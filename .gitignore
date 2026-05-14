@@ -1,0 +1,16 @@
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.egg-info/
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+Testing/
+.venv/
+venv/
+.env
+.env.*
+!.env.example

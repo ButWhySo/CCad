@@ -1,0 +1,48 @@
+# Technical Handover
+
+## Vision
+
+CCad is a native desktop PCB design kernel built for machine callers first. Agents should interact with stable typed objects, deterministic files, validation results, and eventually transactions/RPC. Human UI should render and review kernel state rather than own it.
+
+## Phase Roadmap
+
+1. Logical kernel: project, components, pins, nets, constraints, ERC, CLI.
+2. Physical primitives: board outline, layers, keepouts, placement regions, early DRC.
+3. Routing assistance: constrained route requests and external router boundary.
+4. Native GUI/reviewer: render schematic/PCB state, diffs, diagnostics, and transaction review.
+5. Interop: KiCad, Circuit JSON, DSN/SES, manufacturing exports.
+
+## Current Architecture
+
+The initial codebase is C++20:
+
+- Model objects are plain C++ structs/classes with explicit JSON conversion.
+- JSON output is sorted and stable for diffs.
+- ERC returns typed diagnostics for agent consumption.
+- CLI commands are intentionally small and deterministic.
+
+## Development Commands
+
+```bash
+cmake -S . -B build -DCCAD_WARNINGS_AS_ERRORS=ON
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+## CI/CD
+
+GitHub Actions workflow lives in `.github/workflows/ci.yml`. It configures CMake, builds, and runs CTest on pushes to `main` and `phase-*`, plus pull requests to `main`.
+
+There is no remote configured in this local repo. CI config is present for future GitHub use.
+
+## Test Policy
+
+Use TDD for production behavior. Each new kernel rule or CLI behavior should have a focused test that fails before implementation. Keep tests behavioral and avoid mocking domain code.
+
+## Security Posture
+
+- Project JSON is data only.
+- No dynamic import or code execution from design files.
+- No network calls in kernel or CLI.
+- No secrets needed for local tests or CI.
+- Future importers should validate input before mapping into kernel objects.

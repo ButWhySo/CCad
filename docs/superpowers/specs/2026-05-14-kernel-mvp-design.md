@@ -19,23 +19,22 @@ Phase 1 establishes a logical circuit kernel with:
 
 ## Architecture
 
-The kernel is a Python package named `ccad`. Python is chosen for this base because it gives fast iteration, strong test tooling, readable models, and a practical path to later CLI/RPC/MCP services.
+The kernel is a native C++20 library named `ccad_core`. C++ is chosen because the long-term product is native desktop CAD software with a durable kernel, not a web application. The command-line executable is the first machine-callable client of that kernel. Python may be used later for automation, tests, bindings, or scripts, but it is not the source-of-truth implementation.
 
 The code is split into small modules:
 
-- `ccad.model`: immutable-ish dataclasses for project, component, pin, net, and constraints.
-- `ccad.serialize`: deterministic JSON load/dump with schema versioning.
-- `ccad.erc`: rule checks that return typed diagnostics, never raw strings.
-- `ccad.cli`: command-line surface for machine callers and CI.
+- `src/ccad_core`: C++ domain model, serialization, and ERC.
+- `src/ccad_cli`: native command-line surface for machine callers and CI.
+- `tests`: C++ unit tests run through CTest.
 
 The project JSON file is an artifact format, not the eventual full database. It is the first stable interchange layer used for tests, replay, and future RPC.
 
 ## Data Flow
 
 1. User or agent creates a JSON project file with `ccad init`.
-2. `ccad.serialize` loads and validates structure.
-3. `ccad.erc` emits machine-readable diagnostics.
-4. `ccad.cli` exits `0` for clean designs and nonzero for errors.
+2. `ccad_core` loads and validates structure.
+3. `ccad_core` emits machine-readable ERC diagnostics.
+4. `ccad` exits `0` for clean designs and nonzero for errors.
 
 ## Error Handling
 
@@ -46,7 +45,7 @@ All domain validation errors become `Diagnostic` values with:
 - `message`: concise human text
 - `object_id`: affected object where available
 
-CLI parse errors use nonzero exit codes and print concise messages to stderr. ERC results are JSON on stdout for automation.
+CLI parse errors use nonzero exit codes and print concise messages to stderr. ERC results are JSON on stdout for automation. Project files are parsed as data only.
 
 ## Testing
 
@@ -64,7 +63,7 @@ Every commit must run the full local test suite.
 
 Docs include:
 
-- `README.md`: project purpose, setup, commands.
+- `README.md`: project purpose, setup, build, commands.
 - `AGENTS.md`: repo working rules and handover for future agents.
 - `docs/technical-handover.md`: architecture, phases, testing, CI, security notes.
 - `docs/superpowers/plans/2026-05-14-kernel-mvp.md`: implementation plan.
@@ -79,6 +78,5 @@ The CLI treats project files as data only. It does not execute project content, 
 - Autorouting.
 - Physical placement.
 - KiCad/Circuit JSON import/export.
-- Remote MCP server.
+- Remote MCP server or web service.
 - Package publishing.
-
