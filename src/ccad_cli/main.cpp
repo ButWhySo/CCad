@@ -2,6 +2,7 @@
 #include "ccad_core/drc.hpp"
 #include "ccad_core/erc.hpp"
 #include "ccad_core/json.hpp"
+#include "ccad_core/kicad_footprint_import.hpp"
 #include "ccad_core/model.hpp"
 #include "ccad_core/review.hpp"
 #include "ccad_core/serialize.hpp"
@@ -25,6 +26,7 @@ void printUsage(std::ostream& out) {
       << "  ccad drc <path>\n"
       << "  ccad inspect <path>\n"
       << "  ccad diff <before> <after>\n"
+      << "  ccad lib import-footprint --in <path.kicad_mod> --out <path.json>\n"
       << "  ccad pcb add-pad --file <path> --id <id> --component <id> --pin <name> "
          "--net <id> --layer <id> --x-mm <n> --y-mm <n> --width-mm <n> --height-mm <n>\n"
       << "  ccad pcb add-via --file <path> --id <id> --net <id> --x-mm <n> --y-mm <n> "
@@ -478,6 +480,46 @@ int pcbCommand(const std::vector<std::string>& args) {
   }
 }
 
+int libCommand(const std::vector<std::string>& args) {
+  if (args.empty()) {
+    std::cerr << "lib requires a subcommand\n";
+    return 2;
+  }
+
+  try {
+    const std::string& subcommand = args.at(0);
+    if (subcommand == "import-footprint") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--in", "--out"});
+      const std::string in_path = requireOption(options, "--in");
+      const std::string out_path = requireOption(options, "--out");
+
+      std::ifstream input(in_path);
+      if (!input) {
+        std::cerr << "failed to open footprint input file: " << in_path << '\n';
+        return 2;
+      }
+      std::ostringstream buffer;
+      buffer << input.rdbuf();
+      const ccad::Footprint footprint = ccad::importKiCadFootprint(buffer.str());
+
+      std::ofstream output(out_path);
+      if (!output) {
+        std::cerr << "failed to open footprint output file: " << out_path << '\n';
+        return 2;
+      }
+      output << ccad::dumpFootprintJson(footprint);
+      return static_cast<bool>(output) ? 0 : 2;
+    }
+
+    std::cerr << "unknown lib subcommand: " << subcommand << '\n';
+    return 2;
+  } catch (const std::exception& error) {
+    std::cerr << "failed to import library data: " << error.what() << '\n';
+    return 2;
+  }
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -509,6 +551,9 @@ int main(int argc, char** argv) {
   }
   if (command == "pcb") {
     return pcbCommand(args);
+  }
+  if (command == "lib") {
+    return libCommand(args);
   }
 
   std::cerr << "unknown command: " << command << '\n';

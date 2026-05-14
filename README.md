@@ -187,6 +187,29 @@ When to run:
 - Before opening the GUI for review.
 - Before treating a generated board as a valid intermediate artifact.
 
+Import a KiCad footprint:
+
+```powershell
+.\build-qt\ccad.exe lib import-footprint --in .\path\to\R_0805_2012Metric.kicad_mod --out .\build-qt\R_0805_2012Metric.ccad-footprint.json
+```
+
+What it does:
+
+- Reads a KiCad `.kicad_mod` footprint file as data.
+- Imports the footprint name and basic pad geometry.
+- Writes deterministic CCad footprint JSON.
+
+When to run:
+
+- When reusing existing KiCad footprint library assets.
+- When building a CCad package/footprint catalog.
+- Before future placement commands consume library footprints.
+
+Current limitation:
+
+- The importer handles a narrow pad subset: number, type, shape, position, size, simple drill, and layers.
+- Advanced KiCad footprint constructs are skipped safely for now.
+
 Add PCB primitives through the CLI:
 
 ```powershell
@@ -291,6 +314,7 @@ What it does:
 - Creates `artifacts/demos/sprint7-drc-demo.ccad.json`.
 - Adds a pad, via, and track through the CLI.
 - Writes inspect, validate, and DRC JSON reports.
+- Writes a sample KiCad `.kicad_mod` file and imports it to CCad footprint JSON.
 - Launches the Qt GUI and saves a screenshot under `artifacts/screenshots/`.
 
 When to run:

@@ -141,6 +141,7 @@ What it does:
 - Creates project files with board outline when given `--width-mm` and `--height-mm`.
 - Adds PCB pads, vias, and track segments to existing board projects.
 - Runs physical DRC diagnostics with `ccad drc`.
+- Imports basic KiCad `.kicad_mod` footprint files with `ccad lib import-footprint`.
 - Validates CCad project files.
 - Inspects projects and emits review JSON.
 - Diffs two project files and emits machine-readable diff JSON.
@@ -171,6 +172,7 @@ On Windows PowerShell:
 .\build\ccad.exe inspect demo.ccad.json
 .\build\ccad.exe diff before.ccad.json after.ccad.json
 .\build\ccad.exe drc board.ccad.json
+.\build\ccad.exe lib import-footprint --in R_0805_2012Metric.kicad_mod --out R_0805_2012Metric.ccad-footprint.json
 .\build\ccad.exe pcb add-pad --file board.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 .\build\ccad.exe pcb add-via --file board.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
 .\build\ccad.exe pcb add-track --file board.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
@@ -195,6 +197,14 @@ DRC command behavior:
 - Reports duplicate primitive IDs, unknown layers, geometry outside board outline, invalid dimensions, via drill larger than diameter, and zero-length track segments.
 - Exits `0` for no DRC errors, `1` for DRC errors, and `2` for usage/file/parse failure.
 
+KiCad footprint import behavior:
+
+- `lib import-footprint --in <file.kicad_mod> --out <file.json>` reads one KiCad footprint file.
+- Imports footprint name and basic pad number/type/shape/position/size/simple drill/layers.
+- Writes deterministic CCad footprint JSON.
+- Rejects malformed s-expressions and non-`footprint` roots.
+- Treats KiCad input as data only; it does not execute scripts or resolve external model paths.
+
 Test:
 
 ```bash
@@ -209,6 +219,7 @@ Expected result:
 - CLI validates an invalid file with nonzero exit and JSON diagnostics.
 - CLI PCB commands append primitives and reject invalid mutations.
 - CLI DRC command emits JSON physical diagnostics.
+- CLI footprint import command emits deterministic footprint JSON.
 
 ## Project Review Model
 
