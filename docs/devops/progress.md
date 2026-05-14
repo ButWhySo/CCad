@@ -7,9 +7,9 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
 - Sprint: 17
-- Branch: `sprint-17-drc-empty-net-warnings`
-- Last merged sprint: Sprint 16, DRC track endpoint connectivity
-- Status: Sprint 17 implementation on feature branch
+- Branch: `main`
+- Last merged sprint: Sprint 17, DRC empty via/track net warnings
+- Status: Sprint 17 merged and verified on `main`
 
 ## Phase Roadmap
 
@@ -38,10 +38,11 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Sprint 14: DRC unconnected pad warning.
 - Sprint 15: DRC unknown physical net references.
 - Sprint 16: DRC track endpoint connectivity.
+- Sprint 17: DRC empty via/track net warnings.
 
 ## Active Sprint
 
-- Sprint 17: DRC empty via/track net warnings.
+- Next: Sprint 18 planning.
 
 ## Reporting Rule
 
@@ -54,5 +55,5 @@ Progress: Phase 2/6, Sprint 17, <branch-or-main>, <short status>
 Example:
 
 ```text
-Progress: Phase 2/6, Sprint 17, sprint-17-drc-empty-net-warnings, implementation.
+Progress: Phase 2/6, Sprint 17, main, merged and verified.
 ```
