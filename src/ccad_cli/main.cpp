@@ -1,4 +1,5 @@
 #include "ccad_core/diff.hpp"
+#include "ccad_core/drc.hpp"
 #include "ccad_core/erc.hpp"
 #include "ccad_core/json.hpp"
 #include "ccad_core/model.hpp"
@@ -21,6 +22,7 @@ void printUsage(std::ostream& out) {
   out << "Usage:\n"
       << "  ccad init --name <name> --out <path> [--width-mm <n> --height-mm <n>]\n"
       << "  ccad validate <path>\n"
+      << "  ccad drc <path>\n"
       << "  ccad inspect <path>\n"
       << "  ccad diff <before> <after>\n"
       << "  ccad pcb add-pad --file <path> --id <id> --component <id> --pin <name> "
@@ -308,6 +310,23 @@ int validateCommand(const std::vector<std::string>& args) {
   }
 }
 
+int drcCommand(const std::vector<std::string>& args) {
+  if (args.size() != 1) {
+    std::cerr << "drc requires exactly one project path\n";
+    return 2;
+  }
+
+  try {
+    const ccad::Project project = loadProjectFile(args.at(0));
+    const std::vector<ccad::Diagnostic> diagnostics = ccad::runDrc(project);
+    std::cout << diagnosticsJson(diagnostics);
+    return hasError(diagnostics) ? 1 : 0;
+  } catch (const std::exception& error) {
+    std::cerr << "failed to run drc: " << error.what() << '\n';
+    return 2;
+  }
+}
+
 int inspectCommand(const std::vector<std::string>& args) {
   if (args.size() != 1) {
     std::cerr << "inspect requires exactly one project path\n";
@@ -478,6 +497,9 @@ int main(int argc, char** argv) {
   }
   if (command == "validate") {
     return validateCommand(args);
+  }
+  if (command == "drc") {
+    return drcCommand(args);
   }
   if (command == "inspect") {
     return inspectCommand(args);

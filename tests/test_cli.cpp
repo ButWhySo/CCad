@@ -173,6 +173,50 @@ int main() {
   require(board_inspect_output.find("\"width_nm\": 42000000") != std::string::npos,
           "inspect reports board width");
 
+  const std::filesystem::path drc_output_path = temp / "drc.json";
+  const std::string drc_command = quote(CCAD_BINARY) + " drc " + quote(board_project_path) +
+                                  " > " + quote(drc_output_path);
+  require(run(drc_command) == 0, "clean drc exits zero");
+  require(readFile(drc_output_path).find("\"diagnostics\": [") != std::string::npos,
+          "drc writes diagnostics json");
+
+  const std::filesystem::path invalid_drc_path = temp / "invalid-drc.ccad.json";
+  std::ofstream invalid_drc(invalid_drc_path);
+  invalid_drc << "{\n"
+              << "  \"schema_version\": 1,\n"
+              << "  \"id\": \"proj-invalid-drc\",\n"
+              << "  \"name\": \"invalid-drc\",\n"
+              << "  \"board\": {\n"
+              << "    \"outline\": {\n"
+              << "      \"x_nm\": 0,\n"
+              << "      \"y_nm\": 0,\n"
+              << "      \"width_nm\": 42000000,\n"
+              << "      \"height_nm\": 28000000\n"
+              << "    },\n"
+              << "    \"layers\": [\n"
+              << "      {\"id\": \"F.Cu\", \"name\": \"Front copper\", \"kind\": \"copper\", \"visible\": true}\n"
+              << "    ],\n"
+              << "    \"pads\": [],\n"
+              << "    \"vias\": [],\n"
+              << "    \"tracks\": [\n"
+              << "      {\"id\": \"T_BAD\", \"net_id\": \"N1\", \"layer_id\": \"Inner.Cu\", "
+              << "\"start\": {\"x_nm\": 5000000, \"y_nm\": 6000000}, "
+              << "\"end\": {\"x_nm\": 8000000, \"y_nm\": 9000000}, \"width_nm\": 250000}\n"
+              << "    ]\n"
+              << "  },\n"
+              << "  \"components\": [],\n"
+              << "  \"constraints\": [],\n"
+              << "  \"nets\": []\n"
+              << "}\n";
+  invalid_drc.close();
+  const std::string invalid_drc_command = quote(CCAD_BINARY) + " drc " +
+                                          quote(invalid_drc_path) + " > " +
+                                          quote(drc_output_path);
+  require(run(invalid_drc_command) != 0, "invalid drc exits nonzero");
+  require(readFile(drc_output_path).find("\"code\": \"UNKNOWN_TRACK_LAYER\"") !=
+              std::string::npos,
+          "drc reports unknown track layer");
+
   const std::filesystem::path diff_after_path = temp / "diff-after.ccad.json";
   std::ofstream diff_after(diff_after_path);
   diff_after << "{\n"
