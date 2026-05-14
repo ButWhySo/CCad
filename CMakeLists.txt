@@ -40,7 +40,12 @@ else()
 endif()
 
 add_executable(ccad
+  src/ccad_cli/app.cpp
+  src/ccad_cli/common.cpp
+  src/ccad_cli/lib_commands.cpp
   src/ccad_cli/main.cpp
+  src/ccad_cli/pcb_commands.cpp
+  src/ccad_cli/project_commands.cpp
 )
 target_link_libraries(ccad PRIVATE ccad_core)
 if(MINGW)
