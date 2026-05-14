@@ -125,7 +125,9 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
       diagnostics.push_back(
           makeDiagnostic("VIA_OUTSIDE_BOARD", "Via position is outside board outline", via.id));
     }
-    if (!via.net_id.empty() && !hasNet(project, via.net_id)) {
+    if (via.net_id.empty()) {
+      diagnostics.push_back(makeWarning("UNCONNECTED_VIA", "Via has no assigned net", via.id));
+    } else if (!hasNet(project, via.net_id)) {
       diagnostics.push_back(
           makeDiagnostic("UNKNOWN_VIA_NET", "Via references an unknown net", via.id));
     }
@@ -152,7 +154,10 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
       diagnostics.push_back(
           makeDiagnostic("UNKNOWN_TRACK_LAYER", "Track references an unknown layer", track.id));
     }
-    if (!track.net_id.empty() && !hasNet(project, track.net_id)) {
+    if (track.net_id.empty()) {
+      diagnostics.push_back(
+          makeWarning("UNCONNECTED_TRACK", "Track has no assigned net", track.id));
+    } else if (!hasNet(project, track.net_id)) {
       diagnostics.push_back(
           makeDiagnostic("UNKNOWN_TRACK_NET", "Track references an unknown net", track.id));
     }

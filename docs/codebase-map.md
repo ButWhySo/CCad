@@ -6,7 +6,7 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 
 - Phase: 2 / 6
 - Last merged sprint: Sprint 16, DRC track endpoint connectivity
-- Next sprint: Sprint 17 planning
+- Current sprint: Sprint 17, DRC empty via/track net warnings
 - Active branch pattern: `sprint-<n>-<topic>`
 - Current source of truth for phase/sprint counter: `docs/devops/progress.md`
 - Main product direction: native C++ PCB kernel and machine-callable CLI first; Qt GUI is a human review/editor client, not the data owner.
@@ -208,6 +208,7 @@ Current checks:
 - pad/via/track positions outside board
 - non-positive pad/via/track dimensions
 - unconnected pads as warnings
+- unconnected vias/tracks as warnings
 - unknown non-empty pad/via/track net IDs
 - unconnected track endpoints as warnings
 - via drill larger than diameter
