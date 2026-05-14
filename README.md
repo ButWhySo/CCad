@@ -37,6 +37,8 @@ ctest --test-dir build --output-on-failure
 
 See `docs/features/implemented-features.md` for a complete feature-by-feature usage and testing guide.
 
+Agents should read `docs/codebase-map.md` before editing code. It is the maintained map of files, modules, public functions, and invariants.
+
 ## Windows Qt Development Loop
 
 Run these commands from `F:\CCad` in PowerShell when you need the native desktop GUI too.
@@ -213,7 +215,7 @@ Current limitation:
 Place an imported footprint on a board:
 
 ```powershell
-.\build-qt\ccad.exe pcb place-footprint --file .\build-qt\canvas-demo.ccad.json --footprint .\build-qt\R_0805_2012Metric.ccad-footprint.json --component R1 --at-x-mm 16 --at-y-mm 14 --layer F.Cu
+.\build-qt\ccad.exe pcb place-footprint --file .\build-qt\canvas-demo.ccad.json --footprint .\build-qt\R_0805_2012Metric.ccad-footprint.json --component R1 --at-x-mm 16 --at-y-mm 14 --layer F.Cu --rotation-deg 90
 ```
 
 What it does:
@@ -221,6 +223,7 @@ What it does:
 - Loads CCad footprint JSON.
 - Places each footprint pad onto the board as a board pad.
 - Generates stable pad IDs such as `R1.1` and `R1.2`.
+- Rotates footprint-local pad centers and pad orientation when `--rotation-deg` is provided.
 
 When to run:
 
@@ -230,9 +233,8 @@ When to run:
 
 Current limitation:
 
-- Placement is translation-only.
 - Nets are left empty until schematic-footprint mapping exists.
-- Rotation, flipping, courtyard checks, and schematic parity are later work.
+- Flipping, courtyard checks, and schematic parity are later work.
 
 Add PCB primitives through the CLI:
 

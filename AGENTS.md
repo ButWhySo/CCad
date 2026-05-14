@@ -8,12 +8,15 @@ Read `docs/research/2026-05-14-llm-native-pcb-tool-report.md` before making arch
 
 Read `docs/research/2026-05-14-kicad-feature-map.md` before adding GUI, schematic, PCB, routing, simulation, library, or manufacturing features. It maps KiCad-like expectations into CCad's machine-native roadmap.
 
+Read `docs/codebase-map.md` before editing code. It is the maintained memory-loss handover for modules, files, public functions, invariants, and current technical debt.
+
 ## Working Rules
 
 - Work on a feature branch, then merge to `main` after verification.
 - Keep commits small and meaningful.
 - Track project position in `docs/devops/progress.md`.
 - Every commit/merge update to the user must include `Progress: Phase X/Y, Sprint N, <branch>, <status>`.
+- Use multi-line commit messages with Why, Changed, Behavior, Verification, and Demo sections as documented in `docs/codebase-map.md`.
 - Write tests before production behavior changes.
 - Run CMake build and CTest before committing completion work.
 - Never add secrets, tokens, or machine-specific paths to committed files.
