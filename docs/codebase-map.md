@@ -338,7 +338,27 @@ Rules:
 
 ### `src/ccad_cli/main.cpp`
 
-Current state: large and should be split in a future refactor into command modules. Until then, keep changes grouped by helper/command.
+Entrypoint only.
+
+Owns:
+
+```cpp
+int main(int argc, char** argv);
+```
+
+Rule:
+
+- Delegate process behavior to `ccad_cli::run`.
+
+### `src/ccad_cli/app.hpp/.cpp`
+
+Owns top-level command dispatch and usage text.
+
+Public function:
+
+```cpp
+int run(int argc, char** argv);
+```
 
 Command groups:
 
@@ -355,16 +375,54 @@ ccad pcb add-track
 ccad pcb place-footprint
 ```
 
-Important helpers:
+### `src/ccad_cli/common.hpp/.cpp`
+
+Owns shared CLI helpers for option parsing, project/footprint file I/O, JSON responses, and board mutation validation.
+
+Important functions:
 
 ```cpp
 Project loadProjectFile(const std::string& path);
 bool writeProjectFile(const std::string& path, const Project& project);
-std::map<std::string, std::string> parseOptions(...);
-Length requirePositiveMillimeters(...);
-double optionDoubleOrDefault(...);
-Point rotateAndTranslate(...);
 Footprint loadFootprintFile(const std::string& path);
+std::map<std::string, std::string> parseOptions(...);
+std::string requireOption(...);
+Length requirePositiveMillimeters(...);
+double requireDoubleOption(...);
+double optionDoubleOrDefault(...);
+std::string diagnosticsJson(...);
+std::string reviewJson(...);
+Board& requireBoard(Project& project);
+void requireLayer(const Board& board, const std::string& layer_id);
+void requireInsideBoard(...);
+void requireUniquePadId(...);
+void requireUniqueViaId(...);
+void requireUniqueTrackId(...);
+Point rotateAndTranslate(...);
+```
+
+Rule:
+
+- These helpers must stay deterministic and must not shell out or execute project/library file contents.
+
+### `src/ccad_cli/project_commands.hpp/.cpp`
+
+Owns project-level commands:
+
+```cpp
+int initCommand(const std::vector<std::string>& args);
+int validateCommand(const std::vector<std::string>& args);
+int drcCommand(const std::vector<std::string>& args);
+int inspectCommand(const std::vector<std::string>& args);
+int diffCommand(const std::vector<std::string>& args);
+```
+
+### `src/ccad_cli/pcb_commands.hpp/.cpp`
+
+Owns PCB mutation command group:
+
+```cpp
+int pcbCommand(const std::vector<std::string>& args);
 ```
 
 Placement rule:
@@ -373,9 +431,17 @@ Placement rule:
 - Pad ID format: `<component>.<pad-number>`.
 - Current net mapping is empty string until schematic-footprint mapping exists.
 
-Refactor target:
+### `src/ccad_cli/lib_commands.hpp/.cpp`
 
-- Split into `src/ccad_cli/commands.hpp/.cpp`, `pcb_commands.cpp`, `lib_commands.cpp`, and `io.cpp`.
+Owns library/import command group:
+
+```cpp
+int libCommand(const std::vector<std::string>& args);
+```
+
+Current scope:
+
+- `lib import-footprint --in <path.kicad_mod> --out <path.json>`
 
 ## GUI Files
 
@@ -465,7 +531,7 @@ Outputs:
 
 ## Current Known Technical Debt To Avoid Expanding
 
-- `src/ccad_cli/main.cpp` is too large. Split it before adding many more commands.
+- CLI commands are now split, but `src/ccad_cli/pcb_commands.cpp` should be split further once placement, routing, or net mapping grows.
 - `serialize.cpp` and `kicad_footprint_import.cpp` contain handwritten parsers. They are deterministic and tested, but keep scope narrow.
 - GUI is still a review canvas, not a full editor.
 - No schematic-footprint mapping yet; placed footprint pads have empty nets.

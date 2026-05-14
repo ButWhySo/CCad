@@ -133,6 +133,16 @@ Status: implemented.
 Files:
 
 - `src/ccad_cli/main.cpp`
+- `src/ccad_cli/app.hpp`
+- `src/ccad_cli/app.cpp`
+- `src/ccad_cli/common.hpp`
+- `src/ccad_cli/common.cpp`
+- `src/ccad_cli/project_commands.hpp`
+- `src/ccad_cli/project_commands.cpp`
+- `src/ccad_cli/pcb_commands.hpp`
+- `src/ccad_cli/pcb_commands.cpp`
+- `src/ccad_cli/lib_commands.hpp`
+- `src/ccad_cli/lib_commands.cpp`
 - `tests/test_cli.cpp`
 
 What it does:
@@ -150,6 +160,7 @@ What it does:
 - Returns `0` when validation has no errors.
 - Returns `1` when ERC errors exist.
 - Returns `2` for CLI usage, file, or parse failures.
+- Keeps process entry, top-level dispatch, project commands, PCB commands, library commands, and shared helpers in separate native C++ modules.
 
 Build:
 
