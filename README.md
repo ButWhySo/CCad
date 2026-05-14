@@ -28,6 +28,8 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
+See `docs/features/implemented-features.md` for a complete feature-by-feature usage and testing guide.
+
 ## CLI
 
 Create an empty project:

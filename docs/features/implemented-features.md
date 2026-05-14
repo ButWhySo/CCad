@@ -1,0 +1,292 @@
+# Implemented Features
+
+This document tracks user-visible and agent-visible features that exist in the repo, how to use them, how to test them, and where they are implemented.
+
+## Build System And DevOps
+
+Status: implemented.
+
+Files:
+
+- `CMakeLists.txt`
+- `.github/workflows/ci.yml`
+- `.gitignore`
+- `docs/devops/sprints/2026-05-14-sprint-1-qt-review-gui.md`
+
+What it does:
+
+- Builds a native C++20 project with CMake.
+- Builds `ccad_core`, `ccad`, tests, and optional `ccad_gui`.
+- Runs tests through CTest.
+- GitHub Actions has a core job and a Linux Qt GUI compile job.
+
+Use:
+
+```bash
+cmake -S . -B build -DCCAD_WARNINGS_AS_ERRORS=ON
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+Core-only build:
+
+```bash
+cmake -S . -B build -DCCAD_WARNINGS_AS_ERRORS=ON -DCCAD_BUILD_GUI=OFF
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+Expected result:
+
+- CMake configure succeeds.
+- Build succeeds.
+- CTest reports all tests passing.
+
+## Logical Project Model
+
+Status: implemented.
+
+Files:
+
+- `src/ccad_core/model.hpp`
+- `src/ccad_core/model.cpp`
+- `tests/test_serialize.cpp`
+
+What it does:
+
+- Represents project metadata.
+- Represents components, pins, nets, net members, and constraints.
+- Provides the data model used by CLI, ERC, review model, and future GUI/RPC clients.
+
+Test:
+
+```bash
+cmake --build build --target ccad_tests
+ctest --test-dir build -R serialize --output-on-failure
+```
+
+Expected result:
+
+- `serialize` test passes.
+
+## Deterministic JSON Serialization
+
+Status: implemented.
+
+Files:
+
+- `src/ccad_core/serialize.hpp`
+- `src/ccad_core/serialize.cpp`
+- `tests/test_serialize.cpp`
+
+What it does:
+
+- Converts `Project` objects to stable JSON.
+- Loads JSON back into `Project`.
+- Escapes JSON strings correctly for control characters, quotes, and slashes.
+- Rejects malformed JSON such as trailing garbage and trailing commas.
+
+Test:
+
+```bash
+ctest --test-dir build -R serialize --output-on-failure
+```
+
+Expected result:
+
+- Round-trip JSON test passes.
+- Escape tests pass.
+- Malformed JSON rejection tests pass.
+
+## ERC Diagnostics
+
+Status: implemented.
+
+Files:
+
+- `src/ccad_core/erc.hpp`
+- `src/ccad_core/erc.cpp`
+- `tests/test_erc.cpp`
+
+What it does:
+
+- Runs logical electrical-rule checks.
+- Reports typed diagnostics with severity, code, message, and object ID.
+- Detects unknown components, unknown pins, duplicate component IDs, duplicate pins, duplicate net members, and empty projects.
+
+Test:
+
+```bash
+cmake --build build --target ccad_erc_tests
+ctest --test-dir build -R erc --output-on-failure
+```
+
+Expected result:
+
+- `erc` test passes.
+
+## Native CLI
+
+Status: implemented.
+
+Files:
+
+- `src/ccad_cli/main.cpp`
+- `tests/test_cli.cpp`
+
+What it does:
+
+- Creates empty CCad project files.
+- Validates CCad project files.
+- Prints ERC diagnostics as JSON.
+- Returns `0` when validation has no errors.
+- Returns `1` when ERC errors exist.
+- Returns `2` for CLI usage, file, or parse failures.
+
+Build:
+
+```bash
+cmake --build build --target ccad
+```
+
+Use:
+
+```bash
+build/ccad init --name demo --out demo.ccad.json
+build/ccad validate demo.ccad.json
+```
+
+On Windows PowerShell:
+
+```powershell
+.\build\ccad.exe init --name demo --out demo.ccad.json
+.\build\ccad.exe validate demo.ccad.json
+```
+
+Test:
+
+```bash
+cmake --build build --target ccad_cli_tests
+ctest --test-dir build -R cli --output-on-failure
+```
+
+Expected result:
+
+- CLI creates a project file.
+- CLI validates a clean file with exit code `0`.
+- CLI validates an invalid file with nonzero exit and JSON diagnostics.
+
+## Project Review Model
+
+Status: implemented.
+
+Files:
+
+- `src/ccad_core/review.hpp`
+- `src/ccad_core/review.cpp`
+- `tests/test_review.cpp`
+
+What it does:
+
+- Builds a human-review summary from a `Project`.
+- Reports project ID/name.
+- Reports component, net, and constraint counts.
+- Carries ERC diagnostics.
+- Produces status text such as `Clean: 1 component, 1 net, 1 constraint`, `Warnings: 1`, or `Errors: 1, warnings: 0`.
+
+Test:
+
+```bash
+cmake --build build --target ccad_review_tests
+ctest --test-dir build -R review --output-on-failure
+```
+
+Expected result:
+
+- `review` test passes.
+
+## Optional Qt Review GUI
+
+Status: implemented as optional target.
+
+Files:
+
+- `src/ccad_gui/main.cpp`
+- `CMakeLists.txt`
+
+What it does:
+
+- Builds `ccad_gui` when Qt 6 Widgets is available.
+- Provides a native desktop window for human review.
+- Opens `.ccad.json` project files.
+- Shows project summary.
+- Shows ERC diagnostics table.
+- Supports reload.
+
+Build with Qt:
+
+```bash
+cmake -S . -B build -DCCAD_BUILD_GUI=ON
+cmake --build build --target ccad_gui
+```
+
+Run:
+
+```bash
+build/ccad_gui
+```
+
+On Windows:
+
+```powershell
+.\build\ccad_gui.exe
+```
+
+If Qt is not installed:
+
+- CMake prints `Qt6 Widgets not found; skipping ccad_gui target`.
+- Core, CLI, and tests still build.
+
+Manual test:
+
+1. Build with Qt installed.
+2. Run `ccad_gui`.
+3. Choose `File > Open`.
+4. Open a `.ccad.json` file created by `ccad init`.
+5. Confirm summary and diagnostics display.
+6. Edit the file externally or regenerate it.
+7. Click Reload.
+
+Expected result:
+
+- GUI opens project file.
+- Summary counts match the file.
+- Clean files show clean status.
+- Invalid files show diagnostics.
+
+## Research And Architecture Docs
+
+Status: implemented.
+
+Files:
+
+- `docs/research/2026-05-14-llm-native-pcb-tool-report.md`
+- `docs/superpowers/specs/2026-05-14-kernel-mvp-design.md`
+- `docs/superpowers/plans/2026-05-14-kernel-mvp.md`
+- `docs/superpowers/specs/2026-05-14-qt-review-gui-design.md`
+- `docs/superpowers/plans/2026-05-14-qt-review-gui.md`
+- `docs/technical-handover.md`
+- `AGENTS.md`
+
+What it does:
+
+- Documents the LLM-native PCB thesis.
+- Documents prior art and reuse strategy.
+- Documents the current kernel MVP.
+- Documents the Qt review GUI design.
+- Documents agent handover and sprint process.
+
+Review:
+
+Open the files above in the editor.
+
