@@ -11,6 +11,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_library(ccad_core
   src/ccad_core/model.cpp
   src/ccad_core/erc.cpp
+  src/ccad_core/review.cpp
   src/ccad_core/serialize.cpp
 )
 
@@ -68,3 +69,12 @@ target_compile_definitions(ccad_cli_tests PRIVATE
   CCAD_BINARY="$<TARGET_FILE:ccad>"
 )
 add_test(NAME cli COMMAND ccad_cli_tests)
+
+add_executable(ccad_review_tests
+  tests/test_review.cpp
+)
+target_link_libraries(ccad_review_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_review_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME review COMMAND ccad_review_tests)
