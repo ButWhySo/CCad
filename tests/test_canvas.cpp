@@ -14,6 +14,25 @@ ccad::Project boardProject() {
           .size = ccad::Size{.width = ccad::millimeters(42), .height = ccad::millimeters(28)},
       },
       .layers = {},
+      .pads = {ccad::Pad{.id = "P1",
+                         .component_id = "U1",
+                         .pin_name = "1",
+                         .net_id = "N1",
+                         .layer_id = "F.Cu",
+                         .position = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
+                         .size = ccad::Size{.width = ccad::millimeters(1.5),
+                                            .height = ccad::millimeters(1.0)}}},
+      .vias = {ccad::Via{.id = "V1",
+                         .net_id = "N1",
+                         .position = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},
+                         .diameter = ccad::millimeters(0.8),
+                         .drill = ccad::millimeters(0.4)}},
+      .tracks = {ccad::TrackSegment{.id = "T1",
+                                    .net_id = "N1",
+                                    .layer_id = "F.Cu",
+                                    .start = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
+                                    .end = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},
+                                    .width = ccad::millimeters(0.25)}},
   };
   return project;
 }
@@ -34,5 +53,11 @@ int main() {
   require(scene.board_height_nm == 28000000, "board scene height set");
   require(scene.view_width_units == 42.0, "view width is mm");
   require(scene.view_height_units == 28.0, "view height is mm");
+  require(scene.pads.size() == 1, "canvas has pad");
+  require(scene.pads.at(0).x_units == 5.0, "canvas pad x is mm");
+  require(scene.vias.size() == 1, "canvas has via");
+  require(scene.vias.at(0).diameter_units == 0.8, "canvas via diameter is mm");
+  require(scene.tracks.size() == 1, "canvas has track");
+  require(scene.tracks.at(0).width_units == 0.25, "canvas track width is mm");
 }
 

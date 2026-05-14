@@ -383,6 +383,41 @@ class ReviewWindow final : public QMainWindow {
     auto* board = canvas_scene_->addRect(board_rect, outline_pen, QBrush(QColor("#0f1b2d")));
     board->setToolTip("Board outline");
 
+    QPen track_pen(QColor("#ef4444"));
+    track_pen.setCapStyle(Qt::RoundCap);
+    for (const ccad::CanvasTrack& track : scene.tracks) {
+      track_pen.setWidthF(std::max(1.2, track.width_units * scale));
+      auto* item = canvas_scene_->addLine(margin + (track.start_x_units * scale),
+                                          margin + (track.start_y_units * scale),
+                                          margin + (track.end_x_units * scale),
+                                          margin + (track.end_y_units * scale), track_pen);
+      item->setToolTip("Track " + qstr(track.id));
+    }
+
+    for (const ccad::CanvasPad& pad : scene.pads) {
+      const QRectF pad_rect(margin + (pad.x_units * scale) - ((pad.width_units * scale) / 2.0),
+                            margin + (pad.y_units * scale) - ((pad.height_units * scale) / 2.0),
+                            pad.width_units * scale, pad.height_units * scale);
+      auto* item =
+          canvas_scene_->addRoundedRect(pad_rect, 2.0, 2.0, QPen(QColor("#f472b6"), 0.8),
+                                        QBrush(QColor("#be185d")));
+      item->setToolTip("Pad " + qstr(pad.id));
+    }
+
+    for (const ccad::CanvasVia& via : scene.vias) {
+      const double diameter = via.diameter_units * scale;
+      const QRectF via_rect(margin + (via.x_units * scale) - (diameter / 2.0),
+                            margin + (via.y_units * scale) - (diameter / 2.0), diameter,
+                            diameter);
+      auto* item = canvas_scene_->addEllipse(via_rect, QPen(QColor("#fde68a"), 1.0),
+                                             QBrush(QColor("#f59e0b")));
+      item->setToolTip("Via " + qstr(via.id));
+      const double drill = via.drill_units * scale;
+      canvas_scene_->addEllipse(margin + (via.x_units * scale) - (drill / 2.0),
+                                margin + (via.y_units * scale) - (drill / 2.0), drill, drill,
+                                QPen(Qt::NoPen), QBrush(QColor("#07111f")));
+    }
+
     auto* label = canvas_scene_->addText(QString::number(scene.view_width_units, 'f', 2) + " mm x " +
                                          QString::number(scene.view_height_units, 'f', 2) + " mm");
     label->setDefaultTextColor(QColor("#cbd5e1"));
