@@ -19,6 +19,20 @@ void writeField(std::ostringstream& out, const int indent, const std::string& ke
   out << '\n';
 }
 
+void writePoint(std::ostringstream& out, const int indent, const Point& point) {
+  out << std::string(indent, ' ') << "{\n";
+  out << std::string(indent + 2, ' ') << "\"x_nm\": " << point.x.nanometers << ",\n";
+  out << std::string(indent + 2, ' ') << "\"y_nm\": " << point.y.nanometers << "\n";
+  out << std::string(indent, ' ') << "}";
+}
+
+void writeSize(std::ostringstream& out, const int indent, const Size& size) {
+  out << std::string(indent, ' ') << "{\n";
+  out << std::string(indent + 2, ' ') << "\"width_nm\": " << size.width.nanometers << ",\n";
+  out << std::string(indent + 2, ' ') << "\"height_nm\": " << size.height.nanometers << "\n";
+  out << std::string(indent, ' ') << "}";
+}
+
 class JsonReader {
  public:
   explicit JsonReader(std::string_view source) : source_(source) {}
@@ -78,6 +92,12 @@ class JsonReader {
           board.outline = readRect();
         } else if (key == "layers") {
           board.layers = readLayers();
+        } else if (key == "pads") {
+          board.pads = readPads();
+        } else if (key == "vias") {
+          board.vias = readVias();
+        } else if (key == "tracks") {
+          board.tracks = readTracks();
         } else {
           throw std::runtime_error("unknown board key: " + key);
         }
@@ -123,6 +143,58 @@ class JsonReader {
     return rect;
   }
 
+  Point readPoint() {
+    Point point;
+    expect('{');
+    if (!consume('}')) {
+      while (true) {
+        const std::string key = readString();
+        expect(':');
+        if (key == "x_nm") {
+          point.x = nanometers(readInt64());
+        } else if (key == "y_nm") {
+          point.y = nanometers(readInt64());
+        } else {
+          throw std::runtime_error("unknown point key: " + key);
+        }
+        if (consume('}')) {
+          break;
+        }
+        expect(',');
+        if (peek('}')) {
+          throw std::runtime_error("trailing comma in point object");
+        }
+      }
+    }
+    return point;
+  }
+
+  Size readSize() {
+    Size size;
+    expect('{');
+    if (!consume('}')) {
+      while (true) {
+        const std::string key = readString();
+        expect(':');
+        if (key == "width_nm") {
+          size.width = nanometers(readInt64());
+        } else if (key == "height_nm") {
+          size.height = nanometers(readInt64());
+        } else {
+          throw std::runtime_error("unknown size key: " + key);
+        }
+        if (consume('}')) {
+          break;
+        }
+        expect(',');
+        if (peek('}')) {
+          throw std::runtime_error("trailing comma in size object");
+        }
+      }
+    }
+    return size;
+  }
+
   std::vector<Layer> readLayers() {
     std::vector<Layer> layers;
     expect('[');
@@ -163,6 +235,150 @@ class JsonReader {
       expect(',');
       if (peek(']')) {
         throw std::runtime_error("trailing comma in layers array");
+      }
+    }
+  }
+
+  std::vector<Pad> readPads() {
+    std::vector<Pad> pads;
+    expect('[');
+    if (consume(']')) {
+      return pads;
+    }
+    while (true) {
+      Pad pad;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            pad.id = readString();
+          } else if (key == "component_id") {
+            pad.component_id = readString();
+          } else if (key == "pin_name") {
+            pad.pin_name = readString();
+          } else if (key == "net_id") {
+            pad.net_id = readString();
+          } else if (key == "layer_id") {
+            pad.layer_id = readString();
+          } else if (key == "position") {
+            pad.position = readPoint();
+          } else if (key == "size") {
+            pad.size = readSize();
+          } else {
+            throw std::runtime_error("unknown pad key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+          if (peek('}')) {
+            throw std::runtime_error("trailing comma in pad object");
+          }
+        }
+      }
+      pads.push_back(pad);
+      if (consume(']')) {
+        return pads;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in pads array");
+      }
+    }
+  }
+
+  std::vector<Via> readVias() {
+    std::vector<Via> vias;
+    expect('[');
+    if (consume(']')) {
+      return vias;
+    }
+    while (true) {
+      Via via;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            via.id = readString();
+          } else if (key == "net_id") {
+            via.net_id = readString();
+          } else if (key == "position") {
+            via.position = readPoint();
+          } else if (key == "diameter_nm") {
+            via.diameter = nanometers(readInt64());
+          } else if (key == "drill_nm") {
+            via.drill = nanometers(readInt64());
+          } else {
+            throw std::runtime_error("unknown via key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+          if (peek('}')) {
+            throw std::runtime_error("trailing comma in via object");
+          }
+        }
+      }
+      vias.push_back(via);
+      if (consume(']')) {
+        return vias;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in vias array");
+      }
+    }
+  }
+
+  std::vector<TrackSegment> readTracks() {
+    std::vector<TrackSegment> tracks;
+    expect('[');
+    if (consume(']')) {
+      return tracks;
+    }
+    while (true) {
+      TrackSegment track;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            track.id = readString();
+          } else if (key == "net_id") {
+            track.net_id = readString();
+          } else if (key == "layer_id") {
+            track.layer_id = readString();
+          } else if (key == "start") {
+            track.start = readPoint();
+          } else if (key == "end") {
+            track.end = readPoint();
+          } else if (key == "width_nm") {
+            track.width = nanometers(readInt64());
+          } else {
+            throw std::runtime_error("unknown track key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+          if (peek('}')) {
+            throw std::runtime_error("trailing comma in track object");
+          }
+        }
+      }
+      tracks.push_back(track);
+      if (consume(']')) {
+        return tracks;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in tracks array");
       }
     }
   }
@@ -552,6 +768,55 @@ std::string dumpProjectJson(const Project& project) {
       writeField(out, 8, "name", layer.name);
       out << "        \"visible\": " << (layer.visible ? "true" : "false") << '\n';
       out << "      }" << (i + 1 == board.layers.size() ? "" : ",") << '\n';
+    }
+    out << "    ],\n";
+    out << "    \"pads\": [\n";
+    for (std::size_t i = 0; i < board.pads.size(); ++i) {
+      const Pad& pad = board.pads.at(i);
+      out << "      {\n";
+      writeField(out, 8, "id", pad.id);
+      writeField(out, 8, "component_id", pad.component_id);
+      writeField(out, 8, "pin_name", pad.pin_name);
+      writeField(out, 8, "net_id", pad.net_id);
+      writeField(out, 8, "layer_id", pad.layer_id);
+      out << "        \"position\": ";
+      writePoint(out, 0, pad.position);
+      out << ",\n";
+      out << "        \"size\": ";
+      writeSize(out, 0, pad.size);
+      out << "\n";
+      out << "      }" << (i + 1 == board.pads.size() ? "" : ",") << '\n';
+    }
+    out << "    ],\n";
+    out << "    \"tracks\": [\n";
+    for (std::size_t i = 0; i < board.tracks.size(); ++i) {
+      const TrackSegment& track = board.tracks.at(i);
+      out << "      {\n";
+      writeField(out, 8, "id", track.id);
+      writeField(out, 8, "net_id", track.net_id);
+      writeField(out, 8, "layer_id", track.layer_id);
+      out << "        \"start\": ";
+      writePoint(out, 0, track.start);
+      out << ",\n";
+      out << "        \"end\": ";
+      writePoint(out, 0, track.end);
+      out << ",\n";
+      out << "        \"width_nm\": " << track.width.nanometers << "\n";
+      out << "      }" << (i + 1 == board.tracks.size() ? "" : ",") << '\n';
+    }
+    out << "    ],\n";
+    out << "    \"vias\": [\n";
+    for (std::size_t i = 0; i < board.vias.size(); ++i) {
+      const Via& via = board.vias.at(i);
+      out << "      {\n";
+      writeField(out, 8, "id", via.id);
+      writeField(out, 8, "net_id", via.net_id);
+      out << "        \"position\": ";
+      writePoint(out, 0, via.position);
+      out << ",\n";
+      out << "        \"diameter_nm\": " << via.diameter.nanometers << ",\n";
+      out << "        \"drill_nm\": " << via.drill.nanometers << "\n";
+      out << "      }" << (i + 1 == board.vias.size() ? "" : ",") << '\n';
     }
     out << "    ]\n";
     out << "  },\n";

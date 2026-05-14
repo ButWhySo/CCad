@@ -257,7 +257,58 @@ What it does:
 - Stores physical lengths as integer nanometers.
 - Converts millimeters and mils deterministically.
 - Represents points, sizes, rectangles, board outline, and layers.
+- Represents first drawable PCB primitives: pads, vias, and track segments.
+- Preserves primitive IDs, net IDs, layer IDs, component/pin ownership, and geometry through JSON round-trip.
 - Serializes board data in project JSON.
+
+Example board JSON shape:
+
+```json
+{
+  "id": "proj-primitive-demo",
+  "name": "primitive-demo",
+  "board": {
+    "outline": {
+      "origin": { "x_nm": 0, "y_nm": 0 },
+      "size": { "width_nm": 42000000, "height_nm": 28000000 }
+    },
+    "layers": [
+      { "id": "F.Cu", "name": "Front copper", "kind": "signal" },
+      { "id": "B.Cu", "name": "Back copper", "kind": "signal" }
+    ],
+    "pads": [
+      {
+        "id": "pad-u1-1",
+        "component_id": "U1",
+        "pin_name": "1",
+        "net_id": "GND",
+        "layer_id": "F.Cu",
+        "position": { "x_nm": 5000000, "y_nm": 6000000 },
+        "size": { "width_nm": 1500000, "height_nm": 1000000 }
+      }
+    ],
+    "vias": [
+      {
+        "id": "via-gnd-1",
+        "net_id": "GND",
+        "position": { "x_nm": 8000000, "y_nm": 9000000 },
+        "diameter_nm": 800000,
+        "drill_nm": 400000
+      }
+    ],
+    "tracks": [
+      {
+        "id": "trk-gnd-1",
+        "net_id": "GND",
+        "layer_id": "F.Cu",
+        "start": { "x_nm": 5000000, "y_nm": 6000000 },
+        "end": { "x_nm": 8000000, "y_nm": 9000000 },
+        "width_nm": 250000
+      }
+    ]
+  }
+}
+```
 
 Test:
 
@@ -285,6 +336,7 @@ What it does:
 - Converts project board data into a deterministic canvas scene model.
 - Reports whether a board exists.
 - Converts board width/height from nanometers to millimeter view units.
+- Converts pads, vias, and track segments into millimeter view units.
 - Keeps GUI rendering inputs testable outside Qt.
 
 Test:
@@ -341,7 +393,7 @@ What it does:
 - Opens `.ccad.json` project files.
 - Shows project summary.
 - Shows board dimensions and layer count when board data exists.
-- Renders board outline in a native Qt `QGraphicsView` canvas when board data exists.
+- Renders board outline, pads, vias, and track segments in a native Qt `QGraphicsView` canvas when board data exists.
 - Shows ERC diagnostics table.
 - Supports reload.
 
@@ -408,6 +460,13 @@ Expected result:
 - Summary counts match the file.
 - Clean files show clean status.
 - Invalid files show diagnostics.
+- Board files show the outline on the dark canvas.
+- Board files with primitives show red tracks, pink pads, and yellow vias.
+
+Current limitation:
+
+- The GUI is a review canvas, not a full KiCad/Altium-class PCB editor yet.
+- Primitive authoring currently happens through the project JSON/kernel path; command verbs for placement/routing are planned next.
 
 ## Research And Architecture Docs
 

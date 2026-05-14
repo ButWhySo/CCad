@@ -20,8 +20,10 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPen>
 #include <QPushButton>
+#include <QResizeEvent>
 #include <QSplitter>
 #include <QStatusBar>
 #include <QTableWidget>
@@ -31,11 +33,25 @@
 #include <QWidget>
 
 #include <filesystem>
+#include <algorithm>
 #include <fstream>
 #include <sstream>
 #include <string>
 
 namespace {
+
+class BoardCanvasView final : public QGraphicsView {
+ public:
+  using QGraphicsView::QGraphicsView;
+
+ protected:
+  void resizeEvent(QResizeEvent* event) override {
+    QGraphicsView::resizeEvent(event);
+    if (scene() != nullptr && !scene()->sceneRect().isEmpty()) {
+      fitInView(scene()->sceneRect(), Qt::KeepAspectRatio);
+    }
+  }
+};
 
 std::string readFile(const std::filesystem::path& path) {
   std::ifstream input(path);
@@ -135,7 +151,7 @@ class ReviewWindow final : public QMainWindow {
     diagnostics_->verticalHeader()->setVisible(false);
     diagnostics_->setShowGrid(false);
     canvas_scene_ = new QGraphicsScene(this);
-    canvas_view_ = new QGraphicsView(canvas_scene_, root);
+    canvas_view_ = new BoardCanvasView(canvas_scene_, root);
     canvas_view_->setObjectName("boardCanvas");
     canvas_view_->setRenderHint(QPainter::Antialiasing);
     canvas_view_->setDragMode(QGraphicsView::ScrollHandDrag);
@@ -145,8 +161,8 @@ class ReviewWindow final : public QMainWindow {
     auto* workspace = new QSplitter(Qt::Horizontal, root);
     workspace->addWidget(canvas_view_);
     workspace->addWidget(diagnostics_);
-    workspace->setStretchFactor(0, 3);
-    workspace->setStretchFactor(1, 2);
+    workspace->setStretchFactor(0, 4);
+    workspace->setStretchFactor(1, 3);
     layout->addWidget(workspace, 1);
 
     setCentralWidget(root);
@@ -348,30 +364,68 @@ class ReviewWindow final : public QMainWindow {
       return;
     }
 
-    constexpr double margin = 6.0;
-    const QRectF board_rect(margin, margin, scene.view_width_units, scene.view_height_units);
-    canvas_scene_->setSceneRect(0, 0, scene.view_width_units + (2.0 * margin),
-                                scene.view_height_units + (2.0 * margin));
+    constexpr double margin = 18.0;
+    constexpr double scale = 10.0;
+    const double width = scene.view_width_units * scale;
+    const double height = scene.view_height_units * scale;
+    const QRectF board_rect(margin, margin, width, height);
+    canvas_scene_->setSceneRect(0, 0, width + (2.0 * margin), height + 52.0);
 
     QPen grid_pen(QColor("#17243a"));
-    grid_pen.setWidthF(0.03);
-    for (double x = margin; x <= margin + scene.view_width_units; x += 5.0) {
-      canvas_scene_->addLine(x, margin, x, margin + scene.view_height_units, grid_pen);
+    grid_pen.setWidthF(0.25);
+    for (double x = margin; x <= margin + width; x += 5.0 * scale) {
+      canvas_scene_->addLine(x, margin, x, margin + height, grid_pen);
     }
-    for (double y = margin; y <= margin + scene.view_height_units; y += 5.0) {
-      canvas_scene_->addLine(margin, y, margin + scene.view_width_units, y, grid_pen);
+    for (double y = margin; y <= margin + height; y += 5.0 * scale) {
+      canvas_scene_->addLine(margin, y, margin + width, y, grid_pen);
     }
 
     QPen outline_pen(QColor("#38bdf8"));
-    outline_pen.setWidthF(0.18);
+    outline_pen.setWidthF(1.8);
     auto* board = canvas_scene_->addRect(board_rect, outline_pen, QBrush(QColor("#0f1b2d")));
     board->setToolTip("Board outline");
+
+    QPen track_pen(QColor("#ef4444"));
+    track_pen.setCapStyle(Qt::RoundCap);
+    for (const ccad::CanvasTrack& track : scene.tracks) {
+      track_pen.setWidthF(std::max(1.2, track.width_units * scale));
+      auto* item = canvas_scene_->addLine(margin + (track.start_x_units * scale),
+                                          margin + (track.start_y_units * scale),
+                                          margin + (track.end_x_units * scale),
+                                          margin + (track.end_y_units * scale), track_pen);
+      item->setToolTip("Track " + qstr(track.id));
+    }
+
+    for (const ccad::CanvasPad& pad : scene.pads) {
+      const QRectF pad_rect(margin + (pad.x_units * scale) - ((pad.width_units * scale) / 2.0),
+                            margin + (pad.y_units * scale) - ((pad.height_units * scale) / 2.0),
+                            pad.width_units * scale, pad.height_units * scale);
+      QPainterPath pad_path;
+      pad_path.addRoundedRect(pad_rect, 2.0, 2.0);
+      auto* item = canvas_scene_->addPath(pad_path, QPen(QColor("#f472b6"), 0.8),
+                                          QBrush(QColor("#be185d")));
+      item->setToolTip("Pad " + qstr(pad.id));
+    }
+
+    for (const ccad::CanvasVia& via : scene.vias) {
+      const double diameter = via.diameter_units * scale;
+      const QRectF via_rect(margin + (via.x_units * scale) - (diameter / 2.0),
+                            margin + (via.y_units * scale) - (diameter / 2.0), diameter,
+                            diameter);
+      auto* item = canvas_scene_->addEllipse(via_rect, QPen(QColor("#fde68a"), 1.0),
+                                             QBrush(QColor("#f59e0b")));
+      item->setToolTip("Via " + qstr(via.id));
+      const double drill = via.drill_units * scale;
+      canvas_scene_->addEllipse(margin + (via.x_units * scale) - (drill / 2.0),
+                                margin + (via.y_units * scale) - (drill / 2.0), drill, drill,
+                                QPen(Qt::NoPen), QBrush(QColor("#07111f")));
+    }
 
     auto* label = canvas_scene_->addText(QString::number(scene.view_width_units, 'f', 2) + " mm x " +
                                          QString::number(scene.view_height_units, 'f', 2) + " mm");
     label->setDefaultTextColor(QColor("#cbd5e1"));
-    label->setScale(0.12);
-    label->setPos(margin, margin + scene.view_height_units + 1.0);
+    label->setScale(0.9);
+    label->setPos(margin, margin + height + 10.0);
 
     canvas_view_->fitInView(canvas_scene_->sceneRect(), Qt::KeepAspectRatio);
   }
