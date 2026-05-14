@@ -28,6 +28,7 @@ CanvasScene buildCanvasScene(const Project& project) {
         .y_units = toMillimeters(pad.position.y),
         .width_units = toMillimeters(pad.size.width),
         .height_units = toMillimeters(pad.size.height),
+        .rotation_degrees = pad.rotation_degrees,
     });
   }
 

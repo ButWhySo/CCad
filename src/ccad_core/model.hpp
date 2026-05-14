@@ -50,6 +50,7 @@ struct Pad {
   std::string net_id;
   std::string layer_id;
   Point position;
+  double rotation_degrees = 0.0;
   Size size;
 };
 

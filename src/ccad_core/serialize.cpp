@@ -264,6 +264,8 @@ class JsonReader {
             pad.layer_id = readString();
           } else if (key == "position") {
             pad.position = readPoint();
+          } else if (key == "rotation_degrees") {
+            pad.rotation_degrees = readDouble();
           } else if (key == "size") {
             pad.size = readSize();
           } else {
@@ -612,6 +614,30 @@ class JsonReader {
     return value;
   }
 
+  double readDouble() {
+    skipWhitespace();
+    const std::size_t start = pos_;
+    if (pos_ < source_.size() && source_[pos_] == '-') {
+      ++pos_;
+    }
+    bool found_digit = false;
+    while (pos_ < source_.size() && std::isdigit(static_cast<unsigned char>(source_[pos_]))) {
+      found_digit = true;
+      ++pos_;
+    }
+    if (pos_ < source_.size() && source_[pos_] == '.') {
+      ++pos_;
+      while (pos_ < source_.size() && std::isdigit(static_cast<unsigned char>(source_[pos_]))) {
+        found_digit = true;
+        ++pos_;
+      }
+    }
+    if (!found_digit) {
+      throw std::runtime_error("expected number");
+    }
+    return std::stod(std::string(source_.substr(start, pos_ - start)));
+  }
+
   bool readBool() {
     skipWhitespace();
     if (source_.substr(pos_, 4) == "true") {
@@ -782,6 +808,7 @@ std::string dumpProjectJson(const Project& project) {
       out << "        \"position\": ";
       writePoint(out, 0, pad.position);
       out << ",\n";
+      out << "        \"rotation_degrees\": " << pad.rotation_degrees << ",\n";
       out << "        \"size\": ";
       writeSize(out, 0, pad.size);
       out << "\n";

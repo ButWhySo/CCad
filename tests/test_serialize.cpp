@@ -29,6 +29,7 @@ int main() {
                          .net_id = "N_3V3",
                          .layer_id = "F.Cu",
                          .position = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
+                         .rotation_degrees = 90.0,
                          .size = ccad::Size{.width = ccad::millimeters(1.5),
                                             .height = ccad::millimeters(1.0)}}},
       .vias = {ccad::Via{.id = "V1",
@@ -78,6 +79,7 @@ int main() {
   require(loaded.board->layers.size() == 2, "board layers round trip");
   require(loaded.board->pads.size() == 1, "board pads round trip");
   require(loaded.board->pads.at(0).position.x.nanometers == 5000000, "pad x round trips");
+  require(loaded.board->pads.at(0).rotation_degrees == 90.0, "pad rotation round trips");
   require(loaded.board->vias.size() == 1, "board vias round trip");
   require(loaded.board->vias.at(0).drill.nanometers == 400000, "via drill round trips");
   require(loaded.board->tracks.size() == 1, "board tracks round trip");
