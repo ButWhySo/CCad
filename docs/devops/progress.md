@@ -9,7 +9,7 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Sprint: 9
 - Branch: `sprint-9-footprint-placement`
 - Last merged sprint: Sprint 8, KiCad footprint import
-- Status: Sprint 9 implementation on feature branch
+- Status: Sprint 9 implemented on feature branch; merge pending
 
 ## Phase Roadmap
 

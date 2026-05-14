@@ -18,8 +18,8 @@ Progress: Phase 2/6, Sprint 9, `sprint-9-footprint-placement`, planning.
 2. Done: implement CCad footprint JSON loader.
 3. Done: add failing CLI placement tests.
 4. Done: implement `ccad pcb place-footprint`.
-5. In progress: update docs, progress, and demo script.
-6. In progress: run full Qt build and CTest before every commit and before merge.
+5. Done: update docs, progress, and demo script.
+6. Done: run full Qt build and CTest before every commit and before merge.
 7. Pending: merge to `main`.
 
 ## Demo Artifacts
@@ -35,6 +35,26 @@ Outputs include:
 - `artifacts/demos/sprint9-footprint-placement-demo.ccad.json`
 - `artifacts/demos/sprint9-footprint-placement-demo-R_0805_2012Metric.ccad-footprint.json`
 - `artifacts/screenshots/sprint9-footprint-placement-demo-<timestamp>.png`
+
+Latest local demo screenshot:
+
+- `artifacts/screenshots/sprint9-footprint-placement-demo-20260514-180624.png`
+
+## Verification Log
+
+2026-05-14:
+
+```powershell
+cmake --build build-qt --clean-first
+ctest --test-dir build-qt --output-on-failure
+powershell -ExecutionPolicy Bypass -File .\scripts\run_sprint_demo.ps1 -Name sprint9-footprint-placement-demo
+```
+
+Result:
+
+- Clean Qt build passed.
+- 10/10 CTest tests passed.
+- Demo project, imported footprint JSON, placed board pads, and GUI screenshot were generated under `artifacts/`.
 
 ## Definition Of Done
 
