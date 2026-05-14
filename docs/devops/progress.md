@@ -7,9 +7,9 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
 - Sprint: 12
-- Branch: `sprint-12-cli-help-json`
+- Branch: `main`
 - Last merged sprint: Sprint 10, footprint rotation
-- Status: Sprint 12 implementation on feature branch
+- Status: Sprint 12 merged and verified on `main`
 
 ## Phase Roadmap
 
@@ -33,10 +33,11 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Sprint 9: footprint placement from imported library data.
 - Sprint 10: footprint rotation and GUI module split.
 - Sprint 11: CLI module split.
+- Sprint 12: machine-readable CLI help.
 
 ## Active Sprint
 
-- Sprint 12: machine-readable CLI help.
+- Next: Sprint 13 planning.
 
 ## Reporting Rule
 
@@ -49,5 +50,5 @@ Progress: Phase 2/6, Sprint 12, <branch-or-main>, <short status>
 Example:
 
 ```text
-Progress: Phase 2/6, Sprint 12, sprint-12-cli-help-json, implementation.
+Progress: Phase 2/6, Sprint 12, main, merged and verified.
 ```
