@@ -9,6 +9,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(ccad_core
+  src/ccad_core/model.cpp
+  src/ccad_core/serialize.cpp
 )
 
 target_include_directories(ccad_core PUBLIC
@@ -27,8 +29,15 @@ else()
   endif()
 endif()
 
-add_executable(ccad)
+add_executable(ccad
+  src/ccad_cli/main.cpp
+)
 target_link_libraries(ccad PRIVATE ccad_core)
 
 enable_testing()
 
+add_executable(ccad_tests
+  tests/test_serialize.cpp
+)
+target_link_libraries(ccad_tests PRIVATE ccad_core)
+add_test(NAME serialize COMMAND ccad_tests)
