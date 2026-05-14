@@ -139,6 +139,7 @@ What it does:
 
 - Creates empty CCad project files.
 - Creates project files with board outline when given `--width-mm` and `--height-mm`.
+- Adds PCB pads, vias, and track segments to existing board projects.
 - Validates CCad project files.
 - Inspects projects and emits review JSON.
 - Diffs two project files and emits machine-readable diff JSON.
@@ -168,7 +169,23 @@ On Windows PowerShell:
 .\build\ccad.exe validate demo.ccad.json
 .\build\ccad.exe inspect demo.ccad.json
 .\build\ccad.exe diff before.ccad.json after.ccad.json
+.\build\ccad.exe pcb add-pad --file board.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
+.\build\ccad.exe pcb add-via --file board.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
+.\build\ccad.exe pcb add-track --file board.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
 ```
+
+PCB authoring command behavior:
+
+- `pcb add-pad` writes one rectangular pad into `board.pads`.
+- `pcb add-via` writes one via into `board.vias`.
+- `pcb add-track` writes one straight track segment into `board.tracks`.
+- Commands mutate the file passed through `--file`.
+- Commands reject missing boards, duplicate primitive IDs, invalid numeric dimensions, unknown layers, out-of-board positions, and via drill larger than via diameter.
+
+Current limitation:
+
+- These commands are explicit primitive authoring verbs, not automatic placement or routing.
+- They do not yet enforce schematic-layout parity or physical DRC beyond command argument guards.
 
 Test:
 
@@ -182,6 +199,7 @@ Expected result:
 - CLI creates a project file.
 - CLI validates a clean file with exit code `0`.
 - CLI validates an invalid file with nonzero exit and JSON diagnostics.
+- CLI PCB commands append primitives and reject invalid mutations.
 
 ## Project Review Model
 
