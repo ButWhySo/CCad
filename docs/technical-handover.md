@@ -31,6 +31,7 @@ The initial codebase is C++20:
 - CLI commands are intentionally small and deterministic.
 - `ccad_gui` is optional and builds only when Qt 6 Widgets is available.
 - Physical lengths are stored as integer nanometers in `ccad_core::Length`; user-facing mm/mil values convert at API boundaries.
+- `ccad_core::CanvasScene` is the tested rendering input for the Qt board canvas. GUI rendering must consume this model rather than directly inventing project geometry.
 
 ## Development Commands
 
