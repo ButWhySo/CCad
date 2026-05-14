@@ -216,7 +216,8 @@ Current limitation:
 DRC command behavior:
 
 - `drc <path>` runs physical board checks.
-- Reports duplicate primitive IDs, unknown layers, unknown non-empty net references, geometry outside board outline, invalid dimensions, unconnected pads/vias/tracks, unconnected track endpoints, via drill larger than diameter, and zero-length track segments.
+- Reports duplicate primitive IDs, unknown layers, unknown non-empty net references, geometry outside board outline, invalid dimensions, rectangular keepout violations, unconnected pads/vias/tracks, unconnected track endpoints, via drill larger than diameter, and zero-length track segments.
+- Pad centers, via centers, and track endpoints inside rectangular keepouts are errors: `PAD_IN_KEEPOUT`, `VIA_IN_KEEPOUT`, and `TRACK_ENDPOINT_IN_KEEPOUT`.
 - Empty pad `net_id` is reported as warning code `UNCONNECTED_PAD`.
 - Empty via and track `net_id` values are warnings: `UNCONNECTED_VIA` and `UNCONNECTED_TRACK`.
 - Track endpoints that do not exactly touch a same-net pad center, via center, or another track endpoint are reported as warning code `UNCONNECTED_TRACK_ENDPOINT`.
@@ -329,7 +330,7 @@ What it does:
 
 - Stores physical lengths as integer nanometers.
 - Converts millimeters and mils deterministically.
-- Represents points, sizes, rectangles, board outline, and layers.
+- Represents points, sizes, rectangles, board outline, layers, and rectangular keepouts.
 - Represents first drawable PCB primitives: pads, vias, and track segments.
 - Preserves primitive IDs, net IDs, layer IDs, component/pin ownership, and geometry through JSON round-trip.
 - Serializes board data in project JSON.
@@ -358,6 +359,18 @@ Example board JSON shape:
         "layer_id": "F.Cu",
         "position": { "x_nm": 5000000, "y_nm": 6000000 },
         "size": { "width_nm": 1500000, "height_nm": 1000000 }
+      }
+    ],
+    "keepouts": [
+      {
+        "id": "keepout-mounting-hole",
+        "kind": "placement",
+        "area": {
+          "x_nm": 20000000,
+          "y_nm": 20000000,
+          "width_nm": 4000000,
+          "height_nm": 3000000
+        }
       }
     ],
     "vias": [

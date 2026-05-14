@@ -92,6 +92,8 @@ class JsonReader {
           board.outline = readRect();
         } else if (key == "layers") {
           board.layers = readLayers();
+        } else if (key == "keepouts") {
+          board.keepouts = readKeepouts();
         } else if (key == "pads") {
           board.pads = readPads();
         } else if (key == "vias") {
@@ -287,6 +289,48 @@ class JsonReader {
       expect(',');
       if (peek(']')) {
         throw std::runtime_error("trailing comma in pads array");
+      }
+    }
+  }
+
+  std::vector<Keepout> readKeepouts() {
+    std::vector<Keepout> keepouts;
+    expect('[');
+    if (consume(']')) {
+      return keepouts;
+    }
+    while (true) {
+      Keepout keepout;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            keepout.id = readString();
+          } else if (key == "kind") {
+            keepout.kind = readString();
+          } else if (key == "area") {
+            keepout.area = readRect();
+          } else {
+            throw std::runtime_error("unknown keepout key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+          if (peek('}')) {
+            throw std::runtime_error("trailing comma in keepout object");
+          }
+        }
+      }
+      keepouts.push_back(keepout);
+      if (consume(']')) {
+        return keepouts;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in keepouts array");
       }
     }
   }
@@ -794,6 +838,21 @@ std::string dumpProjectJson(const Project& project) {
       writeField(out, 8, "name", layer.name);
       out << "        \"visible\": " << (layer.visible ? "true" : "false") << '\n';
       out << "      }" << (i + 1 == board.layers.size() ? "" : ",") << '\n';
+    }
+    out << "    ],\n";
+    out << "    \"keepouts\": [\n";
+    for (std::size_t i = 0; i < board.keepouts.size(); ++i) {
+      const Keepout& keepout = board.keepouts.at(i);
+      out << "      {\n";
+      writeField(out, 8, "id", keepout.id);
+      writeField(out, 8, "kind", keepout.kind);
+      out << "        \"area\": {\n";
+      out << "          \"x_nm\": " << keepout.area.origin.x.nanometers << ",\n";
+      out << "          \"y_nm\": " << keepout.area.origin.y.nanometers << ",\n";
+      out << "          \"width_nm\": " << keepout.area.size.width.nanometers << ",\n";
+      out << "          \"height_nm\": " << keepout.area.size.height.nanometers << "\n";
+      out << "        }\n";
+      out << "      }" << (i + 1 == board.keepouts.size() ? "" : ",") << '\n';
     }
     out << "    ],\n";
     out << "    \"pads\": [\n";

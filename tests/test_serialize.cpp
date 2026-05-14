@@ -23,6 +23,13 @@ int main() {
       },
       .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true},
                  ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true}},
+      .keepouts = {ccad::Keepout{.id = "K1",
+                                 .kind = "placement",
+                                 .area = ccad::Rect{
+                                     .origin = ccad::Point{.x = ccad::millimeters(20),
+                                                           .y = ccad::millimeters(20)},
+                                     .size = ccad::Size{.width = ccad::millimeters(4),
+                                                        .height = ccad::millimeters(3)}}}},
       .pads = {ccad::Pad{.id = "P1",
                          .component_id = "U1",
                          .pin_name = "VDD",
@@ -68,6 +75,7 @@ int main() {
   require(json.find("\"id\": \"proj-demo\"") != std::string::npos, "project id emitted");
   require(json.find("\"board\"") != std::string::npos, "board emitted");
   require(json.find("\"width_nm\": 42000000") != std::string::npos, "board width emitted");
+  require(json.find("\"keepouts\"") != std::string::npos, "keepouts emitted");
   require(json.find("\"component_id\": \"U1\"") != std::string::npos, "net member emitted");
 
   const Project loaded = ccad::loadProjectJson(json);
@@ -77,6 +85,9 @@ int main() {
   require(loaded.board->outline.size.width.nanometers == 42000000, "board width round trips");
   require(loaded.board->outline.size.height.nanometers == 28000000, "board height round trips");
   require(loaded.board->layers.size() == 2, "board layers round trip");
+  require(loaded.board->keepouts.size() == 1, "board keepouts round trip");
+  require(loaded.board->keepouts.at(0).area.size.width.nanometers == 4000000,
+          "keepout width round trips");
   require(loaded.board->pads.size() == 1, "board pads round trip");
   require(loaded.board->pads.at(0).position.x.nanometers == 5000000, "pad x round trips");
   require(loaded.board->pads.at(0).rotation_degrees == 90.0, "pad rotation round trips");
