@@ -6,6 +6,8 @@ CCad is intended to become an LLM-native native desktop PCB design tool. The sou
 
 Read `docs/research/2026-05-14-llm-native-pcb-tool-report.md` before making architecture changes. It captures the project thesis, prior art, KiCad analysis, reuse strategy, roadmap, and security posture.
 
+Read `docs/research/2026-05-14-kicad-feature-map.md` before adding GUI, schematic, PCB, routing, simulation, library, or manufacturing features. It maps KiCad-like expectations into CCad's machine-native roadmap.
+
 ## Working Rules
 
 - Work on a feature branch, then merge to `main` after verification.

@@ -138,6 +138,8 @@ What it does:
 
 - Creates empty CCad project files.
 - Validates CCad project files.
+- Inspects projects and emits review JSON.
+- Diffs two project files and emits machine-readable diff JSON.
 - Prints ERC diagnostics as JSON.
 - Returns `0` when validation has no errors.
 - Returns `1` when ERC errors exist.
@@ -161,6 +163,8 @@ On Windows PowerShell:
 ```powershell
 .\build\ccad.exe init --name demo --out demo.ccad.json
 .\build\ccad.exe validate demo.ccad.json
+.\build\ccad.exe inspect demo.ccad.json
+.\build\ccad.exe diff before.ccad.json after.ccad.json
 ```
 
 Test:
@@ -204,6 +208,60 @@ ctest --test-dir build -R review --output-on-failure
 Expected result:
 
 - `review` test passes.
+
+## Project Diff Model
+
+Status: implemented.
+
+Files:
+
+- `src/ccad_core/diff.hpp`
+- `src/ccad_core/diff.cpp`
+- `tests/test_diff.cpp`
+
+What it does:
+
+- Compares two project objects.
+- Reports added, removed, and changed components, nets, and constraints.
+- Provides counts and entries for CLI, GUI, and future transaction review.
+
+Test:
+
+```bash
+cmake --build build-qt --target ccad_diff_tests
+ctest --test-dir build-qt -R diff --output-on-failure
+```
+
+Expected result:
+
+- `diff` test passes.
+
+## Transaction Journal Model
+
+Status: implemented.
+
+Files:
+
+- `src/ccad_core/transaction.hpp`
+- `src/ccad_core/transaction.cpp`
+- `tests/test_transaction.cpp`
+
+What it does:
+
+- Creates a transaction record from before/after project states.
+- Records ID, command, summary, project IDs, and diff.
+- Emits deterministic transaction JSON.
+
+Test:
+
+```bash
+cmake --build build-qt --target ccad_transaction_tests
+ctest --test-dir build-qt -R transaction --output-on-failure
+```
+
+Expected result:
+
+- `transaction` test passes.
 
 ## Optional Qt Review GUI
 
@@ -251,6 +309,12 @@ $env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
 .\build-qt\ccad_gui.exe .\build-qt\gui-demo.ccad.json
 ```
 
+Or run the demo script:
+
+```powershell
+.\scripts\run_gui_demo.ps1
+```
+
 If Qt is not installed:
 
 - CMake prints `Qt6 Widgets not found; skipping ccad_gui target`.
@@ -280,6 +344,7 @@ Status: implemented.
 Files:
 
 - `docs/research/2026-05-14-llm-native-pcb-tool-report.md`
+- `docs/research/2026-05-14-kicad-feature-map.md`
 - `docs/superpowers/specs/2026-05-14-kernel-mvp-design.md`
 - `docs/superpowers/plans/2026-05-14-kernel-mvp.md`
 - `docs/superpowers/specs/2026-05-14-qt-review-gui-design.md`

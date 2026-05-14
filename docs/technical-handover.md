@@ -6,6 +6,8 @@ CCad is a native desktop PCB design kernel built for machine callers first. Agen
 
 The research basis for this architecture is documented in `docs/research/2026-05-14-llm-native-pcb-tool-report.md`. The key decision is that CCad is not a KiCad wrapper. KiCad, tscircuit/Circuit JSON, SKiDL, Atopile, Freerouting, pcb-rnd, Magic, and OpenROAD are references or interoperability targets. CCad's source of truth remains its own native kernel.
 
+KiCad-style functionality and UI expectations are mapped in `docs/research/2026-05-14-kicad-feature-map.md`.
+
 ## Phase Roadmap
 
 1. Logical kernel: project, components, pins, nets, constraints, ERC, CLI.
