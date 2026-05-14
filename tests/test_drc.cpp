@@ -11,6 +11,8 @@ ccad::Project validBoardProject() {
   ccad::Project project;
   project.id = "proj-drc";
   project.name = "drc";
+  project.nets = {ccad::Net{.id = "N1",
+                            .members = {ccad::NetMember{.component_id = "U1", .pin_name = "1"}}}};
   project.board = ccad::Board{
       .outline = ccad::Rect{
           .origin = ccad::Point{.x = ccad::nanometers(0), .y = ccad::nanometers(0)},
@@ -94,4 +96,19 @@ int main() {
   unconnected_pad.board->pads.at(0).net_id.clear();
   require(hasDiagnostic(ccad::runDrc(unconnected_pad), "UNCONNECTED_PAD", "warning"),
           "drc reports unconnected pad as warning");
+
+  ccad::Project unknown_pad_net = validBoardProject();
+  unknown_pad_net.board->pads.at(0).net_id = "N404";
+  require(hasCode(ccad::runDrc(unknown_pad_net), "UNKNOWN_PAD_NET"),
+          "drc reports unknown pad net");
+
+  ccad::Project unknown_via_net = validBoardProject();
+  unknown_via_net.board->vias.at(0).net_id = "N404";
+  require(hasCode(ccad::runDrc(unknown_via_net), "UNKNOWN_VIA_NET"),
+          "drc reports unknown via net");
+
+  ccad::Project unknown_track_net = validBoardProject();
+  unknown_track_net.board->tracks.at(0).net_id = "N404";
+  require(hasCode(ccad::runDrc(unknown_track_net), "UNKNOWN_TRACK_NET"),
+          "drc reports unknown track net");
 }

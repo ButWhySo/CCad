@@ -33,6 +33,11 @@ std::string readFile(const std::filesystem::path& path) {
   return buffer.str();
 }
 
+void writeFile(const std::filesystem::path& path, const std::string& content) {
+  std::ofstream output(path);
+  output << content;
+}
+
 }  // namespace
 
 int main() {
@@ -183,6 +188,21 @@ int main() {
           "inspect reports board present");
   require(board_inspect_output.find("\"width_nm\": 42000000") != std::string::npos,
           "inspect reports board width");
+
+  std::string board_with_net = readFile(board_project_path);
+  const std::string empty_nets = "  \"nets\": [\n  ]";
+  const std::string logical_n1 =
+      "  \"nets\": [\n"
+      "    {\n"
+      "      \"id\": \"N1\",\n"
+      "      \"members\": [\n"
+      "      ]\n"
+      "    }\n"
+      "  ]";
+  const std::size_t nets_position = board_with_net.find(empty_nets);
+  require(nets_position != std::string::npos, "board fixture has empty nets before clean drc");
+  board_with_net.replace(nets_position, empty_nets.size(), logical_n1);
+  writeFile(board_project_path, board_with_net);
 
   const std::filesystem::path drc_output_path = temp / "drc.json";
   const std::string drc_command = quote(CCAD_BINARY) + " drc " + quote(board_project_path) +

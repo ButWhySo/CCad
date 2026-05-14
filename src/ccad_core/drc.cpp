@@ -35,6 +35,15 @@ bool hasLayer(const Board& board, const std::string& layer_id) {
   return false;
 }
 
+bool hasNet(const Project& project, const std::string& net_id) {
+  for (const Net& net : project.nets) {
+    if (net.id == net_id) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool containsPoint(const Board& board, const Point& point) {
   const Point min = board.outline.origin;
   const Point max = maxPoint(board.outline);
@@ -50,7 +59,7 @@ bool samePoint(const Point& left, const Point& right) {
   return left.x.nanometers == right.x.nanometers && left.y.nanometers == right.y.nanometers;
 }
 
-void checkPads(const Board& board, std::vector<Diagnostic>& diagnostics) {
+void checkPads(const Project& project, const Board& board, std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
   for (const Pad& pad : board.pads) {
     if (!ids.insert(pad.id).second) {
@@ -71,11 +80,14 @@ void checkPads(const Board& board, std::vector<Diagnostic>& diagnostics) {
     }
     if (pad.net_id.empty()) {
       diagnostics.push_back(makeWarning("UNCONNECTED_PAD", "Pad has no assigned net", pad.id));
+    } else if (!hasNet(project, pad.net_id)) {
+      diagnostics.push_back(
+          makeDiagnostic("UNKNOWN_PAD_NET", "Pad references an unknown net", pad.id));
     }
   }
 }
 
-void checkVias(const Board& board, std::vector<Diagnostic>& diagnostics) {
+void checkVias(const Project& project, const Board& board, std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
   for (const Via& via : board.vias) {
     if (!ids.insert(via.id).second) {
@@ -85,6 +97,10 @@ void checkVias(const Board& board, std::vector<Diagnostic>& diagnostics) {
     if (!containsPoint(board, via.position)) {
       diagnostics.push_back(
           makeDiagnostic("VIA_OUTSIDE_BOARD", "Via position is outside board outline", via.id));
+    }
+    if (!via.net_id.empty() && !hasNet(project, via.net_id)) {
+      diagnostics.push_back(
+          makeDiagnostic("UNKNOWN_VIA_NET", "Via references an unknown net", via.id));
     }
     if (!isPositive(via.diameter) || !isPositive(via.drill)) {
       diagnostics.push_back(makeDiagnostic("INVALID_VIA_SIZE",
@@ -98,7 +114,7 @@ void checkVias(const Board& board, std::vector<Diagnostic>& diagnostics) {
   }
 }
 
-void checkTracks(const Board& board, std::vector<Diagnostic>& diagnostics) {
+void checkTracks(const Project& project, const Board& board, std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
   for (const TrackSegment& track : board.tracks) {
     if (!ids.insert(track.id).second) {
@@ -108,6 +124,10 @@ void checkTracks(const Board& board, std::vector<Diagnostic>& diagnostics) {
     if (!hasLayer(board, track.layer_id)) {
       diagnostics.push_back(
           makeDiagnostic("UNKNOWN_TRACK_LAYER", "Track references an unknown layer", track.id));
+    }
+    if (!track.net_id.empty() && !hasNet(project, track.net_id)) {
+      diagnostics.push_back(
+          makeDiagnostic("UNKNOWN_TRACK_NET", "Track references an unknown net", track.id));
     }
     if (!containsPoint(board, track.start)) {
       diagnostics.push_back(
@@ -138,9 +158,9 @@ std::vector<Diagnostic> runDrc(const Project& project) {
   }
 
   const Board& board = *project.board;
-  checkPads(board, diagnostics);
-  checkVias(board, diagnostics);
-  checkTracks(board, diagnostics);
+  checkPads(project, board, diagnostics);
+  checkVias(project, board, diagnostics);
+  checkTracks(project, board, diagnostics);
   return diagnostics;
 }
 

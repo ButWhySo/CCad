@@ -6,10 +6,10 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
-- Sprint: 14
-- Branch: `main`
+- Sprint: 15
+- Branch: `sprint-15-drc-unknown-nets`
 - Last merged sprint: Sprint 14, DRC unconnected pad warning
-- Status: Sprint 14 merged and verified on `main`
+- Status: Sprint 15 implementation on feature branch
 
 ## Phase Roadmap
 
@@ -39,18 +39,18 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 ## Active Sprint
 
-- Next: Sprint 15 planning.
+- Sprint 15: DRC unknown physical net references.
 
 ## Reporting Rule
 
 Every commit/merge status update should include:
 
 ```text
-Progress: Phase 2/6, Sprint 14, <branch-or-main>, <short status>
+Progress: Phase 2/6, Sprint 15, <branch-or-main>, <short status>
 ```
 
 Example:
 
 ```text
-Progress: Phase 2/6, Sprint 14, main, merged and verified.
+Progress: Phase 2/6, Sprint 15, sprint-15-drc-unknown-nets, implementation.
 ```
