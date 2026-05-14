@@ -59,6 +59,60 @@ int main() {
   require(board_json.find("\"width_nm\": 42000000") != std::string::npos,
           "board init writes width");
 
+  const std::string add_pad_command =
+      quote(CCAD_BINARY) + " pcb add-pad --file " + quote(board_project_path) +
+      " --id P1 --component U1 --pin 1 --net N1 --layer F.Cu"
+      " --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0";
+  require(run(add_pad_command) == 0, "pcb add-pad exits zero");
+  const std::string pad_json = readFile(board_project_path);
+  require(pad_json.find("\"pads\"") != std::string::npos, "pcb add-pad writes pads");
+  require(pad_json.find("\"id\": \"P1\"") != std::string::npos, "pcb add-pad writes id");
+  require(pad_json.find("\"width_nm\": 1500000") != std::string::npos,
+          "pcb add-pad writes width");
+
+  const std::string add_via_command =
+      quote(CCAD_BINARY) + " pcb add-via --file " + quote(board_project_path) +
+      " --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4";
+  require(run(add_via_command) == 0, "pcb add-via exits zero");
+  const std::string via_json = readFile(board_project_path);
+  require(via_json.find("\"vias\"") != std::string::npos, "pcb add-via writes vias");
+  require(via_json.find("\"drill_nm\": 400000") != std::string::npos,
+          "pcb add-via writes drill");
+
+  const std::string add_track_command =
+      quote(CCAD_BINARY) + " pcb add-track --file " + quote(board_project_path) +
+      " --id T1 --net N1 --layer F.Cu"
+      " --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25";
+  require(run(add_track_command) == 0, "pcb add-track exits zero");
+  const std::string track_json = readFile(board_project_path);
+  require(track_json.find("\"tracks\"") != std::string::npos, "pcb add-track writes tracks");
+  require(track_json.find("\"width_nm\": 250000") != std::string::npos,
+          "pcb add-track writes width");
+
+  require(run(add_pad_command) != 0, "pcb add-pad rejects duplicate id");
+
+  const std::string bad_layer_command =
+      quote(CCAD_BINARY) + " pcb add-track --file " + quote(board_project_path) +
+      " --id T_BAD --net N1 --layer Inner.Cu"
+      " --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25";
+  require(run(bad_layer_command) != 0, "pcb add-track rejects unknown layer");
+
+  const std::string bad_via_command =
+      quote(CCAD_BINARY) + " pcb add-via --file " + quote(board_project_path) +
+      " --id V_BAD --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.4 --drill-mm 0.8";
+  require(run(bad_via_command) != 0, "pcb add-via rejects drill larger than diameter");
+
+  const std::string outside_track_command =
+      quote(CCAD_BINARY) + " pcb add-track --file " + quote(board_project_path) +
+      " --id T_OUT --net N1 --layer F.Cu"
+      " --start-x-mm 5 --start-y-mm 6 --end-x-mm 99 --end-y-mm 9 --width-mm 0.25";
+  require(run(outside_track_command) != 0, "pcb add-track rejects endpoint outside board");
+
+  const std::string missing_board_command =
+      quote(CCAD_BINARY) + " pcb add-via --file " + quote(project_path) +
+      " --id V_NO_BOARD --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4";
+  require(run(missing_board_command) != 0, "pcb add-via rejects missing board");
+
   const std::string missing_height_command = quote(CCAD_BINARY) +
                                              " init --name bad --width-mm 42 --out " +
                                              quote(temp / "bad.ccad.json");
