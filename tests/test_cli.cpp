@@ -217,6 +217,26 @@ int main() {
               std::string::npos,
           "drc reports unknown track layer");
 
+  const std::filesystem::path footprint_in_path = temp / "R_0805_2012Metric.kicad_mod";
+  std::ofstream footprint_in(footprint_in_path);
+  footprint_in << "(footprint \"R_0805_2012Metric\"\n"
+               << "  (version 20240101)\n"
+               << "  (generator \"ccad-test\")\n"
+               << "  (pad \"1\" smd roundrect (at -0.95 0 0) (size 1.0 1.45) "
+               << "(layers \"F.Cu\" \"F.Paste\" \"F.Mask\"))\n"
+               << ")\n";
+  footprint_in.close();
+  const std::filesystem::path footprint_out_path = temp / "R_0805_2012Metric.ccad-footprint.json";
+  const std::string import_footprint_command =
+      quote(CCAD_BINARY) + " lib import-footprint --in " + quote(footprint_in_path) +
+      " --out " + quote(footprint_out_path);
+  require(run(import_footprint_command) == 0, "lib import-footprint exits zero");
+  const std::string footprint_output = readFile(footprint_out_path);
+  require(footprint_output.find("\"name\": \"R_0805_2012Metric\"") != std::string::npos,
+          "lib import-footprint writes name");
+  require(footprint_output.find("\"width_nm\": 1000000") != std::string::npos,
+          "lib import-footprint writes pad width");
+
   const std::filesystem::path diff_after_path = temp / "diff-after.ccad.json";
   std::ofstream diff_after(diff_after_path);
   diff_after << "{\n"
