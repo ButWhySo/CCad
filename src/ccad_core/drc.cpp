@@ -16,6 +16,16 @@ Diagnostic makeDiagnostic(const std::string& code, const std::string& message,
   };
 }
 
+Diagnostic makeWarning(const std::string& code, const std::string& message,
+                       const std::string& object_id) {
+  return Diagnostic{
+      .severity = "warning",
+      .code = code,
+      .message = message,
+      .object_id = object_id,
+  };
+}
+
 bool hasLayer(const Board& board, const std::string& layer_id) {
   for (const Layer& layer : board.layers) {
     if (layer.id == layer_id) {
@@ -58,6 +68,9 @@ void checkPads(const Board& board, std::vector<Diagnostic>& diagnostics) {
     if (!isPositive(pad.size.width) || !isPositive(pad.size.height)) {
       diagnostics.push_back(
           makeDiagnostic("INVALID_PAD_SIZE", "Pad width and height must be positive", pad.id));
+    }
+    if (pad.net_id.empty()) {
+      diagnostics.push_back(makeWarning("UNCONNECTED_PAD", "Pad has no assigned net", pad.id));
     }
   }
 }

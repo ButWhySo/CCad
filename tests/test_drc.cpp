@@ -50,6 +50,16 @@ bool hasCode(const std::vector<ccad::Diagnostic>& diagnostics, const std::string
   return false;
 }
 
+bool hasDiagnostic(const std::vector<ccad::Diagnostic>& diagnostics, const std::string& code,
+                   const std::string& severity) {
+  for (const ccad::Diagnostic& diagnostic : diagnostics) {
+    if (diagnostic.code == code && diagnostic.severity == severity) {
+      return true;
+    }
+  }
+  return false;
+}
+
 }  // namespace
 
 int main() {
@@ -79,4 +89,9 @@ int main() {
   duplicate_pad.board->pads.push_back(duplicate_pad.board->pads.at(0));
   require(hasCode(ccad::runDrc(duplicate_pad), "DUPLICATE_PAD_ID"),
           "drc reports duplicate pad id");
+
+  ccad::Project unconnected_pad = validBoardProject();
+  unconnected_pad.board->pads.at(0).net_id.clear();
+  require(hasDiagnostic(ccad::runDrc(unconnected_pad), "UNCONNECTED_PAD", "warning"),
+          "drc reports unconnected pad as warning");
 }
