@@ -7,9 +7,9 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
 - Sprint: 10
-- Branch: `sprint-10-footprint-rotation`
-- Last merged sprint: Sprint 9, footprint placement
-- Status: Sprint 10 implementation complete on feature branch; merge pending
+- Branch: `main`
+- Last merged sprint: Sprint 10, footprint rotation
+- Status: Sprint 10 merged and verified on `main`
 
 ## Phase Roadmap
 
@@ -31,10 +31,11 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Sprint 7: physical DRC diagnostics and `ccad drc`.
 - Sprint 8: KiCad footprint import groundwork.
 - Sprint 9: footprint placement from imported library data.
+- Sprint 10: footprint rotation and GUI module split.
 
 ## Active Sprint
 
-- Sprint 10: footprint rotation.
+- Next: Sprint 11 planning.
 
 ## Reporting Rule
 

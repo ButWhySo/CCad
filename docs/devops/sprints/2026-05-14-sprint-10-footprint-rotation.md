@@ -10,7 +10,7 @@ Add rotation-aware footprint placement and rotated pad rendering.
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 10, `sprint-10-footprint-rotation`, implementation complete; merge pending.
+Progress: Phase 2/6, Sprint 10, `main`, merged and verified.
 
 ## Backlog
 
@@ -21,7 +21,7 @@ Progress: Phase 2/6, Sprint 10, `sprint-10-footprint-rotation`, implementation c
 5. Done: render rotated pads in Qt.
 6. Done: update docs, progress, and demo script.
 7. Done: run full Qt build and CTest before every implementation commit.
-8. Pending: merge to `main`.
+8. Done: merge to `main`.
 
 ## Demo Artifacts
 
@@ -49,6 +49,10 @@ Latest verified checkpoints:
 - Command: `cmake --build build-qt --clean-first`
 - Command: `ctest --test-dir build-qt --output-on-failure`
 - Result: 10/10 tests passed before checkpoint commit.
+- `main` merge gate after `merge: sprint 10 footprint rotation`
+- Command: `cmake --build build-qt --clean-first`
+- Command: `ctest --test-dir build-qt --output-on-failure`
+- Result: 10/10 tests passed after merge.
 
 ## Definition Of Done
 
