@@ -11,11 +11,17 @@ Render the physical board outline in the Qt GUI from kernel state. This creates 
 ## Backlog
 
 1. Add tested canvas view-model in `ccad_core`.
+   - Status: done in `25f4851`.
 2. Render board outline in Qt GUI using `QGraphicsView`.
+   - Status: done in `3286cca`.
 3. Add empty-state canvas when no board exists.
+   - Status: done in `3286cca`.
 4. Preserve review panels and diagnostics.
+   - Status: done in `3286cca`.
 5. Document how to run the GUI demo.
+   - Status: in progress.
 6. Run full Qt build and CTest, then merge.
+   - Status: pending.
 
 ## Definition Of Done
 
@@ -24,4 +30,3 @@ Render the physical board outline in the Qt GUI from kernel state. This creates 
 - GUI remains read-only.
 - Tests cover canvas dimensions and empty-board behavior.
 - Full Qt build and CTest pass.
-

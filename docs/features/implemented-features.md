@@ -270,6 +270,34 @@ Expected result:
 
 - `geometry` and `serialize` tests pass.
 
+## Board Canvas Scene Model
+
+Status: implemented.
+
+Files:
+
+- `src/ccad_core/canvas.hpp`
+- `src/ccad_core/canvas.cpp`
+- `tests/test_canvas.cpp`
+
+What it does:
+
+- Converts project board data into a deterministic canvas scene model.
+- Reports whether a board exists.
+- Converts board width/height from nanometers to millimeter view units.
+- Keeps GUI rendering inputs testable outside Qt.
+
+Test:
+
+```bash
+cmake --build build-qt --target ccad_canvas_tests
+ctest --test-dir build-qt -R canvas --output-on-failure
+```
+
+Expected result:
+
+- `canvas` test passes.
+
 ## Transaction Journal Model
 
 Status: implemented.
@@ -313,6 +341,7 @@ What it does:
 - Opens `.ccad.json` project files.
 - Shows project summary.
 - Shows board dimensions and layer count when board data exists.
+- Renders board outline in a native Qt `QGraphicsView` canvas when board data exists.
 - Shows ERC diagnostics table.
 - Supports reload.
 
@@ -342,6 +371,14 @@ Open a project directly:
 $env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
 .\build-qt\ccad.exe init --name gui-demo --out .\build-qt\gui-demo.ccad.json
 .\build-qt\ccad_gui.exe .\build-qt\gui-demo.ccad.json
+```
+
+Board canvas demo:
+
+```powershell
+$env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
+.\build-qt\ccad.exe init --name canvas-demo --width-mm 42 --height-mm 28 --out .\build-qt\canvas-demo.ccad.json
+.\build-qt\ccad_gui.exe .\build-qt\canvas-demo.ccad.json
 ```
 
 Or run the demo script:
