@@ -20,6 +20,7 @@ ccad::Project boardProject() {
                          .net_id = "N1",
                          .layer_id = "F.Cu",
                          .position = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
+                         .rotation_degrees = 90.0,
                          .size = ccad::Size{.width = ccad::millimeters(1.5),
                                             .height = ccad::millimeters(1.0)}}},
       .vias = {ccad::Via{.id = "V1",
@@ -55,6 +56,7 @@ int main() {
   require(scene.view_height_units == 28.0, "view height is mm");
   require(scene.pads.size() == 1, "canvas has pad");
   require(scene.pads.at(0).x_units == 5.0, "canvas pad x is mm");
+  require(scene.pads.at(0).rotation_degrees == 90.0, "canvas pad rotation is degrees");
   require(scene.vias.size() == 1, "canvas has via");
   require(scene.vias.at(0).diameter_units == 0.8, "canvas via diameter is mm");
   require(scene.tracks.size() == 1, "canvas has track");

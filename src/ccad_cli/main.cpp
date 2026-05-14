@@ -12,6 +12,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <cmath>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -28,7 +29,7 @@ void printUsage(std::ostream& out) {
       << "  ccad diff <before> <after>\n"
       << "  ccad lib import-footprint --in <path.kicad_mod> --out <path.json>\n"
       << "  ccad pcb place-footprint --file <path> --footprint <path.json> --component <id> "
-         "--at-x-mm <n> --at-y-mm <n> --layer <id>\n"
+         "--at-x-mm <n> --at-y-mm <n> --layer <id> [--rotation-deg <n>]\n"
       << "  ccad pcb add-pad --file <path> --id <id> --component <id> --pin <name> "
          "--net <id> --layer <id> --x-mm <n> --y-mm <n> --width-mm <n> --height-mm <n>\n"
       << "  ccad pcb add-via --file <path> --id <id> --net <id> --x-mm <n> --y-mm <n> "
@@ -141,6 +142,29 @@ ccad::Length requirePositiveMillimeters(const std::map<std::string, std::string>
   return ccad::millimeters(*parsed);
 }
 
+double requireDoubleOption(const std::map<std::string, std::string>& options,
+                           const std::string& key) {
+  const std::string value = requireOption(options, key);
+  try {
+    std::size_t parsed = 0;
+    const double number = std::stod(value, &parsed);
+    if (parsed != value.size()) {
+      throw std::runtime_error(key + " must be a number");
+    }
+    return number;
+  } catch (const std::exception&) {
+    throw std::runtime_error(key + " must be a number");
+  }
+}
+
+double optionDoubleOrDefault(const std::map<std::string, std::string>& options,
+                             const std::string& key, const double default_value) {
+  if (!options.contains(key)) {
+    return default_value;
+  }
+  return requireDoubleOption(options, key);
+}
+
 bool hasLayer(const ccad::Board& board, const std::string& layer_id) {
   for (const ccad::Layer& layer : board.layers) {
     if (layer.id == layer_id) {
@@ -193,6 +217,24 @@ ccad::Footprint loadFootprintFile(const std::string& path) {
   std::ostringstream buffer;
   buffer << input.rdbuf();
   return ccad::loadFootprintJson(buffer.str());
+}
+
+ccad::Point rotateAndTranslate(const ccad::Point& local, const ccad::Point& origin,
+                               const double rotation_degrees) {
+  constexpr double pi = 3.14159265358979323846;
+  const double radians = rotation_degrees * pi / 180.0;
+  const double cos_theta = std::cos(radians);
+  const double sin_theta = std::sin(radians);
+  const double local_x = static_cast<double>(local.x.nanometers);
+  const double local_y = static_cast<double>(local.y.nanometers);
+  return ccad::Point{
+      .x = ccad::nanometers(origin.x.nanometers +
+                            static_cast<std::int64_t>(std::llround((local_x * cos_theta) -
+                                                                   (local_y * sin_theta)))),
+      .y = ccad::nanometers(origin.y.nanometers +
+                            static_cast<std::int64_t>(std::llround((local_x * sin_theta) +
+                                                                   (local_y * cos_theta)))),
+  };
 }
 
 void requireUniqueViaId(const ccad::Board& board, const std::string& id) {
@@ -487,7 +529,7 @@ int pcbCommand(const std::vector<std::string>& args) {
     if (subcommand == "place-footprint") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--footprint", "--component", "--at-x-mm", "--at-y-mm",
-                                 "--layer"});
+                                 "--layer", "--rotation-deg"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
       ccad::Board& board = requireBoard(project);
@@ -502,22 +544,19 @@ int pcbCommand(const std::vector<std::string>& args) {
           .x = requirePositiveMillimeters(options, "--at-x-mm"),
           .y = requirePositiveMillimeters(options, "--at-y-mm"),
       };
+      const double placement_rotation = optionDoubleOrDefault(options, "--rotation-deg", 0.0);
 
       for (const ccad::FootprintPad& footprint_pad : footprint.pads) {
         const std::string pad_id = component_id + "." + footprint_pad.number;
         requireUniquePadId(board, pad_id);
-        const ccad::Point placed_position{
-            .x = ccad::nanometers(origin.x.nanometers + footprint_pad.position.x.nanometers),
-            .y = ccad::nanometers(origin.y.nanometers + footprint_pad.position.y.nanometers),
-        };
+        const ccad::Point placed_position =
+            rotateAndTranslate(footprint_pad.position, origin, placement_rotation);
         requireInsideBoard(board, placed_position, "footprint pad position");
       }
 
       for (const ccad::FootprintPad& footprint_pad : footprint.pads) {
-        const ccad::Point placed_position{
-            .x = ccad::nanometers(origin.x.nanometers + footprint_pad.position.x.nanometers),
-            .y = ccad::nanometers(origin.y.nanometers + footprint_pad.position.y.nanometers),
-        };
+        const ccad::Point placed_position =
+            rotateAndTranslate(footprint_pad.position, origin, placement_rotation);
         board.pads.push_back(ccad::Pad{
             .id = component_id + "." + footprint_pad.number,
             .component_id = component_id,
@@ -525,6 +564,7 @@ int pcbCommand(const std::vector<std::string>& args) {
             .net_id = "",
             .layer_id = layer_id,
             .position = placed_position,
+            .rotation_degrees = footprint_pad.rotation_degrees + placement_rotation,
             .size = footprint_pad.size,
         });
       }

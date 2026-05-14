@@ -14,6 +14,7 @@ struct CanvasPad {
   double y_units = 0.0;
   double width_units = 0.0;
   double height_units = 0.0;
+  double rotation_degrees = 0.0;
 };
 
 struct CanvasVia {

@@ -6,10 +6,10 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
-- Sprint: 9
-- Branch: `sprint-9-footprint-placement`
-- Last merged sprint: Sprint 8, KiCad footprint import
-- Status: Sprint 9 implemented on feature branch; merge pending
+- Sprint: 10
+- Branch: `sprint-10-footprint-rotation`
+- Last merged sprint: Sprint 9, footprint placement
+- Status: Sprint 10 implementation complete on feature branch; merge pending
 
 ## Phase Roadmap
 
@@ -30,21 +30,22 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Sprint 6: CLI PCB primitive authoring.
 - Sprint 7: physical DRC diagnostics and `ccad drc`.
 - Sprint 8: KiCad footprint import groundwork.
+- Sprint 9: footprint placement from imported library data.
 
 ## Active Sprint
 
-- Sprint 9: footprint placement from imported library data.
+- Sprint 10: footprint rotation.
 
 ## Reporting Rule
 
 Every commit/merge status update should include:
 
 ```text
-Progress: Phase 2/6, Sprint 9, <branch-or-main>, <short status>
+Progress: Phase 2/6, Sprint 10, <branch-or-main>, <short status>
 ```
 
 Example:
 
 ```text
-Progress: Phase 2/6, Sprint 9, main, merged and verified.
+Progress: Phase 2/6, Sprint 10, main, merged and verified.
 ```

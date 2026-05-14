@@ -97,7 +97,9 @@ if(CCAD_BUILD_GUI)
   find_package(Qt6 QUIET COMPONENTS Widgets)
   if(Qt6Widgets_FOUND)
     add_executable(ccad_gui
+      src/ccad_gui/board_canvas_renderer.cpp
       src/ccad_gui/main.cpp
+      src/ccad_gui/review_window.cpp
     )
     target_link_libraries(ccad_gui PRIVATE ccad_core Qt6::Widgets)
     if(MINGW)

@@ -57,7 +57,7 @@ Invoke-Ccad drc $Project | Set-Content -Encoding UTF8 $Drc
 )
 '@ | Set-Content -Encoding UTF8 $KiCadFootprint
 Invoke-Ccad lib import-footprint --in $KiCadFootprint --out $ImportedFootprint
-Invoke-Ccad pcb place-footprint --file $Project --footprint $ImportedFootprint --component R1 --at-x-mm 16 --at-y-mm 14 --layer F.Cu
+Invoke-Ccad pcb place-footprint --file $Project --footprint $ImportedFootprint --component R1 --at-x-mm 16 --at-y-mm 14 --layer F.Cu --rotation-deg 90
 
 $Process = Start-Process -FilePath $Gui -ArgumentList $Project -PassThru
 try {

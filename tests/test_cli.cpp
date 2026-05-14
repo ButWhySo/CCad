@@ -259,6 +259,27 @@ int main() {
       " --component R2 --at-x-mm 10 --at-y-mm 12 --layer Inner.Cu";
   require(run(bad_place_layer_command) != 0, "pcb place-footprint rejects unknown layer");
 
+  const std::filesystem::path rotated_board_path = temp / "rotated-board.ccad.json";
+  const std::string rotated_init_command =
+      quote(CCAD_BINARY) +
+      " init --name rotated-board --width-mm 42 --height-mm 28 --out " +
+      quote(rotated_board_path);
+  require(run(rotated_init_command) == 0, "rotated board init exits zero");
+  const std::string rotated_place_command =
+      quote(CCAD_BINARY) + " pcb place-footprint --file " + quote(rotated_board_path) +
+      " --footprint " + quote(footprint_out_path) +
+      " --component R90 --at-x-mm 16 --at-y-mm 14 --layer F.Cu --rotation-deg 90";
+  require(run(rotated_place_command) == 0, "pcb place-footprint rotation exits zero");
+  const std::string rotated_project = readFile(rotated_board_path);
+  require(rotated_project.find("\"id\": \"R90.1\"") != std::string::npos,
+          "rotated placement writes first pad id");
+  require(rotated_project.find("\"x_nm\": 16000000") != std::string::npos,
+          "rotated placement transforms x");
+  require(rotated_project.find("\"y_nm\": 13050000") != std::string::npos,
+          "rotated placement transforms y");
+  require(rotated_project.find("\"rotation_degrees\": 90") != std::string::npos,
+          "rotated placement writes pad rotation");
+
   const std::filesystem::path diff_after_path = temp / "diff-after.ccad.json";
   std::ofstream diff_after(diff_after_path);
   diff_after << "{\n"
