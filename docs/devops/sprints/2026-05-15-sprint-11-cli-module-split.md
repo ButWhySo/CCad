@@ -10,7 +10,7 @@ Split the LLM-facing native CLI into maintainable modules without changing comma
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 11, `sprint-11-cli-module-split`, planning.
+Progress: Phase 2/6, Sprint 11, `main`, merged and verified.
 
 ## Backlog
 
@@ -20,8 +20,32 @@ Progress: Phase 2/6, Sprint 11, `sprint-11-cli-module-split`, planning.
 4. Done: update CMake.
 5. Done: run focused CLI test.
 6. In progress: update codebase map and feature docs.
-7. Pending: run full native Qt build and CTest.
-8. Pending: merge to `main`.
+7. Done: run full native Qt build and CTest.
+8. Done: merge to `main`.
+
+## Verification
+
+Focused characterization:
+
+```powershell
+cmake --build build-qt --target ccad_cli_tests
+ctest --test-dir build-qt -R cli --output-on-failure
+```
+
+Result: `cli` passed.
+
+Full gate before implementation commit and after merge:
+
+```powershell
+cmake --build build-qt --clean-first
+ctest --test-dir build-qt --output-on-failure
+```
+
+Result: 10/10 tests passed.
+
+## Demo Artifacts
+
+No screenshot was required for Sprint 11 because the sprint is an internal native CLI refactor. The verification artifact is the black-box CLI test suite plus the full native CTest gate.
 
 ## Definition Of Done
 
