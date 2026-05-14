@@ -1,4 +1,5 @@
 #include "ccad_core/erc.hpp"
+#include "ccad_core/json.hpp"
 #include "ccad_core/model.hpp"
 #include "ccad_core/serialize.hpp"
 
@@ -10,17 +11,6 @@
 #include <vector>
 
 namespace {
-
-std::string escapeJson(const std::string& value) {
-  std::string out;
-  for (const char ch : value) {
-    if (ch == '"' || ch == '\\') {
-      out.push_back('\\');
-    }
-    out.push_back(ch);
-  }
-  return out;
-}
 
 void printUsage(std::ostream& out) {
   out << "Usage:\n"
@@ -43,10 +33,10 @@ std::string diagnosticsJson(const std::vector<ccad::Diagnostic>& diagnostics) {
   for (std::size_t i = 0; i < diagnostics.size(); ++i) {
     const ccad::Diagnostic& diagnostic = diagnostics.at(i);
     out << "    {\n"
-        << "      \"code\": \"" << escapeJson(diagnostic.code) << "\",\n"
-        << "      \"message\": \"" << escapeJson(diagnostic.message) << "\",\n"
-        << "      \"object_id\": \"" << escapeJson(diagnostic.object_id) << "\",\n"
-        << "      \"severity\": \"" << escapeJson(diagnostic.severity) << "\"\n"
+        << "      \"code\": \"" << ccad::escapeJson(diagnostic.code) << "\",\n"
+        << "      \"message\": \"" << ccad::escapeJson(diagnostic.message) << "\",\n"
+        << "      \"object_id\": \"" << ccad::escapeJson(diagnostic.object_id) << "\",\n"
+        << "      \"severity\": \"" << ccad::escapeJson(diagnostic.severity) << "\"\n"
         << "    }" << (i + 1 == diagnostics.size() ? "" : ",") << '\n';
   }
   out << "  ]\n}\n";
