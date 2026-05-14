@@ -142,6 +142,7 @@ What it does:
 - Adds PCB pads, vias, and track segments to existing board projects.
 - Runs physical DRC diagnostics with `ccad drc`.
 - Imports basic KiCad `.kicad_mod` footprint files with `ccad lib import-footprint`.
+- Places imported CCad footprint pads onto a board with `ccad pcb place-footprint`.
 - Validates CCad project files.
 - Inspects projects and emits review JSON.
 - Diffs two project files and emits machine-readable diff JSON.
@@ -173,6 +174,7 @@ On Windows PowerShell:
 .\build\ccad.exe diff before.ccad.json after.ccad.json
 .\build\ccad.exe drc board.ccad.json
 .\build\ccad.exe lib import-footprint --in R_0805_2012Metric.kicad_mod --out R_0805_2012Metric.ccad-footprint.json
+.\build\ccad.exe pcb place-footprint --file board.ccad.json --footprint R_0805_2012Metric.ccad-footprint.json --component R1 --at-x-mm 16 --at-y-mm 14 --layer F.Cu
 .\build\ccad.exe pcb add-pad --file board.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 .\build\ccad.exe pcb add-via --file board.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
 .\build\ccad.exe pcb add-track --file board.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
@@ -205,6 +207,13 @@ KiCad footprint import behavior:
 - Rejects malformed s-expressions and non-`footprint` roots.
 - Treats KiCad input as data only; it does not execute scripts or resolve external model paths.
 
+Footprint placement behavior:
+
+- `pcb place-footprint` loads CCad footprint JSON and creates board pads.
+- Generated pad IDs are `<component>.<pad-number>`.
+- Command rejects missing board, unknown layer, duplicate generated pad IDs, empty footprints, and out-of-board pad positions.
+- Placement is translation-only in this sprint.
+
 Test:
 
 ```bash
@@ -220,6 +229,7 @@ Expected result:
 - CLI PCB commands append primitives and reject invalid mutations.
 - CLI DRC command emits JSON physical diagnostics.
 - CLI footprint import command emits deterministic footprint JSON.
+- CLI footprint placement command creates visible board pads from imported footprint data.
 
 ## Project Review Model
 
