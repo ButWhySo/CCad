@@ -9,7 +9,7 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Sprint: 7
 - Branch: `sprint-7-physical-drc`
 - Last merged sprint: Sprint 6, CLI PCB authoring
-- Status: Sprint 7 in progress
+- Status: Sprint 7 implemented on feature branch; merge pending
 
 ## Phase Roadmap
 
