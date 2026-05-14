@@ -59,6 +59,16 @@ int main() {
   require(board_json.find("\"width_nm\": 42000000") != std::string::npos,
           "board init writes width");
 
+  const std::string missing_height_command = quote(CCAD_BINARY) +
+                                             " init --name bad --width-mm 42 --out " +
+                                             quote(temp / "bad.ccad.json");
+  require(run(missing_height_command) != 0, "board init rejects missing height");
+
+  const std::string bad_width_command = quote(CCAD_BINARY) +
+                                        " init --name bad --width-mm nope --height-mm 28 --out " +
+                                        quote(temp / "bad-width.ccad.json");
+  require(run(bad_width_command) != 0, "board init rejects invalid width");
+
   const std::string validate_clean = quote(CCAD_BINARY) + " validate " + quote(project_path) +
                                      " > " + quote(diagnostics_path);
   require(run(validate_clean) == 0, "clean validate exits zero");

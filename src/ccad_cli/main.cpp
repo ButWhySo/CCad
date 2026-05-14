@@ -49,6 +49,19 @@ std::string diagnosticsJson(const std::vector<ccad::Diagnostic>& diagnostics) {
   return out.str();
 }
 
+std::optional<double> parsePositiveDouble(const std::string& value) {
+  try {
+    std::size_t parsed = 0;
+    const double number = std::stod(value, &parsed);
+    if (parsed != value.size() || number <= 0.0) {
+      return std::nullopt;
+    }
+    return number;
+  } catch (const std::exception&) {
+    return std::nullopt;
+  }
+}
+
 ccad::Project loadProjectFile(const std::string& path) {
   std::ifstream input(path);
   if (!input) {
@@ -106,9 +119,17 @@ int initCommand(const std::vector<std::string>& args) {
     } else if (args.at(i) == "--out" && i + 1 < args.size()) {
       out_path = args.at(++i);
     } else if (args.at(i) == "--width-mm" && i + 1 < args.size()) {
-      width_mm = std::stod(args.at(++i));
+      width_mm = parsePositiveDouble(args.at(++i));
+      if (!width_mm.has_value()) {
+        std::cerr << "--width-mm must be a positive number\n";
+        return 2;
+      }
     } else if (args.at(i) == "--height-mm" && i + 1 < args.size()) {
-      height_mm = std::stod(args.at(++i));
+      height_mm = parsePositiveDouble(args.at(++i));
+      if (!height_mm.has_value()) {
+        std::cerr << "--height-mm must be a positive number\n";
+        return 2;
+      }
     } else {
       std::cerr << "unknown or incomplete init argument: " << args.at(i) << '\n';
       return 2;
