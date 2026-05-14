@@ -43,6 +43,15 @@ To force a non-GUI build:
 cmake -S . -B build -DCCAD_BUILD_GUI=OFF
 ```
 
+Local Windows Qt build used in this repo:
+
+```powershell
+cmake -S . -B build-qt -DCCAD_WARNINGS_AS_ERRORS=ON -DCCAD_BUILD_GUI=ON -DCMAKE_PREFIX_PATH=C:\Qt\6.11.1\mingw_64
+cmake --build build-qt
+$env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
+.\build-qt\ccad_gui.exe
+```
+
 ## CI/CD
 
 GitHub Actions workflow lives in `.github/workflows/ci.yml`. It configures CMake, builds, and runs CTest on pushes to `main` and `phase-*`, plus pull requests to `main`.

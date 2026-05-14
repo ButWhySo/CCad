@@ -81,6 +81,11 @@ class ReviewWindow final : public QMainWindow {
     toolbar->addAction(reload_action);
   }
 
+  void loadProjectPath(const std::filesystem::path& path) {
+    current_path_ = path;
+    reloadProject();
+  }
+
  private:
   void openProject() {
     const QString selected = QFileDialog::getOpenFileName(
@@ -101,7 +106,7 @@ class ReviewWindow final : public QMainWindow {
     try {
       const ccad::Project project = ccad::loadProjectJson(readFile(current_path_));
       renderReview(ccad::buildReview(project));
-      setWindowTitle("CCad Review - " + QFileInfo(qstr(current_path_)).fileName());
+      setWindowTitle("CCad Review - " + QFileInfo(qstr(current_path_.string())).fileName());
     } catch (const std::exception& error) {
       diagnostics_->setRowCount(0);
       summary_->setText("Load failed");
@@ -139,6 +144,9 @@ class ReviewWindow final : public QMainWindow {
 int main(int argc, char** argv) {
   QApplication app(argc, argv);
   ReviewWindow window;
+  if (argc > 1) {
+    window.loadProjectPath(argv[1]);
+  }
   window.show();
   return QApplication::exec();
 }
