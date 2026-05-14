@@ -6,12 +6,12 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 6 complete and merged. See `docs/devops/progress.md`.
+Progress counter: Phase 2 / 6, Sprint 12 in progress. See `docs/devops/progress.md`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
 - Logical ERC diagnostics.
-- CLI: `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
+- CLI: `ccad help --format json`, `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
 - CLI PCB authoring: `ccad pcb add-pad`, `ccad pcb add-via`, and `ccad pcb add-track`.
 - Physical board outline, layers, pads, vias, and track segments in project JSON.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
@@ -117,6 +117,23 @@ build/ccad validate demo.ccad.json
 ```
 
 `validate` prints JSON diagnostics. Exit code `0` means no ERC errors. Exit code `1` means at least one error.
+
+Discover commands as machine-readable JSON:
+
+```bash
+build/ccad help --format json
+```
+
+What it does:
+
+- Emits deterministic command metadata with command names, summaries, and usage strings.
+- Gives agents a stable command discovery surface without scraping human usage text.
+
+When to run:
+
+- Before an agent chooses a CLI command.
+- When documenting or testing command availability.
+- After adding a new CLI command to confirm it is discoverable.
 
 Create a starter board project on Windows:
 

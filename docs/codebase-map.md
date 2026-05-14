@@ -352,7 +352,7 @@ Rule:
 
 ### `src/ccad_cli/app.hpp/.cpp`
 
-Owns top-level command dispatch and usage text.
+Owns top-level command dispatch, usage text, and machine-readable command metadata.
 
 Public function:
 
@@ -360,10 +360,19 @@ Public function:
 int run(int argc, char** argv);
 ```
 
+Internal command metadata functions:
+
+```cpp
+const std::vector<CommandHelp>& commandHelp();
+std::string helpJson();
+int helpCommand(const std::vector<std::string>& args);
+```
+
 Command groups:
 
 ```text
 ccad init
+ccad help --format json
 ccad validate
 ccad drc
 ccad inspect
