@@ -169,6 +169,24 @@ When to run:
 - Before opening a project for review.
 - In CI or agent workflows as a correctness gate.
 
+Run physical DRC:
+
+```powershell
+.\build-qt\ccad.exe drc .\build-qt\canvas-demo.ccad.json
+```
+
+What it does:
+
+- Runs kernel-level physical checks on board primitives.
+- Emits JSON diagnostics.
+- Exits `0` when no DRC errors exist, `1` when DRC errors exist, `2` for usage/file/parse failures.
+
+When to run:
+
+- After adding pads, vias, or tracks.
+- Before opening the GUI for review.
+- Before treating a generated board as a valid intermediate artifact.
+
 Add PCB primitives through the CLI:
 
 ```powershell
@@ -257,6 +275,26 @@ ctest --test-dir build-qt --output-on-failure
 .\build-qt\ccad.exe pcb add-track --file .\build-qt\canvas-demo.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
 .\build-qt\ccad.exe inspect .\build-qt\canvas-demo.ccad.json
 .\build-qt\ccad.exe validate .\build-qt\canvas-demo.ccad.json
+.\build-qt\ccad.exe drc .\build-qt\canvas-demo.ccad.json
 $env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
 .\build-qt\ccad_gui.exe .\build-qt\canvas-demo.ccad.json
 ```
+
+Generate demo artifacts and a GUI screenshot:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_sprint_demo.ps1 -Name sprint7-drc-demo
+```
+
+What it does:
+
+- Creates `artifacts/demos/sprint7-drc-demo.ccad.json`.
+- Adds a pad, via, and track through the CLI.
+- Writes inspect, validate, and DRC JSON reports.
+- Launches the Qt GUI and saves a screenshot under `artifacts/screenshots/`.
+
+When to run:
+
+- At sprint end.
+- After GUI-visible commits.
+- When handing off progress for visual review.

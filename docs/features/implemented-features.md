@@ -140,6 +140,7 @@ What it does:
 - Creates empty CCad project files.
 - Creates project files with board outline when given `--width-mm` and `--height-mm`.
 - Adds PCB pads, vias, and track segments to existing board projects.
+- Runs physical DRC diagnostics with `ccad drc`.
 - Validates CCad project files.
 - Inspects projects and emits review JSON.
 - Diffs two project files and emits machine-readable diff JSON.
@@ -169,6 +170,7 @@ On Windows PowerShell:
 .\build\ccad.exe validate demo.ccad.json
 .\build\ccad.exe inspect demo.ccad.json
 .\build\ccad.exe diff before.ccad.json after.ccad.json
+.\build\ccad.exe drc board.ccad.json
 .\build\ccad.exe pcb add-pad --file board.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 .\build\ccad.exe pcb add-via --file board.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
 .\build\ccad.exe pcb add-track --file board.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
@@ -187,6 +189,12 @@ Current limitation:
 - These commands are explicit primitive authoring verbs, not automatic placement or routing.
 - They do not yet enforce schematic-layout parity or physical DRC beyond command argument guards.
 
+DRC command behavior:
+
+- `drc <path>` runs physical board checks.
+- Reports duplicate primitive IDs, unknown layers, geometry outside board outline, invalid dimensions, via drill larger than diameter, and zero-length track segments.
+- Exits `0` for no DRC errors, `1` for DRC errors, and `2` for usage/file/parse failure.
+
 Test:
 
 ```bash
@@ -200,6 +208,7 @@ Expected result:
 - CLI validates a clean file with exit code `0`.
 - CLI validates an invalid file with nonzero exit and JSON diagnostics.
 - CLI PCB commands append primitives and reject invalid mutations.
+- CLI DRC command emits JSON physical diagnostics.
 
 ## Project Review Model
 
