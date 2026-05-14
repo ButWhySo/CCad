@@ -11,16 +11,22 @@ Add the first transaction/diff foundation for agent-safe work, expose project in
 ## Backlog
 
 1. Add tested project diff model in `ccad_core`.
+   - Status: done in `fd880be`.
 2. Add tested transaction journal entry model in `ccad_core`.
+   - Status: done in `8823ac6`.
 3. Add `ccad inspect` and `ccad diff` CLI commands with JSON output.
+   - Status: done in `ce907e3`.
 4. Polish Qt review GUI layout and styling:
    - modern spacing and typography
    - summary cards/chips
    - colored diagnostic severity
    - clearer empty state
    - better table sizing
+   - Status: done in `66e1028`.
 5. Update feature docs and handover.
+   - Status: done in `3a44d91`.
 6. Run Qt and core verification, then merge to `main`.
+   - Status: in progress.
 
 ## Definition Of Done
 
@@ -39,4 +45,3 @@ cmake -S . -B build-qt -DCCAD_WARNINGS_AS_ERRORS=ON -DCCAD_BUILD_GUI=ON -DCMAKE_
 cmake --build build-qt --clean-first
 ctest --test-dir build-qt --output-on-failure
 ```
-
