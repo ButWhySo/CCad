@@ -30,6 +30,7 @@ The initial codebase is C++20:
 - ERC returns typed diagnostics for agent consumption.
 - CLI commands are intentionally small and deterministic.
 - `ccad_gui` is optional and builds only when Qt 6 Widgets is available.
+- Physical lengths are stored as integer nanometers in `ccad_core::Length`; user-facing mm/mil values convert at API boundaries.
 
 ## Development Commands
 

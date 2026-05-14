@@ -56,6 +56,7 @@ What it does:
 
 - Represents project metadata.
 - Represents components, pins, nets, net members, and constraints.
+- Represents optional physical board data: outline and layers.
 - Provides the data model used by CLI, ERC, review model, and future GUI/RPC clients.
 
 Test:
@@ -137,6 +138,7 @@ Files:
 What it does:
 
 - Creates empty CCad project files.
+- Creates project files with board outline when given `--width-mm` and `--height-mm`.
 - Validates CCad project files.
 - Inspects projects and emits review JSON.
 - Diffs two project files and emits machine-readable diff JSON.
@@ -162,6 +164,7 @@ On Windows PowerShell:
 
 ```powershell
 .\build\ccad.exe init --name demo --out demo.ccad.json
+.\build\ccad.exe init --name board --width-mm 42 --height-mm 28 --out board.ccad.json
 .\build\ccad.exe validate demo.ccad.json
 .\build\ccad.exe inspect demo.ccad.json
 .\build\ccad.exe diff before.ccad.json after.ccad.json
@@ -236,6 +239,37 @@ Expected result:
 
 - `diff` test passes.
 
+## Physical Units And Board Primitives
+
+Status: implemented.
+
+Files:
+
+- `src/ccad_core/geometry.hpp`
+- `src/ccad_core/geometry.cpp`
+- `src/ccad_core/model.hpp`
+- `src/ccad_core/serialize.cpp`
+- `tests/test_geometry.cpp`
+- `tests/test_serialize.cpp`
+
+What it does:
+
+- Stores physical lengths as integer nanometers.
+- Converts millimeters and mils deterministically.
+- Represents points, sizes, rectangles, board outline, and layers.
+- Serializes board data in project JSON.
+
+Test:
+
+```bash
+cmake --build build-qt --target ccad_geometry_tests ccad_tests
+ctest --test-dir build-qt -R "geometry|serialize" --output-on-failure
+```
+
+Expected result:
+
+- `geometry` and `serialize` tests pass.
+
 ## Transaction Journal Model
 
 Status: implemented.
@@ -278,6 +312,7 @@ What it does:
 - Provides a native desktop window for human review.
 - Opens `.ccad.json` project files.
 - Shows project summary.
+- Shows board dimensions and layer count when board data exists.
 - Shows ERC diagnostics table.
 - Supports reload.
 

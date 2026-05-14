@@ -11,13 +11,21 @@ Create the first physical PCB data model: exact units, geometry primitives, boar
 ## Backlog
 
 1. Add exact unit conversion helpers.
+   - Status: done in `b72ac69`.
 2. Add geometry primitives: point, size, rectangle.
+   - Status: done in `b72ac69`.
 3. Add board/layer model.
+   - Status: done in `7e18214`.
 4. Add board model to `Project`.
+   - Status: done in `7e18214`.
 5. Extend deterministic JSON serialization.
+   - Status: done in `7e18214`.
 6. Add tests for units, geometry, board model, and JSON round trip.
+   - Status: done.
 7. Update docs/features.
+   - Status: in progress.
 8. Run full Qt build and CTest, then merge to `main`.
+   - Status: pending.
 
 ## Definition Of Done
 
@@ -35,4 +43,3 @@ cmake -S . -B build-qt -DCCAD_WARNINGS_AS_ERRORS=ON -DCCAD_BUILD_GUI=ON -DCMAKE_
 cmake --build build-qt --clean-first
 ctest --test-dir build-qt --output-on-failure
 ```
-
