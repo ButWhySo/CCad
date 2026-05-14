@@ -2,21 +2,21 @@
 
 ## Vision
 
-CCad is a PCB design kernel built for machine callers first. Agents should interact with stable typed objects, deterministic files, validation results, and eventually transactions/RPC. Human UI should render and review kernel state rather than own it.
+CCad is a native desktop PCB design kernel built for machine callers first. Agents should interact with stable typed objects, deterministic files, validation results, and eventually transactions/RPC. Human UI should render and review kernel state rather than own it.
 
 ## Phase Roadmap
 
 1. Logical kernel: project, components, pins, nets, constraints, ERC, CLI.
 2. Physical primitives: board outline, layers, keepouts, placement regions, early DRC.
 3. Routing assistance: constrained route requests and external router boundary.
-4. GUI/reviewer: render schematic/PCB state, diffs, diagnostics, and transaction review.
+4. Native GUI/reviewer: render schematic/PCB state, diffs, diagnostics, and transaction review.
 5. Interop: KiCad, Circuit JSON, DSN/SES, manufacturing exports.
 
 ## Current Architecture
 
-The initial codebase is Python 3.11+:
+The initial codebase is C++20:
 
-- Model objects are plain dataclasses with explicit JSON conversion.
+- Model objects are plain C++ structs/classes with explicit JSON conversion.
 - JSON output is sorted and stable for diffs.
 - ERC returns typed diagnostics for agent consumption.
 - CLI commands are intentionally small and deterministic.
@@ -24,15 +24,14 @@ The initial codebase is Python 3.11+:
 ## Development Commands
 
 ```bash
-python -m pip install -e ".[dev]"
-ruff check .
-mypy src
-pytest
+cmake -S . -B build -DCCAD_WARNINGS_AS_ERRORS=ON
+cmake --build build
+ctest --test-dir build --output-on-failure
 ```
 
 ## CI/CD
 
-GitHub Actions workflow lives in `.github/workflows/ci.yml`. It runs lint, type checks, and tests on pushes to `main` and `phase-*`, plus pull requests to `main`.
+GitHub Actions workflow lives in `.github/workflows/ci.yml`. It configures CMake, builds, and runs CTest on pushes to `main` and `phase-*`, plus pull requests to `main`.
 
 There is no remote configured in this local repo. CI config is present for future GitHub use.
 
@@ -47,4 +46,3 @@ Use TDD for production behavior. Each new kernel rule or CLI behavior should hav
 - No network calls in kernel or CLI.
 - No secrets needed for local tests or CI.
 - Future importers should validate input before mapping into kernel objects.
-
