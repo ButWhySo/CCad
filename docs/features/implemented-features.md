@@ -216,8 +216,9 @@ Current limitation:
 DRC command behavior:
 
 - `drc <path>` runs physical board checks.
-- Reports duplicate primitive IDs, unknown layers, unknown non-empty net references, geometry outside board outline, invalid dimensions, unconnected pads, via drill larger than diameter, and zero-length track segments.
+- Reports duplicate primitive IDs, unknown layers, unknown non-empty net references, geometry outside board outline, invalid dimensions, unconnected pads, unconnected track endpoints, via drill larger than diameter, and zero-length track segments.
 - Empty pad `net_id` is reported as warning code `UNCONNECTED_PAD`.
+- Track endpoints that do not exactly touch a same-net pad center, via center, or another track endpoint are reported as warning code `UNCONNECTED_TRACK_ENDPOINT`.
 - Unknown physical net references are errors: `UNKNOWN_PAD_NET`, `UNKNOWN_VIA_NET`, and `UNKNOWN_TRACK_NET`.
 - Exits `0` for no DRC errors, `1` for DRC errors, and `2` for usage/file/parse failure.
 

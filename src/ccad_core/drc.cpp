@@ -59,6 +59,33 @@ bool samePoint(const Point& left, const Point& right) {
   return left.x.nanometers == right.x.nanometers && left.y.nanometers == right.y.nanometers;
 }
 
+bool endpointTouchesSameNetPrimitive(const Board& board, const TrackSegment& source_track,
+                                     const Point& endpoint) {
+  if (source_track.net_id.empty()) {
+    return true;
+  }
+
+  for (const Pad& pad : board.pads) {
+    if (pad.net_id == source_track.net_id && samePoint(pad.position, endpoint)) {
+      return true;
+    }
+  }
+  for (const Via& via : board.vias) {
+    if (via.net_id == source_track.net_id && samePoint(via.position, endpoint)) {
+      return true;
+    }
+  }
+  for (const TrackSegment& track : board.tracks) {
+    if (track.id == source_track.id || track.net_id != source_track.net_id) {
+      continue;
+    }
+    if (samePoint(track.start, endpoint) || samePoint(track.end, endpoint)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void checkPads(const Project& project, const Board& board, std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
   for (const Pad& pad : board.pads) {
@@ -145,6 +172,12 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
     if (samePoint(track.start, track.end)) {
       diagnostics.push_back(
           makeDiagnostic("ZERO_LENGTH_TRACK", "Track start and end must be different", track.id));
+    }
+    if (!endpointTouchesSameNetPrimitive(board, track, track.start) ||
+        !endpointTouchesSameNetPrimitive(board, track, track.end)) {
+      diagnostics.push_back(makeWarning("UNCONNECTED_TRACK_ENDPOINT",
+                                        "Track endpoint does not touch a same-net pad, via, or track",
+                                        track.id));
     }
   }
 }

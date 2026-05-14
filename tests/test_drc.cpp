@@ -111,4 +111,10 @@ int main() {
   unknown_track_net.board->tracks.at(0).net_id = "N404";
   require(hasCode(ccad::runDrc(unknown_track_net), "UNKNOWN_TRACK_NET"),
           "drc reports unknown track net");
+
+  ccad::Project dangling_track = validBoardProject();
+  dangling_track.board->tracks.at(0).end = ccad::Point{.x = ccad::millimeters(10),
+                                                       .y = ccad::millimeters(9)};
+  require(hasDiagnostic(ccad::runDrc(dangling_track), "UNCONNECTED_TRACK_ENDPOINT", "warning"),
+          "drc reports dangling track endpoint as warning");
 }
