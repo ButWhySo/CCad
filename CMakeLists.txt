@@ -13,6 +13,7 @@ add_library(ccad_core
   src/ccad_core/model.cpp
   src/ccad_core/diff.cpp
   src/ccad_core/erc.cpp
+  src/ccad_core/geometry.cpp
   src/ccad_core/json.cpp
   src/ccad_core/review.cpp
   src/ccad_core/serialize.cpp
@@ -127,3 +128,12 @@ if(MINGW)
   target_link_options(ccad_transaction_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME transaction COMMAND ccad_transaction_tests)
+
+add_executable(ccad_geometry_tests
+  tests/test_geometry.cpp
+)
+target_link_libraries(ccad_geometry_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_geometry_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME geometry COMMAND ccad_geometry_tests)
