@@ -4,6 +4,8 @@
 
 CCad is intended to become an LLM-native native desktop PCB design tool. The source of truth should be a typed C++ kernel and transaction/API layer, not a GUI session. The GUI, when added, must be a client of the kernel.
 
+Read `docs/research/2026-05-14-llm-native-pcb-tool-report.md` before making architecture changes. It captures the project thesis, prior art, KiCad analysis, reuse strategy, roadmap, and security posture.
+
 ## Working Rules
 
 - Work on a feature branch, then merge to `main` after verification.

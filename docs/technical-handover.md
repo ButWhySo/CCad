@@ -4,6 +4,8 @@
 
 CCad is a native desktop PCB design kernel built for machine callers first. Agents should interact with stable typed objects, deterministic files, validation results, and eventually transactions/RPC. Human UI should render and review kernel state rather than own it.
 
+The research basis for this architecture is documented in `docs/research/2026-05-14-llm-native-pcb-tool-report.md`. The key decision is that CCad is not a KiCad wrapper. KiCad, tscircuit/Circuit JSON, SKiDL, Atopile, Freerouting, pcb-rnd, Magic, and OpenROAD are references or interoperability targets. CCad's source of truth remains its own native kernel.
+
 ## Phase Roadmap
 
 1. Logical kernel: project, components, pins, nets, constraints, ERC, CLI.
@@ -11,6 +13,7 @@ CCad is a native desktop PCB design kernel built for machine callers first. Agen
 3. Routing assistance: constrained route requests and external router boundary.
 4. Native GUI/reviewer: render schematic/PCB state, diffs, diagnostics, and transaction review.
 5. Interop: KiCad, Circuit JSON, DSN/SES, manufacturing exports.
+6. Agent protocol: JSON-RPC/MCP over the same transaction bus, with audit logs and permission gates.
 
 ## Current Architecture
 
