@@ -1,6 +1,7 @@
 #include "ccad_core/serialize.hpp"
 
 #include <cctype>
+#include <iomanip>
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
@@ -10,11 +11,40 @@ namespace {
 
 std::string escapeJson(const std::string& value) {
   std::string out;
-  for (const char ch : value) {
-    if (ch == '"' || ch == '\\') {
-      out.push_back('\\');
+  for (const unsigned char ch : value) {
+    switch (ch) {
+      case '"':
+        out += "\\\"";
+        break;
+      case '\\':
+        out += "\\\\";
+        break;
+      case '\b':
+        out += "\\b";
+        break;
+      case '\f':
+        out += "\\f";
+        break;
+      case '\n':
+        out += "\\n";
+        break;
+      case '\r':
+        out += "\\r";
+        break;
+      case '\t':
+        out += "\\t";
+        break;
+      default:
+        if (ch < 0x20) {
+          std::ostringstream escaped;
+          escaped << "\\u" << std::hex << std::setw(4) << std::setfill('0')
+                  << static_cast<int>(ch);
+          out += escaped.str();
+        } else {
+          out.push_back(static_cast<char>(ch));
+        }
+        break;
     }
-    out.push_back(ch);
   }
   return out;
 }
@@ -35,7 +65,10 @@ class JsonReader {
   Project readProject() {
     Project project;
     expect('{');
-    while (!consume('}')) {
+    if (consume('}')) {
+      return project;
+    }
+    while (true) {
       const std::string key = readString();
       expect(':');
       if (key == "schema_version") {
@@ -53,19 +86,35 @@ class JsonReader {
       } else {
         throw std::runtime_error("unknown project key: " + key);
       }
-      consume(',');
+      if (consume('}')) {
+        return project;
+      }
+      expect(',');
+      if (peek('}')) {
+        throw std::runtime_error("trailing comma in project object");
+      }
     }
-    return project;
+  }
+
+  void finish() {
+    skipWhitespace();
+    if (pos_ != source_.size()) {
+      throw std::runtime_error("trailing content after root object");
+    }
   }
 
  private:
   std::vector<Component> readComponents() {
     std::vector<Component> components;
     expect('[');
-    while (!consume(']')) {
+    if (consume(']')) {
+      return components;
+    }
+    while (true) {
       Component component;
       expect('{');
-      while (!consume('}')) {
+      if (!consume('}')) {
+        while (true) {
         const std::string key = readString();
         expect(':');
         if (key == "id") {
@@ -77,21 +126,37 @@ class JsonReader {
         } else {
           throw std::runtime_error("unknown component key: " + key);
         }
-        consume(',');
+        if (consume('}')) {
+          break;
+        }
+        expect(',');
+        if (peek('}')) {
+          throw std::runtime_error("trailing comma in component object");
+        }
+        }
       }
       components.push_back(component);
-      consume(',');
+      if (consume(']')) {
+        return components;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in components array");
+      }
     }
-    return components;
   }
 
   std::vector<Pin> readPins() {
     std::vector<Pin> pins;
     expect('[');
-    while (!consume(']')) {
+    if (consume(']')) {
+      return pins;
+    }
+    while (true) {
       Pin pin;
       expect('{');
-      while (!consume('}')) {
+      if (!consume('}')) {
+        while (true) {
         const std::string key = readString();
         expect(':');
         if (key == "name") {
@@ -101,21 +166,37 @@ class JsonReader {
         } else {
           throw std::runtime_error("unknown pin key: " + key);
         }
-        consume(',');
+        if (consume('}')) {
+          break;
+        }
+        expect(',');
+        if (peek('}')) {
+          throw std::runtime_error("trailing comma in pin object");
+        }
+        }
       }
       pins.push_back(pin);
-      consume(',');
+      if (consume(']')) {
+        return pins;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in pins array");
+      }
     }
-    return pins;
   }
 
   std::vector<Net> readNets() {
     std::vector<Net> nets;
     expect('[');
-    while (!consume(']')) {
+    if (consume(']')) {
+      return nets;
+    }
+    while (true) {
       Net net;
       expect('{');
-      while (!consume('}')) {
+      if (!consume('}')) {
+        while (true) {
         const std::string key = readString();
         expect(':');
         if (key == "id") {
@@ -125,21 +206,37 @@ class JsonReader {
         } else {
           throw std::runtime_error("unknown net key: " + key);
         }
-        consume(',');
+        if (consume('}')) {
+          break;
+        }
+        expect(',');
+        if (peek('}')) {
+          throw std::runtime_error("trailing comma in net object");
+        }
+        }
       }
       nets.push_back(net);
-      consume(',');
+      if (consume(']')) {
+        return nets;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in nets array");
+      }
     }
-    return nets;
   }
 
   std::vector<NetMember> readMembers() {
     std::vector<NetMember> members;
     expect('[');
-    while (!consume(']')) {
+    if (consume(']')) {
+      return members;
+    }
+    while (true) {
       NetMember member;
       expect('{');
-      while (!consume('}')) {
+      if (!consume('}')) {
+        while (true) {
         const std::string key = readString();
         expect(':');
         if (key == "component_id") {
@@ -149,21 +246,37 @@ class JsonReader {
         } else {
           throw std::runtime_error("unknown net member key: " + key);
         }
-        consume(',');
+        if (consume('}')) {
+          break;
+        }
+        expect(',');
+        if (peek('}')) {
+          throw std::runtime_error("trailing comma in net member object");
+        }
+        }
       }
       members.push_back(member);
-      consume(',');
+      if (consume(']')) {
+        return members;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in members array");
+      }
     }
-    return members;
   }
 
   std::vector<Constraint> readConstraints() {
     std::vector<Constraint> constraints;
     expect('[');
-    while (!consume(']')) {
+    if (consume(']')) {
+      return constraints;
+    }
+    while (true) {
       Constraint constraint;
       expect('{');
-      while (!consume('}')) {
+      if (!consume('}')) {
+        while (true) {
         const std::string key = readString();
         expect(':');
         if (key == "id") {
@@ -177,12 +290,24 @@ class JsonReader {
         } else {
           throw std::runtime_error("unknown constraint key: " + key);
         }
-        consume(',');
+        if (consume('}')) {
+          break;
+        }
+        expect(',');
+        if (peek('}')) {
+          throw std::runtime_error("trailing comma in constraint object");
+        }
+        }
       }
       constraints.push_back(constraint);
-      consume(',');
+      if (consume(']')) {
+        return constraints;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in constraints array");
+      }
     }
-    return constraints;
   }
 
   int readInt() {
@@ -210,6 +335,11 @@ class JsonReader {
         if (pos_ >= source_.size()) {
           throw std::runtime_error("unterminated escape");
         }
+        value += readEscape();
+        continue;
+      }
+      if (static_cast<unsigned char>(source_[pos_]) < 0x20) {
+        throw std::runtime_error("unescaped control character in string");
       }
       value.push_back(source_[pos_]);
       ++pos_;
@@ -225,6 +355,66 @@ class JsonReader {
       return true;
     }
     return false;
+  }
+
+  bool peek(const char expected) {
+    skipWhitespace();
+    return pos_ < source_.size() && source_[pos_] == expected;
+  }
+
+  std::string readEscape() {
+    const char escaped = source_[pos_++];
+    switch (escaped) {
+      case '"':
+      case '\\':
+      case '/':
+        return std::string(1, escaped);
+      case 'b':
+        return "\b";
+      case 'f':
+        return "\f";
+      case 'n':
+        return "\n";
+      case 'r':
+        return "\r";
+      case 't':
+        return "\t";
+      case 'u':
+        return readUnicodeEscape();
+      default:
+        throw std::runtime_error("invalid string escape");
+    }
+  }
+
+  std::string readUnicodeEscape() {
+    int codepoint = 0;
+    for (int i = 0; i < 4; ++i) {
+      if (pos_ >= source_.size() || std::isxdigit(static_cast<unsigned char>(source_[pos_])) == 0) {
+        throw std::runtime_error("invalid unicode escape");
+      }
+      const char ch = source_[pos_++];
+      codepoint *= 16;
+      if (ch >= '0' && ch <= '9') {
+        codepoint += ch - '0';
+      } else if (ch >= 'a' && ch <= 'f') {
+        codepoint += 10 + ch - 'a';
+      } else {
+        codepoint += 10 + ch - 'A';
+      }
+    }
+
+    std::string out;
+    if (codepoint <= 0x7F) {
+      out.push_back(static_cast<char>(codepoint));
+    } else if (codepoint <= 0x7FF) {
+      out.push_back(static_cast<char>(0xC0 | (codepoint >> 6)));
+      out.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
+    } else {
+      out.push_back(static_cast<char>(0xE0 | (codepoint >> 12)));
+      out.push_back(static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F)));
+      out.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
+    }
+    return out;
   }
 
   void expect(const char expected) {
@@ -314,8 +504,9 @@ std::string dumpProjectJson(const Project& project) {
 
 Project loadProjectJson(const std::string& json) {
   JsonReader reader(json);
-  return reader.readProject();
+  Project project = reader.readProject();
+  reader.finish();
+  return project;
 }
 
 }  // namespace ccad
-

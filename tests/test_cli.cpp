@@ -1,4 +1,5 @@
-#include <cassert>
+#include "test_support.hpp"
+
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
@@ -42,16 +43,17 @@ int main() {
 
   const std::string init_command = quote(CCAD_BINARY) + " init --name demo --out " +
                                    quote(project_path);
-  assert(run(init_command) == 0);
-  assert(std::filesystem::exists(project_path));
+  require(run(init_command) == 0, "init exits zero");
+  require(std::filesystem::exists(project_path), "init writes project file");
 
   const std::string project_json = readFile(project_path);
-  assert(project_json.find("\"name\": \"demo\"") != std::string::npos);
+  require(project_json.find("\"name\": \"demo\"") != std::string::npos, "init writes name");
 
   const std::string validate_clean = quote(CCAD_BINARY) + " validate " + quote(project_path) +
                                      " > " + quote(diagnostics_path);
-  assert(run(validate_clean) == 0);
-  assert(readFile(diagnostics_path).find("\"diagnostics\": [") != std::string::npos);
+  require(run(validate_clean) == 0, "clean validate exits zero");
+  require(readFile(diagnostics_path).find("\"diagnostics\": [") != std::string::npos,
+          "validate writes diagnostics json");
 
   const std::filesystem::path invalid_path = temp / "invalid.ccad.json";
   std::ofstream invalid(invalid_path);
@@ -70,7 +72,15 @@ int main() {
 
   const std::string validate_invalid = quote(CCAD_BINARY) + " validate " + quote(invalid_path) +
                                        " > " + quote(diagnostics_path);
-  assert(run(validate_invalid) != 0);
+  require(run(validate_invalid) != 0, "invalid validate exits nonzero");
   const std::string invalid_output = readFile(diagnostics_path);
-  assert(invalid_output.find("\"code\": \"UNKNOWN_COMPONENT\"") != std::string::npos);
+  require(invalid_output.find("\"code\": \"UNKNOWN_COMPONENT\"") != std::string::npos,
+          "invalid validate reports unknown component");
+
+  const std::filesystem::path escaped_path = temp / "escaped.ccad.json";
+  const std::string init_escaped = quote(CCAD_BINARY) +
+                                   " init --name \"demo\tname\" --out " + quote(escaped_path);
+  require(run(init_escaped) == 0, "init accepts escaped shell tab value");
+  require(readFile(escaped_path).find("\\t") != std::string::npos,
+          "init emits valid escaped JSON string");
 }

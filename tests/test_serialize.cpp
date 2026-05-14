@@ -1,7 +1,8 @@
 #include "ccad_core/model.hpp"
 #include "ccad_core/serialize.hpp"
+#include "test_support.hpp"
 
-#include <cassert>
+#include <stdexcept>
 #include <string>
 
 using ccad::Component;
@@ -33,17 +34,40 @@ int main() {
 
   const std::string json = ccad::dumpProjectJson(project);
 
-  assert(json.find("\"schema_version\": 1") != std::string::npos);
-  assert(json.find("\"id\": \"proj-demo\"") != std::string::npos);
-  assert(json.find("\"component_id\": \"U1\"") != std::string::npos);
+  require(json.find("\"schema_version\": 1") != std::string::npos, "schema version emitted");
+  require(json.find("\"id\": \"proj-demo\"") != std::string::npos, "project id emitted");
+  require(json.find("\"component_id\": \"U1\"") != std::string::npos, "net member emitted");
 
   const Project loaded = ccad::loadProjectJson(json);
-  assert(loaded.id == "proj-demo");
-  assert(loaded.name == "demo");
-  assert(loaded.components.size() == 1);
-  assert(loaded.components.at(0).pins.size() == 2);
-  assert(loaded.nets.size() == 1);
-  assert(loaded.constraints.size() == 1);
-  assert(ccad::dumpProjectJson(loaded) == json);
-}
+  require(loaded.id == "proj-demo", "project id round trips");
+  require(loaded.name == "demo", "project name round trips");
+  require(loaded.components.size() == 1, "component count round trips");
+  require(loaded.components.at(0).pins.size() == 2, "pin count round trips");
+  require(loaded.nets.size() == 1, "net count round trips");
+  require(loaded.constraints.size() == 1, "constraint count round trips");
+  require(ccad::dumpProjectJson(loaded) == json, "json output is deterministic");
 
+  Project escaped;
+  escaped.id = "proj-escaped";
+  escaped.name = "line\n tab\t quote\" slash\\";
+  const std::string escaped_json = ccad::dumpProjectJson(escaped);
+  require(escaped_json.find("\\n") != std::string::npos, "newline escaped");
+  require(escaped_json.find("\\t") != std::string::npos, "tab escaped");
+  require(ccad::loadProjectJson(escaped_json).name == escaped.name, "escapes round trip");
+
+  bool rejected_trailing_garbage = false;
+  try {
+    (void)ccad::loadProjectJson(json + " garbage");
+  } catch (const std::runtime_error&) {
+    rejected_trailing_garbage = true;
+  }
+  require(rejected_trailing_garbage, "trailing garbage rejected");
+
+  bool rejected_trailing_comma = false;
+  try {
+    (void)ccad::loadProjectJson("{\"schema_version\": 1,}");
+  } catch (const std::runtime_error&) {
+    rejected_trailing_comma = true;
+  }
+  require(rejected_trailing_comma, "trailing comma rejected");
+}
