@@ -10,6 +10,7 @@ Phase 1: kernel + native review GUI foundation.
 - Deterministic JSON load/dump.
 - Logical ERC diagnostics.
 - CLI: `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
+- CLI PCB authoring: `ccad pcb add-pad`, `ccad pcb add-via`, and `ccad pcb add-track`.
 - Physical board outline, layers, pads, vias, and track segments in project JSON.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
 
@@ -166,6 +167,40 @@ When to run:
 - Before opening a project for review.
 - In CI or agent workflows as a correctness gate.
 
+Add PCB primitives through the CLI:
+
+```powershell
+.\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
+.\build-qt\ccad.exe pcb add-via --file .\build-qt\canvas-demo.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
+.\build-qt\ccad.exe pcb add-track --file .\build-qt\canvas-demo.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
+```
+
+What these do:
+
+- `pcb add-pad` appends a rectangular pad to an existing board project.
+- `pcb add-via` appends a plated via with diameter and drill size.
+- `pcb add-track` appends a straight copper track segment.
+- All three rewrite the same `.ccad.json` file using deterministic JSON.
+
+When to run:
+
+- When an agent needs to mutate a board without manual JSON editing.
+- When building a small reproducible PCB test case.
+- Before launching the GUI to review generated primitive geometry.
+
+Current command guards:
+
+- The project must already have a board.
+- Primitive IDs must be unique within their primitive type.
+- Dimensions must be positive.
+- Referenced layers must exist for pads and tracks.
+- Positions and track endpoints must be inside the board outline.
+- Via drill must be less than or equal to via diameter.
+
+Current limitation:
+
+- These commands create raw primitives only. They do not run full DRC, enforce schematic parity, solve placement, or route nets automatically yet.
+
 ## GUI
 
 CCad can build an optional native Qt 6 Widgets review GUI named `ccad_gui`. It is intended for human co-working and review while the kernel and CLI remain the source of truth.
@@ -215,6 +250,9 @@ cmake -S . -B build-qt `
 cmake --build build-qt --clean-first
 ctest --test-dir build-qt --output-on-failure
 .\build-qt\ccad.exe init --name canvas-demo --width-mm 42 --height-mm 28 --out .\build-qt\canvas-demo.ccad.json
+.\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
+.\build-qt\ccad.exe pcb add-via --file .\build-qt\canvas-demo.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
+.\build-qt\ccad.exe pcb add-track --file .\build-qt\canvas-demo.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
 .\build-qt\ccad.exe inspect .\build-qt\canvas-demo.ccad.json
 .\build-qt\ccad.exe validate .\build-qt\canvas-demo.ccad.json
 $env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
