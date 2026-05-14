@@ -1,5 +1,8 @@
 #pragma once
 
+#include "ccad_core/geometry.hpp"
+
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -33,10 +36,23 @@ struct Constraint {
   std::string value;
 };
 
+struct Layer {
+  std::string id;
+  std::string name;
+  std::string kind;
+  bool visible = true;
+};
+
+struct Board {
+  Rect outline;
+  std::vector<Layer> layers;
+};
+
 struct Project {
   int schema_version = 1;
   std::string id;
   std::string name;
+  std::optional<Board> board;
   std::vector<Component> components;
   std::vector<Net> nets;
   std::vector<Constraint> constraints;

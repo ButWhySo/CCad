@@ -38,6 +38,8 @@ class JsonReader {
         project.id = readString();
       } else if (key == "name") {
         project.name = readString();
+      } else if (key == "board") {
+        project.board = readBoard();
       } else if (key == "components") {
         project.components = readComponents();
       } else if (key == "nets") {
@@ -65,6 +67,106 @@ class JsonReader {
   }
 
  private:
+  Board readBoard() {
+    Board board;
+    expect('{');
+    if (!consume('}')) {
+      while (true) {
+        const std::string key = readString();
+        expect(':');
+        if (key == "outline") {
+          board.outline = readRect();
+        } else if (key == "layers") {
+          board.layers = readLayers();
+        } else {
+          throw std::runtime_error("unknown board key: " + key);
+        }
+        if (consume('}')) {
+          break;
+        }
+        expect(',');
+        if (peek('}')) {
+          throw std::runtime_error("trailing comma in board object");
+        }
+      }
+    }
+    return board;
+  }
+
+  Rect readRect() {
+    Rect rect;
+    expect('{');
+    if (!consume('}')) {
+      while (true) {
+        const std::string key = readString();
+        expect(':');
+        if (key == "x_nm") {
+          rect.origin.x = nanometers(readInt64());
+        } else if (key == "y_nm") {
+          rect.origin.y = nanometers(readInt64());
+        } else if (key == "width_nm") {
+          rect.size.width = nanometers(readInt64());
+        } else if (key == "height_nm") {
+          rect.size.height = nanometers(readInt64());
+        } else {
+          throw std::runtime_error("unknown rect key: " + key);
+        }
+        if (consume('}')) {
+          break;
+        }
+        expect(',');
+        if (peek('}')) {
+          throw std::runtime_error("trailing comma in rect object");
+        }
+      }
+    }
+    return rect;
+  }
+
+  std::vector<Layer> readLayers() {
+    std::vector<Layer> layers;
+    expect('[');
+    if (consume(']')) {
+      return layers;
+    }
+    while (true) {
+      Layer layer;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            layer.id = readString();
+          } else if (key == "name") {
+            layer.name = readString();
+          } else if (key == "kind") {
+            layer.kind = readString();
+          } else if (key == "visible") {
+            layer.visible = readBool();
+          } else {
+            throw std::runtime_error("unknown layer key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+          if (peek('}')) {
+            throw std::runtime_error("trailing comma in layer object");
+          }
+        }
+      }
+      layers.push_back(layer);
+      if (consume(']')) {
+        return layers;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in layers array");
+      }
+    }
+  }
+
   std::vector<Component> readComponents() {
     std::vector<Component> components;
     expect('[');
@@ -272,8 +374,16 @@ class JsonReader {
   }
 
   int readInt() {
+    const std::int64_t value = readInt64();
+    if (value > 2147483647) {
+      throw std::runtime_error("integer too large");
+    }
+    return static_cast<int>(value);
+  }
+
+  std::int64_t readInt64() {
     skipWhitespace();
-    int value = 0;
+    std::int64_t value = 0;
     bool found = false;
     while (pos_ < source_.size() && std::isdigit(static_cast<unsigned char>(source_[pos_]))) {
       found = true;
@@ -284,6 +394,19 @@ class JsonReader {
       throw std::runtime_error("expected integer");
     }
     return value;
+  }
+
+  bool readBool() {
+    skipWhitespace();
+    if (source_.substr(pos_, 4) == "true") {
+      pos_ += 4;
+      return true;
+    }
+    if (source_.substr(pos_, 5) == "false") {
+      pos_ += 5;
+      return false;
+    }
+    throw std::runtime_error("expected boolean");
   }
 
   std::string readString() {
@@ -410,6 +533,29 @@ std::string dumpProjectJson(const Project& project) {
   out << "  \"schema_version\": " << project.schema_version << ",\n";
   writeField(out, 2, "id", project.id);
   writeField(out, 2, "name", project.name);
+
+  if (project.board.has_value()) {
+    const Board& board = *project.board;
+    out << "  \"board\": {\n";
+    out << "    \"outline\": {\n";
+    out << "      \"x_nm\": " << board.outline.origin.x.nanometers << ",\n";
+    out << "      \"y_nm\": " << board.outline.origin.y.nanometers << ",\n";
+    out << "      \"width_nm\": " << board.outline.size.width.nanometers << ",\n";
+    out << "      \"height_nm\": " << board.outline.size.height.nanometers << "\n";
+    out << "    },\n";
+    out << "    \"layers\": [\n";
+    for (std::size_t i = 0; i < board.layers.size(); ++i) {
+      const Layer& layer = board.layers.at(i);
+      out << "      {\n";
+      writeField(out, 8, "id", layer.id);
+      writeField(out, 8, "kind", layer.kind);
+      writeField(out, 8, "name", layer.name);
+      out << "        \"visible\": " << (layer.visible ? "true" : "false") << '\n';
+      out << "      }" << (i + 1 == board.layers.size() ? "" : ",") << '\n';
+    }
+    out << "    ]\n";
+    out << "  },\n";
+  }
 
   out << "  \"components\": [\n";
   for (std::size_t i = 0; i < project.components.size(); ++i) {

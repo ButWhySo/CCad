@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -48,6 +49,19 @@ std::string diagnosticsJson(const std::vector<ccad::Diagnostic>& diagnostics) {
   return out.str();
 }
 
+std::optional<double> parsePositiveDouble(const std::string& value) {
+  try {
+    std::size_t parsed = 0;
+    const double number = std::stod(value, &parsed);
+    if (parsed != value.size() || number <= 0.0) {
+      return std::nullopt;
+    }
+    return number;
+  } catch (const std::exception&) {
+    return std::nullopt;
+  }
+}
+
 ccad::Project loadProjectFile(const std::string& path) {
   std::ifstream input(path);
   if (!input) {
@@ -69,7 +83,13 @@ std::string reviewJson(const ccad::ProjectReview& review) {
   out << "  \"counts\": {\n";
   out << "    \"components\": " << review.component_count << ",\n";
   out << "    \"constraints\": " << review.constraint_count << ",\n";
+  out << "    \"layers\": " << review.layer_count << ",\n";
   out << "    \"nets\": " << review.net_count << "\n";
+  out << "  },\n";
+  out << "  \"board\": {\n";
+  out << "    \"has_board\": " << (review.has_board ? "true" : "false") << ",\n";
+  out << "    \"width_nm\": " << review.board_width_nm << ",\n";
+  out << "    \"height_nm\": " << review.board_height_nm << "\n";
   out << "  },\n";
   out << "  \"status\": \"" << ccad::escapeJson(review.status) << "\",\n";
   out << "  \"diagnostics\": [\n";
@@ -90,12 +110,26 @@ std::string reviewJson(const ccad::ProjectReview& review) {
 int initCommand(const std::vector<std::string>& args) {
   std::string name;
   std::filesystem::path out_path;
+  std::optional<double> width_mm;
+  std::optional<double> height_mm;
 
   for (std::size_t i = 0; i < args.size(); ++i) {
     if (args.at(i) == "--name" && i + 1 < args.size()) {
       name = args.at(++i);
     } else if (args.at(i) == "--out" && i + 1 < args.size()) {
       out_path = args.at(++i);
+    } else if (args.at(i) == "--width-mm" && i + 1 < args.size()) {
+      width_mm = parsePositiveDouble(args.at(++i));
+      if (!width_mm.has_value()) {
+        std::cerr << "--width-mm must be a positive number\n";
+        return 2;
+      }
+    } else if (args.at(i) == "--height-mm" && i + 1 < args.size()) {
+      height_mm = parsePositiveDouble(args.at(++i));
+      if (!height_mm.has_value()) {
+        std::cerr << "--height-mm must be a positive number\n";
+        return 2;
+      }
     } else {
       std::cerr << "unknown or incomplete init argument: " << args.at(i) << '\n';
       return 2;
@@ -110,6 +144,21 @@ int initCommand(const std::vector<std::string>& args) {
   ccad::Project project;
   project.id = "proj-" + name;
   project.name = name;
+  if (width_mm.has_value() != height_mm.has_value()) {
+    std::cerr << "init requires both --width-mm and --height-mm when creating a board\n";
+    return 2;
+  }
+  if (width_mm.has_value() && height_mm.has_value()) {
+    project.board = ccad::Board{
+        .outline = ccad::Rect{
+            .origin = ccad::Point{.x = ccad::nanometers(0), .y = ccad::nanometers(0)},
+            .size = ccad::Size{.width = ccad::millimeters(*width_mm),
+                                .height = ccad::millimeters(*height_mm)},
+        },
+        .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true},
+                   ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true}},
+    };
+  }
 
   std::ofstream output(out_path);
   if (!output) {
