@@ -12,6 +12,8 @@ Read `docs/research/2026-05-14-kicad-feature-map.md` before adding GUI, schemati
 
 - Work on a feature branch, then merge to `main` after verification.
 - Keep commits small and meaningful.
+- Track project position in `docs/devops/progress.md`.
+- Every commit/merge update to the user must include `Progress: Phase X/Y, Sprint N, <branch>, <status>`.
 - Write tests before production behavior changes.
 - Run CMake build and CTest before committing completion work.
 - Never add secrets, tokens, or machine-specific paths to committed files.

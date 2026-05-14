@@ -10,6 +10,8 @@ KiCad-style functionality and UI expectations are mapped in `docs/research/2026-
 
 ## Phase Roadmap
 
+Current progress counter is tracked in `docs/devops/progress.md`. As of Sprint 6, CCad is in Phase 2 / 6: physical primitives and early board authoring.
+
 1. Logical kernel: project, components, pins, nets, constraints, ERC, CLI.
 2. Physical primitives: board outline, layers, keepouts, placement regions, early DRC.
 3. Routing assistance: constrained route requests and external router boundary.
