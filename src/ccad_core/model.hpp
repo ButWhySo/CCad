@@ -43,9 +43,39 @@ struct Layer {
   bool visible = true;
 };
 
+struct Pad {
+  std::string id;
+  std::string component_id;
+  std::string pin_name;
+  std::string net_id;
+  std::string layer_id;
+  Point position;
+  Size size;
+};
+
+struct Via {
+  std::string id;
+  std::string net_id;
+  Point position;
+  Length diameter;
+  Length drill;
+};
+
+struct TrackSegment {
+  std::string id;
+  std::string net_id;
+  std::string layer_id;
+  Point start;
+  Point end;
+  Length width;
+};
+
 struct Board {
   Rect outline;
   std::vector<Layer> layers;
+  std::vector<Pad> pads;
+  std::vector<Via> vias;
+  std::vector<TrackSegment> tracks;
 };
 
 struct Project {
