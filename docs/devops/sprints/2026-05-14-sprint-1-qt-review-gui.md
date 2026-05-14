@@ -13,8 +13,8 @@ Give humans a native desktop review surface for CCad project files while keeping
 1. Add GUI spec and implementation plan.
 2. Add tested `ccad_core` project review view-model. Status: done in `f7fe5b0`.
 3. Add optional Qt 6 Widgets GUI target. Status: done in `f99a91e`.
-4. Update handover and build documentation. Status: in progress. Feature catalog added in `docs/features/implemented-features.md`.
-5. Run full verification and merge to `main`. Status: pending.
+4. Update handover and build documentation. Status: done in `cc3b692`. Feature catalog added in `docs/features/implemented-features.md`.
+5. Run full verification and merge to `main`. Status: in progress.
 
 ## Definition Of Done
 
