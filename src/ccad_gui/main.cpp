@@ -1,3 +1,4 @@
+#include "ccad_core/canvas.hpp"
 #include "ccad_core/review.hpp"
 #include "ccad_core/serialize.hpp"
 
@@ -8,13 +9,20 @@
 #include <QFileInfo>
 #include <QFrame>
 #include <QGridLayout>
+#include <QGraphicsRectItem>
+#include <QGraphicsScene>
+#include <QGraphicsTextItem>
+#include <QGraphicsView>
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMainWindow>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QPainter>
+#include <QPen>
 #include <QPushButton>
+#include <QSplitter>
 #include <QStatusBar>
 #include <QTableWidget>
 #include <QTableWidgetItem>
@@ -126,7 +134,20 @@ class ReviewWindow final : public QMainWindow {
     diagnostics_->setAlternatingRowColors(true);
     diagnostics_->verticalHeader()->setVisible(false);
     diagnostics_->setShowGrid(false);
-    layout->addWidget(diagnostics_, 1);
+    canvas_scene_ = new QGraphicsScene(this);
+    canvas_view_ = new QGraphicsView(canvas_scene_, root);
+    canvas_view_->setObjectName("boardCanvas");
+    canvas_view_->setRenderHint(QPainter::Antialiasing);
+    canvas_view_->setDragMode(QGraphicsView::ScrollHandDrag);
+    canvas_view_->setFrameShape(QFrame::NoFrame);
+    canvas_view_->setMinimumHeight(360);
+
+    auto* workspace = new QSplitter(Qt::Horizontal, root);
+    workspace->addWidget(canvas_view_);
+    workspace->addWidget(diagnostics_);
+    workspace->setStretchFactor(0, 3);
+    workspace->setStretchFactor(1, 2);
+    layout->addWidget(workspace, 1);
 
     setCentralWidget(root);
     statusBar()->showMessage("Ready");
@@ -255,10 +276,12 @@ class ReviewWindow final : public QMainWindow {
 
     try {
       const ccad::Project project = ccad::loadProjectJson(readFile(current_path_));
+      project_cache_ = project;
       renderReview(ccad::buildReview(project));
       setWindowTitle("CCad Review - " + QFileInfo(qstr(current_path_.string())).fileName());
     } catch (const std::exception& error) {
       diagnostics_->setRowCount(0);
+      renderCanvas(ccad::CanvasScene{});
       title_->setText("Load failed");
       subtitle_->setText(qstr(current_path_.string()));
       components_value_->setText("0");
@@ -309,7 +332,48 @@ class ReviewWindow final : public QMainWindow {
       diagnostics_->setItem(row, 3, makeItem(qstr(diagnostic.message)));
     }
     diagnostics_->resizeColumnsToContents();
+    renderCanvas(ccad::buildCanvasScene(project_cache_));
     statusBar()->showMessage(qstr(review.status));
+  }
+
+  void renderCanvas(const ccad::CanvasScene& scene) {
+    canvas_scene_->clear();
+    canvas_scene_->setBackgroundBrush(QBrush(QColor("#07111f")));
+    if (!scene.has_board) {
+      auto* text = canvas_scene_->addText("No board outline yet");
+      text->setDefaultTextColor(QColor("#94a3b8"));
+      text->setPos(18, 18);
+      canvas_scene_->setSceneRect(0, 0, 420, 280);
+      canvas_view_->fitInView(canvas_scene_->sceneRect(), Qt::KeepAspectRatio);
+      return;
+    }
+
+    constexpr double margin = 6.0;
+    const QRectF board_rect(margin, margin, scene.view_width_units, scene.view_height_units);
+    canvas_scene_->setSceneRect(0, 0, scene.view_width_units + (2.0 * margin),
+                                scene.view_height_units + (2.0 * margin));
+
+    QPen grid_pen(QColor("#17243a"));
+    grid_pen.setWidthF(0.03);
+    for (double x = margin; x <= margin + scene.view_width_units; x += 5.0) {
+      canvas_scene_->addLine(x, margin, x, margin + scene.view_height_units, grid_pen);
+    }
+    for (double y = margin; y <= margin + scene.view_height_units; y += 5.0) {
+      canvas_scene_->addLine(margin, y, margin + scene.view_width_units, y, grid_pen);
+    }
+
+    QPen outline_pen(QColor("#38bdf8"));
+    outline_pen.setWidthF(0.18);
+    auto* board = canvas_scene_->addRect(board_rect, outline_pen, QBrush(QColor("#0f1b2d")));
+    board->setToolTip("Board outline");
+
+    auto* label = canvas_scene_->addText(QString::number(scene.view_width_units, 'f', 2) + " mm x " +
+                                         QString::number(scene.view_height_units, 'f', 2) + " mm");
+    label->setDefaultTextColor(QColor("#cbd5e1"));
+    label->setScale(0.12);
+    label->setPos(margin, margin + scene.view_height_units + 1.0);
+
+    canvas_view_->fitInView(canvas_scene_->sceneRect(), Qt::KeepAspectRatio);
   }
 
   void setStatusChip(const QString& text, const QString& color) {
@@ -325,8 +389,11 @@ class ReviewWindow final : public QMainWindow {
   QLabel* nets_value_ = nullptr;
   QLabel* layers_value_ = nullptr;
   QLabel* diagnostics_value_ = nullptr;
+  QGraphicsScene* canvas_scene_ = nullptr;
+  QGraphicsView* canvas_view_ = nullptr;
   QTableWidget* diagnostics_ = nullptr;
   std::filesystem::path current_path_;
+  ccad::Project project_cache_;
 };
 
 }  // namespace
