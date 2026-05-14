@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(ccad_core
+  src/ccad_core/canvas.cpp
   src/ccad_core/model.cpp
   src/ccad_core/diff.cpp
   src/ccad_core/erc.cpp
@@ -137,3 +138,12 @@ if(MINGW)
   target_link_options(ccad_geometry_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME geometry COMMAND ccad_geometry_tests)
+
+add_executable(ccad_canvas_tests
+  tests/test_canvas.cpp
+)
+target_link_libraries(ccad_canvas_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_canvas_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME canvas COMMAND ccad_canvas_tests)
