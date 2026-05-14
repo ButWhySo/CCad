@@ -11,6 +11,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(ccad_core
   src/ccad_core/model.cpp
+  src/ccad_core/diff.cpp
   src/ccad_core/erc.cpp
   src/ccad_core/review.cpp
   src/ccad_core/serialize.cpp
@@ -105,3 +106,12 @@ if(MINGW)
   target_link_options(ccad_review_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME review COMMAND ccad_review_tests)
+
+add_executable(ccad_diff_tests
+  tests/test_diff.cpp
+)
+target_link_libraries(ccad_diff_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_diff_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME diff COMMAND ccad_diff_tests)
