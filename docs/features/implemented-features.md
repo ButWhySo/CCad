@@ -226,20 +226,29 @@ What it does:
 Build with Qt:
 
 ```bash
-cmake -S . -B build -DCCAD_BUILD_GUI=ON
-cmake --build build --target ccad_gui
+cmake -S . -B build-qt -DCCAD_BUILD_GUI=ON -DCMAKE_PREFIX_PATH=C:\Qt\6.11.1\mingw_64
+cmake --build build-qt --target ccad_gui
 ```
 
 Run:
 
 ```bash
-build/ccad_gui
+build-qt/ccad_gui
 ```
 
 On Windows:
 
 ```powershell
-.\build\ccad_gui.exe
+$env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
+.\build-qt\ccad_gui.exe
+```
+
+Open a project directly:
+
+```powershell
+$env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
+.\build-qt\ccad.exe init --name gui-demo --out .\build-qt\gui-demo.ccad.json
+.\build-qt\ccad_gui.exe .\build-qt\gui-demo.ccad.json
 ```
 
 If Qt is not installed:

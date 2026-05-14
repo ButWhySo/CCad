@@ -53,8 +53,15 @@ CCad can build an optional native Qt 6 Widgets review GUI named `ccad_gui`. It i
 If Qt 6 Widgets is installed, CMake builds it automatically:
 
 ```bash
-cmake -S . -B build -DCCAD_BUILD_GUI=ON
-cmake --build build
+cmake -S . -B build-qt -DCCAD_BUILD_GUI=ON -DCMAKE_PREFIX_PATH=C:\Qt\6.11.1\mingw_64
+cmake --build build-qt
 ```
 
 If Qt is not installed, core, CLI, and tests still build.
+
+On Windows, add Qt DLLs to `PATH` before launching the GUI:
+
+```powershell
+$env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
+.\build-qt\ccad_gui.exe
+```
