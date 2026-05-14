@@ -24,6 +24,13 @@ if (-not (Test-Path $Gui)) {
   throw "Missing GUI executable: $Gui"
 }
 
+function Invoke-Ccad {
+  & $Ccad @args
+  if ($LASTEXITCODE -ne 0) {
+    throw "ccad command failed ($LASTEXITCODE): $args"
+  }
+}
+
 $Project = Join-Path $DemoDir "$Name.ccad.json"
 $Inspect = Join-Path $DemoDir "$Name.inspect.json"
 $Validate = Join-Path $DemoDir "$Name.validate.json"
@@ -33,13 +40,13 @@ $ImportedFootprint = Join-Path $DemoDir "$Name-R_0805_2012Metric.ccad-footprint.
 $Timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $Screenshot = Join-Path $ScreenshotDir "$Name-$Timestamp.png"
 
-& $Ccad init --name $Name --width-mm 42 --height-mm 28 --out $Project
-& $Ccad pcb add-pad --file $Project --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
-& $Ccad pcb add-via --file $Project --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
-& $Ccad pcb add-track --file $Project --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
-& $Ccad inspect $Project | Set-Content -Encoding UTF8 $Inspect
-& $Ccad validate $Project | Set-Content -Encoding UTF8 $Validate
-& $Ccad drc $Project | Set-Content -Encoding UTF8 $Drc
+Invoke-Ccad init --name $Name --width-mm 42 --height-mm 28 --out $Project
+Invoke-Ccad pcb add-pad --file $Project --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
+Invoke-Ccad pcb add-via --file $Project --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
+Invoke-Ccad pcb add-track --file $Project --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
+Invoke-Ccad inspect $Project | Set-Content -Encoding UTF8 $Inspect
+Invoke-Ccad validate $Project | Set-Content -Encoding UTF8 $Validate
+Invoke-Ccad drc $Project | Set-Content -Encoding UTF8 $Drc
 
 @'
 (footprint "R_0805_2012Metric"
@@ -49,7 +56,7 @@ $Screenshot = Join-Path $ScreenshotDir "$Name-$Timestamp.png"
   (pad "2" smd roundrect (at 0.95 0 0) (size 1.0 1.45) (layers "F.Cu" "F.Paste" "F.Mask"))
 )
 '@ | Set-Content -Encoding UTF8 $KiCadFootprint
-& $Ccad lib import-footprint --in $KiCadFootprint --out $ImportedFootprint
+Invoke-Ccad lib import-footprint --in $KiCadFootprint --out $ImportedFootprint
 
 $Process = Start-Process -FilePath $Gui -ArgumentList $Project -PassThru
 try {

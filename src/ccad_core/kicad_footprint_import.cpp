@@ -22,6 +22,7 @@ class SExprReader {
   explicit SExprReader(std::string_view source) : source_(source) {}
 
   SExpr readRoot() {
+    skipUtf8Bom();
     SExpr root = readExpr();
     skipWhitespace();
     if (pos_ != source_.size()) {
@@ -46,6 +47,14 @@ class SExprReader {
       } else {
         expr.children.push_back(SExpr{.value = readAtom(), .children = {}});
       }
+    }
+  }
+
+  void skipUtf8Bom() {
+    if (source_.size() >= 3 && static_cast<unsigned char>(source_.at(0)) == 0xEF &&
+        static_cast<unsigned char>(source_.at(1)) == 0xBB &&
+        static_cast<unsigned char>(source_.at(2)) == 0xBF) {
+      pos_ = 3;
     }
   }
 

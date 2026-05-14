@@ -36,6 +36,10 @@ int main() {
           "footprint json includes pad width");
   require(ccad::dumpFootprintJson(footprint) == json, "footprint json deterministic");
 
+  const std::string bom_source = std::string("\xEF\xBB\xBF") + source;
+  require(ccad::importKiCadFootprint(bom_source).name == "R_0805_2012Metric",
+          "importer accepts utf8 bom");
+
   bool rejected_root = false;
   try {
     (void)ccad::importKiCadFootprint("(symbol \"R\")");
