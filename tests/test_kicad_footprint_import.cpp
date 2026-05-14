@@ -36,6 +36,15 @@ int main() {
           "footprint json includes pad width");
   require(ccad::dumpFootprintJson(footprint) == json, "footprint json deterministic");
 
+  const ccad::Footprint loaded = ccad::loadFootprintJson(json);
+  require(loaded.name == footprint.name, "footprint json loads name");
+  require(loaded.pads.size() == 2, "footprint json loads pads");
+  require(loaded.pads.at(1).number == "2", "footprint json loads pad number");
+  require(loaded.pads.at(1).position.x.nanometers == 950000, "footprint json loads pad x");
+  require(loaded.pads.at(1).size.height.nanometers == 1450000,
+          "footprint json loads pad height");
+  require(loaded.pads.at(1).layers.at(2) == "F.Mask", "footprint json loads layers");
+
   const std::string bom_source = std::string("\xEF\xBB\xBF") + source;
   require(ccad::importKiCadFootprint(bom_source).name == "R_0805_2012Metric",
           "importer accepts utf8 bom");

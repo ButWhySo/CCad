@@ -210,6 +210,30 @@ Current limitation:
 - The importer handles a narrow pad subset: number, type, shape, position, size, simple drill, and layers.
 - Advanced KiCad footprint constructs are skipped safely for now.
 
+Place an imported footprint on a board:
+
+```powershell
+.\build-qt\ccad.exe pcb place-footprint --file .\build-qt\canvas-demo.ccad.json --footprint .\build-qt\R_0805_2012Metric.ccad-footprint.json --component R1 --at-x-mm 16 --at-y-mm 14 --layer F.Cu
+```
+
+What it does:
+
+- Loads CCad footprint JSON.
+- Places each footprint pad onto the board as a board pad.
+- Generates stable pad IDs such as `R1.1` and `R1.2`.
+
+When to run:
+
+- After importing a KiCad footprint.
+- When generating board geometry from reusable library data.
+- Before GUI review of placed package pads.
+
+Current limitation:
+
+- Placement is translation-only.
+- Nets are left empty until schematic-footprint mapping exists.
+- Rotation, flipping, courtyard checks, and schematic parity are later work.
+
 Add PCB primitives through the CLI:
 
 ```powershell
@@ -315,6 +339,7 @@ What it does:
 - Adds a pad, via, and track through the CLI.
 - Writes inspect, validate, and DRC JSON reports.
 - Writes a sample KiCad `.kicad_mod` file and imports it to CCad footprint JSON.
+- Places the imported footprint onto the demo board.
 - Launches the Qt GUI and saves a screenshot under `artifacts/screenshots/`.
 
 When to run:

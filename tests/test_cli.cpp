@@ -237,6 +237,28 @@ int main() {
   require(footprint_output.find("\"width_nm\": 1000000") != std::string::npos,
           "lib import-footprint writes pad width");
 
+  const std::string place_footprint_command =
+      quote(CCAD_BINARY) + " pcb place-footprint --file " + quote(board_project_path) +
+      " --footprint " + quote(footprint_out_path) +
+      " --component R1 --at-x-mm 10 --at-y-mm 12 --layer F.Cu";
+  require(run(place_footprint_command) == 0, "pcb place-footprint exits zero");
+  const std::string placed_footprint_project = readFile(board_project_path);
+  require(placed_footprint_project.find("\"id\": \"R1.1\"") != std::string::npos,
+          "pcb place-footprint writes first pad id");
+  require(placed_footprint_project.find("\"component_id\": \"R1\"") != std::string::npos,
+          "pcb place-footprint writes component id");
+  require(placed_footprint_project.find("\"pin_name\": \"1\"") != std::string::npos,
+          "pcb place-footprint writes pin name");
+  require(placed_footprint_project.find("\"x_nm\": 9050000") != std::string::npos,
+          "pcb place-footprint translates pad x");
+  require(run(place_footprint_command) != 0, "pcb place-footprint rejects duplicate pad ids");
+
+  const std::string bad_place_layer_command =
+      quote(CCAD_BINARY) + " pcb place-footprint --file " + quote(board_project_path) +
+      " --footprint " + quote(footprint_out_path) +
+      " --component R2 --at-x-mm 10 --at-y-mm 12 --layer Inner.Cu";
+  require(run(bad_place_layer_command) != 0, "pcb place-footprint rejects unknown layer");
+
   const std::filesystem::path diff_after_path = temp / "diff-after.ccad.json";
   std::ofstream diff_after(diff_after_path);
   diff_after << "{\n"
