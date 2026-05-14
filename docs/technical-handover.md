@@ -27,6 +27,7 @@ The initial codebase is C++20:
 - JSON output is sorted and stable for diffs.
 - ERC returns typed diagnostics for agent consumption.
 - CLI commands are intentionally small and deterministic.
+- `ccad_gui` is optional and builds only when Qt 6 Widgets is available.
 
 ## Development Commands
 
@@ -34,6 +35,12 @@ The initial codebase is C++20:
 cmake -S . -B build -DCCAD_WARNINGS_AS_ERRORS=ON
 cmake --build build
 ctest --test-dir build --output-on-failure
+```
+
+To force a non-GUI build:
+
+```bash
+cmake -S . -B build -DCCAD_BUILD_GUI=OFF
 ```
 
 ## CI/CD

@@ -11,8 +11,8 @@ Give humans a native desktop review surface for CCad project files while keeping
 ## Backlog
 
 1. Add GUI spec and implementation plan.
-2. Add tested `ccad_core` project review view-model.
-3. Add optional Qt 6 Widgets GUI target.
+2. Add tested `ccad_core` project review view-model. Status: done in `f7fe5b0`.
+3. Add optional Qt 6 Widgets GUI target. Status: in progress.
 4. Update handover and build documentation.
 5. Run full verification and merge to `main`.
 
@@ -41,4 +41,3 @@ cmake -S . -B build -DCCAD_WARNINGS_AS_ERRORS=ON
 cmake --build build --clean-first
 ctest --test-dir build --output-on-failure
 ```
-
