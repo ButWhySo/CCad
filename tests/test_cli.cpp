@@ -77,6 +77,40 @@ int main() {
   require(invalid_output.find("\"code\": \"UNKNOWN_COMPONENT\"") != std::string::npos,
           "invalid validate reports unknown component");
 
+  const std::filesystem::path inspect_path = temp / "inspect.json";
+  const std::string inspect_command = quote(CCAD_BINARY) + " inspect " + quote(project_path) +
+                                      " > " + quote(inspect_path);
+  require(run(inspect_command) == 0, "inspect exits zero");
+  const std::string inspect_output = readFile(inspect_path);
+  require(inspect_output.find("\"project\"") != std::string::npos, "inspect has project object");
+  require(inspect_output.find("\"components\": 0") != std::string::npos,
+          "inspect has component count");
+  require(inspect_output.find("\"status\": \"Warnings: 1\"") != std::string::npos,
+          "inspect has review status");
+
+  const std::filesystem::path diff_after_path = temp / "diff-after.ccad.json";
+  std::ofstream diff_after(diff_after_path);
+  diff_after << "{\n"
+             << "  \"schema_version\": 1,\n"
+             << "  \"id\": \"proj-diff\",\n"
+             << "  \"name\": \"diff\",\n"
+             << "  \"components\": [\n"
+             << "    {\"id\": \"U1\", \"part\": \"MCU\", \"pins\": []}\n"
+             << "  ],\n"
+             << "  \"constraints\": [],\n"
+             << "  \"nets\": []\n"
+             << "}\n";
+  diff_after.close();
+  const std::filesystem::path diff_output_path = temp / "diff.json";
+  const std::string diff_command = quote(CCAD_BINARY) + " diff " + quote(project_path) + " " +
+                                   quote(diff_after_path) + " > " + quote(diff_output_path);
+  require(run(diff_command) == 0, "diff exits zero");
+  const std::string diff_output = readFile(diff_output_path);
+  require(diff_output.find("\"added\": 1") != std::string::npos, "diff has added count");
+  require(diff_output.find("\"object_type\": \"component\"") != std::string::npos,
+          "diff has object type");
+  require(diff_output.find("\"object_id\": \"U1\"") != std::string::npos, "diff has object id");
+
   const std::filesystem::path escaped_path = temp / "escaped.ccad.json";
   const std::string init_escaped = quote(CCAD_BINARY) +
                                    " init --name \"demo\tname\" --out " + quote(escaped_path);
