@@ -49,6 +49,17 @@ int main() {
   const std::string project_json = readFile(project_path);
   require(project_json.find("\"name\": \"demo\"") != std::string::npos, "init writes name");
 
+  const std::filesystem::path help_json_path = temp / "help.json";
+  const std::string help_json_command = quote(CCAD_BINARY) + " help --format json > " +
+                                        quote(help_json_path);
+  require(run(help_json_command) == 0, "help json exits zero");
+  const std::string help_json = readFile(help_json_path);
+  require(help_json.find("\"commands\"") != std::string::npos, "help json has commands");
+  require(help_json.find("\"name\": \"pcb place-footprint\"") != std::string::npos,
+          "help json describes footprint placement");
+  require(help_json.find("--rotation-deg") != std::string::npos,
+          "help json exposes rotation option");
+
   const std::filesystem::path board_project_path = temp / "board.ccad.json";
   const std::string board_init_command = quote(CCAD_BINARY) +
                                          " init --name board --width-mm 42 --height-mm 28 --out " +

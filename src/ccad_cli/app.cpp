@@ -3,30 +3,100 @@
 #include "ccad_cli/lib_commands.hpp"
 #include "ccad_cli/pcb_commands.hpp"
 #include "ccad_cli/project_commands.hpp"
+#include "ccad_core/json.hpp"
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
 namespace ccad_cli {
 namespace {
 
+struct CommandHelp {
+  std::string name;
+  std::string summary;
+  std::string usage;
+};
+
+const std::vector<CommandHelp>& commandHelp() {
+  static const std::vector<CommandHelp> commands{
+      CommandHelp{.name = "init",
+                  .summary = "Create a CCad project file",
+                  .usage = "ccad init --name <name> --out <path> [--width-mm <n> --height-mm <n>]"},
+      CommandHelp{.name = "validate",
+                  .summary = "Run logical ERC diagnostics and emit JSON",
+                  .usage = "ccad validate <path>"},
+      CommandHelp{.name = "drc",
+                  .summary = "Run physical board diagnostics and emit JSON",
+                  .usage = "ccad drc <path>"},
+      CommandHelp{.name = "inspect",
+                  .summary = "Emit human-review project summary JSON",
+                  .usage = "ccad inspect <path>"},
+      CommandHelp{.name = "diff",
+                  .summary = "Emit machine-readable diff JSON for two project files",
+                  .usage = "ccad diff <before> <after>"},
+      CommandHelp{.name = "lib import-footprint",
+                  .summary = "Import one KiCad .kicad_mod footprint as CCad footprint JSON",
+                  .usage = "ccad lib import-footprint --in <path.kicad_mod> --out <path.json>"},
+      CommandHelp{.name = "pcb place-footprint",
+                  .summary = "Place imported footprint pads onto a board",
+                  .usage = "ccad pcb place-footprint --file <path> --footprint <path.json> "
+                           "--component <id> --at-x-mm <n> --at-y-mm <n> --layer <id> "
+                           "[--rotation-deg <n>]"},
+      CommandHelp{.name = "pcb add-pad",
+                  .summary = "Append one rectangular pad to a board project",
+                  .usage = "ccad pcb add-pad --file <path> --id <id> --component <id> "
+                           "--pin <name> --net <id> --layer <id> --x-mm <n> --y-mm <n> "
+                           "--width-mm <n> --height-mm <n>"},
+      CommandHelp{.name = "pcb add-via",
+                  .summary = "Append one via to a board project",
+                  .usage = "ccad pcb add-via --file <path> --id <id> --net <id> --x-mm <n> "
+                           "--y-mm <n> --diameter-mm <n> --drill-mm <n>"},
+      CommandHelp{.name = "pcb add-track",
+                  .summary = "Append one straight track segment to a board project",
+                  .usage = "ccad pcb add-track --file <path> --id <id> --net <id> --layer <id> "
+                           "--start-x-mm <n> --start-y-mm <n> --end-x-mm <n> "
+                           "--end-y-mm <n> --width-mm <n>"},
+  };
+  return commands;
+}
+
 void printUsage(std::ostream& out) {
   out << "Usage:\n"
-      << "  ccad init --name <name> --out <path> [--width-mm <n> --height-mm <n>]\n"
-      << "  ccad validate <path>\n"
-      << "  ccad drc <path>\n"
-      << "  ccad inspect <path>\n"
-      << "  ccad diff <before> <after>\n"
-      << "  ccad lib import-footprint --in <path.kicad_mod> --out <path.json>\n"
-      << "  ccad pcb place-footprint --file <path> --footprint <path.json> --component <id> "
-         "--at-x-mm <n> --at-y-mm <n> --layer <id> [--rotation-deg <n>]\n"
-      << "  ccad pcb add-pad --file <path> --id <id> --component <id> --pin <name> "
-         "--net <id> --layer <id> --x-mm <n> --y-mm <n> --width-mm <n> --height-mm <n>\n"
-      << "  ccad pcb add-via --file <path> --id <id> --net <id> --x-mm <n> --y-mm <n> "
-         "--diameter-mm <n> --drill-mm <n>\n"
-      << "  ccad pcb add-track --file <path> --id <id> --net <id> --layer <id> "
-         "--start-x-mm <n> --start-y-mm <n> --end-x-mm <n> --end-y-mm <n> --width-mm <n>\n";
+      << "  ccad help [--format json]\n";
+  for (const CommandHelp& command : commandHelp()) {
+    out << "  " << command.usage << '\n';
+  }
+}
+
+std::string helpJson() {
+  std::ostringstream out;
+  out << "{\n  \"commands\": [\n";
+  const std::vector<CommandHelp>& commands = commandHelp();
+  for (std::size_t i = 0; i < commands.size(); ++i) {
+    const CommandHelp& command = commands.at(i);
+    out << "    {\n"
+        << "      \"name\": \"" << ccad::escapeJson(command.name) << "\",\n"
+        << "      \"summary\": \"" << ccad::escapeJson(command.summary) << "\",\n"
+        << "      \"usage\": \"" << ccad::escapeJson(command.usage) << "\"\n"
+        << "    }" << (i + 1 == commands.size() ? "" : ",") << '\n';
+  }
+  out << "  ]\n}\n";
+  return out.str();
+}
+
+int helpCommand(const std::vector<std::string>& args) {
+  if (args.empty()) {
+    printUsage(std::cout);
+    return 0;
+  }
+  if (args.size() == 2 && args.at(0) == "--format" && args.at(1) == "json") {
+    std::cout << helpJson();
+    return 0;
+  }
+  std::cerr << "help supports only --format json\n";
+  return 2;
 }
 
 }  // namespace
@@ -43,6 +113,9 @@ int run(int argc, char** argv) {
   }
 
   const std::string command = argv[1];
+  if (command == "help") {
+    return helpCommand(args);
+  }
   if (command == "init") {
     return initCommand(args);
   }

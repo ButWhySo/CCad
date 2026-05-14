@@ -148,6 +148,7 @@ Files:
 What it does:
 
 - Creates empty CCad project files.
+- Emits deterministic command discovery JSON with `ccad help --format json`.
 - Creates project files with board outline when given `--width-mm` and `--height-mm`.
 - Adds PCB pads, vias, and track segments to existing board projects.
 - Runs physical DRC diagnostics with `ccad drc`.
@@ -172,6 +173,7 @@ Use:
 
 ```bash
 build/ccad init --name demo --out demo.ccad.json
+build/ccad help --format json
 build/ccad validate demo.ccad.json
 ```
 
@@ -179,6 +181,7 @@ On Windows PowerShell:
 
 ```powershell
 .\build\ccad.exe init --name demo --out demo.ccad.json
+.\build\ccad.exe help --format json
 .\build\ccad.exe init --name board --width-mm 42 --height-mm 28 --out board.ccad.json
 .\build\ccad.exe validate demo.ccad.json
 .\build\ccad.exe inspect demo.ccad.json
@@ -198,6 +201,12 @@ PCB authoring command behavior:
 - `pcb add-track` writes one straight track segment into `board.tracks`.
 - Commands mutate the file passed through `--file`.
 - Commands reject missing boards, duplicate primitive IDs, invalid numeric dimensions, unknown layers, out-of-board positions, and via drill larger than via diameter.
+
+Help command behavior:
+
+- `help --format json` emits a deterministic `commands` array.
+- Each command entry includes `name`, `summary`, and `usage`.
+- This is the preferred command discovery surface for agents.
 
 Current limitation:
 
