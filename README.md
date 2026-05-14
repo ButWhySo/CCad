@@ -283,7 +283,7 @@ $env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
 Generate demo artifacts and a GUI screenshot:
 
 ```powershell
-.\scripts\run_sprint_demo.ps1 -Name sprint7-drc-demo
+powershell -ExecutionPolicy Bypass -File .\scripts\run_sprint_demo.ps1 -Name sprint7-drc-demo
 ```
 
 What it does:

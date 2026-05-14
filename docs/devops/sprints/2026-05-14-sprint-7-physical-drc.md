@@ -34,7 +34,7 @@ Progress: Phase 2/6, Sprint 7, `sprint-7-physical-drc`, planning.
 Run:
 
 ```powershell
-.\scripts\run_sprint_demo.ps1 -Name sprint7-drc-demo
+powershell -ExecutionPolicy Bypass -File .\scripts\run_sprint_demo.ps1 -Name sprint7-drc-demo
 ```
 
 Outputs:
