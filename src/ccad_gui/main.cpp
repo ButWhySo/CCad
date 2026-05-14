@@ -109,7 +109,7 @@ class ReviewWindow final : public QMainWindow {
     cards_layout->setVerticalSpacing(12);
     cards_layout->addWidget(makeCard(cards, "Components", &components_value_), 0, 0);
     cards_layout->addWidget(makeCard(cards, "Nets", &nets_value_), 0, 1);
-    cards_layout->addWidget(makeCard(cards, "Constraints", &constraints_value_), 0, 2);
+    cards_layout->addWidget(makeCard(cards, "Layers", &layers_value_), 0, 2);
     cards_layout->addWidget(makeCard(cards, "Diagnostics", &diagnostics_value_), 0, 3);
     layout->addWidget(cards);
 
@@ -263,7 +263,7 @@ class ReviewWindow final : public QMainWindow {
       subtitle_->setText(qstr(current_path_.string()));
       components_value_->setText("0");
       nets_value_->setText("0");
-      constraints_value_->setText("0");
+      layers_value_->setText("0");
       diagnostics_value_->setText("0");
       setStatusChip("Load failed", "#dc2626");
       statusBar()->showMessage(qstr(error.what()));
@@ -273,10 +273,15 @@ class ReviewWindow final : public QMainWindow {
 
   void renderReview(const ccad::ProjectReview& review) {
     title_->setText(qstr(review.project_name));
-    subtitle_->setText("Project ID: " + qstr(review.project_id));
+    QString board_text = "No board";
+    if (review.has_board) {
+      board_text = "Board: " + QString::number(review.board_width_nm / 1000000.0, 'f', 2) +
+                   " mm x " + QString::number(review.board_height_nm / 1000000.0, 'f', 2) + " mm";
+    }
+    subtitle_->setText("Project ID: " + qstr(review.project_id) + "   " + board_text);
     components_value_->setText(QString::number(review.component_count));
     nets_value_->setText(QString::number(review.net_count));
-    constraints_value_->setText(QString::number(review.constraint_count));
+    layers_value_->setText(QString::number(review.layer_count));
     diagnostics_value_->setText(QString::number(review.diagnostics.size()));
 
     if (review.error_count > 0) {
@@ -318,7 +323,7 @@ class ReviewWindow final : public QMainWindow {
   QLabel* status_chip_ = nullptr;
   QLabel* components_value_ = nullptr;
   QLabel* nets_value_ = nullptr;
-  QLabel* constraints_value_ = nullptr;
+  QLabel* layers_value_ = nullptr;
   QLabel* diagnostics_value_ = nullptr;
   QTableWidget* diagnostics_ = nullptr;
   std::filesystem::path current_path_;
