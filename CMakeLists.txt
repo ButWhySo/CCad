@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 project(CCad VERSION 0.1.0 LANGUAGES CXX)
 
 option(CCAD_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
+option(CCAD_BUILD_GUI "Build Qt review GUI when Qt 6 Widgets is available" ON)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -11,6 +12,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_library(ccad_core
   src/ccad_core/model.cpp
   src/ccad_core/erc.cpp
+  src/ccad_core/review.cpp
   src/ccad_core/serialize.cpp
 )
 
@@ -64,7 +66,42 @@ add_executable(ccad_cli_tests
 if(MINGW)
   target_link_options(ccad_cli_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
+
+if(CCAD_BUILD_GUI)
+  find_package(Qt6 QUIET COMPONENTS Widgets)
+  if(Qt6Widgets_FOUND)
+    add_executable(ccad_gui
+      src/ccad_gui/main.cpp
+    )
+    target_link_libraries(ccad_gui PRIVATE ccad_core Qt6::Widgets)
+    if(MINGW)
+      target_link_options(ccad_gui PRIVATE -static -static-libgcc -static-libstdc++)
+    endif()
+    if(MSVC)
+      target_compile_options(ccad_gui PRIVATE /W4)
+      if(CCAD_WARNINGS_AS_ERRORS)
+        target_compile_options(ccad_gui PRIVATE /WX)
+      endif()
+    else()
+      target_compile_options(ccad_gui PRIVATE -Wall -Wextra -Wpedantic)
+      if(CCAD_WARNINGS_AS_ERRORS)
+        target_compile_options(ccad_gui PRIVATE -Werror)
+      endif()
+    endif()
+  else()
+    message(STATUS "Qt6 Widgets not found; skipping ccad_gui target")
+  endif()
+endif()
 target_compile_definitions(ccad_cli_tests PRIVATE
   CCAD_BINARY="$<TARGET_FILE:ccad>"
 )
 add_test(NAME cli COMMAND ccad_cli_tests)
+
+add_executable(ccad_review_tests
+  tests/test_review.cpp
+)
+target_link_libraries(ccad_review_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_review_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME review COMMAND ccad_review_tests)

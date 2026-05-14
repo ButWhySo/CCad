@@ -19,8 +19,11 @@ Read `docs/research/2026-05-14-llm-native-pcb-tool-report.md` before making arch
 
 - `src/ccad_core/`: native C++ kernel library.
 - `src/ccad_cli/`: native command-line surface.
+- `src/ccad_gui/`: optional Qt 6 native review GUI. GUI code must stay thin and call `ccad_core`.
 - `tests/`: C++ behavior tests run through CTest.
 - `docs/technical-handover.md`: detailed project notes.
+- `docs/devops/sprints/`: sprint goals, backlog, risks, and Definition of Done.
+- `docs/features/implemented-features.md`: feature inventory, usage, and test commands.
 - `docs/superpowers/`: design specs and implementation plans.
 
 ## Branching

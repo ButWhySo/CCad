@@ -15,6 +15,10 @@ The research basis for this architecture is documented in `docs/research/2026-05
 5. Interop: KiCad, Circuit JSON, DSN/SES, manufacturing exports.
 6. Agent protocol: JSON-RPC/MCP over the same transaction bus, with audit logs and permission gates.
 
+The first GUI phase is specified in `docs/superpowers/specs/2026-05-14-qt-review-gui-design.md`. It uses Qt 6 Widgets when available and keeps all review logic in `ccad_core`.
+
+Sprint tracking starts in `docs/devops/sprints/2026-05-14-sprint-1-qt-review-gui.md`.
+
 ## Current Architecture
 
 The initial codebase is C++20:
@@ -23,6 +27,7 @@ The initial codebase is C++20:
 - JSON output is sorted and stable for diffs.
 - ERC returns typed diagnostics for agent consumption.
 - CLI commands are intentionally small and deterministic.
+- `ccad_gui` is optional and builds only when Qt 6 Widgets is available.
 
 ## Development Commands
 
@@ -30,6 +35,12 @@ The initial codebase is C++20:
 cmake -S . -B build -DCCAD_WARNINGS_AS_ERRORS=ON
 cmake --build build
 ctest --test-dir build --output-on-failure
+```
+
+To force a non-GUI build:
+
+```bash
+cmake -S . -B build -DCCAD_BUILD_GUI=OFF
 ```
 
 ## CI/CD
