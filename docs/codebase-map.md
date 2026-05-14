@@ -6,7 +6,7 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 
 - Phase: 2 / 6
 - Last merged sprint: Sprint 12, machine-readable CLI help
-- Next sprint: Sprint 13 planning
+- Current sprint: Sprint 13, footprint net mapping
 - Active branch pattern: `sprint-<n>-<topic>`
 - Current source of truth for phase/sprint counter: `docs/devops/progress.md`
 - Main product direction: native C++ PCB kernel and machine-callable CLI first; Qt GUI is a human review/editor client, not the data owner.
@@ -438,7 +438,8 @@ Placement rule:
 
 - `pcb place-footprint` maps `FootprintPad` to placed `Pad`.
 - Pad ID format: `<component>.<pad-number>`.
-- Current net mapping is empty string until schematic-footprint mapping exists.
+- `net_id` is copied from the first logical `Net` member matching the placed component ID and footprint pad number.
+- If no logical net member matches, `net_id` remains empty for backward compatibility.
 
 ### `src/ccad_cli/lib_commands.hpp/.cpp`
 

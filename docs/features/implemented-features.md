@@ -231,6 +231,7 @@ Footprint placement behavior:
 
 - `pcb place-footprint` loads CCad footprint JSON and creates board pads.
 - Generated pad IDs are `<component>.<pad-number>`.
+- Generated pad `net_id` values inherit existing logical net membership when a project net contains the placed component ID and matching footprint pad number.
 - Optional `--rotation-deg` rotates footprint-local pad centers and pad orientation.
 - Command rejects missing board, unknown layer, duplicate generated pad IDs, empty footprints, and out-of-board pad positions.
 
