@@ -17,7 +17,11 @@ std::string quote(const std::filesystem::path& path) {
 }
 
 int run(const std::string& command) {
+#ifdef _WIN32
   const std::string shell_command = "cmd /C \"" + command + "\"";
+#else
+  const std::string shell_command = command;
+#endif
   return std::system(shell_command.c_str());
 }
 
