@@ -27,6 +27,8 @@ void printUsage(std::ostream& out) {
       << "  ccad inspect <path>\n"
       << "  ccad diff <before> <after>\n"
       << "  ccad lib import-footprint --in <path.kicad_mod> --out <path.json>\n"
+      << "  ccad pcb place-footprint --file <path> --footprint <path.json> --component <id> "
+         "--at-x-mm <n> --at-y-mm <n> --layer <id>\n"
       << "  ccad pcb add-pad --file <path> --id <id> --component <id> --pin <name> "
          "--net <id> --layer <id> --x-mm <n> --y-mm <n> --width-mm <n> --height-mm <n>\n"
       << "  ccad pcb add-via --file <path> --id <id> --net <id> --x-mm <n> --y-mm <n> "
@@ -181,6 +183,16 @@ void requireUniquePadId(const ccad::Board& board, const std::string& id) {
       throw std::runtime_error("duplicate pad id: " + id);
     }
   }
+}
+
+ccad::Footprint loadFootprintFile(const std::string& path) {
+  std::ifstream input(path);
+  if (!input) {
+    throw std::runtime_error("failed to open footprint file: " + path);
+  }
+  std::ostringstream buffer;
+  buffer << input.rdbuf();
+  return ccad::loadFootprintJson(buffer.str());
 }
 
 void requireUniqueViaId(const ccad::Board& board, const std::string& id) {
@@ -465,6 +477,58 @@ int pcbCommand(const std::vector<std::string>& args) {
           .end = end,
           .width = requirePositiveMillimeters(options, "--width-mm"),
       });
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "place-footprint") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--footprint", "--component", "--at-x-mm", "--at-y-mm",
+                                 "--layer"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const ccad::Footprint footprint = loadFootprintFile(requireOption(options, "--footprint"));
+      if (footprint.pads.empty()) {
+        throw std::runtime_error("footprint has no pads");
+      }
+      const std::string component_id = requireOption(options, "--component");
+      const std::string layer_id = requireOption(options, "--layer");
+      requireLayer(board, layer_id);
+      const ccad::Point origin{
+          .x = requirePositiveMillimeters(options, "--at-x-mm"),
+          .y = requirePositiveMillimeters(options, "--at-y-mm"),
+      };
+
+      for (const ccad::FootprintPad& footprint_pad : footprint.pads) {
+        const std::string pad_id = component_id + "." + footprint_pad.number;
+        requireUniquePadId(board, pad_id);
+        const ccad::Point placed_position{
+            .x = ccad::nanometers(origin.x.nanometers + footprint_pad.position.x.nanometers),
+            .y = ccad::nanometers(origin.y.nanometers + footprint_pad.position.y.nanometers),
+        };
+        requireInsideBoard(board, placed_position, "footprint pad position");
+      }
+
+      for (const ccad::FootprintPad& footprint_pad : footprint.pads) {
+        const ccad::Point placed_position{
+            .x = ccad::nanometers(origin.x.nanometers + footprint_pad.position.x.nanometers),
+            .y = ccad::nanometers(origin.y.nanometers + footprint_pad.position.y.nanometers),
+        };
+        board.pads.push_back(ccad::Pad{
+            .id = component_id + "." + footprint_pad.number,
+            .component_id = component_id,
+            .pin_name = footprint_pad.number,
+            .net_id = "",
+            .layer_id = layer_id,
+            .position = placed_position,
+            .size = footprint_pad.size,
+        });
+      }
+
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
