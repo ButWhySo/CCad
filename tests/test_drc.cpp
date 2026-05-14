@@ -97,6 +97,16 @@ int main() {
   require(hasDiagnostic(ccad::runDrc(unconnected_pad), "UNCONNECTED_PAD", "warning"),
           "drc reports unconnected pad as warning");
 
+  ccad::Project unconnected_via = validBoardProject();
+  unconnected_via.board->vias.at(0).net_id.clear();
+  require(hasDiagnostic(ccad::runDrc(unconnected_via), "UNCONNECTED_VIA", "warning"),
+          "drc reports unconnected via as warning");
+
+  ccad::Project unconnected_track = validBoardProject();
+  unconnected_track.board->tracks.at(0).net_id.clear();
+  require(hasDiagnostic(ccad::runDrc(unconnected_track), "UNCONNECTED_TRACK", "warning"),
+          "drc reports unconnected track as warning");
+
   ccad::Project unknown_pad_net = validBoardProject();
   unknown_pad_net.board->pads.at(0).net_id = "N404";
   require(hasCode(ccad::runDrc(unknown_pad_net), "UNKNOWN_PAD_NET"),
