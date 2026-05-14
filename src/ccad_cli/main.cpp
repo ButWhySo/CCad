@@ -1,7 +1,10 @@
+#include "ccad_core/diff.hpp"
 #include "ccad_core/erc.hpp"
 #include "ccad_core/json.hpp"
 #include "ccad_core/model.hpp"
+#include "ccad_core/review.hpp"
 #include "ccad_core/serialize.hpp"
+#include "ccad_core/transaction.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -15,7 +18,9 @@ namespace {
 void printUsage(std::ostream& out) {
   out << "Usage:\n"
       << "  ccad init --name <name> --out <path>\n"
-      << "  ccad validate <path>\n";
+      << "  ccad validate <path>\n"
+      << "  ccad inspect <path>\n"
+      << "  ccad diff <before> <after>\n";
 }
 
 bool hasError(const std::vector<ccad::Diagnostic>& diagnostics) {
@@ -40,6 +45,45 @@ std::string diagnosticsJson(const std::vector<ccad::Diagnostic>& diagnostics) {
         << "    }" << (i + 1 == diagnostics.size() ? "" : ",") << '\n';
   }
   out << "  ]\n}\n";
+  return out.str();
+}
+
+ccad::Project loadProjectFile(const std::string& path) {
+  std::ifstream input(path);
+  if (!input) {
+    throw std::runtime_error("failed to open project file: " + path);
+  }
+
+  std::ostringstream buffer;
+  buffer << input.rdbuf();
+  return ccad::loadProjectJson(buffer.str());
+}
+
+std::string reviewJson(const ccad::ProjectReview& review) {
+  std::ostringstream out;
+  out << "{\n";
+  out << "  \"project\": {\n";
+  out << "    \"id\": \"" << ccad::escapeJson(review.project_id) << "\",\n";
+  out << "    \"name\": \"" << ccad::escapeJson(review.project_name) << "\"\n";
+  out << "  },\n";
+  out << "  \"counts\": {\n";
+  out << "    \"components\": " << review.component_count << ",\n";
+  out << "    \"constraints\": " << review.constraint_count << ",\n";
+  out << "    \"nets\": " << review.net_count << "\n";
+  out << "  },\n";
+  out << "  \"status\": \"" << ccad::escapeJson(review.status) << "\",\n";
+  out << "  \"diagnostics\": [\n";
+  for (std::size_t i = 0; i < review.diagnostics.size(); ++i) {
+    const ccad::Diagnostic& diagnostic = review.diagnostics.at(i);
+    out << "    {\n"
+        << "      \"code\": \"" << ccad::escapeJson(diagnostic.code) << "\",\n"
+        << "      \"message\": \"" << ccad::escapeJson(diagnostic.message) << "\",\n"
+        << "      \"object_id\": \"" << ccad::escapeJson(diagnostic.object_id) << "\",\n"
+        << "      \"severity\": \"" << ccad::escapeJson(diagnostic.severity) << "\"\n"
+        << "    }" << (i + 1 == review.diagnostics.size() ? "" : ",") << '\n';
+  }
+  out << "  ]\n";
+  out << "}\n";
   return out.str();
 }
 
@@ -82,22 +126,46 @@ int validateCommand(const std::vector<std::string>& args) {
     return 2;
   }
 
-  std::ifstream input(args.at(0));
-  if (!input) {
-    std::cerr << "failed to open project file: " << args.at(0) << '\n';
-    return 2;
-  }
-
-  std::ostringstream buffer;
-  buffer << input.rdbuf();
-
   try {
-    const ccad::Project project = ccad::loadProjectJson(buffer.str());
+    const ccad::Project project = loadProjectFile(args.at(0));
     const std::vector<ccad::Diagnostic> diagnostics = ccad::runErc(project);
     std::cout << diagnosticsJson(diagnostics);
     return hasError(diagnostics) ? 1 : 0;
   } catch (const std::exception& error) {
     std::cerr << "failed to parse project file: " << error.what() << '\n';
+    return 2;
+  }
+}
+
+int inspectCommand(const std::vector<std::string>& args) {
+  if (args.size() != 1) {
+    std::cerr << "inspect requires exactly one project path\n";
+    return 2;
+  }
+
+  try {
+    const ccad::Project project = loadProjectFile(args.at(0));
+    std::cout << reviewJson(ccad::buildReview(project));
+    return 0;
+  } catch (const std::exception& error) {
+    std::cerr << "failed to inspect project file: " << error.what() << '\n';
+    return 2;
+  }
+}
+
+int diffCommand(const std::vector<std::string>& args) {
+  if (args.size() != 2) {
+    std::cerr << "diff requires before and after project paths\n";
+    return 2;
+  }
+
+  try {
+    const ccad::Project before = loadProjectFile(args.at(0));
+    const ccad::Project after = loadProjectFile(args.at(1));
+    std::cout << ccad::dumpProjectDiffJson(ccad::diffProjects(before, after));
+    return 0;
+  } catch (const std::exception& error) {
+    std::cerr << "failed to diff project files: " << error.what() << '\n';
     return 2;
   }
 }
@@ -121,6 +189,12 @@ int main(int argc, char** argv) {
   }
   if (command == "validate") {
     return validateCommand(args);
+  }
+  if (command == "inspect") {
+    return inspectCommand(args);
+  }
+  if (command == "diff") {
+    return diffCommand(args);
   }
 
   std::cerr << "unknown command: " << command << '\n';

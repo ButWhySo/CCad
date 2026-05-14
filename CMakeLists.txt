@@ -66,6 +66,7 @@ add_test(NAME erc COMMAND ccad_erc_tests)
 add_executable(ccad_cli_tests
   tests/test_cli.cpp
 )
+add_dependencies(ccad_cli_tests ccad)
 if(MINGW)
   target_link_options(ccad_cli_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
