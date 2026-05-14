@@ -13,6 +13,7 @@ Progress counter: Phase 2 / 6, Sprint 12 in progress. See `docs/devops/progress.
 - Logical ERC diagnostics.
 - CLI: `ccad help --format json`, `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
 - CLI PCB authoring: `ccad pcb add-pad`, `ccad pcb add-via`, and `ccad pcb add-track`.
+- CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - Physical board outline, layers, pads, vias, and track segments in project JSON.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
 

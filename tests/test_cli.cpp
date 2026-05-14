@@ -291,6 +291,51 @@ int main() {
   require(rotated_project.find("\"rotation_degrees\": 90") != std::string::npos,
           "rotated placement writes pad rotation");
 
+  const std::filesystem::path mapped_board_path = temp / "mapped-board.ccad.json";
+  std::ofstream mapped_board(mapped_board_path);
+  mapped_board << "{\n"
+               << "  \"schema_version\": 1,\n"
+               << "  \"id\": \"proj-mapped-board\",\n"
+               << "  \"name\": \"mapped-board\",\n"
+               << "  \"board\": {\n"
+               << "    \"outline\": {\n"
+               << "      \"x_nm\": 0,\n"
+               << "      \"y_nm\": 0,\n"
+               << "      \"width_nm\": 42000000,\n"
+               << "      \"height_nm\": 28000000\n"
+               << "    },\n"
+               << "    \"layers\": [\n"
+               << "      {\"id\": \"F.Cu\", \"name\": \"Front copper\", \"kind\": \"copper\", \"visible\": true},\n"
+               << "      {\"id\": \"B.Cu\", \"name\": \"Back copper\", \"kind\": \"copper\", \"visible\": true}\n"
+               << "    ],\n"
+               << "    \"pads\": [],\n"
+               << "    \"vias\": [],\n"
+               << "    \"tracks\": []\n"
+               << "  },\n"
+               << "  \"components\": [\n"
+               << "    {\"id\": \"RMAP\", \"part\": \"R\", \"pins\": [\n"
+               << "      {\"name\": \"1\", \"kind\": \"passive\"}\n"
+               << "    ]}\n"
+               << "  ],\n"
+               << "  \"constraints\": [],\n"
+               << "  \"nets\": [\n"
+               << "    {\"id\": \"N_SIGNAL\", \"members\": [\n"
+               << "      {\"component_id\": \"RMAP\", \"pin_name\": \"1\"}\n"
+               << "    ]}\n"
+               << "  ]\n"
+               << "}\n";
+  mapped_board.close();
+  const std::string mapped_place_command =
+      quote(CCAD_BINARY) + " pcb place-footprint --file " + quote(mapped_board_path) +
+      " --footprint " + quote(footprint_out_path) +
+      " --component RMAP --at-x-mm 16 --at-y-mm 14 --layer F.Cu";
+  require(run(mapped_place_command) == 0, "pcb place-footprint mapped net exits zero");
+  const std::string mapped_project = readFile(mapped_board_path);
+  require(mapped_project.find("\"id\": \"RMAP.1\"") != std::string::npos,
+          "mapped placement writes first pad id");
+  require(mapped_project.find("\"net_id\": \"N_SIGNAL\"") != std::string::npos,
+          "mapped placement assigns logical net id");
+
   const std::filesystem::path diff_after_path = temp / "diff-after.ccad.json";
   std::ofstream diff_after(diff_after_path);
   diff_after << "{\n"

@@ -6,10 +6,10 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
-- Sprint: 12
-- Branch: `main`
-- Last merged sprint: Sprint 10, footprint rotation
-- Status: Sprint 12 merged and verified on `main`
+- Sprint: 13
+- Branch: `sprint-13-footprint-net-mapping`
+- Last merged sprint: Sprint 12, machine-readable CLI help
+- Status: Sprint 13 planning on feature branch
 
 ## Phase Roadmap
 
@@ -37,18 +37,18 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 ## Active Sprint
 
-- Next: Sprint 13 planning.
+- Sprint 13: footprint net mapping.
 
 ## Reporting Rule
 
 Every commit/merge status update should include:
 
 ```text
-Progress: Phase 2/6, Sprint 12, <branch-or-main>, <short status>
+Progress: Phase 2/6, Sprint 13, <branch-or-main>, <short status>
 ```
 
 Example:
 
 ```text
-Progress: Phase 2/6, Sprint 12, main, merged and verified.
+Progress: Phase 2/6, Sprint 13, sprint-13-footprint-net-mapping, planning.
 ```

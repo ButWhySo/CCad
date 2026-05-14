@@ -7,6 +7,21 @@
 #include <stdexcept>
 
 namespace ccad_cli {
+namespace {
+
+std::string netIdForPin(const ccad::Project& project, const std::string& component_id,
+                        const std::string& pin_name) {
+  for (const ccad::Net& net : project.nets) {
+    for (const ccad::NetMember& member : net.members) {
+      if (member.component_id == component_id && member.pin_name == pin_name) {
+        return net.id;
+      }
+    }
+  }
+  return "";
+}
+
+}  // namespace
 
 int pcbCommand(const std::vector<std::string>& args) {
   if (args.empty()) {
@@ -153,7 +168,7 @@ int pcbCommand(const std::vector<std::string>& args) {
             .id = component_id + "." + footprint_pad.number,
             .component_id = component_id,
             .pin_name = footprint_pad.number,
-            .net_id = "",
+            .net_id = netIdForPin(project, component_id, footprint_pad.number),
             .layer_id = layer_id,
             .position = placed_position,
             .rotation_degrees = footprint_pad.rotation_degrees + placement_rotation,
