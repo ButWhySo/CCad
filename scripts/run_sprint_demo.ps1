@@ -28,6 +28,8 @@ $Project = Join-Path $DemoDir "$Name.ccad.json"
 $Inspect = Join-Path $DemoDir "$Name.inspect.json"
 $Validate = Join-Path $DemoDir "$Name.validate.json"
 $Drc = Join-Path $DemoDir "$Name.drc.json"
+$KiCadFootprint = Join-Path $DemoDir "$Name-R_0805_2012Metric.kicad_mod"
+$ImportedFootprint = Join-Path $DemoDir "$Name-R_0805_2012Metric.ccad-footprint.json"
 $Timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $Screenshot = Join-Path $ScreenshotDir "$Name-$Timestamp.png"
 
@@ -38,6 +40,16 @@ $Screenshot = Join-Path $ScreenshotDir "$Name-$Timestamp.png"
 & $Ccad inspect $Project | Set-Content -Encoding UTF8 $Inspect
 & $Ccad validate $Project | Set-Content -Encoding UTF8 $Validate
 & $Ccad drc $Project | Set-Content -Encoding UTF8 $Drc
+
+@'
+(footprint "R_0805_2012Metric"
+  (version 20240101)
+  (generator "ccad-demo")
+  (pad "1" smd roundrect (at -0.95 0 0) (size 1.0 1.45) (layers "F.Cu" "F.Paste" "F.Mask"))
+  (pad "2" smd roundrect (at 0.95 0 0) (size 1.0 1.45) (layers "F.Cu" "F.Paste" "F.Mask"))
+)
+'@ | Set-Content -Encoding UTF8 $KiCadFootprint
+& $Ccad lib import-footprint --in $KiCadFootprint --out $ImportedFootprint
 
 $Process = Start-Process -FilePath $Gui -ArgumentList $Project -PassThru
 try {
@@ -105,4 +117,6 @@ Write-Output "Project: $Project"
 Write-Output "Inspect: $Inspect"
 Write-Output "Validate: $Validate"
 Write-Output "DRC: $Drc"
+Write-Output "KiCad footprint: $KiCadFootprint"
+Write-Output "Imported footprint: $ImportedFootprint"
 Write-Output "Screenshot: $Screenshot"
