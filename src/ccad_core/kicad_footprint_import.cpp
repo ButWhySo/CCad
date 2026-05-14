@@ -201,6 +201,196 @@ void writeStringArray(std::ostringstream& out, const int indent,
   (void)indent;
 }
 
+class FootprintJsonReader {
+ public:
+  explicit FootprintJsonReader(std::string_view source) : source_(source) {}
+
+  Footprint readFootprint() {
+    Footprint footprint;
+    expect('{');
+    if (consume('}')) {
+      return footprint;
+    }
+    while (true) {
+      const std::string key = readString();
+      expect(':');
+      if (key == "name") {
+        footprint.name = readString();
+      } else if (key == "pads") {
+        footprint.pads = readPads();
+      } else {
+        throw std::runtime_error("unknown footprint json key: " + key);
+      }
+      if (consume('}')) {
+        finish();
+        return footprint;
+      }
+      expect(',');
+    }
+  }
+
+ private:
+  std::vector<FootprintPad> readPads() {
+    std::vector<FootprintPad> pads;
+    expect('[');
+    if (consume(']')) {
+      return pads;
+    }
+    while (true) {
+      pads.push_back(readPad());
+      if (consume(']')) {
+        return pads;
+      }
+      expect(',');
+    }
+  }
+
+  FootprintPad readPad() {
+    FootprintPad pad;
+    expect('{');
+    if (consume('}')) {
+      return pad;
+    }
+    while (true) {
+      const std::string key = readString();
+      expect(':');
+      if (key == "number") {
+        pad.number = readString();
+      } else if (key == "type") {
+        pad.type = readString();
+      } else if (key == "shape") {
+        pad.shape = readString();
+      } else if (key == "x_nm") {
+        pad.position.x = nanometers(readInt64());
+      } else if (key == "y_nm") {
+        pad.position.y = nanometers(readInt64());
+      } else if (key == "rotation_degrees") {
+        pad.rotation_degrees = readNumber();
+      } else if (key == "width_nm") {
+        pad.size.width = nanometers(readInt64());
+      } else if (key == "height_nm") {
+        pad.size.height = nanometers(readInt64());
+      } else if (key == "drill_nm") {
+        pad.drill = nanometers(readInt64());
+      } else if (key == "layers") {
+        pad.layers = readStringArray();
+      } else {
+        throw std::runtime_error("unknown footprint pad json key: " + key);
+      }
+      if (consume('}')) {
+        return pad;
+      }
+      expect(',');
+    }
+  }
+
+  std::vector<std::string> readStringArray() {
+    std::vector<std::string> values;
+    expect('[');
+    if (consume(']')) {
+      return values;
+    }
+    while (true) {
+      values.push_back(readString());
+      if (consume(']')) {
+        return values;
+      }
+      expect(',');
+    }
+  }
+
+  std::string readString() {
+    skipWhitespace();
+    expectRaw('"');
+    std::string value;
+    while (pos_ < source_.size()) {
+      const char current = source_.at(pos_++);
+      if (current == '"') {
+        return value;
+      }
+      if (current == '\\') {
+        if (pos_ >= source_.size()) {
+          throw std::runtime_error("unterminated json escape");
+        }
+        const char escaped = source_.at(pos_++);
+        if (escaped == 'n') {
+          value.push_back('\n');
+        } else if (escaped == 't') {
+          value.push_back('\t');
+        } else {
+          value.push_back(escaped);
+        }
+      } else {
+        value.push_back(current);
+      }
+    }
+    throw std::runtime_error("unterminated json string");
+  }
+
+  std::int64_t readInt64() {
+    return static_cast<std::int64_t>(readNumber());
+  }
+
+  double readNumber() {
+    skipWhitespace();
+    const std::size_t start = pos_;
+    if (pos_ < source_.size() && source_.at(pos_) == '-') {
+      ++pos_;
+    }
+    while (pos_ < source_.size() && std::isdigit(static_cast<unsigned char>(source_.at(pos_)))) {
+      ++pos_;
+    }
+    if (pos_ < source_.size() && source_.at(pos_) == '.') {
+      ++pos_;
+      while (pos_ < source_.size() &&
+             std::isdigit(static_cast<unsigned char>(source_.at(pos_)))) {
+        ++pos_;
+      }
+    }
+    if (start == pos_) {
+      throw std::runtime_error("expected json number");
+    }
+    return parseDouble(std::string(source_.substr(start, pos_ - start)), "json number");
+  }
+
+  bool consume(char expected) {
+    skipWhitespace();
+    if (pos_ < source_.size() && source_.at(pos_) == expected) {
+      ++pos_;
+      return true;
+    }
+    return false;
+  }
+
+  void expect(char expected) {
+    skipWhitespace();
+    expectRaw(expected);
+  }
+
+  void expectRaw(char expected) {
+    if (pos_ >= source_.size() || source_.at(pos_) != expected) {
+      throw std::runtime_error(std::string("expected json '") + expected + "'");
+    }
+    ++pos_;
+  }
+
+  void skipWhitespace() {
+    while (pos_ < source_.size() && std::isspace(static_cast<unsigned char>(source_.at(pos_)))) {
+      ++pos_;
+    }
+  }
+
+  void finish() {
+    skipWhitespace();
+    if (pos_ != source_.size()) {
+      throw std::runtime_error("trailing content after footprint json");
+    }
+  }
+
+  std::string_view source_;
+  std::size_t pos_ = 0;
+};
+
 }  // namespace
 
 Footprint importKiCadFootprint(const std::string_view source) {
@@ -252,6 +442,10 @@ std::string dumpFootprintJson(const Footprint& footprint) {
   out << "  ]\n";
   out << "}\n";
   return out.str();
+}
+
+Footprint loadFootprintJson(const std::string_view source) {
+  return FootprintJsonReader(source).readFootprint();
 }
 
 }  // namespace ccad
