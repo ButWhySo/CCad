@@ -13,6 +13,7 @@ add_library(ccad_core
   src/ccad_core/canvas.cpp
   src/ccad_core/model.cpp
   src/ccad_core/diff.cpp
+  src/ccad_core/drc.cpp
   src/ccad_core/erc.cpp
   src/ccad_core/geometry.cpp
   src/ccad_core/json.cpp
@@ -64,6 +65,15 @@ if(MINGW)
   target_link_options(ccad_erc_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME erc COMMAND ccad_erc_tests)
+
+add_executable(ccad_drc_tests
+  tests/test_drc.cpp
+)
+target_link_libraries(ccad_drc_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_drc_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME drc COMMAND ccad_drc_tests)
 
 add_executable(ccad_cli_tests
   tests/test_cli.cpp
