@@ -17,9 +17,9 @@ Progress: Phase 2/6, Sprint 8, `sprint-8-kicad-footprint-import`, planning.
 1. Done: add failing importer unit tests.
 2. Done: implement core footprint model and KiCad importer.
 3. Done: add `ccad lib import-footprint`.
-4. In progress: document KiCad reuse policy and command usage.
-5. In progress: generate demo footprint-import artifact.
-6. In progress: run full Qt build and CTest before every commit and before merge.
+4. Done: document KiCad reuse policy and command usage.
+5. Done: generate demo footprint-import artifact.
+6. Done: run full Qt build and CTest before every commit and before merge.
 7. Pending: merge to `main`.
 
 ## KiCad Reuse Policy
@@ -42,6 +42,23 @@ Outputs include:
 
 - `artifacts/demos/sprint8-kicad-footprint-demo-R_0805_2012Metric.kicad_mod`
 - `artifacts/demos/sprint8-kicad-footprint-demo-R_0805_2012Metric.ccad-footprint.json`
+- `artifacts/screenshots/sprint8-kicad-footprint-demo-20260514-175449.png`
+
+## Verification Log
+
+2026-05-14:
+
+```powershell
+cmake --build build-qt --clean-first
+ctest --test-dir build-qt --output-on-failure
+powershell -ExecutionPolicy Bypass -File .\scripts\run_sprint_demo.ps1 -Name sprint8-kicad-footprint-demo
+```
+
+Result:
+
+- Clean Qt build passed.
+- 10/10 CTest tests passed.
+- Demo project, inspect JSON, validate JSON, DRC JSON, KiCad footprint sample, imported CCad footprint JSON, and GUI screenshot were generated under `artifacts/`.
 
 ## Definition Of Done
 
