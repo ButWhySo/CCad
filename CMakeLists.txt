@@ -10,6 +10,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(ccad_core
   src/ccad_core/model.cpp
+  src/ccad_core/erc.cpp
   src/ccad_core/serialize.cpp
 )
 
@@ -41,3 +42,9 @@ add_executable(ccad_tests
 )
 target_link_libraries(ccad_tests PRIVATE ccad_core)
 add_test(NAME serialize COMMAND ccad_tests)
+
+add_executable(ccad_erc_tests
+  tests/test_erc.cpp
+)
+target_link_libraries(ccad_erc_tests PRIVATE ccad_core)
+add_test(NAME erc COMMAND ccad_erc_tests)
