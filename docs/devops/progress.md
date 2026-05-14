@@ -7,9 +7,9 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
 - Sprint: 14
-- Branch: `sprint-14-drc-unconnected-pads`
-- Last merged sprint: Sprint 13, footprint net mapping
-- Status: Sprint 14 implementation on feature branch
+- Branch: `main`
+- Last merged sprint: Sprint 14, DRC unconnected pad warning
+- Status: Sprint 14 merged and verified on `main`
 
 ## Phase Roadmap
 
@@ -35,10 +35,11 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Sprint 11: CLI module split.
 - Sprint 12: machine-readable CLI help.
 - Sprint 13: footprint net mapping.
+- Sprint 14: DRC unconnected pad warning.
 
 ## Active Sprint
 
-- Sprint 14: DRC unconnected pad warning.
+- Next: Sprint 15 planning.
 
 ## Reporting Rule
 
@@ -51,5 +52,5 @@ Progress: Phase 2/6, Sprint 14, <branch-or-main>, <short status>
 Example:
 
 ```text
-Progress: Phase 2/6, Sprint 14, sprint-14-drc-unconnected-pads, implementation.
+Progress: Phase 2/6, Sprint 14, main, merged and verified.
 ```
