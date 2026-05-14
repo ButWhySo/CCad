@@ -17,6 +17,7 @@ add_library(ccad_core
   src/ccad_core/erc.cpp
   src/ccad_core/geometry.cpp
   src/ccad_core/json.cpp
+  src/ccad_core/kicad_footprint_import.cpp
   src/ccad_core/review.cpp
   src/ccad_core/serialize.cpp
   src/ccad_core/transaction.cpp
@@ -74,6 +75,15 @@ if(MINGW)
   target_link_options(ccad_drc_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME drc COMMAND ccad_drc_tests)
+
+add_executable(ccad_kicad_footprint_import_tests
+  tests/test_kicad_footprint_import.cpp
+)
+target_link_libraries(ccad_kicad_footprint_import_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_kicad_footprint_import_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME kicad_footprint_import COMMAND ccad_kicad_footprint_import_tests)
 
 add_executable(ccad_cli_tests
   tests/test_cli.cpp
