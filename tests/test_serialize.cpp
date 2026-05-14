@@ -16,6 +16,14 @@ int main() {
   Project project;
   project.id = "proj-demo";
   project.name = "demo";
+  project.board = ccad::Board{
+      .outline = ccad::Rect{
+          .origin = ccad::Point{.x = ccad::nanometers(0), .y = ccad::nanometers(0)},
+          .size = ccad::Size{.width = ccad::millimeters(42), .height = ccad::millimeters(28)},
+      },
+      .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true},
+                 ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true}},
+  };
   project.components.push_back(Component{
       .id = "U1",
       .part = "MCU",
@@ -36,11 +44,17 @@ int main() {
 
   require(json.find("\"schema_version\": 1") != std::string::npos, "schema version emitted");
   require(json.find("\"id\": \"proj-demo\"") != std::string::npos, "project id emitted");
+  require(json.find("\"board\"") != std::string::npos, "board emitted");
+  require(json.find("\"width_nm\": 42000000") != std::string::npos, "board width emitted");
   require(json.find("\"component_id\": \"U1\"") != std::string::npos, "net member emitted");
 
   const Project loaded = ccad::loadProjectJson(json);
   require(loaded.id == "proj-demo", "project id round trips");
   require(loaded.name == "demo", "project name round trips");
+  require(loaded.board.has_value(), "board round trips");
+  require(loaded.board->outline.size.width.nanometers == 42000000, "board width round trips");
+  require(loaded.board->outline.size.height.nanometers == 28000000, "board height round trips");
+  require(loaded.board->layers.size() == 2, "board layers round trip");
   require(loaded.components.size() == 1, "component count round trips");
   require(loaded.components.at(0).pins.size() == 2, "pin count round trips");
   require(loaded.nets.size() == 1, "net count round trips");
