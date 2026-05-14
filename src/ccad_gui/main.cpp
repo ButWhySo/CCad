@@ -20,6 +20,7 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPen>
 #include <QPushButton>
 #include <QResizeEvent>
@@ -32,6 +33,7 @@
 #include <QWidget>
 
 #include <filesystem>
+#include <algorithm>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -398,9 +400,10 @@ class ReviewWindow final : public QMainWindow {
       const QRectF pad_rect(margin + (pad.x_units * scale) - ((pad.width_units * scale) / 2.0),
                             margin + (pad.y_units * scale) - ((pad.height_units * scale) / 2.0),
                             pad.width_units * scale, pad.height_units * scale);
-      auto* item =
-          canvas_scene_->addRoundedRect(pad_rect, 2.0, 2.0, QPen(QColor("#f472b6"), 0.8),
-                                        QBrush(QColor("#be185d")));
+      QPainterPath pad_path;
+      pad_path.addRoundedRect(pad_rect, 2.0, 2.0);
+      auto* item = canvas_scene_->addPath(pad_path, QPen(QColor("#f472b6"), 0.8),
+                                          QBrush(QColor("#be185d")));
       item->setToolTip("Pad " + qstr(pad.id));
     }
 
