@@ -49,6 +49,16 @@ int main() {
   const std::string project_json = readFile(project_path);
   require(project_json.find("\"name\": \"demo\"") != std::string::npos, "init writes name");
 
+  const std::filesystem::path board_project_path = temp / "board.ccad.json";
+  const std::string board_init_command = quote(CCAD_BINARY) +
+                                         " init --name board --width-mm 42 --height-mm 28 --out " +
+                                         quote(board_project_path);
+  require(run(board_init_command) == 0, "board init exits zero");
+  const std::string board_json = readFile(board_project_path);
+  require(board_json.find("\"board\"") != std::string::npos, "board init writes board");
+  require(board_json.find("\"width_nm\": 42000000") != std::string::npos,
+          "board init writes width");
+
   const std::string validate_clean = quote(CCAD_BINARY) + " validate " + quote(project_path) +
                                      " > " + quote(diagnostics_path);
   require(run(validate_clean) == 0, "clean validate exits zero");
@@ -87,6 +97,17 @@ int main() {
           "inspect has component count");
   require(inspect_output.find("\"status\": \"Warnings: 1\"") != std::string::npos,
           "inspect has review status");
+
+  const std::filesystem::path board_inspect_path = temp / "board-inspect.json";
+  const std::string board_inspect_command = quote(CCAD_BINARY) + " inspect " +
+                                            quote(board_project_path) + " > " +
+                                            quote(board_inspect_path);
+  require(run(board_inspect_command) == 0, "board inspect exits zero");
+  const std::string board_inspect_output = readFile(board_inspect_path);
+  require(board_inspect_output.find("\"has_board\": true") != std::string::npos,
+          "inspect reports board present");
+  require(board_inspect_output.find("\"width_nm\": 42000000") != std::string::npos,
+          "inspect reports board width");
 
   const std::filesystem::path diff_after_path = temp / "diff-after.ccad.json";
   std::ofstream diff_after(diff_after_path);

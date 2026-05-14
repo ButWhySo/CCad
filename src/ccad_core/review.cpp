@@ -21,6 +21,12 @@ ProjectReview buildReview(const Project& project) {
   review.component_count = project.components.size();
   review.net_count = project.nets.size();
   review.constraint_count = project.constraints.size();
+  if (project.board.has_value()) {
+    review.has_board = true;
+    review.board_width_nm = project.board->outline.size.width.nanometers;
+    review.board_height_nm = project.board->outline.size.height.nanometers;
+    review.layer_count = project.board->layers.size();
+  }
   review.diagnostics = runErc(project);
 
   for (const Diagnostic& diagnostic : review.diagnostics) {

@@ -25,6 +25,14 @@ ccad::Project validProject() {
       .target = "N_3V3",
       .value = "3.3V",
   });
+  project.board = ccad::Board{
+      .outline = ccad::Rect{
+          .origin = ccad::Point{.x = ccad::nanometers(0), .y = ccad::nanometers(0)},
+          .size = ccad::Size{.width = ccad::millimeters(42), .height = ccad::millimeters(28)},
+      },
+      .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true},
+                 ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true}},
+  };
   return project;
 }
 
@@ -37,6 +45,10 @@ int main() {
   require(clean.component_count == 1, "component count set");
   require(clean.net_count == 1, "net count set");
   require(clean.constraint_count == 1, "constraint count set");
+  require(clean.has_board, "review reports board present");
+  require(clean.board_width_nm == 42000000, "review reports board width");
+  require(clean.board_height_nm == 28000000, "review reports board height");
+  require(clean.layer_count == 2, "review reports layer count");
   require(clean.error_count == 0, "clean review has no errors");
   require(clean.warning_count == 0, "clean review has no warnings");
   require(clean.status == "Clean: 1 component, 1 net, 1 constraint", "clean status text");
