@@ -7,9 +7,9 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
 - Sprint: 35
-- Branch: `sprint-35-object-browser-selection`
-- Last merged sprint: Sprint 34, diagnostic overlay markers
-- Status: Sprint 35 in progress; object-browser rows will select matching PCB canvas objects
+- Branch: `main`
+- Last merged sprint: Sprint 35, object browser selection link
+- Status: Sprint 35 merged on `main`; verification running after merge
 
 ## Phase Roadmap
 
@@ -56,10 +56,11 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Sprint 32: diagnostic selection link.
 - Sprint 33: review DRC diagnostics.
 - Sprint 34: diagnostic overlay markers.
+- Sprint 35: object browser selection link.
 
 ## Active Sprint
 
-- Sprint 35: object browser selection link.
+- Sprint 36: planning pending.
 
 ## Reporting Rule
 
