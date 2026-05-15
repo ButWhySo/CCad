@@ -538,6 +538,7 @@ What it does:
 - Shows board dimensions and layer count when board data exists.
 - Renders board outline, rectangular keepouts, pads, vias, and track segments in a native Qt `QGraphicsView` canvas when board data exists.
 - Uses a CAD editor shell with a central PCB canvas tab, docked project/layer/diagnostics panels, explicit Fit, wheel zoom, middle-button pan, and cursor/zoom status.
+- GUI project summary and diagnostics rendering are split into dedicated Qt widgets to keep the shell maintainable.
 - Shows ERC diagnostics table.
 - Supports reload.
 

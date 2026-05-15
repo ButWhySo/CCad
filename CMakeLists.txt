@@ -113,7 +113,9 @@ if(CCAD_BUILD_GUI)
   if(Qt6Widgets_FOUND)
     add_executable(ccad_gui
       src/ccad_gui/board_canvas_renderer.cpp
+      src/ccad_gui/diagnostics_panel.cpp
       src/ccad_gui/main.cpp
+      src/ccad_gui/project_summary_panel.cpp
       src/ccad_gui/review_window.cpp
     )
     target_link_libraries(ccad_gui PRIVATE ccad_core Qt6::Widgets)

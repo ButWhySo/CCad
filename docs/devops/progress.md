@@ -7,9 +7,9 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
 - Sprint: 24
-- Branch: `main`
+- Branch: `sprint-28-gui-module-split`
 - Last merged sprint: Sprint 27, GUI CAD editor shell foundation
-- Status: Sprint 27 merged and verified on `main`; Sprint 28 planning next
+- Status: Sprint 28 implementation on feature branch
 
 ## Phase Roadmap
 
@@ -65,5 +65,5 @@ Progress: Phase 2/6, Sprint 25, <branch-or-main>, <short status>
 Example:
 
 ```text
-Progress: Phase 2/6, Sprint 27, main, merged and verified.
+Progress: Phase 2/6, Sprint 28, sprint-28-gui-module-split, implementation.
 ```
