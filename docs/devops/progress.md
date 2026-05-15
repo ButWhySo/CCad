@@ -7,9 +7,9 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
 - Sprint: 24
-- Branch: `sprint-25-library-catalog-validate`
-- Last merged sprint: Sprint 24, library catalog kind filter
-- Status: Sprint 25 implementation on feature branch
+- Branch: `main`
+- Last merged sprint: Sprint 25, library catalog validation
+- Status: Sprint 25 merged and verified on `main`; Sprint 26 planning next
 
 ## Phase Roadmap
 
@@ -46,10 +46,11 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Sprint 22: library catalog CLI.
 - Sprint 23: library catalog search.
 - Sprint 24: library catalog kind filter.
+- Sprint 25: library catalog validation.
 
 ## Active Sprint
 
-- Sprint 25: library catalog validation.
+- Sprint 26: planning.
 
 ## Reporting Rule
 
@@ -62,5 +63,5 @@ Progress: Phase 2/6, Sprint 25, <branch-or-main>, <short status>
 Example:
 
 ```text
-Progress: Phase 2/6, Sprint 25, sprint-25-library-catalog-validate, implementation.
+Progress: Phase 2/6, Sprint 25, main, merged and verified.
 ```
