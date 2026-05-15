@@ -151,6 +151,7 @@ What it does:
 - Emits deterministic command discovery JSON with `ccad help --format json`.
 - Creates project files with board outline when given `--width-mm` and `--height-mm`.
 - Adds PCB pads, vias, and track segments to existing board projects.
+- Adds rectangular keepouts to existing board projects.
 - Runs physical DRC diagnostics with `ccad drc`.
 - Imports basic KiCad `.kicad_mod` footprint files with `ccad lib import-footprint`.
 - Places imported CCad footprint pads onto a board with `ccad pcb place-footprint`.
@@ -192,6 +193,7 @@ On Windows PowerShell:
 .\build\ccad.exe pcb add-pad --file board.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 .\build\ccad.exe pcb add-via --file board.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
 .\build\ccad.exe pcb add-track --file board.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
+.\build\ccad.exe pcb add-keepout --file board.ccad.json --id K1 --kind placement --x-mm 20 --y-mm 10 --width-mm 4 --height-mm 3
 ```
 
 PCB authoring command behavior:
@@ -199,8 +201,9 @@ PCB authoring command behavior:
 - `pcb add-pad` writes one rectangular pad into `board.pads`.
 - `pcb add-via` writes one via into `board.vias`.
 - `pcb add-track` writes one straight track segment into `board.tracks`.
+- `pcb add-keepout` writes one rectangular keepout into `board.keepouts`.
 - Commands mutate the file passed through `--file`.
-- Commands reject missing boards, duplicate primitive IDs, invalid numeric dimensions, unknown layers, out-of-board positions, and via drill larger than via diameter.
+- Commands reject missing boards, duplicate primitive IDs, invalid numeric dimensions, unknown layers, out-of-board positions/areas, and via drill larger than via diameter.
 
 Help command behavior:
 
@@ -423,6 +426,7 @@ What it does:
 - Reports whether a board exists.
 - Converts board width/height from nanometers to millimeter view units.
 - Converts pads, vias, and track segments into millimeter view units.
+- Converts rectangular keepouts into millimeter view units.
 - Keeps GUI rendering inputs testable outside Qt.
 
 Test:
@@ -479,7 +483,7 @@ What it does:
 - Opens `.ccad.json` project files.
 - Shows project summary.
 - Shows board dimensions and layer count when board data exists.
-- Renders board outline, pads, vias, and track segments in a native Qt `QGraphicsView` canvas when board data exists.
+- Renders board outline, rectangular keepouts, pads, vias, and track segments in a native Qt `QGraphicsView` canvas when board data exists.
 - Shows ERC diagnostics table.
 - Supports reload.
 
@@ -547,7 +551,7 @@ Expected result:
 - Clean files show clean status.
 - Invalid files show diagnostics.
 - Board files show the outline on the dark canvas.
-- Board files with primitives show red tracks, pink pads, and yellow vias.
+- Board files with primitives show red tracks, pink pads, yellow vias, and orange dashed keepout regions.
 
 Current limitation:
 

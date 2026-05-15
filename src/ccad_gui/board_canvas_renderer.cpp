@@ -51,6 +51,18 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, QGraphicsView& canvas_view,
   auto* board = canvas_scene.addRect(board_rect, outline_pen, QBrush(QColor("#0f1b2d")));
   board->setToolTip("Board outline");
 
+  QPen keepout_pen(QColor("#f97316"));
+  keepout_pen.setWidthF(1.2);
+  keepout_pen.setStyle(Qt::DashLine);
+  QBrush keepout_brush(QColor(249, 115, 22, 48));
+  for (const ccad::CanvasKeepout& keepout : scene.keepouts) {
+    const QRectF keepout_rect(margin + (keepout.x_units * scale),
+                              margin + (keepout.y_units * scale),
+                              keepout.width_units * scale, keepout.height_units * scale);
+    auto* item = canvas_scene.addRect(keepout_rect, keepout_pen, keepout_brush);
+    item->setToolTip("Keepout " + qstr(keepout.id) + " (" + qstr(keepout.kind) + ")");
+  }
+
   QPen track_pen(QColor("#ef4444"));
   track_pen.setCapStyle(Qt::RoundCap);
   for (const ccad::CanvasTrack& track : scene.tracks) {

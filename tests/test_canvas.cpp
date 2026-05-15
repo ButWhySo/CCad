@@ -14,6 +14,13 @@ ccad::Project boardProject() {
           .size = ccad::Size{.width = ccad::millimeters(42), .height = ccad::millimeters(28)},
       },
       .layers = {},
+      .keepouts = {ccad::Keepout{.id = "K1",
+                                 .kind = "placement",
+                                 .area = ccad::Rect{
+                                     .origin = ccad::Point{.x = ccad::millimeters(20),
+                                                           .y = ccad::millimeters(10)},
+                                     .size = ccad::Size{.width = ccad::millimeters(4),
+                                                        .height = ccad::millimeters(3)}}}},
       .pads = {ccad::Pad{.id = "P1",
                          .component_id = "U1",
                          .pin_name = "1",
@@ -54,6 +61,10 @@ int main() {
   require(scene.board_height_nm == 28000000, "board scene height set");
   require(scene.view_width_units == 42.0, "view width is mm");
   require(scene.view_height_units == 28.0, "view height is mm");
+  require(scene.keepouts.size() == 1, "canvas has keepout");
+  require(scene.keepouts.at(0).id == "K1", "canvas keepout id");
+  require(scene.keepouts.at(0).x_units == 20.0, "canvas keepout x is mm");
+  require(scene.keepouts.at(0).width_units == 4.0, "canvas keepout width is mm");
   require(scene.pads.size() == 1, "canvas has pad");
   require(scene.pads.at(0).x_units == 5.0, "canvas pad x is mm");
   require(scene.pads.at(0).rotation_degrees == 90.0, "canvas pad rotation is degrees");
