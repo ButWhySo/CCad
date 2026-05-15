@@ -6,7 +6,7 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 
 - Phase: 2 / 6
 - Last merged sprint: Sprint 30, GUI inspector panel
-- Next sprint: Sprint 31, planning pending
+- Next sprint: Sprint 31, layer and object browser
 - Active branch pattern: `sprint-<n>-<topic>`
 - Current source of truth for phase/sprint counter: `docs/devops/progress.md`
 - Main product direction: native C++ PCB kernel and machine-callable CLI first; Qt GUI is a human review/editor client, not the data owner.
@@ -242,6 +242,8 @@ Important structs:
 ```cpp
 struct CanvasPad {
   std::string id;
+  std::string net_id;
+  std::string layer_id;
   double x_units;
   double y_units;
   double width_units;
@@ -253,6 +255,7 @@ struct CanvasPad {
 Rule:
 
 - GUI rendering must consume `CanvasScene`, not inspect project geometry directly.
+- Canvas scene metadata supports read-only GUI browsing. Keep it semantic and derived from the kernel model.
 
 ### `src/ccad_core/review.hpp/.cpp`
 
@@ -603,6 +606,22 @@ Rule:
 
 - The inspector displays stable object identity from canvas item metadata. It must not mutate project state or infer board geometry.
 
+### `src/ccad_gui/object_browser_panel.hpp/.cpp`
+
+Owns the read-only right-dock layer and board-object browser.
+
+Important methods:
+
+```cpp
+void renderScene(const ccad::CanvasScene& scene);
+int itemCount() const;
+QString itemText(int row) const;
+```
+
+Rule:
+
+- The browser renders `CanvasScene` metadata only. It must not parse project JSON, own board state, or mutate design objects.
+
 ### `src/ccad_gui/board_canvas_renderer.hpp/.cpp`
 
 Owns drawing board canvas objects into `QGraphicsScene`.
@@ -613,6 +632,7 @@ Public function:
 void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& scene);
 QString canvasObjectId(const QGraphicsItem& item);
 QString canvasObjectType(const QGraphicsItem& item);
+bool canvasUsesShapeSelectionHighlight(const QGraphicsItem& item);
 ```
 
 Renders:
@@ -624,6 +644,7 @@ Renders:
 - vias
 - board size label
 - stable object type/ID metadata on selectable primitive items
+- shape-level selection highlighting for selectable primitive items, avoiding loose Qt bounding boxes
 
 ### `src/ccad_gui/board_canvas_view.hpp`
 

@@ -21,6 +21,14 @@ CanvasScene buildCanvasScene(const Project& project) {
   scene.view_width_units = toMillimeters(project.board->outline.size.width);
   scene.view_height_units = toMillimeters(project.board->outline.size.height);
 
+  for (const Layer& layer : project.board->layers) {
+    scene.layers.push_back(CanvasLayer{
+        .id = layer.id,
+        .name = layer.name,
+        .kind = layer.kind,
+    });
+  }
+
   for (const Keepout& keepout : project.board->keepouts) {
     scene.keepouts.push_back(CanvasKeepout{
         .id = keepout.id,
@@ -35,6 +43,8 @@ CanvasScene buildCanvasScene(const Project& project) {
   for (const Pad& pad : project.board->pads) {
     scene.pads.push_back(CanvasPad{
         .id = pad.id,
+        .net_id = pad.net_id,
+        .layer_id = pad.layer_id,
         .x_units = toMillimeters(pad.position.x),
         .y_units = toMillimeters(pad.position.y),
         .width_units = toMillimeters(pad.size.width),
@@ -46,6 +56,7 @@ CanvasScene buildCanvasScene(const Project& project) {
   for (const Via& via : project.board->vias) {
     scene.vias.push_back(CanvasVia{
         .id = via.id,
+        .net_id = via.net_id,
         .x_units = toMillimeters(via.position.x),
         .y_units = toMillimeters(via.position.y),
         .diameter_units = toMillimeters(via.diameter),
@@ -56,6 +67,8 @@ CanvasScene buildCanvasScene(const Project& project) {
   for (const TrackSegment& track : project.board->tracks) {
     scene.tracks.push_back(CanvasTrack{
         .id = track.id,
+        .net_id = track.net_id,
+        .layer_id = track.layer_id,
         .start_x_units = toMillimeters(track.start.x),
         .start_y_units = toMillimeters(track.start.y),
         .end_x_units = toMillimeters(track.end.x),

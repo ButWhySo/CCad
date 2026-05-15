@@ -1,6 +1,7 @@
 #pragma once
 
 #include "diagnostics_panel.hpp"
+#include "object_browser_panel.hpp"
 #include "project_summary_panel.hpp"
 #include "selection_inspector_panel.hpp"
 #include "ccad_core/model.hpp"
@@ -36,6 +37,7 @@ class ReviewWindow final : public QMainWindow {
   QLabel* layer_status_ = nullptr;
   QLabel* selection_status_ = nullptr;
   SelectionInspectorPanel* selection_inspector_ = nullptr;
+  ObjectBrowserPanel* object_browser_ = nullptr;
   QGraphicsScene* canvas_scene_ = nullptr;
   QGraphicsView* canvas_view_ = nullptr;
   DiagnosticsPanel* diagnostics_ = nullptr;

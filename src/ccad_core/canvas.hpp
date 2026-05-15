@@ -8,8 +8,16 @@
 
 namespace ccad {
 
+struct CanvasLayer {
+  std::string id;
+  std::string name;
+  std::string kind;
+};
+
 struct CanvasPad {
   std::string id;
+  std::string net_id;
+  std::string layer_id;
   double x_units = 0.0;
   double y_units = 0.0;
   double width_units = 0.0;
@@ -19,6 +27,7 @@ struct CanvasPad {
 
 struct CanvasVia {
   std::string id;
+  std::string net_id;
   double x_units = 0.0;
   double y_units = 0.0;
   double diameter_units = 0.0;
@@ -27,6 +36,8 @@ struct CanvasVia {
 
 struct CanvasTrack {
   std::string id;
+  std::string net_id;
+  std::string layer_id;
   double start_x_units = 0.0;
   double start_y_units = 0.0;
   double end_x_units = 0.0;
@@ -49,6 +60,7 @@ struct CanvasScene {
   std::int64_t board_height_nm = 0;
   double view_width_units = 0.0;
   double view_height_units = 0.0;
+  std::vector<CanvasLayer> layers;
   std::vector<CanvasKeepout> keepouts;
   std::vector<CanvasPad> pads;
   std::vector<CanvasVia> vias;

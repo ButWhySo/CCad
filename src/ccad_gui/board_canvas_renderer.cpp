@@ -2,14 +2,41 @@
 
 #include <QBrush>
 #include <QColor>
+#include <QGraphicsPathItem>
 #include <QGraphicsTextItem>
+#include <QPainter>
 #include <QPainterPath>
 #include <QPen>
+#include <QStyleOptionGraphicsItem>
 #include <QTransform>
 
 #include <algorithm>
 
 namespace {
+
+class ShapeHighlightPathItem final : public QGraphicsPathItem {
+ public:
+  using QGraphicsPathItem::QGraphicsPathItem;
+
+  void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override {
+    QStyleOptionGraphicsItem clean_option(*option);
+    clean_option.state &= ~QStyle::State_Selected;
+    QGraphicsPathItem::paint(painter, &clean_option, widget);
+
+    if (!isSelected()) {
+      return;
+    }
+
+    QPen highlight_pen(QColor("#60a5fa"));
+    highlight_pen.setCosmetic(true);
+    highlight_pen.setWidthF(2.5);
+    highlight_pen.setJoinStyle(Qt::RoundJoin);
+    highlight_pen.setCapStyle(Qt::RoundCap);
+    painter->setPen(highlight_pen);
+    painter->setBrush(Qt::NoBrush);
+    painter->drawPath(path());
+  }
+};
 
 QString qstr(const std::string& value) {
   return QString::fromStdString(value);
@@ -19,6 +46,17 @@ void tagObject(QGraphicsItem& item, const QString& type, const QString& id) {
   item.setFlag(QGraphicsItem::ItemIsSelectable, true);
   item.setData(kCanvasObjectTypeRole, type);
   item.setData(kCanvasObjectIdRole, id);
+  item.setData(kCanvasShapeSelectionHighlightRole, true);
+}
+
+ShapeHighlightPathItem* addHighlightPath(QGraphicsScene& canvas_scene, const QPainterPath& path,
+                                         const QPen& pen, const QBrush& brush) {
+  auto* item = new ShapeHighlightPathItem();
+  item->setPath(path);
+  item->setPen(pen);
+  item->setBrush(brush);
+  canvas_scene.addItem(item);
+  return item;
 }
 
 }  // namespace
@@ -63,7 +101,9 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     const QRectF keepout_rect(margin + (keepout.x_units * scale),
                               margin + (keepout.y_units * scale),
                               keepout.width_units * scale, keepout.height_units * scale);
-    auto* item = canvas_scene.addRect(keepout_rect, keepout_pen, keepout_brush);
+    QPainterPath keepout_path;
+    keepout_path.addRect(keepout_rect);
+    auto* item = addHighlightPath(canvas_scene, keepout_path, keepout_pen, keepout_brush);
     item->setToolTip("Keepout " + qstr(keepout.id) + " (" + qstr(keepout.kind) + ")");
     tagObject(*item, "keepout", qstr(keepout.id));
   }
@@ -72,10 +112,11 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
   track_pen.setCapStyle(Qt::RoundCap);
   for (const ccad::CanvasTrack& track : scene.tracks) {
     track_pen.setWidthF(std::max(1.2, track.width_units * scale));
-    auto* item = canvas_scene.addLine(margin + (track.start_x_units * scale),
-                                      margin + (track.start_y_units * scale),
-                                      margin + (track.end_x_units * scale),
-                                      margin + (track.end_y_units * scale), track_pen);
+    QPainterPath track_path;
+    track_path.moveTo(margin + (track.start_x_units * scale),
+                      margin + (track.start_y_units * scale));
+    track_path.lineTo(margin + (track.end_x_units * scale), margin + (track.end_y_units * scale));
+    auto* item = addHighlightPath(canvas_scene, track_path, track_pen, QBrush(Qt::NoBrush));
     item->setToolTip("Track " + qstr(track.id));
     tagObject(*item, "track", qstr(track.id));
   }
@@ -94,8 +135,8 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
       transform.translate(-pad_center.x(), -pad_center.y());
       pad_path = transform.map(pad_path);
     }
-    auto* item =
-        canvas_scene.addPath(pad_path, QPen(QColor("#f472b6"), 0.8), QBrush(QColor("#be185d")));
+    auto* item = addHighlightPath(canvas_scene, pad_path, QPen(QColor("#f472b6"), 0.8),
+                                  QBrush(QColor("#be185d")));
     item->setToolTip("Pad " + qstr(pad.id));
     tagObject(*item, "pad", qstr(pad.id));
   }
@@ -104,8 +145,10 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     const double diameter = via.diameter_units * scale;
     const QRectF via_rect(margin + (via.x_units * scale) - (diameter / 2.0),
                           margin + (via.y_units * scale) - (diameter / 2.0), diameter, diameter);
-    auto* item =
-        canvas_scene.addEllipse(via_rect, QPen(QColor("#fde68a"), 1.0), QBrush(QColor("#f59e0b")));
+    QPainterPath via_path;
+    via_path.addEllipse(via_rect);
+    auto* item = addHighlightPath(canvas_scene, via_path, QPen(QColor("#fde68a"), 1.0),
+                                  QBrush(QColor("#f59e0b")));
     item->setToolTip("Via " + qstr(via.id));
     tagObject(*item, "via", qstr(via.id));
     const double drill = via.drill_units * scale;
@@ -127,4 +170,8 @@ QString canvasObjectId(const QGraphicsItem& item) {
 
 QString canvasObjectType(const QGraphicsItem& item) {
   return item.data(kCanvasObjectTypeRole).toString();
+}
+
+bool canvasUsesShapeSelectionHighlight(const QGraphicsItem& item) {
+  return item.data(kCanvasShapeSelectionHighlightRole).toBool();
 }
