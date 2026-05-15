@@ -220,7 +220,7 @@ DRC command behavior:
 
 - `drc <path>` runs physical board checks.
 - Reports duplicate primitive IDs, unknown layers, unknown non-empty net references, geometry outside board outline, invalid dimensions, rectangular keepout violations, unconnected pads/vias/tracks, unconnected track endpoints, via drill larger than diameter, and zero-length track segments.
-- Pad centers, via centers, and track endpoints inside rectangular keepouts are errors: `PAD_IN_KEEPOUT`, `VIA_IN_KEEPOUT`, and `TRACK_ENDPOINT_IN_KEEPOUT`.
+- Pad centers, via centers, track endpoints, and track segments crossing rectangular keepouts are errors: `PAD_IN_KEEPOUT`, `VIA_IN_KEEPOUT`, `TRACK_ENDPOINT_IN_KEEPOUT`, and `TRACK_CROSSES_KEEPOUT`.
 - Empty pad `net_id` is reported as warning code `UNCONNECTED_PAD`.
 - Empty via and track `net_id` values are warnings: `UNCONNECTED_VIA` and `UNCONNECTED_TRACK`.
 - Track endpoints that do not exactly touch a same-net pad center, via center, or another track endpoint are reported as warning code `UNCONNECTED_TRACK_ENDPOINT`.

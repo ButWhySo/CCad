@@ -10,7 +10,7 @@ KiCad-style functionality and UI expectations are mapped in `docs/research/2026-
 
 ## Phase Roadmap
 
-Current progress counter is tracked in `docs/devops/progress.md`. As of Sprint 19, CCad is in Phase 2 / 6: physical primitives and early board authoring.
+Current progress counter is tracked in `docs/devops/progress.md`. As of Sprint 20, CCad is in Phase 2 / 6: physical primitives and early board authoring.
 
 1. Logical kernel: project, components, pins, nets, constraints, ERC, CLI.
 2. Physical primitives: board outline, layers, pads, vias, tracks, rectangular keepouts, placement regions, early DRC.
@@ -37,7 +37,20 @@ The initial codebase is C++20:
 - Rectangular keepouts can be authored with `ccad pcb add-keepout` and are visible in the Qt board canvas.
 - KiCad footprint import supports a basic `.kicad_mod` pad subset and treats files strictly as data.
 - Footprint placement can rotate pads and preserve logical net IDs when project nets contain matching component/pin members.
-- Physical DRC currently covers duplicate IDs, unknown layers/nets, outline bounds, invalid dimensions, empty net warnings, track endpoint connectivity warnings, rectangular keepout violations, drill/diameter sanity, and zero-length tracks.
+- Physical DRC currently covers duplicate IDs, unknown layers/nets, outline bounds, invalid dimensions, empty net warnings, track endpoint connectivity warnings, rectangular keepout occupancy/crossing violations, drill/diameter sanity, and zero-length tracks.
+
+## KiCad Library Reuse Policy
+
+KiCad symbols, footprints, and 3D model references are important source data for future compatibility, but CCad should not vendor a bulk KiCad library dump into the main source tree.
+
+Planned approach:
+
+- Build importers and indexers before bulk ingestion.
+- Treat KiCad libraries as external data, never executable code.
+- Preserve source URL, mirror, commit/hash, original path, license, and import diagnostics per library item.
+- Normalize imported assets into a controlled CCad catalog format.
+- Keep large binary/model caches outside this repo or in a dedicated artifact/catalog repository.
+- Use official KiCad libraries as the primary source when possible; mirrors such as Gitee can be fallback sources only when provenance and checksums match.
 
 ## Current Source Layout
 
