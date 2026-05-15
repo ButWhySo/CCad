@@ -5,8 +5,8 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 ## Current Progress
 
 - Phase: 2 / 6
-- Last merged sprint: Sprint 38, net highlight groundwork
-- Current sprint: Sprint 39, net browser highlight
+- Last merged sprint: Sprint 39, net browser highlight
+- Next sprint: Sprint 40, planning pending
 - Sprint sizing: prefer moderate branches that group several related tasks before the full clean gate; avoid one tiny branch per small GUI affordance when compile cost dominates.
 - Active branch pattern: `sprint-<n>-<topic>`
 - Current source of truth for phase/sprint counter: `docs/devops/progress.md`
