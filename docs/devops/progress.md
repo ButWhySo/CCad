@@ -6,10 +6,10 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
-- Sprint: 30
-- Branch: `main`
+- Sprint: 31
+- Branch: `sprint-31-layer-object-browser`
 - Last merged sprint: Sprint 30, GUI inspector panel
-- Status: Sprint 30 merged and verified on `main`; Sprint 31 planning next
+- Status: Sprint 31 implementation on feature branch
 
 ## Phase Roadmap
 
@@ -55,7 +55,7 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 ## Active Sprint
 
-- Sprint 31: planning pending.
+- Sprint 31: layer and object browser.
 
 ## Reporting Rule
 

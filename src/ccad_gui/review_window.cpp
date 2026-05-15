@@ -11,7 +11,6 @@
 #include <QFileInfo>
 #include <QGraphicsScene>
 #include <QDockWidget>
-#include <QListWidget>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QPainter>
@@ -68,14 +67,9 @@ ReviewWindow::ReviewWindow() {
   right_layout->setSpacing(8);
   selection_inspector_ = new SelectionInspectorPanel(right_panel);
   selection_inspector_->setObjectName("selectionInspectorPanel");
-  auto* layer_panel = new QListWidget(right_panel);
-  layer_panel->setObjectName("layersPanel");
-  layer_panel->addItem("F.Cu");
-  layer_panel->addItem("B.Cu");
-  layer_panel->addItem("Edge.Cuts");
-  layer_panel->addItem("Keepouts");
+  object_browser_ = new ObjectBrowserPanel(right_panel);
   right_layout->addWidget(selection_inspector_);
-  right_layout->addWidget(layer_panel, 1);
+  right_layout->addWidget(object_browser_, 1);
   auto* layers_dock = new QDockWidget("Layers / Objects", this);
   layers_dock->setObjectName("layersDock");
   layers_dock->setWidget(right_panel);
@@ -208,7 +202,7 @@ void ReviewWindow::applyStyle() {
       selection-background-color: #dbeafe;
       selection-color: #111827;
     }
-    QListWidget#layersPanel {
+    QListWidget#objectBrowserPanel {
       background: #ffffff;
       border: 1px solid #dfe6ef;
       padding: 6px;
@@ -301,6 +295,7 @@ void ReviewWindow::renderReview(const ccad::ProjectReview& review) {
 
 void ReviewWindow::renderCanvas(const ccad::CanvasScene& scene) {
   renderBoardCanvas(*canvas_scene_, scene);
+  object_browser_->renderScene(scene);
   auto* board_view = dynamic_cast<BoardCanvasView*>(canvas_view_);
   if (board_view != nullptr) {
     board_view->zoomToFit();

@@ -19,6 +19,7 @@ Progress counter: Phase 2 / 6, Sprint 30 merged; Sprint 31 planning. See `docs/d
 - Physical DRC for geometry, connectivity metadata, rectangular keepout occupancy, and track crossing violations.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
 - Native GUI selection inspector for stable object type and ID.
+- Native GUI layer/object browser and shape-level selection highlight.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
 

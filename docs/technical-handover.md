@@ -35,6 +35,7 @@ The initial codebase is C++20:
 - Sprint 27 starts the CAD editor shell direction: central PCB tab, dock panels, explicit canvas fit, wheel zoom, middle-button pan, and status readouts.
 - Sprint 28 split the project summary and diagnostics panels out of `ReviewWindow`; keep future GUI features similarly modular.
 - Sprint 29 made canvas primitives selectable by stable object type and ID. Sprint 30 adds a dedicated read-only inspector panel for the selected object's stable type and ID.
+- Sprint 31 adds read-only layer/object browsing from `CanvasScene` metadata and uses shape-level selection highlights instead of Qt bounding boxes.
 - Large designs should not be generated as command spam. See `docs/architecture/large-design-and-component-knowledge-pipeline.md` for the intended batching, component knowledge, curation, and visual review pipeline.
 - Large designs should not be generated as command spam. See `docs/architecture/large-design-and-component-knowledge-pipeline.md` for the intended batching, component knowledge, curation, and visual review pipeline.
 - Physical lengths are stored as integer nanometers in `ccad_core::Length`; user-facing mm/mil values convert at API boundaries.
