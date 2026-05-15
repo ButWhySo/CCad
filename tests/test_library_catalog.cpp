@@ -74,6 +74,11 @@ int main() {
   const std::vector<const ccad::LibraryItem*> metric_matches =
       ccad::searchLibraryItems(parsed, "0603");
   require(metric_matches.size() == 2, "catalog search returns multiple matches");
+  const std::vector<const ccad::LibraryItem*> capacitor_matches =
+      ccad::searchLibraryItems(parsed, "0603", "footprint");
+  require(capacitor_matches.size() == 2, "catalog search kind filter keeps footprints");
+  require(ccad::searchLibraryItems(parsed, "0603", "symbol").empty(),
+          "catalog search kind filter removes non-matching kind");
   require(ccad::searchLibraryItems(parsed, "").empty(), "catalog search rejects empty query");
 
   bool rejected = false;

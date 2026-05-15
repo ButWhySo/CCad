@@ -48,7 +48,7 @@ const std::vector<CommandHelp>& commandHelp() {
       CommandHelp{.name = "lib catalog-search",
                   .summary = "Search local CCad library catalog items",
                   .usage = "ccad lib catalog-search --catalog <path.ccad-library.json> "
-                           "--query <text>"},
+                           "--query <text> [--kind <kind>]"},
       CommandHelp{.name = "pcb place-footprint",
                   .summary = "Place imported footprint pads onto a board",
                   .usage = "ccad pcb place-footprint --file <path> --footprint <path.json> "

@@ -53,7 +53,7 @@ void printCatalogItem(const ccad::LibraryItem& item) {
             << "}\n";
 }
 
-void printCatalogSearchResults(const std::string& query,
+void printCatalogSearchResults(const std::string& query, const std::string& kind,
                                const std::vector<const ccad::LibraryItem*>& items) {
   std::cout << "{\n"
             << "  \"count\": " << items.size() << ",\n"
@@ -69,6 +69,7 @@ void printCatalogSearchResults(const std::string& query,
               << "    }" << (i + 1 == items.size() ? "" : ",") << '\n';
   }
   std::cout << "  ],\n"
+            << "  \"kind\": \"" << ccad::escapeJson(kind) << "\",\n"
             << "  \"query\": \"" << ccad::escapeJson(query) << "\"\n"
             << "}\n";
 }
@@ -136,10 +137,14 @@ int libCommand(const std::vector<std::string>& args) {
 
     if (subcommand == "catalog-search") {
       const std::map<std::string, std::string> options =
-          parseOptions(args, 1, {"--catalog", "--query"});
+          parseOptions(args, 1, {"--catalog", "--query", "--kind"});
       const std::string query = requireOption(options, "--query");
+      std::string kind;
+      if (options.contains("--kind")) {
+        kind = requireOption(options, "--kind");
+      }
       const ccad::LibraryCatalog catalog = loadCatalogFile(requireOption(options, "--catalog"));
-      printCatalogSearchResults(query, ccad::searchLibraryItems(catalog, query));
+      printCatalogSearchResults(query, kind, ccad::searchLibraryItems(catalog, query, kind));
       return 0;
     }
 

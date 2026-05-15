@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 23 merged; Sprint 24 planning. See `docs/devops/progress.md`.
+Progress counter: Phase 2 / 6, Sprint 24 in progress. See `docs/devops/progress.md`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -71,6 +71,12 @@ Search a catalog by text:
 
 ```powershell
 .\build-qt\ccad.exe lib catalog-search --catalog .\catalog-cache\kicad.ccad-library.json --query 0603
+```
+
+Limit search to one item kind:
+
+```powershell
+.\build-qt\ccad.exe lib catalog-search --catalog .\catalog-cache\kicad.ccad-library.json --query 0603 --kind footprint
 ```
 
 ## Windows Qt Development Loop

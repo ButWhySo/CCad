@@ -6,10 +6,10 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
-- Sprint: 23
-- Branch: `main`
+- Sprint: 24
+- Branch: `sprint-24-library-catalog-kind-filter`
 - Last merged sprint: Sprint 23, library catalog search
-- Status: Sprint 23 merged and verified on main
+- Status: Sprint 24 implementation on feature branch
 
 ## Phase Roadmap
 
@@ -48,18 +48,18 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 ## Active Sprint
 
-- Sprint 24: planning.
+- Sprint 24: library catalog kind filter.
 
 ## Reporting Rule
 
 Every commit/merge status update should include:
 
 ```text
-Progress: Phase 2/6, Sprint 23, <branch-or-main>, <short status>
+Progress: Phase 2/6, Sprint 24, <branch-or-main>, <short status>
 ```
 
 Example:
 
 ```text
-Progress: Phase 2/6, Sprint 23, main, merged and verified.
+Progress: Phase 2/6, Sprint 24, sprint-24-library-catalog-kind-filter, implementation.
 ```

@@ -38,5 +38,8 @@ LibraryCatalog loadLibraryCatalogJson(const std::string& json);
 const LibraryItem* findLibraryItem(const LibraryCatalog& catalog, const std::string& id);
 std::vector<const LibraryItem*> searchLibraryItems(const LibraryCatalog& catalog,
                                                    const std::string& query);
+std::vector<const LibraryItem*> searchLibraryItems(const LibraryCatalog& catalog,
+                                                   const std::string& query,
+                                                   const std::string& kind);
 
 }  // namespace ccad
