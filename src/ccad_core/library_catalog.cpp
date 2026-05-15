@@ -2,11 +2,13 @@
 
 #include "ccad_core/json.hpp"
 
-#include <cctype>
 #include <algorithm>
+#include <cctype>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
+#include <utility>
 
 namespace ccad {
 namespace {
@@ -29,6 +31,16 @@ std::string lowercase(std::string value) {
 
 bool containsCaseInsensitive(const std::string& value, const std::string& query) {
   return lowercase(value).find(query) != std::string::npos;
+}
+
+void addDiagnostic(std::vector<CatalogDiagnostic>& diagnostics, std::string code,
+                   std::string message, std::string object_id) {
+  diagnostics.push_back(CatalogDiagnostic{
+      .severity = "error",
+      .code = std::move(code),
+      .message = std::move(message),
+      .object_id = std::move(object_id),
+  });
 }
 
 class CatalogJsonReader {
@@ -360,6 +372,48 @@ std::vector<const LibraryItem*> searchLibraryItems(const LibraryCatalog& catalog
     }
   }
   return matches;
+}
+
+std::vector<CatalogDiagnostic> validateLibraryCatalog(const LibraryCatalog& catalog) {
+  std::vector<CatalogDiagnostic> diagnostics;
+  std::set<std::string> item_ids;
+  for (const LibraryItem& item : catalog.items) {
+    if (item.id.empty()) {
+      addDiagnostic(diagnostics, "MISSING_ITEM_ID", "Library item has no stable ID",
+                    item.name);
+    } else if (!item_ids.insert(item.id).second) {
+      addDiagnostic(diagnostics, "DUPLICATE_ITEM_ID",
+                    "Library item ID is duplicated in the catalog", item.id);
+    }
+    if (item.kind.empty()) {
+      addDiagnostic(diagnostics, "MISSING_ITEM_KIND", "Library item has no kind", item.id);
+    }
+    if (item.name.empty()) {
+      addDiagnostic(diagnostics, "MISSING_ITEM_NAME", "Library item has no display name",
+                    item.id);
+    }
+    if (item.source_path.empty()) {
+      addDiagnostic(diagnostics, "MISSING_ITEM_SOURCE_PATH",
+                    "Library item has no upstream source path", item.id);
+    }
+    if (item.native_path.empty()) {
+      addDiagnostic(diagnostics, "MISSING_ITEM_NATIVE_PATH",
+                    "Library item has no CCad-native artifact path", item.id);
+    }
+    if (item.sha256.empty()) {
+      addDiagnostic(diagnostics, "MISSING_ITEM_SHA256",
+                    "Library item has no source checksum", item.id);
+    }
+    if (item.license.empty()) {
+      addDiagnostic(diagnostics, "MISSING_ITEM_LICENSE",
+                    "Library item has no license metadata", item.id);
+    }
+    if (item.provenance.empty()) {
+      addDiagnostic(diagnostics, "MISSING_ITEM_PROVENANCE",
+                    "Library item has no provenance metadata", item.id);
+    }
+  }
+  return diagnostics;
 }
 
 }  // namespace ccad

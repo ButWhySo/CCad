@@ -33,6 +33,13 @@ struct LibraryCatalog {
   std::vector<LibraryItem> items;
 };
 
+struct CatalogDiagnostic {
+  std::string severity;
+  std::string code;
+  std::string message;
+  std::string object_id;
+};
+
 std::string dumpLibraryCatalogJson(const LibraryCatalog& catalog);
 LibraryCatalog loadLibraryCatalogJson(const std::string& json);
 const LibraryItem* findLibraryItem(const LibraryCatalog& catalog, const std::string& id);
@@ -41,5 +48,6 @@ std::vector<const LibraryItem*> searchLibraryItems(const LibraryCatalog& catalog
 std::vector<const LibraryItem*> searchLibraryItems(const LibraryCatalog& catalog,
                                                    const std::string& query,
                                                    const std::string& kind);
+std::vector<CatalogDiagnostic> validateLibraryCatalog(const LibraryCatalog& catalog);
 
 }  // namespace ccad
