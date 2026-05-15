@@ -62,4 +62,30 @@ int main(int argc, char** argv) {
 
   require(saw_track, "test scene has selectable track");
   require(saw_pad, "test scene has selectable pad");
+
+  CanvasRenderTheme theme;
+  theme.track_color = QColor("#22c55e");
+  theme.pad_fill_color = QColor("#0ea5e9");
+
+  QGraphicsScene themed_scene;
+  renderBoardCanvas(themed_scene, selectionScene(), theme);
+
+  bool saw_themed_track = false;
+  bool saw_themed_pad = false;
+  for (QGraphicsItem* item : themed_scene.items()) {
+    const QString type = canvasObjectType(*item);
+    if (type == "track") {
+      saw_themed_track = true;
+      require(canvasSelectionHighlightColor(*item) == theme.track_color.lighter(160),
+              "themed track highlight derives from theme track color");
+    }
+    if (type == "pad") {
+      saw_themed_pad = true;
+      require(canvasSelectionHighlightColor(*item) == theme.pad_fill_color.lighter(160),
+              "themed pad highlight derives from theme pad color");
+    }
+  }
+
+  require(saw_themed_track, "themed scene has selectable track");
+  require(saw_themed_pad, "themed scene has selectable pad");
 }
