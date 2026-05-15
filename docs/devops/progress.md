@@ -7,9 +7,9 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
 - Sprint: 21
-- Branch: `sprint-21-native-library-catalog`
-- Last merged sprint: Sprint 20, track crossing keepout DRC
-- Status: Sprint 21 implementation on feature branch
+- Branch: `main`
+- Last merged sprint: Sprint 21, native library catalog foundation
+- Status: Sprint 21 merged and verified on main
 
 ## Phase Roadmap
 
@@ -42,10 +42,11 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Sprint 18: rectangular keepouts.
 - Sprint 19: keepout authoring and visibility.
 - Sprint 20: track crossing keepout DRC.
+- Sprint 21: native library catalog foundation.
 
 ## Active Sprint
 
-- Sprint 21: native library catalog foundation.
+- Sprint 22: planning.
 
 ## Reporting Rule
 
@@ -58,5 +59,5 @@ Progress: Phase 2/6, Sprint 21, <branch-or-main>, <short status>
 Example:
 
 ```text
-Progress: Phase 2/6, Sprint 21, sprint-21-native-library-catalog, implementation.
+Progress: Phase 2/6, Sprint 21, main, merged and verified.
 ```

@@ -10,7 +10,7 @@ Add the metadata foundation for local/offline CCad-native library catalogs with 
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 21, `sprint-21-native-library-catalog`, implementation.
+Progress: Phase 2/6, Sprint 21, `main`, merged and verified.
 
 ## Backlog
 
@@ -21,7 +21,7 @@ Progress: Phase 2/6, Sprint 21, `sprint-21-native-library-catalog`, implementati
 5. Done: ignore local huge cache paths.
 6. In progress: update docs.
 7. Pending: run full native Qt build and CTest.
-8. Pending: merge to `main`.
+8. Done: merge to `main`.
 
 ## Verification So Far
 
@@ -41,6 +41,24 @@ ctest --test-dir build-qt -R library_catalog --output-on-failure
 ```
 
 - Result: focused catalog test passed.
+
+Full feature-branch gate:
+
+```cmd
+cmake --build build-qt --clean-first
+ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: 11 / 11 tests passed before commit.
+
+Main integration gate:
+
+```cmd
+cmake --build build-qt --clean-first
+ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: 11 / 11 tests passed after merging Sprint 21 to `main`.
 
 ## Demo
 
