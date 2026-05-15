@@ -335,12 +335,22 @@ const LibraryItem* findLibraryItem(const LibraryCatalog& catalog, const std::str
 
 std::vector<const LibraryItem*> searchLibraryItems(const LibraryCatalog& catalog,
                                                    const std::string& query) {
+  return searchLibraryItems(catalog, query, "");
+}
+
+std::vector<const LibraryItem*> searchLibraryItems(const LibraryCatalog& catalog,
+                                                   const std::string& query,
+                                                   const std::string& kind) {
   const std::string normalized_query = lowercase(query);
+  const std::string normalized_kind = lowercase(kind);
   std::vector<const LibraryItem*> matches;
   if (normalized_query.empty()) {
     return matches;
   }
   for (const LibraryItem& item : catalog.items) {
+    if (!normalized_kind.empty() && lowercase(item.kind) != normalized_kind) {
+      continue;
+    }
     if (containsCaseInsensitive(item.id, normalized_query) ||
         containsCaseInsensitive(item.name, normalized_query) ||
         containsCaseInsensitive(item.kind, normalized_query) ||

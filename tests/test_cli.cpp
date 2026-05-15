@@ -384,6 +384,12 @@ int main() {
   require(catalog_search_output.find("\"id\": \"footprint:Capacitor_SMD:C_0603_1608Metric\"") !=
               std::string::npos,
           "lib catalog-search writes capacitor match");
+  const std::string catalog_search_kind_command =
+      quote(CCAD_BINARY) + " lib catalog-search --catalog " + quote(catalog_path) +
+      " --query 0603 --kind symbol > " + quote(catalog_search_path);
+  require(run(catalog_search_kind_command) == 0, "lib catalog-search kind filter exits zero");
+  require(readFile(catalog_search_path).find("\"count\": 0") != std::string::npos,
+          "lib catalog-search kind filter excludes mismatched kind");
 
   const std::string place_footprint_command =
       quote(CCAD_BINARY) + " pcb place-footprint --file " + quote(board_project_path) +
