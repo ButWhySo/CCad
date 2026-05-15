@@ -26,12 +26,15 @@ class ReviewWindow final : public QMainWindow {
   void renderReview(const ccad::ProjectReview& review);
   void renderCanvas(const ccad::CanvasScene& scene);
   void updateCursorStatus(const QPointF& scene_position, double zoom_factor);
+  void updateSelectionStatus();
 
   ProjectSummaryPanel* project_summary_ = nullptr;
   QLabel* cursor_status_ = nullptr;
   QLabel* zoom_status_ = nullptr;
   QLabel* tool_status_ = nullptr;
   QLabel* layer_status_ = nullptr;
+  QLabel* selection_status_ = nullptr;
+  QLabel* selection_panel_status_ = nullptr;
   QGraphicsScene* canvas_scene_ = nullptr;
   QGraphicsView* canvas_view_ = nullptr;
   DiagnosticsPanel* diagnostics_ = nullptr;

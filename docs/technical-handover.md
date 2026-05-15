@@ -34,6 +34,7 @@ The initial codebase is C++20:
 - `ccad_gui` is optional and builds only when Qt 6 Widgets is available.
 - Sprint 27 starts the CAD editor shell direction: central PCB tab, dock panels, explicit canvas fit, wheel zoom, middle-button pan, and status readouts.
 - Sprint 28 split the project summary and diagnostics panels out of `ReviewWindow`; keep future GUI features similarly modular.
+- Sprint 29 made canvas primitives selectable by stable object type and ID. Selection is currently read-only and displayed in the status bar plus the right dock.
 - Physical lengths are stored as integer nanometers in `ccad_core::Length`; user-facing mm/mil values convert at API boundaries.
 - `ccad_core::CanvasScene` is the tested rendering input for the Qt board canvas. GUI rendering must consume this model rather than directly inventing project geometry.
 - Rectangular keepouts can be authored with `ccad pcb add-keepout` and are visible in the Qt board canvas.
