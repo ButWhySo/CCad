@@ -6,7 +6,7 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 
 - Phase: 2 / 6
 - Last merged sprint: Sprint 31, layer and object browser
-- Next sprint: Sprint 32, planning pending
+- Next sprint: Sprint 32, diagnostic selection link
 - Active branch pattern: `sprint-<n>-<topic>`
 - Current source of truth for phase/sprint counter: `docs/devops/progress.md`
 - Main product direction: native C++ PCB kernel and machine-callable CLI first; Qt GUI is a human review/editor client, not the data owner.
@@ -587,6 +587,7 @@ Important method:
 
 ```cpp
 void renderDiagnostics(const std::vector<ccad::Diagnostic>& diagnostics);
+QString objectIdForRow(int row) const;
 ```
 
 ### `src/ccad_gui/selection_inspector_panel.hpp/.cpp`
@@ -633,6 +634,7 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
 QString canvasObjectId(const QGraphicsItem& item);
 QString canvasObjectType(const QGraphicsItem& item);
 bool canvasUsesShapeSelectionHighlight(const QGraphicsItem& item);
+bool selectCanvasObjectById(QGraphicsScene& canvas_scene, const QString& id);
 ```
 
 Renders:
@@ -645,6 +647,7 @@ Renders:
 - board size label
 - stable object type/ID metadata on selectable primitive items
 - shape-level selection highlighting for selectable primitive items, avoiding loose Qt bounding boxes
+- selecting one canvas object by stable object ID for diagnostic-table linking
 
 ### `src/ccad_gui/board_canvas_view.hpp`
 

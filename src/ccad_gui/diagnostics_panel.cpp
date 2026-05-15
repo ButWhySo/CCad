@@ -53,3 +53,11 @@ void DiagnosticsPanel::renderDiagnostics(const std::vector<ccad::Diagnostic>& di
   }
   resizeColumnsToContents();
 }
+
+QString DiagnosticsPanel::objectIdForRow(const int row) const {
+  const QTableWidgetItem* object_item = item(row, 2);
+  if (object_item == nullptr) {
+    return {};
+  }
+  return object_item->text();
+}

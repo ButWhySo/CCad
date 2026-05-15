@@ -543,6 +543,7 @@ What it does:
 - GUI selection has a dedicated read-only inspector panel that shows selected object type and ID.
 - GUI right dock includes a read-only layer and object browser derived from the canvas scene.
 - GUI selected primitives use shape-level highlights instead of loose bounding boxes.
+- GUI diagnostic rows can select a matching PCB canvas object when the row carries a stable object ID.
 - Shows ERC diagnostics table.
 - Supports reload.
 
@@ -614,7 +615,7 @@ Expected result:
 
 Current limitation:
 
-- The GUI is now an early CAD editor shell, but layer visibility toggles, net highlight, richer object properties, editing, schematic rendering, and transaction timeline are still future work.
+- The GUI is now an early CAD editor shell, but DRC overlay markers, layer visibility toggles, net highlight, richer object properties, editing, schematic rendering, and transaction timeline are still future work.
 - Primitive authoring currently happens through the project JSON/kernel path; command verbs for placement/routing are planned next.
 
 ## Research And Architecture Docs
