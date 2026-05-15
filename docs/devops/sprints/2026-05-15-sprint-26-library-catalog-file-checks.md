@@ -10,7 +10,7 @@ Verify local native catalog artifacts by existence and checksum when a catalog r
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 26, `sprint-26-library-catalog-file-checks`, implementation.
+Progress: Phase 2/6, Sprint 26, `main`, merged and verified.
 
 ## Backlog
 
@@ -18,9 +18,9 @@ Progress: Phase 2/6, Sprint 26, `sprint-26-library-catalog-file-checks`, impleme
 2. Done: add failing CLI `--root` tests.
 3. Done: implement SHA-256 file verification.
 4. Done: expose `lib catalog-validate --root`.
-5. In progress: update docs.
-6. Pending: full native Qt build and CTest.
-7. Pending: merge to `main`.
+5. Done: update docs.
+6. Done: full native Qt build and CTest.
+7. Done: merge to `main`.
 
 ## Verification So Far
 
@@ -39,6 +39,22 @@ cmake --build build-qt --target ccad_library_catalog_tests ccad_cli_tests && cte
 ```
 
 - Result: focused catalog and CLI tests passed, 2/2.
+
+Full branch gate:
+
+```cmd
+cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: passed, 11/11 tests.
+
+Main integration gate:
+
+```cmd
+cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: passed, 11/11 tests after merge to `main`.
 
 ## Demo
 
