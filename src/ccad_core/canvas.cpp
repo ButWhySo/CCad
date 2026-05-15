@@ -21,6 +21,17 @@ CanvasScene buildCanvasScene(const Project& project) {
   scene.view_width_units = toMillimeters(project.board->outline.size.width);
   scene.view_height_units = toMillimeters(project.board->outline.size.height);
 
+  for (const Keepout& keepout : project.board->keepouts) {
+    scene.keepouts.push_back(CanvasKeepout{
+        .id = keepout.id,
+        .kind = keepout.kind,
+        .x_units = toMillimeters(keepout.area.origin.x),
+        .y_units = toMillimeters(keepout.area.origin.y),
+        .width_units = toMillimeters(keepout.area.size.width),
+        .height_units = toMillimeters(keepout.area.size.height),
+    });
+  }
+
   for (const Pad& pad : project.board->pads) {
     scene.pads.push_back(CanvasPad{
         .id = pad.id,

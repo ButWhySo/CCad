@@ -38,6 +38,9 @@ void requireInsideBoard(const ccad::Board& board, ccad::Point point, const std::
 void requireUniquePadId(const ccad::Board& board, const std::string& id);
 void requireUniqueViaId(const ccad::Board& board, const std::string& id);
 void requireUniqueTrackId(const ccad::Board& board, const std::string& id);
+void requireUniqueKeepoutId(const ccad::Board& board, const std::string& id);
+void requireRectInsideBoard(const ccad::Board& board, const ccad::Rect& rect,
+                            const std::string& label);
 ccad::Point rotateAndTranslate(const ccad::Point& local, const ccad::Point& origin,
                                double rotation_degrees);
 

@@ -209,6 +209,12 @@ void requireInsideBoard(const ccad::Board& board, const ccad::Point point,
   }
 }
 
+void requireRectInsideBoard(const ccad::Board& board, const ccad::Rect& rect,
+                            const std::string& label) {
+  requireInsideBoard(board, rect.origin, label + " origin");
+  requireInsideBoard(board, ccad::maxPoint(rect), label + " max corner");
+}
+
 void requireUniquePadId(const ccad::Board& board, const std::string& id) {
   for (const ccad::Pad& pad : board.pads) {
     if (pad.id == id) {
@@ -229,6 +235,14 @@ void requireUniqueTrackId(const ccad::Board& board, const std::string& id) {
   for (const ccad::TrackSegment& track : board.tracks) {
     if (track.id == id) {
       throw std::runtime_error("duplicate track id: " + id);
+    }
+  }
+}
+
+void requireUniqueKeepoutId(const ccad::Board& board, const std::string& id) {
+  for (const ccad::Keepout& keepout : board.keepouts) {
+    if (keepout.id == id) {
+      throw std::runtime_error("duplicate keepout id: " + id);
     }
   }
 }

@@ -62,6 +62,8 @@ int main() {
   require(help_json.find("\"commands\"") != std::string::npos, "help json has commands");
   require(help_json.find("\"name\": \"pcb place-footprint\"") != std::string::npos,
           "help json describes footprint placement");
+  require(help_json.find("\"name\": \"pcb add-keepout\"") != std::string::npos,
+          "help json describes keepout authoring");
   require(help_json.find("--rotation-deg") != std::string::npos,
           "help json exposes rotation option");
 
@@ -105,7 +107,22 @@ int main() {
   require(track_json.find("\"width_nm\": 250000") != std::string::npos,
           "pcb add-track writes width");
 
+  const std::string add_keepout_command =
+      quote(CCAD_BINARY) + " pcb add-keepout --file " + quote(board_project_path) +
+      " --id K1 --kind placement --x-mm 20 --y-mm 10 --width-mm 4 --height-mm 3";
+  require(run(add_keepout_command) == 0, "pcb add-keepout exits zero");
+  const std::string keepout_json = readFile(board_project_path);
+  require(keepout_json.find("\"keepouts\"") != std::string::npos,
+          "pcb add-keepout writes keepouts");
+  require(keepout_json.find("\"id\": \"K1\"") != std::string::npos,
+          "pcb add-keepout writes id");
+  require(keepout_json.find("\"kind\": \"placement\"") != std::string::npos,
+          "pcb add-keepout writes kind");
+  require(keepout_json.find("\"width_nm\": 4000000") != std::string::npos,
+          "pcb add-keepout writes width");
+
   require(run(add_pad_command) != 0, "pcb add-pad rejects duplicate id");
+  require(run(add_keepout_command) != 0, "pcb add-keepout rejects duplicate id");
 
   const std::string bad_layer_command =
       quote(CCAD_BINARY) + " pcb add-track --file " + quote(board_project_path) +
@@ -123,6 +140,11 @@ int main() {
       " --id T_OUT --net N1 --layer F.Cu"
       " --start-x-mm 5 --start-y-mm 6 --end-x-mm 99 --end-y-mm 9 --width-mm 0.25";
   require(run(outside_track_command) != 0, "pcb add-track rejects endpoint outside board");
+
+  const std::string outside_keepout_command =
+      quote(CCAD_BINARY) + " pcb add-keepout --file " + quote(board_project_path) +
+      " --id K_OUT --kind placement --x-mm 40 --y-mm 26 --width-mm 4 --height-mm 3";
+  require(run(outside_keepout_command) != 0, "pcb add-keepout rejects area outside board");
 
   const std::string missing_board_command =
       quote(CCAD_BINARY) + " pcb add-via --file " + quote(project_path) +

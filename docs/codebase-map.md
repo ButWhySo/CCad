@@ -6,7 +6,7 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 
 - Phase: 2 / 6
 - Last merged sprint: Sprint 18, rectangular keepouts
-- Next sprint: Sprint 19 planning
+- Next sprint: Sprint 19, keepout authoring and visibility
 - Active branch pattern: `sprint-<n>-<topic>`
 - Current source of truth for phase/sprint counter: `docs/devops/progress.md`
 - Main product direction: native C++ PCB kernel and machine-callable CLI first; Qt GUI is a human review/editor client, not the data owner.
@@ -396,6 +396,7 @@ ccad lib import-footprint
 ccad pcb add-pad
 ccad pcb add-via
 ccad pcb add-track
+ccad pcb add-keepout
 ccad pcb place-footprint
 ```
 
@@ -452,6 +453,7 @@ int pcbCommand(const std::vector<std::string>& args);
 Placement rule:
 
 - `pcb place-footprint` maps `FootprintPad` to placed `Pad`.
+- `pcb add-keepout` maps command arguments to one rectangular `Keepout` and rejects duplicate IDs or areas outside the board.
 - Pad ID format: `<component>.<pad-number>`.
 - `net_id` is copied from the first logical `Net` member matching the placed component ID and footprint pad number.
 - If no logical net member matches, `net_id` remains empty for backward compatibility.

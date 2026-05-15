@@ -6,13 +6,13 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 18 in progress. See `docs/devops/progress.md`.
+Progress counter: Phase 2 / 6, Sprint 19 in progress. See `docs/devops/progress.md`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
 - Logical ERC diagnostics.
 - CLI: `ccad help --format json`, `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
-- CLI PCB authoring: `ccad pcb add-pad`, `ccad pcb add-via`, and `ccad pcb add-track`.
+- CLI PCB authoring: `ccad pcb add-pad`, `ccad pcb add-via`, `ccad pcb add-track`, and `ccad pcb add-keepout`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - Physical board outline, layers, rectangular keepouts, pads, vias, and track segments in project JSON.
 - Physical DRC for geometry, connectivity metadata, and rectangular keepout violations.
@@ -288,10 +288,15 @@ Current command guards:
 
 Rectangular keepouts:
 
-- Keepouts are currently represented in project JSON and checked by DRC.
-- There is not yet a CLI authoring command for keepouts.
+- Keepouts are represented in project JSON, can be authored through the CLI, are visible in the Qt board canvas, and are checked by DRC.
 - A keepout has `id`, `kind`, and rectangular `area`.
 - DRC errors if a pad center, via center, or track endpoint lies inside a keepout.
+
+Add a keepout through the CLI:
+
+```powershell
+.\build-qt\ccad.exe pcb add-keepout --file .\build-qt\canvas-demo.ccad.json --id K1 --kind placement --x-mm 20 --y-mm 10 --width-mm 4 --height-mm 3
+```
 
 Example JSON fragment:
 
@@ -366,6 +371,7 @@ ctest --test-dir build-qt --output-on-failure
 .\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 .\build-qt\ccad.exe pcb add-via --file .\build-qt\canvas-demo.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
 .\build-qt\ccad.exe pcb add-track --file .\build-qt\canvas-demo.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
+.\build-qt\ccad.exe pcb add-keepout --file .\build-qt\canvas-demo.ccad.json --id K1 --kind placement --x-mm 20 --y-mm 10 --width-mm 4 --height-mm 3
 .\build-qt\ccad.exe inspect .\build-qt\canvas-demo.ccad.json
 .\build-qt\ccad.exe validate .\build-qt\canvas-demo.ccad.json
 .\build-qt\ccad.exe drc .\build-qt\canvas-demo.ccad.json
@@ -382,7 +388,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_sprint_demo.ps1 -Name spr
 What it does:
 
 - Creates `artifacts/demos/sprint7-drc-demo.ccad.json`.
-- Adds a pad, via, and track through the CLI.
+- Adds a pad, via, track, and rectangular keepout through the CLI.
 - Writes inspect, validate, and DRC JSON reports.
 - Writes a sample KiCad `.kicad_mod` file and imports it to CCad footprint JSON.
 - Places the imported footprint onto the demo board.

@@ -10,7 +10,7 @@ KiCad-style functionality and UI expectations are mapped in `docs/research/2026-
 
 ## Phase Roadmap
 
-Current progress counter is tracked in `docs/devops/progress.md`. As of Sprint 18, CCad is in Phase 2 / 6: physical primitives and early board authoring.
+Current progress counter is tracked in `docs/devops/progress.md`. As of Sprint 19, CCad is in Phase 2 / 6: physical primitives and early board authoring.
 
 1. Logical kernel: project, components, pins, nets, constraints, ERC, CLI.
 2. Physical primitives: board outline, layers, pads, vias, tracks, rectangular keepouts, placement regions, early DRC.
@@ -34,6 +34,7 @@ The initial codebase is C++20:
 - `ccad_gui` is optional and builds only when Qt 6 Widgets is available.
 - Physical lengths are stored as integer nanometers in `ccad_core::Length`; user-facing mm/mil values convert at API boundaries.
 - `ccad_core::CanvasScene` is the tested rendering input for the Qt board canvas. GUI rendering must consume this model rather than directly inventing project geometry.
+- Rectangular keepouts can be authored with `ccad pcb add-keepout` and are visible in the Qt board canvas.
 - KiCad footprint import supports a basic `.kicad_mod` pad subset and treats files strictly as data.
 - Footprint placement can rotate pads and preserve logical net IDs when project nets contain matching component/pin members.
 - Physical DRC currently covers duplicate IDs, unknown layers/nets, outline bounds, invalid dimensions, empty net warnings, track endpoint connectivity warnings, rectangular keepout violations, drill/diameter sanity, and zero-length tracks.

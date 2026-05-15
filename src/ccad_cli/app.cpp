@@ -58,6 +58,10 @@ const std::vector<CommandHelp>& commandHelp() {
                   .usage = "ccad pcb add-track --file <path> --id <id> --net <id> --layer <id> "
                            "--start-x-mm <n> --start-y-mm <n> --end-x-mm <n> "
                            "--end-y-mm <n> --width-mm <n>"},
+      CommandHelp{.name = "pcb add-keepout",
+                  .summary = "Append one rectangular keepout to a board project",
+                  .usage = "ccad pcb add-keepout --file <path> --id <id> --kind <kind> "
+                           "--x-mm <n> --y-mm <n> --width-mm <n> --height-mm <n>"},
   };
   return commands;
 }

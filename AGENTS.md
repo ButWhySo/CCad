@@ -43,8 +43,9 @@ Current progress is tracked only in `docs/devops/progress.md`; do not rely on th
 
 - Phase 2 focuses on physical primitives and early board authoring.
 - The kernel now supports board outline, layers, rectangular keepouts, pads, vias, tracks, KiCad footprint import, footprint placement, pad rotation, and physical DRC diagnostics.
+- The CLI can author rectangular keepouts through `ccad pcb add-keepout`.
 - The GUI is still a review surface, not the source of truth and not yet a full editor.
-- Rectangular keepouts are in the kernel/JSON/DRC only; CLI authoring and GUI rendering are later work.
+- Rectangular keepouts are rendered in the Qt board canvas as orange dashed regions.
 - DRC currently reports geometry errors, unknown layers/nets, empty net warnings, dangling track endpoint warnings, and keepout violations.
 
 ## Security Notes

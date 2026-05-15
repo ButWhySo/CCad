@@ -6,10 +6,10 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
-- Sprint: 18
-- Branch: `main`
+- Sprint: 19
+- Branch: `sprint-19-keepout-authoring-visibility`
 - Last merged sprint: Sprint 18, rectangular keepouts
-- Status: Sprint 18 merged and verified on main
+- Status: Sprint 19 implementation on feature branch
 
 ## Phase Roadmap
 
@@ -43,7 +43,7 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 ## Active Sprint
 
-- Sprint 19: planning.
+- Sprint 19: keepout authoring and visibility.
 
 ## Reporting Rule
 
@@ -56,5 +56,5 @@ Progress: Phase 2/6, Sprint 19, <branch-or-main>, <short status>
 Example:
 
 ```text
-Progress: Phase 2/6, Sprint 18, main, merged and verified.
+Progress: Phase 2/6, Sprint 19, sprint-19-keepout-authoring-visibility, implementation.
 ```
