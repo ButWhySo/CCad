@@ -46,6 +46,10 @@ Agents should read `docs/codebase-map.md` before editing code. It is the maintai
 
 CCad should reuse KiCad's symbol, footprint, and 3D model ecosystem through local source caches and CCad-native catalogs.
 
+For large designs, CCad should use semantic batches, enriched component knowledge, local catalog search, and checkpoint-based visual review instead of thousands of primitive commands. See `docs/architecture/large-design-and-component-knowledge-pipeline.md`.
+
+For large designs, CCad should use semantic batches, enriched component knowledge, local catalog search, and checkpoint-based visual review instead of thousands of primitive commands. See `docs/architecture/large-design-and-component-knowledge-pipeline.md`.
+
 Policy:
 
 - Do not fetch the internet repeatedly during normal design work.
