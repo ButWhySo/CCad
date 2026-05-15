@@ -7,9 +7,9 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
 - Sprint: 18
-- Branch: `sprint-18-rect-keepouts`
-- Last merged sprint: Sprint 17, DRC empty via/track net warnings
-- Status: Sprint 18 implementation on feature branch
+- Branch: `main`
+- Last merged sprint: Sprint 18, rectangular keepouts
+- Status: Sprint 18 merged and verified on main
 
 ## Phase Roadmap
 
@@ -39,21 +39,22 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Sprint 15: DRC unknown physical net references.
 - Sprint 16: DRC track endpoint connectivity.
 - Sprint 17: DRC empty via/track net warnings.
+- Sprint 18: rectangular keepouts.
 
 ## Active Sprint
 
-- Sprint 18: rectangular keepouts.
+- Sprint 19: planning.
 
 ## Reporting Rule
 
 Every commit/merge status update should include:
 
 ```text
-Progress: Phase 2/6, Sprint 18, <branch-or-main>, <short status>
+Progress: Phase 2/6, Sprint 19, <branch-or-main>, <short status>
 ```
 
 Example:
 
 ```text
-Progress: Phase 2/6, Sprint 18, sprint-18-rect-keepouts, implementation.
+Progress: Phase 2/6, Sprint 18, main, merged and verified.
 ```
