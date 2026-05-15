@@ -10,7 +10,7 @@ Draw read-only PCB canvas markers for diagnostics that name a selectable object.
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 34, `sprint-34-diagnostic-overlay-markers`, implementation in progress.
+Progress: Phase 2/6, Sprint 34, `main`, merged and verified.
 
 ## Backlog
 
@@ -21,7 +21,7 @@ Progress: Phase 2/6, Sprint 34, `sprint-34-diagnostic-overlay-markers`, implemen
 5. Done: record theme/plugin/custom component creator compatibility in the large-design pipeline.
 6. Done: run focused marker and selection-style tests plus GUI build.
 7. Done: full native Qt build and CTest.
-8. Pending: commit and merge to `main`.
+8. Done: commit and merge to `main`.
 
 ## Verification So Far
 
@@ -52,6 +52,14 @@ cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-fa
 ```
 
 - Result: passed, 11/11 tests.
+
+Main integration gate:
+
+```cmd
+cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: passed, 11/11 tests after merge to `main`.
 
 ## Demo
 
