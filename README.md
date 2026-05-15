@@ -21,6 +21,7 @@ Progress counter: Phase 2 / 6, Sprint 32 merged; Sprint 33 planning. See `docs/d
 - Native GUI selection inspector for stable object type and ID.
 - Native GUI layer/object browser and shape-level selection highlight.
 - Native GUI diagnostic rows can select matching PCB canvas objects by stable ID.
+- Project review and GUI diagnostics include physical DRC findings.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
 

@@ -6,10 +6,10 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
-- Sprint: 32
-- Branch: `main`
+- Sprint: 33
+- Branch: `sprint-33-review-drc-diagnostics`
 - Last merged sprint: Sprint 32, diagnostic selection link
-- Status: Sprint 32 merged and verified on `main`; Sprint 33 planning next
+- Status: Sprint 33 implementation on feature branch
 
 ## Phase Roadmap
 
@@ -57,7 +57,7 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 ## Active Sprint
 
-- Sprint 33: planning pending.
+- Sprint 33: review DRC diagnostics.
 
 ## Reporting Rule
 

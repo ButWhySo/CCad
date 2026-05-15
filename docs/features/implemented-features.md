@@ -293,6 +293,7 @@ What it does:
 - Reports project ID/name.
 - Reports component, net, and constraint counts.
 - Carries ERC diagnostics.
+- Carries physical DRC diagnostics.
 - Produces status text such as `Clean: 1 component, 1 net, 1 constraint`, `Warnings: 1`, or `Errors: 1, warnings: 0`.
 
 Test:
