@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 19 merged; Sprint 20 planning. See `docs/devops/progress.md`.
+Progress counter: Phase 2 / 6, Sprint 20 in progress. See `docs/devops/progress.md`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -15,7 +15,7 @@ Progress counter: Phase 2 / 6, Sprint 19 merged; Sprint 20 planning. See `docs/d
 - CLI PCB authoring: `ccad pcb add-pad`, `ccad pcb add-via`, `ccad pcb add-track`, and `ccad pcb add-keepout`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - Physical board outline, layers, rectangular keepouts, pads, vias, and track segments in project JSON.
-- Physical DRC for geometry, connectivity metadata, and rectangular keepout violations.
+- Physical DRC for geometry, connectivity metadata, rectangular keepout occupancy, and track crossing violations.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
@@ -290,7 +290,7 @@ Rectangular keepouts:
 
 - Keepouts are represented in project JSON, can be authored through the CLI, are visible in the Qt board canvas, and are checked by DRC.
 - A keepout has `id`, `kind`, and rectangular `area`.
-- DRC errors if a pad center, via center, or track endpoint lies inside a keepout.
+- DRC errors if a pad center, via center, track endpoint, or track segment lies inside or crosses a keepout.
 
 Add a keepout through the CLI:
 

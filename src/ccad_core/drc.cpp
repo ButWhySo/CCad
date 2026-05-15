@@ -57,6 +57,60 @@ bool rectContainsPoint(const Rect& rect, const Point& point) {
          point.y.nanometers >= rect.origin.y.nanometers && point.y.nanometers <= max.y.nanometers;
 }
 
+int orientation(const Point& a, const Point& b, const Point& c) {
+  const long double ab_x = static_cast<long double>(b.x.nanometers - a.x.nanometers);
+  const long double ab_y = static_cast<long double>(b.y.nanometers - a.y.nanometers);
+  const long double ac_x = static_cast<long double>(c.x.nanometers - a.x.nanometers);
+  const long double ac_y = static_cast<long double>(c.y.nanometers - a.y.nanometers);
+  const long double cross = (ab_x * ac_y) - (ab_y * ac_x);
+  if (cross > 0) {
+    return 1;
+  }
+  if (cross < 0) {
+    return -1;
+  }
+  return 0;
+}
+
+bool pointOnSegment(const Point& a, const Point& b, const Point& point) {
+  if (orientation(a, b, point) != 0) {
+    return false;
+  }
+  const std::int64_t min_x = std::min(a.x.nanometers, b.x.nanometers);
+  const std::int64_t max_x = std::max(a.x.nanometers, b.x.nanometers);
+  const std::int64_t min_y = std::min(a.y.nanometers, b.y.nanometers);
+  const std::int64_t max_y = std::max(a.y.nanometers, b.y.nanometers);
+  return point.x.nanometers >= min_x && point.x.nanometers <= max_x &&
+         point.y.nanometers >= min_y && point.y.nanometers <= max_y;
+}
+
+bool segmentsIntersect(const Point& a, const Point& b, const Point& c, const Point& d) {
+  const int o1 = orientation(a, b, c);
+  const int o2 = orientation(a, b, d);
+  const int o3 = orientation(c, d, a);
+  const int o4 = orientation(c, d, b);
+  if (o1 != o2 && o3 != o4) {
+    return true;
+  }
+  return (o1 == 0 && pointOnSegment(a, b, c)) || (o2 == 0 && pointOnSegment(a, b, d)) ||
+         (o3 == 0 && pointOnSegment(c, d, a)) || (o4 == 0 && pointOnSegment(c, d, b));
+}
+
+bool segmentIntersectsRect(const Point& start, const Point& end, const Rect& rect) {
+  if (rectContainsPoint(rect, start) || rectContainsPoint(rect, end)) {
+    return true;
+  }
+
+  const Point top_left = rect.origin;
+  const Point bottom_right = maxPoint(rect);
+  const Point top_right{.x = bottom_right.x, .y = top_left.y};
+  const Point bottom_left{.x = top_left.x, .y = bottom_right.y};
+  return segmentsIntersect(start, end, top_left, top_right) ||
+         segmentsIntersect(start, end, top_right, bottom_right) ||
+         segmentsIntersect(start, end, bottom_right, bottom_left) ||
+         segmentsIntersect(start, end, bottom_left, top_left);
+}
+
 bool isPositive(const Length& length) {
   return length.nanometers > 0;
 }
@@ -210,6 +264,9 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
         diagnostics.push_back(makeDiagnostic(
             "TRACK_ENDPOINT_IN_KEEPOUT", "Track endpoint is inside keepout " + keepout.id,
             track.id));
+      } else if (segmentIntersectsRect(track.start, track.end, keepout.area)) {
+        diagnostics.push_back(makeDiagnostic(
+            "TRACK_CROSSES_KEEPOUT", "Track segment crosses keepout " + keepout.id, track.id));
       }
     }
   }

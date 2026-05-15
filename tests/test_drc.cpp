@@ -161,4 +161,19 @@ int main() {
                                             .height = ccad::millimeters(3)}}});
   require(hasCode(ccad::runDrc(keepout_track), "TRACK_ENDPOINT_IN_KEEPOUT"),
           "drc reports track endpoint in keepout");
+
+  ccad::Project keepout_track_crossing = validBoardProject();
+  keepout_track_crossing.board->tracks.at(0).start =
+      ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(12)};
+  keepout_track_crossing.board->tracks.at(0).end =
+      ccad::Point{.x = ccad::millimeters(12), .y = ccad::millimeters(12)};
+  keepout_track_crossing.board->keepouts.push_back(ccad::Keepout{
+      .id = "K_CROSS",
+      .kind = "routing",
+      .area = ccad::Rect{.origin = ccad::Point{.x = ccad::millimeters(6),
+                                               .y = ccad::millimeters(10)},
+                         .size = ccad::Size{.width = ccad::millimeters(2),
+                                            .height = ccad::millimeters(4)}}});
+  require(hasCode(ccad::runDrc(keepout_track_crossing), "TRACK_CROSSES_KEEPOUT"),
+          "drc reports track crossing keepout with endpoints outside");
 }
