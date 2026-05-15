@@ -37,6 +37,7 @@ The initial codebase is C++20:
 - Sprint 29 made canvas primitives selectable by stable object type and ID. Sprint 30 adds a dedicated read-only inspector panel for the selected object's stable type and ID.
 - Sprint 31 adds read-only layer/object browsing from `CanvasScene` metadata and uses shape-level selection highlights instead of Qt bounding boxes.
 - Sprint 32 links diagnostic table rows to PCB canvas selection when a diagnostic carries a stable object ID.
+- Sprint 33 includes DRC diagnostics in the shared `ProjectReview` stream used by CLI inspect and the GUI.
 - Large designs should not be generated as command spam. See `docs/architecture/large-design-and-component-knowledge-pipeline.md` for the intended batching, component knowledge, curation, and visual review pipeline.
 - Large designs should not be generated as command spam. See `docs/architecture/large-design-and-component-knowledge-pipeline.md` for the intended batching, component knowledge, curation, and visual review pipeline.
 - Physical lengths are stored as integer nanometers in `ccad_core::Length`; user-facing mm/mil values convert at API boundaries.

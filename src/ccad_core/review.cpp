@@ -1,5 +1,7 @@
 #include "ccad_core/review.hpp"
 
+#include "ccad_core/drc.hpp"
+
 #include <string>
 
 namespace ccad {
@@ -28,6 +30,9 @@ ProjectReview buildReview(const Project& project) {
     review.layer_count = project.board->layers.size();
   }
   review.diagnostics = runErc(project);
+  const std::vector<Diagnostic> drc_diagnostics = runDrc(project);
+  review.diagnostics.insert(review.diagnostics.end(), drc_diagnostics.begin(),
+                            drc_diagnostics.end());
 
   for (const Diagnostic& diagnostic : review.diagnostics) {
     if (diagnostic.severity == "error") {

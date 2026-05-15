@@ -6,7 +6,7 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 
 - Phase: 2 / 6
 - Last merged sprint: Sprint 32, diagnostic selection link
-- Next sprint: Sprint 33, planning pending
+- Next sprint: Sprint 33, review DRC diagnostics
 - Active branch pattern: `sprint-<n>-<topic>`
 - Current source of truth for phase/sprint counter: `docs/devops/progress.md`
 - Main product direction: native C++ PCB kernel and machine-callable CLI first; Qt GUI is a human review/editor client, not the data owner.
@@ -271,6 +271,10 @@ Used by:
 
 - `ccad inspect`
 - Qt review GUI header/cards/diagnostic table
+
+Rule:
+
+- Review diagnostics include both ERC and DRC results so GUI and CLI inspect see logical and physical issues through one stream.
 
 ### `src/ccad_core/diff.hpp/.cpp`
 
