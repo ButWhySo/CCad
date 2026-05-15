@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -49,5 +50,7 @@ std::vector<const LibraryItem*> searchLibraryItems(const LibraryCatalog& catalog
                                                    const std::string& query,
                                                    const std::string& kind);
 std::vector<CatalogDiagnostic> validateLibraryCatalog(const LibraryCatalog& catalog);
+std::vector<CatalogDiagnostic> validateLibraryCatalog(const LibraryCatalog& catalog,
+                                                      const std::filesystem::path& root);
 
 }  // namespace ccad
