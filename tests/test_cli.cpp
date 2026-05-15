@@ -391,6 +391,66 @@ int main() {
   require(readFile(catalog_search_path).find("\"count\": 0") != std::string::npos,
           "lib catalog-search kind filter excludes mismatched kind");
 
+  const std::filesystem::path catalog_validate_path = temp / "catalog-validate.json";
+  const std::string catalog_validate_command =
+      quote(CCAD_BINARY) + " lib catalog-validate --catalog " + quote(catalog_path) + " > " +
+      quote(catalog_validate_path);
+  require(run(catalog_validate_command) == 0, "lib catalog-validate clean catalog exits zero");
+  require(readFile(catalog_validate_path).find("\"diagnostics\": [") != std::string::npos,
+          "lib catalog-validate writes diagnostics array");
+
+  const std::filesystem::path bad_catalog_path = temp / "bad-catalog.ccad-library.json";
+  std::ofstream bad_catalog(bad_catalog_path);
+  bad_catalog << "{\n"
+              << "  \"schema_version\": 1,\n"
+              << "  \"name\": \"bad-cache\",\n"
+              << "  \"source\": {\n"
+              << "    \"name\": \"kicad-official\",\n"
+              << "    \"kind\": \"kicad\",\n"
+              << "    \"url\": \"https://gitlab.com/kicad/libraries/kicad-footprints\",\n"
+              << "    \"commit\": \"abc123\",\n"
+              << "    \"mirror\": \"official\",\n"
+              << "    \"fetched_at\": \"2026-05-15T00:00:00Z\"\n"
+              << "  },\n"
+              << "  \"items\": [\n"
+              << "    {\n"
+              << "      \"id\": \"footprint:dup\",\n"
+              << "      \"kind\": \"footprint\",\n"
+              << "      \"name\": \"dup-a\",\n"
+              << "      \"source_path\": \"a.kicad_mod\",\n"
+              << "      \"native_path\": \"a.ccad-footprint.json\",\n"
+              << "      \"sha256\": \"aaa\",\n"
+              << "      \"license\": \"CC-BY-SA-4.0 WITH KiCad-library-exception\",\n"
+              << "      \"provenance\": \"kicad-official@abc123\",\n"
+              << "      \"warnings\": []\n"
+              << "    },\n"
+              << "    {\n"
+              << "      \"id\": \"footprint:dup\",\n"
+              << "      \"kind\": \"footprint\",\n"
+              << "      \"name\": \"dup-b\",\n"
+              << "      \"source_path\": \"b.kicad_mod\",\n"
+              << "      \"native_path\": \"b.ccad-footprint.json\",\n"
+              << "      \"sha256\": \"\",\n"
+              << "      \"license\": \"\",\n"
+              << "      \"provenance\": \"\",\n"
+              << "      \"warnings\": []\n"
+              << "    }\n"
+              << "  ]\n"
+              << "}\n";
+  bad_catalog.close();
+  const std::string bad_catalog_validate_command =
+      quote(CCAD_BINARY) + " lib catalog-validate --catalog " + quote(bad_catalog_path) +
+      " > " + quote(catalog_validate_path);
+  require(run(bad_catalog_validate_command) != 0,
+          "lib catalog-validate invalid catalog exits nonzero");
+  const std::string bad_catalog_validate_output = readFile(catalog_validate_path);
+  require(bad_catalog_validate_output.find("\"code\": \"DUPLICATE_ITEM_ID\"") !=
+              std::string::npos,
+          "lib catalog-validate reports duplicate id");
+  require(bad_catalog_validate_output.find("\"code\": \"MISSING_ITEM_SHA256\"") !=
+              std::string::npos,
+          "lib catalog-validate reports missing checksum");
+
   const std::string place_footprint_command =
       quote(CCAD_BINARY) + " pcb place-footprint --file " + quote(board_project_path) +
       " --footprint " + quote(footprint_out_path) +

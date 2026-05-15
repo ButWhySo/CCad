@@ -246,6 +246,7 @@ Catalog CLI behavior:
 - `lib catalog-find --catalog <path> --id <id>` emits the matching item metadata as JSON.
 - `lib catalog-search --catalog <path> --query <text>` emits matching item metadata as JSON.
 - `lib catalog-search --catalog <path> --query <text> --kind <kind>` restricts matches to one item kind such as `footprint`, `symbol`, or `model`.
+- `lib catalog-validate --catalog <path>` validates required metadata and duplicate item IDs before a catalog is trusted.
 - Missing catalog items return exit code `1` and emit `{ "found": false, ... }`.
 - Parse/file/usage failures return exit code `2`.
 - These commands read local catalog files only and do not fetch network sources.

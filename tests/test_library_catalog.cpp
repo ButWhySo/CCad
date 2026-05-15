@@ -81,6 +81,31 @@ int main() {
           "catalog search kind filter removes non-matching kind");
   require(ccad::searchLibraryItems(parsed, "").empty(), "catalog search rejects empty query");
 
+  std::vector<ccad::CatalogDiagnostic> clean_diagnostics = ccad::validateLibraryCatalog(parsed);
+  require(clean_diagnostics.empty(), "catalog validator accepts complete unique catalog");
+
+  parsed.items.push_back(ccad::LibraryItem{
+      .id = "footprint:Resistor_SMD:R_0603_1608Metric",
+      .kind = "footprint",
+      .name = "duplicate resistor",
+      .source_path = "Resistor_SMD.pretty/R_0603_1608Metric.kicad_mod",
+      .native_path = "footprints/Resistor_SMD/R_0603_1608Metric.copy.ccad-footprint.json",
+      .sha256 = "",
+      .license = "",
+      .provenance = "",
+  });
+  const std::vector<ccad::CatalogDiagnostic> dirty_diagnostics =
+      ccad::validateLibraryCatalog(parsed);
+  require(dirty_diagnostics.size() == 4, "catalog validator reports duplicate and empty fields");
+  require(dirty_diagnostics.at(0).code == "DUPLICATE_ITEM_ID",
+          "catalog validator reports duplicate id first");
+  require(dirty_diagnostics.at(1).code == "MISSING_ITEM_SHA256",
+          "catalog validator reports missing checksum");
+  require(dirty_diagnostics.at(2).code == "MISSING_ITEM_LICENSE",
+          "catalog validator reports missing license");
+  require(dirty_diagnostics.at(3).code == "MISSING_ITEM_PROVENANCE",
+          "catalog validator reports missing provenance");
+
   bool rejected = false;
   try {
     (void)ccad::loadLibraryCatalogJson("{\"schema_version\": 1, \"name\": \"bad\"}");

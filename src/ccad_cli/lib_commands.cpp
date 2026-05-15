@@ -81,6 +81,22 @@ void printMissingCatalogItem(const std::string& id) {
             << "}\n";
 }
 
+void printCatalogDiagnostics(const std::vector<ccad::CatalogDiagnostic>& diagnostics) {
+  std::cout << "{\n"
+            << "  \"diagnostics\": [\n";
+  for (std::size_t i = 0; i < diagnostics.size(); ++i) {
+    const ccad::CatalogDiagnostic& diagnostic = diagnostics.at(i);
+    std::cout << "    {\n"
+              << "      \"code\": \"" << ccad::escapeJson(diagnostic.code) << "\",\n"
+              << "      \"message\": \"" << ccad::escapeJson(diagnostic.message) << "\",\n"
+              << "      \"object_id\": \"" << ccad::escapeJson(diagnostic.object_id) << "\",\n"
+              << "      \"severity\": \"" << ccad::escapeJson(diagnostic.severity) << "\"\n"
+              << "    }" << (i + 1 == diagnostics.size() ? "" : ",") << '\n';
+  }
+  std::cout << "  ]\n"
+            << "}\n";
+}
+
 }  // namespace
 
 int libCommand(const std::vector<std::string>& args) {
@@ -146,6 +162,15 @@ int libCommand(const std::vector<std::string>& args) {
       const ccad::LibraryCatalog catalog = loadCatalogFile(requireOption(options, "--catalog"));
       printCatalogSearchResults(query, kind, ccad::searchLibraryItems(catalog, query, kind));
       return 0;
+    }
+
+    if (subcommand == "catalog-validate") {
+      const std::map<std::string, std::string> options = parseOptions(args, 1, {"--catalog"});
+      const ccad::LibraryCatalog catalog = loadCatalogFile(requireOption(options, "--catalog"));
+      const std::vector<ccad::CatalogDiagnostic> diagnostics =
+          ccad::validateLibraryCatalog(catalog);
+      printCatalogDiagnostics(diagnostics);
+      return diagnostics.empty() ? 0 : 1;
     }
 
     std::cerr << "unknown lib subcommand: " << subcommand << '\n';

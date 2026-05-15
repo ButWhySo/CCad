@@ -6,7 +6,7 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 
 - Phase: 2 / 6
 - Last merged sprint: Sprint 24, library catalog kind filter
-- Next sprint: Sprint 25, planning
+- Next sprint: Sprint 25, library catalog validation
 - Active branch pattern: `sprint-<n>-<topic>`
 - Current source of truth for phase/sprint counter: `docs/devops/progress.md`
 - Main product direction: native C++ PCB kernel and machine-callable CLI first; Qt GUI is a human review/editor client, not the data owner.
@@ -391,6 +391,7 @@ std::vector<const LibraryItem*> searchLibraryItems(const LibraryCatalog& catalog
 std::vector<const LibraryItem*> searchLibraryItems(const LibraryCatalog& catalog,
                                                    const std::string& query,
                                                    const std::string& kind);
+std::vector<CatalogDiagnostic> validateLibraryCatalog(const LibraryCatalog& catalog);
 ```
 
 Rules:
@@ -526,6 +527,7 @@ Current scope:
 - `lib catalog-info --catalog <path.ccad-library.json>`
 - `lib catalog-find --catalog <path.ccad-library.json> --id <id>`
 - `lib catalog-search --catalog <path.ccad-library.json> --query <text> [--kind <kind>]`
+- `lib catalog-validate --catalog <path.ccad-library.json>`
 
 ## GUI Files
 
