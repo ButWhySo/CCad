@@ -105,9 +105,18 @@ struct Project {
 struct Board {
   Rect outline;
   std::vector<Layer> layers;
+  std::vector<Keepout> keepouts;
   std::vector<Pad> pads;
   std::vector<Via> vias;
   std::vector<TrackSegment> tracks;
+};
+```
+
+```cpp
+struct Keepout {
+  std::string id;
+  std::string kind;
+  Rect area;
 };
 ```
 
@@ -127,6 +136,7 @@ struct Pad {
 Rules:
 
 - `Board::pads` are placed physical pads.
+- `Board::keepouts` are rectangular forbidden regions checked by DRC.
 - `FootprintPad` is reusable library geometry and lives in `footprint.hpp`.
 - Add fields carefully: update JSON, canvas, DRC, CLI, tests, docs.
 
@@ -211,6 +221,7 @@ Current checks:
 - unconnected vias/tracks as warnings
 - unknown non-empty pad/via/track net IDs
 - unconnected track endpoints as warnings
+- pad/via/track endpoints inside rectangular keepouts
 - via drill larger than diameter
 - zero-length tracks
 

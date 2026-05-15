@@ -10,10 +10,10 @@ KiCad-style functionality and UI expectations are mapped in `docs/research/2026-
 
 ## Phase Roadmap
 
-Current progress counter is tracked in `docs/devops/progress.md`. As of Sprint 6, CCad is in Phase 2 / 6: physical primitives and early board authoring.
+Current progress counter is tracked in `docs/devops/progress.md`. As of Sprint 18, CCad is in Phase 2 / 6: physical primitives and early board authoring.
 
 1. Logical kernel: project, components, pins, nets, constraints, ERC, CLI.
-2. Physical primitives: board outline, layers, keepouts, placement regions, early DRC.
+2. Physical primitives: board outline, layers, pads, vias, tracks, rectangular keepouts, placement regions, early DRC.
 3. Routing assistance: constrained route requests and external router boundary.
 4. Native GUI/reviewer: render schematic/PCB state, diffs, diagnostics, and transaction review.
 5. Interop: KiCad, Circuit JSON, DSN/SES, manufacturing exports.
@@ -28,12 +28,23 @@ Sprint tracking starts in `docs/devops/sprints/2026-05-14-sprint-1-qt-review-gui
 The initial codebase is C++20:
 
 - Model objects are plain C++ structs/classes with explicit JSON conversion.
-- JSON output is sorted and stable for diffs.
-- ERC returns typed diagnostics for agent consumption.
-- CLI commands are intentionally small and deterministic.
+- JSON output is deterministic for diffs and replay.
+- ERC and DRC return typed diagnostics for agent consumption.
+- CLI commands are split into deterministic command modules.
 - `ccad_gui` is optional and builds only when Qt 6 Widgets is available.
 - Physical lengths are stored as integer nanometers in `ccad_core::Length`; user-facing mm/mil values convert at API boundaries.
 - `ccad_core::CanvasScene` is the tested rendering input for the Qt board canvas. GUI rendering must consume this model rather than directly inventing project geometry.
+- KiCad footprint import supports a basic `.kicad_mod` pad subset and treats files strictly as data.
+- Footprint placement can rotate pads and preserve logical net IDs when project nets contain matching component/pin members.
+- Physical DRC currently covers duplicate IDs, unknown layers/nets, outline bounds, invalid dimensions, empty net warnings, track endpoint connectivity warnings, rectangular keepout violations, drill/diameter sanity, and zero-length tracks.
+
+## Current Source Layout
+
+- `src/ccad_core/`: source-of-truth kernel model, serialization, ERC, DRC, review, diff, transactions, canvas scene, and KiCad footprint import.
+- `src/ccad_cli/`: machine-callable CLI split into `app`, `common`, `project_commands`, `pcb_commands`, and `lib_commands`.
+- `src/ccad_gui/`: native Qt review GUI split into `ReviewWindow`, board canvas renderer, board canvas view, and a small `main.cpp`.
+- `tests/`: C++ CTest targets for serialize, ERC, DRC, footprint import, CLI, review, diff, transaction, geometry, and canvas behavior.
+- `docs/codebase-map.md`: maintained memory-loss map for agents. Read it before non-trivial edits.
 
 ## Development Commands
 

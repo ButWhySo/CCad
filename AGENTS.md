@@ -35,7 +35,17 @@ Read `docs/codebase-map.md` before editing code. It is the maintained memory-los
 
 ## Branching
 
-Default base branch is `main`. Current phase branch is `phase-0-kernel-base`.
+Default base branch is `main`. Use one feature branch per sprint with the pattern `sprint-<number>-<topic>`, then merge back to `main` after the full verification gate passes.
+
+Current progress is tracked only in `docs/devops/progress.md`; do not rely on this file for the active sprint number. Read `docs/codebase-map.md` and the latest sprint log before editing.
+
+## Current Technical Context
+
+- Phase 2 focuses on physical primitives and early board authoring.
+- The kernel now supports board outline, layers, rectangular keepouts, pads, vias, tracks, KiCad footprint import, footprint placement, pad rotation, and physical DRC diagnostics.
+- The GUI is still a review surface, not the source of truth and not yet a full editor.
+- Rectangular keepouts are in the kernel/JSON/DRC only; CLI authoring and GUI rendering are later work.
+- DRC currently reports geometry errors, unknown layers/nets, empty net warnings, dangling track endpoint warnings, and keepout violations.
 
 ## Security Notes
 

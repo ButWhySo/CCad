@@ -71,9 +71,16 @@ struct TrackSegment {
   Length width;
 };
 
+struct Keepout {
+  std::string id;
+  std::string kind;
+  Rect area;
+};
+
 struct Board {
   Rect outline;
   std::vector<Layer> layers;
+  std::vector<Keepout> keepouts;
   std::vector<Pad> pads;
   std::vector<Via> vias;
   std::vector<TrackSegment> tracks;

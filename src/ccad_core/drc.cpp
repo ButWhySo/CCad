@@ -51,6 +51,12 @@ bool containsPoint(const Board& board, const Point& point) {
          point.y.nanometers >= min.y.nanometers && point.y.nanometers <= max.y.nanometers;
 }
 
+bool rectContainsPoint(const Rect& rect, const Point& point) {
+  const Point max = maxPoint(rect);
+  return point.x.nanometers >= rect.origin.x.nanometers && point.x.nanometers <= max.x.nanometers &&
+         point.y.nanometers >= rect.origin.y.nanometers && point.y.nanometers <= max.y.nanometers;
+}
+
 bool isPositive(const Length& length) {
   return length.nanometers > 0;
 }
@@ -111,6 +117,13 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
       diagnostics.push_back(
           makeDiagnostic("UNKNOWN_PAD_NET", "Pad references an unknown net", pad.id));
     }
+    for (const Keepout& keepout : board.keepouts) {
+      if (rectContainsPoint(keepout.area, pad.position)) {
+        diagnostics.push_back(
+            makeDiagnostic("PAD_IN_KEEPOUT", "Pad position is inside keepout " + keepout.id,
+                           pad.id));
+      }
+    }
   }
 }
 
@@ -139,6 +152,13 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
       diagnostics.push_back(makeDiagnostic("VIA_DRILL_TOO_LARGE",
                                            "Via drill must be less than or equal to diameter",
                                            via.id));
+    }
+    for (const Keepout& keepout : board.keepouts) {
+      if (rectContainsPoint(keepout.area, via.position)) {
+        diagnostics.push_back(
+            makeDiagnostic("VIA_IN_KEEPOUT", "Via position is inside keepout " + keepout.id,
+                           via.id));
+      }
     }
   }
 }
@@ -183,6 +203,14 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
       diagnostics.push_back(makeWarning("UNCONNECTED_TRACK_ENDPOINT",
                                         "Track endpoint does not touch a same-net pad, via, or track",
                                         track.id));
+    }
+    for (const Keepout& keepout : board.keepouts) {
+      if (rectContainsPoint(keepout.area, track.start) ||
+          rectContainsPoint(keepout.area, track.end)) {
+        diagnostics.push_back(makeDiagnostic(
+            "TRACK_ENDPOINT_IN_KEEPOUT", "Track endpoint is inside keepout " + keepout.id,
+            track.id));
+      }
     }
   }
 }

@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 12 in progress. See `docs/devops/progress.md`.
+Progress counter: Phase 2 / 6, Sprint 18 in progress. See `docs/devops/progress.md`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -14,7 +14,8 @@ Progress counter: Phase 2 / 6, Sprint 12 in progress. See `docs/devops/progress.
 - CLI: `ccad help --format json`, `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
 - CLI PCB authoring: `ccad pcb add-pad`, `ccad pcb add-via`, and `ccad pcb add-track`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
-- Physical board outline, layers, pads, vias, and track segments in project JSON.
+- Physical board outline, layers, rectangular keepouts, pads, vias, and track segments in project JSON.
+- Physical DRC for geometry, connectivity metadata, and rectangular keepout violations.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
@@ -241,6 +242,7 @@ What it does:
 - Loads CCad footprint JSON.
 - Places each footprint pad onto the board as a board pad.
 - Generates stable pad IDs such as `R1.1` and `R1.2`.
+- Preserves `net_id` from logical project nets when a matching component/pin net member exists.
 - Rotates footprint-local pad centers and pad orientation when `--rotation-deg` is provided.
 
 When to run:
@@ -251,8 +253,8 @@ When to run:
 
 Current limitation:
 
-- Nets are left empty until schematic-footprint mapping exists.
-- Flipping, courtyard checks, and schematic parity are later work.
+- Pads without a matching logical net member keep an empty `net_id` and DRC reports that as a warning.
+- Flipping, courtyard checks, automatic symbol-footprint assignment, and full schematic parity are later work.
 
 Add PCB primitives through the CLI:
 
@@ -283,6 +285,30 @@ Current command guards:
 - Referenced layers must exist for pads and tracks.
 - Positions and track endpoints must be inside the board outline.
 - Via drill must be less than or equal to via diameter.
+
+Rectangular keepouts:
+
+- Keepouts are currently represented in project JSON and checked by DRC.
+- There is not yet a CLI authoring command for keepouts.
+- A keepout has `id`, `kind`, and rectangular `area`.
+- DRC errors if a pad center, via center, or track endpoint lies inside a keepout.
+
+Example JSON fragment:
+
+```json
+"keepouts": [
+  {
+    "id": "keepout-mounting-hole",
+    "kind": "placement",
+    "area": {
+      "x_nm": 20000000,
+      "y_nm": 20000000,
+      "width_nm": 4000000,
+      "height_nm": 3000000
+    }
+  }
+]
+```
 
 Current limitation:
 

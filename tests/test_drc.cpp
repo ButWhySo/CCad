@@ -20,6 +20,7 @@ ccad::Project validBoardProject() {
       },
       .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true},
                  ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true}},
+      .keepouts = {},
       .pads = {ccad::Pad{.id = "P1",
                          .component_id = "U1",
                          .pin_name = "1",
@@ -127,4 +128,37 @@ int main() {
                                                        .y = ccad::millimeters(9)};
   require(hasDiagnostic(ccad::runDrc(dangling_track), "UNCONNECTED_TRACK_ENDPOINT", "warning"),
           "drc reports dangling track endpoint as warning");
+
+  ccad::Project keepout_pad = validBoardProject();
+  keepout_pad.board->keepouts.push_back(ccad::Keepout{
+      .id = "K_PAD",
+      .kind = "placement",
+      .area = ccad::Rect{.origin = ccad::Point{.x = ccad::millimeters(4),
+                                               .y = ccad::millimeters(5)},
+                         .size = ccad::Size{.width = ccad::millimeters(3),
+                                            .height = ccad::millimeters(3)}}});
+  require(hasCode(ccad::runDrc(keepout_pad), "PAD_IN_KEEPOUT"),
+          "drc reports pad in keepout");
+
+  ccad::Project keepout_via = validBoardProject();
+  keepout_via.board->keepouts.push_back(ccad::Keepout{
+      .id = "K_VIA",
+      .kind = "routing",
+      .area = ccad::Rect{.origin = ccad::Point{.x = ccad::millimeters(7),
+                                               .y = ccad::millimeters(8)},
+                         .size = ccad::Size{.width = ccad::millimeters(3),
+                                            .height = ccad::millimeters(3)}}});
+  require(hasCode(ccad::runDrc(keepout_via), "VIA_IN_KEEPOUT"),
+          "drc reports via in keepout");
+
+  ccad::Project keepout_track = validBoardProject();
+  keepout_track.board->keepouts.push_back(ccad::Keepout{
+      .id = "K_TRACK",
+      .kind = "routing",
+      .area = ccad::Rect{.origin = ccad::Point{.x = ccad::millimeters(4),
+                                               .y = ccad::millimeters(5)},
+                         .size = ccad::Size{.width = ccad::millimeters(3),
+                                            .height = ccad::millimeters(3)}}});
+  require(hasCode(ccad::runDrc(keepout_track), "TRACK_ENDPOINT_IN_KEEPOUT"),
+          "drc reports track endpoint in keepout");
 }
