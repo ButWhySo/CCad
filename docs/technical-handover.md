@@ -36,6 +36,7 @@ The initial codebase is C++20:
 - `ccad_core::CanvasScene` is the tested rendering input for the Qt board canvas. GUI rendering must consume this model rather than directly inventing project geometry.
 - Rectangular keepouts can be authored with `ccad pcb add-keepout` and are visible in the Qt board canvas.
 - KiCad footprint import supports a basic `.kicad_mod` pad subset and treats files strictly as data.
+- Native library catalog metadata supports local/offline CCad-compatible catalogs with provenance and checksum fields.
 - Footprint placement can rotate pads and preserve logical net IDs when project nets contain matching component/pin members.
 - Physical DRC currently covers duplicate IDs, unknown layers/nets, outline bounds, invalid dimensions, empty net warnings, track endpoint connectivity warnings, rectangular keepout occupancy/crossing violations, drill/diameter sanity, and zero-length tracks.
 
@@ -47,6 +48,7 @@ Planned approach:
 
 - Build importers and indexers before bulk ingestion.
 - Treat KiCad libraries as external data, never executable code.
+- Avoid fetching during normal design work; prefer pinned local source caches and native CCad catalog files.
 - Preserve source URL, mirror, commit/hash, original path, license, and import diagnostics per library item.
 - Normalize imported assets into a controlled CCad catalog format.
 - Keep large binary/model caches outside this repo or in a dedicated artifact/catalog repository.

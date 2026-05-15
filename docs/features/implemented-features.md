@@ -467,6 +467,42 @@ Expected result:
 
 - `transaction` test passes.
 
+## Native Library Catalog Metadata
+
+Status: implemented foundation.
+
+Files:
+
+- `src/ccad_core/library_catalog.hpp`
+- `src/ccad_core/library_catalog.cpp`
+- `tests/test_library_catalog.cpp`
+
+What it does:
+
+- Represents a local/offline CCad library catalog.
+- Records upstream source metadata: name, kind, URL, commit, mirror, and fetch timestamp.
+- Records item metadata: ID, kind, name, source path, native path, checksum, license, provenance, and import warnings.
+- Serializes catalog data to deterministic JSON.
+- Loads catalog JSON strictly and rejects missing source/items data.
+- Finds catalog items by stable ID.
+
+Design intent:
+
+- KiCad/GitHub/Gitee libraries are source data.
+- CCad runtime should query local native catalogs instead of repeatedly fetching remote libraries or reparsing raw KiCad files.
+- Huge caches should live under ignored local paths such as `library-cache/` or `catalog-cache/`, or in a future dedicated catalog package.
+
+Test:
+
+```bash
+cmake --build build-qt --target ccad_library_catalog_tests
+ctest --test-dir build-qt -R library_catalog --output-on-failure
+```
+
+Expected result:
+
+- `library_catalog` test passes.
+
 ## Optional Qt Review GUI
 
 Status: implemented as optional target.

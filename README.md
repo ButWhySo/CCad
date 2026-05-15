@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 20 merged; Sprint 21 planning. See `docs/devops/progress.md`.
+Progress counter: Phase 2 / 6, Sprint 21 in progress. See `docs/devops/progress.md`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -14,6 +14,7 @@ Progress counter: Phase 2 / 6, Sprint 20 merged; Sprint 21 planning. See `docs/d
 - CLI: `ccad help --format json`, `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
 - CLI PCB authoring: `ccad pcb add-pad`, `ccad pcb add-via`, `ccad pcb add-track`, and `ccad pcb add-keepout`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
+- Native library catalog metadata for local/offline component-library caches.
 - Physical board outline, layers, rectangular keepouts, pads, vias, and track segments in project JSON.
 - Physical DRC for geometry, connectivity metadata, rectangular keepout occupancy, and track crossing violations.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
@@ -40,6 +41,19 @@ ctest --test-dir build --output-on-failure
 See `docs/features/implemented-features.md` for a complete feature-by-feature usage and testing guide.
 
 Agents should read `docs/codebase-map.md` before editing code. It is the maintained map of files, modules, public functions, and invariants.
+
+## Library Cache Direction
+
+CCad should reuse KiCad's symbol, footprint, and 3D model ecosystem through local source caches and CCad-native catalogs.
+
+Policy:
+
+- Do not fetch the internet repeatedly during normal design work.
+- Do not vendor huge KiCad/Gitee/GitHub library dumps into this source repo.
+- Keep raw upstream checkouts and converted catalogs in ignored local paths such as `library-cache/` or `catalog-cache/`.
+- Store runtime/search data in CCad's own catalog format.
+- Preserve source URL, mirror, commit/hash, source path, checksum, license, provenance, and import warnings for each item.
+- Later, a separate `ccad-libraries` repo/package can distribute curated prebuilt catalogs.
 
 ## Windows Qt Development Loop
 

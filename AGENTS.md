@@ -43,6 +43,7 @@ Current progress is tracked only in `docs/devops/progress.md`; do not rely on th
 
 - Phase 2 focuses on physical primitives and early board authoring.
 - The kernel now supports board outline, layers, rectangular keepouts, pads, vias, tracks, KiCad footprint import, footprint placement, pad rotation, and physical DRC diagnostics.
+- Local library work should use CCad native catalog metadata with provenance instead of repeatedly fetching remote KiCad/Gitee/GitHub libraries.
 - The CLI can author rectangular keepouts through `ccad pcb add-keepout`.
 - The GUI is still a review surface, not the source of truth and not yet a full editor.
 - Rectangular keepouts are rendered in the Qt board canvas as orange dashed regions.
@@ -51,3 +52,5 @@ Current progress is tracked only in `docs/devops/progress.md`; do not rely on th
 ## Security Notes
 
 The CLI must not evaluate project files as code. Avoid shelling out based on project-file values. Keep future plugin/routing/importer integrations behind explicit process boundaries and documented trust assumptions. Do not add a web app unless explicitly requested.
+
+Large library caches must stay out of git unless explicitly split into a dedicated catalog repository/package. Use ignored local paths such as `library-cache/` or `catalog-cache/`.
