@@ -4,6 +4,7 @@
 #include "object_browser_panel.hpp"
 #include "project_summary_panel.hpp"
 #include "selection_inspector_panel.hpp"
+#include "transaction_timeline_panel.hpp"
 #include "ccad_core/model.hpp"
 #include "ccad_core/review.hpp"
 #include "ccad_core/canvas.hpp"
@@ -43,6 +44,7 @@ class ReviewWindow final : public QMainWindow {
   QGraphicsScene* canvas_scene_ = nullptr;
   QGraphicsView* canvas_view_ = nullptr;
   DiagnosticsPanel* diagnostics_ = nullptr;
+  TransactionTimelinePanel* transaction_timeline_ = nullptr;
   std::filesystem::path current_path_;
   ccad::Project project_cache_;
 };

@@ -119,6 +119,7 @@ if(CCAD_BUILD_GUI)
       src/ccad_gui/project_summary_panel.cpp
       src/ccad_gui/review_window.cpp
       src/ccad_gui/selection_inspector_panel.cpp
+      src/ccad_gui/transaction_timeline_panel.cpp
     )
     target_link_libraries(ccad_gui PRIVATE ccad_core Qt6::Widgets)
     if(MINGW)
@@ -259,6 +260,27 @@ if(CCAD_BUILD_GUI)
       target_compile_options(ccad_gui_diagnostic_markers_tests PRIVATE -Wall -Wextra -Wpedantic)
       if(CCAD_WARNINGS_AS_ERRORS)
         target_compile_options(ccad_gui_diagnostic_markers_tests PRIVATE -Werror)
+      endif()
+    endif()
+
+    add_executable(ccad_gui_transaction_timeline_tests
+      tests/test_gui_transaction_timeline_panel.cpp
+      src/ccad_gui/transaction_timeline_panel.cpp
+    )
+    target_link_libraries(ccad_gui_transaction_timeline_tests PRIVATE ccad_core Qt6::Widgets)
+    target_include_directories(ccad_gui_transaction_timeline_tests PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests
+    )
+    if(MSVC)
+      target_compile_options(ccad_gui_transaction_timeline_tests PRIVATE /W4)
+      if(CCAD_WARNINGS_AS_ERRORS)
+        target_compile_options(ccad_gui_transaction_timeline_tests PRIVATE /WX)
+      endif()
+    else()
+      target_compile_options(ccad_gui_transaction_timeline_tests PRIVATE -Wall -Wextra -Wpedantic)
+      if(CCAD_WARNINGS_AS_ERRORS)
+        target_compile_options(ccad_gui_transaction_timeline_tests PRIVATE -Werror)
       endif()
     endif()
   else()

@@ -55,10 +55,15 @@ ReviewWindow::ReviewWindow() {
   addDockWidget(Qt::LeftDockWidgetArea, project_dock);
 
   diagnostics_ = new DiagnosticsPanel(this);
+  transaction_timeline_ = new TransactionTimelinePanel(this);
 
   auto* diagnostics_dock = new QDockWidget("Diagnostics", this);
   diagnostics_dock->setObjectName("diagnosticsDock");
-  diagnostics_dock->setWidget(diagnostics_);
+  auto* bottom_tabs = new QTabWidget(diagnostics_dock);
+  bottom_tabs->setObjectName("bottomReviewTabs");
+  bottom_tabs->addTab(diagnostics_, "Diagnostics");
+  bottom_tabs->addTab(transaction_timeline_, "Transactions");
+  diagnostics_dock->setWidget(bottom_tabs);
   addDockWidget(Qt::BottomDockWidgetArea, diagnostics_dock);
 
   auto* right_panel = new QWidget(this);
@@ -138,6 +143,7 @@ ReviewWindow::ReviewWindow() {
   });
   object_browser_->setObjectActivatedCallback(
       [this](const QString& object_id) { selectCanvasObjectById(*canvas_scene_, object_id); });
+  transaction_timeline_->renderTransactions({});
 }
 
 void ReviewWindow::loadProjectPath(const std::filesystem::path& path) {
