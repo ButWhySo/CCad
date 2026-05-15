@@ -10,7 +10,7 @@ Replace the placeholder right-dock layer list with a read-only browser for canva
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 31, `sprint-31-layer-object-browser`, implementation in progress.
+Progress: Phase 2/6, Sprint 31, `main`, merged and verified.
 
 ## Backlog
 
@@ -22,7 +22,7 @@ Progress: Phase 2/6, Sprint 31, `sprint-31-layer-object-browser`, implementation
 6. Done: replace default selection bounding boxes with shape-level highlight painting.
 7. Done: run focused tests and GUI build.
 8. Done: full native Qt build and CTest.
-9. Pending: commit and merge to `main`.
+9. Done: commit and merge to `main`.
 
 ## Verification So Far
 
@@ -60,6 +60,14 @@ cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-fa
 ```
 
 - Result: passed, 11/11 tests.
+
+Main integration gate:
+
+```cmd
+cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: passed, 11/11 tests after merge to `main`.
 
 ## Demo
 
