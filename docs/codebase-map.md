@@ -586,6 +586,23 @@ Important method:
 void renderDiagnostics(const std::vector<ccad::Diagnostic>& diagnostics);
 ```
 
+### `src/ccad_gui/selection_inspector_panel.hpp/.cpp`
+
+Owns the read-only selected-object inspector in the right dock.
+
+Important methods:
+
+```cpp
+void clearSelection();
+void renderSelection(const QString& type, const QString& id);
+void renderCanvasItem();
+QString rowText(const QString& label) const;
+```
+
+Rule:
+
+- The inspector displays stable object identity from canvas item metadata. It must not mutate project state or infer board geometry.
+
 ### `src/ccad_gui/board_canvas_renderer.hpp/.cpp`
 
 Owns drawing board canvas objects into `QGraphicsScene`.

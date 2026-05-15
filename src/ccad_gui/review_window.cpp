@@ -66,15 +66,15 @@ ReviewWindow::ReviewWindow() {
   auto* right_layout = new QVBoxLayout(right_panel);
   right_layout->setContentsMargins(8, 8, 8, 8);
   right_layout->setSpacing(8);
-  selection_panel_status_ = new QLabel("Selection: --", right_panel);
-  selection_panel_status_->setObjectName("selectionPanelStatus");
+  selection_inspector_ = new SelectionInspectorPanel(right_panel);
+  selection_inspector_->setObjectName("selectionInspectorPanel");
   auto* layer_panel = new QListWidget(right_panel);
   layer_panel->setObjectName("layersPanel");
   layer_panel->addItem("F.Cu");
   layer_panel->addItem("B.Cu");
   layer_panel->addItem("Edge.Cuts");
   layer_panel->addItem("Keepouts");
-  right_layout->addWidget(selection_panel_status_);
+  right_layout->addWidget(selection_inspector_);
   right_layout->addWidget(layer_panel, 1);
   auto* layers_dock = new QDockWidget("Layers / Objects", this);
   layers_dock->setObjectName("layersDock");
@@ -213,12 +213,21 @@ void ReviewWindow::applyStyle() {
       border: 1px solid #dfe6ef;
       padding: 6px;
     }
-    QLabel#selectionPanelStatus {
+    QWidget#selectionInspectorPanel {
       background: #e0f2fe;
-      color: #0f172a;
       border: 1px solid #38bdf8;
       border-radius: 6px;
       padding: 8px;
+    }
+    QLabel#inspectorTitle {
+      color: #0f172a;
+      font-weight: 700;
+    }
+    QLabel#inspectorDetail {
+      color: #334155;
+    }
+    QLabel#inspectorValue {
+      color: #0f172a;
       font-weight: 700;
     }
     QTabWidget::pane {
@@ -312,7 +321,7 @@ void ReviewWindow::updateSelectionStatus() {
   const QList<QGraphicsItem*> selected_items = canvas_scene_->selectedItems();
   if (selected_items.isEmpty()) {
     selection_status_->setText("Selected --");
-    selection_panel_status_->setText("Selection: --");
+    selection_inspector_->clearSelection();
     return;
   }
   const QGraphicsItem* item = selected_items.first();
@@ -320,11 +329,11 @@ void ReviewWindow::updateSelectionStatus() {
   const QString id = canvasObjectId(*item);
   if (type.isEmpty() || id.isEmpty()) {
     selection_status_->setText("Selected canvas item");
-    selection_panel_status_->setText("Selection: canvas item");
+    selection_inspector_->renderCanvasItem();
     return;
   }
   const QString text = "Selected " + type + " " + id;
   selection_status_->setText(text);
-  selection_panel_status_->setText("Selection: " + type + " " + id);
+  selection_inspector_->renderSelection(type, id);
 }
 
