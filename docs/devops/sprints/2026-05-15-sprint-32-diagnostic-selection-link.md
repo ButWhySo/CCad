@@ -10,7 +10,7 @@ Let diagnostic rows select matching PCB canvas objects by stable object ID.
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 32, `sprint-32-diagnostic-selection-link`, implementation in progress.
+Progress: Phase 2/6, Sprint 32, `main`, merged and verified.
 
 ## Backlog
 
@@ -21,7 +21,7 @@ Progress: Phase 2/6, Sprint 32, `sprint-32-diagnostic-selection-link`, implement
 5. Done: wire diagnostic row clicks to canvas selection.
 6. Done: run focused tests and GUI build.
 7. Done: full native Qt build and CTest.
-8. Pending: commit and merge to `main`.
+8. Done: commit and merge to `main`.
 
 ## Verification So Far
 
@@ -52,6 +52,14 @@ cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-fa
 ```
 
 - Result: passed, 11/11 tests.
+
+Main integration gate:
+
+```cmd
+cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: passed, 11/11 tests after merge to `main`.
 
 ## Demo
 

@@ -7,9 +7,9 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
 - Sprint: 32
-- Branch: `sprint-32-diagnostic-selection-link`
-- Last merged sprint: Sprint 31, layer and object browser
-- Status: Sprint 32 implementation on feature branch
+- Branch: `main`
+- Last merged sprint: Sprint 32, diagnostic selection link
+- Status: Sprint 32 merged and verified on `main`; Sprint 33 planning next
 
 ## Phase Roadmap
 
@@ -53,10 +53,11 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Sprint 29: GUI selection groundwork.
 - Sprint 30: GUI inspector panel.
 - Sprint 31: layer and object browser.
+- Sprint 32: diagnostic selection link.
 
 ## Active Sprint
 
-- Sprint 32: diagnostic selection link.
+- Sprint 33: planning pending.
 
 ## Reporting Rule
 
