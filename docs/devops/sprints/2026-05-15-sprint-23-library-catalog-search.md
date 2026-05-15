@@ -10,7 +10,7 @@ Add local text search over CCad-native library catalogs and expose it through th
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 23, `sprint-23-library-catalog-search`, implementation.
+Progress: Phase 2/6, Sprint 23, `main`, merged and verified.
 
 ## Backlog
 
@@ -20,7 +20,7 @@ Progress: Phase 2/6, Sprint 23, `sprint-23-library-catalog-search`, implementati
 4. Done: run focused catalog and CLI tests.
 5. In progress: update docs.
 6. Pending: run full native Qt build and CTest.
-7. Pending: merge to `main`.
+7. Done: merge to `main`.
 
 ## Verification So Far
 
@@ -41,6 +41,24 @@ ctest --test-dir build-qt -R "library_catalog|cli" --output-on-failure
 ```
 
 - Result: focused catalog and CLI tests passed.
+
+Full feature-branch gate:
+
+```cmd
+cmake --build build-qt --clean-first
+ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: 11 / 11 tests passed before commit.
+
+Main integration gate:
+
+```cmd
+cmake --build build-qt --clean-first
+ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: 11 / 11 tests passed after merging Sprint 23 to `main`.
 
 ## Demo
 
