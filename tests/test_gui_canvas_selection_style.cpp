@@ -2,6 +2,7 @@
 #include "test_support.hpp"
 
 #include <QApplication>
+#include <QColor>
 #include <QGraphicsScene>
 
 namespace {
@@ -48,10 +49,14 @@ int main(int argc, char** argv) {
     if (type == "track") {
       saw_track = true;
       require(canvasUsesShapeSelectionHighlight(*item), "track uses shape selection highlight");
+      require(canvasSelectionHighlightColor(*item) == QColor("#ef4444").lighter(160),
+              "track highlight derives from track color");
     }
     if (type == "pad") {
       saw_pad = true;
       require(canvasUsesShapeSelectionHighlight(*item), "pad uses shape selection highlight");
+      require(canvasSelectionHighlightColor(*item) == QColor("#be185d").lighter(160),
+              "pad highlight derives from pad color");
     }
   }
 

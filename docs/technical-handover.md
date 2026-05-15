@@ -38,6 +38,7 @@ The initial codebase is C++20:
 - Sprint 31 adds read-only layer/object browsing from `CanvasScene` metadata and uses shape-level selection highlights instead of Qt bounding boxes.
 - Sprint 32 links diagnostic table rows to PCB canvas selection when a diagnostic carries a stable object ID.
 - Sprint 33 includes DRC diagnostics in the shared `ProjectReview` stream used by CLI inspect and the GUI.
+- Sprint 34 renders read-only diagnostic markers on PCB canvas objects referenced by review diagnostics and derives selected-object highlights from each object's display color for future theme compatibility.
 - Large designs should not be generated as command spam. See `docs/architecture/large-design-and-component-knowledge-pipeline.md` for the intended batching, component knowledge, curation, and visual review pipeline.
 - Large designs should not be generated as command spam. See `docs/architecture/large-design-and-component-knowledge-pipeline.md` for the intended batching, component knowledge, curation, and visual review pipeline.
 - Physical lengths are stored as integer nanometers in `ccad_core::Length`; user-facing mm/mil values convert at API boundaries.

@@ -22,6 +22,7 @@ Progress counter: Phase 2 / 6, Sprint 33 merged; Sprint 34 planning. See `docs/d
 - Native GUI layer/object browser and shape-level selection highlight.
 - Native GUI diagnostic rows can select matching PCB canvas objects by stable ID.
 - Project review and GUI diagnostics include physical DRC findings.
+- Native GUI diagnostic markers are drawn over matching PCB canvas objects.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
 

@@ -240,6 +240,27 @@ if(CCAD_BUILD_GUI)
         target_compile_options(ccad_gui_canvas_selection_link_tests PRIVATE -Werror)
       endif()
     endif()
+
+    add_executable(ccad_gui_diagnostic_markers_tests
+      tests/test_gui_diagnostic_markers.cpp
+      src/ccad_gui/board_canvas_renderer.cpp
+    )
+    target_link_libraries(ccad_gui_diagnostic_markers_tests PRIVATE ccad_core Qt6::Widgets)
+    target_include_directories(ccad_gui_diagnostic_markers_tests PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests
+    )
+    if(MSVC)
+      target_compile_options(ccad_gui_diagnostic_markers_tests PRIVATE /W4)
+      if(CCAD_WARNINGS_AS_ERRORS)
+        target_compile_options(ccad_gui_diagnostic_markers_tests PRIVATE /WX)
+      endif()
+    else()
+      target_compile_options(ccad_gui_diagnostic_markers_tests PRIVATE -Wall -Wextra -Wpedantic)
+      if(CCAD_WARNINGS_AS_ERRORS)
+        target_compile_options(ccad_gui_diagnostic_markers_tests PRIVATE -Werror)
+      endif()
+    endif()
   else()
     message(STATUS "Qt6 Widgets not found; skipping ccad_gui target")
   endif()

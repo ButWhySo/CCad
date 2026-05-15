@@ -14,6 +14,7 @@
 #include <QMainWindow>
 
 #include <filesystem>
+#include <vector>
 
 class ReviewWindow final : public QMainWindow {
  public:
@@ -26,7 +27,8 @@ class ReviewWindow final : public QMainWindow {
   void openProject();
   void reloadProject();
   void renderReview(const ccad::ProjectReview& review);
-  void renderCanvas(const ccad::CanvasScene& scene);
+  void renderCanvas(const ccad::CanvasScene& scene,
+                    const std::vector<ccad::Diagnostic>& diagnostics = {});
   void updateCursorStatus(const QPointF& scene_position, double zoom_factor);
   void updateSelectionStatus();
 

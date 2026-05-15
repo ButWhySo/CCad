@@ -544,7 +544,9 @@ What it does:
 - GUI selection has a dedicated read-only inspector panel that shows selected object type and ID.
 - GUI right dock includes a read-only layer and object browser derived from the canvas scene.
 - GUI selected primitives use shape-level highlights instead of loose bounding boxes.
+- GUI selected primitive highlights derive from each object's display color so future theme palettes can stay coherent.
 - GUI diagnostic rows can select a matching PCB canvas object when the row carries a stable object ID.
+- GUI draws read-only diagnostic markers over PCB canvas objects named by diagnostics.
 - Shows ERC diagnostics table.
 - Supports reload.
 

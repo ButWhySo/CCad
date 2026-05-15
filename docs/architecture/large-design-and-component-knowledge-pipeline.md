@@ -390,6 +390,18 @@ The GUI should support:
 
 If a human drags a trace or component later, the GUI should convert that action into a structured command. The kernel should snap, validate, accept or reject, then re-render.
 
+## Themes, Plugins, And Custom Component Creators
+
+CCad should stay open to future user, team, and vendor customization without letting customization become hidden source-of-truth logic. Themes, plugins, custom component creators, and schematic/PCB assistants should be clients of typed kernel APIs and transaction APIs.
+
+Themes should control presentation only. A theme may define colors, stroke weights, selected-object highlights, marker styles, grid density, contrast modes, and per-layer rendering palettes. A theme must not change geometry, electrical meaning, DRC rules, net membership, component identity, or project serialization. Selection highlights should derive from the object's normal display color, usually as a lighter or higher-contrast variant, so custom themes remain visually coherent.
+
+Plugins should use explicit capability boundaries. A plugin may provide component creation wizards, schematic module generators, footprint selection helpers, placement policies, routing policies, review panels, custom DRC checks, manufacturing checks, importers, exporters, or visualization overlays. Plugins must communicate through documented schemas, must preserve provenance, and must not execute project or library data as code.
+
+Custom component creators should work across schematic and PCB phases. A creator may define symbol pins, pin roles, package choices, footprint pads, 3D references, electrical ratings, recommended passives, layout warnings, and manufacturing notes. The output should be a proposed typed component/library record with provenance, confidence, and review status, not an opaque GUI-only object. The same component record should support schematic placement, PCB footprint placement, DRC/ERC checks, catalog search, and later manufacturing export.
+
+The long-term plugin model should separate trusted kernel code from extension code. Core validation, serialization, transactions, and security gates stay in `ccad_core`. Extensions run through local process boundaries, signed packages, restricted scripting hosts, or future RPC/MCP capabilities with explicit permissions. Every extension-created design change should become a transaction with a diff and diagnostics.
+
 ## Routing Risk
 
 Routing traces is dangerous if the LLM controls raw coordinates directly.

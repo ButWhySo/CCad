@@ -6,7 +6,7 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 
 - Phase: 2 / 6
 - Last merged sprint: Sprint 33, review DRC diagnostics
-- Next sprint: Sprint 34, planning pending
+- Next sprint: Sprint 34, diagnostic overlay markers
 - Active branch pattern: `sprint-<n>-<topic>`
 - Current source of truth for phase/sprint counter: `docs/devops/progress.md`
 - Main product direction: native C++ PCB kernel and machine-callable CLI first; Qt GUI is a human review/editor client, not the data owner.
@@ -639,6 +639,10 @@ QString canvasObjectId(const QGraphicsItem& item);
 QString canvasObjectType(const QGraphicsItem& item);
 bool canvasUsesShapeSelectionHighlight(const QGraphicsItem& item);
 bool selectCanvasObjectById(QGraphicsScene& canvas_scene, const QString& id);
+void addDiagnosticMarkers(QGraphicsScene& canvas_scene,
+                          const std::vector<ccad::Diagnostic>& diagnostics);
+QString canvasDiagnosticMarkerObjectId(const QGraphicsItem& item);
+QString canvasDiagnosticMarkerSeverity(const QGraphicsItem& item);
 ```
 
 Renders:
@@ -652,6 +656,7 @@ Renders:
 - stable object type/ID metadata on selectable primitive items
 - shape-level selection highlighting for selectable primitive items, avoiding loose Qt bounding boxes
 - selecting one canvas object by stable object ID for diagnostic-table linking
+- read-only diagnostic markers for diagnostics whose object IDs match selectable canvas items
 
 ### `src/ccad_gui/board_canvas_view.hpp`
 
