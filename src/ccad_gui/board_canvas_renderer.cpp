@@ -175,3 +175,17 @@ QString canvasObjectType(const QGraphicsItem& item) {
 bool canvasUsesShapeSelectionHighlight(const QGraphicsItem& item) {
   return item.data(kCanvasShapeSelectionHighlightRole).toBool();
 }
+
+bool selectCanvasObjectById(QGraphicsScene& canvas_scene, const QString& id) {
+  canvas_scene.clearSelection();
+  if (id.isEmpty()) {
+    return false;
+  }
+  for (QGraphicsItem* item : canvas_scene.items()) {
+    if (canvasObjectId(*item) == id) {
+      item->setSelected(true);
+      return true;
+    }
+  }
+  return false;
+}

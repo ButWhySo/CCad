@@ -133,6 +133,9 @@ ReviewWindow::ReviewWindow() {
 
   connect(canvas_scene_, &QGraphicsScene::selectionChanged, this,
           [this]() { updateSelectionStatus(); });
+  connect(diagnostics_, &QTableWidget::cellClicked, this, [this](const int row, int) {
+    selectCanvasObjectById(*canvas_scene_, diagnostics_->objectIdForRow(row));
+  });
 }
 
 void ReviewWindow::loadProjectPath(const std::filesystem::path& path) {

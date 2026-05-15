@@ -10,4 +10,5 @@ class DiagnosticsPanel final : public QTableWidget {
   explicit DiagnosticsPanel(QWidget* parent = nullptr);
 
   void renderDiagnostics(const std::vector<ccad::Diagnostic>& diagnostics);
+  QString objectIdForRow(int row) const;
 };

@@ -14,3 +14,4 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
 QString canvasObjectId(const QGraphicsItem& item);
 QString canvasObjectType(const QGraphicsItem& item);
 bool canvasUsesShapeSelectionHighlight(const QGraphicsItem& item);
+bool selectCanvasObjectById(QGraphicsScene& canvas_scene, const QString& id);
