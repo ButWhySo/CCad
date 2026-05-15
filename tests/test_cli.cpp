@@ -34,7 +34,7 @@ std::string readFile(const std::filesystem::path& path) {
 }
 
 void writeFile(const std::filesystem::path& path, const std::string& content) {
-  std::ofstream output(path);
+  std::ofstream output(path, std::ios::binary);
   output << content;
 }
 
@@ -450,6 +450,51 @@ int main() {
   require(bad_catalog_validate_output.find("\"code\": \"MISSING_ITEM_SHA256\"") !=
               std::string::npos,
           "lib catalog-validate reports missing checksum");
+
+  std::filesystem::create_directories(temp / "native" / "footprints");
+  const std::filesystem::path native_artifact_path =
+      temp / "native" / "footprints" / "demo.ccad-footprint.json";
+  writeFile(native_artifact_path, "hello\n");
+  const std::filesystem::path file_catalog_path = temp / "file-catalog.ccad-library.json";
+  std::ofstream file_catalog(file_catalog_path);
+  file_catalog << "{\n"
+               << "  \"schema_version\": 1,\n"
+               << "  \"name\": \"file-cache\",\n"
+               << "  \"source\": {\n"
+               << "    \"name\": \"kicad-official\",\n"
+               << "    \"kind\": \"kicad\",\n"
+               << "    \"url\": \"https://gitlab.com/kicad/libraries/kicad-footprints\",\n"
+               << "    \"commit\": \"abc123\",\n"
+               << "    \"mirror\": \"official\",\n"
+               << "    \"fetched_at\": \"2026-05-15T00:00:00Z\"\n"
+               << "  },\n"
+               << "  \"items\": [\n"
+               << "    {\n"
+               << "      \"id\": \"footprint:demo\",\n"
+               << "      \"kind\": \"footprint\",\n"
+               << "      \"name\": \"demo\",\n"
+               << "      \"source_path\": \"demo.kicad_mod\",\n"
+               << "      \"native_path\": \"footprints/demo.ccad-footprint.json\",\n"
+               << "      \"sha256\": \"5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03\",\n"
+               << "      \"license\": \"CC-BY-SA-4.0 WITH KiCad-library-exception\",\n"
+               << "      \"provenance\": \"kicad-official@abc123\",\n"
+               << "      \"warnings\": []\n"
+               << "    }\n"
+               << "  ]\n"
+               << "}\n";
+  file_catalog.close();
+  const std::string file_catalog_validate_command =
+      quote(CCAD_BINARY) + " lib catalog-validate --catalog " + quote(file_catalog_path) +
+      " --root " + quote(temp / "native") + " > " + quote(catalog_validate_path);
+  require(run(file_catalog_validate_command) == 0,
+          "lib catalog-validate root checksum exits zero");
+
+  writeFile(native_artifact_path, "tampered\n");
+  require(run(file_catalog_validate_command) != 0,
+          "lib catalog-validate root checksum mismatch exits nonzero");
+  require(readFile(catalog_validate_path).find("\"code\": \"ITEM_SHA256_MISMATCH\"") !=
+              std::string::npos,
+          "lib catalog-validate reports checksum mismatch");
 
   const std::string place_footprint_command =
       quote(CCAD_BINARY) + " pcb place-footprint --file " + quote(board_project_path) +

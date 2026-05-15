@@ -1,6 +1,8 @@
 #include "ccad_core/library_catalog.hpp"
 #include "test_support.hpp"
 
+#include <filesystem>
+#include <fstream>
 #include <string>
 
 int main() {
@@ -105,6 +107,45 @@ int main() {
           "catalog validator reports missing license");
   require(dirty_diagnostics.at(3).code == "MISSING_ITEM_PROVENANCE",
           "catalog validator reports missing provenance");
+
+  const std::filesystem::path temp = std::filesystem::temp_directory_path() / "ccad_catalog_test";
+  std::filesystem::create_directories(temp / "footprints" / "Resistor_SMD");
+  std::ofstream native_item(temp / "footprints" / "Resistor_SMD" /
+                                "R_0603_1608Metric.ccad-footprint.json",
+                            std::ios::binary);
+  native_item << "hello\n";
+  native_item.close();
+
+  ccad::LibraryCatalog file_catalog;
+  file_catalog.schema_version = 1;
+  file_catalog.name = "file-cache";
+  file_catalog.source = catalog.source;
+  file_catalog.items.push_back(ccad::LibraryItem{
+      .id = "footprint:Resistor_SMD:R_0603_1608Metric",
+      .kind = "footprint",
+      .name = "R_0603_1608Metric",
+      .source_path = "Resistor_SMD.pretty/R_0603_1608Metric.kicad_mod",
+      .native_path = "footprints/Resistor_SMD/R_0603_1608Metric.ccad-footprint.json",
+      .sha256 = "5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03",
+      .license = "CC-BY-SA-4.0 WITH KiCad-library-exception",
+      .provenance = "kicad-official@abc123",
+  });
+  require(ccad::validateLibraryCatalog(file_catalog, temp).empty(),
+          "catalog file validator accepts matching local artifact checksum");
+
+  file_catalog.items.at(0).sha256 = "0000000000000000000000000000000000000000000000000000000000000000";
+  const std::vector<ccad::CatalogDiagnostic> checksum_diagnostics =
+      ccad::validateLibraryCatalog(file_catalog, temp);
+  require(checksum_diagnostics.size() == 1, "catalog file validator reports checksum mismatch");
+  require(checksum_diagnostics.at(0).code == "ITEM_SHA256_MISMATCH",
+          "catalog file validator uses checksum mismatch code");
+
+  file_catalog.items.at(0).native_path = "footprints/missing.ccad-footprint.json";
+  const std::vector<ccad::CatalogDiagnostic> missing_file_diagnostics =
+      ccad::validateLibraryCatalog(file_catalog, temp);
+  require(missing_file_diagnostics.size() == 1, "catalog file validator reports missing file");
+  require(missing_file_diagnostics.at(0).code == "MISSING_NATIVE_FILE",
+          "catalog file validator uses missing file code");
 
   bool rejected = false;
   try {

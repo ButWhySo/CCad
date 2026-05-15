@@ -165,10 +165,15 @@ int libCommand(const std::vector<std::string>& args) {
     }
 
     if (subcommand == "catalog-validate") {
-      const std::map<std::string, std::string> options = parseOptions(args, 1, {"--catalog"});
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--catalog", "--root"});
       const ccad::LibraryCatalog catalog = loadCatalogFile(requireOption(options, "--catalog"));
-      const std::vector<ccad::CatalogDiagnostic> diagnostics =
-          ccad::validateLibraryCatalog(catalog);
+      std::vector<ccad::CatalogDiagnostic> diagnostics;
+      if (options.contains("--root")) {
+        diagnostics = ccad::validateLibraryCatalog(catalog, requireOption(options, "--root"));
+      } else {
+        diagnostics = ccad::validateLibraryCatalog(catalog);
+      }
       printCatalogDiagnostics(diagnostics);
       return diagnostics.empty() ? 0 : 1;
     }

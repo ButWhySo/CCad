@@ -41,6 +41,7 @@ The initial codebase is C++20:
 - `ccad lib catalog-search` provides local text search over catalog ID, kind, name, source path, and native path.
 - `ccad lib catalog-search --kind <kind>` restricts local search to one catalog item kind.
 - `ccad lib catalog-validate` validates required metadata and duplicate item IDs before a catalog is trusted.
+- `ccad lib catalog-validate --root <dir>` verifies local native catalog artifacts by existence and SHA-256.
 - Footprint placement can rotate pads and preserve logical net IDs when project nets contain matching component/pin members.
 - Physical DRC currently covers duplicate IDs, unknown layers/nets, outline bounds, invalid dimensions, empty net warnings, track endpoint connectivity warnings, rectangular keepout occupancy/crossing violations, drill/diameter sanity, and zero-length tracks.
 
