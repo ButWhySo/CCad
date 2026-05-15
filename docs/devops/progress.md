@@ -7,9 +7,9 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
 - Sprint: 38
-- Branch: `sprint-38-net-highlight-groundwork`
-- Last merged sprint: Sprint 37, transaction timeline panel
-- Status: Sprint 38 in progress; canvas net metadata and net selection groundwork are being added
+- Branch: `main`
+- Last merged sprint: Sprint 38, net highlight groundwork
+- Status: Sprint 38 merged on `main`; verification running after merge
 
 ## Phase Roadmap
 
@@ -59,10 +59,11 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Sprint 35: object browser selection link.
 - Sprint 36: canvas render theme groundwork.
 - Sprint 37: transaction timeline panel.
+- Sprint 38: net highlight groundwork.
 
 ## Active Sprint
 
-- Sprint 38: net highlight groundwork.
+- Sprint 39: planning pending; use a larger epic-style branch with multiple tasks before the full gate.
 
 ## Reporting Rule
 
