@@ -26,6 +26,10 @@ int main() {
       .sha256 = "0123456789abcdef",
       .license = "CC-BY-SA-4.0 WITH KiCad-library-exception",
       .provenance = "kicad-official@abc123",
+      .usage_summary = "0603 resistor footprint for compact passive placement",
+      .layout_notes = {"check assembly house minimum passive spacing"},
+      .source_confidence = "library_metadata",
+      .review_status = "reviewed",
       .warnings = {"unsupported 3d model reference skipped"},
   });
 
@@ -36,6 +40,15 @@ int main() {
           "catalog json writes checksum");
   require(json.find("\"provenance\": \"kicad-official@abc123\"") != std::string::npos,
           "catalog json writes provenance");
+  require(json.find("\"usage_summary\": \"0603 resistor footprint for compact passive placement\"") !=
+              std::string::npos,
+          "catalog json writes usage summary");
+  require(json.find("check assembly house minimum passive spacing") != std::string::npos,
+          "catalog json writes layout notes");
+  require(json.find("\"source_confidence\": \"library_metadata\"") != std::string::npos,
+          "catalog json writes source confidence");
+  require(json.find("\"review_status\": \"reviewed\"") != std::string::npos,
+          "catalog json writes review status");
   require(json.find("unsupported 3d model reference skipped") != std::string::npos,
           "catalog json writes warnings");
 
@@ -48,6 +61,13 @@ int main() {
           "catalog round trips item id");
   require(parsed.items.at(0).license == "CC-BY-SA-4.0 WITH KiCad-library-exception",
           "catalog round trips license");
+  require(parsed.items.at(0).usage_summary ==
+              "0603 resistor footprint for compact passive placement",
+          "catalog round trips usage summary");
+  require(parsed.items.at(0).layout_notes.size() == 1, "catalog round trips layout notes");
+  require(parsed.items.at(0).source_confidence == "library_metadata",
+          "catalog round trips source confidence");
+  require(parsed.items.at(0).review_status == "reviewed", "catalog round trips review status");
   require(parsed.items.at(0).warnings.size() == 1, "catalog round trips warnings");
 
   const ccad::LibraryItem* found =
@@ -79,6 +99,11 @@ int main() {
   const std::vector<const ccad::LibraryItem*> capacitor_matches =
       ccad::searchLibraryItems(parsed, "0603", "footprint");
   require(capacitor_matches.size() == 2, "catalog search kind filter keeps footprints");
+  const std::vector<const ccad::LibraryItem*> spacing_matches =
+      ccad::searchLibraryItems(parsed, "assembly house");
+  require(spacing_matches.size() == 1, "catalog search matches layout notes");
+  require(spacing_matches.at(0)->id == "footprint:Resistor_SMD:R_0603_1608Metric",
+          "layout note search returns matching item");
   require(ccad::searchLibraryItems(parsed, "0603", "symbol").empty(),
           "catalog search kind filter removes non-matching kind");
   require(ccad::searchLibraryItems(parsed, "").empty(), "catalog search rejects empty query");
@@ -107,6 +132,25 @@ int main() {
           "catalog validator reports missing license");
   require(dirty_diagnostics.at(3).code == "MISSING_ITEM_PROVENANCE",
           "catalog validator reports missing provenance");
+
+  parsed.items.clear();
+  parsed.items.push_back(ccad::LibraryItem{
+      .id = "part:demo:unreviewed",
+      .kind = "part",
+      .name = "Unreviewed Part",
+      .source_path = "parts/unreviewed.json",
+      .native_path = "parts/unreviewed.ccad-part.json",
+      .sha256 = "abc",
+      .license = "MIT",
+      .provenance = "local",
+      .source_confidence = "datasheet",
+      .review_status = "maybe",
+  });
+  const std::vector<ccad::CatalogDiagnostic> review_status_diagnostics =
+      ccad::validateLibraryCatalog(parsed);
+  require(review_status_diagnostics.size() == 1, "catalog validator reports invalid review status");
+  require(review_status_diagnostics.at(0).code == "INVALID_REVIEW_STATUS",
+          "catalog validator uses invalid review status code");
 
   const std::filesystem::path temp = std::filesystem::temp_directory_path() / "ccad_catalog_test";
   std::filesystem::create_directories(temp / "footprints" / "Resistor_SMD");
