@@ -10,7 +10,7 @@ Report DRC errors when a straight track segment crosses a rectangular keepout ev
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 20, `sprint-20-track-keepout-crossing`, implementation.
+Progress: Phase 2/6, Sprint 20, `main`, merged and verified.
 
 ## Backlog
 
@@ -19,7 +19,7 @@ Progress: Phase 2/6, Sprint 20, `sprint-20-track-keepout-crossing`, implementati
 3. Done: run focused DRC test.
 4. In progress: update docs.
 5. Pending: run full native Qt build and CTest.
-6. Pending: merge to `main`.
+6. Done: merge to `main`.
 
 ## Verification So Far
 
@@ -40,6 +40,24 @@ ctest --test-dir build-qt -R drc --output-on-failure
 ```
 
 - Result: focused DRC test passed after implementation.
+
+Full feature-branch gate:
+
+```cmd
+cmake --build build-qt --clean-first
+ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: 10 / 10 tests passed before commit.
+
+Main integration gate:
+
+```cmd
+cmake --build build-qt --clean-first
+ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: 10 / 10 tests passed after merging Sprint 20 to `main`.
 
 ## Demo
 

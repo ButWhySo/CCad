@@ -5,8 +5,8 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 ## Current Progress
 
 - Phase: 2 / 6
-- Last merged sprint: Sprint 19, keepout authoring and visibility
-- Next sprint: Sprint 20, track crossing keepout DRC
+- Last merged sprint: Sprint 20, track crossing keepout DRC
+- Next sprint: Sprint 21 planning
 - Active branch pattern: `sprint-<n>-<topic>`
 - Current source of truth for phase/sprint counter: `docs/devops/progress.md`
 - Main product direction: native C++ PCB kernel and machine-callable CLI first; Qt GUI is a human review/editor client, not the data owner.
