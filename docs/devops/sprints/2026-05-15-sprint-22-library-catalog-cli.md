@@ -10,7 +10,7 @@ Expose local CCad-native library catalogs through deterministic CLI commands for
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 22, `sprint-22-library-catalog-cli`, implementation.
+Progress: Phase 2/6, Sprint 22, `main`, merged and verified.
 
 ## Backlog
 
@@ -21,7 +21,7 @@ Progress: Phase 2/6, Sprint 22, `sprint-22-library-catalog-cli`, implementation.
 5. Done: run focused CLI test.
 6. In progress: update docs.
 7. Pending: run full native Qt build and CTest.
-8. Pending: merge to `main`.
+8. Done: merge to `main`.
 
 ## Verification So Far
 
@@ -42,6 +42,24 @@ ctest --test-dir build-qt -R cli --output-on-failure
 ```
 
 - Result: focused CLI test passed.
+
+Full feature-branch gate:
+
+```cmd
+cmake --build build-qt --clean-first
+ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: 11 / 11 tests passed before commit.
+
+Main integration gate:
+
+```cmd
+cmake --build build-qt --clean-first
+ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: 11 / 11 tests passed after merging Sprint 22 to `main`.
 
 ## Demo
 
