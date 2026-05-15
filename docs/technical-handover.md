@@ -32,6 +32,7 @@ The initial codebase is C++20:
 - ERC and DRC return typed diagnostics for agent consumption.
 - CLI commands are split into deterministic command modules.
 - `ccad_gui` is optional and builds only when Qt 6 Widgets is available.
+- Sprint 27 starts the CAD editor shell direction: central PCB tab, dock panels, explicit canvas fit, wheel zoom, middle-button pan, and status readouts.
 - Physical lengths are stored as integer nanometers in `ccad_core::Length`; user-facing mm/mil values convert at API boundaries.
 - `ccad_core::CanvasScene` is the tested rendering input for the Qt board canvas. GUI rendering must consume this model rather than directly inventing project geometry.
 - Rectangular keepouts can be authored with `ccad pcb add-keepout` and are visible in the Qt board canvas.
@@ -63,7 +64,7 @@ Planned approach:
 
 - `src/ccad_core/`: source-of-truth kernel model, serialization, ERC, DRC, review, diff, transactions, canvas scene, and KiCad footprint import.
 - `src/ccad_cli/`: machine-callable CLI split into `app`, `common`, `project_commands`, `pcb_commands`, and `lib_commands`.
-- `src/ccad_gui/`: native Qt review GUI split into `ReviewWindow`, board canvas renderer, board canvas view, and a small `main.cpp`.
+- `src/ccad_gui/`: native Qt GUI split into `ReviewWindow`, board canvas renderer, board canvas view, and a small `main.cpp`.
 - `tests/`: C++ CTest targets for serialize, ERC, DRC, footprint import, CLI, review, diff, transaction, geometry, and canvas behavior.
 - `docs/codebase-map.md`: maintained memory-loss map for agents. Read it before non-trivial edits.
 
