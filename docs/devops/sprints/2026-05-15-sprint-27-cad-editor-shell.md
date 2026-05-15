@@ -10,7 +10,7 @@ Replace the review-dashboard layout with the first native CAD editor shell: cent
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 27, `sprint-27-cad-editor-shell`, implementation.
+Progress: Phase 2/6, Sprint 27, `main`, merged and verified.
 
 ## Backlog
 
@@ -20,8 +20,8 @@ Progress: Phase 2/6, Sprint 27, `sprint-27-cad-editor-shell`, implementation.
 4. Done: add project, layers/objects, and diagnostics docks.
 5. Done: add explicit Fit, wheel zoom, middle-button pan, cursor coordinates, and zoom status.
 6. Done: capture demo screenshot.
-7. Pending: full native Qt build and CTest.
-8. Pending: merge to `main`.
+7. Done: full native Qt build and CTest.
+8. Done: merge to `main`.
 
 ## Verification So Far
 
@@ -40,3 +40,19 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_sprint_demo.ps1 -Name spr
 ```
 
 - Result: screenshot captured at `artifacts/screenshots/sprint27-cad-shell-fitfix-20260515-160919.png`.
+
+Full branch gate:
+
+```cmd
+cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: passed, 11/11 tests.
+
+Main integration gate:
+
+```cmd
+cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: passed, 11/11 tests after merge to `main`.
