@@ -565,6 +565,27 @@ Rule:
 - Do not parse geometry here.
 - Load project -> `buildReview` and `buildCanvasScene` -> render.
 
+### `src/ccad_gui/project_summary_panel.hpp/.cpp`
+
+Owns the project summary dock content.
+
+Important methods:
+
+```cpp
+void renderReview(const ccad::ProjectReview& review);
+void renderLoadFailure(const QString& path);
+```
+
+### `src/ccad_gui/diagnostics_panel.hpp/.cpp`
+
+Owns diagnostics table setup and row rendering.
+
+Important method:
+
+```cpp
+void renderDiagnostics(const std::vector<ccad::Diagnostic>& diagnostics);
+```
+
 ### `src/ccad_gui/board_canvas_renderer.hpp/.cpp`
 
 Owns drawing board canvas objects into `QGraphicsScene`.

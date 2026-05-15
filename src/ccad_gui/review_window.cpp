@@ -9,24 +9,15 @@
 #include <QAction>
 #include <QFileDialog>
 #include <QFileInfo>
-#include <QFrame>
-#include <QGridLayout>
 #include <QGraphicsScene>
-#include <QHeaderView>
-#include <QHBoxLayout>
 #include <QDockWidget>
 #include <QListWidget>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QPainter>
-#include <QPushButton>
-#include <QSplitter>
 #include <QStatusBar>
 #include <QTabWidget>
-#include <QTableWidgetItem>
 #include <QToolBar>
-#include <QVBoxLayout>
-#include <QWidget>
 
 #include <fstream>
 #include <sstream>
@@ -48,29 +39,6 @@ QString qstr(const std::string& value) {
   return QString::fromStdString(value);
 }
 
-QFrame* makeCard(QWidget* parent, const QString& label, QLabel** value_label) {
-  auto* card = new QFrame(parent);
-  card->setObjectName("summaryCard");
-  auto* layout = new QVBoxLayout(card);
-  layout->setContentsMargins(14, 10, 14, 10);
-  layout->setSpacing(4);
-
-  auto* title = new QLabel(label, card);
-  title->setObjectName("cardTitle");
-  *value_label = new QLabel("0", card);
-  (*value_label)->setObjectName("cardValue");
-
-  layout->addWidget(title);
-  layout->addWidget(*value_label);
-  return card;
-}
-
-QTableWidgetItem* makeItem(const QString& text) {
-  auto* item = new QTableWidgetItem(text);
-  item->setFlags(item->flags() & ~Qt::ItemIsEditable);
-  return item;
-}
-
 }  // namespace
 
 ReviewWindow::ReviewWindow() {
@@ -78,45 +46,14 @@ ReviewWindow::ReviewWindow() {
   resize(1360, 860);
   applyStyle();
 
-  auto* project_panel = new QWidget(this);
-  auto* project_layout = new QVBoxLayout(project_panel);
-  project_layout->setContentsMargins(14, 12, 14, 12);
-  project_layout->setSpacing(10);
-
-  title_ = new QLabel("No project loaded", project_panel);
-  title_->setObjectName("title");
-  subtitle_ = new QLabel("Open a .ccad.json project to review board state.", project_panel);
-  subtitle_->setObjectName("subtitle");
-  status_chip_ = new QLabel("Ready", project_panel);
-  status_chip_->setObjectName("statusChip");
-  status_chip_->setAlignment(Qt::AlignCenter);
-  project_layout->addWidget(title_);
-  project_layout->addWidget(subtitle_);
-  project_layout->addWidget(status_chip_);
-  project_layout->addWidget(makeCard(project_panel, "Components", &components_value_));
-  project_layout->addWidget(makeCard(project_panel, "Nets", &nets_value_));
-  project_layout->addWidget(makeCard(project_panel, "Layers", &layers_value_));
-  project_layout->addWidget(makeCard(project_panel, "Diagnostics", &diagnostics_value_));
-  project_layout->addStretch(1);
+  project_summary_ = new ProjectSummaryPanel(this);
 
   auto* project_dock = new QDockWidget("Project", this);
   project_dock->setObjectName("projectDock");
-  project_dock->setWidget(project_panel);
+  project_dock->setWidget(project_summary_);
   addDockWidget(Qt::LeftDockWidgetArea, project_dock);
 
-  diagnostics_ = new QTableWidget(this);
-  diagnostics_->setObjectName("diagnosticsTable");
-  diagnostics_->setColumnCount(4);
-  diagnostics_->setHorizontalHeaderLabels({"Severity", "Code", "Object", "Message"});
-  diagnostics_->horizontalHeader()->setStretchLastSection(true);
-  diagnostics_->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-  diagnostics_->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-  diagnostics_->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-  diagnostics_->setEditTriggers(QAbstractItemView::NoEditTriggers);
-  diagnostics_->setSelectionBehavior(QAbstractItemView::SelectRows);
-  diagnostics_->setAlternatingRowColors(true);
-  diagnostics_->verticalHeader()->setVisible(false);
-  diagnostics_->setShowGrid(false);
+  diagnostics_ = new DiagnosticsPanel(this);
 
   auto* diagnostics_dock = new QDockWidget("Diagnostics", this);
   diagnostics_dock->setObjectName("diagnosticsDock");
@@ -317,56 +254,15 @@ void ReviewWindow::reloadProject() {
   } catch (const std::exception& error) {
     diagnostics_->setRowCount(0);
     renderCanvas(ccad::CanvasScene{});
-    title_->setText("Load failed");
-    subtitle_->setText(qstr(current_path_.string()));
-    components_value_->setText("0");
-    nets_value_->setText("0");
-    layers_value_->setText("0");
-    diagnostics_value_->setText("0");
-    setStatusChip("Load failed", "#dc2626");
+    project_summary_->renderLoadFailure(qstr(current_path_.string()));
     statusBar()->showMessage(qstr(error.what()));
     QMessageBox::warning(this, "Load failed", qstr(error.what()));
   }
 }
 
 void ReviewWindow::renderReview(const ccad::ProjectReview& review) {
-  title_->setText(qstr(review.project_name));
-  QString board_text = "No board";
-  if (review.has_board) {
-    board_text = "Board: " + QString::number(review.board_width_nm / 1000000.0, 'f', 2) +
-                 " mm x " + QString::number(review.board_height_nm / 1000000.0, 'f', 2) + " mm";
-  }
-  subtitle_->setText("Project ID: " + qstr(review.project_id) + "   " + board_text);
-  components_value_->setText(QString::number(review.component_count));
-  nets_value_->setText(QString::number(review.net_count));
-  layers_value_->setText(QString::number(review.layer_count));
-  diagnostics_value_->setText(QString::number(review.diagnostics.size()));
-
-  if (review.error_count > 0) {
-    setStatusChip("Errors", "#dc2626");
-  } else if (review.warning_count > 0) {
-    setStatusChip("Warnings", "#d97706");
-  } else {
-    setStatusChip("Clean", "#059669");
-  }
-
-  diagnostics_->setRowCount(static_cast<int>(review.diagnostics.size()));
-  for (int row = 0; row < static_cast<int>(review.diagnostics.size()); ++row) {
-    const ccad::Diagnostic& diagnostic = review.diagnostics.at(static_cast<std::size_t>(row));
-    auto* severity = makeItem(qstr(diagnostic.severity));
-    if (diagnostic.severity == "error") {
-      severity->setBackground(QColor("#fee2e2"));
-      severity->setForeground(QColor("#991b1b"));
-    } else if (diagnostic.severity == "warning") {
-      severity->setBackground(QColor("#fef3c7"));
-      severity->setForeground(QColor("#92400e"));
-    }
-    diagnostics_->setItem(row, 0, severity);
-    diagnostics_->setItem(row, 1, makeItem(qstr(diagnostic.code)));
-    diagnostics_->setItem(row, 2, makeItem(qstr(diagnostic.object_id)));
-    diagnostics_->setItem(row, 3, makeItem(qstr(diagnostic.message)));
-  }
-  diagnostics_->resizeColumnsToContents();
+  project_summary_->renderReview(review);
+  diagnostics_->renderDiagnostics(review.diagnostics);
   renderCanvas(ccad::buildCanvasScene(project_cache_));
   statusBar()->showMessage(qstr(review.status));
 }
@@ -389,8 +285,3 @@ void ReviewWindow::updateCursorStatus(const QPointF& scene_position, const doubl
   zoom_status_->setText("Zoom " + QString::number(zoom_factor * 100.0, 'f', 0) + "%");
 }
 
-void ReviewWindow::setStatusChip(const QString& text, const QString& color) {
-  status_chip_->setText(text);
-  status_chip_->setStyleSheet("color: #ffffff; background: " + color +
-                              "; border-radius: 13px; padding: 6px 12px; font-weight: 700;");
-}
