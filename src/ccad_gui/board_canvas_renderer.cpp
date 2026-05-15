@@ -17,8 +17,7 @@ QString qstr(const std::string& value) {
 
 }  // namespace
 
-void renderBoardCanvas(QGraphicsScene& canvas_scene, QGraphicsView& canvas_view,
-                       const ccad::CanvasScene& scene) {
+void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& scene) {
   canvas_scene.clear();
   canvas_scene.setBackgroundBrush(QBrush(QColor("#07111f")));
   if (!scene.has_board) {
@@ -26,7 +25,6 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, QGraphicsView& canvas_view,
     text->setDefaultTextColor(QColor("#94a3b8"));
     text->setPos(18, 18);
     canvas_scene.setSceneRect(0, 0, 420, 280);
-    canvas_view.fitInView(canvas_scene.sceneRect(), Qt::KeepAspectRatio);
     return;
   }
 
@@ -111,6 +109,4 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, QGraphicsView& canvas_view,
   label->setDefaultTextColor(QColor("#cbd5e1"));
   label->setScale(0.9);
   label->setPos(margin, margin + height + 10.0);
-
-  canvas_view.fitInView(canvas_scene.sceneRect(), Qt::KeepAspectRatio);
 }

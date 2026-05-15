@@ -14,12 +14,15 @@
 #include <QGraphicsScene>
 #include <QHeaderView>
 #include <QHBoxLayout>
+#include <QDockWidget>
+#include <QListWidget>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QPainter>
 #include <QPushButton>
 #include <QSplitter>
 #include <QStatusBar>
+#include <QTabWidget>
 #include <QTableWidgetItem>
 #include <QToolBar>
 #include <QVBoxLayout>
@@ -71,51 +74,37 @@ QTableWidgetItem* makeItem(const QString& text) {
 }  // namespace
 
 ReviewWindow::ReviewWindow() {
-  setWindowTitle("CCad Review");
-  resize(1120, 720);
+  setWindowTitle("CCad PCB Editor");
+  resize(1360, 860);
   applyStyle();
 
-  auto* root = new QWidget(this);
-  auto* layout = new QVBoxLayout(root);
-  layout->setContentsMargins(20, 18, 20, 16);
-  layout->setSpacing(14);
+  auto* project_panel = new QWidget(this);
+  auto* project_layout = new QVBoxLayout(project_panel);
+  project_layout->setContentsMargins(14, 12, 14, 12);
+  project_layout->setSpacing(10);
 
-  auto* header = new QFrame(root);
-  header->setObjectName("header");
-  auto* header_layout = new QHBoxLayout(header);
-  header_layout->setContentsMargins(18, 14, 18, 14);
-  header_layout->setSpacing(16);
-
-  title_ = new QLabel("CCad Review", header);
+  title_ = new QLabel("No project loaded", project_panel);
   title_->setObjectName("title");
-  subtitle_ = new QLabel("Open a project to inspect agent output and ERC state.", header);
+  subtitle_ = new QLabel("Open a .ccad.json project to review board state.", project_panel);
   subtitle_->setObjectName("subtitle");
-  auto* title_stack = new QVBoxLayout();
-  title_stack->setSpacing(2);
-  title_stack->addWidget(title_);
-  title_stack->addWidget(subtitle_);
-
-  status_chip_ = new QLabel("Ready", header);
+  status_chip_ = new QLabel("Ready", project_panel);
   status_chip_->setObjectName("statusChip");
   status_chip_->setAlignment(Qt::AlignCenter);
-  status_chip_->setMinimumWidth(120);
+  project_layout->addWidget(title_);
+  project_layout->addWidget(subtitle_);
+  project_layout->addWidget(status_chip_);
+  project_layout->addWidget(makeCard(project_panel, "Components", &components_value_));
+  project_layout->addWidget(makeCard(project_panel, "Nets", &nets_value_));
+  project_layout->addWidget(makeCard(project_panel, "Layers", &layers_value_));
+  project_layout->addWidget(makeCard(project_panel, "Diagnostics", &diagnostics_value_));
+  project_layout->addStretch(1);
 
-  header_layout->addLayout(title_stack, 1);
-  header_layout->addWidget(status_chip_);
-  layout->addWidget(header);
+  auto* project_dock = new QDockWidget("Project", this);
+  project_dock->setObjectName("projectDock");
+  project_dock->setWidget(project_panel);
+  addDockWidget(Qt::LeftDockWidgetArea, project_dock);
 
-  auto* cards = new QFrame(root);
-  auto* cards_layout = new QGridLayout(cards);
-  cards_layout->setContentsMargins(0, 0, 0, 0);
-  cards_layout->setHorizontalSpacing(12);
-  cards_layout->setVerticalSpacing(12);
-  cards_layout->addWidget(makeCard(cards, "Components", &components_value_), 0, 0);
-  cards_layout->addWidget(makeCard(cards, "Nets", &nets_value_), 0, 1);
-  cards_layout->addWidget(makeCard(cards, "Layers", &layers_value_), 0, 2);
-  cards_layout->addWidget(makeCard(cards, "Diagnostics", &diagnostics_value_), 0, 3);
-  layout->addWidget(cards);
-
-  diagnostics_ = new QTableWidget(root);
+  diagnostics_ = new QTableWidget(this);
   diagnostics_->setObjectName("diagnosticsTable");
   diagnostics_->setColumnCount(4);
   diagnostics_->setHorizontalHeaderLabels({"Severity", "Code", "Object", "Message"});
@@ -128,30 +117,63 @@ ReviewWindow::ReviewWindow() {
   diagnostics_->setAlternatingRowColors(true);
   diagnostics_->verticalHeader()->setVisible(false);
   diagnostics_->setShowGrid(false);
+
+  auto* diagnostics_dock = new QDockWidget("Diagnostics", this);
+  diagnostics_dock->setObjectName("diagnosticsDock");
+  diagnostics_dock->setWidget(diagnostics_);
+  addDockWidget(Qt::BottomDockWidgetArea, diagnostics_dock);
+
+  auto* layer_panel = new QListWidget(this);
+  layer_panel->setObjectName("layersPanel");
+  layer_panel->addItem("F.Cu");
+  layer_panel->addItem("B.Cu");
+  layer_panel->addItem("Edge.Cuts");
+  layer_panel->addItem("Keepouts");
+  auto* layers_dock = new QDockWidget("Layers / Objects", this);
+  layers_dock->setObjectName("layersDock");
+  layers_dock->setWidget(layer_panel);
+  addDockWidget(Qt::RightDockWidgetArea, layers_dock);
+
   canvas_scene_ = new QGraphicsScene(this);
-  canvas_view_ = new BoardCanvasView(canvas_scene_, root);
+  auto* board_view = new BoardCanvasView(canvas_scene_, this);
+  canvas_view_ = board_view;
   canvas_view_->setObjectName("boardCanvas");
   canvas_view_->setRenderHint(QPainter::Antialiasing);
-  canvas_view_->setDragMode(QGraphicsView::ScrollHandDrag);
+  canvas_view_->setDragMode(QGraphicsView::NoDrag);
   canvas_view_->setFrameShape(QFrame::NoFrame);
-  canvas_view_->setMinimumHeight(360);
+  canvas_view_->setMouseTracking(true);
+  board_view->setCoordinateCallback(
+      [this](const QPointF& scene_position, const double zoom_factor) {
+        updateCursorStatus(scene_position, zoom_factor);
+      });
 
-  auto* workspace = new QSplitter(Qt::Horizontal, root);
-  workspace->addWidget(canvas_view_);
-  workspace->addWidget(diagnostics_);
-  workspace->setStretchFactor(0, 4);
-  workspace->setStretchFactor(1, 3);
-  layout->addWidget(workspace, 1);
+  auto* tabs = new QTabWidget(this);
+  tabs->setObjectName("editorTabs");
+  tabs->addTab(canvas_view_, "PCB");
+  auto* schematic_placeholder = new QLabel("Schematic editor will share this shell.", tabs);
+  schematic_placeholder->setAlignment(Qt::AlignCenter);
+  tabs->addTab(schematic_placeholder, "Schematic");
+  tabs->setTabEnabled(1, false);
 
-  setCentralWidget(root);
+  setCentralWidget(tabs);
+  cursor_status_ = new QLabel("X --  Y --", this);
+  zoom_status_ = new QLabel("Zoom 100%", this);
+  tool_status_ = new QLabel("Tool Select", this);
+  layer_status_ = new QLabel("Layer F.Cu", this);
+  statusBar()->addPermanentWidget(cursor_status_);
+  statusBar()->addPermanentWidget(zoom_status_);
+  statusBar()->addPermanentWidget(tool_status_);
+  statusBar()->addPermanentWidget(layer_status_);
   statusBar()->showMessage("Ready");
 
   auto* open_action = new QAction("Open", this);
   auto* reload_action = new QAction("Reload", this);
+  auto* fit_action = new QAction("Fit", this);
   auto* quit_action = new QAction("Quit", this);
 
   connect(open_action, &QAction::triggered, this, [this]() { openProject(); });
   connect(reload_action, &QAction::triggered, this, [this]() { reloadProject(); });
+  connect(fit_action, &QAction::triggered, this, [board_view]() { board_view->zoomToFit(); });
   connect(quit_action, &QAction::triggered, this, [this]() { close(); });
 
   auto* file_menu = menuBar()->addMenu("File");
@@ -163,6 +185,8 @@ ReviewWindow::ReviewWindow() {
   auto* toolbar = addToolBar("Main");
   toolbar->addAction(open_action);
   toolbar->addAction(reload_action);
+  toolbar->addSeparator();
+  toolbar->addAction(fit_action);
 }
 
 void ReviewWindow::loadProjectPath(const std::filesystem::path& path) {
@@ -173,13 +197,14 @@ void ReviewWindow::loadProjectPath(const std::filesystem::path& path) {
 void ReviewWindow::applyStyle() {
   setStyleSheet(R"(
     QMainWindow {
-      background: #f5f7fb;
+      background: #0f172a;
       color: #172033;
       font-size: 10.5pt;
     }
-    QMenuBar, QToolBar {
-      background: #ffffff;
-      border-bottom: 1px solid #dde3ec;
+    QMenuBar, QToolBar, QDockWidget {
+      background: #f8fafc;
+      color: #111827;
+      border-bottom: 1px solid #cbd5e1;
       spacing: 8px;
     }
     QToolBar {
@@ -192,17 +217,13 @@ void ReviewWindow::applyStyle() {
     QToolButton:hover {
       background: #e8eef7;
     }
-    QFrame#header {
-      background: #182235;
-      border-radius: 10px;
-    }
     QLabel#title {
-      color: #ffffff;
-      font-size: 18pt;
+      color: #f8fafc;
+      font-size: 16pt;
       font-weight: 700;
     }
     QLabel#subtitle {
-      color: #b7c4d8;
+      color: #94a3b8;
     }
     QLabel#statusChip {
       color: #ffffff;
@@ -214,7 +235,7 @@ void ReviewWindow::applyStyle() {
     QFrame#summaryCard {
       background: #ffffff;
       border: 1px solid #dfe6ef;
-      border-radius: 9px;
+      border-radius: 6px;
     }
     QLabel#cardTitle {
       color: #64748b;
@@ -235,6 +256,27 @@ void ReviewWindow::applyStyle() {
       selection-background-color: #dbeafe;
       selection-color: #111827;
     }
+    QListWidget#layersPanel {
+      background: #ffffff;
+      border: 1px solid #dfe6ef;
+      padding: 6px;
+    }
+    QTabWidget::pane {
+      border: 1px solid #1e293b;
+      background: #07111f;
+    }
+    QTabBar::tab {
+      background: #e2e8f0;
+      color: #1e293b;
+      padding: 8px 18px;
+      border-top-left-radius: 6px;
+      border-top-right-radius: 6px;
+    }
+    QTabBar::tab:selected {
+      background: #ffffff;
+      color: #0f172a;
+      font-weight: 700;
+    }
     QHeaderView::section {
       background: #eef2f7;
       color: #334155;
@@ -244,9 +286,9 @@ void ReviewWindow::applyStyle() {
       font-weight: 700;
     }
     QStatusBar {
-      background: #ffffff;
-      color: #475569;
-      border-top: 1px solid #dde3ec;
+      background: #111827;
+      color: #dbeafe;
+      border-top: 1px solid #334155;
     }
   )");
 }
@@ -330,7 +372,21 @@ void ReviewWindow::renderReview(const ccad::ProjectReview& review) {
 }
 
 void ReviewWindow::renderCanvas(const ccad::CanvasScene& scene) {
-  renderBoardCanvas(*canvas_scene_, *canvas_view_, scene);
+  renderBoardCanvas(*canvas_scene_, scene);
+  auto* board_view = dynamic_cast<BoardCanvasView*>(canvas_view_);
+  if (board_view != nullptr) {
+    board_view->zoomToFit();
+  }
+}
+
+void ReviewWindow::updateCursorStatus(const QPointF& scene_position, const double zoom_factor) {
+  constexpr double margin = 18.0;
+  constexpr double scale = 10.0;
+  const double x_mm = (scene_position.x() - margin) / scale;
+  const double y_mm = (scene_position.y() - margin) / scale;
+  cursor_status_->setText("X " + QString::number(x_mm, 'f', 2) + " mm  Y " +
+                          QString::number(y_mm, 'f', 2) + " mm");
+  zoom_status_->setText("Zoom " + QString::number(zoom_factor * 100.0, 'f', 0) + "%");
 }
 
 void ReviewWindow::setStatusChip(const QString& text, const QString& color) {

@@ -537,6 +537,7 @@ What it does:
 - Shows project summary.
 - Shows board dimensions and layer count when board data exists.
 - Renders board outline, rectangular keepouts, pads, vias, and track segments in a native Qt `QGraphicsView` canvas when board data exists.
+- Uses a CAD editor shell with a central PCB canvas tab, docked project/layer/diagnostics panels, explicit Fit, wheel zoom, middle-button pan, and cursor/zoom status.
 - Shows ERC diagnostics table.
 - Supports reload.
 
@@ -608,7 +609,7 @@ Expected result:
 
 Current limitation:
 
-- The GUI is a review canvas, not a full KiCad/Altium-class PCB editor yet.
+- The GUI is now an early CAD editor shell, but selection, layer visibility, object inspection, editing, schematic rendering, and transaction timeline are still future work.
 - Primitive authoring currently happens through the project JSON/kernel path; command verbs for placement/routing are planned next.
 
 ## Research And Architecture Docs

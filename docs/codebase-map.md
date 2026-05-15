@@ -572,9 +572,7 @@ Owns drawing board canvas objects into `QGraphicsScene`.
 Public function:
 
 ```cpp
-void renderBoardCanvas(QGraphicsScene& canvas_scene,
-                       QGraphicsView& canvas_view,
-                       const ccad::CanvasScene& scene);
+void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& scene);
 ```
 
 Renders:
@@ -588,12 +586,15 @@ Renders:
 
 ### `src/ccad_gui/board_canvas_view.hpp`
 
-Owns fit-to-view behavior on resize.
+Owns editor viewport behavior.
 
 Important method:
 
 ```cpp
-void resizeEvent(QResizeEvent* event) override;
+void zoomToFit();
+void wheelEvent(QWheelEvent* event) override;
+void mousePressEvent(QMouseEvent* event) override;
+void mouseMoveEvent(QMouseEvent* event) override;
 ```
 
 ## Scripts
@@ -621,7 +622,7 @@ Outputs:
 
 - CLI commands are now split, but `src/ccad_cli/pcb_commands.cpp` should be split further once placement, routing, or net mapping grows.
 - `serialize.cpp` and `kicad_footprint_import.cpp` contain handwritten parsers. They are deterministic and tested, but keep scope narrow.
-- GUI is still a review canvas, not a full editor.
+- GUI is an early CAD editor shell, not a full editor yet.
 - No schematic-footprint mapping yet; placed footprint pads have empty nets.
 - No clearance DRC yet.
 
