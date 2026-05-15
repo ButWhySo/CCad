@@ -6,7 +6,7 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 
 - Phase: 2 / 6
 - Last merged sprint: Sprint 20, track crossing keepout DRC
-- Next sprint: Sprint 21 planning
+- Next sprint: Sprint 21, native library catalog foundation
 - Active branch pattern: `sprint-<n>-<topic>`
 - Current source of truth for phase/sprint counter: `docs/devops/progress.md`
 - Main product direction: native C++ PCB kernel and machine-callable CLI first; Qt GUI is a human review/editor client, not the data owner.
@@ -74,6 +74,7 @@ Optional Qt 6 Widgets GUI. It is for human review and visual feedback. It must s
 - `erc`: logical electrical-rule diagnostics.
 - `drc`: physical board diagnostics.
 - `kicad_footprint_import`: KiCad footprint import and CCad footprint JSON tests.
+- `library_catalog`: native catalog/provenance JSON tests.
 - `cli`: black-box CLI behavior.
 - `review`: human review summary model.
 - `diff`: project diff model.
@@ -349,6 +350,50 @@ Rules:
 - Skip unsupported KiCad constructs safely.
 - Reject malformed s-expressions and non-footprint root.
 - Accept UTF-8 BOM.
+
+### `src/ccad_core/library_catalog.hpp/.cpp`
+
+Owns CCad native library catalog metadata for local/offline component libraries.
+
+Important structs:
+
+```cpp
+struct LibrarySource {
+  std::string name;
+  std::string kind;
+  std::string url;
+  std::string commit;
+  std::string mirror;
+  std::string fetched_at;
+};
+
+struct LibraryItem {
+  std::string id;
+  std::string kind;
+  std::string name;
+  std::string source_path;
+  std::string native_path;
+  std::string sha256;
+  std::string license;
+  std::string provenance;
+  std::vector<std::string> warnings;
+};
+```
+
+Public functions:
+
+```cpp
+std::string dumpLibraryCatalogJson(const LibraryCatalog& catalog);
+LibraryCatalog loadLibraryCatalogJson(const std::string& json);
+const LibraryItem* findLibraryItem(const LibraryCatalog& catalog, const std::string& id);
+```
+
+Rules:
+
+- KiCad and mirror libraries are source data.
+- CCad runtime should query native catalog records, not repeatedly fetch or parse raw upstream files.
+- Huge local caches belong under ignored paths such as `library-cache/` or `catalog-cache/`, not the main source tree.
+- Every imported item must preserve source path, source commit/hash, checksum, license, provenance, and warnings.
 
 ## CLI Files
 

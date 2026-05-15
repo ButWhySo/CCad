@@ -8,6 +8,8 @@ build-*/
 cmake-build-*/
 screenshots/
 artifacts/
+library-cache/
+catalog-cache/
 *.png
 *.jpg
 *.jpeg
