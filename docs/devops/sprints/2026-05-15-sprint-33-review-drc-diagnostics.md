@@ -10,7 +10,7 @@ Include physical DRC diagnostics in the project review stream consumed by CLI in
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 33, `sprint-33-review-drc-diagnostics`, implementation in progress.
+Progress: Phase 2/6, Sprint 33, `main`, merged and verified.
 
 ## Backlog
 
@@ -18,7 +18,7 @@ Progress: Phase 2/6, Sprint 33, `sprint-33-review-drc-diagnostics`, implementati
 2. Done: append DRC diagnostics to `ProjectReview`.
 3. Done: run focused review test.
 4. Done: full native Qt build and CTest.
-5. Pending: commit and merge to `main`.
+5. Done: commit and merge to `main`.
 
 ## Verification So Far
 
@@ -36,6 +36,14 @@ cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-fa
 ```
 
 - Result: passed, 11/11 tests.
+
+Main integration gate:
+
+```cmd
+cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: passed, 11/11 tests after merge to `main`.
 
 ## Demo
 
