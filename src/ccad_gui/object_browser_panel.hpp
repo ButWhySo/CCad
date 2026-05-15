@@ -14,15 +14,18 @@ class ObjectBrowserPanel final : public QWidget {
 
   void renderScene(const ccad::CanvasScene& scene);
   void setObjectActivatedCallback(std::function<void(QString)> callback);
+  void setNetActivatedCallback(std::function<void(QString)> callback);
 
   int itemCount() const;
   QString itemText(int row) const;
   QString objectIdForRow(int row) const;
+  QString netIdForRow(int row) const;
 
  private:
   void addSection(const QString& text);
-  void addRow(const QString& text, const QString& object_id = {});
+  void addRow(const QString& text, const QString& object_id = {}, const QString& net_id = {});
 
   QListWidget* list_ = nullptr;
   std::function<void(QString)> object_activated_callback_;
+  std::function<void(QString)> net_activated_callback_;
 };

@@ -2834,3 +2834,7 @@ https://everything.curl.dev/http/modify/user-agent.html
 curl manual page:
 https://curl.se/docs/manpage.html
 ```
+
+## F.29 Sprint And Compile Cost Sizing
+
+When a project has an expensive full build or test gate, avoid splitting closely related work into many tiny branches that each require a clean compile. Prefer moderate branches that group a few tightly related tasks, bugs, or UI states under one coherent sprint or epic. Keep tests test-first for each behavior change, run focused targets while developing, and reserve the full clean gate for the end of that moderate branch and again after merge. Do not swing to huge risky epics; choose a size where the branch still has a clear theme, reviewable diff, and recoverable failure surface.

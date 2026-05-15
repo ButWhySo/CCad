@@ -6,10 +6,10 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
-- Sprint: 38
-- Branch: `main`
+- Sprint: 39
+- Branch: `sprint-39-net-browser-highlight`
 - Last merged sprint: Sprint 38, net highlight groundwork
-- Status: Sprint 38 merged on `main`; verification running after merge
+- Status: Sprint 39 in progress; moderate branch for object-browser net rows and click-to-select-net wiring
 
 ## Phase Roadmap
 
@@ -63,7 +63,7 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 ## Active Sprint
 
-- Sprint 39: planning pending; use a larger epic-style branch with multiple tasks before the full gate.
+- Sprint 39: net browser highlight. Use moderate sprint sizing: several related tasks per compile, not one tiny branch per small GUI affordance.
 
 ## Reporting Rule
 

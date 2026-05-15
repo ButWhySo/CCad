@@ -30,32 +30,45 @@ int main(int argc, char** argv) {
   require(panel.itemText(0) == "No board objects", "empty browser status text");
 
   panel.renderScene(browserScene());
-  require(panel.itemCount() == 8, "browser has layer and object rows");
+  require(panel.itemCount() == 10, "browser has layer, net, and object rows");
   require(panel.itemText(0) == "Layers (2)", "layer section row");
   require(panel.itemText(1) == "F.Cu - Front copper [signal]", "front layer row");
-  require(panel.itemText(3) == "Objects (4)", "object section row");
-  require(panel.itemText(4) == "pad P1  net N1  layer F.Cu", "pad object row");
-  require(panel.itemText(5) == "via V1  net N1", "via object row");
-  require(panel.itemText(6) == "track T1  net N1  layer F.Cu", "track object row");
-  require(panel.itemText(7) == "keepout K1  kind placement", "keepout object row");
+  require(panel.itemText(3) == "Nets (1)", "net section row");
+  require(panel.itemText(4) == "net N1  objects 3", "net row summarizes member count");
+  require(panel.itemText(5) == "Objects (4)", "object section row");
+  require(panel.itemText(6) == "pad P1  net N1  layer F.Cu", "pad object row");
+  require(panel.itemText(7) == "via V1  net N1", "via object row");
+  require(panel.itemText(8) == "track T1  net N1  layer F.Cu", "track object row");
+  require(panel.itemText(9) == "keepout K1  kind placement", "keepout object row");
   require(panel.objectIdForRow(0).isEmpty(), "section rows do not expose object ids");
   require(panel.objectIdForRow(1).isEmpty(), "layer rows do not expose object ids");
-  require(panel.objectIdForRow(4) == "P1", "pad row exposes object id");
-  require(panel.objectIdForRow(5) == "V1", "via row exposes object id");
-  require(panel.objectIdForRow(6) == "T1", "track row exposes object id");
-  require(panel.objectIdForRow(7) == "K1", "keepout row exposes object id");
+  require(panel.objectIdForRow(4).isEmpty(), "net rows do not expose object ids");
+  require(panel.netIdForRow(4) == "N1", "net row exposes net id");
+  require(panel.objectIdForRow(6) == "P1", "pad row exposes object id");
+  require(panel.objectIdForRow(7) == "V1", "via row exposes object id");
+  require(panel.objectIdForRow(8) == "T1", "track row exposes object id");
+  require(panel.objectIdForRow(9) == "K1", "keepout row exposes object id");
   require(panel.objectIdForRow(99).isEmpty(), "out of range rows do not expose object ids");
+  require(panel.netIdForRow(99).isEmpty(), "out of range rows do not expose net ids");
 
   QString activated_id;
+  QString activated_net_id;
   panel.setObjectActivatedCallback([&activated_id](const QString& object_id) {
     activated_id = object_id;
+  });
+  panel.setNetActivatedCallback([&activated_net_id](const QString& net_id) {
+    activated_net_id = net_id;
   });
   auto* list = panel.findChild<QListWidget*>("objectBrowserPanel");
   require(list != nullptr, "browser list is discoverable for interaction tests");
   QMetaObject::invokeMethod(list, "itemClicked", Qt::DirectConnection,
-                            Q_ARG(QListWidgetItem*, list->item(4)));
+                            Q_ARG(QListWidgetItem*, list->item(6)));
   require(activated_id == "P1", "clicking object row activates object id");
+  QMetaObject::invokeMethod(list, "itemClicked", Qt::DirectConnection,
+                            Q_ARG(QListWidgetItem*, list->item(4)));
+  require(activated_net_id == "N1", "clicking net row activates net id");
   QMetaObject::invokeMethod(list, "itemClicked", Qt::DirectConnection,
                             Q_ARG(QListWidgetItem*, list->item(1)));
   require(activated_id == "P1", "clicking non-object row does not activate object id");
+  require(activated_net_id == "N1", "clicking non-net row does not activate net id");
 }
