@@ -232,6 +232,113 @@ The safe flow is:
 
 This should not silently create production-ready circuits. It should create candidates with evidence.
 
+## Broad Prompt To Finished Electronics Flow
+
+CCad should eventually handle broad product prompts, not only narrow PCB edits.
+
+Examples:
+
+```text
+create a Class D amplifier
+create a TV set-top box
+create an HDMI display controller
+create an STM32-based FPV drone with edge AI
+```
+
+These prompts are too broad to become one direct PCB command. They need an end-to-end engineering pipeline.
+
+The flow should be:
+
+1. Turn the prompt into requirements.
+2. Ask clarifying questions only where the answer changes the design.
+3. Decompose the product into subsystems.
+4. Choose candidate architectures.
+5. Choose components from the enriched local catalog.
+6. Generate schematic modules.
+7. Generate constraints for power, signals, mechanics, thermal, radio, and manufacturing.
+8. Place modules and clusters.
+9. Route using policies and internal solver loops.
+10. Run ERC, DRC, sourcing checks, thermal checks, signal checks, and manufacturing checks.
+11. Produce compact reports and transaction diffs.
+12. Use GUI visual checkpoints for human and agent review.
+13. Iterate only on failed checks or weak-confidence decisions.
+14. Export manufacturing and handover artifacts.
+
+The agent should not pretend one broad prompt is enough information for a finished board. It should create an evidence-backed design plan, expose assumptions, and then build in verified batches.
+
+## Product-Level Decomposition
+
+Broad prompts should be converted into a product tree.
+
+Example for an STM32 FPV drone with edge AI:
+
+```text
+product
+  power
+    battery input
+    regulators
+    current sensing
+  compute
+    STM32 flight controller
+    edge AI module
+    memory
+  sensing
+    IMU
+    barometer
+    camera input
+  communications
+    RC receiver
+    telemetry
+    video link
+  motor control
+    ESC interfaces
+    current paths
+  programming and debug
+    SWD
+    boot controls
+  mechanical
+    mounting holes
+    connector placement
+  manufacturing
+    layer count
+    assembly constraints
+```
+
+Each subsystem should become one or more schematic modules with explicit interfaces, constraints, risks, and review status.
+
+## Architecture Choice Records
+
+For broad prompts, CCad should record why major choices were made.
+
+Examples:
+
+- why this MCU was selected
+- why this regulator topology was selected
+- why a connector was placed on one edge
+- why a differential pair layer was chosen
+- why a part was rejected
+
+These records help humans review the design and help future agents avoid repeating bad searches.
+
+## Confidence And Human Review Gates
+
+End-to-end generation must include confidence levels.
+
+High-confidence work can proceed automatically after validation. Low-confidence work must pause for human review.
+
+Human review gates should appear for:
+
+- unclear requirements
+- safety-critical power decisions
+- RF or high-speed interfaces
+- thermal assumptions
+- sourcing substitutions
+- datasheet facts not yet reviewed
+- generated circuits based on image or text extraction
+- any rule violation that the agent proposes to waive
+
+The goal is not blind automation. The goal is fast generation with visible evidence and controlled approval points.
+
 ## Feedback Loop Without Too Many API Calls
 
 Avoid:
