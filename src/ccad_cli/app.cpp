@@ -39,6 +39,12 @@ const std::vector<CommandHelp>& commandHelp() {
       CommandHelp{.name = "lib import-footprint",
                   .summary = "Import one KiCad .kicad_mod footprint as CCad footprint JSON",
                   .usage = "ccad lib import-footprint --in <path.kicad_mod> --out <path.json>"},
+      CommandHelp{.name = "lib catalog-info",
+                  .summary = "Summarize a local CCad library catalog as JSON",
+                  .usage = "ccad lib catalog-info --catalog <path.ccad-library.json>"},
+      CommandHelp{.name = "lib catalog-find",
+                  .summary = "Find one local CCad library catalog item by stable ID",
+                  .usage = "ccad lib catalog-find --catalog <path.ccad-library.json> --id <id>"},
       CommandHelp{.name = "pcb place-footprint",
                   .summary = "Place imported footprint pads onto a board",
                   .usage = "ccad pcb place-footprint --file <path> --footprint <path.json> "

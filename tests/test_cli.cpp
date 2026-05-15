@@ -64,6 +64,10 @@ int main() {
           "help json describes footprint placement");
   require(help_json.find("\"name\": \"pcb add-keepout\"") != std::string::npos,
           "help json describes keepout authoring");
+  require(help_json.find("\"name\": \"lib catalog-info\"") != std::string::npos,
+          "help json describes catalog info");
+  require(help_json.find("\"name\": \"lib catalog-find\"") != std::string::npos,
+          "help json describes catalog lookup");
   require(help_json.find("--rotation-deg") != std::string::npos,
           "help json exposes rotation option");
 
@@ -289,6 +293,67 @@ int main() {
           "lib import-footprint writes name");
   require(footprint_output.find("\"width_nm\": 1000000") != std::string::npos,
           "lib import-footprint writes pad width");
+
+  const std::filesystem::path catalog_path = temp / "catalog.ccad-library.json";
+  std::ofstream catalog(catalog_path);
+  catalog << "{\n"
+          << "  \"schema_version\": 1,\n"
+          << "  \"name\": \"local-kicad-cache\",\n"
+          << "  \"source\": {\n"
+          << "    \"name\": \"kicad-official\",\n"
+          << "    \"kind\": \"kicad\",\n"
+          << "    \"url\": \"https://gitlab.com/kicad/libraries/kicad-footprints\",\n"
+          << "    \"commit\": \"abc123\",\n"
+          << "    \"mirror\": \"official\",\n"
+          << "    \"fetched_at\": \"2026-05-15T00:00:00Z\"\n"
+          << "  },\n"
+          << "  \"items\": [\n"
+          << "    {\n"
+          << "      \"id\": \"footprint:Resistor_SMD:R_0603_1608Metric\",\n"
+          << "      \"kind\": \"footprint\",\n"
+          << "      \"name\": \"R_0603_1608Metric\",\n"
+          << "      \"source_path\": \"Resistor_SMD.pretty/R_0603_1608Metric.kicad_mod\",\n"
+          << "      \"native_path\": \"footprints/Resistor_SMD/R_0603_1608Metric.ccad-footprint.json\",\n"
+          << "      \"sha256\": \"0123456789abcdef\",\n"
+          << "      \"license\": \"CC-BY-SA-4.0 WITH KiCad-library-exception\",\n"
+          << "      \"provenance\": \"kicad-official@abc123\",\n"
+          << "      \"warnings\": [\n"
+          << "      ]\n"
+          << "    }\n"
+          << "  ]\n"
+          << "}\n";
+  catalog.close();
+
+  const std::filesystem::path catalog_info_path = temp / "catalog-info.json";
+  const std::string catalog_info_command =
+      quote(CCAD_BINARY) + " lib catalog-info --catalog " + quote(catalog_path) + " > " +
+      quote(catalog_info_path);
+  require(run(catalog_info_command) == 0, "lib catalog-info exits zero");
+  const std::string catalog_info_output = readFile(catalog_info_path);
+  require(catalog_info_output.find("\"name\": \"local-kicad-cache\"") != std::string::npos,
+          "lib catalog-info writes catalog name");
+  require(catalog_info_output.find("\"item_count\": 1") != std::string::npos,
+          "lib catalog-info writes item count");
+  require(catalog_info_output.find("\"commit\": \"abc123\"") != std::string::npos,
+          "lib catalog-info writes source commit");
+
+  const std::filesystem::path catalog_find_path = temp / "catalog-find.json";
+  const std::string catalog_find_command =
+      quote(CCAD_BINARY) + " lib catalog-find --catalog " + quote(catalog_path) +
+      " --id footprint:Resistor_SMD:R_0603_1608Metric > " + quote(catalog_find_path);
+  require(run(catalog_find_command) == 0, "lib catalog-find exits zero");
+  const std::string catalog_find_output = readFile(catalog_find_path);
+  require(catalog_find_output.find("\"found\": true") != std::string::npos,
+          "lib catalog-find reports found");
+  require(catalog_find_output.find("\"native_path\": \"footprints/Resistor_SMD/R_0603_1608Metric.ccad-footprint.json\"") !=
+              std::string::npos,
+          "lib catalog-find writes native path");
+  const std::string catalog_missing_command =
+      quote(CCAD_BINARY) + " lib catalog-find --catalog " + quote(catalog_path) +
+      " --id missing > " + quote(catalog_find_path);
+  require(run(catalog_missing_command) != 0, "lib catalog-find missing item exits nonzero");
+  require(readFile(catalog_find_path).find("\"found\": false") != std::string::npos,
+          "lib catalog-find reports missing item");
 
   const std::string place_footprint_command =
       quote(CCAD_BINARY) + " pcb place-footprint --file " + quote(board_project_path) +

@@ -6,7 +6,7 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 
 - Phase: 2 / 6
 - Last merged sprint: Sprint 21, native library catalog foundation
-- Next sprint: Sprint 22 planning
+- Next sprint: Sprint 22, library catalog CLI
 - Active branch pattern: `sprint-<n>-<topic>`
 - Current source of truth for phase/sprint counter: `docs/devops/progress.md`
 - Main product direction: native C++ PCB kernel and machine-callable CLI first; Qt GUI is a human review/editor client, not the data owner.
@@ -439,6 +439,8 @@ ccad drc
 ccad inspect
 ccad diff
 ccad lib import-footprint
+ccad lib catalog-info
+ccad lib catalog-find
 ccad pcb add-pad
 ccad pcb add-via
 ccad pcb add-track
@@ -515,6 +517,8 @@ int libCommand(const std::vector<std::string>& args);
 Current scope:
 
 - `lib import-footprint --in <path.kicad_mod> --out <path.json>`
+- `lib catalog-info --catalog <path.ccad-library.json>`
+- `lib catalog-find --catalog <path.ccad-library.json> --id <id>`
 
 ## GUI Files
 
