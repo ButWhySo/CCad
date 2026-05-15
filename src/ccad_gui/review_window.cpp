@@ -292,12 +292,14 @@ void ReviewWindow::reloadProject() {
 void ReviewWindow::renderReview(const ccad::ProjectReview& review) {
   project_summary_->renderReview(review);
   diagnostics_->renderDiagnostics(review.diagnostics);
-  renderCanvas(ccad::buildCanvasScene(project_cache_));
+  renderCanvas(ccad::buildCanvasScene(project_cache_), review.diagnostics);
   statusBar()->showMessage(qstr(review.status));
 }
 
-void ReviewWindow::renderCanvas(const ccad::CanvasScene& scene) {
+void ReviewWindow::renderCanvas(const ccad::CanvasScene& scene,
+                                const std::vector<ccad::Diagnostic>& diagnostics) {
   renderBoardCanvas(*canvas_scene_, scene);
+  addDiagnosticMarkers(*canvas_scene_, diagnostics);
   object_browser_->renderScene(scene);
   auto* board_view = dynamic_cast<BoardCanvasView*>(canvas_view_);
   if (board_view != nullptr) {
