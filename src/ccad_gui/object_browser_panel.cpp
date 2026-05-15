@@ -3,11 +3,13 @@
 #include <QListWidgetItem>
 #include <QVBoxLayout>
 
+#include <map>
 #include <utility>
 
 namespace {
 
 constexpr int kObjectIdRole = Qt::UserRole;
+constexpr int kNetIdRole = Qt::UserRole + 1;
 
 QString qstr(const std::string& value) {
   return QString::fromStdString(value);
@@ -19,6 +21,12 @@ QString netText(const std::string& net_id) {
 
 QString layerText(const std::string& layer_id) {
   return layer_id.empty() ? "layer --" : "layer " + qstr(layer_id);
+}
+
+void countNet(std::map<std::string, int>& net_counts, const std::string& net_id) {
+  if (!net_id.empty()) {
+    ++net_counts[net_id];
+  }
 }
 
 }  // namespace
@@ -35,6 +43,12 @@ ObjectBrowserPanel::ObjectBrowserPanel(QWidget* parent) : QWidget(parent) {
     if (item == nullptr || !object_activated_callback_) {
       return;
     }
+    const QString net_id = item->data(kNetIdRole).toString();
+    if (!net_id.isEmpty() && net_activated_callback_) {
+      net_activated_callback_(net_id);
+      return;
+    }
+
     const QString object_id = item->data(kObjectIdRole).toString();
     if (!object_id.isEmpty()) {
       object_activated_callback_(object_id);
@@ -54,6 +68,21 @@ void ObjectBrowserPanel::renderScene(const ccad::CanvasScene& scene) {
   addSection("Layers (" + QString::number(static_cast<int>(scene.layers.size())) + ")");
   for (const ccad::CanvasLayer& layer : scene.layers) {
     addRow(qstr(layer.id) + " - " + qstr(layer.name) + " [" + qstr(layer.kind) + "]");
+  }
+
+  std::map<std::string, int> net_counts;
+  for (const ccad::CanvasPad& pad : scene.pads) {
+    countNet(net_counts, pad.net_id);
+  }
+  for (const ccad::CanvasVia& via : scene.vias) {
+    countNet(net_counts, via.net_id);
+  }
+  for (const ccad::CanvasTrack& track : scene.tracks) {
+    countNet(net_counts, track.net_id);
+  }
+  addSection("Nets (" + QString::number(static_cast<int>(net_counts.size())) + ")");
+  for (const auto& [net_id, count] : net_counts) {
+    addRow("net " + qstr(net_id) + "  objects " + QString::number(count), {}, qstr(net_id));
   }
 
   const int object_count = static_cast<int>(scene.pads.size() + scene.vias.size() +
@@ -81,6 +110,10 @@ void ObjectBrowserPanel::setObjectActivatedCallback(std::function<void(QString)>
   object_activated_callback_ = std::move(callback);
 }
 
+void ObjectBrowserPanel::setNetActivatedCallback(std::function<void(QString)> callback) {
+  net_activated_callback_ = std::move(callback);
+}
+
 int ObjectBrowserPanel::itemCount() const {
   return list_->count();
 }
@@ -101,6 +134,14 @@ QString ObjectBrowserPanel::objectIdForRow(const int row) const {
   return item->data(kObjectIdRole).toString();
 }
 
+QString ObjectBrowserPanel::netIdForRow(const int row) const {
+  const QListWidgetItem* item = list_->item(row);
+  if (item == nullptr) {
+    return {};
+  }
+  return item->data(kNetIdRole).toString();
+}
+
 void ObjectBrowserPanel::addSection(const QString& text) {
   auto* item = new QListWidgetItem(text, list_);
   QFont font = item->font();
@@ -108,9 +149,13 @@ void ObjectBrowserPanel::addSection(const QString& text) {
   item->setFont(font);
 }
 
-void ObjectBrowserPanel::addRow(const QString& text, const QString& object_id) {
+void ObjectBrowserPanel::addRow(const QString& text, const QString& object_id,
+                                const QString& net_id) {
   auto* item = new QListWidgetItem(text, list_);
   if (!object_id.isEmpty()) {
     item->setData(kObjectIdRole, object_id);
+  }
+  if (!net_id.isEmpty()) {
+    item->setData(kNetIdRole, net_id);
   }
 }
