@@ -7,9 +7,9 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
 - Sprint: 36
-- Branch: `sprint-36-canvas-render-theme`
-- Last merged sprint: Sprint 35, object browser selection link
-- Status: Sprint 36 in progress; canvas rendering is gaining an explicit presentation theme
+- Branch: `main`
+- Last merged sprint: Sprint 36, canvas render theme groundwork
+- Status: Sprint 36 merged on `main`; verification running after merge
 
 ## Phase Roadmap
 
@@ -57,10 +57,11 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Sprint 33: review DRC diagnostics.
 - Sprint 34: diagnostic overlay markers.
 - Sprint 35: object browser selection link.
+- Sprint 36: canvas render theme groundwork.
 
 ## Active Sprint
 
-- Sprint 36: canvas render theme groundwork.
+- Sprint 37: planning pending.
 
 ## Reporting Rule
 
