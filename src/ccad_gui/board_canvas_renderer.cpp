@@ -15,6 +15,12 @@ QString qstr(const std::string& value) {
   return QString::fromStdString(value);
 }
 
+void tagObject(QGraphicsItem& item, const QString& type, const QString& id) {
+  item.setFlag(QGraphicsItem::ItemIsSelectable, true);
+  item.setData(kCanvasObjectTypeRole, type);
+  item.setData(kCanvasObjectIdRole, id);
+}
+
 }  // namespace
 
 void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& scene) {
@@ -59,6 +65,7 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
                               keepout.width_units * scale, keepout.height_units * scale);
     auto* item = canvas_scene.addRect(keepout_rect, keepout_pen, keepout_brush);
     item->setToolTip("Keepout " + qstr(keepout.id) + " (" + qstr(keepout.kind) + ")");
+    tagObject(*item, "keepout", qstr(keepout.id));
   }
 
   QPen track_pen(QColor("#ef4444"));
@@ -70,6 +77,7 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
                                       margin + (track.end_x_units * scale),
                                       margin + (track.end_y_units * scale), track_pen);
     item->setToolTip("Track " + qstr(track.id));
+    tagObject(*item, "track", qstr(track.id));
   }
 
   for (const ccad::CanvasPad& pad : scene.pads) {
@@ -89,6 +97,7 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     auto* item =
         canvas_scene.addPath(pad_path, QPen(QColor("#f472b6"), 0.8), QBrush(QColor("#be185d")));
     item->setToolTip("Pad " + qstr(pad.id));
+    tagObject(*item, "pad", qstr(pad.id));
   }
 
   for (const ccad::CanvasVia& via : scene.vias) {
@@ -98,6 +107,7 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     auto* item =
         canvas_scene.addEllipse(via_rect, QPen(QColor("#fde68a"), 1.0), QBrush(QColor("#f59e0b")));
     item->setToolTip("Via " + qstr(via.id));
+    tagObject(*item, "via", qstr(via.id));
     const double drill = via.drill_units * scale;
     canvas_scene.addEllipse(margin + (via.x_units * scale) - (drill / 2.0),
                             margin + (via.y_units * scale) - (drill / 2.0), drill, drill,
@@ -109,4 +119,12 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
   label->setDefaultTextColor(QColor("#cbd5e1"));
   label->setScale(0.9);
   label->setPos(margin, margin + height + 10.0);
+}
+
+QString canvasObjectId(const QGraphicsItem& item) {
+  return item.data(kCanvasObjectIdRole).toString();
+}
+
+QString canvasObjectType(const QGraphicsItem& item) {
+  return item.data(kCanvasObjectTypeRole).toString();
 }

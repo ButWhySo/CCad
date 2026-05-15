@@ -1,7 +1,8 @@
 param(
   [string]$BuildDir = "build-qt",
   [string]$QtBin = "C:\Qt\6.11.1\mingw_64\bin",
-  [string]$Name = "sprint-demo"
+  [string]$Name = "sprint-demo",
+  [switch]$ClickSelection
 )
 
 $ErrorActionPreference = "Stop"
@@ -98,6 +99,12 @@ namespace CCad {
 
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    public static extern bool SetCursorPos(int X, int Y);
+
+    [DllImport("user32.dll")]
+    public static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
   }
 }
 "@
@@ -114,6 +121,16 @@ namespace CCad {
   $Height = $Rect.Bottom - $Rect.Top
   if ($Width -le 0 -or $Height -le 0) {
     throw "Invalid GUI window rectangle"
+  }
+
+  if ($ClickSelection) {
+    $ClickX = $Rect.Left + [Math]::Min(545, [Math]::Max(0, $Width - 120))
+    $ClickY = $Rect.Top + [Math]::Min(235, [Math]::Max(0, $Height - 120))
+    [CCad.NativeWindow]::SetCursorPos($ClickX, $ClickY) | Out-Null
+    Start-Sleep -Milliseconds 100
+    [CCad.NativeWindow]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero)
+    [CCad.NativeWindow]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero)
+    Start-Sleep -Milliseconds 300
   }
 
   $Bitmap = New-Object System.Drawing.Bitmap $Width, $Height

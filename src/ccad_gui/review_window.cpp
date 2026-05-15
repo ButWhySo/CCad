@@ -18,6 +18,8 @@
 #include <QStatusBar>
 #include <QTabWidget>
 #include <QToolBar>
+#include <QVBoxLayout>
+#include <QWidget>
 
 #include <fstream>
 #include <sstream>
@@ -60,15 +62,23 @@ ReviewWindow::ReviewWindow() {
   diagnostics_dock->setWidget(diagnostics_);
   addDockWidget(Qt::BottomDockWidgetArea, diagnostics_dock);
 
-  auto* layer_panel = new QListWidget(this);
+  auto* right_panel = new QWidget(this);
+  auto* right_layout = new QVBoxLayout(right_panel);
+  right_layout->setContentsMargins(8, 8, 8, 8);
+  right_layout->setSpacing(8);
+  selection_panel_status_ = new QLabel("Selection: --", right_panel);
+  selection_panel_status_->setObjectName("selectionPanelStatus");
+  auto* layer_panel = new QListWidget(right_panel);
   layer_panel->setObjectName("layersPanel");
   layer_panel->addItem("F.Cu");
   layer_panel->addItem("B.Cu");
   layer_panel->addItem("Edge.Cuts");
   layer_panel->addItem("Keepouts");
+  right_layout->addWidget(selection_panel_status_);
+  right_layout->addWidget(layer_panel, 1);
   auto* layers_dock = new QDockWidget("Layers / Objects", this);
   layers_dock->setObjectName("layersDock");
-  layers_dock->setWidget(layer_panel);
+  layers_dock->setWidget(right_panel);
   addDockWidget(Qt::RightDockWidgetArea, layers_dock);
 
   canvas_scene_ = new QGraphicsScene(this);
@@ -97,8 +107,10 @@ ReviewWindow::ReviewWindow() {
   zoom_status_ = new QLabel("Zoom 100%", this);
   tool_status_ = new QLabel("Tool Select", this);
   layer_status_ = new QLabel("Layer F.Cu", this);
+  selection_status_ = new QLabel("Selected --", this);
   statusBar()->addPermanentWidget(cursor_status_);
   statusBar()->addPermanentWidget(zoom_status_);
+  statusBar()->addPermanentWidget(selection_status_);
   statusBar()->addPermanentWidget(tool_status_);
   statusBar()->addPermanentWidget(layer_status_);
   statusBar()->showMessage("Ready");
@@ -124,6 +136,9 @@ ReviewWindow::ReviewWindow() {
   toolbar->addAction(reload_action);
   toolbar->addSeparator();
   toolbar->addAction(fit_action);
+
+  connect(canvas_scene_, &QGraphicsScene::selectionChanged, this,
+          [this]() { updateSelectionStatus(); });
 }
 
 void ReviewWindow::loadProjectPath(const std::filesystem::path& path) {
@@ -197,6 +212,14 @@ void ReviewWindow::applyStyle() {
       background: #ffffff;
       border: 1px solid #dfe6ef;
       padding: 6px;
+    }
+    QLabel#selectionPanelStatus {
+      background: #e0f2fe;
+      color: #0f172a;
+      border: 1px solid #38bdf8;
+      border-radius: 6px;
+      padding: 8px;
+      font-weight: 700;
     }
     QTabWidget::pane {
       border: 1px solid #1e293b;
@@ -283,5 +306,25 @@ void ReviewWindow::updateCursorStatus(const QPointF& scene_position, const doubl
   cursor_status_->setText("X " + QString::number(x_mm, 'f', 2) + " mm  Y " +
                           QString::number(y_mm, 'f', 2) + " mm");
   zoom_status_->setText("Zoom " + QString::number(zoom_factor * 100.0, 'f', 0) + "%");
+}
+
+void ReviewWindow::updateSelectionStatus() {
+  const QList<QGraphicsItem*> selected_items = canvas_scene_->selectedItems();
+  if (selected_items.isEmpty()) {
+    selection_status_->setText("Selected --");
+    selection_panel_status_->setText("Selection: --");
+    return;
+  }
+  const QGraphicsItem* item = selected_items.first();
+  const QString type = canvasObjectType(*item);
+  const QString id = canvasObjectId(*item);
+  if (type.isEmpty() || id.isEmpty()) {
+    selection_status_->setText("Selected canvas item");
+    selection_panel_status_->setText("Selection: canvas item");
+    return;
+  }
+  const QString text = "Selected " + type + " " + id;
+  selection_status_->setText(text);
+  selection_panel_status_->setText("Selection: " + type + " " + id);
 }
 

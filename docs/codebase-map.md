@@ -594,6 +594,8 @@ Public function:
 
 ```cpp
 void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& scene);
+QString canvasObjectId(const QGraphicsItem& item);
+QString canvasObjectType(const QGraphicsItem& item);
 ```
 
 Renders:
@@ -604,6 +606,7 @@ Renders:
 - pads, including rotation
 - vias
 - board size label
+- stable object type/ID metadata on selectable primitive items
 
 ### `src/ccad_gui/board_canvas_view.hpp`
 
