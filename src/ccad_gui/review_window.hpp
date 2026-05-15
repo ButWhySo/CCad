@@ -2,6 +2,7 @@
 
 #include "diagnostics_panel.hpp"
 #include "project_summary_panel.hpp"
+#include "selection_inspector_panel.hpp"
 #include "ccad_core/model.hpp"
 #include "ccad_core/review.hpp"
 #include "ccad_core/canvas.hpp"
@@ -34,7 +35,7 @@ class ReviewWindow final : public QMainWindow {
   QLabel* tool_status_ = nullptr;
   QLabel* layer_status_ = nullptr;
   QLabel* selection_status_ = nullptr;
-  QLabel* selection_panel_status_ = nullptr;
+  SelectionInspectorPanel* selection_inspector_ = nullptr;
   QGraphicsScene* canvas_scene_ = nullptr;
   QGraphicsView* canvas_view_ = nullptr;
   DiagnosticsPanel* diagnostics_ = nullptr;

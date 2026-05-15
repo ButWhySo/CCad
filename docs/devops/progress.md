@@ -6,10 +6,10 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
-- Sprint: 24
-- Branch: `main`
+- Sprint: 30
+- Branch: `sprint-30-gui-inspector-panel`
 - Last merged sprint: Sprint 29, GUI selection groundwork
-- Status: Sprint 29 merged and verified on `main`; Sprint 30 planning next
+- Status: Sprint 30 implemented and verified on feature branch; merge to `main` pending
 
 ## Phase Roadmap
 

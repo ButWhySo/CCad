@@ -540,6 +540,7 @@ What it does:
 - Uses a CAD editor shell with a central PCB canvas tab, docked project/layer/diagnostics panels, explicit Fit, wheel zoom, middle-button pan, and cursor/zoom status.
 - GUI project summary and diagnostics rendering are split into dedicated Qt widgets to keep the shell maintainable.
 - GUI canvas primitives are selectable and expose stable type/ID feedback in the status bar and Layers / Objects dock.
+- GUI selection has a dedicated read-only inspector panel that shows selected object type and ID.
 - Shows ERC diagnostics table.
 - Supports reload.
 
@@ -611,7 +612,7 @@ Expected result:
 
 Current limitation:
 
-- The GUI is now an early CAD editor shell, but selection, layer visibility, object inspection, editing, schematic rendering, and transaction timeline are still future work.
+- The GUI is now an early CAD editor shell, but layer visibility, richer object properties, editing, schematic rendering, and transaction timeline are still future work.
 - Primitive authoring currently happens through the project JSON/kernel path; command verbs for placement/routing are planned next.
 
 ## Research And Architecture Docs

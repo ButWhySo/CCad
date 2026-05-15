@@ -18,6 +18,7 @@ Progress counter: Phase 2 / 6, Sprint 29 merged; Sprint 30 planning. See `docs/d
 - Physical board outline, layers, rectangular keepouts, pads, vias, and track segments in project JSON.
 - Physical DRC for geometry, connectivity metadata, rectangular keepout occupancy, and track crossing violations.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
+- Native GUI selection inspector for stable object type and ID.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
 
@@ -45,6 +46,10 @@ Agents should read `docs/codebase-map.md` before editing code. It is the maintai
 ## Library Cache Direction
 
 CCad should reuse KiCad's symbol, footprint, and 3D model ecosystem through local source caches and CCad-native catalogs.
+
+For large designs, CCad should use semantic batches, enriched component knowledge, local catalog search, and checkpoint-based visual review instead of thousands of primitive commands. See `docs/architecture/large-design-and-component-knowledge-pipeline.md`.
+
+For large designs, CCad should use semantic batches, enriched component knowledge, local catalog search, and checkpoint-based visual review instead of thousands of primitive commands. See `docs/architecture/large-design-and-component-knowledge-pipeline.md`.
 
 Policy:
 

@@ -12,6 +12,10 @@ Read `docs/codebase-map.md` before editing code. It is the maintained memory-los
 
 Read `docs/agent-methodology.md` for general working rules learned from the user. Update it when the user gives guidance that can help future agents in any project, not only this repo.
 
+Read `docs/architecture/large-design-and-component-knowledge-pipeline.md` before designing library ingestion, schematic import, large-board generation, routing, component search, or AI/human review workflows.
+
+Read `docs/architecture/large-design-and-component-knowledge-pipeline.md` before designing library ingestion, schematic import, large-board generation, routing, component search, or AI/human review workflows.
+
 ## Working Rules
 
 - Work on a feature branch, then merge to `main` after verification.
