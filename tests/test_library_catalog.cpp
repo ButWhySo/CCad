@@ -37,7 +37,7 @@ int main() {
   require(json.find("unsupported 3d model reference skipped") != std::string::npos,
           "catalog json writes warnings");
 
-  const ccad::LibraryCatalog parsed = ccad::loadLibraryCatalogJson(json);
+  ccad::LibraryCatalog parsed = ccad::loadLibraryCatalogJson(json);
   require(parsed.schema_version == 1, "catalog round trips schema version");
   require(parsed.source.name == "kicad-official", "catalog round trips source name");
   require(parsed.source.commit == "abc123", "catalog round trips source commit");
@@ -55,6 +55,26 @@ int main() {
           "catalog found item has native path");
   require(ccad::findLibraryItem(parsed, "missing") == nullptr,
           "catalog missing item returns null");
+
+  parsed.items.push_back(ccad::LibraryItem{
+      .id = "footprint:Capacitor_SMD:C_0603_1608Metric",
+      .kind = "footprint",
+      .name = "C_0603_1608Metric",
+      .source_path = "Capacitor_SMD.pretty/C_0603_1608Metric.kicad_mod",
+      .native_path = "footprints/Capacitor_SMD/C_0603_1608Metric.ccad-footprint.json",
+      .sha256 = "fedcba9876543210",
+      .license = "CC-BY-SA-4.0 WITH KiCad-library-exception",
+      .provenance = "kicad-official@abc123",
+  });
+  const std::vector<const ccad::LibraryItem*> resistor_matches =
+      ccad::searchLibraryItems(parsed, "resistor");
+  require(resistor_matches.size() == 1, "catalog search matches source path case-insensitively");
+  require(resistor_matches.at(0)->id == "footprint:Resistor_SMD:R_0603_1608Metric",
+          "catalog search returns matching item");
+  const std::vector<const ccad::LibraryItem*> metric_matches =
+      ccad::searchLibraryItems(parsed, "0603");
+  require(metric_matches.size() == 2, "catalog search returns multiple matches");
+  require(ccad::searchLibraryItems(parsed, "").empty(), "catalog search rejects empty query");
 
   bool rejected = false;
   try {

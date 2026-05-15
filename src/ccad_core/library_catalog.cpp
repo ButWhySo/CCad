@@ -3,6 +3,7 @@
 #include "ccad_core/json.hpp"
 
 #include <cctype>
+#include <algorithm>
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
@@ -17,6 +18,17 @@ void writeField(std::ostringstream& out, const int indent, const std::string& ke
     out << ',';
   }
   out << '\n';
+}
+
+std::string lowercase(std::string value) {
+  std::transform(value.begin(), value.end(), value.begin(), [](const unsigned char ch) {
+    return static_cast<char>(std::tolower(ch));
+  });
+  return value;
+}
+
+bool containsCaseInsensitive(const std::string& value, const std::string& query) {
+  return lowercase(value).find(query) != std::string::npos;
 }
 
 class CatalogJsonReader {
@@ -319,6 +331,25 @@ const LibraryItem* findLibraryItem(const LibraryCatalog& catalog, const std::str
     }
   }
   return nullptr;
+}
+
+std::vector<const LibraryItem*> searchLibraryItems(const LibraryCatalog& catalog,
+                                                   const std::string& query) {
+  const std::string normalized_query = lowercase(query);
+  std::vector<const LibraryItem*> matches;
+  if (normalized_query.empty()) {
+    return matches;
+  }
+  for (const LibraryItem& item : catalog.items) {
+    if (containsCaseInsensitive(item.id, normalized_query) ||
+        containsCaseInsensitive(item.name, normalized_query) ||
+        containsCaseInsensitive(item.kind, normalized_query) ||
+        containsCaseInsensitive(item.source_path, normalized_query) ||
+        containsCaseInsensitive(item.native_path, normalized_query)) {
+      matches.push_back(&item);
+    }
+  }
+  return matches;
 }
 
 }  // namespace ccad

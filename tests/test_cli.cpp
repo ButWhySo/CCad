@@ -68,6 +68,8 @@ int main() {
           "help json describes catalog info");
   require(help_json.find("\"name\": \"lib catalog-find\"") != std::string::npos,
           "help json describes catalog lookup");
+  require(help_json.find("\"name\": \"lib catalog-search\"") != std::string::npos,
+          "help json describes catalog search");
   require(help_json.find("--rotation-deg") != std::string::npos,
           "help json exposes rotation option");
 
@@ -320,6 +322,19 @@ int main() {
           << "      \"warnings\": [\n"
           << "      ]\n"
           << "    }\n"
+          << "    ,\n"
+          << "    {\n"
+          << "      \"id\": \"footprint:Capacitor_SMD:C_0603_1608Metric\",\n"
+          << "      \"kind\": \"footprint\",\n"
+          << "      \"name\": \"C_0603_1608Metric\",\n"
+          << "      \"source_path\": \"Capacitor_SMD.pretty/C_0603_1608Metric.kicad_mod\",\n"
+          << "      \"native_path\": \"footprints/Capacitor_SMD/C_0603_1608Metric.ccad-footprint.json\",\n"
+          << "      \"sha256\": \"fedcba9876543210\",\n"
+          << "      \"license\": \"CC-BY-SA-4.0 WITH KiCad-library-exception\",\n"
+          << "      \"provenance\": \"kicad-official@abc123\",\n"
+          << "      \"warnings\": [\n"
+          << "      ]\n"
+          << "    }\n"
           << "  ]\n"
           << "}\n";
   catalog.close();
@@ -332,7 +347,7 @@ int main() {
   const std::string catalog_info_output = readFile(catalog_info_path);
   require(catalog_info_output.find("\"name\": \"local-kicad-cache\"") != std::string::npos,
           "lib catalog-info writes catalog name");
-  require(catalog_info_output.find("\"item_count\": 1") != std::string::npos,
+  require(catalog_info_output.find("\"item_count\": 2") != std::string::npos,
           "lib catalog-info writes item count");
   require(catalog_info_output.find("\"commit\": \"abc123\"") != std::string::npos,
           "lib catalog-info writes source commit");
@@ -354,6 +369,21 @@ int main() {
   require(run(catalog_missing_command) != 0, "lib catalog-find missing item exits nonzero");
   require(readFile(catalog_find_path).find("\"found\": false") != std::string::npos,
           "lib catalog-find reports missing item");
+
+  const std::filesystem::path catalog_search_path = temp / "catalog-search.json";
+  const std::string catalog_search_command =
+      quote(CCAD_BINARY) + " lib catalog-search --catalog " + quote(catalog_path) +
+      " --query 0603 > " + quote(catalog_search_path);
+  require(run(catalog_search_command) == 0, "lib catalog-search exits zero");
+  const std::string catalog_search_output = readFile(catalog_search_path);
+  require(catalog_search_output.find("\"count\": 2") != std::string::npos,
+          "lib catalog-search writes match count");
+  require(catalog_search_output.find("\"id\": \"footprint:Resistor_SMD:R_0603_1608Metric\"") !=
+              std::string::npos,
+          "lib catalog-search writes resistor match");
+  require(catalog_search_output.find("\"id\": \"footprint:Capacitor_SMD:C_0603_1608Metric\"") !=
+              std::string::npos,
+          "lib catalog-search writes capacitor match");
 
   const std::string place_footprint_command =
       quote(CCAD_BINARY) + " pcb place-footprint --file " + quote(board_project_path) +

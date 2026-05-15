@@ -53,6 +53,26 @@ void printCatalogItem(const ccad::LibraryItem& item) {
             << "}\n";
 }
 
+void printCatalogSearchResults(const std::string& query,
+                               const std::vector<const ccad::LibraryItem*>& items) {
+  std::cout << "{\n"
+            << "  \"count\": " << items.size() << ",\n"
+            << "  \"items\": [\n";
+  for (std::size_t i = 0; i < items.size(); ++i) {
+    const ccad::LibraryItem& item = *items.at(i);
+    std::cout << "    {\n"
+              << "      \"id\": \"" << ccad::escapeJson(item.id) << "\",\n"
+              << "      \"kind\": \"" << ccad::escapeJson(item.kind) << "\",\n"
+              << "      \"name\": \"" << ccad::escapeJson(item.name) << "\",\n"
+              << "      \"native_path\": \"" << ccad::escapeJson(item.native_path) << "\",\n"
+              << "      \"source_path\": \"" << ccad::escapeJson(item.source_path) << "\"\n"
+              << "    }" << (i + 1 == items.size() ? "" : ",") << '\n';
+  }
+  std::cout << "  ],\n"
+            << "  \"query\": \"" << ccad::escapeJson(query) << "\"\n"
+            << "}\n";
+}
+
 void printMissingCatalogItem(const std::string& id) {
   std::cout << "{\n"
             << "  \"found\": false,\n"
@@ -111,6 +131,15 @@ int libCommand(const std::vector<std::string>& args) {
         return 1;
       }
       printCatalogItem(*item);
+      return 0;
+    }
+
+    if (subcommand == "catalog-search") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--catalog", "--query"});
+      const std::string query = requireOption(options, "--query");
+      const ccad::LibraryCatalog catalog = loadCatalogFile(requireOption(options, "--catalog"));
+      printCatalogSearchResults(query, ccad::searchLibraryItems(catalog, query));
       return 0;
     }
 
