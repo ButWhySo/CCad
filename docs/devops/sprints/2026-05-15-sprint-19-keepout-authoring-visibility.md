@@ -10,7 +10,7 @@ Make rectangular keepouts authorable through the CLI and visible in the native Q
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 19, `sprint-19-keepout-authoring-visibility`, implementation.
+Progress: Phase 2/6, Sprint 19, `main`, merged and verified.
 
 ## Backlog
 
@@ -23,7 +23,7 @@ Progress: Phase 2/6, Sprint 19, `sprint-19-keepout-authoring-visibility`, implem
 7. Done: update docs and demo script.
 8. Done: run full native Qt build and CTest.
 9. Done: capture GUI screenshot demo.
-10. Pending: merge to `main`.
+10. Done: merge to `main`.
 
 ## Verification So Far
 
@@ -52,6 +52,15 @@ ctest --test-dir build-qt --output-on-failure
 ```
 
 - Result: 10 / 10 tests passed before commit.
+
+Main integration gate:
+
+```cmd
+cmake --build build-qt --clean-first
+ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: 10 / 10 tests passed after merging Sprint 19 to `main`.
 
 ## Demo
 
