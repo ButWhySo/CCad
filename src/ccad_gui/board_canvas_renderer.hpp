@@ -14,6 +14,8 @@ constexpr int kCanvasShapeSelectionHighlightRole = 2;
 constexpr int kCanvasDiagnosticMarkerObjectIdRole = 3;
 constexpr int kCanvasDiagnosticMarkerSeverityRole = 4;
 constexpr int kCanvasSelectionHighlightColorRole = 5;
+constexpr int kCanvasObjectNetIdRole = 6;
+constexpr int kCanvasObjectLayerIdRole = 7;
 
 struct CanvasRenderTheme {
   QColor background_color = QColor("#07111f");
@@ -42,8 +44,11 @@ void addDiagnosticMarkers(QGraphicsScene& canvas_scene,
                           const CanvasRenderTheme& theme);
 QString canvasObjectId(const QGraphicsItem& item);
 QString canvasObjectType(const QGraphicsItem& item);
+QString canvasObjectNetId(const QGraphicsItem& item);
+QString canvasObjectLayerId(const QGraphicsItem& item);
 bool canvasUsesShapeSelectionHighlight(const QGraphicsItem& item);
 QColor canvasSelectionHighlightColor(const QGraphicsItem& item);
 bool selectCanvasObjectById(QGraphicsScene& canvas_scene, const QString& id);
+int selectCanvasObjectsByNetId(QGraphicsScene& canvas_scene, const QString& net_id);
 QString canvasDiagnosticMarkerObjectId(const QGraphicsItem& item);
 QString canvasDiagnosticMarkerSeverity(const QGraphicsItem& item);

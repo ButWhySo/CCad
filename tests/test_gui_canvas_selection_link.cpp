@@ -20,6 +20,15 @@ ccad::CanvasScene sceneWithPadAndTrack() {
       .width_units = 1.0,
       .height_units = 1.0,
   });
+  scene.pads.push_back(ccad::CanvasPad{
+      .id = "P2",
+      .net_id = "N2",
+      .layer_id = "F.Cu",
+      .x_units = 14.0,
+      .y_units = 14.0,
+      .width_units = 1.0,
+      .height_units = 1.0,
+  });
   scene.tracks.push_back(ccad::CanvasTrack{
       .id = "T1",
       .net_id = "N1",
@@ -51,4 +60,25 @@ int main(int argc, char** argv) {
 
   require(!selectCanvasObjectById(scene, "NOPE"), "missing object id reports false");
   require(scene.selectedItems().isEmpty(), "missing object clears selection");
+
+  int n1_tagged_items = 0;
+  for (QGraphicsItem* item : scene.items()) {
+    if (canvasObjectNetId(*item) == "N1") {
+      ++n1_tagged_items;
+    }
+  }
+  require(n1_tagged_items == 2, "pad and track expose matching net metadata");
+
+  require(selectCanvasObjectsByNetId(scene, "N1") == 2, "selects all canvas objects on net");
+  require(scene.selectedItems().size() == 2, "net selection selects both matching objects");
+  for (QGraphicsItem* item : scene.selectedItems()) {
+    require(canvasObjectNetId(*item) == "N1", "selected item belongs to requested net");
+  }
+
+  require(selectCanvasObjectsByNetId(scene, "N2") == 1, "selects one-object net");
+  require(scene.selectedItems().size() == 1, "net selection clears previous selection");
+  require(canvasObjectId(*scene.selectedItems().first()) == "P2", "single selected item is N2 pad");
+
+  require(selectCanvasObjectsByNetId(scene, "NOPE") == 0, "missing net reports zero");
+  require(scene.selectedItems().isEmpty(), "missing net clears selection");
 }

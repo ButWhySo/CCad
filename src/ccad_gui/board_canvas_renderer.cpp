@@ -48,12 +48,19 @@ QColor lighterHighlight(const QColor& color) {
 }
 
 void tagObject(QGraphicsItem& item, const QString& type, const QString& id,
-               const QColor& display_color) {
+               const QColor& display_color, const QString& net_id = {},
+               const QString& layer_id = {}) {
   item.setFlag(QGraphicsItem::ItemIsSelectable, true);
   item.setData(kCanvasObjectTypeRole, type);
   item.setData(kCanvasObjectIdRole, id);
   item.setData(kCanvasShapeSelectionHighlightRole, true);
   item.setData(kCanvasSelectionHighlightColorRole, lighterHighlight(display_color));
+  if (!net_id.isEmpty()) {
+    item.setData(kCanvasObjectNetIdRole, net_id);
+  }
+  if (!layer_id.isEmpty()) {
+    item.setData(kCanvasObjectLayerIdRole, layer_id);
+  }
 }
 
 ShapeHighlightPathItem* addHighlightPath(QGraphicsScene& canvas_scene, const QPainterPath& path,
@@ -143,7 +150,8 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     track_path.lineTo(margin + (track.end_x_units * scale), margin + (track.end_y_units * scale));
     auto* item = addHighlightPath(canvas_scene, track_path, track_pen, QBrush(Qt::NoBrush));
     item->setToolTip("Track " + qstr(track.id));
-    tagObject(*item, "track", qstr(track.id), theme.track_color);
+    tagObject(*item, "track", qstr(track.id), theme.track_color, qstr(track.net_id),
+              qstr(track.layer_id));
   }
 
   for (const ccad::CanvasPad& pad : scene.pads) {
@@ -164,7 +172,8 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
         addHighlightPath(canvas_scene, pad_path, QPen(theme.pad_outline_color, 0.8),
                          QBrush(theme.pad_fill_color));
     item->setToolTip("Pad " + qstr(pad.id));
-    tagObject(*item, "pad", qstr(pad.id), theme.pad_fill_color);
+    tagObject(*item, "pad", qstr(pad.id), theme.pad_fill_color, qstr(pad.net_id),
+              qstr(pad.layer_id));
   }
 
   for (const ccad::CanvasVia& via : scene.vias) {
@@ -177,7 +186,7 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
         addHighlightPath(canvas_scene, via_path, QPen(theme.via_outline_color, 1.0),
                          QBrush(theme.via_fill_color));
     item->setToolTip("Via " + qstr(via.id));
-    tagObject(*item, "via", qstr(via.id), theme.via_fill_color);
+    tagObject(*item, "via", qstr(via.id), theme.via_fill_color, qstr(via.net_id));
     const double drill = via.drill_units * scale;
     canvas_scene.addEllipse(margin + (via.x_units * scale) - (drill / 2.0),
                             margin + (via.y_units * scale) - (drill / 2.0), drill, drill,
@@ -238,6 +247,14 @@ QString canvasObjectType(const QGraphicsItem& item) {
   return item.data(kCanvasObjectTypeRole).toString();
 }
 
+QString canvasObjectNetId(const QGraphicsItem& item) {
+  return item.data(kCanvasObjectNetIdRole).toString();
+}
+
+QString canvasObjectLayerId(const QGraphicsItem& item) {
+  return item.data(kCanvasObjectLayerIdRole).toString();
+}
+
 bool canvasUsesShapeSelectionHighlight(const QGraphicsItem& item) {
   return item.data(kCanvasShapeSelectionHighlightRole).toBool();
 }
@@ -258,6 +275,22 @@ bool selectCanvasObjectById(QGraphicsScene& canvas_scene, const QString& id) {
     return true;
   }
   return false;
+}
+
+int selectCanvasObjectsByNetId(QGraphicsScene& canvas_scene, const QString& net_id) {
+  canvas_scene.clearSelection();
+  if (net_id.isEmpty()) {
+    return 0;
+  }
+
+  int selected_count = 0;
+  for (QGraphicsItem* item : canvas_scene.items()) {
+    if (canvasObjectNetId(*item) == net_id) {
+      item->setSelected(true);
+      ++selected_count;
+    }
+  }
+  return selected_count;
 }
 
 QString canvasDiagnosticMarkerObjectId(const QGraphicsItem& item) {
