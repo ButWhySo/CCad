@@ -6,7 +6,7 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 
 - Phase: 2 / 6
 - Last merged sprint: Sprint 34, diagnostic overlay markers
-- Next sprint: Sprint 35, planning pending
+- Current sprint: Sprint 35, object browser selection link
 - Active branch pattern: `sprint-<n>-<topic>`
 - Current source of truth for phase/sprint counter: `docs/devops/progress.md`
 - Main product direction: native C++ PCB kernel and machine-callable CLI first; Qt GUI is a human review/editor client, not the data owner.
@@ -619,13 +619,16 @@ Important methods:
 
 ```cpp
 void renderScene(const ccad::CanvasScene& scene);
+void setObjectActivatedCallback(std::function<void(QString)> callback);
 int itemCount() const;
 QString itemText(int row) const;
+QString objectIdForRow(int row) const;
 ```
 
 Rule:
 
 - The browser renders `CanvasScene` metadata only. It must not parse project JSON, own board state, or mutate design objects.
+- Object rows carry stable canvas object IDs so the main window can select matching PCB canvas items without duplicating geometry knowledge.
 
 ### `src/ccad_gui/board_canvas_renderer.hpp/.cpp`
 
