@@ -154,7 +154,7 @@ What it does:
 - Adds rectangular keepouts to existing board projects.
 - Runs physical DRC diagnostics with `ccad drc`.
 - Imports basic KiCad `.kicad_mod` footprint files with `ccad lib import-footprint`.
-- Inspects and looks up local CCad library catalog records with `ccad lib catalog-info` and `ccad lib catalog-find`.
+- Inspects, looks up, and searches local CCad library catalog records with `ccad lib catalog-info`, `ccad lib catalog-find`, and `ccad lib catalog-search`.
 - Places imported CCad footprint pads onto a board with `ccad pcb place-footprint`.
 - Validates CCad project files.
 - Inspects projects and emits review JSON.
@@ -192,6 +192,7 @@ On Windows PowerShell:
 .\build\ccad.exe lib import-footprint --in R_0805_2012Metric.kicad_mod --out R_0805_2012Metric.ccad-footprint.json
 .\build\ccad.exe lib catalog-info --catalog kicad.ccad-library.json
 .\build\ccad.exe lib catalog-find --catalog kicad.ccad-library.json --id footprint:Resistor_SMD:R_0603_1608Metric
+.\build\ccad.exe lib catalog-search --catalog kicad.ccad-library.json --query 0603
 .\build\ccad.exe pcb place-footprint --file board.ccad.json --footprint R_0805_2012Metric.ccad-footprint.json --component R1 --at-x-mm 16 --at-y-mm 14 --layer F.Cu --rotation-deg 90
 .\build\ccad.exe pcb add-pad --file board.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 .\build\ccad.exe pcb add-via --file board.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
@@ -242,6 +243,7 @@ Catalog CLI behavior:
 
 - `lib catalog-info --catalog <path>` loads a local CCad native library catalog and emits summary JSON.
 - `lib catalog-find --catalog <path> --id <id>` emits the matching item metadata as JSON.
+- `lib catalog-search --catalog <path> --query <text>` emits matching item metadata as JSON.
 - Missing catalog items return exit code `1` and emit `{ "found": false, ... }`.
 - Parse/file/usage failures return exit code `2`.
 - These commands read local catalog files only and do not fetch network sources.
