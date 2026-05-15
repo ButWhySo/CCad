@@ -6,7 +6,7 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 
 - Phase: 2 / 6
 - Last merged sprint: Sprint 36, canvas render theme groundwork
-- Next sprint: Sprint 37, planning pending
+- Current sprint: Sprint 37, transaction timeline panel
 - Active branch pattern: `sprint-<n>-<topic>`
 - Current source of truth for phase/sprint counter: `docs/devops/progress.md`
 - Main product direction: native C++ PCB kernel and machine-callable CLI first; Qt GUI is a human review/editor client, not the data owner.
@@ -593,6 +593,22 @@ Important method:
 void renderDiagnostics(const std::vector<ccad::Diagnostic>& diagnostics);
 QString objectIdForRow(int row) const;
 ```
+
+### `src/ccad_gui/transaction_timeline_panel.hpp/.cpp`
+
+Owns the read-only transaction timeline table in the bottom dock.
+
+Important methods:
+
+```cpp
+void renderTransactions(const std::vector<ccad::Transaction>& transactions);
+QString itemText(int row, int column) const;
+QString transactionIdForRow(int row) const;
+```
+
+Rule:
+
+- The timeline displays transaction metadata and diff counts only. It must not mutate projects or replay transaction content.
 
 ### `src/ccad_gui/selection_inspector_panel.hpp/.cpp`
 

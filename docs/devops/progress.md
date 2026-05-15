@@ -6,10 +6,10 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
-- Sprint: 36
-- Branch: `main`
+- Sprint: 37
+- Branch: `sprint-37-transaction-timeline-panel`
 - Last merged sprint: Sprint 36, canvas render theme groundwork
-- Status: Sprint 36 merged on `main`; verification running after merge
+- Status: Sprint 37 in progress; read-only GUI transaction timeline panel is being added
 
 ## Phase Roadmap
 
@@ -61,7 +61,7 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 ## Active Sprint
 
-- Sprint 37: planning pending.
+- Sprint 37: transaction timeline panel.
 
 ## Reporting Rule
 

@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 36 merged; Sprint 37 planning. See `docs/devops/progress.md`.
+Progress counter: Phase 2 / 6, Sprint 37 in progress. See `docs/devops/progress.md`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -25,6 +25,7 @@ Progress counter: Phase 2 / 6, Sprint 36 merged; Sprint 37 planning. See `docs/d
 - Native GUI diagnostic markers are drawn over matching PCB canvas objects.
 - Native GUI object browser rows can select matching PCB canvas objects by stable ID.
 - Native GUI canvas rendering has explicit presentation-theme groundwork.
+- Native GUI has read-only transaction timeline panel groundwork.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
 
