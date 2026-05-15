@@ -10,7 +10,7 @@ Add an optional kind filter to local library catalog search.
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 24, `sprint-24-library-catalog-kind-filter`, implementation.
+Progress: Phase 2/6, Sprint 24, `main`, merged and verified.
 
 ## Backlog
 
@@ -18,9 +18,9 @@ Progress: Phase 2/6, Sprint 24, `sprint-24-library-catalog-kind-filter`, impleme
 2. Done: implement kind-filtered catalog search.
 3. Done: expose `--kind` on `lib catalog-search`.
 4. Done: run focused catalog and CLI tests.
-5. In progress: update docs.
-6. Pending: run full native Qt build and CTest.
-7. Pending: merge to `main`.
+5. Done: update docs.
+6. Done: run full native Qt build and CTest.
+7. Done: merge to `main`.
 
 ## Verification So Far
 
@@ -41,6 +41,22 @@ ctest --test-dir build-qt -R "library_catalog|cli" --output-on-failure
 ```
 
 - Result: focused catalog and CLI tests passed.
+
+Full branch gate:
+
+```cmd
+cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: passed, 11/11 tests.
+
+Main integration gate:
+
+```cmd
+cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: passed, 11/11 tests after merge to `main`.
 
 ## Demo
 
