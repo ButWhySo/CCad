@@ -10,7 +10,7 @@ Add a dedicated read-only inspector panel for selected PCB canvas objects.
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 30, `sprint-30-gui-inspector-panel`, implemented and verified; commit pending.
+Progress: Phase 2/6, Sprint 30, `main`, merged and verified.
 
 ## Backlog
 
@@ -23,7 +23,7 @@ Progress: Phase 2/6, Sprint 30, `sprint-30-gui-inspector-panel`, implemented and
 7. Done: focused Qt inspector test.
 8. Done: full native Qt build and CTest.
 9. Done: demo screenshot.
-10. Pending: commit.
+10. Done: commit and merge to `main`.
 
 ## Verification So Far
 
@@ -56,6 +56,14 @@ cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-fa
 ```
 
 - Result: passed, 11/11 tests.
+
+Main integration gate:
+
+```cmd
+cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: passed, 11/11 tests after merge to `main`.
 
 Demo:
 

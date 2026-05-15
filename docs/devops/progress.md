@@ -7,9 +7,9 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
 - Sprint: 30
-- Branch: `sprint-30-gui-inspector-panel`
-- Last merged sprint: Sprint 29, GUI selection groundwork
-- Status: Sprint 30 implemented and verified on feature branch; merge to `main` pending
+- Branch: `main`
+- Last merged sprint: Sprint 30, GUI inspector panel
+- Status: Sprint 30 merged and verified on `main`; Sprint 31 planning next
 
 ## Phase Roadmap
 
@@ -51,10 +51,11 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Sprint 27: GUI CAD editor shell foundation.
 - Sprint 28: GUI module split.
 - Sprint 29: GUI selection groundwork.
+- Sprint 30: GUI inspector panel.
 
 ## Active Sprint
 
-- Sprint 30: GUI inspector panel.
+- Sprint 31: planning pending.
 
 ## Reporting Rule
 
