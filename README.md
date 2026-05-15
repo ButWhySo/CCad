@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 21 merged; Sprint 22 planning. See `docs/devops/progress.md`.
+Progress counter: Phase 2 / 6, Sprint 22 in progress. See `docs/devops/progress.md`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -14,7 +14,7 @@ Progress counter: Phase 2 / 6, Sprint 21 merged; Sprint 22 planning. See `docs/d
 - CLI: `ccad help --format json`, `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
 - CLI PCB authoring: `ccad pcb add-pad`, `ccad pcb add-via`, `ccad pcb add-track`, and `ccad pcb add-keepout`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
-- Native library catalog metadata for local/offline component-library caches.
+- Native library catalog metadata and CLI lookup for local/offline component-library caches.
 - Physical board outline, layers, rectangular keepouts, pads, vias, and track segments in project JSON.
 - Physical DRC for geometry, connectivity metadata, rectangular keepout occupancy, and track crossing violations.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
@@ -54,6 +54,18 @@ Policy:
 - Store runtime/search data in CCad's own catalog format.
 - Preserve source URL, mirror, commit/hash, source path, checksum, license, provenance, and import warnings for each item.
 - Later, a separate `ccad-libraries` repo/package can distribute curated prebuilt catalogs.
+
+Inspect a local catalog:
+
+```powershell
+.\build-qt\ccad.exe lib catalog-info --catalog .\catalog-cache\kicad.ccad-library.json
+```
+
+Find a catalog item by stable ID:
+
+```powershell
+.\build-qt\ccad.exe lib catalog-find --catalog .\catalog-cache\kicad.ccad-library.json --id footprint:Resistor_SMD:R_0603_1608Metric
+```
 
 ## Windows Qt Development Loop
 
