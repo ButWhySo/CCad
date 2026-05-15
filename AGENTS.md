@@ -10,6 +10,8 @@ Read `docs/research/2026-05-14-kicad-feature-map.md` before adding GUI, schemati
 
 Read `docs/codebase-map.md` before editing code. It is the maintained memory-loss handover for modules, files, public functions, invariants, and current technical debt.
 
+Read `docs/agent-methodology.md` for general working rules learned from the user. Update it when the user gives guidance that can help future agents in any project, not only this repo.
+
 ## Working Rules
 
 - Work on a feature branch, then merge to `main` after verification.

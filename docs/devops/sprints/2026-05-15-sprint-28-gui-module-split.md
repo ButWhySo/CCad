@@ -10,7 +10,7 @@ Split stable GUI panel responsibilities out of `ReviewWindow` so the CAD shell c
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 28, `sprint-28-gui-module-split`, implementation.
+Progress: Phase 2/6, Sprint 28, `main`, merged and verified.
 
 ## Backlog
 
@@ -23,7 +23,7 @@ Progress: Phase 2/6, Sprint 28, `sprint-28-gui-module-split`, implementation.
 7. In progress: update docs.
 8. Done: full native Qt build and CTest.
 9. Done: screenshot demo.
-10. Pending: merge to `main`.
+10. Done: merge to `main`.
 
 ## Verification So Far
 
@@ -50,3 +50,11 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_sprint_demo.ps1 -Name spr
 ```
 
 - Result: screenshot captured at `artifacts/screenshots/sprint28-gui-module-split-20260515-162646.png`.
+
+Main integration gate:
+
+```cmd
+cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: passed, 11/11 tests after merge to `main`.
