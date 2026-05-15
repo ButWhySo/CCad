@@ -136,6 +136,8 @@ ReviewWindow::ReviewWindow() {
   connect(diagnostics_, &QTableWidget::cellClicked, this, [this](const int row, int) {
     selectCanvasObjectById(*canvas_scene_, diagnostics_->objectIdForRow(row));
   });
+  object_browser_->setObjectActivatedCallback(
+      [this](const QString& object_id) { selectCanvasObjectById(*canvas_scene_, object_id); });
 }
 
 void ReviewWindow::loadProjectPath(const std::filesystem::path& path) {

@@ -3,7 +3,11 @@
 #include <QListWidgetItem>
 #include <QVBoxLayout>
 
+#include <utility>
+
 namespace {
+
+constexpr int kObjectIdRole = Qt::UserRole;
 
 QString qstr(const std::string& value) {
   return QString::fromStdString(value);
@@ -27,6 +31,15 @@ ObjectBrowserPanel::ObjectBrowserPanel(QWidget* parent) : QWidget(parent) {
   list_ = new QListWidget(this);
   list_->setObjectName("objectBrowserPanel");
   layout->addWidget(list_);
+  connect(list_, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
+    if (item == nullptr || !object_activated_callback_) {
+      return;
+    }
+    const QString object_id = item->data(kObjectIdRole).toString();
+    if (!object_id.isEmpty()) {
+      object_activated_callback_(object_id);
+    }
+  });
 
   renderScene(ccad::CanvasScene{});
 }
@@ -47,18 +60,25 @@ void ObjectBrowserPanel::renderScene(const ccad::CanvasScene& scene) {
                                             scene.tracks.size() + scene.keepouts.size());
   addSection("Objects (" + QString::number(object_count) + ")");
   for (const ccad::CanvasPad& pad : scene.pads) {
-    addRow("pad " + qstr(pad.id) + "  " + netText(pad.net_id) + "  " + layerText(pad.layer_id));
+    addRow("pad " + qstr(pad.id) + "  " + netText(pad.net_id) + "  " +
+               layerText(pad.layer_id),
+           qstr(pad.id));
   }
   for (const ccad::CanvasVia& via : scene.vias) {
-    addRow("via " + qstr(via.id) + "  " + netText(via.net_id));
+    addRow("via " + qstr(via.id) + "  " + netText(via.net_id), qstr(via.id));
   }
   for (const ccad::CanvasTrack& track : scene.tracks) {
     addRow("track " + qstr(track.id) + "  " + netText(track.net_id) + "  " +
-           layerText(track.layer_id));
+               layerText(track.layer_id),
+           qstr(track.id));
   }
   for (const ccad::CanvasKeepout& keepout : scene.keepouts) {
-    addRow("keepout " + qstr(keepout.id) + "  kind " + qstr(keepout.kind));
+    addRow("keepout " + qstr(keepout.id) + "  kind " + qstr(keepout.kind), qstr(keepout.id));
   }
+}
+
+void ObjectBrowserPanel::setObjectActivatedCallback(std::function<void(QString)> callback) {
+  object_activated_callback_ = std::move(callback);
 }
 
 int ObjectBrowserPanel::itemCount() const {
@@ -73,6 +93,14 @@ QString ObjectBrowserPanel::itemText(const int row) const {
   return item->text();
 }
 
+QString ObjectBrowserPanel::objectIdForRow(const int row) const {
+  const QListWidgetItem* item = list_->item(row);
+  if (item == nullptr) {
+    return {};
+  }
+  return item->data(kObjectIdRole).toString();
+}
+
 void ObjectBrowserPanel::addSection(const QString& text) {
   auto* item = new QListWidgetItem(text, list_);
   QFont font = item->font();
@@ -80,6 +108,9 @@ void ObjectBrowserPanel::addSection(const QString& text) {
   item->setFont(font);
 }
 
-void ObjectBrowserPanel::addRow(const QString& text) {
-  list_->addItem(text);
+void ObjectBrowserPanel::addRow(const QString& text, const QString& object_id) {
+  auto* item = new QListWidgetItem(text, list_);
+  if (!object_id.isEmpty()) {
+    item->setData(kObjectIdRole, object_id);
+  }
 }

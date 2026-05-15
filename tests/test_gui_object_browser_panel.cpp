@@ -2,6 +2,8 @@
 #include "test_support.hpp"
 
 #include <QApplication>
+#include <QListWidget>
+#include <QMetaObject>
 
 namespace {
 
@@ -36,4 +38,24 @@ int main(int argc, char** argv) {
   require(panel.itemText(5) == "via V1  net N1", "via object row");
   require(panel.itemText(6) == "track T1  net N1  layer F.Cu", "track object row");
   require(panel.itemText(7) == "keepout K1  kind placement", "keepout object row");
+  require(panel.objectIdForRow(0).isEmpty(), "section rows do not expose object ids");
+  require(panel.objectIdForRow(1).isEmpty(), "layer rows do not expose object ids");
+  require(panel.objectIdForRow(4) == "P1", "pad row exposes object id");
+  require(panel.objectIdForRow(5) == "V1", "via row exposes object id");
+  require(panel.objectIdForRow(6) == "T1", "track row exposes object id");
+  require(panel.objectIdForRow(7) == "K1", "keepout row exposes object id");
+  require(panel.objectIdForRow(99).isEmpty(), "out of range rows do not expose object ids");
+
+  QString activated_id;
+  panel.setObjectActivatedCallback([&activated_id](const QString& object_id) {
+    activated_id = object_id;
+  });
+  auto* list = panel.findChild<QListWidget*>("objectBrowserPanel");
+  require(list != nullptr, "browser list is discoverable for interaction tests");
+  QMetaObject::invokeMethod(list, "itemClicked", Qt::DirectConnection,
+                            Q_ARG(QListWidgetItem*, list->item(4)));
+  require(activated_id == "P1", "clicking object row activates object id");
+  QMetaObject::invokeMethod(list, "itemClicked", Qt::DirectConnection,
+                            Q_ARG(QListWidgetItem*, list->item(1)));
+  require(activated_id == "P1", "clicking non-object row does not activate object id");
 }

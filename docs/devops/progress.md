@@ -6,10 +6,10 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
-- Sprint: 34
-- Branch: `main`
+- Sprint: 35
+- Branch: `sprint-35-object-browser-selection`
 - Last merged sprint: Sprint 34, diagnostic overlay markers
-- Status: Sprint 34 merged and verified on `main`; Sprint 35 planning next
+- Status: Sprint 35 in progress; object-browser rows will select matching PCB canvas objects
 
 ## Phase Roadmap
 
@@ -59,7 +59,7 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 ## Active Sprint
 
-- Sprint 35: planning pending.
+- Sprint 35: object browser selection link.
 
 ## Reporting Rule
 
