@@ -7,9 +7,9 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
 - Sprint: 24
-- Branch: `sprint-29-gui-selection-groundwork`
-- Last merged sprint: Sprint 28, GUI module split
-- Status: Sprint 29 implementation on feature branch
+- Branch: `main`
+- Last merged sprint: Sprint 29, GUI selection groundwork
+- Status: Sprint 29 merged and verified on `main`; Sprint 30 planning next
 
 ## Phase Roadmap
 
@@ -50,10 +50,11 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Sprint 26: library catalog file checks.
 - Sprint 27: GUI CAD editor shell foundation.
 - Sprint 28: GUI module split.
+- Sprint 29: GUI selection groundwork.
 
 ## Active Sprint
 
-- Sprint 29: GUI selection groundwork.
+- Sprint 30: GUI inspector panel.
 
 ## Reporting Rule
 
@@ -66,5 +67,5 @@ Progress: Phase 2/6, Sprint 25, <branch-or-main>, <short status>
 Example:
 
 ```text
-Progress: Phase 2/6, Sprint 29, sprint-29-gui-selection-groundwork, implementation.
+Progress: Phase 2/6, Sprint 29, main, merged and verified.
 ```

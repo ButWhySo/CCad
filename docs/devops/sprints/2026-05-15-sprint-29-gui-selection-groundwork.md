@@ -10,7 +10,7 @@ Make rendered PCB canvas primitives selectable by stable object type and ID.
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 29, `sprint-29-gui-selection-groundwork`, implementation.
+Progress: Phase 2/6, Sprint 29, `main`, merged and verified.
 
 ## Backlog
 
@@ -21,8 +21,8 @@ Progress: Phase 2/6, Sprint 29, `sprint-29-gui-selection-groundwork`, implementa
 5. Done: show selection in status bar and right dock.
 6. Done: add opt-in selection click to demo script.
 7. Done: capture screenshot.
-8. Pending: full native Qt build and CTest.
-9. Pending: merge to `main`.
+8. Done: full native Qt build and CTest.
+9. Done: merge to `main`.
 
 ## Verification So Far
 
@@ -41,3 +41,19 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_sprint_demo.ps1 -Name spr
 ```
 
 - Result: screenshot captured at `artifacts/screenshots/sprint29-gui-selection-visible-20260515-173628.png`.
+
+Full branch gate:
+
+```cmd
+cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: passed, 11/11 tests.
+
+Main integration gate:
+
+```cmd
+cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-failure
+```
+
+- Result: passed, 11/11 tests after merge to `main`.
