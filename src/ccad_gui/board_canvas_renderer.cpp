@@ -81,11 +81,16 @@ QGraphicsItem* findCanvasObjectById(QGraphicsScene& canvas_scene, const QString&
 }  // namespace
 
 void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& scene) {
+  renderBoardCanvas(canvas_scene, scene, CanvasRenderTheme{});
+}
+
+void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& scene,
+                       const CanvasRenderTheme& theme) {
   canvas_scene.clear();
-  canvas_scene.setBackgroundBrush(QBrush(QColor("#07111f")));
+  canvas_scene.setBackgroundBrush(QBrush(theme.background_color));
   if (!scene.has_board) {
     auto* text = canvas_scene.addText("No board outline yet");
-    text->setDefaultTextColor(QColor("#94a3b8"));
+    text->setDefaultTextColor(theme.empty_text_color);
     text->setPos(18, 18);
     canvas_scene.setSceneRect(0, 0, 420, 280);
     return;
@@ -98,7 +103,7 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
   const QRectF board_rect(margin, margin, width, height);
   canvas_scene.setSceneRect(0, 0, width + (2.0 * margin), height + 52.0);
 
-  QPen grid_pen(QColor("#17243a"));
+  QPen grid_pen(theme.grid_color);
   grid_pen.setWidthF(0.25);
   for (double x = margin; x <= margin + width; x += 5.0 * scale) {
     canvas_scene.addLine(x, margin, x, margin + height, grid_pen);
@@ -107,15 +112,16 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     canvas_scene.addLine(margin, y, margin + width, y, grid_pen);
   }
 
-  QPen outline_pen(QColor("#38bdf8"));
+  QPen outline_pen(theme.board_outline_color);
   outline_pen.setWidthF(1.8);
-  auto* board = canvas_scene.addRect(board_rect, outline_pen, QBrush(QColor("#0f1b2d")));
+  auto* board = canvas_scene.addRect(board_rect, outline_pen, QBrush(theme.board_fill_color));
   board->setToolTip("Board outline");
 
-  QPen keepout_pen(QColor("#f97316"));
+  QPen keepout_pen(theme.keepout_color);
   keepout_pen.setWidthF(1.2);
   keepout_pen.setStyle(Qt::DashLine);
-  QBrush keepout_brush(QColor(249, 115, 22, 48));
+  QBrush keepout_brush(
+      QColor(theme.keepout_color.red(), theme.keepout_color.green(), theme.keepout_color.blue(), 48));
   for (const ccad::CanvasKeepout& keepout : scene.keepouts) {
     const QRectF keepout_rect(margin + (keepout.x_units * scale),
                               margin + (keepout.y_units * scale),
@@ -124,11 +130,10 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     keepout_path.addRect(keepout_rect);
     auto* item = addHighlightPath(canvas_scene, keepout_path, keepout_pen, keepout_brush);
     item->setToolTip("Keepout " + qstr(keepout.id) + " (" + qstr(keepout.kind) + ")");
-    tagObject(*item, "keepout", qstr(keepout.id), QColor("#f97316"));
+    tagObject(*item, "keepout", qstr(keepout.id), theme.keepout_color);
   }
 
-  const QColor track_color("#ef4444");
-  QPen track_pen(track_color);
+  QPen track_pen(theme.track_color);
   track_pen.setCapStyle(Qt::RoundCap);
   for (const ccad::CanvasTrack& track : scene.tracks) {
     track_pen.setWidthF(std::max(1.2, track.width_units * scale));
@@ -138,10 +143,9 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     track_path.lineTo(margin + (track.end_x_units * scale), margin + (track.end_y_units * scale));
     auto* item = addHighlightPath(canvas_scene, track_path, track_pen, QBrush(Qt::NoBrush));
     item->setToolTip("Track " + qstr(track.id));
-    tagObject(*item, "track", qstr(track.id), track_color);
+    tagObject(*item, "track", qstr(track.id), theme.track_color);
   }
 
-  const QColor pad_fill_color("#be185d");
   for (const ccad::CanvasPad& pad : scene.pads) {
     const QRectF pad_rect(margin + (pad.x_units * scale) - ((pad.width_units * scale) / 2.0),
                           margin + (pad.y_units * scale) - ((pad.height_units * scale) / 2.0),
@@ -157,12 +161,12 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
       pad_path = transform.map(pad_path);
     }
     auto* item =
-        addHighlightPath(canvas_scene, pad_path, QPen(QColor("#f472b6"), 0.8), QBrush(pad_fill_color));
+        addHighlightPath(canvas_scene, pad_path, QPen(theme.pad_outline_color, 0.8),
+                         QBrush(theme.pad_fill_color));
     item->setToolTip("Pad " + qstr(pad.id));
-    tagObject(*item, "pad", qstr(pad.id), pad_fill_color);
+    tagObject(*item, "pad", qstr(pad.id), theme.pad_fill_color);
   }
 
-  const QColor via_fill_color("#f59e0b");
   for (const ccad::CanvasVia& via : scene.vias) {
     const double diameter = via.diameter_units * scale;
     const QRectF via_rect(margin + (via.x_units * scale) - (diameter / 2.0),
@@ -170,24 +174,31 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     QPainterPath via_path;
     via_path.addEllipse(via_rect);
     auto* item =
-        addHighlightPath(canvas_scene, via_path, QPen(QColor("#fde68a"), 1.0), QBrush(via_fill_color));
+        addHighlightPath(canvas_scene, via_path, QPen(theme.via_outline_color, 1.0),
+                         QBrush(theme.via_fill_color));
     item->setToolTip("Via " + qstr(via.id));
-    tagObject(*item, "via", qstr(via.id), via_fill_color);
+    tagObject(*item, "via", qstr(via.id), theme.via_fill_color);
     const double drill = via.drill_units * scale;
     canvas_scene.addEllipse(margin + (via.x_units * scale) - (drill / 2.0),
                             margin + (via.y_units * scale) - (drill / 2.0), drill, drill,
-                            QPen(Qt::NoPen), QBrush(QColor("#07111f")));
+                            QPen(Qt::NoPen), QBrush(theme.background_color));
   }
 
   auto* label = canvas_scene.addText(QString::number(scene.view_width_units, 'f', 2) + " mm x " +
                                      QString::number(scene.view_height_units, 'f', 2) + " mm");
-  label->setDefaultTextColor(QColor("#cbd5e1"));
+  label->setDefaultTextColor(theme.board_label_color);
   label->setScale(0.9);
   label->setPos(margin, margin + height + 10.0);
 }
 
 void addDiagnosticMarkers(QGraphicsScene& canvas_scene,
                           const std::vector<ccad::Diagnostic>& diagnostics) {
+  addDiagnosticMarkers(canvas_scene, diagnostics, CanvasRenderTheme{});
+}
+
+void addDiagnosticMarkers(QGraphicsScene& canvas_scene,
+                          const std::vector<ccad::Diagnostic>& diagnostics,
+                          const CanvasRenderTheme& theme) {
   for (QGraphicsItem* item : canvas_scene.items()) {
     if (!canvasDiagnosticMarkerObjectId(*item).isEmpty()) {
       canvas_scene.removeItem(item);
@@ -205,7 +216,8 @@ void addDiagnosticMarkers(QGraphicsScene& canvas_scene,
     const QRectF bounds = target->sceneBoundingRect();
     const QPointF center = bounds.center();
     constexpr double radius = 5.0;
-    const QColor color = diagnostic.severity == "error" ? QColor("#ef4444") : QColor("#f59e0b");
+    const QColor color =
+        diagnostic.severity == "error" ? theme.error_marker_color : theme.warning_marker_color;
     auto* marker =
         canvas_scene.addEllipse(center.x() - radius, center.y() - radius, radius * 2.0,
                                 radius * 2.0, QPen(color, 1.8), QBrush(QColor(color.red(),

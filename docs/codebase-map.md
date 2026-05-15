@@ -6,7 +6,7 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 
 - Phase: 2 / 6
 - Last merged sprint: Sprint 35, object browser selection link
-- Next sprint: Sprint 36, planning pending
+- Current sprint: Sprint 36, canvas render theme groundwork
 - Active branch pattern: `sprint-<n>-<topic>`
 - Current source of truth for phase/sprint counter: `docs/devops/progress.md`
 - Main product direction: native C++ PCB kernel and machine-callable CLI first; Qt GUI is a human review/editor client, not the data owner.
@@ -638,12 +638,17 @@ Public function:
 
 ```cpp
 void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& scene);
+void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& scene,
+                       const CanvasRenderTheme& theme);
 QString canvasObjectId(const QGraphicsItem& item);
 QString canvasObjectType(const QGraphicsItem& item);
 bool canvasUsesShapeSelectionHighlight(const QGraphicsItem& item);
 bool selectCanvasObjectById(QGraphicsScene& canvas_scene, const QString& id);
 void addDiagnosticMarkers(QGraphicsScene& canvas_scene,
                           const std::vector<ccad::Diagnostic>& diagnostics);
+void addDiagnosticMarkers(QGraphicsScene& canvas_scene,
+                          const std::vector<ccad::Diagnostic>& diagnostics,
+                          const CanvasRenderTheme& theme);
 QString canvasDiagnosticMarkerObjectId(const QGraphicsItem& item);
 QString canvasDiagnosticMarkerSeverity(const QGraphicsItem& item);
 ```
@@ -658,6 +663,7 @@ Renders:
 - board size label
 - stable object type/ID metadata on selectable primitive items
 - shape-level selection highlighting for selectable primitive items, avoiding loose Qt bounding boxes
+- presentation-only `CanvasRenderTheme` colors for future theme/plugin compatibility
 - selecting one canvas object by stable object ID for diagnostic-table linking
 - read-only diagnostic markers for diagnostics whose object IDs match selectable canvas items
 
