@@ -1,0 +1,95 @@
+# Markdown policy for public GitHub publish
+*.md
+!README.md
+
+# Build outputs
+build/
+build-*/
+cmake-build-*/
+out/
+bin/
+obj/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+Testing/
+CTestTestfile.cmake
+DartConfiguration.tcl
+install_manifest.txt
+*.ninja
+.ninja_*
+rules.ninja
+
+# Generated binaries and libraries
+*.exe
+*.dll
+*.lib
+*.a
+*.so
+*.dylib
+*.o
+*.obj
+*.pdb
+*.ilk
+*.exp
+
+# Qt generated files
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+*.qmlc
+*.jsc
+
+# Demo and screenshot artifacts
+artifacts/
+screenshots/
+*.png
+*.jpg
+*.jpeg
+*.bmp
+*.gif
+*.svg
+
+# Local library and catalog caches
+library-cache/
+catalog-cache/
+
+# Python and tooling caches
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*.orig
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.user
+*.suo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
