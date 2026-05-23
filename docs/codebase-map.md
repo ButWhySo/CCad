@@ -555,6 +555,10 @@ Current scope:
 - `lib catalog-search --catalog <path.ccad-library.json> --query <text> [--kind <kind>]`
 - `lib catalog-validate --catalog <path.ccad-library.json> [--root <native-library-root>]`
 
+Rule:
+
+- `catalog-find` and `catalog-search` must print component-knowledge fields as part of item JSON so agents do not need to parse raw catalog files after finding a candidate.
+
 ## GUI Files
 
 ### `src/ccad_gui/main.cpp`

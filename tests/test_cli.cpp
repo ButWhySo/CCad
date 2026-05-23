@@ -319,6 +319,12 @@ int main() {
           << "      \"sha256\": \"0123456789abcdef\",\n"
           << "      \"license\": \"CC-BY-SA-4.0 WITH KiCad-library-exception\",\n"
           << "      \"provenance\": \"kicad-official@abc123\",\n"
+          << "      \"usage_summary\": \"0603 resistor footprint for compact passive placement\",\n"
+          << "      \"layout_notes\": [\n"
+          << "        \"keep near the driven net and check assembly spacing\"\n"
+          << "      ],\n"
+          << "      \"source_confidence\": \"library_metadata\",\n"
+          << "      \"review_status\": \"reviewed\",\n"
           << "      \"warnings\": [\n"
           << "      ]\n"
           << "    }\n"
@@ -363,6 +369,16 @@ int main() {
   require(catalog_find_output.find("\"native_path\": \"footprints/Resistor_SMD/R_0603_1608Metric.ccad-footprint.json\"") !=
               std::string::npos,
           "lib catalog-find writes native path");
+  require(catalog_find_output.find("\"usage_summary\": \"0603 resistor footprint for compact passive placement\"") !=
+              std::string::npos,
+          "lib catalog-find writes usage summary");
+  require(catalog_find_output.find("keep near the driven net") != std::string::npos,
+          "lib catalog-find writes layout notes");
+  require(catalog_find_output.find("\"source_confidence\": \"library_metadata\"") !=
+              std::string::npos,
+          "lib catalog-find writes source confidence");
+  require(catalog_find_output.find("\"review_status\": \"reviewed\"") != std::string::npos,
+          "lib catalog-find writes review status");
   const std::string catalog_missing_command =
       quote(CCAD_BINARY) + " lib catalog-find --catalog " + quote(catalog_path) +
       " --id missing > " + quote(catalog_find_path);
@@ -384,6 +400,20 @@ int main() {
   require(catalog_search_output.find("\"id\": \"footprint:Capacitor_SMD:C_0603_1608Metric\"") !=
               std::string::npos,
           "lib catalog-search writes capacitor match");
+  const std::string catalog_search_reviewed_command =
+      quote(CCAD_BINARY) + " lib catalog-search --catalog " + quote(catalog_path) +
+      " --query reviewed > " + quote(catalog_search_path);
+  require(run(catalog_search_reviewed_command) == 0,
+          "lib catalog-search review status exits zero");
+  const std::string catalog_search_reviewed_output = readFile(catalog_search_path);
+  require(catalog_search_reviewed_output.find("\"count\": 1") != std::string::npos,
+          "lib catalog-search finds reviewed item");
+  require(catalog_search_reviewed_output.find("\"usage_summary\": \"0603 resistor footprint for compact passive placement\"") !=
+              std::string::npos,
+          "lib catalog-search writes usage summary");
+  require(catalog_search_reviewed_output.find("\"review_status\": \"reviewed\"") !=
+              std::string::npos,
+          "lib catalog-search writes review status");
   const std::string catalog_search_kind_command =
       quote(CCAD_BINARY) + " lib catalog-search --catalog " + quote(catalog_path) +
       " --query 0603 --kind symbol > " + quote(catalog_search_path);
