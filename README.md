@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 42 merged and verified on `main`; Sprint 43 planning. See `docs/devops/progress.md`.
+Progress counter: Phase 2 / 6, Sprint 43 in progress on `sprint-43-clearance-drc`. See `docs/devops/progress.md`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -16,7 +16,7 @@ Progress counter: Phase 2 / 6, Sprint 42 merged and verified on `main`; Sprint 4
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
 - Physical board outline, layers, rectangular keepouts, pads, vias, and track segments in project JSON.
-- Physical DRC for geometry, connectivity metadata, rectangular keepout occupancy, and track crossing violations.
+- Physical DRC for geometry, connectivity metadata, rectangular keepout occupancy, track crossing violations, and fixed default copper clearance.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
 - Native GUI selection inspector for stable object type and ID.
 - Native GUI layer/object browser and shape-level selection highlight.
@@ -266,6 +266,7 @@ What it does:
 - Runs kernel-level physical checks on board primitives.
 - Emits JSON diagnostics.
 - Exits `0` when no DRC errors exist, `1` when DRC errors exist, `2` for usage/file/parse failures.
+- Reports `COPPER_CLEARANCE` when different-net copper is closer than the current fixed default clearance of `0.20 mm`.
 
 When to run:
 
@@ -453,7 +454,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_sprint_demo.ps1 -Name spr
 What it does:
 
 - Creates `artifacts/demos/sprint42-gui-canvas-mvp-review.ccad.json`.
-- Adds a pad, via, track, and rectangular keepout through the CLI.
+- Adds a pad, via, two crossing tracks, logical demo nets, and a rectangular keepout.
 - Writes inspect, validate, and DRC JSON reports.
 - Writes a sample KiCad `.kicad_mod` file and imports it to CCad footprint JSON.
 - Places the imported footprint onto the demo board.

@@ -55,7 +55,7 @@ The initial codebase is C++20:
 - Catalog items can preserve component-knowledge fields: `usage_summary`, `layout_notes`, `source_confidence`, and `review_status`.
 - `review_status` is validated when present and currently accepts `generated`, `needs_review`, `reviewed`, and `rejected`.
 - Footprint placement can rotate pads and preserve logical net IDs when project nets contain matching component/pin members.
-- Physical DRC currently covers duplicate IDs, unknown layers/nets, outline bounds, invalid dimensions, empty net warnings, track endpoint connectivity warnings, rectangular keepout occupancy/crossing violations, drill/diameter sanity, and zero-length tracks.
+- Physical DRC currently covers duplicate IDs, unknown layers/nets, outline bounds, invalid dimensions, empty net warnings, track endpoint connectivity warnings, rectangular keepout occupancy/crossing violations, fixed default 0.20 mm different-net copper clearance, drill/diameter sanity, and zero-length tracks.
 
 ## KiCad Library Reuse Policy
 

@@ -12,7 +12,9 @@ ccad::Project validBoardProject() {
   project.id = "proj-drc";
   project.name = "drc";
   project.nets = {ccad::Net{.id = "N1",
-                            .members = {ccad::NetMember{.component_id = "U1", .pin_name = "1"}}}};
+                            .members = {ccad::NetMember{.component_id = "U1", .pin_name = "1"}}},
+                  ccad::Net{.id = "N2",
+                            .members = {ccad::NetMember{.component_id = "U2", .pin_name = "1"}}}};
   project.board = ccad::Board{
       .outline = ccad::Rect{
           .origin = ccad::Point{.x = ccad::nanometers(0), .y = ccad::nanometers(0)},
@@ -57,6 +59,16 @@ bool hasDiagnostic(const std::vector<ccad::Diagnostic>& diagnostics, const std::
                    const std::string& severity) {
   for (const ccad::Diagnostic& diagnostic : diagnostics) {
     if (diagnostic.code == code && diagnostic.severity == severity) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool hasDiagnosticForObject(const std::vector<ccad::Diagnostic>& diagnostics,
+                            const std::string& code, const std::string& object_id) {
+  for (const ccad::Diagnostic& diagnostic : diagnostics) {
+    if (diagnostic.code == code && diagnostic.object_id == object_id) {
       return true;
     }
   }
@@ -176,4 +188,38 @@ int main() {
                                             .height = ccad::millimeters(4)}}});
   require(hasCode(ccad::runDrc(keepout_track_crossing), "TRACK_CROSSES_KEEPOUT"),
           "drc reports track crossing keepout with endpoints outside");
+
+  ccad::Project same_net_touching_track = validBoardProject();
+  same_net_touching_track.board->tracks.push_back(ccad::TrackSegment{
+      .id = "T_SAME",
+      .net_id = "N1",
+      .layer_id = "F.Cu",
+      .start = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
+      .end = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(10)},
+      .width = ccad::millimeters(0.25)});
+  require(!hasCode(ccad::runDrc(same_net_touching_track), "COPPER_CLEARANCE"),
+          "drc allows same-net copper to touch");
+
+  ccad::Project pad_clearance = validBoardProject();
+  pad_clearance.board->pads.push_back(ccad::Pad{
+      .id = "P2",
+      .component_id = "U2",
+      .pin_name = "1",
+      .net_id = "N2",
+      .layer_id = "F.Cu",
+      .position = ccad::Point{.x = ccad::millimeters(6.05), .y = ccad::millimeters(6)},
+      .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(1.0)}});
+  require(hasDiagnosticForObject(ccad::runDrc(pad_clearance), "COPPER_CLEARANCE", "P2"),
+          "drc reports different-net pads closer than default clearance");
+
+  ccad::Project crossing_tracks = validBoardProject();
+  crossing_tracks.board->tracks.push_back(ccad::TrackSegment{
+      .id = "T2",
+      .net_id = "N2",
+      .layer_id = "F.Cu",
+      .start = ccad::Point{.x = ccad::millimeters(4), .y = ccad::millimeters(9)},
+      .end = ccad::Point{.x = ccad::millimeters(9), .y = ccad::millimeters(4)},
+      .width = ccad::millimeters(0.25)});
+  require(hasDiagnosticForObject(ccad::runDrc(crossing_tracks), "COPPER_CLEARANCE", "T2"),
+          "drc reports crossing different-net tracks on same layer");
 }

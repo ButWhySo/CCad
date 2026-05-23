@@ -153,6 +153,7 @@ What it does:
 - Adds PCB pads, vias, and track segments to existing board projects.
 - Adds rectangular keepouts to existing board projects.
 - Runs physical DRC diagnostics with `ccad drc`.
+- Reports fixed default copper clearance errors with `COPPER_CLEARANCE`.
 - Imports basic KiCad `.kicad_mod` footprint files with `ccad lib import-footprint`.
 - Inspects, looks up, and searches local CCad library catalog records with `ccad lib catalog-info`, `ccad lib catalog-find`, and `ccad lib catalog-search`.
 - Places imported CCad footprint pads onto a board with `ccad pcb place-footprint`.
@@ -225,6 +226,8 @@ DRC command behavior:
 
 - `drc <path>` runs physical board checks.
 - Reports duplicate primitive IDs, unknown layers, unknown non-empty net references, geometry outside board outline, invalid dimensions, rectangular keepout violations, unconnected pads/vias/tracks, unconnected track endpoints, via drill larger than diameter, and zero-length track segments.
+- Reports `COPPER_CLEARANCE` errors when different-net pad-pad, track-track, pad-track, via-via, via-pad, or via-track copper is closer than the current fixed default `0.20 mm` clearance.
+- Allows same-net copper to touch.
 - Pad centers, via centers, track endpoints, and track segments crossing rectangular keepouts are errors: `PAD_IN_KEEPOUT`, `VIA_IN_KEEPOUT`, `TRACK_ENDPOINT_IN_KEEPOUT`, and `TRACK_CROSSES_KEEPOUT`.
 - Empty pad `net_id` is reported as warning code `UNCONNECTED_PAD`.
 - Empty via and track `net_id` values are warnings: `UNCONNECTED_VIA` and `UNCONNECTED_TRACK`.

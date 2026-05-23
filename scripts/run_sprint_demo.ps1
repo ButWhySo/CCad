@@ -54,7 +54,18 @@ Invoke-Ccad init --name $Name --width-mm 42 --height-mm 28 --out $Project
 Invoke-Ccad pcb add-pad --file $Project --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 Invoke-Ccad pcb add-via --file $Project --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
 Invoke-Ccad pcb add-track --file $Project --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
+Invoke-Ccad pcb add-track --file $Project --id T2 --net N2 --layer F.Cu --start-x-mm 5 --start-y-mm 9 --end-x-mm 8 --end-y-mm 6 --width-mm 0.25
 Invoke-Ccad pcb add-keepout --file $Project --id K1 --kind placement --x-mm 20 --y-mm 10 --width-mm 4 --height-mm 3
+
+$ProjectObject = Get-Content -Raw $Project | ConvertFrom-Json
+$ProjectObject.nets = @(
+  [ordered]@{ id = "N1"; members = @() },
+  [ordered]@{ id = "N2"; members = @() }
+)
+$ProjectJson = $ProjectObject | ConvertTo-Json -Depth 32
+$Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($Project, $ProjectJson, $Utf8NoBom)
+
 Invoke-Ccad inspect $Project | Set-Content -Encoding UTF8 $Inspect
 Invoke-Ccad validate $Project | Set-Content -Encoding UTF8 $Validate
 Invoke-CcadDrcReport
