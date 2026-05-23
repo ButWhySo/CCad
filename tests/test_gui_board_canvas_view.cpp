@@ -9,6 +9,7 @@
 #include <QScrollBar>
 
 #include <cmath>
+#include <vector>
 
 namespace {
 
@@ -26,6 +27,10 @@ int main(int argc, char** argv) {
   scene.addRect(0.0, 0.0, 5000.0, 5000.0);
 
   BoardCanvasView view(&scene);
+  std::vector<std::pair<bool, bool>> pan_states;
+  view.setPanModeCallback([&pan_states](const bool space_mode, const bool dragging) {
+    pan_states.emplace_back(space_mode, dragging);
+  });
   view.resize(420, 300);
   view.show();
   app.processEvents();
@@ -133,10 +138,13 @@ int main(int argc, char** argv) {
   const int before_space_pan_y = view.verticalScrollBar()->value();
   QKeyEvent space_press(QEvent::KeyPress, Qt::Key_Space, Qt::NoModifier);
   QApplication::sendEvent(&view, &space_press);
+  require(!pan_states.empty(), "pan callback receives initial state");
+  require(pan_states.back().first && !pan_states.back().second, "space sets pan-ready state");
 
   QMouseEvent left_pan_press(QEvent::MouseButtonPress, QPointF(180.0, 170.0), QPointF(180.0, 170.0),
                              Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
   QApplication::sendEvent(view.viewport(), &left_pan_press);
+  require(pan_states.back().first && pan_states.back().second, "left press enters pan-drag state");
   QMouseEvent left_pan_move(QEvent::MouseMove, QPointF(120.0, 110.0), QPointF(120.0, 110.0),
                             Qt::NoButton, Qt::LeftButton, Qt::NoModifier);
   QApplication::sendEvent(view.viewport(), &left_pan_move);
@@ -144,9 +152,12 @@ int main(int argc, char** argv) {
                                QPointF(120.0, 110.0), Qt::LeftButton, Qt::NoButton,
                                Qt::NoModifier);
   QApplication::sendEvent(view.viewport(), &left_pan_release);
+  require(pan_states.back().first && !pan_states.back().second,
+          "left release returns to pan-ready state");
 
   QKeyEvent space_release(QEvent::KeyRelease, Qt::Key_Space, Qt::NoModifier);
   QApplication::sendEvent(&view, &space_release);
+  require(!pan_states.back().first && !pan_states.back().second, "space release clears pan mode");
 
   require(view.horizontalScrollBar()->value() != before_space_pan_x ||
               view.verticalScrollBar()->value() != before_space_pan_y,

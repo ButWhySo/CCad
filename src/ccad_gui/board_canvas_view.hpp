@@ -31,6 +31,10 @@ class BoardCanvasView final : public QGraphicsView {
   void setCoordinateCallback(std::function<void(QPointF, double)> callback) {
     coordinate_callback_ = std::move(callback);
   }
+  void setPanModeCallback(std::function<void(bool, bool)> callback) {
+    pan_mode_callback_ = std::move(callback);
+    notifyPanModeChanged();
+  }
   void zoomIn() { zoomBy(1.18); }
   void zoomOut() { zoomBy(1.0 / 1.18); }
   void resetZoom() {
@@ -84,6 +88,7 @@ class BoardCanvasView final : public QGraphicsView {
       pan_last_pos_ = event->pos();
       viewport()->setCursor(Qt::ClosedHandCursor);
       user_view_ = true;
+      notifyPanModeChanged();
       event->accept();
       return;
     }
@@ -95,6 +100,10 @@ class BoardCanvasView final : public QGraphicsView {
                      event->button() == Qt::LeftButton)) {
       panning_ = false;
       viewport()->unsetCursor();
+      if (space_pan_mode_) {
+        viewport()->setCursor(Qt::OpenHandCursor);
+      }
+      notifyPanModeChanged();
       notifyViewportChanged(event->pos());
       event->accept();
       return;
@@ -149,6 +158,7 @@ class BoardCanvasView final : public QGraphicsView {
         if (!panning_) {
           viewport()->setCursor(Qt::OpenHandCursor);
         }
+        notifyPanModeChanged();
         event->accept();
         return;
       default:
@@ -163,6 +173,7 @@ class BoardCanvasView final : public QGraphicsView {
       if (!panning_) {
         viewport()->unsetCursor();
       }
+      notifyPanModeChanged();
       event->accept();
       return;
     }
@@ -206,10 +217,17 @@ class BoardCanvasView final : public QGraphicsView {
     }
   }
 
+  void notifyPanModeChanged() {
+    if (pan_mode_callback_) {
+      pan_mode_callback_(space_pan_mode_, panning_);
+    }
+  }
+
   double zoom_factor_ = 1.0;
   bool user_view_ = false;
   bool panning_ = false;
   bool space_pan_mode_ = false;
   QPoint pan_last_pos_;
   std::function<void(QPointF, double)> coordinate_callback_;
+  std::function<void(bool, bool)> pan_mode_callback_;
 };

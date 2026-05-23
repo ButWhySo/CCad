@@ -93,6 +93,17 @@ ReviewWindow::ReviewWindow() {
       [this](const QPointF& scene_position, const double zoom_factor) {
         updateCursorStatus(scene_position, zoom_factor);
       });
+  board_view->setPanModeCallback([this](const bool space_mode, const bool dragging) {
+    if (dragging) {
+      tool_status_->setText("Tool Pan Drag");
+      return;
+    }
+    if (space_mode) {
+      tool_status_->setText("Tool Pan Ready");
+      return;
+    }
+    tool_status_->setText("Tool Select");
+  });
 
   auto* tabs = new QTabWidget(this);
   tabs->setObjectName("editorTabs");
