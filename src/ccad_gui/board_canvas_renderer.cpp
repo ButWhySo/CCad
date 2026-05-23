@@ -108,7 +108,10 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
   const double width = scene.view_width_units * scale;
   const double height = scene.view_height_units * scale;
   const QRectF board_rect(margin, margin, width, height);
-  canvas_scene.setSceneRect(0, 0, width + (2.0 * margin), height + 52.0);
+  const double horizontal_padding = std::max(width * 1.5, 420.0);
+  const double vertical_padding = std::max(height * 1.5, 320.0);
+  canvas_scene.setSceneRect(board_rect.adjusted(-horizontal_padding, -vertical_padding,
+                                                horizontal_padding, vertical_padding + 52.0));
 
   QPen grid_pen(theme.grid_color);
   grid_pen.setWidthF(0.25);
