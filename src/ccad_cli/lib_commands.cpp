@@ -37,19 +37,44 @@ void printCatalogInfo(const ccad::LibraryCatalog& catalog) {
             << "}\n";
 }
 
+void printStringArray(const std::vector<std::string>& values, int indent) {
+  const std::string padding(static_cast<std::size_t>(indent), ' ');
+  for (std::size_t i = 0; i < values.size(); ++i) {
+    std::cout << padding << "\"" << ccad::escapeJson(values.at(i)) << "\""
+              << (i + 1 == values.size() ? "" : ",") << '\n';
+  }
+}
+
+void printCatalogItemFields(const ccad::LibraryItem& item, int indent) {
+  const std::string padding(static_cast<std::size_t>(indent), ' ');
+  std::cout << padding << "\"id\": \"" << ccad::escapeJson(item.id) << "\",\n"
+            << padding << "\"kind\": \"" << ccad::escapeJson(item.kind) << "\",\n"
+            << padding << "\"layout_notes\": [\n";
+  printStringArray(item.layout_notes, indent + 2);
+  std::cout << padding << "],\n"
+            << padding << "\"license\": \"" << ccad::escapeJson(item.license) << "\",\n"
+            << padding << "\"name\": \"" << ccad::escapeJson(item.name) << "\",\n"
+            << padding << "\"native_path\": \"" << ccad::escapeJson(item.native_path)
+            << "\",\n"
+            << padding << "\"provenance\": \"" << ccad::escapeJson(item.provenance)
+            << "\",\n"
+            << padding << "\"review_status\": \"" << ccad::escapeJson(item.review_status)
+            << "\",\n"
+            << padding << "\"sha256\": \"" << ccad::escapeJson(item.sha256) << "\",\n"
+            << padding << "\"source_confidence\": \""
+            << ccad::escapeJson(item.source_confidence) << "\",\n"
+            << padding << "\"source_path\": \"" << ccad::escapeJson(item.source_path)
+            << "\",\n"
+            << padding << "\"usage_summary\": \"" << ccad::escapeJson(item.usage_summary)
+            << "\"\n";
+}
+
 void printCatalogItem(const ccad::LibraryItem& item) {
   std::cout << "{\n"
             << "  \"found\": true,\n"
-            << "  \"item\": {\n"
-            << "    \"id\": \"" << ccad::escapeJson(item.id) << "\",\n"
-            << "    \"kind\": \"" << ccad::escapeJson(item.kind) << "\",\n"
-            << "    \"license\": \"" << ccad::escapeJson(item.license) << "\",\n"
-            << "    \"name\": \"" << ccad::escapeJson(item.name) << "\",\n"
-            << "    \"native_path\": \"" << ccad::escapeJson(item.native_path) << "\",\n"
-            << "    \"provenance\": \"" << ccad::escapeJson(item.provenance) << "\",\n"
-            << "    \"sha256\": \"" << ccad::escapeJson(item.sha256) << "\",\n"
-            << "    \"source_path\": \"" << ccad::escapeJson(item.source_path) << "\"\n"
-            << "  }\n"
+            << "  \"item\": {\n";
+  printCatalogItemFields(item, 4);
+  std::cout << "  }\n"
             << "}\n";
 }
 
@@ -60,13 +85,9 @@ void printCatalogSearchResults(const std::string& query, const std::string& kind
             << "  \"items\": [\n";
   for (std::size_t i = 0; i < items.size(); ++i) {
     const ccad::LibraryItem& item = *items.at(i);
-    std::cout << "    {\n"
-              << "      \"id\": \"" << ccad::escapeJson(item.id) << "\",\n"
-              << "      \"kind\": \"" << ccad::escapeJson(item.kind) << "\",\n"
-              << "      \"name\": \"" << ccad::escapeJson(item.name) << "\",\n"
-              << "      \"native_path\": \"" << ccad::escapeJson(item.native_path) << "\",\n"
-              << "      \"source_path\": \"" << ccad::escapeJson(item.source_path) << "\"\n"
-              << "    }" << (i + 1 == items.size() ? "" : ",") << '\n';
+    std::cout << "    {\n";
+    printCatalogItemFields(item, 6);
+    std::cout << "    }" << (i + 1 == items.size() ? "" : ",") << '\n';
   }
   std::cout << "  ],\n"
             << "  \"kind\": \"" << ccad::escapeJson(kind) << "\",\n"

@@ -243,8 +243,8 @@ KiCad footprint import behavior:
 Catalog CLI behavior:
 
 - `lib catalog-info --catalog <path>` loads a local CCad native library catalog and emits summary JSON.
-- `lib catalog-find --catalog <path> --id <id>` emits the matching item metadata as JSON.
-- `lib catalog-search --catalog <path> --query <text>` emits matching item metadata as JSON.
+- `lib catalog-find --catalog <path> --id <id>` emits the matching item metadata as JSON, including component-knowledge fields.
+- `lib catalog-search --catalog <path> --query <text>` emits matching item metadata as JSON, including component-knowledge fields.
 - `lib catalog-search --catalog <path> --query <text> --kind <kind>` restricts matches to one item kind such as `footprint`, `symbol`, or `model`.
 - `lib catalog-validate --catalog <path>` validates required metadata and duplicate item IDs before a catalog is trusted.
 - `lib catalog-validate --catalog <path> --root <dir>` also verifies local native artifact existence and SHA-256 checksums.
