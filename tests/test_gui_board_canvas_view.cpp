@@ -113,6 +113,26 @@ int main(int argc, char** argv) {
   QApplication::sendEvent(&view, &up_key);
   require(view.verticalScrollBar()->value() < before_up, "up key pans up");
 
+  const int before_d = view.horizontalScrollBar()->value();
+  QKeyEvent d_key(QEvent::KeyPress, Qt::Key_D, Qt::NoModifier);
+  QApplication::sendEvent(&view, &d_key);
+  require(view.horizontalScrollBar()->value() > before_d, "D key pans right");
+
+  const int before_a = view.horizontalScrollBar()->value();
+  QKeyEvent a_key(QEvent::KeyPress, Qt::Key_A, Qt::NoModifier);
+  QApplication::sendEvent(&view, &a_key);
+  require(view.horizontalScrollBar()->value() < before_a, "A key pans left");
+
+  const int before_s = view.verticalScrollBar()->value();
+  QKeyEvent s_key(QEvent::KeyPress, Qt::Key_S, Qt::NoModifier);
+  QApplication::sendEvent(&view, &s_key);
+  require(view.verticalScrollBar()->value() > before_s, "S key pans down");
+
+  const int before_w = view.verticalScrollBar()->value();
+  QKeyEvent w_key(QEvent::KeyPress, Qt::Key_W, Qt::NoModifier);
+  QApplication::sendEvent(&view, &w_key);
+  require(view.verticalScrollBar()->value() < before_w, "W key pans up");
+
   const int before_space_pan_x = view.horizontalScrollBar()->value();
   const int before_space_pan_y = view.verticalScrollBar()->value();
   QKeyEvent space_press(QEvent::KeyPress, Qt::Key_Space, Qt::NoModifier);

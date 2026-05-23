@@ -124,18 +124,22 @@ class BoardCanvasView final : public QGraphicsView {
         event->accept();
         return;
       case Qt::Key::Key_Left:
+      case Qt::Key::Key_A:
         panByPixels(-pan_step_pixels, 0);
         event->accept();
         return;
       case Qt::Key::Key_Right:
+      case Qt::Key::Key_D:
         panByPixels(pan_step_pixels, 0);
         event->accept();
         return;
       case Qt::Key::Key_Up:
+      case Qt::Key::Key_W:
         panByPixels(0, -pan_step_pixels);
         event->accept();
         return;
       case Qt::Key::Key_Down:
+      case Qt::Key::Key_S:
         panByPixels(0, pan_step_pixels);
         event->accept();
         return;
