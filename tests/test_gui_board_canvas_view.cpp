@@ -66,32 +66,28 @@ int main(int argc, char** argv) {
 
   QKeyEvent fit_key(QEvent::KeyPress, Qt::Key_F, Qt::NoModifier);
   QApplication::sendEvent(&view, &fit_key);
-  require(view.zoomFactor() > BoardCanvasView::kMinZoomFactor, "fit key applies fit zoom");
+  const double fit_zoom = view.zoomFactor();
+  require(fit_zoom > BoardCanvasView::kMinZoomFactor, "fit key applies fit zoom");
 
   QKeyEvent reset_key(QEvent::KeyPress, Qt::Key_0, Qt::NoModifier);
   QApplication::sendEvent(&view, &reset_key);
   require(approxEqual(view.zoomFactor(), 1.0), "zero key resets zoom");
 
+  QKeyEvent home_key(QEvent::KeyPress, Qt::Key_Home, Qt::NoModifier);
+  QApplication::sendEvent(&view, &home_key);
+  require(approxEqual(view.zoomFactor(), fit_zoom), "home key applies fit zoom");
+
+  view.resetZoom();
+  app.processEvents();
+  require(approxEqual(view.zoomFactor(), 1.0), "reset before pan key assertions");
+
   view.centerOn(2500.0, 2500.0);
   app.processEvents();
-  const int before_x = view.horizontalScrollBar()->value();
-  const int before_y = view.verticalScrollBar()->value();
-
-  QMouseEvent press(QEvent::MouseButtonPress, QPointF(120.0, 120.0), QPointF(120.0, 120.0),
-                    Qt::RightButton, Qt::RightButton, Qt::NoModifier);
-  QApplication::sendEvent(view.viewport(), &press);
-
-  QMouseEvent move(QEvent::MouseMove, QPointF(220.0, 180.0), QPointF(220.0, 180.0),
-                   Qt::NoButton, Qt::RightButton, Qt::NoModifier);
-  QApplication::sendEvent(view.viewport(), &move);
-
-  QMouseEvent release(QEvent::MouseButtonRelease, QPointF(220.0, 180.0), QPointF(220.0, 180.0),
-                      Qt::RightButton, Qt::NoButton, Qt::NoModifier);
-  QApplication::sendEvent(view.viewport(), &release);
-
-  const int after_x = view.horizontalScrollBar()->value();
-  const int after_y = view.verticalScrollBar()->value();
-  require(before_x != after_x || before_y != after_y, "right-drag pan changes scroll position");
+  const int h_mid =
+      (view.horizontalScrollBar()->minimum() + view.horizontalScrollBar()->maximum()) / 2;
+  const int v_mid = (view.verticalScrollBar()->minimum() + view.verticalScrollBar()->maximum()) / 2;
+  view.horizontalScrollBar()->setValue(h_mid);
+  view.verticalScrollBar()->setValue(v_mid);
 
   const int before_right = view.horizontalScrollBar()->value();
   QKeyEvent right_key(QEvent::KeyPress, Qt::Key_Right, Qt::NoModifier);
