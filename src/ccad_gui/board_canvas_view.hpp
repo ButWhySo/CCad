@@ -18,10 +18,13 @@ class BoardCanvasView final : public QGraphicsView {
   static constexpr double kMaxZoomFactor = 40.0;
 
   void zoomToFit() {
-    if (scene() == nullptr || scene()->sceneRect().isEmpty()) {
+    if (scene() == nullptr || scene()->itemsBoundingRect().isEmpty()) {
       return;
     }
-    fitInView(scene()->sceneRect(), Qt::KeepAspectRatio);
+    const QRectF content = scene()->itemsBoundingRect();
+    const double pad_x = std::max(24.0, content.width() * 0.06);
+    const double pad_y = std::max(24.0, content.height() * 0.06);
+    fitInView(content.adjusted(-pad_x, -pad_y, pad_x, pad_y), Qt::KeepAspectRatio);
     zoom_factor_ = std::clamp(transform().m11(), kMinZoomFactor, kMaxZoomFactor);
     user_view_ = false;
     notifyViewportChanged();

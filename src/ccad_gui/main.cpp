@@ -8,24 +8,6 @@
 #include <QEventLoop>
 #include <filesystem>
 #include <iostream>
-#include <cstdlib>
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
-namespace {
-
-[[noreturn]] void exitScreenshotMode(const int code) {
-#ifdef _WIN32
-  TerminateProcess(GetCurrentProcess(), static_cast<UINT>(code));
-#else
-  std::_Exit(code);
-#endif
-  std::_Exit(code);
-}
-
-}  // namespace
 
 int main(int argc, char** argv) {
   QApplication app(argc, argv);
@@ -48,11 +30,11 @@ int main(int argc, char** argv) {
     if (!screenshot.save(screenshot_path)) {
       std::cerr << "failed to save GUI screenshot: " << screenshot_arg << '\n';
       std::cerr.flush();
-      exitScreenshotMode(2);
+      return 2;
     }
     std::cout << "screenshot saved: " << screenshot_arg << '\n';
     std::cout.flush();
-    exitScreenshotMode(0);
+    return 0;
   } else {
     ReviewWindow window;
     window.show();

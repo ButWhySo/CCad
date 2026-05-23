@@ -22,8 +22,19 @@ bool approxEqual(const double lhs, const double rhs) {
 int main(int argc, char** argv) {
   QApplication app(argc, argv);
 
+  QGraphicsScene fit_scene;
+  fit_scene.setSceneRect(-50000.0, -50000.0, 100000.0, 100000.0);
+  fit_scene.addRect(0.0, 0.0, 400.0, 300.0);
+
+  BoardCanvasView fit_view(&fit_scene);
+  fit_view.resize(420, 300);
+  fit_view.show();
+  app.processEvents();
+  fit_view.zoomToFit();
+  require(fit_view.zoomFactor() > 0.4, "fit uses content bounds inside oversized scene rect");
+
   QGraphicsScene scene;
-  scene.setSceneRect(0.0, 0.0, 5000.0, 5000.0);
+  scene.setSceneRect(-50000.0, -50000.0, 100000.0, 100000.0);
   scene.addRect(0.0, 0.0, 5000.0, 5000.0);
 
   BoardCanvasView view(&scene);
@@ -72,7 +83,7 @@ int main(int argc, char** argv) {
   QKeyEvent fit_key(QEvent::KeyPress, Qt::Key_F, Qt::NoModifier);
   QApplication::sendEvent(&view, &fit_key);
   const double fit_zoom = view.zoomFactor();
-  require(fit_zoom > BoardCanvasView::kMinZoomFactor, "fit key applies fit zoom");
+  require(fit_zoom < 1.0, "fit key applies fit zoom");
 
   QKeyEvent reset_key(QEvent::KeyPress, Qt::Key_0, Qt::NoModifier);
   QApplication::sendEvent(&view, &reset_key);
