@@ -7,9 +7,9 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
 - Sprint: 41
-- Branch: `sprint-41-catalog-knowledge-demo`
-- Last merged sprint: Sprint 40, component knowledge schema
-- Status: Sprint 41 implemented and verified on branch; merge pending
+- Branch: `main`
+- Last merged sprint: Sprint 41, catalog knowledge CLI visibility
+- Status: Sprint 41 merged on `main` and verified after merge
 
 ## Phase Roadmap
 
@@ -62,10 +62,11 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Sprint 38: net highlight groundwork.
 - Sprint 39: net browser highlight.
 - Sprint 40: component knowledge schema.
+- Sprint 41: catalog knowledge CLI visibility.
 
 ## Active Sprint
 
-- Sprint 41: catalog knowledge CLI visibility implemented and verified; merge pending. Use moderate sprint sizing: several related tasks per compile, not one tiny branch per small GUI affordance.
+- Sprint 42: planning pending. Use moderate sprint sizing: several related tasks per compile, not one tiny branch per small GUI affordance.
 
 ## Reporting Rule
 
