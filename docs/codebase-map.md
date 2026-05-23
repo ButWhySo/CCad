@@ -6,7 +6,7 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 
 - Phase: 2 / 6
 - Last merged sprint: Sprint 42, GUI canvas MVP review
-- Next sprint: Sprint 43, planning pending
+- Current sprint: Sprint 43, clearance DRC
 - Sprint sizing: prefer moderate branches that group several related tasks before the full clean gate; avoid one tiny branch per small GUI affordance when compile cost dominates.
 - Active branch pattern: `sprint-<n>-<topic>`
 - Current source of truth for phase/sprint counter: `docs/devops/progress.md`
@@ -233,6 +233,7 @@ Current checks:
 - unconnected track endpoints as warnings
 - pad/via/track endpoints inside rectangular keepouts
 - track segments crossing rectangular keepouts
+- fixed default 0.20 mm copper clearance between different-net pads, vias, and tracks
 - via drill larger than diameter
 - zero-length tracks
 
@@ -768,7 +769,7 @@ Rule:
 - `serialize.cpp` and `kicad_footprint_import.cpp` contain handwritten parsers. They are deterministic and tested, but keep scope narrow.
 - GUI is an early CAD editor shell, not a full editor yet.
 - No schematic-footprint mapping yet; placed footprint pads have empty nets.
-- No clearance DRC yet.
+- Clearance DRC currently uses a fixed default 0.20 mm threshold. Per-netclass and per-constraint clearance rules are later work.
 
 ## How To Add A New Feature
 

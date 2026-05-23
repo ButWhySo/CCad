@@ -1,7 +1,11 @@
 #include "ccad_core/drc.hpp"
 
+#include <algorithm>
+#include <cmath>
 #include <set>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace ccad {
 namespace {
@@ -117,6 +121,186 @@ bool isPositive(const Length& length) {
 
 bool samePoint(const Point& left, const Point& right) {
   return left.x.nanometers == right.x.nanometers && left.y.nanometers == right.y.nanometers;
+}
+
+long double distanceBetweenPoints(const Point& left, const Point& right) {
+  const long double dx = static_cast<long double>(left.x.nanometers - right.x.nanometers);
+  const long double dy = static_cast<long double>(left.y.nanometers - right.y.nanometers);
+  return std::hypotl(dx, dy);
+}
+
+long double distancePointToSegment(const Point& point, const Point& start, const Point& end) {
+  const long double px = static_cast<long double>(point.x.nanometers);
+  const long double py = static_cast<long double>(point.y.nanometers);
+  const long double sx = static_cast<long double>(start.x.nanometers);
+  const long double sy = static_cast<long double>(start.y.nanometers);
+  const long double ex = static_cast<long double>(end.x.nanometers);
+  const long double ey = static_cast<long double>(end.y.nanometers);
+  const long double dx = ex - sx;
+  const long double dy = ey - sy;
+  const long double length_squared = (dx * dx) + (dy * dy);
+  if (length_squared == 0.0L) {
+    return distanceBetweenPoints(point, start);
+  }
+  const long double raw_t = (((px - sx) * dx) + ((py - sy) * dy)) / length_squared;
+  const long double t = std::clamp(raw_t, 0.0L, 1.0L);
+  const long double closest_x = sx + (t * dx);
+  const long double closest_y = sy + (t * dy);
+  return std::hypotl(px - closest_x, py - closest_y);
+}
+
+long double distanceBetweenSegments(const Point& first_start, const Point& first_end,
+                                    const Point& second_start, const Point& second_end) {
+  if (segmentsIntersect(first_start, first_end, second_start, second_end)) {
+    return 0.0L;
+  }
+  return std::min({distancePointToSegment(first_start, second_start, second_end),
+                   distancePointToSegment(first_end, second_start, second_end),
+                   distancePointToSegment(second_start, first_start, first_end),
+                   distancePointToSegment(second_end, first_start, first_end)});
+}
+
+std::vector<Point> padCorners(const Pad& pad) {
+  constexpr long double pi = 3.141592653589793238462643383279502884L;
+  const long double radians = (static_cast<long double>(pad.rotation_degrees) * pi) / 180.0L;
+  const long double cosine = std::cos(radians);
+  const long double sine = std::sin(radians);
+  const long double center_x = static_cast<long double>(pad.position.x.nanometers);
+  const long double center_y = static_cast<long double>(pad.position.y.nanometers);
+  const long double half_width = static_cast<long double>(pad.size.width.nanometers) / 2.0L;
+  const long double half_height = static_cast<long double>(pad.size.height.nanometers) / 2.0L;
+
+  std::vector<Point> corners;
+  corners.reserve(4);
+  for (const auto& local : {std::pair<long double, long double>{-half_width, -half_height},
+                            std::pair<long double, long double>{half_width, -half_height},
+                            std::pair<long double, long double>{half_width, half_height},
+                            std::pair<long double, long double>{-half_width, half_height}}) {
+    const long double rotated_x = center_x + (local.first * cosine) - (local.second * sine);
+    const long double rotated_y = center_y + (local.first * sine) + (local.second * cosine);
+    corners.push_back(Point{.x = nanometers(static_cast<std::int64_t>(std::llround(rotated_x))),
+                            .y = nanometers(static_cast<std::int64_t>(std::llround(rotated_y)))});
+  }
+  return corners;
+}
+
+bool pointInPolygon(const Point& point, const std::vector<Point>& polygon) {
+  bool inside = false;
+  for (std::size_t i = 0, j = polygon.size() - 1; i < polygon.size(); j = i++) {
+    const long double ix = static_cast<long double>(polygon.at(i).x.nanometers);
+    const long double iy = static_cast<long double>(polygon.at(i).y.nanometers);
+    const long double jx = static_cast<long double>(polygon.at(j).x.nanometers);
+    const long double jy = static_cast<long double>(polygon.at(j).y.nanometers);
+    const long double px = static_cast<long double>(point.x.nanometers);
+    const long double py = static_cast<long double>(point.y.nanometers);
+    if (pointOnSegment(polygon.at(j), polygon.at(i), point)) {
+      return true;
+    }
+    const bool crosses_y = (iy > py) != (jy > py);
+    if (crosses_y && px < (((jx - ix) * (py - iy)) / (jy - iy)) + ix) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+bool segmentIntersectsPolygon(const Point& start, const Point& end,
+                              const std::vector<Point>& polygon) {
+  if (pointInPolygon(start, polygon) || pointInPolygon(end, polygon)) {
+    return true;
+  }
+  for (std::size_t i = 0; i < polygon.size(); ++i) {
+    const Point& edge_start = polygon.at(i);
+    const Point& edge_end = polygon.at((i + 1) % polygon.size());
+    if (segmentsIntersect(start, end, edge_start, edge_end)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+long double distancePointToPolygon(const Point& point, const std::vector<Point>& polygon) {
+  if (pointInPolygon(point, polygon)) {
+    return 0.0L;
+  }
+  long double distance = distancePointToSegment(point, polygon.at(0), polygon.at(1));
+  for (std::size_t i = 1; i < polygon.size(); ++i) {
+    distance = std::min(distance, distancePointToSegment(point, polygon.at(i),
+                                                        polygon.at((i + 1) % polygon.size())));
+  }
+  return distance;
+}
+
+long double distanceSegmentToPolygon(const Point& start, const Point& end,
+                                     const std::vector<Point>& polygon) {
+  if (segmentIntersectsPolygon(start, end, polygon)) {
+    return 0.0L;
+  }
+  long double distance = distanceBetweenSegments(start, end, polygon.at(0), polygon.at(1));
+  for (std::size_t i = 1; i < polygon.size(); ++i) {
+    distance =
+        std::min(distance, distanceBetweenSegments(start, end, polygon.at(i),
+                                                  polygon.at((i + 1) % polygon.size())));
+  }
+  return distance;
+}
+
+long double distanceBetweenPolygons(const std::vector<Point>& first,
+                                    const std::vector<Point>& second) {
+  for (std::size_t i = 0; i < first.size(); ++i) {
+    if (pointInPolygon(first.at(i), second)) {
+      return 0.0L;
+    }
+  }
+  for (std::size_t i = 0; i < second.size(); ++i) {
+    if (pointInPolygon(second.at(i), first)) {
+      return 0.0L;
+    }
+  }
+
+  long double distance = distanceBetweenSegments(first.at(0), first.at(1), second.at(0),
+                                                 second.at(1));
+  for (std::size_t first_index = 0; first_index < first.size(); ++first_index) {
+    for (std::size_t second_index = 0; second_index < second.size(); ++second_index) {
+      distance = std::min(
+          distance,
+          distanceBetweenSegments(first.at(first_index),
+                                  first.at((first_index + 1) % first.size()),
+                                  second.at(second_index),
+                                  second.at((second_index + 1) % second.size())));
+    }
+  }
+  return distance;
+}
+
+bool sameNonEmptyNet(const std::string& left, const std::string& right) {
+  return !left.empty() && left == right;
+}
+
+bool differentNonEmptyNets(const std::string& left, const std::string& right) {
+  return !left.empty() && !right.empty() && left != right;
+}
+
+bool isCopperLayer(const Board& board, const std::string& layer_id) {
+  for (const Layer& layer : board.layers) {
+    if (layer.id == layer_id) {
+      return layer.kind == "copper";
+    }
+  }
+  return false;
+}
+
+bool shareCopperLayer(const Board& board, const std::string& left_layer,
+                      const std::string& right_layer) {
+  return left_layer == right_layer && isCopperLayer(board, left_layer);
+}
+
+void addClearanceDiagnostic(std::vector<Diagnostic>& diagnostics, const std::string& checked_id,
+                            const std::string& other_id) {
+  diagnostics.push_back(makeDiagnostic("COPPER_CLEARANCE",
+                                       "Different-net copper is closer than default clearance to " +
+                                           other_id,
+                                       checked_id));
 }
 
 bool endpointTouchesSameNetPrimitive(const Board& board, const TrackSegment& source_track,
@@ -272,6 +456,110 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
   }
 }
 
+void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  constexpr std::int64_t default_clearance_nm = 200000;
+  constexpr long double default_clearance = static_cast<long double>(default_clearance_nm);
+
+  for (std::size_t left = 0; left < board.pads.size(); ++left) {
+    for (std::size_t right = left + 1; right < board.pads.size(); ++right) {
+      const Pad& left_pad = board.pads.at(left);
+      const Pad& right_pad = board.pads.at(right);
+      if (sameNonEmptyNet(left_pad.net_id, right_pad.net_id) ||
+          !differentNonEmptyNets(left_pad.net_id, right_pad.net_id) ||
+          !shareCopperLayer(board, left_pad.layer_id, right_pad.layer_id)) {
+        continue;
+      }
+      if (distanceBetweenPolygons(padCorners(left_pad), padCorners(right_pad)) <
+          default_clearance) {
+        addClearanceDiagnostic(diagnostics, right_pad.id, left_pad.id);
+      }
+    }
+  }
+
+  for (std::size_t left = 0; left < board.tracks.size(); ++left) {
+    for (std::size_t right = left + 1; right < board.tracks.size(); ++right) {
+      const TrackSegment& left_track = board.tracks.at(left);
+      const TrackSegment& right_track = board.tracks.at(right);
+      if (sameNonEmptyNet(left_track.net_id, right_track.net_id) ||
+          !differentNonEmptyNets(left_track.net_id, right_track.net_id) ||
+          !shareCopperLayer(board, left_track.layer_id, right_track.layer_id)) {
+        continue;
+      }
+      const long double edge_distance =
+          distanceBetweenSegments(left_track.start, left_track.end, right_track.start,
+                                  right_track.end) -
+          (static_cast<long double>(left_track.width.nanometers) / 2.0L) -
+          (static_cast<long double>(right_track.width.nanometers) / 2.0L);
+      if (edge_distance < default_clearance) {
+        addClearanceDiagnostic(diagnostics, right_track.id, left_track.id);
+      }
+    }
+  }
+
+  for (const Pad& pad : board.pads) {
+    for (const TrackSegment& track : board.tracks) {
+      if (sameNonEmptyNet(pad.net_id, track.net_id) ||
+          !differentNonEmptyNets(pad.net_id, track.net_id) ||
+          !shareCopperLayer(board, pad.layer_id, track.layer_id)) {
+        continue;
+      }
+      const long double edge_distance =
+          distanceSegmentToPolygon(track.start, track.end, padCorners(pad)) -
+          (static_cast<long double>(track.width.nanometers) / 2.0L);
+      if (edge_distance < default_clearance) {
+        addClearanceDiagnostic(diagnostics, track.id, pad.id);
+      }
+    }
+  }
+
+  for (std::size_t left = 0; left < board.vias.size(); ++left) {
+    for (std::size_t right = left + 1; right < board.vias.size(); ++right) {
+      const Via& left_via = board.vias.at(left);
+      const Via& right_via = board.vias.at(right);
+      if (sameNonEmptyNet(left_via.net_id, right_via.net_id) ||
+          !differentNonEmptyNets(left_via.net_id, right_via.net_id)) {
+        continue;
+      }
+      const long double edge_distance =
+          distanceBetweenPoints(left_via.position, right_via.position) -
+          (static_cast<long double>(left_via.diameter.nanometers) / 2.0L) -
+          (static_cast<long double>(right_via.diameter.nanometers) / 2.0L);
+      if (edge_distance < default_clearance) {
+        addClearanceDiagnostic(diagnostics, right_via.id, left_via.id);
+      }
+    }
+  }
+
+  for (const Via& via : board.vias) {
+    for (const Pad& pad : board.pads) {
+      if (sameNonEmptyNet(via.net_id, pad.net_id) ||
+          !differentNonEmptyNets(via.net_id, pad.net_id) || !isCopperLayer(board, pad.layer_id)) {
+        continue;
+      }
+      const long double edge_distance =
+          distancePointToPolygon(via.position, padCorners(pad)) -
+          (static_cast<long double>(via.diameter.nanometers) / 2.0L);
+      if (edge_distance < default_clearance) {
+        addClearanceDiagnostic(diagnostics, via.id, pad.id);
+      }
+    }
+    for (const TrackSegment& track : board.tracks) {
+      if (sameNonEmptyNet(via.net_id, track.net_id) ||
+          !differentNonEmptyNets(via.net_id, track.net_id) ||
+          !isCopperLayer(board, track.layer_id)) {
+        continue;
+      }
+      const long double edge_distance =
+          distancePointToSegment(via.position, track.start, track.end) -
+          (static_cast<long double>(via.diameter.nanometers) / 2.0L) -
+          (static_cast<long double>(track.width.nanometers) / 2.0L);
+      if (edge_distance < default_clearance) {
+        addClearanceDiagnostic(diagnostics, via.id, track.id);
+      }
+    }
+  }
+}
+
 }  // namespace
 
 std::vector<Diagnostic> runDrc(const Project& project) {
@@ -284,6 +572,7 @@ std::vector<Diagnostic> runDrc(const Project& project) {
   checkPads(project, board, diagnostics);
   checkVias(project, board, diagnostics);
   checkTracks(project, board, diagnostics);
+  checkCopperClearance(board, diagnostics);
   return diagnostics;
 }
 
