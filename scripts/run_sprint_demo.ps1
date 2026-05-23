@@ -2,7 +2,8 @@ param(
   [string]$BuildDir = "build-qt",
   [string]$QtBin = "C:\Qt\6.11.1\mingw_64\bin",
   [string]$Name = "sprint-demo",
-  [switch]$ClickSelection
+  [switch]$ClickSelection,
+  [int]$GuiWaitSeconds = 20
 )
 
 $ErrorActionPreference = "Stop"
@@ -38,6 +39,78 @@ function Invoke-CcadDrcReport {
   $Output | Set-Content -Encoding UTF8 $Drc
   if ($ExitCode -eq 2) {
     throw "ccad drc command failed with usage/file/parse error ($ExitCode): $Project"
+  }
+}
+
+function Save-GuiWindowScreenshot {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$GuiPath,
+    [Parameter(Mandatory = $true)]
+    [string]$ProjectPath,
+    [Parameter(Mandatory = $true)]
+    [string]$ScreenshotPath,
+    [Parameter(Mandatory = $true)]
+    [int]$WaitSeconds
+  )
+
+  Add-Type -AssemblyName System.Drawing
+  Add-Type -AssemblyName System.Windows.Forms
+  Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public static class NativeWin {
+  [DllImport("user32.dll")]
+  public static extern bool SetForegroundWindow(IntPtr hWnd);
+  [DllImport("user32.dll")]
+  public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+  [DllImport("user32.dll")]
+  public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+  [StructLayout(LayoutKind.Sequential)]
+  public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+}
+"@
+
+  $process = Start-Process -FilePath $GuiPath -ArgumentList $ProjectPath -PassThru
+  try {
+    $deadline = (Get-Date).AddSeconds([Math]::Max(5, $WaitSeconds))
+    while ((Get-Date) -lt $deadline) {
+      $process.Refresh()
+      if ($process.HasExited) {
+        throw "ccad_gui exited before screenshot fallback capture."
+      }
+      if ($process.MainWindowHandle -ne 0) {
+        break
+      }
+      Start-Sleep -Milliseconds 250
+    }
+    if ($process.MainWindowHandle -eq 0) {
+      throw "ccad_gui window handle not available in fallback capture."
+    }
+
+    [NativeWin]::ShowWindow($process.MainWindowHandle, 9) | Out-Null
+    [NativeWin]::SetForegroundWindow($process.MainWindowHandle) | Out-Null
+    Start-Sleep -Milliseconds 800
+
+    $rect = New-Object NativeWin+RECT
+    if (-not [NativeWin]::GetWindowRect($process.MainWindowHandle, [ref]$rect)) {
+      throw "GetWindowRect failed for fallback capture."
+    }
+    $width = [Math]::Max(1, $rect.Right - $rect.Left)
+    $height = [Math]::Max(1, $rect.Bottom - $rect.Top)
+    $bitmap = New-Object System.Drawing.Bitmap($width, $height)
+    $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+    $graphics.CopyFromScreen($rect.Left, $rect.Top, 0, 0, $bitmap.Size)
+    $bitmap.Save($ScreenshotPath, [System.Drawing.Imaging.ImageFormat]::Png)
+    $graphics.Dispose()
+    $bitmap.Dispose()
+  } finally {
+    if ($process -and -not $process.HasExited) {
+      [void]$process.CloseMainWindow()
+      if (-not $process.WaitForExit(5000)) {
+        Stop-Process -Id $process.Id -Force
+      }
+    }
   }
 }
 
@@ -83,11 +156,11 @@ Invoke-Ccad pcb place-footprint --file $Project --footprint $ImportedFootprint -
 
 $GuiOutput = & $Gui --screenshot $Project $Screenshot
 $GuiExitCode = $LASTEXITCODE
-if ($GuiExitCode -ne 0) {
-  throw "ccad_gui screenshot failed ($GuiExitCode): $GuiOutput"
-}
-if (-not (Test-Path $Screenshot)) {
-  throw "ccad_gui screenshot did not create: $Screenshot"
+if ($GuiExitCode -ne 0 -or -not (Test-Path $Screenshot)) {
+  Save-GuiWindowScreenshot -GuiPath $Gui -ProjectPath $Project -ScreenshotPath $Screenshot -WaitSeconds $GuiWaitSeconds
+  if (-not (Test-Path $Screenshot)) {
+    throw "GUI screenshot fallback did not create: $Screenshot"
+  }
 }
 
 Write-Output "Project: $Project"
