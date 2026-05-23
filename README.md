@@ -33,6 +33,18 @@ Progress counter: Phase 2 / 6, Sprint 43 merged and verified on `main`; Sprint 4
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
 
+## Git History Policy
+
+For public GitHub publishing, internal markdown guidance files are kept locally for human and agent workflow but are removed from Git tracking; only `README.md` stays tracked as markdown.
+
+When publishing a clean snapshot to an empty remote, never orphan long-term `main` history without reconnecting lineage. If a root snapshot commit is used, immediately attach the prior lineage with a non-rewriting merge, for example:
+
+```bash
+git merge --allow-unrelated-histories -s ours <full-history-branch> -m "merge: restore historical lineage onto public main"
+```
+
+This keeps the current public tree intact while restoring commit-log continuity for `git log`, debugging, and agent context retrieval.
+
 ## Setup
 
 Install CMake and a C++20 compiler, then build the core/CLI/test targets:
