@@ -42,6 +42,10 @@ Result: passed. The clean Qt build completed 72 steps and CTest passed 11 of 11 
 
 No GUI screenshot is required for this sprint because the work is catalog schema/search behavior. The visible output is deterministic catalog JSON and local search results.
 
+## Merge Status
+
+Merged to `main` after branch verification. Post-merge clean Qt build and CTest passed on `main`.
+
 ## Definition Of Done
 
 The sprint is done when catalog tests cover round-trip serialization, search over the new knowledge fields, invalid review status diagnostics, documentation updates, full clean Qt build, full CTest pass, and merge back to `main`.
