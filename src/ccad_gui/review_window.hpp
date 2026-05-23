@@ -27,6 +27,7 @@ class ReviewWindow final : public QMainWindow {
   void applyStyle();
   void openProject();
   void reloadProject();
+  void showNavigationHelp();
   void renderReview(const ccad::ProjectReview& review);
   void renderCanvas(const ccad::CanvasScene& scene,
                     const std::vector<ccad::Diagnostic>& diagnostics = {});
