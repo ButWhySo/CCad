@@ -76,6 +76,7 @@ class BoardCanvasView final : public QGraphicsView {
   void mousePressEvent(QMouseEvent* event) override {
     const bool pan_gesture = event->button() == Qt::MiddleButton ||
                              event->button() == Qt::RightButton ||
+                             (event->button() == Qt::LeftButton && space_pan_mode_) ||
                              (event->button() == Qt::LeftButton &&
                               (event->modifiers() & Qt::KeyboardModifier::ShiftModifier));
     if (pan_gesture) {
@@ -138,10 +139,29 @@ class BoardCanvasView final : public QGraphicsView {
         panByPixels(0, pan_step_pixels);
         event->accept();
         return;
+      case Qt::Key::Key_Space:
+        space_pan_mode_ = true;
+        if (!panning_) {
+          viewport()->setCursor(Qt::OpenHandCursor);
+        }
+        event->accept();
+        return;
       default:
         break;
     }
     QGraphicsView::keyPressEvent(event);
+  }
+
+  void keyReleaseEvent(QKeyEvent* event) override {
+    if (event->key() == Qt::Key::Key_Space) {
+      space_pan_mode_ = false;
+      if (!panning_) {
+        viewport()->unsetCursor();
+      }
+      event->accept();
+      return;
+    }
+    QGraphicsView::keyReleaseEvent(event);
   }
 
  private:
@@ -184,6 +204,7 @@ class BoardCanvasView final : public QGraphicsView {
   double zoom_factor_ = 1.0;
   bool user_view_ = false;
   bool panning_ = false;
+  bool space_pan_mode_ = false;
   QPoint pan_last_pos_;
   std::function<void(QPointF, double)> coordinate_callback_;
 };
