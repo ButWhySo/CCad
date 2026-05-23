@@ -2,7 +2,7 @@
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 43, `sprint-43-clearance-drc`, verified on feature branch.
+Progress: Phase 2/6, Sprint 43, `main`, merged and verified after merge.
 
 ## Goal
 

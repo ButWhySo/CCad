@@ -7,9 +7,9 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
 - Sprint: 43
-- Branch: `sprint-43-clearance-drc`
-- Last merged sprint: Sprint 42, GUI canvas MVP review
-- Status: Sprint 43 verified on feature branch; commit and merge pending
+- Branch: `main`
+- Last merged sprint: Sprint 43, clearance DRC
+- Status: Sprint 43 merged on `main` and verified after merge
 
 ## Phase Roadmap
 
@@ -64,10 +64,11 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 - Sprint 40: component knowledge schema.
 - Sprint 41: catalog knowledge CLI visibility.
 - Sprint 42: GUI canvas MVP review and app-owned screenshot harness.
+- Sprint 43: clearance DRC.
 
 ## Active Sprint
 
-- Sprint 43: clearance DRC. Use moderate sprint sizing: several related tasks per compile, not one tiny branch per small GUI affordance.
+- Sprint 44: planning pending. Use moderate sprint sizing: several related tasks per compile, not one tiny branch per small GUI affordance.
 
 ## Reporting Rule
 
