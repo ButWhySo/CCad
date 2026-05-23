@@ -2,7 +2,7 @@
 
 ## Progress
 
-Progress: Phase 2/6, Sprint 42, `sprint-42-gui-canvas-mvp-review`, verified on feature branch.
+Progress: Phase 2/6, Sprint 42, `main`, merged and verified after merge.
 
 ## Goal
 
