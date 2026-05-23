@@ -3,20 +3,25 @@
 #include <QGraphicsView>
 #include <QMouseEvent>
 #include <QResizeEvent>
+#include <QScrollBar>
 #include <QWheelEvent>
 
+#include <algorithm>
+#include <cmath>
 #include <functional>
 
 class BoardCanvasView final : public QGraphicsView {
  public:
   using QGraphicsView::QGraphicsView;
+  static constexpr double kMinZoomFactor = 0.05;
+  static constexpr double kMaxZoomFactor = 40.0;
 
   void zoomToFit() {
     if (scene() == nullptr || scene()->sceneRect().isEmpty()) {
       return;
     }
     fitInView(scene()->sceneRect(), Qt::KeepAspectRatio);
-    zoom_factor_ = transform().m11();
+    zoom_factor_ = std::clamp(transform().m11(), kMinZoomFactor, kMaxZoomFactor);
     user_view_ = false;
     notifyViewportChanged();
   }
@@ -49,30 +54,47 @@ class BoardCanvasView final : public QGraphicsView {
   }
 
   void mouseMoveEvent(QMouseEvent* event) override {
+    if (panning_) {
+      const QPoint delta = event->pos() - pan_last_pos_;
+      if (horizontalScrollBar() != nullptr) {
+        horizontalScrollBar()->setValue(horizontalScrollBar()->value() - delta.x());
+      }
+      if (verticalScrollBar() != nullptr) {
+        verticalScrollBar()->setValue(verticalScrollBar()->value() - delta.y());
+      }
+      pan_last_pos_ = event->pos();
+      user_view_ = true;
+      notifyViewportChanged(event->pos());
+      event->accept();
+      return;
+    }
     QGraphicsView::mouseMoveEvent(event);
     notifyViewportChanged(event->pos());
   }
 
   void mousePressEvent(QMouseEvent* event) override {
-    if (event->button() == Qt::MiddleButton) {
-      setDragMode(QGraphicsView::ScrollHandDrag);
-      auto left_event = QMouseEvent(event->type(), event->position(), event->scenePosition(),
-                                    event->globalPosition(), Qt::LeftButton, Qt::LeftButton,
-                                    event->modifiers());
-      QGraphicsView::mousePressEvent(&left_event);
+    const bool pan_gesture = event->button() == Qt::MiddleButton ||
+                             event->button() == Qt::RightButton ||
+                             (event->button() == Qt::LeftButton &&
+                              (event->modifiers() & Qt::KeyboardModifier::ShiftModifier));
+    if (pan_gesture) {
+      panning_ = true;
+      pan_last_pos_ = event->pos();
+      viewport()->setCursor(Qt::ClosedHandCursor);
       user_view_ = true;
+      event->accept();
       return;
     }
     QGraphicsView::mousePressEvent(event);
   }
 
   void mouseReleaseEvent(QMouseEvent* event) override {
-    if (event->button() == Qt::MiddleButton) {
-      auto left_event = QMouseEvent(event->type(), event->position(), event->scenePosition(),
-                                    event->globalPosition(), Qt::LeftButton, Qt::NoButton,
-                                    event->modifiers());
-      QGraphicsView::mouseReleaseEvent(&left_event);
-      setDragMode(QGraphicsView::NoDrag);
+    if (panning_ && (event->button() == Qt::MiddleButton || event->button() == Qt::RightButton ||
+                     event->button() == Qt::LeftButton)) {
+      panning_ = false;
+      viewport()->unsetCursor();
+      notifyViewportChanged(event->pos());
+      event->accept();
       return;
     }
     QGraphicsView::mouseReleaseEvent(event);
@@ -80,8 +102,16 @@ class BoardCanvasView final : public QGraphicsView {
 
  private:
   void zoomBy(const double factor) {
-    scale(factor, factor);
-    zoom_factor_ = transform().m11();
+    const double target = std::clamp(zoom_factor_ * factor, kMinZoomFactor, kMaxZoomFactor);
+    if (zoom_factor_ <= 0.0) {
+      zoom_factor_ = transform().m11();
+    }
+    const double relative = target / zoom_factor_;
+    if (std::abs(relative - 1.0) < 0.0001) {
+      return;
+    }
+    scale(relative, relative);
+    zoom_factor_ = target;
     user_view_ = true;
     notifyViewportChanged();
   }
@@ -98,5 +128,7 @@ class BoardCanvasView final : public QGraphicsView {
 
   double zoom_factor_ = 1.0;
   bool user_view_ = false;
+  bool panning_ = false;
+  QPoint pan_last_pos_;
   std::function<void(QPointF, double)> coordinate_callback_;
 };

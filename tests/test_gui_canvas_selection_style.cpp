@@ -41,6 +41,9 @@ int main(int argc, char** argv) {
 
   QGraphicsScene scene;
   renderBoardCanvas(scene, selectionScene());
+  const QRectF scene_rect = scene.sceneRect();
+  require(scene_rect.width() > (20.0 * 10.0), "scene rect is wider than board width for pan room");
+  require(scene_rect.height() > (20.0 * 10.0), "scene rect is taller than board height for pan room");
 
   bool saw_track = false;
   bool saw_pad = false;
