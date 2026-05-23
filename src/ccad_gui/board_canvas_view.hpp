@@ -120,6 +120,7 @@ class BoardCanvasView final : public QGraphicsView {
         event->accept();
         return;
       case Qt::Key::Key_F:
+      case Qt::Key::Key_Home:
         zoomToFit();
         event->accept();
         return;

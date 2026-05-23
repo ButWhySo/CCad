@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 49 merged and verified on `main`; Sprint 50 planning. See `docs/devops/progress.md`.
+Progress counter: Phase 2 / 6, Sprint 50 merged and verified on `main`; Sprint 51 planning. See `docs/devops/progress.md`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -32,7 +32,7 @@ Progress counter: Phase 2 / 6, Sprint 49 merged and verified on `main`; Sprint 5
 - Native GUI has an internal `--screenshot` harness for sprint-end visual QA without foreground-window capture.
 - Native GUI canvas supports CAD-style pan with middle-drag, right-drag, or Shift+left-drag, plus clamped wheel zoom and expanded scene navigation bounds.
 - GUI panel/canvas test binaries are now registered in CTest and run in the default `ctest` gate.
-- Native GUI canvas supports keyboard navigation: `+`, `-`, `0`, `F`, arrow-key panning, and `W/A/S/D` panning.
+- Native GUI canvas supports keyboard navigation: `+`, `-`, `0`, `F`, `Home`, arrow-key panning, and `W/A/S/D` panning.
 - Native GUI canvas supports hold-space hand-pan mode with left-drag.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
