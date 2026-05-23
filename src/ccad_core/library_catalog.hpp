@@ -24,6 +24,10 @@ struct LibraryItem {
   std::string sha256;
   std::string license;
   std::string provenance;
+  std::string usage_summary;
+  std::vector<std::string> layout_notes;
+  std::string source_confidence;
+  std::string review_status;
   std::vector<std::string> warnings;
 };
 

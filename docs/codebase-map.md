@@ -6,7 +6,7 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 
 - Phase: 2 / 6
 - Last merged sprint: Sprint 39, net browser highlight
-- Next sprint: Sprint 40, planning pending
+- Active sprint: Sprint 40, component knowledge schema
 - Sprint sizing: prefer moderate branches that group several related tasks before the full clean gate; avoid one tiny branch per small GUI affordance when compile cost dominates.
 - Active branch pattern: `sprint-<n>-<topic>`
 - Current source of truth for phase/sprint counter: `docs/devops/progress.md`
@@ -23,6 +23,14 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 cmake --build build-qt --clean-first
 ctest --test-dir build-qt --output-on-failure
 ```
+
+- On Windows, run Qt-linked tests and GUI programs with Qt's `bin` directory first on `PATH`:
+
+```cmd
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && ctest --test-dir build-qt --output-on-failure"
+```
+
+- If CTest reports Windows loader error `0xc0000139` before test output appears, treat it as a runtime DLL resolution problem first. Check `cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && where Qt6Core.dll"` and make sure the Qt DLL from `C:\Qt\6.11.1\mingw_64\bin` is first.
 
 - Every commit/merge status update must include:
 
@@ -384,6 +392,10 @@ struct LibraryItem {
   std::string sha256;
   std::string license;
   std::string provenance;
+  std::string usage_summary;
+  std::vector<std::string> layout_notes;
+  std::string source_confidence;
+  std::string review_status;
   std::vector<std::string> warnings;
 };
 ```
@@ -409,7 +421,11 @@ Rules:
 - KiCad and mirror libraries are source data.
 - CCad runtime should query native catalog records, not repeatedly fetch or parse raw upstream files.
 - Huge local caches belong under ignored paths such as `library-cache/` or `catalog-cache/`, not the main source tree.
-- Every imported item must preserve source path, source commit/hash, checksum, license, provenance, and warnings.
+- Every imported item must preserve source path, source commit/hash, checksum, license, provenance, warnings, and any available component-knowledge fields.
+- `usage_summary` and `layout_notes` are local agent-facing knowledge fields for choosing and placing components.
+- `source_confidence` records where the knowledge came from. Keep it descriptive until the ingestion taxonomy is formalized.
+- `review_status` is a controlled curation field. Current accepted values are `generated`, `needs_review`, `reviewed`, and `rejected`.
+- Catalog search indexes identity, paths, usage summary, layout notes, source confidence, and review status.
 
 ## CLI Files
 

@@ -47,10 +47,12 @@ The initial codebase is C++20:
 - KiCad footprint import supports a basic `.kicad_mod` pad subset and treats files strictly as data.
 - Native library catalog metadata supports local/offline CCad-compatible catalogs with provenance and checksum fields.
 - `ccad lib catalog-info` and `ccad lib catalog-find` expose local catalog metadata to agents without network fetches.
-- `ccad lib catalog-search` provides local text search over catalog ID, kind, name, source path, and native path.
+- `ccad lib catalog-search` provides local text search over catalog ID, kind, name, source path, native path, usage summary, layout notes, source confidence, and review status.
 - `ccad lib catalog-search --kind <kind>` restricts local search to one catalog item kind.
 - `ccad lib catalog-validate` validates required metadata and duplicate item IDs before a catalog is trusted.
 - `ccad lib catalog-validate --root <dir>` verifies local native catalog artifacts by existence and SHA-256.
+- Catalog items can preserve component-knowledge fields: `usage_summary`, `layout_notes`, `source_confidence`, and `review_status`.
+- `review_status` is validated when present and currently accepts `generated`, `needs_review`, `reviewed`, and `rejected`.
 - Footprint placement can rotate pads and preserve logical net IDs when project nets contain matching component/pin members.
 - Physical DRC currently covers duplicate IDs, unknown layers/nets, outline bounds, invalid dimensions, empty net warnings, track endpoint connectivity warnings, rectangular keepout occupancy/crossing violations, drill/diameter sanity, and zero-length tracks.
 
@@ -97,6 +99,18 @@ cmake -S . -B build-qt -DCCAD_WARNINGS_AS_ERRORS=ON -DCCAD_BUILD_GUI=ON -DCMAKE_
 cmake --build build-qt
 $env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
 .\build-qt\ccad_gui.exe
+```
+
+For `cmd.exe` or agents that prefer one-line commands, use the same runtime environment explicitly:
+
+```cmd
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-failure"
+```
+
+If a built test or GUI executable fails before printing test output with Windows status `0xc0000139`, debug it as a loader/DLL problem first. The most common cause in this repo is running a Qt-linked executable without `C:\Qt\6.11.1\mingw_64\bin` first on `PATH`, or with another incompatible Qt DLL earlier on `PATH`. Confirm the DLL resolution order with:
+
+```cmd
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && where Qt6Core.dll"
 ```
 
 ## CI/CD

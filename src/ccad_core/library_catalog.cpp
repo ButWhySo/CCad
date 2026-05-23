@@ -27,6 +27,20 @@ void writeField(std::ostringstream& out, const int indent, const std::string& ke
   out << '\n';
 }
 
+void writeStringArray(std::ostringstream& out, const int indent, const std::string& key,
+                      const std::vector<std::string>& values, const bool comma = true) {
+  out << std::string(indent, ' ') << '"' << key << "\": [\n";
+  for (std::size_t i = 0; i < values.size(); ++i) {
+    out << std::string(indent + 2, ' ') << '"' << escapeJson(values.at(i)) << '"'
+        << (i + 1 == values.size() ? "" : ",") << '\n';
+  }
+  out << std::string(indent, ' ') << ']';
+  if (comma) {
+    out << ',';
+  }
+  out << '\n';
+}
+
 std::string lowercase(std::string value) {
   std::transform(value.begin(), value.end(), value.begin(), [](const unsigned char ch) {
     return static_cast<char>(std::tolower(ch));
@@ -259,6 +273,14 @@ class CatalogJsonReader {
         item.license = readString();
       } else if (key == "provenance") {
         item.provenance = readString();
+      } else if (key == "usage_summary") {
+        item.usage_summary = readString();
+      } else if (key == "layout_notes") {
+        item.layout_notes = readStringArray();
+      } else if (key == "source_confidence") {
+        item.source_confidence = readString();
+      } else if (key == "review_status") {
+        item.review_status = readString();
       } else if (key == "warnings") {
         item.warnings = readStringArray();
       } else {
@@ -415,12 +437,11 @@ std::string dumpLibraryCatalogJson(const LibraryCatalog& catalog) {
     writeField(out, 6, "sha256", item.sha256);
     writeField(out, 6, "license", item.license);
     writeField(out, 6, "provenance", item.provenance);
-    out << "      \"warnings\": [\n";
-    for (std::size_t j = 0; j < item.warnings.size(); ++j) {
-      out << "        \"" << escapeJson(item.warnings.at(j)) << "\""
-          << (j + 1 == item.warnings.size() ? "" : ",") << '\n';
-    }
-    out << "      ]\n";
+    writeField(out, 6, "usage_summary", item.usage_summary);
+    writeStringArray(out, 6, "layout_notes", item.layout_notes);
+    writeField(out, 6, "source_confidence", item.source_confidence);
+    writeField(out, 6, "review_status", item.review_status);
+    writeStringArray(out, 6, "warnings", item.warnings, false);
     out << "    }" << (i + 1 == catalog.items.size() ? "" : ",") << '\n';
   }
   out << "  ]\n";
@@ -466,8 +487,18 @@ std::vector<const LibraryItem*> searchLibraryItems(const LibraryCatalog& catalog
         containsCaseInsensitive(item.name, normalized_query) ||
         containsCaseInsensitive(item.kind, normalized_query) ||
         containsCaseInsensitive(item.source_path, normalized_query) ||
-        containsCaseInsensitive(item.native_path, normalized_query)) {
+        containsCaseInsensitive(item.native_path, normalized_query) ||
+        containsCaseInsensitive(item.usage_summary, normalized_query) ||
+        containsCaseInsensitive(item.source_confidence, normalized_query) ||
+        containsCaseInsensitive(item.review_status, normalized_query)) {
       matches.push_back(&item);
+      continue;
+    }
+    for (const std::string& note : item.layout_notes) {
+      if (containsCaseInsensitive(note, normalized_query)) {
+        matches.push_back(&item);
+        break;
+      }
     }
   }
   return matches;
@@ -510,6 +541,13 @@ std::vector<CatalogDiagnostic> validateLibraryCatalog(const LibraryCatalog& cata
     if (item.provenance.empty()) {
       addDiagnostic(diagnostics, "MISSING_ITEM_PROVENANCE",
                     "Library item has no provenance metadata", item.id);
+    }
+    if (!item.review_status.empty()) {
+      if (item.review_status != "generated" && item.review_status != "needs_review" &&
+          item.review_status != "reviewed" && item.review_status != "rejected") {
+        addDiagnostic(diagnostics, "INVALID_REVIEW_STATUS",
+                      "Library item has invalid review status", item.id);
+      }
     }
   }
   return diagnostics;
