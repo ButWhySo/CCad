@@ -18,22 +18,26 @@ class BoardCanvasView final : public QGraphicsView {
     fitInView(scene()->sceneRect(), Qt::KeepAspectRatio);
     zoom_factor_ = transform().m11();
     user_view_ = false;
+    notifyViewportChanged();
   }
 
   double zoomFactor() const { return zoom_factor_; }
   void setCoordinateCallback(std::function<void(QPointF, double)> callback) {
     coordinate_callback_ = std::move(callback);
   }
+  void zoomIn() { zoomBy(1.18); }
+  void zoomOut() { zoomBy(1.0 / 1.18); }
+  void resetZoom() {
+    resetTransform();
+    zoom_factor_ = 1.0;
+    user_view_ = true;
+    notifyViewportChanged();
+  }
 
  protected:
   void wheelEvent(QWheelEvent* event) override {
-    constexpr double zoom_in = 1.18;
-    constexpr double zoom_out = 1.0 / zoom_in;
-    const double factor = event->angleDelta().y() > 0 ? zoom_in : zoom_out;
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-    scale(factor, factor);
-    zoom_factor_ = transform().m11();
-    user_view_ = true;
+    zoomBy(event->angleDelta().y() > 0 ? 1.18 : 1.0 / 1.18);
     event->accept();
   }
 
@@ -46,9 +50,7 @@ class BoardCanvasView final : public QGraphicsView {
 
   void mouseMoveEvent(QMouseEvent* event) override {
     QGraphicsView::mouseMoveEvent(event);
-    if (coordinate_callback_) {
-      coordinate_callback_(mapToScene(event->pos()), zoom_factor_);
-    }
+    notifyViewportChanged(event->pos());
   }
 
   void mousePressEvent(QMouseEvent* event) override {
@@ -77,6 +79,23 @@ class BoardCanvasView final : public QGraphicsView {
   }
 
  private:
+  void zoomBy(const double factor) {
+    scale(factor, factor);
+    zoom_factor_ = transform().m11();
+    user_view_ = true;
+    notifyViewportChanged();
+  }
+
+  void notifyViewportChanged() {
+    notifyViewportChanged(viewport()->rect().center());
+  }
+
+  void notifyViewportChanged(const QPoint& viewport_position) {
+    if (coordinate_callback_) {
+      coordinate_callback_(mapToScene(viewport_position), zoom_factor_);
+    }
+  }
+
   double zoom_factor_ = 1.0;
   bool user_view_ = false;
   std::function<void(QPointF, double)> coordinate_callback_;

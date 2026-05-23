@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 39 merged; Sprint 40 planning. See `docs/devops/progress.md`.
+Progress counter: Phase 2 / 6, Sprint 42 in progress on `sprint-42-gui-canvas-mvp-review`. See `docs/devops/progress.md`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -28,6 +28,8 @@ Progress counter: Phase 2 / 6, Sprint 39 merged; Sprint 40 planning. See `docs/d
 - Native GUI has read-only transaction timeline panel groundwork.
 - Native GUI canvas items expose net metadata for net highlight groundwork.
 - Native GUI object browser has net rows for net-selection workflow.
+- Native GUI canvas toolbar has Fit, Zoom Out, Zoom In, and 100% review controls.
+- Native GUI has an internal `--screenshot` harness for sprint-end visual QA without foreground-window capture.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
 
@@ -445,17 +447,18 @@ $env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
 Generate demo artifacts and a GUI screenshot:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\run_sprint_demo.ps1 -Name sprint7-drc-demo
+powershell -ExecutionPolicy Bypass -File .\scripts\run_sprint_demo.ps1 -Name sprint42-gui-canvas-mvp-review
 ```
 
 What it does:
 
-- Creates `artifacts/demos/sprint7-drc-demo.ccad.json`.
+- Creates `artifacts/demos/sprint42-gui-canvas-mvp-review.ccad.json`.
 - Adds a pad, via, track, and rectangular keepout through the CLI.
 - Writes inspect, validate, and DRC JSON reports.
 - Writes a sample KiCad `.kicad_mod` file and imports it to CCad footprint JSON.
 - Places the imported footprint onto the demo board.
-- Launches the Qt GUI and saves a screenshot under `artifacts/screenshots/`.
+- Launches the Qt GUI through `ccad_gui --screenshot`, waits 20 seconds for load/render events, and saves a screenshot under `artifacts/screenshots/`.
+- Uses the app's own Qt screenshot mode instead of capturing or killing the foreground desktop window.
 
 When to run:
 

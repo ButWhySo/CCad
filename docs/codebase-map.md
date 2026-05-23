@@ -6,7 +6,7 @@ This is the first file a memory-loss agent should read after `AGENTS.md`. It exp
 
 - Phase: 2 / 6
 - Last merged sprint: Sprint 41, catalog knowledge CLI visibility
-- Next sprint: Sprint 42, planning pending
+- Current sprint: Sprint 42, GUI canvas MVP review
 - Sprint sizing: prefer moderate branches that group several related tasks before the full clean gate; avoid one tiny branch per small GUI affordance when compile cost dominates.
 - Active branch pattern: `sprint-<n>-<topic>`
 - Current source of truth for phase/sprint counter: `docs/devops/progress.md`
@@ -571,6 +571,14 @@ Owns:
 int main(int argc, char** argv);
 ```
 
+Also owns the local GUI screenshot harness:
+
+```cmd
+build-qt\ccad_gui.exe --screenshot <project.ccad.json> <out.png>
+```
+
+The harness loads the project, shows the native Qt window, processes GUI events for 20 seconds, grabs the window through Qt, writes the PNG, and exits the launched process. Keep this path independent of foreground-window capture so it never steals or kills the user's active application.
+
 ### `src/ccad_gui/review_window.hpp/.cpp`
 
 Owns native review window, menus, toolbar, summary cards, diagnostics table, file loading, and calls into canvas renderer.
@@ -669,6 +677,7 @@ Rule:
 - The browser renders `CanvasScene` metadata only. It must not parse project JSON, own board state, or mutate design objects.
 - Object rows carry stable canvas object IDs so the main window can select matching PCB canvas items without duplicating geometry knowledge.
 - Net rows summarize non-empty net IDs from pads, vias, and tracks, then activate canvas net selection by stable net ID.
+- Do not populate placeholder rows in the constructor; render rows only through `renderScene` so project-load refreshes do not clear constructor-owned items during window startup.
 
 ### `src/ccad_gui/board_canvas_renderer.hpp/.cpp`
 
@@ -720,6 +729,9 @@ Important method:
 
 ```cpp
 void zoomToFit();
+void zoomIn();
+void zoomOut();
+void resetZoom();
 void wheelEvent(QWheelEvent* event) override;
 void mousePressEvent(QMouseEvent* event) override;
 void mouseMoveEvent(QMouseEvent* event) override;
@@ -729,7 +741,7 @@ void mouseMoveEvent(QMouseEvent* event) override;
 
 ### `scripts/run_sprint_demo.ps1`
 
-Creates a demo board, adds primitives, imports KiCad footprint sample, places the footprint, runs inspect/validate/DRC, launches GUI, captures screenshot.
+Creates a demo board, adds primitives, imports KiCad footprint sample, places the footprint, runs inspect/validate/DRC, then asks `ccad_gui --screenshot` to capture the native GUI.
 
 Run:
 
@@ -745,6 +757,10 @@ Outputs:
 - `artifacts/demos/*.drc.json`
 - `artifacts/demos/*.ccad-footprint.json`
 - `artifacts/screenshots/*.png`
+
+Rule:
+
+- The script must use app-owned screenshot mode and must not capture arbitrary foreground windows or kill globally named GUI processes.
 
 ## Current Known Technical Debt To Avoid Expanding
 

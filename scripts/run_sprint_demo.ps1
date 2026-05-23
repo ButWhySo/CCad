@@ -70,85 +70,13 @@ Invoke-CcadDrcReport
 Invoke-Ccad lib import-footprint --in $KiCadFootprint --out $ImportedFootprint
 Invoke-Ccad pcb place-footprint --file $Project --footprint $ImportedFootprint --component R1 --at-x-mm 16 --at-y-mm 14 --layer F.Cu --rotation-deg 90
 
-$Process = Start-Process -FilePath $Gui -ArgumentList $Project -PassThru
-try {
-  Start-Sleep -Seconds 2
-  $Process.Refresh()
-  if ($Process.MainWindowHandle -eq 0) {
-    throw "GUI did not expose a main window handle"
-  }
-
-  Add-Type -AssemblyName System.Drawing
-  if (-not ("CCad.NativeWindow" -as [type])) {
-    Add-Type @"
-using System;
-using System.Runtime.InteropServices;
-
-namespace CCad {
-  public static class NativeWindow {
-    [StructLayout(LayoutKind.Sequential)]
-    public struct RECT {
-      public int Left;
-      public int Top;
-      public int Right;
-      public int Bottom;
-    }
-
-    [DllImport("user32.dll")]
-    public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
-
-    [DllImport("user32.dll")]
-    public static extern bool SetForegroundWindow(IntPtr hWnd);
-
-    [DllImport("user32.dll")]
-    public static extern bool SetCursorPos(int X, int Y);
-
-    [DllImport("user32.dll")]
-    public static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
-  }
+$GuiOutput = & $Gui --screenshot $Project $Screenshot
+$GuiExitCode = $LASTEXITCODE
+if ($GuiExitCode -ne 0) {
+  throw "ccad_gui screenshot failed ($GuiExitCode): $GuiOutput"
 }
-"@
-  }
-
-  Add-Type -AssemblyName System.Windows.Forms
-  [System.Windows.Forms.SendKeys]::SendWait("{ESC}")
-  Start-Sleep -Milliseconds 200
-  [CCad.NativeWindow]::SetForegroundWindow($Process.MainWindowHandle) | Out-Null
-  Start-Sleep -Milliseconds 300
-  $Rect = New-Object CCad.NativeWindow+RECT
-  [CCad.NativeWindow]::GetWindowRect($Process.MainWindowHandle, [ref]$Rect) | Out-Null
-  $Width = $Rect.Right - $Rect.Left
-  $Height = $Rect.Bottom - $Rect.Top
-  if ($Width -le 0 -or $Height -le 0) {
-    throw "Invalid GUI window rectangle"
-  }
-
-  if ($ClickSelection) {
-    $ClickX = $Rect.Left + [Math]::Min(545, [Math]::Max(0, $Width - 120))
-    $ClickY = $Rect.Top + [Math]::Min(235, [Math]::Max(0, $Height - 120))
-    [CCad.NativeWindow]::SetCursorPos($ClickX, $ClickY) | Out-Null
-    Start-Sleep -Milliseconds 100
-    [CCad.NativeWindow]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero)
-    [CCad.NativeWindow]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero)
-    Start-Sleep -Milliseconds 300
-  }
-
-  $Bitmap = New-Object System.Drawing.Bitmap $Width, $Height
-  $Graphics = [System.Drawing.Graphics]::FromImage($Bitmap)
-  try {
-    $Graphics.CopyFromScreen($Rect.Left, $Rect.Top, 0, 0, $Bitmap.Size)
-    $Bitmap.Save($Screenshot, [System.Drawing.Imaging.ImageFormat]::Png)
-  } finally {
-    $Graphics.Dispose()
-    $Bitmap.Dispose()
-  }
-} finally {
-  if (-not $Process.HasExited) {
-    $Process.CloseMainWindow() | Out-Null
-    if (-not $Process.WaitForExit(2000)) {
-      $Process.Kill()
-    }
-  }
+if (-not (Test-Path $Screenshot)) {
+  throw "ccad_gui screenshot did not create: $Screenshot"
 }
 
 Write-Output "Project: $Project"

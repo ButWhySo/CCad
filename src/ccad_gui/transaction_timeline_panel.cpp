@@ -37,7 +37,6 @@ TransactionTimelinePanel::TransactionTimelinePanel(QWidget* parent) : QTableWidg
   setAlternatingRowColors(true);
   verticalHeader()->setVisible(false);
   setShowGrid(false);
-  renderTransactions({});
 }
 
 void TransactionTimelinePanel::renderTransactions(
