@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QGraphicsView>
+#include <QKeyEvent>
 #include <QMouseEvent>
 #include <QResizeEvent>
 #include <QScrollBar>
@@ -100,7 +101,61 @@ class BoardCanvasView final : public QGraphicsView {
     QGraphicsView::mouseReleaseEvent(event);
   }
 
+  void keyPressEvent(QKeyEvent* event) override {
+    constexpr int pan_step_pixels = 48;
+    switch (event->key()) {
+      case Qt::Key::Key_Plus:
+      case Qt::Key::Key_Equal:
+        zoomIn();
+        event->accept();
+        return;
+      case Qt::Key::Key_Minus:
+      case Qt::Key::Key_Underscore:
+        zoomOut();
+        event->accept();
+        return;
+      case Qt::Key::Key_0:
+        resetZoom();
+        event->accept();
+        return;
+      case Qt::Key::Key_F:
+        zoomToFit();
+        event->accept();
+        return;
+      case Qt::Key::Key_Left:
+        panByPixels(-pan_step_pixels, 0);
+        event->accept();
+        return;
+      case Qt::Key::Key_Right:
+        panByPixels(pan_step_pixels, 0);
+        event->accept();
+        return;
+      case Qt::Key::Key_Up:
+        panByPixels(0, -pan_step_pixels);
+        event->accept();
+        return;
+      case Qt::Key::Key_Down:
+        panByPixels(0, pan_step_pixels);
+        event->accept();
+        return;
+      default:
+        break;
+    }
+    QGraphicsView::keyPressEvent(event);
+  }
+
  private:
+  void panByPixels(const int dx, const int dy) {
+    if (horizontalScrollBar() != nullptr) {
+      horizontalScrollBar()->setValue(horizontalScrollBar()->value() + dx);
+    }
+    if (verticalScrollBar() != nullptr) {
+      verticalScrollBar()->setValue(verticalScrollBar()->value() + dy);
+    }
+    user_view_ = true;
+    notifyViewportChanged();
+  }
+
   void zoomBy(const double factor) {
     const double target = std::clamp(zoom_factor_ * factor, kMinZoomFactor, kMaxZoomFactor);
     if (zoom_factor_ <= 0.0) {

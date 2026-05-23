@@ -14,6 +14,7 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QPainter>
+#include <QKeySequence>
 #include <QStatusBar>
 #include <QTabWidget>
 #include <QToolBar>
@@ -121,6 +122,11 @@ ReviewWindow::ReviewWindow() {
   auto* zoom_out_action = new QAction("Zoom Out", this);
   auto* zoom_100_action = new QAction("100%", this);
   auto* quit_action = new QAction("Quit", this);
+  fit_action->setShortcut(QKeySequence(Qt::Key_F));
+  zoom_in_action->setShortcuts(
+      {QKeySequence(Qt::Key_Plus), QKeySequence(Qt::CTRL | Qt::Key_Equal)});
+  zoom_out_action->setShortcut(QKeySequence(Qt::Key_Minus));
+  zoom_100_action->setShortcut(QKeySequence(Qt::Key_0));
 
   connect(open_action, &QAction::triggered, this, [this]() { openProject(); });
   connect(reload_action, &QAction::triggered, this, [this]() { reloadProject(); });
