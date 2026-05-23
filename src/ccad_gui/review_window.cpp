@@ -16,6 +16,7 @@
 #include <QPainter>
 #include <QKeySequence>
 #include <QStatusBar>
+#include <QStringList>
 #include <QTabWidget>
 #include <QToolBar>
 #include <QVBoxLayout>
@@ -132,12 +133,14 @@ ReviewWindow::ReviewWindow() {
   auto* zoom_in_action = new QAction("Zoom In", this);
   auto* zoom_out_action = new QAction("Zoom Out", this);
   auto* zoom_100_action = new QAction("100%", this);
+  auto* navigation_help_action = new QAction("Navigation Controls", this);
   auto* quit_action = new QAction("Quit", this);
   fit_action->setShortcut(QKeySequence(Qt::Key_F));
   zoom_in_action->setShortcuts(
       {QKeySequence(Qt::Key_Plus), QKeySequence(Qt::CTRL | Qt::Key_Equal)});
   zoom_out_action->setShortcut(QKeySequence(Qt::Key_Minus));
   zoom_100_action->setShortcut(QKeySequence(Qt::Key_0));
+  navigation_help_action->setShortcut(QKeySequence(Qt::Key_F1));
 
   connect(open_action, &QAction::triggered, this, [this]() { openProject(); });
   connect(reload_action, &QAction::triggered, this, [this]() { reloadProject(); });
@@ -145,6 +148,8 @@ ReviewWindow::ReviewWindow() {
   connect(zoom_in_action, &QAction::triggered, this, [board_view]() { board_view->zoomIn(); });
   connect(zoom_out_action, &QAction::triggered, this, [board_view]() { board_view->zoomOut(); });
   connect(zoom_100_action, &QAction::triggered, this, [board_view]() { board_view->resetZoom(); });
+  connect(navigation_help_action, &QAction::triggered, this,
+          [this]() { showNavigationHelp(); });
   connect(quit_action, &QAction::triggered, this, [this]() { close(); });
 
   auto* file_menu = menuBar()->addMenu("File");
@@ -152,6 +157,8 @@ ReviewWindow::ReviewWindow() {
   file_menu->addAction(reload_action);
   file_menu->addSeparator();
   file_menu->addAction(quit_action);
+  auto* help_menu = menuBar()->addMenu("Help");
+  help_menu->addAction(navigation_help_action);
 
   auto* toolbar = addToolBar("Main");
   toolbar->addAction(open_action);
@@ -172,6 +179,26 @@ ReviewWindow::ReviewWindow() {
   object_browser_->setNetActivatedCallback(
       [this](const QString& net_id) { selectCanvasObjectsByNetId(*canvas_scene_, net_id); });
   transaction_timeline_->renderTransactions({});
+}
+
+void ReviewWindow::showNavigationHelp() {
+  const QStringList lines{
+      "Mouse:",
+      "  - Wheel: zoom in/out",
+      "  - Middle drag: pan",
+      "  - Right drag: pan",
+      "  - Shift + Left drag: pan",
+      "  - Hold Space + Left drag: hand-pan",
+      "",
+      "Keyboard:",
+      "  - + / -: zoom in/out",
+      "  - 0: reset zoom to 100%",
+      "  - F or Home: fit board to view",
+      "  - Arrow keys: pan",
+      "  - W / A / S / D: pan",
+      "  - F1: open this help",
+  };
+  QMessageBox::information(this, "Navigation Controls", lines.join('\n'));
 }
 
 void ReviewWindow::loadProjectPath(const std::filesystem::path& path) {
