@@ -54,8 +54,6 @@ ObjectBrowserPanel::ObjectBrowserPanel(QWidget* parent) : QWidget(parent) {
       object_activated_callback_(object_id);
     }
   });
-
-  renderScene(ccad::CanvasScene{});
 }
 
 void ObjectBrowserPanel::renderScene(const ccad::CanvasScene& scene) {

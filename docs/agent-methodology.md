@@ -3484,7 +3484,11 @@ You have a computer. You have git. You have a browser. You have a terminal. You 
 
 Use that power. Verify that power. Document that power. Improve the work.
 
-## L.3 Reference Shelf for New Appendices
+## L.3 Visual QA Must Not Disturb The User's Desktop
+
+When testing a native GUI, prefer an app-owned screenshot or export mode over operating-system foreground-window capture. The test should launch the app, wait long enough for build, load, and render events, capture the app's own window or scene, save the artifact, and close only the process that the test launched. Do not kill globally named processes, and do not assume the foreground window belongs to the test. If the app needs more time to load, use a documented wait or condition-based readiness check instead of repeatedly failing with short sleeps.
+
+## L.4 Reference Shelf for New Appendices
 
 These references informed the added appendices and should guide future research. They are not a substitute for fresh research when versions, APIs, or standards may have changed.
 

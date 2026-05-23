@@ -117,11 +117,17 @@ ReviewWindow::ReviewWindow() {
   auto* open_action = new QAction("Open", this);
   auto* reload_action = new QAction("Reload", this);
   auto* fit_action = new QAction("Fit", this);
+  auto* zoom_in_action = new QAction("Zoom In", this);
+  auto* zoom_out_action = new QAction("Zoom Out", this);
+  auto* zoom_100_action = new QAction("100%", this);
   auto* quit_action = new QAction("Quit", this);
 
   connect(open_action, &QAction::triggered, this, [this]() { openProject(); });
   connect(reload_action, &QAction::triggered, this, [this]() { reloadProject(); });
   connect(fit_action, &QAction::triggered, this, [board_view]() { board_view->zoomToFit(); });
+  connect(zoom_in_action, &QAction::triggered, this, [board_view]() { board_view->zoomIn(); });
+  connect(zoom_out_action, &QAction::triggered, this, [board_view]() { board_view->zoomOut(); });
+  connect(zoom_100_action, &QAction::triggered, this, [board_view]() { board_view->resetZoom(); });
   connect(quit_action, &QAction::triggered, this, [this]() { close(); });
 
   auto* file_menu = menuBar()->addMenu("File");
@@ -135,6 +141,9 @@ ReviewWindow::ReviewWindow() {
   toolbar->addAction(reload_action);
   toolbar->addSeparator();
   toolbar->addAction(fit_action);
+  toolbar->addAction(zoom_out_action);
+  toolbar->addAction(zoom_in_action);
+  toolbar->addAction(zoom_100_action);
 
   connect(canvas_scene_, &QGraphicsScene::selectionChanged, this,
           [this]() { updateSelectionStatus(); });
@@ -322,8 +331,18 @@ void ReviewWindow::updateCursorStatus(const QPointF& scene_position, const doubl
   constexpr double scale = 10.0;
   const double x_mm = (scene_position.x() - margin) / scale;
   const double y_mm = (scene_position.y() - margin) / scale;
-  cursor_status_->setText("X " + QString::number(x_mm, 'f', 2) + " mm  Y " +
-                          QString::number(y_mm, 'f', 2) + " mm");
+  if (!project_cache_.board.has_value()) {
+    cursor_status_->setText("X --  Y --");
+  } else {
+    const ccad::Rect outline = project_cache_.board->outline;
+    const double board_width_mm = outline.size.width.nanometers / 1000000.0;
+    const double board_height_mm = outline.size.height.nanometers / 1000000.0;
+    const bool inside_board =
+        x_mm >= 0.0 && y_mm >= 0.0 && x_mm <= board_width_mm && y_mm <= board_height_mm;
+    cursor_status_->setText((inside_board ? "Board " : "Canvas ") + QString("X ") +
+                            QString::number(x_mm, 'f', 2) + " mm  Y " +
+                            QString::number(y_mm, 'f', 2) + " mm");
+  }
   zoom_status_->setText("Zoom " + QString::number(zoom_factor * 100.0, 'f', 0) + "%");
 }
 

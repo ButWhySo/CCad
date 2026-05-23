@@ -6,10 +6,10 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 - Phase: 2 / 6
 - Phase name: Physical primitives and early board authoring
-- Sprint: 41
-- Branch: `main`
+- Sprint: 42
+- Branch: `sprint-42-gui-canvas-mvp-review`
 - Last merged sprint: Sprint 41, catalog knowledge CLI visibility
-- Status: Sprint 41 merged on `main` and verified after merge
+- Status: Sprint 42 verified on feature branch; commit and merge pending
 
 ## Phase Roadmap
 
@@ -66,7 +66,7 @@ This file is the canonical phase/sprint counter for CCad. Update it after every 
 
 ## Active Sprint
 
-- Sprint 42: planning pending. Use moderate sprint sizing: several related tasks per compile, not one tiny branch per small GUI affordance.
+- Sprint 42: GUI canvas MVP review. Use moderate sprint sizing: several related tasks per compile, not one tiny branch per small GUI affordance.
 
 ## Reporting Rule
 

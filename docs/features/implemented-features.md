@@ -551,6 +551,9 @@ What it does:
 - GUI selected primitive highlights derive from each object's display color so future theme palettes can stay coherent.
 - GUI diagnostic rows can select a matching PCB canvas object when the row carries a stable object ID.
 - GUI draws read-only diagnostic markers over PCB canvas objects named by diagnostics.
+- GUI toolbar exposes Fit, Zoom Out, Zoom In, and 100% canvas review controls.
+- GUI status readout distinguishes board coordinates from off-board canvas coordinates.
+- GUI screenshot mode captures the app through `ccad_gui --screenshot <project.ccad.json> <out.png>` after a 20-second event-processing wait.
 - Shows ERC diagnostics table.
 - Supports reload.
 
@@ -573,6 +576,16 @@ On Windows:
 $env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
 .\build-qt\ccad_gui.exe
 ```
+
+Capture a sprint demo screenshot without depending on the foreground window:
+
+```cmd
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --screenshot artifacts\demos\sprint42-gui-canvas-mvp-review.ccad.json artifacts\screenshots\sprint42-gui-canvas-mvp-review.png"
+```
+
+Expected result:
+
+- The command waits about 20 seconds, writes the PNG, exits cleanly, and leaves no `ccad_gui.exe` process running.
 
 Open a project directly:
 
