@@ -99,6 +99,18 @@ $env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
 .\build-qt\ccad_gui.exe
 ```
 
+For `cmd.exe` or agents that prefer one-line commands, use the same runtime environment explicitly:
+
+```cmd
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && cmake --build build-qt --clean-first && ctest --test-dir build-qt --output-on-failure"
+```
+
+If a built test or GUI executable fails before printing test output with Windows status `0xc0000139`, debug it as a loader/DLL problem first. The most common cause in this repo is running a Qt-linked executable without `C:\Qt\6.11.1\mingw_64\bin` first on `PATH`, or with another incompatible Qt DLL earlier on `PATH`. Confirm the DLL resolution order with:
+
+```cmd
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && where Qt6Core.dll"
+```
+
 ## CI/CD
 
 GitHub Actions workflow lives in `.github/workflows/ci.yml`. It configures CMake, builds, and runs CTest on pushes to `main` and `phase-*`, plus pull requests to `main`.

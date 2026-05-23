@@ -24,6 +24,14 @@ cmake --build build-qt --clean-first
 ctest --test-dir build-qt --output-on-failure
 ```
 
+- On Windows, run Qt-linked tests and GUI programs with Qt's `bin` directory first on `PATH`:
+
+```cmd
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && ctest --test-dir build-qt --output-on-failure"
+```
+
+- If CTest reports Windows loader error `0xc0000139` before test output appears, treat it as a runtime DLL resolution problem first. Check `cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && where Qt6Core.dll"` and make sure the Qt DLL from `C:\Qt\6.11.1\mingw_64\bin` is first.
+
 - Every commit/merge status update must include:
 
 ```text

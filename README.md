@@ -156,6 +156,18 @@ When to run:
 - Before every commit that claims working code.
 - Before merging a sprint branch to `main`.
 
+For agents or shells using `cmd.exe`, keep the Qt runtime path in the same one-line command:
+
+```cmd
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && ctest --test-dir build-qt --output-on-failure"
+```
+
+If CTest fails before any CCad test output with Windows status `0xc0000139`, assume a DLL loader problem first. Check that the intended Qt DLL is found before any other Qt install:
+
+```cmd
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && where Qt6Core.dll"
+```
+
 ## CLI
 
 Create an empty project:
