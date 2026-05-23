@@ -157,6 +157,7 @@ if(CCAD_BUILD_GUI)
         target_compile_options(ccad_gui_inspector_tests PRIVATE -Werror)
       endif()
     endif()
+    add_test(NAME gui_inspector COMMAND ccad_gui_inspector_tests)
 
     add_executable(ccad_gui_object_browser_tests
       tests/test_gui_object_browser_panel.cpp
@@ -178,6 +179,7 @@ if(CCAD_BUILD_GUI)
         target_compile_options(ccad_gui_object_browser_tests PRIVATE -Werror)
       endif()
     endif()
+    add_test(NAME gui_object_browser COMMAND ccad_gui_object_browser_tests)
 
     add_executable(ccad_gui_canvas_selection_style_tests
       tests/test_gui_canvas_selection_style.cpp
@@ -199,6 +201,7 @@ if(CCAD_BUILD_GUI)
         target_compile_options(ccad_gui_canvas_selection_style_tests PRIVATE -Werror)
       endif()
     endif()
+    add_test(NAME gui_canvas_selection_style COMMAND ccad_gui_canvas_selection_style_tests)
 
     add_executable(ccad_gui_diagnostics_panel_tests
       tests/test_gui_diagnostics_panel.cpp
@@ -220,6 +223,7 @@ if(CCAD_BUILD_GUI)
         target_compile_options(ccad_gui_diagnostics_panel_tests PRIVATE -Werror)
       endif()
     endif()
+    add_test(NAME gui_diagnostics_panel COMMAND ccad_gui_diagnostics_panel_tests)
 
     add_executable(ccad_gui_canvas_selection_link_tests
       tests/test_gui_canvas_selection_link.cpp
@@ -241,6 +245,7 @@ if(CCAD_BUILD_GUI)
         target_compile_options(ccad_gui_canvas_selection_link_tests PRIVATE -Werror)
       endif()
     endif()
+    add_test(NAME gui_canvas_selection_link COMMAND ccad_gui_canvas_selection_link_tests)
 
     add_executable(ccad_gui_diagnostic_markers_tests
       tests/test_gui_diagnostic_markers.cpp
@@ -262,6 +267,7 @@ if(CCAD_BUILD_GUI)
         target_compile_options(ccad_gui_diagnostic_markers_tests PRIVATE -Werror)
       endif()
     endif()
+    add_test(NAME gui_diagnostic_markers COMMAND ccad_gui_diagnostic_markers_tests)
 
     add_executable(ccad_gui_transaction_timeline_tests
       tests/test_gui_transaction_timeline_panel.cpp
@@ -283,6 +289,28 @@ if(CCAD_BUILD_GUI)
         target_compile_options(ccad_gui_transaction_timeline_tests PRIVATE -Werror)
       endif()
     endif()
+    add_test(NAME gui_transaction_timeline COMMAND ccad_gui_transaction_timeline_tests)
+
+    add_executable(ccad_gui_board_canvas_view_tests
+      tests/test_gui_board_canvas_view.cpp
+    )
+    target_link_libraries(ccad_gui_board_canvas_view_tests PRIVATE Qt6::Widgets)
+    target_include_directories(ccad_gui_board_canvas_view_tests PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests
+    )
+    if(MSVC)
+      target_compile_options(ccad_gui_board_canvas_view_tests PRIVATE /W4)
+      if(CCAD_WARNINGS_AS_ERRORS)
+        target_compile_options(ccad_gui_board_canvas_view_tests PRIVATE /WX)
+      endif()
+    else()
+      target_compile_options(ccad_gui_board_canvas_view_tests PRIVATE -Wall -Wextra -Wpedantic)
+      if(CCAD_WARNINGS_AS_ERRORS)
+        target_compile_options(ccad_gui_board_canvas_view_tests PRIVATE -Werror)
+      endif()
+    endif()
+    add_test(NAME gui_board_canvas_view COMMAND ccad_gui_board_canvas_view_tests)
   else()
     message(STATUS "Qt6 Widgets not found; skipping ccad_gui target")
   endif()
