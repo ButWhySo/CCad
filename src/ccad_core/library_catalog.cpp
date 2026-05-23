@@ -483,12 +483,14 @@ std::vector<const LibraryItem*> searchLibraryItems(const LibraryCatalog& catalog
     if (!normalized_kind.empty() && lowercase(item.kind) != normalized_kind) {
       continue;
     }
-      if (containsCaseInsensitive(item.id, normalized_query) ||
+    if (containsCaseInsensitive(item.id, normalized_query) ||
         containsCaseInsensitive(item.name, normalized_query) ||
         containsCaseInsensitive(item.kind, normalized_query) ||
         containsCaseInsensitive(item.source_path, normalized_query) ||
         containsCaseInsensitive(item.native_path, normalized_query) ||
-        containsCaseInsensitive(item.usage_summary, normalized_query)) {
+        containsCaseInsensitive(item.usage_summary, normalized_query) ||
+        containsCaseInsensitive(item.source_confidence, normalized_query) ||
+        containsCaseInsensitive(item.review_status, normalized_query)) {
       matches.push_back(&item);
       continue;
     }

@@ -499,16 +499,20 @@ What it does:
 
 - Represents a local/offline CCad library catalog.
 - Records upstream source metadata: name, kind, URL, commit, mirror, and fetch timestamp.
-- Records item metadata: ID, kind, name, source path, native path, checksum, license, provenance, and import warnings.
+- Records item metadata: ID, kind, name, source path, native path, checksum, license, provenance, component-knowledge fields, and import warnings.
+- Preserves `usage_summary`, `layout_notes`, `source_confidence`, and `review_status` for future local component search and human/AI curation.
 - Serializes catalog data to deterministic JSON.
 - Loads catalog JSON strictly and rejects missing source/items data.
 - Finds catalog items by stable ID.
+- Searches catalog identity, paths, usage summaries, layout notes, source confidence, and review status.
+- Validates `review_status` when present. Current accepted values are `generated`, `needs_review`, `reviewed`, and `rejected`.
 
 Design intent:
 
 - KiCad/GitHub/Gitee libraries are source data.
 - CCad runtime should query local native catalogs instead of repeatedly fetching remote libraries or reparsing raw KiCad files.
 - Huge caches should live under ignored local paths such as `library-cache/` or `catalog-cache/`, or in a future dedicated catalog package.
+- Rich component knowledge should be preprocessed into the local catalog so agents can pick parts using local metadata before escalating to web research or human review.
 
 Test:
 

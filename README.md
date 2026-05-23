@@ -58,15 +58,14 @@ CCad should reuse KiCad's symbol, footprint, and 3D model ecosystem through loca
 
 For large designs, CCad should use semantic batches, enriched component knowledge, local catalog search, and checkpoint-based visual review instead of thousands of primitive commands. See `docs/architecture/large-design-and-component-knowledge-pipeline.md`.
 
-For large designs, CCad should use semantic batches, enriched component knowledge, local catalog search, and checkpoint-based visual review instead of thousands of primitive commands. See `docs/architecture/large-design-and-component-knowledge-pipeline.md`.
-
 Policy:
 
 - Do not fetch the internet repeatedly during normal design work.
 - Do not vendor huge KiCad/Gitee/GitHub library dumps into this source repo.
 - Keep raw upstream checkouts and converted catalogs in ignored local paths such as `library-cache/` or `catalog-cache/`.
 - Store runtime/search data in CCad's own catalog format.
-- Preserve source URL, mirror, commit/hash, source path, checksum, license, provenance, and import warnings for each item.
+- Preserve source URL, mirror, commit/hash, source path, checksum, license, provenance, component-knowledge fields, and import warnings for each item.
+- Use `usage_summary`, `layout_notes`, `source_confidence`, and `review_status` so agents can search local curated knowledge before using web research.
 - Later, a separate `ccad-libraries` repo/package can distribute curated prebuilt catalogs.
 
 Inspect a local catalog:

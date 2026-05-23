@@ -104,6 +104,16 @@ int main() {
   require(spacing_matches.size() == 1, "catalog search matches layout notes");
   require(spacing_matches.at(0)->id == "footprint:Resistor_SMD:R_0603_1608Metric",
           "layout note search returns matching item");
+  const std::vector<const ccad::LibraryItem*> confidence_matches =
+      ccad::searchLibraryItems(parsed, "library_metadata");
+  require(confidence_matches.size() == 1, "catalog search matches source confidence");
+  require(confidence_matches.at(0)->id == "footprint:Resistor_SMD:R_0603_1608Metric",
+          "source confidence search returns matching item");
+  const std::vector<const ccad::LibraryItem*> review_matches =
+      ccad::searchLibraryItems(parsed, "reviewed");
+  require(review_matches.size() == 1, "catalog search matches review status");
+  require(review_matches.at(0)->id == "footprint:Resistor_SMD:R_0603_1608Metric",
+          "review status search returns matching item");
   require(ccad::searchLibraryItems(parsed, "0603", "symbol").empty(),
           "catalog search kind filter removes non-matching kind");
   require(ccad::searchLibraryItems(parsed, "").empty(), "catalog search rejects empty query");
