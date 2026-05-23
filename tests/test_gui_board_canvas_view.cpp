@@ -112,4 +112,27 @@ int main(int argc, char** argv) {
   QKeyEvent up_key(QEvent::KeyPress, Qt::Key_Up, Qt::NoModifier);
   QApplication::sendEvent(&view, &up_key);
   require(view.verticalScrollBar()->value() < before_up, "up key pans up");
+
+  const int before_space_pan_x = view.horizontalScrollBar()->value();
+  const int before_space_pan_y = view.verticalScrollBar()->value();
+  QKeyEvent space_press(QEvent::KeyPress, Qt::Key_Space, Qt::NoModifier);
+  QApplication::sendEvent(&view, &space_press);
+
+  QMouseEvent left_pan_press(QEvent::MouseButtonPress, QPointF(180.0, 170.0), QPointF(180.0, 170.0),
+                             Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+  QApplication::sendEvent(view.viewport(), &left_pan_press);
+  QMouseEvent left_pan_move(QEvent::MouseMove, QPointF(120.0, 110.0), QPointF(120.0, 110.0),
+                            Qt::NoButton, Qt::LeftButton, Qt::NoModifier);
+  QApplication::sendEvent(view.viewport(), &left_pan_move);
+  QMouseEvent left_pan_release(QEvent::MouseButtonRelease, QPointF(120.0, 110.0),
+                               QPointF(120.0, 110.0), Qt::LeftButton, Qt::NoButton,
+                               Qt::NoModifier);
+  QApplication::sendEvent(view.viewport(), &left_pan_release);
+
+  QKeyEvent space_release(QEvent::KeyRelease, Qt::Key_Space, Qt::NoModifier);
+  QApplication::sendEvent(&view, &space_release);
+
+  require(view.horizontalScrollBar()->value() != before_space_pan_x ||
+              view.verticalScrollBar()->value() != before_space_pan_y,
+          "space plus left drag pans viewport");
 }
