@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 52 merged and verified on `main`; Sprint 53 planning. See `docs/devops/progress.md`.
+Progress counter: Phase 2 / 6, Sprint 55 merged and verified on `main`; Sprint 56 in progress.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -29,7 +29,7 @@ Progress counter: Phase 2 / 6, Sprint 52 merged and verified on `main`; Sprint 5
 - Native GUI canvas items expose net metadata for net highlight groundwork.
 - Native GUI object browser has net rows for net-selection workflow.
 - Native GUI canvas toolbar has Fit, Zoom Out, Zoom In, and 100% review controls.
-- Native GUI has an internal `--screenshot` harness for sprint-end visual QA without foreground-window capture.
+- Sprint demo automation now has a robust screenshot fallback path that captures only the spawned CCad window by PID when `ccad_gui --screenshot` fails.
 - Native GUI canvas supports CAD-style pan with middle-drag, right-drag, or Shift+left-drag, plus clamped wheel zoom and expanded scene navigation bounds.
 - GUI panel/canvas test binaries are now registered in CTest and run in the default `ctest` gate.
 - Native GUI canvas supports keyboard navigation: `+`, `-`, `0`, `F`, `Home`, arrow-key panning, and `W/A/S/D` panning.
@@ -68,15 +68,13 @@ Use this core build when you are changing kernel, CLI, serialization, ERC, diff,
 ctest --test-dir build --output-on-failure
 ```
 
-See `docs/features/implemented-features.md` for a complete feature-by-feature usage and testing guide.
-
-Agents should read `docs/codebase-map.md` before editing code. It is the maintained map of files, modules, public functions, and invariants.
+If your local setup still has internal docs from private iterations, treat this README as the source of truth for the public GitHub branch.
 
 ## Library Cache Direction
 
 CCad should reuse KiCad's symbol, footprint, and 3D model ecosystem through local source caches and CCad-native catalogs.
 
-For large designs, CCad should use semantic batches, enriched component knowledge, local catalog search, and checkpoint-based visual review instead of thousands of primitive commands. See `docs/architecture/large-design-and-component-knowledge-pipeline.md`.
+For large designs, CCad should use semantic batches, enriched component knowledge, local catalog search, and checkpoint-based visual review instead of thousands of primitive commands.
 
 Policy:
 
@@ -478,8 +476,8 @@ What it does:
 - Writes inspect, validate, and DRC JSON reports.
 - Writes a sample KiCad `.kicad_mod` file and imports it to CCad footprint JSON.
 - Places the imported footprint onto the demo board.
-- Launches the Qt GUI through `ccad_gui --screenshot`, waits 20 seconds for load/render events, and saves a screenshot under `artifacts/screenshots/`.
-- Uses the app's own Qt screenshot mode instead of capturing or killing the foreground desktop window.
+- First attempts Qt internal screenshot mode (`ccad_gui --screenshot`).
+- If that path fails on the host, it launches the GUI normally, waits for window readiness, captures the exact CCad window bounds, and closes only the spawned GUI process.
 
 When to run:
 
