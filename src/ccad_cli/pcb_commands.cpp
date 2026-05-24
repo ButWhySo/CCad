@@ -5,6 +5,7 @@
 #include <iostream>
 #include <map>
 #include <stdexcept>
+#include <vector>
 
 namespace ccad_cli {
 namespace {
@@ -66,6 +67,17 @@ void requireBoardObjectsInsideOutline(const ccad::Board& board) {
   for (const ccad::PlacementRegion& region : board.placement_regions) {
     requireRectInsideBoard(board, region.area, "placement region " + region.id);
   }
+}
+
+template <typename T>
+bool eraseById(std::vector<T>& items, const std::string& id) {
+  for (auto it = items.begin(); it != items.end(); ++it) {
+    if (it->id == id) {
+      items.erase(it);
+      return true;
+    }
+  }
+  return false;
 }
 
 }  // namespace
@@ -336,6 +348,26 @@ int pcbCommand(const std::vector<std::string>& args) {
           .kind = requireOption(options, "--kind"),
           .area = area,
       });
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "remove-object") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const bool removed = eraseById(board.pads, id) || eraseById(board.vias, id) ||
+                           eraseById(board.tracks, id) || eraseById(board.keepouts, id) ||
+                           eraseById(board.placement_regions, id);
+      if (!removed) {
+        throw std::runtime_error("unknown physical object: " + id);
+      }
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
