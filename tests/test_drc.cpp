@@ -81,6 +81,18 @@ bool hasDiagnosticForObject(const std::vector<ccad::Diagnostic>& diagnostics,
   return false;
 }
 
+bool hasDiagnosticMessageContaining(const std::vector<ccad::Diagnostic>& diagnostics,
+                                    const std::string& code,
+                                    const std::string& message_fragment) {
+  for (const ccad::Diagnostic& diagnostic : diagnostics) {
+    if (diagnostic.code == code &&
+        diagnostic.message.find(message_fragment) != std::string::npos) {
+      return true;
+    }
+  }
+  return false;
+}
+
 }  // namespace
 
 int main() {
@@ -592,7 +604,10 @@ int main() {
       .position = ccad::Point{.x = ccad::millimeters(6.35), .y = ccad::millimeters(6)},
       .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(1.0)}});
   require(hasDiagnosticForObject(ccad::runDrc(pad_clearance), "COPPER_CLEARANCE", "P2"),
-          "drc reports different-net pads closer than default clearance");
+          "drc reports different-net pads closer than configured clearance");
+  require(hasDiagnosticMessageContaining(ccad::runDrc(pad_clearance), "COPPER_CLEARANCE",
+                                         "configured clearance 200000 nm"),
+          "drc clearance diagnostic includes configured clearance value");
 
   ccad::Project cross_layer_pad_clearance = pad_clearance;
   cross_layer_pad_clearance.board->pads.back().layer_id = "B.Cu";
