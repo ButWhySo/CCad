@@ -35,6 +35,34 @@ bool parseVisibleOption(const std::map<std::string, std::string>& options) {
   throw std::runtime_error("--visible must be true or false");
 }
 
+ccad::Length requireMillimeters(const std::map<std::string, std::string>& options,
+                                const std::string& key) {
+  return ccad::millimeters(requireDoubleOption(options, key));
+}
+
+void requireBoardObjectsInsideOutline(const ccad::Board& board) {
+  for (const ccad::Pad& pad : board.pads) {
+    requireRotatedRectInsideBoard(board, pad.position, pad.size, pad.rotation_degrees,
+                                  "pad " + pad.id);
+  }
+  for (const ccad::Via& via : board.vias) {
+    requirePointWithMarginInsideBoard(board, via.position,
+                                      ccad::nanometers(via.diameter.nanometers / 2),
+                                      "via " + via.id);
+  }
+  for (const ccad::TrackSegment& track : board.tracks) {
+    const ccad::Length half_width = ccad::nanometers(track.width.nanometers / 2);
+    requirePointWithMarginInsideBoard(board, track.start, half_width, "track " + track.id);
+    requirePointWithMarginInsideBoard(board, track.end, half_width, "track " + track.id);
+  }
+  for (const ccad::Keepout& keepout : board.keepouts) {
+    requireRectInsideBoard(board, keepout.area, "keepout " + keepout.id);
+  }
+  for (const ccad::PlacementRegion& region : board.placement_regions) {
+    requireRectInsideBoard(board, region.area, "placement region " + region.id);
+  }
+}
+
 }  // namespace
 
 int pcbCommand(const std::vector<std::string>& args) {
@@ -81,6 +109,32 @@ int pcbCommand(const std::vector<std::string>& args) {
           .min_via_annular_ring =
               requirePositiveMillimeters(options, "--min-via-annular-ring-mm"),
       };
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "set-outline") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--x-mm", "--y-mm", "--width-mm", "--height-mm"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const ccad::Rect previous_outline = board.outline;
+      board.outline = ccad::Rect{
+          .origin = ccad::Point{.x = requireMillimeters(options, "--x-mm"),
+                                .y = requireMillimeters(options, "--y-mm")},
+          .size = ccad::Size{.width = requirePositiveMillimeters(options, "--width-mm"),
+                             .height = requirePositiveMillimeters(options, "--height-mm")},
+      };
+      try {
+        requireBoardObjectsInsideOutline(board);
+      } catch (...) {
+        board.outline = previous_outline;
+        throw;
+      }
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;

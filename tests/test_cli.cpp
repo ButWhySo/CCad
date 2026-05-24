@@ -66,6 +66,8 @@ int main() {
           "help json describes layer authoring");
   require(help_json.find("\"name\": \"pcb set-rules\"") != std::string::npos,
           "help json describes drc rule authoring");
+  require(help_json.find("\"name\": \"pcb set-outline\"") != std::string::npos,
+          "help json describes outline authoring");
   require(help_json.find("\"name\": \"pcb add-keepout\"") != std::string::npos,
           "help json describes keepout authoring");
   require(help_json.find("\"name\": \"pcb add-placement-region\"") != std::string::npos,
@@ -233,6 +235,22 @@ int main() {
   require(run(outside_placement_region_command) != 0,
           "pcb add-placement-region rejects area outside board");
 
+  const std::string set_outline_command =
+      quote(CCAD_BINARY) + " pcb set-outline --file " + quote(board_project_path) +
+      " --x-mm 0 --y-mm 0 --width-mm 50 --height-mm 30";
+  require(run(set_outline_command) == 0, "pcb set-outline exits zero");
+  const std::string outline_json = readFile(board_project_path);
+  require(outline_json.find("\"width_nm\": 50000000") != std::string::npos,
+          "pcb set-outline writes width");
+  require(outline_json.find("\"height_nm\": 30000000") != std::string::npos,
+          "pcb set-outline writes height");
+
+  const std::string invalid_outline_command =
+      quote(CCAD_BINARY) + " pcb set-outline --file " + quote(board_project_path) +
+      " --x-mm 10 --y-mm 10 --width-mm 5 --height-mm 5";
+  require(run(invalid_outline_command) != 0,
+          "pcb set-outline rejects outline that excludes existing objects");
+
   const std::string missing_board_command =
       quote(CCAD_BINARY) + " pcb add-via --file " + quote(project_path) +
       " --id V_NO_BOARD --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4";
@@ -295,7 +313,7 @@ int main() {
   const std::string board_inspect_output = readFile(board_inspect_path);
   require(board_inspect_output.find("\"has_board\": true") != std::string::npos,
           "inspect reports board present");
-  require(board_inspect_output.find("\"width_nm\": 42000000") != std::string::npos,
+  require(board_inspect_output.find("\"width_nm\": 50000000") != std::string::npos,
           "inspect reports board width");
   require(board_inspect_output.find("\"layers\": 3") != std::string::npos,
           "inspect reports layer count");
