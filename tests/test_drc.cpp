@@ -251,6 +251,58 @@ int main() {
   require(hasCode(ccad::runDrc(duplicate_physical_object_id), "DUPLICATE_PHYSICAL_OBJECT_ID"),
           "drc reports physical object id reused across types");
 
+  ccad::Project valid_route_request = validBoardProject();
+  valid_route_request.board->route_requests.push_back(ccad::RouteRequest{
+      .id = "RR1",
+      .net_id = "N1",
+      .from_object_id = "P1",
+      .to_object_id = "V1",
+      .preferred_layer_id = "F.Cu",
+      .policy = "shortest_safe",
+      .width = ccad::millimeters(0.25),
+  });
+  require(ccad::runDrc(valid_route_request).empty(), "valid route request has no drc diagnostics");
+
+  ccad::Project duplicate_route_request = valid_route_request;
+  duplicate_route_request.board->route_requests.push_back(
+      duplicate_route_request.board->route_requests.front());
+  require(hasCode(ccad::runDrc(duplicate_route_request), "DUPLICATE_ROUTE_REQUEST_ID"),
+          "drc reports duplicate route request id");
+
+  ccad::Project empty_route_request_id = valid_route_request;
+  empty_route_request_id.board->route_requests.at(0).id.clear();
+  require(hasCode(ccad::runDrc(empty_route_request_id), "INVALID_ROUTE_REQUEST_ID"),
+          "drc reports empty route request id");
+
+  ccad::Project unknown_route_request_net = valid_route_request;
+  unknown_route_request_net.board->route_requests.at(0).net_id = "NO_NET";
+  require(hasCode(ccad::runDrc(unknown_route_request_net), "UNKNOWN_ROUTE_REQUEST_NET"),
+          "drc reports unknown route request net");
+
+  ccad::Project unknown_route_request_layer = valid_route_request;
+  unknown_route_request_layer.board->route_requests.at(0).preferred_layer_id = "Inner.Cu";
+  require(hasCode(ccad::runDrc(unknown_route_request_layer), "UNKNOWN_ROUTE_REQUEST_LAYER"),
+          "drc reports unknown route request preferred layer");
+
+  ccad::Project non_copper_route_request_layer = valid_route_request;
+  non_copper_route_request_layer.board->layers.push_back(
+      ccad::Layer{.id = "F.SilkS", .name = "Front silkscreen", .kind = "silkscreen"});
+  non_copper_route_request_layer.board->route_requests.at(0).preferred_layer_id = "F.SilkS";
+  require(hasCode(ccad::runDrc(non_copper_route_request_layer),
+                  "ROUTE_REQUEST_NON_COPPER_LAYER"),
+          "drc reports route request on non-copper preferred layer");
+
+  ccad::Project missing_route_request_endpoint = valid_route_request;
+  missing_route_request_endpoint.board->route_requests.at(0).to_object_id = "NO_OBJECT";
+  require(hasCode(ccad::runDrc(missing_route_request_endpoint),
+                  "UNKNOWN_ROUTE_REQUEST_ENDPOINT"),
+          "drc reports unknown route request endpoint object");
+
+  ccad::Project invalid_route_request_width = valid_route_request;
+  invalid_route_request_width.board->route_requests.at(0).width = ccad::nanometers(0);
+  require(hasCode(ccad::runDrc(invalid_route_request_width), "INVALID_ROUTE_REQUEST_WIDTH"),
+          "drc reports non-positive route request width");
+
   ccad::Project empty_pad_id = validBoardProject();
   empty_pad_id.board->pads.at(0).id.clear();
   require(hasCode(ccad::runDrc(empty_pad_id), "INVALID_PAD_ID"),
