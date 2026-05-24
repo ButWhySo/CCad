@@ -190,6 +190,8 @@ int main() {
   via_drill_too_large.board->vias.at(0).drill = ccad::millimeters(1.0);
   require(hasCode(ccad::runDrc(via_drill_too_large), "VIA_DRILL_TOO_LARGE"),
           "drc reports via drill too large");
+  require(!hasCode(ccad::runDrc(via_drill_too_large), "VIA_ANNULAR_RING_TOO_SMALL"),
+          "drc does not report derived annular ring error when via drill exceeds diameter");
 
   ccad::Project via_geometry_outside = validBoardProject();
   via_geometry_outside.board->vias.at(0).position =
