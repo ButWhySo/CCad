@@ -199,6 +199,91 @@ std::string regionObjectJson(const std::string& type, const std::string& id,
   return out.str();
 }
 
+bool includeObjectType(const std::string& filter, const std::string& type) {
+  return filter.empty() || filter == type;
+}
+
+void requireKnownObjectType(const std::string& type) {
+  if (type.empty() || type == "layer" || type == "pad" || type == "via" || type == "track" ||
+      type == "keepout" || type == "placement_region") {
+    return;
+  }
+  throw std::runtime_error("unknown object type: " + type);
+}
+
+std::string listObjectsJson(const ccad::Board& board, const std::string& type_filter) {
+  std::vector<std::string> rows;
+  auto add_row = [&rows](const std::ostringstream& row) { rows.push_back(row.str()); };
+
+  if (includeObjectType(type_filter, "layer")) {
+    for (const ccad::Layer& layer : board.layers) {
+      std::ostringstream row;
+      row << "    {\"type\": \"layer\", \"id\": \"" << ccad::escapeJson(layer.id)
+          << "\", \"name\": \"" << ccad::escapeJson(layer.name) << "\", \"kind\": \""
+          << ccad::escapeJson(layer.kind) << "\", \"visible\": "
+          << (layer.visible ? "true" : "false") << "}";
+      add_row(row);
+    }
+  }
+  if (includeObjectType(type_filter, "pad")) {
+    for (const ccad::Pad& pad : board.pads) {
+      std::ostringstream row;
+      row << "    {\"type\": \"pad\", \"id\": \"" << ccad::escapeJson(pad.id)
+          << "\", \"component_id\": \"" << ccad::escapeJson(pad.component_id)
+          << "\", \"pin_name\": \"" << ccad::escapeJson(pad.pin_name)
+          << "\", \"net_id\": \"" << ccad::escapeJson(pad.net_id)
+          << "\", \"layer_id\": \"" << ccad::escapeJson(pad.layer_id) << "\"}";
+      add_row(row);
+    }
+  }
+  if (includeObjectType(type_filter, "via")) {
+    for (const ccad::Via& via : board.vias) {
+      std::ostringstream row;
+      row << "    {\"type\": \"via\", \"id\": \"" << ccad::escapeJson(via.id)
+          << "\", \"net_id\": \"" << ccad::escapeJson(via.net_id) << "\"}";
+      add_row(row);
+    }
+  }
+  if (includeObjectType(type_filter, "track")) {
+    for (const ccad::TrackSegment& track : board.tracks) {
+      std::ostringstream row;
+      row << "    {\"type\": \"track\", \"id\": \"" << ccad::escapeJson(track.id)
+          << "\", \"net_id\": \"" << ccad::escapeJson(track.net_id)
+          << "\", \"layer_id\": \"" << ccad::escapeJson(track.layer_id) << "\"}";
+      add_row(row);
+    }
+  }
+  if (includeObjectType(type_filter, "keepout")) {
+    for (const ccad::Keepout& keepout : board.keepouts) {
+      std::ostringstream row;
+      row << "    {\"type\": \"keepout\", \"id\": \"" << ccad::escapeJson(keepout.id)
+          << "\", \"kind\": \"" << ccad::escapeJson(keepout.kind) << "\"}";
+      add_row(row);
+    }
+  }
+  if (includeObjectType(type_filter, "placement_region")) {
+    for (const ccad::PlacementRegion& region : board.placement_regions) {
+      std::ostringstream row;
+      row << "    {\"type\": \"placement_region\", \"id\": \"" << ccad::escapeJson(region.id)
+          << "\", \"kind\": \"" << ccad::escapeJson(region.kind) << "\"}";
+      add_row(row);
+    }
+  }
+
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"summary\": {\n"
+      << "    \"total\": " << rows.size() << "\n"
+      << "  },\n"
+      << "  \"objects\": [\n";
+  for (std::size_t i = 0; i < rows.size(); ++i) {
+    out << rows.at(i) << (i + 1 == rows.size() ? "" : ",") << '\n';
+  }
+  out << "  ]\n"
+      << "}\n";
+  return out.str();
+}
+
 }  // namespace
 
 int pcbCommand(const std::vector<std::string>& args) {
@@ -312,6 +397,21 @@ int pcbCommand(const std::vector<std::string>& args) {
         }
       }
       throw std::runtime_error("unknown board object: " + id);
+    }
+
+    if (subcommand == "list-objects") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--type"});
+      const std::string file = requireOption(options, "--file");
+      const ccad::Project project = loadProjectFile(file);
+      if (!project.board.has_value()) {
+        throw std::runtime_error("project has no board");
+      }
+      const std::string type_filter =
+          options.contains("--type") ? requireOption(options, "--type") : "";
+      requireKnownObjectType(type_filter);
+      std::cout << listObjectsJson(*project.board, type_filter);
+      return 0;
     }
 
     if (subcommand == "remove-layer") {
