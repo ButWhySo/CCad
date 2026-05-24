@@ -17,6 +17,7 @@ Progress counter: Phase 2 / 6, Sprint 72 merged and verified on `main`; Sprint 7
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
 - Physical board outline, layers, rectangular placement regions, rectangular keepouts, pads, vias, and track segments in project JSON.
 - Physical DRC for geometry, connectivity metadata, layer-aware copper connectivity and clearance, rectangular keepout occupancy, track crossing violations, board-level copper clearance, minimum track width, minimum via annular ring, stable physical object IDs, and logical pad/net parity.
+- Physical DRC rejects pads and tracks placed on non-copper layers.
 - Physical DRC track-endpoint connectivity now accepts geometric copper contact with same-net pads and vias, not only exact center-point matches.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
 - Native GUI selection inspector for stable object type and ID.
@@ -302,6 +303,7 @@ What it does:
 - Exits `0` when no DRC errors exist, `1` when DRC errors exist, `2` for usage/file/parse failures.
 - Reports `COPPER_CLEARANCE` when different-net copper is closer than the current fixed default clearance of `0.20 mm`.
 - Treats layer-bound pad/track copper as colliding only when they share a copper layer; vias still interact with copper across layers.
+- Reports `PAD_NON_COPPER_LAYER` or `TRACK_NON_COPPER_LAYER` when copper primitives reference a valid layer whose kind is not `copper`.
 
 When to run:
 
@@ -395,6 +397,7 @@ Current command guards:
 - Layer IDs must be unique.
 - Dimensions must be positive.
 - Referenced layers must exist for pads and tracks.
+- Pad, track, and placed-footprint layers must be copper layers.
 - Positions and track endpoints must be inside the board outline.
 - Via drill must be less than or equal to via diameter.
 

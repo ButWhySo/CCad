@@ -128,6 +128,11 @@ int main() {
   require(run(bad_layer_visibility_value_command) != 0,
           "pcb set-layer-visibility rejects invalid visibility");
 
+  const std::string add_silkscreen_layer_command =
+      quote(CCAD_BINARY) + " pcb add-layer --file " + quote(board_project_path) +
+      " --id F.SilkS --name FrontSilkscreen --kind silkscreen";
+  require(run(add_silkscreen_layer_command) == 0, "pcb add-layer accepts non-copper metadata");
+
   const std::string set_rules_command =
       quote(CCAD_BINARY) + " pcb set-rules --file " + quote(board_project_path) +
       " --copper-clearance-mm 0.15 --min-track-width-mm 0.12"
@@ -217,6 +222,18 @@ int main() {
       " --id T_BAD --net N1 --layer Inner.Cu"
       " --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25";
   require(run(bad_layer_command) != 0, "pcb add-track rejects unknown layer");
+
+  const std::string non_copper_pad_command =
+      quote(CCAD_BINARY) + " pcb add-pad --file " + quote(board_project_path) +
+      " --id P_SILK --component U1 --pin 1 --net N1 --layer F.SilkS"
+      " --x-mm 10 --y-mm 6 --width-mm 1.0 --height-mm 1.0";
+  require(run(non_copper_pad_command) != 0, "pcb add-pad rejects non-copper layer");
+
+  const std::string non_copper_track_command =
+      quote(CCAD_BINARY) + " pcb add-track --file " + quote(board_project_path) +
+      " --id T_SILK --net N1 --layer F.SilkS"
+      " --start-x-mm 10 --start-y-mm 6 --end-x-mm 12 --end-y-mm 6 --width-mm 0.25";
+  require(run(non_copper_track_command) != 0, "pcb add-track rejects non-copper layer");
 
   const std::string bad_via_command =
       quote(CCAD_BINARY) + " pcb add-via --file " + quote(board_project_path) +
@@ -337,7 +354,7 @@ int main() {
           "inspect reports board present");
   require(board_inspect_output.find("\"width_nm\": 50000000") != std::string::npos,
           "inspect reports board width");
-  require(board_inspect_output.find("\"layers\": 3") != std::string::npos,
+  require(board_inspect_output.find("\"layers\": 4") != std::string::npos,
           "inspect reports layer count");
   require(board_inspect_output.find("\"pads\": 1") != std::string::npos,
           "inspect reports pad count");
@@ -696,6 +713,13 @@ int main() {
       " --footprint " + quote(footprint_out_path) +
       " --component R2 --at-x-mm 10 --at-y-mm 12 --layer Inner.Cu";
   require(run(bad_place_layer_command) != 0, "pcb place-footprint rejects unknown layer");
+
+  const std::string non_copper_place_layer_command =
+      quote(CCAD_BINARY) + " pcb place-footprint --file " + quote(board_project_path) +
+      " --footprint " + quote(footprint_out_path) +
+      " --component R_SILK --at-x-mm 10 --at-y-mm 12 --layer F.SilkS";
+  require(run(non_copper_place_layer_command) != 0,
+          "pcb place-footprint rejects non-copper layer");
 
   const std::string edge_place_command =
       quote(CCAD_BINARY) + " pcb place-footprint --file " + quote(board_project_path) +

@@ -204,6 +204,18 @@ void requireLayer(const ccad::Board& board, const std::string& layer_id) {
   throw std::runtime_error("unknown layer: " + layer_id);
 }
 
+void requireCopperLayer(const ccad::Board& board, const std::string& layer_id) {
+  for (const ccad::Layer& layer : board.layers) {
+    if (layer.id == layer_id) {
+      if (layer.kind != "copper") {
+        throw std::runtime_error("layer is not copper: " + layer_id);
+      }
+      return;
+    }
+  }
+  throw std::runtime_error("unknown layer: " + layer_id);
+}
+
 void requireUniqueLayerId(const ccad::Board& board, const std::string& id) {
   for (const ccad::Layer& layer : board.layers) {
     if (layer.id == id) {

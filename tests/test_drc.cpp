@@ -101,6 +101,20 @@ int main() {
   require(hasCode(ccad::runDrc(unknown_track_layer), "UNKNOWN_TRACK_LAYER"),
           "drc reports unknown track layer");
 
+  ccad::Project non_copper_pad_layer = validBoardProject();
+  non_copper_pad_layer.board->layers.push_back(
+      ccad::Layer{.id = "F.SilkS", .name = "Front silkscreen", .kind = "silkscreen"});
+  non_copper_pad_layer.board->pads.at(0).layer_id = "F.SilkS";
+  require(hasCode(ccad::runDrc(non_copper_pad_layer), "PAD_NON_COPPER_LAYER"),
+          "drc reports pad on non-copper layer");
+
+  ccad::Project non_copper_track_layer = validBoardProject();
+  non_copper_track_layer.board->layers.push_back(
+      ccad::Layer{.id = "F.SilkS", .name = "Front silkscreen", .kind = "silkscreen"});
+  non_copper_track_layer.board->tracks.at(0).layer_id = "F.SilkS";
+  require(hasCode(ccad::runDrc(non_copper_track_layer), "TRACK_NON_COPPER_LAYER"),
+          "drc reports track on non-copper layer");
+
   ccad::Project duplicate_layer = validBoardProject();
   duplicate_layer.board->layers.push_back(duplicate_layer.board->layers.front());
   require(hasCode(ccad::runDrc(duplicate_layer), "DUPLICATE_LAYER_ID"),
