@@ -119,6 +119,9 @@ bool isPositive(const Length& length) {
   return length.nanometers > 0;
 }
 
+constexpr std::int64_t kDefaultMinTrackWidthNm = 150000;   // 0.15 mm
+constexpr std::int64_t kDefaultMinAnnularRingNm = 100000;  // 0.10 mm
+
 bool samePoint(const Point& left, const Point& right) {
   return left.x.nanometers == right.x.nanometers && left.y.nanometers == right.y.nanometers;
 }
@@ -391,6 +394,12 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
                                            "Via drill must be less than or equal to diameter",
                                            via.id));
     }
+    const std::int64_t annular_ring = (via.diameter.nanometers - via.drill.nanometers) / 2;
+    if (annular_ring < kDefaultMinAnnularRingNm) {
+      diagnostics.push_back(
+          makeDiagnostic("VIA_ANNULAR_RING_TOO_SMALL",
+                         "Via annular ring is below default minimum of 0.10 mm", via.id));
+    }
     for (const Keepout& keepout : board.keepouts) {
       if (rectContainsPoint(keepout.area, via.position)) {
         diagnostics.push_back(
@@ -431,6 +440,10 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
     if (!isPositive(track.width)) {
       diagnostics.push_back(
           makeDiagnostic("INVALID_TRACK_WIDTH", "Track width must be positive", track.id));
+    }
+    if (track.width.nanometers < kDefaultMinTrackWidthNm) {
+      diagnostics.push_back(makeDiagnostic(
+          "TRACK_TOO_NARROW", "Track width is below default minimum of 0.15 mm", track.id));
     }
     if (samePoint(track.start, track.end)) {
       diagnostics.push_back(
