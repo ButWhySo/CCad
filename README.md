@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 103 merged and verified on `main`; Sprint 104 planning.
+Progress counter: Phase 2 / 6, Sprint 104 in progress on `sprint-104-cli-route-metadata-edit`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -71,6 +71,7 @@ Progress counter: Phase 2 / 6, Sprint 103 merged and verified on `main`; Sprint 
 - CLI PCB authoring can resize pads, keepouts, and placement regions by stable ID.
 - CLI PCB authoring can update existing track endpoints and width by stable ID.
 - CLI PCB authoring can update existing via diameter and drill by stable ID.
+- CLI PCB authoring can update existing track net/layer metadata and via net metadata by stable ID.
 - CLI PCB authoring can update existing pad metadata, layer, and rotation by stable ID.
 - CLI PCB authoring can update keepout and placement-region kind values by stable ID.
 
@@ -404,9 +405,9 @@ Add PCB primitives through the CLI:
 .\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 .\build-qt\ccad.exe pcb set-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --rotation-deg 90
 .\build-qt\ccad.exe pcb add-via --file .\build-qt\canvas-demo.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
-.\build-qt\ccad.exe pcb set-via --file .\build-qt\canvas-demo.ccad.json --id V1 --diameter-mm 1.0 --drill-mm 0.5
+.\build-qt\ccad.exe pcb set-via --file .\build-qt\canvas-demo.ccad.json --id V1 --diameter-mm 1.0 --drill-mm 0.5 --net N2
 .\build-qt\ccad.exe pcb add-track --file .\build-qt\canvas-demo.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
-.\build-qt\ccad.exe pcb set-track --file .\build-qt\canvas-demo.ccad.json --id T1 --start-x-mm 6 --start-y-mm 7 --end-x-mm 9 --end-y-mm 10 --width-mm 0.30
+.\build-qt\ccad.exe pcb set-track --file .\build-qt\canvas-demo.ccad.json --id T1 --start-x-mm 6 --start-y-mm 7 --end-x-mm 9 --end-y-mm 10 --width-mm 0.30 --net N2 --layer B.Cu
 .\build-qt\ccad.exe pcb set-region-kind --file .\build-qt\canvas-demo.ccad.json --id K1 --kind routing
 .\build-qt\ccad.exe pcb move-object --file .\build-qt\canvas-demo.ccad.json --id V1 --x-mm 9 --y-mm 10
 .\build-qt\ccad.exe pcb resize-object --file .\build-qt\canvas-demo.ccad.json --id P1 --width-mm 2.0 --height-mm 1.2
@@ -424,9 +425,9 @@ What these do:
 - `pcb add-pad` appends a rectangular pad to an existing board project.
 - `pcb set-pad` updates an existing pad's component, pin, net, layer, and rotation.
 - `pcb add-via` appends a plated via with diameter and drill size.
-- `pcb set-via` updates an existing via diameter and drill size.
+- `pcb set-via` updates an existing via diameter, drill size, and optional net ID.
 - `pcb add-track` appends a straight copper track segment.
-- `pcb set-track` updates an existing straight track segment's endpoints and width.
+- `pcb set-track` updates an existing straight track segment's endpoints, width, optional net ID, and optional copper layer ID.
 - `pcb set-region-kind` updates an existing keepout or placement region kind.
 - `pcb move-object` moves a pad or via center, or a keepout or placement-region origin, by stable ID.
 - `pcb resize-object` resizes a pad, keepout, or placement region by stable ID.
@@ -578,7 +579,9 @@ ctest --test-dir build-qt --output-on-failure
 .\build-qt\ccad.exe pcb set-layer-visibility --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --visible true
 .\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 .\build-qt\ccad.exe pcb add-via --file .\build-qt\canvas-demo.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
+.\build-qt\ccad.exe pcb set-via --file .\build-qt\canvas-demo.ccad.json --id V1 --diameter-mm 1.0 --drill-mm 0.5 --net N2
 .\build-qt\ccad.exe pcb add-track --file .\build-qt\canvas-demo.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
+.\build-qt\ccad.exe pcb set-track --file .\build-qt\canvas-demo.ccad.json --id T1 --start-x-mm 6 --start-y-mm 7 --end-x-mm 9 --end-y-mm 10 --width-mm 0.30 --net N2 --layer B.Cu
 .\build-qt\ccad.exe pcb add-placement-region --file .\build-qt\canvas-demo.ccad.json --id PR1 --kind component --x-mm 11 --y-mm 4 --width-mm 12 --height-mm 8
 .\build-qt\ccad.exe pcb add-keepout --file .\build-qt\canvas-demo.ccad.json --id K1 --kind placement --x-mm 20 --y-mm 10 --width-mm 4 --height-mm 3
 .\build-qt\ccad.exe inspect .\build-qt\canvas-demo.ccad.json

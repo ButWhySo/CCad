@@ -467,11 +467,18 @@ int main() {
               " --id ST1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6"
               " --end-x-mm 8 --end-y-mm 9 --width-mm 0.25") == 0,
           "set track fixture add track exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb add-layer --file " + quote(set_track_board_path) +
+              " --id F.SilkS --name FrontSilkscreen --kind silkscreen") == 0,
+          "set track fixture add silkscreen layer exits zero");
   require(run(quote(CCAD_BINARY) + " pcb set-track --file " + quote(set_track_board_path) +
               " --id ST1 --start-x-mm 6 --start-y-mm 7 --end-x-mm 10 --end-y-mm 11"
-              " --width-mm 0.35") == 0,
-          "pcb set-track updates track geometry");
+              " --width-mm 0.35 --net N2 --layer B.Cu") == 0,
+          "pcb set-track updates track geometry and metadata");
   const std::string set_track_json = readFile(set_track_board_path);
+  require(set_track_json.find("\"net_id\": \"N2\"") != std::string::npos,
+          "pcb set-track writes net");
+  require(set_track_json.find("\"layer_id\": \"B.Cu\"") != std::string::npos,
+          "pcb set-track writes layer");
   require(set_track_json.find("\"x_nm\": 6000000") != std::string::npos,
           "pcb set-track writes start x");
   require(set_track_json.find("\"x_nm\": 10000000") != std::string::npos,
@@ -486,6 +493,10 @@ int main() {
               " --id MISSING --start-x-mm 6 --start-y-mm 7 --end-x-mm 10 --end-y-mm 11"
               " --width-mm 0.35") != 0,
           "pcb set-track rejects missing track");
+  require(run(quote(CCAD_BINARY) + " pcb set-track --file " + quote(set_track_board_path) +
+              " --id ST1 --start-x-mm 6 --start-y-mm 7 --end-x-mm 10 --end-y-mm 11"
+              " --width-mm 0.35 --layer F.SilkS") != 0,
+          "pcb set-track rejects non-copper layer metadata");
 
   const std::filesystem::path set_via_board_path = temp / "set-via-board.ccad.json";
   const std::string set_via_board_init_command =
@@ -498,9 +509,11 @@ int main() {
               0,
           "set via fixture add via exits zero");
   require(run(quote(CCAD_BINARY) + " pcb set-via --file " + quote(set_via_board_path) +
-              " --id SV1 --diameter-mm 1.0 --drill-mm 0.5") == 0,
-          "pcb set-via updates via geometry");
+              " --id SV1 --diameter-mm 1.0 --drill-mm 0.5 --net N2") == 0,
+          "pcb set-via updates via geometry and metadata");
   const std::string set_via_json = readFile(set_via_board_path);
+  require(set_via_json.find("\"net_id\": \"N2\"") != std::string::npos,
+          "pcb set-via writes net");
   require(set_via_json.find("\"diameter_nm\": 1000000") != std::string::npos,
           "pcb set-via writes diameter");
   require(set_via_json.find("\"drill_nm\": 500000") != std::string::npos,
