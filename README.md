@@ -4,9 +4,11 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 ## Current Phase
 
-Phase 2 / 6: physical primitives and early board authoring.
+Phase 3 / 6: routing assistance.
 
-Progress counter: Phase 2 / 6, Sprint 108 merged and verified on `main`; Sprint 109 planning.
+Progress counter: Phase 3 / 6, Sprint 109 in progress on `sprint-109-phase-2-completion-gate`.
+
+Phase 2 is complete. CCad now has a deterministic physical board model, early PCB authoring commands, physical DRC, board diffs, compact board query commands, and a native Qt review surface. Phase 3 starts the routing-assistance milestone: constrained route requests and a clean boundary for future router integration.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -78,7 +80,7 @@ Progress counter: Phase 2 / 6, Sprint 108 merged and verified on `main`; Sprint 
 - CLI PCB authoring can update existing pad metadata, layer, and rotation by stable ID.
 - CLI PCB authoring can update keepout and placement-region kind values by stable ID.
 
-Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
+Out of scope for the Phase 3 MVP: full interactive editing, automatic placement, a production autorouter, KiCad import/export, fabrication outputs, and network services.
 
 ## Git History Policy
 
