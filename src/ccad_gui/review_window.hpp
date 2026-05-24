@@ -13,9 +13,14 @@
 #include <QGraphicsView>
 #include <QLabel>
 #include <QMainWindow>
+#include <QPointF>
+#include <QString>
 
 #include <filesystem>
+#include <optional>
 #include <vector>
+
+QString formatCursorStatus(const std::optional<ccad::Board>& board, const QPointF& scene_position);
 
 class ReviewWindow final : public QMainWindow {
  public:
