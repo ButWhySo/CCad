@@ -91,6 +91,10 @@ const std::vector<CommandHelp>& commandHelp() {
                   .usage = "ccad pcb add-track --file <path> --id <id> --net <id> --layer <id> "
                            "--start-x-mm <n> --start-y-mm <n> --end-x-mm <n> "
                            "--end-y-mm <n> --width-mm <n>"},
+      CommandHelp{.name = "pcb set-track",
+                  .summary = "Update one existing track segment geometry",
+                  .usage = "ccad pcb set-track --file <path> --id <id> --start-x-mm <n> "
+                           "--start-y-mm <n> --end-x-mm <n> --end-y-mm <n> --width-mm <n>"},
       CommandHelp{.name = "pcb add-keepout",
                   .summary = "Append one rectangular keepout to a board project",
                   .usage = "ccad pcb add-keepout --file <path> --id <id> --kind <kind> "
