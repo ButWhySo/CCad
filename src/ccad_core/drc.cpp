@@ -489,6 +489,12 @@ void checkKeepouts(const Board& board, std::vector<Diagnostic>& diagnostics) {
       continue;
     }
 
+    if (keepout.kind != "placement" && keepout.kind != "routing") {
+      diagnostics.push_back(makeDiagnostic("UNKNOWN_KEEPOUT_KIND",
+                                           "Keepout kind must be placement or routing",
+                                           keepout.id));
+    }
+
     const Point min = keepout.area.origin;
     const Point max = maxPoint(keepout.area);
     if (!containsPoint(board, min) || !containsPoint(board, max)) {

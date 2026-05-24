@@ -274,6 +274,17 @@ int main() {
   require(hasCode(ccad::runDrc(keepout_outside), "KEEPOUT_OUTSIDE_BOARD"),
           "drc reports keepout area outside board");
 
+  ccad::Project unknown_keepout_kind = validBoardProject();
+  unknown_keepout_kind.board->keepouts.push_back(ccad::Keepout{
+      .id = "K_KIND",
+      .kind = "thermal",
+      .area = ccad::Rect{.origin = ccad::Point{.x = ccad::millimeters(4),
+                                               .y = ccad::millimeters(4)},
+                         .size = ccad::Size{.width = ccad::millimeters(2),
+                                            .height = ccad::millimeters(2)}}});
+  require(hasCode(ccad::runDrc(unknown_keepout_kind), "UNKNOWN_KEEPOUT_KIND"),
+          "drc reports unknown keepout kind");
+
   ccad::Project same_net_touching_track = validBoardProject();
   same_net_touching_track.board->tracks.push_back(ccad::TrackSegment{
       .id = "T_SAME",
