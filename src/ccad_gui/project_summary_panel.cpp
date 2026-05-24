@@ -9,6 +9,10 @@ QString qstr(const std::string& value) {
   return QString::fromStdString(value);
 }
 
+QString nmToMmText(const std::int64_t value_nm) {
+  return QString::number(value_nm / 1000000.0, 'f', 2);
+}
+
 }  // namespace
 
 ProjectSummaryPanel::ProjectSummaryPanel(QWidget* parent) : QWidget(parent) {
@@ -18,8 +22,10 @@ ProjectSummaryPanel::ProjectSummaryPanel(QWidget* parent) : QWidget(parent) {
 
   title_ = new QLabel("No project loaded", this);
   title_->setObjectName("title");
+  title_->setWordWrap(true);
   subtitle_ = new QLabel("Open a .ccad.json project to review board state.", this);
   subtitle_->setObjectName("subtitle");
+  subtitle_->setWordWrap(true);
   status_chip_ = new QLabel("Ready", this);
   status_chip_->setObjectName("statusChip");
   status_chip_->setAlignment(Qt::AlignCenter);
@@ -43,8 +49,13 @@ void ProjectSummaryPanel::renderReview(const ccad::ProjectReview& review) {
   title_->setText(qstr(review.project_name));
   QString board_text = "No board";
   if (review.has_board) {
-    board_text = "Board: " + QString::number(review.board_width_nm / 1000000.0, 'f', 2) +
-                 " mm x " + QString::number(review.board_height_nm / 1000000.0, 'f', 2) + " mm";
+    const QString board_size =
+        nmToMmText(review.board_width_nm) + " mm x " + nmToMmText(review.board_height_nm) + " mm";
+    board_text = "Board: " + board_size;
+    if (review.board_origin_x_nm != 0 || review.board_origin_y_nm != 0) {
+      board_text = "Board: origin " + nmToMmText(review.board_origin_x_nm) + " mm, " +
+                   nmToMmText(review.board_origin_y_nm) + " mm; " + board_size;
+    }
   }
   subtitle_->setText("Project ID: " + qstr(review.project_id) + "   " + board_text);
   components_value_->setText(QString::number(review.component_count));

@@ -181,6 +181,28 @@ if(CCAD_BUILD_GUI)
     endif()
     add_test(NAME gui_object_browser COMMAND ccad_gui_object_browser_tests)
 
+    add_executable(ccad_gui_project_summary_tests
+      tests/test_gui_project_summary_panel.cpp
+      src/ccad_gui/project_summary_panel.cpp
+    )
+    target_link_libraries(ccad_gui_project_summary_tests PRIVATE ccad_core Qt6::Widgets)
+    target_include_directories(ccad_gui_project_summary_tests PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests
+    )
+    if(MSVC)
+      target_compile_options(ccad_gui_project_summary_tests PRIVATE /W4)
+      if(CCAD_WARNINGS_AS_ERRORS)
+        target_compile_options(ccad_gui_project_summary_tests PRIVATE /WX)
+      endif()
+    else()
+      target_compile_options(ccad_gui_project_summary_tests PRIVATE -Wall -Wextra -Wpedantic)
+      if(CCAD_WARNINGS_AS_ERRORS)
+        target_compile_options(ccad_gui_project_summary_tests PRIVATE -Werror)
+      endif()
+    endif()
+    add_test(NAME gui_project_summary COMMAND ccad_gui_project_summary_tests)
+
     add_executable(ccad_gui_canvas_selection_style_tests
       tests/test_gui_canvas_selection_style.cpp
       src/ccad_gui/board_canvas_renderer.cpp
