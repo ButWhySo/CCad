@@ -65,6 +65,8 @@ int main() {
           "help json describes footprint placement");
   require(help_json.find("\"name\": \"pcb add-layer\"") != std::string::npos,
           "help json describes layer authoring");
+  require(help_json.find("\"name\": \"pcb set-layer\"") != std::string::npos,
+          "help json describes layer metadata editing");
   require(help_json.find("\"name\": \"pcb remove-layer\"") != std::string::npos,
           "help json describes layer removal");
   require(help_json.find("\"name\": \"pcb set-layer-visibility\"") != std::string::npos,
@@ -134,6 +136,28 @@ int main() {
           "pcb set-layer-visibility preserves layer id");
   require(visible_layer_json.find("\"visible\": true") != std::string::npos,
           "pcb set-layer-visibility writes true visibility");
+  const std::string set_layer_command =
+      quote(CCAD_BINARY) + " pcb set-layer --file " + quote(board_project_path) +
+      " --id In1.Cu --name InnerSignal --kind copper --visible false";
+  require(run(set_layer_command) == 0, "pcb set-layer exits zero");
+  const std::string edited_layer_json = readFile(board_project_path);
+  require(edited_layer_json.find("\"id\": \"In1.Cu\"") != std::string::npos,
+          "pcb set-layer preserves layer id");
+  require(edited_layer_json.find("\"name\": \"InnerSignal\"") != std::string::npos,
+          "pcb set-layer writes name");
+  require(edited_layer_json.find("\"kind\": \"copper\"") != std::string::npos,
+          "pcb set-layer writes kind");
+  require(edited_layer_json.find("\"visible\": false") != std::string::npos,
+          "pcb set-layer writes visibility");
+  const std::string bad_set_layer_command =
+      quote(CCAD_BINARY) + " pcb set-layer --file " + quote(board_project_path) +
+      " --id Missing.Cu --name Missing --kind copper --visible true";
+  require(run(bad_set_layer_command) != 0, "pcb set-layer rejects missing layer");
+  const std::string bad_set_layer_visibility_value_command =
+      quote(CCAD_BINARY) + " pcb set-layer --file " + quote(board_project_path) +
+      " --id In1.Cu --name InnerSignal --kind copper --visible maybe";
+  require(run(bad_set_layer_visibility_value_command) != 0,
+          "pcb set-layer rejects invalid visibility");
   const std::string bad_set_layer_visibility_command =
       quote(CCAD_BINARY) + " pcb set-layer-visibility --file " + quote(board_project_path) +
       " --id Missing.Cu --visible true";
@@ -170,6 +194,11 @@ int main() {
       " --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0";
   require(run(remove_layer_add_pad_command) == 0, "remove layer fixture add pad exits zero");
   require(run(remove_back_layer_command) != 0, "pcb remove-layer rejects referenced layer");
+  const std::string set_referenced_layer_kind_command =
+      quote(CCAD_BINARY) + " pcb set-layer --file " + quote(remove_layer_board_path) +
+      " --id In1.Cu --name InnerSilkscreen --kind silkscreen --visible true";
+  require(run(set_referenced_layer_kind_command) != 0,
+          "pcb set-layer rejects referenced non-copper layer kind");
 
   const std::string add_silkscreen_layer_command =
       quote(CCAD_BINARY) + " pcb add-layer --file " + quote(board_project_path) +

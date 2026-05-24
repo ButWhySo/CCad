@@ -6,13 +6,13 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 102 merged and verified on `main`; Sprint 103 planning.
+Progress counter: Phase 2 / 6, Sprint 103 in progress on `sprint-103-cli-set-layer`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
 - Logical ERC diagnostics.
 - CLI: `ccad help --format json`, `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
-- CLI PCB authoring: `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
+- CLI PCB authoring: `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
 - Physical board outline, layers, rectangular placement regions, rectangular keepouts, pads, vias, and track segments in project JSON.
@@ -66,6 +66,7 @@ Progress counter: Phase 2 / 6, Sprint 102 merged and verified on `main`; Sprint 
 - CLI diff tests cover board-level physical object entries in executable JSON output.
 - CLI PCB authoring can remove physical board objects by stable ID.
 - CLI PCB authoring can remove unused board layers by stable ID.
+- CLI PCB authoring can update board layer name, kind, and visibility by stable ID.
 - CLI PCB authoring can move pads, vias, keepouts, and placement regions by stable ID.
 - CLI PCB authoring can resize pads, keepouts, and placement regions by stable ID.
 - CLI PCB authoring can update existing track endpoints and width by stable ID.
@@ -397,6 +398,7 @@ Add PCB primitives through the CLI:
 .\build-qt\ccad.exe pcb set-outline --file .\build-qt\canvas-demo.ccad.json --x-mm 0 --y-mm 0 --width-mm 44 --height-mm 30
 .\build-qt\ccad.exe pcb set-rules --file .\build-qt\canvas-demo.ccad.json --copper-clearance-mm 0.20 --min-track-width-mm 0.15 --min-via-annular-ring-mm 0.10
 .\build-qt\ccad.exe pcb add-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --name "Inner 1 copper" --kind copper --visible false
+.\build-qt\ccad.exe pcb set-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --name "Inner signal copper" --kind copper --visible true
 .\build-qt\ccad.exe pcb set-layer-visibility --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --visible true
 .\build-qt\ccad.exe pcb remove-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu
 .\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
@@ -416,6 +418,7 @@ What these do:
 - `pcb set-outline` replaces the rectangular board outline while rejecting outlines that would leave existing pads, vias, tracks, keepouts, or placement regions outside the board.
 - `pcb set-rules` updates board-level DRC defaults for copper clearance, minimum track width, and minimum via annular ring.
 - `pcb add-layer` appends a board layer with stable ID, display name, kind, and optional visibility.
+- `pcb set-layer` updates an existing layer's display name, kind, and visibility while rejecting non-copper kind changes for layers referenced by pads or tracks.
 - `pcb remove-layer` removes an unused board layer by stable ID.
 - `pcb set-layer-visibility` updates an existing layer's visibility flag for review surfaces.
 - `pcb add-pad` appends a rectangular pad to an existing board project.
@@ -571,6 +574,7 @@ ctest --test-dir build-qt --output-on-failure
 .\build-qt\ccad.exe pcb set-outline --file .\build-qt\canvas-demo.ccad.json --x-mm 0 --y-mm 0 --width-mm 44 --height-mm 30
 .\build-qt\ccad.exe pcb set-rules --file .\build-qt\canvas-demo.ccad.json --copper-clearance-mm 0.20 --min-track-width-mm 0.15 --min-via-annular-ring-mm 0.10
 .\build-qt\ccad.exe pcb add-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --name "Inner 1 copper" --kind copper --visible false
+.\build-qt\ccad.exe pcb set-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --name "Inner signal copper" --kind copper --visible true
 .\build-qt\ccad.exe pcb set-layer-visibility --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --visible true
 .\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 .\build-qt\ccad.exe pcb add-via --file .\build-qt\canvas-demo.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
