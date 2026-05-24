@@ -501,6 +501,39 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "set-region-kind") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--kind"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const std::string kind = requireOption(options, "--kind");
+      bool updated = false;
+      for (ccad::Keepout& keepout : board.keepouts) {
+        if (keepout.id == id) {
+          keepout.kind = kind;
+          updated = true;
+          break;
+        }
+      }
+      for (ccad::PlacementRegion& region : board.placement_regions) {
+        if (region.id == id) {
+          region.kind = kind;
+          updated = true;
+          break;
+        }
+      }
+      if (!updated) {
+        throw std::runtime_error("unknown region: " + id);
+      }
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "remove-object") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id"});

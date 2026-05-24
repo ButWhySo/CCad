@@ -83,6 +83,8 @@ int main() {
           "help json describes via editing");
   require(help_json.find("\"name\": \"pcb add-placement-region\"") != std::string::npos,
           "help json describes placement region authoring");
+  require(help_json.find("\"name\": \"pcb set-region-kind\"") != std::string::npos,
+          "help json describes region kind editing");
   require(help_json.find("\"name\": \"pcb remove-object\"") != std::string::npos,
           "help json describes physical object removal");
   require(help_json.find("\"name\": \"pcb move-object\"") != std::string::npos,
@@ -530,6 +532,36 @@ int main() {
               " --id MISSING --component U2 --pin 2 --net N2 --layer F.Cu"
               " --rotation-deg 0") != 0,
           "pcb set-pad rejects missing pad");
+
+  const std::filesystem::path set_region_board_path = temp / "set-region-board.ccad.json";
+  const std::string set_region_board_init_command =
+      quote(CCAD_BINARY) +
+      " init --name set-region-board --width-mm 42 --height-mm 28 --out " +
+      quote(set_region_board_path);
+  require(run(set_region_board_init_command) == 0, "set region board init exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb add-keepout --file " + quote(set_region_board_path) +
+              " --id SRK1 --kind placement --x-mm 20 --y-mm 10 --width-mm 4 --height-mm 3") ==
+              0,
+          "set region fixture add keepout exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb add-placement-region --file " +
+              quote(set_region_board_path) +
+              " --id SRPR1 --kind component --x-mm 2 --y-mm 3 --width-mm 10 --height-mm 6") ==
+              0,
+          "set region fixture add placement region exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb set-region-kind --file " +
+              quote(set_region_board_path) + " --id SRK1 --kind routing") == 0,
+          "pcb set-region-kind updates keepout");
+  require(run(quote(CCAD_BINARY) + " pcb set-region-kind --file " +
+              quote(set_region_board_path) + " --id SRPR1 --kind module") == 0,
+          "pcb set-region-kind updates placement region");
+  const std::string set_region_json = readFile(set_region_board_path);
+  require(set_region_json.find("\"kind\": \"routing\"") != std::string::npos,
+          "pcb set-region-kind writes keepout kind");
+  require(set_region_json.find("\"kind\": \"module\"") != std::string::npos,
+          "pcb set-region-kind writes placement region kind");
+  require(run(quote(CCAD_BINARY) + " pcb set-region-kind --file " +
+              quote(set_region_board_path) + " --id MISSING --kind routing") != 0,
+          "pcb set-region-kind rejects missing region");
 
   const std::string bad_layer_command =
       quote(CCAD_BINARY) + " pcb add-track --file " + quote(board_project_path) +
