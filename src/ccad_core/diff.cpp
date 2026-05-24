@@ -72,6 +72,14 @@ std::string trackSignature(const TrackSegment& track) {
          std::to_string(track.width.nanometers);
 }
 
+std::string keepoutSignature(const Keepout& keepout) {
+  return keepout.kind + "\x1f" + outlineSignature(keepout.area);
+}
+
+std::string placementRegionSignature(const PlacementRegion& region) {
+  return region.kind + "\x1f" + outlineSignature(region.area);
+}
+
 template <typename T, typename SignatureFn>
 void diffObjectMap(ProjectDiff& diff, const std::string& object_type, const std::vector<T>& before,
                    const std::vector<T>& after, SignatureFn signature_fn) {
@@ -138,6 +146,10 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
       });
     }
     diffObjectMap(diff, "layer", before.board->layers, after.board->layers, layerSignature);
+    diffObjectMap(diff, "placement_region", before.board->placement_regions,
+                  after.board->placement_regions, placementRegionSignature);
+    diffObjectMap(diff, "keepout", before.board->keepouts, after.board->keepouts,
+                  keepoutSignature);
     diffObjectMap(diff, "pad", before.board->pads, after.board->pads, padSignature);
     diffObjectMap(diff, "via", before.board->vias, after.board->vias, viaSignature);
     diffObjectMap(diff, "track", before.board->tracks, after.board->tracks, trackSignature);
@@ -156,6 +168,24 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .object_type = "layer",
           .object_id = layer.id,
           .message = "layer added",
+      });
+    }
+    diff.added_count += after.board->placement_regions.size();
+    for (const PlacementRegion& region : after.board->placement_regions) {
+      diff.entries.push_back(DiffEntry{
+          .change = "added",
+          .object_type = "placement_region",
+          .object_id = region.id,
+          .message = "placement_region added",
+      });
+    }
+    diff.added_count += after.board->keepouts.size();
+    for (const Keepout& keepout : after.board->keepouts) {
+      diff.entries.push_back(DiffEntry{
+          .change = "added",
+          .object_type = "keepout",
+          .object_id = keepout.id,
+          .message = "keepout added",
       });
     }
     diff.added_count += after.board->pads.size();
@@ -200,6 +230,24 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .object_type = "layer",
           .object_id = layer.id,
           .message = "layer removed",
+      });
+    }
+    diff.removed_count += before.board->placement_regions.size();
+    for (const PlacementRegion& region : before.board->placement_regions) {
+      diff.entries.push_back(DiffEntry{
+          .change = "removed",
+          .object_type = "placement_region",
+          .object_id = region.id,
+          .message = "placement_region removed",
+      });
+    }
+    diff.removed_count += before.board->keepouts.size();
+    for (const Keepout& keepout : before.board->keepouts) {
+      diff.entries.push_back(DiffEntry{
+          .change = "removed",
+          .object_type = "keepout",
+          .object_id = keepout.id,
+          .message = "keepout removed",
       });
     }
     diff.removed_count += before.board->pads.size();
