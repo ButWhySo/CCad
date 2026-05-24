@@ -95,6 +95,13 @@ bool eraseById(std::vector<T>& items, const std::string& id) {
   return false;
 }
 
+struct PhysicalNetSummary {
+  std::string id;
+  int pad_count = 0;
+  int via_count = 0;
+  int track_count = 0;
+};
+
 void writePointJson(std::ostream& out, const ccad::Point& point, const int indent) {
   const std::string pad(static_cast<std::size_t>(indent), ' ');
   out << pad << "\"x_nm\": " << point.x.nanometers << ",\n";
@@ -284,6 +291,49 @@ std::string listObjectsJson(const ccad::Board& board, const std::string& type_fi
   return out.str();
 }
 
+std::string listNetsJson(const ccad::Board& board) {
+  std::map<std::string, PhysicalNetSummary> nets;
+  for (const ccad::Pad& pad : board.pads) {
+    if (!pad.net_id.empty()) {
+      PhysicalNetSummary& summary = nets[pad.net_id];
+      summary.id = pad.net_id;
+      ++summary.pad_count;
+    }
+  }
+  for (const ccad::Via& via : board.vias) {
+    if (!via.net_id.empty()) {
+      PhysicalNetSummary& summary = nets[via.net_id];
+      summary.id = via.net_id;
+      ++summary.via_count;
+    }
+  }
+  for (const ccad::TrackSegment& track : board.tracks) {
+    if (!track.net_id.empty()) {
+      PhysicalNetSummary& summary = nets[track.net_id];
+      summary.id = track.net_id;
+      ++summary.track_count;
+    }
+  }
+
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"summary\": {\n"
+      << "    \"total\": " << nets.size() << "\n"
+      << "  },\n"
+      << "  \"nets\": [\n";
+  std::size_t index = 0;
+  for (const auto& entry : nets) {
+    const PhysicalNetSummary& net = entry.second;
+    out << "    {\"id\": \"" << ccad::escapeJson(net.id) << "\", \"pad_count\": "
+        << net.pad_count << ", \"via_count\": " << net.via_count
+        << ", \"track_count\": " << net.track_count << "}"
+        << (++index == nets.size() ? "" : ",") << '\n';
+  }
+  out << "  ]\n"
+      << "}\n";
+  return out.str();
+}
+
 }  // namespace
 
 int pcbCommand(const std::vector<std::string>& args) {
@@ -411,6 +461,17 @@ int pcbCommand(const std::vector<std::string>& args) {
           options.contains("--type") ? requireOption(options, "--type") : "";
       requireKnownObjectType(type_filter);
       std::cout << listObjectsJson(*project.board, type_filter);
+      return 0;
+    }
+
+    if (subcommand == "list-nets") {
+      const std::map<std::string, std::string> options = parseOptions(args, 1, {"--file"});
+      const std::string file = requireOption(options, "--file");
+      const ccad::Project project = loadProjectFile(file);
+      if (!project.board.has_value()) {
+        throw std::runtime_error("project has no board");
+      }
+      std::cout << listNetsJson(*project.board);
       return 0;
     }
 
