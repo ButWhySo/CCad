@@ -34,6 +34,7 @@ ccad::Footprint loadFootprintFile(const std::string& path);
 
 ccad::Board& requireBoard(ccad::Project& project);
 void requireLayer(const ccad::Board& board, const std::string& layer_id);
+void requireUniqueLayerId(const ccad::Board& board, const std::string& id);
 void requireInsideBoard(const ccad::Board& board, ccad::Point point, const std::string& label);
 void requirePointWithMarginInsideBoard(const ccad::Board& board, ccad::Point point,
                                        ccad::Length margin, const std::string& label);
