@@ -77,6 +77,8 @@ int main() {
           "help json describes track editing");
   require(help_json.find("\"name\": \"pcb add-keepout\"") != std::string::npos,
           "help json describes keepout authoring");
+  require(help_json.find("\"name\": \"pcb set-via\"") != std::string::npos,
+          "help json describes via editing");
   require(help_json.find("\"name\": \"pcb add-placement-region\"") != std::string::npos,
           "help json describes placement region authoring");
   require(help_json.find("\"name\": \"pcb remove-object\"") != std::string::npos,
@@ -451,6 +453,37 @@ int main() {
               " --id MISSING --start-x-mm 6 --start-y-mm 7 --end-x-mm 10 --end-y-mm 11"
               " --width-mm 0.35") != 0,
           "pcb set-track rejects missing track");
+
+  const std::filesystem::path set_via_board_path = temp / "set-via-board.ccad.json";
+  const std::string set_via_board_init_command =
+      quote(CCAD_BINARY) +
+      " init --name set-via-board --width-mm 42 --height-mm 28 --out " +
+      quote(set_via_board_path);
+  require(run(set_via_board_init_command) == 0, "set via board init exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb add-via --file " + quote(set_via_board_path) +
+              " --id SV1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4") ==
+              0,
+          "set via fixture add via exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb set-via --file " + quote(set_via_board_path) +
+              " --id SV1 --diameter-mm 1.0 --drill-mm 0.5") == 0,
+          "pcb set-via updates via geometry");
+  const std::string set_via_json = readFile(set_via_board_path);
+  require(set_via_json.find("\"diameter_nm\": 1000000") != std::string::npos,
+          "pcb set-via writes diameter");
+  require(set_via_json.find("\"drill_nm\": 500000") != std::string::npos,
+          "pcb set-via writes drill");
+  require(run(quote(CCAD_BINARY) + " pcb set-via --file " + quote(set_via_board_path) +
+              " --id SV1 --diameter-mm 0.4 --drill-mm 0.8") != 0,
+          "pcb set-via rejects drill larger than diameter");
+  require(run(quote(CCAD_BINARY) + " pcb move-object --file " + quote(set_via_board_path) +
+              " --id SV1 --x-mm 0.5 --y-mm 9") == 0,
+          "set via fixture moves via near edge");
+  require(run(quote(CCAD_BINARY) + " pcb set-via --file " + quote(set_via_board_path) +
+              " --id SV1 --diameter-mm 2.0 --drill-mm 0.5") != 0,
+          "pcb set-via rejects geometry outside board");
+  require(run(quote(CCAD_BINARY) + " pcb set-via --file " + quote(set_via_board_path) +
+              " --id MISSING --diameter-mm 1.0 --drill-mm 0.5") != 0,
+          "pcb set-via rejects missing via");
 
   const std::string bad_layer_command =
       quote(CCAD_BINARY) + " pcb add-track --file " + quote(board_project_path) +
