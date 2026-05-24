@@ -174,6 +174,11 @@ int main() {
   require(hasCode(ccad::runDrc(duplicate_pad), "DUPLICATE_PAD_ID"),
           "drc reports duplicate pad id");
 
+  ccad::Project empty_pad_id = validBoardProject();
+  empty_pad_id.board->pads.at(0).id.clear();
+  require(hasCode(ccad::runDrc(empty_pad_id), "INVALID_PAD_ID"),
+          "drc reports empty pad id");
+
   ccad::Project pad_geometry_outside = validBoardProject();
   pad_geometry_outside.board->pads.at(0).position =
       ccad::Point{.x = ccad::millimeters(0.4), .y = ccad::millimeters(0.4)};
@@ -190,10 +195,20 @@ int main() {
   require(hasDiagnostic(ccad::runDrc(unconnected_via), "UNCONNECTED_VIA", "warning"),
           "drc reports unconnected via as warning");
 
+  ccad::Project empty_via_id = validBoardProject();
+  empty_via_id.board->vias.at(0).id.clear();
+  require(hasCode(ccad::runDrc(empty_via_id), "INVALID_VIA_ID"),
+          "drc reports empty via id");
+
   ccad::Project unconnected_track = validBoardProject();
   unconnected_track.board->tracks.at(0).net_id.clear();
   require(hasDiagnostic(ccad::runDrc(unconnected_track), "UNCONNECTED_TRACK", "warning"),
           "drc reports unconnected track as warning");
+
+  ccad::Project empty_track_id = validBoardProject();
+  empty_track_id.board->tracks.at(0).id.clear();
+  require(hasCode(ccad::runDrc(empty_track_id), "INVALID_TRACK_ID"),
+          "drc reports empty track id");
 
   ccad::Project unknown_pad_net = validBoardProject();
   unknown_pad_net.board->pads.at(0).net_id = "N404";

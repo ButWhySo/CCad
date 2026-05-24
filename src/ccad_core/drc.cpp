@@ -407,6 +407,9 @@ bool endpointTouchesSameNetPrimitive(const Board& board, const TrackSegment& sou
 void checkPads(const Project& project, const Board& board, std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
   for (const Pad& pad : board.pads) {
+    if (pad.id.empty()) {
+      diagnostics.push_back(makeDiagnostic("INVALID_PAD_ID", "Pad ID must not be empty", pad.id));
+    }
     if (!ids.insert(pad.id).second) {
       diagnostics.push_back(
           makeDiagnostic("DUPLICATE_PAD_ID", "Pad ID appears more than once", pad.id));
@@ -455,6 +458,9 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
 void checkVias(const Project& project, const Board& board, std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
   for (const Via& via : board.vias) {
+    if (via.id.empty()) {
+      diagnostics.push_back(makeDiagnostic("INVALID_VIA_ID", "Via ID must not be empty", via.id));
+    }
     if (!ids.insert(via.id).second) {
       diagnostics.push_back(
           makeDiagnostic("DUPLICATE_VIA_ID", "Via ID appears more than once", via.id));
@@ -509,6 +515,10 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
 void checkTracks(const Project& project, const Board& board, std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
   for (const TrackSegment& track : board.tracks) {
+    if (track.id.empty()) {
+      diagnostics.push_back(
+          makeDiagnostic("INVALID_TRACK_ID", "Track ID must not be empty", track.id));
+    }
     if (!ids.insert(track.id).second) {
       diagnostics.push_back(
           makeDiagnostic("DUPLICATE_TRACK_ID", "Track ID appears more than once", track.id));
