@@ -53,7 +53,12 @@ std::string reviewJson(const ccad::ProjectReview& review) {
   out << "  \"board\": {\n";
   out << "    \"has_board\": " << (review.has_board ? "true" : "false") << ",\n";
   out << "    \"width_nm\": " << review.board_width_nm << ",\n";
-  out << "    \"height_nm\": " << review.board_height_nm << "\n";
+  out << "    \"height_nm\": " << review.board_height_nm << ",\n";
+  out << "    \"pads\": " << review.pad_count << ",\n";
+  out << "    \"vias\": " << review.via_count << ",\n";
+  out << "    \"tracks\": " << review.track_count << ",\n";
+  out << "    \"placement_regions\": " << review.placement_region_count << ",\n";
+  out << "    \"keepouts\": " << review.keepout_count << "\n";
   out << "  },\n";
   out << "  \"status\": \"" << ccad::escapeJson(review.status) << "\",\n";
   out << "  \"diagnostics\": [\n";
@@ -297,6 +302,14 @@ void requireUniqueKeepoutId(const ccad::Board& board, const std::string& id) {
   }
 }
 
+void requireUniquePlacementRegionId(const ccad::Board& board, const std::string& id) {
+  for (const ccad::PlacementRegion& region : board.placement_regions) {
+    if (region.id == id) {
+      throw std::runtime_error("duplicate placement region id: " + id);
+    }
+  }
+}
+
 void requireUniquePhysicalObjectId(const ccad::Board& board, const std::string& id) {
   for (const ccad::Pad& pad : board.pads) {
     if (pad.id == id) {
@@ -315,6 +328,11 @@ void requireUniquePhysicalObjectId(const ccad::Board& board, const std::string& 
   }
   for (const ccad::Keepout& keepout : board.keepouts) {
     if (keepout.id == id) {
+      throw std::runtime_error("duplicate physical object id: " + id);
+    }
+  }
+  for (const ccad::PlacementRegion& region : board.placement_regions) {
+    if (region.id == id) {
       throw std::runtime_error("duplicate physical object id: " + id);
     }
   }

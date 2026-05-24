@@ -20,6 +20,11 @@ struct ProjectReview {
   std::int64_t board_width_nm = 0;
   std::int64_t board_height_nm = 0;
   std::size_t layer_count = 0;
+  std::size_t pad_count = 0;
+  std::size_t via_count = 0;
+  std::size_t track_count = 0;
+  std::size_t placement_region_count = 0;
+  std::size_t keepout_count = 0;
   std::vector<Diagnostic> diagnostics;
   std::size_t error_count = 0;
   std::size_t warning_count = 0;

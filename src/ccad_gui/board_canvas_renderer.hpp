@@ -23,6 +23,7 @@ struct CanvasRenderTheme {
   QColor grid_color = QColor("#17243a");
   QColor board_outline_color = QColor("#38bdf8");
   QColor board_fill_color = QColor("#0f1b2d");
+  QColor placement_region_color = QColor("#22c55e");
   QColor keepout_color = QColor("#f97316");
   QColor track_color = QColor("#ef4444");
   QColor pad_outline_color = QColor("#f472b6");

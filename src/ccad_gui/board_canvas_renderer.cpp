@@ -127,6 +127,24 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
   auto* board = canvas_scene.addRect(board_rect, outline_pen, QBrush(theme.board_fill_color));
   board->setToolTip("Board outline");
 
+  QPen placement_region_pen(theme.placement_region_color);
+  placement_region_pen.setWidthF(1.2);
+  placement_region_pen.setStyle(Qt::DotLine);
+  QBrush placement_region_brush(QColor(theme.placement_region_color.red(),
+                                       theme.placement_region_color.green(),
+                                       theme.placement_region_color.blue(), 36));
+  for (const ccad::CanvasPlacementRegion& region : scene.placement_regions) {
+    const QRectF region_rect(margin + (region.x_units * scale),
+                             margin + (region.y_units * scale),
+                             region.width_units * scale, region.height_units * scale);
+    QPainterPath region_path;
+    region_path.addRect(region_rect);
+    auto* item =
+        addHighlightPath(canvas_scene, region_path, placement_region_pen, placement_region_brush);
+    item->setToolTip("Placement region " + qstr(region.id) + " (" + qstr(region.kind) + ")");
+    tagObject(*item, "placement-region", qstr(region.id), theme.placement_region_color);
+  }
+
   QPen keepout_pen(theme.keepout_color);
   keepout_pen.setWidthF(1.2);
   keepout_pen.setStyle(Qt::DashLine);

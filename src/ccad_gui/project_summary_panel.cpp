@@ -30,6 +30,11 @@ ProjectSummaryPanel::ProjectSummaryPanel(QWidget* parent) : QWidget(parent) {
   layout->addWidget(makeValueCard("Components"));
   layout->addWidget(makeValueCard("Nets"));
   layout->addWidget(makeValueCard("Layers"));
+  layout->addWidget(makeValueCard("Pads"));
+  layout->addWidget(makeValueCard("Vias"));
+  layout->addWidget(makeValueCard("Tracks"));
+  layout->addWidget(makeValueCard("Placement Regions"));
+  layout->addWidget(makeValueCard("Keepouts"));
   layout->addWidget(makeValueCard("Diagnostics"));
   layout->addStretch(1);
 }
@@ -45,6 +50,11 @@ void ProjectSummaryPanel::renderReview(const ccad::ProjectReview& review) {
   components_value_->setText(QString::number(review.component_count));
   nets_value_->setText(QString::number(review.net_count));
   layers_value_->setText(QString::number(review.layer_count));
+  pads_value_->setText(QString::number(review.pad_count));
+  vias_value_->setText(QString::number(review.via_count));
+  tracks_value_->setText(QString::number(review.track_count));
+  placement_regions_value_->setText(QString::number(review.placement_region_count));
+  keepouts_value_->setText(QString::number(review.keepout_count));
   diagnostics_value_->setText(QString::number(review.diagnostics.size()));
 
   if (review.error_count > 0) {
@@ -62,6 +72,11 @@ void ProjectSummaryPanel::renderLoadFailure(const QString& path) {
   components_value_->setText("0");
   nets_value_->setText("0");
   layers_value_->setText("0");
+  pads_value_->setText("0");
+  vias_value_->setText("0");
+  tracks_value_->setText("0");
+  placement_regions_value_->setText("0");
+  keepouts_value_->setText("0");
   diagnostics_value_->setText("0");
   setStatusChip("Load failed", "#dc2626");
 }
@@ -87,6 +102,16 @@ QWidget* ProjectSummaryPanel::makeValueCard(const QString& label) {
     nets_value_ = value;
   } else if (label == "Layers") {
     layers_value_ = value;
+  } else if (label == "Pads") {
+    pads_value_ = value;
+  } else if (label == "Vias") {
+    vias_value_ = value;
+  } else if (label == "Tracks") {
+    tracks_value_ = value;
+  } else if (label == "Placement Regions") {
+    placement_regions_value_ = value;
+  } else if (label == "Keepouts") {
+    keepouts_value_ = value;
   } else {
     diagnostics_value_ = value;
   }

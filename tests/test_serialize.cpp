@@ -23,6 +23,13 @@ int main() {
       },
       .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true},
                  ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true}},
+      .placement_regions = {ccad::PlacementRegion{
+          .id = "PR1",
+          .kind = "component",
+          .area = ccad::Rect{
+              .origin = ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(3)},
+              .size = ccad::Size{.width = ccad::millimeters(10),
+                                  .height = ccad::millimeters(6)}}}},
       .keepouts = {ccad::Keepout{.id = "K1",
                                  .kind = "placement",
                                  .area = ccad::Rect{
@@ -75,6 +82,8 @@ int main() {
   require(json.find("\"id\": \"proj-demo\"") != std::string::npos, "project id emitted");
   require(json.find("\"board\"") != std::string::npos, "board emitted");
   require(json.find("\"width_nm\": 42000000") != std::string::npos, "board width emitted");
+  require(json.find("\"placement_regions\"") != std::string::npos,
+          "placement regions emitted");
   require(json.find("\"keepouts\"") != std::string::npos, "keepouts emitted");
   require(json.find("\"component_id\": \"U1\"") != std::string::npos, "net member emitted");
 
@@ -85,6 +94,9 @@ int main() {
   require(loaded.board->outline.size.width.nanometers == 42000000, "board width round trips");
   require(loaded.board->outline.size.height.nanometers == 28000000, "board height round trips");
   require(loaded.board->layers.size() == 2, "board layers round trip");
+  require(loaded.board->placement_regions.size() == 1, "board placement regions round trip");
+  require(loaded.board->placement_regions.at(0).area.size.width.nanometers == 10000000,
+          "placement region width round trips");
   require(loaded.board->keepouts.size() == 1, "board keepouts round trip");
   require(loaded.board->keepouts.at(0).area.size.width.nanometers == 4000000,
           "keepout width round trips");

@@ -738,6 +738,42 @@ void checkKeepouts(const Board& board, std::vector<Diagnostic>& diagnostics) {
   }
 }
 
+void checkPlacementRegions(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  std::set<std::string> ids;
+  for (const PlacementRegion& region : board.placement_regions) {
+    if (region.id.empty()) {
+      diagnostics.push_back(makeDiagnostic("INVALID_PLACEMENT_REGION_ID",
+                                           "Placement region ID must not be empty", region.id));
+    }
+    if (!ids.insert(region.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_PLACEMENT_REGION_ID",
+                                           "Placement region ID appears more than once",
+                                           region.id));
+    }
+
+    if (!isPositive(region.area.size.width) || !isPositive(region.area.size.height)) {
+      diagnostics.push_back(makeDiagnostic("INVALID_PLACEMENT_REGION_SIZE",
+                                           "Placement region width and height must be positive",
+                                           region.id));
+      continue;
+    }
+
+    if (region.kind != "component" && region.kind != "module") {
+      diagnostics.push_back(makeDiagnostic("UNKNOWN_PLACEMENT_REGION_KIND",
+                                           "Placement region kind must be component or module",
+                                           region.id));
+    }
+
+    const Point min = region.area.origin;
+    const Point max = maxPoint(region.area);
+    if (!containsPoint(board, min) || !containsPoint(board, max)) {
+      diagnostics.push_back(makeDiagnostic("PLACEMENT_REGION_OUTSIDE_BOARD",
+                                           "Placement region area is outside board outline",
+                                           region.id));
+    }
+  }
+}
+
 void checkPhysicalObjectIds(const Board& board, std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
   for (const Pad& pad : board.pads) {
@@ -766,6 +802,13 @@ void checkPhysicalObjectIds(const Board& board, std::vector<Diagnostic>& diagnos
       diagnostics.push_back(makeDiagnostic("DUPLICATE_PHYSICAL_OBJECT_ID",
                                            "Physical object ID is reused across object types",
                                            keepout.id));
+    }
+  }
+  for (const PlacementRegion& region : board.placement_regions) {
+    if (!region.id.empty() && !ids.insert(region.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_PHYSICAL_OBJECT_ID",
+                                           "Physical object ID is reused across object types",
+                                           region.id));
     }
   }
 }
@@ -889,6 +932,7 @@ std::vector<Diagnostic> runDrc(const Project& project) {
   checkPads(project, board, diagnostics);
   checkVias(project, board, diagnostics);
   checkTracks(project, board, diagnostics);
+  checkPlacementRegions(board, diagnostics);
   checkKeepouts(board, diagnostics);
   checkPhysicalObjectIds(board, diagnostics);
   checkCopperClearance(board, diagnostics);

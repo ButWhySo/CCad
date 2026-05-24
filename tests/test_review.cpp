@@ -49,6 +49,11 @@ int main() {
   require(clean.board_width_nm == 42000000, "review reports board width");
   require(clean.board_height_nm == 28000000, "review reports board height");
   require(clean.layer_count == 2, "review reports layer count");
+  require(clean.pad_count == 0, "review reports pad count");
+  require(clean.via_count == 0, "review reports via count");
+  require(clean.track_count == 0, "review reports track count");
+  require(clean.placement_region_count == 0, "review reports placement region count");
+  require(clean.keepout_count == 0, "review reports keepout count");
   require(clean.error_count == 0, "clean review has no errors");
   require(clean.warning_count == 0, "clean review has no warnings");
   require(clean.status == "Clean: 1 component, 1 net, 1 constraint", "clean status text");
@@ -69,10 +74,21 @@ int main() {
       .position = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
       .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(1.0)}});
   const ccad::ProjectReview drc_review = ccad::buildReview(drc_invalid);
+  require(drc_review.pad_count == 1, "review counts pads");
+  require(drc_review.keepout_count == 1, "review counts keepouts");
   require(drc_review.error_count == 1, "review includes drc error");
   require(drc_review.diagnostics.size() == 1, "review carries drc diagnostic");
   require(drc_review.diagnostics.at(0).code == "PAD_IN_KEEPOUT", "review includes drc code");
   require(drc_review.diagnostics.at(0).object_id == "P1", "review includes drc object id");
+
+  drc_invalid.board->placement_regions.push_back(ccad::PlacementRegion{
+      .id = "PR1",
+      .kind = "component",
+      .area = ccad::Rect{
+          .origin = ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(2)},
+          .size = ccad::Size{.width = ccad::millimeters(5), .height = ccad::millimeters(5)}}});
+  const ccad::ProjectReview placement_review = ccad::buildReview(drc_invalid);
+  require(placement_review.placement_region_count == 1, "review counts placement regions");
 
   ccad::Project invalid = validProject();
   invalid.nets.at(0).members.push_back(
