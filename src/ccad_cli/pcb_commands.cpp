@@ -1,9 +1,11 @@
 #include "ccad_cli/pcb_commands.hpp"
 
 #include "ccad_cli/common.hpp"
+#include "ccad_core/json.hpp"
 
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <stdexcept>
 #include <vector>
 
@@ -93,6 +95,110 @@ bool eraseById(std::vector<T>& items, const std::string& id) {
   return false;
 }
 
+void writePointJson(std::ostream& out, const ccad::Point& point, const int indent) {
+  const std::string pad(static_cast<std::size_t>(indent), ' ');
+  out << pad << "\"x_nm\": " << point.x.nanometers << ",\n";
+  out << pad << "\"y_nm\": " << point.y.nanometers;
+}
+
+void writeSizeJson(std::ostream& out, const ccad::Size& size, const int indent) {
+  const std::string pad(static_cast<std::size_t>(indent), ' ');
+  out << pad << "\"width_nm\": " << size.width.nanometers << ",\n";
+  out << pad << "\"height_nm\": " << size.height.nanometers;
+}
+
+std::string layerObjectJson(const ccad::Layer& layer) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"object\": {\n"
+      << "    \"type\": \"layer\",\n"
+      << "    \"id\": \"" << ccad::escapeJson(layer.id) << "\",\n"
+      << "    \"name\": \"" << ccad::escapeJson(layer.name) << "\",\n"
+      << "    \"kind\": \"" << ccad::escapeJson(layer.kind) << "\",\n"
+      << "    \"visible\": " << (layer.visible ? "true" : "false") << "\n"
+      << "  }\n"
+      << "}\n";
+  return out.str();
+}
+
+std::string padObjectJson(const ccad::Pad& pad) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"object\": {\n"
+      << "    \"type\": \"pad\",\n"
+      << "    \"id\": \"" << ccad::escapeJson(pad.id) << "\",\n"
+      << "    \"component_id\": \"" << ccad::escapeJson(pad.component_id) << "\",\n"
+      << "    \"pin_name\": \"" << ccad::escapeJson(pad.pin_name) << "\",\n"
+      << "    \"net_id\": \"" << ccad::escapeJson(pad.net_id) << "\",\n"
+      << "    \"layer_id\": \"" << ccad::escapeJson(pad.layer_id) << "\",\n"
+      << "    \"position\": {\n";
+  writePointJson(out, pad.position, 6);
+  out << "\n    },\n"
+      << "    \"rotation_degrees\": " << pad.rotation_degrees << ",\n"
+      << "    \"size\": {\n";
+  writeSizeJson(out, pad.size, 6);
+  out << "\n    }\n"
+      << "  }\n"
+      << "}\n";
+  return out.str();
+}
+
+std::string viaObjectJson(const ccad::Via& via) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"object\": {\n"
+      << "    \"type\": \"via\",\n"
+      << "    \"id\": \"" << ccad::escapeJson(via.id) << "\",\n"
+      << "    \"net_id\": \"" << ccad::escapeJson(via.net_id) << "\",\n"
+      << "    \"position\": {\n";
+  writePointJson(out, via.position, 6);
+  out << "\n    },\n"
+      << "    \"diameter_nm\": " << via.diameter.nanometers << ",\n"
+      << "    \"drill_nm\": " << via.drill.nanometers << "\n"
+      << "  }\n"
+      << "}\n";
+  return out.str();
+}
+
+std::string trackObjectJson(const ccad::TrackSegment& track) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"object\": {\n"
+      << "    \"type\": \"track\",\n"
+      << "    \"id\": \"" << ccad::escapeJson(track.id) << "\",\n"
+      << "    \"net_id\": \"" << ccad::escapeJson(track.net_id) << "\",\n"
+      << "    \"layer_id\": \"" << ccad::escapeJson(track.layer_id) << "\",\n"
+      << "    \"start\": {\n";
+  writePointJson(out, track.start, 6);
+  out << "\n    },\n"
+      << "    \"end\": {\n";
+  writePointJson(out, track.end, 6);
+  out << "\n    },\n"
+      << "    \"width_nm\": " << track.width.nanometers << "\n"
+      << "  }\n"
+      << "}\n";
+  return out.str();
+}
+
+std::string regionObjectJson(const std::string& type, const std::string& id,
+                             const std::string& kind, const ccad::Rect& area) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"object\": {\n"
+      << "    \"type\": \"" << ccad::escapeJson(type) << "\",\n"
+      << "    \"id\": \"" << ccad::escapeJson(id) << "\",\n"
+      << "    \"kind\": \"" << ccad::escapeJson(kind) << "\",\n"
+      << "    \"area\": {\n"
+      << "      \"x_nm\": " << area.origin.x.nanometers << ",\n"
+      << "      \"y_nm\": " << area.origin.y.nanometers << ",\n"
+      << "      \"width_nm\": " << area.size.width.nanometers << ",\n"
+      << "      \"height_nm\": " << area.size.height.nanometers << "\n"
+      << "    }\n"
+      << "  }\n"
+      << "}\n";
+  return out.str();
+}
+
 }  // namespace
 
 int pcbCommand(const std::vector<std::string>& args) {
@@ -157,6 +263,55 @@ int pcbCommand(const std::vector<std::string>& args) {
         return 2;
       }
       return 0;
+    }
+
+    if (subcommand == "get-object") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id"});
+      const std::string file = requireOption(options, "--file");
+      const ccad::Project project = loadProjectFile(file);
+      if (!project.board.has_value()) {
+        throw std::runtime_error("project has no board");
+      }
+      const ccad::Board& board = *project.board;
+      const std::string id = requireOption(options, "--id");
+      for (const ccad::Layer& layer : board.layers) {
+        if (layer.id == id) {
+          std::cout << layerObjectJson(layer);
+          return 0;
+        }
+      }
+      for (const ccad::Pad& pad : board.pads) {
+        if (pad.id == id) {
+          std::cout << padObjectJson(pad);
+          return 0;
+        }
+      }
+      for (const ccad::Via& via : board.vias) {
+        if (via.id == id) {
+          std::cout << viaObjectJson(via);
+          return 0;
+        }
+      }
+      for (const ccad::TrackSegment& track : board.tracks) {
+        if (track.id == id) {
+          std::cout << trackObjectJson(track);
+          return 0;
+        }
+      }
+      for (const ccad::Keepout& keepout : board.keepouts) {
+        if (keepout.id == id) {
+          std::cout << regionObjectJson("keepout", keepout.id, keepout.kind, keepout.area);
+          return 0;
+        }
+      }
+      for (const ccad::PlacementRegion& region : board.placement_regions) {
+        if (region.id == id) {
+          std::cout << regionObjectJson("placement_region", region.id, region.kind, region.area);
+          return 0;
+        }
+      }
+      throw std::runtime_error("unknown board object: " + id);
     }
 
     if (subcommand == "remove-layer") {
