@@ -561,7 +561,10 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
     if (annular_ring < board.design_rules.min_via_annular_ring.nanometers) {
       diagnostics.push_back(
           makeDiagnostic("VIA_ANNULAR_RING_TOO_SMALL",
-                         "Via annular ring is below configured minimum", via.id));
+                         "Via annular ring is below configured minimum " +
+                             std::to_string(board.design_rules.min_via_annular_ring.nanometers) +
+                             " nm",
+                         via.id));
     }
     for (const Keepout& keepout : board.keepouts) {
       const long double radius = static_cast<long double>(via.diameter.nanometers) / 2.0L;
@@ -614,7 +617,10 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
     } else {
       if (track.width.nanometers < board.design_rules.min_track_width.nanometers) {
         diagnostics.push_back(makeDiagnostic(
-            "TRACK_TOO_NARROW", "Track width is below configured minimum", track.id));
+            "TRACK_TOO_NARROW",
+            "Track width is below configured minimum " +
+                std::to_string(board.design_rules.min_track_width.nanometers) + " nm",
+            track.id));
       }
       const long double half_width = static_cast<long double>(track.width.nanometers) / 2.0L;
       if (distanceToBoardEdge(board, track.start) < half_width ||
