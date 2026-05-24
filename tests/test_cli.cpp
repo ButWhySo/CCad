@@ -71,6 +71,8 @@ int main() {
           "help json describes pcb object lookup");
   require(help_json.find("\"name\": \"pcb list-objects\"") != std::string::npos,
           "help json describes pcb object listing");
+  require(help_json.find("\"name\": \"pcb list-nets\"") != std::string::npos,
+          "help json describes pcb net listing");
   require(help_json.find("\"name\": \"pcb remove-layer\"") != std::string::npos,
           "help json describes layer removal");
   require(help_json.find("\"name\": \"pcb set-layer-visibility\"") != std::string::npos,
@@ -367,6 +369,25 @@ int main() {
       quote(CCAD_BINARY) + " pcb list-objects --file " + quote(board_project_path) +
       " --type nonsense";
   require(run(bad_list_objects_command) != 0, "pcb list-objects rejects unknown type");
+
+  const std::filesystem::path list_nets_path = temp / "list-nets.json";
+  const std::string list_nets_command =
+      quote(CCAD_BINARY) + " pcb list-nets --file " + quote(board_project_path) +
+      " > " + quote(list_nets_path);
+  require(run(list_nets_command) == 0, "pcb list-nets exits zero");
+  const std::string list_nets_json = readFile(list_nets_path);
+  require(list_nets_json.find("\"summary\": {") != std::string::npos,
+          "pcb list-nets writes summary");
+  require(list_nets_json.find("\"total\": 1") != std::string::npos,
+          "pcb list-nets reports one physical net");
+  require(list_nets_json.find("\"id\": \"N1\"") != std::string::npos,
+          "pcb list-nets includes net id");
+  require(list_nets_json.find("\"pad_count\": 1") != std::string::npos,
+          "pcb list-nets counts pads");
+  require(list_nets_json.find("\"via_count\": 1") != std::string::npos,
+          "pcb list-nets counts vias");
+  require(list_nets_json.find("\"track_count\": 1") != std::string::npos,
+          "pcb list-nets counts tracks");
 
   require(run(add_pad_command) != 0, "pcb add-pad rejects duplicate id");
   require(run(add_keepout_command) != 0, "pcb add-keepout rejects duplicate id");
