@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 108 in progress on `sprint-108-cli-pcb-query-module`.
+Progress counter: Phase 2 / 6, Sprint 108 merged and verified on `main`; Sprint 109 planning.
 
 - Typed project model.
 - Deterministic JSON load/dump.
