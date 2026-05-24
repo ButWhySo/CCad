@@ -27,5 +27,8 @@ class ProjectSummaryPanel final : public QWidget {
   QLabel* tracks_value_ = nullptr;
   QLabel* placement_regions_value_ = nullptr;
   QLabel* keepouts_value_ = nullptr;
+  QLabel* copper_clearance_value_ = nullptr;
+  QLabel* min_track_width_value_ = nullptr;
+  QLabel* via_annular_ring_value_ = nullptr;
   QLabel* diagnostics_value_ = nullptr;
 };

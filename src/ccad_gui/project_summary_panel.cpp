@@ -13,6 +13,10 @@ QString nmToMmText(const std::int64_t value_nm) {
   return QString::number(value_nm / 1000000.0, 'f', 2);
 }
 
+QString nmToMmLabel(const std::int64_t value_nm) {
+  return nmToMmText(value_nm) + " mm";
+}
+
 }  // namespace
 
 ProjectSummaryPanel::ProjectSummaryPanel(QWidget* parent) : QWidget(parent) {
@@ -33,6 +37,9 @@ ProjectSummaryPanel::ProjectSummaryPanel(QWidget* parent) : QWidget(parent) {
   layout->addWidget(title_);
   layout->addWidget(subtitle_);
   layout->addWidget(status_chip_);
+  layout->addWidget(makeValueCard("Copper Clearance"));
+  layout->addWidget(makeValueCard("Min Track Width"));
+  layout->addWidget(makeValueCard("Via Annular Ring"));
   layout->addWidget(makeValueCard("Components"));
   layout->addWidget(makeValueCard("Nets"));
   layout->addWidget(makeValueCard("Layers"));
@@ -66,6 +73,9 @@ void ProjectSummaryPanel::renderReview(const ccad::ProjectReview& review) {
   tracks_value_->setText(QString::number(review.track_count));
   placement_regions_value_->setText(QString::number(review.placement_region_count));
   keepouts_value_->setText(QString::number(review.keepout_count));
+  copper_clearance_value_->setText(nmToMmLabel(review.copper_clearance_nm));
+  min_track_width_value_->setText(nmToMmLabel(review.min_track_width_nm));
+  via_annular_ring_value_->setText(nmToMmLabel(review.min_via_annular_ring_nm));
   diagnostics_value_->setText(QString::number(review.diagnostics.size()));
 
   if (review.error_count > 0) {
@@ -88,6 +98,9 @@ void ProjectSummaryPanel::renderLoadFailure(const QString& path) {
   tracks_value_->setText("0");
   placement_regions_value_->setText("0");
   keepouts_value_->setText("0");
+  copper_clearance_value_->setText("0.00 mm");
+  min_track_width_value_->setText("0.00 mm");
+  via_annular_ring_value_->setText("0.00 mm");
   diagnostics_value_->setText("0");
   setStatusChip("Load failed", "#dc2626");
 }
@@ -123,6 +136,12 @@ QWidget* ProjectSummaryPanel::makeValueCard(const QString& label) {
     placement_regions_value_ = value;
   } else if (label == "Keepouts") {
     keepouts_value_ = value;
+  } else if (label == "Copper Clearance") {
+    copper_clearance_value_ = value;
+  } else if (label == "Min Track Width") {
+    min_track_width_value_ = value;
+  } else if (label == "Via Annular Ring") {
+    via_annular_ring_value_ = value;
   } else {
     diagnostics_value_ = value;
   }

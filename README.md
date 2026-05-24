@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 76 merged and verified on `main`; Sprint 77 planning.
+Progress counter: Phase 2 / 6, Sprint 77 in progress on `sprint-77-gui-design-rule-summary`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -47,6 +47,7 @@ Progress counter: Phase 2 / 6, Sprint 76 merged and verified on `main`; Sprint 7
 - Native GUI canvas rendering now respects board layer visibility for pads and tracks, while vias remain visible because they are cross-layer objects.
 - Native GUI canvas rendering is origin-aware when the board outline uses a non-zero origin.
 - Native GUI project summary shows non-zero board outline origin next to board size.
+- Native GUI project summary shows active board-level DRC rule values.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
 
