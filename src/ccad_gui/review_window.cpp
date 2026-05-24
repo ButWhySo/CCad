@@ -61,6 +61,8 @@ ReviewWindow::ReviewWindow() {
 
   auto* project_dock = new QDockWidget("Project", this);
   project_dock->setObjectName("projectDock");
+  project_dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+  project_dock->setMinimumWidth(300);
   project_dock->setWidget(project_summary_);
   addDockWidget(Qt::LeftDockWidgetArea, project_dock);
 
@@ -69,6 +71,7 @@ ReviewWindow::ReviewWindow() {
 
   auto* diagnostics_dock = new QDockWidget("Diagnostics", this);
   diagnostics_dock->setObjectName("diagnosticsDock");
+  diagnostics_dock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
   auto* bottom_tabs = new QTabWidget(diagnostics_dock);
   bottom_tabs->setObjectName("bottomReviewTabs");
   bottom_tabs->addTab(diagnostics_, "Diagnostics");
@@ -87,6 +90,8 @@ ReviewWindow::ReviewWindow() {
   right_layout->addWidget(object_browser_, 1);
   auto* layers_dock = new QDockWidget("Layers / Objects", this);
   layers_dock->setObjectName("layersDock");
+  layers_dock->setAllowedAreas(Qt::RightDockWidgetArea | Qt::LeftDockWidgetArea);
+  layers_dock->setMinimumWidth(280);
   layers_dock->setWidget(right_panel);
   addDockWidget(Qt::RightDockWidgetArea, layers_dock);
 
@@ -123,6 +128,9 @@ ReviewWindow::ReviewWindow() {
   tabs->setTabEnabled(1, false);
 
   setCentralWidget(tabs);
+  setDockNestingEnabled(true);
+  resizeDocks({project_dock, layers_dock}, {360, 320}, Qt::Horizontal);
+  resizeDocks({project_dock, diagnostics_dock}, {620, 240}, Qt::Vertical);
   cursor_status_ = new QLabel("X --  Y --", this);
   zoom_status_ = new QLabel("Zoom 100%", this);
   tool_status_ = new QLabel("Tool Select", this);
