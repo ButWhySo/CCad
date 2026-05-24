@@ -14,6 +14,7 @@ std::string pcbRegionObjectJson(const std::string& type, const std::string& id,
                                 const std::string& kind, const ccad::Rect& area);
 std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type_filter);
 std::string listPcbNetsJson(const ccad::Board& board);
+std::string listRouteRequestsJson(const ccad::Board& board);
 void requireKnownPcbObjectType(const std::string& type);
 
 }  // namespace ccad_cli

@@ -73,6 +73,8 @@ int main() {
           "help json describes pcb object listing");
   require(help_json.find("\"name\": \"pcb list-nets\"") != std::string::npos,
           "help json describes pcb net listing");
+  require(help_json.find("\"name\": \"pcb list-route-requests\"") != std::string::npos,
+          "help json describes route request listing");
   require(help_json.find("\"name\": \"pcb remove-layer\"") != std::string::npos,
           "help json describes layer removal");
   require(help_json.find("\"name\": \"pcb set-layer-visibility\"") != std::string::npos,
@@ -414,6 +416,23 @@ int main() {
           "pcb list-nets counts vias");
   require(list_nets_json.find("\"track_count\": 1") != std::string::npos,
           "pcb list-nets counts tracks");
+
+  const std::filesystem::path list_route_requests_path = temp / "list-route-requests.json";
+  const std::string list_route_requests_command =
+      quote(CCAD_BINARY) + " pcb list-route-requests --file " + quote(board_project_path) +
+      " > " + quote(list_route_requests_path);
+  require(run(list_route_requests_command) == 0, "pcb list-route-requests exits zero");
+  const std::string list_route_requests_json = readFile(list_route_requests_path);
+  require(list_route_requests_json.find("\"summary\": {") != std::string::npos,
+          "pcb list-route-requests writes summary");
+  require(list_route_requests_json.find("\"total\": 1") != std::string::npos,
+          "pcb list-route-requests reports one request");
+  require(list_route_requests_json.find("\"id\": \"RR1\"") != std::string::npos,
+          "pcb list-route-requests includes request id");
+  require(list_route_requests_json.find("\"from_object_id\": \"P1\"") != std::string::npos,
+          "pcb list-route-requests includes source object");
+  require(list_route_requests_json.find("\"to_object_id\": \"V1\"") != std::string::npos,
+          "pcb list-route-requests includes target object");
 
   require(run(add_pad_command) != 0, "pcb add-pad rejects duplicate id");
   require(run(add_keepout_command) != 0, "pcb add-keepout rejects duplicate id");

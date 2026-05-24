@@ -251,4 +251,27 @@ std::string listPcbNetsJson(const ccad::Board& board) {
   return out.str();
 }
 
+std::string listRouteRequestsJson(const ccad::Board& board) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"summary\": {\n"
+      << "    \"total\": " << board.route_requests.size() << "\n"
+      << "  },\n"
+      << "  \"route_requests\": [\n";
+  for (std::size_t i = 0; i < board.route_requests.size(); ++i) {
+    const ccad::RouteRequest& request = board.route_requests.at(i);
+    out << "    {\"id\": \"" << ccad::escapeJson(request.id) << "\", \"net_id\": \""
+        << ccad::escapeJson(request.net_id) << "\", \"from_object_id\": \""
+        << ccad::escapeJson(request.from_object_id) << "\", \"to_object_id\": \""
+        << ccad::escapeJson(request.to_object_id) << "\", \"preferred_layer_id\": \""
+        << ccad::escapeJson(request.preferred_layer_id) << "\", \"policy\": \""
+        << ccad::escapeJson(request.policy) << "\", \"width_nm\": "
+        << request.width.nanometers << "}" << (i + 1 == board.route_requests.size() ? "" : ",")
+        << '\n';
+  }
+  out << "  ]\n"
+      << "}\n";
+  return out.str();
+}
+
 }  // namespace ccad_cli
