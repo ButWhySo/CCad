@@ -222,6 +222,35 @@ int main() {
   const ccad::ProjectDiff removed_track_diff = ccad::diffProjects(baseProject(), removed_track);
   require(hasEntry(removed_track_diff, "removed", "track", "T1"), "removed track entry");
 
+  ccad::Project added_route_request = baseProject();
+  added_route_request.board->route_requests.push_back(ccad::RouteRequest{
+      .id = "RR1",
+      .net_id = "N_3V3",
+      .from_object_id = "P1",
+      .to_object_id = "V1",
+      .preferred_layer_id = "F.Cu",
+      .policy = "shortest_safe",
+      .width = ccad::millimeters(0.25),
+  });
+  const ccad::ProjectDiff added_route_request_diff =
+      ccad::diffProjects(baseProject(), added_route_request);
+  require(hasEntry(added_route_request_diff, "added", "route_request", "RR1"),
+          "added route request entry");
+
+  ccad::Project changed_route_request = added_route_request;
+  changed_route_request.board->route_requests.at(0).policy = "prefer_top";
+  const ccad::ProjectDiff changed_route_request_diff =
+      ccad::diffProjects(added_route_request, changed_route_request);
+  require(hasEntry(changed_route_request_diff, "changed", "route_request", "RR1"),
+          "changed route request entry");
+
+  ccad::Project removed_route_request = added_route_request;
+  removed_route_request.board->route_requests.clear();
+  const ccad::ProjectDiff removed_route_request_diff =
+      ccad::diffProjects(added_route_request, removed_route_request);
+  require(hasEntry(removed_route_request_diff, "removed", "route_request", "RR1"),
+          "removed route request entry");
+
   ccad::Project added_keepout = baseProject();
   added_keepout.board->keepouts.push_back(ccad::Keepout{
       .id = "K2",

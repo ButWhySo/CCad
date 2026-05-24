@@ -78,6 +78,12 @@ std::string trackSignature(const TrackSegment& track) {
          std::to_string(track.width.nanometers);
 }
 
+std::string routeRequestSignature(const RouteRequest& route_request) {
+  return route_request.net_id + "\x1f" + route_request.from_object_id + "\x1f" +
+         route_request.to_object_id + "\x1f" + route_request.preferred_layer_id + "\x1f" +
+         route_request.policy + "\x1f" + std::to_string(route_request.width.nanometers);
+}
+
 std::string keepoutSignature(const Keepout& keepout) {
   return keepout.kind + "\x1f" + outlineSignature(keepout.area);
 }
@@ -169,6 +175,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
     diffObjectMap(diff, "pad", before.board->pads, after.board->pads, padSignature);
     diffObjectMap(diff, "via", before.board->vias, after.board->vias, viaSignature);
     diffObjectMap(diff, "track", before.board->tracks, after.board->tracks, trackSignature);
+    diffObjectMap(diff, "route_request", before.board->route_requests,
+                  after.board->route_requests, routeRequestSignature);
   } else if (!before.board.has_value() && after.board.has_value()) {
     ++diff.added_count;
     diff.entries.push_back(DiffEntry{
@@ -231,6 +239,15 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "track added",
       });
     }
+    diff.added_count += after.board->route_requests.size();
+    for (const RouteRequest& route_request : after.board->route_requests) {
+      diff.entries.push_back(DiffEntry{
+          .change = "added",
+          .object_type = "route_request",
+          .object_id = route_request.id,
+          .message = "route_request added",
+      });
+    }
   } else if (before.board.has_value() && !after.board.has_value()) {
     ++diff.removed_count;
     diff.entries.push_back(DiffEntry{
@@ -291,6 +308,15 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .object_type = "track",
           .object_id = track.id,
           .message = "track removed",
+      });
+    }
+    diff.removed_count += before.board->route_requests.size();
+    for (const RouteRequest& route_request : before.board->route_requests) {
+      diff.entries.push_back(DiffEntry{
+          .change = "removed",
+          .object_type = "route_request",
+          .object_id = route_request.id,
+          .message = "route_request removed",
       });
     }
   }

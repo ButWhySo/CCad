@@ -63,6 +63,7 @@ Phase 2 is complete. CCad now has a deterministic physical board model, early PC
 - Project diffs include board outline additions, removals, and changes.
 - Project diffs include board pad additions, removals, and changes.
 - Project diffs include board via and track additions, removals, and changes.
+- Project diffs include route-request intent additions, removals, and changes.
 - Project diffs include board keepout and placement-region additions, removals, and changes.
 - Project diffs include board design-rule changes.
 - CLI diff tests cover board-level physical object entries in executable JSON output.
