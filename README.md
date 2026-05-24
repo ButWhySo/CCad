@@ -6,13 +6,13 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 95 merged and verified on `main`; Sprint 96 planning.
+Progress counter: Phase 2 / 6, Sprint 96 in progress on `sprint-96-cli-remove-layer`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
 - Logical ERC diagnostics.
 - CLI: `ccad help --format json`, `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
-- CLI PCB authoring: `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb add-via`, `ccad pcb add-track`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, and `ccad pcb remove-object`.
+- CLI PCB authoring: `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb add-via`, `ccad pcb add-track`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, and `ccad pcb remove-object`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
 - Physical board outline, layers, rectangular placement regions, rectangular keepouts, pads, vias, and track segments in project JSON.
@@ -65,6 +65,7 @@ Progress counter: Phase 2 / 6, Sprint 95 merged and verified on `main`; Sprint 9
 - Project diffs include board design-rule changes.
 - CLI diff tests cover board-level physical object entries in executable JSON output.
 - CLI PCB authoring can remove physical board objects by stable ID.
+- CLI PCB authoring can remove unused board layers by stable ID.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
 
@@ -391,6 +392,7 @@ Add PCB primitives through the CLI:
 .\build-qt\ccad.exe pcb set-rules --file .\build-qt\canvas-demo.ccad.json --copper-clearance-mm 0.20 --min-track-width-mm 0.15 --min-via-annular-ring-mm 0.10
 .\build-qt\ccad.exe pcb add-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --name "Inner 1 copper" --kind copper --visible false
 .\build-qt\ccad.exe pcb set-layer-visibility --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --visible true
+.\build-qt\ccad.exe pcb remove-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu
 .\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 .\build-qt\ccad.exe pcb add-via --file .\build-qt\canvas-demo.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
 .\build-qt\ccad.exe pcb add-track --file .\build-qt\canvas-demo.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
@@ -402,6 +404,7 @@ What these do:
 - `pcb set-outline` replaces the rectangular board outline while rejecting outlines that would leave existing pads, vias, tracks, keepouts, or placement regions outside the board.
 - `pcb set-rules` updates board-level DRC defaults for copper clearance, minimum track width, and minimum via annular ring.
 - `pcb add-layer` appends a board layer with stable ID, display name, kind, and optional visibility.
+- `pcb remove-layer` removes an unused board layer by stable ID.
 - `pcb set-layer-visibility` updates an existing layer's visibility flag for review surfaces.
 - `pcb add-pad` appends a rectangular pad to an existing board project.
 - `pcb add-via` appends a plated via with diameter and drill size.
@@ -422,6 +425,7 @@ Current command guards:
 - Rule dimensions must be positive.
 - Primitive IDs must be unique within their primitive type.
 - Layer IDs must be unique.
+- Removed layers must exist and must not be referenced by pads or tracks.
 - Dimensions must be positive.
 - Referenced layers must exist for pads and tracks.
 - Pad, track, and placed-footprint layers must be copper layers.
