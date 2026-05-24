@@ -201,7 +201,11 @@ int main() {
   via_small_ring.board->vias.at(0).diameter = ccad::millimeters(0.45);
   via_small_ring.board->vias.at(0).drill = ccad::millimeters(0.4);
   require(hasCode(ccad::runDrc(via_small_ring), "VIA_ANNULAR_RING_TOO_SMALL"),
-          "drc reports via annular ring below default minimum");
+          "drc reports via annular ring below configured minimum");
+  require(hasDiagnosticMessageContaining(ccad::runDrc(via_small_ring),
+                                         "VIA_ANNULAR_RING_TOO_SMALL",
+                                         "configured minimum 100000 nm"),
+          "drc via annular ring diagnostic includes configured minimum value");
 
   ccad::Project relaxed_via_ring = via_small_ring;
   relaxed_via_ring.board->design_rules.min_via_annular_ring = ccad::millimeters(0.02);
@@ -216,7 +220,10 @@ int main() {
   ccad::Project narrow_track = validBoardProject();
   narrow_track.board->tracks.at(0).width = ccad::millimeters(0.10);
   require(hasCode(ccad::runDrc(narrow_track), "TRACK_TOO_NARROW"),
-          "drc reports track width below default minimum");
+          "drc reports track width below configured minimum");
+  require(hasDiagnosticMessageContaining(ccad::runDrc(narrow_track), "TRACK_TOO_NARROW",
+                                         "configured minimum 150000 nm"),
+          "drc track width diagnostic includes configured minimum value");
 
   ccad::Project relaxed_track_width = narrow_track;
   relaxed_track_width.board->design_rules.min_track_width = ccad::millimeters(0.08);
