@@ -191,7 +191,7 @@ $Timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $Screenshot = Join-Path $ScreenshotDir "$Name-$Timestamp.png"
 
 Invoke-Ccad init --name $Name --width-mm 42 --height-mm 28 --out $Project
-Invoke-Ccad pcb set-outline --file $Project --x-mm 0 --y-mm 0 --width-mm 44 --height-mm 30
+Invoke-Ccad pcb set-outline --file $Project --x-mm 2 --y-mm 2 --width-mm 44 --height-mm 30
 Invoke-Ccad pcb set-rules --file $Project --copper-clearance-mm 0.20 --min-track-width-mm 0.15 --min-via-annular-ring-mm 0.10
 Invoke-Ccad pcb add-layer --file $Project --id In1.Cu --name "Inner 1 copper" --kind copper --visible false
 Invoke-Ccad pcb set-layer-visibility --file $Project --id In1.Cu --visible true

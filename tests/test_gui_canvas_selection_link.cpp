@@ -58,6 +58,31 @@ ccad::CanvasScene hiddenLayerScene() {
   return scene;
 }
 
+ccad::CanvasScene originShiftedScene() {
+  ccad::CanvasScene scene;
+  scene.has_board = true;
+  scene.board_origin_x_units = 10.0;
+  scene.board_origin_y_units = 20.0;
+  scene.view_width_units = 20.0;
+  scene.view_height_units = 20.0;
+  scene.layers.push_back(
+      ccad::CanvasLayer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true});
+  scene.pads.push_back(ccad::CanvasPad{
+      .id = "P_ORIGIN",
+      .net_id = "N1",
+      .layer_id = "F.Cu",
+      .x_units = 12.0,
+      .y_units = 23.0,
+      .width_units = 1.0,
+      .height_units = 1.0,
+  });
+  return scene;
+}
+
+void requireNear(const double actual, const double expected, const char* message) {
+  require(actual > expected - 0.01 && actual < expected + 0.01, message);
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -105,4 +130,11 @@ int main(int argc, char** argv) {
   require(selectCanvasObjectById(hidden_scene, "V1"), "vias stay visible when copper layer is hidden");
   require(selectCanvasObjectsByNetId(hidden_scene, "N1") == 1,
           "hidden layer net selection excludes hidden copper");
+
+  QGraphicsScene origin_scene;
+  renderBoardCanvas(origin_scene, originShiftedScene());
+  require(selectCanvasObjectById(origin_scene, "P_ORIGIN"), "selects origin-shifted pad");
+  const QRectF bounds = origin_scene.selectedItems().first()->sceneBoundingRect();
+  requireNear(bounds.center().x(), 38.0, "origin-shifted pad x is board-relative");
+  requireNear(bounds.center().y(), 48.0, "origin-shifted pad y is board-relative");
 }

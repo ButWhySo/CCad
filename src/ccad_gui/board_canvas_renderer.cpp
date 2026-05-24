@@ -100,6 +100,16 @@ bool layerIsVisible(const std::set<std::string>& hidden_layers, const std::strin
   return layer_id.empty() || !hidden_layers.contains(layer_id);
 }
 
+double sceneX(const ccad::CanvasScene& scene, const double board_x_units, const double margin,
+              const double scale) {
+  return margin + ((board_x_units - scene.board_origin_x_units) * scale);
+}
+
+double sceneY(const ccad::CanvasScene& scene, const double board_y_units, const double margin,
+              const double scale) {
+  return margin + ((board_y_units - scene.board_origin_y_units) * scale);
+}
+
 }  // namespace
 
 void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& scene) {
@@ -151,8 +161,8 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
                                        theme.placement_region_color.green(),
                                        theme.placement_region_color.blue(), 36));
   for (const ccad::CanvasPlacementRegion& region : scene.placement_regions) {
-    const QRectF region_rect(margin + (region.x_units * scale),
-                             margin + (region.y_units * scale),
+    const QRectF region_rect(sceneX(scene, region.x_units, margin, scale),
+                             sceneY(scene, region.y_units, margin, scale),
                              region.width_units * scale, region.height_units * scale);
     QPainterPath region_path;
     region_path.addRect(region_rect);
@@ -168,8 +178,8 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
   QBrush keepout_brush(
       QColor(theme.keepout_color.red(), theme.keepout_color.green(), theme.keepout_color.blue(), 48));
   for (const ccad::CanvasKeepout& keepout : scene.keepouts) {
-    const QRectF keepout_rect(margin + (keepout.x_units * scale),
-                              margin + (keepout.y_units * scale),
+    const QRectF keepout_rect(sceneX(scene, keepout.x_units, margin, scale),
+                              sceneY(scene, keepout.y_units, margin, scale),
                               keepout.width_units * scale, keepout.height_units * scale);
     QPainterPath keepout_path;
     keepout_path.addRect(keepout_rect);
@@ -186,9 +196,10 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     }
     track_pen.setWidthF(std::max(1.2, track.width_units * scale));
     QPainterPath track_path;
-    track_path.moveTo(margin + (track.start_x_units * scale),
-                      margin + (track.start_y_units * scale));
-    track_path.lineTo(margin + (track.end_x_units * scale), margin + (track.end_y_units * scale));
+    track_path.moveTo(sceneX(scene, track.start_x_units, margin, scale),
+                      sceneY(scene, track.start_y_units, margin, scale));
+    track_path.lineTo(sceneX(scene, track.end_x_units, margin, scale),
+                      sceneY(scene, track.end_y_units, margin, scale));
     auto* item = addHighlightPath(canvas_scene, track_path, track_pen, QBrush(Qt::NoBrush));
     item->setToolTip("Track " + qstr(track.id));
     tagObject(*item, "track", qstr(track.id), theme.track_color, qstr(track.net_id),
@@ -199,10 +210,13 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     if (!layerIsVisible(hidden_layers, pad.layer_id)) {
       continue;
     }
-    const QRectF pad_rect(margin + (pad.x_units * scale) - ((pad.width_units * scale) / 2.0),
-                          margin + (pad.y_units * scale) - ((pad.height_units * scale) / 2.0),
+    const QRectF pad_rect(sceneX(scene, pad.x_units, margin, scale) -
+                              ((pad.width_units * scale) / 2.0),
+                          sceneY(scene, pad.y_units, margin, scale) -
+                              ((pad.height_units * scale) / 2.0),
                           pad.width_units * scale, pad.height_units * scale);
-    const QPointF pad_center(margin + (pad.x_units * scale), margin + (pad.y_units * scale));
+    const QPointF pad_center(sceneX(scene, pad.x_units, margin, scale),
+                             sceneY(scene, pad.y_units, margin, scale));
     QPainterPath pad_path;
     pad_path.addRoundedRect(pad_rect, 2.0, 2.0);
     if (pad.rotation_degrees != 0.0) {
@@ -222,8 +236,9 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
 
   for (const ccad::CanvasVia& via : scene.vias) {
     const double diameter = via.diameter_units * scale;
-    const QRectF via_rect(margin + (via.x_units * scale) - (diameter / 2.0),
-                          margin + (via.y_units * scale) - (diameter / 2.0), diameter, diameter);
+    const QRectF via_rect(sceneX(scene, via.x_units, margin, scale) - (diameter / 2.0),
+                          sceneY(scene, via.y_units, margin, scale) - (diameter / 2.0),
+                          diameter, diameter);
     QPainterPath via_path;
     via_path.addEllipse(via_rect);
     auto* item =
@@ -232,9 +247,9 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     item->setToolTip("Via " + qstr(via.id));
     tagObject(*item, "via", qstr(via.id), theme.via_fill_color, qstr(via.net_id));
     const double drill = via.drill_units * scale;
-    canvas_scene.addEllipse(margin + (via.x_units * scale) - (drill / 2.0),
-                            margin + (via.y_units * scale) - (drill / 2.0), drill, drill,
-                            QPen(Qt::NoPen), QBrush(theme.background_color));
+    canvas_scene.addEllipse(sceneX(scene, via.x_units, margin, scale) - (drill / 2.0),
+                            sceneY(scene, via.y_units, margin, scale) - (drill / 2.0), drill,
+                            drill, QPen(Qt::NoPen), QBrush(theme.background_color));
   }
 
   auto* label = canvas_scene.addText(QString::number(scene.view_width_units, 'f', 2) + " mm x " +

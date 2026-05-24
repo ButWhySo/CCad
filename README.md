@@ -43,6 +43,7 @@ Progress counter: Phase 2 / 6, Sprint 70 merged and verified on `main`; Sprint 7
 - Board-level physical DRC rules are serialized and configurable through `ccad pcb set-rules`.
 - Native GUI startup crash (status `0xC0000005`) fixed by ordering status-label initialization before pan-mode callback wiring.
 - Native GUI canvas rendering now respects board layer visibility for pads and tracks, while vias remain visible because they are cross-layer objects.
+- Native GUI canvas rendering is origin-aware when the board outline uses a non-zero origin.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
 
@@ -533,7 +534,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_sprint_demo.ps1 -Name spr
 What it does:
 
 - Creates `artifacts/demos/sprint42-gui-canvas-mvp-review.ccad.json`.
-- Sets the board outline and board-level DRC rules, adds an extra board layer, toggles that layer's visibility, adds a pad, via, two crossing tracks, a rectangular placement region, logical demo nets, and a rectangular keepout.
+- Sets a non-zero-origin board outline and board-level DRC rules, adds an extra board layer, toggles that layer's visibility, adds a pad, via, two crossing tracks, a rectangular placement region, logical demo nets, and a rectangular keepout.
 - Writes inspect, validate, and DRC JSON reports.
 - Writes a sample KiCad `.kicad_mod` file and imports it to CCad footprint JSON.
 - Places the imported footprint onto the demo board.
