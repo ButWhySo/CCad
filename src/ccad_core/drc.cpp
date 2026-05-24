@@ -496,6 +496,14 @@ void checkLayers(const Board& board, std::vector<Diagnostic>& diagnostics) {
       diagnostics.push_back(
           makeDiagnostic("INVALID_LAYER_ID", "Layer ID must not be empty", layer.id));
     }
+    if (layer.name.empty()) {
+      diagnostics.push_back(
+          makeDiagnostic("INVALID_LAYER_NAME", "Layer name must not be empty", layer.id));
+    }
+    if (layer.kind.empty()) {
+      diagnostics.push_back(
+          makeDiagnostic("INVALID_LAYER_KIND", "Layer kind must not be empty", layer.id));
+    }
     if (!ids.insert(layer.id).second) {
       diagnostics.push_back(
           makeDiagnostic("DUPLICATE_LAYER_ID", "Layer ID appears more than once", layer.id));

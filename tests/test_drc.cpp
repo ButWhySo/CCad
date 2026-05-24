@@ -101,6 +101,16 @@ int main() {
   require(hasCode(ccad::runDrc(empty_layer_id), "INVALID_LAYER_ID"),
           "drc reports empty layer id");
 
+  ccad::Project empty_layer_name = validBoardProject();
+  empty_layer_name.board->layers.at(0).name.clear();
+  require(hasCode(ccad::runDrc(empty_layer_name), "INVALID_LAYER_NAME"),
+          "drc reports empty layer name");
+
+  ccad::Project empty_layer_kind = validBoardProject();
+  empty_layer_kind.board->layers.at(0).kind.clear();
+  require(hasCode(ccad::runDrc(empty_layer_kind), "INVALID_LAYER_KIND"),
+          "drc reports empty layer kind");
+
   ccad::Project duplicate_net = validBoardProject();
   duplicate_net.nets.push_back(duplicate_net.nets.front());
   require(hasCode(ccad::runDrc(duplicate_net), "DUPLICATE_NET_ID"),
