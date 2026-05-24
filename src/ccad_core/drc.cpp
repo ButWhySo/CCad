@@ -55,6 +55,20 @@ bool containsPoint(const Board& board, const Point& point) {
          point.y.nanometers >= min.y.nanometers && point.y.nanometers <= max.y.nanometers;
 }
 
+long double distanceToBoardEdge(const Board& board, const Point& point) {
+  const std::int64_t min_x = board.outline.origin.x.nanometers;
+  const std::int64_t min_y = board.outline.origin.y.nanometers;
+  const Point max = maxPoint(board.outline);
+  const std::int64_t max_x = max.x.nanometers;
+  const std::int64_t max_y = max.y.nanometers;
+  const std::int64_t left = point.x.nanometers - min_x;
+  const std::int64_t right = max_x - point.x.nanometers;
+  const std::int64_t bottom = point.y.nanometers - min_y;
+  const std::int64_t top = max_y - point.y.nanometers;
+  const std::int64_t nearest = std::min(std::min(left, right), std::min(bottom, top));
+  return static_cast<long double>(nearest);
+}
+
 bool rectContainsPoint(const Rect& rect, const Point& point) {
   const Point max = maxPoint(rect);
   return point.x.nanometers >= rect.origin.x.nanometers && point.x.nanometers <= max.x.nanometers &&
@@ -469,10 +483,18 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
     if (!isPositive(track.width)) {
       diagnostics.push_back(
           makeDiagnostic("INVALID_TRACK_WIDTH", "Track width must be positive", track.id));
-    }
-    if (track.width.nanometers < kDefaultMinTrackWidthNm) {
-      diagnostics.push_back(makeDiagnostic(
-          "TRACK_TOO_NARROW", "Track width is below default minimum of 0.15 mm", track.id));
+    } else {
+      if (track.width.nanometers < kDefaultMinTrackWidthNm) {
+        diagnostics.push_back(makeDiagnostic(
+            "TRACK_TOO_NARROW", "Track width is below default minimum of 0.15 mm", track.id));
+      }
+      const long double half_width = static_cast<long double>(track.width.nanometers) / 2.0L;
+      if (distanceToBoardEdge(board, track.start) < half_width ||
+          distanceToBoardEdge(board, track.end) < half_width) {
+        diagnostics.push_back(makeDiagnostic(
+            "TRACK_GEOMETRY_OUTSIDE_BOARD",
+            "Track copper geometry extends outside board outline", track.id));
+      }
     }
     if (samePoint(track.start, track.end)) {
       diagnostics.push_back(

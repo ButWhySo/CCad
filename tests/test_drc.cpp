@@ -149,6 +149,14 @@ int main() {
   require(hasCode(ccad::runDrc(narrow_track), "TRACK_TOO_NARROW"),
           "drc reports track width below default minimum");
 
+  ccad::Project track_geometry_outside = validBoardProject();
+  track_geometry_outside.board->tracks.at(0).start =
+      ccad::Point{.x = ccad::millimeters(0.05), .y = ccad::millimeters(6)};
+  track_geometry_outside.board->tracks.at(0).end =
+      ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)};
+  require(hasCode(ccad::runDrc(track_geometry_outside), "TRACK_GEOMETRY_OUTSIDE_BOARD"),
+          "drc reports track copper geometry outside board");
+
   ccad::Project duplicate_pad = validBoardProject();
   duplicate_pad.board->pads.push_back(duplicate_pad.board->pads.at(0));
   require(hasCode(ccad::runDrc(duplicate_pad), "DUPLICATE_PAD_ID"),
