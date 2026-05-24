@@ -473,6 +473,53 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "resize-object") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--width-mm", "--height-mm"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const ccad::Size size{.width = requirePositiveMillimeters(options, "--width-mm"),
+                            .height = requirePositiveMillimeters(options, "--height-mm")};
+
+      bool resized = false;
+      for (ccad::Pad& pad : board.pads) {
+        if (pad.id == id) {
+          requireRotatedRectInsideBoard(board, pad.position, size, pad.rotation_degrees, "pad");
+          pad.size = size;
+          resized = true;
+          break;
+        }
+      }
+      for (ccad::Keepout& keepout : board.keepouts) {
+        if (keepout.id == id) {
+          const ccad::Rect resized_area{.origin = keepout.area.origin, .size = size};
+          requireRectInsideBoard(board, resized_area, "keepout area");
+          keepout.area.size = size;
+          resized = true;
+          break;
+        }
+      }
+      for (ccad::PlacementRegion& region : board.placement_regions) {
+        if (region.id == id) {
+          const ccad::Rect resized_area{.origin = region.area.origin, .size = size};
+          requireRectInsideBoard(board, resized_area, "placement region area");
+          region.area.size = size;
+          resized = true;
+          break;
+        }
+      }
+      if (!resized) {
+        throw std::runtime_error("unknown resizable physical object: " + id);
+      }
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "place-footprint") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--footprint", "--component", "--at-x-mm", "--at-y-mm",

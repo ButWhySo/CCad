@@ -107,6 +107,10 @@ const std::vector<CommandHelp>& commandHelp() {
                   .summary = "Move one physical board object by stable ID",
                   .usage = "ccad pcb move-object --file <path> --id <id> --x-mm <n> "
                            "--y-mm <n>"},
+      CommandHelp{.name = "pcb resize-object",
+                  .summary = "Resize one physical board object by stable ID",
+                  .usage = "ccad pcb resize-object --file <path> --id <id> --width-mm <n> "
+                           "--height-mm <n>"},
   };
   return commands;
 }

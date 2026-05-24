@@ -6,13 +6,13 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 97 merged and verified on `main`; Sprint 98 planning.
+Progress counter: Phase 2 / 6, Sprint 98 in progress on `sprint-98-cli-resize-physical-object`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
 - Logical ERC diagnostics.
 - CLI: `ccad help --format json`, `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
-- CLI PCB authoring: `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb add-via`, `ccad pcb add-track`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb remove-object`, and `ccad pcb move-object`.
+- CLI PCB authoring: `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb add-via`, `ccad pcb add-track`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
 - Physical board outline, layers, rectangular placement regions, rectangular keepouts, pads, vias, and track segments in project JSON.
@@ -67,6 +67,7 @@ Progress counter: Phase 2 / 6, Sprint 97 merged and verified on `main`; Sprint 9
 - CLI PCB authoring can remove physical board objects by stable ID.
 - CLI PCB authoring can remove unused board layers by stable ID.
 - CLI PCB authoring can move pads, vias, keepouts, and placement regions by stable ID.
+- CLI PCB authoring can resize pads, keepouts, and placement regions by stable ID.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
 
@@ -398,6 +399,7 @@ Add PCB primitives through the CLI:
 .\build-qt\ccad.exe pcb add-via --file .\build-qt\canvas-demo.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
 .\build-qt\ccad.exe pcb add-track --file .\build-qt\canvas-demo.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
 .\build-qt\ccad.exe pcb move-object --file .\build-qt\canvas-demo.ccad.json --id V1 --x-mm 9 --y-mm 10
+.\build-qt\ccad.exe pcb resize-object --file .\build-qt\canvas-demo.ccad.json --id P1 --width-mm 2.0 --height-mm 1.2
 .\build-qt\ccad.exe pcb remove-object --file .\build-qt\canvas-demo.ccad.json --id T1
 ```
 
@@ -412,6 +414,7 @@ What these do:
 - `pcb add-via` appends a plated via with diameter and drill size.
 - `pcb add-track` appends a straight copper track segment.
 - `pcb move-object` moves a pad or via center, or a keepout or placement-region origin, by stable ID.
+- `pcb resize-object` resizes a pad, keepout, or placement region by stable ID.
 - `pcb remove-object` removes one physical board object by stable ID.
 - These commands rewrite the same `.ccad.json` file using deterministic JSON.
 
@@ -435,6 +438,7 @@ Current command guards:
 - Positions and track endpoints must be inside the board outline.
 - Via drill must be less than or equal to via diameter.
 - Moved pads, vias, keepouts, and placement regions must remain fully inside the board outline.
+- Resized pads, keepouts, and placement regions must remain fully inside the board outline.
 - Removal IDs must match an existing pad, via, track, keepout, or placement region.
 
 Rectangular keepouts:
