@@ -74,6 +74,8 @@ int main() {
           "help json describes keepout authoring");
   require(help_json.find("\"name\": \"pcb add-placement-region\"") != std::string::npos,
           "help json describes placement region authoring");
+  require(help_json.find("\"name\": \"pcb remove-object\"") != std::string::npos,
+          "help json describes physical object removal");
   require(help_json.find("\"name\": \"lib catalog-info\"") != std::string::npos,
           "help json describes catalog info");
   require(help_json.find("\"name\": \"lib catalog-find\"") != std::string::npos,
@@ -230,6 +232,68 @@ int main() {
   require(run(add_keepout_command) != 0, "pcb add-keepout rejects duplicate id");
   require(run(add_placement_region_command) != 0,
           "pcb add-placement-region rejects duplicate id");
+
+  const std::filesystem::path remove_board_path = temp / "remove-board.ccad.json";
+  const std::string remove_board_init_command =
+      quote(CCAD_BINARY) +
+      " init --name remove-board --width-mm 42 --height-mm 28 --out " +
+      quote(remove_board_path);
+  require(run(remove_board_init_command) == 0, "remove board init exits zero");
+  const std::string remove_add_pad_command =
+      quote(CCAD_BINARY) + " pcb add-pad --file " + quote(remove_board_path) +
+      " --id RP1 --component U1 --pin 1 --net N1 --layer F.Cu"
+      " --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0";
+  const std::string remove_add_via_command =
+      quote(CCAD_BINARY) + " pcb add-via --file " + quote(remove_board_path) +
+      " --id RV1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4";
+  const std::string remove_add_track_command =
+      quote(CCAD_BINARY) + " pcb add-track --file " + quote(remove_board_path) +
+      " --id RT1 --net N1 --layer F.Cu"
+      " --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25";
+  const std::string remove_add_keepout_command =
+      quote(CCAD_BINARY) + " pcb add-keepout --file " + quote(remove_board_path) +
+      " --id RK1 --kind placement --x-mm 20 --y-mm 10 --width-mm 4 --height-mm 3";
+  const std::string remove_add_region_command =
+      quote(CCAD_BINARY) + " pcb add-placement-region --file " + quote(remove_board_path) +
+      " --id RPR1 --kind component --x-mm 2 --y-mm 3 --width-mm 10 --height-mm 6";
+  require(run(remove_add_pad_command) == 0, "remove fixture add pad exits zero");
+  require(run(remove_add_via_command) == 0, "remove fixture add via exits zero");
+  require(run(remove_add_track_command) == 0, "remove fixture add track exits zero");
+  require(run(remove_add_keepout_command) == 0, "remove fixture add keepout exits zero");
+  require(run(remove_add_region_command) == 0, "remove fixture add placement region exits zero");
+
+  const std::string remove_pad_command =
+      quote(CCAD_BINARY) + " pcb remove-object --file " + quote(remove_board_path) +
+      " --id RP1";
+  const std::string remove_via_command =
+      quote(CCAD_BINARY) + " pcb remove-object --file " + quote(remove_board_path) +
+      " --id RV1";
+  const std::string remove_track_command =
+      quote(CCAD_BINARY) + " pcb remove-object --file " + quote(remove_board_path) +
+      " --id RT1";
+  const std::string remove_keepout_command =
+      quote(CCAD_BINARY) + " pcb remove-object --file " + quote(remove_board_path) +
+      " --id RK1";
+  const std::string remove_region_command =
+      quote(CCAD_BINARY) + " pcb remove-object --file " + quote(remove_board_path) +
+      " --id RPR1";
+  require(run(remove_pad_command) == 0, "pcb remove-object removes pad");
+  require(run(remove_via_command) == 0, "pcb remove-object removes via");
+  require(run(remove_track_command) == 0, "pcb remove-object removes track");
+  require(run(remove_keepout_command) == 0, "pcb remove-object removes keepout");
+  require(run(remove_region_command) == 0, "pcb remove-object removes placement region");
+  const std::string removed_objects_json = readFile(remove_board_path);
+  require(removed_objects_json.find("\"id\": \"RP1\"") == std::string::npos,
+          "pcb remove-object deletes pad id");
+  require(removed_objects_json.find("\"id\": \"RV1\"") == std::string::npos,
+          "pcb remove-object deletes via id");
+  require(removed_objects_json.find("\"id\": \"RT1\"") == std::string::npos,
+          "pcb remove-object deletes track id");
+  require(removed_objects_json.find("\"id\": \"RK1\"") == std::string::npos,
+          "pcb remove-object deletes keepout id");
+  require(removed_objects_json.find("\"id\": \"RPR1\"") == std::string::npos,
+          "pcb remove-object deletes placement region id");
+  require(run(remove_pad_command) != 0, "pcb remove-object rejects missing object");
 
   const std::string bad_layer_command =
       quote(CCAD_BINARY) + " pcb add-track --file " + quote(board_project_path) +

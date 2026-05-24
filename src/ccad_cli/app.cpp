@@ -97,6 +97,9 @@ const std::vector<CommandHelp>& commandHelp() {
                   .usage = "ccad pcb add-placement-region --file <path> --id <id> "
                            "--kind <kind> --x-mm <n> --y-mm <n> --width-mm <n> "
                            "--height-mm <n>"},
+      CommandHelp{.name = "pcb remove-object",
+                  .summary = "Remove one physical board object by stable ID",
+                  .usage = "ccad pcb remove-object --file <path> --id <id>"},
   };
   return commands;
 }
