@@ -234,6 +234,31 @@ void requireCenteredRectInsideBoard(const ccad::Board& board, const ccad::Point 
   requireInsideBoard(board, max, label + " max corner");
 }
 
+void requireRotatedRectInsideBoard(const ccad::Board& board, const ccad::Point center,
+                                   const ccad::Size size, const double rotation_degrees,
+                                   const std::string& label) {
+  constexpr double pi = 3.14159265358979323846;
+  const double radians = rotation_degrees * pi / 180.0;
+  const double cos_theta = std::cos(radians);
+  const double sin_theta = std::sin(radians);
+  const double half_width = static_cast<double>(size.width.nanometers) / 2.0;
+  const double half_height = static_cast<double>(size.height.nanometers) / 2.0;
+  const double center_x = static_cast<double>(center.x.nanometers);
+  const double center_y = static_cast<double>(center.y.nanometers);
+
+  for (const auto& local : {std::pair<double, double>{-half_width, -half_height},
+                            std::pair<double, double>{half_width, -half_height},
+                            std::pair<double, double>{half_width, half_height},
+                            std::pair<double, double>{-half_width, half_height}}) {
+    const ccad::Point corner{
+        .x = ccad::nanometers(static_cast<std::int64_t>(
+            std::llround(center_x + (local.first * cos_theta) - (local.second * sin_theta)))),
+        .y = ccad::nanometers(static_cast<std::int64_t>(
+            std::llround(center_y + (local.first * sin_theta) + (local.second * cos_theta))))};
+    requireInsideBoard(board, corner, label + " corner");
+  }
+}
+
 void requireRectInsideBoard(const ccad::Board& board, const ccad::Rect& rect,
                             const std::string& label) {
   requireInsideBoard(board, rect.origin, label + " origin");

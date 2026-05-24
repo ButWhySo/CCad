@@ -581,6 +581,13 @@ int main() {
       " --component R2 --at-x-mm 10 --at-y-mm 12 --layer Inner.Cu";
   require(run(bad_place_layer_command) != 0, "pcb place-footprint rejects unknown layer");
 
+  const std::string edge_place_command =
+      quote(CCAD_BINARY) + " pcb place-footprint --file " + quote(board_project_path) +
+      " --footprint " + quote(footprint_out_path) +
+      " --component R_EDGE --at-x-mm 1 --at-y-mm 12 --layer F.Cu";
+  require(run(edge_place_command) != 0,
+          "pcb place-footprint rejects pad geometry outside board");
+
   const std::filesystem::path rotated_board_path = temp / "rotated-board.ccad.json";
   const std::string rotated_init_command =
       quote(CCAD_BINARY) +

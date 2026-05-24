@@ -39,6 +39,9 @@ void requirePointWithMarginInsideBoard(const ccad::Board& board, ccad::Point poi
                                        ccad::Length margin, const std::string& label);
 void requireCenteredRectInsideBoard(const ccad::Board& board, ccad::Point center,
                                     ccad::Size size, const std::string& label);
+void requireRotatedRectInsideBoard(const ccad::Board& board, ccad::Point center,
+                                   ccad::Size size, double rotation_degrees,
+                                   const std::string& label);
 void requireUniquePadId(const ccad::Board& board, const std::string& id);
 void requireUniqueViaId(const ccad::Board& board, const std::string& id);
 void requireUniqueTrackId(const ccad::Board& board, const std::string& id);

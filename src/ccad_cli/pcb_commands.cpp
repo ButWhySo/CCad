@@ -195,6 +195,9 @@ int pcbCommand(const std::vector<std::string>& args) {
         const ccad::Point placed_position =
             rotateAndTranslate(footprint_pad.position, origin, placement_rotation);
         requireInsideBoard(board, placed_position, "footprint pad position");
+        requireRotatedRectInsideBoard(board, placed_position, footprint_pad.size,
+                                      footprint_pad.rotation_degrees + placement_rotation,
+                                      "footprint pad");
       }
 
       for (const ccad::FootprintPad& footprint_pad : footprint.pads) {
