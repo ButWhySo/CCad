@@ -9,6 +9,7 @@
 #include <QAction>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QGraphicsScene>
 #include <QDockWidget>
 #include <QMenuBar>
