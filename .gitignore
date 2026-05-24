@@ -1,6 +1,7 @@
 # Markdown policy for public GitHub publish
 *.md
 !README.md
+docs/
 
 # Build outputs
 build/
