@@ -140,6 +140,12 @@ int main() {
   require(hasEntry(changed_outline_diff, "changed", "board_outline", "board"),
           "changed board outline entry");
 
+  ccad::Project changed_rules = baseProject();
+  changed_rules.board->design_rules.copper_clearance = ccad::millimeters(0.25);
+  const ccad::ProjectDiff changed_rules_diff = ccad::diffProjects(baseProject(), changed_rules);
+  require(hasEntry(changed_rules_diff, "changed", "design_rules", "board"),
+          "changed design rules entry");
+
   ccad::Project added_board = baseProject();
   added_board.board.reset();
   const ccad::ProjectDiff added_board_diff = ccad::diffProjects(added_board, baseProject());
