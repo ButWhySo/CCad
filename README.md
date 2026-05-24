@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 79 merged and verified on `main`; Sprint 80 planning.
+Progress counter: Phase 2 / 6, Sprint 80 in progress on `sprint-80-configured-clearance-diagnostics`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -49,6 +49,7 @@ Progress counter: Phase 2 / 6, Sprint 79 merged and verified on `main`; Sprint 8
 - Native GUI cursor status uses board-origin-aware coordinates for shifted board outlines.
 - Native GUI project summary shows non-zero board outline origin next to board size.
 - Native GUI project summary shows active board-level DRC rule values.
+- `COPPER_CLEARANCE` DRC diagnostics include the configured clearance value that triggered the finding.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
 
@@ -305,7 +306,7 @@ What it does:
 - Runs kernel-level physical checks on board primitives.
 - Emits JSON diagnostics.
 - Exits `0` when no DRC errors exist, `1` when DRC errors exist, `2` for usage/file/parse failures.
-- Reports `COPPER_CLEARANCE` when different-net copper is closer than the configured board-level copper clearance.
+- Reports `COPPER_CLEARANCE` when different-net copper is closer than the configured board-level copper clearance, including that configured value in the diagnostic message.
 - Reports invalid rule values when board-level copper clearance, minimum track width, or minimum via annular ring are non-positive in project JSON.
 - Treats layer-bound pad/track copper as colliding only when they share a copper layer; vias still interact with copper across layers.
 - Reports `PAD_NON_COPPER_LAYER` or `TRACK_NON_COPPER_LAYER` when copper primitives reference a valid layer whose kind is not `copper`.

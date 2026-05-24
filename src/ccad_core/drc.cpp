@@ -399,9 +399,10 @@ bool shareCopperLayer(const Board& board, const std::string& left_layer,
 }
 
 void addClearanceDiagnostic(std::vector<Diagnostic>& diagnostics, const std::string& checked_id,
-                            const std::string& other_id) {
+                            const std::string& other_id, const Length& clearance) {
   diagnostics.push_back(makeDiagnostic("COPPER_CLEARANCE",
-                                       "Different-net copper is closer than default clearance to " +
+                                       "Different-net copper is closer than configured clearance " +
+                                           std::to_string(clearance.nanometers) + " nm to " +
                                            other_id,
                                        checked_id));
 }
@@ -850,7 +851,8 @@ void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnosti
       }
       if (distanceBetweenPolygons(padCorners(left_pad), padCorners(right_pad)) <
           copper_clearance) {
-        addClearanceDiagnostic(diagnostics, right_pad.id, left_pad.id);
+        addClearanceDiagnostic(diagnostics, right_pad.id, left_pad.id,
+                               board.design_rules.copper_clearance);
       }
     }
   }
@@ -870,7 +872,8 @@ void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnosti
           (static_cast<long double>(left_track.width.nanometers) / 2.0L) -
           (static_cast<long double>(right_track.width.nanometers) / 2.0L);
       if (edge_distance < copper_clearance) {
-        addClearanceDiagnostic(diagnostics, right_track.id, left_track.id);
+        addClearanceDiagnostic(diagnostics, right_track.id, left_track.id,
+                               board.design_rules.copper_clearance);
       }
     }
   }
@@ -886,7 +889,7 @@ void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnosti
           distanceSegmentToPolygon(track.start, track.end, padCorners(pad)) -
           (static_cast<long double>(track.width.nanometers) / 2.0L);
       if (edge_distance < copper_clearance) {
-        addClearanceDiagnostic(diagnostics, track.id, pad.id);
+        addClearanceDiagnostic(diagnostics, track.id, pad.id, board.design_rules.copper_clearance);
       }
     }
   }
@@ -904,7 +907,8 @@ void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnosti
           (static_cast<long double>(left_via.diameter.nanometers) / 2.0L) -
           (static_cast<long double>(right_via.diameter.nanometers) / 2.0L);
       if (edge_distance < copper_clearance) {
-        addClearanceDiagnostic(diagnostics, right_via.id, left_via.id);
+        addClearanceDiagnostic(diagnostics, right_via.id, left_via.id,
+                               board.design_rules.copper_clearance);
       }
     }
   }
@@ -919,7 +923,7 @@ void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnosti
           distancePointToPolygon(via.position, padCorners(pad)) -
           (static_cast<long double>(via.diameter.nanometers) / 2.0L);
       if (edge_distance < copper_clearance) {
-        addClearanceDiagnostic(diagnostics, via.id, pad.id);
+        addClearanceDiagnostic(diagnostics, via.id, pad.id, board.design_rules.copper_clearance);
       }
     }
     for (const TrackSegment& track : board.tracks) {
@@ -933,7 +937,8 @@ void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnosti
           (static_cast<long double>(via.diameter.nanometers) / 2.0L) -
           (static_cast<long double>(track.width.nanometers) / 2.0L);
       if (edge_distance < copper_clearance) {
-        addClearanceDiagnostic(diagnostics, via.id, track.id);
+        addClearanceDiagnostic(diagnostics, via.id, track.id,
+                               board.design_rules.copper_clearance);
       }
     }
   }
