@@ -28,6 +28,10 @@ ProjectReview buildReview(const Project& project) {
     review.board_width_nm = project.board->outline.size.width.nanometers;
     review.board_height_nm = project.board->outline.size.height.nanometers;
     review.layer_count = project.board->layers.size();
+    review.pad_count = project.board->pads.size();
+    review.via_count = project.board->vias.size();
+    review.track_count = project.board->tracks.size();
+    review.keepout_count = project.board->keepouts.size();
   }
   review.diagnostics = runErc(project);
   const std::vector<Diagnostic> drc_diagnostics = runDrc(project);

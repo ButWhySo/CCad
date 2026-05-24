@@ -239,6 +239,14 @@ int main() {
           "inspect reports board present");
   require(board_inspect_output.find("\"width_nm\": 42000000") != std::string::npos,
           "inspect reports board width");
+  require(board_inspect_output.find("\"pads\": 1") != std::string::npos,
+          "inspect reports pad count");
+  require(board_inspect_output.find("\"vias\": 1") != std::string::npos,
+          "inspect reports via count");
+  require(board_inspect_output.find("\"tracks\": 1") != std::string::npos,
+          "inspect reports track count");
+  require(board_inspect_output.find("\"keepouts\": 1") != std::string::npos,
+          "inspect reports keepout count");
 
   std::string board_with_net = readFile(board_project_path);
   const std::string empty_components = "  \"components\": [\n  ]";
