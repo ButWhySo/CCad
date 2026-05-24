@@ -42,6 +42,7 @@ void writeFile(const std::filesystem::path& path, const std::string& content) {
 
 int main() {
   const std::filesystem::path temp = std::filesystem::temp_directory_path() / "ccad_cli_test";
+  std::filesystem::remove_all(temp);
   std::filesystem::create_directories(temp);
   const std::filesystem::path project_path = temp / "demo.ccad.json";
   const std::filesystem::path diagnostics_path = temp / "diagnostics.json";
@@ -64,6 +65,8 @@ int main() {
           "help json describes footprint placement");
   require(help_json.find("\"name\": \"pcb add-layer\"") != std::string::npos,
           "help json describes layer authoring");
+  require(help_json.find("\"name\": \"pcb remove-layer\"") != std::string::npos,
+          "help json describes layer removal");
   require(help_json.find("\"name\": \"pcb set-layer-visibility\"") != std::string::npos,
           "help json describes layer visibility authoring");
   require(help_json.find("\"name\": \"pcb set-rules\"") != std::string::npos,
@@ -129,6 +132,32 @@ int main() {
       " --id In1.Cu --visible maybe";
   require(run(bad_layer_visibility_value_command) != 0,
           "pcb set-layer-visibility rejects invalid visibility");
+
+  const std::filesystem::path remove_layer_board_path = temp / "remove-layer-board.ccad.json";
+  const std::string remove_layer_init_command =
+      quote(CCAD_BINARY) +
+      " init --name remove-layer --width-mm 42 --height-mm 28 --out " +
+      quote(remove_layer_board_path);
+  require(run(remove_layer_init_command) == 0, "remove layer board init exits zero");
+  const std::string remove_layer_add_back_command =
+      quote(CCAD_BINARY) + " pcb add-layer --file " + quote(remove_layer_board_path) +
+      " --id In1.Cu --name Inner1 --kind copper";
+  require(run(remove_layer_add_back_command) == 0, "remove layer fixture add layer exits zero");
+  const std::string remove_back_layer_command =
+      quote(CCAD_BINARY) + " pcb remove-layer --file " + quote(remove_layer_board_path) +
+      " --id In1.Cu";
+  require(run(remove_back_layer_command) == 0, "pcb remove-layer removes unused layer");
+  require(readFile(remove_layer_board_path).find("\"id\": \"In1.Cu\"") == std::string::npos,
+          "pcb remove-layer deletes layer id");
+  require(run(remove_back_layer_command) != 0, "pcb remove-layer rejects missing layer");
+  require(run(remove_layer_add_back_command) == 0,
+          "remove layer fixture re-adds layer after removal");
+  const std::string remove_layer_add_pad_command =
+      quote(CCAD_BINARY) + " pcb add-pad --file " + quote(remove_layer_board_path) +
+      " --id LP1 --component U1 --pin 1 --net N1 --layer In1.Cu"
+      " --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0";
+  require(run(remove_layer_add_pad_command) == 0, "remove layer fixture add pad exits zero");
+  require(run(remove_back_layer_command) != 0, "pcb remove-layer rejects referenced layer");
 
   const std::string add_silkscreen_layer_command =
       quote(CCAD_BINARY) + " pcb add-layer --file " + quote(board_project_path) +

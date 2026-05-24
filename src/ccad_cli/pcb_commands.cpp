@@ -41,6 +41,19 @@ bool parseRequiredVisibleOption(const std::map<std::string, std::string>& option
   return parseVisibleOption(options);
 }
 
+void requireLayerUnused(const ccad::Board& board, const std::string& id) {
+  for (const ccad::Pad& pad : board.pads) {
+    if (pad.layer_id == id) {
+      throw std::runtime_error("layer is referenced by pad: " + pad.id);
+    }
+  }
+  for (const ccad::TrackSegment& track : board.tracks) {
+    if (track.layer_id == id) {
+      throw std::runtime_error("layer is referenced by track: " + track.id);
+    }
+  }
+}
+
 ccad::Length requireMillimeters(const std::map<std::string, std::string>& options,
                                 const std::string& key) {
   return ccad::millimeters(requireDoubleOption(options, key));
@@ -106,6 +119,32 @@ int pcbCommand(const std::vector<std::string>& args) {
           .kind = kind,
           .visible = parseVisibleOption(options),
       });
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "remove-layer") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      requireLayerUnused(board, id);
+      bool removed = false;
+      for (auto it = board.layers.begin(); it != board.layers.end(); ++it) {
+        if (it->id == id) {
+          board.layers.erase(it);
+          removed = true;
+          break;
+        }
+      }
+      if (!removed) {
+        throw std::runtime_error("unknown layer: " + id);
+      }
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
