@@ -62,6 +62,15 @@ int main() {
           .end = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},
           .width = ccad::millimeters(0.25),
       }},
+      .route_requests = {ccad::RouteRequest{
+          .id = "RR1",
+          .net_id = "N_3V3",
+          .from_object_id = "P1",
+          .to_object_id = "V1",
+          .preferred_layer_id = "F.Cu",
+          .policy = "shortest_safe",
+          .width = ccad::millimeters(0.25),
+      }},
   };
   project.components.push_back(Component{
       .id = "U1",
@@ -90,6 +99,9 @@ int main() {
           "copper clearance rule emitted");
   require(json.find("\"placement_regions\"") != std::string::npos,
           "placement regions emitted");
+  require(json.find("\"route_requests\"") != std::string::npos, "route requests emitted");
+  require(json.find("\"policy\": \"shortest_safe\"") != std::string::npos,
+          "route request policy emitted");
   require(json.find("\"keepouts\"") != std::string::npos, "keepouts emitted");
   require(json.find("\"component_id\": \"U1\"") != std::string::npos, "net member emitted");
 
@@ -119,6 +131,15 @@ int main() {
   require(loaded.board->vias.at(0).drill.nanometers == 400000, "via drill round trips");
   require(loaded.board->tracks.size() == 1, "board tracks round trip");
   require(loaded.board->tracks.at(0).width.nanometers == 250000, "track width round trips");
+  require(loaded.board->route_requests.size() == 1, "route requests round trip");
+  require(loaded.board->route_requests.at(0).from_object_id == "P1",
+          "route request start object round trips");
+  require(loaded.board->route_requests.at(0).to_object_id == "V1",
+          "route request target object round trips");
+  require(loaded.board->route_requests.at(0).preferred_layer_id == "F.Cu",
+          "route request preferred layer round trips");
+  require(loaded.board->route_requests.at(0).width.nanometers == 250000,
+          "route request width round trips");
   require(loaded.components.size() == 1, "component count round trips");
   require(loaded.components.at(0).pins.size() == 2, "pin count round trips");
   require(loaded.nets.size() == 1, "net count round trips");

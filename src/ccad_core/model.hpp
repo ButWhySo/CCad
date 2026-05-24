@@ -77,6 +77,16 @@ struct TrackSegment {
   Length width;
 };
 
+struct RouteRequest {
+  std::string id;
+  std::string net_id;
+  std::string from_object_id;
+  std::string to_object_id;
+  std::string preferred_layer_id;
+  std::string policy;
+  Length width;
+};
+
 struct Keepout {
   std::string id;
   std::string kind;
@@ -98,6 +108,7 @@ struct Board {
   std::vector<Pad> pads;
   std::vector<Via> vias;
   std::vector<TrackSegment> tracks;
+  std::vector<RouteRequest> route_requests;
 };
 
 struct Project {

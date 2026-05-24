@@ -79,6 +79,7 @@ Phase 2 is complete. CCad now has a deterministic physical board model, early PC
 - CLI PCB authoring can update existing track net/layer metadata and via net metadata by stable ID.
 - CLI PCB authoring can update existing pad metadata, layer, and rotation by stable ID.
 - CLI PCB authoring can update keepout and placement-region kind values by stable ID.
+- Board JSON now has typed route-request records for early routing-assistance intent.
 
 Out of scope for the Phase 3 MVP: full interactive editing, automatic placement, a production autorouter, KiCad import/export, fabrication outputs, and network services.
 
