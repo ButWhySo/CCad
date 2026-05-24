@@ -68,6 +68,26 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "set-rules") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--copper-clearance-mm", "--min-track-width-mm",
+                                 "--min-via-annular-ring-mm"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      board.design_rules = ccad::DesignRules{
+          .copper_clearance = requirePositiveMillimeters(options, "--copper-clearance-mm"),
+          .min_track_width = requirePositiveMillimeters(options, "--min-track-width-mm"),
+          .min_via_annular_ring =
+              requirePositiveMillimeters(options, "--min-via-annular-ring-mm"),
+      };
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "add-pad") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--component", "--pin", "--net", "--layer",

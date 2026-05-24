@@ -21,6 +21,9 @@ int main() {
           .origin = ccad::Point{.x = ccad::nanometers(0), .y = ccad::nanometers(0)},
           .size = ccad::Size{.width = ccad::millimeters(42), .height = ccad::millimeters(28)},
       },
+      .design_rules = ccad::DesignRules{.copper_clearance = ccad::millimeters(0.15),
+                                        .min_track_width = ccad::millimeters(0.12),
+                                        .min_via_annular_ring = ccad::millimeters(0.08)},
       .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true},
                  ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true}},
       .placement_regions = {ccad::PlacementRegion{
@@ -82,6 +85,9 @@ int main() {
   require(json.find("\"id\": \"proj-demo\"") != std::string::npos, "project id emitted");
   require(json.find("\"board\"") != std::string::npos, "board emitted");
   require(json.find("\"width_nm\": 42000000") != std::string::npos, "board width emitted");
+  require(json.find("\"design_rules\"") != std::string::npos, "design rules emitted");
+  require(json.find("\"copper_clearance_nm\": 150000") != std::string::npos,
+          "copper clearance rule emitted");
   require(json.find("\"placement_regions\"") != std::string::npos,
           "placement regions emitted");
   require(json.find("\"keepouts\"") != std::string::npos, "keepouts emitted");
@@ -93,6 +99,12 @@ int main() {
   require(loaded.board.has_value(), "board round trips");
   require(loaded.board->outline.size.width.nanometers == 42000000, "board width round trips");
   require(loaded.board->outline.size.height.nanometers == 28000000, "board height round trips");
+  require(loaded.board->design_rules.copper_clearance.nanometers == 150000,
+          "copper clearance rule round trips");
+  require(loaded.board->design_rules.min_track_width.nanometers == 120000,
+          "minimum track width rule round trips");
+  require(loaded.board->design_rules.min_via_annular_ring.nanometers == 80000,
+          "minimum via annular ring rule round trips");
   require(loaded.board->layers.size() == 2, "board layers round trip");
   require(loaded.board->placement_regions.size() == 1, "board placement regions round trip");
   require(loaded.board->placement_regions.at(0).area.size.width.nanometers == 10000000,

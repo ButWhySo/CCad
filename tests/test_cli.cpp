@@ -64,6 +64,8 @@ int main() {
           "help json describes footprint placement");
   require(help_json.find("\"name\": \"pcb add-layer\"") != std::string::npos,
           "help json describes layer authoring");
+  require(help_json.find("\"name\": \"pcb set-rules\"") != std::string::npos,
+          "help json describes drc rule authoring");
   require(help_json.find("\"name\": \"pcb add-keepout\"") != std::string::npos,
           "help json describes keepout authoring");
   require(help_json.find("\"name\": \"pcb add-placement-region\"") != std::string::npos,
@@ -101,6 +103,21 @@ int main() {
   require(layer_json.find("\"visible\": false") != std::string::npos,
           "pcb add-layer writes visibility");
   require(run(add_layer_command) != 0, "pcb add-layer rejects duplicate id");
+
+  const std::string set_rules_command =
+      quote(CCAD_BINARY) + " pcb set-rules --file " + quote(board_project_path) +
+      " --copper-clearance-mm 0.15 --min-track-width-mm 0.12"
+      " --min-via-annular-ring-mm 0.08";
+  require(run(set_rules_command) == 0, "pcb set-rules exits zero");
+  const std::string rules_json = readFile(board_project_path);
+  require(rules_json.find("\"design_rules\"") != std::string::npos,
+          "pcb set-rules writes design rules");
+  require(rules_json.find("\"copper_clearance_nm\": 150000") != std::string::npos,
+          "pcb set-rules writes copper clearance");
+  require(rules_json.find("\"min_track_width_nm\": 120000") != std::string::npos,
+          "pcb set-rules writes minimum track width");
+  require(rules_json.find("\"min_via_annular_ring_nm\": 80000") != std::string::npos,
+          "pcb set-rules writes minimum via annular ring");
 
   const std::string add_pad_command =
       quote(CCAD_BINARY) + " pcb add-pad --file " + quote(board_project_path) +

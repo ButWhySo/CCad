@@ -16,7 +16,7 @@ Progress counter: Phase 2 / 6, Sprint 67 merged and verified on `main`; Sprint 6
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
 - Physical board outline, layers, rectangular placement regions, rectangular keepouts, pads, vias, and track segments in project JSON.
-- Physical DRC for geometry, connectivity metadata, rectangular keepout occupancy, track crossing violations, fixed default copper clearance, default minimum track width, default minimum via annular ring, stable physical object IDs, and logical pad/net parity.
+- Physical DRC for geometry, connectivity metadata, rectangular keepout occupancy, track crossing violations, board-level copper clearance, minimum track width, minimum via annular ring, stable physical object IDs, and logical pad/net parity.
 - Physical DRC track-endpoint connectivity now accepts geometric copper contact with same-net pads and vias, not only exact center-point matches.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
 - Native GUI selection inspector for stable object type and ID.
@@ -40,6 +40,7 @@ Progress counter: Phase 2 / 6, Sprint 67 merged and verified on `main`; Sprint 6
 - GitHub CI now uses `actions/checkout@v5` for Node 24 runner compatibility.
 - Native GUI starts with a larger default window size derived from desktop available bounds.
 - Placement regions are serialized, authored through the CLI, inspected in review JSON, checked by DRC, rendered in the Qt canvas, and listed in the object browser.
+- Board-level physical DRC rules are serialized and configurable through `ccad pcb set-rules`.
 - Native GUI startup crash (status `0xC0000005`) fixed by ordering status-label initialization before pan-mode callback wiring.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
@@ -356,6 +357,7 @@ Current limitation:
 Add PCB primitives through the CLI:
 
 ```powershell
+.\build-qt\ccad.exe pcb set-rules --file .\build-qt\canvas-demo.ccad.json --copper-clearance-mm 0.20 --min-track-width-mm 0.15 --min-via-annular-ring-mm 0.10
 .\build-qt\ccad.exe pcb add-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --name "Inner 1 copper" --kind copper --visible false
 .\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 .\build-qt\ccad.exe pcb add-via --file .\build-qt\canvas-demo.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
@@ -364,6 +366,7 @@ Add PCB primitives through the CLI:
 
 What these do:
 
+- `pcb set-rules` updates board-level DRC defaults for copper clearance, minimum track width, and minimum via annular ring.
 - `pcb add-layer` appends a board layer with stable ID, display name, kind, and optional visibility.
 - `pcb add-pad` appends a rectangular pad to an existing board project.
 - `pcb add-via` appends a plated via with diameter and drill size.
@@ -379,6 +382,7 @@ When to run:
 Current command guards:
 
 - The project must already have a board.
+- Rule dimensions must be positive.
 - Primitive IDs must be unique within their primitive type.
 - Layer IDs must be unique.
 - Dimensions must be positive.
@@ -498,6 +502,7 @@ cmake -S . -B build-qt `
 cmake --build build-qt --clean-first
 ctest --test-dir build-qt --output-on-failure
 .\build-qt\ccad.exe init --name canvas-demo --width-mm 42 --height-mm 28 --out .\build-qt\canvas-demo.ccad.json
+.\build-qt\ccad.exe pcb set-rules --file .\build-qt\canvas-demo.ccad.json --copper-clearance-mm 0.20 --min-track-width-mm 0.15 --min-via-annular-ring-mm 0.10
 .\build-qt\ccad.exe pcb add-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --name "Inner 1 copper" --kind copper --visible false
 .\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 .\build-qt\ccad.exe pcb add-via --file .\build-qt\canvas-demo.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
@@ -520,7 +525,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_sprint_demo.ps1 -Name spr
 What it does:
 
 - Creates `artifacts/demos/sprint42-gui-canvas-mvp-review.ccad.json`.
-- Adds an extra board layer, a pad, via, two crossing tracks, a rectangular placement region, logical demo nets, and a rectangular keepout.
+- Sets board-level DRC rules, adds an extra board layer, a pad, via, two crossing tracks, a rectangular placement region, logical demo nets, and a rectangular keepout.
 - Writes inspect, validate, and DRC JSON reports.
 - Writes a sample KiCad `.kicad_mod` file and imports it to CCad footprint JSON.
 - Places the imported footprint onto the demo board.
