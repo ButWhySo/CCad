@@ -255,6 +255,21 @@ int main() {
   require(hasCode(ccad::runDrc(keepout_pad), "PAD_IN_KEEPOUT"),
           "drc reports pad in keepout");
 
+  ccad::Project keepout_pad_geometry = validBoardProject();
+  keepout_pad_geometry.board->pads.at(0).position =
+      ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(5)};
+  keepout_pad_geometry.board->pads.at(0).size =
+      ccad::Size{.width = ccad::millimeters(2.0), .height = ccad::millimeters(2.0)};
+  keepout_pad_geometry.board->keepouts.push_back(ccad::Keepout{
+      .id = "K_PAD_GEOM",
+      .kind = "placement",
+      .area = ccad::Rect{.origin = ccad::Point{.x = ccad::millimeters(5.9),
+                                               .y = ccad::millimeters(5.9)},
+                         .size = ccad::Size{.width = ccad::millimeters(1.0),
+                                            .height = ccad::millimeters(1.0)}}});
+  require(hasCode(ccad::runDrc(keepout_pad_geometry), "PAD_IN_KEEPOUT"),
+          "drc reports pad geometry intersection with keepout");
+
   ccad::Project keepout_via = validBoardProject();
   keepout_via.board->keepouts.push_back(ccad::Keepout{
       .id = "K_VIA",
@@ -265,6 +280,21 @@ int main() {
                                             .height = ccad::millimeters(3)}}});
   require(hasCode(ccad::runDrc(keepout_via), "VIA_IN_KEEPOUT"),
           "drc reports via in keepout");
+
+  ccad::Project keepout_via_geometry = validBoardProject();
+  keepout_via_geometry.board->vias.at(0).position =
+      ccad::Point{.x = ccad::millimeters(10.4), .y = ccad::millimeters(9.0)};
+  keepout_via_geometry.board->vias.at(0).diameter = ccad::millimeters(1.0);
+  keepout_via_geometry.board->vias.at(0).drill = ccad::millimeters(0.4);
+  keepout_via_geometry.board->keepouts.push_back(ccad::Keepout{
+      .id = "K_VIA_GEOM",
+      .kind = "routing",
+      .area = ccad::Rect{.origin = ccad::Point{.x = ccad::millimeters(9.9),
+                                               .y = ccad::millimeters(8.8)},
+                         .size = ccad::Size{.width = ccad::millimeters(0.4),
+                                            .height = ccad::millimeters(0.4)}}});
+  require(hasCode(ccad::runDrc(keepout_via_geometry), "VIA_IN_KEEPOUT"),
+          "drc reports via geometry intersection with keepout");
 
   ccad::Project keepout_track = validBoardProject();
   keepout_track.board->keepouts.push_back(ccad::Keepout{

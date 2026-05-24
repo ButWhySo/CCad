@@ -75,6 +75,14 @@ bool rectContainsPoint(const Rect& rect, const Point& point) {
          point.y.nanometers >= rect.origin.y.nanometers && point.y.nanometers <= max.y.nanometers;
 }
 
+std::vector<Point> rectCorners(const Rect& rect) {
+  const Point top_left = rect.origin;
+  const Point bottom_right = maxPoint(rect);
+  const Point top_right{.x = bottom_right.x, .y = top_left.y};
+  const Point bottom_left{.x = top_left.x, .y = bottom_right.y};
+  return {top_left, top_right, bottom_right, bottom_left};
+}
+
 int orientation(const Point& a, const Point& b, const Point& c) {
   const long double ab_x = static_cast<long double>(b.x.nanometers - a.x.nanometers);
   const long double ab_y = static_cast<long double>(b.y.nanometers - a.y.nanometers);
@@ -236,6 +244,41 @@ bool segmentIntersectsPolygon(const Point& start, const Point& end,
   return false;
 }
 
+bool polygonIntersectsRect(const std::vector<Point>& polygon, const Rect& rect) {
+  const std::vector<Point> rect_polygon = rectCorners(rect);
+  for (std::size_t i = 0; i < polygon.size(); ++i) {
+    const Point& edge_start = polygon.at(i);
+    const Point& edge_end = polygon.at((i + 1) % polygon.size());
+    if (segmentIntersectsRect(edge_start, edge_end, rect)) {
+      return true;
+    }
+  }
+  for (const Point& point : polygon) {
+    if (rectContainsPoint(rect, point)) {
+      return true;
+    }
+  }
+  for (const Point& rect_point : rect_polygon) {
+    if (pointInPolygon(rect_point, polygon)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+long double distancePointToRect(const Point& point, const Rect& rect) {
+  const Point rect_max = maxPoint(rect);
+  const long double px = static_cast<long double>(point.x.nanometers);
+  const long double py = static_cast<long double>(point.y.nanometers);
+  const long double min_x = static_cast<long double>(rect.origin.x.nanometers);
+  const long double min_y = static_cast<long double>(rect.origin.y.nanometers);
+  const long double max_x = static_cast<long double>(rect_max.x.nanometers);
+  const long double max_y = static_cast<long double>(rect_max.y.nanometers);
+  const long double clamped_x = std::clamp(px, min_x, max_x);
+  const long double clamped_y = std::clamp(py, min_y, max_y);
+  return std::hypotl(px - clamped_x, py - clamped_y);
+}
+
 long double distancePointToPolygon(const Point& point, const std::vector<Point>& polygon) {
   if (pointInPolygon(point, polygon)) {
     return 0.0L;
@@ -391,9 +434,9 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
           makeDiagnostic("UNKNOWN_PAD_NET", "Pad references an unknown net", pad.id));
     }
     for (const Keepout& keepout : board.keepouts) {
-      if (rectContainsPoint(keepout.area, pad.position)) {
+      if (polygonIntersectsRect(padCorners(pad), keepout.area)) {
         diagnostics.push_back(
-            makeDiagnostic("PAD_IN_KEEPOUT", "Pad position is inside keepout " + keepout.id,
+            makeDiagnostic("PAD_IN_KEEPOUT", "Pad geometry intersects keepout " + keepout.id,
                            pad.id));
       }
     }
@@ -444,9 +487,10 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
                          "Via annular ring is below default minimum of 0.10 mm", via.id));
     }
     for (const Keepout& keepout : board.keepouts) {
-      if (rectContainsPoint(keepout.area, via.position)) {
+      const long double radius = static_cast<long double>(via.diameter.nanometers) / 2.0L;
+      if (distancePointToRect(via.position, keepout.area) <= radius) {
         diagnostics.push_back(
-            makeDiagnostic("VIA_IN_KEEPOUT", "Via position is inside keepout " + keepout.id,
+            makeDiagnostic("VIA_IN_KEEPOUT", "Via geometry intersects keepout " + keepout.id,
                            via.id));
       }
     }
