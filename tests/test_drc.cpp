@@ -179,6 +179,16 @@ int main() {
   require(hasCode(ccad::runDrc(empty_pad_id), "INVALID_PAD_ID"),
           "drc reports empty pad id");
 
+  ccad::Project empty_pad_component = validBoardProject();
+  empty_pad_component.board->pads.at(0).component_id.clear();
+  require(hasCode(ccad::runDrc(empty_pad_component), "INVALID_PAD_COMPONENT"),
+          "drc reports empty pad component id");
+
+  ccad::Project empty_pad_pin = validBoardProject();
+  empty_pad_pin.board->pads.at(0).pin_name.clear();
+  require(hasCode(ccad::runDrc(empty_pad_pin), "INVALID_PAD_PIN"),
+          "drc reports empty pad pin name");
+
   ccad::Project pad_geometry_outside = validBoardProject();
   pad_geometry_outside.board->pads.at(0).position =
       ccad::Point{.x = ccad::millimeters(0.4), .y = ccad::millimeters(0.4)};

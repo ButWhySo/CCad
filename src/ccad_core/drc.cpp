@@ -414,6 +414,14 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
       diagnostics.push_back(
           makeDiagnostic("DUPLICATE_PAD_ID", "Pad ID appears more than once", pad.id));
     }
+    if (pad.component_id.empty()) {
+      diagnostics.push_back(makeDiagnostic("INVALID_PAD_COMPONENT",
+                                           "Pad component_id must not be empty", pad.id));
+    }
+    if (pad.pin_name.empty()) {
+      diagnostics.push_back(
+          makeDiagnostic("INVALID_PAD_PIN", "Pad pin_name must not be empty", pad.id));
+    }
     if (!hasLayer(board, pad.layer_id)) {
       diagnostics.push_back(
           makeDiagnostic("UNKNOWN_PAD_LAYER", "Pad references an unknown layer", pad.id));
