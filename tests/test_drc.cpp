@@ -90,6 +90,17 @@ int main() {
   require(hasCode(ccad::runDrc(unknown_track_layer), "UNKNOWN_TRACK_LAYER"),
           "drc reports unknown track layer");
 
+  ccad::Project duplicate_layer = validBoardProject();
+  duplicate_layer.board->layers.push_back(duplicate_layer.board->layers.front());
+  require(hasCode(ccad::runDrc(duplicate_layer), "DUPLICATE_LAYER_ID"),
+          "drc reports duplicate layer id");
+
+  ccad::Project empty_layer_id = validBoardProject();
+  empty_layer_id.board->layers.push_back(
+      ccad::Layer{.id = "", .name = "Invalid", .kind = "copper", .visible = true});
+  require(hasCode(ccad::runDrc(empty_layer_id), "INVALID_LAYER_ID"),
+          "drc reports empty layer id");
+
   ccad::Project via_drill_too_large = validBoardProject();
   via_drill_too_large.board->vias.at(0).drill = ccad::millimeters(1.0);
   require(hasCode(ccad::runDrc(via_drill_too_large), "VIA_DRILL_TOO_LARGE"),

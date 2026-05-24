@@ -474,6 +474,20 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
   }
 }
 
+void checkLayers(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  std::set<std::string> ids;
+  for (const Layer& layer : board.layers) {
+    if (layer.id.empty()) {
+      diagnostics.push_back(
+          makeDiagnostic("INVALID_LAYER_ID", "Layer ID must not be empty", layer.id));
+    }
+    if (!ids.insert(layer.id).second) {
+      diagnostics.push_back(
+          makeDiagnostic("DUPLICATE_LAYER_ID", "Layer ID appears more than once", layer.id));
+    }
+  }
+}
+
 void checkKeepouts(const Board& board, std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
   for (const Keepout& keepout : board.keepouts) {
@@ -621,6 +635,7 @@ std::vector<Diagnostic> runDrc(const Project& project) {
   }
 
   const Board& board = *project.board;
+  checkLayers(board, diagnostics);
   checkPads(project, board, diagnostics);
   checkVias(project, board, diagnostics);
   checkTracks(project, board, diagnostics);
