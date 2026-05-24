@@ -60,6 +60,18 @@ std::string padSignature(const Pad& pad) {
          sizeSignature(pad.size) + "\x1f" + std::to_string(pad.rotation_degrees);
 }
 
+std::string viaSignature(const Via& via) {
+  return via.net_id + "\x1f" + pointSignature(via.position) + "\x1f" +
+         std::to_string(via.diameter.nanometers) + "\x1f" +
+         std::to_string(via.drill.nanometers);
+}
+
+std::string trackSignature(const TrackSegment& track) {
+  return track.net_id + "\x1f" + track.layer_id + "\x1f" + pointSignature(track.start) +
+         "\x1f" + pointSignature(track.end) + "\x1f" +
+         std::to_string(track.width.nanometers);
+}
+
 template <typename T, typename SignatureFn>
 void diffObjectMap(ProjectDiff& diff, const std::string& object_type, const std::vector<T>& before,
                    const std::vector<T>& after, SignatureFn signature_fn) {
@@ -127,6 +139,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
     }
     diffObjectMap(diff, "layer", before.board->layers, after.board->layers, layerSignature);
     diffObjectMap(diff, "pad", before.board->pads, after.board->pads, padSignature);
+    diffObjectMap(diff, "via", before.board->vias, after.board->vias, viaSignature);
+    diffObjectMap(diff, "track", before.board->tracks, after.board->tracks, trackSignature);
   } else if (!before.board.has_value() && after.board.has_value()) {
     ++diff.added_count;
     diff.entries.push_back(DiffEntry{
@@ -153,6 +167,24 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "pad added",
       });
     }
+    diff.added_count += after.board->vias.size();
+    for (const Via& via : after.board->vias) {
+      diff.entries.push_back(DiffEntry{
+          .change = "added",
+          .object_type = "via",
+          .object_id = via.id,
+          .message = "via added",
+      });
+    }
+    diff.added_count += after.board->tracks.size();
+    for (const TrackSegment& track : after.board->tracks) {
+      diff.entries.push_back(DiffEntry{
+          .change = "added",
+          .object_type = "track",
+          .object_id = track.id,
+          .message = "track added",
+      });
+    }
   } else if (before.board.has_value() && !after.board.has_value()) {
     ++diff.removed_count;
     diff.entries.push_back(DiffEntry{
@@ -177,6 +209,24 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .object_type = "pad",
           .object_id = pad.id,
           .message = "pad removed",
+      });
+    }
+    diff.removed_count += before.board->vias.size();
+    for (const Via& via : before.board->vias) {
+      diff.entries.push_back(DiffEntry{
+          .change = "removed",
+          .object_type = "via",
+          .object_id = via.id,
+          .message = "via removed",
+      });
+    }
+    diff.removed_count += before.board->tracks.size();
+    for (const TrackSegment& track : before.board->tracks) {
+      diff.entries.push_back(DiffEntry{
+          .change = "removed",
+          .object_type = "track",
+          .object_id = track.id,
+          .message = "track removed",
       });
     }
   }

@@ -42,6 +42,20 @@ ccad::Project baseProject() {
                                                  .y = ccad::millimeters(6)},
                          .size = ccad::Size{.width = ccad::millimeters(1.0),
                                             .height = ccad::millimeters(1.0)}}},
+      .vias = {ccad::Via{.id = "V1",
+                         .net_id = "N_3V3",
+                         .position = ccad::Point{.x = ccad::millimeters(8),
+                                                 .y = ccad::millimeters(9)},
+                         .diameter = ccad::millimeters(0.8),
+                         .drill = ccad::millimeters(0.4)}},
+      .tracks = {ccad::TrackSegment{.id = "T1",
+                                    .net_id = "N_3V3",
+                                    .layer_id = "F.Cu",
+                                    .start = ccad::Point{.x = ccad::millimeters(5),
+                                                         .y = ccad::millimeters(6)},
+                                    .end = ccad::Point{.x = ccad::millimeters(8),
+                                                       .y = ccad::millimeters(9)},
+                                    .width = ccad::millimeters(0.25)}},
   };
   return project;
 }
@@ -145,5 +159,46 @@ int main() {
   removed_pad.board->pads.clear();
   const ccad::ProjectDiff removed_pad_diff = ccad::diffProjects(baseProject(), removed_pad);
   require(hasEntry(removed_pad_diff, "removed", "pad", "P1"), "removed pad entry");
+
+  ccad::Project added_via = baseProject();
+  added_via.board->vias.push_back(ccad::Via{.id = "V2",
+                                            .net_id = "N_3V3",
+                                            .position = ccad::Point{.x = ccad::millimeters(10),
+                                                                    .y = ccad::millimeters(9)},
+                                            .diameter = ccad::millimeters(0.8),
+                                            .drill = ccad::millimeters(0.4)});
+  const ccad::ProjectDiff added_via_diff = ccad::diffProjects(baseProject(), added_via);
+  require(hasEntry(added_via_diff, "added", "via", "V2"), "added via entry");
+
+  ccad::Project changed_via = baseProject();
+  changed_via.board->vias.at(0).diameter = ccad::millimeters(0.9);
+  const ccad::ProjectDiff changed_via_diff = ccad::diffProjects(baseProject(), changed_via);
+  require(hasEntry(changed_via_diff, "changed", "via", "V1"), "changed via entry");
+
+  ccad::Project removed_via = baseProject();
+  removed_via.board->vias.clear();
+  const ccad::ProjectDiff removed_via_diff = ccad::diffProjects(baseProject(), removed_via);
+  require(hasEntry(removed_via_diff, "removed", "via", "V1"), "removed via entry");
+
+  ccad::Project added_track = baseProject();
+  added_track.board->tracks.push_back(ccad::TrackSegment{
+      .id = "T2",
+      .net_id = "N_3V3",
+      .layer_id = "F.Cu",
+      .start = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},
+      .end = ccad::Point{.x = ccad::millimeters(12), .y = ccad::millimeters(9)},
+      .width = ccad::millimeters(0.25)});
+  const ccad::ProjectDiff added_track_diff = ccad::diffProjects(baseProject(), added_track);
+  require(hasEntry(added_track_diff, "added", "track", "T2"), "added track entry");
+
+  ccad::Project changed_track = baseProject();
+  changed_track.board->tracks.at(0).width = ccad::millimeters(0.3);
+  const ccad::ProjectDiff changed_track_diff = ccad::diffProjects(baseProject(), changed_track);
+  require(hasEntry(changed_track_diff, "changed", "track", "T1"), "changed track entry");
+
+  ccad::Project removed_track = baseProject();
+  removed_track.board->tracks.clear();
+  const ccad::ProjectDiff removed_track_diff = ccad::diffProjects(baseProject(), removed_track);
+  require(hasEntry(removed_track_diff, "removed", "track", "T1"), "removed track entry");
 }
 
