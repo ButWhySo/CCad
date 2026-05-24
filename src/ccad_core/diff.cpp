@@ -45,6 +45,21 @@ std::string outlineSignature(const Rect& outline) {
          std::to_string(outline.size.height.nanometers);
 }
 
+std::string pointSignature(const Point& point) {
+  return std::to_string(point.x.nanometers) + "\x1f" + std::to_string(point.y.nanometers);
+}
+
+std::string sizeSignature(const Size& size) {
+  return std::to_string(size.width.nanometers) + "\x1f" +
+         std::to_string(size.height.nanometers);
+}
+
+std::string padSignature(const Pad& pad) {
+  return pad.component_id + "\x1f" + pad.pin_name + "\x1f" + pad.net_id + "\x1f" +
+         pad.layer_id + "\x1f" + pointSignature(pad.position) + "\x1f" +
+         sizeSignature(pad.size) + "\x1f" + std::to_string(pad.rotation_degrees);
+}
+
 template <typename T, typename SignatureFn>
 void diffObjectMap(ProjectDiff& diff, const std::string& object_type, const std::vector<T>& before,
                    const std::vector<T>& after, SignatureFn signature_fn) {
@@ -111,6 +126,7 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
       });
     }
     diffObjectMap(diff, "layer", before.board->layers, after.board->layers, layerSignature);
+    diffObjectMap(diff, "pad", before.board->pads, after.board->pads, padSignature);
   } else if (!before.board.has_value() && after.board.has_value()) {
     ++diff.added_count;
     diff.entries.push_back(DiffEntry{
@@ -128,6 +144,15 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "layer added",
       });
     }
+    diff.added_count += after.board->pads.size();
+    for (const Pad& pad : after.board->pads) {
+      diff.entries.push_back(DiffEntry{
+          .change = "added",
+          .object_type = "pad",
+          .object_id = pad.id,
+          .message = "pad added",
+      });
+    }
   } else if (before.board.has_value() && !after.board.has_value()) {
     ++diff.removed_count;
     diff.entries.push_back(DiffEntry{
@@ -143,6 +168,15 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .object_type = "layer",
           .object_id = layer.id,
           .message = "layer removed",
+      });
+    }
+    diff.removed_count += before.board->pads.size();
+    for (const Pad& pad : before.board->pads) {
+      diff.entries.push_back(DiffEntry{
+          .change = "removed",
+          .object_type = "pad",
+          .object_id = pad.id,
+          .message = "pad removed",
       });
     }
   }

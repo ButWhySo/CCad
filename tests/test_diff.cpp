@@ -33,6 +33,15 @@ ccad::Project baseProject() {
       },
       .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper",
                              .visible = true}},
+      .pads = {ccad::Pad{.id = "P1",
+                         .component_id = "U1",
+                         .pin_name = "VDD",
+                         .net_id = "N_3V3",
+                         .layer_id = "F.Cu",
+                         .position = ccad::Point{.x = ccad::millimeters(5),
+                                                 .y = ccad::millimeters(6)},
+                         .size = ccad::Size{.width = ccad::millimeters(1.0),
+                                            .height = ccad::millimeters(1.0)}}},
   };
   return project;
 }
@@ -114,5 +123,27 @@ int main() {
   const ccad::ProjectDiff removed_board_diff = ccad::diffProjects(baseProject(), removed_board);
   require(hasEntry(removed_board_diff, "removed", "board_outline", "board"),
           "removed board outline entry");
+
+  ccad::Project added_pad = baseProject();
+  added_pad.board->pads.push_back(ccad::Pad{
+      .id = "P2",
+      .component_id = "U1",
+      .pin_name = "VDD",
+      .net_id = "N_3V3",
+      .layer_id = "F.Cu",
+      .position = ccad::Point{.x = ccad::millimeters(7), .y = ccad::millimeters(6)},
+      .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(1.0)}});
+  const ccad::ProjectDiff added_pad_diff = ccad::diffProjects(baseProject(), added_pad);
+  require(hasEntry(added_pad_diff, "added", "pad", "P2"), "added pad entry");
+
+  ccad::Project changed_pad = baseProject();
+  changed_pad.board->pads.at(0).position.x = ccad::millimeters(8);
+  const ccad::ProjectDiff changed_pad_diff = ccad::diffProjects(baseProject(), changed_pad);
+  require(hasEntry(changed_pad_diff, "changed", "pad", "P1"), "changed pad entry");
+
+  ccad::Project removed_pad = baseProject();
+  removed_pad.board->pads.clear();
+  const ccad::ProjectDiff removed_pad_diff = ccad::diffProjects(baseProject(), removed_pad);
+  require(hasEntry(removed_pad_diff, "removed", "pad", "P1"), "removed pad entry");
 }
 
