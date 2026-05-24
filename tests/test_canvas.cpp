@@ -10,7 +10,7 @@ ccad::Project boardProject() {
   project.name = "canvas";
   project.board = ccad::Board{
       .outline = ccad::Rect{
-          .origin = ccad::Point{.x = ccad::nanometers(0), .y = ccad::nanometers(0)},
+          .origin = ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(3)},
           .size = ccad::Size{.width = ccad::millimeters(42), .height = ccad::millimeters(28)},
       },
       .layers = {ccad::Layer{.id = "F.Cu",
@@ -73,6 +73,8 @@ int main() {
   require(scene.has_board, "board scene reports board");
   require(scene.board_width_nm == 42000000, "board scene width set");
   require(scene.board_height_nm == 28000000, "board scene height set");
+  require(scene.board_origin_x_units == 2.0, "board origin x is mm");
+  require(scene.board_origin_y_units == 3.0, "board origin y is mm");
   require(scene.view_width_units == 42.0, "view width is mm");
   require(scene.view_height_units == 28.0, "view height is mm");
   require(scene.layers.size() == 2, "canvas has board layers");

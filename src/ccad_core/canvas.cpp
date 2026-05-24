@@ -18,6 +18,8 @@ CanvasScene buildCanvasScene(const Project& project) {
   scene.has_board = true;
   scene.board_width_nm = project.board->outline.size.width.nanometers;
   scene.board_height_nm = project.board->outline.size.height.nanometers;
+  scene.board_origin_x_units = toMillimeters(project.board->outline.origin.x);
+  scene.board_origin_y_units = toMillimeters(project.board->outline.origin.y);
   scene.view_width_units = toMillimeters(project.board->outline.size.width);
   scene.view_height_units = toMillimeters(project.board->outline.size.height);
 
