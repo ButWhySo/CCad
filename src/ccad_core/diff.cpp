@@ -45,6 +45,12 @@ std::string outlineSignature(const Rect& outline) {
          std::to_string(outline.size.height.nanometers);
 }
 
+std::string designRulesSignature(const DesignRules& rules) {
+  return std::to_string(rules.copper_clearance.nanometers) + "\x1f" +
+         std::to_string(rules.min_track_width.nanometers) + "\x1f" +
+         std::to_string(rules.min_via_annular_ring.nanometers);
+}
+
 std::string pointSignature(const Point& point) {
   return std::to_string(point.x.nanometers) + "\x1f" + std::to_string(point.y.nanometers);
 }
@@ -143,6 +149,16 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .object_type = "board_outline",
           .object_id = "board",
           .message = "board outline changed",
+      });
+    }
+    if (designRulesSignature(before.board->design_rules) !=
+        designRulesSignature(after.board->design_rules)) {
+      ++diff.changed_count;
+      diff.entries.push_back(DiffEntry{
+          .change = "changed",
+          .object_type = "design_rules",
+          .object_id = "board",
+          .message = "design rules changed",
       });
     }
     diffObjectMap(diff, "layer", before.board->layers, after.board->layers, layerSignature);
