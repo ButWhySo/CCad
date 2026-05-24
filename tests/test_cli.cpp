@@ -235,6 +235,7 @@ int main() {
       "    {\n"
       "      \"id\": \"N1\",\n"
       "      \"members\": [\n"
+      "        {\"component_id\": \"U1\", \"pin_name\": \"1\"}\n"
       "      ]\n"
       "    }\n"
       "  ]";

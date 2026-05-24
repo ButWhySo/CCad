@@ -48,6 +48,15 @@ bool hasNet(const Project& project, const std::string& net_id) {
   return false;
 }
 
+const Net* findNet(const Project& project, const std::string& net_id) {
+  for (const Net& net : project.nets) {
+    if (net.id == net_id) {
+      return &net;
+    }
+  }
+  return nullptr;
+}
+
 bool containsPoint(const Board& board, const Point& point) {
   const Point min = board.outline.origin;
   const Point max = maxPoint(board.outline);
@@ -67,6 +76,16 @@ const Component* findComponent(const Project& project, const std::string& compon
 bool componentHasPin(const Component& component, const std::string& pin_name) {
   for (const Pin& pin : component.pins) {
     if (pin.name == pin_name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool netContainsMember(const Net& net, const std::string& component_id,
+                       const std::string& pin_name) {
+  for (const NetMember& member : net.members) {
+    if (member.component_id == component_id && member.pin_name == pin_name) {
       return true;
     }
   }
@@ -478,6 +497,13 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
     } else if (!hasNet(project, pad.net_id)) {
       diagnostics.push_back(
           makeDiagnostic("UNKNOWN_PAD_NET", "Pad references an unknown net", pad.id));
+    } else if (!pad.component_id.empty() && !pad.pin_name.empty()) {
+      const Net* net = findNet(project, pad.net_id);
+      if (net != nullptr && !netContainsMember(*net, pad.component_id, pad.pin_name)) {
+        diagnostics.push_back(makeDiagnostic(
+            "PAD_NET_MEMBER_MISMATCH",
+            "Pad net does not contain the pad component/pin as a logical member", pad.id));
+      }
     }
     for (const Keepout& keepout : board.keepouts) {
       if (polygonIntersectsRect(padCorners(pad), keepout.area)) {

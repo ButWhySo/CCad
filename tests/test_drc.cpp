@@ -240,6 +240,11 @@ int main() {
   require(hasCode(ccad::runDrc(unknown_pad_net), "UNKNOWN_PAD_NET"),
           "drc reports unknown pad net");
 
+  ccad::Project pad_net_member_mismatch = validBoardProject();
+  pad_net_member_mismatch.board->pads.at(0).net_id = "N2";
+  require(hasCode(ccad::runDrc(pad_net_member_mismatch), "PAD_NET_MEMBER_MISMATCH"),
+          "drc reports pad net/member mismatch");
+
   ccad::Project unknown_via_net = validBoardProject();
   unknown_via_net.board->vias.at(0).net_id = "N404";
   require(hasCode(ccad::runDrc(unknown_via_net), "UNKNOWN_VIA_NET"),
