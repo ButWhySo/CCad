@@ -209,6 +209,31 @@ void requireInsideBoard(const ccad::Board& board, const ccad::Point point,
   }
 }
 
+void requirePointWithMarginInsideBoard(const ccad::Board& board, const ccad::Point point,
+                                       const ccad::Length margin,
+                                       const std::string& label) {
+  const ccad::Point min = board.outline.origin;
+  const ccad::Point max = ccad::maxPoint(board.outline);
+  if (point.x.nanometers - margin.nanometers < min.x.nanometers ||
+      point.x.nanometers + margin.nanometers > max.x.nanometers ||
+      point.y.nanometers - margin.nanometers < min.y.nanometers ||
+      point.y.nanometers + margin.nanometers > max.y.nanometers) {
+    throw std::runtime_error(label + " geometry is outside board outline");
+  }
+}
+
+void requireCenteredRectInsideBoard(const ccad::Board& board, const ccad::Point center,
+                                    const ccad::Size size, const std::string& label) {
+  const ccad::Length half_width = ccad::nanometers(size.width.nanometers / 2);
+  const ccad::Length half_height = ccad::nanometers(size.height.nanometers / 2);
+  const ccad::Point min{.x = ccad::nanometers(center.x.nanometers - half_width.nanometers),
+                        .y = ccad::nanometers(center.y.nanometers - half_height.nanometers)};
+  const ccad::Point max{.x = ccad::nanometers(center.x.nanometers + half_width.nanometers),
+                        .y = ccad::nanometers(center.y.nanometers + half_height.nanometers)};
+  requireInsideBoard(board, min, label + " min corner");
+  requireInsideBoard(board, max, label + " max corner");
+}
+
 void requireRectInsideBoard(const ccad::Board& board, const ccad::Rect& rect,
                             const std::string& label) {
   requireInsideBoard(board, rect.origin, label + " origin");

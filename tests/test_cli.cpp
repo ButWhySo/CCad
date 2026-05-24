@@ -147,6 +147,23 @@ int main() {
       " --start-x-mm 5 --start-y-mm 6 --end-x-mm 99 --end-y-mm 9 --width-mm 0.25";
   require(run(outside_track_command) != 0, "pcb add-track rejects endpoint outside board");
 
+  const std::string edge_pad_command =
+      quote(CCAD_BINARY) + " pcb add-pad --file " + quote(board_project_path) +
+      " --id P_EDGE --component U1 --pin 1 --net N1 --layer F.Cu"
+      " --x-mm 0.2 --y-mm 6 --width-mm 1.0 --height-mm 1.0";
+  require(run(edge_pad_command) != 0, "pcb add-pad rejects geometry outside board");
+
+  const std::string edge_via_command =
+      quote(CCAD_BINARY) + " pcb add-via --file " + quote(board_project_path) +
+      " --id V_EDGE --net N1 --x-mm 0.2 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4";
+  require(run(edge_via_command) != 0, "pcb add-via rejects geometry outside board");
+
+  const std::string edge_track_command =
+      quote(CCAD_BINARY) + " pcb add-track --file " + quote(board_project_path) +
+      " --id T_EDGE --net N1 --layer F.Cu"
+      " --start-x-mm 0.05 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25";
+  require(run(edge_track_command) != 0, "pcb add-track rejects copper outside board");
+
   const std::string outside_keepout_command =
       quote(CCAD_BINARY) + " pcb add-keepout --file " + quote(board_project_path) +
       " --id K_OUT --kind placement --x-mm 40 --y-mm 26 --width-mm 4 --height-mm 3";
