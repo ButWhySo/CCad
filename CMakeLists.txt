@@ -333,6 +333,34 @@ if(CCAD_BUILD_GUI)
       endif()
     endif()
     add_test(NAME gui_board_canvas_view COMMAND ccad_gui_board_canvas_view_tests)
+
+    add_executable(ccad_gui_review_window_cursor_status_tests
+      tests/test_gui_review_window_cursor_status.cpp
+      src/ccad_gui/review_window.cpp
+      src/ccad_gui/project_summary_panel.cpp
+      src/ccad_gui/diagnostics_panel.cpp
+      src/ccad_gui/transaction_timeline_panel.cpp
+      src/ccad_gui/object_browser_panel.cpp
+      src/ccad_gui/selection_inspector_panel.cpp
+      src/ccad_gui/board_canvas_renderer.cpp
+    )
+    target_link_libraries(ccad_gui_review_window_cursor_status_tests PRIVATE ccad_core Qt6::Widgets)
+    target_include_directories(ccad_gui_review_window_cursor_status_tests PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests
+    )
+    if(MSVC)
+      target_compile_options(ccad_gui_review_window_cursor_status_tests PRIVATE /W4)
+      if(CCAD_WARNINGS_AS_ERRORS)
+        target_compile_options(ccad_gui_review_window_cursor_status_tests PRIVATE /WX)
+      endif()
+    else()
+      target_compile_options(ccad_gui_review_window_cursor_status_tests PRIVATE -Wall -Wextra -Wpedantic)
+      if(CCAD_WARNINGS_AS_ERRORS)
+        target_compile_options(ccad_gui_review_window_cursor_status_tests PRIVATE -Werror)
+      endif()
+    endif()
+    add_test(NAME gui_review_window_cursor_status COMMAND ccad_gui_review_window_cursor_status_tests)
   else()
     message(STATUS "Qt6 Widgets not found; skipping ccad_gui target")
   endif()

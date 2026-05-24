@@ -29,6 +29,28 @@
 #include <sstream>
 #include <string>
 
+QString formatCursorStatus(const std::optional<ccad::Board>& board, const QPointF& scene_position) {
+  constexpr double margin = 18.0;
+  constexpr double scale = 10.0;
+  if (!board.has_value()) {
+    return "X --  Y --";
+  }
+
+  const ccad::Rect outline = board->outline;
+  const double origin_x_mm = outline.origin.x.nanometers / 1000000.0;
+  const double origin_y_mm = outline.origin.y.nanometers / 1000000.0;
+  const double board_width_mm = outline.size.width.nanometers / 1000000.0;
+  const double board_height_mm = outline.size.height.nanometers / 1000000.0;
+  const double x_mm = origin_x_mm + ((scene_position.x() - margin) / scale);
+  const double y_mm = origin_y_mm + ((scene_position.y() - margin) / scale);
+  const bool inside_board = x_mm >= origin_x_mm && y_mm >= origin_y_mm &&
+                            x_mm <= origin_x_mm + board_width_mm &&
+                            y_mm <= origin_y_mm + board_height_mm;
+
+  return (inside_board ? "Board " : "Canvas ") + QString("X ") +
+         QString::number(x_mm, 'f', 2) + " mm  Y " + QString::number(y_mm, 'f', 2) + " mm";
+}
+
 namespace {
 
 std::string readFile(const std::filesystem::path& path) {
@@ -397,22 +419,7 @@ void ReviewWindow::renderCanvas(const ccad::CanvasScene& scene,
 }
 
 void ReviewWindow::updateCursorStatus(const QPointF& scene_position, const double zoom_factor) {
-  constexpr double margin = 18.0;
-  constexpr double scale = 10.0;
-  const double x_mm = (scene_position.x() - margin) / scale;
-  const double y_mm = (scene_position.y() - margin) / scale;
-  if (!project_cache_.board.has_value()) {
-    cursor_status_->setText("X --  Y --");
-  } else {
-    const ccad::Rect outline = project_cache_.board->outline;
-    const double board_width_mm = outline.size.width.nanometers / 1000000.0;
-    const double board_height_mm = outline.size.height.nanometers / 1000000.0;
-    const bool inside_board =
-        x_mm >= 0.0 && y_mm >= 0.0 && x_mm <= board_width_mm && y_mm <= board_height_mm;
-    cursor_status_->setText((inside_board ? "Board " : "Canvas ") + QString("X ") +
-                            QString::number(x_mm, 'f', 2) + " mm  Y " +
-                            QString::number(y_mm, 'f', 2) + " mm");
-  }
+  cursor_status_->setText(formatCursorStatus(project_cache_.board, scene_position));
   zoom_status_->setText("Zoom " + QString::number(zoom_factor * 100.0, 'f', 0) + "%");
 }
 
