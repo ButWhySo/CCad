@@ -79,6 +79,8 @@ int main() {
           "help json describes placement region authoring");
   require(help_json.find("\"name\": \"pcb remove-object\"") != std::string::npos,
           "help json describes physical object removal");
+  require(help_json.find("\"name\": \"pcb move-object\"") != std::string::npos,
+          "help json describes physical object movement");
   require(help_json.find("\"name\": \"lib catalog-info\"") != std::string::npos,
           "help json describes catalog info");
   require(help_json.find("\"name\": \"lib catalog-find\"") != std::string::npos,
@@ -323,6 +325,56 @@ int main() {
   require(removed_objects_json.find("\"id\": \"RPR1\"") == std::string::npos,
           "pcb remove-object deletes placement region id");
   require(run(remove_pad_command) != 0, "pcb remove-object rejects missing object");
+
+  const std::filesystem::path move_board_path = temp / "move-board.ccad.json";
+  const std::string move_board_init_command =
+      quote(CCAD_BINARY) +
+      " init --name move-board --width-mm 42 --height-mm 28 --out " + quote(move_board_path);
+  require(run(move_board_init_command) == 0, "move board init exits zero");
+  const std::string move_add_pad_command =
+      quote(CCAD_BINARY) + " pcb add-pad --file " + quote(move_board_path) +
+      " --id MP1 --component U1 --pin 1 --net N1 --layer F.Cu"
+      " --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0";
+  const std::string move_add_via_command =
+      quote(CCAD_BINARY) + " pcb add-via --file " + quote(move_board_path) +
+      " --id MV1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4";
+  const std::string move_add_keepout_command =
+      quote(CCAD_BINARY) + " pcb add-keepout --file " + quote(move_board_path) +
+      " --id MK1 --kind placement --x-mm 20 --y-mm 10 --width-mm 4 --height-mm 3";
+  const std::string move_add_region_command =
+      quote(CCAD_BINARY) + " pcb add-placement-region --file " + quote(move_board_path) +
+      " --id MPR1 --kind component --x-mm 2 --y-mm 3 --width-mm 10 --height-mm 6";
+  require(run(move_add_pad_command) == 0, "move fixture add pad exits zero");
+  require(run(move_add_via_command) == 0, "move fixture add via exits zero");
+  require(run(move_add_keepout_command) == 0, "move fixture add keepout exits zero");
+  require(run(move_add_region_command) == 0, "move fixture add placement region exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb move-object --file " + quote(move_board_path) +
+              " --id MP1 --x-mm 7 --y-mm 8") == 0,
+          "pcb move-object moves pad");
+  require(run(quote(CCAD_BINARY) + " pcb move-object --file " + quote(move_board_path) +
+              " --id MV1 --x-mm 9 --y-mm 10") == 0,
+          "pcb move-object moves via");
+  require(run(quote(CCAD_BINARY) + " pcb move-object --file " + quote(move_board_path) +
+              " --id MK1 --x-mm 21 --y-mm 11") == 0,
+          "pcb move-object moves keepout");
+  require(run(quote(CCAD_BINARY) + " pcb move-object --file " + quote(move_board_path) +
+              " --id MPR1 --x-mm 3 --y-mm 4") == 0,
+          "pcb move-object moves placement region");
+  const std::string moved_objects_json = readFile(move_board_path);
+  require(moved_objects_json.find("\"x_nm\": 7000000") != std::string::npos,
+          "pcb move-object writes moved pad x");
+  require(moved_objects_json.find("\"x_nm\": 9000000") != std::string::npos,
+          "pcb move-object writes moved via x");
+  require(moved_objects_json.find("\"x_nm\": 21000000") != std::string::npos,
+          "pcb move-object writes moved keepout x");
+  require(moved_objects_json.find("\"x_nm\": 3000000") != std::string::npos,
+          "pcb move-object writes moved placement region x");
+  require(run(quote(CCAD_BINARY) + " pcb move-object --file " + quote(move_board_path) +
+              " --id MP1 --x-mm 0.2 --y-mm 8") != 0,
+          "pcb move-object rejects pad outside board");
+  require(run(quote(CCAD_BINARY) + " pcb move-object --file " + quote(move_board_path) +
+              " --id MISSING --x-mm 3 --y-mm 4") != 0,
+          "pcb move-object rejects missing object");
 
   const std::string bad_layer_command =
       quote(CCAD_BINARY) + " pcb add-track --file " + quote(board_project_path) +

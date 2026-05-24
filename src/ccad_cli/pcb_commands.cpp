@@ -414,6 +414,65 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "move-object") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--x-mm", "--y-mm"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const ccad::Point position{
+          .x = requirePositiveMillimeters(options, "--x-mm"),
+          .y = requirePositiveMillimeters(options, "--y-mm"),
+      };
+
+      bool moved = false;
+      for (ccad::Pad& pad : board.pads) {
+        if (pad.id == id) {
+          requireRotatedRectInsideBoard(board, position, pad.size, pad.rotation_degrees, "pad");
+          pad.position = position;
+          moved = true;
+          break;
+        }
+      }
+      for (ccad::Via& via : board.vias) {
+        if (via.id == id) {
+          requirePointWithMarginInsideBoard(board, position,
+                                            ccad::nanometers(via.diameter.nanometers / 2),
+                                            "via");
+          via.position = position;
+          moved = true;
+          break;
+        }
+      }
+      for (ccad::Keepout& keepout : board.keepouts) {
+        if (keepout.id == id) {
+          const ccad::Rect moved_area{.origin = position, .size = keepout.area.size};
+          requireRectInsideBoard(board, moved_area, "keepout area");
+          keepout.area.origin = position;
+          moved = true;
+          break;
+        }
+      }
+      for (ccad::PlacementRegion& region : board.placement_regions) {
+        if (region.id == id) {
+          const ccad::Rect moved_area{.origin = position, .size = region.area.size};
+          requireRectInsideBoard(board, moved_area, "placement region area");
+          region.area.origin = position;
+          moved = true;
+          break;
+        }
+      }
+      if (!moved) {
+        throw std::runtime_error("unknown movable physical object: " + id);
+      }
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "place-footprint") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--footprint", "--component", "--at-x-mm", "--at-y-mm",

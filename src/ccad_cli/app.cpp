@@ -103,6 +103,10 @@ const std::vector<CommandHelp>& commandHelp() {
       CommandHelp{.name = "pcb remove-object",
                   .summary = "Remove one physical board object by stable ID",
                   .usage = "ccad pcb remove-object --file <path> --id <id>"},
+      CommandHelp{.name = "pcb move-object",
+                  .summary = "Move one physical board object by stable ID",
+                  .usage = "ccad pcb move-object --file <path> --id <id> --x-mm <n> "
+                           "--y-mm <n>"},
   };
   return commands;
 }
