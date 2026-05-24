@@ -48,6 +48,15 @@ bool hasNet(const Project& project, const std::string& net_id) {
   return false;
 }
 
+const Net* findNet(const Project& project, const std::string& net_id) {
+  for (const Net& net : project.nets) {
+    if (net.id == net_id) {
+      return &net;
+    }
+  }
+  return nullptr;
+}
+
 bool containsPoint(const Board& board, const Point& point) {
   const Point min = board.outline.origin;
   const Point max = maxPoint(board.outline);
@@ -55,10 +64,60 @@ bool containsPoint(const Board& board, const Point& point) {
          point.y.nanometers >= min.y.nanometers && point.y.nanometers <= max.y.nanometers;
 }
 
+const Component* findComponent(const Project& project, const std::string& component_id) {
+  for (const Component& component : project.components) {
+    if (component.id == component_id) {
+      return &component;
+    }
+  }
+  return nullptr;
+}
+
+bool componentHasPin(const Component& component, const std::string& pin_name) {
+  for (const Pin& pin : component.pins) {
+    if (pin.name == pin_name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool netContainsMember(const Net& net, const std::string& component_id,
+                       const std::string& pin_name) {
+  for (const NetMember& member : net.members) {
+    if (member.component_id == component_id && member.pin_name == pin_name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+long double distanceToBoardEdge(const Board& board, const Point& point) {
+  const std::int64_t min_x = board.outline.origin.x.nanometers;
+  const std::int64_t min_y = board.outline.origin.y.nanometers;
+  const Point max = maxPoint(board.outline);
+  const std::int64_t max_x = max.x.nanometers;
+  const std::int64_t max_y = max.y.nanometers;
+  const std::int64_t left = point.x.nanometers - min_x;
+  const std::int64_t right = max_x - point.x.nanometers;
+  const std::int64_t bottom = point.y.nanometers - min_y;
+  const std::int64_t top = max_y - point.y.nanometers;
+  const std::int64_t nearest = std::min(std::min(left, right), std::min(bottom, top));
+  return static_cast<long double>(nearest);
+}
+
 bool rectContainsPoint(const Rect& rect, const Point& point) {
   const Point max = maxPoint(rect);
   return point.x.nanometers >= rect.origin.x.nanometers && point.x.nanometers <= max.x.nanometers &&
          point.y.nanometers >= rect.origin.y.nanometers && point.y.nanometers <= max.y.nanometers;
+}
+
+std::vector<Point> rectCorners(const Rect& rect) {
+  const Point top_left = rect.origin;
+  const Point bottom_right = maxPoint(rect);
+  const Point top_right{.x = bottom_right.x, .y = top_left.y};
+  const Point bottom_left{.x = top_left.x, .y = bottom_right.y};
+  return {top_left, top_right, bottom_right, bottom_left};
 }
 
 int orientation(const Point& a, const Point& b, const Point& c) {
@@ -222,6 +281,50 @@ bool segmentIntersectsPolygon(const Point& start, const Point& end,
   return false;
 }
 
+Rect inflateRect(const Rect& rect, std::int64_t margin_nm) {
+  const std::int64_t min_x = rect.origin.x.nanometers - margin_nm;
+  const std::int64_t min_y = rect.origin.y.nanometers - margin_nm;
+  const std::int64_t width_nm = rect.size.width.nanometers + (2 * margin_nm);
+  const std::int64_t height_nm = rect.size.height.nanometers + (2 * margin_nm);
+  return Rect{.origin = Point{.x = nanometers(min_x), .y = nanometers(min_y)},
+              .size = Size{.width = nanometers(width_nm), .height = nanometers(height_nm)}};
+}
+
+bool polygonIntersectsRect(const std::vector<Point>& polygon, const Rect& rect) {
+  const std::vector<Point> rect_polygon = rectCorners(rect);
+  for (std::size_t i = 0; i < polygon.size(); ++i) {
+    const Point& edge_start = polygon.at(i);
+    const Point& edge_end = polygon.at((i + 1) % polygon.size());
+    if (segmentIntersectsRect(edge_start, edge_end, rect)) {
+      return true;
+    }
+  }
+  for (const Point& point : polygon) {
+    if (rectContainsPoint(rect, point)) {
+      return true;
+    }
+  }
+  for (const Point& rect_point : rect_polygon) {
+    if (pointInPolygon(rect_point, polygon)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+long double distancePointToRect(const Point& point, const Rect& rect) {
+  const Point rect_max = maxPoint(rect);
+  const long double px = static_cast<long double>(point.x.nanometers);
+  const long double py = static_cast<long double>(point.y.nanometers);
+  const long double min_x = static_cast<long double>(rect.origin.x.nanometers);
+  const long double min_y = static_cast<long double>(rect.origin.y.nanometers);
+  const long double max_x = static_cast<long double>(rect_max.x.nanometers);
+  const long double max_y = static_cast<long double>(rect_max.y.nanometers);
+  const long double clamped_x = std::clamp(px, min_x, max_x);
+  const long double clamped_y = std::clamp(py, min_y, max_y);
+  return std::hypotl(px - clamped_x, py - clamped_y);
+}
+
 long double distancePointToPolygon(const Point& point, const std::vector<Point>& polygon) {
   if (pointInPolygon(point, polygon)) {
     return 0.0L;
@@ -313,20 +416,25 @@ bool endpointTouchesSameNetPrimitive(const Board& board, const TrackSegment& sou
   }
 
   for (const Pad& pad : board.pads) {
-    if (pad.net_id == source_track.net_id && samePoint(pad.position, endpoint)) {
+    if (pad.net_id == source_track.net_id &&
+        pointInPolygon(endpoint, padCorners(pad))) {
       return true;
     }
   }
   for (const Via& via : board.vias) {
-    if (via.net_id == source_track.net_id && samePoint(via.position, endpoint)) {
+    if (via.net_id == source_track.net_id &&
+        distanceBetweenPoints(via.position, endpoint) <=
+            (static_cast<long double>(via.diameter.nanometers) / 2.0L)) {
       return true;
     }
   }
   for (const TrackSegment& track : board.tracks) {
-    if (track.id == source_track.id || track.net_id != source_track.net_id) {
+    if (track.id == source_track.id || track.net_id != source_track.net_id ||
+        track.layer_id != source_track.layer_id) {
       continue;
     }
-    if (samePoint(track.start, endpoint) || samePoint(track.end, endpoint)) {
+    if (samePoint(track.start, endpoint) || samePoint(track.end, endpoint) ||
+        pointOnSegment(track.start, track.end, endpoint)) {
       return true;
     }
   }
@@ -336,9 +444,28 @@ bool endpointTouchesSameNetPrimitive(const Board& board, const TrackSegment& sou
 void checkPads(const Project& project, const Board& board, std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
   for (const Pad& pad : board.pads) {
+    if (pad.id.empty()) {
+      diagnostics.push_back(makeDiagnostic("INVALID_PAD_ID", "Pad ID must not be empty", pad.id));
+    }
     if (!ids.insert(pad.id).second) {
       diagnostics.push_back(
           makeDiagnostic("DUPLICATE_PAD_ID", "Pad ID appears more than once", pad.id));
+    }
+    if (pad.component_id.empty()) {
+      diagnostics.push_back(makeDiagnostic("INVALID_PAD_COMPONENT",
+                                           "Pad component_id must not be empty", pad.id));
+    } else if (findComponent(project, pad.component_id) == nullptr) {
+      diagnostics.push_back(makeDiagnostic("UNKNOWN_PAD_COMPONENT",
+                                           "Pad references an unknown component", pad.id));
+    }
+    if (pad.pin_name.empty()) {
+      diagnostics.push_back(
+          makeDiagnostic("INVALID_PAD_PIN", "Pad pin_name must not be empty", pad.id));
+    } else if (const Component* component = findComponent(project, pad.component_id)) {
+      if (!componentHasPin(*component, pad.pin_name)) {
+        diagnostics.push_back(
+            makeDiagnostic("UNKNOWN_PAD_PIN", "Pad references an unknown component pin", pad.id));
+      }
     }
     if (!hasLayer(board, pad.layer_id)) {
       diagnostics.push_back(
@@ -351,17 +478,37 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
     if (!isPositive(pad.size.width) || !isPositive(pad.size.height)) {
       diagnostics.push_back(
           makeDiagnostic("INVALID_PAD_SIZE", "Pad width and height must be positive", pad.id));
+    } else {
+      const std::vector<Point> corners = padCorners(pad);
+      bool all_corners_inside = true;
+      for (const Point& corner : corners) {
+        if (!containsPoint(board, corner)) {
+          all_corners_inside = false;
+          break;
+        }
+      }
+      if (!all_corners_inside) {
+        diagnostics.push_back(makeDiagnostic(
+            "PAD_GEOMETRY_OUTSIDE_BOARD", "Pad geometry extends outside board outline", pad.id));
+      }
     }
     if (pad.net_id.empty()) {
       diagnostics.push_back(makeWarning("UNCONNECTED_PAD", "Pad has no assigned net", pad.id));
     } else if (!hasNet(project, pad.net_id)) {
       diagnostics.push_back(
           makeDiagnostic("UNKNOWN_PAD_NET", "Pad references an unknown net", pad.id));
+    } else if (!pad.component_id.empty() && !pad.pin_name.empty()) {
+      const Net* net = findNet(project, pad.net_id);
+      if (net != nullptr && !netContainsMember(*net, pad.component_id, pad.pin_name)) {
+        diagnostics.push_back(makeDiagnostic(
+            "PAD_NET_MEMBER_MISMATCH",
+            "Pad net does not contain the pad component/pin as a logical member", pad.id));
+      }
     }
     for (const Keepout& keepout : board.keepouts) {
-      if (rectContainsPoint(keepout.area, pad.position)) {
+      if (polygonIntersectsRect(padCorners(pad), keepout.area)) {
         diagnostics.push_back(
-            makeDiagnostic("PAD_IN_KEEPOUT", "Pad position is inside keepout " + keepout.id,
+            makeDiagnostic("PAD_IN_KEEPOUT", "Pad geometry intersects keepout " + keepout.id,
                            pad.id));
       }
     }
@@ -371,6 +518,9 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
 void checkVias(const Project& project, const Board& board, std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
   for (const Via& via : board.vias) {
+    if (via.id.empty()) {
+      diagnostics.push_back(makeDiagnostic("INVALID_VIA_ID", "Via ID must not be empty", via.id));
+    }
     if (!ids.insert(via.id).second) {
       diagnostics.push_back(
           makeDiagnostic("DUPLICATE_VIA_ID", "Via ID appears more than once", via.id));
@@ -388,6 +538,17 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
     if (!isPositive(via.diameter) || !isPositive(via.drill)) {
       diagnostics.push_back(makeDiagnostic("INVALID_VIA_SIZE",
                                            "Via diameter and drill must be positive", via.id));
+    } else {
+      const std::int64_t radius_nm = via.diameter.nanometers / 2;
+      const Point min{.x = nanometers(via.position.x.nanometers - radius_nm),
+                      .y = nanometers(via.position.y.nanometers - radius_nm)};
+      const Point max{.x = nanometers(via.position.x.nanometers + radius_nm),
+                      .y = nanometers(via.position.y.nanometers + radius_nm)};
+      if (!containsPoint(board, min) || !containsPoint(board, max)) {
+        diagnostics.push_back(makeDiagnostic(
+            "VIA_GEOMETRY_OUTSIDE_BOARD", "Via copper geometry extends outside board outline",
+            via.id));
+      }
     }
     if (via.drill.nanometers > via.diameter.nanometers) {
       diagnostics.push_back(makeDiagnostic("VIA_DRILL_TOO_LARGE",
@@ -401,9 +562,10 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
                          "Via annular ring is below default minimum of 0.10 mm", via.id));
     }
     for (const Keepout& keepout : board.keepouts) {
-      if (rectContainsPoint(keepout.area, via.position)) {
+      const long double radius = static_cast<long double>(via.diameter.nanometers) / 2.0L;
+      if (distancePointToRect(via.position, keepout.area) <= radius) {
         diagnostics.push_back(
-            makeDiagnostic("VIA_IN_KEEPOUT", "Via position is inside keepout " + keepout.id,
+            makeDiagnostic("VIA_IN_KEEPOUT", "Via geometry intersects keepout " + keepout.id,
                            via.id));
       }
     }
@@ -413,6 +575,10 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
 void checkTracks(const Project& project, const Board& board, std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
   for (const TrackSegment& track : board.tracks) {
+    if (track.id.empty()) {
+      diagnostics.push_back(
+          makeDiagnostic("INVALID_TRACK_ID", "Track ID must not be empty", track.id));
+    }
     if (!ids.insert(track.id).second) {
       diagnostics.push_back(
           makeDiagnostic("DUPLICATE_TRACK_ID", "Track ID appears more than once", track.id));
@@ -440,10 +606,18 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
     if (!isPositive(track.width)) {
       diagnostics.push_back(
           makeDiagnostic("INVALID_TRACK_WIDTH", "Track width must be positive", track.id));
-    }
-    if (track.width.nanometers < kDefaultMinTrackWidthNm) {
-      diagnostics.push_back(makeDiagnostic(
-          "TRACK_TOO_NARROW", "Track width is below default minimum of 0.15 mm", track.id));
+    } else {
+      if (track.width.nanometers < kDefaultMinTrackWidthNm) {
+        diagnostics.push_back(makeDiagnostic(
+            "TRACK_TOO_NARROW", "Track width is below default minimum of 0.15 mm", track.id));
+      }
+      const long double half_width = static_cast<long double>(track.width.nanometers) / 2.0L;
+      if (distanceToBoardEdge(board, track.start) < half_width ||
+          distanceToBoardEdge(board, track.end) < half_width) {
+        diagnostics.push_back(makeDiagnostic(
+            "TRACK_GEOMETRY_OUTSIDE_BOARD",
+            "Track copper geometry extends outside board outline", track.id));
+      }
     }
     if (samePoint(track.start, track.end)) {
       diagnostics.push_back(
@@ -456,15 +630,142 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
                                         track.id));
     }
     for (const Keepout& keepout : board.keepouts) {
-      if (rectContainsPoint(keepout.area, track.start) ||
-          rectContainsPoint(keepout.area, track.end)) {
+      const std::int64_t half_width_nm = track.width.nanometers / 2;
+      const Rect inflated_keepout = inflateRect(keepout.area, half_width_nm);
+      if (rectContainsPoint(inflated_keepout, track.start) ||
+          rectContainsPoint(inflated_keepout, track.end)) {
         diagnostics.push_back(makeDiagnostic(
             "TRACK_ENDPOINT_IN_KEEPOUT", "Track endpoint is inside keepout " + keepout.id,
             track.id));
-      } else if (segmentIntersectsRect(track.start, track.end, keepout.area)) {
+      } else if (segmentIntersectsRect(track.start, track.end, inflated_keepout)) {
         diagnostics.push_back(makeDiagnostic(
             "TRACK_CROSSES_KEEPOUT", "Track segment crosses keepout " + keepout.id, track.id));
       }
+    }
+  }
+}
+
+void checkProjectNets(const Project& project, std::vector<Diagnostic>& diagnostics) {
+  std::set<std::string> ids;
+  for (const Net& net : project.nets) {
+    if (net.id.empty()) {
+      diagnostics.push_back(
+          makeDiagnostic("INVALID_NET_ID", "Net ID must not be empty", net.id));
+      continue;
+    }
+    if (!ids.insert(net.id).second) {
+      diagnostics.push_back(
+          makeDiagnostic("DUPLICATE_NET_ID", "Net ID appears more than once", net.id));
+    }
+
+    std::set<std::pair<std::string, std::string>> members;
+    for (const NetMember& member : net.members) {
+      if (member.component_id.empty() || member.pin_name.empty()) {
+        diagnostics.push_back(makeDiagnostic(
+            "INVALID_NET_MEMBER", "Net member must include component_id and pin_name", net.id));
+        continue;
+      }
+      const std::pair<std::string, std::string> member_key{member.component_id, member.pin_name};
+      if (!members.insert(member_key).second) {
+        diagnostics.push_back(makeDiagnostic(
+            "DUPLICATE_NET_MEMBER", "Net contains duplicate member component/pin", net.id));
+      }
+    }
+  }
+}
+
+void checkBoardOutline(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  if (!isPositive(board.outline.size.width) || !isPositive(board.outline.size.height)) {
+    diagnostics.push_back(makeDiagnostic("INVALID_BOARD_OUTLINE",
+                                         "Board outline width and height must be positive",
+                                         "board"));
+  }
+}
+
+void checkLayers(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  std::set<std::string> ids;
+  for (const Layer& layer : board.layers) {
+    if (layer.id.empty()) {
+      diagnostics.push_back(
+          makeDiagnostic("INVALID_LAYER_ID", "Layer ID must not be empty", layer.id));
+    }
+    if (layer.name.empty()) {
+      diagnostics.push_back(
+          makeDiagnostic("INVALID_LAYER_NAME", "Layer name must not be empty", layer.id));
+    }
+    if (layer.kind.empty()) {
+      diagnostics.push_back(
+          makeDiagnostic("INVALID_LAYER_KIND", "Layer kind must not be empty", layer.id));
+    }
+    if (!ids.insert(layer.id).second) {
+      diagnostics.push_back(
+          makeDiagnostic("DUPLICATE_LAYER_ID", "Layer ID appears more than once", layer.id));
+    }
+  }
+}
+
+void checkKeepouts(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  std::set<std::string> ids;
+  for (const Keepout& keepout : board.keepouts) {
+    if (keepout.id.empty()) {
+      diagnostics.push_back(makeDiagnostic("INVALID_KEEPOUT_ID",
+                                           "Keepout ID must not be empty", keepout.id));
+    }
+    if (!ids.insert(keepout.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_KEEPOUT_ID",
+                                           "Keepout ID appears more than once", keepout.id));
+    }
+
+    if (!isPositive(keepout.area.size.width) || !isPositive(keepout.area.size.height)) {
+      diagnostics.push_back(makeDiagnostic("INVALID_KEEPOUT_SIZE",
+                                           "Keepout width and height must be positive",
+                                           keepout.id));
+      continue;
+    }
+
+    if (keepout.kind != "placement" && keepout.kind != "routing") {
+      diagnostics.push_back(makeDiagnostic("UNKNOWN_KEEPOUT_KIND",
+                                           "Keepout kind must be placement or routing",
+                                           keepout.id));
+    }
+
+    const Point min = keepout.area.origin;
+    const Point max = maxPoint(keepout.area);
+    if (!containsPoint(board, min) || !containsPoint(board, max)) {
+      diagnostics.push_back(makeDiagnostic("KEEPOUT_OUTSIDE_BOARD",
+                                           "Keepout area is outside board outline", keepout.id));
+    }
+  }
+}
+
+void checkPhysicalObjectIds(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  std::set<std::string> ids;
+  for (const Pad& pad : board.pads) {
+    if (!pad.id.empty() && !ids.insert(pad.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_PHYSICAL_OBJECT_ID",
+                                           "Physical object ID is reused across object types",
+                                           pad.id));
+    }
+  }
+  for (const Via& via : board.vias) {
+    if (!via.id.empty() && !ids.insert(via.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_PHYSICAL_OBJECT_ID",
+                                           "Physical object ID is reused across object types",
+                                           via.id));
+    }
+  }
+  for (const TrackSegment& track : board.tracks) {
+    if (!track.id.empty() && !ids.insert(track.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_PHYSICAL_OBJECT_ID",
+                                           "Physical object ID is reused across object types",
+                                           track.id));
+    }
+  }
+  for (const Keepout& keepout : board.keepouts) {
+    if (!keepout.id.empty() && !ids.insert(keepout.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_PHYSICAL_OBJECT_ID",
+                                           "Physical object ID is reused across object types",
+                                           keepout.id));
     }
   }
 }
@@ -581,10 +882,15 @@ std::vector<Diagnostic> runDrc(const Project& project) {
     return diagnostics;
   }
 
+  checkProjectNets(project, diagnostics);
   const Board& board = *project.board;
+  checkBoardOutline(board, diagnostics);
+  checkLayers(board, diagnostics);
   checkPads(project, board, diagnostics);
   checkVias(project, board, diagnostics);
   checkTracks(project, board, diagnostics);
+  checkKeepouts(board, diagnostics);
+  checkPhysicalObjectIds(board, diagnostics);
   checkCopperClearance(board, diagnostics);
   return diagnostics;
 }

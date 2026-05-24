@@ -103,6 +103,12 @@ int main() {
   require(via_json.find("\"drill_nm\": 400000") != std::string::npos,
           "pcb add-via writes drill");
 
+  const std::string duplicate_cross_type_id_command =
+      quote(CCAD_BINARY) + " pcb add-via --file " + quote(board_project_path) +
+      " --id P1 --net N1 --x-mm 10 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4";
+  require(run(duplicate_cross_type_id_command) != 0,
+          "pcb add-via rejects duplicate physical object id across types");
+
   const std::string add_track_command =
       quote(CCAD_BINARY) + " pcb add-track --file " + quote(board_project_path) +
       " --id T1 --net N1 --layer F.Cu"
@@ -146,6 +152,23 @@ int main() {
       " --id T_OUT --net N1 --layer F.Cu"
       " --start-x-mm 5 --start-y-mm 6 --end-x-mm 99 --end-y-mm 9 --width-mm 0.25";
   require(run(outside_track_command) != 0, "pcb add-track rejects endpoint outside board");
+
+  const std::string edge_pad_command =
+      quote(CCAD_BINARY) + " pcb add-pad --file " + quote(board_project_path) +
+      " --id P_EDGE --component U1 --pin 1 --net N1 --layer F.Cu"
+      " --x-mm 0.2 --y-mm 6 --width-mm 1.0 --height-mm 1.0";
+  require(run(edge_pad_command) != 0, "pcb add-pad rejects geometry outside board");
+
+  const std::string edge_via_command =
+      quote(CCAD_BINARY) + " pcb add-via --file " + quote(board_project_path) +
+      " --id V_EDGE --net N1 --x-mm 0.2 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4";
+  require(run(edge_via_command) != 0, "pcb add-via rejects geometry outside board");
+
+  const std::string edge_track_command =
+      quote(CCAD_BINARY) + " pcb add-track --file " + quote(board_project_path) +
+      " --id T_EDGE --net N1 --layer F.Cu"
+      " --start-x-mm 0.05 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25";
+  require(run(edge_track_command) != 0, "pcb add-track rejects copper outside board");
 
   const std::string outside_keepout_command =
       quote(CCAD_BINARY) + " pcb add-keepout --file " + quote(board_project_path) +
@@ -218,15 +241,31 @@ int main() {
           "inspect reports board width");
 
   std::string board_with_net = readFile(board_project_path);
+  const std::string empty_components = "  \"components\": [\n  ]";
+  const std::string logical_u1 =
+      "  \"components\": [\n"
+      "    {\n"
+      "      \"id\": \"U1\",\n"
+      "      \"part\": \"test-component\",\n"
+      "      \"pins\": [\n"
+      "        {\"name\": \"1\", \"kind\": \"passive\"}\n"
+      "      ]\n"
+      "    }\n"
+      "  ]";
   const std::string empty_nets = "  \"nets\": [\n  ]";
   const std::string logical_n1 =
       "  \"nets\": [\n"
       "    {\n"
       "      \"id\": \"N1\",\n"
       "      \"members\": [\n"
+      "        {\"component_id\": \"U1\", \"pin_name\": \"1\"}\n"
       "      ]\n"
       "    }\n"
       "  ]";
+  const std::size_t components_position = board_with_net.find(empty_components);
+  require(components_position != std::string::npos,
+          "board fixture has empty components before clean drc");
+  board_with_net.replace(components_position, empty_components.size(), logical_u1);
   const std::size_t nets_position = board_with_net.find(empty_nets);
   require(nets_position != std::string::npos, "board fixture has empty nets before clean drc");
   board_with_net.replace(nets_position, empty_nets.size(), logical_n1);
@@ -547,6 +586,13 @@ int main() {
       " --footprint " + quote(footprint_out_path) +
       " --component R2 --at-x-mm 10 --at-y-mm 12 --layer Inner.Cu";
   require(run(bad_place_layer_command) != 0, "pcb place-footprint rejects unknown layer");
+
+  const std::string edge_place_command =
+      quote(CCAD_BINARY) + " pcb place-footprint --file " + quote(board_project_path) +
+      " --footprint " + quote(footprint_out_path) +
+      " --component R_EDGE --at-x-mm 1 --at-y-mm 12 --layer F.Cu";
+  require(run(edge_place_command) != 0,
+          "pcb place-footprint rejects pad geometry outside board");
 
   const std::filesystem::path rotated_board_path = temp / "rotated-board.ccad.json";
   const std::string rotated_init_command =

@@ -209,6 +209,56 @@ void requireInsideBoard(const ccad::Board& board, const ccad::Point point,
   }
 }
 
+void requirePointWithMarginInsideBoard(const ccad::Board& board, const ccad::Point point,
+                                       const ccad::Length margin,
+                                       const std::string& label) {
+  const ccad::Point min = board.outline.origin;
+  const ccad::Point max = ccad::maxPoint(board.outline);
+  if (point.x.nanometers - margin.nanometers < min.x.nanometers ||
+      point.x.nanometers + margin.nanometers > max.x.nanometers ||
+      point.y.nanometers - margin.nanometers < min.y.nanometers ||
+      point.y.nanometers + margin.nanometers > max.y.nanometers) {
+    throw std::runtime_error(label + " geometry is outside board outline");
+  }
+}
+
+void requireCenteredRectInsideBoard(const ccad::Board& board, const ccad::Point center,
+                                    const ccad::Size size, const std::string& label) {
+  const ccad::Length half_width = ccad::nanometers(size.width.nanometers / 2);
+  const ccad::Length half_height = ccad::nanometers(size.height.nanometers / 2);
+  const ccad::Point min{.x = ccad::nanometers(center.x.nanometers - half_width.nanometers),
+                        .y = ccad::nanometers(center.y.nanometers - half_height.nanometers)};
+  const ccad::Point max{.x = ccad::nanometers(center.x.nanometers + half_width.nanometers),
+                        .y = ccad::nanometers(center.y.nanometers + half_height.nanometers)};
+  requireInsideBoard(board, min, label + " min corner");
+  requireInsideBoard(board, max, label + " max corner");
+}
+
+void requireRotatedRectInsideBoard(const ccad::Board& board, const ccad::Point center,
+                                   const ccad::Size size, const double rotation_degrees,
+                                   const std::string& label) {
+  constexpr double pi = 3.14159265358979323846;
+  const double radians = rotation_degrees * pi / 180.0;
+  const double cos_theta = std::cos(radians);
+  const double sin_theta = std::sin(radians);
+  const double half_width = static_cast<double>(size.width.nanometers) / 2.0;
+  const double half_height = static_cast<double>(size.height.nanometers) / 2.0;
+  const double center_x = static_cast<double>(center.x.nanometers);
+  const double center_y = static_cast<double>(center.y.nanometers);
+
+  for (const auto& local : {std::pair<double, double>{-half_width, -half_height},
+                            std::pair<double, double>{half_width, -half_height},
+                            std::pair<double, double>{half_width, half_height},
+                            std::pair<double, double>{-half_width, half_height}}) {
+    const ccad::Point corner{
+        .x = ccad::nanometers(static_cast<std::int64_t>(
+            std::llround(center_x + (local.first * cos_theta) - (local.second * sin_theta)))),
+        .y = ccad::nanometers(static_cast<std::int64_t>(
+            std::llround(center_y + (local.first * sin_theta) + (local.second * cos_theta))))};
+    requireInsideBoard(board, corner, label + " corner");
+  }
+}
+
 void requireRectInsideBoard(const ccad::Board& board, const ccad::Rect& rect,
                             const std::string& label) {
   requireInsideBoard(board, rect.origin, label + " origin");
@@ -243,6 +293,29 @@ void requireUniqueKeepoutId(const ccad::Board& board, const std::string& id) {
   for (const ccad::Keepout& keepout : board.keepouts) {
     if (keepout.id == id) {
       throw std::runtime_error("duplicate keepout id: " + id);
+    }
+  }
+}
+
+void requireUniquePhysicalObjectId(const ccad::Board& board, const std::string& id) {
+  for (const ccad::Pad& pad : board.pads) {
+    if (pad.id == id) {
+      throw std::runtime_error("duplicate physical object id: " + id);
+    }
+  }
+  for (const ccad::Via& via : board.vias) {
+    if (via.id == id) {
+      throw std::runtime_error("duplicate physical object id: " + id);
+    }
+  }
+  for (const ccad::TrackSegment& track : board.tracks) {
+    if (track.id == id) {
+      throw std::runtime_error("duplicate physical object id: " + id);
+    }
+  }
+  for (const ccad::Keepout& keepout : board.keepouts) {
+    if (keepout.id == id) {
+      throw std::runtime_error("duplicate physical object id: " + id);
     }
   }
 }

@@ -41,12 +41,16 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::string id = requireOption(options, "--id");
       const std::string layer_id = requireOption(options, "--layer");
       requireUniquePadId(board, id);
+      requireUniquePhysicalObjectId(board, id);
       requireLayer(board, layer_id);
       const ccad::Point position{
           .x = requirePositiveMillimeters(options, "--x-mm"),
           .y = requirePositiveMillimeters(options, "--y-mm"),
       };
       requireInsideBoard(board, position, "pad position");
+      const ccad::Size size{.width = requirePositiveMillimeters(options, "--width-mm"),
+                            .height = requirePositiveMillimeters(options, "--height-mm")};
+      requireCenteredRectInsideBoard(board, position, size, "pad");
       board.pads.push_back(ccad::Pad{
           .id = id,
           .component_id = requireOption(options, "--component"),
@@ -54,8 +58,7 @@ int pcbCommand(const std::vector<std::string>& args) {
           .net_id = requireOption(options, "--net"),
           .layer_id = layer_id,
           .position = position,
-          .size = ccad::Size{.width = requirePositiveMillimeters(options, "--width-mm"),
-                             .height = requirePositiveMillimeters(options, "--height-mm")},
+          .size = size,
       });
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
@@ -73,6 +76,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       ccad::Board& board = requireBoard(project);
       const std::string id = requireOption(options, "--id");
       requireUniqueViaId(board, id);
+      requireUniquePhysicalObjectId(board, id);
       const ccad::Point position{
           .x = requirePositiveMillimeters(options, "--x-mm"),
           .y = requirePositiveMillimeters(options, "--y-mm"),
@@ -83,6 +87,8 @@ int pcbCommand(const std::vector<std::string>& args) {
       if (drill.nanometers > diameter.nanometers) {
         throw std::runtime_error("via drill must be less than or equal to diameter");
       }
+      requirePointWithMarginInsideBoard(board, position,
+                                        ccad::nanometers(diameter.nanometers / 2), "via");
       board.vias.push_back(ccad::Via{
           .id = id,
           .net_id = requireOption(options, "--net"),
@@ -107,6 +113,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::string id = requireOption(options, "--id");
       const std::string layer_id = requireOption(options, "--layer");
       requireUniqueTrackId(board, id);
+      requireUniquePhysicalObjectId(board, id);
       requireLayer(board, layer_id);
       const ccad::Point start{
           .x = requirePositiveMillimeters(options, "--start-x-mm"),
@@ -118,13 +125,17 @@ int pcbCommand(const std::vector<std::string>& args) {
       };
       requireInsideBoard(board, start, "track start");
       requireInsideBoard(board, end, "track end");
+      const ccad::Length width = requirePositiveMillimeters(options, "--width-mm");
+      const ccad::Length half_width = ccad::nanometers(width.nanometers / 2);
+      requirePointWithMarginInsideBoard(board, start, half_width, "track start");
+      requirePointWithMarginInsideBoard(board, end, half_width, "track end");
       board.tracks.push_back(ccad::TrackSegment{
           .id = id,
           .net_id = requireOption(options, "--net"),
           .layer_id = layer_id,
           .start = start,
           .end = end,
-          .width = requirePositiveMillimeters(options, "--width-mm"),
+          .width = width,
       });
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
@@ -142,6 +153,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       ccad::Board& board = requireBoard(project);
       const std::string id = requireOption(options, "--id");
       requireUniqueKeepoutId(board, id);
+      requireUniquePhysicalObjectId(board, id);
       const ccad::Rect area{
           .origin = ccad::Point{.x = requirePositiveMillimeters(options, "--x-mm"),
                                 .y = requirePositiveMillimeters(options, "--y-mm")},
@@ -184,9 +196,13 @@ int pcbCommand(const std::vector<std::string>& args) {
       for (const ccad::FootprintPad& footprint_pad : footprint.pads) {
         const std::string pad_id = component_id + "." + footprint_pad.number;
         requireUniquePadId(board, pad_id);
+        requireUniquePhysicalObjectId(board, pad_id);
         const ccad::Point placed_position =
             rotateAndTranslate(footprint_pad.position, origin, placement_rotation);
         requireInsideBoard(board, placed_position, "footprint pad position");
+        requireRotatedRectInsideBoard(board, placed_position, footprint_pad.size,
+                                      footprint_pad.rotation_degrees + placement_rotation,
+                                      "footprint pad");
       }
 
       for (const ccad::FootprintPad& footprint_pad : footprint.pads) {

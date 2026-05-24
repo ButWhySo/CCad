@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 63 merged and verified on `main`; Sprint 64 in progress.
+Progress counter: Phase 2 / 6, Sprint 64 merged and verified on `main`; Sprint 65 in progress.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -17,6 +17,7 @@ Progress counter: Phase 2 / 6, Sprint 63 merged and verified on `main`; Sprint 6
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
 - Physical board outline, layers, rectangular keepouts, pads, vias, and track segments in project JSON.
 - Physical DRC for geometry, connectivity metadata, rectangular keepout occupancy, track crossing violations, fixed default copper clearance, default minimum track width, and default minimum via annular ring.
+- Physical DRC track-endpoint connectivity now accepts geometric copper contact with same-net pads and vias, not only exact center-point matches.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
 - Native GUI selection inspector for stable object type and ID.
 - Native GUI layer/object browser and shape-level selection highlight.
@@ -38,6 +39,7 @@ Progress counter: Phase 2 / 6, Sprint 63 merged and verified on `main`; Sprint 6
 - Native GUI includes in-app navigation controls help (`Help > Navigation Controls`, shortcut `F1`).
 - GitHub CI now uses `actions/checkout@v5` for Node 24 runner compatibility.
 - Native GUI starts with a larger default window size derived from desktop available bounds.
+- Native GUI startup crash (status `0xC0000005`) fixed by ordering status-label initialization before pan-mode callback wiring.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
 
@@ -115,6 +117,14 @@ Limit search to one item kind:
 ## Windows Qt Development Loop
 
 Run these commands from `F:\CCad` in PowerShell when you need the native desktop GUI too.
+
+Mandatory precheck before configure/build/run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\preflight_qt_env.ps1
+```
+
+This fails fast when the first `Qt6Core.dll` in `PATH` is not from `C:\Qt\6.11.1\mingw_64\bin`, or when `build-qt\CMakeCache.txt` is using the wrong compiler toolchain.
 
 Configure the Qt build directory:
 
