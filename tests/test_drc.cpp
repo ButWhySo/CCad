@@ -322,6 +322,22 @@ int main() {
   require(hasCode(ccad::runDrc(keepout_track_crossing), "TRACK_CROSSES_KEEPOUT"),
           "drc reports track crossing keepout with endpoints outside");
 
+  ccad::Project keepout_track_width_overlap = validBoardProject();
+  keepout_track_width_overlap.board->tracks.at(0).start =
+      ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(11.65)};
+  keepout_track_width_overlap.board->tracks.at(0).end =
+      ccad::Point{.x = ccad::millimeters(12), .y = ccad::millimeters(11.65)};
+  keepout_track_width_overlap.board->tracks.at(0).width = ccad::millimeters(0.6);
+  keepout_track_width_overlap.board->keepouts.push_back(ccad::Keepout{
+      .id = "K_WIDTH_OVERLAP",
+      .kind = "routing",
+      .area = ccad::Rect{.origin = ccad::Point{.x = ccad::millimeters(6),
+                                               .y = ccad::millimeters(10)},
+                         .size = ccad::Size{.width = ccad::millimeters(2),
+                                            .height = ccad::millimeters(1.5)}}});
+  require(hasCode(ccad::runDrc(keepout_track_width_overlap), "TRACK_CROSSES_KEEPOUT"),
+          "drc reports keepout crossing when only track width overlaps keepout");
+
   ccad::Project duplicate_keepout = validBoardProject();
   duplicate_keepout.board->keepouts.push_back(ccad::Keepout{
       .id = "K_DUP",

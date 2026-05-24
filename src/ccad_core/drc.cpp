@@ -244,6 +244,15 @@ bool segmentIntersectsPolygon(const Point& start, const Point& end,
   return false;
 }
 
+Rect inflateRect(const Rect& rect, std::int64_t margin_nm) {
+  const std::int64_t min_x = rect.origin.x.nanometers - margin_nm;
+  const std::int64_t min_y = rect.origin.y.nanometers - margin_nm;
+  const std::int64_t width_nm = rect.size.width.nanometers + (2 * margin_nm);
+  const std::int64_t height_nm = rect.size.height.nanometers + (2 * margin_nm);
+  return Rect{.origin = Point{.x = nanometers(min_x), .y = nanometers(min_y)},
+              .size = Size{.width = nanometers(width_nm), .height = nanometers(height_nm)}};
+}
+
 bool polygonIntersectsRect(const std::vector<Point>& polygon, const Rect& rect) {
   const std::vector<Point> rect_polygon = rectCorners(rect);
   for (std::size_t i = 0; i < polygon.size(); ++i) {
@@ -551,12 +560,14 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
                                         track.id));
     }
     for (const Keepout& keepout : board.keepouts) {
-      if (rectContainsPoint(keepout.area, track.start) ||
-          rectContainsPoint(keepout.area, track.end)) {
+      const std::int64_t half_width_nm = track.width.nanometers / 2;
+      const Rect inflated_keepout = inflateRect(keepout.area, half_width_nm);
+      if (rectContainsPoint(inflated_keepout, track.start) ||
+          rectContainsPoint(inflated_keepout, track.end)) {
         diagnostics.push_back(makeDiagnostic(
             "TRACK_ENDPOINT_IN_KEEPOUT", "Track endpoint is inside keepout " + keepout.id,
             track.id));
-      } else if (segmentIntersectsRect(track.start, track.end, keepout.area)) {
+      } else if (segmentIntersectsRect(track.start, track.end, inflated_keepout)) {
         diagnostics.push_back(makeDiagnostic(
             "TRACK_CROSSES_KEEPOUT", "Track segment crosses keepout " + keepout.id, track.id));
       }
