@@ -180,6 +180,18 @@ int main() {
       !hasDiagnostic(ccad::runDrc(segment_contact_track), "UNCONNECTED_TRACK_ENDPOINT", "warning"),
       "drc accepts same-net track endpoint touching another same-net track segment interior");
 
+  ccad::Project cross_layer_segment_contact_track = validBoardProject();
+  cross_layer_segment_contact_track.board->tracks.push_back(ccad::TrackSegment{
+      .id = "T_STUB_B",
+      .net_id = "N1",
+      .layer_id = "B.Cu",
+      .start = ccad::Point{.x = ccad::millimeters(6.5), .y = ccad::millimeters(7.5)},
+      .end = ccad::Point{.x = ccad::millimeters(8.0), .y = ccad::millimeters(9.0)},
+      .width = ccad::millimeters(0.25)});
+  require(hasDiagnostic(ccad::runDrc(cross_layer_segment_contact_track),
+                        "UNCONNECTED_TRACK_ENDPOINT", "warning"),
+          "drc keeps track-segment connectivity layer-aware without via");
+
   ccad::Project keepout_pad = validBoardProject();
   keepout_pad.board->keepouts.push_back(ccad::Keepout{
       .id = "K_PAD",
