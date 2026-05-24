@@ -38,6 +38,26 @@ bool hasCode(const std::vector<ccad::Diagnostic>& diagnostics, const std::string
 int main() {
   require(ccad::runErc(validProject()).empty(), "valid project has no diagnostics");
 
+  ccad::Project empty_component_id = validProject();
+  empty_component_id.components.at(0).id.clear();
+  require(hasCode(ccad::runErc(empty_component_id), "INVALID_COMPONENT_ID"),
+          "empty component id reported");
+
+  ccad::Project empty_component_part = validProject();
+  empty_component_part.components.at(0).part.clear();
+  require(hasCode(ccad::runErc(empty_component_part), "INVALID_COMPONENT_PART"),
+          "empty component part reported");
+
+  ccad::Project empty_pin_name = validProject();
+  empty_pin_name.components.at(0).pins.at(0).name.clear();
+  require(hasCode(ccad::runErc(empty_pin_name), "INVALID_PIN_NAME"),
+          "empty pin name reported");
+
+  ccad::Project empty_pin_kind = validProject();
+  empty_pin_kind.components.at(0).pins.at(0).kind.clear();
+  require(hasCode(ccad::runErc(empty_pin_kind), "INVALID_PIN_KIND"),
+          "empty pin kind reported");
+
   ccad::Project unknown_component = validProject();
   unknown_component.nets.at(0).members.push_back(
       ccad::NetMember{.component_id = "U404", .pin_name = "VDD"});

@@ -46,6 +46,14 @@ std::vector<Diagnostic> runErc(const Project& project) {
 
   std::set<std::string> component_ids;
   for (const Component& component : project.components) {
+    if (component.id.empty()) {
+      diagnostics.push_back(makeDiagnostic("error", "INVALID_COMPONENT_ID",
+                                           "Component ID must not be empty", component.id));
+    }
+    if (component.part.empty()) {
+      diagnostics.push_back(makeDiagnostic("error", "INVALID_COMPONENT_PART",
+                                           "Component part must not be empty", component.id));
+    }
     if (!component_ids.insert(component.id).second) {
       diagnostics.push_back(makeDiagnostic("error", "DUPLICATE_COMPONENT_ID",
                                            "Component ID appears more than once", component.id));
@@ -53,6 +61,16 @@ std::vector<Diagnostic> runErc(const Project& project) {
 
     std::set<std::string> pin_names;
     for (const Pin& pin : component.pins) {
+      if (pin.name.empty()) {
+        diagnostics.push_back(makeDiagnostic("error", "INVALID_PIN_NAME",
+                                             "Component pin name must not be empty",
+                                             component.id));
+      }
+      if (pin.kind.empty()) {
+        diagnostics.push_back(makeDiagnostic("error", "INVALID_PIN_KIND",
+                                             "Component pin kind must not be empty",
+                                             component.id + "." + pin.name));
+      }
       if (!pin_names.insert(pin.name).second) {
         diagnostics.push_back(makeDiagnostic("error", "DUPLICATE_PIN",
                                              "Component pin appears more than once",
