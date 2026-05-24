@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 82 merged and verified on `main`; Sprint 83 planning.
+Progress counter: Phase 2 / 6, Sprint 83 in progress on `sprint-83-keepout-diagnostic-priority`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -52,6 +52,7 @@ Progress counter: Phase 2 / 6, Sprint 82 merged and verified on `main`; Sprint 8
 - `COPPER_CLEARANCE` DRC diagnostics include the configured clearance value that triggered the finding.
 - Track-width and via annular-ring DRC diagnostics include the configured threshold value that triggered the finding.
 - Via annular-ring DRC diagnostics are suppressed when via drill geometry is already invalid.
+- Keepout geometry DRC diagnostics are suppressed when the checked pad, via, or track has invalid dimensions.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
 
@@ -312,6 +313,7 @@ What it does:
 - Reports invalid rule values when board-level copper clearance, minimum track width, or minimum via annular ring are non-positive in project JSON.
 - Reports minimum track-width and via annular-ring violations with the configured threshold value in the diagnostic message.
 - Prioritizes invalid via drill geometry over derived annular-ring violations to keep diagnostics focused.
+- Prioritizes invalid pad, via, and track dimensions over derived keepout geometry violations.
 - Treats layer-bound pad/track copper as colliding only when they share a copper layer; vias still interact with copper across layers.
 - Reports `PAD_NON_COPPER_LAYER` or `TRACK_NON_COPPER_LAYER` when copper primitives reference a valid layer whose kind is not `copper`.
 
