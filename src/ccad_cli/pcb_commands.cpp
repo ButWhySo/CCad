@@ -126,6 +126,39 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "set-layer") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--name", "--kind", "--visible"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const std::string name = requireOption(options, "--name");
+      const std::string kind = requireOption(options, "--kind");
+      const bool visible = parseRequiredVisibleOption(options);
+      if (kind != "copper") {
+        requireLayerUnused(board, id);
+      }
+      bool updated = false;
+      for (ccad::Layer& layer : board.layers) {
+        if (layer.id == id) {
+          layer.name = name;
+          layer.kind = kind;
+          layer.visible = visible;
+          updated = true;
+          break;
+        }
+      }
+      if (!updated) {
+        throw std::runtime_error("unknown layer: " + id);
+      }
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "remove-layer") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id"});

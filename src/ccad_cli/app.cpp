@@ -62,6 +62,10 @@ const std::vector<CommandHelp>& commandHelp() {
                   .summary = "Append one board layer to a board project",
                   .usage = "ccad pcb add-layer --file <path> --id <id> --name <name> "
                            "--kind <kind> [--visible true|false]"},
+      CommandHelp{.name = "pcb set-layer",
+                  .summary = "Update one board layer's metadata",
+                  .usage = "ccad pcb set-layer --file <path> --id <id> --name <name> "
+                           "--kind <kind> --visible true|false"},
       CommandHelp{.name = "pcb remove-layer",
                   .summary = "Remove one unused board layer by stable ID",
                   .usage = "ccad pcb remove-layer --file <path> --id <id>"},
