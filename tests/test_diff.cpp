@@ -26,6 +26,14 @@ ccad::Project baseProject() {
       .target = "N_3V3",
       .value = "3.3V",
   });
+  project.board = ccad::Board{
+      .outline = ccad::Rect{
+          .origin = ccad::Point{.x = ccad::nanometers(0), .y = ccad::nanometers(0)},
+          .size = ccad::Size{.width = ccad::millimeters(42), .height = ccad::millimeters(28)},
+      },
+      .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper",
+                             .visible = true}},
+  };
   return project;
 }
 
@@ -71,5 +79,21 @@ int main() {
   const ccad::ProjectDiff changed_diff = ccad::diffProjects(baseProject(), changed);
   require(changed_diff.changed_count == 1, "changed count set");
   require(hasEntry(changed_diff, "changed", "constraint", "C_3V3"), "changed constraint entry");
+
+  ccad::Project added_layer = baseProject();
+  added_layer.board->layers.push_back(
+      ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true});
+  const ccad::ProjectDiff added_layer_diff = ccad::diffProjects(baseProject(), added_layer);
+  require(hasEntry(added_layer_diff, "added", "layer", "B.Cu"), "added layer entry");
+
+  ccad::Project changed_layer = baseProject();
+  changed_layer.board->layers.at(0).visible = false;
+  const ccad::ProjectDiff changed_layer_diff = ccad::diffProjects(baseProject(), changed_layer);
+  require(hasEntry(changed_layer_diff, "changed", "layer", "F.Cu"), "changed layer entry");
+
+  ccad::Project removed_layer = baseProject();
+  removed_layer.board->layers.clear();
+  const ccad::ProjectDiff removed_layer_diff = ccad::diffProjects(baseProject(), removed_layer);
+  require(hasEntry(removed_layer_diff, "removed", "layer", "F.Cu"), "removed layer entry");
 }
 

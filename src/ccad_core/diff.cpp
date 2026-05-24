@@ -34,6 +34,10 @@ std::string constraintSignature(const Constraint& constraint) {
   return constraint.kind + "\x1f" + constraint.target + "\x1f" + constraint.value;
 }
 
+std::string layerSignature(const Layer& layer) {
+  return layer.name + "\x1f" + layer.kind + "\x1f" + (layer.visible ? "visible" : "hidden");
+}
+
 template <typename T, typename SignatureFn>
 void diffObjectMap(ProjectDiff& diff, const std::string& object_type, const std::vector<T>& before,
                    const std::vector<T>& after, SignatureFn signature_fn) {
@@ -89,6 +93,29 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
   diffObjectMap(diff, "component", before.components, after.components, componentSignature);
   diffObjectMap(diff, "net", before.nets, after.nets, netSignature);
   diffObjectMap(diff, "constraint", before.constraints, after.constraints, constraintSignature);
+  if (before.board.has_value() && after.board.has_value()) {
+    diffObjectMap(diff, "layer", before.board->layers, after.board->layers, layerSignature);
+  } else if (!before.board.has_value() && after.board.has_value()) {
+    diff.added_count += after.board->layers.size();
+    for (const Layer& layer : after.board->layers) {
+      diff.entries.push_back(DiffEntry{
+          .change = "added",
+          .object_type = "layer",
+          .object_id = layer.id,
+          .message = "layer added",
+      });
+    }
+  } else if (before.board.has_value() && !after.board.has_value()) {
+    diff.removed_count += before.board->layers.size();
+    for (const Layer& layer : before.board->layers) {
+      diff.entries.push_back(DiffEntry{
+          .change = "removed",
+          .object_type = "layer",
+          .object_id = layer.id,
+          .message = "layer removed",
+      });
+    }
+  }
   return diff;
 }
 
