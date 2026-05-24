@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 84 merged and verified on `main`; Sprint 85 planning.
+Progress counter: Phase 2 / 6, Sprint 85 in progress on `sprint-85-diagnostic-json-summary`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -54,6 +54,7 @@ Progress counter: Phase 2 / 6, Sprint 84 merged and verified on `main`; Sprint 8
 - Via annular-ring DRC diagnostics are suppressed when via drill geometry is already invalid.
 - Keepout geometry DRC diagnostics are suppressed when the checked pad, via, or track has invalid dimensions.
 - Copper-clearance DRC diagnostics are suppressed when the checked pad, via, or track has invalid dimensions.
+- CLI diagnostic JSON includes summary counts for total diagnostics, errors, and warnings.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
 
@@ -290,7 +291,7 @@ Validate a project on Windows:
 What it does:
 
 - Runs ERC diagnostics.
-- Prints diagnostics as JSON.
+- Prints diagnostics and summary counts as JSON.
 - Exits `0` if there are no ERC errors, `1` if ERC errors exist, `2` for usage/file/parse failures.
 
 When to run:
@@ -308,7 +309,7 @@ Run physical DRC:
 What it does:
 
 - Runs kernel-level physical checks on board primitives.
-- Emits JSON diagnostics.
+- Emits JSON diagnostics and summary counts.
 - Exits `0` when no DRC errors exist, `1` when DRC errors exist, `2` for usage/file/parse failures.
 - Reports `COPPER_CLEARANCE` when different-net copper is closer than the configured board-level copper clearance, including that configured value in the diagnostic message.
 - Reports invalid rule values when board-level copper clearance, minimum track width, or minimum via annular ring are non-positive in project JSON.

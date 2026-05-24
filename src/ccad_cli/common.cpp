@@ -22,8 +22,24 @@ bool hasError(const std::vector<ccad::Diagnostic>& diagnostics) {
 }
 
 std::string diagnosticsJson(const std::vector<ccad::Diagnostic>& diagnostics) {
+  std::size_t error_count = 0;
+  std::size_t warning_count = 0;
+  for (const ccad::Diagnostic& diagnostic : diagnostics) {
+    if (diagnostic.severity == "error") {
+      ++error_count;
+    } else if (diagnostic.severity == "warning") {
+      ++warning_count;
+    }
+  }
+
   std::ostringstream out;
-  out << "{\n  \"diagnostics\": [\n";
+  out << "{\n";
+  out << "  \"summary\": {\n";
+  out << "    \"total\": " << diagnostics.size() << ",\n";
+  out << "    \"errors\": " << error_count << ",\n";
+  out << "    \"warnings\": " << warning_count << "\n";
+  out << "  },\n";
+  out << "  \"diagnostics\": [\n";
   for (std::size_t i = 0; i < diagnostics.size(); ++i) {
     const ccad::Diagnostic& diagnostic = diagnostics.at(i);
     out << "    {\n"
