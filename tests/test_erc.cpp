@@ -62,6 +62,11 @@ int main() {
   empty_net_id.nets.at(0).id.clear();
   require(hasCode(ccad::runErc(empty_net_id), "INVALID_NET_ID"), "empty net id reported");
 
+  ccad::Project duplicate_net_id = validProject();
+  duplicate_net_id.nets.push_back(duplicate_net_id.nets.front());
+  require(hasCode(ccad::runErc(duplicate_net_id), "DUPLICATE_NET_ID"),
+          "duplicate net id reported");
+
   ccad::Project invalid_net_member = validProject();
   invalid_net_member.nets.at(0).members.push_back(
       ccad::NetMember{.component_id = "", .pin_name = "VDD"});

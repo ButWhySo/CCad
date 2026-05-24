@@ -79,10 +79,15 @@ std::vector<Diagnostic> runErc(const Project& project) {
     }
   }
 
+  std::set<std::string> net_ids;
   for (const Net& net : project.nets) {
     if (net.id.empty()) {
       diagnostics.push_back(makeDiagnostic("error", "INVALID_NET_ID", "Net ID must not be empty",
                                            net.id));
+    }
+    if (!net_ids.insert(net.id).second) {
+      diagnostics.push_back(makeDiagnostic("error", "DUPLICATE_NET_ID",
+                                           "Net ID appears more than once", net.id));
     }
     std::set<std::string> members;
     for (const NetMember& member : net.members) {
