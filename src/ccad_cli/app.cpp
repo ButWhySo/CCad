@@ -86,6 +86,10 @@ const std::vector<CommandHelp>& commandHelp() {
                   .summary = "Append one via to a board project",
                   .usage = "ccad pcb add-via --file <path> --id <id> --net <id> --x-mm <n> "
                            "--y-mm <n> --diameter-mm <n> --drill-mm <n>"},
+      CommandHelp{.name = "pcb set-via",
+                  .summary = "Update one existing via geometry",
+                  .usage = "ccad pcb set-via --file <path> --id <id> --diameter-mm <n> "
+                           "--drill-mm <n>"},
       CommandHelp{.name = "pcb add-track",
                   .summary = "Append one straight track segment to a board project",
                   .usage = "ccad pcb add-track --file <path> --id <id> --net <id> --layer <id> "

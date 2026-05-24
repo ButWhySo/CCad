@@ -295,6 +295,39 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "set-via") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--diameter-mm", "--drill-mm"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const ccad::Length diameter = requirePositiveMillimeters(options, "--diameter-mm");
+      const ccad::Length drill = requirePositiveMillimeters(options, "--drill-mm");
+      if (drill.nanometers > diameter.nanometers) {
+        throw std::runtime_error("via drill must be less than or equal to diameter");
+      }
+      bool updated = false;
+      for (ccad::Via& via : board.vias) {
+        if (via.id == id) {
+          requirePointWithMarginInsideBoard(board, via.position,
+                                            ccad::nanometers(diameter.nanometers / 2), "via");
+          via.diameter = diameter;
+          via.drill = drill;
+          updated = true;
+          break;
+        }
+      }
+      if (!updated) {
+        throw std::runtime_error("unknown via: " + id);
+      }
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "add-track") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--net", "--layer", "--start-x-mm",
