@@ -81,6 +81,8 @@ int main() {
           "help json describes physical object removal");
   require(help_json.find("\"name\": \"pcb move-object\"") != std::string::npos,
           "help json describes physical object movement");
+  require(help_json.find("\"name\": \"pcb resize-object\"") != std::string::npos,
+          "help json describes physical object resizing");
   require(help_json.find("\"name\": \"lib catalog-info\"") != std::string::npos,
           "help json describes catalog info");
   require(help_json.find("\"name\": \"lib catalog-find\"") != std::string::npos,
@@ -375,6 +377,48 @@ int main() {
   require(run(quote(CCAD_BINARY) + " pcb move-object --file " + quote(move_board_path) +
               " --id MISSING --x-mm 3 --y-mm 4") != 0,
           "pcb move-object rejects missing object");
+
+  const std::filesystem::path resize_board_path = temp / "resize-board.ccad.json";
+  const std::string resize_board_init_command =
+      quote(CCAD_BINARY) +
+      " init --name resize-board --width-mm 42 --height-mm 28 --out " +
+      quote(resize_board_path);
+  require(run(resize_board_init_command) == 0, "resize board init exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb add-pad --file " + quote(resize_board_path) +
+              " --id SP1 --component U1 --pin 1 --net N1 --layer F.Cu"
+              " --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0") == 0,
+          "resize fixture add pad exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb add-keepout --file " + quote(resize_board_path) +
+              " --id SK1 --kind placement --x-mm 20 --y-mm 10 --width-mm 4 --height-mm 3") ==
+              0,
+          "resize fixture add keepout exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb add-placement-region --file " +
+              quote(resize_board_path) +
+              " --id SPR1 --kind component --x-mm 2 --y-mm 3 --width-mm 10 --height-mm 6") ==
+              0,
+          "resize fixture add placement region exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb resize-object --file " + quote(resize_board_path) +
+              " --id SP1 --width-mm 2 --height-mm 1.2") == 0,
+          "pcb resize-object resizes pad");
+  require(run(quote(CCAD_BINARY) + " pcb resize-object --file " + quote(resize_board_path) +
+              " --id SK1 --width-mm 5 --height-mm 4") == 0,
+          "pcb resize-object resizes keepout");
+  require(run(quote(CCAD_BINARY) + " pcb resize-object --file " + quote(resize_board_path) +
+              " --id SPR1 --width-mm 11 --height-mm 7") == 0,
+          "pcb resize-object resizes placement region");
+  const std::string resized_objects_json = readFile(resize_board_path);
+  require(resized_objects_json.find("\"width_nm\": 2000000") != std::string::npos,
+          "pcb resize-object writes resized pad width");
+  require(resized_objects_json.find("\"width_nm\": 5000000") != std::string::npos,
+          "pcb resize-object writes resized keepout width");
+  require(resized_objects_json.find("\"width_nm\": 11000000") != std::string::npos,
+          "pcb resize-object writes resized placement region width");
+  require(run(quote(CCAD_BINARY) + " pcb resize-object --file " + quote(resize_board_path) +
+              " --id SP1 --width-mm 20 --height-mm 20") != 0,
+          "pcb resize-object rejects pad outside board");
+  require(run(quote(CCAD_BINARY) + " pcb resize-object --file " + quote(resize_board_path) +
+              " --id MISSING --width-mm 2 --height-mm 2") != 0,
+          "pcb resize-object rejects missing object");
 
   const std::string bad_layer_command =
       quote(CCAD_BINARY) + " pcb add-track --file " + quote(board_project_path) +
