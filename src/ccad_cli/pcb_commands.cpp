@@ -21,6 +21,20 @@ std::string netIdForPin(const ccad::Project& project, const std::string& compone
   return "";
 }
 
+bool parseVisibleOption(const std::map<std::string, std::string>& options) {
+  if (!options.contains("--visible")) {
+    return true;
+  }
+  const std::string value = requireOption(options, "--visible");
+  if (value == "true") {
+    return true;
+  }
+  if (value == "false") {
+    return false;
+  }
+  throw std::runtime_error("--visible must be true or false");
+}
+
 }  // namespace
 
 int pcbCommand(const std::vector<std::string>& args) {
@@ -31,6 +45,29 @@ int pcbCommand(const std::vector<std::string>& args) {
 
   try {
     const std::string& subcommand = args.at(0);
+    if (subcommand == "add-layer") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--name", "--kind", "--visible"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const std::string name = requireOption(options, "--name");
+      const std::string kind = requireOption(options, "--kind");
+      requireUniqueLayerId(board, id);
+      board.layers.push_back(ccad::Layer{
+          .id = id,
+          .name = name,
+          .kind = kind,
+          .visible = parseVisibleOption(options),
+      });
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "add-pad") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--component", "--pin", "--net", "--layer",

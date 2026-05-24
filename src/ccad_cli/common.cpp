@@ -204,6 +204,14 @@ void requireLayer(const ccad::Board& board, const std::string& layer_id) {
   throw std::runtime_error("unknown layer: " + layer_id);
 }
 
+void requireUniqueLayerId(const ccad::Board& board, const std::string& id) {
+  for (const ccad::Layer& layer : board.layers) {
+    if (layer.id == id) {
+      throw std::runtime_error("duplicate layer id: " + id);
+    }
+  }
+}
+
 void requireInsideBoard(const ccad::Board& board, const ccad::Point point,
                         const std::string& label) {
   const ccad::Point min = board.outline.origin;

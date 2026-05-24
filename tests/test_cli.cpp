@@ -62,6 +62,8 @@ int main() {
   require(help_json.find("\"commands\"") != std::string::npos, "help json has commands");
   require(help_json.find("\"name\": \"pcb place-footprint\"") != std::string::npos,
           "help json describes footprint placement");
+  require(help_json.find("\"name\": \"pcb add-layer\"") != std::string::npos,
+          "help json describes layer authoring");
   require(help_json.find("\"name\": \"pcb add-keepout\"") != std::string::npos,
           "help json describes keepout authoring");
   require(help_json.find("\"name\": \"pcb add-placement-region\"") != std::string::npos,
@@ -84,6 +86,21 @@ int main() {
   require(board_json.find("\"board\"") != std::string::npos, "board init writes board");
   require(board_json.find("\"width_nm\": 42000000") != std::string::npos,
           "board init writes width");
+
+  const std::string add_layer_command =
+      quote(CCAD_BINARY) + " pcb add-layer --file " + quote(board_project_path) +
+      " --id In1.Cu --name Inner1 --kind copper --visible false";
+  require(run(add_layer_command) == 0, "pcb add-layer exits zero");
+  const std::string layer_json = readFile(board_project_path);
+  require(layer_json.find("\"id\": \"In1.Cu\"") != std::string::npos,
+          "pcb add-layer writes id");
+  require(layer_json.find("\"name\": \"Inner1\"") != std::string::npos,
+          "pcb add-layer writes name");
+  require(layer_json.find("\"kind\": \"copper\"") != std::string::npos,
+          "pcb add-layer writes kind");
+  require(layer_json.find("\"visible\": false") != std::string::npos,
+          "pcb add-layer writes visibility");
+  require(run(add_layer_command) != 0, "pcb add-layer rejects duplicate id");
 
   const std::string add_pad_command =
       quote(CCAD_BINARY) + " pcb add-pad --file " + quote(board_project_path) +
@@ -263,6 +280,8 @@ int main() {
           "inspect reports board present");
   require(board_inspect_output.find("\"width_nm\": 42000000") != std::string::npos,
           "inspect reports board width");
+  require(board_inspect_output.find("\"layers\": 3") != std::string::npos,
+          "inspect reports layer count");
   require(board_inspect_output.find("\"pads\": 1") != std::string::npos,
           "inspect reports pad count");
   require(board_inspect_output.find("\"vias\": 1") != std::string::npos,

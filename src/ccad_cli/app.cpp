@@ -58,6 +58,10 @@ const std::vector<CommandHelp>& commandHelp() {
                   .usage = "ccad pcb place-footprint --file <path> --footprint <path.json> "
                            "--component <id> --at-x-mm <n> --at-y-mm <n> --layer <id> "
                            "[--rotation-deg <n>]"},
+      CommandHelp{.name = "pcb add-layer",
+                  .summary = "Append one board layer to a board project",
+                  .usage = "ccad pcb add-layer --file <path> --id <id> --name <name> "
+                           "--kind <kind> [--visible true|false]"},
       CommandHelp{.name = "pcb add-pad",
                   .summary = "Append one rectangular pad to a board project",
                   .usage = "ccad pcb add-pad --file <path> --id <id> --component <id> "
