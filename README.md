@@ -67,6 +67,7 @@ Phase 2 is complete. CCad now has a deterministic physical board model, early PC
 - Project diffs include board design-rule changes.
 - CLI diff tests cover board-level physical object entries in executable JSON output.
 - CLI PCB authoring can list physical board net usage counts as compact JSON.
+- CLI PCB authoring can list route-request intent records as compact JSON.
 - CLI PCB authoring can list board layer and physical object IDs as compact JSON, with optional type filtering.
 - CLI PCB authoring can inspect one board layer or physical object by stable ID as compact JSON.
 - CLI PCB authoring can remove physical board objects by stable ID.
