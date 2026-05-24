@@ -639,6 +639,15 @@ int main() {
                                          "configured clearance 200000 nm"),
           "drc clearance diagnostic includes configured clearance value");
 
+  ccad::Project invalid_pad_size_clearance = pad_clearance;
+  invalid_pad_size_clearance.board->pads.back().position.x = ccad::millimeters(5.85);
+  invalid_pad_size_clearance.board->pads.back().size.width = ccad::nanometers(0);
+  require(hasCode(ccad::runDrc(invalid_pad_size_clearance), "INVALID_PAD_SIZE"),
+          "drc reports invalid pad size before clearance geometry");
+  require(!hasDiagnosticForObject(ccad::runDrc(invalid_pad_size_clearance), "COPPER_CLEARANCE",
+                                  "P2"),
+          "drc does not report copper clearance for invalid pad geometry");
+
   ccad::Project cross_layer_pad_clearance = pad_clearance;
   cross_layer_pad_clearance.board->pads.back().layer_id = "B.Cu";
   require(!hasDiagnosticForObject(ccad::runDrc(cross_layer_pad_clearance), "COPPER_CLEARANCE",
@@ -661,6 +670,20 @@ int main() {
   require(hasDiagnosticForObject(ccad::runDrc(crossing_tracks), "COPPER_CLEARANCE", "T2"),
           "drc reports crossing different-net tracks on same layer");
 
+  ccad::Project invalid_track_width_clearance = validBoardProject();
+  invalid_track_width_clearance.board->tracks.push_back(ccad::TrackSegment{
+      .id = "T_BAD",
+      .net_id = "N2",
+      .layer_id = "F.Cu",
+      .start = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(5)},
+      .end = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(7)},
+      .width = ccad::nanometers(0)});
+  require(hasCode(ccad::runDrc(invalid_track_width_clearance), "INVALID_TRACK_WIDTH"),
+          "drc reports invalid track width before clearance geometry");
+  require(!hasDiagnosticForObject(ccad::runDrc(invalid_track_width_clearance),
+                                  "COPPER_CLEARANCE", "T_BAD"),
+          "drc does not report copper clearance for invalid track geometry");
+
   ccad::Project cross_layer_crossing_tracks = crossing_tracks;
   cross_layer_crossing_tracks.board->tracks.back().layer_id = "B.Cu";
   require(!hasDiagnosticForObject(ccad::runDrc(cross_layer_crossing_tracks), "COPPER_CLEARANCE",
@@ -677,4 +700,17 @@ int main() {
   require(hasDiagnosticForObject(ccad::runDrc(via_cross_layer_clearance), "COPPER_CLEARANCE",
                                  "V2"),
           "drc still checks via clearance against layer-bound copper");
+
+  ccad::Project invalid_via_size_clearance = validBoardProject();
+  invalid_via_size_clearance.board->vias.push_back(ccad::Via{
+      .id = "V_BAD",
+      .net_id = "N2",
+      .position = ccad::Point{.x = ccad::millimeters(5.1), .y = ccad::millimeters(6)},
+      .diameter = ccad::nanometers(0),
+      .drill = ccad::millimeters(0.4)});
+  require(hasCode(ccad::runDrc(invalid_via_size_clearance), "INVALID_VIA_SIZE"),
+          "drc reports invalid via size before clearance geometry");
+  require(!hasDiagnosticForObject(ccad::runDrc(invalid_via_size_clearance),
+                                  "COPPER_CLEARANCE", "V_BAD"),
+          "drc does not report copper clearance for invalid via geometry");
 }

@@ -398,6 +398,17 @@ bool shareCopperLayer(const Board& board, const std::string& left_layer,
   return left_layer == right_layer && isCopperLayer(board, left_layer);
 }
 
+bool hasValidPadGeometry(const Pad& pad) {
+  return isPositive(pad.size.width) && isPositive(pad.size.height);
+}
+
+bool hasValidTrackGeometry(const TrackSegment& track) { return isPositive(track.width); }
+
+bool hasValidViaGeometry(const Via& via) {
+  return isPositive(via.diameter) && isPositive(via.drill) &&
+         via.drill.nanometers <= via.diameter.nanometers;
+}
+
 void addClearanceDiagnostic(std::vector<Diagnostic>& diagnostics, const std::string& checked_id,
                             const std::string& other_id, const Length& clearance) {
   diagnostics.push_back(makeDiagnostic("COPPER_CLEARANCE",
@@ -861,7 +872,8 @@ void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnosti
     for (std::size_t right = left + 1; right < board.pads.size(); ++right) {
       const Pad& left_pad = board.pads.at(left);
       const Pad& right_pad = board.pads.at(right);
-      if (sameNonEmptyNet(left_pad.net_id, right_pad.net_id) ||
+      if (!hasValidPadGeometry(left_pad) || !hasValidPadGeometry(right_pad) ||
+          sameNonEmptyNet(left_pad.net_id, right_pad.net_id) ||
           !differentNonEmptyNets(left_pad.net_id, right_pad.net_id) ||
           !shareCopperLayer(board, left_pad.layer_id, right_pad.layer_id)) {
         continue;
@@ -878,7 +890,8 @@ void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnosti
     for (std::size_t right = left + 1; right < board.tracks.size(); ++right) {
       const TrackSegment& left_track = board.tracks.at(left);
       const TrackSegment& right_track = board.tracks.at(right);
-      if (sameNonEmptyNet(left_track.net_id, right_track.net_id) ||
+      if (!hasValidTrackGeometry(left_track) || !hasValidTrackGeometry(right_track) ||
+          sameNonEmptyNet(left_track.net_id, right_track.net_id) ||
           !differentNonEmptyNets(left_track.net_id, right_track.net_id) ||
           !shareCopperLayer(board, left_track.layer_id, right_track.layer_id)) {
         continue;
@@ -897,7 +910,8 @@ void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnosti
 
   for (const Pad& pad : board.pads) {
     for (const TrackSegment& track : board.tracks) {
-      if (sameNonEmptyNet(pad.net_id, track.net_id) ||
+      if (!hasValidPadGeometry(pad) || !hasValidTrackGeometry(track) ||
+          sameNonEmptyNet(pad.net_id, track.net_id) ||
           !differentNonEmptyNets(pad.net_id, track.net_id) ||
           !shareCopperLayer(board, pad.layer_id, track.layer_id)) {
         continue;
@@ -915,7 +929,8 @@ void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnosti
     for (std::size_t right = left + 1; right < board.vias.size(); ++right) {
       const Via& left_via = board.vias.at(left);
       const Via& right_via = board.vias.at(right);
-      if (sameNonEmptyNet(left_via.net_id, right_via.net_id) ||
+      if (!hasValidViaGeometry(left_via) || !hasValidViaGeometry(right_via) ||
+          sameNonEmptyNet(left_via.net_id, right_via.net_id) ||
           !differentNonEmptyNets(left_via.net_id, right_via.net_id)) {
         continue;
       }
@@ -932,7 +947,8 @@ void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnosti
 
   for (const Via& via : board.vias) {
     for (const Pad& pad : board.pads) {
-      if (sameNonEmptyNet(via.net_id, pad.net_id) ||
+      if (!hasValidViaGeometry(via) || !hasValidPadGeometry(pad) ||
+          sameNonEmptyNet(via.net_id, pad.net_id) ||
           !differentNonEmptyNets(via.net_id, pad.net_id) || !isCopperLayer(board, pad.layer_id)) {
         continue;
       }
@@ -944,7 +960,8 @@ void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnosti
       }
     }
     for (const TrackSegment& track : board.tracks) {
-      if (sameNonEmptyNet(via.net_id, track.net_id) ||
+      if (!hasValidViaGeometry(via) || !hasValidTrackGeometry(track) ||
+          sameNonEmptyNet(via.net_id, track.net_id) ||
           !differentNonEmptyNets(via.net_id, track.net_id) ||
           !isCopperLayer(board, track.layer_id)) {
         continue;
