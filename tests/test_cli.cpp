@@ -855,6 +855,95 @@ int main() {
           "diff has object type");
   require(diff_output.find("\"object_id\": \"U1\"") != std::string::npos, "diff has object id");
 
+  const std::filesystem::path board_diff_before_path = temp / "board-diff-before.ccad.json";
+  std::ofstream board_diff_before(board_diff_before_path);
+  board_diff_before << "{\n"
+                    << "  \"schema_version\": 1,\n"
+                    << "  \"id\": \"proj-board-diff\",\n"
+                    << "  \"name\": \"board-diff\",\n"
+                    << "  \"board\": {\n"
+                    << "    \"outline\": {\"x_nm\": 0, \"y_nm\": 0, \"width_nm\": 42000000, \"height_nm\": 28000000},\n"
+                    << "    \"design_rules\": {\"copper_clearance_nm\": 200000, \"min_track_width_nm\": 150000, \"min_via_annular_ring_nm\": 100000},\n"
+                    << "    \"layers\": [\n"
+                    << "      {\"id\": \"F.Cu\", \"name\": \"Front copper\", \"kind\": \"copper\", \"visible\": true}\n"
+                    << "    ],\n"
+                    << "    \"placement_regions\": [\n"
+                    << "      {\"id\": \"PR1\", \"kind\": \"component\", \"area\": {\"x_nm\": 2000000, \"y_nm\": 3000000, \"width_nm\": 10000000, \"height_nm\": 6000000}}\n"
+                    << "    ],\n"
+                    << "    \"keepouts\": [\n"
+                    << "      {\"id\": \"K1\", \"kind\": \"placement\", \"area\": {\"x_nm\": 20000000, \"y_nm\": 10000000, \"width_nm\": 4000000, \"height_nm\": 3000000}}\n"
+                    << "    ],\n"
+                    << "    \"pads\": [\n"
+                    << "      {\"id\": \"P1\", \"component_id\": \"U1\", \"pin_name\": \"1\", \"net_id\": \"N1\", \"layer_id\": \"F.Cu\", \"position\": {\"x_nm\": 5000000, \"y_nm\": 6000000}, \"rotation_degrees\": 0, \"size\": {\"width_nm\": 1500000, \"height_nm\": 1000000}}\n"
+                    << "    ],\n"
+                    << "    \"vias\": [\n"
+                    << "      {\"id\": \"V1\", \"net_id\": \"N1\", \"position\": {\"x_nm\": 8000000, \"y_nm\": 9000000}, \"diameter_nm\": 800000, \"drill_nm\": 400000}\n"
+                    << "    ],\n"
+                    << "    \"tracks\": [\n"
+                    << "      {\"id\": \"T1\", \"net_id\": \"N1\", \"layer_id\": \"F.Cu\", \"start\": {\"x_nm\": 5000000, \"y_nm\": 6000000}, \"end\": {\"x_nm\": 8000000, \"y_nm\": 9000000}, \"width_nm\": 250000}\n"
+                    << "    ]\n"
+                    << "  },\n"
+                    << "  \"components\": [],\n"
+                    << "  \"constraints\": [],\n"
+                    << "  \"nets\": []\n"
+                    << "}\n";
+  board_diff_before.close();
+
+  const std::filesystem::path board_diff_after_path = temp / "board-diff-after.ccad.json";
+  std::ofstream board_diff_after(board_diff_after_path);
+  board_diff_after << "{\n"
+                   << "  \"schema_version\": 1,\n"
+                   << "  \"id\": \"proj-board-diff\",\n"
+                   << "  \"name\": \"board-diff\",\n"
+                   << "  \"board\": {\n"
+                   << "    \"outline\": {\"x_nm\": 0, \"y_nm\": 0, \"width_nm\": 42000000, \"height_nm\": 28000000},\n"
+                   << "    \"design_rules\": {\"copper_clearance_nm\": 250000, \"min_track_width_nm\": 150000, \"min_via_annular_ring_nm\": 100000},\n"
+                   << "    \"layers\": [\n"
+                   << "      {\"id\": \"F.Cu\", \"name\": \"Front copper\", \"kind\": \"copper\", \"visible\": false}\n"
+                   << "    ],\n"
+                   << "    \"placement_regions\": [\n"
+                   << "      {\"id\": \"PR1\", \"kind\": \"module\", \"area\": {\"x_nm\": 2000000, \"y_nm\": 3000000, \"width_nm\": 10000000, \"height_nm\": 6000000}}\n"
+                   << "    ],\n"
+                   << "    \"keepouts\": [\n"
+                   << "      {\"id\": \"K1\", \"kind\": \"placement\", \"area\": {\"x_nm\": 20000000, \"y_nm\": 10000000, \"width_nm\": 5000000, \"height_nm\": 3000000}}\n"
+                   << "    ],\n"
+                   << "    \"pads\": [\n"
+                   << "      {\"id\": \"P1\", \"component_id\": \"U1\", \"pin_name\": \"1\", \"net_id\": \"N1\", \"layer_id\": \"F.Cu\", \"position\": {\"x_nm\": 6000000, \"y_nm\": 6000000}, \"rotation_degrees\": 0, \"size\": {\"width_nm\": 1500000, \"height_nm\": 1000000}}\n"
+                   << "    ],\n"
+                   << "    \"vias\": [\n"
+                   << "      {\"id\": \"V1\", \"net_id\": \"N1\", \"position\": {\"x_nm\": 8000000, \"y_nm\": 9000000}, \"diameter_nm\": 900000, \"drill_nm\": 400000}\n"
+                   << "    ],\n"
+                   << "    \"tracks\": [\n"
+                   << "      {\"id\": \"T1\", \"net_id\": \"N1\", \"layer_id\": \"F.Cu\", \"start\": {\"x_nm\": 5000000, \"y_nm\": 6000000}, \"end\": {\"x_nm\": 8000000, \"y_nm\": 9000000}, \"width_nm\": 300000}\n"
+                   << "    ]\n"
+                   << "  },\n"
+                   << "  \"components\": [],\n"
+                   << "  \"constraints\": [],\n"
+                   << "  \"nets\": []\n"
+                   << "}\n";
+  board_diff_after.close();
+
+  const std::filesystem::path board_diff_output_path = temp / "board-diff.json";
+  const std::string board_diff_command =
+      quote(CCAD_BINARY) + " diff " + quote(board_diff_before_path) + " " +
+      quote(board_diff_after_path) + " > " + quote(board_diff_output_path);
+  require(run(board_diff_command) == 0, "board diff exits zero");
+  const std::string board_diff_output = readFile(board_diff_output_path);
+  require(board_diff_output.find("\"object_type\": \"design_rules\"") != std::string::npos,
+          "board diff has design rules entry");
+  require(board_diff_output.find("\"object_type\": \"layer\"") != std::string::npos,
+          "board diff has layer entry");
+  require(board_diff_output.find("\"object_type\": \"placement_region\"") != std::string::npos,
+          "board diff has placement region entry");
+  require(board_diff_output.find("\"object_type\": \"keepout\"") != std::string::npos,
+          "board diff has keepout entry");
+  require(board_diff_output.find("\"object_type\": \"pad\"") != std::string::npos,
+          "board diff has pad entry");
+  require(board_diff_output.find("\"object_type\": \"via\"") != std::string::npos,
+          "board diff has via entry");
+  require(board_diff_output.find("\"object_type\": \"track\"") != std::string::npos,
+          "board diff has track entry");
+
   const std::filesystem::path escaped_path = temp / "escaped.ccad.json";
   const std::string init_escaped = quote(CCAD_BINARY) +
                                    " init --name \"demo\tname\" --out " + quote(escaped_path);
