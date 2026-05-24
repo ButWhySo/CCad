@@ -38,6 +38,13 @@ std::string layerSignature(const Layer& layer) {
   return layer.name + "\x1f" + layer.kind + "\x1f" + (layer.visible ? "visible" : "hidden");
 }
 
+std::string outlineSignature(const Rect& outline) {
+  return std::to_string(outline.origin.x.nanometers) + "\x1f" +
+         std::to_string(outline.origin.y.nanometers) + "\x1f" +
+         std::to_string(outline.size.width.nanometers) + "\x1f" +
+         std::to_string(outline.size.height.nanometers);
+}
+
 template <typename T, typename SignatureFn>
 void diffObjectMap(ProjectDiff& diff, const std::string& object_type, const std::vector<T>& before,
                    const std::vector<T>& after, SignatureFn signature_fn) {
@@ -94,8 +101,24 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
   diffObjectMap(diff, "net", before.nets, after.nets, netSignature);
   diffObjectMap(diff, "constraint", before.constraints, after.constraints, constraintSignature);
   if (before.board.has_value() && after.board.has_value()) {
+    if (outlineSignature(before.board->outline) != outlineSignature(after.board->outline)) {
+      ++diff.changed_count;
+      diff.entries.push_back(DiffEntry{
+          .change = "changed",
+          .object_type = "board_outline",
+          .object_id = "board",
+          .message = "board outline changed",
+      });
+    }
     diffObjectMap(diff, "layer", before.board->layers, after.board->layers, layerSignature);
   } else if (!before.board.has_value() && after.board.has_value()) {
+    ++diff.added_count;
+    diff.entries.push_back(DiffEntry{
+        .change = "added",
+        .object_type = "board_outline",
+        .object_id = "board",
+        .message = "board outline added",
+    });
     diff.added_count += after.board->layers.size();
     for (const Layer& layer : after.board->layers) {
       diff.entries.push_back(DiffEntry{
@@ -106,6 +129,13 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
       });
     }
   } else if (before.board.has_value() && !after.board.has_value()) {
+    ++diff.removed_count;
+    diff.entries.push_back(DiffEntry{
+        .change = "removed",
+        .object_type = "board_outline",
+        .object_id = "board",
+        .message = "board outline removed",
+    });
     diff.removed_count += before.board->layers.size();
     for (const Layer& layer : before.board->layers) {
       diff.entries.push_back(DiffEntry{

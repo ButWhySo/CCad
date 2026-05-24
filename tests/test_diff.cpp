@@ -95,5 +95,24 @@ int main() {
   removed_layer.board->layers.clear();
   const ccad::ProjectDiff removed_layer_diff = ccad::diffProjects(baseProject(), removed_layer);
   require(hasEntry(removed_layer_diff, "removed", "layer", "F.Cu"), "removed layer entry");
+
+  ccad::Project changed_outline = baseProject();
+  changed_outline.board->outline.size.width = ccad::millimeters(50);
+  const ccad::ProjectDiff changed_outline_diff =
+      ccad::diffProjects(baseProject(), changed_outline);
+  require(hasEntry(changed_outline_diff, "changed", "board_outline", "board"),
+          "changed board outline entry");
+
+  ccad::Project added_board = baseProject();
+  added_board.board.reset();
+  const ccad::ProjectDiff added_board_diff = ccad::diffProjects(added_board, baseProject());
+  require(hasEntry(added_board_diff, "added", "board_outline", "board"),
+          "added board outline entry");
+
+  ccad::Project removed_board = baseProject();
+  removed_board.board.reset();
+  const ccad::ProjectDiff removed_board_diff = ccad::diffProjects(baseProject(), removed_board);
+  require(hasEntry(removed_board_diff, "removed", "board_outline", "board"),
+          "removed board outline entry");
 }
 
