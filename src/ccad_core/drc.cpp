@@ -313,12 +313,15 @@ bool endpointTouchesSameNetPrimitive(const Board& board, const TrackSegment& sou
   }
 
   for (const Pad& pad : board.pads) {
-    if (pad.net_id == source_track.net_id && samePoint(pad.position, endpoint)) {
+    if (pad.net_id == source_track.net_id &&
+        pointInPolygon(endpoint, padCorners(pad))) {
       return true;
     }
   }
   for (const Via& via : board.vias) {
-    if (via.net_id == source_track.net_id && samePoint(via.position, endpoint)) {
+    if (via.net_id == source_track.net_id &&
+        distanceBetweenPoints(via.position, endpoint) <=
+            (static_cast<long double>(via.diameter.nanometers) / 2.0L)) {
       return true;
     }
   }

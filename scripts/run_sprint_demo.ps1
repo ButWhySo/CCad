@@ -18,6 +18,11 @@ New-Item -ItemType Directory -Force -Path $DemoDir, $ScreenshotDir | Out-Null
 
 $env:PATH = "$QtBin;$env:PATH"
 
+$preflight = Join-Path $PSScriptRoot "preflight_qt_env.ps1"
+if (Test-Path $preflight) {
+  & $preflight -BuildDir $BuildDir | Out-Null
+}
+
 $Ccad = Join-Path $BuildPath "ccad.exe"
 $Gui = Join-Path $BuildPath "ccad_gui.exe"
 if (-not (Test-Path $Ccad)) {
@@ -72,26 +77,56 @@ public static class NativeWin {
 }
 "@
 
-  $process = Start-Process -FilePath $GuiPath -ArgumentList $ProjectPath -PassThru
+  $stdoutLog = Join-Path $ScreenshotDir ("gui-capture-" + [Guid]::NewGuid().ToString("N") + ".stdout.log")
+  $stderrLog = Join-Path $ScreenshotDir ("gui-capture-" + [Guid]::NewGuid().ToString("N") + ".stderr.log")
+  $process = Start-Process -FilePath $GuiPath -ArgumentList $ProjectPath -PassThru `
+    -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
   try {
     $deadline = (Get-Date).AddSeconds([Math]::Max(5, $WaitSeconds))
+    $windowReady = $false
     while ((Get-Date) -lt $deadline) {
       $process.Refresh()
       if ($process.HasExited) {
         throw "ccad_gui exited before screenshot fallback capture."
       }
       if ($process.MainWindowHandle -ne 0) {
+        $windowReady = $true
         break
       }
       Start-Sleep -Milliseconds 250
     }
-    if ($process.MainWindowHandle -eq 0) {
+    if (-not $windowReady -or $process.MainWindowHandle -eq 0) {
       throw "ccad_gui window handle not available in fallback capture."
+    }
+
+    # Even after a window handle appears, allow full UI/layout/project render to settle.
+    Start-Sleep -Milliseconds ([Math]::Max(15000, $WaitSeconds * 1000))
+
+    $process.Refresh()
+    if ($process.HasExited) {
+      $process.WaitForExit()
+      $exitCodeText = "unknown"
+      try {
+        $exitCodeText = [string]$process.ExitCode
+      } catch {
+        $exitCodeText = "unavailable"
+      }
+      $stdoutText = ""
+      $stderrText = ""
+      if (Test-Path $stdoutLog) { $stdoutText = Get-Content -Raw $stdoutLog }
+      if (Test-Path $stderrLog) { $stderrText = Get-Content -Raw $stderrLog }
+      throw "ccad_gui exited before screenshot capture. exit=$exitCodeText`nstdout:`n$stdoutText`nstderr:`n$stderrText"
+    }
+    if ($process.MainWindowHandle -eq 0) {
+      throw "ccad_gui main window handle disappeared before capture."
+    }
+    if ([string]::IsNullOrWhiteSpace($process.MainWindowTitle)) {
+      throw "ccad_gui main window title was empty before capture."
     }
 
     [NativeWin]::ShowWindow($process.MainWindowHandle, 9) | Out-Null
     [NativeWin]::SetForegroundWindow($process.MainWindowHandle) | Out-Null
-    Start-Sleep -Milliseconds 800
+    Start-Sleep -Milliseconds 1200
 
     $rect = New-Object NativeWin+RECT
     if (-not [NativeWin]::GetWindowRect($process.MainWindowHandle, [ref]$rect)) {
@@ -112,6 +147,37 @@ public static class NativeWin {
         Stop-Process -Id $process.Id -Force
       }
     }
+  }
+}
+
+function Invoke-PreScreenshotBeep {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$RootPath
+  )
+
+  $beepPath = Join-Path $RootPath "docs\beep.mp3"
+  if (-not (Test-Path $beepPath)) {
+    return
+  }
+
+  try {
+    Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public static class WinMMBridge {
+  [DllImport("winmm.dll", CharSet = CharSet.Auto)]
+  public static extern int mciSendString(string command, System.Text.StringBuilder buffer, int bufferSize, IntPtr hwndCallback);
+}
+"@
+    [void][WinMMBridge]::mciSendString("close ccad_beep", $null, 0, [IntPtr]::Zero)
+    $quoted = '"' + $beepPath + '"'
+    [void][WinMMBridge]::mciSendString("open $quoted type mpegvideo alias ccad_beep", $null, 0, [IntPtr]::Zero)
+    [void][WinMMBridge]::mciSendString("play ccad_beep", $null, 0, [IntPtr]::Zero)
+    Start-Sleep -Milliseconds 350
+    [void][WinMMBridge]::mciSendString("close ccad_beep", $null, 0, [IntPtr]::Zero)
+  } catch {
+    # Audio feedback is best-effort only.
   }
 }
 
@@ -155,10 +221,17 @@ Invoke-CcadDrcReport
 Invoke-Ccad lib import-footprint --in $KiCadFootprint --out $ImportedFootprint
 Invoke-Ccad pcb place-footprint --file $Project --footprint $ImportedFootprint --component R1 --at-x-mm 16 --at-y-mm 14 --layer F.Cu --rotation-deg 90
 
+Invoke-PreScreenshotBeep -RootPath $Root
+Start-Sleep -Seconds 2
+
 if ($PreferInternalScreenshot) {
   $GuiOutput = & $Gui --screenshot $Project $Screenshot
   $GuiExitCode = $LASTEXITCODE
   if ($GuiExitCode -ne 0 -or -not (Test-Path $Screenshot)) {
+    $internalOutput = ($GuiOutput | Out-String)
+    if ($GuiExitCode -ne 0) {
+      Write-Warning "Internal screenshot mode failed. exit=$GuiExitCode output=$internalOutput"
+    }
     Save-GuiWindowScreenshot -GuiPath $Gui -ProjectPath $Project -ScreenshotPath $Screenshot -WaitSeconds $GuiWaitSeconds
     if (-not (Test-Path $Screenshot)) {
       throw "GUI screenshot fallback did not create: $Screenshot"

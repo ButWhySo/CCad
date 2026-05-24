@@ -108,7 +108,22 @@ ReviewWindow::ReviewWindow() {
       [this](const QPointF& scene_position, const double zoom_factor) {
         updateCursorStatus(scene_position, zoom_factor);
       });
+  cursor_status_ = new QLabel("X --  Y --", this);
+  zoom_status_ = new QLabel("Zoom 100%", this);
+  tool_status_ = new QLabel("Tool Select", this);
+  layer_status_ = new QLabel("Layer F.Cu", this);
+  selection_status_ = new QLabel("Selected --", this);
+  statusBar()->addPermanentWidget(cursor_status_);
+  statusBar()->addPermanentWidget(zoom_status_);
+  statusBar()->addPermanentWidget(selection_status_);
+  statusBar()->addPermanentWidget(tool_status_);
+  statusBar()->addPermanentWidget(layer_status_);
+  statusBar()->showMessage("Ready");
+
   board_view->setPanModeCallback([this](const bool space_mode, const bool dragging) {
+    if (tool_status_ == nullptr) {
+      return;
+    }
     if (dragging) {
       tool_status_->setText("Tool Pan Drag");
       return;
@@ -132,17 +147,6 @@ ReviewWindow::ReviewWindow() {
   setDockNestingEnabled(true);
   resizeDocks({project_dock, layers_dock}, {360, 320}, Qt::Horizontal);
   resizeDocks({project_dock, diagnostics_dock}, {620, 240}, Qt::Vertical);
-  cursor_status_ = new QLabel("X --  Y --", this);
-  zoom_status_ = new QLabel("Zoom 100%", this);
-  tool_status_ = new QLabel("Tool Select", this);
-  layer_status_ = new QLabel("Layer F.Cu", this);
-  selection_status_ = new QLabel("Selected --", this);
-  statusBar()->addPermanentWidget(cursor_status_);
-  statusBar()->addPermanentWidget(zoom_status_);
-  statusBar()->addPermanentWidget(selection_status_);
-  statusBar()->addPermanentWidget(tool_status_);
-  statusBar()->addPermanentWidget(layer_status_);
-  statusBar()->showMessage("Ready");
 
   auto* open_action = new QAction("Open", this);
   auto* reload_action = new QAction("Reload", this);

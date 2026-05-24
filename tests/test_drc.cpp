@@ -152,6 +152,22 @@ int main() {
   require(hasDiagnostic(ccad::runDrc(dangling_track), "UNCONNECTED_TRACK_ENDPOINT", "warning"),
           "drc reports dangling track endpoint as warning");
 
+  ccad::Project via_contact_track = validBoardProject();
+  via_contact_track.board->tracks.at(0).start =
+      ccad::Point{.x = ccad::millimeters(7.6), .y = ccad::millimeters(9)};
+  via_contact_track.board->tracks.at(0).end =
+      ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)};
+  require(!hasDiagnostic(ccad::runDrc(via_contact_track), "UNCONNECTED_TRACK_ENDPOINT", "warning"),
+          "drc accepts same-net track endpoint touching via copper area");
+
+  ccad::Project pad_contact_track = validBoardProject();
+  pad_contact_track.board->tracks.at(0).start =
+      ccad::Point{.x = ccad::millimeters(4.3), .y = ccad::millimeters(6)};
+  pad_contact_track.board->tracks.at(0).end =
+      ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)};
+  require(!hasDiagnostic(ccad::runDrc(pad_contact_track), "UNCONNECTED_TRACK_ENDPOINT", "warning"),
+          "drc accepts same-net track endpoint touching pad copper area");
+
   ccad::Project keepout_pad = validBoardProject();
   keepout_pad.board->keepouts.push_back(ccad::Keepout{
       .id = "K_PAD",
