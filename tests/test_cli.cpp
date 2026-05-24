@@ -147,6 +147,20 @@ int main() {
           "pcb set-rules writes minimum track width");
   require(rules_json.find("\"min_via_annular_ring_nm\": 80000") != std::string::npos,
           "pcb set-rules writes minimum via annular ring");
+  const std::filesystem::path inspect_rules_path = temp / "inspect-rules.json";
+  const std::string inspect_rules_command =
+      quote(CCAD_BINARY) + " inspect " + quote(board_project_path) + " > " +
+      quote(inspect_rules_path);
+  require(run(inspect_rules_command) == 0, "inspect after set-rules exits zero");
+  const std::string inspect_rules_json = readFile(inspect_rules_path);
+  require(inspect_rules_json.find("\"design_rules\"") != std::string::npos,
+          "inspect writes design rules");
+  require(inspect_rules_json.find("\"copper_clearance_nm\": 150000") != std::string::npos,
+          "inspect writes copper clearance rule");
+  require(inspect_rules_json.find("\"min_track_width_nm\": 120000") != std::string::npos,
+          "inspect writes minimum track width rule");
+  require(inspect_rules_json.find("\"min_via_annular_ring_nm\": 80000") != std::string::npos,
+          "inspect writes minimum via annular ring rule");
 
   const std::string add_pad_command =
       quote(CCAD_BINARY) + " pcb add-pad --file " + quote(board_project_path) +

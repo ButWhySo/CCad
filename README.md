@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 75 merged and verified on `main`; Sprint 76 planning.
+Progress counter: Phase 2 / 6, Sprint 76 in progress on `sprint-76-review-design-rules`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -16,7 +16,7 @@ Progress counter: Phase 2 / 6, Sprint 75 merged and verified on `main`; Sprint 7
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
 - Physical board outline, layers, rectangular placement regions, rectangular keepouts, pads, vias, and track segments in project JSON.
-- Project review and `ccad inspect` report the full board outline rectangle, including origin and size.
+- Project review and `ccad inspect` report the full board outline rectangle and active board-level DRC rules.
 - Physical DRC for geometry, connectivity metadata, layer-aware copper connectivity and clearance, rectangular keepout occupancy, track crossing violations, board-level copper clearance, minimum track width, minimum via annular ring, stable physical object IDs, and logical pad/net parity.
 - Physical DRC rejects pads and tracks placed on non-copper layers.
 - Physical DRC track-endpoint connectivity now accepts geometric copper contact with same-net pads and vias, not only exact center-point matches.

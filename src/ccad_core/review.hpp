@@ -21,6 +21,9 @@ struct ProjectReview {
   std::int64_t board_origin_y_nm = 0;
   std::int64_t board_width_nm = 0;
   std::int64_t board_height_nm = 0;
+  std::int64_t copper_clearance_nm = 0;
+  std::int64_t min_track_width_nm = 0;
+  std::int64_t min_via_annular_ring_nm = 0;
   std::size_t layer_count = 0;
   std::size_t pad_count = 0;
   std::size_t via_count = 0;
