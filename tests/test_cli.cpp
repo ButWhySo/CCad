@@ -586,6 +586,10 @@ int main() {
       " --query 0603 > " + quote(catalog_search_path);
   require(run(catalog_search_command) == 0, "lib catalog-search exits zero");
   const std::string catalog_search_output = readFile(catalog_search_path);
+  require(catalog_search_output.find("\"summary\": {") != std::string::npos,
+          "lib catalog-search writes summary");
+  require(catalog_search_output.find("\"match_count\": 2") != std::string::npos,
+          "lib catalog-search summary writes match count");
   require(catalog_search_output.find("\"count\": 2") != std::string::npos,
           "lib catalog-search writes match count");
   require(catalog_search_output.find("\"id\": \"footprint:Resistor_SMD:R_0603_1608Metric\"") !=

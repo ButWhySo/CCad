@@ -81,6 +81,9 @@ void printCatalogItem(const ccad::LibraryItem& item) {
 void printCatalogSearchResults(const std::string& query, const std::string& kind,
                                const std::vector<const ccad::LibraryItem*>& items) {
   std::cout << "{\n"
+            << "  \"summary\": {\n"
+            << "    \"match_count\": " << items.size() << "\n"
+            << "  },\n"
             << "  \"count\": " << items.size() << ",\n"
             << "  \"items\": [\n";
   for (std::size_t i = 0; i < items.size(); ++i) {
