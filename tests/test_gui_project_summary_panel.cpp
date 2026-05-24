@@ -23,6 +23,16 @@ QString subtitleText(ProjectSummaryPanel& panel) {
   return subtitle->text();
 }
 
+bool hasLabelText(ProjectSummaryPanel& panel, const QString& expected) {
+  const QList<QLabel*> labels = panel.findChildren<QLabel*>();
+  for (const QLabel* label : labels) {
+    if (label->text() == expected) {
+      return true;
+    }
+  }
+  return false;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -39,12 +49,21 @@ int main(int argc, char** argv) {
   ccad::ProjectReview shifted = baseReview();
   shifted.board_origin_x_nm = 2000000;
   shifted.board_origin_y_nm = 3000000;
+  shifted.copper_clearance_nm = 250000;
+  shifted.min_track_width_nm = 180000;
+  shifted.min_via_annular_ring_nm = 110000;
   panel.renderReview(shifted);
   const QString shifted_subtitle = subtitleText(panel);
   require(shifted_subtitle.contains("Project ID: proj-demo"), "subtitle contains project id");
   require(shifted_subtitle.contains("origin 2.00 mm, 3.00 mm"),
           "non-zero board origin is visible");
   require(shifted_subtitle.contains("44.00 mm x 30.00 mm"), "board size remains visible");
+  require(hasLabelText(panel, "Copper Clearance"), "summary labels copper clearance");
+  require(hasLabelText(panel, "0.25 mm"), "summary shows copper clearance value");
+  require(hasLabelText(panel, "Min Track Width"), "summary labels minimum track width");
+  require(hasLabelText(panel, "0.18 mm"), "summary shows minimum track width value");
+  require(hasLabelText(panel, "Via Annular Ring"), "summary labels via annular ring");
+  require(hasLabelText(panel, "0.11 mm"), "summary shows via annular ring value");
 
   ccad::ProjectReview origin_zero = baseReview();
   panel.renderReview(origin_zero);
