@@ -364,7 +364,7 @@ int pcbCommand(const std::vector<std::string>& args) {
 
     if (subcommand == "set-via") {
       const std::map<std::string, std::string> options =
-          parseOptions(args, 1, {"--file", "--id", "--diameter-mm", "--drill-mm"});
+          parseOptions(args, 1, {"--file", "--id", "--diameter-mm", "--drill-mm", "--net"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
       ccad::Board& board = requireBoard(project);
@@ -379,6 +379,9 @@ int pcbCommand(const std::vector<std::string>& args) {
         if (via.id == id) {
           requirePointWithMarginInsideBoard(board, via.position,
                                             ccad::nanometers(diameter.nanometers / 2), "via");
+          if (options.contains("--net")) {
+            via.net_id = requireOption(options, "--net");
+          }
           via.diameter = diameter;
           via.drill = drill;
           updated = true;
@@ -439,11 +442,15 @@ int pcbCommand(const std::vector<std::string>& args) {
     if (subcommand == "set-track") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--start-x-mm", "--start-y-mm",
-                                 "--end-x-mm", "--end-y-mm", "--width-mm"});
+                                 "--end-x-mm", "--end-y-mm", "--width-mm", "--net",
+                                 "--layer"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
       ccad::Board& board = requireBoard(project);
       const std::string id = requireOption(options, "--id");
+      if (options.contains("--layer")) {
+        requireCopperLayer(board, requireOption(options, "--layer"));
+      }
       const ccad::Point start{
           .x = requirePositiveMillimeters(options, "--start-x-mm"),
           .y = requirePositiveMillimeters(options, "--start-y-mm"),
@@ -459,6 +466,12 @@ int pcbCommand(const std::vector<std::string>& args) {
       bool updated = false;
       for (ccad::TrackSegment& track : board.tracks) {
         if (track.id == id) {
+          if (options.contains("--net")) {
+            track.net_id = requireOption(options, "--net");
+          }
+          if (options.contains("--layer")) {
+            track.layer_id = requireOption(options, "--layer");
+          }
           track.start = start;
           track.end = end;
           track.width = width;
