@@ -52,6 +52,8 @@ std::string reviewJson(const ccad::ProjectReview& review) {
   out << "  },\n";
   out << "  \"board\": {\n";
   out << "    \"has_board\": " << (review.has_board ? "true" : "false") << ",\n";
+  out << "    \"x_nm\": " << review.board_origin_x_nm << ",\n";
+  out << "    \"y_nm\": " << review.board_origin_y_nm << ",\n";
   out << "    \"width_nm\": " << review.board_width_nm << ",\n";
   out << "    \"height_nm\": " << review.board_height_nm << ",\n";
   out << "    \"pads\": " << review.pad_count << ",\n";
