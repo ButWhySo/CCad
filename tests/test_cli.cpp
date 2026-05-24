@@ -69,6 +69,8 @@ int main() {
           "help json describes layer metadata editing");
   require(help_json.find("\"name\": \"pcb get-object\"") != std::string::npos,
           "help json describes pcb object lookup");
+  require(help_json.find("\"name\": \"pcb list-objects\"") != std::string::npos,
+          "help json describes pcb object listing");
   require(help_json.find("\"name\": \"pcb remove-layer\"") != std::string::npos,
           "help json describes layer removal");
   require(help_json.find("\"name\": \"pcb set-layer-visibility\"") != std::string::npos,
@@ -330,6 +332,41 @@ int main() {
       quote(CCAD_BINARY) + " pcb get-object --file " + quote(board_project_path) +
       " --id MISSING";
   require(run(missing_lookup_command) != 0, "pcb get-object rejects missing id");
+
+  const std::filesystem::path list_objects_path = temp / "list-objects.json";
+  const std::string list_objects_command =
+      quote(CCAD_BINARY) + " pcb list-objects --file " + quote(board_project_path) +
+      " > " + quote(list_objects_path);
+  require(run(list_objects_command) == 0, "pcb list-objects exits zero");
+  const std::string list_objects_json = readFile(list_objects_path);
+  require(list_objects_json.find("\"summary\": {") != std::string::npos,
+          "pcb list-objects writes summary");
+  require(list_objects_json.find("\"total\": 9") != std::string::npos,
+          "pcb list-objects reports total");
+  require(list_objects_json.find("\"type\": \"layer\"") != std::string::npos,
+          "pcb list-objects includes layers");
+  require(list_objects_json.find("\"id\": \"P1\"") != std::string::npos,
+          "pcb list-objects includes pad id");
+  require(list_objects_json.find("\"net_id\": \"N1\"") != std::string::npos,
+          "pcb list-objects includes net metadata");
+
+  const std::filesystem::path list_tracks_path = temp / "list-tracks.json";
+  const std::string list_tracks_command =
+      quote(CCAD_BINARY) + " pcb list-objects --file " + quote(board_project_path) +
+      " --type track > " + quote(list_tracks_path);
+  require(run(list_tracks_command) == 0, "pcb list-objects filters by type");
+  const std::string list_tracks_json = readFile(list_tracks_path);
+  require(list_tracks_json.find("\"total\": 1") != std::string::npos,
+          "pcb list-objects filtered summary reports one track");
+  require(list_tracks_json.find("\"type\": \"track\"") != std::string::npos,
+          "pcb list-objects filtered output includes track");
+  require(list_tracks_json.find("\"type\": \"pad\"") == std::string::npos,
+          "pcb list-objects filtered output excludes pad");
+
+  const std::string bad_list_objects_command =
+      quote(CCAD_BINARY) + " pcb list-objects --file " + quote(board_project_path) +
+      " --type nonsense";
+  require(run(bad_list_objects_command) != 0, "pcb list-objects rejects unknown type");
 
   require(run(add_pad_command) != 0, "pcb add-pad rejects duplicate id");
   require(run(add_keepout_command) != 0, "pcb add-keepout rejects duplicate id");
