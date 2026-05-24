@@ -184,6 +184,11 @@ int main() {
   require(hasCode(ccad::runDrc(duplicate_pad), "DUPLICATE_PAD_ID"),
           "drc reports duplicate pad id");
 
+  ccad::Project duplicate_physical_object_id = validBoardProject();
+  duplicate_physical_object_id.board->vias.at(0).id = "P1";
+  require(hasCode(ccad::runDrc(duplicate_physical_object_id), "DUPLICATE_PHYSICAL_OBJECT_ID"),
+          "drc reports physical object id reused across types");
+
   ccad::Project empty_pad_id = validBoardProject();
   empty_pad_id.board->pads.at(0).id.clear();
   require(hasCode(ccad::runDrc(empty_pad_id), "INVALID_PAD_ID"),

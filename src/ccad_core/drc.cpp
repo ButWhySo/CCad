@@ -738,6 +738,38 @@ void checkKeepouts(const Board& board, std::vector<Diagnostic>& diagnostics) {
   }
 }
 
+void checkPhysicalObjectIds(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  std::set<std::string> ids;
+  for (const Pad& pad : board.pads) {
+    if (!pad.id.empty() && !ids.insert(pad.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_PHYSICAL_OBJECT_ID",
+                                           "Physical object ID is reused across object types",
+                                           pad.id));
+    }
+  }
+  for (const Via& via : board.vias) {
+    if (!via.id.empty() && !ids.insert(via.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_PHYSICAL_OBJECT_ID",
+                                           "Physical object ID is reused across object types",
+                                           via.id));
+    }
+  }
+  for (const TrackSegment& track : board.tracks) {
+    if (!track.id.empty() && !ids.insert(track.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_PHYSICAL_OBJECT_ID",
+                                           "Physical object ID is reused across object types",
+                                           track.id));
+    }
+  }
+  for (const Keepout& keepout : board.keepouts) {
+    if (!keepout.id.empty() && !ids.insert(keepout.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_PHYSICAL_OBJECT_ID",
+                                           "Physical object ID is reused across object types",
+                                           keepout.id));
+    }
+  }
+}
+
 void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnostics) {
   constexpr std::int64_t default_clearance_nm = 200000;
   constexpr long double default_clearance = static_cast<long double>(default_clearance_nm);
@@ -858,6 +890,7 @@ std::vector<Diagnostic> runDrc(const Project& project) {
   checkVias(project, board, diagnostics);
   checkTracks(project, board, diagnostics);
   checkKeepouts(board, diagnostics);
+  checkPhysicalObjectIds(board, diagnostics);
   checkCopperClearance(board, diagnostics);
   return diagnostics;
 }
