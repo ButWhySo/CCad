@@ -276,9 +276,13 @@ int main() {
 
   const std::string set_outline_command =
       quote(CCAD_BINARY) + " pcb set-outline --file " + quote(board_project_path) +
-      " --x-mm 0 --y-mm 0 --width-mm 50 --height-mm 30";
+      " --x-mm 2 --y-mm 2 --width-mm 50 --height-mm 30";
   require(run(set_outline_command) == 0, "pcb set-outline exits zero");
   const std::string outline_json = readFile(board_project_path);
+  require(outline_json.find("\"x_nm\": 2000000") != std::string::npos,
+          "pcb set-outline writes origin x");
+  require(outline_json.find("\"y_nm\": 2000000") != std::string::npos,
+          "pcb set-outline writes origin y");
   require(outline_json.find("\"width_nm\": 50000000") != std::string::npos,
           "pcb set-outline writes width");
   require(outline_json.find("\"height_nm\": 30000000") != std::string::npos,
@@ -352,6 +356,10 @@ int main() {
   const std::string board_inspect_output = readFile(board_inspect_path);
   require(board_inspect_output.find("\"has_board\": true") != std::string::npos,
           "inspect reports board present");
+  require(board_inspect_output.find("\"x_nm\": 2000000") != std::string::npos,
+          "inspect reports board origin x");
+  require(board_inspect_output.find("\"y_nm\": 2000000") != std::string::npos,
+          "inspect reports board origin y");
   require(board_inspect_output.find("\"width_nm\": 50000000") != std::string::npos,
           "inspect reports board width");
   require(board_inspect_output.find("\"layers\": 4") != std::string::npos,

@@ -17,6 +17,8 @@ struct ProjectReview {
   std::size_t net_count = 0;
   std::size_t constraint_count = 0;
   bool has_board = false;
+  std::int64_t board_origin_x_nm = 0;
+  std::int64_t board_origin_y_nm = 0;
   std::int64_t board_width_nm = 0;
   std::int64_t board_height_nm = 0;
   std::size_t layer_count = 0;

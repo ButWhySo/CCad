@@ -27,7 +27,7 @@ ccad::Project validProject() {
   });
   project.board = ccad::Board{
       .outline = ccad::Rect{
-          .origin = ccad::Point{.x = ccad::nanometers(0), .y = ccad::nanometers(0)},
+          .origin = ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(3)},
           .size = ccad::Size{.width = ccad::millimeters(42), .height = ccad::millimeters(28)},
       },
       .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true},
@@ -46,6 +46,8 @@ int main() {
   require(clean.net_count == 1, "net count set");
   require(clean.constraint_count == 1, "constraint count set");
   require(clean.has_board, "review reports board present");
+  require(clean.board_origin_x_nm == 2000000, "review reports board origin x");
+  require(clean.board_origin_y_nm == 3000000, "review reports board origin y");
   require(clean.board_width_nm == 42000000, "review reports board width");
   require(clean.board_height_nm == 28000000, "review reports board height");
   require(clean.layer_count == 2, "review reports layer count");

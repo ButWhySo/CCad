@@ -25,6 +25,8 @@ ProjectReview buildReview(const Project& project) {
   review.constraint_count = project.constraints.size();
   if (project.board.has_value()) {
     review.has_board = true;
+    review.board_origin_x_nm = project.board->outline.origin.x.nanometers;
+    review.board_origin_y_nm = project.board->outline.origin.y.nanometers;
     review.board_width_nm = project.board->outline.size.width.nanometers;
     review.board_height_nm = project.board->outline.size.height.nanometers;
     review.layer_count = project.board->layers.size();

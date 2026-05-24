@@ -16,6 +16,7 @@ Progress counter: Phase 2 / 6, Sprint 73 merged and verified on `main`; Sprint 7
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
 - Physical board outline, layers, rectangular placement regions, rectangular keepouts, pads, vias, and track segments in project JSON.
+- Project review and `ccad inspect` report the full board outline rectangle, including origin and size.
 - Physical DRC for geometry, connectivity metadata, layer-aware copper connectivity and clearance, rectangular keepout occupancy, track crossing violations, board-level copper clearance, minimum track width, minimum via annular ring, stable physical object IDs, and logical pad/net parity.
 - Physical DRC rejects pads and tracks placed on non-copper layers.
 - Physical DRC track-endpoint connectivity now accepts geometric copper contact with same-net pads and vias, not only exact center-point matches.
@@ -264,7 +265,7 @@ Inspect a project:
 What it does:
 
 - Loads a project.
-- Emits machine-readable review JSON: project summary, counts, status, diagnostics, and board metadata.
+- Emits machine-readable review JSON: project summary, counts, status, diagnostics, and board metadata including board origin and size.
 
 When to run:
 
