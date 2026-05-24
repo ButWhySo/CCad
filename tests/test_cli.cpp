@@ -67,6 +67,8 @@ int main() {
           "help json describes layer authoring");
   require(help_json.find("\"name\": \"pcb set-layer\"") != std::string::npos,
           "help json describes layer metadata editing");
+  require(help_json.find("\"name\": \"pcb get-object\"") != std::string::npos,
+          "help json describes pcb object lookup");
   require(help_json.find("\"name\": \"pcb remove-layer\"") != std::string::npos,
           "help json describes layer removal");
   require(help_json.find("\"name\": \"pcb set-layer-visibility\"") != std::string::npos,
@@ -297,6 +299,37 @@ int main() {
           "pcb add-placement-region writes kind");
   require(placement_region_json.find("\"width_nm\": 10000000") != std::string::npos,
           "pcb add-placement-region writes width");
+
+  const std::filesystem::path layer_lookup_path = temp / "layer-lookup.json";
+  const std::string layer_lookup_command =
+      quote(CCAD_BINARY) + " pcb get-object --file " + quote(board_project_path) +
+      " --id F.Cu > " + quote(layer_lookup_path);
+  require(run(layer_lookup_command) == 0, "pcb get-object finds layer");
+  const std::string layer_lookup_json = readFile(layer_lookup_path);
+  require(layer_lookup_json.find("\"type\": \"layer\"") != std::string::npos,
+          "pcb get-object writes layer type");
+  require(layer_lookup_json.find("\"id\": \"F.Cu\"") != std::string::npos,
+          "pcb get-object writes layer id");
+  require(layer_lookup_json.find("\"kind\": \"copper\"") != std::string::npos,
+          "pcb get-object writes layer kind");
+
+  const std::filesystem::path pad_lookup_path = temp / "pad-lookup.json";
+  const std::string pad_lookup_command =
+      quote(CCAD_BINARY) + " pcb get-object --file " + quote(board_project_path) +
+      " --id P1 > " + quote(pad_lookup_path);
+  require(run(pad_lookup_command) == 0, "pcb get-object finds pad");
+  const std::string pad_lookup_json = readFile(pad_lookup_path);
+  require(pad_lookup_json.find("\"type\": \"pad\"") != std::string::npos,
+          "pcb get-object writes pad type");
+  require(pad_lookup_json.find("\"component_id\": \"U1\"") != std::string::npos,
+          "pcb get-object writes pad component");
+  require(pad_lookup_json.find("\"width_nm\": 1500000") != std::string::npos,
+          "pcb get-object writes pad width");
+
+  const std::string missing_lookup_command =
+      quote(CCAD_BINARY) + " pcb get-object --file " + quote(board_project_path) +
+      " --id MISSING";
+  require(run(missing_lookup_command) != 0, "pcb get-object rejects missing id");
 
   require(run(add_pad_command) != 0, "pcb add-pad rejects duplicate id");
   require(run(add_keepout_command) != 0, "pcb add-keepout rejects duplicate id");

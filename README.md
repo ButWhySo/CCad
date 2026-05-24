@@ -6,13 +6,13 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 104 merged and verified on `main`; Sprint 105 planning.
+Progress counter: Phase 2 / 6, Sprint 105 in progress on `sprint-105-cli-pcb-get-object`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
 - Logical ERC diagnostics.
 - CLI: `ccad help --format json`, `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
-- CLI PCB authoring: `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
+- CLI PCB authoring: `ccad pcb get-object`, `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
 - Physical board outline, layers, rectangular placement regions, rectangular keepouts, pads, vias, and track segments in project JSON.
@@ -64,6 +64,7 @@ Progress counter: Phase 2 / 6, Sprint 104 merged and verified on `main`; Sprint 
 - Project diffs include board keepout and placement-region additions, removals, and changes.
 - Project diffs include board design-rule changes.
 - CLI diff tests cover board-level physical object entries in executable JSON output.
+- CLI PCB authoring can inspect one board layer or physical object by stable ID as compact JSON.
 - CLI PCB authoring can remove physical board objects by stable ID.
 - CLI PCB authoring can remove unused board layers by stable ID.
 - CLI PCB authoring can update board layer name, kind, and visibility by stable ID.
@@ -396,6 +397,7 @@ Current limitation:
 Add PCB primitives through the CLI:
 
 ```powershell
+.\build-qt\ccad.exe pcb get-object --file .\build-qt\canvas-demo.ccad.json --id F.Cu
 .\build-qt\ccad.exe pcb set-outline --file .\build-qt\canvas-demo.ccad.json --x-mm 0 --y-mm 0 --width-mm 44 --height-mm 30
 .\build-qt\ccad.exe pcb set-rules --file .\build-qt\canvas-demo.ccad.json --copper-clearance-mm 0.20 --min-track-width-mm 0.15 --min-via-annular-ring-mm 0.10
 .\build-qt\ccad.exe pcb add-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --name "Inner 1 copper" --kind copper --visible false
@@ -416,6 +418,7 @@ Add PCB primitives through the CLI:
 
 What these do:
 
+- `pcb get-object` emits one board layer, pad, via, track, keepout, or placement region by stable ID as compact JSON.
 - `pcb set-outline` replaces the rectangular board outline while rejecting outlines that would leave existing pads, vias, tracks, keepouts, or placement regions outside the board.
 - `pcb set-rules` updates board-level DRC defaults for copper clearance, minimum track width, and minimum via annular ring.
 - `pcb add-layer` appends a board layer with stable ID, display name, kind, and optional visibility.

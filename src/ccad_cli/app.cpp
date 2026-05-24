@@ -66,6 +66,9 @@ const std::vector<CommandHelp>& commandHelp() {
                   .summary = "Update one board layer's metadata",
                   .usage = "ccad pcb set-layer --file <path> --id <id> --name <name> "
                            "--kind <kind> --visible true|false"},
+      CommandHelp{.name = "pcb get-object",
+                  .summary = "Emit one board layer or physical object by stable ID as JSON",
+                  .usage = "ccad pcb get-object --file <path> --id <id>"},
       CommandHelp{.name = "pcb remove-layer",
                   .summary = "Remove one unused board layer by stable ID",
                   .usage = "ccad pcb remove-layer --file <path> --id <id>"},
