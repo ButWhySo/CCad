@@ -356,6 +356,19 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
     if (!isPositive(pad.size.width) || !isPositive(pad.size.height)) {
       diagnostics.push_back(
           makeDiagnostic("INVALID_PAD_SIZE", "Pad width and height must be positive", pad.id));
+    } else {
+      const std::vector<Point> corners = padCorners(pad);
+      bool all_corners_inside = true;
+      for (const Point& corner : corners) {
+        if (!containsPoint(board, corner)) {
+          all_corners_inside = false;
+          break;
+        }
+      }
+      if (!all_corners_inside) {
+        diagnostics.push_back(makeDiagnostic(
+            "PAD_GEOMETRY_OUTSIDE_BOARD", "Pad geometry extends outside board outline", pad.id));
+      }
     }
     if (pad.net_id.empty()) {
       diagnostics.push_back(makeWarning("UNCONNECTED_PAD", "Pad has no assigned net", pad.id));
@@ -393,6 +406,17 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
     if (!isPositive(via.diameter) || !isPositive(via.drill)) {
       diagnostics.push_back(makeDiagnostic("INVALID_VIA_SIZE",
                                            "Via diameter and drill must be positive", via.id));
+    } else {
+      const std::int64_t radius_nm = via.diameter.nanometers / 2;
+      const Point min{.x = nanometers(via.position.x.nanometers - radius_nm),
+                      .y = nanometers(via.position.y.nanometers - radius_nm)};
+      const Point max{.x = nanometers(via.position.x.nanometers + radius_nm),
+                      .y = nanometers(via.position.y.nanometers + radius_nm)};
+      if (!containsPoint(board, min) || !containsPoint(board, max)) {
+        diagnostics.push_back(makeDiagnostic(
+            "VIA_GEOMETRY_OUTSIDE_BOARD", "Via copper geometry extends outside board outline",
+            via.id));
+      }
     }
     if (via.drill.nanometers > via.diameter.nanometers) {
       diagnostics.push_back(makeDiagnostic("VIA_DRILL_TOO_LARGE",

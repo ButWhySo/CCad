@@ -127,6 +127,12 @@ int main() {
   require(hasCode(ccad::runDrc(via_drill_too_large), "VIA_DRILL_TOO_LARGE"),
           "drc reports via drill too large");
 
+  ccad::Project via_geometry_outside = validBoardProject();
+  via_geometry_outside.board->vias.at(0).position =
+      ccad::Point{.x = ccad::millimeters(0.1), .y = ccad::millimeters(0.1)};
+  require(hasCode(ccad::runDrc(via_geometry_outside), "VIA_GEOMETRY_OUTSIDE_BOARD"),
+          "drc reports via copper geometry outside board");
+
   ccad::Project via_small_ring = validBoardProject();
   via_small_ring.board->vias.at(0).diameter = ccad::millimeters(0.45);
   via_small_ring.board->vias.at(0).drill = ccad::millimeters(0.4);
@@ -147,6 +153,12 @@ int main() {
   duplicate_pad.board->pads.push_back(duplicate_pad.board->pads.at(0));
   require(hasCode(ccad::runDrc(duplicate_pad), "DUPLICATE_PAD_ID"),
           "drc reports duplicate pad id");
+
+  ccad::Project pad_geometry_outside = validBoardProject();
+  pad_geometry_outside.board->pads.at(0).position =
+      ccad::Point{.x = ccad::millimeters(0.4), .y = ccad::millimeters(0.4)};
+  require(hasCode(ccad::runDrc(pad_geometry_outside), "PAD_GEOMETRY_OUTSIDE_BOARD"),
+          "drc reports pad geometry outside board");
 
   ccad::Project unconnected_pad = validBoardProject();
   unconnected_pad.board->pads.at(0).net_id.clear();
