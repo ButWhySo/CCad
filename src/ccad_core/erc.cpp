@@ -80,8 +80,18 @@ std::vector<Diagnostic> runErc(const Project& project) {
   }
 
   for (const Net& net : project.nets) {
+    if (net.id.empty()) {
+      diagnostics.push_back(makeDiagnostic("error", "INVALID_NET_ID", "Net ID must not be empty",
+                                           net.id));
+    }
     std::set<std::string> members;
     for (const NetMember& member : net.members) {
+      if (member.component_id.empty() || member.pin_name.empty()) {
+        diagnostics.push_back(makeDiagnostic("error", "INVALID_NET_MEMBER",
+                                             "Net member must include component_id and pin_name",
+                                             net.id));
+        continue;
+      }
       const std::string member_id = member.component_id + "." + member.pin_name;
       if (!members.insert(member_id).second) {
         diagnostics.push_back(makeDiagnostic("error", "DUPLICATE_NET_MEMBER",

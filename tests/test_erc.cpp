@@ -58,6 +58,16 @@ int main() {
   require(hasCode(ccad::runErc(empty_pin_kind), "INVALID_PIN_KIND"),
           "empty pin kind reported");
 
+  ccad::Project empty_net_id = validProject();
+  empty_net_id.nets.at(0).id.clear();
+  require(hasCode(ccad::runErc(empty_net_id), "INVALID_NET_ID"), "empty net id reported");
+
+  ccad::Project invalid_net_member = validProject();
+  invalid_net_member.nets.at(0).members.push_back(
+      ccad::NetMember{.component_id = "", .pin_name = "VDD"});
+  require(hasCode(ccad::runErc(invalid_net_member), "INVALID_NET_MEMBER"),
+          "invalid net member reported");
+
   ccad::Project unknown_component = validProject();
   unknown_component.nets.at(0).members.push_back(
       ccad::NetMember{.component_id = "U404", .pin_name = "VDD"});
