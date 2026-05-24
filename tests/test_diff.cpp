@@ -33,6 +33,20 @@ ccad::Project baseProject() {
       },
       .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper",
                              .visible = true}},
+      .placement_regions = {ccad::PlacementRegion{
+          .id = "PR1",
+          .kind = "component",
+          .area = ccad::Rect{
+              .origin = ccad::Point{.x = ccad::millimeters(10), .y = ccad::millimeters(5)},
+              .size = ccad::Size{.width = ccad::millimeters(6),
+                                  .height = ccad::millimeters(4)}}}},
+      .keepouts = {ccad::Keepout{
+          .id = "K1",
+          .kind = "placement",
+          .area = ccad::Rect{
+              .origin = ccad::Point{.x = ccad::millimeters(20), .y = ccad::millimeters(10)},
+              .size = ccad::Size{.width = ccad::millimeters(3),
+                                  .height = ccad::millimeters(2)}}}},
       .pads = {ccad::Pad{.id = "P1",
                          .component_id = "U1",
                          .pin_name = "VDD",
@@ -200,5 +214,56 @@ int main() {
   removed_track.board->tracks.clear();
   const ccad::ProjectDiff removed_track_diff = ccad::diffProjects(baseProject(), removed_track);
   require(hasEntry(removed_track_diff, "removed", "track", "T1"), "removed track entry");
+
+  ccad::Project added_keepout = baseProject();
+  added_keepout.board->keepouts.push_back(ccad::Keepout{
+      .id = "K2",
+      .kind = "routing",
+      .area = ccad::Rect{
+          .origin = ccad::Point{.x = ccad::millimeters(24), .y = ccad::millimeters(10)},
+          .size = ccad::Size{.width = ccad::millimeters(3),
+                              .height = ccad::millimeters(2)}}});
+  const ccad::ProjectDiff added_keepout_diff = ccad::diffProjects(baseProject(), added_keepout);
+  require(hasEntry(added_keepout_diff, "added", "keepout", "K2"), "added keepout entry");
+
+  ccad::Project changed_keepout = baseProject();
+  changed_keepout.board->keepouts.at(0).area.size.width = ccad::millimeters(4);
+  const ccad::ProjectDiff changed_keepout_diff =
+      ccad::diffProjects(baseProject(), changed_keepout);
+  require(hasEntry(changed_keepout_diff, "changed", "keepout", "K1"),
+          "changed keepout entry");
+
+  ccad::Project removed_keepout = baseProject();
+  removed_keepout.board->keepouts.clear();
+  const ccad::ProjectDiff removed_keepout_diff =
+      ccad::diffProjects(baseProject(), removed_keepout);
+  require(hasEntry(removed_keepout_diff, "removed", "keepout", "K1"),
+          "removed keepout entry");
+
+  ccad::Project added_region = baseProject();
+  added_region.board->placement_regions.push_back(ccad::PlacementRegion{
+      .id = "PR2",
+      .kind = "module",
+      .area = ccad::Rect{
+          .origin = ccad::Point{.x = ccad::millimeters(18), .y = ccad::millimeters(6)},
+          .size = ccad::Size{.width = ccad::millimeters(5),
+                              .height = ccad::millimeters(4)}}});
+  const ccad::ProjectDiff added_region_diff = ccad::diffProjects(baseProject(), added_region);
+  require(hasEntry(added_region_diff, "added", "placement_region", "PR2"),
+          "added placement region entry");
+
+  ccad::Project changed_region = baseProject();
+  changed_region.board->placement_regions.at(0).kind = "module";
+  const ccad::ProjectDiff changed_region_diff =
+      ccad::diffProjects(baseProject(), changed_region);
+  require(hasEntry(changed_region_diff, "changed", "placement_region", "PR1"),
+          "changed placement region entry");
+
+  ccad::Project removed_region = baseProject();
+  removed_region.board->placement_regions.clear();
+  const ccad::ProjectDiff removed_region_diff =
+      ccad::diffProjects(baseProject(), removed_region);
+  require(hasEntry(removed_region_diff, "removed", "placement_region", "PR1"),
+          "removed placement region entry");
 }
 

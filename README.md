@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 91 merged and verified on `main`; Sprint 92 planning.
+Progress counter: Phase 2 / 6, Sprint 92 in progress on `sprint-92-diff-board-regions`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -61,6 +61,7 @@ Progress counter: Phase 2 / 6, Sprint 91 merged and verified on `main`; Sprint 9
 - Project diffs include board outline additions, removals, and changes.
 - Project diffs include board pad additions, removals, and changes.
 - Project diffs include board via and track additions, removals, and changes.
+- Project diffs include board keepout and placement-region additions, removals, and changes.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
 
