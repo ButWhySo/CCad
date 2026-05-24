@@ -414,6 +414,7 @@ bool endpointTouchesSameNetPrimitive(const Board& board, const TrackSegment& sou
 
   for (const Pad& pad : board.pads) {
     if (pad.net_id == source_track.net_id &&
+        shareCopperLayer(board, pad.layer_id, source_track.layer_id) &&
         pointInPolygon(endpoint, padCorners(pad))) {
       return true;
     }

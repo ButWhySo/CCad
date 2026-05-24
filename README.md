@@ -16,7 +16,7 @@ Progress counter: Phase 2 / 6, Sprint 71 merged and verified on `main`; Sprint 7
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
 - Physical board outline, layers, rectangular placement regions, rectangular keepouts, pads, vias, and track segments in project JSON.
-- Physical DRC for geometry, connectivity metadata, rectangular keepout occupancy, track crossing violations, board-level copper clearance, minimum track width, minimum via annular ring, stable physical object IDs, and logical pad/net parity.
+- Physical DRC for geometry, connectivity metadata, layer-aware copper connectivity and clearance, rectangular keepout occupancy, track crossing violations, board-level copper clearance, minimum track width, minimum via annular ring, stable physical object IDs, and logical pad/net parity.
 - Physical DRC track-endpoint connectivity now accepts geometric copper contact with same-net pads and vias, not only exact center-point matches.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
 - Native GUI selection inspector for stable object type and ID.
@@ -301,6 +301,7 @@ What it does:
 - Emits JSON diagnostics.
 - Exits `0` when no DRC errors exist, `1` when DRC errors exist, `2` for usage/file/parse failures.
 - Reports `COPPER_CLEARANCE` when different-net copper is closer than the current fixed default clearance of `0.20 mm`.
+- Treats layer-bound pad/track copper as colliding only when they share a copper layer; vias still interact with copper across layers.
 
 When to run:
 

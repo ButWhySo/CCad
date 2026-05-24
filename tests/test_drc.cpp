@@ -298,6 +298,16 @@ int main() {
   require(!hasDiagnostic(ccad::runDrc(pad_contact_track), "UNCONNECTED_TRACK_ENDPOINT", "warning"),
           "drc accepts same-net track endpoint touching pad copper area");
 
+  ccad::Project cross_layer_pad_contact_track = validBoardProject();
+  cross_layer_pad_contact_track.board->tracks.at(0).layer_id = "B.Cu";
+  cross_layer_pad_contact_track.board->tracks.at(0).start =
+      ccad::Point{.x = ccad::millimeters(4.3), .y = ccad::millimeters(6)};
+  cross_layer_pad_contact_track.board->tracks.at(0).end =
+      ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)};
+  require(hasDiagnostic(ccad::runDrc(cross_layer_pad_contact_track),
+                        "UNCONNECTED_TRACK_ENDPOINT", "warning"),
+          "drc keeps track-pad connectivity layer-aware without via");
+
   ccad::Project segment_contact_track = validBoardProject();
   segment_contact_track.board->tracks.push_back(ccad::TrackSegment{
       .id = "T_STUB",
@@ -555,6 +565,12 @@ int main() {
   require(hasDiagnosticForObject(ccad::runDrc(pad_clearance), "COPPER_CLEARANCE", "P2"),
           "drc reports different-net pads closer than default clearance");
 
+  ccad::Project cross_layer_pad_clearance = pad_clearance;
+  cross_layer_pad_clearance.board->pads.back().layer_id = "B.Cu";
+  require(!hasDiagnosticForObject(ccad::runDrc(cross_layer_pad_clearance), "COPPER_CLEARANCE",
+                                  "P2"),
+          "drc allows different-net pads to overlap on different copper layers");
+
   ccad::Project relaxed_clearance = pad_clearance;
   relaxed_clearance.board->design_rules.copper_clearance = ccad::millimeters(0.04);
   require(!hasDiagnosticForObject(ccad::runDrc(relaxed_clearance), "COPPER_CLEARANCE", "P2"),
@@ -570,4 +586,21 @@ int main() {
       .width = ccad::millimeters(0.25)});
   require(hasDiagnosticForObject(ccad::runDrc(crossing_tracks), "COPPER_CLEARANCE", "T2"),
           "drc reports crossing different-net tracks on same layer");
+
+  ccad::Project cross_layer_crossing_tracks = crossing_tracks;
+  cross_layer_crossing_tracks.board->tracks.back().layer_id = "B.Cu";
+  require(!hasDiagnosticForObject(ccad::runDrc(cross_layer_crossing_tracks), "COPPER_CLEARANCE",
+                                  "T2"),
+          "drc allows different-net tracks to cross on different copper layers");
+
+  ccad::Project via_cross_layer_clearance = cross_layer_pad_clearance;
+  via_cross_layer_clearance.board->vias.push_back(ccad::Via{
+      .id = "V2",
+      .net_id = "N2",
+      .position = ccad::Point{.x = ccad::millimeters(5.1), .y = ccad::millimeters(6)},
+      .diameter = ccad::millimeters(0.8),
+      .drill = ccad::millimeters(0.4)});
+  require(hasDiagnosticForObject(ccad::runDrc(via_cross_layer_clearance), "COPPER_CLEARANCE",
+                                 "V2"),
+          "drc still checks via clearance against layer-bound copper");
 }
