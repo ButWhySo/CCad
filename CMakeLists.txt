@@ -46,6 +46,7 @@ add_executable(ccad
   src/ccad_cli/lib_commands.cpp
   src/ccad_cli/main.cpp
   src/ccad_cli/pcb_commands.cpp
+  src/ccad_cli/pcb_object_queries.cpp
   src/ccad_cli/project_commands.cpp
 )
 target_link_libraries(ccad PRIVATE ccad_core)
