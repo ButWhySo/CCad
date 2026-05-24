@@ -95,10 +95,21 @@ int main() {
   require(hasCode(ccad::runDrc(via_drill_too_large), "VIA_DRILL_TOO_LARGE"),
           "drc reports via drill too large");
 
+  ccad::Project via_small_ring = validBoardProject();
+  via_small_ring.board->vias.at(0).diameter = ccad::millimeters(0.45);
+  via_small_ring.board->vias.at(0).drill = ccad::millimeters(0.4);
+  require(hasCode(ccad::runDrc(via_small_ring), "VIA_ANNULAR_RING_TOO_SMALL"),
+          "drc reports via annular ring below default minimum");
+
   ccad::Project zero_length_track = validBoardProject();
   zero_length_track.board->tracks.at(0).end = zero_length_track.board->tracks.at(0).start;
   require(hasCode(ccad::runDrc(zero_length_track), "ZERO_LENGTH_TRACK"),
           "drc reports zero length track");
+
+  ccad::Project narrow_track = validBoardProject();
+  narrow_track.board->tracks.at(0).width = ccad::millimeters(0.10);
+  require(hasCode(ccad::runDrc(narrow_track), "TRACK_TOO_NARROW"),
+          "drc reports track width below default minimum");
 
   ccad::Project duplicate_pad = validBoardProject();
   duplicate_pad.board->pads.push_back(duplicate_pad.board->pads.at(0));

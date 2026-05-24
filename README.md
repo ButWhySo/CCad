@@ -16,7 +16,7 @@ Progress counter: Phase 2 / 6, Sprint 63 merged and verified on `main`; Sprint 6
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
 - Physical board outline, layers, rectangular keepouts, pads, vias, and track segments in project JSON.
-- Physical DRC for geometry, connectivity metadata, rectangular keepout occupancy, track crossing violations, and fixed default copper clearance.
+- Physical DRC for geometry, connectivity metadata, rectangular keepout occupancy, track crossing violations, fixed default copper clearance, default minimum track width, and default minimum via annular ring.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
 - Native GUI selection inspector for stable object type and ID.
 - Native GUI layer/object browser and shape-level selection highlight.
