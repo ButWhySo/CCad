@@ -686,6 +686,24 @@ void checkBoardOutline(const Board& board, std::vector<Diagnostic>& diagnostics)
   }
 }
 
+void checkDesignRules(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  if (!isPositive(board.design_rules.copper_clearance)) {
+    diagnostics.push_back(makeDiagnostic("INVALID_COPPER_CLEARANCE",
+                                         "Copper clearance rule must be positive",
+                                         "board.design_rules"));
+  }
+  if (!isPositive(board.design_rules.min_track_width)) {
+    diagnostics.push_back(makeDiagnostic("INVALID_MIN_TRACK_WIDTH",
+                                         "Minimum track width rule must be positive",
+                                         "board.design_rules"));
+  }
+  if (!isPositive(board.design_rules.min_via_annular_ring)) {
+    diagnostics.push_back(makeDiagnostic("INVALID_MIN_VIA_ANNULAR_RING",
+                                         "Minimum via annular ring rule must be positive",
+                                         "board.design_rules"));
+  }
+}
+
 void checkLayers(const Board& board, std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
   for (const Layer& layer : board.layers) {
@@ -932,6 +950,7 @@ std::vector<Diagnostic> runDrc(const Project& project) {
   checkProjectNets(project, diagnostics);
   const Board& board = *project.board;
   checkBoardOutline(board, diagnostics);
+  checkDesignRules(board, diagnostics);
   checkLayers(board, diagnostics);
   checkPads(project, board, diagnostics);
   checkVias(project, board, diagnostics);

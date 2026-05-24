@@ -91,6 +91,21 @@ int main() {
   require(hasCode(ccad::runDrc(invalid_board_outline), "INVALID_BOARD_OUTLINE"),
           "drc reports invalid board outline size");
 
+  ccad::Project invalid_copper_clearance = validBoardProject();
+  invalid_copper_clearance.board->design_rules.copper_clearance = ccad::nanometers(0);
+  require(hasCode(ccad::runDrc(invalid_copper_clearance), "INVALID_COPPER_CLEARANCE"),
+          "drc reports non-positive copper clearance rule");
+
+  ccad::Project invalid_min_track_width = validBoardProject();
+  invalid_min_track_width.board->design_rules.min_track_width = ccad::nanometers(0);
+  require(hasCode(ccad::runDrc(invalid_min_track_width), "INVALID_MIN_TRACK_WIDTH"),
+          "drc reports non-positive minimum track width rule");
+
+  ccad::Project invalid_min_via_annular_ring = validBoardProject();
+  invalid_min_via_annular_ring.board->design_rules.min_via_annular_ring = ccad::nanometers(0);
+  require(hasCode(ccad::runDrc(invalid_min_via_annular_ring), "INVALID_MIN_VIA_ANNULAR_RING"),
+          "drc reports non-positive minimum via annular ring rule");
+
   ccad::Project pad_outside = validBoardProject();
   pad_outside.board->pads.at(0).position.x = ccad::millimeters(99);
   require(hasCode(ccad::runDrc(pad_outside), "PAD_OUTSIDE_BOARD"),
