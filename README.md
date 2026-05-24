@@ -12,7 +12,7 @@ Progress counter: Phase 2 / 6, Sprint 68 merged and verified on `main`; Sprint 6
 - Deterministic JSON load/dump.
 - Logical ERC diagnostics.
 - CLI: `ccad help --format json`, `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
-- CLI PCB authoring: `ccad pcb add-layer`, `ccad pcb add-pad`, `ccad pcb add-via`, `ccad pcb add-track`, `ccad pcb add-keepout`, and `ccad pcb add-placement-region`.
+- CLI PCB authoring: `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb add-pad`, `ccad pcb add-via`, `ccad pcb add-track`, `ccad pcb add-keepout`, and `ccad pcb add-placement-region`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
 - Physical board outline, layers, rectangular placement regions, rectangular keepouts, pads, vias, and track segments in project JSON.
@@ -357,6 +357,7 @@ Current limitation:
 Add PCB primitives through the CLI:
 
 ```powershell
+.\build-qt\ccad.exe pcb set-outline --file .\build-qt\canvas-demo.ccad.json --x-mm 0 --y-mm 0 --width-mm 44 --height-mm 30
 .\build-qt\ccad.exe pcb set-rules --file .\build-qt\canvas-demo.ccad.json --copper-clearance-mm 0.20 --min-track-width-mm 0.15 --min-via-annular-ring-mm 0.10
 .\build-qt\ccad.exe pcb add-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --name "Inner 1 copper" --kind copper --visible false
 .\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
@@ -366,6 +367,7 @@ Add PCB primitives through the CLI:
 
 What these do:
 
+- `pcb set-outline` replaces the rectangular board outline while rejecting outlines that would leave existing pads, vias, tracks, keepouts, or placement regions outside the board.
 - `pcb set-rules` updates board-level DRC defaults for copper clearance, minimum track width, and minimum via annular ring.
 - `pcb add-layer` appends a board layer with stable ID, display name, kind, and optional visibility.
 - `pcb add-pad` appends a rectangular pad to an existing board project.
@@ -382,6 +384,7 @@ When to run:
 Current command guards:
 
 - The project must already have a board.
+- Outline width and height must be positive.
 - Rule dimensions must be positive.
 - Primitive IDs must be unique within their primitive type.
 - Layer IDs must be unique.
@@ -502,6 +505,7 @@ cmake -S . -B build-qt `
 cmake --build build-qt --clean-first
 ctest --test-dir build-qt --output-on-failure
 .\build-qt\ccad.exe init --name canvas-demo --width-mm 42 --height-mm 28 --out .\build-qt\canvas-demo.ccad.json
+.\build-qt\ccad.exe pcb set-outline --file .\build-qt\canvas-demo.ccad.json --x-mm 0 --y-mm 0 --width-mm 44 --height-mm 30
 .\build-qt\ccad.exe pcb set-rules --file .\build-qt\canvas-demo.ccad.json --copper-clearance-mm 0.20 --min-track-width-mm 0.15 --min-via-annular-ring-mm 0.10
 .\build-qt\ccad.exe pcb add-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --name "Inner 1 copper" --kind copper --visible false
 .\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
@@ -525,7 +529,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_sprint_demo.ps1 -Name spr
 What it does:
 
 - Creates `artifacts/demos/sprint42-gui-canvas-mvp-review.ccad.json`.
-- Sets board-level DRC rules, adds an extra board layer, a pad, via, two crossing tracks, a rectangular placement region, logical demo nets, and a rectangular keepout.
+- Sets the board outline and board-level DRC rules, adds an extra board layer, a pad, via, two crossing tracks, a rectangular placement region, logical demo nets, and a rectangular keepout.
 - Writes inspect, validate, and DRC JSON reports.
 - Writes a sample KiCad `.kicad_mod` file and imports it to CCad footprint JSON.
 - Places the imported footprint onto the demo board.
