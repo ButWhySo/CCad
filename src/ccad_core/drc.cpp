@@ -468,6 +468,9 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
     if (!hasLayer(board, pad.layer_id)) {
       diagnostics.push_back(
           makeDiagnostic("UNKNOWN_PAD_LAYER", "Pad references an unknown layer", pad.id));
+    } else if (!isCopperLayer(board, pad.layer_id)) {
+      diagnostics.push_back(
+          makeDiagnostic("PAD_NON_COPPER_LAYER", "Pad must be on a copper layer", pad.id));
     }
     if (!containsPoint(board, pad.position)) {
       diagnostics.push_back(
@@ -584,6 +587,9 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
     if (!hasLayer(board, track.layer_id)) {
       diagnostics.push_back(
           makeDiagnostic("UNKNOWN_TRACK_LAYER", "Track references an unknown layer", track.id));
+    } else if (!isCopperLayer(board, track.layer_id)) {
+      diagnostics.push_back(makeDiagnostic("TRACK_NON_COPPER_LAYER",
+                                           "Track must be on a copper layer", track.id));
     }
     if (track.net_id.empty()) {
       diagnostics.push_back(

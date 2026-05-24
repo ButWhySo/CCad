@@ -183,7 +183,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::string layer_id = requireOption(options, "--layer");
       requireUniquePadId(board, id);
       requireUniquePhysicalObjectId(board, id);
-      requireLayer(board, layer_id);
+      requireCopperLayer(board, layer_id);
       const ccad::Point position{
           .x = requirePositiveMillimeters(options, "--x-mm"),
           .y = requirePositiveMillimeters(options, "--y-mm"),
@@ -255,7 +255,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::string layer_id = requireOption(options, "--layer");
       requireUniqueTrackId(board, id);
       requireUniquePhysicalObjectId(board, id);
-      requireLayer(board, layer_id);
+      requireCopperLayer(board, layer_id);
       const ccad::Point start{
           .x = requirePositiveMillimeters(options, "--start-x-mm"),
           .y = requirePositiveMillimeters(options, "--start-y-mm"),
@@ -356,7 +356,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       }
       const std::string component_id = requireOption(options, "--component");
       const std::string layer_id = requireOption(options, "--layer");
-      requireLayer(board, layer_id);
+      requireCopperLayer(board, layer_id);
       const ccad::Point origin{
           .x = requirePositiveMillimeters(options, "--at-x-mm"),
           .y = requirePositiveMillimeters(options, "--at-y-mm"),
