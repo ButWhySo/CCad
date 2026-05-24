@@ -259,6 +259,40 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "set-pad") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--component", "--pin", "--net", "--layer",
+                                 "--rotation-deg"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const std::string layer_id = requireOption(options, "--layer");
+      const double rotation_degrees = requireDoubleOption(options, "--rotation-deg");
+      requireCopperLayer(board, layer_id);
+      bool updated = false;
+      for (ccad::Pad& pad : board.pads) {
+        if (pad.id == id) {
+          requireRotatedRectInsideBoard(board, pad.position, pad.size, rotation_degrees, "pad");
+          pad.component_id = requireOption(options, "--component");
+          pad.pin_name = requireOption(options, "--pin");
+          pad.net_id = requireOption(options, "--net");
+          pad.layer_id = layer_id;
+          pad.rotation_degrees = rotation_degrees;
+          updated = true;
+          break;
+        }
+      }
+      if (!updated) {
+        throw std::runtime_error("unknown pad: " + id);
+      }
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "add-via") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--net", "--x-mm", "--y-mm", "--diameter-mm",

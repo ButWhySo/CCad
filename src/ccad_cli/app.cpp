@@ -82,6 +82,10 @@ const std::vector<CommandHelp>& commandHelp() {
                   .usage = "ccad pcb add-pad --file <path> --id <id> --component <id> "
                            "--pin <name> --net <id> --layer <id> --x-mm <n> --y-mm <n> "
                            "--width-mm <n> --height-mm <n>"},
+      CommandHelp{.name = "pcb set-pad",
+                  .summary = "Update one existing pad metadata and rotation",
+                  .usage = "ccad pcb set-pad --file <path> --id <id> --component <id> "
+                           "--pin <name> --net <id> --layer <id> --rotation-deg <n>"},
       CommandHelp{.name = "pcb add-via",
                   .summary = "Append one via to a board project",
                   .usage = "ccad pcb add-via --file <path> --id <id> --net <id> --x-mm <n> "

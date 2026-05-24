@@ -6,13 +6,13 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 100 merged and verified on `main`; Sprint 101 planning.
+Progress counter: Phase 2 / 6, Sprint 101 in progress on `sprint-101-cli-set-pad`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
 - Logical ERC diagnostics.
 - CLI: `ccad help --format json`, `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
-- CLI PCB authoring: `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
+- CLI PCB authoring: `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
 - Physical board outline, layers, rectangular placement regions, rectangular keepouts, pads, vias, and track segments in project JSON.
@@ -70,6 +70,7 @@ Progress counter: Phase 2 / 6, Sprint 100 merged and verified on `main`; Sprint 
 - CLI PCB authoring can resize pads, keepouts, and placement regions by stable ID.
 - CLI PCB authoring can update existing track endpoints and width by stable ID.
 - CLI PCB authoring can update existing via diameter and drill by stable ID.
+- CLI PCB authoring can update existing pad metadata, layer, and rotation by stable ID.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
 
@@ -398,6 +399,7 @@ Add PCB primitives through the CLI:
 .\build-qt\ccad.exe pcb set-layer-visibility --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --visible true
 .\build-qt\ccad.exe pcb remove-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu
 .\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
+.\build-qt\ccad.exe pcb set-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --rotation-deg 90
 .\build-qt\ccad.exe pcb add-via --file .\build-qt\canvas-demo.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
 .\build-qt\ccad.exe pcb set-via --file .\build-qt\canvas-demo.ccad.json --id V1 --diameter-mm 1.0 --drill-mm 0.5
 .\build-qt\ccad.exe pcb add-track --file .\build-qt\canvas-demo.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
@@ -415,6 +417,7 @@ What these do:
 - `pcb remove-layer` removes an unused board layer by stable ID.
 - `pcb set-layer-visibility` updates an existing layer's visibility flag for review surfaces.
 - `pcb add-pad` appends a rectangular pad to an existing board project.
+- `pcb set-pad` updates an existing pad's component, pin, net, layer, and rotation.
 - `pcb add-via` appends a plated via with diameter and drill size.
 - `pcb set-via` updates an existing via diameter and drill size.
 - `pcb add-track` appends a straight copper track segment.
@@ -441,6 +444,7 @@ Current command guards:
 - Dimensions must be positive.
 - Referenced layers must exist for pads and tracks.
 - Pad, track, and placed-footprint layers must be copper layers.
+- Updated pad layers must be copper layers, and updated pad rotation must remain inside the board outline.
 - Positions and track endpoints must be inside the board outline.
 - Updated track endpoints and copper width margin must remain inside the board outline.
 - Via drill must be less than or equal to via diameter.

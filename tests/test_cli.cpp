@@ -77,6 +77,8 @@ int main() {
           "help json describes track editing");
   require(help_json.find("\"name\": \"pcb add-keepout\"") != std::string::npos,
           "help json describes keepout authoring");
+  require(help_json.find("\"name\": \"pcb set-pad\"") != std::string::npos,
+          "help json describes pad editing");
   require(help_json.find("\"name\": \"pcb set-via\"") != std::string::npos,
           "help json describes via editing");
   require(help_json.find("\"name\": \"pcb add-placement-region\"") != std::string::npos,
@@ -484,6 +486,50 @@ int main() {
   require(run(quote(CCAD_BINARY) + " pcb set-via --file " + quote(set_via_board_path) +
               " --id MISSING --diameter-mm 1.0 --drill-mm 0.5") != 0,
           "pcb set-via rejects missing via");
+
+  const std::filesystem::path set_pad_board_path = temp / "set-pad-board.ccad.json";
+  const std::string set_pad_board_init_command =
+      quote(CCAD_BINARY) +
+      " init --name set-pad-board --width-mm 42 --height-mm 28 --out " +
+      quote(set_pad_board_path);
+  require(run(set_pad_board_init_command) == 0, "set pad board init exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb add-layer --file " + quote(set_pad_board_path) +
+              " --id F.SilkS --name FrontSilkscreen --kind silkscreen") == 0,
+          "set pad fixture add silkscreen layer exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb add-pad --file " + quote(set_pad_board_path) +
+              " --id SPD1 --component U1 --pin 1 --net N1 --layer F.Cu"
+              " --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0") == 0,
+          "set pad fixture add pad exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb set-pad --file " + quote(set_pad_board_path) +
+              " --id SPD1 --component U2 --pin 2 --net N2 --layer B.Cu"
+              " --rotation-deg 90") == 0,
+          "pcb set-pad updates pad metadata");
+  const std::string set_pad_json = readFile(set_pad_board_path);
+  require(set_pad_json.find("\"component_id\": \"U2\"") != std::string::npos,
+          "pcb set-pad writes component");
+  require(set_pad_json.find("\"pin_name\": \"2\"") != std::string::npos,
+          "pcb set-pad writes pin");
+  require(set_pad_json.find("\"net_id\": \"N2\"") != std::string::npos,
+          "pcb set-pad writes net");
+  require(set_pad_json.find("\"layer_id\": \"B.Cu\"") != std::string::npos,
+          "pcb set-pad writes layer");
+  require(set_pad_json.find("\"rotation_degrees\": 90") != std::string::npos,
+          "pcb set-pad writes rotation");
+  require(run(quote(CCAD_BINARY) + " pcb set-pad --file " + quote(set_pad_board_path) +
+              " --id SPD1 --component U2 --pin 2 --net N2 --layer F.SilkS"
+              " --rotation-deg 90") != 0,
+          "pcb set-pad rejects non-copper layer");
+  require(run(quote(CCAD_BINARY) + " pcb move-object --file " + quote(set_pad_board_path) +
+              " --id SPD1 --x-mm 0.6 --y-mm 6") == 0,
+          "set pad fixture moves pad near edge");
+  require(run(quote(CCAD_BINARY) + " pcb set-pad --file " + quote(set_pad_board_path) +
+              " --id SPD1 --component U2 --pin 2 --net N2 --layer F.Cu"
+              " --rotation-deg 0") != 0,
+          "pcb set-pad rejects rotated pad outside board");
+  require(run(quote(CCAD_BINARY) + " pcb set-pad --file " + quote(set_pad_board_path) +
+              " --id MISSING --component U2 --pin 2 --net N2 --layer F.Cu"
+              " --rotation-deg 0") != 0,
+          "pcb set-pad rejects missing pad");
 
   const std::string bad_layer_command =
       quote(CCAD_BINARY) + " pcb add-track --file " + quote(board_project_path) +
