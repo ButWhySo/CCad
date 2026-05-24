@@ -537,7 +537,9 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
       diagnostics.push_back(
           makeDiagnostic("UNKNOWN_VIA_NET", "Via references an unknown net", via.id));
     }
-    if (!isPositive(via.diameter) || !isPositive(via.drill)) {
+    const bool via_size_positive = isPositive(via.diameter) && isPositive(via.drill);
+    const bool via_drill_fits = via.drill.nanometers <= via.diameter.nanometers;
+    if (!via_size_positive) {
       diagnostics.push_back(makeDiagnostic("INVALID_VIA_SIZE",
                                            "Via diameter and drill must be positive", via.id));
     } else {
@@ -552,13 +554,14 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
             via.id));
       }
     }
-    if (via.drill.nanometers > via.diameter.nanometers) {
+    if (!via_drill_fits) {
       diagnostics.push_back(makeDiagnostic("VIA_DRILL_TOO_LARGE",
                                            "Via drill must be less than or equal to diameter",
                                            via.id));
     }
     const std::int64_t annular_ring = (via.diameter.nanometers - via.drill.nanometers) / 2;
-    if (annular_ring < board.design_rules.min_via_annular_ring.nanometers) {
+    if (via_size_positive && via_drill_fits &&
+        annular_ring < board.design_rules.min_via_annular_ring.nanometers) {
       diagnostics.push_back(
           makeDiagnostic("VIA_ANNULAR_RING_TOO_SMALL",
                          "Via annular ring is below configured minimum " +
