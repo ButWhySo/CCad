@@ -83,6 +83,33 @@ void requireBoardObjectsInsideOutline(const ccad::Board& board) {
   }
 }
 
+void requireUniqueRouteRequestId(const ccad::Board& board, const std::string& id) {
+  for (const ccad::RouteRequest& route_request : board.route_requests) {
+    if (route_request.id == id) {
+      throw std::runtime_error("duplicate route request id: " + id);
+    }
+  }
+}
+
+void requireBoardObjectId(const ccad::Board& board, const std::string& id) {
+  for (const ccad::Pad& pad : board.pads) {
+    if (pad.id == id) {
+      return;
+    }
+  }
+  for (const ccad::Via& via : board.vias) {
+    if (via.id == id) {
+      return;
+    }
+  }
+  for (const ccad::TrackSegment& track : board.tracks) {
+    if (track.id == id) {
+      return;
+    }
+  }
+  throw std::runtime_error("unknown board object id: " + id);
+}
+
 template <typename T>
 bool eraseById(std::vector<T>& items, const std::string& id) {
   for (auto it = items.begin(); it != items.end(); ++it) {
@@ -508,6 +535,38 @@ int pcbCommand(const std::vector<std::string>& args) {
           .start = start,
           .end = end,
           .width = width,
+      });
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "add-route-request") {
+      const std::map<std::string, std::string> options = parseOptions(
+          args, 1,
+          {"--file", "--id", "--net", "--from", "--to", "--preferred-layer", "--policy",
+           "--width-mm"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const std::string from_object_id = requireOption(options, "--from");
+      const std::string to_object_id = requireOption(options, "--to");
+      const std::string preferred_layer_id = requireOption(options, "--preferred-layer");
+      requireUniqueRouteRequestId(board, id);
+      requireBoardObjectId(board, from_object_id);
+      requireBoardObjectId(board, to_object_id);
+      requireCopperLayer(board, preferred_layer_id);
+      board.route_requests.push_back(ccad::RouteRequest{
+          .id = id,
+          .net_id = requireOption(options, "--net"),
+          .from_object_id = from_object_id,
+          .to_object_id = to_object_id,
+          .preferred_layer_id = preferred_layer_id,
+          .policy = requireOption(options, "--policy"),
+          .width = requirePositiveMillimeters(options, "--width-mm"),
       });
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';

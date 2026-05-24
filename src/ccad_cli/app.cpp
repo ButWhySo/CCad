@@ -112,6 +112,11 @@ const std::vector<CommandHelp>& commandHelp() {
                   .usage = "ccad pcb add-track --file <path> --id <id> --net <id> --layer <id> "
                            "--start-x-mm <n> --start-y-mm <n> --end-x-mm <n> "
                            "--end-y-mm <n> --width-mm <n>"},
+      CommandHelp{.name = "pcb add-route-request",
+                  .summary = "Append one route-assistance request to a board project",
+                  .usage = "ccad pcb add-route-request --file <path> --id <id> --net <id> "
+                           "--from <object-id> --to <object-id> --preferred-layer <id> "
+                           "--policy <name> --width-mm <n>"},
       CommandHelp{.name = "pcb set-track",
                   .summary = "Update one existing track segment geometry",
                   .usage = "ccad pcb set-track --file <path> --id <id> --start-x-mm <n> "
