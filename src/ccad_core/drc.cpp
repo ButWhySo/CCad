@@ -674,6 +674,14 @@ void checkProjectNets(const Project& project, std::vector<Diagnostic>& diagnosti
   }
 }
 
+void checkBoardOutline(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  if (!isPositive(board.outline.size.width) || !isPositive(board.outline.size.height)) {
+    diagnostics.push_back(makeDiagnostic("INVALID_BOARD_OUTLINE",
+                                         "Board outline width and height must be positive",
+                                         "board"));
+  }
+}
+
 void checkLayers(const Board& board, std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
   for (const Layer& layer : board.layers) {
@@ -844,6 +852,7 @@ std::vector<Diagnostic> runDrc(const Project& project) {
 
   checkProjectNets(project, diagnostics);
   const Board& board = *project.board;
+  checkBoardOutline(board, diagnostics);
   checkLayers(board, diagnostics);
   checkPads(project, board, diagnostics);
   checkVias(project, board, diagnostics);

@@ -85,6 +85,11 @@ bool hasDiagnosticForObject(const std::vector<ccad::Diagnostic>& diagnostics,
 int main() {
   require(ccad::runDrc(validBoardProject()).empty(), "valid board has no drc diagnostics");
 
+  ccad::Project invalid_board_outline = validBoardProject();
+  invalid_board_outline.board->outline.size.width = ccad::nanometers(0);
+  require(hasCode(ccad::runDrc(invalid_board_outline), "INVALID_BOARD_OUTLINE"),
+          "drc reports invalid board outline size");
+
   ccad::Project pad_outside = validBoardProject();
   pad_outside.board->pads.at(0).position.x = ccad::millimeters(99);
   require(hasCode(ccad::runDrc(pad_outside), "PAD_OUTSIDE_BOARD"),
