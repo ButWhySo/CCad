@@ -587,6 +587,20 @@ void checkProjectNets(const Project& project, std::vector<Diagnostic>& diagnosti
       diagnostics.push_back(
           makeDiagnostic("DUPLICATE_NET_ID", "Net ID appears more than once", net.id));
     }
+
+    std::set<std::pair<std::string, std::string>> members;
+    for (const NetMember& member : net.members) {
+      if (member.component_id.empty() || member.pin_name.empty()) {
+        diagnostics.push_back(makeDiagnostic(
+            "INVALID_NET_MEMBER", "Net member must include component_id and pin_name", net.id));
+        continue;
+      }
+      const std::pair<std::string, std::string> member_key{member.component_id, member.pin_name};
+      if (!members.insert(member_key).second) {
+        diagnostics.push_back(makeDiagnostic(
+            "DUPLICATE_NET_MEMBER", "Net contains duplicate member component/pin", net.id));
+      }
+    }
   }
 }
 

@@ -122,6 +122,18 @@ int main() {
   require(hasCode(ccad::runDrc(empty_net_id), "INVALID_NET_ID"),
           "drc reports empty net id");
 
+  ccad::Project invalid_net_member = validBoardProject();
+  invalid_net_member.nets.at(0).members.push_back(
+      ccad::NetMember{.component_id = "", .pin_name = "2"});
+  require(hasCode(ccad::runDrc(invalid_net_member), "INVALID_NET_MEMBER"),
+          "drc reports invalid net member fields");
+
+  ccad::Project duplicate_net_member = validBoardProject();
+  duplicate_net_member.nets.at(0).members.push_back(
+      duplicate_net_member.nets.at(0).members.front());
+  require(hasCode(ccad::runDrc(duplicate_net_member), "DUPLICATE_NET_MEMBER"),
+          "drc reports duplicate net member mapping");
+
   ccad::Project via_drill_too_large = validBoardProject();
   via_drill_too_large.board->vias.at(0).drill = ccad::millimeters(1.0);
   require(hasCode(ccad::runDrc(via_drill_too_large), "VIA_DRILL_TOO_LARGE"),
