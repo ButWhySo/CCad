@@ -622,6 +622,10 @@ int main() {
   require(run(catalog_validate_command) == 0, "lib catalog-validate clean catalog exits zero");
   require(readFile(catalog_validate_path).find("\"diagnostics\": [") != std::string::npos,
           "lib catalog-validate writes diagnostics array");
+  require(readFile(catalog_validate_path).find("\"summary\": {") != std::string::npos,
+          "lib catalog-validate writes diagnostic summary");
+  require(readFile(catalog_validate_path).find("\"total\": 0") != std::string::npos,
+          "lib catalog-validate clean summary reports zero diagnostics");
 
   const std::filesystem::path bad_catalog_path = temp / "bad-catalog.ccad-library.json";
   std::ofstream bad_catalog(bad_catalog_path);
@@ -674,6 +678,8 @@ int main() {
   require(bad_catalog_validate_output.find("\"code\": \"MISSING_ITEM_SHA256\"") !=
               std::string::npos,
           "lib catalog-validate reports missing checksum");
+  require(bad_catalog_validate_output.find("\"errors\": ") != std::string::npos,
+          "lib catalog-validate summary reports error count");
 
   std::filesystem::create_directories(temp / "native" / "footprints");
   const std::filesystem::path native_artifact_path =

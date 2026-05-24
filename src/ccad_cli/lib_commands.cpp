@@ -103,7 +103,22 @@ void printMissingCatalogItem(const std::string& id) {
 }
 
 void printCatalogDiagnostics(const std::vector<ccad::CatalogDiagnostic>& diagnostics) {
+  std::size_t error_count = 0;
+  std::size_t warning_count = 0;
+  for (const ccad::CatalogDiagnostic& diagnostic : diagnostics) {
+    if (diagnostic.severity == "error") {
+      ++error_count;
+    } else if (diagnostic.severity == "warning") {
+      ++warning_count;
+    }
+  }
+
   std::cout << "{\n"
+            << "  \"summary\": {\n"
+            << "    \"total\": " << diagnostics.size() << ",\n"
+            << "    \"errors\": " << error_count << ",\n"
+            << "    \"warnings\": " << warning_count << "\n"
+            << "  },\n"
             << "  \"diagnostics\": [\n";
   for (std::size_t i = 0; i < diagnostics.size(); ++i) {
     const ccad::CatalogDiagnostic& diagnostic = diagnostics.at(i);
