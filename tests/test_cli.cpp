@@ -73,6 +73,8 @@ int main() {
           "help json describes drc rule authoring");
   require(help_json.find("\"name\": \"pcb set-outline\"") != std::string::npos,
           "help json describes outline authoring");
+  require(help_json.find("\"name\": \"pcb set-track\"") != std::string::npos,
+          "help json describes track editing");
   require(help_json.find("\"name\": \"pcb add-keepout\"") != std::string::npos,
           "help json describes keepout authoring");
   require(help_json.find("\"name\": \"pcb add-placement-region\"") != std::string::npos,
@@ -419,6 +421,36 @@ int main() {
   require(run(quote(CCAD_BINARY) + " pcb resize-object --file " + quote(resize_board_path) +
               " --id MISSING --width-mm 2 --height-mm 2") != 0,
           "pcb resize-object rejects missing object");
+
+  const std::filesystem::path set_track_board_path = temp / "set-track-board.ccad.json";
+  const std::string set_track_board_init_command =
+      quote(CCAD_BINARY) +
+      " init --name set-track-board --width-mm 42 --height-mm 28 --out " +
+      quote(set_track_board_path);
+  require(run(set_track_board_init_command) == 0, "set track board init exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb add-track --file " + quote(set_track_board_path) +
+              " --id ST1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6"
+              " --end-x-mm 8 --end-y-mm 9 --width-mm 0.25") == 0,
+          "set track fixture add track exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb set-track --file " + quote(set_track_board_path) +
+              " --id ST1 --start-x-mm 6 --start-y-mm 7 --end-x-mm 10 --end-y-mm 11"
+              " --width-mm 0.35") == 0,
+          "pcb set-track updates track geometry");
+  const std::string set_track_json = readFile(set_track_board_path);
+  require(set_track_json.find("\"x_nm\": 6000000") != std::string::npos,
+          "pcb set-track writes start x");
+  require(set_track_json.find("\"x_nm\": 10000000") != std::string::npos,
+          "pcb set-track writes end x");
+  require(set_track_json.find("\"width_nm\": 350000") != std::string::npos,
+          "pcb set-track writes width");
+  require(run(quote(CCAD_BINARY) + " pcb set-track --file " + quote(set_track_board_path) +
+              " --id ST1 --start-x-mm 0.05 --start-y-mm 7 --end-x-mm 10 --end-y-mm 11"
+              " --width-mm 0.35") != 0,
+          "pcb set-track rejects copper outside board");
+  require(run(quote(CCAD_BINARY) + " pcb set-track --file " + quote(set_track_board_path) +
+              " --id MISSING --start-x-mm 6 --start-y-mm 7 --end-x-mm 10 --end-y-mm 11"
+              " --width-mm 0.35") != 0,
+          "pcb set-track rejects missing track");
 
   const std::string bad_layer_command =
       quote(CCAD_BINARY) + " pcb add-track --file " + quote(board_project_path) +

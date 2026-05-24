@@ -336,6 +336,46 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "set-track") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--start-x-mm", "--start-y-mm",
+                                 "--end-x-mm", "--end-y-mm", "--width-mm"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const ccad::Point start{
+          .x = requirePositiveMillimeters(options, "--start-x-mm"),
+          .y = requirePositiveMillimeters(options, "--start-y-mm"),
+      };
+      const ccad::Point end{
+          .x = requirePositiveMillimeters(options, "--end-x-mm"),
+          .y = requirePositiveMillimeters(options, "--end-y-mm"),
+      };
+      const ccad::Length width = requirePositiveMillimeters(options, "--width-mm");
+      const ccad::Length half_width = ccad::nanometers(width.nanometers / 2);
+      requirePointWithMarginInsideBoard(board, start, half_width, "track start");
+      requirePointWithMarginInsideBoard(board, end, half_width, "track end");
+      bool updated = false;
+      for (ccad::TrackSegment& track : board.tracks) {
+        if (track.id == id) {
+          track.start = start;
+          track.end = end;
+          track.width = width;
+          updated = true;
+          break;
+        }
+      }
+      if (!updated) {
+        throw std::runtime_error("unknown track: " + id);
+      }
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "add-keepout") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--kind", "--x-mm", "--y-mm", "--width-mm",
