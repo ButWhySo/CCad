@@ -30,6 +30,11 @@ ccad::Project validProject() {
           .origin = ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(3)},
           .size = ccad::Size{.width = ccad::millimeters(42), .height = ccad::millimeters(28)},
       },
+      .design_rules = ccad::DesignRules{
+          .copper_clearance = ccad::millimeters(0.25),
+          .min_track_width = ccad::millimeters(0.18),
+          .min_via_annular_ring = ccad::millimeters(0.11),
+      },
       .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true},
                  ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true}},
   };
@@ -50,6 +55,10 @@ int main() {
   require(clean.board_origin_y_nm == 3000000, "review reports board origin y");
   require(clean.board_width_nm == 42000000, "review reports board width");
   require(clean.board_height_nm == 28000000, "review reports board height");
+  require(clean.copper_clearance_nm == 250000, "review reports copper clearance rule");
+  require(clean.min_track_width_nm == 180000, "review reports minimum track width rule");
+  require(clean.min_via_annular_ring_nm == 110000,
+          "review reports minimum via annular ring rule");
   require(clean.layer_count == 2, "review reports layer count");
   require(clean.pad_count == 0, "review reports pad count");
   require(clean.via_count == 0, "review reports via count");

@@ -29,6 +29,9 @@ ProjectReview buildReview(const Project& project) {
     review.board_origin_y_nm = project.board->outline.origin.y.nanometers;
     review.board_width_nm = project.board->outline.size.width.nanometers;
     review.board_height_nm = project.board->outline.size.height.nanometers;
+    review.copper_clearance_nm = project.board->design_rules.copper_clearance.nanometers;
+    review.min_track_width_nm = project.board->design_rules.min_track_width.nanometers;
+    review.min_via_annular_ring_nm = project.board->design_rules.min_via_annular_ring.nanometers;
     review.layer_count = project.board->layers.size();
     review.pad_count = project.board->pads.size();
     review.via_count = project.board->vias.size();
