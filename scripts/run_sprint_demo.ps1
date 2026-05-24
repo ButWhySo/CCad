@@ -194,6 +194,8 @@ Invoke-Ccad init --name $Name --width-mm 42 --height-mm 28 --out $Project
 Invoke-Ccad pcb set-outline --file $Project --x-mm 0 --y-mm 0 --width-mm 44 --height-mm 30
 Invoke-Ccad pcb set-rules --file $Project --copper-clearance-mm 0.20 --min-track-width-mm 0.15 --min-via-annular-ring-mm 0.10
 Invoke-Ccad pcb add-layer --file $Project --id In1.Cu --name "Inner 1 copper" --kind copper --visible false
+Invoke-Ccad pcb set-layer-visibility --file $Project --id In1.Cu --visible true
+Invoke-Ccad pcb set-layer-visibility --file $Project --id In1.Cu --visible false
 Invoke-Ccad pcb add-pad --file $Project --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 Invoke-Ccad pcb add-via --file $Project --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
 Invoke-Ccad pcb add-track --file $Project --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25

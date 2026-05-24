@@ -12,6 +12,7 @@ struct CanvasLayer {
   std::string id;
   std::string name;
   std::string kind;
+  bool visible = true;
 };
 
 struct CanvasPad {

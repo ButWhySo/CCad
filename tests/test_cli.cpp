@@ -64,6 +64,8 @@ int main() {
           "help json describes footprint placement");
   require(help_json.find("\"name\": \"pcb add-layer\"") != std::string::npos,
           "help json describes layer authoring");
+  require(help_json.find("\"name\": \"pcb set-layer-visibility\"") != std::string::npos,
+          "help json describes layer visibility authoring");
   require(help_json.find("\"name\": \"pcb set-rules\"") != std::string::npos,
           "help json describes drc rule authoring");
   require(help_json.find("\"name\": \"pcb set-outline\"") != std::string::npos,
@@ -105,6 +107,26 @@ int main() {
   require(layer_json.find("\"visible\": false") != std::string::npos,
           "pcb add-layer writes visibility");
   require(run(add_layer_command) != 0, "pcb add-layer rejects duplicate id");
+
+  const std::string set_layer_visibility_command =
+      quote(CCAD_BINARY) + " pcb set-layer-visibility --file " + quote(board_project_path) +
+      " --id In1.Cu --visible true";
+  require(run(set_layer_visibility_command) == 0, "pcb set-layer-visibility exits zero");
+  const std::string visible_layer_json = readFile(board_project_path);
+  require(visible_layer_json.find("\"id\": \"In1.Cu\"") != std::string::npos,
+          "pcb set-layer-visibility preserves layer id");
+  require(visible_layer_json.find("\"visible\": true") != std::string::npos,
+          "pcb set-layer-visibility writes true visibility");
+  const std::string bad_set_layer_visibility_command =
+      quote(CCAD_BINARY) + " pcb set-layer-visibility --file " + quote(board_project_path) +
+      " --id Missing.Cu --visible true";
+  require(run(bad_set_layer_visibility_command) != 0,
+          "pcb set-layer-visibility rejects missing layer");
+  const std::string bad_layer_visibility_value_command =
+      quote(CCAD_BINARY) + " pcb set-layer-visibility --file " + quote(board_project_path) +
+      " --id In1.Cu --visible maybe";
+  require(run(bad_layer_visibility_value_command) != 0,
+          "pcb set-layer-visibility rejects invalid visibility");
 
   const std::string set_rules_command =
       quote(CCAD_BINARY) + " pcb set-rules --file " + quote(board_project_path) +

@@ -35,6 +35,11 @@ bool parseVisibleOption(const std::map<std::string, std::string>& options) {
   throw std::runtime_error("--visible must be true or false");
 }
 
+bool parseRequiredVisibleOption(const std::map<std::string, std::string>& options) {
+  requireOption(options, "--visible");
+  return parseVisibleOption(options);
+}
+
 ccad::Length requireMillimeters(const std::map<std::string, std::string>& options,
                                 const std::string& key) {
   return ccad::millimeters(requireDoubleOption(options, key));
@@ -89,6 +94,31 @@ int pcbCommand(const std::vector<std::string>& args) {
           .kind = kind,
           .visible = parseVisibleOption(options),
       });
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "set-layer-visibility") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--visible"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      bool updated = false;
+      for (ccad::Layer& layer : board.layers) {
+        if (layer.id == id) {
+          layer.visible = parseRequiredVisibleOption(options);
+          updated = true;
+          break;
+        }
+      }
+      if (!updated) {
+        throw std::runtime_error("unknown layer: " + id);
+      }
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
