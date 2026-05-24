@@ -426,6 +426,10 @@ int main() {
   require(run(drc_command) == 0, "clean drc exits zero");
   require(readFile(drc_output_path).find("\"diagnostics\": [") != std::string::npos,
           "drc writes diagnostics json");
+  require(readFile(drc_output_path).find("\"summary\": {") != std::string::npos,
+          "drc writes diagnostic summary json");
+  require(readFile(drc_output_path).find("\"total\": 0") != std::string::npos,
+          "drc summary reports zero diagnostics for clean board");
 
   const std::filesystem::path invalid_drc_path = temp / "invalid-drc.ccad.json";
   std::ofstream invalid_drc(invalid_drc_path);
@@ -463,6 +467,8 @@ int main() {
   require(readFile(drc_output_path).find("\"code\": \"UNKNOWN_TRACK_LAYER\"") !=
               std::string::npos,
           "drc reports unknown track layer");
+  require(readFile(drc_output_path).find("\"errors\": ") != std::string::npos,
+          "drc summary reports error count");
 
   const std::filesystem::path footprint_in_path = temp / "R_0805_2012Metric.kicad_mod";
   std::ofstream footprint_in(footprint_in_path);
