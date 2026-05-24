@@ -11,6 +11,11 @@ ccad::Project validBoardProject() {
   ccad::Project project;
   project.id = "proj-drc";
   project.name = "drc";
+  project.components = {ccad::Component{
+      .id = "U1",
+      .part = "MCU",
+      .pins = {ccad::Pin{.name = "1", .kind = "passive"}},
+  }};
   project.nets = {ccad::Net{.id = "N1",
                             .members = {ccad::NetMember{.component_id = "U1", .pin_name = "1"}}},
                   ccad::Net{.id = "N2",
@@ -188,6 +193,16 @@ int main() {
   empty_pad_pin.board->pads.at(0).pin_name.clear();
   require(hasCode(ccad::runDrc(empty_pad_pin), "INVALID_PAD_PIN"),
           "drc reports empty pad pin name");
+
+  ccad::Project unknown_pad_component = validBoardProject();
+  unknown_pad_component.board->pads.at(0).component_id = "U404";
+  require(hasCode(ccad::runDrc(unknown_pad_component), "UNKNOWN_PAD_COMPONENT"),
+          "drc reports pad unknown component reference");
+
+  ccad::Project unknown_pad_pin = validBoardProject();
+  unknown_pad_pin.board->pads.at(0).pin_name = "404";
+  require(hasCode(ccad::runDrc(unknown_pad_pin), "UNKNOWN_PAD_PIN"),
+          "drc reports pad unknown component pin reference");
 
   ccad::Project pad_geometry_outside = validBoardProject();
   pad_geometry_outside.board->pads.at(0).position =

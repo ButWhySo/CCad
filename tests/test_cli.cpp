@@ -218,6 +218,17 @@ int main() {
           "inspect reports board width");
 
   std::string board_with_net = readFile(board_project_path);
+  const std::string empty_components = "  \"components\": [\n  ]";
+  const std::string logical_u1 =
+      "  \"components\": [\n"
+      "    {\n"
+      "      \"id\": \"U1\",\n"
+      "      \"part\": \"test-component\",\n"
+      "      \"pins\": [\n"
+      "        {\"name\": \"1\", \"kind\": \"passive\"}\n"
+      "      ]\n"
+      "    }\n"
+      "  ]";
   const std::string empty_nets = "  \"nets\": [\n  ]";
   const std::string logical_n1 =
       "  \"nets\": [\n"
@@ -227,6 +238,10 @@ int main() {
       "      ]\n"
       "    }\n"
       "  ]";
+  const std::size_t components_position = board_with_net.find(empty_components);
+  require(components_position != std::string::npos,
+          "board fixture has empty components before clean drc");
+  board_with_net.replace(components_position, empty_components.size(), logical_u1);
   const std::size_t nets_position = board_with_net.find(empty_nets);
   require(nets_position != std::string::npos, "board fixture has empty nets before clean drc");
   board_with_net.replace(nets_position, empty_nets.size(), logical_n1);

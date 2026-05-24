@@ -55,6 +55,24 @@ bool containsPoint(const Board& board, const Point& point) {
          point.y.nanometers >= min.y.nanometers && point.y.nanometers <= max.y.nanometers;
 }
 
+const Component* findComponent(const Project& project, const std::string& component_id) {
+  for (const Component& component : project.components) {
+    if (component.id == component_id) {
+      return &component;
+    }
+  }
+  return nullptr;
+}
+
+bool componentHasPin(const Component& component, const std::string& pin_name) {
+  for (const Pin& pin : component.pins) {
+    if (pin.name == pin_name) {
+      return true;
+    }
+  }
+  return false;
+}
+
 long double distanceToBoardEdge(const Board& board, const Point& point) {
   const std::int64_t min_x = board.outline.origin.x.nanometers;
   const std::int64_t min_y = board.outline.origin.y.nanometers;
@@ -417,10 +435,18 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
     if (pad.component_id.empty()) {
       diagnostics.push_back(makeDiagnostic("INVALID_PAD_COMPONENT",
                                            "Pad component_id must not be empty", pad.id));
+    } else if (findComponent(project, pad.component_id) == nullptr) {
+      diagnostics.push_back(makeDiagnostic("UNKNOWN_PAD_COMPONENT",
+                                           "Pad references an unknown component", pad.id));
     }
     if (pad.pin_name.empty()) {
       diagnostics.push_back(
           makeDiagnostic("INVALID_PAD_PIN", "Pad pin_name must not be empty", pad.id));
+    } else if (const Component* component = findComponent(project, pad.component_id)) {
+      if (!componentHasPin(*component, pad.pin_name)) {
+        diagnostics.push_back(
+            makeDiagnostic("UNKNOWN_PAD_PIN", "Pad references an unknown component pin", pad.id));
+      }
     }
     if (!hasLayer(board, pad.layer_id)) {
       diagnostics.push_back(
