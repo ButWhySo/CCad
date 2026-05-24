@@ -15,6 +15,7 @@
 #include <QMessageBox>
 #include <QPainter>
 #include <QKeySequence>
+#include <QScreen>
 #include <QStatusBar>
 #include <QStringList>
 #include <QTabWidget>
@@ -46,7 +47,14 @@ QString qstr(const std::string& value) {
 
 ReviewWindow::ReviewWindow() {
   setWindowTitle("CCad PCB Editor");
-  resize(1360, 860);
+  if (const QScreen* screen = QGuiApplication::primaryScreen()) {
+    const QRect available = screen->availableGeometry();
+    const int width = std::max(1360, (available.width() * 88) / 100);
+    const int height = std::max(860, (available.height() * 88) / 100);
+    resize(width, height);
+  } else {
+    resize(1360, 860);
+  }
   applyStyle();
 
   project_summary_ = new ProjectSummaryPanel(this);
