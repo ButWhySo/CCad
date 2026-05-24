@@ -240,6 +240,40 @@ int main() {
   require(hasCode(ccad::runDrc(keepout_track_crossing), "TRACK_CROSSES_KEEPOUT"),
           "drc reports track crossing keepout with endpoints outside");
 
+  ccad::Project duplicate_keepout = validBoardProject();
+  duplicate_keepout.board->keepouts.push_back(ccad::Keepout{
+      .id = "K_DUP",
+      .kind = "routing",
+      .area = ccad::Rect{.origin = ccad::Point{.x = ccad::millimeters(3),
+                                               .y = ccad::millimeters(3)},
+                         .size = ccad::Size{.width = ccad::millimeters(2),
+                                            .height = ccad::millimeters(2)}}});
+  duplicate_keepout.board->keepouts.push_back(duplicate_keepout.board->keepouts.back());
+  require(hasCode(ccad::runDrc(duplicate_keepout), "DUPLICATE_KEEPOUT_ID"),
+          "drc reports duplicate keepout ids");
+
+  ccad::Project invalid_keepout_size = validBoardProject();
+  invalid_keepout_size.board->keepouts.push_back(ccad::Keepout{
+      .id = "K_SIZE",
+      .kind = "placement",
+      .area = ccad::Rect{.origin = ccad::Point{.x = ccad::millimeters(2),
+                                               .y = ccad::millimeters(2)},
+                         .size = ccad::Size{.width = ccad::millimeters(0),
+                                            .height = ccad::millimeters(1)}}});
+  require(hasCode(ccad::runDrc(invalid_keepout_size), "INVALID_KEEPOUT_SIZE"),
+          "drc reports invalid keepout size");
+
+  ccad::Project keepout_outside = validBoardProject();
+  keepout_outside.board->keepouts.push_back(ccad::Keepout{
+      .id = "K_OUT",
+      .kind = "routing",
+      .area = ccad::Rect{.origin = ccad::Point{.x = ccad::millimeters(41),
+                                               .y = ccad::millimeters(27)},
+                         .size = ccad::Size{.width = ccad::millimeters(2),
+                                            .height = ccad::millimeters(2)}}});
+  require(hasCode(ccad::runDrc(keepout_outside), "KEEPOUT_OUTSIDE_BOARD"),
+          "drc reports keepout area outside board");
+
   ccad::Project same_net_touching_track = validBoardProject();
   same_net_touching_track.board->tracks.push_back(ccad::TrackSegment{
       .id = "T_SAME",

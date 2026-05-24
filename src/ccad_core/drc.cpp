@@ -474,6 +474,30 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
   }
 }
 
+void checkKeepouts(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  std::set<std::string> ids;
+  for (const Keepout& keepout : board.keepouts) {
+    if (!ids.insert(keepout.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_KEEPOUT_ID",
+                                           "Keepout ID appears more than once", keepout.id));
+    }
+
+    if (!isPositive(keepout.area.size.width) || !isPositive(keepout.area.size.height)) {
+      diagnostics.push_back(makeDiagnostic("INVALID_KEEPOUT_SIZE",
+                                           "Keepout width and height must be positive",
+                                           keepout.id));
+      continue;
+    }
+
+    const Point min = keepout.area.origin;
+    const Point max = maxPoint(keepout.area);
+    if (!containsPoint(board, min) || !containsPoint(board, max)) {
+      diagnostics.push_back(makeDiagnostic("KEEPOUT_OUTSIDE_BOARD",
+                                           "Keepout area is outside board outline", keepout.id));
+    }
+  }
+}
+
 void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnostics) {
   constexpr std::int64_t default_clearance_nm = 200000;
   constexpr long double default_clearance = static_cast<long double>(default_clearance_nm);
@@ -590,6 +614,7 @@ std::vector<Diagnostic> runDrc(const Project& project) {
   checkPads(project, board, diagnostics);
   checkVias(project, board, diagnostics);
   checkTracks(project, board, diagnostics);
+  checkKeepouts(board, diagnostics);
   checkCopperClearance(board, diagnostics);
   return diagnostics;
 }
