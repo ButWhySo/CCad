@@ -3,7 +3,8 @@ param(
   [string]$QtBin = "C:\Qt\6.11.1\mingw_64\bin",
   [string]$Name = "sprint-demo",
   [switch]$ClickSelection,
-  [int]$GuiWaitSeconds = 20
+  [int]$GuiWaitSeconds = 20,
+  [switch]$PreferInternalScreenshot
 )
 
 $ErrorActionPreference = "Stop"
@@ -154,12 +155,19 @@ Invoke-CcadDrcReport
 Invoke-Ccad lib import-footprint --in $KiCadFootprint --out $ImportedFootprint
 Invoke-Ccad pcb place-footprint --file $Project --footprint $ImportedFootprint --component R1 --at-x-mm 16 --at-y-mm 14 --layer F.Cu --rotation-deg 90
 
-$GuiOutput = & $Gui --screenshot $Project $Screenshot
-$GuiExitCode = $LASTEXITCODE
-if ($GuiExitCode -ne 0 -or -not (Test-Path $Screenshot)) {
+if ($PreferInternalScreenshot) {
+  $GuiOutput = & $Gui --screenshot $Project $Screenshot
+  $GuiExitCode = $LASTEXITCODE
+  if ($GuiExitCode -ne 0 -or -not (Test-Path $Screenshot)) {
+    Save-GuiWindowScreenshot -GuiPath $Gui -ProjectPath $Project -ScreenshotPath $Screenshot -WaitSeconds $GuiWaitSeconds
+    if (-not (Test-Path $Screenshot)) {
+      throw "GUI screenshot fallback did not create: $Screenshot"
+    }
+  }
+} else {
   Save-GuiWindowScreenshot -GuiPath $Gui -ProjectPath $Project -ScreenshotPath $Screenshot -WaitSeconds $GuiWaitSeconds
   if (-not (Test-Path $Screenshot)) {
-    throw "GUI screenshot fallback did not create: $Screenshot"
+    throw "GUI screenshot capture did not create: $Screenshot"
   }
 }
 

@@ -480,6 +480,7 @@ What it does:
 - Places the imported footprint onto the demo board.
 - First attempts Qt internal screenshot mode (`ccad_gui --screenshot`).
 - If that path fails on the host, it launches the GUI normally, waits for window readiness, captures the exact CCad window bounds, and closes only the spawned GUI process.
+- Default script behavior now prefers the stable window-capture path first; pass `-PreferInternalScreenshot` only when validating the native `--screenshot` code path.
 
 When to run:
 
