@@ -393,6 +393,13 @@ int main() {
   require(hasCode(ccad::runDrc(keepout_pad), "PAD_IN_KEEPOUT"),
           "drc reports pad in keepout");
 
+  ccad::Project invalid_pad_size_in_keepout = keepout_pad;
+  invalid_pad_size_in_keepout.board->pads.at(0).size.width = ccad::nanometers(0);
+  require(hasCode(ccad::runDrc(invalid_pad_size_in_keepout), "INVALID_PAD_SIZE"),
+          "drc reports invalid pad size before keepout geometry");
+  require(!hasCode(ccad::runDrc(invalid_pad_size_in_keepout), "PAD_IN_KEEPOUT"),
+          "drc does not report pad keepout geometry when pad size is invalid");
+
   ccad::Project keepout_pad_geometry = validBoardProject();
   keepout_pad_geometry.board->pads.at(0).position =
       ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(5)};
@@ -419,6 +426,13 @@ int main() {
   require(hasCode(ccad::runDrc(keepout_via), "VIA_IN_KEEPOUT"),
           "drc reports via in keepout");
 
+  ccad::Project invalid_via_size_in_keepout = keepout_via;
+  invalid_via_size_in_keepout.board->vias.at(0).diameter = ccad::nanometers(0);
+  require(hasCode(ccad::runDrc(invalid_via_size_in_keepout), "INVALID_VIA_SIZE"),
+          "drc reports invalid via size before keepout geometry");
+  require(!hasCode(ccad::runDrc(invalid_via_size_in_keepout), "VIA_IN_KEEPOUT"),
+          "drc does not report via keepout geometry when via size is invalid");
+
   ccad::Project keepout_via_geometry = validBoardProject();
   keepout_via_geometry.board->vias.at(0).position =
       ccad::Point{.x = ccad::millimeters(10.4), .y = ccad::millimeters(9.0)};
@@ -444,6 +458,13 @@ int main() {
                                             .height = ccad::millimeters(3)}}});
   require(hasCode(ccad::runDrc(keepout_track), "TRACK_ENDPOINT_IN_KEEPOUT"),
           "drc reports track endpoint in keepout");
+
+  ccad::Project invalid_track_width_in_keepout = keepout_track;
+  invalid_track_width_in_keepout.board->tracks.at(0).width = ccad::nanometers(0);
+  require(hasCode(ccad::runDrc(invalid_track_width_in_keepout), "INVALID_TRACK_WIDTH"),
+          "drc reports invalid track width before keepout geometry");
+  require(!hasCode(ccad::runDrc(invalid_track_width_in_keepout), "TRACK_ENDPOINT_IN_KEEPOUT"),
+          "drc does not report track keepout geometry when track width is invalid");
 
   ccad::Project keepout_track_crossing = validBoardProject();
   keepout_track_crossing.board->tracks.at(0).start =

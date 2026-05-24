@@ -477,7 +477,8 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
       diagnostics.push_back(
           makeDiagnostic("PAD_OUTSIDE_BOARD", "Pad position is outside board outline", pad.id));
     }
-    if (!isPositive(pad.size.width) || !isPositive(pad.size.height)) {
+    const bool pad_size_positive = isPositive(pad.size.width) && isPositive(pad.size.height);
+    if (!pad_size_positive) {
       diagnostics.push_back(
           makeDiagnostic("INVALID_PAD_SIZE", "Pad width and height must be positive", pad.id));
     } else {
@@ -507,11 +508,13 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
             "Pad net does not contain the pad component/pin as a logical member", pad.id));
       }
     }
-    for (const Keepout& keepout : board.keepouts) {
-      if (polygonIntersectsRect(padCorners(pad), keepout.area)) {
-        diagnostics.push_back(
-            makeDiagnostic("PAD_IN_KEEPOUT", "Pad geometry intersects keepout " + keepout.id,
-                           pad.id));
+    if (pad_size_positive) {
+      for (const Keepout& keepout : board.keepouts) {
+        if (polygonIntersectsRect(padCorners(pad), keepout.area)) {
+          diagnostics.push_back(
+              makeDiagnostic("PAD_IN_KEEPOUT", "Pad geometry intersects keepout " + keepout.id,
+                             pad.id));
+        }
       }
     }
   }
@@ -569,12 +572,14 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
                              " nm",
                          via.id));
     }
-    for (const Keepout& keepout : board.keepouts) {
-      const long double radius = static_cast<long double>(via.diameter.nanometers) / 2.0L;
-      if (distancePointToRect(via.position, keepout.area) <= radius) {
-        diagnostics.push_back(
-            makeDiagnostic("VIA_IN_KEEPOUT", "Via geometry intersects keepout " + keepout.id,
-                           via.id));
+    if (via_size_positive) {
+      for (const Keepout& keepout : board.keepouts) {
+        const long double radius = static_cast<long double>(via.diameter.nanometers) / 2.0L;
+        if (distancePointToRect(via.position, keepout.area) <= radius) {
+          diagnostics.push_back(
+              makeDiagnostic("VIA_IN_KEEPOUT", "Via geometry intersects keepout " + keepout.id,
+                             via.id));
+        }
       }
     }
   }
@@ -614,7 +619,8 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
       diagnostics.push_back(makeDiagnostic("TRACK_END_OUTSIDE_BOARD",
                                            "Track end is outside board outline", track.id));
     }
-    if (!isPositive(track.width)) {
+    const bool track_width_positive = isPositive(track.width);
+    if (!track_width_positive) {
       diagnostics.push_back(
           makeDiagnostic("INVALID_TRACK_WIDTH", "Track width must be positive", track.id));
     } else {
@@ -643,17 +649,19 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
                                         "Track endpoint does not touch a same-net pad, via, or track",
                                         track.id));
     }
-    for (const Keepout& keepout : board.keepouts) {
-      const std::int64_t half_width_nm = track.width.nanometers / 2;
-      const Rect inflated_keepout = inflateRect(keepout.area, half_width_nm);
-      if (rectContainsPoint(inflated_keepout, track.start) ||
-          rectContainsPoint(inflated_keepout, track.end)) {
-        diagnostics.push_back(makeDiagnostic(
-            "TRACK_ENDPOINT_IN_KEEPOUT", "Track endpoint is inside keepout " + keepout.id,
-            track.id));
-      } else if (segmentIntersectsRect(track.start, track.end, inflated_keepout)) {
-        diagnostics.push_back(makeDiagnostic(
-            "TRACK_CROSSES_KEEPOUT", "Track segment crosses keepout " + keepout.id, track.id));
+    if (track_width_positive) {
+      for (const Keepout& keepout : board.keepouts) {
+        const std::int64_t half_width_nm = track.width.nanometers / 2;
+        const Rect inflated_keepout = inflateRect(keepout.area, half_width_nm);
+        if (rectContainsPoint(inflated_keepout, track.start) ||
+            rectContainsPoint(inflated_keepout, track.end)) {
+          diagnostics.push_back(makeDiagnostic(
+              "TRACK_ENDPOINT_IN_KEEPOUT", "Track endpoint is inside keepout " + keepout.id,
+              track.id));
+        } else if (segmentIntersectsRect(track.start, track.end, inflated_keepout)) {
+          diagnostics.push_back(makeDiagnostic(
+              "TRACK_CROSSES_KEEPOUT", "Track segment crosses keepout " + keepout.id, track.id));
+        }
       }
     }
   }
