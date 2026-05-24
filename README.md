@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 2 / 6: physical primitives and early board authoring.
 
-Progress counter: Phase 2 / 6, Sprint 78 merged and verified on `main`; Sprint 79 planning.
+Progress counter: Phase 2 / 6, Sprint 79 in progress on `sprint-79-design-rule-drc-validation`.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -17,7 +17,7 @@ Progress counter: Phase 2 / 6, Sprint 78 merged and verified on `main`; Sprint 7
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
 - Physical board outline, layers, rectangular placement regions, rectangular keepouts, pads, vias, and track segments in project JSON.
 - Project review and `ccad inspect` report the full board outline rectangle and active board-level DRC rules.
-- Physical DRC for geometry, connectivity metadata, layer-aware copper connectivity and clearance, rectangular keepout occupancy, track crossing violations, board-level copper clearance, minimum track width, minimum via annular ring, stable physical object IDs, and logical pad/net parity.
+- Physical DRC for geometry, connectivity metadata, layer-aware copper connectivity and clearance, rectangular keepout occupancy, track crossing violations, board-level copper clearance, minimum track width, minimum via annular ring, design-rule value validation, stable physical object IDs, and logical pad/net parity.
 - Physical DRC rejects pads and tracks placed on non-copper layers.
 - Physical DRC track-endpoint connectivity now accepts geometric copper contact with same-net pads and vias, not only exact center-point matches.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
@@ -305,7 +305,8 @@ What it does:
 - Runs kernel-level physical checks on board primitives.
 - Emits JSON diagnostics.
 - Exits `0` when no DRC errors exist, `1` when DRC errors exist, `2` for usage/file/parse failures.
-- Reports `COPPER_CLEARANCE` when different-net copper is closer than the current fixed default clearance of `0.20 mm`.
+- Reports `COPPER_CLEARANCE` when different-net copper is closer than the configured board-level copper clearance.
+- Reports invalid rule values when board-level copper clearance, minimum track width, or minimum via annular ring are non-positive in project JSON.
 - Treats layer-bound pad/track copper as colliding only when they share a copper layer; vias still interact with copper across layers.
 - Reports `PAD_NON_COPPER_LAYER` or `TRACK_NON_COPPER_LAYER` when copper primitives reference a valid layer whose kind is not `copper`.
 
