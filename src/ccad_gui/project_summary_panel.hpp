@@ -22,5 +22,9 @@ class ProjectSummaryPanel final : public QWidget {
   QLabel* components_value_ = nullptr;
   QLabel* nets_value_ = nullptr;
   QLabel* layers_value_ = nullptr;
+  QLabel* pads_value_ = nullptr;
+  QLabel* vias_value_ = nullptr;
+  QLabel* tracks_value_ = nullptr;
+  QLabel* keepouts_value_ = nullptr;
   QLabel* diagnostics_value_ = nullptr;
 };
