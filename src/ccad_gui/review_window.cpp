@@ -16,6 +16,7 @@
 #include <QMessageBox>
 #include <QPainter>
 #include <QKeySequence>
+#include <QScrollArea>
 #include <QScreen>
 #include <QStatusBar>
 #include <QStringList>
@@ -64,7 +65,11 @@ ReviewWindow::ReviewWindow() {
   project_dock->setObjectName("projectDock");
   project_dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
   project_dock->setMinimumWidth(300);
-  project_dock->setWidget(project_summary_);
+  auto* project_scroll = new QScrollArea(project_dock);
+  project_scroll->setWidgetResizable(true);
+  project_scroll->setFrameShape(QFrame::NoFrame);
+  project_scroll->setWidget(project_summary_);
+  project_dock->setWidget(project_scroll);
   addDockWidget(Qt::LeftDockWidgetArea, project_dock);
 
   diagnostics_ = new DiagnosticsPanel(this);
