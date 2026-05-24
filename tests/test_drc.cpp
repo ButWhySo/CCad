@@ -48,6 +48,7 @@ ccad::Project validBoardProject() {
                                     .start = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
                                     .end = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},
                                     .width = ccad::millimeters(0.25)}},
+      .route_requests = {},
   };
   return project;
 }

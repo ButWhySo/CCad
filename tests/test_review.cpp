@@ -37,6 +37,7 @@ ccad::Project validProject() {
       },
       .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true},
                  ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true}},
+      .route_requests = {},
   };
   return project;
 }

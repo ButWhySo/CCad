@@ -104,6 +104,8 @@ class JsonReader {
           board.vias = readVias();
         } else if (key == "tracks") {
           board.tracks = readTracks();
+        } else if (key == "route_requests") {
+          board.route_requests = readRouteRequests();
         } else {
           throw std::runtime_error("unknown board key: " + key);
         }
@@ -499,6 +501,56 @@ class JsonReader {
       expect(',');
       if (peek(']')) {
         throw std::runtime_error("trailing comma in tracks array");
+      }
+    }
+  }
+
+  std::vector<RouteRequest> readRouteRequests() {
+    std::vector<RouteRequest> route_requests;
+    expect('[');
+    if (consume(']')) {
+      return route_requests;
+    }
+    while (true) {
+      RouteRequest route_request;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            route_request.id = readString();
+          } else if (key == "net_id") {
+            route_request.net_id = readString();
+          } else if (key == "from_object_id") {
+            route_request.from_object_id = readString();
+          } else if (key == "to_object_id") {
+            route_request.to_object_id = readString();
+          } else if (key == "preferred_layer_id") {
+            route_request.preferred_layer_id = readString();
+          } else if (key == "policy") {
+            route_request.policy = readString();
+          } else if (key == "width_nm") {
+            route_request.width = nanometers(readInt64());
+          } else {
+            throw std::runtime_error("unknown route request key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+          if (peek('}')) {
+            throw std::runtime_error("trailing comma in route request object");
+          }
+        }
+      }
+      route_requests.push_back(route_request);
+      if (consume(']')) {
+        return route_requests;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in route requests array");
       }
     }
   }
@@ -1000,6 +1052,20 @@ std::string dumpProjectJson(const Project& project) {
       out << "        \"diameter_nm\": " << via.diameter.nanometers << ",\n";
       out << "        \"drill_nm\": " << via.drill.nanometers << "\n";
       out << "      }" << (i + 1 == board.vias.size() ? "" : ",") << '\n';
+    }
+    out << "    ],\n";
+    out << "    \"route_requests\": [\n";
+    for (std::size_t i = 0; i < board.route_requests.size(); ++i) {
+      const RouteRequest& route_request = board.route_requests.at(i);
+      out << "      {\n";
+      writeField(out, 8, "id", route_request.id);
+      writeField(out, 8, "net_id", route_request.net_id);
+      writeField(out, 8, "from_object_id", route_request.from_object_id);
+      writeField(out, 8, "to_object_id", route_request.to_object_id);
+      writeField(out, 8, "preferred_layer_id", route_request.preferred_layer_id);
+      writeField(out, 8, "policy", route_request.policy);
+      out << "        \"width_nm\": " << route_request.width.nanometers << "\n";
+      out << "      }" << (i + 1 == board.route_requests.size() ? "" : ",") << '\n';
     }
     out << "    ]\n";
     out << "  },\n";

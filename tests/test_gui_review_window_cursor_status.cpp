@@ -21,6 +21,7 @@ ccad::Board shiftedBoard() {
       .pads = {},
       .vias = {},
       .tracks = {},
+      .route_requests = {},
   };
 }
 
