@@ -477,6 +477,10 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
 void checkKeepouts(const Board& board, std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
   for (const Keepout& keepout : board.keepouts) {
+    if (keepout.id.empty()) {
+      diagnostics.push_back(makeDiagnostic("INVALID_KEEPOUT_ID",
+                                           "Keepout ID must not be empty", keepout.id));
+    }
     if (!ids.insert(keepout.id).second) {
       diagnostics.push_back(makeDiagnostic("DUPLICATE_KEEPOUT_ID",
                                            "Keepout ID appears more than once", keepout.id));

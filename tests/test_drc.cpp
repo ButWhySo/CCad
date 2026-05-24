@@ -285,6 +285,17 @@ int main() {
   require(hasCode(ccad::runDrc(unknown_keepout_kind), "UNKNOWN_KEEPOUT_KIND"),
           "drc reports unknown keepout kind");
 
+  ccad::Project empty_keepout_id = validBoardProject();
+  empty_keepout_id.board->keepouts.push_back(ccad::Keepout{
+      .id = "",
+      .kind = "placement",
+      .area = ccad::Rect{.origin = ccad::Point{.x = ccad::millimeters(4),
+                                               .y = ccad::millimeters(4)},
+                         .size = ccad::Size{.width = ccad::millimeters(2),
+                                            .height = ccad::millimeters(2)}}});
+  require(hasCode(ccad::runDrc(empty_keepout_id), "INVALID_KEEPOUT_ID"),
+          "drc reports empty keepout id");
+
   ccad::Project same_net_touching_track = validBoardProject();
   same_net_touching_track.board->tracks.push_back(ccad::TrackSegment{
       .id = "T_SAME",
