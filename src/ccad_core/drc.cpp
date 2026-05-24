@@ -39,6 +39,25 @@ bool hasLayer(const Board& board, const std::string& layer_id) {
   return false;
 }
 
+bool hasBoardObject(const Board& board, const std::string& object_id) {
+  for (const Pad& pad : board.pads) {
+    if (pad.id == object_id) {
+      return true;
+    }
+  }
+  for (const Via& via : board.vias) {
+    if (via.id == object_id) {
+      return true;
+    }
+  }
+  for (const TrackSegment& track : board.tracks) {
+    if (track.id == object_id) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool hasNet(const Project& project, const std::string& net_id) {
   for (const Net& net : project.nets) {
     if (net.id == net_id) {
@@ -678,6 +697,52 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
   }
 }
 
+void checkRouteRequests(const Project& project, const Board& board,
+                        std::vector<Diagnostic>& diagnostics) {
+  std::set<std::string> ids;
+  for (const RouteRequest& route_request : board.route_requests) {
+    if (route_request.id.empty()) {
+      diagnostics.push_back(makeDiagnostic("INVALID_ROUTE_REQUEST_ID",
+                                           "Route request ID must not be empty",
+                                           route_request.id));
+    }
+    if (!ids.insert(route_request.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_ROUTE_REQUEST_ID",
+                                           "Route request ID appears more than once",
+                                           route_request.id));
+    }
+    if (route_request.net_id.empty()) {
+      diagnostics.push_back(makeDiagnostic("INVALID_ROUTE_REQUEST_NET",
+                                           "Route request net_id must not be empty",
+                                           route_request.id));
+    } else if (!hasNet(project, route_request.net_id)) {
+      diagnostics.push_back(makeDiagnostic("UNKNOWN_ROUTE_REQUEST_NET",
+                                           "Route request references an unknown net",
+                                           route_request.id));
+    }
+    if (!hasLayer(board, route_request.preferred_layer_id)) {
+      diagnostics.push_back(makeDiagnostic("UNKNOWN_ROUTE_REQUEST_LAYER",
+                                           "Route request references an unknown preferred layer",
+                                           route_request.id));
+    } else if (!isCopperLayer(board, route_request.preferred_layer_id)) {
+      diagnostics.push_back(makeDiagnostic("ROUTE_REQUEST_NON_COPPER_LAYER",
+                                           "Route request preferred layer must be copper",
+                                           route_request.id));
+    }
+    if (!hasBoardObject(board, route_request.from_object_id) ||
+        !hasBoardObject(board, route_request.to_object_id)) {
+      diagnostics.push_back(makeDiagnostic("UNKNOWN_ROUTE_REQUEST_ENDPOINT",
+                                           "Route request endpoint object does not exist",
+                                           route_request.id));
+    }
+    if (!isPositive(route_request.width)) {
+      diagnostics.push_back(makeDiagnostic("INVALID_ROUTE_REQUEST_WIDTH",
+                                           "Route request width must be positive",
+                                           route_request.id));
+    }
+  }
+}
+
 void checkProjectNets(const Project& project, std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
   for (const Net& net : project.nets) {
@@ -994,6 +1059,7 @@ std::vector<Diagnostic> runDrc(const Project& project) {
   checkPads(project, board, diagnostics);
   checkVias(project, board, diagnostics);
   checkTracks(project, board, diagnostics);
+  checkRouteRequests(project, board, diagnostics);
   checkPlacementRegions(board, diagnostics);
   checkKeepouts(board, diagnostics);
   checkPhysicalObjectIds(board, diagnostics);
