@@ -101,6 +101,17 @@ int main() {
   require(hasCode(ccad::runDrc(empty_layer_id), "INVALID_LAYER_ID"),
           "drc reports empty layer id");
 
+  ccad::Project duplicate_net = validBoardProject();
+  duplicate_net.nets.push_back(duplicate_net.nets.front());
+  require(hasCode(ccad::runDrc(duplicate_net), "DUPLICATE_NET_ID"),
+          "drc reports duplicate net id");
+
+  ccad::Project empty_net_id = validBoardProject();
+  empty_net_id.nets.push_back(
+      ccad::Net{.id = "", .members = {ccad::NetMember{.component_id = "U3", .pin_name = "1"}}});
+  require(hasCode(ccad::runDrc(empty_net_id), "INVALID_NET_ID"),
+          "drc reports empty net id");
+
   ccad::Project via_drill_too_large = validBoardProject();
   via_drill_too_large.board->vias.at(0).drill = ccad::millimeters(1.0);
   require(hasCode(ccad::runDrc(via_drill_too_large), "VIA_DRILL_TOO_LARGE"),

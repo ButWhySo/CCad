@@ -474,6 +474,21 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
   }
 }
 
+void checkProjectNets(const Project& project, std::vector<Diagnostic>& diagnostics) {
+  std::set<std::string> ids;
+  for (const Net& net : project.nets) {
+    if (net.id.empty()) {
+      diagnostics.push_back(
+          makeDiagnostic("INVALID_NET_ID", "Net ID must not be empty", net.id));
+      continue;
+    }
+    if (!ids.insert(net.id).second) {
+      diagnostics.push_back(
+          makeDiagnostic("DUPLICATE_NET_ID", "Net ID appears more than once", net.id));
+    }
+  }
+}
+
 void checkLayers(const Board& board, std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
   for (const Layer& layer : board.layers) {
@@ -634,6 +649,7 @@ std::vector<Diagnostic> runDrc(const Project& project) {
     return diagnostics;
   }
 
+  checkProjectNets(project, diagnostics);
   const Board& board = *project.board;
   checkLayers(board, diagnostics);
   checkPads(project, board, diagnostics);
