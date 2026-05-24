@@ -162,6 +162,11 @@ int main() {
   require(hasCode(ccad::runDrc(via_small_ring), "VIA_ANNULAR_RING_TOO_SMALL"),
           "drc reports via annular ring below default minimum");
 
+  ccad::Project relaxed_via_ring = via_small_ring;
+  relaxed_via_ring.board->design_rules.min_via_annular_ring = ccad::millimeters(0.02);
+  require(!hasCode(ccad::runDrc(relaxed_via_ring), "VIA_ANNULAR_RING_TOO_SMALL"),
+          "drc obeys configured minimum via annular ring");
+
   ccad::Project zero_length_track = validBoardProject();
   zero_length_track.board->tracks.at(0).end = zero_length_track.board->tracks.at(0).start;
   require(hasCode(ccad::runDrc(zero_length_track), "ZERO_LENGTH_TRACK"),
@@ -171,6 +176,11 @@ int main() {
   narrow_track.board->tracks.at(0).width = ccad::millimeters(0.10);
   require(hasCode(ccad::runDrc(narrow_track), "TRACK_TOO_NARROW"),
           "drc reports track width below default minimum");
+
+  ccad::Project relaxed_track_width = narrow_track;
+  relaxed_track_width.board->design_rules.min_track_width = ccad::millimeters(0.08);
+  require(!hasCode(ccad::runDrc(relaxed_track_width), "TRACK_TOO_NARROW"),
+          "drc obeys configured minimum track width");
 
   ccad::Project track_geometry_outside = validBoardProject();
   track_geometry_outside.board->tracks.at(0).start =
@@ -540,10 +550,15 @@ int main() {
       .pin_name = "1",
       .net_id = "N2",
       .layer_id = "F.Cu",
-      .position = ccad::Point{.x = ccad::millimeters(6.05), .y = ccad::millimeters(6)},
+      .position = ccad::Point{.x = ccad::millimeters(6.35), .y = ccad::millimeters(6)},
       .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(1.0)}});
   require(hasDiagnosticForObject(ccad::runDrc(pad_clearance), "COPPER_CLEARANCE", "P2"),
           "drc reports different-net pads closer than default clearance");
+
+  ccad::Project relaxed_clearance = pad_clearance;
+  relaxed_clearance.board->design_rules.copper_clearance = ccad::millimeters(0.04);
+  require(!hasDiagnosticForObject(ccad::runDrc(relaxed_clearance), "COPPER_CLEARANCE", "P2"),
+          "drc obeys configured copper clearance");
 
   ccad::Project crossing_tracks = validBoardProject();
   crossing_tracks.board->tracks.push_back(ccad::TrackSegment{

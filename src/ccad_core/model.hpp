@@ -43,6 +43,12 @@ struct Layer {
   bool visible = true;
 };
 
+struct DesignRules {
+  Length copper_clearance = millimeters(0.20);
+  Length min_track_width = millimeters(0.15);
+  Length min_via_annular_ring = millimeters(0.10);
+};
+
 struct Pad {
   std::string id;
   std::string component_id;
@@ -85,6 +91,7 @@ struct PlacementRegion {
 
 struct Board {
   Rect outline;
+  DesignRules design_rules;
   std::vector<Layer> layers;
   std::vector<PlacementRegion> placement_regions;
   std::vector<Keepout> keepouts;

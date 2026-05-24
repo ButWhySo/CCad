@@ -90,6 +90,8 @@ class JsonReader {
         expect(':');
         if (key == "outline") {
           board.outline = readRect();
+        } else if (key == "design_rules") {
+          board.design_rules = readDesignRules();
         } else if (key == "layers") {
           board.layers = readLayers();
         } else if (key == "placement_regions") {
@@ -197,6 +199,34 @@ class JsonReader {
       }
     }
     return size;
+  }
+
+  DesignRules readDesignRules() {
+    DesignRules rules;
+    expect('{');
+    if (!consume('}')) {
+      while (true) {
+        const std::string key = readString();
+        expect(':');
+        if (key == "copper_clearance_nm") {
+          rules.copper_clearance = nanometers(readInt64());
+        } else if (key == "min_track_width_nm") {
+          rules.min_track_width = nanometers(readInt64());
+        } else if (key == "min_via_annular_ring_nm") {
+          rules.min_via_annular_ring = nanometers(readInt64());
+        } else {
+          throw std::runtime_error("unknown design rules key: " + key);
+        }
+        if (consume('}')) {
+          break;
+        }
+        expect(',');
+        if (peek('}')) {
+          throw std::runtime_error("trailing comma in design rules object");
+        }
+      }
+    }
+    return rules;
   }
 
   std::vector<Layer> readLayers() {
@@ -872,6 +902,14 @@ std::string dumpProjectJson(const Project& project) {
     out << "      \"y_nm\": " << board.outline.origin.y.nanometers << ",\n";
     out << "      \"width_nm\": " << board.outline.size.width.nanometers << ",\n";
     out << "      \"height_nm\": " << board.outline.size.height.nanometers << "\n";
+    out << "    },\n";
+    out << "    \"design_rules\": {\n";
+    out << "      \"copper_clearance_nm\": "
+        << board.design_rules.copper_clearance.nanometers << ",\n";
+    out << "      \"min_track_width_nm\": "
+        << board.design_rules.min_track_width.nanometers << ",\n";
+    out << "      \"min_via_annular_ring_nm\": "
+        << board.design_rules.min_via_annular_ring.nanometers << "\n";
     out << "    },\n";
     out << "    \"layers\": [\n";
     for (std::size_t i = 0; i < board.layers.size(); ++i) {

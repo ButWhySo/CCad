@@ -62,6 +62,10 @@ const std::vector<CommandHelp>& commandHelp() {
                   .summary = "Append one board layer to a board project",
                   .usage = "ccad pcb add-layer --file <path> --id <id> --name <name> "
                            "--kind <kind> [--visible true|false]"},
+      CommandHelp{.name = "pcb set-rules",
+                  .summary = "Set board-level physical DRC rule defaults",
+                  .usage = "ccad pcb set-rules --file <path> --copper-clearance-mm <n> "
+                           "--min-track-width-mm <n> --min-via-annular-ring-mm <n>"},
       CommandHelp{.name = "pcb add-pad",
                   .summary = "Append one rectangular pad to a board project",
                   .usage = "ccad pcb add-pad --file <path> --id <id> --component <id> "
