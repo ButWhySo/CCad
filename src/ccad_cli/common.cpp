@@ -297,6 +297,29 @@ void requireUniqueKeepoutId(const ccad::Board& board, const std::string& id) {
   }
 }
 
+void requireUniquePhysicalObjectId(const ccad::Board& board, const std::string& id) {
+  for (const ccad::Pad& pad : board.pads) {
+    if (pad.id == id) {
+      throw std::runtime_error("duplicate physical object id: " + id);
+    }
+  }
+  for (const ccad::Via& via : board.vias) {
+    if (via.id == id) {
+      throw std::runtime_error("duplicate physical object id: " + id);
+    }
+  }
+  for (const ccad::TrackSegment& track : board.tracks) {
+    if (track.id == id) {
+      throw std::runtime_error("duplicate physical object id: " + id);
+    }
+  }
+  for (const ccad::Keepout& keepout : board.keepouts) {
+    if (keepout.id == id) {
+      throw std::runtime_error("duplicate physical object id: " + id);
+    }
+  }
+}
+
 ccad::Point rotateAndTranslate(const ccad::Point& local, const ccad::Point& origin,
                                const double rotation_degrees) {
   constexpr double pi = 3.14159265358979323846;

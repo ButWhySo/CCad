@@ -41,6 +41,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::string id = requireOption(options, "--id");
       const std::string layer_id = requireOption(options, "--layer");
       requireUniquePadId(board, id);
+      requireUniquePhysicalObjectId(board, id);
       requireLayer(board, layer_id);
       const ccad::Point position{
           .x = requirePositiveMillimeters(options, "--x-mm"),
@@ -75,6 +76,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       ccad::Board& board = requireBoard(project);
       const std::string id = requireOption(options, "--id");
       requireUniqueViaId(board, id);
+      requireUniquePhysicalObjectId(board, id);
       const ccad::Point position{
           .x = requirePositiveMillimeters(options, "--x-mm"),
           .y = requirePositiveMillimeters(options, "--y-mm"),
@@ -111,6 +113,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::string id = requireOption(options, "--id");
       const std::string layer_id = requireOption(options, "--layer");
       requireUniqueTrackId(board, id);
+      requireUniquePhysicalObjectId(board, id);
       requireLayer(board, layer_id);
       const ccad::Point start{
           .x = requirePositiveMillimeters(options, "--start-x-mm"),
@@ -150,6 +153,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       ccad::Board& board = requireBoard(project);
       const std::string id = requireOption(options, "--id");
       requireUniqueKeepoutId(board, id);
+      requireUniquePhysicalObjectId(board, id);
       const ccad::Rect area{
           .origin = ccad::Point{.x = requirePositiveMillimeters(options, "--x-mm"),
                                 .y = requirePositiveMillimeters(options, "--y-mm")},
@@ -192,6 +196,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       for (const ccad::FootprintPad& footprint_pad : footprint.pads) {
         const std::string pad_id = component_id + "." + footprint_pad.number;
         requireUniquePadId(board, pad_id);
+        requireUniquePhysicalObjectId(board, pad_id);
         const ccad::Point placed_position =
             rotateAndTranslate(footprint_pad.position, origin, placement_rotation);
         requireInsideBoard(board, placed_position, "footprint pad position");

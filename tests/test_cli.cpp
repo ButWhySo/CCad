@@ -103,6 +103,12 @@ int main() {
   require(via_json.find("\"drill_nm\": 400000") != std::string::npos,
           "pcb add-via writes drill");
 
+  const std::string duplicate_cross_type_id_command =
+      quote(CCAD_BINARY) + " pcb add-via --file " + quote(board_project_path) +
+      " --id P1 --net N1 --x-mm 10 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4";
+  require(run(duplicate_cross_type_id_command) != 0,
+          "pcb add-via rejects duplicate physical object id across types");
+
   const std::string add_track_command =
       quote(CCAD_BINARY) + " pcb add-track --file " + quote(board_project_path) +
       " --id T1 --net N1 --layer F.Cu"
