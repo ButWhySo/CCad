@@ -64,6 +64,8 @@ int main() {
           "help json describes footprint placement");
   require(help_json.find("\"name\": \"pcb add-keepout\"") != std::string::npos,
           "help json describes keepout authoring");
+  require(help_json.find("\"name\": \"pcb add-placement-region\"") != std::string::npos,
+          "help json describes placement region authoring");
   require(help_json.find("\"name\": \"lib catalog-info\"") != std::string::npos,
           "help json describes catalog info");
   require(help_json.find("\"name\": \"lib catalog-find\"") != std::string::npos,
@@ -133,8 +135,24 @@ int main() {
   require(keepout_json.find("\"width_nm\": 4000000") != std::string::npos,
           "pcb add-keepout writes width");
 
+  const std::string add_placement_region_command =
+      quote(CCAD_BINARY) + " pcb add-placement-region --file " + quote(board_project_path) +
+      " --id PR1 --kind component --x-mm 2 --y-mm 3 --width-mm 10 --height-mm 6";
+  require(run(add_placement_region_command) == 0, "pcb add-placement-region exits zero");
+  const std::string placement_region_json = readFile(board_project_path);
+  require(placement_region_json.find("\"placement_regions\"") != std::string::npos,
+          "pcb add-placement-region writes placement regions");
+  require(placement_region_json.find("\"id\": \"PR1\"") != std::string::npos,
+          "pcb add-placement-region writes id");
+  require(placement_region_json.find("\"kind\": \"component\"") != std::string::npos,
+          "pcb add-placement-region writes kind");
+  require(placement_region_json.find("\"width_nm\": 10000000") != std::string::npos,
+          "pcb add-placement-region writes width");
+
   require(run(add_pad_command) != 0, "pcb add-pad rejects duplicate id");
   require(run(add_keepout_command) != 0, "pcb add-keepout rejects duplicate id");
+  require(run(add_placement_region_command) != 0,
+          "pcb add-placement-region rejects duplicate id");
 
   const std::string bad_layer_command =
       quote(CCAD_BINARY) + " pcb add-track --file " + quote(board_project_path) +
@@ -174,6 +192,12 @@ int main() {
       quote(CCAD_BINARY) + " pcb add-keepout --file " + quote(board_project_path) +
       " --id K_OUT --kind placement --x-mm 40 --y-mm 26 --width-mm 4 --height-mm 3";
   require(run(outside_keepout_command) != 0, "pcb add-keepout rejects area outside board");
+
+  const std::string outside_placement_region_command =
+      quote(CCAD_BINARY) + " pcb add-placement-region --file " + quote(board_project_path) +
+      " --id PR_OUT --kind component --x-mm 40 --y-mm 26 --width-mm 4 --height-mm 3";
+  require(run(outside_placement_region_command) != 0,
+          "pcb add-placement-region rejects area outside board");
 
   const std::string missing_board_command =
       quote(CCAD_BINARY) + " pcb add-via --file " + quote(project_path) +
@@ -245,6 +269,8 @@ int main() {
           "inspect reports via count");
   require(board_inspect_output.find("\"tracks\": 1") != std::string::npos,
           "inspect reports track count");
+  require(board_inspect_output.find("\"placement_regions\": 1") != std::string::npos,
+          "inspect reports placement region count");
   require(board_inspect_output.find("\"keepouts\": 1") != std::string::npos,
           "inspect reports keepout count");
 

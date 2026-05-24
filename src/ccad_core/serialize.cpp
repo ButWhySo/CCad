@@ -92,6 +92,8 @@ class JsonReader {
           board.outline = readRect();
         } else if (key == "layers") {
           board.layers = readLayers();
+        } else if (key == "placement_regions") {
+          board.placement_regions = readPlacementRegions();
         } else if (key == "keepouts") {
           board.keepouts = readKeepouts();
         } else if (key == "pads") {
@@ -331,6 +333,48 @@ class JsonReader {
       expect(',');
       if (peek(']')) {
         throw std::runtime_error("trailing comma in keepouts array");
+      }
+    }
+  }
+
+  std::vector<PlacementRegion> readPlacementRegions() {
+    std::vector<PlacementRegion> regions;
+    expect('[');
+    if (consume(']')) {
+      return regions;
+    }
+    while (true) {
+      PlacementRegion region;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            region.id = readString();
+          } else if (key == "kind") {
+            region.kind = readString();
+          } else if (key == "area") {
+            region.area = readRect();
+          } else {
+            throw std::runtime_error("unknown placement region key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+          if (peek('}')) {
+            throw std::runtime_error("trailing comma in placement region object");
+          }
+        }
+      }
+      regions.push_back(region);
+      if (consume(']')) {
+        return regions;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in placement regions array");
       }
     }
   }
@@ -838,6 +882,21 @@ std::string dumpProjectJson(const Project& project) {
       writeField(out, 8, "name", layer.name);
       out << "        \"visible\": " << (layer.visible ? "true" : "false") << '\n';
       out << "      }" << (i + 1 == board.layers.size() ? "" : ",") << '\n';
+    }
+    out << "    ],\n";
+    out << "    \"placement_regions\": [\n";
+    for (std::size_t i = 0; i < board.placement_regions.size(); ++i) {
+      const PlacementRegion& region = board.placement_regions.at(i);
+      out << "      {\n";
+      writeField(out, 8, "id", region.id);
+      writeField(out, 8, "kind", region.kind);
+      out << "        \"area\": {\n";
+      out << "          \"x_nm\": " << region.area.origin.x.nanometers << ",\n";
+      out << "          \"y_nm\": " << region.area.origin.y.nanometers << ",\n";
+      out << "          \"width_nm\": " << region.area.size.width.nanometers << ",\n";
+      out << "          \"height_nm\": " << region.area.size.height.nanometers << "\n";
+      out << "        }\n";
+      out << "      }" << (i + 1 == board.placement_regions.size() ? "" : ",") << '\n';
     }
     out << "    ],\n";
     out << "    \"keepouts\": [\n";

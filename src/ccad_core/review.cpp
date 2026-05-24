@@ -31,6 +31,7 @@ ProjectReview buildReview(const Project& project) {
     review.pad_count = project.board->pads.size();
     review.via_count = project.board->vias.size();
     review.track_count = project.board->tracks.size();
+    review.placement_region_count = project.board->placement_regions.size();
     review.keepout_count = project.board->keepouts.size();
   }
   review.diagnostics = runErc(project);

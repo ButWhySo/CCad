@@ -27,6 +27,7 @@ ccad::Project validBoardProject() {
       },
       .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true},
                  ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true}},
+      .placement_regions = {},
       .keepouts = {},
       .pads = {ccad::Pad{.id = "P1",
                          .component_id = "U1",
@@ -460,6 +461,66 @@ int main() {
                                             .height = ccad::millimeters(2)}}});
   require(hasCode(ccad::runDrc(empty_keepout_id), "INVALID_KEEPOUT_ID"),
           "drc reports empty keepout id");
+
+  ccad::Project duplicate_placement_region = validBoardProject();
+  duplicate_placement_region.board->placement_regions.push_back(ccad::PlacementRegion{
+      .id = "PR1",
+      .kind = "component",
+      .area = ccad::Rect{.origin = ccad::Point{.x = ccad::millimeters(2),
+                                               .y = ccad::millimeters(2)},
+                         .size = ccad::Size{.width = ccad::millimeters(5),
+                                            .height = ccad::millimeters(5)}}});
+  duplicate_placement_region.board->placement_regions.push_back(
+      duplicate_placement_region.board->placement_regions.back());
+  require(hasCode(ccad::runDrc(duplicate_placement_region),
+                  "DUPLICATE_PLACEMENT_REGION_ID"),
+          "drc reports duplicate placement region ids");
+
+  ccad::Project invalid_placement_region_size = validBoardProject();
+  invalid_placement_region_size.board->placement_regions.push_back(ccad::PlacementRegion{
+      .id = "PR_BAD",
+      .kind = "component",
+      .area = ccad::Rect{.origin = ccad::Point{.x = ccad::millimeters(2),
+                                               .y = ccad::millimeters(2)},
+                         .size = ccad::Size{.width = ccad::nanometers(0),
+                                            .height = ccad::millimeters(5)}}});
+  require(hasCode(ccad::runDrc(invalid_placement_region_size),
+                  "INVALID_PLACEMENT_REGION_SIZE"),
+          "drc reports invalid placement region size");
+
+  ccad::Project placement_region_outside = validBoardProject();
+  placement_region_outside.board->placement_regions.push_back(ccad::PlacementRegion{
+      .id = "PR_OUT",
+      .kind = "component",
+      .area = ccad::Rect{.origin = ccad::Point{.x = ccad::millimeters(40),
+                                               .y = ccad::millimeters(26)},
+                         .size = ccad::Size{.width = ccad::millimeters(4),
+                                            .height = ccad::millimeters(3)}}});
+  require(hasCode(ccad::runDrc(placement_region_outside), "PLACEMENT_REGION_OUTSIDE_BOARD"),
+          "drc reports placement region area outside board");
+
+  ccad::Project unknown_placement_region_kind = validBoardProject();
+  unknown_placement_region_kind.board->placement_regions.push_back(ccad::PlacementRegion{
+      .id = "PR_KIND",
+      .kind = "mystery",
+      .area = ccad::Rect{.origin = ccad::Point{.x = ccad::millimeters(2),
+                                               .y = ccad::millimeters(2)},
+                         .size = ccad::Size{.width = ccad::millimeters(5),
+                                            .height = ccad::millimeters(5)}}});
+  require(hasCode(ccad::runDrc(unknown_placement_region_kind),
+                  "UNKNOWN_PLACEMENT_REGION_KIND"),
+          "drc reports unknown placement region kind");
+
+  ccad::Project empty_placement_region_id = validBoardProject();
+  empty_placement_region_id.board->placement_regions.push_back(ccad::PlacementRegion{
+      .id = "",
+      .kind = "component",
+      .area = ccad::Rect{.origin = ccad::Point{.x = ccad::millimeters(2),
+                                               .y = ccad::millimeters(2)},
+                         .size = ccad::Size{.width = ccad::millimeters(5),
+                                            .height = ccad::millimeters(5)}}});
+  require(hasCode(ccad::runDrc(empty_placement_region_id), "INVALID_PLACEMENT_REGION_ID"),
+          "drc reports empty placement region id");
 
   ccad::Project same_net_touching_track = validBoardProject();
   same_net_touching_track.board->tracks.push_back(ccad::TrackSegment{

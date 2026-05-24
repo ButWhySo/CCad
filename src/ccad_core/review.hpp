@@ -23,6 +23,7 @@ struct ProjectReview {
   std::size_t pad_count = 0;
   std::size_t via_count = 0;
   std::size_t track_count = 0;
+  std::size_t placement_region_count = 0;
   std::size_t keepout_count = 0;
   std::vector<Diagnostic> diagnostics;
   std::size_t error_count = 0;

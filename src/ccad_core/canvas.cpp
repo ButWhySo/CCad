@@ -29,6 +29,17 @@ CanvasScene buildCanvasScene(const Project& project) {
     });
   }
 
+  for (const PlacementRegion& region : project.board->placement_regions) {
+    scene.placement_regions.push_back(CanvasPlacementRegion{
+        .id = region.id,
+        .kind = region.kind,
+        .x_units = toMillimeters(region.area.origin.x),
+        .y_units = toMillimeters(region.area.origin.y),
+        .width_units = toMillimeters(region.area.size.width),
+        .height_units = toMillimeters(region.area.size.height),
+    });
+  }
+
   for (const Keepout& keepout : project.board->keepouts) {
     scene.keepouts.push_back(CanvasKeepout{
         .id = keepout.id,

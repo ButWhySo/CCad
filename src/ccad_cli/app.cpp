@@ -76,6 +76,11 @@ const std::vector<CommandHelp>& commandHelp() {
                   .summary = "Append one rectangular keepout to a board project",
                   .usage = "ccad pcb add-keepout --file <path> --id <id> --kind <kind> "
                            "--x-mm <n> --y-mm <n> --width-mm <n> --height-mm <n>"},
+      CommandHelp{.name = "pcb add-placement-region",
+                  .summary = "Append one rectangular placement region to a board project",
+                  .usage = "ccad pcb add-placement-region --file <path> --id <id> "
+                           "--kind <kind> --x-mm <n> --y-mm <n> --width-mm <n> "
+                           "--height-mm <n>"},
   };
   return commands;
 }

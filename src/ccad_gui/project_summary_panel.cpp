@@ -33,6 +33,7 @@ ProjectSummaryPanel::ProjectSummaryPanel(QWidget* parent) : QWidget(parent) {
   layout->addWidget(makeValueCard("Pads"));
   layout->addWidget(makeValueCard("Vias"));
   layout->addWidget(makeValueCard("Tracks"));
+  layout->addWidget(makeValueCard("Placement Regions"));
   layout->addWidget(makeValueCard("Keepouts"));
   layout->addWidget(makeValueCard("Diagnostics"));
   layout->addStretch(1);
@@ -52,6 +53,7 @@ void ProjectSummaryPanel::renderReview(const ccad::ProjectReview& review) {
   pads_value_->setText(QString::number(review.pad_count));
   vias_value_->setText(QString::number(review.via_count));
   tracks_value_->setText(QString::number(review.track_count));
+  placement_regions_value_->setText(QString::number(review.placement_region_count));
   keepouts_value_->setText(QString::number(review.keepout_count));
   diagnostics_value_->setText(QString::number(review.diagnostics.size()));
 
@@ -73,6 +75,7 @@ void ProjectSummaryPanel::renderLoadFailure(const QString& path) {
   pads_value_->setText("0");
   vias_value_->setText("0");
   tracks_value_->setText("0");
+  placement_regions_value_->setText("0");
   keepouts_value_->setText("0");
   diagnostics_value_->setText("0");
   setStatusChip("Load failed", "#dc2626");
@@ -105,6 +108,8 @@ QWidget* ProjectSummaryPanel::makeValueCard(const QString& label) {
     vias_value_ = value;
   } else if (label == "Tracks") {
     tracks_value_ = value;
+  } else if (label == "Placement Regions") {
+    placement_regions_value_ = value;
   } else if (label == "Keepouts") {
     keepouts_value_ = value;
   } else {

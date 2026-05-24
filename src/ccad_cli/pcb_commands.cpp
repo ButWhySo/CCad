@@ -173,6 +173,35 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "add-placement-region") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--kind", "--x-mm", "--y-mm", "--width-mm",
+                                 "--height-mm"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      requireUniquePlacementRegionId(board, id);
+      requireUniquePhysicalObjectId(board, id);
+      const ccad::Rect area{
+          .origin = ccad::Point{.x = requirePositiveMillimeters(options, "--x-mm"),
+                                .y = requirePositiveMillimeters(options, "--y-mm")},
+          .size = ccad::Size{.width = requirePositiveMillimeters(options, "--width-mm"),
+                             .height = requirePositiveMillimeters(options, "--height-mm")},
+      };
+      requireRectInsideBoard(board, area, "placement region area");
+      board.placement_regions.push_back(ccad::PlacementRegion{
+          .id = id,
+          .kind = requireOption(options, "--kind"),
+          .area = area,
+      });
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "place-footprint") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--footprint", "--component", "--at-x-mm", "--at-y-mm",

@@ -25,6 +25,7 @@ class ProjectSummaryPanel final : public QWidget {
   QLabel* pads_value_ = nullptr;
   QLabel* vias_value_ = nullptr;
   QLabel* tracks_value_ = nullptr;
+  QLabel* placement_regions_value_ = nullptr;
   QLabel* keepouts_value_ = nullptr;
   QLabel* diagnostics_value_ = nullptr;
 };

@@ -195,6 +195,7 @@ Invoke-Ccad pcb add-pad --file $Project --id P1 --component U1 --pin 1 --net N1 
 Invoke-Ccad pcb add-via --file $Project --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
 Invoke-Ccad pcb add-track --file $Project --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
 Invoke-Ccad pcb add-track --file $Project --id T2 --net N2 --layer F.Cu --start-x-mm 5 --start-y-mm 9 --end-x-mm 8 --end-y-mm 6 --width-mm 0.25
+Invoke-Ccad pcb add-placement-region --file $Project --id PR1 --kind component --x-mm 11 --y-mm 4 --width-mm 12 --height-mm 8
 Invoke-Ccad pcb add-keepout --file $Project --id K1 --kind placement --x-mm 20 --y-mm 10 --width-mm 4 --height-mm 3
 
 $ProjectObject = Get-Content -Raw $Project | ConvertFrom-Json

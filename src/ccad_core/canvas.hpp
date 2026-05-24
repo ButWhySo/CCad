@@ -54,6 +54,15 @@ struct CanvasKeepout {
   double height_units = 0.0;
 };
 
+struct CanvasPlacementRegion {
+  std::string id;
+  std::string kind;
+  double x_units = 0.0;
+  double y_units = 0.0;
+  double width_units = 0.0;
+  double height_units = 0.0;
+};
+
 struct CanvasScene {
   bool has_board = false;
   std::int64_t board_width_nm = 0;
@@ -61,6 +70,7 @@ struct CanvasScene {
   double view_width_units = 0.0;
   double view_height_units = 0.0;
   std::vector<CanvasLayer> layers;
+  std::vector<CanvasPlacementRegion> placement_regions;
   std::vector<CanvasKeepout> keepouts;
   std::vector<CanvasPad> pads;
   std::vector<CanvasVia> vias;

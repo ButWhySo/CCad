@@ -52,6 +52,7 @@ int main() {
   require(clean.pad_count == 0, "review reports pad count");
   require(clean.via_count == 0, "review reports via count");
   require(clean.track_count == 0, "review reports track count");
+  require(clean.placement_region_count == 0, "review reports placement region count");
   require(clean.keepout_count == 0, "review reports keepout count");
   require(clean.error_count == 0, "clean review has no errors");
   require(clean.warning_count == 0, "clean review has no warnings");
@@ -79,6 +80,15 @@ int main() {
   require(drc_review.diagnostics.size() == 1, "review carries drc diagnostic");
   require(drc_review.diagnostics.at(0).code == "PAD_IN_KEEPOUT", "review includes drc code");
   require(drc_review.diagnostics.at(0).object_id == "P1", "review includes drc object id");
+
+  drc_invalid.board->placement_regions.push_back(ccad::PlacementRegion{
+      .id = "PR1",
+      .kind = "component",
+      .area = ccad::Rect{
+          .origin = ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(2)},
+          .size = ccad::Size{.width = ccad::millimeters(5), .height = ccad::millimeters(5)}}});
+  const ccad::ProjectReview placement_review = ccad::buildReview(drc_invalid);
+  require(placement_review.placement_region_count == 1, "review counts placement regions");
 
   ccad::Project invalid = validProject();
   invalid.nets.at(0).members.push_back(

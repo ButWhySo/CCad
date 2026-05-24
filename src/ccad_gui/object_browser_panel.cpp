@@ -84,7 +84,8 @@ void ObjectBrowserPanel::renderScene(const ccad::CanvasScene& scene) {
   }
 
   const int object_count = static_cast<int>(scene.pads.size() + scene.vias.size() +
-                                            scene.tracks.size() + scene.keepouts.size());
+                                            scene.tracks.size() + scene.keepouts.size() +
+                                            scene.placement_regions.size());
   addSection("Objects (" + QString::number(object_count) + ")");
   for (const ccad::CanvasPad& pad : scene.pads) {
     addRow("pad " + qstr(pad.id) + "  " + netText(pad.net_id) + "  " +
@@ -101,6 +102,10 @@ void ObjectBrowserPanel::renderScene(const ccad::CanvasScene& scene) {
   }
   for (const ccad::CanvasKeepout& keepout : scene.keepouts) {
     addRow("keepout " + qstr(keepout.id) + "  kind " + qstr(keepout.kind), qstr(keepout.id));
+  }
+  for (const ccad::CanvasPlacementRegion& region : scene.placement_regions) {
+    addRow("placement-region " + qstr(region.id) + "  kind " + qstr(region.kind),
+           qstr(region.id));
   }
 }
 

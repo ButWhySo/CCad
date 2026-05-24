@@ -12,10 +12,10 @@ Progress counter: Phase 2 / 6, Sprint 65 merged and verified on `main`; Sprint 6
 - Deterministic JSON load/dump.
 - Logical ERC diagnostics.
 - CLI: `ccad help --format json`, `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
-- CLI PCB authoring: `ccad pcb add-pad`, `ccad pcb add-via`, `ccad pcb add-track`, and `ccad pcb add-keepout`.
+- CLI PCB authoring: `ccad pcb add-pad`, `ccad pcb add-via`, `ccad pcb add-track`, `ccad pcb add-keepout`, and `ccad pcb add-placement-region`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
-- Physical board outline, layers, rectangular keepouts, pads, vias, and track segments in project JSON.
+- Physical board outline, layers, rectangular placement regions, rectangular keepouts, pads, vias, and track segments in project JSON.
 - Physical DRC for geometry, connectivity metadata, rectangular keepout occupancy, track crossing violations, fixed default copper clearance, default minimum track width, default minimum via annular ring, stable physical object IDs, and logical pad/net parity.
 - Physical DRC track-endpoint connectivity now accepts geometric copper contact with same-net pads and vias, not only exact center-point matches.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
@@ -39,6 +39,7 @@ Progress counter: Phase 2 / 6, Sprint 65 merged and verified on `main`; Sprint 6
 - Native GUI includes in-app navigation controls help (`Help > Navigation Controls`, shortcut `F1`).
 - GitHub CI now uses `actions/checkout@v5` for Node 24 runner compatibility.
 - Native GUI starts with a larger default window size derived from desktop available bounds.
+- Placement regions are serialized, authored through the CLI, inspected in review JSON, checked by DRC, rendered in the Qt canvas, and listed in the object browser.
 - Native GUI startup crash (status `0xC0000005`) fixed by ordering status-label initialization before pan-mode callback wiring.
 
 Out of scope for this phase: full interactive editing, placement engine, routing engine, KiCad import/export, fabrication outputs, and network services.
@@ -415,6 +416,36 @@ Current limitation:
 
 - These commands create raw primitives only. They do not run full DRC, enforce schematic parity, solve placement, or route nets automatically yet.
 
+Placement regions:
+
+- Placement regions are represented in project JSON, can be authored through the CLI, are visible in the Qt board canvas, are listed in review/object browser surfaces, and are checked by DRC.
+- A placement region has `id`, `kind`, and rectangular `area`.
+- Current accepted kinds are `component` and `module`.
+- Placement regions are guidance geometry for future placement engines and human/agent review. They do not automatically move components yet.
+
+Add a placement region through the CLI:
+
+```powershell
+.\build-qt\ccad.exe pcb add-placement-region --file .\build-qt\canvas-demo.ccad.json --id PR1 --kind component --x-mm 8 --y-mm 6 --width-mm 12 --height-mm 8
+```
+
+Example JSON fragment:
+
+```json
+"placement_regions": [
+  {
+    "id": "power-cluster",
+    "kind": "component",
+    "area": {
+      "x_nm": 8000000,
+      "y_nm": 6000000,
+      "width_nm": 12000000,
+      "height_nm": 8000000
+    }
+  }
+]
+```
+
 ## GUI
 
 CCad can build an optional native Qt 6 Widgets review GUI named `ccad_gui`. It is intended for human co-working and review while the kernel and CLI remain the source of truth.
@@ -467,6 +498,7 @@ ctest --test-dir build-qt --output-on-failure
 .\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 .\build-qt\ccad.exe pcb add-via --file .\build-qt\canvas-demo.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
 .\build-qt\ccad.exe pcb add-track --file .\build-qt\canvas-demo.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
+.\build-qt\ccad.exe pcb add-placement-region --file .\build-qt\canvas-demo.ccad.json --id PR1 --kind component --x-mm 11 --y-mm 4 --width-mm 12 --height-mm 8
 .\build-qt\ccad.exe pcb add-keepout --file .\build-qt\canvas-demo.ccad.json --id K1 --kind placement --x-mm 20 --y-mm 10 --width-mm 4 --height-mm 3
 .\build-qt\ccad.exe inspect .\build-qt\canvas-demo.ccad.json
 .\build-qt\ccad.exe validate .\build-qt\canvas-demo.ccad.json
@@ -484,7 +516,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_sprint_demo.ps1 -Name spr
 What it does:
 
 - Creates `artifacts/demos/sprint42-gui-canvas-mvp-review.ccad.json`.
-- Adds a pad, via, two crossing tracks, logical demo nets, and a rectangular keepout.
+- Adds a pad, via, two crossing tracks, a rectangular placement region, logical demo nets, and a rectangular keepout.
 - Writes inspect, validate, and DRC JSON reports.
 - Writes a sample KiCad `.kicad_mod` file and imports it to CCad footprint JSON.
 - Places the imported footprint onto the demo board.
