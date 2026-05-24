@@ -329,7 +329,8 @@ bool endpointTouchesSameNetPrimitive(const Board& board, const TrackSegment& sou
     if (track.id == source_track.id || track.net_id != source_track.net_id) {
       continue;
     }
-    if (samePoint(track.start, endpoint) || samePoint(track.end, endpoint)) {
+    if (samePoint(track.start, endpoint) || samePoint(track.end, endpoint) ||
+        pointOnSegment(track.start, track.end, endpoint)) {
       return true;
     }
   }

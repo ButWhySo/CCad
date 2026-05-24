@@ -168,6 +168,18 @@ int main() {
   require(!hasDiagnostic(ccad::runDrc(pad_contact_track), "UNCONNECTED_TRACK_ENDPOINT", "warning"),
           "drc accepts same-net track endpoint touching pad copper area");
 
+  ccad::Project segment_contact_track = validBoardProject();
+  segment_contact_track.board->tracks.push_back(ccad::TrackSegment{
+      .id = "T_STUB",
+      .net_id = "N1",
+      .layer_id = "F.Cu",
+      .start = ccad::Point{.x = ccad::millimeters(6.5), .y = ccad::millimeters(7.5)},
+      .end = ccad::Point{.x = ccad::millimeters(8.0), .y = ccad::millimeters(9.0)},
+      .width = ccad::millimeters(0.25)});
+  require(
+      !hasDiagnostic(ccad::runDrc(segment_contact_track), "UNCONNECTED_TRACK_ENDPOINT", "warning"),
+      "drc accepts same-net track endpoint touching another same-net track segment interior");
+
   ccad::Project keepout_pad = validBoardProject();
   keepout_pad.board->keepouts.push_back(ccad::Keepout{
       .id = "K_PAD",
