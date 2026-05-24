@@ -26,6 +26,7 @@ CanvasScene buildCanvasScene(const Project& project) {
         .id = layer.id,
         .name = layer.name,
         .kind = layer.kind,
+        .visible = layer.visible,
     });
   }
 

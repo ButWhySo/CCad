@@ -11,6 +11,8 @@ ccad::CanvasScene sceneWithPadAndTrack() {
   scene.has_board = true;
   scene.view_width_units = 20.0;
   scene.view_height_units = 20.0;
+  scene.layers.push_back(
+      ccad::CanvasLayer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true});
   scene.pads.push_back(ccad::CanvasPad{
       .id = "P1",
       .net_id = "N1",
@@ -38,6 +40,20 @@ ccad::CanvasScene sceneWithPadAndTrack() {
       .end_x_units = 10.0,
       .end_y_units = 5.0,
       .width_units = 0.25,
+  });
+  return scene;
+}
+
+ccad::CanvasScene hiddenLayerScene() {
+  ccad::CanvasScene scene = sceneWithPadAndTrack();
+  scene.layers.at(0).visible = false;
+  scene.vias.push_back(ccad::CanvasVia{
+      .id = "V1",
+      .net_id = "N1",
+      .x_units = 8.0,
+      .y_units = 8.0,
+      .diameter_units = 1.0,
+      .drill_units = 0.5,
   });
   return scene;
 }
@@ -81,4 +97,12 @@ int main(int argc, char** argv) {
 
   require(selectCanvasObjectsByNetId(scene, "NOPE") == 0, "missing net reports zero");
   require(scene.selectedItems().isEmpty(), "missing net clears selection");
+
+  QGraphicsScene hidden_scene;
+  renderBoardCanvas(hidden_scene, hiddenLayerScene());
+  require(!selectCanvasObjectById(hidden_scene, "P1"), "hidden layer suppresses pad selection");
+  require(!selectCanvasObjectById(hidden_scene, "T1"), "hidden layer suppresses track selection");
+  require(selectCanvasObjectById(hidden_scene, "V1"), "vias stay visible when copper layer is hidden");
+  require(selectCanvasObjectsByNetId(hidden_scene, "N1") == 1,
+          "hidden layer net selection excludes hidden copper");
 }

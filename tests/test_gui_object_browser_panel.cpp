@@ -10,8 +10,10 @@ namespace {
 ccad::CanvasScene browserScene() {
   ccad::CanvasScene scene;
   scene.has_board = true;
-  scene.layers.push_back(ccad::CanvasLayer{.id = "F.Cu", .name = "Front copper", .kind = "signal"});
-  scene.layers.push_back(ccad::CanvasLayer{.id = "B.Cu", .name = "Back copper", .kind = "signal"});
+  scene.layers.push_back(
+      ccad::CanvasLayer{.id = "F.Cu", .name = "Front copper", .kind = "signal", .visible = true});
+  scene.layers.push_back(
+      ccad::CanvasLayer{.id = "B.Cu", .name = "Back copper", .kind = "signal", .visible = false});
   scene.keepouts.push_back(ccad::CanvasKeepout{.id = "K1", .kind = "placement"});
   scene.pads.push_back(ccad::CanvasPad{.id = "P1", .net_id = "N1", .layer_id = "F.Cu"});
   scene.vias.push_back(ccad::CanvasVia{.id = "V1", .net_id = "N1"});
@@ -32,7 +34,8 @@ int main(int argc, char** argv) {
   panel.renderScene(browserScene());
   require(panel.itemCount() == 10, "browser has layer, net, and object rows");
   require(panel.itemText(0) == "Layers (2)", "layer section row");
-  require(panel.itemText(1) == "F.Cu - Front copper [signal]", "front layer row");
+  require(panel.itemText(1) == "F.Cu - Front copper [signal, visible]", "front layer row");
+  require(panel.itemText(2) == "B.Cu - Back copper [signal, hidden]", "hidden layer row");
   require(panel.itemText(3) == "Nets (1)", "net section row");
   require(panel.itemText(4) == "net N1  objects 3", "net row summarizes member count");
   require(panel.itemText(5) == "Objects (4)", "object section row");

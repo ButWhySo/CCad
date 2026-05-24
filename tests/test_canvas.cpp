@@ -13,8 +13,14 @@ ccad::Project boardProject() {
           .origin = ccad::Point{.x = ccad::nanometers(0), .y = ccad::nanometers(0)},
           .size = ccad::Size{.width = ccad::millimeters(42), .height = ccad::millimeters(28)},
       },
-      .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "signal"},
-                 ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "signal"}},
+      .layers = {ccad::Layer{.id = "F.Cu",
+                              .name = "Front copper",
+                              .kind = "signal",
+                              .visible = true},
+                 ccad::Layer{.id = "B.Cu",
+                              .name = "Back copper",
+                              .kind = "signal",
+                              .visible = false}},
       .placement_regions = {ccad::PlacementRegion{
           .id = "PR1",
           .kind = "component",
@@ -73,6 +79,8 @@ int main() {
   require(scene.layers.at(0).id == "F.Cu", "canvas layer id");
   require(scene.layers.at(0).name == "Front copper", "canvas layer name");
   require(scene.layers.at(0).kind == "signal", "canvas layer kind");
+  require(scene.layers.at(0).visible, "canvas front layer visibility");
+  require(!scene.layers.at(1).visible, "canvas back layer visibility");
   require(scene.placement_regions.size() == 1, "canvas has placement region");
   require(scene.placement_regions.at(0).id == "PR1", "canvas placement region id");
   require(scene.placement_regions.at(0).x_units == 3.0, "canvas placement region x is mm");

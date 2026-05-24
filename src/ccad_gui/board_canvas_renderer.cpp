@@ -12,6 +12,7 @@
 #include <QTransform>
 
 #include <algorithm>
+#include <set>
 
 namespace {
 
@@ -85,6 +86,20 @@ QGraphicsItem* findCanvasObjectById(QGraphicsScene& canvas_scene, const QString&
   return nullptr;
 }
 
+std::set<std::string> hiddenLayerIds(const ccad::CanvasScene& scene) {
+  std::set<std::string> hidden;
+  for (const ccad::CanvasLayer& layer : scene.layers) {
+    if (!layer.visible) {
+      hidden.insert(layer.id);
+    }
+  }
+  return hidden;
+}
+
+bool layerIsVisible(const std::set<std::string>& hidden_layers, const std::string& layer_id) {
+  return layer_id.empty() || !hidden_layers.contains(layer_id);
+}
+
 }  // namespace
 
 void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& scene) {
@@ -127,6 +142,8 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
   auto* board = canvas_scene.addRect(board_rect, outline_pen, QBrush(theme.board_fill_color));
   board->setToolTip("Board outline");
 
+  const std::set<std::string> hidden_layers = hiddenLayerIds(scene);
+
   QPen placement_region_pen(theme.placement_region_color);
   placement_region_pen.setWidthF(1.2);
   placement_region_pen.setStyle(Qt::DotLine);
@@ -164,6 +181,9 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
   QPen track_pen(theme.track_color);
   track_pen.setCapStyle(Qt::RoundCap);
   for (const ccad::CanvasTrack& track : scene.tracks) {
+    if (!layerIsVisible(hidden_layers, track.layer_id)) {
+      continue;
+    }
     track_pen.setWidthF(std::max(1.2, track.width_units * scale));
     QPainterPath track_path;
     track_path.moveTo(margin + (track.start_x_units * scale),
@@ -176,6 +196,9 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
   }
 
   for (const ccad::CanvasPad& pad : scene.pads) {
+    if (!layerIsVisible(hidden_layers, pad.layer_id)) {
+      continue;
+    }
     const QRectF pad_rect(margin + (pad.x_units * scale) - ((pad.width_units * scale) / 2.0),
                           margin + (pad.y_units * scale) - ((pad.height_units * scale) / 2.0),
                           pad.width_units * scale, pad.height_units * scale);

@@ -23,6 +23,10 @@ QString layerText(const std::string& layer_id) {
   return layer_id.empty() ? "layer --" : "layer " + qstr(layer_id);
 }
 
+QString visibilityText(const bool visible) {
+  return visible ? "visible" : "hidden";
+}
+
 void countNet(std::map<std::string, int>& net_counts, const std::string& net_id) {
   if (!net_id.empty()) {
     ++net_counts[net_id];
@@ -65,7 +69,8 @@ void ObjectBrowserPanel::renderScene(const ccad::CanvasScene& scene) {
 
   addSection("Layers (" + QString::number(static_cast<int>(scene.layers.size())) + ")");
   for (const ccad::CanvasLayer& layer : scene.layers) {
-    addRow(qstr(layer.id) + " - " + qstr(layer.name) + " [" + qstr(layer.kind) + "]");
+    addRow(qstr(layer.id) + " - " + qstr(layer.name) + " [" + qstr(layer.kind) + ", " +
+           visibilityText(layer.visible) + "]");
   }
 
   std::map<std::string, int> net_counts;
