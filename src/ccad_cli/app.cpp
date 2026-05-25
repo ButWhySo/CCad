@@ -131,6 +131,11 @@ const std::vector<CommandHelp>& commandHelp() {
       CommandHelp{.name = "pcb remove-route-request",
                   .summary = "Remove one route-assistance request by stable ID",
                   .usage = "ccad pcb remove-route-request --file <path> --id <id>"},
+      CommandHelp{.name = "pcb apply-route-segment",
+                  .summary = "Apply one routed track segment for a route request",
+                  .usage = "ccad pcb apply-route-segment --file <path> --request-id <id> "
+                           "--track-id <id> --layer <id> --start-x-mm <n> --start-y-mm <n> "
+                           "--end-x-mm <n> --end-y-mm <n>"},
       CommandHelp{.name = "pcb set-track",
                   .summary = "Update one existing track segment geometry",
                   .usage = "ccad pcb set-track --file <path> --id <id> --start-x-mm <n> "

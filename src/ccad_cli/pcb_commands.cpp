@@ -3,6 +3,7 @@
 #include "ccad_cli/common.hpp"
 #include "ccad_cli/pcb_object_queries.hpp"
 
+#include <algorithm>
 #include <iostream>
 #include <map>
 #include <stdexcept>
@@ -652,6 +653,54 @@ int pcbCommand(const std::vector<std::string>& args) {
       if (board.route_requests.size() == old_size) {
         throw std::runtime_error("unknown route request: " + id);
       }
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "apply-route-segment") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--request-id", "--track-id", "--layer",
+                                 "--start-x-mm", "--start-y-mm", "--end-x-mm",
+                                 "--end-y-mm"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string request_id = requireOption(options, "--request-id");
+      const std::string track_id = requireOption(options, "--track-id");
+      const std::string layer_id = requireOption(options, "--layer");
+      requireUniqueTrackId(board, track_id);
+      requireUniquePhysicalObjectId(board, track_id);
+      requireCopperLayer(board, layer_id);
+      auto request_it = std::find_if(
+          board.route_requests.begin(), board.route_requests.end(),
+          [&request_id](const ccad::RouteRequest& request) { return request.id == request_id; });
+      if (request_it == board.route_requests.end()) {
+        throw std::runtime_error("unknown route request: " + request_id);
+      }
+      const ccad::Point start{
+          .x = requirePositiveMillimeters(options, "--start-x-mm"),
+          .y = requirePositiveMillimeters(options, "--start-y-mm"),
+      };
+      const ccad::Point end{
+          .x = requirePositiveMillimeters(options, "--end-x-mm"),
+          .y = requirePositiveMillimeters(options, "--end-y-mm"),
+      };
+      const ccad::Length width = request_it->width;
+      const ccad::Length half_width = ccad::nanometers(width.nanometers / 2);
+      requirePointWithMarginInsideBoard(board, start, half_width, "route segment start");
+      requirePointWithMarginInsideBoard(board, end, half_width, "route segment end");
+      board.tracks.push_back(ccad::TrackSegment{
+          .id = track_id,
+          .net_id = request_it->net_id,
+          .layer_id = layer_id,
+          .start = start,
+          .end = end,
+          .width = width,
+      });
+      board.route_requests.erase(request_it);
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
