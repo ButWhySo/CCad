@@ -120,6 +120,11 @@ const std::vector<CommandHelp>& commandHelp() {
                   .usage = "ccad pcb add-route-request --file <path> --id <id> --net <id> "
                            "--from <object-id> --to <object-id> --preferred-layer <id> "
                            "--policy <name> --width-mm <n>"},
+      CommandHelp{.name = "pcb set-route-request",
+                  .summary = "Update one existing route-assistance request",
+                  .usage = "ccad pcb set-route-request --file <path> --id <id> --net <id> "
+                           "--from <object-id> --to <object-id> --preferred-layer <id> "
+                           "--policy <name> --width-mm <n>"},
       CommandHelp{.name = "pcb set-track",
                   .summary = "Update one existing track segment geometry",
                   .usage = "ccad pcb set-track --file <path> --id <id> --start-x-mm <n> "

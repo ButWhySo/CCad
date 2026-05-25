@@ -586,6 +586,45 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "set-route-request") {
+      const std::map<std::string, std::string> options = parseOptions(
+          args, 1,
+          {"--file", "--id", "--net", "--from", "--to", "--preferred-layer", "--policy",
+           "--width-mm"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const std::string from_object_id = requireOption(options, "--from");
+      const std::string to_object_id = requireOption(options, "--to");
+      const std::string preferred_layer_id = requireOption(options, "--preferred-layer");
+      requireBoardObjectId(board, from_object_id);
+      requireBoardObjectId(board, to_object_id);
+      requireCopperLayer(board, preferred_layer_id);
+      const ccad::Length width = requirePositiveMillimeters(options, "--width-mm");
+      bool updated = false;
+      for (ccad::RouteRequest& request : board.route_requests) {
+        if (request.id == id) {
+          request.net_id = requireOption(options, "--net");
+          request.from_object_id = from_object_id;
+          request.to_object_id = to_object_id;
+          request.preferred_layer_id = preferred_layer_id;
+          request.policy = requireOption(options, "--policy");
+          request.width = width;
+          updated = true;
+          break;
+        }
+      }
+      if (!updated) {
+        throw std::runtime_error("unknown route request: " + id);
+      }
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "set-track") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--start-x-mm", "--start-y-mm",
