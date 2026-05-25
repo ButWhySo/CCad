@@ -288,6 +288,11 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
   std::ostringstream out;
   out << "{\n"
       << "  \"route_job\": {\n"
+      << "    \"schema_version\": 1,\n"
+      << "    \"units\": {\n"
+      << "      \"length_unit\": \"nanometer\",\n"
+      << "      \"angle_unit\": \"degree\"\n"
+      << "    },\n"
       << "    \"summary\": {\n"
       << "      \"layer_count\": " << board.layers.size() << ",\n"
       << "      \"pad_count\": " << board.pads.size() << ",\n"

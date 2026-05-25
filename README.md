@@ -437,7 +437,7 @@ Add PCB primitives through the CLI:
 What these do:
 
 - `pcb list-nets` emits compact physical net usage counts for pads, vias, and tracks.
-- `pcb export-route-job` emits a compact deterministic route-job JSON envelope with board outline, design rules, layers, pads, vias, tracks, keepouts, placement regions, and route requests; pass `--request-id <id>` to export one request.
+- `pcb export-route-job` emits a compact deterministic route-job JSON envelope with schema/version metadata, units, board outline, design rules, layers, pads, vias, tracks, keepouts, placement regions, and route requests; pass `--request-id <id>` to export one request.
 - `pcb list-objects` emits compact board layer and physical object rows as JSON, with optional type filtering for `layer`, `pad`, `via`, `track`, `keepout`, or `placement_region`.
 - `pcb get-object` emits one board layer, pad, via, track, keepout, or placement region by stable ID as compact JSON.
 - `pcb set-outline` replaces the rectangular board outline while rejecting outlines that would leave existing pads, vias, tracks, keepouts, or placement regions outside the board.
