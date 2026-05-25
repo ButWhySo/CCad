@@ -274,6 +274,17 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "export-route-job") {
+      const std::map<std::string, std::string> options = parseOptions(args, 1, {"--file"});
+      const std::string file = requireOption(options, "--file");
+      const ccad::Project project = loadProjectFile(file);
+      if (!project.board.has_value()) {
+        throw std::runtime_error("project has no board");
+      }
+      std::cout << exportRouteJobJson(*project.board);
+      return 0;
+    }
+
     if (subcommand == "remove-layer") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id"});

@@ -75,6 +75,8 @@ int main() {
           "help json describes pcb net listing");
   require(help_json.find("\"name\": \"pcb list-route-requests\"") != std::string::npos,
           "help json describes route request listing");
+  require(help_json.find("\"name\": \"pcb export-route-job\"") != std::string::npos,
+          "help json describes route job export");
   require(help_json.find("\"name\": \"pcb remove-layer\"") != std::string::npos,
           "help json describes layer removal");
   require(help_json.find("\"name\": \"pcb set-layer-visibility\"") != std::string::npos,
@@ -467,6 +469,24 @@ int main() {
           "pcb list-route-requests includes source object");
   require(list_route_requests_json.find("\"to_object_id\": \"T1\"") != std::string::npos,
           "pcb list-route-requests includes target object");
+  const std::filesystem::path route_job_path = temp / "route-job.json";
+  const std::string export_route_job_command =
+      quote(CCAD_BINARY) + " pcb export-route-job --file " + quote(board_project_path) +
+      " > " + quote(route_job_path);
+  require(run(export_route_job_command) == 0, "pcb export-route-job exits zero");
+  const std::string route_job_json = readFile(route_job_path);
+  require(route_job_json.find("\"route_job\"") != std::string::npos,
+          "pcb export-route-job writes route job root");
+  require(route_job_json.find("\"route_request_count\": 1") != std::string::npos,
+          "pcb export-route-job reports request count");
+  require(route_job_json.find("\"board_outline\"") != std::string::npos,
+          "pcb export-route-job includes board outline");
+  require(route_job_json.find("\"physical_objects\"") != std::string::npos,
+          "pcb export-route-job includes physical objects");
+  require(route_job_json.find("\"route_requests\"") != std::string::npos,
+          "pcb export-route-job includes route requests");
+  require(route_job_json.find("\"id\": \"RR1\"") != std::string::npos,
+          "pcb export-route-job includes route request id");
   const std::string remove_route_request_command =
       quote(CCAD_BINARY) + " pcb remove-route-request --file " + quote(board_project_path) +
       " --id RR1";
