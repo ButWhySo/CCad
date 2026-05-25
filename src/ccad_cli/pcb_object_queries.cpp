@@ -274,4 +274,91 @@ std::string listRouteRequestsJson(const ccad::Board& board) {
   return out.str();
 }
 
+std::string exportRouteJobJson(const ccad::Board& board) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"route_job\": {\n"
+      << "    \"summary\": {\n"
+      << "      \"layer_count\": " << board.layers.size() << ",\n"
+      << "      \"pad_count\": " << board.pads.size() << ",\n"
+      << "      \"via_count\": " << board.vias.size() << ",\n"
+      << "      \"track_count\": " << board.tracks.size() << ",\n"
+      << "      \"route_request_count\": " << board.route_requests.size() << "\n"
+      << "    },\n"
+      << "    \"board_outline\": {\n"
+      << "      \"x_nm\": " << board.outline.origin.x.nanometers << ",\n"
+      << "      \"y_nm\": " << board.outline.origin.y.nanometers << ",\n"
+      << "      \"width_nm\": " << board.outline.size.width.nanometers << ",\n"
+      << "      \"height_nm\": " << board.outline.size.height.nanometers << "\n"
+      << "    },\n"
+      << "    \"design_rules\": {\n"
+      << "      \"copper_clearance_nm\": " << board.design_rules.copper_clearance.nanometers
+      << ",\n"
+      << "      \"min_track_width_nm\": " << board.design_rules.min_track_width.nanometers
+      << ",\n"
+      << "      \"min_via_annular_ring_nm\": "
+      << board.design_rules.min_via_annular_ring.nanometers << "\n"
+      << "    },\n"
+      << "    \"layers\": [\n";
+  for (std::size_t i = 0; i < board.layers.size(); ++i) {
+    const ccad::Layer& layer = board.layers.at(i);
+    out << "      {\"id\": \"" << ccad::escapeJson(layer.id) << "\", \"name\": \""
+        << ccad::escapeJson(layer.name) << "\", \"kind\": \"" << ccad::escapeJson(layer.kind)
+        << "\", \"visible\": " << (layer.visible ? "true" : "false") << "}"
+        << (i + 1 == board.layers.size() ? "" : ",") << '\n';
+  }
+  out << "    ],\n"
+      << "    \"physical_objects\": {\n"
+      << "      \"pads\": [\n";
+  for (std::size_t i = 0; i < board.pads.size(); ++i) {
+    const ccad::Pad& pad = board.pads.at(i);
+    out << "        {\"id\": \"" << ccad::escapeJson(pad.id) << "\", \"net_id\": \""
+        << ccad::escapeJson(pad.net_id) << "\", \"layer_id\": \""
+        << ccad::escapeJson(pad.layer_id) << "\", \"x_nm\": " << pad.position.x.nanometers
+        << ", \"y_nm\": " << pad.position.y.nanometers << ", \"width_nm\": "
+        << pad.size.width.nanometers << ", \"height_nm\": " << pad.size.height.nanometers
+        << "}" << (i + 1 == board.pads.size() ? "" : ",") << '\n';
+  }
+  out << "      ],\n"
+      << "      \"vias\": [\n";
+  for (std::size_t i = 0; i < board.vias.size(); ++i) {
+    const ccad::Via& via = board.vias.at(i);
+    out << "        {\"id\": \"" << ccad::escapeJson(via.id) << "\", \"net_id\": \""
+        << ccad::escapeJson(via.net_id) << "\", \"x_nm\": " << via.position.x.nanometers
+        << ", \"y_nm\": " << via.position.y.nanometers << ", \"diameter_nm\": "
+        << via.diameter.nanometers << ", \"drill_nm\": " << via.drill.nanometers << "}"
+        << (i + 1 == board.vias.size() ? "" : ",") << '\n';
+  }
+  out << "      ],\n"
+      << "      \"tracks\": [\n";
+  for (std::size_t i = 0; i < board.tracks.size(); ++i) {
+    const ccad::TrackSegment& track = board.tracks.at(i);
+    out << "        {\"id\": \"" << ccad::escapeJson(track.id) << "\", \"net_id\": \""
+        << ccad::escapeJson(track.net_id) << "\", \"layer_id\": \""
+        << ccad::escapeJson(track.layer_id) << "\", \"start_x_nm\": "
+        << track.start.x.nanometers << ", \"start_y_nm\": " << track.start.y.nanometers
+        << ", \"end_x_nm\": " << track.end.x.nanometers << ", \"end_y_nm\": "
+        << track.end.y.nanometers << ", \"width_nm\": " << track.width.nanometers << "}"
+        << (i + 1 == board.tracks.size() ? "" : ",") << '\n';
+  }
+  out << "      ]\n"
+      << "    },\n"
+      << "    \"route_requests\": [\n";
+  for (std::size_t i = 0; i < board.route_requests.size(); ++i) {
+    const ccad::RouteRequest& request = board.route_requests.at(i);
+    out << "      {\"id\": \"" << ccad::escapeJson(request.id) << "\", \"net_id\": \""
+        << ccad::escapeJson(request.net_id) << "\", \"from_object_id\": \""
+        << ccad::escapeJson(request.from_object_id) << "\", \"to_object_id\": \""
+        << ccad::escapeJson(request.to_object_id) << "\", \"preferred_layer_id\": \""
+        << ccad::escapeJson(request.preferred_layer_id) << "\", \"policy\": \""
+        << ccad::escapeJson(request.policy) << "\", \"width_nm\": "
+        << request.width.nanometers << "}"
+        << (i + 1 == board.route_requests.size() ? "" : ",") << '\n';
+  }
+  out << "    ]\n"
+      << "  }\n"
+      << "}\n";
+  return out.str();
+}
+
 }  // namespace ccad_cli

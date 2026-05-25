@@ -69,6 +69,7 @@ Phase 2 is complete. CCad now has a deterministic physical board model, early PC
 - CLI diff tests cover board-level physical object entries in executable JSON output.
 - CLI PCB authoring can list physical board net usage counts as compact JSON.
 - CLI PCB authoring can list route-request intent records as compact JSON.
+- CLI PCB authoring can export compact route-job JSON for external router handoff.
 - CLI PCB authoring can list board layer and physical object IDs as compact JSON, with optional type filtering.
 - CLI PCB authoring can inspect one board layer or physical object by stable ID as compact JSON.
 - CLI PCB authoring can remove physical board objects by stable ID.
@@ -424,6 +425,7 @@ Add PCB primitives through the CLI:
 .\build-qt\ccad.exe pcb add-track --file .\build-qt\canvas-demo.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
 .\build-qt\ccad.exe pcb add-route-request --file .\build-qt\canvas-demo.ccad.json --id RR1 --net N1 --from P1 --to V1 --preferred-layer F.Cu --policy shortest_safe --width-mm 0.25
 .\build-qt\ccad.exe pcb set-route-request --file .\build-qt\canvas-demo.ccad.json --id RR1 --net N1 --from V1 --to T1 --preferred-layer B.Cu --policy prefer_back --width-mm 0.30
+.\build-qt\ccad.exe pcb export-route-job --file .\build-qt\canvas-demo.ccad.json
 .\build-qt\ccad.exe pcb remove-route-request --file .\build-qt\canvas-demo.ccad.json --id RR1
 .\build-qt\ccad.exe pcb set-track --file .\build-qt\canvas-demo.ccad.json --id T1 --start-x-mm 6 --start-y-mm 7 --end-x-mm 9 --end-y-mm 10 --width-mm 0.30 --net N2 --layer B.Cu
 .\build-qt\ccad.exe pcb set-region-kind --file .\build-qt\canvas-demo.ccad.json --id K1 --kind routing
@@ -435,6 +437,7 @@ Add PCB primitives through the CLI:
 What these do:
 
 - `pcb list-nets` emits compact physical net usage counts for pads, vias, and tracks.
+- `pcb export-route-job` emits a compact deterministic route-job JSON envelope with board outline, design rules, layers, pads, vias, tracks, and route requests.
 - `pcb list-objects` emits compact board layer and physical object rows as JSON, with optional type filtering for `layer`, `pad`, `via`, `track`, `keepout`, or `placement_region`.
 - `pcb get-object` emits one board layer, pad, via, track, keepout, or placement region by stable ID as compact JSON.
 - `pcb set-outline` replaces the rectangular board outline while rejecting outlines that would leave existing pads, vias, tracks, keepouts, or placement regions outside the board.
@@ -606,6 +609,7 @@ ctest --test-dir build-qt --output-on-failure
 .\build-qt\ccad.exe pcb add-track --file .\build-qt\canvas-demo.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
 .\build-qt\ccad.exe pcb add-route-request --file .\build-qt\canvas-demo.ccad.json --id RR1 --net N1 --from P1 --to V1 --preferred-layer F.Cu --policy shortest_safe --width-mm 0.25
 .\build-qt\ccad.exe pcb set-route-request --file .\build-qt\canvas-demo.ccad.json --id RR1 --net N1 --from V1 --to T1 --preferred-layer B.Cu --policy prefer_back --width-mm 0.30
+.\build-qt\ccad.exe pcb export-route-job --file .\build-qt\canvas-demo.ccad.json
 .\build-qt\ccad.exe pcb remove-route-request --file .\build-qt\canvas-demo.ccad.json --id RR1
 .\build-qt\ccad.exe pcb set-track --file .\build-qt\canvas-demo.ccad.json --id T1 --start-x-mm 6 --start-y-mm 7 --end-x-mm 9 --end-y-mm 10 --width-mm 0.30 --net N2 --layer B.Cu
 .\build-qt\ccad.exe pcb add-placement-region --file .\build-qt\canvas-demo.ccad.json --id PR1 --kind component --x-mm 11 --y-mm 4 --width-mm 12 --height-mm 8
