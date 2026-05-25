@@ -93,6 +93,8 @@ int main() {
           "help json describes route request editing");
   require(help_json.find("\"name\": \"pcb remove-route-request\"") != std::string::npos,
           "help json describes route request removal");
+  require(help_json.find("\"name\": \"pcb apply-route-segment\"") != std::string::npos,
+          "help json describes route segment application");
   require(help_json.find("\"name\": \"pcb add-keepout\"") != std::string::npos,
           "help json describes keepout authoring");
   require(help_json.find("\"name\": \"pcb set-pad\"") != std::string::npos,
@@ -529,6 +531,52 @@ int main() {
   require(run(add_keepout_command) != 0, "pcb add-keepout rejects duplicate id");
   require(run(add_placement_region_command) != 0,
           "pcb add-placement-region rejects duplicate id");
+
+  const std::filesystem::path apply_route_board_path = temp / "apply-route-board.ccad.json";
+  const std::string apply_route_init_command =
+      quote(CCAD_BINARY) +
+      " init --name apply-route-board --width-mm 42 --height-mm 28 --out " +
+      quote(apply_route_board_path);
+  require(run(apply_route_init_command) == 0, "apply route board init exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb add-pad --file " + quote(apply_route_board_path) +
+              " --id ARP1 --component U1 --pin 1 --net N1 --layer F.Cu"
+              " --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0") == 0,
+          "apply route fixture add pad exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb add-via --file " + quote(apply_route_board_path) +
+              " --id ARV1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4") == 0,
+          "apply route fixture add via exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb add-route-request --file " +
+              quote(apply_route_board_path) +
+              " --id ARR1 --net N1 --from ARP1 --to ARV1 --preferred-layer F.Cu"
+              " --policy straight --width-mm 0.25") == 0,
+          "apply route fixture add request exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb apply-route-segment --file " +
+              quote(apply_route_board_path) +
+              " --request-id ARR1 --track-id ART1 --layer F.Cu"
+              " --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9") == 0,
+          "pcb apply-route-segment exits zero");
+  const std::string applied_route_json = readFile(apply_route_board_path);
+  require(applied_route_json.find("\"id\": \"ART1\"") != std::string::npos,
+          "pcb apply-route-segment writes track id");
+  require(applied_route_json.find("\"width_nm\": 250000") != std::string::npos,
+          "pcb apply-route-segment uses request width");
+  require(applied_route_json.find("\"id\": \"ARR1\"") == std::string::npos,
+          "pcb apply-route-segment removes satisfied request");
+  require(run(quote(CCAD_BINARY) + " pcb apply-route-segment --file " +
+              quote(apply_route_board_path) +
+              " --request-id ARR1 --track-id ART2 --layer F.Cu"
+              " --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9") != 0,
+          "pcb apply-route-segment rejects missing request");
+  require(run(quote(CCAD_BINARY) + " pcb add-route-request --file " +
+              quote(apply_route_board_path) +
+              " --id ARR2 --net N1 --from ARP1 --to ARV1 --preferred-layer F.Cu"
+              " --policy straight --width-mm 0.25") == 0,
+          "apply route fixture re-adds request exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb apply-route-segment --file " +
+              quote(apply_route_board_path) +
+              " --request-id ARR2 --track-id ART2 --layer B.Cu"
+              " --start-x-mm 5 --start-y-mm 6 --end-x-mm 60 --end-y-mm 9") != 0,
+          "pcb apply-route-segment rejects outside board");
 
   const std::filesystem::path remove_board_path = temp / "remove-board.ccad.json";
   const std::string remove_board_init_command =
