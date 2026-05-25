@@ -75,7 +75,7 @@ std::string viaSignature(const Via& via) {
 std::string trackSignature(const TrackSegment& track) {
   return track.net_id + "\x1f" + track.layer_id + "\x1f" + pointSignature(track.start) +
          "\x1f" + pointSignature(track.end) + "\x1f" +
-         std::to_string(track.width.nanometers);
+         std::to_string(track.width.nanometers) + "\x1f" + track.source_route_request_id;
 }
 
 std::string routeRequestSignature(const RouteRequest& route_request) {

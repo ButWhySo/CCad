@@ -716,6 +716,7 @@ int pcbCommand(const std::vector<std::string>& args) {
           .start = start,
           .end = end,
           .width = width,
+          .source_route_request_id = request_id,
       });
       if (complete_request) {
         board.route_requests.erase(request_it);

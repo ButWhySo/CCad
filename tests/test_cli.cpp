@@ -560,6 +560,9 @@ int main() {
           "pcb apply-route-segment writes track id");
   require(applied_route_json.find("\"width_nm\": 250000") != std::string::npos,
           "pcb apply-route-segment uses request width");
+  require(applied_route_json.find("\"source_route_request_id\": \"ARR1\"") !=
+              std::string::npos,
+          "pcb apply-route-segment records route request provenance");
   require(applied_route_json.find("\"id\": \"ARR1\"") == std::string::npos,
           "pcb apply-route-segment removes satisfied request");
   require(run(quote(CCAD_BINARY) + " pcb apply-route-segment --file " +

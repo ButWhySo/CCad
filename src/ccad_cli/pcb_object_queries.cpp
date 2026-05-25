@@ -355,7 +355,9 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
         << ccad::escapeJson(track.layer_id) << "\", \"start_x_nm\": "
         << track.start.x.nanometers << ", \"start_y_nm\": " << track.start.y.nanometers
         << ", \"end_x_nm\": " << track.end.x.nanometers << ", \"end_y_nm\": "
-        << track.end.y.nanometers << ", \"width_nm\": " << track.width.nanometers << "}"
+        << track.end.y.nanometers << ", \"width_nm\": " << track.width.nanometers
+        << ", \"source_route_request_id\": \""
+        << ccad::escapeJson(track.source_route_request_id) << "\"}"
         << (i + 1 == board.tracks.size() ? "" : ",") << '\n';
   }
   out << "      ]\n"
