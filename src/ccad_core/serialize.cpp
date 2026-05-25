@@ -482,6 +482,8 @@ class JsonReader {
             track.end = readPoint();
           } else if (key == "width_nm") {
             track.width = nanometers(readInt64());
+          } else if (key == "source_route_request_id") {
+            track.source_route_request_id = readString();
           } else {
             throw std::runtime_error("unknown track key: " + key);
           }
@@ -1036,7 +1038,8 @@ std::string dumpProjectJson(const Project& project) {
       out << "        \"end\": ";
       writePoint(out, 0, track.end);
       out << ",\n";
-      out << "        \"width_nm\": " << track.width.nanometers << "\n";
+      out << "        \"width_nm\": " << track.width.nanometers << ",\n";
+      writeField(out, 8, "source_route_request_id", track.source_route_request_id, false);
       out << "      }" << (i + 1 == board.tracks.size() ? "" : ",") << '\n';
     }
     out << "    ],\n";

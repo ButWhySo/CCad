@@ -75,6 +75,7 @@ struct TrackSegment {
   Point start;
   Point end;
   Length width;
+  std::string source_route_request_id;
 };
 
 struct RouteRequest {
