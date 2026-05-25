@@ -455,7 +455,7 @@ What these do:
 - `pcb set-track` updates an existing straight track segment's endpoints, width, optional net ID, and optional copper layer ID.
 - `pcb set-route-request` updates an existing route-request intent record's net, endpoint object IDs, preferred copper layer, policy, and width.
 - `pcb remove-route-request` removes an existing route-request intent record by stable ID.
-- `pcb apply-route-segment` appends one track segment from a route request's net and width; use `--complete false` for intermediate route segments, otherwise the satisfied request is removed.
+- `pcb apply-route-segment` appends one track segment from a route request's net and width, defaulting to the request's preferred layer when `--layer` is omitted; use `--complete false` for intermediate route segments, otherwise the satisfied request is removed.
 - `pcb set-region-kind` updates an existing keepout or placement region kind.
 - `pcb move-object` moves a pad or via center, or a keepout or placement-region origin, by stable ID.
 - `pcb resize-object` resizes a pad, keepout, or placement region by stable ID.

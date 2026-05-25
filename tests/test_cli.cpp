@@ -605,6 +605,21 @@ int main() {
           "pcb apply-route-segment writes final track id");
   require(complete_route_json.find("\"id\": \"ARR2\"") == std::string::npos,
           "pcb apply-route-segment removes completed request");
+  require(run(quote(CCAD_BINARY) + " pcb add-route-request --file " +
+              quote(apply_route_board_path) +
+              " --id ARR3 --net N1 --from ARP1 --to ARV1 --preferred-layer B.Cu"
+              " --policy straight --width-mm 0.25") == 0,
+          "apply route fixture adds default-layer request");
+  require(run(quote(CCAD_BINARY) + " pcb apply-route-segment --file " +
+              quote(apply_route_board_path) +
+              " --request-id ARR3 --track-id ART4"
+              " --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9") == 0,
+          "pcb apply-route-segment defaults to request preferred layer");
+  const std::string default_layer_route_json = readFile(apply_route_board_path);
+  require(default_layer_route_json.find("\"id\": \"ART4\"") != std::string::npos,
+          "pcb apply-route-segment writes default-layer track id");
+  require(default_layer_route_json.find("\"layer_id\": \"B.Cu\"") != std::string::npos,
+          "pcb apply-route-segment writes request preferred layer");
 
   const std::filesystem::path remove_board_path = temp / "remove-board.ccad.json";
   const std::string remove_board_init_command =
