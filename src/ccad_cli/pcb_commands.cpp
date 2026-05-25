@@ -684,17 +684,19 @@ int pcbCommand(const std::vector<std::string>& args) {
       ccad::Board& board = requireBoard(project);
       const std::string request_id = requireOption(options, "--request-id");
       const std::string track_id = requireOption(options, "--track-id");
-      const std::string layer_id = requireOption(options, "--layer");
       const bool complete_request = parseCompleteOption(options);
       requireUniqueTrackId(board, track_id);
       requireUniquePhysicalObjectId(board, track_id);
-      requireCopperLayer(board, layer_id);
       auto request_it = std::find_if(
           board.route_requests.begin(), board.route_requests.end(),
           [&request_id](const ccad::RouteRequest& request) { return request.id == request_id; });
       if (request_it == board.route_requests.end()) {
         throw std::runtime_error("unknown route request: " + request_id);
       }
+      const std::string layer_id =
+          options.contains("--layer") ? requireOption(options, "--layer")
+                                      : request_it->preferred_layer_id;
+      requireCopperLayer(board, layer_id);
       const ccad::Point start{
           .x = requirePositiveMillimeters(options, "--start-x-mm"),
           .y = requirePositiveMillimeters(options, "--start-y-mm"),
