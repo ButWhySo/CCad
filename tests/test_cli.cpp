@@ -89,6 +89,8 @@ int main() {
           "help json describes route request authoring");
   require(help_json.find("\"name\": \"pcb set-route-request\"") != std::string::npos,
           "help json describes route request editing");
+  require(help_json.find("\"name\": \"pcb remove-route-request\"") != std::string::npos,
+          "help json describes route request removal");
   require(help_json.find("\"name\": \"pcb add-keepout\"") != std::string::npos,
           "help json describes keepout authoring");
   require(help_json.find("\"name\": \"pcb set-pad\"") != std::string::npos,
@@ -465,6 +467,15 @@ int main() {
           "pcb list-route-requests includes source object");
   require(list_route_requests_json.find("\"to_object_id\": \"T1\"") != std::string::npos,
           "pcb list-route-requests includes target object");
+  const std::string remove_route_request_command =
+      quote(CCAD_BINARY) + " pcb remove-route-request --file " + quote(board_project_path) +
+      " --id RR1";
+  require(run(remove_route_request_command) == 0, "pcb remove-route-request exits zero");
+  const std::string remove_route_request_json = readFile(board_project_path);
+  require(remove_route_request_json.find("\"id\": \"RR1\"") == std::string::npos,
+          "pcb remove-route-request removes request id");
+  require(run(remove_route_request_command) != 0,
+          "pcb remove-route-request rejects missing request");
 
   require(run(add_pad_command) != 0, "pcb add-pad rejects duplicate id");
   require(run(add_keepout_command) != 0, "pcb add-keepout rejects duplicate id");
