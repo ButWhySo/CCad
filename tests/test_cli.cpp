@@ -477,6 +477,12 @@ int main() {
   const std::string route_job_json = readFile(route_job_path);
   require(route_job_json.find("\"route_job\"") != std::string::npos,
           "pcb export-route-job writes route job root");
+  require(route_job_json.find("\"schema_version\": 1") != std::string::npos,
+          "pcb export-route-job writes schema version");
+  require(route_job_json.find("\"length_unit\": \"nanometer\"") != std::string::npos,
+          "pcb export-route-job writes length unit");
+  require(route_job_json.find("\"angle_unit\": \"degree\"") != std::string::npos,
+          "pcb export-route-job writes angle unit");
   require(route_job_json.find("\"route_request_count\": 1") != std::string::npos,
           "pcb export-route-job reports request count");
   require(route_job_json.find("\"keepout_count\": 1") != std::string::npos,
