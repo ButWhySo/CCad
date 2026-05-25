@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 3 / 6: routing assistance.
 
-Progress counter: Phase 3 / 6, Sprint 123 merged and verified on `main`; Sprint 124 planning.
+Progress counter: Phase 3 / 6, Sprint 124 merged and verified on `main`; Sprint 125 planning.
 
 Phase 2 is complete. CCad now has a deterministic physical board model, early PCB authoring commands, physical DRC, board diffs, compact board query commands, and a native Qt review surface. Phase 3 starts the routing-assistance milestone: constrained route requests and a clean boundary for future router integration.
 
