@@ -87,6 +87,8 @@ int main() {
           "help json describes track editing");
   require(help_json.find("\"name\": \"pcb add-route-request\"") != std::string::npos,
           "help json describes route request authoring");
+  require(help_json.find("\"name\": \"pcb set-route-request\"") != std::string::npos,
+          "help json describes route request editing");
   require(help_json.find("\"name\": \"pcb add-keepout\"") != std::string::npos,
           "help json describes keepout authoring");
   require(help_json.find("\"name\": \"pcb set-pad\"") != std::string::npos,
@@ -303,6 +305,36 @@ int main() {
               " --id RR_SILK --net N1 --from P1 --to V1 --preferred-layer F.SilkS"
               " --policy shortest_safe --width-mm 0.25") != 0,
           "pcb add-route-request rejects non-copper preferred layer");
+  const std::string set_route_request_command =
+      quote(CCAD_BINARY) + " pcb set-route-request --file " + quote(board_project_path) +
+      " --id RR1 --net N1 --from V1 --to T1 --preferred-layer B.Cu"
+      " --policy prefer_back --width-mm 0.30";
+  require(run(set_route_request_command) == 0, "pcb set-route-request exits zero");
+  const std::string set_route_request_json = readFile(board_project_path);
+  require(set_route_request_json.find("\"net_id\": \"N1\"") != std::string::npos,
+          "pcb set-route-request writes net");
+  require(set_route_request_json.find("\"from_object_id\": \"V1\"") != std::string::npos,
+          "pcb set-route-request writes source object");
+  require(set_route_request_json.find("\"to_object_id\": \"T1\"") != std::string::npos,
+          "pcb set-route-request writes target object");
+  require(set_route_request_json.find("\"preferred_layer_id\": \"B.Cu\"") != std::string::npos,
+          "pcb set-route-request writes preferred layer");
+  require(set_route_request_json.find("\"policy\": \"prefer_back\"") != std::string::npos,
+          "pcb set-route-request writes policy");
+  require(set_route_request_json.find("\"width_nm\": 300000") != std::string::npos,
+          "pcb set-route-request writes width");
+  require(run(quote(CCAD_BINARY) + " pcb set-route-request --file " + quote(board_project_path) +
+              " --id RR_MISSING --net N1 --from V1 --to T1 --preferred-layer B.Cu"
+              " --policy prefer_back --width-mm 0.30") != 0,
+          "pcb set-route-request rejects missing request");
+  require(run(quote(CCAD_BINARY) + " pcb set-route-request --file " + quote(board_project_path) +
+              " --id RR1 --net N1 --from V1 --to NO_OBJECT --preferred-layer B.Cu"
+              " --policy prefer_back --width-mm 0.30") != 0,
+          "pcb set-route-request rejects missing endpoint");
+  require(run(quote(CCAD_BINARY) + " pcb set-route-request --file " + quote(board_project_path) +
+              " --id RR1 --net N1 --from V1 --to T1 --preferred-layer F.SilkS"
+              " --policy prefer_back --width-mm 0.30") != 0,
+          "pcb set-route-request rejects non-copper preferred layer");
 
   const std::string add_keepout_command =
       quote(CCAD_BINARY) + " pcb add-keepout --file " + quote(board_project_path) +
@@ -429,9 +461,9 @@ int main() {
           "pcb list-route-requests reports one request");
   require(list_route_requests_json.find("\"id\": \"RR1\"") != std::string::npos,
           "pcb list-route-requests includes request id");
-  require(list_route_requests_json.find("\"from_object_id\": \"P1\"") != std::string::npos,
+  require(list_route_requests_json.find("\"from_object_id\": \"V1\"") != std::string::npos,
           "pcb list-route-requests includes source object");
-  require(list_route_requests_json.find("\"to_object_id\": \"V1\"") != std::string::npos,
+  require(list_route_requests_json.find("\"to_object_id\": \"T1\"") != std::string::npos,
           "pcb list-route-requests includes target object");
 
   require(run(add_pad_command) != 0, "pcb add-pad rejects duplicate id");
