@@ -4,22 +4,22 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 ## Current Phase
 
-Phase 3 / 6: routing assistance.
+Phase 4 / 6: native GUI/editor.
 
-Progress counter: Phase 3 / 6, Sprint 125 merged and verified on `main`; Sprint 126 planning.
+Progress counter: Phase 4 / 6, Sprint 126 completed Phase 3 routing assistance on `main`; Sprint 127 planning.
 
-Phase 2 is complete. CCad now has a deterministic physical board model, early PCB authoring commands, physical DRC, board diffs, compact board query commands, and a native Qt review surface. Phase 3 starts the routing-assistance milestone: constrained route requests and a clean boundary for future router integration.
+Phase 3 is complete. CCad now has constrained route-request intent, route-job export, route-result application, route provenance on generated tracks, compact route progress reporting, DRC validity checks for route requests, and a clean boundary for future router integration. Phase 4 starts the native GUI/editor milestone while keeping the kernel and CLI as the source of truth.
 
 - Typed project model.
 - Deterministic JSON load/dump.
 - Logical ERC diagnostics.
 - CLI: `ccad help --format json`, `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
-- CLI PCB authoring: `ccad pcb list-nets`, `ccad pcb list-objects`, `ccad pcb get-object`, `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
+- CLI PCB authoring: `ccad pcb list-nets`, `ccad pcb list-objects`, `ccad pcb get-object`, `ccad pcb route-status`, `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
 - Physical board outline, layers, rectangular placement regions, rectangular keepouts, pads, vias, and track segments in project JSON.
 - Project review and `ccad inspect` report the full board outline rectangle and active board-level DRC rules.
-- Physical DRC for geometry, connectivity metadata, layer-aware copper connectivity and clearance, rectangular keepout occupancy, track crossing violations, board-level copper clearance, minimum track width, minimum via annular ring, design-rule value validation, stable physical object IDs, logical pad/net parity, and route-request validity.
+- Physical DRC for geometry, connectivity metadata, layer-aware copper connectivity and clearance, rectangular keepout occupancy, track crossing violations, board-level copper clearance, minimum track width, minimum via annular ring, design-rule value validation, stable physical object IDs, logical pad/net parity, route-request validity, route-request endpoint net parity, and route-request width policy.
 - Physical DRC rejects pads and tracks placed on non-copper layers.
 - Physical DRC track-endpoint connectivity now accepts geometric copper contact with same-net pads and vias, not only exact center-point matches.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
@@ -68,7 +68,7 @@ Phase 2 is complete. CCad now has a deterministic physical board model, early PC
 - Project diffs include board design-rule changes.
 - CLI diff tests cover board-level physical object entries in executable JSON output.
 - CLI PCB authoring can list physical board net usage counts as compact JSON.
-- CLI PCB authoring can list route-request intent records as compact JSON.
+- CLI PCB authoring can list route-request intent records and route completion status as compact JSON.
 - CLI PCB authoring can export compact route-job JSON for external router handoff.
 - CLI PCB authoring can list board layer and physical object IDs as compact JSON, with optional type filtering.
 - CLI PCB authoring can inspect one board layer or physical object by stable ID as compact JSON, including route provenance for tracks.
@@ -86,7 +86,7 @@ Phase 2 is complete. CCad now has a deterministic physical board model, early PC
 - CLI PCB authoring can add typed route-request records by stable endpoint object IDs.
 - CLI PCB authoring can update typed route-request records by stable ID.
 - CLI PCB authoring can remove typed route-request records by stable ID.
-- CLI PCB authoring can apply one routed segment from a route request into board tracks while preserving source request provenance.
+- CLI PCB authoring can apply one routed segment or one routed polyline from a route request into board tracks while preserving source request provenance.
 
 Out of scope for the Phase 3 MVP: full interactive editing, automatic placement, a production autorouter, KiCad import/export, fabrication outputs, and network services.
 
@@ -428,6 +428,8 @@ Add PCB primitives through the CLI:
 .\build-qt\ccad.exe pcb set-route-request --file .\build-qt\canvas-demo.ccad.json --id RR1 --net N1 --from V1 --to T1 --preferred-layer B.Cu --policy prefer_back --width-mm 0.30
 .\build-qt\ccad.exe pcb export-route-job --file .\build-qt\canvas-demo.ccad.json
 .\build-qt\ccad.exe pcb apply-route-segment --file .\build-qt\canvas-demo.ccad.json --request-id RR1 --track-id RT1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9
+.\build-qt\ccad.exe pcb apply-route-polyline --file .\build-qt\canvas-demo.ccad.json --request-id RR1 --track-prefix RTP --points-mm "5,6;6.5,7.5;8,9"
+.\build-qt\ccad.exe pcb route-status --file .\build-qt\canvas-demo.ccad.json
 .\build-qt\ccad.exe pcb set-track --file .\build-qt\canvas-demo.ccad.json --id T1 --start-x-mm 6 --start-y-mm 7 --end-x-mm 9 --end-y-mm 10 --width-mm 0.30 --net N2 --layer B.Cu
 .\build-qt\ccad.exe pcb set-region-kind --file .\build-qt\canvas-demo.ccad.json --id K1 --kind routing
 .\build-qt\ccad.exe pcb move-object --file .\build-qt\canvas-demo.ccad.json --id V1 --x-mm 9 --y-mm 10
@@ -438,6 +440,7 @@ Add PCB primitives through the CLI:
 What these do:
 
 - `pcb list-nets` emits compact physical net usage counts for pads, vias, and tracks.
+- `pcb route-status` emits compact route progress counts for open, partial, and completed route requests, derived from current route requests and track provenance.
 - `pcb export-route-job` emits a compact deterministic route-job JSON envelope with schema/version metadata, units, board outline, design rules, layers, pads, vias, tracks, keepouts, placement regions, and route requests; pass `--request-id <id>` to export one request.
 - `pcb list-objects` emits compact board layer and physical object rows as JSON, with optional type filtering for `layer`, `pad`, `via`, `track`, `keepout`, or `placement_region`.
 - `pcb get-object` emits one board layer, pad, via, track, keepout, or placement region by stable ID as compact JSON.
@@ -456,6 +459,7 @@ What these do:
 - `pcb set-route-request` updates an existing route-request intent record's net, endpoint object IDs, preferred copper layer, policy, and width.
 - `pcb remove-route-request` removes an existing route-request intent record by stable ID.
 - `pcb apply-route-segment` appends one track segment from a route request's net and width, records `source_route_request_id`, and defaults to the request's preferred layer when `--layer` is omitted; use `--complete false` for intermediate route segments, otherwise the satisfied request is removed.
+- `pcb apply-route-polyline` expands `--points-mm "x,y;x,y;..."` into multiple track segments with generated IDs from `--track-prefix`, preserves route request provenance on every segment, and follows the same completion behavior as `pcb apply-route-segment`.
 - `pcb set-region-kind` updates an existing keepout or placement region kind.
 - `pcb move-object` moves a pad or via center, or a keepout or placement-region origin, by stable ID.
 - `pcb resize-object` resizes a pad, keepout, or placement region by stable ID.

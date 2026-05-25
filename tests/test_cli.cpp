@@ -75,6 +75,8 @@ int main() {
           "help json describes pcb net listing");
   require(help_json.find("\"name\": \"pcb list-route-requests\"") != std::string::npos,
           "help json describes route request listing");
+  require(help_json.find("\"name\": \"pcb route-status\"") != std::string::npos,
+          "help json describes route status reporting");
   require(help_json.find("\"name\": \"pcb export-route-job\"") != std::string::npos,
           "help json describes route job export");
   require(help_json.find("\"name\": \"pcb remove-layer\"") != std::string::npos,
@@ -95,6 +97,8 @@ int main() {
           "help json describes route request removal");
   require(help_json.find("\"name\": \"pcb apply-route-segment\"") != std::string::npos,
           "help json describes route segment application");
+  require(help_json.find("\"name\": \"pcb apply-route-polyline\"") != std::string::npos,
+          "help json describes route polyline application");
   require(help_json.find("\"name\": \"pcb add-keepout\"") != std::string::npos,
           "help json describes keepout authoring");
   require(help_json.find("\"name\": \"pcb set-pad\"") != std::string::npos,
@@ -471,6 +475,20 @@ int main() {
           "pcb list-route-requests includes source object");
   require(list_route_requests_json.find("\"to_object_id\": \"T1\"") != std::string::npos,
           "pcb list-route-requests includes target object");
+  const std::filesystem::path route_status_path = temp / "route-status.json";
+  const std::string route_status_command =
+      quote(CCAD_BINARY) + " pcb route-status --file " + quote(board_project_path) +
+      " > " + quote(route_status_path);
+  require(run(route_status_command) == 0, "pcb route-status exits zero");
+  const std::string route_status_json = readFile(route_status_path);
+  require(route_status_json.find("\"open\": 1") != std::string::npos,
+          "pcb route-status reports open request");
+  require(route_status_json.find("\"partial\": 0") != std::string::npos,
+          "pcb route-status reports no partial requests");
+  require(route_status_json.find("\"completed\": 0") != std::string::npos,
+          "pcb route-status reports no completed requests");
+  require(route_status_json.find("\"status\": \"open\"") != std::string::npos,
+          "pcb route-status includes open status row");
   const std::filesystem::path route_job_path = temp / "route-job.json";
   const std::string export_route_job_command =
       quote(CCAD_BINARY) + " pcb export-route-job --file " + quote(board_project_path) +
@@ -577,6 +595,15 @@ int main() {
   require(readFile(applied_track_list_path)
               .find("\"source_route_request_id\": \"ARR1\"") != std::string::npos,
           "pcb list-objects reports route track provenance");
+  const std::filesystem::path completed_route_status_path = temp / "completed-route-status.json";
+  require(run(quote(CCAD_BINARY) + " pcb route-status --file " + quote(apply_route_board_path) +
+              " > " + quote(completed_route_status_path)) == 0,
+          "pcb route-status exits after completed route");
+  require(readFile(completed_route_status_path).find("\"completed\": 1") != std::string::npos,
+          "pcb route-status counts completed request");
+  require(readFile(completed_route_status_path).find("\"status\": \"completed\"") !=
+              std::string::npos,
+          "pcb route-status reports completed status row");
   require(applied_route_json.find("\"id\": \"ARR1\"") == std::string::npos,
           "pcb apply-route-segment removes satisfied request");
   require(run(quote(CCAD_BINARY) + " pcb apply-route-segment --file " +
@@ -605,6 +632,15 @@ int main() {
           "pcb apply-route-segment writes partial track id");
   require(partial_route_json.find("\"id\": \"ARR2\"") != std::string::npos,
           "pcb apply-route-segment keeps incomplete request");
+  const std::filesystem::path partial_route_status_path = temp / "partial-route-status.json";
+  require(run(quote(CCAD_BINARY) + " pcb route-status --file " + quote(apply_route_board_path) +
+              " > " + quote(partial_route_status_path)) == 0,
+          "pcb route-status exits after partial route");
+  require(readFile(partial_route_status_path).find("\"partial\": 1") != std::string::npos,
+          "pcb route-status counts partial request");
+  require(readFile(partial_route_status_path).find("\"status\": \"partial\"") !=
+              std::string::npos,
+          "pcb route-status reports partial status row");
   require(run(quote(CCAD_BINARY) + " pcb apply-route-segment --file " +
               quote(apply_route_board_path) +
               " --request-id ARR2 --track-id ART3 --layer F.Cu"
@@ -637,6 +673,55 @@ int main() {
           "pcb apply-route-segment writes default-layer track id");
   require(default_layer_route_json.find("\"layer_id\": \"B.Cu\"") != std::string::npos,
           "pcb apply-route-segment writes request preferred layer");
+  require(run(quote(CCAD_BINARY) + " pcb add-route-request --file " +
+              quote(apply_route_board_path) +
+              " --id ARR4 --net N1 --from ARP1 --to ARV1 --preferred-layer F.Cu"
+              " --policy polyline --width-mm 0.25") == 0,
+          "apply route fixture adds polyline request");
+  require(run(quote(CCAD_BINARY) + " pcb apply-route-polyline --file " +
+              quote(apply_route_board_path) +
+              " --request-id ARR4 --track-prefix ARP --points-mm 5,6;6,7;8,9"
+              " --complete false") == 0,
+          "pcb apply-route-polyline writes multiple route segments");
+  const std::string polyline_route_json = readFile(apply_route_board_path);
+  require(polyline_route_json.find("\"id\": \"ARP.1\"") != std::string::npos,
+          "pcb apply-route-polyline writes first generated track id");
+  require(polyline_route_json.find("\"id\": \"ARP.2\"") != std::string::npos,
+          "pcb apply-route-polyline writes second generated track id");
+  require(polyline_route_json.find("\"source_route_request_id\": \"ARR4\"") !=
+              std::string::npos,
+          "pcb apply-route-polyline records route request provenance");
+  require(polyline_route_json.find("\"id\": \"ARR4\"") != std::string::npos,
+          "pcb apply-route-polyline can leave request open");
+  const std::filesystem::path polyline_status_path = temp / "polyline-route-status.json";
+  require(run(quote(CCAD_BINARY) + " pcb route-status --file " + quote(apply_route_board_path) +
+              " > " + quote(polyline_status_path)) == 0,
+          "pcb route-status exits after polyline route");
+  require(readFile(polyline_status_path).find("\"routed_segment_count\": 2") !=
+              std::string::npos,
+          "pcb route-status counts polyline route segments");
+  require(run(quote(CCAD_BINARY) + " pcb apply-route-polyline --file " +
+              quote(apply_route_board_path) +
+              " --request-id ARR4 --track-prefix ARP --points-mm 5,6;6,7") != 0,
+          "pcb apply-route-polyline rejects duplicate generated track ids");
+  require(run(quote(CCAD_BINARY) + " pcb apply-route-polyline --file " +
+              quote(apply_route_board_path) +
+              " --request-id ARR4 --track-prefix ARZ --points-mm 5,6;5,6") != 0,
+          "pcb apply-route-polyline rejects zero-length segment");
+  require(run(quote(CCAD_BINARY) + " pcb apply-route-polyline --file " +
+              quote(apply_route_board_path) +
+              " --request-id ARR4 --track-prefix ARO --points-mm 5,6;60,7") != 0,
+          "pcb apply-route-polyline rejects out-of-board point");
+  require(run(quote(CCAD_BINARY) + " pcb apply-route-polyline --file " +
+              quote(apply_route_board_path) +
+              " --request-id ARR4 --track-prefix ARC --points-mm 8,9;9,10"
+              " --complete true") == 0,
+          "pcb apply-route-polyline can complete open request");
+  const std::string complete_polyline_json = readFile(apply_route_board_path);
+  require(complete_polyline_json.find("\"id\": \"ARC.1\"") != std::string::npos,
+          "pcb apply-route-polyline writes completion segment");
+  require(complete_polyline_json.find("\"id\": \"ARR4\"") == std::string::npos,
+          "pcb apply-route-polyline removes completed request");
 
   const std::filesystem::path remove_board_path = temp / "remove-board.ccad.json";
   const std::string remove_board_init_command =

@@ -78,6 +78,9 @@ const std::vector<CommandHelp>& commandHelp() {
       CommandHelp{.name = "pcb list-route-requests",
                   .summary = "List board route-request intent records as compact JSON",
                   .usage = "ccad pcb list-route-requests --file <path>"},
+      CommandHelp{.name = "pcb route-status",
+                  .summary = "Report open, partial, and completed route-assistance work",
+                  .usage = "ccad pcb route-status --file <path>"},
       CommandHelp{.name = "pcb export-route-job",
                   .summary = "Export a compact route-assistance job as JSON",
                   .usage = "ccad pcb export-route-job --file <path> [--request-id <id>]"},
@@ -136,6 +139,11 @@ const std::vector<CommandHelp>& commandHelp() {
                   .usage = "ccad pcb apply-route-segment --file <path> --request-id <id> "
                            "--track-id <id> [--layer <id>] --start-x-mm <n> --start-y-mm <n> "
                            "--end-x-mm <n> --end-y-mm <n> [--complete true|false]"},
+      CommandHelp{.name = "pcb apply-route-polyline",
+                  .summary = "Apply a routed polyline as multiple route-result track segments",
+                  .usage = "ccad pcb apply-route-polyline --file <path> --request-id <id> "
+                           "--track-prefix <id> [--layer <id>] --points-mm "
+                           "<x,y;x,y;...> [--complete true|false]"},
       CommandHelp{.name = "pcb set-track",
                   .summary = "Update one existing track segment geometry",
                   .usage = "ccad pcb set-track --file <path> --id <id> --start-x-mm <n> "

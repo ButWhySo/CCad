@@ -58,6 +58,25 @@ bool hasBoardObject(const Board& board, const std::string& object_id) {
   return false;
 }
 
+std::string boardObjectNetId(const Board& board, const std::string& object_id) {
+  for (const Pad& pad : board.pads) {
+    if (pad.id == object_id) {
+      return pad.net_id;
+    }
+  }
+  for (const Via& via : board.vias) {
+    if (via.id == object_id) {
+      return via.net_id;
+    }
+  }
+  for (const TrackSegment& track : board.tracks) {
+    if (track.id == object_id) {
+      return track.net_id;
+    }
+  }
+  return "";
+}
+
 bool hasNet(const Project& project, const std::string& net_id) {
   for (const Net& net : project.nets) {
     if (net.id == net_id) {
@@ -720,6 +739,11 @@ void checkRouteRequests(const Project& project, const Board& board,
                                            "Route request references an unknown net",
                                            route_request.id));
     }
+    if (route_request.from_object_id == route_request.to_object_id) {
+      diagnostics.push_back(makeDiagnostic("ROUTE_REQUEST_SAME_ENDPOINT",
+                                           "Route request endpoints must be different objects",
+                                           route_request.id));
+    }
     if (!hasLayer(board, route_request.preferred_layer_id)) {
       diagnostics.push_back(makeDiagnostic("UNKNOWN_ROUTE_REQUEST_LAYER",
                                            "Route request references an unknown preferred layer",
@@ -734,10 +758,30 @@ void checkRouteRequests(const Project& project, const Board& board,
       diagnostics.push_back(makeDiagnostic("UNKNOWN_ROUTE_REQUEST_ENDPOINT",
                                            "Route request endpoint object does not exist",
                                            route_request.id));
+    } else if (!route_request.net_id.empty()) {
+      const std::string from_net = boardObjectNetId(board, route_request.from_object_id);
+      const std::string to_net = boardObjectNetId(board, route_request.to_object_id);
+      if ((!from_net.empty() && from_net != route_request.net_id) ||
+          (!to_net.empty() && to_net != route_request.net_id)) {
+        diagnostics.push_back(makeDiagnostic("ROUTE_REQUEST_ENDPOINT_NET_MISMATCH",
+                                             "Route request endpoint net does not match request net",
+                                             route_request.id));
+      }
     }
     if (!isPositive(route_request.width)) {
       diagnostics.push_back(makeDiagnostic("INVALID_ROUTE_REQUEST_WIDTH",
                                            "Route request width must be positive",
+                                           route_request.id));
+    } else if (route_request.width.nanometers < board.design_rules.min_track_width.nanometers) {
+      diagnostics.push_back(makeDiagnostic(
+          "ROUTE_REQUEST_WIDTH_TOO_NARROW",
+          "Route request width is below configured minimum " +
+              std::to_string(board.design_rules.min_track_width.nanometers) + " nm",
+          route_request.id));
+    }
+    if (route_request.policy.empty()) {
+      diagnostics.push_back(makeDiagnostic("INVALID_ROUTE_REQUEST_POLICY",
+                                           "Route request policy must not be empty",
                                            route_request.id));
     }
   }

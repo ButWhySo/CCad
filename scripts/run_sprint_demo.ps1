@@ -185,6 +185,8 @@ $Project = Join-Path $DemoDir "$Name.ccad.json"
 $Inspect = Join-Path $DemoDir "$Name.inspect.json"
 $Validate = Join-Path $DemoDir "$Name.validate.json"
 $Drc = Join-Path $DemoDir "$Name.drc.json"
+$RouteJob = Join-Path $DemoDir "$Name.route-job.json"
+$RouteStatus = Join-Path $DemoDir "$Name.route-status.json"
 $KiCadFootprint = Join-Path $DemoDir "$Name-R_0805_2012Metric.kicad_mod"
 $ImportedFootprint = Join-Path $DemoDir "$Name-R_0805_2012Metric.ccad-footprint.json"
 $Timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
@@ -199,18 +201,34 @@ Invoke-Ccad pcb set-layer-visibility --file $Project --id In1.Cu --visible false
 Invoke-Ccad pcb add-pad --file $Project --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 Invoke-Ccad pcb add-via --file $Project --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
 Invoke-Ccad pcb add-track --file $Project --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
-Invoke-Ccad pcb add-track --file $Project --id T2 --net N2 --layer F.Cu --start-x-mm 5 --start-y-mm 9 --end-x-mm 8 --end-y-mm 6 --width-mm 0.25
-Invoke-Ccad pcb add-placement-region --file $Project --id PR1 --kind component --x-mm 11 --y-mm 4 --width-mm 12 --height-mm 8
-Invoke-Ccad pcb add-keepout --file $Project --id K1 --kind placement --x-mm 20 --y-mm 10 --width-mm 4 --height-mm 3
 
 $ProjectObject = Get-Content -Raw $Project | ConvertFrom-Json
+$ProjectObject.components = @(
+  [ordered]@{ id = "U1"; part = "Demo source"; pins = @([ordered]@{ name = "1"; kind = "passive" }) },
+  [ordered]@{ id = "R1"; part = "R_0805_2012Metric"; pins = @(
+    [ordered]@{ name = "1"; kind = "passive" },
+    [ordered]@{ name = "2"; kind = "passive" }
+  ) }
+)
 $ProjectObject.nets = @(
-  [ordered]@{ id = "N1"; members = @() },
-  [ordered]@{ id = "N2"; members = @() }
+  [ordered]@{ id = "N1"; members = @(
+    [ordered]@{ component_id = "U1"; pin_name = "1" },
+    [ordered]@{ component_id = "R1"; pin_name = "1" }
+  ) },
+  [ordered]@{ id = "N2"; members = @(
+    [ordered]@{ component_id = "R1"; pin_name = "2" }
+  ) }
 )
 $ProjectJson = $ProjectObject | ConvertTo-Json -Depth 32
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($Project, $ProjectJson, $Utf8NoBom)
+
+Invoke-Ccad pcb add-route-request --file $Project --id RR1 --net N1 --from P1 --to V1 --preferred-layer F.Cu --policy demo_polyline --width-mm 0.25
+Invoke-Ccad pcb export-route-job --file $Project --request-id RR1 | Set-Content -Encoding UTF8 $RouteJob
+Invoke-Ccad pcb apply-route-polyline --file $Project --request-id RR1 --track-prefix RT --points-mm "5,6;6.5,7.5;8,9" --complete true
+Invoke-Ccad pcb route-status --file $Project | Set-Content -Encoding UTF8 $RouteStatus
+Invoke-Ccad pcb add-placement-region --file $Project --id PR1 --kind component --x-mm 11 --y-mm 4 --width-mm 12 --height-mm 8
+Invoke-Ccad pcb add-keepout --file $Project --id K1 --kind placement --x-mm 20 --y-mm 10 --width-mm 4 --height-mm 3
 
 Invoke-Ccad inspect $Project | Set-Content -Encoding UTF8 $Inspect
 Invoke-Ccad validate $Project | Set-Content -Encoding UTF8 $Validate
@@ -254,6 +272,8 @@ Write-Output "Project: $Project"
 Write-Output "Inspect: $Inspect"
 Write-Output "Validate: $Validate"
 Write-Output "DRC: $Drc"
+Write-Output "Route job: $RouteJob"
+Write-Output "Route status: $RouteStatus"
 Write-Output "KiCad footprint: $KiCadFootprint"
 Write-Output "Imported footprint: $ImportedFootprint"
 Write-Output "Screenshot: $Screenshot"

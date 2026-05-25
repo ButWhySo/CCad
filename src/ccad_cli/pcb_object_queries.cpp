@@ -4,6 +4,7 @@
 
 #include <map>
 #include <ostream>
+#include <set>
 #include <sstream>
 #include <vector>
 
@@ -272,6 +273,74 @@ std::string listRouteRequestsJson(const ccad::Board& board) {
         << ccad::escapeJson(request.policy) << "\", \"width_nm\": "
         << request.width.nanometers << "}" << (i + 1 == board.route_requests.size() ? "" : ",")
         << '\n';
+  }
+  out << "  ]\n"
+      << "}\n";
+  return out.str();
+}
+
+std::string routeStatusJson(const ccad::Board& board) {
+  std::map<std::string, int> routed_segment_counts;
+  for (const ccad::TrackSegment& track : board.tracks) {
+    if (!track.source_route_request_id.empty()) {
+      ++routed_segment_counts[track.source_route_request_id];
+    }
+  }
+
+  std::vector<std::string> rows;
+  int open_count = 0;
+  int partial_count = 0;
+  for (const ccad::RouteRequest& request : board.route_requests) {
+    const int segment_count = routed_segment_counts[request.id];
+    const std::string status = segment_count > 0 ? "partial" : "open";
+    if (status == "partial") {
+      ++partial_count;
+    } else {
+      ++open_count;
+    }
+
+    std::ostringstream row;
+    row << "    {\"request_id\": \"" << ccad::escapeJson(request.id)
+        << "\", \"status\": \"" << status << "\", \"net_id\": \""
+        << ccad::escapeJson(request.net_id) << "\", \"from_object_id\": \""
+        << ccad::escapeJson(request.from_object_id) << "\", \"to_object_id\": \""
+        << ccad::escapeJson(request.to_object_id) << "\", \"preferred_layer_id\": \""
+        << ccad::escapeJson(request.preferred_layer_id) << "\", \"policy\": \""
+        << ccad::escapeJson(request.policy) << "\", \"width_nm\": "
+        << request.width.nanometers << ", \"routed_segment_count\": " << segment_count << "}";
+    rows.push_back(row.str());
+  }
+
+  int completed_count = 0;
+  for (const auto& entry : routed_segment_counts) {
+    bool still_open = false;
+    for (const ccad::RouteRequest& request : board.route_requests) {
+      if (request.id == entry.first) {
+        still_open = true;
+        break;
+      }
+    }
+    if (still_open) {
+      continue;
+    }
+    ++completed_count;
+    std::ostringstream row;
+    row << "    {\"request_id\": \"" << ccad::escapeJson(entry.first)
+        << "\", \"status\": \"completed\", \"routed_segment_count\": " << entry.second << "}";
+    rows.push_back(row.str());
+  }
+
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"summary\": {\n"
+      << "    \"open\": " << open_count << ",\n"
+      << "    \"partial\": " << partial_count << ",\n"
+      << "    \"completed\": " << completed_count << ",\n"
+      << "    \"total\": " << rows.size() << "\n"
+      << "  },\n"
+      << "  \"routes\": [\n";
+  for (std::size_t i = 0; i < rows.size(); ++i) {
+    out << rows.at(i) << (i + 1 == rows.size() ? "" : ",") << '\n';
   }
   out << "  ]\n"
       << "}\n";
