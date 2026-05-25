@@ -303,6 +303,28 @@ int main() {
   require(hasCode(ccad::runDrc(invalid_route_request_width), "INVALID_ROUTE_REQUEST_WIDTH"),
           "drc reports non-positive route request width");
 
+  ccad::Project narrow_route_request_width = valid_route_request;
+  narrow_route_request_width.board->route_requests.at(0).width = ccad::millimeters(0.05);
+  require(hasCode(ccad::runDrc(narrow_route_request_width),
+                  "ROUTE_REQUEST_WIDTH_TOO_NARROW"),
+          "drc reports route request width below configured minimum");
+
+  ccad::Project same_endpoint_route_request = valid_route_request;
+  same_endpoint_route_request.board->route_requests.at(0).to_object_id = "P1";
+  require(hasCode(ccad::runDrc(same_endpoint_route_request), "ROUTE_REQUEST_SAME_ENDPOINT"),
+          "drc reports route request with same endpoint object");
+
+  ccad::Project endpoint_net_mismatch_route_request = valid_route_request;
+  endpoint_net_mismatch_route_request.board->vias.at(0).net_id = "N2";
+  require(hasCode(ccad::runDrc(endpoint_net_mismatch_route_request),
+                  "ROUTE_REQUEST_ENDPOINT_NET_MISMATCH"),
+          "drc reports route request endpoint net mismatch");
+
+  ccad::Project empty_policy_route_request = valid_route_request;
+  empty_policy_route_request.board->route_requests.at(0).policy.clear();
+  require(hasCode(ccad::runDrc(empty_policy_route_request), "INVALID_ROUTE_REQUEST_POLICY"),
+          "drc reports empty route request policy");
+
   ccad::Project empty_pad_id = validBoardProject();
   empty_pad_id.board->pads.at(0).id.clear();
   require(hasCode(ccad::runDrc(empty_pad_id), "INVALID_PAD_ID"),

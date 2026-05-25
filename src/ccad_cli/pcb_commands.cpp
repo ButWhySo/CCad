@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <stdexcept>
 #include <vector>
 
@@ -55,6 +56,34 @@ bool parseCompleteOption(const std::map<std::string, std::string>& options) {
     return false;
   }
   throw std::runtime_error("--complete must be true or false");
+}
+
+std::vector<ccad::Point> parsePolylinePointsMm(const std::string& value) {
+  std::vector<ccad::Point> points;
+  std::stringstream point_stream(value);
+  std::string point_text;
+  while (std::getline(point_stream, point_text, ';')) {
+    if (point_text.empty()) {
+      throw std::runtime_error("--points-mm contains an empty point");
+    }
+    const std::size_t comma = point_text.find(',');
+    if (comma == std::string::npos || point_text.find(',', comma + 1) != std::string::npos) {
+      throw std::runtime_error("--points-mm points must use x,y pairs");
+    }
+    const std::string x_text = point_text.substr(0, comma);
+    const std::string y_text = point_text.substr(comma + 1);
+    if (x_text.empty() || y_text.empty()) {
+      throw std::runtime_error("--points-mm points must include x and y");
+    }
+    points.push_back(ccad::Point{
+        .x = ccad::millimeters(std::stod(x_text)),
+        .y = ccad::millimeters(std::stod(y_text)),
+    });
+  }
+  if (points.size() < 2) {
+    throw std::runtime_error("--points-mm must contain at least two points");
+  }
+  return points;
 }
 
 void requireLayerUnused(const ccad::Board& board, const std::string& id) {
@@ -286,6 +315,17 @@ int pcbCommand(const std::vector<std::string>& args) {
         throw std::runtime_error("project has no board");
       }
       std::cout << listRouteRequestsJson(*project.board);
+      return 0;
+    }
+
+    if (subcommand == "route-status") {
+      const std::map<std::string, std::string> options = parseOptions(args, 1, {"--file"});
+      const std::string file = requireOption(options, "--file");
+      const ccad::Project project = loadProjectFile(file);
+      if (!project.board.has_value()) {
+        throw std::runtime_error("project has no board");
+      }
+      std::cout << routeStatusJson(*project.board);
       return 0;
     }
 
@@ -718,6 +758,67 @@ int pcbCommand(const std::vector<std::string>& args) {
           .width = width,
           .source_route_request_id = request_id,
       });
+      if (complete_request) {
+        board.route_requests.erase(request_it);
+      }
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "apply-route-polyline") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--request-id", "--track-prefix", "--layer",
+                                 "--points-mm", "--complete"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string request_id = requireOption(options, "--request-id");
+      const std::string track_prefix = requireOption(options, "--track-prefix");
+      if (track_prefix.empty()) {
+        throw std::runtime_error("--track-prefix must not be empty");
+      }
+      const bool complete_request = parseCompleteOption(options);
+      auto request_it = std::find_if(
+          board.route_requests.begin(), board.route_requests.end(),
+          [&request_id](const ccad::RouteRequest& request) { return request.id == request_id; });
+      if (request_it == board.route_requests.end()) {
+        throw std::runtime_error("unknown route request: " + request_id);
+      }
+      const std::string layer_id =
+          options.contains("--layer") ? requireOption(options, "--layer")
+                                      : request_it->preferred_layer_id;
+      requireCopperLayer(board, layer_id);
+      const std::vector<ccad::Point> points =
+          parsePolylinePointsMm(requireOption(options, "--points-mm"));
+      const ccad::Length width = request_it->width;
+      const ccad::Length half_width = ccad::nanometers(width.nanometers / 2);
+      for (std::size_t index = 0; index + 1 < points.size(); ++index) {
+        const std::string track_id = track_prefix + "." + std::to_string(index + 1);
+        requireUniqueTrackId(board, track_id);
+        requireUniquePhysicalObjectId(board, track_id);
+        if (points.at(index).x.nanometers == points.at(index + 1).x.nanometers &&
+            points.at(index).y.nanometers == points.at(index + 1).y.nanometers) {
+          throw std::runtime_error("route polyline contains a zero-length segment");
+        }
+        requirePointWithMarginInsideBoard(board, points.at(index), half_width,
+                                          "route polyline point");
+        requirePointWithMarginInsideBoard(board, points.at(index + 1), half_width,
+                                          "route polyline point");
+      }
+      for (std::size_t index = 0; index + 1 < points.size(); ++index) {
+        board.tracks.push_back(ccad::TrackSegment{
+            .id = track_prefix + "." + std::to_string(index + 1),
+            .net_id = request_it->net_id,
+            .layer_id = layer_id,
+            .start = points.at(index),
+            .end = points.at(index + 1),
+            .width = width,
+            .source_route_request_id = request_id,
+        });
+      }
       if (complete_request) {
         board.route_requests.erase(request_it);
       }
