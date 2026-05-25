@@ -563,6 +563,20 @@ int main() {
   require(applied_route_json.find("\"source_route_request_id\": \"ARR1\"") !=
               std::string::npos,
           "pcb apply-route-segment records route request provenance");
+  const std::filesystem::path applied_track_lookup_path = temp / "applied-track-lookup.json";
+  require(run(quote(CCAD_BINARY) + " pcb get-object --file " + quote(apply_route_board_path) +
+              " --id ART1 > " + quote(applied_track_lookup_path)) == 0,
+          "pcb get-object finds applied route track");
+  require(readFile(applied_track_lookup_path)
+              .find("\"source_route_request_id\": \"ARR1\"") != std::string::npos,
+          "pcb get-object reports route track provenance");
+  const std::filesystem::path applied_track_list_path = temp / "applied-track-list.json";
+  require(run(quote(CCAD_BINARY) + " pcb list-objects --file " + quote(apply_route_board_path) +
+              " --type track > " + quote(applied_track_list_path)) == 0,
+          "pcb list-objects lists applied route tracks");
+  require(readFile(applied_track_list_path)
+              .find("\"source_route_request_id\": \"ARR1\"") != std::string::npos,
+          "pcb list-objects reports route track provenance");
   require(applied_route_json.find("\"id\": \"ARR1\"") == std::string::npos,
           "pcb apply-route-segment removes satisfied request");
   require(run(quote(CCAD_BINARY) + " pcb apply-route-segment --file " +

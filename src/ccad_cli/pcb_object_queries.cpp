@@ -102,7 +102,9 @@ std::string pcbTrackObjectJson(const ccad::TrackSegment& track) {
       << "    \"end\": {\n";
   writePointJson(out, track.end, 6);
   out << "\n    },\n"
-      << "    \"width_nm\": " << track.width.nanometers << "\n"
+      << "    \"width_nm\": " << track.width.nanometers << ",\n"
+      << "    \"source_route_request_id\": \""
+      << ccad::escapeJson(track.source_route_request_id) << "\"\n"
       << "  }\n"
       << "}\n";
   return out.str();
@@ -173,7 +175,9 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
       std::ostringstream row;
       row << "    {\"type\": \"track\", \"id\": \"" << ccad::escapeJson(track.id)
           << "\", \"net_id\": \"" << ccad::escapeJson(track.net_id)
-          << "\", \"layer_id\": \"" << ccad::escapeJson(track.layer_id) << "\"}";
+          << "\", \"layer_id\": \"" << ccad::escapeJson(track.layer_id)
+          << "\", \"source_route_request_id\": \""
+          << ccad::escapeJson(track.source_route_request_id) << "\"}";
       add_row(row);
     }
   }
