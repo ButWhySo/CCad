@@ -43,6 +43,20 @@ bool parseRequiredVisibleOption(const std::map<std::string, std::string>& option
   return parseVisibleOption(options);
 }
 
+bool parseCompleteOption(const std::map<std::string, std::string>& options) {
+  if (!options.contains("--complete")) {
+    return true;
+  }
+  const std::string value = requireOption(options, "--complete");
+  if (value == "true") {
+    return true;
+  }
+  if (value == "false") {
+    return false;
+  }
+  throw std::runtime_error("--complete must be true or false");
+}
+
 void requireLayerUnused(const ccad::Board& board, const std::string& id) {
   for (const ccad::Pad& pad : board.pads) {
     if (pad.layer_id == id) {
@@ -664,13 +678,14 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--request-id", "--track-id", "--layer",
                                  "--start-x-mm", "--start-y-mm", "--end-x-mm",
-                                 "--end-y-mm"});
+                                 "--end-y-mm", "--complete"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
       ccad::Board& board = requireBoard(project);
       const std::string request_id = requireOption(options, "--request-id");
       const std::string track_id = requireOption(options, "--track-id");
       const std::string layer_id = requireOption(options, "--layer");
+      const bool complete_request = parseCompleteOption(options);
       requireUniqueTrackId(board, track_id);
       requireUniquePhysicalObjectId(board, track_id);
       requireCopperLayer(board, layer_id);
@@ -700,7 +715,9 @@ int pcbCommand(const std::vector<std::string>& args) {
           .end = end,
           .width = width,
       });
-      board.route_requests.erase(request_it);
+      if (complete_request) {
+        board.route_requests.erase(request_it);
+      }
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
