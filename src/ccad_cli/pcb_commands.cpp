@@ -625,6 +625,26 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "remove-route-request") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const auto old_size = board.route_requests.size();
+      std::erase_if(board.route_requests,
+                    [&id](const ccad::RouteRequest& request) { return request.id == id; });
+      if (board.route_requests.size() == old_size) {
+        throw std::runtime_error("unknown route request: " + id);
+      }
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "set-track") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--start-x-mm", "--start-y-mm",
