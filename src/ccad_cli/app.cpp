@@ -80,7 +80,7 @@ const std::vector<CommandHelp>& commandHelp() {
                   .usage = "ccad pcb list-route-requests --file <path>"},
       CommandHelp{.name = "pcb export-route-job",
                   .summary = "Export a compact route-assistance job as JSON",
-                  .usage = "ccad pcb export-route-job --file <path>"},
+                  .usage = "ccad pcb export-route-job --file <path> [--request-id <id>]"},
       CommandHelp{.name = "pcb remove-layer",
                   .summary = "Remove one unused board layer by stable ID",
                   .usage = "ccad pcb remove-layer --file <path> --id <id>"},

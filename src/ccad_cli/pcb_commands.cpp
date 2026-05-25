@@ -275,13 +275,16 @@ int pcbCommand(const std::vector<std::string>& args) {
     }
 
     if (subcommand == "export-route-job") {
-      const std::map<std::string, std::string> options = parseOptions(args, 1, {"--file"});
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--request-id"});
       const std::string file = requireOption(options, "--file");
       const ccad::Project project = loadProjectFile(file);
       if (!project.board.has_value()) {
         throw std::runtime_error("project has no board");
       }
-      std::cout << exportRouteJobJson(*project.board);
+      const std::string request_id_filter =
+          options.contains("--request-id") ? requireOption(options, "--request-id") : "";
+      std::cout << exportRouteJobJson(*project.board, request_id_filter);
       return 0;
     }
 

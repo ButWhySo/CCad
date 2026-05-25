@@ -495,6 +495,20 @@ int main() {
           "pcb export-route-job includes route requests");
   require(route_job_json.find("\"id\": \"RR1\"") != std::string::npos,
           "pcb export-route-job includes route request id");
+  const std::filesystem::path filtered_route_job_path = temp / "filtered-route-job.json";
+  const std::string filtered_route_job_command =
+      quote(CCAD_BINARY) + " pcb export-route-job --file " + quote(board_project_path) +
+      " --request-id RR1 > " + quote(filtered_route_job_path);
+  require(run(filtered_route_job_command) == 0,
+          "pcb export-route-job filters by request id");
+  const std::string filtered_route_job_json = readFile(filtered_route_job_path);
+  require(filtered_route_job_json.find("\"route_request_count\": 1") != std::string::npos,
+          "pcb export-route-job filtered summary reports one request");
+  require(filtered_route_job_json.find("\"id\": \"RR1\"") != std::string::npos,
+          "pcb export-route-job filtered output includes requested id");
+  require(run(quote(CCAD_BINARY) + " pcb export-route-job --file " + quote(board_project_path) +
+              " --request-id RR_MISSING") != 0,
+          "pcb export-route-job rejects missing request id");
   const std::string remove_route_request_command =
       quote(CCAD_BINARY) + " pcb remove-route-request --file " + quote(board_project_path) +
       " --id RR1";

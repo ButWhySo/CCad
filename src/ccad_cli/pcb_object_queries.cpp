@@ -274,7 +274,17 @@ std::string listRouteRequestsJson(const ccad::Board& board) {
   return out.str();
 }
 
-std::string exportRouteJobJson(const ccad::Board& board) {
+std::string exportRouteJobJson(const ccad::Board& board, const std::string& request_id_filter) {
+  std::vector<const ccad::RouteRequest*> route_requests;
+  for (const ccad::RouteRequest& request : board.route_requests) {
+    if (request_id_filter.empty() || request.id == request_id_filter) {
+      route_requests.push_back(&request);
+    }
+  }
+  if (!request_id_filter.empty() && route_requests.empty()) {
+    throw std::runtime_error("unknown route request: " + request_id_filter);
+  }
+
   std::ostringstream out;
   out << "{\n"
       << "  \"route_job\": {\n"
@@ -285,7 +295,7 @@ std::string exportRouteJobJson(const ccad::Board& board) {
       << "      \"track_count\": " << board.tracks.size() << ",\n"
       << "      \"keepout_count\": " << board.keepouts.size() << ",\n"
       << "      \"placement_region_count\": " << board.placement_regions.size() << ",\n"
-      << "      \"route_request_count\": " << board.route_requests.size() << "\n"
+      << "      \"route_request_count\": " << route_requests.size() << "\n"
       << "    },\n"
       << "    \"board_outline\": {\n"
       << "      \"x_nm\": " << board.outline.origin.x.nanometers << ",\n"
@@ -370,8 +380,8 @@ std::string exportRouteJobJson(const ccad::Board& board) {
   }
   out << "    ],\n"
       << "    \"route_requests\": [\n";
-  for (std::size_t i = 0; i < board.route_requests.size(); ++i) {
-    const ccad::RouteRequest& request = board.route_requests.at(i);
+  for (std::size_t i = 0; i < route_requests.size(); ++i) {
+    const ccad::RouteRequest& request = *route_requests.at(i);
     out << "      {\"id\": \"" << ccad::escapeJson(request.id) << "\", \"net_id\": \""
         << ccad::escapeJson(request.net_id) << "\", \"from_object_id\": \""
         << ccad::escapeJson(request.from_object_id) << "\", \"to_object_id\": \""
@@ -379,7 +389,7 @@ std::string exportRouteJobJson(const ccad::Board& board) {
         << ccad::escapeJson(request.preferred_layer_id) << "\", \"policy\": \""
         << ccad::escapeJson(request.policy) << "\", \"width_nm\": "
         << request.width.nanometers << "}"
-        << (i + 1 == board.route_requests.size() ? "" : ",") << '\n';
+        << (i + 1 == route_requests.size() ? "" : ",") << '\n';
   }
   out << "    ]\n"
       << "  }\n"
