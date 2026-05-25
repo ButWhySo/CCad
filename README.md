@@ -71,7 +71,7 @@ Phase 2 is complete. CCad now has a deterministic physical board model, early PC
 - CLI PCB authoring can list route-request intent records as compact JSON.
 - CLI PCB authoring can export compact route-job JSON for external router handoff.
 - CLI PCB authoring can list board layer and physical object IDs as compact JSON, with optional type filtering.
-- CLI PCB authoring can inspect one board layer or physical object by stable ID as compact JSON.
+- CLI PCB authoring can inspect one board layer or physical object by stable ID as compact JSON, including route provenance for tracks.
 - CLI PCB authoring can remove physical board objects by stable ID.
 - CLI PCB authoring can remove unused board layers by stable ID.
 - CLI PCB authoring can update board layer name, kind, and visibility by stable ID.
