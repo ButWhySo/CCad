@@ -577,6 +577,34 @@ int main() {
               " --request-id ARR2 --track-id ART2 --layer B.Cu"
               " --start-x-mm 5 --start-y-mm 6 --end-x-mm 60 --end-y-mm 9") != 0,
           "pcb apply-route-segment rejects outside board");
+  require(run(quote(CCAD_BINARY) + " pcb apply-route-segment --file " +
+              quote(apply_route_board_path) +
+              " --request-id ARR2 --track-id ART2 --layer F.Cu"
+              " --start-x-mm 5 --start-y-mm 6 --end-x-mm 6 --end-y-mm 7"
+              " --complete false") == 0,
+          "pcb apply-route-segment can keep request open");
+  const std::string partial_route_json = readFile(apply_route_board_path);
+  require(partial_route_json.find("\"id\": \"ART2\"") != std::string::npos,
+          "pcb apply-route-segment writes partial track id");
+  require(partial_route_json.find("\"id\": \"ARR2\"") != std::string::npos,
+          "pcb apply-route-segment keeps incomplete request");
+  require(run(quote(CCAD_BINARY) + " pcb apply-route-segment --file " +
+              quote(apply_route_board_path) +
+              " --request-id ARR2 --track-id ART3 --layer F.Cu"
+              " --start-x-mm 6 --start-y-mm 7 --end-x-mm 8 --end-y-mm 9"
+              " --complete maybe") != 0,
+          "pcb apply-route-segment rejects invalid completion flag");
+  require(run(quote(CCAD_BINARY) + " pcb apply-route-segment --file " +
+              quote(apply_route_board_path) +
+              " --request-id ARR2 --track-id ART3 --layer F.Cu"
+              " --start-x-mm 6 --start-y-mm 7 --end-x-mm 8 --end-y-mm 9"
+              " --complete true") == 0,
+          "pcb apply-route-segment completes open request");
+  const std::string complete_route_json = readFile(apply_route_board_path);
+  require(complete_route_json.find("\"id\": \"ART3\"") != std::string::npos,
+          "pcb apply-route-segment writes final track id");
+  require(complete_route_json.find("\"id\": \"ARR2\"") == std::string::npos,
+          "pcb apply-route-segment removes completed request");
 
   const std::filesystem::path remove_board_path = temp / "remove-board.ccad.json";
   const std::string remove_board_init_command =
