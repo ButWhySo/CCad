@@ -283,6 +283,8 @@ std::string exportRouteJobJson(const ccad::Board& board) {
       << "      \"pad_count\": " << board.pads.size() << ",\n"
       << "      \"via_count\": " << board.vias.size() << ",\n"
       << "      \"track_count\": " << board.tracks.size() << ",\n"
+      << "      \"keepout_count\": " << board.keepouts.size() << ",\n"
+      << "      \"placement_region_count\": " << board.placement_regions.size() << ",\n"
       << "      \"route_request_count\": " << board.route_requests.size() << "\n"
       << "    },\n"
       << "    \"board_outline\": {\n"
@@ -343,6 +345,30 @@ std::string exportRouteJobJson(const ccad::Board& board) {
   }
   out << "      ]\n"
       << "    },\n"
+      << "    \"keepouts\": [\n";
+  for (std::size_t i = 0; i < board.keepouts.size(); ++i) {
+    const ccad::Keepout& keepout = board.keepouts.at(i);
+    out << "      {\"id\": \"" << ccad::escapeJson(keepout.id) << "\", \"kind\": \""
+        << ccad::escapeJson(keepout.kind) << "\", \"x_nm\": "
+        << keepout.area.origin.x.nanometers << ", \"y_nm\": "
+        << keepout.area.origin.y.nanometers << ", \"width_nm\": "
+        << keepout.area.size.width.nanometers << ", \"height_nm\": "
+        << keepout.area.size.height.nanometers << "}"
+        << (i + 1 == board.keepouts.size() ? "" : ",") << '\n';
+  }
+  out << "    ],\n"
+      << "    \"placement_regions\": [\n";
+  for (std::size_t i = 0; i < board.placement_regions.size(); ++i) {
+    const ccad::PlacementRegion& region = board.placement_regions.at(i);
+    out << "      {\"id\": \"" << ccad::escapeJson(region.id) << "\", \"kind\": \""
+        << ccad::escapeJson(region.kind) << "\", \"x_nm\": "
+        << region.area.origin.x.nanometers << ", \"y_nm\": "
+        << region.area.origin.y.nanometers << ", \"width_nm\": "
+        << region.area.size.width.nanometers << ", \"height_nm\": "
+        << region.area.size.height.nanometers << "}"
+        << (i + 1 == board.placement_regions.size() ? "" : ",") << '\n';
+  }
+  out << "    ],\n"
       << "    \"route_requests\": [\n";
   for (std::size_t i = 0; i < board.route_requests.size(); ++i) {
     const ccad::RouteRequest& request = board.route_requests.at(i);

@@ -479,10 +479,18 @@ int main() {
           "pcb export-route-job writes route job root");
   require(route_job_json.find("\"route_request_count\": 1") != std::string::npos,
           "pcb export-route-job reports request count");
+  require(route_job_json.find("\"keepout_count\": 1") != std::string::npos,
+          "pcb export-route-job reports keepout count");
+  require(route_job_json.find("\"placement_region_count\": 1") != std::string::npos,
+          "pcb export-route-job reports placement region count");
   require(route_job_json.find("\"board_outline\"") != std::string::npos,
           "pcb export-route-job includes board outline");
   require(route_job_json.find("\"physical_objects\"") != std::string::npos,
           "pcb export-route-job includes physical objects");
+  require(route_job_json.find("\"keepouts\"") != std::string::npos,
+          "pcb export-route-job includes keepouts");
+  require(route_job_json.find("\"placement_regions\"") != std::string::npos,
+          "pcb export-route-job includes placement regions");
   require(route_job_json.find("\"route_requests\"") != std::string::npos,
           "pcb export-route-job includes route requests");
   require(route_job_json.find("\"id\": \"RR1\"") != std::string::npos,
