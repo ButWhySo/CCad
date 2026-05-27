@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 4 / 6: native GUI/editor.
 
-Progress counter: Phase 4 / 6, Sprint 127 is building the native GUI/editor route-review foundation on branch `sprint-127-gui-route-review`.
+Progress counter: Phase 4 / 6, Sprint 128 completed the KiCad layer compatibility foundation on branch `sprint-128-kicad-layer-foundation`.
 
 Phase 3 is complete. CCad now has constrained route-request intent, route-job export, route-result application, route provenance on generated tracks, compact route progress reporting, DRC validity checks for route requests, and a clean boundary for future router integration. Phase 4 starts the native GUI/editor milestone while keeping the kernel and CLI as the source of truth.
 
@@ -91,6 +91,8 @@ Phase 3 is complete. CCad now has constrained route-request intent, route-job ex
 - CLI PCB authoring can update typed route-request records by stable ID.
 - CLI PCB authoring can remove typed route-request records by stable ID.
 - CLI PCB authoring can apply one routed segment or one routed polyline from a route request into board tracks while preserving source request provenance.
+- Core PCB metadata includes the canonical KiCad named layer set used by `.kicad_pcb` files, including 32 copper layers, paired fabrication/assembly layers, board geometry layers, and user layers through `User.9`.
+- CLI PCB authoring can append missing KiCad standard layers with `ccad pcb add-standard-layers --file <path>` while preserving existing and custom layers.
 
 Out of scope for the Phase 3 MVP: full interactive editing, automatic placement, a production autorouter, KiCad import/export, fabrication outputs, and network services.
 
@@ -421,6 +423,7 @@ Add PCB primitives through the CLI:
 .\build-qt\ccad.exe pcb set-outline --file .\build-qt\canvas-demo.ccad.json --x-mm 0 --y-mm 0 --width-mm 44 --height-mm 30
 .\build-qt\ccad.exe pcb set-rules --file .\build-qt\canvas-demo.ccad.json --copper-clearance-mm 0.20 --min-track-width-mm 0.15 --min-via-annular-ring-mm 0.10
 .\build-qt\ccad.exe pcb add-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --name "Inner 1 copper" --kind copper --visible false
+.\build-qt\ccad.exe pcb add-standard-layers --file .\build-qt\canvas-demo.ccad.json
 .\build-qt\ccad.exe pcb set-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --name "Inner signal copper" --kind copper --visible true
 .\build-qt\ccad.exe pcb set-layer-visibility --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --visible true
 .\build-qt\ccad.exe pcb remove-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu
@@ -453,6 +456,7 @@ What these do:
 - `pcb set-outline` replaces the rectangular board outline while rejecting outlines that would leave existing pads, vias, tracks, keepouts, or placement regions outside the board.
 - `pcb set-rules` updates board-level DRC defaults for copper clearance, minimum track width, and minimum via annular ring.
 - `pcb add-layer` appends a board layer with stable ID, display name, kind, and optional visibility.
+- `pcb add-standard-layers` appends any missing KiCad standard named layers without removing existing custom layers.
 - `pcb set-layer` updates an existing layer's display name, kind, and visibility while rejecting non-copper kind changes for layers referenced by pads or tracks.
 - `pcb remove-layer` removes an unused board layer by stable ID.
 - `pcb set-layer-visibility` updates an existing layer's visibility flag for review surfaces.

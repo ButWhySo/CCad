@@ -65,6 +65,8 @@ int main() {
           "help json describes footprint placement");
   require(help_json.find("\"name\": \"pcb add-layer\"") != std::string::npos,
           "help json describes layer authoring");
+  require(help_json.find("\"name\": \"pcb add-standard-layers\"") != std::string::npos,
+          "help json describes KiCad standard layer authoring");
   require(help_json.find("\"name\": \"pcb set-layer\"") != std::string::npos,
           "help json describes layer metadata editing");
   require(help_json.find("\"name\": \"pcb get-object\"") != std::string::npos,
@@ -148,6 +150,27 @@ int main() {
   require(layer_json.find("\"visible\": false") != std::string::npos,
           "pcb add-layer writes visibility");
   require(run(add_layer_command) != 0, "pcb add-layer rejects duplicate id");
+
+  const std::filesystem::path standard_layers_path = temp / "standard-layers.ccad.json";
+  const std::string standard_layers_init_command =
+      quote(CCAD_BINARY) +
+      " init --name standard-layers --width-mm 42 --height-mm 28 --out " +
+      quote(standard_layers_path);
+  require(run(standard_layers_init_command) == 0, "standard layer board init exits zero");
+  const std::string add_standard_layers_command =
+      quote(CCAD_BINARY) + " pcb add-standard-layers --file " + quote(standard_layers_path);
+  require(run(add_standard_layers_command) == 0, "pcb add-standard-layers exits zero");
+  const std::string standard_layers_json = readFile(standard_layers_path);
+  require(standard_layers_json.find("\"id\": \"In30.Cu\"") != std::string::npos,
+          "pcb add-standard-layers writes final inner copper layer");
+  require(standard_layers_json.find("\"id\": \"F.Paste\"") != std::string::npos,
+          "pcb add-standard-layers writes front paste layer");
+  require(standard_layers_json.find("\"kind\": \"board_edge\"") != std::string::npos,
+          "pcb add-standard-layers writes board edge kind");
+  require(standard_layers_json.find("\"id\": \"User.9\"") != std::string::npos,
+          "pcb add-standard-layers writes final user layer");
+  require(run(add_standard_layers_command) == 0,
+          "pcb add-standard-layers is idempotent for already-complete boards");
 
   const std::string set_layer_visibility_command =
       quote(CCAD_BINARY) + " pcb set-layer-visibility --file " + quote(board_project_path) +

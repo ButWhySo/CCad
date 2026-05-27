@@ -3,6 +3,8 @@
 #include "ccad_cli/common.hpp"
 #include "ccad_cli/pcb_object_queries.hpp"
 
+#include "ccad_core/layers.hpp"
+
 #include <algorithm>
 #include <iostream>
 #include <map>
@@ -191,6 +193,19 @@ int pcbCommand(const std::vector<std::string>& args) {
           .kind = kind,
           .visible = parseVisibleOption(options),
       });
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "add-standard-layers") {
+      const std::map<std::string, std::string> options = parseOptions(args, 1, {"--file"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      ccad::appendMissingStandardKiCadPcbLayers(board);
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;

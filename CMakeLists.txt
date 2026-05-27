@@ -18,6 +18,7 @@ add_library(ccad_core
   src/ccad_core/geometry.cpp
   src/ccad_core/json.cpp
   src/ccad_core/kicad_footprint_import.cpp
+  src/ccad_core/layers.cpp
   src/ccad_core/library_catalog.cpp
   src/ccad_core/review.cpp
   src/ccad_core/serialize.cpp
@@ -64,6 +65,15 @@ if(MINGW)
   target_link_options(ccad_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME serialize COMMAND ccad_tests)
+
+add_executable(ccad_layer_tests
+  tests/test_layers.cpp
+)
+target_link_libraries(ccad_layer_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_layer_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME layers COMMAND ccad_layer_tests)
 
 add_executable(ccad_erc_tests
   tests/test_erc.cpp
