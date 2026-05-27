@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 4 / 6: native GUI/editor.
 
-Progress counter: Phase 4 / 6, Sprint 126 completed Phase 3 routing assistance on `main`; Sprint 127 planning.
+Progress counter: Phase 4 / 6, Sprint 127 is building the native GUI/editor route-review foundation on branch `sprint-127-gui-route-review`.
 
 Phase 3 is complete. CCad now has constrained route-request intent, route-job export, route-result application, route provenance on generated tracks, compact route progress reporting, DRC validity checks for route requests, and a clean boundary for future router integration. Phase 4 starts the native GUI/editor milestone while keeping the kernel and CLI as the source of truth.
 
@@ -41,6 +41,10 @@ Phase 3 is complete. CCad now has constrained route-request intent, route-job ex
 - Native GUI canvas supports hold-space hand-pan mode with left-drag.
 - Native GUI status bar tool state now reflects pan mode transitions (`Select`, `Pan Ready`, `Pan Drag`).
 - Native GUI includes in-app navigation controls help (`Help > Navigation Controls`, shortcut `F1`).
+- Native GUI project summary shows route request count, open/partial/done route progress, and routed segment count.
+- Native GUI object browser lists route-request intent rows and shows route provenance on routed track rows.
+- Native GUI route-request rows can select routed tracks that were generated from that request.
+- `ccad inspect` reports board route progress derived from route requests and track provenance.
 - GitHub CI now uses `actions/checkout@v5` for Node 24 runner compatibility.
 - Native GUI starts with a larger default window size derived from desktop available bounds.
 - Placement regions are serialized, authored through the CLI, inspected in review JSON, checked by DRC, rendered in the Qt canvas, and listed in the object browser.
@@ -441,6 +445,7 @@ What these do:
 
 - `pcb list-nets` emits compact physical net usage counts for pads, vias, and tracks.
 - `pcb route-status` emits compact route progress counts for open, partial, and completed route requests, derived from current route requests and track provenance.
+- `inspect` also reports board route progress in review JSON so GUI and agents share the same route-review contract.
 - `pcb export-route-job` emits a compact deterministic route-job JSON envelope with schema/version metadata, units, board outline, design rules, layers, pads, vias, tracks, keepouts, placement regions, and route requests; pass `--request-id <id>` to export one request.
 - `pcb list-objects` emits compact board layer and physical object rows as JSON, with optional type filtering for `layer`, `pad`, `via`, `track`, `keepout`, or `placement_region`.
 - `pcb get-object` emits one board layer, pad, via, track, keepout, or placement region by stable ID as compact JSON.
@@ -586,7 +591,7 @@ What it does:
 
 - Starts the native Qt review GUI.
 - Loads the selected `.ccad.json` project.
-- Shows project counts, status, diagnostics, board outline, and current PCB primitives.
+- Shows project counts, route progress, status, diagnostics, board outline, and current PCB primitives.
 
 When to run:
 

@@ -66,6 +66,11 @@ int main() {
   require(clean.track_count == 0, "review reports track count");
   require(clean.placement_region_count == 0, "review reports placement region count");
   require(clean.keepout_count == 0, "review reports keepout count");
+  require(clean.route_request_count == 0, "review reports route request count");
+  require(clean.routed_segment_count == 0, "review reports routed segment count");
+  require(clean.open_route_count == 0, "review reports open route count");
+  require(clean.partial_route_count == 0, "review reports partial route count");
+  require(clean.completed_route_count == 0, "review reports completed route count");
   require(clean.error_count == 0, "clean review has no errors");
   require(clean.warning_count == 0, "clean review has no warnings");
   require(clean.status == "Clean: 1 component, 1 net, 1 constraint", "clean status text");
@@ -118,5 +123,59 @@ int main() {
   require(warning_review.error_count == 0, "warning review has no errors");
   require(warning_review.warning_count == 1, "warning review has one warning");
   require(warning_review.status == "Warnings: 1", "warning status text");
+
+  ccad::Project route_review_project = validProject();
+  route_review_project.board->pads.push_back(ccad::Pad{
+      .id = "P1",
+      .component_id = "U1",
+      .pin_name = "VDD",
+      .net_id = "N_3V3",
+      .layer_id = "F.Cu",
+      .position = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
+      .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(1.0)}});
+  route_review_project.board->vias.push_back(ccad::Via{
+      .id = "V1",
+      .net_id = "N_3V3",
+      .position = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},
+      .diameter = ccad::millimeters(0.8),
+      .drill = ccad::millimeters(0.4)});
+  route_review_project.board->tracks.push_back(ccad::TrackSegment{
+      .id = "RT1",
+      .net_id = "N_3V3",
+      .layer_id = "F.Cu",
+      .start = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
+      .end = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},
+      .width = ccad::millimeters(0.25),
+      .source_route_request_id = "RR1"});
+  route_review_project.board->tracks.push_back(ccad::TrackSegment{
+      .id = "RT2",
+      .net_id = "N_3V3",
+      .layer_id = "F.Cu",
+      .start = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},
+      .end = ccad::Point{.x = ccad::millimeters(9), .y = ccad::millimeters(10)},
+      .width = ccad::millimeters(0.25),
+      .source_route_request_id = "DONE1"});
+  route_review_project.board->route_requests.push_back(ccad::RouteRequest{
+      .id = "RR1",
+      .net_id = "N_3V3",
+      .from_object_id = "P1",
+      .to_object_id = "V1",
+      .preferred_layer_id = "F.Cu",
+      .policy = "shortest_safe",
+      .width = ccad::millimeters(0.25)});
+  route_review_project.board->route_requests.push_back(ccad::RouteRequest{
+      .id = "RR2",
+      .net_id = "N_3V3",
+      .from_object_id = "P1",
+      .to_object_id = "V1",
+      .preferred_layer_id = "F.Cu",
+      .policy = "shortest_safe",
+      .width = ccad::millimeters(0.25)});
+  const ccad::ProjectReview route_review = ccad::buildReview(route_review_project);
+  require(route_review.route_request_count == 2, "review counts open route requests");
+  require(route_review.routed_segment_count == 2, "review counts provenanced routed segments");
+  require(route_review.open_route_count == 1, "review counts open routes");
+  require(route_review.partial_route_count == 1, "review counts partial routes");
+  require(route_review.completed_route_count == 1, "review counts completed routes");
 }
 

@@ -39,11 +39,23 @@ struct CanvasTrack {
   std::string id;
   std::string net_id;
   std::string layer_id;
+  std::string source_route_request_id;
   double start_x_units = 0.0;
   double start_y_units = 0.0;
   double end_x_units = 0.0;
   double end_y_units = 0.0;
   double width_units = 0.0;
+};
+
+struct CanvasRouteRequest {
+  std::string id;
+  std::string net_id;
+  std::string from_object_id;
+  std::string to_object_id;
+  std::string preferred_layer_id;
+  std::string policy;
+  std::int64_t width_nm = 0;
+  std::size_t routed_segment_count = 0;
 };
 
 struct CanvasKeepout {
@@ -78,6 +90,7 @@ struct CanvasScene {
   std::vector<CanvasPad> pads;
   std::vector<CanvasVia> vias;
   std::vector<CanvasTrack> tracks;
+  std::vector<CanvasRouteRequest> route_requests;
 };
 
 CanvasScene buildCanvasScene(const Project& project);

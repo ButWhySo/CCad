@@ -1178,6 +1178,12 @@ int main() {
           "inspect reports via count");
   require(board_inspect_output.find("\"tracks\": 1") != std::string::npos,
           "inspect reports track count");
+  require(board_inspect_output.find("\"route_requests\": 0") != std::string::npos,
+          "inspect reports route request count");
+  require(board_inspect_output.find("\"route_progress\"") != std::string::npos,
+          "inspect reports route progress object");
+  require(board_inspect_output.find("\"routed_segments\": 0") != std::string::npos,
+          "inspect reports routed segment count");
   require(board_inspect_output.find("\"placement_regions\": 1") != std::string::npos,
           "inspect reports placement region count");
   require(board_inspect_output.find("\"keepouts\": 1") != std::string::npos,

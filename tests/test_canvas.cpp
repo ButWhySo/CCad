@@ -54,8 +54,15 @@ ccad::Project boardProject() {
                                     .layer_id = "F.Cu",
                                     .start = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
                                     .end = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},
-                                    .width = ccad::millimeters(0.25)}},
-      .route_requests = {},
+                                    .width = ccad::millimeters(0.25),
+                                    .source_route_request_id = "RR1"}},
+      .route_requests = {ccad::RouteRequest{.id = "RR1",
+                                            .net_id = "N1",
+                                            .from_object_id = "P1",
+                                            .to_object_id = "V1",
+                                            .preferred_layer_id = "F.Cu",
+                                            .policy = "shortest_safe",
+                                            .width = ccad::millimeters(0.25)}},
   };
   return project;
 }
@@ -104,6 +111,18 @@ int main() {
   require(scene.tracks.size() == 1, "canvas has track");
   require(scene.tracks.at(0).net_id == "N1", "canvas track net id");
   require(scene.tracks.at(0).layer_id == "F.Cu", "canvas track layer id");
+  require(scene.tracks.at(0).source_route_request_id == "RR1",
+          "canvas track exposes route provenance");
   require(scene.tracks.at(0).width_units == 0.25, "canvas track width is mm");
+  require(scene.route_requests.size() == 1, "canvas has route requests");
+  require(scene.route_requests.at(0).id == "RR1", "canvas route request id");
+  require(scene.route_requests.at(0).from_object_id == "P1", "canvas route from object id");
+  require(scene.route_requests.at(0).to_object_id == "V1", "canvas route to object id");
+  require(scene.route_requests.at(0).preferred_layer_id == "F.Cu",
+          "canvas route preferred layer id");
+  require(scene.route_requests.at(0).policy == "shortest_safe", "canvas route policy");
+  require(scene.route_requests.at(0).width_nm == 250000, "canvas route width is nm");
+  require(scene.route_requests.at(0).routed_segment_count == 1,
+          "canvas route counts partial routed segments");
 }
 
