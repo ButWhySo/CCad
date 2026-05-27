@@ -133,6 +133,7 @@ For large designs, CCad should use semantic batches, enriched component knowledg
 
 Policy:
 
+- Before implementing PCB/CAD features or bugfixes, check current external references for that feature domain. KiCad official docs and developer file-format docs are the first compatibility source; use Altium, IPC-style manufacturing references, ngspice, OpenTelemetry, Langfuse, or LangGraph docs when those domains are affected.
 - Do not fetch the internet repeatedly during normal design work.
 - Do not vendor huge KiCad/Gitee/GitHub library dumps into this source repo.
 - Keep raw upstream checkouts and converted catalogs in ignored local paths such as `library-cache/` or `catalog-cache/`.
