@@ -13,7 +13,11 @@ ccad::ProjectReview baseReview() {
   review.has_board = true;
   review.board_width_nm = 44000000;
   review.board_height_nm = 30000000;
-  review.layer_count = 2;
+  review.layer_count = 59;
+  review.copper_layer_count = 32;
+  review.non_copper_layer_count = 27;
+  review.visible_layer_count = 4;
+  review.hidden_layer_count = 55;
   review.route_request_count = 2;
   review.open_route_count = 1;
   review.partial_route_count = 1;
@@ -76,6 +80,12 @@ int main(int argc, char** argv) {
           "summary shows route progress counts");
   require(hasLabelText(panel, "Routed Segments"), "summary labels routed segments");
   require(hasLabelText(panel, "4"), "summary shows routed segment count");
+  require(hasLabelText(panel, "Layer Breakdown"), "summary labels layer breakdown");
+  require(hasLabelText(panel, "copper 32 / other 27"),
+          "summary shows copper and non-copper layer counts");
+  require(hasLabelText(panel, "Layer Visibility"), "summary labels layer visibility");
+  require(hasLabelText(panel, "visible 4 / hidden 55"),
+          "summary shows visible and hidden layer counts");
 
   ccad::ProjectReview origin_zero = baseReview();
   panel.renderReview(origin_zero);

@@ -272,6 +272,16 @@ int main() {
   const std::string inspect_rules_json = readFile(inspect_rules_path);
   require(inspect_rules_json.find("\"design_rules\"") != std::string::npos,
           "inspect writes design rules");
+  require(inspect_rules_json.find("\"layer_summary\"") != std::string::npos,
+          "inspect writes layer summary");
+  require(inspect_rules_json.find("\"copper\": 3") != std::string::npos,
+          "inspect writes copper layer count");
+  require(inspect_rules_json.find("\"non_copper\": 1") != std::string::npos,
+          "inspect writes non-copper layer count");
+  require(inspect_rules_json.find("\"visible\": 3") != std::string::npos,
+          "inspect writes visible layer count");
+  require(inspect_rules_json.find("\"hidden\": 1") != std::string::npos,
+          "inspect writes hidden layer count");
   require(inspect_rules_json.find("\"copper_clearance_nm\": 150000") != std::string::npos,
           "inspect writes copper clearance rule");
   require(inspect_rules_json.find("\"min_track_width_nm\": 120000") != std::string::npos,

@@ -77,6 +77,12 @@ std::string reviewJson(const ccad::ProjectReview& review) {
   out << "      \"min_track_width_nm\": " << review.min_track_width_nm << ",\n";
   out << "      \"min_via_annular_ring_nm\": " << review.min_via_annular_ring_nm << "\n";
   out << "    },\n";
+  out << "    \"layer_summary\": {\n";
+  out << "      \"copper\": " << review.copper_layer_count << ",\n";
+  out << "      \"non_copper\": " << review.non_copper_layer_count << ",\n";
+  out << "      \"visible\": " << review.visible_layer_count << ",\n";
+  out << "      \"hidden\": " << review.hidden_layer_count << "\n";
+  out << "    },\n";
   out << "    \"pads\": " << review.pad_count << ",\n";
   out << "    \"vias\": " << review.via_count << ",\n";
   out << "    \"tracks\": " << review.track_count << ",\n";
