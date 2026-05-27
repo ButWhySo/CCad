@@ -46,6 +46,9 @@ ProjectSummaryPanel::ProjectSummaryPanel(QWidget* parent) : QWidget(parent) {
   layout->addWidget(makeValueCard("Pads"));
   layout->addWidget(makeValueCard("Vias"));
   layout->addWidget(makeValueCard("Tracks"));
+  layout->addWidget(makeValueCard("Route Requests"));
+  layout->addWidget(makeValueCard("Route Progress"));
+  layout->addWidget(makeValueCard("Routed Segments"));
   layout->addWidget(makeValueCard("Placement Regions"));
   layout->addWidget(makeValueCard("Keepouts"));
   layout->addWidget(makeValueCard("Diagnostics"));
@@ -71,6 +74,12 @@ void ProjectSummaryPanel::renderReview(const ccad::ProjectReview& review) {
   pads_value_->setText(QString::number(review.pad_count));
   vias_value_->setText(QString::number(review.via_count));
   tracks_value_->setText(QString::number(review.track_count));
+  route_requests_value_->setText(QString::number(review.route_request_count));
+  route_progress_value_->setText("open " + QString::number(review.open_route_count) +
+                                 " / partial " + QString::number(review.partial_route_count) +
+                                 " / done " +
+                                 QString::number(review.completed_route_count));
+  routed_segments_value_->setText(QString::number(review.routed_segment_count));
   placement_regions_value_->setText(QString::number(review.placement_region_count));
   keepouts_value_->setText(QString::number(review.keepout_count));
   copper_clearance_value_->setText(nmToMmLabel(review.copper_clearance_nm));
@@ -96,6 +105,9 @@ void ProjectSummaryPanel::renderLoadFailure(const QString& path) {
   pads_value_->setText("0");
   vias_value_->setText("0");
   tracks_value_->setText("0");
+  route_requests_value_->setText("0");
+  route_progress_value_->setText("open 0 / partial 0 / done 0");
+  routed_segments_value_->setText("0");
   placement_regions_value_->setText("0");
   keepouts_value_->setText("0");
   copper_clearance_value_->setText("0.00 mm");
@@ -132,6 +144,12 @@ QWidget* ProjectSummaryPanel::makeValueCard(const QString& label) {
     vias_value_ = value;
   } else if (label == "Tracks") {
     tracks_value_ = value;
+  } else if (label == "Route Requests") {
+    route_requests_value_ = value;
+  } else if (label == "Route Progress") {
+    route_progress_value_ = value;
+  } else if (label == "Routed Segments") {
+    routed_segments_value_ = value;
   } else if (label == "Placement Regions") {
     placement_regions_value_ = value;
   } else if (label == "Keepouts") {

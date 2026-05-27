@@ -16,6 +16,7 @@ ccad::CanvasScene selectionScene() {
       .id = "T1",
       .net_id = "N1",
       .layer_id = "F.Cu",
+      .source_route_request_id = {},
       .start_x_units = 2.0,
       .start_y_units = 2.0,
       .end_x_units = 16.0,

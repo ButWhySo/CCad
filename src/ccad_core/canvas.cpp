@@ -1,5 +1,7 @@
 #include "ccad_core/canvas.hpp"
 
+#include <map>
+
 namespace ccad {
 namespace {
 
@@ -83,11 +85,31 @@ CanvasScene buildCanvasScene(const Project& project) {
         .id = track.id,
         .net_id = track.net_id,
         .layer_id = track.layer_id,
+        .source_route_request_id = track.source_route_request_id,
         .start_x_units = toMillimeters(track.start.x),
         .start_y_units = toMillimeters(track.start.y),
         .end_x_units = toMillimeters(track.end.x),
         .end_y_units = toMillimeters(track.end.y),
         .width_units = toMillimeters(track.width),
+    });
+  }
+
+  std::map<std::string, std::size_t> routed_segment_counts;
+  for (const TrackSegment& track : project.board->tracks) {
+    if (!track.source_route_request_id.empty()) {
+      ++routed_segment_counts[track.source_route_request_id];
+    }
+  }
+  for (const RouteRequest& request : project.board->route_requests) {
+    scene.route_requests.push_back(CanvasRouteRequest{
+        .id = request.id,
+        .net_id = request.net_id,
+        .from_object_id = request.from_object_id,
+        .to_object_id = request.to_object_id,
+        .preferred_layer_id = request.preferred_layer_id,
+        .policy = request.policy,
+        .width_nm = request.width.nanometers,
+        .routed_segment_count = routed_segment_counts[request.id],
     });
   }
   return scene;

@@ -14,6 +14,11 @@ ccad::ProjectReview baseReview() {
   review.board_width_nm = 44000000;
   review.board_height_nm = 30000000;
   review.layer_count = 2;
+  review.route_request_count = 2;
+  review.open_route_count = 1;
+  review.partial_route_count = 1;
+  review.completed_route_count = 3;
+  review.routed_segment_count = 4;
   return review;
 }
 
@@ -64,6 +69,13 @@ int main(int argc, char** argv) {
   require(hasLabelText(panel, "0.18 mm"), "summary shows minimum track width value");
   require(hasLabelText(panel, "Via Annular Ring"), "summary labels via annular ring");
   require(hasLabelText(panel, "0.11 mm"), "summary shows via annular ring value");
+  require(hasLabelText(panel, "Route Requests"), "summary labels route requests");
+  require(hasLabelText(panel, "2"), "summary shows route request count");
+  require(hasLabelText(panel, "Route Progress"), "summary labels route progress");
+  require(hasLabelText(panel, "open 1 / partial 1 / done 3"),
+          "summary shows route progress counts");
+  require(hasLabelText(panel, "Routed Segments"), "summary labels routed segments");
+  require(hasLabelText(panel, "4"), "summary shows routed segment count");
 
   ccad::ProjectReview origin_zero = baseReview();
   panel.renderReview(origin_zero);

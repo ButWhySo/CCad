@@ -2,6 +2,7 @@
 
 #include "ccad_core/drc.hpp"
 
+#include <map>
 #include <string>
 
 namespace ccad {
@@ -38,6 +39,33 @@ ProjectReview buildReview(const Project& project) {
     review.track_count = project.board->tracks.size();
     review.placement_region_count = project.board->placement_regions.size();
     review.keepout_count = project.board->keepouts.size();
+    review.route_request_count = project.board->route_requests.size();
+    std::map<std::string, std::size_t> routed_segment_counts;
+    for (const TrackSegment& track : project.board->tracks) {
+      if (!track.source_route_request_id.empty()) {
+        ++review.routed_segment_count;
+        ++routed_segment_counts[track.source_route_request_id];
+      }
+    }
+    for (const RouteRequest& request : project.board->route_requests) {
+      if (routed_segment_counts[request.id] > 0) {
+        ++review.partial_route_count;
+      } else {
+        ++review.open_route_count;
+      }
+    }
+    for (const auto& [request_id, segment_count] : routed_segment_counts) {
+      bool still_open = false;
+      for (const RouteRequest& request : project.board->route_requests) {
+        if (request.id == request_id) {
+          still_open = true;
+          break;
+        }
+      }
+      if (!still_open && segment_count > 0) {
+        ++review.completed_route_count;
+      }
+    }
   }
   review.diagnostics = runErc(project);
   const std::vector<Diagnostic> drc_diagnostics = runDrc(project);

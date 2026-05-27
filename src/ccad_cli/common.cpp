@@ -80,6 +80,13 @@ std::string reviewJson(const ccad::ProjectReview& review) {
   out << "    \"pads\": " << review.pad_count << ",\n";
   out << "    \"vias\": " << review.via_count << ",\n";
   out << "    \"tracks\": " << review.track_count << ",\n";
+  out << "    \"route_requests\": " << review.route_request_count << ",\n";
+  out << "    \"route_progress\": {\n";
+  out << "      \"open\": " << review.open_route_count << ",\n";
+  out << "      \"partial\": " << review.partial_route_count << ",\n";
+  out << "      \"completed\": " << review.completed_route_count << ",\n";
+  out << "      \"routed_segments\": " << review.routed_segment_count << "\n";
+  out << "    },\n";
   out << "    \"placement_regions\": " << review.placement_region_count << ",\n";
   out << "    \"keepouts\": " << review.keepout_count << "\n";
   out << "  },\n";

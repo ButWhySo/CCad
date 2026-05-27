@@ -50,7 +50,7 @@ QColor lighterHighlight(const QColor& color) {
 
 void tagObject(QGraphicsItem& item, const QString& type, const QString& id,
                const QColor& display_color, const QString& net_id = {},
-               const QString& layer_id = {}) {
+               const QString& layer_id = {}, const QString& route_request_id = {}) {
   item.setFlag(QGraphicsItem::ItemIsSelectable, true);
   item.setData(kCanvasObjectTypeRole, type);
   item.setData(kCanvasObjectIdRole, id);
@@ -61,6 +61,9 @@ void tagObject(QGraphicsItem& item, const QString& type, const QString& id,
   }
   if (!layer_id.isEmpty()) {
     item.setData(kCanvasObjectLayerIdRole, layer_id);
+  }
+  if (!route_request_id.isEmpty()) {
+    item.setData(kCanvasObjectRouteRequestIdRole, route_request_id);
   }
 }
 
@@ -203,7 +206,7 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     auto* item = addHighlightPath(canvas_scene, track_path, track_pen, QBrush(Qt::NoBrush));
     item->setToolTip("Track " + qstr(track.id));
     tagObject(*item, "track", qstr(track.id), theme.track_color, qstr(track.net_id),
-              qstr(track.layer_id));
+              qstr(track.layer_id), qstr(track.source_route_request_id));
   }
 
   for (const ccad::CanvasPad& pad : scene.pads) {
@@ -314,6 +317,10 @@ QString canvasObjectLayerId(const QGraphicsItem& item) {
   return item.data(kCanvasObjectLayerIdRole).toString();
 }
 
+QString canvasObjectRouteRequestId(const QGraphicsItem& item) {
+  return item.data(kCanvasObjectRouteRequestIdRole).toString();
+}
+
 bool canvasUsesShapeSelectionHighlight(const QGraphicsItem& item) {
   return item.data(kCanvasShapeSelectionHighlightRole).toBool();
 }
@@ -345,6 +352,23 @@ int selectCanvasObjectsByNetId(QGraphicsScene& canvas_scene, const QString& net_
   int selected_count = 0;
   for (QGraphicsItem* item : canvas_scene.items()) {
     if (canvasObjectNetId(*item) == net_id) {
+      item->setSelected(true);
+      ++selected_count;
+    }
+  }
+  return selected_count;
+}
+
+int selectCanvasObjectsByRouteRequestId(QGraphicsScene& canvas_scene,
+                                        const QString& route_request_id) {
+  canvas_scene.clearSelection();
+  if (route_request_id.isEmpty()) {
+    return 0;
+  }
+
+  int selected_count = 0;
+  for (QGraphicsItem* item : canvas_scene.items()) {
+    if (canvasObjectRouteRequestId(*item) == route_request_id) {
       item->setSelected(true);
       ++selected_count;
     }

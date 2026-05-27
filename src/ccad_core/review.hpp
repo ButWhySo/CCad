@@ -30,6 +30,11 @@ struct ProjectReview {
   std::size_t track_count = 0;
   std::size_t placement_region_count = 0;
   std::size_t keepout_count = 0;
+  std::size_t route_request_count = 0;
+  std::size_t routed_segment_count = 0;
+  std::size_t open_route_count = 0;
+  std::size_t partial_route_count = 0;
+  std::size_t completed_route_count = 0;
   std::vector<Diagnostic> diagnostics;
   std::size_t error_count = 0;
   std::size_t warning_count = 0;

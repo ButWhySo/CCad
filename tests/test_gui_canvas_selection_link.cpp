@@ -35,6 +35,7 @@ ccad::CanvasScene sceneWithPadAndTrack() {
       .id = "T1",
       .net_id = "N1",
       .layer_id = "F.Cu",
+      .source_route_request_id = "RR1",
       .start_x_units = 5.0,
       .start_y_units = 5.0,
       .end_x_units = 10.0,
@@ -109,6 +110,16 @@ int main(int argc, char** argv) {
     }
   }
   require(n1_tagged_items == 2, "pad and track expose matching net metadata");
+  require(selectCanvasObjectById(scene, "T1"), "route-provenanced track can be selected");
+  require(canvasObjectRouteRequestId(*scene.selectedItems().first()) == "RR1",
+          "track exposes route request metadata");
+  require(selectCanvasObjectsByRouteRequestId(scene, "RR1") == 1,
+          "selects routed tracks by route request id");
+  require(canvasObjectId(*scene.selectedItems().first()) == "T1",
+          "route request selection selects track");
+  require(selectCanvasObjectsByRouteRequestId(scene, "NOPE") == 0,
+          "missing route request reports zero");
+  require(scene.selectedItems().isEmpty(), "missing route request clears selection");
 
   require(selectCanvasObjectsByNetId(scene, "N1") == 2, "selects all canvas objects on net");
   require(scene.selectedItems().size() == 2, "net selection selects both matching objects");

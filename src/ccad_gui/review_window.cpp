@@ -226,6 +226,9 @@ ReviewWindow::ReviewWindow() {
       [this](const QString& object_id) { selectCanvasObjectById(*canvas_scene_, object_id); });
   object_browser_->setNetActivatedCallback(
       [this](const QString& net_id) { selectCanvasObjectsByNetId(*canvas_scene_, net_id); });
+  object_browser_->setRouteActivatedCallback([this](const QString& route_request_id) {
+    selectCanvasObjectsByRouteRequestId(*canvas_scene_, route_request_id);
+  });
   transaction_timeline_->renderTransactions({});
 }
 
