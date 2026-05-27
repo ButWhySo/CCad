@@ -195,40 +195,89 @@ $Screenshot = Join-Path $ScreenshotDir "$Name-$Timestamp.png"
 Invoke-Ccad init --name $Name --width-mm 42 --height-mm 28 --out $Project
 Invoke-Ccad pcb set-outline --file $Project --x-mm 2 --y-mm 2 --width-mm 44 --height-mm 30
 Invoke-Ccad pcb set-rules --file $Project --copper-clearance-mm 0.20 --min-track-width-mm 0.15 --min-via-annular-ring-mm 0.10
-Invoke-Ccad pcb add-layer --file $Project --id In1.Cu --name "Inner 1 copper" --kind copper --visible false
+Invoke-Ccad pcb add-standard-layers --file $Project
 Invoke-Ccad pcb set-layer-visibility --file $Project --id In1.Cu --visible true
 Invoke-Ccad pcb set-layer-visibility --file $Project --id In1.Cu --visible false
-Invoke-Ccad pcb add-pad --file $Project --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
-Invoke-Ccad pcb add-via --file $Project --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
-Invoke-Ccad pcb add-track --file $Project --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
+Invoke-Ccad pcb add-pad --file $Project --id JAC1.1 --component JAC1 --pin 1 --net AC1 --layer F.Cu --x-mm 8 --y-mm 17 --width-mm 1.8 --height-mm 1.4
+Invoke-Ccad pcb add-pad --file $Project --id JAC2.1 --component JAC2 --pin 1 --net AC2 --layer F.Cu --x-mm 32 --y-mm 17 --width-mm 1.8 --height-mm 1.4
+Invoke-Ccad pcb add-pad --file $Project --id JDC1.1 --component JDC1 --pin 1 --net DC_POS --layer F.Cu --x-mm 20 --y-mm 8 --width-mm 1.8 --height-mm 1.4
+Invoke-Ccad pcb add-pad --file $Project --id JDC2.1 --component JDC2 --pin 1 --net DC_NEG --layer F.Cu --x-mm 20 --y-mm 26 --width-mm 1.8 --height-mm 1.4
+Invoke-Ccad pcb add-pad --file $Project --id D1.A --component D1 --pin A --net AC1 --layer F.Cu --x-mm 10 --y-mm 15 --width-mm 1.3 --height-mm 1.0
+Invoke-Ccad pcb add-pad --file $Project --id D1.K --component D1 --pin K --net DC_POS --layer F.Cu --x-mm 18 --y-mm 10 --width-mm 1.3 --height-mm 1.0
+Invoke-Ccad pcb add-pad --file $Project --id D2.A --component D2 --pin A --net AC2 --layer F.Cu --x-mm 30 --y-mm 15 --width-mm 1.3 --height-mm 1.0
+Invoke-Ccad pcb add-pad --file $Project --id D2.K --component D2 --pin K --net DC_POS --layer F.Cu --x-mm 22 --y-mm 10 --width-mm 1.3 --height-mm 1.0
+Invoke-Ccad pcb add-pad --file $Project --id D3.A --component D3 --pin A --net DC_NEG --layer F.Cu --x-mm 18 --y-mm 24 --width-mm 1.3 --height-mm 1.0
+Invoke-Ccad pcb add-pad --file $Project --id D3.K --component D3 --pin K --net AC1 --layer F.Cu --x-mm 10 --y-mm 19 --width-mm 1.3 --height-mm 1.0
+Invoke-Ccad pcb add-pad --file $Project --id D4.A --component D4 --pin A --net DC_NEG --layer F.Cu --x-mm 22 --y-mm 24 --width-mm 1.3 --height-mm 1.0
+Invoke-Ccad pcb add-pad --file $Project --id D4.K --component D4 --pin K --net AC2 --layer F.Cu --x-mm 30 --y-mm 19 --width-mm 1.3 --height-mm 1.0
+Invoke-Ccad pcb add-pad --file $Project --id C1.1 --component C1 --pin 1 --net DC_POS --layer F.Cu --x-mm 25 --y-mm 10 --width-mm 1.4 --height-mm 1.2
+Invoke-Ccad pcb add-pad --file $Project --id C1.2 --component C1 --pin 2 --net DC_NEG --layer F.Cu --x-mm 25 --y-mm 24 --width-mm 1.4 --height-mm 1.2
+Invoke-Ccad pcb add-pad --file $Project --id RLOAD.1 --component RLOAD --pin 1 --net DC_POS --layer F.Cu --x-mm 36 --y-mm 12 --width-mm 1.4 --height-mm 1.2
+Invoke-Ccad pcb add-pad --file $Project --id RLOAD.2 --component RLOAD --pin 2 --net DC_NEG --layer F.Cu --x-mm 36 --y-mm 22 --width-mm 1.4 --height-mm 1.2
+Invoke-Ccad pcb add-via --file $Project --id VPOS --net DC_POS --x-mm 28 --y-mm 10 --diameter-mm 0.8 --drill-mm 0.4
+Invoke-Ccad pcb add-via --file $Project --id VNEG --net DC_NEG --x-mm 28 --y-mm 24 --diameter-mm 0.8 --drill-mm 0.4
+Invoke-Ccad pcb add-track --file $Project --id TAC1.1 --net AC1 --layer F.Cu --start-x-mm 8 --start-y-mm 17 --end-x-mm 10 --end-y-mm 15 --width-mm 0.25
+Invoke-Ccad pcb add-track --file $Project --id TAC1.2 --net AC1 --layer F.Cu --start-x-mm 8 --start-y-mm 17 --end-x-mm 10 --end-y-mm 19 --width-mm 0.25
+Invoke-Ccad pcb add-track --file $Project --id TAC2.1 --net AC2 --layer F.Cu --start-x-mm 32 --start-y-mm 17 --end-x-mm 30 --end-y-mm 15 --width-mm 0.25
+Invoke-Ccad pcb add-track --file $Project --id TAC2.2 --net AC2 --layer F.Cu --start-x-mm 32 --start-y-mm 17 --end-x-mm 30 --end-y-mm 19 --width-mm 0.25
+Invoke-Ccad pcb add-track --file $Project --id TPOS.1 --net DC_POS --layer F.Cu --start-x-mm 18 --start-y-mm 10 --end-x-mm 20 --end-y-mm 8 --width-mm 0.25
+Invoke-Ccad pcb add-track --file $Project --id TPOS.2 --net DC_POS --layer F.Cu --start-x-mm 22 --start-y-mm 10 --end-x-mm 20 --end-y-mm 8 --width-mm 0.25
+Invoke-Ccad pcb add-track --file $Project --id TNEG.1 --net DC_NEG --layer F.Cu --start-x-mm 18 --start-y-mm 24 --end-x-mm 20 --end-y-mm 26 --width-mm 0.25
+Invoke-Ccad pcb add-track --file $Project --id TNEG.2 --net DC_NEG --layer F.Cu --start-x-mm 22 --start-y-mm 24 --end-x-mm 20 --end-y-mm 26 --width-mm 0.25
+Invoke-Ccad pcb add-track --file $Project --id TLOAD.1 --net DC_POS --layer F.Cu --start-x-mm 28 --start-y-mm 10 --end-x-mm 36 --end-y-mm 12 --width-mm 0.25
+Invoke-Ccad pcb add-track --file $Project --id TLOAD.2 --net DC_NEG --layer F.Cu --start-x-mm 28 --start-y-mm 24 --end-x-mm 36 --end-y-mm 22 --width-mm 0.25
 
 $ProjectObject = Get-Content -Raw $Project | ConvertFrom-Json
 $ProjectObject.components = @(
-  [ordered]@{ id = "U1"; part = "Demo source"; pins = @([ordered]@{ name = "1"; kind = "passive" }) },
-  [ordered]@{ id = "R1"; part = "R_0805_2012Metric"; pins = @(
-    [ordered]@{ name = "1"; kind = "passive" },
-    [ordered]@{ name = "2"; kind = "passive" }
-  ) }
+  [ordered]@{ id = "JAC1"; part = "AC input"; pins = @([ordered]@{ name = "1"; kind = "passive" }) },
+  [ordered]@{ id = "JAC2"; part = "AC input"; pins = @([ordered]@{ name = "1"; kind = "passive" }) },
+  [ordered]@{ id = "JDC1"; part = "DC positive"; pins = @([ordered]@{ name = "1"; kind = "passive" }) },
+  [ordered]@{ id = "JDC2"; part = "DC negative"; pins = @([ordered]@{ name = "1"; kind = "passive" }) },
+  [ordered]@{ id = "D1"; part = "Diode bridge leg"; pins = @([ordered]@{ name = "A"; kind = "passive" }, [ordered]@{ name = "K"; kind = "passive" }) },
+  [ordered]@{ id = "D2"; part = "Diode bridge leg"; pins = @([ordered]@{ name = "A"; kind = "passive" }, [ordered]@{ name = "K"; kind = "passive" }) },
+  [ordered]@{ id = "D3"; part = "Diode bridge leg"; pins = @([ordered]@{ name = "A"; kind = "passive" }, [ordered]@{ name = "K"; kind = "passive" }) },
+  [ordered]@{ id = "D4"; part = "Diode bridge leg"; pins = @([ordered]@{ name = "A"; kind = "passive" }, [ordered]@{ name = "K"; kind = "passive" }) },
+  [ordered]@{ id = "C1"; part = "Bulk capacitor"; pins = @([ordered]@{ name = "1"; kind = "passive" }, [ordered]@{ name = "2"; kind = "passive" }) },
+  [ordered]@{ id = "RLOAD"; part = "Load resistor"; pins = @([ordered]@{ name = "1"; kind = "passive" }, [ordered]@{ name = "2"; kind = "passive" }) }
 )
 $ProjectObject.nets = @(
-  [ordered]@{ id = "N1"; members = @(
-    [ordered]@{ component_id = "U1"; pin_name = "1" },
-    [ordered]@{ component_id = "R1"; pin_name = "1" }
+  [ordered]@{ id = "AC1"; members = @(
+    [ordered]@{ component_id = "JAC1"; pin_name = "1" },
+    [ordered]@{ component_id = "D1"; pin_name = "A" },
+    [ordered]@{ component_id = "D3"; pin_name = "K" }
   ) },
-  [ordered]@{ id = "N2"; members = @(
-    [ordered]@{ component_id = "R1"; pin_name = "2" }
+  [ordered]@{ id = "AC2"; members = @(
+    [ordered]@{ component_id = "JAC2"; pin_name = "1" },
+    [ordered]@{ component_id = "D2"; pin_name = "A" },
+    [ordered]@{ component_id = "D4"; pin_name = "K" }
+  ) },
+  [ordered]@{ id = "DC_POS"; members = @(
+    [ordered]@{ component_id = "JDC1"; pin_name = "1" },
+    [ordered]@{ component_id = "D1"; pin_name = "K" },
+    [ordered]@{ component_id = "D2"; pin_name = "K" },
+    [ordered]@{ component_id = "C1"; pin_name = "1" },
+    [ordered]@{ component_id = "RLOAD"; pin_name = "1" }
+  ) },
+  [ordered]@{ id = "DC_NEG"; members = @(
+    [ordered]@{ component_id = "JDC2"; pin_name = "1" },
+    [ordered]@{ component_id = "D3"; pin_name = "A" },
+    [ordered]@{ component_id = "D4"; pin_name = "A" },
+    [ordered]@{ component_id = "C1"; pin_name = "2" },
+    [ordered]@{ component_id = "RLOAD"; pin_name = "2" }
   ) }
 )
 $ProjectJson = $ProjectObject | ConvertTo-Json -Depth 32
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($Project, $ProjectJson, $Utf8NoBom)
 
-Invoke-Ccad pcb add-route-request --file $Project --id RR1 --net N1 --from P1 --to V1 --preferred-layer F.Cu --policy demo_polyline --width-mm 0.25
-Invoke-Ccad pcb export-route-job --file $Project --request-id RR1 | Set-Content -Encoding UTF8 $RouteJob
-Invoke-Ccad pcb apply-route-polyline --file $Project --request-id RR1 --track-prefix RT --points-mm "5,6;6.5,7.5;8,9" --complete true
+Invoke-Ccad pcb add-route-request --file $Project --id RR_POS --net DC_POS --from D1.K --to C1.1 --preferred-layer F.Cu --policy bridge_positive_bus --width-mm 0.25
+Invoke-Ccad pcb add-route-request --file $Project --id RR_NEG --net DC_NEG --from D3.A --to C1.2 --preferred-layer F.Cu --policy bridge_negative_bus --width-mm 0.25
+Invoke-Ccad pcb export-route-job --file $Project --request-id RR_POS | Set-Content -Encoding UTF8 $RouteJob
+Invoke-Ccad pcb apply-route-polyline --file $Project --request-id RR_POS --track-prefix RTPOS --points-mm "18,10;21,10;25,10" --complete true
+Invoke-Ccad pcb apply-route-polyline --file $Project --request-id RR_NEG --track-prefix RTNEG --points-mm "18,24;21,24;25,24" --complete true
 Invoke-Ccad pcb route-status --file $Project | Set-Content -Encoding UTF8 $RouteStatus
 Invoke-Ccad pcb add-placement-region --file $Project --id PR1 --kind component --x-mm 11 --y-mm 4 --width-mm 12 --height-mm 8
-Invoke-Ccad pcb add-keepout --file $Project --id K1 --kind placement --x-mm 20 --y-mm 10 --width-mm 4 --height-mm 3
+Invoke-Ccad pcb add-keepout --file $Project --id K1 --kind placement --x-mm 38 --y-mm 26 --width-mm 4 --height-mm 3
 
 Invoke-Ccad inspect $Project | Set-Content -Encoding UTF8 $Inspect
 Invoke-Ccad validate $Project | Set-Content -Encoding UTF8 $Validate
@@ -243,7 +292,6 @@ Invoke-CcadDrcReport
 )
 '@ | Set-Content -Encoding UTF8 $KiCadFootprint
 Invoke-Ccad lib import-footprint --in $KiCadFootprint --out $ImportedFootprint
-Invoke-Ccad pcb place-footprint --file $Project --footprint $ImportedFootprint --component R1 --at-x-mm 16 --at-y-mm 14 --layer F.Cu --rotation-deg 90
 
 Invoke-PreScreenshotBeep -RootPath $Root
 Start-Sleep -Seconds 2
