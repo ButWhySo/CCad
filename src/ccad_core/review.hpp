@@ -25,6 +25,10 @@ struct ProjectReview {
   std::int64_t min_track_width_nm = 0;
   std::int64_t min_via_annular_ring_nm = 0;
   std::size_t layer_count = 0;
+  std::size_t copper_layer_count = 0;
+  std::size_t non_copper_layer_count = 0;
+  std::size_t visible_layer_count = 0;
+  std::size_t hidden_layer_count = 0;
   std::size_t pad_count = 0;
   std::size_t via_count = 0;
   std::size_t track_count = 0;

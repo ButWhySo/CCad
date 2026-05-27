@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 4 / 6: native GUI/editor.
 
-Progress counter: Phase 4 / 6, Sprint 128 completed the KiCad layer compatibility foundation on branch `sprint-128-kicad-layer-foundation`.
+Progress counter: Phase 4 / 6, Sprint 129 completed layer review summaries on branch `sprint-129-layer-review-summary`.
 
 Phase 3 is complete. CCad now has constrained route-request intent, route-job export, route-result application, route provenance on generated tracks, compact route progress reporting, DRC validity checks for route requests, and a clean boundary for future router integration. Phase 4 starts the native GUI/editor milestone while keeping the kernel and CLI as the source of truth.
 
@@ -93,6 +93,7 @@ Phase 3 is complete. CCad now has constrained route-request intent, route-job ex
 - CLI PCB authoring can apply one routed segment or one routed polyline from a route request into board tracks while preserving source request provenance.
 - Core PCB metadata includes the canonical KiCad named layer set used by `.kicad_pcb` files, including 32 copper layers, paired fabrication/assembly layers, board geometry layers, and user layers through `User.9`.
 - CLI PCB authoring can append missing KiCad standard layers with `ccad pcb add-standard-layers --file <path>` while preserving existing and custom layers.
+- `ccad inspect` and the native GUI project summary report layer breakdown counts for copper/non-copper and visible/hidden layers.
 
 Out of scope for the Phase 3 MVP: full interactive editing, automatic placement, a production autorouter, KiCad import/export, fabrication outputs, and network services.
 

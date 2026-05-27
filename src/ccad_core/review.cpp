@@ -34,6 +34,18 @@ ProjectReview buildReview(const Project& project) {
     review.min_track_width_nm = project.board->design_rules.min_track_width.nanometers;
     review.min_via_annular_ring_nm = project.board->design_rules.min_via_annular_ring.nanometers;
     review.layer_count = project.board->layers.size();
+    for (const Layer& layer : project.board->layers) {
+      if (layer.kind == "copper") {
+        ++review.copper_layer_count;
+      } else {
+        ++review.non_copper_layer_count;
+      }
+      if (layer.visible) {
+        ++review.visible_layer_count;
+      } else {
+        ++review.hidden_layer_count;
+      }
+    }
     review.pad_count = project.board->pads.size();
     review.via_count = project.board->vias.size();
     review.track_count = project.board->tracks.size();

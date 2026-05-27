@@ -40,9 +40,11 @@ ProjectSummaryPanel::ProjectSummaryPanel(QWidget* parent) : QWidget(parent) {
   layout->addWidget(makeValueCard("Copper Clearance"));
   layout->addWidget(makeValueCard("Min Track Width"));
   layout->addWidget(makeValueCard("Via Annular Ring"));
+  layout->addWidget(makeValueCard("Layer Breakdown"));
+  layout->addWidget(makeValueCard("Layer Visibility"));
+  layout->addWidget(makeValueCard("Layers"));
   layout->addWidget(makeValueCard("Components"));
   layout->addWidget(makeValueCard("Nets"));
-  layout->addWidget(makeValueCard("Layers"));
   layout->addWidget(makeValueCard("Pads"));
   layout->addWidget(makeValueCard("Vias"));
   layout->addWidget(makeValueCard("Tracks"));
@@ -71,6 +73,12 @@ void ProjectSummaryPanel::renderReview(const ccad::ProjectReview& review) {
   components_value_->setText(QString::number(review.component_count));
   nets_value_->setText(QString::number(review.net_count));
   layers_value_->setText(QString::number(review.layer_count));
+  layer_breakdown_value_->setText("copper " + QString::number(review.copper_layer_count) +
+                                  " / other " +
+                                  QString::number(review.non_copper_layer_count));
+  layer_visibility_value_->setText("visible " + QString::number(review.visible_layer_count) +
+                                   " / hidden " +
+                                   QString::number(review.hidden_layer_count));
   pads_value_->setText(QString::number(review.pad_count));
   vias_value_->setText(QString::number(review.via_count));
   tracks_value_->setText(QString::number(review.track_count));
@@ -102,6 +110,8 @@ void ProjectSummaryPanel::renderLoadFailure(const QString& path) {
   components_value_->setText("0");
   nets_value_->setText("0");
   layers_value_->setText("0");
+  layer_breakdown_value_->setText("copper 0 / other 0");
+  layer_visibility_value_->setText("visible 0 / hidden 0");
   pads_value_->setText("0");
   vias_value_->setText("0");
   tracks_value_->setText("0");
@@ -138,6 +148,10 @@ QWidget* ProjectSummaryPanel::makeValueCard(const QString& label) {
     nets_value_ = value;
   } else if (label == "Layers") {
     layers_value_ = value;
+  } else if (label == "Layer Breakdown") {
+    layer_breakdown_value_ = value;
+  } else if (label == "Layer Visibility") {
+    layer_visibility_value_ = value;
   } else if (label == "Pads") {
     pads_value_ = value;
   } else if (label == "Vias") {

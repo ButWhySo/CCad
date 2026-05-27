@@ -36,7 +36,10 @@ ccad::Project validProject() {
           .min_via_annular_ring = ccad::millimeters(0.11),
       },
       .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true},
-                 ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true}},
+                 ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = false},
+                 ccad::Layer{.id = "F.Mask", .name = "Front mask", .kind = "mask", .visible = true},
+                 ccad::Layer{.id = "Edge.Cuts", .name = "Board outline", .kind = "board_edge", .visible = true},
+                 ccad::Layer{.id = "User.9", .name = "User 9", .kind = "user", .visible = false}},
       .route_requests = {},
   };
   return project;
@@ -60,7 +63,11 @@ int main() {
   require(clean.min_track_width_nm == 180000, "review reports minimum track width rule");
   require(clean.min_via_annular_ring_nm == 110000,
           "review reports minimum via annular ring rule");
-  require(clean.layer_count == 2, "review reports layer count");
+  require(clean.layer_count == 5, "review reports layer count");
+  require(clean.copper_layer_count == 2, "review reports copper layer count");
+  require(clean.non_copper_layer_count == 3, "review reports non-copper layer count");
+  require(clean.visible_layer_count == 3, "review reports visible layer count");
+  require(clean.hidden_layer_count == 2, "review reports hidden layer count");
   require(clean.pad_count == 0, "review reports pad count");
   require(clean.via_count == 0, "review reports via count");
   require(clean.track_count == 0, "review reports track count");
