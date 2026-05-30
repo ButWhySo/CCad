@@ -75,9 +75,9 @@ int main(int argc, char** argv) {
   require(panel.rowText("ID") == "pad_1", "pad ID");
   require(panel.rowText("Position X") == "10.00 mm (393.70 mil)", "pad X");
   require(panel.rowText("Position Y") == "20.00 mm (787.40 mil)", "pad Y");
-  require(panel.rowText("Width") == "1.50 mm (59.06 mil)", "pad width");
-  require(panel.rowText("Height") == "2.00 mm (78.74 mil)", "pad height");
-  require(panel.rowText("Rotation") == "90.0°", "pad rotation");
+  require(panel.rowText("Width") == "1.5000", "pad width");
+  require(panel.rowText("Height") == "2.0000", "pad height");
+  require(panel.rowText("Rotation") == "90.0", "pad rotation");
   require(panel.rowText("Net") == "GND", "pad net");
   require(panel.rowText("Layer") == "F.Cu", "pad layer");
   require(panel.rowText("Component ID") == "U1", "pad component id");
@@ -90,8 +90,8 @@ int main(int argc, char** argv) {
   require(panel.titleText() == "Via via_1", "via title");
   require(panel.rowText("Position X") == "5.00 mm (196.85 mil)", "via X");
   require(panel.rowText("Position Y") == "5.00 mm (196.85 mil)", "via Y");
-  require(panel.rowText("Diameter") == "0.60 mm (23.62 mil)", "via diameter");
-  require(panel.rowText("Drill") == "0.30 mm (11.81 mil)", "via drill");
+  require(panel.rowText("Diameter") == "0.6000", "via diameter");
+  require(panel.rowText("Drill") == "0.3000", "via drill");
   require(panel.rowText("Net") == "VCC", "via net");
 
   // Test Track Inspector Formatting
@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
   require(panel.rowText("Start Y") == "0.00 mm (0.00 mil)", "track start Y");
   require(panel.rowText("End X") == "3.00 mm (118.11 mil)", "track end X");
   require(panel.rowText("End Y") == "4.00 mm (157.48 mil)", "track end Y");
-  require(panel.rowText("Width") == "0.20 mm (7.87 mil)", "track width");
+  require(panel.rowText("Width") == "0.2000", "track width");
   require(panel.rowText("Length") == "5.00 mm (196.85 mil)", "track length");
   require(panel.rowText("Net") == "SIG_A", "track net");
   require(panel.rowText("Layer") == "B.Cu", "track layer");
@@ -116,8 +116,8 @@ int main(int argc, char** argv) {
   require(panel.titleText() == "Keepout keepout_1", "keepout title");
   require(panel.rowText("Origin X") == "50.00 mm (1968.50 mil)", "keepout X");
   require(panel.rowText("Origin Y") == "50.00 mm (1968.50 mil)", "keepout Y");
-  require(panel.rowText("Width") == "10.00 mm (393.70 mil)", "keepout width");
-  require(panel.rowText("Height") == "10.00 mm (393.70 mil)", "keepout height");
+  require(panel.rowText("Width") == "10.0000", "keepout width");
+  require(panel.rowText("Height") == "10.0000", "keepout height");
   require(panel.rowText("Kind") == "copper", "keepout kind");
 
   // Test PlacementRegion Inspector Formatting
@@ -127,9 +127,18 @@ int main(int argc, char** argv) {
   require(panel.titleText() == "Placement_region pr_1", "placement region title");
   require(panel.rowText("Origin X") == "100.00 mm (3937.01 mil)", "placement region X");
   require(panel.rowText("Origin Y") == "100.00 mm (3937.01 mil)", "placement region Y");
-  require(panel.rowText("Width") == "20.00 mm (787.40 mil)", "placement region width");
-  require(panel.rowText("Height") == "20.00 mm (787.40 mil)", "placement region height");
+  require(panel.rowText("Width") == "20.0000", "placement region width");
+  require(panel.rowText("Height") == "20.0000", "placement region height");
   require(panel.rowText("Kind") == "restricted", "placement region kind");
+
+  // Test Board Rules Formatting
+  std::printf("Testing board design rules...\n");
+  std::fflush(stdout);
+  panel.renderBoardRules(board);
+  require(panel.titleText() == "Board Design Rules", "board rules title");
+  require(panel.rowText("Copper Clearance") == "0.2000", "board rules copper clearance");
+  require(panel.rowText("Min Track Width") == "0.1500", "board rules track width");
+  require(panel.rowText("Via Annular Ring") == "0.1000", "board rules annular ring");
 
   // Check cleanup on deselect
   std::printf("Testing deselect...\n");

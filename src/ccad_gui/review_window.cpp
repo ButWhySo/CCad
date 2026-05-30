@@ -64,6 +64,14 @@ std::string readFile(const std::filesystem::path& path) {
   return buffer.str();
 }
 
+void writeFile(const std::filesystem::path& path, const std::string& content) {
+  std::ofstream output(path, std::ios::binary);
+  if (!output) {
+    throw std::runtime_error("failed to open file for writing: " + path.string());
+  }
+  output.write(content.data(), content.size());
+}
+
 QString qstr(const std::string& value) {
   return QString::fromStdString(value);
 }
@@ -242,6 +250,115 @@ ReviewWindow::ReviewWindow() {
     }
     renderReview(ccad::buildReview(project_cache_));
   });
+
+  selection_inspector_->setDesignRulesChangedCallback([this](const ccad::DesignRules& rules) {
+    if (!project_cache_.board) return;
+    project_cache_.board->design_rules = rules;
+    try {
+      writeFile(current_path_, ccad::dumpProjectJson(project_cache_));
+      statusBar()->showMessage("Saved updated design rules to project file");
+    } catch (const std::exception& e) {
+      QMessageBox::warning(this, "Save failed", QString::fromStdString(e.what()));
+    }
+    renderReview(ccad::buildReview(project_cache_));
+    selection_inspector_->renderBoardRules(project_cache_.board);
+  });
+
+  selection_inspector_->setTrackChangedCallback([this](const QString& id, double width_mm) {
+    if (!project_cache_.board) return;
+    for (auto& track : project_cache_.board->tracks) {
+      if (QString::fromStdString(track.id) == id) {
+        track.width = ccad::millimeters(width_mm);
+        break;
+      }
+    }
+    try {
+      writeFile(current_path_, ccad::dumpProjectJson(project_cache_));
+      statusBar()->showMessage("Saved updated track segment to project file");
+    } catch (const std::exception& e) {
+      QMessageBox::warning(this, "Save failed", QString::fromStdString(e.what()));
+    }
+    renderReview(ccad::buildReview(project_cache_));
+    selectCanvasObjectById(*canvas_scene_, id);
+  });
+
+  selection_inspector_->setViaChangedCallback([this](const QString& id, double diameter_mm, double drill_mm) {
+    if (!project_cache_.board) return;
+    for (auto& via : project_cache_.board->vias) {
+      if (QString::fromStdString(via.id) == id) {
+        via.diameter = ccad::millimeters(diameter_mm);
+        via.drill = ccad::millimeters(drill_mm);
+        break;
+      }
+    }
+    try {
+      writeFile(current_path_, ccad::dumpProjectJson(project_cache_));
+      statusBar()->showMessage("Saved updated via to project file");
+    } catch (const std::exception& e) {
+      QMessageBox::warning(this, "Save failed", QString::fromStdString(e.what()));
+    }
+    renderReview(ccad::buildReview(project_cache_));
+    selectCanvasObjectById(*canvas_scene_, id);
+  });
+
+  selection_inspector_->setPadChangedCallback([this](const QString& id, double width_mm, double height_mm, double rotation_deg) {
+    if (!project_cache_.board) return;
+    for (auto& pad : project_cache_.board->pads) {
+      if (QString::fromStdString(pad.id) == id) {
+        pad.size.width = ccad::millimeters(width_mm);
+        pad.size.height = ccad::millimeters(height_mm);
+        pad.rotation_degrees = rotation_deg;
+        break;
+      }
+    }
+    try {
+      writeFile(current_path_, ccad::dumpProjectJson(project_cache_));
+      statusBar()->showMessage("Saved updated pad to project file");
+    } catch (const std::exception& e) {
+      QMessageBox::warning(this, "Save failed", QString::fromStdString(e.what()));
+    }
+    renderReview(ccad::buildReview(project_cache_));
+    selectCanvasObjectById(*canvas_scene_, id);
+  });
+
+  selection_inspector_->setKeepoutChangedCallback([this](const QString& id, double width_mm, double height_mm) {
+    if (!project_cache_.board) return;
+    for (auto& keepout : project_cache_.board->keepouts) {
+      if (QString::fromStdString(keepout.id) == id) {
+        keepout.area.size.width = ccad::millimeters(width_mm);
+        keepout.area.size.height = ccad::millimeters(height_mm);
+        break;
+      }
+    }
+    try {
+      writeFile(current_path_, ccad::dumpProjectJson(project_cache_));
+      statusBar()->showMessage("Saved updated keepout to project file");
+    } catch (const std::exception& e) {
+      QMessageBox::warning(this, "Save failed", QString::fromStdString(e.what()));
+    }
+    renderReview(ccad::buildReview(project_cache_));
+    selectCanvasObjectById(*canvas_scene_, id);
+  });
+
+  selection_inspector_->setRegionChangedCallback([this](const QString& id, double width_mm, double height_mm) {
+    if (!project_cache_.board) return;
+    for (auto& pr : project_cache_.board->placement_regions) {
+      if (QString::fromStdString(pr.id) == id) {
+        pr.area.size.width = ccad::millimeters(width_mm);
+        pr.area.size.height = ccad::millimeters(height_mm);
+        break;
+      }
+    }
+    try {
+      writeFile(current_path_, ccad::dumpProjectJson(project_cache_));
+      statusBar()->showMessage("Saved updated placement region to project file");
+    } catch (const std::exception& e) {
+      QMessageBox::warning(this, "Save failed", QString::fromStdString(e.what()));
+    }
+    renderReview(ccad::buildReview(project_cache_));
+    selectCanvasObjectById(*canvas_scene_, id);
+  });
+
   transaction_timeline_->renderTransactions({});
 }
 
@@ -447,7 +564,7 @@ void ReviewWindow::updateSelectionStatus() {
   const QList<QGraphicsItem*> selected_items = canvas_scene_->selectedItems();
   if (selected_items.isEmpty()) {
     selection_status_->setText("Selected --");
-    selection_inspector_->clearSelection();
+    selection_inspector_->renderBoardRules(project_cache_.board);
     return;
   }
   const QGraphicsItem* item = selected_items.first();
