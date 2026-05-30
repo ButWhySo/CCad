@@ -11,6 +11,7 @@ namespace {
 constexpr int kObjectIdRole = Qt::UserRole;
 constexpr int kNetIdRole = Qt::UserRole + 1;
 constexpr int kRouteRequestIdRole = Qt::UserRole + 2;
+constexpr int kLayerIdRole = Qt::UserRole + 3;
 
 QString qstr(const std::string& value) {
   return QString::fromStdString(value);
@@ -68,19 +69,35 @@ ObjectBrowserPanel::ObjectBrowserPanel(QWidget* parent) : QWidget(parent) {
       object_activated_callback_(object_id);
     }
   });
+
+  connect(list_, &QListWidget::itemChanged, this, [this](QListWidgetItem* item) {
+    if (item == nullptr || !layer_toggled_callback_) {
+      return;
+    }
+    const QString layer_id = item->data(kLayerIdRole).toString();
+    if (!layer_id.isEmpty()) {
+      const bool visible = (item->checkState() == Qt::Checked);
+      layer_toggled_callback_(layer_id, visible);
+    }
+  });
 }
 
 void ObjectBrowserPanel::renderScene(const ccad::CanvasScene& scene) {
+  list_->blockSignals(true);
   list_->clear();
   if (!scene.has_board) {
     addRow("No board objects");
+    list_->blockSignals(false);
     return;
   }
 
   addSection("Layers (" + QString::number(static_cast<int>(scene.layers.size())) + ")");
   for (const ccad::CanvasLayer& layer : scene.layers) {
-    addRow(qstr(layer.id) + " - " + qstr(layer.name) + " [" + qstr(layer.kind) + ", " +
+    auto* item = addRow(qstr(layer.id) + " - " + qstr(layer.name) + " [" + qstr(layer.kind) + ", " +
            visibilityText(layer.visible) + "]");
+    item->setData(kLayerIdRole, qstr(layer.id));
+    item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+    item->setCheckState(layer.visible ? Qt::Checked : Qt::Unchecked);
   }
 
   std::map<std::string, int> net_counts;
@@ -136,6 +153,7 @@ void ObjectBrowserPanel::renderScene(const ccad::CanvasScene& scene) {
     addRow("placement-region " + qstr(region.id) + "  kind " + qstr(region.kind),
            qstr(region.id));
   }
+  list_->blockSignals(false);
 }
 
 void ObjectBrowserPanel::setObjectActivatedCallback(std::function<void(QString)> callback) {
@@ -148,6 +166,10 @@ void ObjectBrowserPanel::setNetActivatedCallback(std::function<void(QString)> ca
 
 void ObjectBrowserPanel::setRouteActivatedCallback(std::function<void(QString)> callback) {
   route_activated_callback_ = std::move(callback);
+}
+
+void ObjectBrowserPanel::setLayerToggledCallback(std::function<void(QString, bool)> callback) {
+  layer_toggled_callback_ = std::move(callback);
 }
 
 int ObjectBrowserPanel::itemCount() const {
@@ -185,8 +207,8 @@ void ObjectBrowserPanel::addSection(const QString& text) {
   item->setFont(font);
 }
 
-void ObjectBrowserPanel::addRow(const QString& text, const QString& object_id,
-                                const QString& net_id, const QString& route_request_id) {
+QListWidgetItem* ObjectBrowserPanel::addRow(const QString& text, const QString& object_id,
+                                            const QString& net_id, const QString& route_request_id) {
   auto* item = new QListWidgetItem(text, list_);
   if (!object_id.isEmpty()) {
     item->setData(kObjectIdRole, object_id);
@@ -197,4 +219,5 @@ void ObjectBrowserPanel::addRow(const QString& text, const QString& object_id,
   if (!route_request_id.isEmpty()) {
     item->setData(kRouteRequestIdRole, route_request_id);
   }
+  return item;
 }

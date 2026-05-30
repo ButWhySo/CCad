@@ -229,6 +229,18 @@ ReviewWindow::ReviewWindow() {
   object_browser_->setRouteActivatedCallback([this](const QString& route_request_id) {
     selectCanvasObjectsByRouteRequestId(*canvas_scene_, route_request_id);
   });
+  object_browser_->setLayerToggledCallback([this](const QString& layer_id, bool visible) {
+    if (!project_cache_.board) {
+      return;
+    }
+    for (auto& layer : project_cache_.board->layers) {
+      if (QString::fromStdString(layer.id) == layer_id) {
+        layer.visible = visible;
+        break;
+      }
+    }
+    renderReview(ccad::buildReview(project_cache_));
+  });
   transaction_timeline_->renderTransactions({});
 }
 

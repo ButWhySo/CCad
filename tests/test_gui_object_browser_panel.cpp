@@ -96,4 +96,22 @@ int main(int argc, char** argv) {
                             Q_ARG(QListWidgetItem*, list->item(1)));
   require(activated_id == "P1", "clicking non-object row does not activate object id");
   require(activated_net_id == "N1", "clicking non-net row does not activate net id");
+
+  // Sprint 130 checkable layer and toggling test
+  require(list->item(1)->flags() & Qt::ItemIsUserCheckable, "front layer row is checkable");
+  require(list->item(2)->flags() & Qt::ItemIsUserCheckable, "back layer row is checkable");
+  require(list->item(1)->checkState() == Qt::Checked, "front layer row is checked by default");
+  require(list->item(2)->checkState() == Qt::Unchecked, "back layer row is unchecked by default");
+
+  QString toggled_layer_id;
+  bool toggled_visible = false;
+  panel.setLayerToggledCallback([&toggled_layer_id, &toggled_visible](const QString& layer_id, bool visible) {
+    toggled_layer_id = layer_id;
+    toggled_visible = visible;
+  });
+
+  list->item(1)->setCheckState(Qt::Unchecked);
+  require(toggled_layer_id == "F.Cu", "toggling F.Cu checkbox fires callback with layer id");
+  require(!toggled_visible, "toggling F.Cu checkbox fires callback with visible = false");
 }
+
