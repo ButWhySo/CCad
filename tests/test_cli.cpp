@@ -1783,4 +1783,12 @@ int main() {
   require(run(init_escaped) == 0, "init accepts escaped shell tab value");
   require(readFile(escaped_path).find("\\t") != std::string::npos,
           "init emits valid escaped JSON string");
+
+  const std::filesystem::path kicad_out_path = temp / "board.kicad_pcb";
+  const std::string export_kicad_cmd = quote(CCAD_BINARY) + " pcb export-kicad --file " +
+                                       quote(board_project_path) + " --output " + quote(kicad_out_path);
+  require(run(export_kicad_cmd) == 0, "export-kicad command exits zero");
+  require(std::filesystem::exists(kicad_out_path), "export-kicad command creates output file");
+  const std::string kicad_out_content = readFile(kicad_out_path);
+  require(kicad_out_content.find("(kicad_pcb") != std::string::npos, "exported content has kicad_pcb");
 }

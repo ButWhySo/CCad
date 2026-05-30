@@ -18,6 +18,7 @@ add_library(ccad_core
   src/ccad_core/geometry.cpp
   src/ccad_core/json.cpp
   src/ccad_core/kicad_footprint_import.cpp
+  src/ccad_core/kicad_pcb_export.cpp
   src/ccad_core/layers.cpp
   src/ccad_core/library_catalog.cpp
   src/ccad_core/review.cpp
@@ -110,6 +111,15 @@ if(MINGW)
   target_link_options(ccad_library_catalog_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME library_catalog COMMAND ccad_library_catalog_tests)
+
+add_executable(ccad_kicad_pcb_export_tests
+  tests/test_kicad_pcb_export.cpp
+)
+target_link_libraries(ccad_kicad_pcb_export_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_kicad_pcb_export_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME kicad_pcb_export COMMAND ccad_kicad_pcb_export_tests)
 
 add_executable(ccad_cli_tests
   tests/test_cli.cpp

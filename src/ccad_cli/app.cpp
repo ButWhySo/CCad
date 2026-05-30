@@ -167,6 +167,9 @@ const std::vector<CommandHelp>& commandHelp() {
       CommandHelp{.name = "pcb remove-object",
                   .summary = "Remove one physical board object by stable ID",
                   .usage = "ccad pcb remove-object --file <path> --id <id>"},
+      CommandHelp{.name = "pcb export-kicad",
+                  .summary = "Export the board project to a KiCad S-expression (.kicad_pcb) file",
+                  .usage = "ccad pcb export-kicad --file <path> --output <path>"},
       CommandHelp{.name = "pcb move-object",
                   .summary = "Move one physical board object by stable ID",
                   .usage = "ccad pcb move-object --file <path> --id <id> --x-mm <n> "
