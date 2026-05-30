@@ -713,7 +713,7 @@ int main() {
           "apply route fixture adds polyline request");
   require(run(quote(CCAD_BINARY) + " pcb apply-route-polyline --file " +
               quote(apply_route_board_path) +
-              " --request-id ARR4 --track-prefix ARP --points-mm 5,6;6,7;8,9"
+              " --request-id ARR4 --track-prefix ARP --points-mm \"5,6;6,7;8,9\""
               " --complete false") == 0,
           "pcb apply-route-polyline writes multiple route segments");
   const std::string polyline_route_json = readFile(apply_route_board_path);
@@ -735,19 +735,19 @@ int main() {
           "pcb route-status counts polyline route segments");
   require(run(quote(CCAD_BINARY) + " pcb apply-route-polyline --file " +
               quote(apply_route_board_path) +
-              " --request-id ARR4 --track-prefix ARP --points-mm 5,6;6,7") != 0,
+              " --request-id ARR4 --track-prefix ARP --points-mm \"5,6;6,7\"") != 0,
           "pcb apply-route-polyline rejects duplicate generated track ids");
   require(run(quote(CCAD_BINARY) + " pcb apply-route-polyline --file " +
               quote(apply_route_board_path) +
-              " --request-id ARR4 --track-prefix ARZ --points-mm 5,6;5,6") != 0,
+              " --request-id ARR4 --track-prefix ARZ --points-mm \"5,6;5,6\"") != 0,
           "pcb apply-route-polyline rejects zero-length segment");
   require(run(quote(CCAD_BINARY) + " pcb apply-route-polyline --file " +
               quote(apply_route_board_path) +
-              " --request-id ARR4 --track-prefix ARO --points-mm 5,6;60,7") != 0,
+              " --request-id ARR4 --track-prefix ARO --points-mm \"5,6;60,7\"") != 0,
           "pcb apply-route-polyline rejects out-of-board point");
   require(run(quote(CCAD_BINARY) + " pcb apply-route-polyline --file " +
               quote(apply_route_board_path) +
-              " --request-id ARR4 --track-prefix ARC --points-mm 8,9;9,10"
+              " --request-id ARR4 --track-prefix ARC --points-mm \"8,9;9,10\""
               " --complete true") == 0,
           "pcb apply-route-polyline can complete open request");
   const std::string complete_polyline_json = readFile(apply_route_board_path);
