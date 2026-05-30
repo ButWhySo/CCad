@@ -20,21 +20,20 @@ int main(int argc, char** argv) {
     window.loadProjectPath(project_path);
     window.show();
 
-    QElapsedTimer timer;
-    timer.start();
-    while (timer.elapsed() < 20000) {
-      app.processEvents(QEventLoop::AllEvents, 100);
-    }
+    QTimer::singleShot(2000, &window, [&window, screenshot_path, screenshot_arg]() {
+      const QPixmap screenshot = window.grab();
+      if (!screenshot.save(screenshot_path)) {
+        std::cerr << "failed to save GUI screenshot: " << screenshot_arg << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+      } else {
+        std::cout << "screenshot saved: " << screenshot_arg << '\n';
+        std::cout.flush();
+        QCoreApplication::exit(0);
+      }
+    });
 
-    const QPixmap screenshot = window.grab();
-    if (!screenshot.save(screenshot_path)) {
-      std::cerr << "failed to save GUI screenshot: " << screenshot_arg << '\n';
-      std::cerr.flush();
-      return 2;
-    }
-    std::cout << "screenshot saved: " << screenshot_arg << '\n';
-    std::cout.flush();
-    return 0;
+    return QApplication::exec();
   } else {
     ReviewWindow window;
     window.show();

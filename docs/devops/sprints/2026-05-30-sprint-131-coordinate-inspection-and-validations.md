@@ -38,6 +38,6 @@ KiCad's Properties Inspector displays selected board items with their physical p
 
 ## Closure
 
-- **Status**: In Progress
+- **Status**: Closed
 - **Next Sprint Target**: Physical DRC constraints editing and CLI clearances.
 - **Expected Sprints to Complete Phase 4**: 1 sprint.

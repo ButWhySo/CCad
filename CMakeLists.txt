@@ -152,7 +152,7 @@ if(CCAD_BUILD_GUI)
       tests/test_gui_inspector_panel.cpp
       src/ccad_gui/selection_inspector_panel.cpp
     )
-    target_link_libraries(ccad_gui_inspector_tests PRIVATE Qt6::Widgets)
+    target_link_libraries(ccad_gui_inspector_tests PRIVATE ccad_core Qt6::Widgets)
     target_include_directories(ccad_gui_inspector_tests PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src
       ${CMAKE_CURRENT_SOURCE_DIR}/tests

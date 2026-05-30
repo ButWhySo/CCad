@@ -26,6 +26,7 @@
 #include <QWidget>
 
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <string>
 
@@ -267,6 +268,10 @@ void ReviewWindow::showNavigationHelp() {
 void ReviewWindow::loadProjectPath(const std::filesystem::path& path) {
   current_path_ = path;
   reloadProject();
+  if (project_cache_.board.has_value() && !project_cache_.board->pads.empty()) {
+    const QString first_pad_id = QString::fromStdString(project_cache_.board->pads.front().id);
+    selectCanvasObjectById(*canvas_scene_, first_pad_id);
+  }
 }
 
 void ReviewWindow::applyStyle() {
@@ -455,6 +460,6 @@ void ReviewWindow::updateSelectionStatus() {
   }
   const QString text = "Selected " + type + " " + id;
   selection_status_->setText(text);
-  selection_inspector_->renderSelection(type, id);
+  selection_inspector_->renderSelection(project_cache_.board, type, id);
 }
 

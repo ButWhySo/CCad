@@ -1,9 +1,13 @@
 #pragma once
 
+#include "ccad_core/model.hpp"
+
 #include <QLabel>
 #include <QMap>
 #include <QString>
 #include <QWidget>
+
+#include <optional>
 
 class QFormLayout;
 
@@ -13,6 +17,7 @@ class SelectionInspectorPanel final : public QWidget {
 
   void clearSelection();
   void renderSelection(const QString& type, const QString& id);
+  void renderSelection(const std::optional<ccad::Board>& board, const QString& type, const QString& id);
   void renderCanvasItem();
 
   QString titleText() const;
@@ -21,6 +26,7 @@ class SelectionInspectorPanel final : public QWidget {
 
  private:
   void setRow(const QString& label, const QString& value);
+  void clearExtraRows();
 
   QLabel* title_ = nullptr;
   QLabel* detail_ = nullptr;
