@@ -1,0 +1,117 @@
+#include "ccad_core/kicad_pcb_export.hpp"
+#include "test_support.hpp"
+
+#include <iostream>
+#include <string>
+
+int main() {
+  ccad::Project project;
+  project.id = "proj_123";
+  project.name = "Test Project";
+
+  ccad::Board board;
+  board.outline = ccad::Rect{
+      .origin = ccad::Point{.x = ccad::millimeters(0), .y = ccad::millimeters(0)},
+      .size = ccad::Size{.width = ccad::millimeters(100), .height = ccad::millimeters(80)}
+  };
+
+  board.design_rules = ccad::DesignRules{
+      .copper_clearance = ccad::millimeters(0.25),
+      .min_track_width = ccad::millimeters(0.20),
+      .min_via_annular_ring = ccad::millimeters(0.15)
+  };
+
+  project.nets = {
+      ccad::Net{.id = "GND"},
+      ccad::Net{.id = "VCC"}
+  };
+
+  project.components = {
+      ccad::Component{.id = "U1", .part = "NE555"}
+  };
+
+  // Add a pad
+  board.pads.push_back(ccad::Pad{
+      .id = "pad1",
+      .component_id = "U1",
+      .pin_name = "1",
+      .net_id = "GND",
+      .layer_id = "F.Cu",
+      .position = ccad::Point{.x = ccad::millimeters(10), .y = ccad::millimeters(20)},
+      .rotation_degrees = 45.0,
+      .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(2.0)}
+  });
+
+  // Add a via
+  board.vias.push_back(ccad::Via{
+      .id = "via1",
+      .net_id = "GND",
+      .position = ccad::Point{.x = ccad::millimeters(30), .y = ccad::millimeters(40)},
+      .diameter = ccad::millimeters(0.8),
+      .drill = ccad::millimeters(0.4)
+  });
+
+  // Add a track
+  board.tracks.push_back(ccad::TrackSegment{
+      .id = "track1",
+      .net_id = "VCC",
+      .layer_id = "F.Cu",
+      .start = ccad::Point{.x = ccad::millimeters(10), .y = ccad::millimeters(20)},
+      .end = ccad::Point{.x = ccad::millimeters(30), .y = ccad::millimeters(40)},
+      .width = ccad::millimeters(0.25)
+  });
+
+  // Add a keepout
+  board.keepouts.push_back(ccad::Keepout{
+      .id = "keepout1",
+      .kind = "copper",
+      .area = ccad::Rect{
+          .origin = ccad::Point{.x = ccad::millimeters(50), .y = ccad::millimeters(50)},
+          .size = ccad::Size{.width = ccad::millimeters(10), .height = ccad::millimeters(10)}
+      }
+  });
+
+  // Add a placement region
+  board.placement_regions.push_back(ccad::PlacementRegion{
+      .id = "region1",
+      .kind = "allow_all",
+      .area = ccad::Rect{
+          .origin = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(5)},
+          .size = ccad::Size{.width = ccad::millimeters(20), .height = ccad::millimeters(20)}
+      }
+  });
+
+  project.board = board;
+
+  std::string exported = ccad::exportToKiCadPcb(project);
+  std::cout << exported << "\n";
+
+  // Assertions to verify correct content in output
+  require(exported.find("(kicad_pcb") != std::string::npos, "Output must contain kicad_pcb root element");
+  require(exported.find("(version 20211014)") != std::string::npos, "Output must contain version 20211014");
+  require(exported.find("(generator ccad)") != std::string::npos, "Output must contain generator ccad");
+  require(exported.find("Edge.Cuts") != std::string::npos, "Output must contain Edge.Cuts layer");
+  require(exported.find("(net 1 \"GND\")") != std::string::npos, "Output must declare GND net");
+  require(exported.find("(net 2 \"VCC\")") != std::string::npos, "Output must declare VCC net");
+
+  // Pad details
+  require(exported.find("footprint \"NE555\"") != std::string::npos, "Output must contain footprint for NE555");
+  require(exported.find("property \"Reference\" \"U1\"") != std::string::npos, "Output must contain Reference U1");
+  require(exported.find("(pad \"1\" smd rect (at 10.000000 20.000000 45.000000)") != std::string::npos, "Pad coordinates/rotation match");
+  require(exported.find("(size 1.500000 2.000000)") != std::string::npos, "Pad size matches");
+
+  // Via details
+  require(exported.find("(via (at 30.000000 40.000000) (size 0.800000) (drill 0.400000)") != std::string::npos, "Via details match");
+
+  // Track details
+  require(exported.find("(segment (start 10.000000 20.000000) (end 30.000000 40.000000) (width 0.250000)") != std::string::npos, "Track details match");
+
+  // Keepout details
+  require(exported.find("(keepout (tracks not_allowed) (vias not_allowed) (pads not_allowed) (copperareas not_allowed))") != std::string::npos, "Keepout rules match");
+
+  // Placement region details
+  require(exported.find("(gr_rect (start 5.000000 5.000000) (end 25.000000 25.000000) (stroke (width 0.1) (type solid)) (layer \"Dwgs.User\"))") != std::string::npos, "Placement region matches");
+
+  std::cout << "All KiCad PCB export tests passed!\n";
+  return 0;
+}

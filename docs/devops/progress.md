@@ -4,14 +4,13 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 ## Current Position
 
-- Phase: 4 / 6
-- Phase name: Native GUI/editor
-- Sprint: 132
-- Branch: `sprint-132-physical-drc-and-clearance-constraints`
-- Phase 4 sprint budget: Sprints 127 through 132, then scope review required.
-- Last merged sprint: Sprint 101, CLI pad metadata and rotation editing
-- Last merged sprint: Sprint 102, CLI region kind editing
-- Status: Sprint 132 completed interactive physical DRC design rule and object property editing in the Selection Inspector Panel with callback updates, project auto-save, and focus preservation.
+- Phase: 5 / 6
+- Phase name: Interop
+- Sprint: 133
+- Branch: `sprint-133-kicad-board-export`
+- Phase 5 sprint budget: Sprints 133 through 135, then scope review required.
+- Last merged sprint: Sprint 132, interactive physical DRC and clearance constraints editing
+- Status: Sprint 133 completed the KiCad PCB export serialization engine, CLI integration, and validation suite.
 
 ## Phase Roadmap
 
@@ -224,6 +223,7 @@ Sprint 131 completed coordinate inspection helpers in the Selection Inspector Pa
 
 Sprint 132 completed interactive physical DRC design rule and object property editing in the Selection Inspector Panel, with callback updates to mutate the `ccad::Board` model, project file auto-save, view refreshes, and selection state preservation. The GUI screenshot harness produced `artifacts/screenshots/sprint-demo-20260530-235551.png` showing interactive inspector row fields. The clean build and CTest gate passed with all 22 tests passing.
 
+Sprint 133 completed the KiCad S-expression PCB export serialization engine (`.kicad_pcb` format) in the CCad core kernel, exposed it via the `ccad pcb export-kicad` subcommand in the CLI, added help metadata, and verified formatting parity and CLI behavior through comprehensive unit and integration tests. The clean build and CTest gate passed with all 23 tests passing.
 
 ## Reporting Rule
 

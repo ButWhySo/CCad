@@ -3,7 +3,9 @@
 #include "ccad_cli/common.hpp"
 #include "ccad_cli/pcb_object_queries.hpp"
 
+#include "ccad_core/kicad_pcb_export.hpp"
 #include "ccad_core/layers.hpp"
+#include <fstream>
 
 #include <algorithm>
 #include <iostream>
@@ -1108,6 +1110,21 @@ int pcbCommand(const std::vector<std::string>& args) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
       }
+      return 0;
+    }
+
+    if (subcommand == "export-kicad") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--output"});
+      const std::string file = requireOption(options, "--file");
+      const std::string output = requireOption(options, "--output");
+      ccad::Project project = loadProjectFile(file);
+      const std::string exported = ccad::exportToKiCadPcb(project);
+      std::ofstream out(output);
+      if (!out) {
+        throw std::runtime_error("failed to open output file: " + output);
+      }
+      out << exported;
       return 0;
     }
 
