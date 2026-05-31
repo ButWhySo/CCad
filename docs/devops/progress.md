@@ -6,14 +6,14 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 6 / 6
 - Phase name: Agent Protocol
-- Sprint: 138
-- Branch: `sprint-138-permission-gates`
+- Sprint: 139
+- Branch: `sprint-139-benchmark-harness`
 - Phase 6 sprint budget: Sprints 136 through 140 planned.
 
 Phase 6 focuses on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
 
 **Current State**: 
-- **Sprint 138 (Agent Permission Gates)** is complete. It added `--allow-read` and `--allow-write` checks.
+- **Sprint 139 (Agent Benchmark Harness)** is complete. It added a Python test harness for evaluating agent completions.
 
 ## Phase Roadmap
 
@@ -237,6 +237,8 @@ Sprint 136 completed Agent JSON-RPC Protocol foundation. It introduced `ccad age
 Sprint 137 completed Agent Audit Logs. `ccad_cli::writeProjectFile` now seamlessly captures `Transaction` records and appends them to `<project>.audit.jsonl` whenever the CLI mutates the board.
 
 Sprint 138 completed Agent Permission Gates. The JSON-RPC `agent serve` now enforces explicit `--allow-read` and `--allow-write` boundaries before executing commands, returning standard JSON-RPC error `-32604` for unauthorized calls.
+
+Sprint 139 completed Agent Benchmark Harness. Introduced `scripts/benchmark.py` which runs a specified agent command against a directory of `.ccad.json` files and executes `ccad drc` to validate correctness of the agent's work.
 
 ## Reporting Rule
 
