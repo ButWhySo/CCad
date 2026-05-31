@@ -1,6 +1,8 @@
 #include "ccad_cli/project_commands.hpp"
+#include "ccad_cli/project_commands.hpp"
 
 #include "ccad_cli/common.hpp"
+#include "ccad_core/bom_export.hpp"
 #include "ccad_core/diff.hpp"
 #include "ccad_core/drc.hpp"
 #include "ccad_core/erc.hpp"
@@ -142,6 +144,23 @@ int diffCommand(const std::vector<std::string>& args) {
     std::cerr << "failed to diff project files: " << error.what() << '\n';
     return 2;
   }
+}
+
+int exportBomCommand(const std::vector<std::string>& args) {
+  auto opts = parseOptions(args, 1, {"--file", "--output"});
+  auto file = requireOption(opts, "--file");
+  auto out = requireOption(opts, "--output");
+
+  ccad::Project project = loadProjectFile(file);
+  std::string bom = ccad::exportToBomCsv(project);
+
+  std::ofstream out_file(out);
+  if (!out_file) {
+    std::cerr << "Failed to open output file for writing: " << out << "\n";
+    return 2;
+  }
+  out_file << bom;
+  return 0;
 }
 
 }  // namespace ccad_cli

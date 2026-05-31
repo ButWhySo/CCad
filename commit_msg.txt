@@ -1,0 +1,22 @@
+Sprint 142: BOM Export
+
+Why:
+Manufacturing requires a Bill of Materials to assemble the PCB. A simple CSV export of project components provides the baseline artifact for procurement and pick-and-place.
+
+Changed:
+- Added `src/ccad_core/bom_export.cpp/hpp` to serialize components to CSV format.
+- Added `exportBomCommand` to `src/ccad_cli/project_commands.cpp`.
+- Updated `src/ccad_cli/app.cpp` to map `ccad project export-bom`.
+- Added unit tests in `tests/test_bom_export.cpp`.
+- Updated `CMakeLists.txt` for the new module.
+- Updated `progress.md` and `implemented-features.md`.
+
+Behavior:
+- Running `ccad project export-bom --file project.json --output bom.csv` generates a CSV file with Designator and Part columns for all components in the project.
+
+Verification:
+- `ctest -R bom_export` verifies CSV generation and component sorting.
+- `ctest -R cli` verifies CLI integration and binary builds.
+
+Demo:
+- Test runner output acts as the proof. (No visual GUI changes for this sprint).

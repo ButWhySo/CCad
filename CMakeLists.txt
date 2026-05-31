@@ -28,6 +28,7 @@ add_library(ccad_core
   src/ccad_core/serialize.cpp
   src/ccad_core/transaction.cpp
   src/ccad_core/dsn_export.cpp
+  src/ccad_core/bom_export.cpp
 )
 
 target_include_directories(ccad_core PUBLIC
@@ -167,6 +168,15 @@ if(MINGW)
   target_link_options(ccad_dsn_export_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME dsn_export COMMAND ccad_dsn_export_tests)
+
+add_executable(ccad_bom_export_tests
+  tests/test_bom_export.cpp
+)
+target_link_libraries(ccad_bom_export_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_bom_export_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME bom_export COMMAND ccad_bom_export_tests)
 
 add_executable(ccad_cli_tests
   tests/test_cli.cpp

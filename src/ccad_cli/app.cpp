@@ -265,8 +265,11 @@ int run(int argc, char** argv) {
   if (command == "inspect") {
     return inspectCommand(args);
   }
-  if (command == "diff") {
-    return diffCommand(args);
+  if (command == "diff" || command == "project diff") {
+    return ccad_cli::diffCommand(args);
+  }
+  if (command == "export-bom" || command == "project export-bom") {
+    return ccad_cli::exportBomCommand(args);
   }
   if (command == "pcb") {
     return pcbCommand(args);
