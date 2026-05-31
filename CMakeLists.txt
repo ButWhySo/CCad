@@ -27,6 +27,7 @@ add_library(ccad_core
   src/ccad_core/review.cpp
   src/ccad_core/serialize.cpp
   src/ccad_core/transaction.cpp
+  src/ccad_core/placement.cpp
   src/ccad_core/dsn_export.cpp
   src/ccad_core/bom_export.cpp
   src/ccad_core/pnp_export.cpp
@@ -76,6 +77,14 @@ if(MINGW)
   target_link_options(ccad_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME serialize COMMAND ccad_tests)
+add_executable(ccad_placement_tests
+  tests/test_placement.cpp
+)
+target_link_libraries(ccad_placement_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_placement_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME placement COMMAND ccad_placement_tests)
 
 add_executable(ccad_layer_tests
   tests/test_layers.cpp
@@ -215,6 +224,7 @@ if(CCAD_BUILD_GUI)
     add_executable(ccad_gui
       src/ccad_gui/board_canvas_renderer.cpp
       src/ccad_gui/component_wizard_dialog.cpp
+      src/ccad_gui/footprint_placement_dialog.cpp
       src/ccad_gui/diagnostics_panel.cpp
       src/ccad_gui/main.cpp
       src/ccad_gui/object_browser_panel.cpp
@@ -440,6 +450,7 @@ if(CCAD_BUILD_GUI)
       tests/test_gui_review_window_cursor_status.cpp
       src/ccad_gui/review_window.cpp
       src/ccad_gui/component_wizard_dialog.cpp
+      src/ccad_gui/footprint_placement_dialog.cpp
       src/ccad_gui/project_summary_panel.cpp
       src/ccad_gui/diagnostics_panel.cpp
       src/ccad_gui/transaction_timeline_panel.cpp

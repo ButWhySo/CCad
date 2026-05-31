@@ -20,6 +20,8 @@ ccad::Transaction addComponentTransaction() {
       .id = "U1",
       .part = "MCU",
       .pins = {ccad::Pin{.name = "VDD", .kind = "power"}},
+      .position = {},
+      .rotation_degrees = 0.0,
   });
   return ccad::buildTransaction("txn-001", "sch add-component U1", "Add MCU", before, after);
 }
