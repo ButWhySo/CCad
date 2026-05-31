@@ -58,6 +58,7 @@ struct Pad {
   Point position;
   double rotation_degrees = 0.0;
   Size size;
+  std::optional<Length> drill;
 };
 
 struct Via {

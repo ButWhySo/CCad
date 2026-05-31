@@ -6,14 +6,14 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 143
-- Branch: `sprint-143-pnp-export`
+- Sprint: 144
+- Branch: `sprint-144-drill-export`
 - Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
 
 **Current State**: 
-- **Sprint 143 (PnP Export)** is complete. It added `ccad pcb export-pnp` to emit a Pick and Place CSV for assembly.
+- **Sprint 144 (Drill Export)** is complete. It added `ccad pcb export-drill` to emit an Excellon drill file for manufacturing.
 
 ## Phase Roadmap
 
@@ -105,6 +105,8 @@ Sprint 141 completed KiCad Component Ingestion and Rendering. It successfully in
 Sprint 142 completed BOM Export. It emitted a CSV Bill of Materials from the `Project` model, providing a basic manufacturing output containing designators and parts.
 
 Sprint 143 completed Pick and Place (PnP) Export. It emitted a CSV file containing component centroids and rotations from the PCB layout, facilitating board assembly.
+
+Sprint 144 completed Drill Export. It emitted an Excellon NC Drill file from the PCB layout's vias and through-hole pads, enabling bare-board fabrication.
 
 Sprint 92 completed board region project diffs. `ccad diff` and transaction diff JSON now report board keepout and placement-region additions, removals, and changes.
 

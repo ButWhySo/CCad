@@ -3,6 +3,7 @@
 #include "ccad_cli/common.hpp"
 #include "ccad_core/bom_export.hpp"
 #include "ccad_core/pnp_export.hpp"
+#include "ccad_core/drill_export.hpp"
 #include "ccad_core/diff.hpp"
 #include "ccad_core/drc.hpp"
 #include "ccad_core/erc.hpp"
@@ -177,6 +178,23 @@ int exportPnpCommand(const std::vector<std::string>& args) {
     return 2;
   }
   out_file << pnp;
+  return 0;
+}
+
+int exportDrillCommand(const std::vector<std::string>& args) {
+  auto opts = parseOptions(args, 1, {"--file", "--output"});
+  auto file = requireOption(opts, "--file");
+  auto out = requireOption(opts, "--output");
+
+  ccad::Project project = loadProjectFile(file);
+  std::string drill = ccad::exportToDrillExcellon(project);
+
+  std::ofstream out_file(out);
+  if (!out_file) {
+    std::cerr << "Failed to open output file for writing: " << out << "\n";
+    return 2;
+  }
+  out_file << drill;
   return 0;
 }
 

@@ -1188,6 +1188,7 @@ int pcbCommand(const std::vector<std::string>& args) {
             .position = placed_position,
             .rotation_degrees = footprint_pad.rotation_degrees + placement_rotation,
             .size = footprint_pad.size,
+            .drill = footprint_pad.drill,
         });
       }
 

@@ -184,6 +184,9 @@ const std::vector<CommandHelp>& commandHelp() {
       CommandHelp{.name = "pcb export-pnp",
                   .summary = "Export Pick and Place data as CSV",
                   .usage = "ccad pcb export-pnp --file <path> --output <path.csv>"},
+      CommandHelp{.name = "pcb export-drill",
+                  .summary = "Export Excellon NC Drill file",
+                  .usage = "ccad pcb export-drill --file <path> --output <path.drl>"},
       CommandHelp{.name = "pcb move-object",
                   .summary = "Move one physical board object by stable ID",
                   .usage = "ccad pcb move-object --file <path> --id <id> --x-mm <n> "
@@ -279,6 +282,9 @@ int run(int argc, char** argv) {
   }
   if (command == "export-pnp" || command == "pcb export-pnp") {
     return ccad_cli::exportPnpCommand(args);
+  }
+  if (command == "export-drill" || command == "pcb export-drill") {
+    return ccad_cli::exportDrillCommand(args);
   }
   if (command == "pcb") {
     return pcbCommand(args);

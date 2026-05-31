@@ -304,6 +304,8 @@ class JsonReader {
             pad.rotation_degrees = readDouble();
           } else if (key == "size") {
             pad.size = readSize();
+          } else if (key == "drill_nm") {
+            pad.drill = nanometers(readInt64());
           } else {
             throw std::runtime_error("unknown pad key: " + key);
           }
@@ -1021,6 +1023,9 @@ std::string dumpProjectJson(const Project& project) {
       out << "        \"rotation_degrees\": " << pad.rotation_degrees << ",\n";
       out << "        \"size\": ";
       writeSize(out, 0, pad.size);
+      if (pad.drill.has_value()) {
+        out << ",\n        \"drill_nm\": " << pad.drill->nanometers;
+      }
       out << "\n";
       out << "      }" << (i + 1 == board.pads.size() ? "" : ",") << '\n';
     }

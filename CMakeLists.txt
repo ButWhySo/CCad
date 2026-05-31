@@ -30,6 +30,7 @@ add_library(ccad_core
   src/ccad_core/dsn_export.cpp
   src/ccad_core/bom_export.cpp
   src/ccad_core/pnp_export.cpp
+  src/ccad_core/drill_export.cpp
 )
 
 target_include_directories(ccad_core PUBLIC
@@ -187,6 +188,15 @@ if(MINGW)
   target_link_options(ccad_pnp_export_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME pnp_export COMMAND ccad_pnp_export_tests)
+
+add_executable(ccad_drill_export_tests
+  tests/test_drill_export.cpp
+)
+target_link_libraries(ccad_drill_export_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_drill_export_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME drill_export COMMAND ccad_drill_export_tests)
 
 add_executable(ccad_cli_tests
   tests/test_cli.cpp
