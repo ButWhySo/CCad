@@ -178,6 +178,12 @@ const std::vector<CommandHelp>& commandHelp() {
       CommandHelp{.name = "pcb export-dsn",
                   .summary = "Export the board project to a Specctra DSN file",
                   .usage = "ccad pcb export-dsn --file <path> --output <path>"},
+      CommandHelp{.name = "project export-bom",
+                  .summary = "Export Bill of Materials as CSV",
+                  .usage = "ccad project export-bom --file <path> --output <path.csv>"},
+      CommandHelp{.name = "pcb export-pnp",
+                  .summary = "Export Pick and Place data as CSV",
+                  .usage = "ccad pcb export-pnp --file <path> --output <path.csv>"},
       CommandHelp{.name = "pcb move-object",
                   .summary = "Move one physical board object by stable ID",
                   .usage = "ccad pcb move-object --file <path> --id <id> --x-mm <n> "
@@ -270,6 +276,9 @@ int run(int argc, char** argv) {
   }
   if (command == "export-bom" || command == "project export-bom") {
     return ccad_cli::exportBomCommand(args);
+  }
+  if (command == "export-pnp" || command == "pcb export-pnp") {
+    return ccad_cli::exportPnpCommand(args);
   }
   if (command == "pcb") {
     return pcbCommand(args);
