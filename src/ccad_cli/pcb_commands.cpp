@@ -7,6 +7,7 @@
 #include "ccad_core/dsn_export.hpp"
 #include "ccad_core/kicad_pcb_export.hpp"
 #include "ccad_core/layers.hpp"
+#include "ccad_core/placement.hpp"
 #include "ccad_core/pnp_export.hpp"
 #include <fstream>
 
@@ -1180,47 +1181,16 @@ int pcbCommand(const std::vector<std::string>& args) {
                                  "--layer", "--rotation-deg"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
-      ccad::Board& board = requireBoard(project);
       const ccad::Footprint footprint = loadFootprintFile(requireOption(options, "--footprint"));
-      if (footprint.pads.empty()) {
-        throw std::runtime_error("footprint has no pads");
-      }
       const std::string component_id = requireOption(options, "--component");
       const std::string layer_id = requireOption(options, "--layer");
-      requireCopperLayer(board, layer_id);
       const ccad::Point origin{
           .x = requirePositiveMillimeters(options, "--at-x-mm"),
           .y = requirePositiveMillimeters(options, "--at-y-mm"),
       };
       const double placement_rotation = optionDoubleOrDefault(options, "--rotation-deg", 0.0);
 
-      for (const ccad::FootprintPad& footprint_pad : footprint.pads) {
-        const std::string pad_id = component_id + "." + footprint_pad.number;
-        requireUniquePadId(board, pad_id);
-        requireUniquePhysicalObjectId(board, pad_id);
-        const ccad::Point placed_position =
-            rotateAndTranslate(footprint_pad.position, origin, placement_rotation);
-        requireInsideBoard(board, placed_position, "footprint pad position");
-        requireRotatedRectInsideBoard(board, placed_position, footprint_pad.size,
-                                      footprint_pad.rotation_degrees + placement_rotation,
-                                      "footprint pad");
-      }
-
-      for (const ccad::FootprintPad& footprint_pad : footprint.pads) {
-        const ccad::Point placed_position =
-            rotateAndTranslate(footprint_pad.position, origin, placement_rotation);
-        board.pads.push_back(ccad::Pad{
-            .id = component_id + "." + footprint_pad.number,
-            .component_id = component_id,
-            .pin_name = footprint_pad.number,
-            .net_id = netIdForPin(project, component_id, footprint_pad.number),
-            .layer_id = layer_id,
-            .position = placed_position,
-            .rotation_degrees = footprint_pad.rotation_degrees + placement_rotation,
-            .size = footprint_pad.size,
-            .drill = footprint_pad.drill,
-        });
-      }
+      ccad::placeFootprint(project, footprint, component_id, origin, placement_rotation, layer_id);
 
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';

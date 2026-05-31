@@ -7,8 +7,10 @@
 #include "ccad_core/component_generator.hpp"
 #include "ccad_core/component_generator.hpp"
 #include "ccad_gui/component_wizard_dialog.hpp"
+#include "ccad_gui/footprint_placement_dialog.hpp"
 #include "ccad_core/kicad_symbol_import.hpp"
 #include "ccad_core/kicad_footprint_import.hpp"
+#include "ccad_core/placement.hpp"
 #include "ccad_core/json.hpp"
 
 #include <QAbstractItemView>
@@ -286,8 +288,35 @@ ReviewWindow::ReviewWindow() {
   auto* select_action = right_toolbar->addAction("Select");
   right_toolbar->addAction("Add Track");
   right_toolbar->addAction("Add Via");
-  right_toolbar->addAction("Add Footprint");
+  auto* add_footprint_action = right_toolbar->addAction("Add Footprint");
   auto* measure_action = right_toolbar->addAction("Measure");
+
+  connect(add_footprint_action, &QAction::triggered, this, [this]() {
+    if (!project_cache_.board.has_value()) {
+      QMessageBox::warning(this, "No Board", "Load a project with a board first.");
+      return;
+    }
+    FootprintPlacementDialog dialog(*project_cache_.board, this);
+    if (dialog.exec() != QDialog::Accepted) return;
+    auto result = dialog.result();
+    if (!result.has_value()) return;
+    try {
+      ccad::placeFootprint(
+          project_cache_, result->footprint, result->component_id,
+          {ccad::millimeters(result->x_mm), ccad::millimeters(result->y_mm)},
+          result->rotation_deg, result->layer_id);
+      // Save the project
+      std::ofstream out(current_path_);
+      if (out) {
+        out << ccad::dumpProjectJson(project_cache_);
+        reloadProject();
+      } else {
+        QMessageBox::critical(this, "Save Error", "Failed to write project file.");
+      }
+    } catch (const std::exception& e) {
+      QMessageBox::critical(this, "Placement Error", QString::fromUtf8(e.what()));
+    }
+  });
 
   connect(select_action, &QAction::triggered, this, [this]() {
     if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) {

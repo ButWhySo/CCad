@@ -298,7 +298,7 @@ Invoke-PreScreenshotBeep -RootPath $Root
 Start-Sleep -Seconds 2
 
 if ($PreferInternalScreenshot) {
-  $GuiOutput = & $Gui --screenshot $Project $Screenshot
+  $GuiOutput = & $Gui --screenshot-measure $Project $Screenshot
   $GuiExitCode = $LASTEXITCODE
   if ($GuiExitCode -ne 0 -or -not (Test-Path $Screenshot)) {
     $internalOutput = ($GuiOutput | Out-String)
