@@ -188,7 +188,7 @@ const std::vector<CommandHelp>& commandHelp() {
                            "--height-mm <n>"},
       CommandHelp{.name = "agent serve",
                   .summary = "Start JSON-RPC agent over standard I/O",
-                  .usage = "ccad agent serve"},
+                  .usage = "ccad agent serve [--allow-read] [--allow-write]"},
   };
   return commands;
 }

@@ -18,7 +18,7 @@ void testPing() {
   auto oldCin = std::cin.rdbuf(in.rdbuf());
   auto oldCout = std::cout.rdbuf(out.rdbuf());
 
-  std::vector<std::string> args = {"serve"};
+  std::vector<std::string> args = {"serve", "--allow-read"};
   int result = ccad_cli::agentCommand(args);
 
   std::cin.rdbuf(oldCin);
@@ -40,7 +40,7 @@ void testExecute() {
   auto oldCin = std::cin.rdbuf(in.rdbuf());
   auto oldCout = std::cout.rdbuf(out.rdbuf());
 
-  std::vector<std::string> args = {"serve"};
+  std::vector<std::string> args = {"serve", "--allow-read"};
   int result = ccad_cli::agentCommand(args);
 
   std::cin.rdbuf(oldCin);

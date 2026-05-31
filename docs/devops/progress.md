@@ -6,14 +6,14 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 6 / 6
 - Phase name: Agent Protocol
-- Sprint: 137
-- Branch: `sprint-137-audit-logs`
+- Sprint: 138
+- Branch: `sprint-138-permission-gates`
 - Phase 6 sprint budget: Sprints 136 through 140 planned.
 
 Phase 6 focuses on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
 
 **Current State**: 
-- **Sprint 137 (Agent Audit Logs)** is complete. It added append-only `.audit.jsonl` files for tracking CCad board mutations via CLI.
+- **Sprint 138 (Agent Permission Gates)** is complete. It added `--allow-read` and `--allow-write` checks.
 
 ## Phase Roadmap
 
@@ -235,6 +235,8 @@ Sprint 135 completed KiCad/Specctra DSN Export functionality and `ccad pcb expor
 Sprint 136 completed Agent JSON-RPC Protocol foundation. It introduced `ccad agent serve` that runs a JSON-RPC 2.0 loop on stdin/stdout, routing commands and returning execution status and redirected stdout/stderr.
 
 Sprint 137 completed Agent Audit Logs. `ccad_cli::writeProjectFile` now seamlessly captures `Transaction` records and appends them to `<project>.audit.jsonl` whenever the CLI mutates the board.
+
+Sprint 138 completed Agent Permission Gates. The JSON-RPC `agent serve` now enforces explicit `--allow-read` and `--allow-write` boundaries before executing commands, returning standard JSON-RPC error `-32604` for unauthorized calls.
 
 ## Reporting Rule
 

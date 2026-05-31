@@ -98,9 +98,16 @@ std::string formatSuccess(const std::string& id, const std::string& resultJson) 
 }  // namespace
 
 int agentCommand(const std::vector<std::string>& args) {
-  if (args.size() != 1 || args[0] != "serve") {
-    std::cerr << "Usage: ccad agent serve\n";
+  if (args.empty() || args[0] != "serve") {
+    std::cerr << "Usage: ccad agent serve [--allow-read] [--allow-write]\n";
     return 1;
+  }
+
+  bool allow_read = false;
+  bool allow_write = false;
+  for (std::size_t i = 1; i < args.size(); ++i) {
+    if (args[i] == "--allow-read") allow_read = true;
+    else if (args[i] == "--allow-write") allow_write = true;
   }
 
   std::string line;
@@ -124,6 +131,33 @@ int agentCommand(const std::vector<std::string>& args) {
       if (cmdArgs.empty()) {
         std::cout << formatError(id, -32602, "Invalid params: args required") << "\n";
       } else {
+        bool is_write = false;
+        const std::string& top_cmd = cmdArgs[0];
+        if (top_cmd == "pcb" || top_cmd == "lib") {
+          if (cmdArgs.size() >= 2) {
+            const std::string& sub = cmdArgs[1];
+            if (sub == "get-object" || sub == "list-objects" || sub == "list-nets" ||
+                sub == "list-route-requests" || sub == "route-status" || sub == "export-route-job" ||
+                sub == "export-kicad" || sub == "export-dsn" || sub == "export-footprint" ||
+                sub == "catalog-info" || sub == "catalog-find" || sub == "catalog-search" ||
+                sub == "catalog-validate") {
+              is_write = false;
+            } else {
+              is_write = true;
+            }
+          }
+        } else if (top_cmd == "init") {
+          is_write = true;
+        } else {
+          is_write = false;
+        }
+
+        if ((is_write && !allow_write) || (!is_write && !allow_read)) {
+          std::cout << formatError(id, -32604, "Permission denied") << "\n";
+          std::cout.flush();
+          continue;
+        }
+
         // Create argv
         std::vector<std::string> fullArgs;
         fullArgs.push_back("ccad");
