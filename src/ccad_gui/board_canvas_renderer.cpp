@@ -123,8 +123,8 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
                        const CanvasRenderTheme& theme) {
   canvas_scene.clear();
   canvas_scene.setBackgroundBrush(QBrush(theme.background_color));
-  if (!scene.has_board) {
-    auto* text = canvas_scene.addText("No board outline yet");
+  if (!scene.has_board && scene.lines.empty() && scene.components.empty() && scene.wires.empty()) {
+    auto* text = canvas_scene.addText("No board or schematic to display");
     text->setDefaultTextColor(theme.empty_text_color);
     text->setPos(18, 18);
     canvas_scene.setSceneRect(0, 0, 420, 280);
@@ -135,11 +135,11 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
   constexpr double scale = 10.0;
   const double width = scene.view_width_units * scale;
   const double height = scene.view_height_units * scale;
-  const QRectF board_rect(margin, margin, width, height);
+  const QRectF bounds_rect(margin, margin, width, height);
   const double horizontal_padding = std::max(width * 6.0, 4800.0);
   const double vertical_padding = std::max(height * 6.0, 3600.0);
-  canvas_scene.setSceneRect(board_rect.adjusted(-horizontal_padding, -vertical_padding,
-                                                horizontal_padding, vertical_padding + 52.0));
+  canvas_scene.setSceneRect(bounds_rect.adjusted(-horizontal_padding, -vertical_padding,
+                                                 horizontal_padding, vertical_padding + 52.0));
 
   QPen grid_pen(theme.grid_color);
   grid_pen.setWidthF(0.25);
@@ -150,10 +150,12 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     canvas_scene.addLine(margin, y, margin + width, y, grid_pen);
   }
 
-  QPen outline_pen(theme.board_outline_color);
-  outline_pen.setWidthF(1.8);
-  auto* board = canvas_scene.addRect(board_rect, outline_pen, QBrush(theme.board_fill_color));
-  board->setToolTip("Board outline");
+  if (scene.has_board) {
+    QPen outline_pen(theme.board_outline_color);
+    outline_pen.setWidthF(1.8);
+    auto* board = canvas_scene.addRect(bounds_rect, outline_pen, QBrush(theme.board_fill_color));
+    board->setToolTip("Board outline");
+  }
 
   const std::set<std::string> hidden_layers = hiddenLayerIds(scene);
 
@@ -320,15 +322,48 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     tagObject(*item, "polygon", qstr(poly.id), theme.track_color, "", qstr(poly.layer_id));
   }
 
-  for (const ccad::CanvasText& text : scene.texts) {
-    if (!layerIsVisible(hidden_layers, text.layer_id)) continue;
-    auto* item = canvas_scene.addText(qstr(text.text));
-    item->setDefaultTextColor(theme.track_color);
-    item->setPos(sceneX(scene, text.x_units, margin, scale), sceneY(scene, text.y_units, margin, scale));
-    // Simplistic rotation
-    item->setTransformOriginPoint(0, 0);
-    item->setRotation(text.rotation_degrees);
-    tagObject(*item, "text", qstr(text.id), theme.track_color, "", qstr(text.layer_id));
+  for (const ccad::CanvasText& text_item : scene.texts) {
+    if (hidden_layers.count(text_item.layer_id)) continue;
+    
+    QGraphicsTextItem* text = canvas_scene.addText(QString::fromStdString(text_item.text));
+    text->setDefaultTextColor(theme.board_label_color);
+    text->setPos(sceneX(scene, text_item.x_units, margin, scale), 
+                 sceneY(scene, text_item.y_units, margin, scale));
+    text->setRotation(text_item.rotation_degrees);
+  }
+
+  // Render Schematic Components
+  QPen component_pen(theme.board_outline_color);
+  component_pen.setWidthF(1.5);
+  for (const ccad::CanvasComponent& comp : scene.components) {
+    const double cx = sceneX(scene, comp.x_units, margin, scale);
+    const double cy = sceneY(scene, comp.y_units, margin, scale);
+    
+    auto* rect = canvas_scene.addRect(cx - 15.0, cy - 15.0, 30.0, 30.0, component_pen);
+    rect->setData(kCanvasObjectIdRole, QString::fromStdString(comp.id));
+    rect->setData(kCanvasObjectTypeRole, "Component");
+    rect->setToolTip(QString::fromStdString(comp.id + " (" + comp.part + ")"));
+    
+    auto* label = canvas_scene.addText(QString::fromStdString(comp.id));
+    label->setDefaultTextColor(theme.board_label_color);
+    label->setPos(cx - 15.0, cy - 35.0);
+  }
+
+  // Render Schematic Wires
+  QPen wire_pen(theme.track_color);
+  wire_pen.setWidthF(2.0);
+  for (std::size_t i = 0; i < scene.wires.size(); ++i) {
+    const ccad::CanvasWire& wire = scene.wires[i];
+    const double sx = sceneX(scene, wire.start_x_units, margin, scale);
+    const double sy = sceneY(scene, wire.start_y_units, margin, scale);
+    const double ex = sceneX(scene, wire.end_x_units, margin, scale);
+    const double ey = sceneY(scene, wire.end_y_units, margin, scale);
+    
+    auto* line = canvas_scene.addLine(sx, sy, ex, ey, wire_pen);
+    line->setData(kCanvasObjectIdRole, QString("wire_%1").arg(i));
+    line->setData(kCanvasObjectTypeRole, "Wire");
+    line->setData(kCanvasObjectNetIdRole, QString::fromStdString(wire.net_id));
+    line->setToolTip(QString::fromStdString(wire.net_id));
   }
 
   auto* label = canvas_scene.addText(QString::number(scene.view_width_units, 'f', 2) + " mm x " +

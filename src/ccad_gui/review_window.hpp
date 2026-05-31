@@ -54,7 +54,10 @@ class ReviewWindow final : public QMainWindow {
   SelectionInspectorPanel* selection_inspector_ = nullptr;
   ObjectBrowserPanel* object_browser_ = nullptr;
   QGraphicsScene* canvas_scene_ = nullptr;
-  QGraphicsView* canvas_view_ = nullptr;
+  QGraphicsView* canvas_view_ = nullptr; // PCB view
+  QGraphicsScene* schematic_scene_ = nullptr;
+  QGraphicsView* schematic_view_ = nullptr;
+  QTabWidget* editor_tabs_ = nullptr;
   DiagnosticsPanel* diagnostics_ = nullptr;
   TransactionTimelinePanel* transaction_timeline_ = nullptr;
   std::filesystem::path current_path_;

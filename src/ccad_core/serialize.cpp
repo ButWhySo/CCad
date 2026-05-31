@@ -58,6 +58,8 @@ class JsonReader {
         project.components = readComponents();
       } else if (key == "nets") {
         project.nets = readNets();
+      } else if (key == "wires") {
+        project.wires = readWireSegments();
       } else if (key == "constraints") {
         project.constraints = readConstraints();
       } else {
@@ -576,6 +578,10 @@ class JsonReader {
           component.id = readString();
         } else if (key == "part") {
           component.part = readString();
+        } else if (key == "position") {
+          component.position = readPoint();
+        } else if (key == "rotation_degrees") {
+          component.rotation_degrees = readDouble();
         } else if (key == "pins") {
           component.pins = readPins();
         } else {
@@ -637,6 +643,48 @@ class JsonReader {
       expect(',');
       if (peek(']')) {
         throw std::runtime_error("trailing comma in pins array");
+      }
+    }
+  }
+
+  std::vector<WireSegment> readWireSegments() {
+    std::vector<WireSegment> wires;
+    expect('[');
+    if (consume(']')) {
+      return wires;
+    }
+    while (true) {
+      WireSegment wire;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "start") {
+            wire.start = readPoint();
+          } else if (key == "end") {
+            wire.end = readPoint();
+          } else if (key == "net_id") {
+            wire.net_id = readString();
+          } else {
+            throw std::runtime_error("unknown wire segment key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+          if (peek('}')) {
+            throw std::runtime_error("trailing comma in wire segment object");
+          }
+        }
+      }
+      wires.push_back(wire);
+      if (consume(']')) {
+        return wires;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in wires array");
       }
     }
   }
@@ -1085,6 +1133,10 @@ std::string dumpProjectJson(const Project& project) {
     out << "    {\n";
     writeField(out, 6, "id", component.id);
     writeField(out, 6, "part", component.part);
+    out << "      \"position\": ";
+    writePoint(out, 0, component.position);
+    out << ",\n";
+    out << "      \"rotation_degrees\": " << component.rotation_degrees << ",\n";
     out << "      \"pins\": [\n";
     for (std::size_t j = 0; j < component.pins.size(); ++j) {
       const Pin& pin = component.pins.at(j);
@@ -1125,6 +1177,21 @@ std::string dumpProjectJson(const Project& project) {
     }
     out << "      ]\n";
     out << "    }" << (i + 1 == project.nets.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n";
+
+  out << "  \"wires\": [\n";
+  for (std::size_t i = 0; i < project.wires.size(); ++i) {
+    const WireSegment& wire = project.wires.at(i);
+    out << "    {\n";
+    out << "      \"start\": ";
+    writePoint(out, 0, wire.start);
+    out << ",\n";
+    out << "      \"end\": ";
+    writePoint(out, 0, wire.end);
+    out << ",\n";
+    writeField(out, 6, "net_id", wire.net_id, false);
+    out << "    }" << (i + 1 == project.wires.size() ? "" : ",") << '\n';
   }
   out << "  ]\n";
   out << "}\n";

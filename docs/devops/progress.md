@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 144
-- Branch: `sprint-144-drill-export`
+- Sprint: 145
+- Branch: `sprint-145-ui-parity`
 - Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.

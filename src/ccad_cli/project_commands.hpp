@@ -11,7 +11,6 @@ int drcCommand(const std::vector<std::string>& args);
 int inspectCommand(const std::vector<std::string>& args);
 int diffCommand(const std::vector<std::string>& args);
 int exportBomCommand(const std::vector<std::string>& args);
-int exportPnpCommand(const std::vector<std::string>& args);
-int exportDrillCommand(const std::vector<std::string>& args);
+int projectCommand(const std::vector<std::string>& args);
 
 }  // namespace ccad_cli

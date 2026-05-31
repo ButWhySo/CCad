@@ -277,14 +277,8 @@ int run(int argc, char** argv) {
   if (command == "diff" || command == "project diff") {
     return ccad_cli::diffCommand(args);
   }
-  if (command == "export-bom" || command == "project export-bom") {
-    return ccad_cli::exportBomCommand(args);
-  }
-  if (command == "export-pnp" || command == "pcb export-pnp") {
-    return ccad_cli::exportPnpCommand(args);
-  }
-  if (command == "export-drill" || command == "pcb export-drill") {
-    return ccad_cli::exportDrillCommand(args);
+  if (command == "project") {
+    return ccad_cli::projectCommand(args);
   }
   if (command == "pcb") {
     return pcbCommand(args);

@@ -178,15 +178,31 @@ ReviewWindow::ReviewWindow() {
     tool_status_->setText("Tool Select");
   });
 
-  auto* tabs = new QTabWidget(this);
-  tabs->setObjectName("editorTabs");
-  tabs->addTab(canvas_view_, "PCB");
-  auto* schematic_placeholder = new QLabel("Schematic editor will share this shell.", tabs);
-  schematic_placeholder->setAlignment(Qt::AlignCenter);
-  tabs->addTab(schematic_placeholder, "Schematic");
-  tabs->setTabEnabled(1, false);
+  schematic_scene_ = new QGraphicsScene(this);
+  auto* schematic_board_view = new BoardCanvasView(schematic_scene_, this);
+  schematic_view_ = schematic_board_view;
+  schematic_view_->setObjectName("schematicCanvas");
+  schematic_view_->setRenderHint(QPainter::Antialiasing);
+  schematic_view_->setDragMode(QGraphicsView::NoDrag);
+  schematic_view_->setFrameShape(QFrame::NoFrame);
+  schematic_view_->setMouseTracking(true);
+  schematic_board_view->setCoordinateCallback(
+      [this](const QPointF& scene_position, const double zoom_factor) {
+        updateCursorStatus(scene_position, zoom_factor);
+      });
+  schematic_board_view->setPanModeCallback([this](const bool space_mode, const bool dragging) {
+    if (tool_status_ == nullptr) return;
+    if (dragging) { tool_status_->setText("Tool Pan Drag"); return; }
+    if (space_mode) { tool_status_->setText("Tool Pan Ready"); return; }
+    tool_status_->setText("Tool Select");
+  });
 
-  setCentralWidget(tabs);
+  editor_tabs_ = new QTabWidget(this);
+  editor_tabs_->setObjectName("editorTabs");
+  editor_tabs_->addTab(canvas_view_, "PCB");
+  editor_tabs_->addTab(schematic_view_, "Schematic");
+
+  setCentralWidget(editor_tabs_);
   setDockNestingEnabled(true);
   resizeDocks({project_dock, layers_dock}, {360, 320}, Qt::Horizontal);
   resizeDocks({project_dock, diagnostics_dock}, {620, 240}, Qt::Vertical);
@@ -212,10 +228,18 @@ ReviewWindow::ReviewWindow() {
   connect(reload_action, &QAction::triggered, this, [this]() { reloadProject(); });
   connect(preview_footprint_action, &QAction::triggered, this, [this]() { previewFootprint(); });
   connect(preview_symbol_action, &QAction::triggered, this, [this]() { previewSymbol(); });
-  connect(fit_action, &QAction::triggered, this, [board_view]() { board_view->zoomToFit(); });
-  connect(zoom_in_action, &QAction::triggered, this, [board_view]() { board_view->zoomIn(); });
-  connect(zoom_out_action, &QAction::triggered, this, [board_view]() { board_view->zoomOut(); });
-  connect(zoom_100_action, &QAction::triggered, this, [board_view]() { board_view->resetZoom(); });
+  connect(fit_action, &QAction::triggered, this, [this]() {
+    if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) view->zoomToFit();
+  });
+  connect(zoom_in_action, &QAction::triggered, this, [this]() {
+    if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) view->zoomIn();
+  });
+  connect(zoom_out_action, &QAction::triggered, this, [this]() {
+    if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) view->zoomOut();
+  });
+  connect(zoom_100_action, &QAction::triggered, this, [this]() {
+    if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) view->resetZoom();
+  });
   connect(navigation_help_action, &QAction::triggered, this,
           [this]() { showNavigationHelp(); });
   connect(quit_action, &QAction::triggered, this, [this]() { close(); });
@@ -235,14 +259,35 @@ ReviewWindow::ReviewWindow() {
   auto* help_menu = menuBar()->addMenu("Help");
   help_menu->addAction(navigation_help_action);
 
-  auto* toolbar = addToolBar("Main");
-  toolbar->addAction(open_action);
-  toolbar->addAction(reload_action);
-  toolbar->addSeparator();
-  toolbar->addAction(fit_action);
-  toolbar->addAction(zoom_out_action);
-  toolbar->addAction(zoom_in_action);
-  toolbar->addAction(zoom_100_action);
+  auto* top_toolbar = addToolBar("Top Toolbar");
+  top_toolbar->setMovable(false);
+  top_toolbar->addAction(open_action);
+  top_toolbar->addAction(reload_action);
+  top_toolbar->addSeparator();
+  top_toolbar->addAction(fit_action);
+  top_toolbar->addAction(zoom_out_action);
+  top_toolbar->addAction(zoom_in_action);
+  top_toolbar->addAction(zoom_100_action);
+
+  auto* left_toolbar = new QToolBar("Left Toolbar", this);
+  left_toolbar->setMovable(false);
+  left_toolbar->setOrientation(Qt::Vertical);
+  addToolBar(Qt::LeftToolBarArea, left_toolbar);
+  // Add some dummy actions for left toolbar to match KiCad
+  left_toolbar->addAction("Grid");
+  left_toolbar->addAction("Units");
+  left_toolbar->addAction("Cursor");
+  
+  auto* right_toolbar = new QToolBar("Right Toolbar", this);
+  right_toolbar->setMovable(false);
+  right_toolbar->setOrientation(Qt::Vertical);
+  addToolBar(Qt::RightToolBarArea, right_toolbar);
+  // Add some dummy actions for right toolbar to match KiCad
+  right_toolbar->addAction("Select");
+  right_toolbar->addAction("Add Track");
+  right_toolbar->addAction("Add Via");
+  right_toolbar->addAction("Add Footprint");
+  right_toolbar->addAction("Measure");
 
   connect(canvas_scene_, &QGraphicsScene::selectionChanged, this,
           [this]() { updateSelectionStatus(); });
@@ -558,7 +603,17 @@ void ReviewWindow::reloadProject() {
 void ReviewWindow::renderReview(const ccad::ProjectReview& review) {
   project_summary_->renderReview(review);
   diagnostics_->renderDiagnostics(review.diagnostics);
-  renderCanvas(ccad::buildCanvasScene(project_cache_), review.diagnostics);
+  
+  const ccad::CanvasScene pcb_scene = ccad::buildCanvasScene(project_cache_);
+  renderBoardCanvas(*canvas_scene_, pcb_scene);
+  addDiagnosticMarkers(*canvas_scene_, review.diagnostics);
+  object_browser_->renderScene(pcb_scene);
+  
+  const ccad::CanvasScene schematic_scene = ccad::buildSchematicScene(project_cache_);
+  renderBoardCanvas(*schematic_scene_, schematic_scene);
+
+  if (auto* board_view = dynamic_cast<BoardCanvasView*>(canvas_view_)) board_view->zoomToFit();
+  if (auto* schem_view = dynamic_cast<BoardCanvasView*>(schematic_view_)) schem_view->zoomToFit();
   statusBar()->showMessage(qstr(review.status));
 }
 
@@ -567,8 +622,7 @@ void ReviewWindow::renderCanvas(const ccad::CanvasScene& scene,
   renderBoardCanvas(*canvas_scene_, scene);
   addDiagnosticMarkers(*canvas_scene_, diagnostics);
   object_browser_->renderScene(scene);
-  auto* board_view = dynamic_cast<BoardCanvasView*>(canvas_view_);
-  if (board_view != nullptr) {
+  if (auto* board_view = dynamic_cast<BoardCanvasView*>(canvas_view_)) {
     board_view->zoomToFit();
   }
 }

@@ -115,6 +115,56 @@ CanvasScene buildCanvasScene(const Project& project) {
   return scene;
 }
 
+CanvasScene buildSchematicScene(const Project& project) {
+  CanvasScene scene;
+  scene.has_board = false;
+  // Compute bounds based on components
+  double min_x = 0;
+  double min_y = 0;
+  double max_x = 0;
+  double max_y = 0;
+
+  for (const Component& comp : project.components) {
+    CanvasComponent cc;
+    cc.id = comp.id;
+    cc.part = comp.part;
+    cc.x_units = toMillimeters(comp.position.x);
+    cc.y_units = toMillimeters(comp.position.y);
+    cc.rotation_degrees = comp.rotation_degrees;
+    scene.components.push_back(cc);
+
+    if (cc.x_units < min_x) min_x = cc.x_units;
+    if (cc.y_units < min_y) min_y = cc.y_units;
+    if (cc.x_units > max_x) max_x = cc.x_units;
+    if (cc.y_units > max_y) max_y = cc.y_units;
+  }
+
+  for (const WireSegment& wire : project.wires) {
+    CanvasWire cw;
+    cw.net_id = wire.net_id;
+    cw.start_x_units = toMillimeters(wire.start.x);
+    cw.start_y_units = toMillimeters(wire.start.y);
+    cw.end_x_units = toMillimeters(wire.end.x);
+    cw.end_y_units = toMillimeters(wire.end.y);
+    scene.wires.push_back(cw);
+
+    if (cw.start_x_units < min_x) min_x = cw.start_x_units;
+    if (cw.start_y_units < min_y) min_y = cw.start_y_units;
+    if (cw.end_x_units < min_x) min_x = cw.end_x_units;
+    if (cw.end_y_units < min_y) min_y = cw.end_y_units;
+    
+    if (cw.start_x_units > max_x) max_x = cw.start_x_units;
+    if (cw.start_y_units > max_y) max_y = cw.start_y_units;
+    if (cw.end_x_units > max_x) max_x = cw.end_x_units;
+    if (cw.end_y_units > max_y) max_y = cw.end_y_units;
+  }
+
+  scene.view_width_units = max_x - min_x + 50.0;
+  scene.view_height_units = max_y - min_y + 50.0;
+
+  return scene;
+}
+
 CanvasScene buildCanvasScene(const Footprint& footprint) {
   CanvasScene scene;
   scene.has_board = false; // It's just a component preview

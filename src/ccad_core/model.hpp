@@ -17,6 +17,8 @@ struct Component {
   std::string id;
   std::string part;
   std::vector<Pin> pins;
+  Point position;
+  double rotation_degrees = 0.0;
 };
 
 struct NetMember {
@@ -27,6 +29,12 @@ struct NetMember {
 struct Net {
   std::string id;
   std::vector<NetMember> members;
+};
+
+struct WireSegment {
+  Point start;
+  Point end;
+  std::string net_id;
 };
 
 struct Constraint {
@@ -120,6 +128,7 @@ struct Project {
   std::optional<Board> board;
   std::vector<Component> components;
   std::vector<Net> nets;
+  std::vector<WireSegment> wires;
   std::vector<Constraint> constraints;
 };
 

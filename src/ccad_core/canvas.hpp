@@ -60,6 +60,23 @@ struct CanvasRouteRequest {
   std::size_t routed_segment_count = 0;
 };
 
+struct CanvasComponent {
+  std::string id;
+  std::string part;
+  double x_units = 0.0;
+  double y_units = 0.0;
+  double rotation_degrees = 0.0;
+  bool selected = false;
+};
+
+struct CanvasWire {
+  std::string net_id;
+  double start_x_units = 0.0;
+  double start_y_units = 0.0;
+  double end_x_units = 0.0;
+  double end_y_units = 0.0;
+};
+
 struct CanvasKeepout {
   std::string id;
   std::string kind;
@@ -151,9 +168,13 @@ struct CanvasScene {
   std::vector<CanvasCircle> circles;
   std::vector<CanvasPolygon> polygons;
   std::vector<CanvasText> texts;
+
+  std::vector<CanvasComponent> components;
+  std::vector<CanvasWire> wires;
 };
 
 CanvasScene buildCanvasScene(const Project& project);
+CanvasScene buildSchematicScene(const Project& project);
 CanvasScene buildCanvasScene(const Footprint& footprint);
 CanvasScene buildCanvasScene(const Symbol& symbol);
 
