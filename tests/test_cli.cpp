@@ -1791,4 +1791,22 @@ int main() {
   require(std::filesystem::exists(kicad_out_path), "export-kicad command creates output file");
   const std::string kicad_out_content = readFile(kicad_out_path);
   require(kicad_out_content.find("(kicad_pcb") != std::string::npos, "exported content has kicad_pcb");
+
+  const std::filesystem::path dsn_out_path = temp / "board.dsn";
+  const std::string export_dsn_cmd = quote(CCAD_BINARY) + " pcb export-dsn --file " +
+                                     quote(board_project_path) + " --output " + quote(dsn_out_path);
+  require(run(export_dsn_cmd) == 0, "export-dsn command exits zero");
+  require(std::filesystem::exists(dsn_out_path), "export-dsn command creates output file");
+  const std::string dsn_out_content = readFile(dsn_out_path);
+  require(dsn_out_content.find("(pcb ") != std::string::npos, "exported dsn has pcb root");
+
+  const std::filesystem::path fp_export_in_path = temp / "export_fp_in.json";
+  writeFile(fp_export_in_path, "{\n  \"name\": \"TestFP\",\n  \"pads\": [\n    {\n      \"number\": \"1\",\n      \"type\": \"smd\",\n      \"shape\": \"rect\",\n      \"x_nm\": 1000000,\n      \"y_nm\": 2000000,\n      \"rotation_degrees\": 90,\n      \"width_nm\": 1000000,\n      \"height_nm\": 2000000,\n      \"layers\": [\"F.Cu\"]\n    }\n  ]\n}");
+  const std::filesystem::path fp_export_out_path = temp / "export_fp_out.kicad_mod";
+  const std::string fp_export_cmd = quote(CCAD_BINARY) + " lib export-footprint --in " +
+                                    quote(fp_export_in_path) + " --out " + quote(fp_export_out_path);
+  require(run(fp_export_cmd) == 0, "export-footprint exits zero");
+  require(std::filesystem::exists(fp_export_out_path), "export-footprint creates file");
+  const std::string fp_export_content = readFile(fp_export_out_path);
+  require(fp_export_content.find("(footprint") != std::string::npos, "export footprint has root");
 }

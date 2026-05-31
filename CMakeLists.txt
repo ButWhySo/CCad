@@ -18,12 +18,14 @@ add_library(ccad_core
   src/ccad_core/geometry.cpp
   src/ccad_core/json.cpp
   src/ccad_core/kicad_footprint_import.cpp
+  src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
   src/ccad_core/layers.cpp
   src/ccad_core/library_catalog.cpp
   src/ccad_core/review.cpp
   src/ccad_core/serialize.cpp
   src/ccad_core/transaction.cpp
+  src/ccad_core/dsn_export.cpp
 )
 
 target_include_directories(ccad_core PUBLIC
@@ -103,6 +105,15 @@ if(MINGW)
 endif()
 add_test(NAME kicad_footprint_import COMMAND ccad_kicad_footprint_import_tests)
 
+add_executable(ccad_kicad_footprint_export_tests
+  tests/test_kicad_footprint_export.cpp
+)
+target_link_libraries(ccad_kicad_footprint_export_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_kicad_footprint_export_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME kicad_footprint_export COMMAND ccad_kicad_footprint_export_tests)
+
 add_executable(ccad_library_catalog_tests
   tests/test_library_catalog.cpp
 )
@@ -120,6 +131,15 @@ if(MINGW)
   target_link_options(ccad_kicad_pcb_export_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME kicad_pcb_export COMMAND ccad_kicad_pcb_export_tests)
+
+add_executable(ccad_dsn_export_tests
+  tests/test_dsn_export.cpp
+)
+target_link_libraries(ccad_dsn_export_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_dsn_export_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME dsn_export COMMAND ccad_dsn_export_tests)
 
 add_executable(ccad_cli_tests
   tests/test_cli.cpp

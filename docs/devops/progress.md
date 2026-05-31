@@ -6,11 +6,14 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 5 / 6
 - Phase name: Interop
-- Sprint: 133
-- Branch: `sprint-133-kicad-board-export`
-- Phase 5 sprint budget: Sprints 133 through 135, then scope review required.
-- Last merged sprint: Sprint 132, interactive physical DRC and clearance constraints editing
-- Status: Sprint 133 completed the KiCad PCB export serialization engine, CLI integration, and validation suite.
+- Sprint: 135
+- Branch: `sprint-135-dsn-export`
+- Phase 5 sprint budget: Sprints 133 through 135 completed.
+
+Phase 5 focuses on interop: KiCad, Circuit JSON, DSN/SES, SPICE/simulation hooks, manufacturing exports.
+
+**Current State**: 
+- **Sprint 135 (Specctra DSN Export)** is complete, providing external autorouter integration. Phase 5 initial budget exhausted.
 
 ## Phase Roadmap
 
@@ -224,6 +227,8 @@ Sprint 131 completed coordinate inspection helpers in the Selection Inspector Pa
 Sprint 132 completed interactive physical DRC design rule and object property editing in the Selection Inspector Panel, with callback updates to mutate the `ccad::Board` model, project file auto-save, view refreshes, and selection state preservation. The GUI screenshot harness produced `artifacts/screenshots/sprint-demo-20260530-235551.png` showing interactive inspector row fields. The clean build and CTest gate passed with all 22 tests passing.
 
 Sprint 133 completed the KiCad S-expression PCB export serialization engine (`.kicad_pcb` format) in the CCad core kernel, exposed it via the `ccad pcb export-kicad` subcommand in the CLI, added help metadata, and verified formatting parity and CLI behavior through comprehensive unit and integration tests. The clean build and CTest gate passed with all 23 tests passing.
+
+Sprint 134 completed KiCad Footprint S-expression export (`.kicad_mod`). The batch added `exportKiCadFootprint` serialization, floating point coordinate translation, and `ccad lib export-footprint` CLI command. The clean build and CTest gate passed with all 24 tests passing.
 
 ## Reporting Rule
 

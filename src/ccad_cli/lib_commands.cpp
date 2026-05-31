@@ -2,6 +2,7 @@
 
 #include "ccad_cli/common.hpp"
 #include "ccad_core/kicad_footprint_import.hpp"
+#include "ccad_core/kicad_footprint_export.hpp"
 #include "ccad_core/json.hpp"
 #include "ccad_core/library_catalog.hpp"
 
@@ -167,6 +168,23 @@ int libCommand(const std::vector<std::string>& args) {
         return 2;
       }
       output << ccad::dumpFootprintJson(footprint);
+      return static_cast<bool>(output) ? 0 : 2;
+    }
+
+    if (subcommand == "export-footprint") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--in", "--out"});
+      const std::string in_path = requireOption(options, "--in");
+      const std::string out_path = requireOption(options, "--out");
+
+      const ccad::Footprint footprint = loadFootprintFile(in_path);
+
+      std::ofstream output(out_path);
+      if (!output) {
+        std::cerr << "failed to open footprint output file: " << out_path << '\n';
+        return 2;
+      }
+      output << ccad::exportKiCadFootprint(footprint);
       return static_cast<bool>(output) ? 0 : 2;
     }
 
