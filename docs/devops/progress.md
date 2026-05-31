@@ -4,16 +4,16 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 ## Current Position
 
-- Phase: 5 / 6
-- Phase name: Interop
-- Sprint: 135
-- Branch: `sprint-135-dsn-export`
-- Phase 5 sprint budget: Sprints 133 through 135 completed.
+- Phase: 6 / 6
+- Phase name: Agent Protocol
+- Sprint: 136
+- Branch: `sprint-136-agent-json-rpc`
+- Phase 6 sprint budget: Sprints 136 through 140 planned.
 
-Phase 5 focuses on interop: KiCad, Circuit JSON, DSN/SES, SPICE/simulation hooks, manufacturing exports.
+Phase 6 focuses on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
 
 **Current State**: 
-- **Sprint 135 (Specctra DSN Export)** is complete, providing external autorouter integration. Phase 5 initial budget exhausted.
+- **Sprint 136 (Agent JSON-RPC Protocol)** has started. The target is a basic JSON-RPC 2.0 loop via standard I/O for `ccad agent serve`.
 
 ## Phase Roadmap
 

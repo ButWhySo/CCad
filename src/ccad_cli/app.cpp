@@ -3,6 +3,7 @@
 #include "ccad_cli/lib_commands.hpp"
 #include "ccad_cli/pcb_commands.hpp"
 #include "ccad_cli/project_commands.hpp"
+#include "ccad_cli/agent_commands.hpp"
 #include "ccad_core/json.hpp"
 
 #include <iostream>
@@ -184,6 +185,9 @@ const std::vector<CommandHelp>& commandHelp() {
                   .summary = "Resize one physical board object by stable ID",
                   .usage = "ccad pcb resize-object --file <path> --id <id> --width-mm <n> "
                            "--height-mm <n>"},
+      CommandHelp{.name = "agent serve",
+                  .summary = "Start JSON-RPC agent over standard I/O",
+                  .usage = "ccad agent serve"},
   };
   return commands;
 }
@@ -262,6 +266,9 @@ int run(int argc, char** argv) {
   }
   if (command == "lib") {
     return libCommand(args);
+  }
+  if (command == "agent") {
+    return agentCommand(args);
   }
 
   std::cerr << "unknown command: " << command << '\n';

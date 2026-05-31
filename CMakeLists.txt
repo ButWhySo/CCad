@@ -52,6 +52,7 @@ add_executable(ccad
   src/ccad_cli/pcb_commands.cpp
   src/ccad_cli/pcb_object_queries.cpp
   src/ccad_cli/project_commands.cpp
+  src/ccad_cli/agent_commands.cpp
 )
 target_link_libraries(ccad PRIVATE ccad_core)
 if(MINGW)
@@ -122,6 +123,19 @@ if(MINGW)
   target_link_options(ccad_library_catalog_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME library_catalog COMMAND ccad_library_catalog_tests)
+
+add_executable(ccad_agent_serve_tests 
+  tests/test_agent_serve.cpp
+  src/ccad_cli/app.cpp
+  src/ccad_cli/common.cpp
+  src/ccad_cli/lib_commands.cpp
+  src/ccad_cli/pcb_commands.cpp
+  src/ccad_cli/pcb_object_queries.cpp
+  src/ccad_cli/project_commands.cpp
+  src/ccad_cli/agent_commands.cpp
+)
+target_link_libraries(ccad_agent_serve_tests PRIVATE ccad_core)
+add_test(NAME agent_serve COMMAND ccad_agent_serve_tests)
 
 add_executable(ccad_kicad_pcb_export_tests
   tests/test_kicad_pcb_export.cpp
