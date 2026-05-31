@@ -10,6 +10,11 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <optional>
+#include <QGraphicsLineItem>
+#include <QGraphicsTextItem>
+
+enum class ToolMode { Select, Measure };
 
 class BoardCanvasView final : public QGraphicsView {
  public:
@@ -47,6 +52,13 @@ class BoardCanvasView final : public QGraphicsView {
     notifyViewportChanged();
   }
 
+  void setToolMode(ToolMode mode) {
+    active_tool_ = mode;
+    clearMeasurement();
+  }
+
+  ToolMode getToolMode() const { return active_tool_; }
+
  protected:
   void wheelEvent(QWheelEvent* event) override {
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
@@ -76,6 +88,11 @@ class BoardCanvasView final : public QGraphicsView {
       event->accept();
       return;
     }
+    
+    if (active_tool_ == ToolMode::Measure && measure_start_pos_.has_value()) {
+      updateMeasurement(mapToScene(event->pos()));
+    }
+
     QGraphicsView::mouseMoveEvent(event);
     notifyViewportChanged(event->pos());
   }
@@ -95,6 +112,18 @@ class BoardCanvasView final : public QGraphicsView {
       event->accept();
       return;
     }
+    
+    if (active_tool_ == ToolMode::Measure && event->button() == Qt::LeftButton) {
+      if (!measure_start_pos_.has_value()) {
+        measure_start_pos_ = mapToScene(event->pos());
+        createMeasurementOverlay();
+      } else {
+        clearMeasurement();
+      }
+      event->accept();
+      return;
+    }
+
     QGraphicsView::mousePressEvent(event);
   }
 
@@ -225,6 +254,63 @@ class BoardCanvasView final : public QGraphicsView {
       pan_mode_callback_(space_pan_mode_, panning_);
     }
   }
+
+  void createMeasurementOverlay() {
+    if (!scene() || !measure_start_pos_.has_value()) return;
+    measure_line_ = scene()->addLine(QLineF(*measure_start_pos_, *measure_start_pos_), QPen(Qt::cyan, 0));
+    measure_line_->setZValue(1000);
+    measure_text_ = scene()->addText("");
+    measure_text_->setDefaultTextColor(Qt::cyan);
+    QFont font = measure_text_->font();
+    font.setPixelSize(14);
+    measure_text_->setFont(font);
+    measure_text_->setZValue(1000);
+    // Add background to text
+    measure_text_bg_ = scene()->addRect(measure_text_->boundingRect(), QPen(Qt::NoPen), QBrush(QColor(0, 0, 0, 180)));
+    measure_text_bg_->setZValue(999);
+    measure_text_->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    measure_text_bg_->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+  }
+
+  void updateMeasurement(const QPointF& current_pos) {
+    if (!measure_line_ || !measure_text_ || !measure_text_bg_ || !measure_start_pos_.has_value()) return;
+    measure_line_->setLine(QLineF(*measure_start_pos_, current_pos));
+    
+    const double dx = current_pos.x() - measure_start_pos_->x();
+    const double dy = current_pos.y() - measure_start_pos_->y();
+    const double dist = std::hypot(dx, dy);
+    
+    measure_text_->setPlainText(QString("dx: %1 mm\ndy: %2 mm\ndist: %3 mm")
+                                    .arg(dx, 0, 'f', 3)
+                                    .arg(-dy, 0, 'f', 3) // Canvas Y is inverted relative to physical Cartesian
+                                    .arg(dist, 0, 'f', 3));
+                                    
+    // Position text near cursor
+    measure_text_->setPos(current_pos + QPointF(10, 10));
+    measure_text_bg_->setRect(measure_text_->boundingRect());
+    measure_text_bg_->setPos(measure_text_->pos());
+  }
+
+  void clearMeasurement() {
+    if (scene()) {
+      if (measure_line_) scene()->removeItem(measure_line_);
+      if (measure_text_) scene()->removeItem(measure_text_);
+      if (measure_text_bg_) scene()->removeItem(measure_text_bg_);
+    }
+    delete measure_line_;
+    delete measure_text_;
+    delete measure_text_bg_;
+    measure_line_ = nullptr;
+    measure_text_ = nullptr;
+    measure_text_bg_ = nullptr;
+    measure_start_pos_.reset();
+  }
+
+  ToolMode active_tool_ = ToolMode::Select;
+  std::optional<QPointF> measure_start_pos_;
+  QGraphicsLineItem* measure_line_ = nullptr;
+  QGraphicsTextItem* measure_text_ = nullptr;
+  QGraphicsRectItem* measure_text_bg_ = nullptr;
 
   double zoom_factor_ = 1.0;
   bool user_view_ = false;

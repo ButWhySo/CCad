@@ -283,11 +283,25 @@ ReviewWindow::ReviewWindow() {
   right_toolbar->setOrientation(Qt::Vertical);
   addToolBar(Qt::RightToolBarArea, right_toolbar);
   // Add some dummy actions for right toolbar to match KiCad
-  right_toolbar->addAction("Select");
+  auto* select_action = right_toolbar->addAction("Select");
   right_toolbar->addAction("Add Track");
   right_toolbar->addAction("Add Via");
   right_toolbar->addAction("Add Footprint");
-  right_toolbar->addAction("Measure");
+  auto* measure_action = right_toolbar->addAction("Measure");
+
+  connect(select_action, &QAction::triggered, this, [this]() {
+    if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) {
+      view->setToolMode(ToolMode::Select);
+      tool_status_->setText("Tool Select");
+    }
+  });
+
+  connect(measure_action, &QAction::triggered, this, [this]() {
+    if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) {
+      view->setToolMode(ToolMode::Measure);
+      tool_status_->setText("Tool Measure");
+    }
+  });
 
   connect(canvas_scene_, &QGraphicsScene::selectionChanged, this,
           [this]() { updateSelectionStatus(); });
