@@ -126,7 +126,15 @@ int agentCommand(const std::vector<std::string>& args) {
     if (method == "ping") {
       std::cout << formatSuccess(id, "\"pong\"") << "\n";
       std::cout.flush();
-    } else if (method == "execute") {
+    } else if (method == "initialize") {
+      std::string res = "{\"protocolVersion\": \"2024-11-05\", \"capabilities\": {\"tools\": {}}, \"serverInfo\": {\"name\": \"ccad\", \"version\": \"1.0.0\"}}";
+      std::cout << formatSuccess(id, res) << "\n";
+      std::cout.flush();
+    } else if (method == "tools/list") {
+      std::string res = "{\"tools\": [{\"name\": \"ccad_execute\", \"description\": \"Execute ccad CLI commands\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"args\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}, \"required\": [\"args\"]}}]}";
+      std::cout << formatSuccess(id, res) << "\n";
+      std::cout.flush();
+    } else if (method == "execute" || method == "tools/call") {
       std::vector<std::string> cmdArgs = extractStringArray(line, "args");
       if (cmdArgs.empty()) {
         std::cout << formatError(id, -32602, "Invalid params: args required") << "\n";
@@ -185,12 +193,20 @@ int agentCommand(const std::vector<std::string>& args) {
         std::cout.rdbuf(oldCout);
         std::cerr.rdbuf(oldCerr);
 
-        std::ostringstream res;
-        res << "{\"exit_code\": " << exitCode << ", "
-            << "\"stdout\": \"" << ccad::escapeJson(capturedOut.str()) << "\", "
-            << "\"stderr\": \"" << ccad::escapeJson(capturedErr.str()) << "\"}";
-
-        std::cout << formatSuccess(id, res.str()) << "\n";
+        if (method == "tools/call") {
+          std::ostringstream res;
+          res << "{\"content\": [{\"type\": \"text\", \"text\": \"exit_code: " << exitCode 
+              << "\\nstdout:\\n" << ccad::escapeJson(capturedOut.str()) 
+              << "\\nstderr:\\n" << ccad::escapeJson(capturedErr.str()) << "\"}], "
+              << "\"isError\": " << (exitCode == 0 ? "false" : "true") << "}";
+          std::cout << formatSuccess(id, res.str()) << "\n";
+        } else {
+          std::ostringstream res;
+          res << "{\"exit_code\": " << exitCode << ", "
+              << "\"stdout\": \"" << ccad::escapeJson(capturedOut.str()) << "\", "
+              << "\"stderr\": \"" << ccad::escapeJson(capturedErr.str()) << "\"}";
+          std::cout << formatSuccess(id, res.str()) << "\n";
+        }
         std::cout.flush();
       }
     } else {

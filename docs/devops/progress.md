@@ -4,16 +4,16 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 ## Current Position
 
-- Phase: 6 / 6
-- Phase name: Agent Protocol
-- Sprint: 139
-- Branch: `sprint-139-benchmark-harness`
-- Phase 6 sprint budget: Sprints 136 through 140 planned.
+- Phase: 7 / 7 (Phase 6 complete)
+- Phase name: Final Polish & Release
+- Sprint: 140
+- Branch: `sprint-140-agent-mcp`
+- Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
 
-Phase 6 focuses on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
+Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
 
 **Current State**: 
-- **Sprint 139 (Agent Benchmark Harness)** is complete. It added a Python test harness for evaluating agent completions.
+- **Sprint 140 (Agent MCP Support)** is complete. It added standard Model Context Protocol (MCP) tool bindings to the `agent serve` loop, completing Phase 6.
 
 ## Phase Roadmap
 
@@ -239,6 +239,8 @@ Sprint 137 completed Agent Audit Logs. `ccad_cli::writeProjectFile` now seamless
 Sprint 138 completed Agent Permission Gates. The JSON-RPC `agent serve` now enforces explicit `--allow-read` and `--allow-write` boundaries before executing commands, returning standard JSON-RPC error `-32604` for unauthorized calls.
 
 Sprint 139 completed Agent Benchmark Harness. Introduced `scripts/benchmark.py` which runs a specified agent command against a directory of `.ccad.json` files and executes `ccad drc` to validate correctness of the agent's work.
+
+Sprint 140 completed Agent MCP Support and closed Phase 6. The `agent serve` loop now natively speaks the Model Context Protocol (MCP) by handling `initialize`, `tools/list`, and `tools/call`, allowing seamless integration with modern LLM-driven tooling.
 
 ## Reporting Rule
 

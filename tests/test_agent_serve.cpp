@@ -56,10 +56,54 @@ void testExecute() {
   assertContains(out.str(), "\\\"commands\\\": [", "has stdout escaped JSON");
 }
 
+void testMCPInitialize() {
+  std::istringstream in("{\"jsonrpc\": \"2.0\", \"method\": \"initialize\", \"id\": 3}\n");
+  std::ostringstream out;
+  auto oldCin = std::cin.rdbuf(in.rdbuf());
+  auto oldCout = std::cout.rdbuf(out.rdbuf());
+  std::vector<std::string> args = {"serve", "--allow-read"};
+  int result = ccad_cli::agentCommand(args);
+  std::cin.rdbuf(oldCin);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) std::exit(1);
+  assertContains(out.str(), "\"protocolVersion\":", "has protocolVersion");
+}
+
+void testMCPToolsList() {
+  std::istringstream in("{\"jsonrpc\": \"2.0\", \"method\": \"tools/list\", \"id\": 4}\n");
+  std::ostringstream out;
+  auto oldCin = std::cin.rdbuf(in.rdbuf());
+  auto oldCout = std::cout.rdbuf(out.rdbuf());
+  std::vector<std::string> args = {"serve", "--allow-read"};
+  int result = ccad_cli::agentCommand(args);
+  std::cin.rdbuf(oldCin);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) std::exit(1);
+  assertContains(out.str(), "\"name\": \"ccad_execute\"", "has ccad_execute tool");
+}
+
+void testMCPToolsCall() {
+  std::istringstream in("{\"jsonrpc\": \"2.0\", \"method\": \"tools/call\", \"params\": {\"name\": \"ccad_execute\", \"arguments\": {\"args\": [\"help\", \"--format\", \"json\"]}}, \"id\": 5}\n");
+  std::ostringstream out;
+  auto oldCin = std::cin.rdbuf(in.rdbuf());
+  auto oldCout = std::cout.rdbuf(out.rdbuf());
+  std::vector<std::string> args = {"serve", "--allow-read"};
+  int result = ccad_cli::agentCommand(args);
+  std::cin.rdbuf(oldCin);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) std::exit(1);
+  assertContains(out.str(), "\"content\": [", "has content array");
+  assertContains(out.str(), "\\\"commands\\\": [", "has stdout escaped JSON");
+  assertContains(out.str(), "\"isError\": false", "has isError false");
+}
+
 int main() {
   try {
     testPing();
     testExecute();
+    testMCPInitialize();
+    testMCPToolsList();
+    testMCPToolsCall();
     std::cout << "PASS agent serve\n";
     return 0;
   } catch (const std::exception& e) {
