@@ -28,6 +28,8 @@ double requireDoubleOption(const std::map<std::string, std::string>& options,
 double optionDoubleOrDefault(const std::map<std::string, std::string>& options,
                              const std::string& key, double default_value);
 
+void setAuditCommand(const std::string& command);
+
 ccad::Project loadProjectFile(const std::string& path);
 bool writeProjectFile(const std::string& path, const ccad::Project& project);
 ccad::Footprint loadFootprintFile(const std::string& path);

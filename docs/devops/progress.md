@@ -6,14 +6,14 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 6 / 6
 - Phase name: Agent Protocol
-- Sprint: 136
-- Branch: `sprint-136-agent-json-rpc`
+- Sprint: 137
+- Branch: `sprint-137-audit-logs`
 - Phase 6 sprint budget: Sprints 136 through 140 planned.
 
 Phase 6 focuses on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
 
 **Current State**: 
-- **Sprint 136 (Agent JSON-RPC Protocol)** has started. The target is a basic JSON-RPC 2.0 loop via standard I/O for `ccad agent serve`.
+- **Sprint 137 (Agent Audit Logs)** is complete. It added append-only `.audit.jsonl` files for tracking CCad board mutations via CLI.
 
 ## Phase Roadmap
 
@@ -229,6 +229,12 @@ Sprint 132 completed interactive physical DRC design rule and object property ed
 Sprint 133 completed the KiCad S-expression PCB export serialization engine (`.kicad_pcb` format) in the CCad core kernel, exposed it via the `ccad pcb export-kicad` subcommand in the CLI, added help metadata, and verified formatting parity and CLI behavior through comprehensive unit and integration tests. The clean build and CTest gate passed with all 23 tests passing.
 
 Sprint 134 completed KiCad Footprint S-expression export (`.kicad_mod`). The batch added `exportKiCadFootprint` serialization, floating point coordinate translation, and `ccad lib export-footprint` CLI command. The clean build and CTest gate passed with all 24 tests passing.
+
+Sprint 135 completed KiCad/Specctra DSN Export functionality and `ccad pcb export-dsn`. The clean build and CTest gate passed with all 25 tests passing.
+
+Sprint 136 completed Agent JSON-RPC Protocol foundation. It introduced `ccad agent serve` that runs a JSON-RPC 2.0 loop on stdin/stdout, routing commands and returning execution status and redirected stdout/stderr.
+
+Sprint 137 completed Agent Audit Logs. `ccad_cli::writeProjectFile` now seamlessly captures `Transaction` records and appends them to `<project>.audit.jsonl` whenever the CLI mutates the board.
 
 ## Reporting Rule
 

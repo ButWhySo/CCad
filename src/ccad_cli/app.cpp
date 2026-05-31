@@ -4,6 +4,7 @@
 #include "ccad_cli/pcb_commands.hpp"
 #include "ccad_cli/project_commands.hpp"
 #include "ccad_cli/agent_commands.hpp"
+#include "ccad_cli/common.hpp"
 #include "ccad_core/json.hpp"
 
 #include <iostream>
@@ -238,9 +239,15 @@ int run(int argc, char** argv) {
   }
 
   std::vector<std::string> args;
+  std::string full_command = "ccad";
   for (int i = 2; i < argc; ++i) {
     args.emplace_back(argv[i]);
   }
+  for (int i = 1; i < argc; ++i) {
+    full_command += " ";
+    full_command += argv[i];
+  }
+  setAuditCommand(full_command);
 
   const std::string command = argv[1];
   if (command == "help") {

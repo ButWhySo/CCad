@@ -4,13 +4,24 @@
 #include "ccad_core/kicad_footprint_import.hpp"
 #include "ccad_core/serialize.hpp"
 
+#include <chrono>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+#include <optional>
+
+#include "ccad_core/transaction.hpp"
 
 namespace ccad_cli {
+
+static std::optional<ccad::Project> g_last_loaded_project;
+static std::string g_current_command;
+
+void setAuditCommand(const std::string& command) {
+  g_current_command = command;
+}
 
 bool hasError(const std::vector<ccad::Diagnostic>& diagnostics) {
   for (const ccad::Diagnostic& diagnostic : diagnostics) {
@@ -202,7 +213,9 @@ ccad::Project loadProjectFile(const std::string& path) {
 
   std::ostringstream buffer;
   buffer << input.rdbuf();
-  return ccad::loadProjectJson(buffer.str());
+  ccad::Project project = ccad::loadProjectJson(buffer.str());
+  g_last_loaded_project = project;
+  return project;
 }
 
 bool writeProjectFile(const std::string& path, const ccad::Project& project) {
@@ -211,6 +224,34 @@ bool writeProjectFile(const std::string& path, const ccad::Project& project) {
     return false;
   }
   output << ccad::dumpProjectJson(project);
+  
+  if (g_last_loaded_project.has_value()) {
+    std::string audit_path = path + ".audit.jsonl";
+    std::ofstream audit(audit_path, std::ios::app);
+    if (audit) {
+      auto now = std::chrono::system_clock::now().time_since_epoch();
+      long long ms = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+      std::string tx_id = "txn-" + std::to_string(ms);
+      
+      ccad::Transaction tx = ccad::buildTransaction(
+          tx_id, 
+          g_current_command.empty() ? "ccad_cli_mutation" : g_current_command, 
+          "CLI mutation", 
+          *g_last_loaded_project, 
+          project
+      );
+      
+      std::string tx_json = ccad::dumpTransactionJson(tx);
+      std::string jsonl;
+      for (char c : tx_json) {
+        if (c != '\n' && c != '\r') {
+          jsonl += c;
+        }
+      }
+      audit << jsonl << "\n";
+    }
+    g_last_loaded_project = std::nullopt;
+  }
   return static_cast<bool>(output);
 }
 
