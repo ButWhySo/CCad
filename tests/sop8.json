@@ -1,0 +1,93 @@
+{
+  "name": "SOP-8",
+  "pads": [
+    {
+      "number": "1",
+      "type": "smd",
+      "shape": "rect",
+      "x_nm": -3000000,
+      "y_nm": -1905000,
+      "rotation_degrees": 0,
+      "width_nm": 1500000,
+      "height_nm": 600000,
+      "layers": ["F.Cu", "F.Paste", "F.Mask"]
+    },
+    {
+      "number": "2",
+      "type": "smd",
+      "shape": "rect",
+      "x_nm": -3000000,
+      "y_nm": -635000,
+      "rotation_degrees": 0,
+      "width_nm": 1500000,
+      "height_nm": 600000,
+      "layers": ["F.Cu", "F.Paste", "F.Mask"]
+    },
+    {
+      "number": "3",
+      "type": "smd",
+      "shape": "rect",
+      "x_nm": -3000000,
+      "y_nm": 635000,
+      "rotation_degrees": 0,
+      "width_nm": 1500000,
+      "height_nm": 600000,
+      "layers": ["F.Cu", "F.Paste", "F.Mask"]
+    },
+    {
+      "number": "4",
+      "type": "smd",
+      "shape": "rect",
+      "x_nm": -3000000,
+      "y_nm": 1905000,
+      "rotation_degrees": 0,
+      "width_nm": 1500000,
+      "height_nm": 600000,
+      "layers": ["F.Cu", "F.Paste", "F.Mask"]
+    },
+    {
+      "number": "5",
+      "type": "smd",
+      "shape": "rect",
+      "x_nm": 3000000,
+      "y_nm": 1905000,
+      "rotation_degrees": 0,
+      "width_nm": 1500000,
+      "height_nm": 600000,
+      "layers": ["F.Cu", "F.Paste", "F.Mask"]
+    },
+    {
+      "number": "6",
+      "type": "smd",
+      "shape": "rect",
+      "x_nm": 3000000,
+      "y_nm": 635000,
+      "rotation_degrees": 0,
+      "width_nm": 1500000,
+      "height_nm": 600000,
+      "layers": ["F.Cu", "F.Paste", "F.Mask"]
+    },
+    {
+      "number": "7",
+      "type": "smd",
+      "shape": "rect",
+      "x_nm": 3000000,
+      "y_nm": -635000,
+      "rotation_degrees": 0,
+      "width_nm": 1500000,
+      "height_nm": 600000,
+      "layers": ["F.Cu", "F.Paste", "F.Mask"]
+    },
+    {
+      "number": "8",
+      "type": "smd",
+      "shape": "rect",
+      "x_nm": 3000000,
+      "y_nm": -1905000,
+      "rotation_degrees": 0,
+      "width_nm": 1500000,
+      "height_nm": 600000,
+      "layers": ["F.Cu", "F.Paste", "F.Mask"]
+    }
+  ]
+}

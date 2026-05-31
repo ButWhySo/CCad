@@ -115,5 +115,173 @@ CanvasScene buildCanvasScene(const Project& project) {
   return scene;
 }
 
+CanvasScene buildCanvasScene(const Footprint& footprint) {
+  CanvasScene scene;
+  scene.has_board = false; // It's just a component preview
+  
+  for (const FootprintLine& line : footprint.lines) {
+    scene.lines.push_back(CanvasLine{
+        .id = "line_" + std::to_string(scene.lines.size()),
+        .layer_id = line.layer,
+        .start_x_units = toMillimeters(line.start.x),
+        .start_y_units = toMillimeters(line.start.y),
+        .end_x_units = toMillimeters(line.end.x),
+        .end_y_units = toMillimeters(line.end.y),
+        .width_units = toMillimeters(line.stroke_width)
+    });
+  }
+  
+  for (const FootprintArc& arc : footprint.arcs) {
+    scene.arcs.push_back(CanvasArc{
+        .id = "arc_" + std::to_string(scene.arcs.size()),
+        .layer_id = arc.layer,
+        .start_x_units = toMillimeters(arc.start.x),
+        .start_y_units = toMillimeters(arc.start.y),
+        .mid_x_units = toMillimeters(arc.center.x),
+        .mid_y_units = toMillimeters(arc.center.y),
+        .end_x_units = toMillimeters(arc.end.x),
+        .end_y_units = toMillimeters(arc.end.y),
+        .width_units = toMillimeters(arc.stroke_width)
+    });
+  }
+  
+  for (const FootprintCircle& circle : footprint.circles) {
+    scene.circles.push_back(CanvasCircle{
+        .id = "circle_" + std::to_string(scene.circles.size()),
+        .layer_id = circle.layer,
+        .center_x_units = toMillimeters(circle.center.x),
+        .center_y_units = toMillimeters(circle.center.y),
+        .radius_units = std::abs(toMillimeters(circle.end.x) - toMillimeters(circle.center.x)), // simplistic radius
+        .width_units = toMillimeters(circle.stroke_width),
+        .fill_type = "none"
+    });
+  }
+  
+  for (const FootprintPolyline& poly : footprint.polylines) {
+    CanvasPolygon canvas_poly;
+    canvas_poly.id = "poly_" + std::to_string(scene.polygons.size());
+    canvas_poly.layer_id = poly.layer;
+    canvas_poly.width_units = toMillimeters(poly.stroke_width);
+    canvas_poly.fill_type = "none";
+    for (const Point& pt : poly.points) {
+      canvas_poly.pts_x_units.push_back(toMillimeters(pt.x));
+      canvas_poly.pts_y_units.push_back(toMillimeters(pt.y));
+    }
+    scene.polygons.push_back(canvas_poly);
+  }
+  
+  for (const FootprintText& text : footprint.texts) {
+    scene.texts.push_back(CanvasText{
+        .id = "text_" + std::to_string(scene.texts.size()),
+        .layer_id = text.layer,
+        .text = text.text,
+        .x_units = toMillimeters(text.position.x),
+        .y_units = toMillimeters(text.position.y),
+        .rotation_degrees = text.rotation_degrees,
+        .size_x_units = toMillimeters(text.size_width),
+        .size_y_units = toMillimeters(text.size_height)
+    });
+  }
+
+  for (const FootprintPad& pad : footprint.pads) {
+    scene.pads.push_back(CanvasPad{
+        .id = "pad_" + pad.number,
+        .net_id = "",
+        .layer_id = pad.layers.empty() ? "" : pad.layers.front(),
+        .x_units = toMillimeters(pad.position.x),
+        .y_units = toMillimeters(pad.position.y),
+        .width_units = toMillimeters(pad.size.width),
+        .height_units = toMillimeters(pad.size.height),
+        .rotation_degrees = pad.rotation_degrees,
+    });
+  }
+  
+  return scene;
+}
+
+CanvasScene buildCanvasScene(const Symbol& symbol) {
+  CanvasScene scene;
+  scene.has_board = false;
+  
+  for (const SymbolLine& line : symbol.lines) {
+    scene.lines.push_back(CanvasLine{
+        .id = "line_" + std::to_string(scene.lines.size()),
+        .layer_id = "symbol",
+        .start_x_units = toMillimeters(line.start.x),
+        .start_y_units = toMillimeters(line.start.y),
+        .end_x_units = toMillimeters(line.end.x),
+        .end_y_units = toMillimeters(line.end.y),
+        .width_units = toMillimeters(line.stroke_width)
+    });
+  }
+  
+  for (const SymbolArc& arc : symbol.arcs) {
+    scene.arcs.push_back(CanvasArc{
+        .id = "arc_" + std::to_string(scene.arcs.size()),
+        .layer_id = "symbol",
+        .start_x_units = toMillimeters(arc.start.x),
+        .start_y_units = toMillimeters(arc.start.y),
+        .mid_x_units = toMillimeters(arc.center.x),
+        .mid_y_units = toMillimeters(arc.center.y),
+        .end_x_units = toMillimeters(arc.end.x),
+        .end_y_units = toMillimeters(arc.end.y),
+        .width_units = toMillimeters(arc.stroke_width)
+    });
+  }
+  
+  for (const SymbolCircle& circle : symbol.circles) {
+    scene.circles.push_back(CanvasCircle{
+        .id = "circle_" + std::to_string(scene.circles.size()),
+        .layer_id = "symbol",
+        .center_x_units = toMillimeters(circle.center.x),
+        .center_y_units = toMillimeters(circle.center.y),
+        .radius_units = toMillimeters(circle.radius),
+        .width_units = toMillimeters(circle.stroke_width),
+        .fill_type = circle.fill_type
+    });
+  }
+  
+  for (const SymbolPolyline& poly : symbol.polylines) {
+    CanvasPolygon canvas_poly;
+    canvas_poly.id = "poly_" + std::to_string(scene.polygons.size());
+    canvas_poly.layer_id = "symbol";
+    canvas_poly.width_units = toMillimeters(poly.stroke_width);
+    canvas_poly.fill_type = poly.fill_type;
+    for (const Point& pt : poly.points) {
+      canvas_poly.pts_x_units.push_back(toMillimeters(pt.x));
+      canvas_poly.pts_y_units.push_back(toMillimeters(pt.y));
+    }
+    scene.polygons.push_back(canvas_poly);
+  }
+  
+  for (const SymbolText& text : symbol.texts) {
+    scene.texts.push_back(CanvasText{
+        .id = "text_" + std::to_string(scene.texts.size()),
+        .layer_id = "symbol",
+        .text = text.text,
+        .x_units = toMillimeters(text.position.x),
+        .y_units = toMillimeters(text.position.y),
+        .rotation_degrees = text.rotation_degrees,
+        .size_x_units = toMillimeters(text.size),
+        .size_y_units = toMillimeters(text.size)
+    });
+  }
+
+  for (const SymbolPin& pin : symbol.pins) {
+    scene.pads.push_back(CanvasPad{
+        .id = "pin_" + pin.number,
+        .net_id = "",
+        .layer_id = "symbol",
+        .x_units = toMillimeters(pin.position.x),
+        .y_units = toMillimeters(pin.position.y),
+        .width_units = toMillimeters(pin.length),
+        .height_units = 0.5,
+        .rotation_degrees = pin.rotation_degrees,
+    });
+  }
+
+  return scene;
+}
+
 }  // namespace ccad
 

@@ -94,3 +94,9 @@ desktop.ini
 *.key
 *.p12
 *.pfx
+
+# KiCad test data caches
+tests/kicad-footprints/
+tests/kicad-symbols/
+tests/kicad-library-conventions/
+tests/kicad-packages3D/

@@ -1,6 +1,8 @@
 #pragma once
 
+#include "ccad_core/footprint.hpp"
 #include "ccad_core/model.hpp"
+#include "ccad_core/symbol.hpp"
 
 #include <cstdint>
 #include <string>
@@ -76,6 +78,58 @@ struct CanvasPlacementRegion {
   double height_units = 0.0;
 };
 
+struct CanvasLine {
+  std::string id;
+  std::string layer_id;
+  double start_x_units = 0.0;
+  double start_y_units = 0.0;
+  double end_x_units = 0.0;
+  double end_y_units = 0.0;
+  double width_units = 0.0;
+};
+
+struct CanvasArc {
+  std::string id;
+  std::string layer_id;
+  double start_x_units = 0.0;
+  double start_y_units = 0.0;
+  double mid_x_units = 0.0;
+  double mid_y_units = 0.0;
+  double end_x_units = 0.0;
+  double end_y_units = 0.0;
+  double width_units = 0.0;
+};
+
+struct CanvasCircle {
+  std::string id;
+  std::string layer_id;
+  double center_x_units = 0.0;
+  double center_y_units = 0.0;
+  double radius_units = 0.0;
+  double width_units = 0.0;
+  std::string fill_type;
+};
+
+struct CanvasPolygon {
+  std::string id;
+  std::string layer_id;
+  std::vector<double> pts_x_units;
+  std::vector<double> pts_y_units;
+  double width_units = 0.0;
+  std::string fill_type;
+};
+
+struct CanvasText {
+  std::string id;
+  std::string layer_id;
+  std::string text;
+  double x_units = 0.0;
+  double y_units = 0.0;
+  double rotation_degrees = 0.0;
+  double size_x_units = 0.0;
+  double size_y_units = 0.0;
+};
+
 struct CanvasScene {
   bool has_board = false;
   std::int64_t board_width_nm = 0;
@@ -91,9 +145,17 @@ struct CanvasScene {
   std::vector<CanvasVia> vias;
   std::vector<CanvasTrack> tracks;
   std::vector<CanvasRouteRequest> route_requests;
+  
+  std::vector<CanvasLine> lines;
+  std::vector<CanvasArc> arcs;
+  std::vector<CanvasCircle> circles;
+  std::vector<CanvasPolygon> polygons;
+  std::vector<CanvasText> texts;
 };
 
 CanvasScene buildCanvasScene(const Project& project);
+CanvasScene buildCanvasScene(const Footprint& footprint);
+CanvasScene buildCanvasScene(const Symbol& symbol);
 
 }  // namespace ccad
 

@@ -4,6 +4,12 @@
 #include "board_canvas_view.hpp"
 #include "ccad_core/canvas.hpp"
 #include "ccad_core/serialize.hpp"
+#include "ccad_core/component_generator.hpp"
+#include "ccad_core/component_generator.hpp"
+#include "ccad_gui/component_wizard_dialog.hpp"
+#include "ccad_core/kicad_symbol_import.hpp"
+#include "ccad_core/kicad_footprint_import.hpp"
+#include "ccad_core/json.hpp"
 
 #include <QAbstractItemView>
 #include <QAction>
@@ -24,6 +30,7 @@
 #include <QToolBar>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <QTextStream>
 
 #include <fstream>
 #include <iostream>
@@ -186,6 +193,8 @@ ReviewWindow::ReviewWindow() {
 
   auto* open_action = new QAction("Open", this);
   auto* reload_action = new QAction("Reload", this);
+  auto* preview_footprint_action = new QAction("Preview KiCad Footprint...", this);
+  auto* preview_symbol_action = new QAction("Preview KiCad Symbol...", this);
   auto* fit_action = new QAction("Fit", this);
   auto* zoom_in_action = new QAction("Zoom In", this);
   auto* zoom_out_action = new QAction("Zoom Out", this);
@@ -201,6 +210,8 @@ ReviewWindow::ReviewWindow() {
 
   connect(open_action, &QAction::triggered, this, [this]() { openProject(); });
   connect(reload_action, &QAction::triggered, this, [this]() { reloadProject(); });
+  connect(preview_footprint_action, &QAction::triggered, this, [this]() { previewFootprint(); });
+  connect(preview_symbol_action, &QAction::triggered, this, [this]() { previewSymbol(); });
   connect(fit_action, &QAction::triggered, this, [board_view]() { board_view->zoomToFit(); });
   connect(zoom_in_action, &QAction::triggered, this, [board_view]() { board_view->zoomIn(); });
   connect(zoom_out_action, &QAction::triggered, this, [board_view]() { board_view->zoomOut(); });
@@ -213,7 +224,14 @@ ReviewWindow::ReviewWindow() {
   file_menu->addAction(open_action);
   file_menu->addAction(reload_action);
   file_menu->addSeparator();
+  file_menu->addAction(preview_footprint_action);
+  file_menu->addAction(preview_symbol_action);
+  file_menu->addSeparator();
   file_menu->addAction(quit_action);
+
+  auto* tools_menu = menuBar()->addMenu(tr("&Tools"));
+  tools_menu->addAction(tr("Component Wizard..."), this, &ReviewWindow::showComponentWizard);
+
   auto* help_menu = menuBar()->addMenu("Help");
   help_menu->addAction(navigation_help_action);
 
@@ -579,4 +597,112 @@ void ReviewWindow::updateSelectionStatus() {
   selection_status_->setText(text);
   selection_inspector_->renderSelection(project_cache_.board, type, id);
 }
+
+void ReviewWindow::previewFootprint() {
+  const QString path = QFileDialog::getOpenFileName(this, "Select KiCad Footprint", "", "KiCad Footprint (*.kicad_mod)");
+  if (path.isEmpty()) return;
+  try {
+    const std::string content = readFile(path.toStdString());
+    const ccad::Footprint footprint = ccad::importKiCadFootprint(content);
+    const ccad::CanvasScene scene = ccad::buildCanvasScene(footprint);
+    renderCanvas(scene);
+    statusBar()->showMessage("Previewing footprint: " + qstr(footprint.name));
+  } catch (const std::exception& e) {
+    QMessageBox::warning(this, "Import Failed", qstr(e.what()));
+  }
+}
+
+void ReviewWindow::previewSymbol() {
+  const QString path = QFileDialog::getOpenFileName(this, "Select KiCad Symbol", "", "KiCad Symbol (*.kicad_sym)");
+  if (path.isEmpty()) return;
+  try {
+    const std::string content = readFile(path.toStdString());
+    const std::vector<ccad::Symbol> symbols = ccad::importKiCadSymbolLibrary(content);
+    if (symbols.empty()) {
+      QMessageBox::warning(this, "Import Failed", "No symbols found in file.");
+      return;
+    }
+    const ccad::CanvasScene scene = ccad::buildCanvasScene(symbols.front());
+    renderCanvas(scene);
+    statusBar()->showMessage("Previewing symbol: " + qstr(symbols.front().name));
+  } catch (const std::exception& e) {
+    QMessageBox::warning(this, "Import Failed", qstr(e.what()));
+  }
+}
+
+void ReviewWindow::loadFootprintPreview(const std::filesystem::path& path) {
+  try {
+    const std::string content = readFile(path);
+    const ccad::Footprint footprint = ccad::importKiCadFootprint(content);
+    const ccad::CanvasScene scene = ccad::buildCanvasScene(footprint);
+    renderCanvas(scene);
+    statusBar()->showMessage("Previewing footprint: " + qstr(footprint.name));
+  } catch (const std::exception& e) {
+    std::cerr << "Import Failed: " << e.what() << "\n";
+  }
+}
+
+void ReviewWindow::loadSymbolPreview(const std::filesystem::path& path) {
+  try {
+    const std::string content = readFile(path);
+    const std::vector<ccad::Symbol> symbols = ccad::importKiCadSymbolLibrary(content);
+    if (!symbols.empty()) {
+      const ccad::CanvasScene scene = ccad::buildCanvasScene(symbols.front());
+      renderCanvas(scene);
+      statusBar()->showMessage("Previewing symbol: " + qstr(symbols.front().name));
+    }
+  } catch (const std::exception& e) {
+    std::cerr << "Import Failed: " << e.what() << "\n";
+  }
+}
+
+void ReviewWindow::exportDrcReport() {
+  QMessageBox::information(this, "Export", "DRC Report export not implemented yet.");
+}
+
+void ReviewWindow::showComponentWizard() {
+  ComponentWizardDialog dialog(this);
+  if (dialog.exec() == QDialog::Accepted) {
+    QString type = dialog.getComponentType();
+    QString name = dialog.getComponentName();
+    int pins = dialog.getPinCount();
+    
+    if (name.isEmpty()) {
+      QMessageBox::warning(this, "Validation Error", "Component name cannot be empty.");
+      return;
+    }
+
+    QString default_out = name + (type == "symbol" ? ".json" : ".json");
+    QString filename = QFileDialog::getSaveFileName(
+        this, "Save Component JSON", default_out, "JSON Files (*.json)");
+        
+    if (filename.isEmpty()) return;
+    
+    std::string json_data;
+    if (type == "symbol") {
+      ccad::SymbolParams params;
+      params.name = name.toStdString();
+      params.pin_count = pins;
+      ccad::Symbol sym = ccad::generateParametricSymbol(params);
+      json_data = ccad::dumpSymbolsJson({sym});
+    } else {
+      ccad::FootprintParams params;
+      params.name = name.toStdString();
+      params.pin_count = pins;
+      params.package_type = dialog.getPackageType().toStdString();
+      ccad::Footprint fp = ccad::generateParametricFootprint(params);
+      json_data = ccad::dumpFootprintJson(fp);
+    }
+    
+    QFile file(filename);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+      QTextStream out(&file);
+      out << QString::fromStdString(json_data);
+      QMessageBox::information(this, "Success", "Component saved successfully.");
+    } else {
+      QMessageBox::critical(this, "Error", "Failed to save file.");
+    }
+  }
+}
+
 

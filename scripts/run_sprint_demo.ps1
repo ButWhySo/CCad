@@ -292,6 +292,7 @@ Invoke-CcadDrcReport
 )
 '@ | Set-Content -Encoding UTF8 $KiCadFootprint
 Invoke-Ccad lib import-footprint --in $KiCadFootprint --out $ImportedFootprint
+Invoke-Ccad pcb place-footprint --file $Project --component U_DEMO --footprint $ImportedFootprint --at-x-mm 10 --at-y-mm 10 --rotation-deg 0 --layer F.Cu
 
 Invoke-PreScreenshotBeep -RootPath $Root
 Start-Sleep -Seconds 2

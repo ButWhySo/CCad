@@ -218,6 +218,16 @@ class FootprintJsonReader {
         footprint.name = readString();
       } else if (key == "pads") {
         footprint.pads = readPads();
+      } else if (key == "lines") {
+        footprint.lines = readLines();
+      } else if (key == "arcs") {
+        footprint.arcs = readArcs();
+      } else if (key == "circles") {
+        footprint.circles = readCircles();
+      } else if (key == "texts") {
+        footprint.texts = readTexts();
+      } else if (key == "models") {
+        footprint.models = readModels();
       } else {
         throw std::runtime_error("unknown footprint json key: " + key);
       }
@@ -282,6 +292,160 @@ class FootprintJsonReader {
       }
       expect(',');
     }
+  }
+
+  std::vector<FootprintLine> readLines() {
+    std::vector<FootprintLine> lines;
+    expect('[');
+    if (consume(']')) return lines;
+    while (true) {
+      FootprintLine line;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "start_x") line.start.x = nanometers(readInt64());
+          else if (key == "start_y") line.start.y = nanometers(readInt64());
+          else if (key == "end_x") line.end.x = nanometers(readInt64());
+          else if (key == "end_y") line.end.y = nanometers(readInt64());
+          else if (key == "stroke_width") line.stroke_width = nanometers(readInt64());
+          else if (key == "layer") line.layer = readString();
+          else throw std::runtime_error("unknown line key: " + key);
+          if (consume('}')) break;
+          expect(',');
+        }
+      }
+      lines.push_back(line);
+      if (consume(']')) break;
+      expect(',');
+    }
+    return lines;
+  }
+
+  std::vector<FootprintArc> readArcs() {
+    std::vector<FootprintArc> arcs;
+    expect('[');
+    if (consume(']')) return arcs;
+    while (true) {
+      FootprintArc arc;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "start_x") arc.start.x = nanometers(readInt64());
+          else if (key == "start_y") arc.start.y = nanometers(readInt64());
+          else if (key == "end_x") arc.end.x = nanometers(readInt64());
+          else if (key == "end_y") arc.end.y = nanometers(readInt64());
+          else if (key == "center_x") arc.center.x = nanometers(readInt64());
+          else if (key == "center_y") arc.center.y = nanometers(readInt64());
+          else if (key == "stroke_width") arc.stroke_width = nanometers(readInt64());
+          else if (key == "layer") arc.layer = readString();
+          else throw std::runtime_error("unknown arc key: " + key);
+          if (consume('}')) break;
+          expect(',');
+        }
+      }
+      arcs.push_back(arc);
+      if (consume(']')) break;
+      expect(',');
+    }
+    return arcs;
+  }
+
+  std::vector<FootprintCircle> readCircles() {
+    std::vector<FootprintCircle> circles;
+    expect('[');
+    if (consume(']')) return circles;
+    while (true) {
+      FootprintCircle circle;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "center_x") circle.center.x = nanometers(readInt64());
+          else if (key == "center_y") circle.center.y = nanometers(readInt64());
+          else if (key == "end_x") circle.end.x = nanometers(readInt64());
+          else if (key == "end_y") circle.end.y = nanometers(readInt64());
+          else if (key == "stroke_width") circle.stroke_width = nanometers(readInt64());
+          else if (key == "layer") circle.layer = readString();
+          else throw std::runtime_error("unknown circle key: " + key);
+          if (consume('}')) break;
+          expect(',');
+        }
+      }
+      circles.push_back(circle);
+      if (consume(']')) break;
+      expect(',');
+    }
+    return circles;
+  }
+
+  std::vector<FootprintText> readTexts() {
+    std::vector<FootprintText> texts;
+    expect('[');
+    if (consume(']')) return texts;
+    while (true) {
+      FootprintText text;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "type") text.type = readString();
+          else if (key == "text") text.text = readString();
+          else if (key == "x_nm") text.position.x = nanometers(readInt64());
+          else if (key == "y_nm") text.position.y = nanometers(readInt64());
+          else if (key == "rotation_degrees") text.rotation_degrees = readNumber();
+          else if (key == "size_width") text.size_width = nanometers(readInt64());
+          else if (key == "size_height") text.size_height = nanometers(readInt64());
+          else if (key == "stroke_width") text.stroke_width = nanometers(readInt64());
+          else if (key == "layer") text.layer = readString();
+          else throw std::runtime_error("unknown text key: " + key);
+          if (consume('}')) break;
+          expect(',');
+        }
+      }
+      texts.push_back(text);
+      if (consume(']')) break;
+      expect(',');
+    }
+    return texts;
+  }
+
+  std::vector<FootprintModel3D> readModels() {
+    std::vector<FootprintModel3D> models;
+    expect('[');
+    if (consume(']')) return models;
+    while (true) {
+      FootprintModel3D model;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "path") model.path = readString();
+          else if (key == "offset_x") model.offset.x = nanometers(readInt64());
+          else if (key == "offset_y") model.offset.y = nanometers(readInt64());
+          else if (key == "offset_z") model.offset_z = readNumber();
+          else if (key == "scale_x") model.scale_x = readNumber();
+          else if (key == "scale_y") model.scale_y = readNumber();
+          else if (key == "scale_z") model.scale_z = readNumber();
+          else if (key == "rotate_x") model.rotate_x = readNumber();
+          else if (key == "rotate_y") model.rotate_y = readNumber();
+          else if (key == "rotate_z") model.rotate_z = readNumber();
+          else throw std::runtime_error("unknown model key: " + key);
+          if (consume('}')) break;
+          expect(',');
+        }
+      }
+      models.push_back(model);
+      if (consume(']')) break;
+      expect(',');
+    }
+    return models;
   }
 
   std::vector<std::string> readStringArray() {

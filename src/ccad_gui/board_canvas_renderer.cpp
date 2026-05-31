@@ -255,6 +255,82 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
                             drill, QPen(Qt::NoPen), QBrush(theme.background_color));
   }
 
+  QPen shape_pen(theme.track_color); // Base color for component graphics
+  shape_pen.setCapStyle(Qt::RoundCap);
+  shape_pen.setJoinStyle(Qt::RoundJoin);
+
+  for (const ccad::CanvasLine& line : scene.lines) {
+    if (!layerIsVisible(hidden_layers, line.layer_id)) continue;
+    shape_pen.setWidthF(std::max(0.2, line.width_units * scale));
+    QPainterPath path;
+    path.moveTo(sceneX(scene, line.start_x_units, margin, scale), sceneY(scene, line.start_y_units, margin, scale));
+    path.lineTo(sceneX(scene, line.end_x_units, margin, scale), sceneY(scene, line.end_y_units, margin, scale));
+    auto* item = addHighlightPath(canvas_scene, path, shape_pen, QBrush(Qt::NoBrush));
+    tagObject(*item, "line", qstr(line.id), theme.track_color, "", qstr(line.layer_id));
+  }
+
+  for (const ccad::CanvasArc& arc : scene.arcs) {
+    if (!layerIsVisible(hidden_layers, arc.layer_id)) continue;
+    shape_pen.setWidthF(std::max(0.2, arc.width_units * scale));
+    QPainterPath path;
+    // We have start, mid, end. To draw an arc through 3 points accurately, we approximate or use QPainterPath::arcTo. 
+    // QPainterPath doesn't natively have a 3-point arc easily without calculating the bounding rect. 
+    // We can use a rough polyline or bezier curve for now to ensure rendering.
+    path.moveTo(sceneX(scene, arc.start_x_units, margin, scale), sceneY(scene, arc.start_y_units, margin, scale));
+    path.quadTo(sceneX(scene, arc.mid_x_units, margin, scale), sceneY(scene, arc.mid_y_units, margin, scale),
+                sceneX(scene, arc.end_x_units, margin, scale), sceneY(scene, arc.end_y_units, margin, scale));
+    auto* item = addHighlightPath(canvas_scene, path, shape_pen, QBrush(Qt::NoBrush));
+    tagObject(*item, "arc", qstr(arc.id), theme.track_color, "", qstr(arc.layer_id));
+  }
+
+  for (const ccad::CanvasCircle& circle : scene.circles) {
+    if (!layerIsVisible(hidden_layers, circle.layer_id)) continue;
+    shape_pen.setWidthF(std::max(0.2, circle.width_units * scale));
+    const double radius = circle.radius_units * scale;
+    const QRectF rect(sceneX(scene, circle.center_x_units, margin, scale) - radius,
+                      sceneY(scene, circle.center_y_units, margin, scale) - radius,
+                      radius * 2.0, radius * 2.0);
+    QPainterPath path;
+    path.addEllipse(rect);
+    
+    QBrush brush = Qt::NoBrush;
+    if (circle.fill_type == "background") brush = QBrush(theme.background_color);
+    else if (circle.fill_type == "solid") brush = QBrush(theme.track_color);
+
+    auto* item = addHighlightPath(canvas_scene, path, shape_pen, brush);
+    tagObject(*item, "circle", qstr(circle.id), theme.track_color, "", qstr(circle.layer_id));
+  }
+
+  for (const ccad::CanvasPolygon& poly : scene.polygons) {
+    if (!layerIsVisible(hidden_layers, poly.layer_id)) continue;
+    shape_pen.setWidthF(std::max(0.2, poly.width_units * scale));
+    QPolygonF qpoly;
+    for (size_t i = 0; i < poly.pts_x_units.size(); ++i) {
+      qpoly << QPointF(sceneX(scene, poly.pts_x_units[i], margin, scale), 
+                       sceneY(scene, poly.pts_y_units[i], margin, scale));
+    }
+    QPainterPath path;
+    path.addPolygon(qpoly);
+    
+    QBrush brush = Qt::NoBrush;
+    if (poly.fill_type == "background") brush = QBrush(theme.background_color);
+    else if (poly.fill_type == "solid") brush = QBrush(theme.track_color);
+
+    auto* item = addHighlightPath(canvas_scene, path, shape_pen, brush);
+    tagObject(*item, "polygon", qstr(poly.id), theme.track_color, "", qstr(poly.layer_id));
+  }
+
+  for (const ccad::CanvasText& text : scene.texts) {
+    if (!layerIsVisible(hidden_layers, text.layer_id)) continue;
+    auto* item = canvas_scene.addText(qstr(text.text));
+    item->setDefaultTextColor(theme.track_color);
+    item->setPos(sceneX(scene, text.x_units, margin, scale), sceneY(scene, text.y_units, margin, scale));
+    // Simplistic rotation
+    item->setTransformOriginPoint(0, 0);
+    item->setRotation(text.rotation_degrees);
+    tagObject(*item, "text", qstr(text.id), theme.track_color, "", qstr(text.layer_id));
+  }
+
   auto* label = canvas_scene.addText(QString::number(scene.view_width_units, 'f', 2) + " mm x " +
                                      QString::number(scene.view_height_units, 'f', 2) + " mm");
   label->setDefaultTextColor(theme.board_label_color);

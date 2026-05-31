@@ -12,12 +12,14 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_library(ccad_core
   src/ccad_core/canvas.cpp
   src/ccad_core/model.cpp
+  src/ccad_core/component_generator.cpp
   src/ccad_core/diff.cpp
   src/ccad_core/drc.cpp
   src/ccad_core/erc.cpp
   src/ccad_core/geometry.cpp
   src/ccad_core/json.cpp
   src/ccad_core/kicad_footprint_import.cpp
+  src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
   src/ccad_core/layers.cpp
@@ -55,6 +57,8 @@ add_executable(ccad
   src/ccad_cli/agent_commands.cpp
 )
 target_link_libraries(ccad PRIVATE ccad_core)
+
+
 if(MINGW)
   target_link_options(ccad PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
@@ -115,6 +119,15 @@ if(MINGW)
 endif()
 add_test(NAME kicad_footprint_export COMMAND ccad_kicad_footprint_export_tests)
 
+add_executable(ccad_kicad_symbol_import_tests
+  tests/test_kicad_symbol_import.cpp
+)
+target_link_libraries(ccad_kicad_symbol_import_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_kicad_symbol_import_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME kicad_symbol_import COMMAND ccad_kicad_symbol_import_tests ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_symbol.kicad_sym)
+
 add_executable(ccad_library_catalog_tests
   tests/test_library_catalog.cpp
 )
@@ -166,8 +179,12 @@ endif()
 if(CCAD_BUILD_GUI)
   find_package(Qt6 QUIET COMPONENTS Widgets)
   if(Qt6Widgets_FOUND)
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTOUIC ON)
+    set(CMAKE_AUTORCC ON)
     add_executable(ccad_gui
       src/ccad_gui/board_canvas_renderer.cpp
+      src/ccad_gui/component_wizard_dialog.cpp
       src/ccad_gui/diagnostics_panel.cpp
       src/ccad_gui/main.cpp
       src/ccad_gui/object_browser_panel.cpp
@@ -392,6 +409,7 @@ if(CCAD_BUILD_GUI)
     add_executable(ccad_gui_review_window_cursor_status_tests
       tests/test_gui_review_window_cursor_status.cpp
       src/ccad_gui/review_window.cpp
+      src/ccad_gui/component_wizard_dialog.cpp
       src/ccad_gui/project_summary_panel.cpp
       src/ccad_gui/diagnostics_panel.cpp
       src/ccad_gui/transaction_timeline_panel.cpp

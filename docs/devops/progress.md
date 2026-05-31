@@ -6,14 +6,14 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 140
-- Branch: `sprint-140-agent-mcp`
+- Sprint: 141
+- Branch: `sprint-141-kicad-component-ingestion`
 - Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
 
 **Current State**: 
-- **Sprint 140 (Agent MCP Support)** is complete. It added standard Model Context Protocol (MCP) tool bindings to the `agent serve` loop, completing Phase 6.
+- **Sprint 141 (KiCad Component Ingestion)** is complete. It added ingestion scripts for KiCad libraries, extended the Canvas data model to natively render Symbol and Footprint primitives (Lines, Arcs, Polygons, Text), and added preview actions to the GUI Review Window.
 
 ## Phase Roadmap
 
@@ -97,6 +97,10 @@ Sprint 89 completed board-outline project diffs. `ccad diff` and transaction dif
 Sprint 90 completed board-pad project diffs. `ccad diff` and transaction diff JSON report board pad additions, removals, and changes.
 
 Sprint 91 completed board route-primitive project diffs. `ccad diff` and transaction diff JSON now report board via and track additions, removals, and changes.
+
+Sprint 140 completed Agent MCP Support.
+
+Sprint 141 completed KiCad Component Ingestion and Rendering. It successfully ingested KiCad footprints and symbols, parsed their graphic primitives (Lines, Arcs, Circles, Polygons, Text), and natively rendered them in the CCad Qt Canvas, fully verified by automated screenshot pipelines.
 
 Sprint 92 completed board region project diffs. `ccad diff` and transaction diff JSON now report board keepout and placement-region additions, removals, and changes.
 

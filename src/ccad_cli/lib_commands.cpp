@@ -2,9 +2,12 @@
 
 #include "ccad_cli/common.hpp"
 #include "ccad_core/kicad_footprint_import.hpp"
+#include "ccad_core/kicad_symbol_import.hpp"
 #include "ccad_core/kicad_footprint_export.hpp"
 #include "ccad_core/json.hpp"
 #include "ccad_core/library_catalog.hpp"
+
+#include "ccad_core/component_generator.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -168,6 +171,72 @@ int libCommand(const std::vector<std::string>& args) {
         return 2;
       }
       output << ccad::dumpFootprintJson(footprint);
+      return static_cast<bool>(output) ? 0 : 2;
+    }
+
+    if (subcommand == "import-symbol") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--in", "--out"});
+      const std::string in_path = requireOption(options, "--in");
+      const std::string out_path = requireOption(options, "--out");
+
+      std::ifstream input(in_path);
+      if (!input) {
+        std::cerr << "failed to open symbol input file: " << in_path << '\n';
+        return 2;
+      }
+      std::ostringstream buffer;
+      buffer << input.rdbuf();
+      auto symbols = ccad::importKiCadSymbolLibrary(buffer.str());
+
+      std::ofstream output(out_path);
+      if (!output) {
+        std::cerr << "failed to open symbol output file: " << out_path << '\n';
+        return 2;
+      }
+      output << ccad::dumpSymbolsJson(symbols);
+      return static_cast<bool>(output) ? 0 : 2;
+    }
+
+    if (subcommand == "create-component") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--type", "--name", "--pins", "--package", "--out"});
+      const std::string type = requireOption(options, "--type");
+      const std::string name = requireOption(options, "--name");
+      const std::string out_path = requireOption(options, "--out");
+      
+      int pins = 8;
+      if (options.contains("--pins")) {
+        pins = std::stoi(options.at("--pins"));
+      }
+
+      std::ofstream output(out_path);
+      if (!output) {
+        std::cerr << "failed to open output file: " << out_path << '\n';
+        return 2;
+      }
+
+      if (type == "symbol") {
+        ccad::SymbolParams params;
+        params.name = name;
+        params.pin_count = pins;
+        ccad::Symbol sym = ccad::generateParametricSymbol(params);
+        output << ccad::dumpSymbolsJson({sym});
+      } else if (type == "footprint") {
+        ccad::FootprintParams params;
+        params.name = name;
+        params.pin_count = pins;
+        if (options.contains("--package")) {
+          params.package_type = options.at("--package");
+        } else {
+          params.package_type = "SOP"; // default
+        }
+        ccad::Footprint fp = ccad::generateParametricFootprint(params);
+        output << ccad::dumpFootprintJson(fp);
+      } else {
+        std::cerr << "type must be symbol or footprint\n";
+        return 2;
+      }
       return static_cast<bool>(output) ? 0 : 2;
     }
 

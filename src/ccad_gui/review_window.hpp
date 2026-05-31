@@ -27,11 +27,17 @@ class ReviewWindow final : public QMainWindow {
   ReviewWindow();
 
   void loadProjectPath(const std::filesystem::path& path);
+  void loadFootprintPreview(const std::filesystem::path& path);
+  void loadSymbolPreview(const std::filesystem::path& path);
 
  private:
   void applyStyle();
+  void exportDrcReport();
+  void showComponentWizard();
   void openProject();
   void reloadProject();
+  void previewFootprint();
+  void previewSymbol();
   void showNavigationHelp();
   void renderReview(const ccad::ProjectReview& review);
   void renderCanvas(const ccad::CanvasScene& scene,
