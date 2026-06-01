@@ -32,10 +32,13 @@ enum class InteractionMode {
 class ReviewWindow final : public QMainWindow {
  public:
   ReviewWindow();
+  ~ReviewWindow() override;
 
   void loadProjectPath(const std::filesystem::path& path);
   void loadFootprintPreview(const std::filesystem::path& path);
   void loadSymbolPreview(const std::filesystem::path& path);
+  QString uiMapJson() const;
+  QString validateUiMapTargetsJson(bool move_cursor) const;
 
  protected:
   bool eventFilter(QObject* obj, QEvent* event) override;
@@ -67,6 +70,7 @@ class ReviewWindow final : public QMainWindow {
   void pushUndoSnapshot();
   void restoreProjectSnapshot(const ccad::Project& snapshot);
   void updateUndoRedoActions();
+  void markUiMapChanged();
 
   ProjectSummaryPanel* project_summary_ = nullptr;
   QLabel* cursor_status_ = nullptr;
@@ -99,4 +103,5 @@ class ReviewWindow final : public QMainWindow {
   std::vector<QGraphicsItem*> interaction_ghost_items_;
   QPointF interaction_last_mouse_pos_;
   QPointF interaction_start_mouse_pos_;
+  int ui_map_epoch_ = 1;
 };

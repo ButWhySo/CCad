@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 156
-- Branch: `sprint-156-lazy-library-chooser`
+- Sprint: 157
+- Branch: `sprint-157-readonly-ui-map`
 - Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
@@ -22,6 +22,7 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - **Sprint 154 (GUI Actions and Library Cache Placement)** is complete and merged to `main`. It replaced top-toolbar placeholders with real Save, Board Setup, Undo, Redo, Run DRC, and DRC export behavior, made the library chooser more KiCad-like, and fixed converted symbol inheritance so library-cache symbol placement gets real pins.
 - **Sprint 155 (KiCad Placement Chooser and Ghost Placement)** is complete and merged to `main`. It removed raw file-preview workflows from the user-facing placement path, routed Add Symbol/Add Footprint by active editor tab, used local `library-cache` chooser data, added cursor-following placement ghosts, and fixed layer color and selected-track visibility problems.
 - **Sprint 156 (Lazy Library Chooser Loading)** is complete on `sprint-156-lazy-library-chooser`. It fixes Add Symbol/Add Footprint hangs by indexing `library-cache` entries cheaply and deferring actual symbol or footprint parsing until a row is selected for details/preview or placed.
+- **Sprint 157 (Read-only GUI UI Map)** is complete on `sprint-157-readonly-ui-map`. It adds an app-owned semantic UI map dump and live target validation for future LLM/native automation tooling, with stable action IDs, tab and canvas bounds, canvas object metadata, route/layer/net context, and target coordinates proven by Qt hit-testing.
 
 ## Phase Roadmap
 

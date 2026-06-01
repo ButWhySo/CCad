@@ -9,6 +9,7 @@
 
 #include <QEventLoop>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 
 int screenshotWindow(QWidget& window, const QString& screenshot_path, const char* screenshot_arg) {
@@ -26,7 +27,41 @@ int screenshotWindow(QWidget& window, const QString& screenshot_path, const char
 int main(int argc, char** argv) {
   QApplication app(argc, argv);
 
-  if (argc == 4 && std::string(argv[1]) == "--screenshot") {
+  if (argc == 4 && (std::string(argv[1]) == "--dump-ui-map" ||
+                    std::string(argv[1]) == "--validate-ui-map-targets")) {
+    const bool validate_targets = std::string(argv[1]) == "--validate-ui-map-targets";
+    const std::filesystem::path project_path(argv[2]);
+    const std::filesystem::path output_path(argv[3]);
+    ReviewWindow window;
+    window.loadProjectPath(project_path);
+    window.show();
+
+    QTimer::singleShot(500, &window, [&window, output_path, validate_targets]() {
+      std::ofstream output(output_path, std::ios::binary);
+      if (!output) {
+        std::cerr << "failed to open UI map output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      const QString map = validate_targets ? window.validateUiMapTargetsJson(true)
+                                           : window.uiMapJson();
+      const QByteArray bytes = map.toUtf8();
+      output.write(bytes.constData(), bytes.size());
+      if (!output) {
+        std::cerr << "failed to write UI map output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      std::cout << (validate_targets ? "ui map target validation saved: " : "ui map saved: ")
+                << output_path.string() << '\n';
+      std::cout.flush();
+      QCoreApplication::exit(0);
+    });
+
+    return QApplication::exec();
+  } else if (argc == 4 && std::string(argv[1]) == "--screenshot") {
     const std::filesystem::path project_path(argv[2]);
     const char* screenshot_arg = argv[3];
     const QString screenshot_path = QString::fromLocal8Bit(screenshot_arg);
