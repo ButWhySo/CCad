@@ -107,13 +107,15 @@ int main(int argc, char** argv) {
     if (type == "track") {
       saw_track = true;
       require(canvasUsesShapeSelectionHighlight(*item), "track uses shape selection highlight");
-      require(canvasSelectionHighlightColor(*item) == QColor("#ef4444").lighter(160),
+      require(canvasSelectionHighlightColor(*item) == QColor("#c83434").lighter(160),
               "track highlight derives from track color");
+      require(canvasSelectionHighlightWidth(*item) >= 3.5,
+              "track selection highlight is wider than a centerline");
     }
     if (type == "pad") {
       saw_pad = true;
       require(canvasUsesShapeSelectionHighlight(*item), "pad uses shape selection highlight");
-      require(canvasSelectionHighlightColor(*item) == QColor("#be185d").lighter(160),
+      require(canvasSelectionHighlightColor(*item) == QColor("#c83434").lighter(160),
               "pad highlight derives from pad color");
     }
   }
@@ -123,6 +125,7 @@ int main(int argc, char** argv) {
 
   CanvasRenderTheme theme;
   theme.track_color = QColor("#22c55e");
+  theme.front_copper_color = QColor("#22c55e");
   theme.pad_fill_color = QColor("#0ea5e9");
 
   QGraphicsScene themed_scene;
@@ -139,13 +142,41 @@ int main(int argc, char** argv) {
     }
     if (type == "pad") {
       saw_themed_pad = true;
-      require(canvasSelectionHighlightColor(*item) == theme.pad_fill_color.lighter(160),
+      require(canvasSelectionHighlightColor(*item) == theme.front_copper_color.lighter(160),
               "themed pad highlight derives from theme pad color");
     }
   }
 
   require(saw_themed_track, "themed scene has selectable track");
   require(saw_themed_pad, "themed scene has selectable pad");
+
+  ccad::CanvasScene copper_scene = selectionScene();
+  copper_scene.tracks.push_back(ccad::CanvasTrack{
+      .id = "B1",
+      .net_id = "N2",
+      .layer_id = "B.Cu",
+      .source_route_request_id = {},
+      .start_x_units = 2.0,
+      .start_y_units = 16.0,
+      .end_x_units = 16.0,
+      .end_y_units = 16.0,
+      .width_units = 0.35,
+  });
+  QGraphicsScene copper_rendered;
+  renderBoardCanvas(copper_rendered, copper_scene);
+  QColor front_highlight;
+  QColor back_highlight;
+  for (QGraphicsItem* item : copper_rendered.items()) {
+    if (canvasObjectId(*item) == "T1") {
+      front_highlight = canvasSelectionHighlightColor(*item);
+    }
+    if (canvasObjectId(*item) == "B1") {
+      back_highlight = canvasSelectionHighlightColor(*item);
+    }
+  }
+  require(front_highlight.isValid(), "front copper track is rendered");
+  require(back_highlight.isValid(), "back copper track is rendered");
+  require(front_highlight != back_highlight, "front and back copper layers render with different colors");
 
   QGraphicsScene through_hole_scene;
   renderBoardCanvas(through_hole_scene, throughHoleScene());

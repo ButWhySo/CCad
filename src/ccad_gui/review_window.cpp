@@ -9,6 +9,7 @@
 #include "ccad_core/drc.hpp"
 #include "ccad_gui/component_wizard_dialog.hpp"
 #include "ccad_gui/footprint_placement_dialog.hpp"
+#include "ccad_gui/library_browser_dialog.hpp"
 #include "ccad_core/kicad_symbol_import.hpp"
 #include "ccad_core/kicad_footprint_import.hpp"
 #include "ccad_core/placement.hpp"
@@ -29,8 +30,10 @@
 #include <QGraphicsScene>
 #include <QDockWidget>
 #include <QIcon>
+#include <QKeyEvent>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
 #include <QKeySequence>
@@ -244,6 +247,165 @@ ccad::Point boardDeltaFromSceneDelta(const QPointF& scene_delta) {
           .y = ccad::millimeters(scene_delta.y() / scale)};
 }
 
+ccad::Point schematicPointFromScene(const QPointF& scene_position) {
+  constexpr double margin = 18.0;
+  constexpr double scale = 10.0;
+  return {ccad::millimeters((scene_position.x() - margin) / scale),
+          ccad::millimeters((scene_position.y() - margin) / scale)};
+}
+
+std::string placementPrefixFromName(const std::string& name) {
+  if (name.starts_with("R") || name.starts_with("Resistor")) return "R";
+  if (name.starts_with("C") || name.starts_with("Capacitor")) return "C";
+  if (name.starts_with("D") || name.starts_with("Diode")) return "D";
+  if (name.starts_with("Q")) return "Q";
+  if (name.starts_with("L")) return "L";
+  if (name.starts_with("J") || name.starts_with("Connector")) return "J";
+  return "U";
+}
+
+std::string nextComponentId(const ccad::Project& project, const std::string& prefix) {
+  int max_num = 0;
+  for (const ccad::Component& component : project.components) {
+    if (!component.id.starts_with(prefix)) {
+      continue;
+    }
+    try {
+      max_num = std::max(max_num, std::stoi(component.id.substr(prefix.size())));
+    } catch (...) {
+    }
+  }
+  if (project.board.has_value()) {
+    for (const ccad::Pad& pad : project.board->pads) {
+      if (!pad.component_id.starts_with(prefix)) {
+        continue;
+      }
+      try {
+        max_num = std::max(max_num, std::stoi(pad.component_id.substr(prefix.size())));
+      } catch (...) {
+      }
+    }
+  }
+  return prefix + std::to_string(max_num + 1);
+}
+
+std::string firstCopperLayerId(const ccad::Board& board) {
+  for (const ccad::Layer& layer : board.layers) {
+    if (layer.kind == "copper" && layer.id == "F.Cu") {
+      return layer.id;
+    }
+  }
+  for (const ccad::Layer& layer : board.layers) {
+    if (layer.kind == "copper") {
+      return layer.id;
+    }
+  }
+  return {};
+}
+
+ccad::Footprint loadFootprintSelection(const std::filesystem::path& path) {
+  const std::string content = readFile(path);
+  const std::string extension = path.extension().string();
+  if (extension == ".kicad_mod") {
+    return ccad::importKiCadFootprint(content);
+  }
+  return ccad::loadFootprintJson(content);
+}
+
+ccad::Symbol loadSymbolSelection(const std::filesystem::path& path) {
+  const std::string content = readFile(path);
+  const std::string extension = path.extension().string();
+  if (extension == ".kicad_sym") {
+    const std::vector<ccad::Symbol> symbols = ccad::importKiCadSymbolLibrary(content);
+    auto selected = std::find_if(symbols.begin(), symbols.end(), [](const ccad::Symbol& symbol) {
+      return !symbol.pins.empty();
+    });
+    if (selected != symbols.end()) {
+      return *selected;
+    }
+    if (!symbols.empty()) {
+      return symbols.front();
+    }
+    throw std::runtime_error("symbol library has no symbols");
+  }
+  return ccad::loadSymbolJsonFileWithLocalInheritance(path);
+}
+
+QPainterPath sceneLinePath(double sx, double sy, double ex, double ey) {
+  QPainterPath path;
+  path.moveTo(sx, sy);
+  path.lineTo(ex, ey);
+  return path;
+}
+
+void moveGhostTo(QGraphicsView& view, std::vector<QGraphicsItem*>& items, const QPointF& scene_pos) {
+  if (items.empty()) {
+    return;
+  }
+  QRectF bounds;
+  for (QGraphicsItem* item : items) {
+    bounds = bounds.isNull() ? item->sceneBoundingRect() : bounds.united(item->sceneBoundingRect());
+  }
+  const QPointF delta = scene_pos - bounds.center();
+  for (QGraphicsItem* item : items) {
+    item->setPos(item->pos() + delta);
+  }
+  view.viewport()->setCursor(Qt::CrossCursor);
+}
+
+void addSymbolPreviewItems(QGraphicsScene& scene, std::vector<QGraphicsItem*>& items,
+                           const ccad::Symbol& symbol, const QColor& color) {
+  constexpr double margin = 18.0;
+  constexpr double scale = 10.0;
+  const ccad::CanvasScene symbol_scene = ccad::buildCanvasScene(symbol);
+  QPen pen(color, 1.2);
+  pen.setCapStyle(Qt::RoundCap);
+  pen.setJoinStyle(Qt::RoundJoin);
+  QBrush translucent(QColor(color.red(), color.green(), color.blue(), 42));
+
+  for (const ccad::CanvasLine& line : symbol_scene.lines) {
+    auto* item = scene.addPath(sceneLinePath(margin + (line.start_x_units * scale),
+                                             margin + (line.start_y_units * scale),
+                                             margin + (line.end_x_units * scale),
+                                             margin + (line.end_y_units * scale)),
+                               pen, QBrush(Qt::NoBrush));
+    item->setZValue(1000);
+    items.push_back(item);
+  }
+  for (const ccad::CanvasCircle& circle : symbol_scene.circles) {
+    const double radius = circle.radius_units * scale;
+    auto* item = scene.addEllipse(margin + (circle.center_x_units * scale) - radius,
+                                  margin + (circle.center_y_units * scale) - radius,
+                                  radius * 2.0, radius * 2.0, pen, QBrush(Qt::NoBrush));
+    item->setZValue(1000);
+    items.push_back(item);
+  }
+  for (const ccad::CanvasPolygon& poly : symbol_scene.polygons) {
+    QPolygonF polygon;
+    for (std::size_t i = 0; i < poly.pts_x_units.size() && i < poly.pts_y_units.size(); ++i) {
+      polygon << QPointF(margin + (poly.pts_x_units.at(i) * scale),
+                         margin + (poly.pts_y_units.at(i) * scale));
+    }
+    QPainterPath path;
+    path.addPolygon(polygon);
+    auto* item = scene.addPath(path, pen, poly.fill_type == "solid" ? translucent : QBrush(Qt::NoBrush));
+    item->setZValue(1000);
+    items.push_back(item);
+  }
+  for (const ccad::SymbolPin& pin : symbol.pins) {
+    const double x = margin + ((pin.position.x.nanometers / 1e6) * scale);
+    const double y = margin + ((pin.position.y.nanometers / 1e6) * scale);
+    auto* item = scene.addEllipse(x - 2.5, y - 2.5, 5.0, 5.0, pen, translucent);
+    item->setZValue(1001);
+    items.push_back(item);
+  }
+  auto* label = scene.addText(QString::fromStdString(symbol.name));
+  label->setDefaultTextColor(color);
+  label->setPos(margin, margin - 18.0);
+  label->setZValue(1001);
+  items.push_back(label);
+}
+
 }  // namespace
 
 ReviewWindow::ReviewWindow() {
@@ -345,6 +507,7 @@ ReviewWindow::ReviewWindow() {
   schematic_view_ = schematic_board_view;
   schematic_view_->setObjectName("schematicCanvas");
   schematic_view_->setRenderHint(QPainter::Antialiasing);
+  schematic_view_->viewport()->installEventFilter(this);
   schematic_view_->setDragMode(QGraphicsView::NoDrag);
   schematic_view_->setFrameShape(QFrame::NoFrame);
   schematic_view_->setMouseTracking(true);
@@ -377,8 +540,6 @@ ReviewWindow::ReviewWindow() {
   redo_action_ = new QAction(kicadIcon("redo"), "Redo", this);
   auto* run_drc_action = new QAction(kicadIcon("drc"), "Run DRC", this);
   auto* export_drc_action = new QAction(kicadIcon("export"), "Export DRC Report...", this);
-  auto* preview_footprint_action = new QAction("Preview KiCad Footprint...", this);
-  auto* preview_symbol_action = new QAction("Preview KiCad Symbol...", this);
   auto* fit_action = new QAction(kicadIcon("zoom_fit_in_page"), "Fit", this);
   auto* zoom_in_action = new QAction(kicadIcon("zoom_in"), "Zoom In", this);
   auto* zoom_out_action = new QAction(kicadIcon("zoom_out"), "Zoom Out", this);
@@ -415,8 +576,6 @@ ReviewWindow::ReviewWindow() {
   });
   connect(run_drc_action, &QAction::triggered, this, [this]() { runDrcFromToolbar(); });
   connect(export_drc_action, &QAction::triggered, this, [this]() { exportDrcReport(); });
-  connect(preview_footprint_action, &QAction::triggered, this, [this]() { previewFootprint(); });
-  connect(preview_symbol_action, &QAction::triggered, this, [this]() { previewSymbol(); });
   connect(fit_action, &QAction::triggered, this, [this]() {
     if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) view->zoomToFit();
   });
@@ -436,9 +595,6 @@ ReviewWindow::ReviewWindow() {
   auto* file_menu = menuBar()->addMenu("File");
   file_menu->addAction(open_action);
   file_menu->addAction(reload_action);
-  file_menu->addSeparator();
-  file_menu->addAction(preview_footprint_action);
-  file_menu->addAction(preview_symbol_action);
   file_menu->addSeparator();
   file_menu->addAction(quit_action);
 
@@ -516,41 +672,16 @@ ReviewWindow::ReviewWindow() {
   addIconAction(*right_toolbar, "delete_cursor", "Delete");
   auto* measure_action = addIconAction(*right_toolbar, "measurement", "Measure");
 
-  connect(add_footprint_action, &QAction::triggered, this, [this]() {
-    if (!project_cache_.board.has_value()) {
-      QMessageBox::warning(this, "No Board", "Load a project with a board first.");
-      return;
-    }
-    FootprintPlacementDialog dialog(*project_cache_.board, this);
-    if (dialog.exec() != QDialog::Accepted) return;
-    auto result = dialog.result();
-    if (!result.has_value()) return;
-    enterPlaceFootprintMode(result->component_id, result->footprint, result->layer_id);
-  });
-
-  connect(add_symbol_action, &QAction::triggered, this, [this]() {
-    SymbolPlacementDialog dialog(project_cache_, this);
-    if (dialog.exec() != QDialog::Accepted) return;
-    auto result = dialog.result();
-    if (!result.has_value()) return;
-    try {
-      pushUndoSnapshot();
-      ccad::placeComponent(
-          project_cache_, result->symbol, result->component_id,
-          {ccad::millimeters(result->x_mm), ccad::millimeters(result->y_mm)},
-          result->rotation_deg);
-      // Save the project
-      std::ofstream out(current_path_);
-      if (out) {
-        out << ccad::dumpProjectJson(project_cache_);
-        reloadProject();
-      } else {
-        QMessageBox::critical(this, "Save Error", "Failed to write project file.");
-      }
-    } catch (const std::exception& e) {
-      QMessageBox::critical(this, "Placement Error", QString::fromUtf8(e.what()));
-    }
-  });
+  connect(add_footprint_action, &QAction::triggered, this, [this]() { placeFromActiveEditor(); });
+  connect(add_symbol_action, &QAction::triggered, this, [this]() { placeFromActiveEditor(); });
+  connect(editor_tabs_, &QTabWidget::currentChanged, this,
+          [add_footprint_action, add_symbol_action](const int index) {
+            const bool pcb_tab = index == 0;
+            add_footprint_action->setVisible(pcb_tab);
+            add_symbol_action->setVisible(!pcb_tab);
+          });
+  add_footprint_action->setVisible(true);
+  add_symbol_action->setVisible(false);
 
   connect(select_action, &QAction::triggered, this, [this]() {
     if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) {
@@ -820,6 +951,73 @@ void ReviewWindow::runDrcFromToolbar() {
   addDiagnosticMarkers(*canvas_scene_, diagnostics);
   object_browser_->renderScene(pcb_scene);
   statusBar()->showMessage("DRC complete: " + QString::number(diagnostics.size()) + " findings");
+}
+
+void ReviewWindow::placeFromActiveEditor() {
+  if (editor_tabs_->currentWidget() == schematic_view_) {
+    chooseAndPlaceSymbol();
+    return;
+  }
+  chooseAndPlaceFootprint();
+}
+
+void ReviewWindow::chooseAndPlaceFootprint() {
+  if (!project_cache_.board.has_value()) {
+    QMessageBox::warning(this, "No Board", "Load a project with a board before placing footprints.");
+    return;
+  }
+  const std::string layer_id = firstCopperLayerId(*project_cache_.board);
+  if (layer_id.empty()) {
+    QMessageBox::warning(this, "No Copper Layer", "No copper layer is available for footprint placement.");
+    return;
+  }
+  LibraryBrowserDialog dialog(LibraryType::Footprint, this);
+  if (dialog.exec() != QDialog::Accepted) {
+    return;
+  }
+  const std::optional<std::string> selected = dialog.result();
+  if (!selected.has_value()) {
+    return;
+  }
+  try {
+    const std::filesystem::path path(*selected);
+    ccad::Footprint footprint = loadFootprintSelection(path);
+    if (footprint.pads.empty()) {
+      QMessageBox::warning(this, "Invalid Footprint", "The selected footprint has no pads.");
+      return;
+    }
+    editor_tabs_->setCurrentWidget(canvas_view_);
+    const std::string component_id =
+        nextComponentId(project_cache_, placementPrefixFromName(path.stem().string()));
+    enterPlaceFootprintMode(component_id, footprint, layer_id);
+  } catch (const std::exception& e) {
+    QMessageBox::critical(this, "Footprint Load Failed", QString::fromUtf8(e.what()));
+  }
+}
+
+void ReviewWindow::chooseAndPlaceSymbol() {
+  LibraryBrowserDialog dialog(LibraryType::Symbol, this);
+  if (dialog.exec() != QDialog::Accepted) {
+    return;
+  }
+  const std::optional<std::string> selected = dialog.result();
+  if (!selected.has_value()) {
+    return;
+  }
+  try {
+    const std::filesystem::path path(*selected);
+    ccad::Symbol symbol = loadSymbolSelection(path);
+    if (symbol.pins.empty()) {
+      QMessageBox::warning(this, "Invalid Symbol", "The selected symbol has no pins.");
+      return;
+    }
+    editor_tabs_->setCurrentWidget(schematic_view_);
+    const std::string component_id =
+        nextComponentId(project_cache_, placementPrefixFromName(path.stem().string()));
+    enterPlaceSymbolMode(component_id, symbol, 0.0);
+  } catch (const std::exception& e) {
+    QMessageBox::critical(this, "Symbol Load Failed", QString::fromUtf8(e.what()));
+  }
 }
 
 void ReviewWindow::loadProjectPath(const std::filesystem::path& path) {
@@ -1172,13 +1370,18 @@ void ReviewWindow::showComponentWizard() {
 
 void ReviewWindow::cancelInteractionMode() {
   for (QGraphicsItem* item : interaction_ghost_items_) {
-    canvas_scene_->removeItem(item);
+    if (item->scene() != nullptr) {
+      item->scene()->removeItem(item);
+    }
     delete item;
   }
   interaction_ghost_items_.clear();
   interaction_mode_ = InteractionMode::Default;
   interaction_component_id_.clear();
   interaction_layer_id_.clear();
+  interaction_rotation_degrees_ = 0.0;
+  canvas_view_->viewport()->unsetCursor();
+  schematic_view_->viewport()->unsetCursor();
 }
 
 void ReviewWindow::enterPlaceFootprintMode(const std::string& component_id, const ccad::Footprint& footprint, const std::string& layer_id) {
@@ -1190,8 +1393,30 @@ void ReviewWindow::enterPlaceFootprintMode(const std::string& component_id, cons
 
   try {
     addPadPreviewItems(*canvas_scene_, interaction_ghost_items_, footprint, QColor(100, 255, 100));
+    interaction_last_mouse_pos_ = canvas_view_->mapToScene(canvas_view_->mapFromGlobal(QCursor::pos()));
+    moveGhostTo(*canvas_view_, interaction_ghost_items_, interaction_last_mouse_pos_);
+    tool_status_->setText("Tool Place Footprint");
   } catch (const std::exception& e) {
     QMessageBox::warning(this, "Error", "Failed to load footprint for placement preview: " + QString(e.what()));
+    cancelInteractionMode();
+  }
+}
+
+void ReviewWindow::enterPlaceSymbolMode(const std::string& component_id, const ccad::Symbol& symbol, double rotation_degrees) {
+  cancelInteractionMode();
+  interaction_mode_ = InteractionMode::PlaceSymbol;
+  interaction_component_id_ = component_id;
+  interaction_symbol_ = symbol;
+  interaction_rotation_degrees_ = rotation_degrees;
+
+  try {
+    addSymbolPreviewItems(*schematic_scene_, interaction_ghost_items_, symbol, QColor("#008484"));
+    interaction_last_mouse_pos_ =
+        schematic_view_->mapToScene(schematic_view_->mapFromGlobal(QCursor::pos()));
+    moveGhostTo(*schematic_view_, interaction_ghost_items_, interaction_last_mouse_pos_);
+    tool_status_->setText("Tool Place Symbol");
+  } catch (const std::exception& e) {
+    QMessageBox::warning(this, "Error", "Failed to load symbol for placement preview: " + QString(e.what()));
     cancelInteractionMode();
   }
 }
@@ -1235,10 +1460,12 @@ void ReviewWindow::enterMoveFootprintMode(const std::string& component_id) {
 
 bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
   if (interaction_mode_ != InteractionMode::Default) {
-    if (obj == canvas_view_->viewport()) {
+    QGraphicsView* active_view = interaction_mode_ == InteractionMode::PlaceSymbol ? schematic_view_
+                                                                                   : canvas_view_;
+    if (obj == active_view->viewport()) {
       if (event->type() == QEvent::MouseMove) {
         auto* me = static_cast<QMouseEvent*>(event);
-        QPointF scene_pos = canvas_view_->mapToScene(me->pos());
+        QPointF scene_pos = active_view->mapToScene(me->pos());
         QPointF delta = scene_pos - interaction_last_mouse_pos_;
 
         for (QGraphicsItem* item : interaction_ghost_items_) {
@@ -1250,7 +1477,7 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
         auto* me = static_cast<QMouseEvent*>(event);
         if (me->button() == Qt::LeftButton) {
           // Finalize placement
-          QPointF scene_pos = canvas_view_->mapToScene(me->pos());
+          QPointF scene_pos = active_view->mapToScene(me->pos());
 
           if (interaction_mode_ == InteractionMode::PlaceFootprint) {
             try {
@@ -1263,6 +1490,22 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
                   boardPointFromScene(*project_cache_.board, scene_pos),
                   0.0, interaction_layer_id_);
               // Save the project
+              std::ofstream out(current_path_);
+              if (out) {
+                out << ccad::dumpProjectJson(project_cache_);
+                reloadProject();
+              } else {
+                QMessageBox::critical(this, "Save Error", "Failed to write project file.");
+              }
+            } catch (const std::exception& e) {
+              QMessageBox::critical(this, "Placement Error", QString::fromUtf8(e.what()));
+            }
+          } else if (interaction_mode_ == InteractionMode::PlaceSymbol) {
+            try {
+              pushUndoSnapshot();
+              ccad::placeComponent(project_cache_, interaction_symbol_, interaction_component_id_,
+                                   schematicPointFromScene(scene_pos),
+                                   interaction_rotation_degrees_);
               std::ofstream out(current_path_);
               if (out) {
                 out << ccad::dumpProjectJson(project_cache_);

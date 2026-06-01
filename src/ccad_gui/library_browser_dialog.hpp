@@ -1,10 +1,10 @@
 #pragma once
 
 #include <QDialog>
-#include <QListWidget>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QString>
+#include <QTreeWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -37,7 +37,7 @@ class LibraryBrowserDialog : public QDialog {
   std::optional<std::string> result_;
 
   QLineEdit* search_edit_ = nullptr;
-  QListWidget* component_list_ = nullptr;
+  QTreeWidget* component_list_ = nullptr;
   QLabel* detail_label_ = nullptr;
   QLabel* preview_label_ = nullptr;
   QPushButton* ok_button_ = nullptr;

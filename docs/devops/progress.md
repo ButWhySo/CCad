@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 154
-- Branch: `sprint-154-gui-actions-library-cache`
+- Sprint: 155
+- Branch: `sprint-155-kicad-placement-chooser`
 - Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
@@ -19,7 +19,8 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - **Sprint 151 (KiCad Pad Authoring CLI)** is complete and merged to `main`. It exposes KiCad-style pad type, shape, drill, roundrect ratio, chamfer ratio, and multi-layer authoring through `ccad pcb add-pad` and `ccad pcb set-pad`.
 - **Sprint 152 (Rich Pad Query Contract)** is complete and merged to `main`. It exposes KiCad-style pad metadata through `ccad pcb get-object` and `ccad pcb list-objects --type pad` so agents can plan from command output instead of parsing raw project JSON.
 - **Sprint 153 (Route-Job Pad Metadata)** is complete and merged to `main`. It carries KiCad-style pad type, shape, drill, ratio, layer, and rotation metadata into `ccad pcb export-route-job` so external routers and AI tools see the same pad geometry intent.
-- **Sprint 154 (GUI Actions and Library Cache Placement)** is active. It replaces top-toolbar placeholders with real Save, Board Setup, Undo, Redo, Run DRC, and DRC export behavior, makes the library chooser more KiCad-like, and fixes converted symbol inheritance so library-cache symbol placement gets real pins.
+- **Sprint 154 (GUI Actions and Library Cache Placement)** is complete and merged to `main`. It replaced top-toolbar placeholders with real Save, Board Setup, Undo, Redo, Run DRC, and DRC export behavior, made the library chooser more KiCad-like, and fixed converted symbol inheritance so library-cache symbol placement gets real pins.
+- **Sprint 155 (KiCad Placement Chooser and Ghost Placement)** is active. It removes raw file-preview workflows from the user-facing placement path, routes Add Symbol/Add Footprint by active editor tab, uses local `library-cache` chooser data, adds cursor-following placement ghosts, and fixes layer color and selected-track visibility problems.
 
 ## Phase Roadmap
 
@@ -287,4 +288,6 @@ Every CCad feature or bugfix sprint must start with current external references 
 
 Sprint 148 is verified on branch `sprint-148-gui-kicad-parity`. The batch adds KiCad-style icon toolbars sourced from the local KiCad checkout, shape-aware pad and drill rendering for annular-ring visibility, core-owned interactive placement and movement, GUI symbol and footprint placement entry points, legacy pad `layer_id` JSON compatibility, and the official visual screenshot proof. The sprint file is `docs/devops/sprints/2026-06-01-sprint-148-gui-kicad-parity.md`. The final clean rebuild passed all 177 build steps, and CTest passed 33 of 33 tests.
 
-Sprint 154 is active on branch `sprint-154-gui-actions-library-cache`. The batch replaces visible GUI top-toolbar placeholders with real Save, Board Setup, Undo, Redo, Run DRC, and DRC export behavior; makes the local library chooser more KiCad-like with filter, library/name rows, detail metadata, and preview notes; resolves converted symbol `extends` inheritance from sibling `library-cache` JSON so derived symbols inherit pins before placement; and accepts raw KiCad `.kicad_mod` files from the footprint chooser.
+Sprint 154 is complete on branch `sprint-154-gui-actions-library-cache`. The batch replaced visible GUI top-toolbar placeholders with real Save, Board Setup, Undo, Redo, Run DRC, and DRC export behavior; made the local library chooser more KiCad-like with filter, library/name rows, detail metadata, and preview notes; resolved converted symbol `extends` inheritance from sibling `library-cache` JSON so derived symbols inherit pins before placement; and accepted raw KiCad `.kicad_mod` files from the footprint chooser.
+
+Sprint 155 is active on branch `sprint-155-kicad-placement-chooser`. The batch targets KiCad-style cache-backed symbol and footprint choosing, tab-aware Add behavior, cursor-following placement ghosts with Escape cancellation, distinct top/bottom copper colors, full-width track selection highlighting, and a consolidated backlog for GUI, KiCad compatibility, library, simulation, manufacturing, LLM, and visual-validation work.

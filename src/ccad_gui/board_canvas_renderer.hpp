@@ -17,6 +17,7 @@ constexpr int kCanvasSelectionHighlightColorRole = 5;
 constexpr int kCanvasObjectNetIdRole = 6;
 constexpr int kCanvasObjectLayerIdRole = 7;
 constexpr int kCanvasObjectRouteRequestIdRole = 8;
+constexpr int kCanvasSelectionHighlightWidthRole = 9;
 
 struct CanvasRenderTheme {
   QColor background_color = QColor("#07111f");
@@ -27,6 +28,8 @@ struct CanvasRenderTheme {
   QColor placement_region_color = QColor("#22c55e");
   QColor keepout_color = QColor("#f97316");
   QColor track_color = QColor("#ef4444");
+  QColor front_copper_color = QColor("#c83434");
+  QColor back_copper_color = QColor("#4d7fc4");
   QColor pad_outline_color = QColor("#f472b6");
   QColor pad_fill_color = QColor("#be185d");
   QColor via_outline_color = QColor("#fde68a");
@@ -51,6 +54,7 @@ QString canvasObjectLayerId(const QGraphicsItem& item);
 QString canvasObjectRouteRequestId(const QGraphicsItem& item);
 bool canvasUsesShapeSelectionHighlight(const QGraphicsItem& item);
 QColor canvasSelectionHighlightColor(const QGraphicsItem& item);
+double canvasSelectionHighlightWidth(const QGraphicsItem& item);
 bool selectCanvasObjectById(QGraphicsScene& canvas_scene, const QString& id);
 int selectCanvasObjectsByNetId(QGraphicsScene& canvas_scene, const QString& net_id);
 int selectCanvasObjectsByRouteRequestId(QGraphicsScene& canvas_scene,
