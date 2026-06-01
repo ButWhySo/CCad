@@ -130,7 +130,9 @@ void FootprintPlacementDialog::onAccept() {
   buffer << input.rdbuf();
 
   try {
-    ccad::Footprint footprint = ccad::loadFootprintJson(buffer.str());
+    ccad::Footprint footprint = fi.suffix().compare("kicad_mod", Qt::CaseInsensitive) == 0
+                                     ? ccad::importKiCadFootprint(buffer.str())
+                                     : ccad::loadFootprintJson(buffer.str());
     if (footprint.pads.empty()) {
       QMessageBox::warning(this, "Invalid Footprint", "The footprint has no pads.");
       return;
