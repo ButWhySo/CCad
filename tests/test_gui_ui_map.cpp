@@ -93,4 +93,28 @@ int main(int argc, char** argv) {
           "UI map validation covers add footprint action");
   require(contains(validation, "\"id\":\"canvas_object:U1.1\""),
           "UI map validation covers canvas object target");
+
+  const QString action_target = window.uiTargetJsonById("action:add_footprint");
+  require(contains(action_target, "\"found\":true"), "action target query finds add footprint");
+  require(contains(action_target, "\"role\":\"action\""), "action target query reports role");
+  require(contains(action_target, "\"physical_x\":"), "action target reports physical pixels");
+
+  const QString pad_target = window.uiTargetJsonById("canvas_object:U1.1");
+  require(contains(pad_target, "\"found\":true"), "canvas object target query finds pad");
+  require(contains(pad_target, "\"role\":\"canvas_object\""),
+          "canvas object target query reports role");
+
+  const QString board_point = window.uiTargetJsonForBoardPoint(8.0, 9.0);
+  require(contains(board_point, "\"found\":true"), "board point target query finds point");
+  require(contains(board_point, "\"space\":\"board\""), "board point target reports space");
+  require(contains(board_point, "\"scene_x\":"), "board point target reports scene mapping");
+
+  const QString unknown = window.uiTargetJsonById("action:not_real");
+  require(contains(unknown, "\"found\":false"), "unknown target id fails explicitly");
+  require(contains(unknown, "\"reason\":\"unknown_id\""), "unknown target id reports reason");
+
+  const QString outside = window.uiTargetJsonForBoardPoint(99.0, 99.0);
+  require(contains(outside, "\"found\":false"), "outside board point fails explicitly");
+  require(contains(outside, "\"reason\":\"outside_board\""),
+          "outside board point reports reason");
 }

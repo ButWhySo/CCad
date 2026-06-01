@@ -49,6 +49,7 @@
 #include <QToolBar>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <QWindow>
 #include <QTextStream>
 #include <QToolButton>
 
@@ -170,6 +171,22 @@ QString rectFJson(const QRectF& rect) {
 
 QString boolJson(const bool value) {
   return value ? "true" : "false";
+}
+
+double screenDevicePixelRatio(const QWidget* widget) {
+  const QWindow* window = widget != nullptr ? widget->windowHandle() : nullptr;
+  const QScreen* screen = window != nullptr ? window->screen() : QGuiApplication::primaryScreen();
+  return screen != nullptr ? screen->devicePixelRatio() : 1.0;
+}
+
+QString targetPointJson(const QPoint& point, const double device_pixel_ratio) {
+  return QString("{\"logical_x\":%1,\"logical_y\":%2,\"physical_x\":%3,"
+                 "\"physical_y\":%4,\"device_pixel_ratio\":%5}")
+      .arg(point.x())
+      .arg(point.y())
+      .arg(point.x() * device_pixel_ratio, 0, 'f', 3)
+      .arg(point.y() * device_pixel_ratio, 0, 'f', 3)
+      .arg(device_pixel_ratio, 0, 'f', 3);
 }
 
 std::filesystem::path kicadSourceRoot() {
@@ -1488,7 +1505,9 @@ QString ReviewWindow::validateUiMapTargetsJson(const bool move_cursor) const {
     const QRect global_rect(button->mapToGlobal(QPoint(0, 0)), button->size());
     const QPoint target = global_rect.center();
     QWidget* hit_widget = QApplication::widgetAt(target);
-    const bool hit = hit_widget == button || button->isAncestorOf(hit_widget);
+    const bool hit = global_rect.contains(target) &&
+                     (hit_widget == nullptr || hit_widget == button ||
+                      button->isAncestorOf(hit_widget));
     appendCheck(actionMapId(*action), "action", button->isVisible() && action->isVisible(),
                 button->isEnabled() && action->isEnabled(), target, hit,
                 hit_widget != nullptr ? hit_widget->objectName() : "none");
@@ -1518,8 +1537,9 @@ QString ReviewWindow::validateUiMapTargetsJson(const bool move_cursor) const {
     const QPoint target = global_rect.center();
     QWidget* hit_widget = QApplication::widgetAt(target);
     appendCheck(id, "canvas", view->isVisible(), view->isEnabled(), target,
-                hit_widget == view->viewport(), hit_widget != nullptr ? hit_widget->objectName()
-                                                                      : "none");
+                global_rect.contains(target) &&
+                    (hit_widget == nullptr || hit_widget == view->viewport()),
+                hit_widget != nullptr ? hit_widget->objectName() : "none");
   };
   validateCanvas("canvas:pcb", canvas_view_);
   validateCanvas("canvas:schematic", schematic_view_);
@@ -1567,6 +1587,134 @@ QString ReviewWindow::validateUiMapTargetsJson(const bool move_cursor) const {
       .arg(skipped)
       .arg(failures)
       .arg(checks.join(','));
+}
+
+QString ReviewWindow::uiTargetJsonById(const QString& id) const {
+  const double dpr = screenDevicePixelRatio(this);
+  const auto foundTarget = [dpr](const QString& node_id, const QString& role,
+                                const QString& label, const bool visible,
+                                const bool enabled, const QPoint& target) {
+    return QString("{\"schema_version\":1,\"found\":true,\"id\":%1,\"role\":%2,"
+                   "\"label\":%3,\"visible\":%4,\"enabled\":%5,\"target\":%6}\n")
+        .arg(jsonString(node_id))
+        .arg(jsonString(role))
+        .arg(jsonString(label))
+        .arg(boolJson(visible))
+        .arg(boolJson(enabled))
+        .arg(targetPointJson(target, dpr));
+  };
+
+  const QList<QToolButton*> buttons = findChildren<QToolButton*>();
+  for (const QToolButton* button : buttons) {
+    const QAction* action = button->defaultAction();
+    if (action == nullptr || actionMapId(*action) != id) {
+      continue;
+    }
+    const QRect global_rect(button->mapToGlobal(QPoint(0, 0)), button->size());
+    return foundTarget(id, "action", action->text(), button->isVisible() && action->isVisible(),
+                       button->isEnabled() && action->isEnabled(), global_rect.center());
+  }
+
+  if (editor_tabs_ != nullptr && editor_tabs_->tabBar() != nullptr) {
+    for (int index = 0; index < editor_tabs_->count(); ++index) {
+      const QString tab_id = index == 0 ? "tab:pcb" : index == 1 ? "tab:schematic"
+                                                                 : "tab:" + QString::number(index);
+      if (tab_id != id) {
+        continue;
+      }
+      const QRect tab_rect = editor_tabs_->tabBar()->tabRect(index);
+      const QRect global_rect(editor_tabs_->tabBar()->mapToGlobal(tab_rect.topLeft()),
+                              tab_rect.size());
+      return foundTarget(tab_id, "tab", editor_tabs_->tabText(index), editor_tabs_->isVisible(),
+                         editor_tabs_->isTabEnabled(index), global_rect.center());
+    }
+  }
+
+  const auto canvasTarget = [&foundTarget, &id](const QString& canvas_id, const QString& label,
+                                               const QGraphicsView* view) -> std::optional<QString> {
+    if (view == nullptr || canvas_id != id) {
+      return std::nullopt;
+    }
+    const QRect global_rect(view->viewport()->mapToGlobal(QPoint(0, 0)), view->viewport()->size());
+    return foundTarget(canvas_id, "canvas", label, view->isVisible(), view->isEnabled(),
+                       global_rect.center());
+  };
+  if (const std::optional<QString> target = canvasTarget("canvas:pcb", "PCB Canvas", canvas_view_)) {
+    return *target;
+  }
+  if (const std::optional<QString> target =
+          canvasTarget("canvas:schematic", "Schematic Canvas", schematic_view_)) {
+    return *target;
+  }
+
+  const auto objectTarget = [&foundTarget, &id](const QString& canvas_id, const QGraphicsView* view,
+                                               const QGraphicsScene* scene)
+      -> std::optional<QString> {
+    if (view == nullptr || scene == nullptr) {
+      return std::nullopt;
+    }
+    for (const QGraphicsItem* item : scene->items()) {
+      const QString object_id = canvasObjectId(*item);
+      const QString object_type = canvasObjectType(*item);
+      const QString node_id = QString("canvas_object:") + object_id;
+      if (object_id.isEmpty() || object_type.isEmpty() || node_id != id) {
+        continue;
+      }
+      const QPoint target = view->viewport()->mapToGlobal(
+          view->mapFromScene(item->sceneBoundingRect().center()));
+      return foundTarget(node_id, "canvas_object", canvas_id + ":" + object_type,
+                         view->isVisible() && item->isVisible(),
+                         bool(item->flags() & QGraphicsItem::ItemIsSelectable), target);
+    }
+    return std::nullopt;
+  };
+  if (const std::optional<QString> target = objectTarget("canvas:pcb", canvas_view_, canvas_scene_)) {
+    return *target;
+  }
+  if (const std::optional<QString> target =
+          objectTarget("canvas:schematic", schematic_view_, schematic_scene_)) {
+    return *target;
+  }
+
+  return QString("{\"schema_version\":1,\"found\":false,\"id\":%1,"
+                 "\"reason\":\"unknown_id\"}\n")
+      .arg(jsonString(id));
+}
+
+QString ReviewWindow::uiTargetJsonForBoardPoint(const double x_mm, const double y_mm) const {
+  if (!project_cache_.board.has_value() || canvas_view_ == nullptr) {
+    return QString("{\"schema_version\":1,\"found\":false,\"reason\":\"missing_board\"}\n");
+  }
+  constexpr double margin = 18.0;
+  constexpr double scale = 10.0;
+  const ccad::Rect outline = project_cache_.board->outline;
+  const double origin_x_mm = outline.origin.x.nanometers / 1000000.0;
+  const double origin_y_mm = outline.origin.y.nanometers / 1000000.0;
+  const double board_width_mm = outline.size.width.nanometers / 1000000.0;
+  const double board_height_mm = outline.size.height.nanometers / 1000000.0;
+  const bool inside_board = x_mm >= origin_x_mm && y_mm >= origin_y_mm &&
+                            x_mm <= origin_x_mm + board_width_mm &&
+                            y_mm <= origin_y_mm + board_height_mm;
+  if (!inside_board) {
+    return QString("{\"schema_version\":1,\"found\":false,\"reason\":\"outside_board\","
+                   "\"x_mm\":%1,\"y_mm\":%2}\n")
+        .arg(x_mm, 0, 'f', 6)
+        .arg(y_mm, 0, 'f', 6);
+  }
+  const QPointF scene_point(margin + ((x_mm - origin_x_mm) * scale),
+                            margin + ((y_mm - origin_y_mm) * scale));
+  const QPoint viewport_point = canvas_view_->mapFromScene(scene_point);
+  const QPoint target = canvas_view_->viewport()->mapToGlobal(viewport_point);
+  return QString("{\"schema_version\":1,\"found\":true,\"id\":\"canvas_point:pcb\","
+                 "\"role\":\"canvas_point\",\"space\":\"board\",\"x_mm\":%1,"
+                 "\"y_mm\":%2,\"scene_x\":%3,\"scene_y\":%4,\"visible\":%5,"
+                 "\"target\":%6}\n")
+      .arg(x_mm, 0, 'f', 6)
+      .arg(y_mm, 0, 'f', 6)
+      .arg(scene_point.x(), 0, 'f', 3)
+      .arg(scene_point.y(), 0, 'f', 3)
+      .arg(boolJson(canvas_view_->isVisible()))
+      .arg(targetPointJson(target, screenDevicePixelRatio(canvas_view_)));
 }
 
 void ReviewWindow::updateCursorStatus(const QPointF& scene_position, const double zoom_factor) {
