@@ -1,5 +1,6 @@
 #include "review_window.hpp"
 #include "board_canvas_view.hpp"
+#include "library_browser_dialog.hpp"
 
 #include <QApplication>
 #include <QElapsedTimer>
@@ -9,6 +10,18 @@
 #include <QEventLoop>
 #include <filesystem>
 #include <iostream>
+
+int screenshotWindow(QWidget& window, const QString& screenshot_path, const char* screenshot_arg) {
+  const QPixmap screenshot = window.grab();
+  if (!screenshot.save(screenshot_path)) {
+    std::cerr << "failed to save GUI screenshot: " << screenshot_arg << '\n';
+    std::cerr.flush();
+    return 2;
+  }
+  std::cout << "screenshot saved: " << screenshot_arg << '\n';
+  std::cout.flush();
+  return 0;
+}
 
 int main(int argc, char** argv) {
   QApplication app(argc, argv);
@@ -60,6 +73,28 @@ int main(int argc, char** argv) {
         std::cout.flush();
         QCoreApplication::exit(0);
       }
+    });
+
+    return QApplication::exec();
+  } else if (argc == 4 && (std::string(argv[1]) == "--screenshot-chooser-footprint" ||
+                           std::string(argv[1]) == "--screenshot-chooser-symbol")) {
+    const LibraryType type = std::string(argv[1]) == "--screenshot-chooser-footprint"
+                                 ? LibraryType::Footprint
+                                 : LibraryType::Symbol;
+    const QString cache_root = QString::fromLocal8Bit(argv[2]);
+    const char* screenshot_arg = argv[3];
+    const QString screenshot_path = QString::fromLocal8Bit(screenshot_arg);
+    auto* dialog = new LibraryBrowserDialog(type, cache_root);
+    dialog->show();
+    QTimer::singleShot(250, dialog, [dialog]() {
+      if (!dialog->selectFirstVisibleItemForTest()) {
+        std::cerr << "chooser had no visible items to select\n";
+        std::cerr.flush();
+        QCoreApplication::exit(3);
+      }
+    });
+    QTimer::singleShot(20000, dialog, [dialog, screenshot_path, screenshot_arg]() {
+      QCoreApplication::exit(screenshotWindow(*dialog, screenshot_path, screenshot_arg));
     });
 
     return QApplication::exec();

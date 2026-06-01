@@ -29,7 +29,16 @@ struct CanvasRenderTheme {
   QColor keepout_color = QColor("#f97316");
   QColor track_color = QColor("#ef4444");
   QColor front_copper_color = QColor("#c83434");
-  QColor back_copper_color = QColor("#4d7fc4");
+  QColor back_copper_color = QColor("#237a45");
+  QColor inner_copper_color = QColor("#c08b2c");
+  QColor front_silkscreen_color = QColor("#d8d2b8");
+  QColor back_silkscreen_color = QColor("#8fb6ff");
+  QColor front_fab_color = QColor("#c9cfd8");
+  QColor back_fab_color = QColor("#7f8ea3");
+  QColor front_courtyard_color = QColor("#b47cff");
+  QColor back_courtyard_color = QColor("#7f5fd8");
+  QColor edge_cuts_color = QColor("#d6e4ff");
+  QColor drawing_color = QColor("#6b7280");
   QColor pad_outline_color = QColor("#f472b6");
   QColor pad_fill_color = QColor("#be185d");
   QColor via_outline_color = QColor("#fde68a");
@@ -38,6 +47,44 @@ struct CanvasRenderTheme {
   QColor error_marker_color = QColor("#ef4444");
   QColor warning_marker_color = QColor("#f59e0b");
 };
+
+inline QColor colorForKiCadLayer(const CanvasRenderTheme& theme, const std::string& layer_id) {
+  if (layer_id == "F.Cu") {
+    return theme.front_copper_color;
+  }
+  if (layer_id == "B.Cu") {
+    return theme.back_copper_color;
+  }
+  if (layer_id.starts_with("In") && layer_id.ends_with(".Cu")) {
+    return theme.inner_copper_color;
+  }
+  if (layer_id == "F.SilkS") {
+    return theme.front_silkscreen_color;
+  }
+  if (layer_id == "B.SilkS") {
+    return theme.back_silkscreen_color;
+  }
+  if (layer_id == "F.Fab") {
+    return theme.front_fab_color;
+  }
+  if (layer_id == "B.Fab") {
+    return theme.back_fab_color;
+  }
+  if (layer_id == "F.CrtYd") {
+    return theme.front_courtyard_color;
+  }
+  if (layer_id == "B.CrtYd") {
+    return theme.back_courtyard_color;
+  }
+  if (layer_id == "Edge.Cuts" || layer_id == "Margin") {
+    return theme.edge_cuts_color;
+  }
+  if (layer_id == "Dwgs.User" || layer_id == "Cmts.User" || layer_id.starts_with("Eco") ||
+      layer_id.starts_with("User.")) {
+    return theme.drawing_color;
+  }
+  return theme.track_color;
+}
 
 void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& scene);
 void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& scene,
