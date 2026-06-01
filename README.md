@@ -632,6 +632,22 @@ $env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
 
 The validator moves the cursor to every visible/enabled exported target and verifies that Qt hit-testing resolves the expected widget, tab, canvas, or canvas item. Hidden or disabled nodes are reported as skipped.
 
+Query one target by semantic ID:
+
+```powershell
+$env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
+.\build-qt\ccad_gui.exe --ui-target-id .\artifacts\demos\sprint156-layer-color-final.ccad.json action:add_footprint .\artifacts\demos\ui-target-add-footprint.json
+```
+
+Query one PCB board point:
+
+```powershell
+$env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
+.\build-qt\ccad_gui.exe --ui-target-board-point .\artifacts\demos\sprint156-layer-color-final.ccad.json 8 17 .\artifacts\demos\ui-target-board-point.json
+```
+
+Target responses include logical Qt pixels, physical pixels, and the device-pixel ratio so OS-level input tools do not have to infer high-DPI scaling.
+
 What it does:
 
 - Starts the native Qt review GUI.

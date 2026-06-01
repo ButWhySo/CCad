@@ -61,6 +61,67 @@ int main(int argc, char** argv) {
     });
 
     return QApplication::exec();
+  } else if (argc == 5 && std::string(argv[1]) == "--ui-target-id") {
+    const std::filesystem::path project_path(argv[2]);
+    const QString target_id = QString::fromLocal8Bit(argv[3]);
+    const std::filesystem::path output_path(argv[4]);
+    ReviewWindow window;
+    window.loadProjectPath(project_path);
+    window.show();
+
+    QTimer::singleShot(500, &window, [&window, target_id, output_path]() {
+      std::ofstream output(output_path, std::ios::binary);
+      if (!output) {
+        std::cerr << "failed to open UI target output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      const QByteArray bytes = window.uiTargetJsonById(target_id).toUtf8();
+      output.write(bytes.constData(), bytes.size());
+      if (!output) {
+        std::cerr << "failed to write UI target output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      std::cout << "ui target saved: " << output_path.string() << '\n';
+      std::cout.flush();
+      QCoreApplication::exit(0);
+    });
+
+    return QApplication::exec();
+  } else if (argc == 6 && std::string(argv[1]) == "--ui-target-board-point") {
+    const std::filesystem::path project_path(argv[2]);
+    const double x_mm = std::stod(argv[3]);
+    const double y_mm = std::stod(argv[4]);
+    const std::filesystem::path output_path(argv[5]);
+    ReviewWindow window;
+    window.loadProjectPath(project_path);
+    window.show();
+
+    QTimer::singleShot(500, &window, [&window, x_mm, y_mm, output_path]() {
+      std::ofstream output(output_path, std::ios::binary);
+      if (!output) {
+        std::cerr << "failed to open UI target output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      const QByteArray bytes = window.uiTargetJsonForBoardPoint(x_mm, y_mm).toUtf8();
+      output.write(bytes.constData(), bytes.size());
+      if (!output) {
+        std::cerr << "failed to write UI target output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      std::cout << "ui target saved: " << output_path.string() << '\n';
+      std::cout.flush();
+      QCoreApplication::exit(0);
+    });
+
+    return QApplication::exec();
   } else if (argc == 4 && std::string(argv[1]) == "--screenshot") {
     const std::filesystem::path project_path(argv[2]);
     const char* screenshot_arg = argv[3];

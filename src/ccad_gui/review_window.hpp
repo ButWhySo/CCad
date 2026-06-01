@@ -39,6 +39,8 @@ class ReviewWindow final : public QMainWindow {
   void loadSymbolPreview(const std::filesystem::path& path);
   QString uiMapJson() const;
   QString validateUiMapTargetsJson(bool move_cursor) const;
+  QString uiTargetJsonById(const QString& id) const;
+  QString uiTargetJsonForBoardPoint(double x_mm, double y_mm) const;
 
  protected:
   bool eventFilter(QObject* obj, QEvent* event) override;
