@@ -211,6 +211,38 @@ int main() {
               " --x-mm 18 --y-mm 6 --width-mm 1.0 --height-mm 1.0") != 0,
           "pcb add-pad rejects invalid roundrect ratio");
 
+  const std::filesystem::path advanced_pad_lookup_path = temp / "advanced-pad-lookup.json";
+  require(run(quote(CCAD_BINARY) + " pcb get-object --file " + quote(advanced_pad_path) +
+              " --id P4 > " + quote(advanced_pad_lookup_path)) == 0,
+          "pcb get-object finds KiCad through-hole pad metadata");
+  const std::string advanced_pad_lookup_json = readFile(advanced_pad_lookup_path);
+  require(advanced_pad_lookup_json.find("\"pad_type\": \"thru_hole\"") != std::string::npos,
+          "pcb get-object writes KiCad pad type");
+  require(advanced_pad_lookup_json.find("\"shape\": \"circle\"") != std::string::npos,
+          "pcb get-object writes KiCad pad shape");
+  require(advanced_pad_lookup_json.find("\"drill_nm\": 700000") != std::string::npos,
+          "pcb get-object writes KiCad pad drill");
+  require(advanced_pad_lookup_json.find("\"*.Cu\"") != std::string::npos,
+          "pcb get-object writes KiCad wildcard pad layer");
+
+  const std::filesystem::path advanced_pad_list_path = temp / "advanced-pad-list.json";
+  require(run(quote(CCAD_BINARY) + " pcb list-objects --file " + quote(advanced_pad_path) +
+              " --type pad > " + quote(advanced_pad_list_path)) == 0,
+          "pcb list-objects lists KiCad pad metadata");
+  const std::string advanced_pad_list_json = readFile(advanced_pad_list_path);
+  require(advanced_pad_list_json.find("\"pad_type\": \"smd\"") != std::string::npos,
+          "pcb list-objects writes compact pad type");
+  require(advanced_pad_list_json.find("\"shape\": \"roundrect\"") != std::string::npos,
+          "pcb list-objects writes compact roundrect shape");
+  require(advanced_pad_list_json.find("\"roundrect_rratio\": 0.25") != std::string::npos,
+          "pcb list-objects writes compact roundrect ratio");
+  require(advanced_pad_list_json.find("\"shape\": \"chamfered_rect\"") != std::string::npos,
+          "pcb list-objects writes compact chamfered shape");
+  require(advanced_pad_list_json.find("\"chamfer_ratio\": 0.2") != std::string::npos,
+          "pcb list-objects writes compact chamfer ratio");
+  require(advanced_pad_list_json.find("\"drill_nm\": 700000") != std::string::npos,
+          "pcb list-objects writes compact drill size");
+
   const std::string set_layer_visibility_command =
       quote(CCAD_BINARY) + " pcb set-layer-visibility --file " + quote(board_project_path) +
       " --id In1.Cu --visible true";
