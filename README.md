@@ -648,6 +648,15 @@ $env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
 
 Target responses include logical Qt pixels, physical pixels, and the device-pixel ratio so OS-level input tools do not have to infer high-DPI scaling.
 
+Trigger a safe non-destructive GUI action directly by semantic ID:
+
+```powershell
+$env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
+.\build-qt\ccad_gui.exe --ui-trigger-safe .\artifacts\demos\sprint156-layer-color-final.ccad.json action:zoom_in .\artifacts\demos\ui-action-zoom-in.json
+```
+
+Only a small allowlist of view/navigation actions is executable this way. Mutating, dialog-opening, or file-writing actions return `performed:false` with a reason field.
+
 What it does:
 
 - Starts the native Qt review GUI.

@@ -1717,6 +1717,61 @@ QString ReviewWindow::uiTargetJsonForBoardPoint(const double x_mm, const double 
       .arg(targetPointJson(target, screenDevicePixelRatio(canvas_view_)));
 }
 
+QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
+  const auto result = [](const QString& action_id, const bool performed, const QString& reason) {
+    return QString("{\"schema_version\":1,\"id\":%1,\"performed\":%2,\"reason\":%3}\n")
+        .arg(jsonString(action_id))
+        .arg(boolJson(performed))
+        .arg(jsonString(reason));
+  };
+
+  if (id == "tab:pcb" || id == "tab:schematic") {
+    if (editor_tabs_ == nullptr) {
+      return result(id, false, "tabs_unavailable");
+    }
+    const int index = id == "tab:pcb" ? 0 : 1;
+    if (!editor_tabs_->isTabEnabled(index)) {
+      return result(id, false, "disabled");
+    }
+    editor_tabs_->setCurrentIndex(index);
+    markUiMapChanged();
+    return result(id, true, "tab_selected");
+  }
+
+  const QStringList safe_action_ids = {"action:fit", "action:zoom_in", "action:zoom_out",
+                                       "action:zoom_100", "action:cursor",
+                                       "action:measurement"};
+  const QStringList unsafe_action_ids = {"action:open", "action:reload", "action:save",
+                                         "action:board_setup", "action:undo", "action:redo",
+                                         "action:run_drc", "action:export_drc",
+                                         "action:add_footprint", "action:add_symbol",
+                                         "action:add_tracks", "action:add_via",
+                                         "action:add_zone", "action:add_keepout_area",
+                                         "action:add_graphical_segments", "action:text",
+                                         "action:delete_cursor", "action:quit"};
+  if (unsafe_action_ids.contains(id)) {
+    return result(id, false, "unsafe_action_requires_human_or_kernel_tool");
+  }
+  if (!safe_action_ids.contains(id)) {
+    return result(id, false, "unknown_or_not_allowlisted");
+  }
+
+  const QList<QAction*> actions = findChildren<QAction*>();
+  for (QAction* action : actions) {
+    if (actionMapId(*action) != id) {
+      continue;
+    }
+    if (!action->isEnabled() || !action->isVisible()) {
+      return result(id, false, "disabled_or_hidden");
+    }
+    action->trigger();
+    QApplication::processEvents();
+    markUiMapChanged();
+    return result(id, true, "triggered");
+  }
+  return result(id, false, "action_not_found");
+}
+
 void ReviewWindow::updateCursorStatus(const QPointF& scene_position, const double zoom_factor) {
   cursor_status_->setText(formatCursorStatus(project_cache_.board, scene_position));
   zoom_status_->setText("Zoom " + QString::number(zoom_factor * 100.0, 'f', 0) + "%");
