@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 151 working on KiCad pad authoring CLI on branch `sprint-151-pad-authoring-cli`.
+Progress counter: Phase 7 / 7, Sprint 152 working on rich pad query contracts on branch `sprint-152-rich-pad-query-contract`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -17,6 +17,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - CLI PCB authoring: `ccad pcb list-nets`, `ccad pcb list-objects`, `ccad pcb get-object`, `ccad pcb route-status`, `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - CLI PCB pad authoring supports KiCad-style pad type, shape, drill, roundrect ratio, chamfer ratio, and multi-layer metadata.
+- Agent-facing PCB pad queries expose KiCad-style pad type, shape, drill, roundrect ratio, chamfer ratio, and layer metadata through `pcb get-object` and `pcb list-objects --type pad`.
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
 - Physical board outline, layers, rectangular placement regions, rectangular keepouts, pads, vias, and track segments in project JSON.
 - Project review and `ccad inspect` report the full board outline rectangle and active board-level DRC rules.
@@ -460,8 +461,8 @@ What these do:
 - `pcb route-status` emits compact route progress counts for open, partial, and completed route requests, derived from current route requests and track provenance.
 - `inspect` also reports board route progress in review JSON so GUI and agents share the same route-review contract.
 - `pcb export-route-job` emits a compact deterministic route-job JSON envelope with schema/version metadata, units, board outline, design rules, layers, pads, vias, tracks, keepouts, placement regions, and route requests; pass `--request-id <id>` to export one request.
-- `pcb list-objects` emits compact board layer and physical object rows as JSON, with optional type filtering for `layer`, `pad`, `via`, `track`, `keepout`, or `placement_region`.
-- `pcb get-object` emits one board layer, pad, via, track, keepout, or placement region by stable ID as compact JSON.
+- `pcb list-objects` emits compact board layer and physical object rows as JSON, with optional type filtering for `layer`, `pad`, `via`, `track`, `keepout`, or `placement_region`. Pad rows include KiCad-style `pad_type`, `shape`, optional `drill_nm`, optional `roundrect_rratio`, and optional `chamfer_ratio`.
+- `pcb get-object` emits one board layer, pad, via, track, keepout, or placement region by stable ID as compact JSON. Pad objects include their KiCad-style type, shape, drill, ratio, layer, position, rotation, and size metadata.
 - `pcb set-outline` replaces the rectangular board outline while rejecting outlines that would leave existing pads, vias, tracks, keepouts, or placement regions outside the board.
 - `pcb set-rules` updates board-level DRC defaults for copper clearance, minimum track width, and minimum via annular ring.
 - `pcb add-layer` appends a board layer with stable ID, display name, kind, and optional visibility.

@@ -67,6 +67,8 @@ std::string pcbPadObjectJson(const ccad::Pad& pad) {
       << "    \"component_id\": \"" << ccad::escapeJson(pad.component_id) << "\",\n"
       << "    \"pin_name\": \"" << ccad::escapeJson(pad.pin_name) << "\",\n"
       << "    \"net_id\": \"" << ccad::escapeJson(pad.net_id) << "\",\n"
+      << "    \"pad_type\": \"" << ccad::escapeJson(pad.type) << "\",\n"
+      << "    \"shape\": \"" << ccad::escapeJson(pad.shape) << "\",\n"
       << "    \"layers\": [";
   for (size_t i = 0; i < pad.layers.size(); ++i) {
     if (i > 0) out << ", ";
@@ -79,7 +81,20 @@ std::string pcbPadObjectJson(const ccad::Pad& pad) {
       << "    \"rotation_degrees\": " << pad.rotation_degrees << ",\n"
       << "    \"size\": {\n";
   writeSizeJson(out, pad.size, 6);
-  out << "\n    }\n"
+  out << "\n    }";
+  if (pad.drill.has_value()) {
+    out << ",\n"
+        << "    \"drill_nm\": " << pad.drill->nanometers;
+  }
+  if (pad.roundrect_rratio.has_value()) {
+    out << ",\n"
+        << "    \"roundrect_rratio\": " << *pad.roundrect_rratio;
+  }
+  if (pad.chamfer_ratio.has_value()) {
+    out << ",\n"
+        << "    \"chamfer_ratio\": " << *pad.chamfer_ratio;
+  }
+  out << "\n"
       << "  }\n"
       << "}\n";
   return out.str();
@@ -177,7 +192,20 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
           << "\", \"component_id\": \"" << ccad::escapeJson(pad.component_id)
           << "\", \"pin_name\": \"" << ccad::escapeJson(pad.pin_name)
           << "\", \"net_id\": \"" << ccad::escapeJson(pad.net_id)
-          << "\", \"layer_id\": \"" << ccad::escapeJson(pad.layers.empty() ? "" : pad.layers.front()) << "\"}";
+          << "\", \"pad_type\": \"" << ccad::escapeJson(pad.type)
+          << "\", \"shape\": \"" << ccad::escapeJson(pad.shape)
+          << "\", \"layer_id\": \""
+          << ccad::escapeJson(pad.layers.empty() ? "" : pad.layers.front()) << "\"";
+      if (pad.drill.has_value()) {
+        row << ", \"drill_nm\": " << pad.drill->nanometers;
+      }
+      if (pad.roundrect_rratio.has_value()) {
+        row << ", \"roundrect_rratio\": " << *pad.roundrect_rratio;
+      }
+      if (pad.chamfer_ratio.has_value()) {
+        row << ", \"chamfer_ratio\": " << *pad.chamfer_ratio;
+      }
+      row << "}";
       add_row(row);
     }
   }
