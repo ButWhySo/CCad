@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 155
-- Branch: `main`
+- Sprint: 156
+- Branch: `sprint-156-lazy-library-chooser`
 - Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
@@ -21,6 +21,7 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - **Sprint 153 (Route-Job Pad Metadata)** is complete and merged to `main`. It carries KiCad-style pad type, shape, drill, ratio, layer, and rotation metadata into `ccad pcb export-route-job` so external routers and AI tools see the same pad geometry intent.
 - **Sprint 154 (GUI Actions and Library Cache Placement)** is complete and merged to `main`. It replaced top-toolbar placeholders with real Save, Board Setup, Undo, Redo, Run DRC, and DRC export behavior, made the library chooser more KiCad-like, and fixed converted symbol inheritance so library-cache symbol placement gets real pins.
 - **Sprint 155 (KiCad Placement Chooser and Ghost Placement)** is complete and merged to `main`. It removed raw file-preview workflows from the user-facing placement path, routed Add Symbol/Add Footprint by active editor tab, used local `library-cache` chooser data, added cursor-following placement ghosts, and fixed layer color and selected-track visibility problems.
+- **Sprint 156 (Lazy Library Chooser Loading)** is complete on `sprint-156-lazy-library-chooser`. It fixes Add Symbol/Add Footprint hangs by indexing `library-cache` entries cheaply and deferring actual symbol or footprint parsing until a row is selected for details/preview or placed.
 
 ## Phase Roadmap
 
@@ -291,3 +292,5 @@ Sprint 148 is verified on branch `sprint-148-gui-kicad-parity`. The batch adds K
 Sprint 154 is complete on branch `sprint-154-gui-actions-library-cache`. The batch replaced visible GUI top-toolbar placeholders with real Save, Board Setup, Undo, Redo, Run DRC, and DRC export behavior; made the local library chooser more KiCad-like with filter, library/name rows, detail metadata, and preview notes; resolved converted symbol `extends` inheritance from sibling `library-cache` JSON so derived symbols inherit pins before placement; and accepted raw KiCad `.kicad_mod` files from the footprint chooser.
 
 Sprint 155 is complete and merged to `main`. The batch delivered KiCad-style cache-backed symbol and footprint choosing, tab-aware Add behavior, cursor-following placement ghosts with Escape cancellation, distinct top/bottom copper colors, full-width track selection highlighting, and a consolidated backlog for GUI, KiCad compatibility, library, simulation, manufacturing, LLM, and visual-validation work. The sprint-end full clean Qt build passed all 177 build steps and CTest passed 33 of 33 tests. The official visual harness produced `artifacts/screenshots/sprint155-kicad-placement-chooser-final-20260601-211645.png`.
+
+Sprint 156 is complete on branch `sprint-156-lazy-library-chooser`. Add Symbol and Add Footprint now open from a cheap cache catalogue, parse only the selected item for detail metadata and a visual preview, and preserve the existing final placement import path. The GUI now has app-owned chooser screenshot modes and a live mouse/keyboard harness for placement-dialog checks. Footprint previews share the actual board canvas layer palette so PCB layer intent colors remain distinct. The sprint-end full clean Qt build passed all 177 build steps and CTest passed 33 of 33 tests. The official visual harness produced `artifacts/screenshots/sprint156-lazy-library-chooser-preview-final-20260602-004023.png`. The live mouse/keyboard harness produced `artifacts/screenshots/sprint156-live-footprint-preview-focus-20260602-004533.png` and `artifacts/screenshots/sprint156-live-symbol-preview-20260602-004647.png`, confirming the chooser previews through real GUI interaction. The layer-color rerun produced `artifacts/screenshots/sprint156-app-footprint-chooser-layer-colors.png` and `artifacts/screenshots/sprint156-app-symbol-chooser-layer-colors.png`.

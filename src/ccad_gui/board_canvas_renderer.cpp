@@ -173,26 +173,10 @@ bool layerIsVisible(const std::set<std::string>& hidden_layers, const std::strin
   return layer_id.empty() || !hidden_layers.contains(layer_id);
 }
 
-QColor layerDisplayColor(const CanvasRenderTheme& theme, const std::string& layer_id) {
-  if (layer_id == "F.Cu") {
-    return theme.front_copper_color;
-  }
-  if (layer_id == "B.Cu") {
-    return theme.back_copper_color;
-  }
-  if (layer_id.starts_with("In")) {
-    return QColor("#5bc3eb");
-  }
-  return theme.track_color;
-}
-
 QColor padDisplayColor(const CanvasRenderTheme& theme, const ccad::CanvasPad& pad) {
   for (const std::string& layer : pad.layers) {
-    if (layer == "F.Cu") {
-      return theme.front_copper_color;
-    }
-    if (layer == "B.Cu") {
-      return theme.back_copper_color;
+    if (layer.ends_with(".Cu") || layer == "*.Cu") {
+      return colorForKiCadLayer(theme, layer == "*.Cu" ? "F.Cu" : layer);
     }
   }
   return theme.pad_fill_color;
@@ -294,7 +278,7 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     if (!layerIsVisible(hidden_layers, track.layer_id)) {
       continue;
     }
-    const QColor track_color = layerDisplayColor(theme, track.layer_id);
+    const QColor track_color = colorForKiCadLayer(theme, track.layer_id);
     track_pen.setColor(track_color);
     track_pen.setWidthF(std::max(1.2, track.width_units * scale));
     QPainterPath track_path;
@@ -375,16 +359,20 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
 
   for (const ccad::CanvasLine& line : scene.lines) {
     if (!layerIsVisible(hidden_layers, line.layer_id)) continue;
+    const QColor layer_color = colorForKiCadLayer(theme, line.layer_id);
+    shape_pen.setColor(layer_color);
     shape_pen.setWidthF(std::max(0.2, line.width_units * scale));
     QPainterPath path;
     path.moveTo(sceneX(scene, line.start_x_units, margin, scale), sceneY(scene, line.start_y_units, margin, scale));
     path.lineTo(sceneX(scene, line.end_x_units, margin, scale), sceneY(scene, line.end_y_units, margin, scale));
     auto* item = addHighlightPath(canvas_scene, path, shape_pen, QBrush(Qt::NoBrush));
-    tagObject(*item, "line", qstr(line.id), theme.track_color, "", qstr(line.layer_id));
+    tagObject(*item, "line", qstr(line.id), layer_color, "", qstr(line.layer_id));
   }
 
   for (const ccad::CanvasArc& arc : scene.arcs) {
     if (!layerIsVisible(hidden_layers, arc.layer_id)) continue;
+    const QColor layer_color = colorForKiCadLayer(theme, arc.layer_id);
+    shape_pen.setColor(layer_color);
     shape_pen.setWidthF(std::max(0.2, arc.width_units * scale));
     QPainterPath path;
     // We have start, mid, end. To draw an arc through 3 points accurately, we approximate or use QPainterPath::arcTo. 
@@ -394,11 +382,13 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     path.quadTo(sceneX(scene, arc.mid_x_units, margin, scale), sceneY(scene, arc.mid_y_units, margin, scale),
                 sceneX(scene, arc.end_x_units, margin, scale), sceneY(scene, arc.end_y_units, margin, scale));
     auto* item = addHighlightPath(canvas_scene, path, shape_pen, QBrush(Qt::NoBrush));
-    tagObject(*item, "arc", qstr(arc.id), theme.track_color, "", qstr(arc.layer_id));
+    tagObject(*item, "arc", qstr(arc.id), layer_color, "", qstr(arc.layer_id));
   }
 
   for (const ccad::CanvasCircle& circle : scene.circles) {
     if (!layerIsVisible(hidden_layers, circle.layer_id)) continue;
+    const QColor layer_color = colorForKiCadLayer(theme, circle.layer_id);
+    shape_pen.setColor(layer_color);
     shape_pen.setWidthF(std::max(0.2, circle.width_units * scale));
     const double radius = circle.radius_units * scale;
     const QRectF rect(sceneX(scene, circle.center_x_units, margin, scale) - radius,
@@ -409,14 +399,16 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     
     QBrush brush = Qt::NoBrush;
     if (circle.fill_type == "background") brush = QBrush(theme.background_color);
-    else if (circle.fill_type == "solid") brush = QBrush(theme.track_color);
+    else if (circle.fill_type == "solid") brush = QBrush(layer_color);
 
     auto* item = addHighlightPath(canvas_scene, path, shape_pen, brush);
-    tagObject(*item, "circle", qstr(circle.id), theme.track_color, "", qstr(circle.layer_id));
+    tagObject(*item, "circle", qstr(circle.id), layer_color, "", qstr(circle.layer_id));
   }
 
   for (const ccad::CanvasPolygon& poly : scene.polygons) {
     if (!layerIsVisible(hidden_layers, poly.layer_id)) continue;
+    const QColor layer_color = colorForKiCadLayer(theme, poly.layer_id);
+    shape_pen.setColor(layer_color);
     shape_pen.setWidthF(std::max(0.2, poly.width_units * scale));
     QPolygonF qpoly;
     for (size_t i = 0; i < poly.pts_x_units.size(); ++i) {
@@ -428,17 +420,17 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     
     QBrush brush = Qt::NoBrush;
     if (poly.fill_type == "background") brush = QBrush(theme.background_color);
-    else if (poly.fill_type == "solid") brush = QBrush(theme.track_color);
+    else if (poly.fill_type == "solid") brush = QBrush(layer_color);
 
     auto* item = addHighlightPath(canvas_scene, path, shape_pen, brush);
-    tagObject(*item, "polygon", qstr(poly.id), theme.track_color, "", qstr(poly.layer_id));
+    tagObject(*item, "polygon", qstr(poly.id), layer_color, "", qstr(poly.layer_id));
   }
 
   for (const ccad::CanvasText& text_item : scene.texts) {
     if (hidden_layers.count(text_item.layer_id)) continue;
     
     QGraphicsTextItem* text = canvas_scene.addText(QString::fromStdString(text_item.text));
-    text->setDefaultTextColor(theme.board_label_color);
+    text->setDefaultTextColor(colorForKiCadLayer(theme, text_item.layer_id));
     text->setPos(sceneX(scene, text_item.x_units, margin, scale), 
                  sceneY(scene, text_item.y_units, margin, scale));
     text->setRotation(text_item.rotation_degrees);

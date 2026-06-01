@@ -10,9 +10,16 @@
 #include <QPushButton>
 #include <QTest>
 #include <QTimer>
+#include <QTemporaryDir>
+#include <QTreeWidget>
+#include <QGraphicsView>
+#include <QDir>
+#include <QFile>
 
 #include <fstream>
 #include <iostream>
+
+#include "ccad_gui/library_browser_dialog.hpp"
 
 class TestGuiFootprintPlacement : public QObject {
   Q_OBJECT
@@ -87,6 +94,47 @@ class TestGuiFootprintPlacement : public QObject {
     QCOMPARE(QString::fromStdString(result.component_id), QString("U1"));
     QCOMPARE(QString::fromStdString(result.layer_id), QString("F.Cu"));
     QCOMPARE(QString::fromStdString(result.footprint_path), QString("test_fp.json"));
+  }
+
+  void testLibraryChooserDoesNotParseFootprintsDuringConstruction() {
+    QTemporaryDir temp_dir;
+    QVERIFY(temp_dir.isValid());
+    QDir root(temp_dir.path());
+    QVERIFY(root.mkpath("footprints/Bad.pretty"));
+
+    QFile footprint(root.filePath("footprints/Bad.pretty/OnePad.json"));
+    QVERIFY(footprint.open(QIODevice::WriteOnly | QIODevice::Text));
+    footprint.write(R"({
+      "name": "OnePad",
+      "pads": [
+        {
+          "number": "1",
+          "type": "smd",
+          "shape": "rect",
+          "x_nm": 0, "y_nm": 0,
+          "rotation_degrees": 0,
+          "width_nm": 1000000,
+          "height_nm": 1000000,
+          "drill_nm": 0,
+          "layers": ["F.Cu"]
+        }
+      ]
+    })");
+    footprint.close();
+
+    LibraryBrowserDialog dialog(LibraryType::Footprint, temp_dir.path());
+    auto* tree = dialog.findChild<QTreeWidget*>();
+    QVERIFY(tree != nullptr);
+    QCOMPARE(tree->topLevelItemCount(), 1);
+    QCOMPARE(tree->topLevelItem(0)->text(0), QString("OnePad"));
+    QVERIFY(!tree->topLevelItem(0)->text(1).contains("pads"));
+
+    tree->setCurrentItem(tree->topLevelItem(0));
+    QApplication::processEvents();
+    auto* preview = dialog.findChild<QGraphicsView*>();
+    QVERIFY(preview != nullptr);
+    QVERIFY(preview->scene() != nullptr);
+    QVERIFY(preview->scene()->items().size() > 0);
   }
 };
 
