@@ -29,6 +29,8 @@ struct CanvasPad {
   double height_units = 0.0;
   double rotation_degrees = 0.0;
   double drill_units = 0.0;
+  std::optional<double> roundrect_rratio = std::nullopt;
+  std::optional<double> chamfer_ratio = std::nullopt;
 };
 
 struct CanvasVia {

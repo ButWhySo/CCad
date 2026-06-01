@@ -12,6 +12,7 @@
 #include <QTransform>
 
 #include <algorithm>
+#include <optional>
 #include <set>
 
 namespace {
@@ -89,8 +90,37 @@ QGraphicsItem* findCanvasObjectById(QGraphicsScene& canvas_scene, const QString&
   return nullptr;
 }
 
+QPainterPath trapezoidPath(const QRectF& rect) {
+  const double inset = std::min(rect.width(), rect.height()) * 0.20;
+  QPainterPath path;
+  path.moveTo(rect.left() + inset, rect.top());
+  path.lineTo(rect.right(), rect.top());
+  path.lineTo(rect.right() - inset, rect.bottom());
+  path.lineTo(rect.left(), rect.bottom());
+  path.closeSubpath();
+  return path;
+}
+
+QPainterPath chamferedRectPath(const QRectF& rect, const std::optional<double> chamfer_ratio) {
+  const double ratio = std::clamp(chamfer_ratio.value_or(0.20), 0.0, 0.5);
+  const double chamfer = std::min(rect.width(), rect.height()) * ratio;
+  QPainterPath path;
+  path.moveTo(rect.left() + chamfer, rect.top());
+  path.lineTo(rect.right() - chamfer, rect.top());
+  path.lineTo(rect.right(), rect.top() + chamfer);
+  path.lineTo(rect.right(), rect.bottom() - chamfer);
+  path.lineTo(rect.right() - chamfer, rect.bottom());
+  path.lineTo(rect.left() + chamfer, rect.bottom());
+  path.lineTo(rect.left(), rect.bottom() - chamfer);
+  path.lineTo(rect.left(), rect.top() + chamfer);
+  path.closeSubpath();
+  return path;
+}
+
 QPainterPath padShapePath(const QRectF& pad_rect, const QPointF& pad_center,
-                          const std::string& shape, const double rotation_degrees) {
+                          const std::string& shape, const double rotation_degrees,
+                          const std::optional<double> roundrect_rratio,
+                          const std::optional<double> chamfer_ratio) {
   QPainterPath pad_path;
   if (shape == "circle") {
     const double diameter = std::min(pad_rect.width(), pad_rect.height());
@@ -101,8 +131,13 @@ QPainterPath padShapePath(const QRectF& pad_rect, const QPointF& pad_center,
   } else if (shape == "rect") {
     pad_path.addRect(pad_rect);
   } else if (shape == "roundrect" || shape == "rounded_rect") {
-    const double radius = std::min(pad_rect.width(), pad_rect.height()) * 0.25;
+    const double ratio = std::clamp(roundrect_rratio.value_or(0.25), 0.0, 0.5);
+    const double radius = std::min(pad_rect.width(), pad_rect.height()) * ratio;
     pad_path.addRoundedRect(pad_rect, radius, radius);
+  } else if (shape == "trapezoid") {
+    pad_path = trapezoidPath(pad_rect);
+  } else if (shape == "chamfered_rect") {
+    pad_path = chamferedRectPath(pad_rect, chamfer_ratio);
   } else {
     pad_path.addEllipse(pad_rect);
   }
@@ -257,7 +292,8 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
                           pad.width_units * scale, pad.height_units * scale);
     const QPointF pad_center(sceneX(scene, pad.x_units, margin, scale),
                              sceneY(scene, pad.y_units, margin, scale));
-    QPainterPath pad_path = padShapePath(pad_rect, pad_center, pad.shape, pad.rotation_degrees);
+    QPainterPath pad_path = padShapePath(pad_rect, pad_center, pad.shape, pad.rotation_degrees,
+                                         pad.roundrect_rratio, pad.chamfer_ratio);
     auto* item =
         addHighlightPath(canvas_scene, pad_path, QPen(theme.pad_outline_color, 0.8),
                          QBrush(theme.pad_fill_color));

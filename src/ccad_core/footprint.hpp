@@ -17,6 +17,8 @@ struct FootprintPad {
   Size size;
   std::optional<Length> drill;
   std::vector<std::string> layers;
+  std::optional<double> roundrect_rratio = std::nullopt;
+  std::optional<double> chamfer_ratio = std::nullopt;
 };
 
 struct FootprintLine {

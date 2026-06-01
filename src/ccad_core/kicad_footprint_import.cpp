@@ -182,6 +182,16 @@ FootprintPad importPad(const SExpr& expr) {
       for (const SExpr& layer : child.children) {
         pad.layers.push_back(layer.value);
       }
+    } else if (isList(child, "roundrect_rratio")) {
+      if (child.children.size() != 1) {
+        throw std::runtime_error("pad roundrect_rratio requires one value");
+      }
+      pad.roundrect_rratio = parseDouble(child.children.at(0).value, "pad roundrect ratio");
+    } else if (isList(child, "chamfer_ratio")) {
+      if (child.children.size() != 1) {
+        throw std::runtime_error("pad chamfer_ratio requires one value");
+      }
+      pad.chamfer_ratio = parseDouble(child.children.at(0).value, "pad chamfer ratio");
     }
   }
 
@@ -284,6 +294,10 @@ class FootprintJsonReader {
         pad.drill = nanometers(readInt64());
       } else if (key == "layers") {
         pad.layers = readStringArray();
+      } else if (key == "roundrect_rratio") {
+        pad.roundrect_rratio = readNumber();
+      } else if (key == "chamfer_ratio") {
+        pad.chamfer_ratio = readNumber();
       } else {
         throw std::runtime_error("unknown footprint pad json key: " + key);
       }
@@ -597,6 +611,12 @@ std::string dumpFootprintJson(const Footprint& footprint) {
     out << "      \"height_nm\": " << pad.size.height.nanometers << ",\n";
     if (pad.drill.has_value()) {
       out << "      \"drill_nm\": " << pad.drill->nanometers << ",\n";
+    }
+    if (pad.roundrect_rratio.has_value()) {
+      out << "      \"roundrect_rratio\": " << *pad.roundrect_rratio << ",\n";
+    }
+    if (pad.chamfer_ratio.has_value()) {
+      out << "      \"chamfer_ratio\": " << *pad.chamfer_ratio << ",\n";
     }
     out << "      \"layers\": ";
     writeStringArray(out, 6, pad.layers);

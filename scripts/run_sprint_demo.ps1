@@ -238,7 +238,13 @@ $ProjectObject.components = @(
   [ordered]@{ id = "D3"; part = "Diode bridge leg"; pins = @([ordered]@{ name = "A"; kind = "passive" }, [ordered]@{ name = "K"; kind = "passive" }) },
   [ordered]@{ id = "D4"; part = "Diode bridge leg"; pins = @([ordered]@{ name = "A"; kind = "passive" }, [ordered]@{ name = "K"; kind = "passive" }) },
   [ordered]@{ id = "C1"; part = "Bulk capacitor"; pins = @([ordered]@{ name = "1"; kind = "passive" }, [ordered]@{ name = "2"; kind = "passive" }) },
-  [ordered]@{ id = "RLOAD"; part = "Load resistor"; pins = @([ordered]@{ name = "1"; kind = "passive" }, [ordered]@{ name = "2"; kind = "passive" }) }
+  [ordered]@{ id = "RLOAD"; part = "Load resistor"; pins = @([ordered]@{ name = "1"; kind = "passive" }, [ordered]@{ name = "2"; kind = "passive" }) },
+  [ordered]@{ id = "U_DEMO"; part = "KiCad pad-shape demo footprint"; pins = @(
+    [ordered]@{ name = "1"; kind = "passive" },
+    [ordered]@{ name = "2"; kind = "passive" },
+    [ordered]@{ name = "3"; kind = "passive" },
+    [ordered]@{ name = "4"; kind = "passive" }
+  ) }
 )
 $ProjectObject.nets = @(
   [ordered]@{ id = "AC1"; members = @(
@@ -287,12 +293,18 @@ Invoke-CcadDrcReport
 (footprint "R_0805_2012Metric"
   (version 20240101)
   (generator "ccad-demo")
-  (pad "1" smd roundrect (at -0.95 0 0) (size 1.0 1.45) (layers "F.Cu" "F.Paste" "F.Mask"))
-  (pad "2" smd roundrect (at 0.95 0 0) (size 1.0 1.45) (layers "F.Cu" "F.Paste" "F.Mask"))
+  (pad "1" smd roundrect (at -1.5 -0.8 0) (size 1.0 1.45) (roundrect_rratio 0.25) (layers "F.Cu" "F.Paste" "F.Mask"))
+  (pad "2" smd trapezoid (at 1.5 -0.8 0) (size 1.2 1.45) (layers "F.Cu" "F.Paste" "F.Mask"))
+  (pad "3" smd chamfered_rect (at -1.5 0.9 0) (size 1.2 1.45) (chamfer_ratio 0.20) (layers "F.Cu" "F.Paste" "F.Mask"))
+  (pad "4" thru_hole circle (at 1.5 0.9 0) (size 1.5 1.5) (drill 0.7) (layers "*.Cu" "*.Mask"))
 )
 '@ | Set-Content -Encoding UTF8 $KiCadFootprint
 Invoke-Ccad lib import-footprint --in $KiCadFootprint --out $ImportedFootprint
 Invoke-Ccad pcb place-footprint --file $Project --component U_DEMO --footprint $ImportedFootprint --at-x-mm 10 --at-y-mm 10 --rotation-deg 0 --layer F.Cu
+
+Invoke-Ccad inspect $Project | Set-Content -Encoding UTF8 $Inspect
+Invoke-Ccad validate $Project | Set-Content -Encoding UTF8 $Validate
+Invoke-CcadDrcReport
 
 Invoke-PreScreenshotBeep -RootPath $Root
 Start-Sleep -Seconds 2

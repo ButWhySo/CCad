@@ -28,6 +28,14 @@ std::string exportKiCadFootprint(const Footprint& footprint) {
       out << " (drill " << (pad.drill->nanometers / 1000000.0) << ")";
     }
 
+    if (pad.roundrect_rratio.has_value()) {
+      out << " (roundrect_rratio " << *pad.roundrect_rratio << ")";
+    }
+
+    if (pad.chamfer_ratio.has_value()) {
+      out << " (chamfer_ratio " << *pad.chamfer_ratio << ")";
+    }
+
     if (!pad.layers.empty()) {
       out << " (layers";
       for (const std::string& layer : pad.layers) {

@@ -314,6 +314,10 @@ class JsonReader {
             pad.size = readSize();
           } else if (key == "drill_nm") {
             pad.drill = nanometers(readInt64());
+          } else if (key == "roundrect_rratio") {
+            pad.roundrect_rratio = readDouble();
+          } else if (key == "chamfer_ratio") {
+            pad.chamfer_ratio = readDouble();
           } else {
             throw std::runtime_error("unknown pad key: " + key);
           }
@@ -1104,6 +1108,12 @@ std::string dumpProjectJson(const Project& project) {
       writeSize(out, 0, pad.size);
       if (pad.drill.has_value()) {
         out << ",\n        \"drill_nm\": " << pad.drill->nanometers;
+      }
+      if (pad.roundrect_rratio.has_value()) {
+        out << ",\n        \"roundrect_rratio\": " << *pad.roundrect_rratio;
+      }
+      if (pad.chamfer_ratio.has_value()) {
+        out << ",\n        \"chamfer_ratio\": " << *pad.chamfer_ratio;
       }
       out << "\n";
       out << "      }" << (i + 1 == board.pads.size() ? "" : ",") << '\n';

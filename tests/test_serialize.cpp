@@ -48,7 +48,8 @@ int main() {
                          .position = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
                          .rotation_degrees = 90.0,
                          .size = ccad::Size{.width = ccad::millimeters(1.5),
-                                            .height = ccad::millimeters(1.0)}}},
+                                            .height = ccad::millimeters(1.0)},
+                         .roundrect_rratio = 0.25}},
       .vias = {ccad::Via{.id = "V1",
                          .net_id = "N_3V3",
                          .position = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},
@@ -107,6 +108,8 @@ int main() {
           "route request policy emitted");
   require(json.find("\"keepouts\"") != std::string::npos, "keepouts emitted");
   require(json.find("\"component_id\": \"U1\"") != std::string::npos, "net member emitted");
+  require(json.find("\"roundrect_rratio\": 0.25") != std::string::npos,
+          "pad roundrect ratio emitted");
 
   const Project loaded = ccad::loadProjectJson(json);
   require(loaded.id == "proj-demo", "project id round trips");
@@ -130,6 +133,8 @@ int main() {
   require(loaded.board->pads.size() == 1, "board pads round trip");
   require(loaded.board->pads.at(0).position.x.nanometers == 5000000, "pad x round trips");
   require(loaded.board->pads.at(0).rotation_degrees == 90.0, "pad rotation round trips");
+  require(loaded.board->pads.at(0).roundrect_rratio.has_value(), "pad roundrect ratio round trips");
+  require(*loaded.board->pads.at(0).roundrect_rratio == 0.25, "pad roundrect ratio value round trips");
   require(loaded.board->vias.size() == 1, "board vias round trip");
   require(loaded.board->vias.at(0).drill.nanometers == 400000, "via drill round trips");
   require(loaded.board->tracks.size() == 1, "board tracks round trip");

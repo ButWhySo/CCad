@@ -43,6 +43,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <cstdlib>
@@ -121,9 +122,39 @@ QAction* addIconAction(QToolBar& toolbar, const std::string& icon_name, const QS
   return action;
 }
 
+QPainterPath trapezoidPreviewPath(const QRectF& rect) {
+  const double inset = std::min(rect.width(), rect.height()) * 0.20;
+  QPainterPath path;
+  path.moveTo(rect.left() + inset, rect.top());
+  path.lineTo(rect.right(), rect.top());
+  path.lineTo(rect.right() - inset, rect.bottom());
+  path.lineTo(rect.left(), rect.bottom());
+  path.closeSubpath();
+  return path;
+}
+
+QPainterPath chamferedRectPreviewPath(const QRectF& rect,
+                                      const std::optional<double> chamfer_ratio) {
+  const double ratio = std::clamp(chamfer_ratio.value_or(0.20), 0.0, 0.5);
+  const double chamfer = std::min(rect.width(), rect.height()) * ratio;
+  QPainterPath path;
+  path.moveTo(rect.left() + chamfer, rect.top());
+  path.lineTo(rect.right() - chamfer, rect.top());
+  path.lineTo(rect.right(), rect.top() + chamfer);
+  path.lineTo(rect.right(), rect.bottom() - chamfer);
+  path.lineTo(rect.right() - chamfer, rect.bottom());
+  path.lineTo(rect.left() + chamfer, rect.bottom());
+  path.lineTo(rect.left(), rect.bottom() - chamfer);
+  path.lineTo(rect.left(), rect.top() + chamfer);
+  path.closeSubpath();
+  return path;
+}
+
 QPainterPath padPreviewPath(const double x_mm, const double y_mm, const double width_mm,
                             const double height_mm, const std::string& shape,
-                            const double rotation_degrees) {
+                            const double rotation_degrees,
+                            const std::optional<double> roundrect_rratio,
+                            const std::optional<double> chamfer_ratio) {
   constexpr double scale = 10.0;
   const QPointF center(x_mm * scale, y_mm * scale);
   const QRectF rect(center.x() - ((width_mm * scale) / 2.0),
@@ -133,12 +164,17 @@ QPainterPath padPreviewPath(const double x_mm, const double y_mm, const double w
   if (shape == "rect") {
     path.addRect(rect);
   } else if (shape == "roundrect" || shape == "rounded_rect") {
-    const double radius = std::min(rect.width(), rect.height()) * 0.25;
+    const double ratio = std::clamp(roundrect_rratio.value_or(0.25), 0.0, 0.5);
+    const double radius = std::min(rect.width(), rect.height()) * ratio;
     path.addRoundedRect(rect, radius, radius);
   } else if (shape == "circle") {
     const double diameter = std::min(rect.width(), rect.height());
     path.addEllipse(QRectF(center.x() - (diameter / 2.0), center.y() - (diameter / 2.0),
                            diameter, diameter));
+  } else if (shape == "trapezoid") {
+    path = trapezoidPreviewPath(rect);
+  } else if (shape == "chamfered_rect") {
+    path = chamferedRectPreviewPath(rect, chamfer_ratio);
   } else {
     path.addEllipse(rect);
   }
@@ -161,7 +197,8 @@ void addPadPreviewItems(QGraphicsScene& scene, std::vector<QGraphicsItem*>& item
     const double h = pad.size.height.nanometers / 1e6;
     const double x = pad.position.x.nanometers / 1e6;
     const double y = pad.position.y.nanometers / 1e6;
-    auto* item = scene.addPath(padPreviewPath(x, y, w, h, pad.shape, pad.rotation_degrees),
+    auto* item = scene.addPath(padPreviewPath(x, y, w, h, pad.shape, pad.rotation_degrees,
+                                              pad.roundrect_rratio, pad.chamfer_ratio),
                                pen, brush);
     item->setZValue(1000);
     items.push_back(item);
@@ -1005,7 +1042,8 @@ void ReviewWindow::enterMoveFootprintMode(const std::string& component_id) {
     const QPointF scene_center = boardPositionToScene(*project_cache_.board, x, y);
     auto* item = canvas_scene_->addPath(padPreviewPath(scene_center.x() / 10.0,
                                                        scene_center.y() / 10.0, w, h,
-                                                       pad.shape, pad.rotation_degrees),
+                                                       pad.shape, pad.rotation_degrees,
+                                                       pad.roundrect_rratio, pad.chamfer_ratio),
                                         QPen(QColor(100, 180, 80), 1.0),
                                         QBrush(QColor(100, 255, 100, 150)));
     item->setZValue(1000);
