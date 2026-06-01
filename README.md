@@ -45,6 +45,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI library chooser now has KiCad-style chooser context with filtered library/name rows, details, and visual symbol/footprint previews.
 - Native GUI library chooser indexes local `library-cache` entries without parsing every symbol or footprint on dialog open; selected rows are parsed lazily for details, preview, and final placement.
 - Native GUI footprint previews and the board canvas use a shared KiCad-inspired layer palette so copper, silkscreen, fabrication, courtyard, edge, and user graphics do not collapse into one generic color.
+- Native GUI can dump a read-only semantic UI map as JSON for LLM/automation tooling, including stable action IDs, tab/canvas bounds, canvas-object IDs, net/layer metadata, route provenance, and click target coordinates.
 - Native GUI symbol placement resolves locally converted KiCad `extends` inheritance from `library-cache`, so derived symbols such as diode variants inherit parent pins before placement.
 - Native GUI footprint placement accepts raw KiCad `.kicad_mod` files from the chooser as well as converted CCad footprint JSON.
 - Native GUI Add behavior is editor-tab aware: PCB opens cache-backed footprint placement, while Schematic opens cache-backed symbol placement.
@@ -612,6 +613,24 @@ Open a project directly:
 $env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
 .\build-qt\ccad_gui.exe .\build-qt\canvas-demo.ccad.json
 ```
+
+Dump a read-only semantic UI map for agent tooling:
+
+```powershell
+$env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
+.\build-qt\ccad_gui.exe --dump-ui-map .\artifacts\demos\sprint156-layer-color-final.ccad.json .\artifacts\demos\ui-map.json
+```
+
+The map reports stable IDs such as `action:add_footprint`, `tab:pcb`, `canvas:pcb`, and `canvas_object:JAC1.1`, plus screen-space target coordinates and CAD metadata.
+
+Validate the exported target coordinates against the live Qt window:
+
+```powershell
+$env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
+.\build-qt\ccad_gui.exe --validate-ui-map-targets .\artifacts\demos\sprint156-layer-color-final.ccad.json .\artifacts\demos\ui-map-target-validation.json
+```
+
+The validator moves the cursor to every visible/enabled exported target and verifies that Qt hit-testing resolves the expected widget, tab, canvas, or canvas item. Hidden or disabled nodes are reported as skipped.
 
 What it does:
 

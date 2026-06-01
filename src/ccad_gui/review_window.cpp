@@ -19,6 +19,7 @@
 
 #include <QAbstractItemView>
 #include <QAction>
+#include <QApplication>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
@@ -30,6 +31,7 @@
 #include <QGraphicsScene>
 #include <QDockWidget>
 #include <QIcon>
+#include <QCursor>
 #include <QKeyEvent>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -42,6 +44,7 @@
 #include <QSize>
 #include <QStatusBar>
 #include <QStringList>
+#include <QTabBar>
 #include <QTabWidget>
 #include <QToolBar>
 #include <QVBoxLayout>
@@ -56,6 +59,7 @@
 #include <sstream>
 #include <string>
 #include <cstdlib>
+#include <vector>
 
 QString formatCursorStatus(const std::optional<ccad::Board>& board, const QPointF& scene_position) {
   constexpr double margin = 18.0;
@@ -103,6 +107,71 @@ QString qstr(const std::string& value) {
   return QString::fromStdString(value);
 }
 
+QString jsonString(const QString& value) {
+  QString output = "\"";
+  for (const QChar ch : value) {
+    if (ch == '\\') {
+      output += "\\\\";
+    } else if (ch == '"') {
+      output += "\\\"";
+    } else if (ch == '\n') {
+      output += "\\n";
+    } else if (ch == '\r') {
+      output += "\\r";
+    } else if (ch == '\t') {
+      output += "\\t";
+    } else {
+      output += ch;
+    }
+  }
+  output += "\"";
+  return output;
+}
+
+QString normalizedIdPart(QString value) {
+  value = value.trimmed().toLower();
+  QString output;
+  output.reserve(value.size());
+  for (const QChar ch : value) {
+    if (ch.isLetterOrNumber()) {
+      output += ch;
+    } else if (!output.endsWith('_')) {
+      output += '_';
+    }
+  }
+  while (output.endsWith('_')) {
+    output.chop(1);
+  }
+  return output.isEmpty() ? "unnamed" : output;
+}
+
+QString actionMapId(const QAction& action) {
+  if (!action.objectName().isEmpty()) {
+    return action.objectName();
+  }
+  return "action:" + normalizedIdPart(action.text());
+}
+
+QString rectJson(const QRect& rect) {
+  return QString("{\"x\":%1,\"y\":%2,\"width\":%3,\"height\":%4}")
+      .arg(rect.x())
+      .arg(rect.y())
+      .arg(rect.width())
+      .arg(rect.height());
+}
+
+QString rectFJson(const QRectF& rect) {
+  return QString("{\"x\":%1,\"y\":%2,\"width\":%3,\"height\":%4}")
+      .arg(rect.x(), 0, 'f', 3)
+      .arg(rect.y(), 0, 'f', 3)
+      .arg(rect.width(), 0, 'f', 3)
+      .arg(rect.height(), 0, 'f', 3);
+}
+
+QString boolJson(const bool value) {
+  return value ? "true" : "false";
+}
+
 std::filesystem::path kicadSourceRoot() {
   if (const char* env = std::getenv("CCAD_KICAD_SRC")) {
     return std::filesystem::path(env);
@@ -126,6 +195,7 @@ QIcon kicadIcon(const std::string& name) {
 
 QAction* addIconAction(QToolBar& toolbar, const std::string& icon_name, const QString& text) {
   auto* action = toolbar.addAction(kicadIcon(icon_name), text);
+  action->setObjectName("action:" + qstr(icon_name));
   action->setToolTip(text);
   action->setStatusTip(text);
   return action;
@@ -546,6 +616,20 @@ ReviewWindow::ReviewWindow() {
   auto* zoom_100_action = new QAction("100%", this);
   auto* navigation_help_action = new QAction("Navigation Controls", this);
   auto* quit_action = new QAction("Quit", this);
+  open_action->setObjectName("action:open");
+  reload_action->setObjectName("action:reload");
+  save_action->setObjectName("action:save");
+  board_setup_action->setObjectName("action:board_setup");
+  undo_action_->setObjectName("action:undo");
+  redo_action_->setObjectName("action:redo");
+  run_drc_action->setObjectName("action:run_drc");
+  export_drc_action->setObjectName("action:export_drc");
+  fit_action->setObjectName("action:fit");
+  zoom_in_action->setObjectName("action:zoom_in");
+  zoom_out_action->setObjectName("action:zoom_out");
+  zoom_100_action->setObjectName("action:zoom_100");
+  navigation_help_action->setObjectName("action:navigation_help");
+  quit_action->setObjectName("action:quit");
   save_action->setShortcut(QKeySequence::Save);
   undo_action_->setShortcut(QKeySequence::Undo);
   redo_action_->setShortcut(QKeySequence::Redo);
@@ -658,8 +742,10 @@ ReviewWindow::ReviewWindow() {
   addIconAction(*right_toolbar, "tool_ratsnest", "Local Ratsnest");
   right_toolbar->addSeparator();
   auto* add_footprint_action = addIconAction(*right_toolbar, "new_footprint", "Add Footprint");
+  add_footprint_action->setObjectName("action:add_footprint");
   add_footprint_action->setShortcut(QKeySequence(Qt::Key_O));
   auto* add_symbol_action = addIconAction(*right_toolbar, "add_symbol_to_schematic", "Add Symbol");
+  add_symbol_action->setObjectName("action:add_symbol");
   add_symbol_action->setShortcut(QKeySequence(Qt::Key_A));
   addIconAction(*right_toolbar, "add_tracks", "Route Track");
   addIconAction(*right_toolbar, "add_via", "Add Via");
@@ -675,10 +761,11 @@ ReviewWindow::ReviewWindow() {
   connect(add_footprint_action, &QAction::triggered, this, [this]() { placeFromActiveEditor(); });
   connect(add_symbol_action, &QAction::triggered, this, [this]() { placeFromActiveEditor(); });
   connect(editor_tabs_, &QTabWidget::currentChanged, this,
-          [add_footprint_action, add_symbol_action](const int index) {
+          [this, add_footprint_action, add_symbol_action](const int index) {
             const bool pcb_tab = index == 0;
             add_footprint_action->setVisible(pcb_tab);
             add_symbol_action->setVisible(!pcb_tab);
+            markUiMapChanged();
           });
   add_footprint_action->setVisible(true);
   add_symbol_action->setVisible(false);
@@ -864,6 +951,17 @@ void ReviewWindow::pushUndoSnapshot() {
   undo_stack_.push_back(project_cache_);
   redo_stack_.clear();
   updateUndoRedoActions();
+}
+
+ReviewWindow::~ReviewWindow() {
+  if (canvas_scene_ != nullptr) {
+    disconnect(canvas_scene_, nullptr, this, nullptr);
+    canvas_scene_->clearSelection();
+  }
+  if (schematic_scene_ != nullptr) {
+    disconnect(schematic_scene_, nullptr, this, nullptr);
+    schematic_scene_->clearSelection();
+  }
 }
 
 void ReviewWindow::restoreProjectSnapshot(const ccad::Project& snapshot) {
@@ -1196,6 +1294,7 @@ void ReviewWindow::renderReview(const ccad::ProjectReview& review) {
   if (auto* board_view = dynamic_cast<BoardCanvasView*>(canvas_view_)) board_view->zoomToFit();
   if (auto* schem_view = dynamic_cast<BoardCanvasView*>(schematic_view_)) schem_view->zoomToFit();
   statusBar()->showMessage(qstr(review.status));
+  markUiMapChanged();
 }
 
 void ReviewWindow::renderCanvas(const ccad::CanvasScene& scene,
@@ -1206,6 +1305,268 @@ void ReviewWindow::renderCanvas(const ccad::CanvasScene& scene,
   if (auto* board_view = dynamic_cast<BoardCanvasView*>(canvas_view_)) {
     board_view->zoomToFit();
   }
+  markUiMapChanged();
+}
+
+void ReviewWindow::markUiMapChanged() {
+  ++ui_map_epoch_;
+}
+
+QString ReviewWindow::uiMapJson() const {
+  QStringList nodes;
+  const QRect root_global_rect(mapToGlobal(QPoint(0, 0)), size());
+  nodes << QString("{\"id\":\"window:review\",\"role\":\"window\",\"label\":%1,"
+                   "\"visible\":%2,\"enabled\":%3,\"global_rect\":%4,"
+                   "\"target_x\":%5,\"target_y\":%6}")
+               .arg(jsonString(windowTitle()))
+               .arg(boolJson(isVisible()))
+               .arg(boolJson(isEnabled()))
+               .arg(rectJson(root_global_rect))
+               .arg(root_global_rect.center().x())
+               .arg(root_global_rect.center().y());
+
+  const QWidget* root = this;
+  const QList<QToolButton*> buttons = findChildren<QToolButton*>();
+  for (const QToolButton* button : buttons) {
+    const QAction* action = button->defaultAction();
+    if (action == nullptr) {
+      continue;
+    }
+    const QPoint local_top_left = button->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
+    const QRect local_rect(local_top_left, button->size());
+    const QRect global_rect(button->mapToGlobal(QPoint(0, 0)), button->size());
+    nodes << QString("{\"id\":%1,\"role\":\"action\",\"label\":%2,"
+                     "\"visible\":%3,\"enabled\":%4,\"local_rect\":%5,"
+                     "\"global_rect\":%6,\"target_x\":%7,\"target_y\":%8}")
+                 .arg(jsonString(actionMapId(*action)))
+                 .arg(jsonString(action->text()))
+                 .arg(boolJson(button->isVisible() && action->isVisible()))
+                 .arg(boolJson(button->isEnabled() && action->isEnabled()))
+                 .arg(rectJson(local_rect))
+                 .arg(rectJson(global_rect))
+                 .arg(global_rect.center().x())
+                 .arg(global_rect.center().y());
+  }
+
+  if (editor_tabs_ != nullptr && editor_tabs_->tabBar() != nullptr) {
+    for (int index = 0; index < editor_tabs_->count(); ++index) {
+      const QString id = index == 0 ? "tab:pcb" : index == 1 ? "tab:schematic"
+                                                             : "tab:" + QString::number(index);
+      const QRect tab_rect = editor_tabs_->tabBar()->tabRect(index);
+      const QRect global_rect(editor_tabs_->tabBar()->mapToGlobal(tab_rect.topLeft()),
+                              tab_rect.size());
+      nodes << QString("{\"id\":%1,\"role\":\"tab\",\"label\":%2,"
+                       "\"visible\":%3,\"enabled\":%4,\"selected\":%5,"
+                       "\"global_rect\":%6,\"target_x\":%7,\"target_y\":%8}")
+                   .arg(jsonString(id))
+                   .arg(jsonString(editor_tabs_->tabText(index)))
+                   .arg(boolJson(editor_tabs_->isVisible()))
+                   .arg(boolJson(editor_tabs_->isTabEnabled(index)))
+                   .arg(boolJson(editor_tabs_->currentIndex() == index))
+                   .arg(rectJson(global_rect))
+                   .arg(global_rect.center().x())
+                   .arg(global_rect.center().y());
+    }
+  }
+
+  const auto appendViewNode = [&nodes](const QString& id, const QString& label,
+                                       const QGraphicsView* view) {
+    if (view == nullptr) {
+      return;
+    }
+    const QRect global_rect(view->viewport()->mapToGlobal(QPoint(0, 0)),
+                            view->viewport()->size());
+    nodes << QString("{\"id\":%1,\"role\":\"canvas\",\"label\":%2,"
+                     "\"visible\":%3,\"enabled\":%4,\"global_rect\":%5,"
+                     "\"target_x\":%6,\"target_y\":%7}")
+                 .arg(jsonString(id))
+                 .arg(jsonString(label))
+                 .arg(boolJson(view->isVisible()))
+                 .arg(boolJson(view->isEnabled()))
+                 .arg(rectJson(global_rect))
+                 .arg(global_rect.center().x())
+                 .arg(global_rect.center().y());
+  };
+  appendViewNode("canvas:pcb", "PCB Canvas", canvas_view_);
+  appendViewNode("canvas:schematic", "Schematic Canvas", schematic_view_);
+
+  const auto appendCanvasObjects = [&nodes](const QString& canvas_id, const QGraphicsView* view,
+                                            const QGraphicsScene* scene) {
+    if (view == nullptr || scene == nullptr) {
+      return;
+    }
+    for (const QGraphicsItem* item : scene->items()) {
+      const QString object_id = canvasObjectId(*item);
+      const QString object_type = canvasObjectType(*item);
+      if (object_id.isEmpty() || object_type.isEmpty()) {
+        continue;
+      }
+      const QRectF scene_rect = item->sceneBoundingRect();
+      const QRect viewport_rect =
+          QRect(view->mapFromScene(scene_rect.topLeft()),
+                view->mapFromScene(scene_rect.bottomRight()))
+              .normalized();
+      const QRect global_rect(view->viewport()->mapToGlobal(viewport_rect.topLeft()),
+                              viewport_rect.size());
+      const bool visible = view->isVisible() && item->isVisible();
+      nodes << QString("{\"id\":%1,\"role\":\"canvas_object\",\"canvas\":%2,"
+                       "\"type\":%3,\"object_id\":%4,\"visible\":%5,"
+                       "\"interactive\":%6,\"net_id\":%7,"
+                       "\"layer_id\":%8,\"route_request_id\":%9,"
+                       "\"scene_rect\":%10,\"global_rect\":%11,"
+                       "\"target_x\":%12,\"target_y\":%13}")
+                   .arg(jsonString(QString("canvas_object:") + object_id))
+                   .arg(jsonString(canvas_id))
+                   .arg(jsonString(object_type))
+                   .arg(jsonString(object_id))
+                   .arg(boolJson(visible))
+                   .arg(boolJson(visible && (item->flags() & QGraphicsItem::ItemIsSelectable)))
+                   .arg(jsonString(canvasObjectNetId(*item)))
+                   .arg(jsonString(canvasObjectLayerId(*item)))
+                   .arg(jsonString(canvasObjectRouteRequestId(*item)))
+                   .arg(rectFJson(scene_rect))
+                   .arg(rectJson(global_rect))
+                   .arg(global_rect.center().x())
+                   .arg(global_rect.center().y());
+    }
+  };
+  appendCanvasObjects("canvas:pcb", canvas_view_, canvas_scene_);
+  appendCanvasObjects("canvas:schematic", schematic_view_, schematic_scene_);
+
+  return QString("{\"schema_version\":1,\"ui_epoch\":%1,\"nodes\":[%2]}\n")
+      .arg(ui_map_epoch_)
+      .arg(nodes.join(','));
+}
+
+QString ReviewWindow::validateUiMapTargetsJson(const bool move_cursor) const {
+  QStringList checks;
+  int total = 0;
+  int checked = 0;
+  int skipped = 0;
+  int failures = 0;
+
+  const auto appendCheck = [&checks, &total, &checked, &skipped, &failures, move_cursor](
+                               const QString& id, const QString& role, const bool visible,
+                               const bool enabled, const QPoint& target,
+                               const bool hit, const QString& hit_label) {
+    ++total;
+    if (!visible || !enabled) {
+      ++skipped;
+      checks << QString("{\"id\":%1,\"role\":%2,\"checked\":false,"
+                        "\"skipped_reason\":%3,\"target_x\":%4,\"target_y\":%5}")
+                    .arg(jsonString(id))
+                    .arg(jsonString(role))
+                    .arg(jsonString(!visible ? "hidden" : "disabled"))
+                    .arg(target.x())
+                    .arg(target.y());
+      return;
+    }
+    if (move_cursor) {
+      QCursor::setPos(target);
+      QApplication::processEvents();
+    }
+    ++checked;
+    if (!hit) {
+      ++failures;
+    }
+    checks << QString("{\"id\":%1,\"role\":%2,\"checked\":true,\"hit\":%3,"
+                      "\"hit_label\":%4,\"target_x\":%5,\"target_y\":%6}")
+                  .arg(jsonString(id))
+                  .arg(jsonString(role))
+                  .arg(boolJson(hit))
+                  .arg(jsonString(hit_label))
+                  .arg(target.x())
+                  .arg(target.y());
+  };
+
+  const QList<QToolButton*> buttons = findChildren<QToolButton*>();
+  for (const QToolButton* button : buttons) {
+    const QAction* action = button->defaultAction();
+    if (action == nullptr) {
+      continue;
+    }
+    const QRect global_rect(button->mapToGlobal(QPoint(0, 0)), button->size());
+    const QPoint target = global_rect.center();
+    QWidget* hit_widget = QApplication::widgetAt(target);
+    const bool hit = hit_widget == button || button->isAncestorOf(hit_widget);
+    appendCheck(actionMapId(*action), "action", button->isVisible() && action->isVisible(),
+                button->isEnabled() && action->isEnabled(), target, hit,
+                hit_widget != nullptr ? hit_widget->objectName() : "none");
+  }
+
+  if (editor_tabs_ != nullptr && editor_tabs_->tabBar() != nullptr) {
+    for (int index = 0; index < editor_tabs_->count(); ++index) {
+      const QString id = index == 0 ? "tab:pcb" : index == 1 ? "tab:schematic"
+                                                             : "tab:" + QString::number(index);
+      const QRect tab_rect = editor_tabs_->tabBar()->tabRect(index);
+      const QRect global_rect(editor_tabs_->tabBar()->mapToGlobal(tab_rect.topLeft()),
+                              tab_rect.size());
+      const QPoint target = global_rect.center();
+      const int tab_at_target = editor_tabs_->tabBar()->tabAt(
+          editor_tabs_->tabBar()->mapFromGlobal(target));
+      appendCheck(id, "tab", editor_tabs_->isVisible(), editor_tabs_->isTabEnabled(index), target,
+                  tab_at_target == index, QString::number(tab_at_target));
+    }
+  }
+
+  const auto validateCanvas = [&appendCheck](const QString& id, const QGraphicsView* view) {
+    if (view == nullptr) {
+      return;
+    }
+    const QRect global_rect(view->viewport()->mapToGlobal(QPoint(0, 0)),
+                            view->viewport()->size());
+    const QPoint target = global_rect.center();
+    QWidget* hit_widget = QApplication::widgetAt(target);
+    appendCheck(id, "canvas", view->isVisible(), view->isEnabled(), target,
+                hit_widget == view->viewport(), hit_widget != nullptr ? hit_widget->objectName()
+                                                                      : "none");
+  };
+  validateCanvas("canvas:pcb", canvas_view_);
+  validateCanvas("canvas:schematic", schematic_view_);
+
+  const auto validateCanvasObjects = [&appendCheck](const QString& canvas_id,
+                                                    const QGraphicsView* view,
+                                                    const QGraphicsScene* scene) {
+    if (view == nullptr || scene == nullptr) {
+      return;
+    }
+    for (const QGraphicsItem* item : scene->items()) {
+      const QString object_id = canvasObjectId(*item);
+      const QString object_type = canvasObjectType(*item);
+      if (object_id.isEmpty() || object_type.isEmpty()) {
+        continue;
+      }
+      const QRectF scene_rect = item->sceneBoundingRect();
+      const QPoint target = view->viewport()->mapToGlobal(
+          view->mapFromScene(scene_rect.center()));
+      const QPoint viewport_target = view->viewport()->mapFromGlobal(target);
+      const QList<QGraphicsItem*> hit_items = scene->items(view->mapToScene(viewport_target));
+      bool hit = false;
+      for (const QGraphicsItem* hit_item : hit_items) {
+        if (hit_item == item || canvasObjectId(*hit_item) == object_id) {
+          hit = true;
+          break;
+        }
+      }
+      appendCheck(QString("canvas_object:") + object_id, "canvas_object",
+                  view->isVisible() && item->isVisible(),
+                  bool(item->flags() & QGraphicsItem::ItemIsSelectable), target, hit,
+                  canvas_id + ":" + object_type);
+    }
+  };
+  validateCanvasObjects("canvas:pcb", canvas_view_, canvas_scene_);
+  validateCanvasObjects("canvas:schematic", schematic_view_, schematic_scene_);
+
+  return QString("{\"schema_version\":1,\"ui_epoch\":%1,\"move_cursor\":%2,"
+                 "\"summary\":{\"total\":%3,\"checked\":%4,\"skipped\":%5,"
+                 "\"failures\":%6},\"checks\":[%7]}\n")
+      .arg(ui_map_epoch_)
+      .arg(boolJson(move_cursor))
+      .arg(total)
+      .arg(checked)
+      .arg(skipped)
+      .arg(failures)
+      .arg(checks.join(','));
 }
 
 void ReviewWindow::updateCursorStatus(const QPointF& scene_position, const double zoom_factor) {

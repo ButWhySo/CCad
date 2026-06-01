@@ -472,6 +472,38 @@ if(CCAD_BUILD_GUI)
     endif()
     add_test(NAME gui_board_canvas_view COMMAND ccad_gui_board_canvas_view_tests)
 
+    add_executable(ccad_gui_ui_map_tests
+      tests/test_gui_ui_map.cpp
+      src/ccad_gui/review_window.cpp
+      src/ccad_gui/component_wizard_dialog.cpp
+      src/ccad_gui/footprint_placement_dialog.cpp
+      src/ccad_gui/symbol_placement_dialog.cpp
+      src/ccad_gui/library_browser_dialog.cpp
+      src/ccad_gui/project_summary_panel.cpp
+      src/ccad_gui/diagnostics_panel.cpp
+      src/ccad_gui/transaction_timeline_panel.cpp
+      src/ccad_gui/object_browser_panel.cpp
+      src/ccad_gui/selection_inspector_panel.cpp
+      src/ccad_gui/board_canvas_renderer.cpp
+    )
+    target_link_libraries(ccad_gui_ui_map_tests PRIVATE ccad_core Qt6::Widgets)
+    target_include_directories(ccad_gui_ui_map_tests PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests
+    )
+    if(MSVC)
+      target_compile_options(ccad_gui_ui_map_tests PRIVATE /W4)
+      if(CCAD_WARNINGS_AS_ERRORS)
+        target_compile_options(ccad_gui_ui_map_tests PRIVATE /WX)
+      endif()
+    else()
+      target_compile_options(ccad_gui_ui_map_tests PRIVATE -Wall -Wextra -Wpedantic)
+      if(CCAD_WARNINGS_AS_ERRORS)
+        target_compile_options(ccad_gui_ui_map_tests PRIVATE -Werror)
+      endif()
+    endif()
+    add_test(NAME gui_ui_map COMMAND ccad_gui_ui_map_tests)
+
     add_executable(ccad_gui_review_window_cursor_status_tests
       tests/test_gui_review_window_cursor_status.cpp
       src/ccad_gui/review_window.cpp
