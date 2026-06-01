@@ -108,14 +108,19 @@ const std::vector<CommandHelp>& commandHelp() {
                   .usage = "ccad pcb set-outline --file <path> --x-mm <n> --y-mm <n> "
                            "--width-mm <n> --height-mm <n>"},
       CommandHelp{.name = "pcb add-pad",
-                  .summary = "Append one rectangular pad to a board project",
+                  .summary = "Append one KiCad-style pad to a board project",
                   .usage = "ccad pcb add-pad --file <path> --id <id> --component <id> "
-                           "--pin <name> --net <id> --layer <id> --x-mm <n> --y-mm <n> "
-                           "--width-mm <n> --height-mm <n>"},
+                           "--pin <name> --net <id> --layers <ids> --x-mm <n> --y-mm <n> "
+                           "--width-mm <n> --height-mm <n> [--type smd|thru_hole|np_thru_hole] "
+                           "[--shape rect|circle|oval|roundrect|trapezoid|chamfered_rect] "
+                           "[--drill-mm <n>] [--roundrect-rratio <0..0.5>] "
+                           "[--chamfer-ratio <0..0.5>]"},
       CommandHelp{.name = "pcb set-pad",
-                  .summary = "Update one existing pad metadata and rotation",
+                  .summary = "Update one existing pad metadata, shape, and rotation",
                   .usage = "ccad pcb set-pad --file <path> --id <id> --component <id> "
-                           "--pin <name> --net <id> --layer <id> --rotation-deg <n>"},
+                           "--pin <name> --net <id> --layers <ids> --rotation-deg <n> "
+                           "[--type <type>] [--shape <shape>] [--roundrect-rratio <0..0.5>] "
+                           "[--chamfer-ratio <0..0.5>]"},
       CommandHelp{.name = "pcb add-via",
                   .summary = "Append one via to a board project",
                   .usage = "ccad pcb add-via --file <path> --id <id> --net <id> --x-mm <n> "
