@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <iostream>
 #include <map>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
@@ -122,6 +123,18 @@ std::vector<std::string> splitLayers(const std::string& value) {
 ccad::Length requireMillimeters(const std::map<std::string, std::string>& options,
                                 const std::string& key) {
   return ccad::millimeters(requireDoubleOption(options, key));
+}
+
+std::optional<double> optionalRatio(const std::map<std::string, std::string>& options,
+                                    const std::string& key) {
+  if (!options.contains(key)) {
+    return std::nullopt;
+  }
+  const double ratio = requireDoubleOption(options, key);
+  if (ratio < 0.0 || ratio > 0.5) {
+    throw std::runtime_error(key + " must be between 0.0 and 0.5");
+  }
+  return ratio;
 }
 
 void requireBoardObjectsInsideOutline(const ccad::Board& board) {
@@ -476,7 +489,8 @@ int pcbCommand(const std::vector<std::string>& args) {
     if (subcommand == "add-pad") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--component", "--pin", "--net", "--layers",
-                                 "--type", "--shape", "--drill-mm",
+                                 "--type", "--shape", "--drill-mm", "--roundrect-rratio",
+                                 "--chamfer-ratio",
                                  "--x-mm", "--y-mm", "--width-mm", "--height-mm"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
@@ -500,6 +514,8 @@ int pcbCommand(const std::vector<std::string>& args) {
       if (options.contains("--drill-mm")) {
         drill = ccad::millimeters(requireDoubleOption(options, "--drill-mm"));
       }
+      const std::optional<double> roundrect_rratio = optionalRatio(options, "--roundrect-rratio");
+      const std::optional<double> chamfer_ratio = optionalRatio(options, "--chamfer-ratio");
       board.pads.push_back(ccad::Pad{
           .id = id,
           .component_id = requireOption(options, "--component"),
@@ -511,6 +527,8 @@ int pcbCommand(const std::vector<std::string>& args) {
           .position = position,
           .size = size,
           .drill = drill,
+          .roundrect_rratio = roundrect_rratio,
+          .chamfer_ratio = chamfer_ratio,
       });
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
@@ -522,7 +540,8 @@ int pcbCommand(const std::vector<std::string>& args) {
     if (subcommand == "set-pad") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--component", "--pin", "--net", "--layers",
-                                 "--type", "--shape", "--rotation-deg"});
+                                 "--type", "--shape", "--rotation-deg", "--roundrect-rratio",
+                                 "--chamfer-ratio"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
       ccad::Board& board = requireBoard(project);
@@ -542,6 +561,12 @@ int pcbCommand(const std::vector<std::string>& args) {
           pad.layers = layers;
           if (options.contains("--type")) pad.type = requireOption(options, "--type");
           if (options.contains("--shape")) pad.shape = requireOption(options, "--shape");
+          if (options.contains("--roundrect-rratio")) {
+            pad.roundrect_rratio = optionalRatio(options, "--roundrect-rratio");
+          }
+          if (options.contains("--chamfer-ratio")) {
+            pad.chamfer_ratio = optionalRatio(options, "--chamfer-ratio");
+          }
           pad.rotation_degrees = rotation_degrees;
           updated = true;
           break;

@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 150 working on standard layer registry fidelity on branch `sprint-150-standard-layer-registry`.
+Progress counter: Phase 7 / 7, Sprint 151 working on KiCad pad authoring CLI on branch `sprint-151-pad-authoring-cli`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -16,6 +16,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - CLI: `ccad help --format json`, `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
 - CLI PCB authoring: `ccad pcb list-nets`, `ccad pcb list-objects`, `ccad pcb get-object`, `ccad pcb route-status`, `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
+- CLI PCB pad authoring supports KiCad-style pad type, shape, drill, roundrect ratio, chamfer ratio, and multi-layer metadata.
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
 - Physical board outline, layers, rectangular placement regions, rectangular keepouts, pads, vias, and track segments in project JSON.
 - Project review and `ccad inspect` report the full board outline rectangle and active board-level DRC rules.
@@ -435,8 +436,8 @@ Add PCB primitives through the CLI:
 .\build-qt\ccad.exe pcb set-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --name "Inner signal copper" --kind copper --visible true
 .\build-qt\ccad.exe pcb set-layer-visibility --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --visible true
 .\build-qt\ccad.exe pcb remove-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu
-.\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
-.\build-qt\ccad.exe pcb set-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --rotation-deg 90
+.\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layers F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
+.\build-qt\ccad.exe pcb set-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layers F.Cu --rotation-deg 90
 .\build-qt\ccad.exe pcb add-via --file .\build-qt\canvas-demo.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
 .\build-qt\ccad.exe pcb set-via --file .\build-qt\canvas-demo.ccad.json --id V1 --diameter-mm 1.0 --drill-mm 0.5 --net N2
 .\build-qt\ccad.exe pcb add-track --file .\build-qt\canvas-demo.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
@@ -468,8 +469,8 @@ What these do:
 - `pcb set-layer` updates an existing layer's display name, kind, and visibility while rejecting non-copper kind changes for layers referenced by pads or tracks.
 - `pcb remove-layer` removes an unused board layer by stable ID.
 - `pcb set-layer-visibility` updates an existing layer's visibility flag for review surfaces.
-- `pcb add-pad` appends a rectangular pad to an existing board project.
-- `pcb set-pad` updates an existing pad's component, pin, net, layer, and rotation.
+- `pcb add-pad` appends a KiCad-style pad to an existing board project. Optional metadata includes `--type`, `--shape`, `--drill-mm`, `--roundrect-rratio`, and `--chamfer-ratio`.
+- `pcb set-pad` updates an existing pad's component, pin, net, layers, type, shape, roundrect ratio, chamfer ratio, and rotation.
 - `pcb add-via` appends a plated via with diameter and drill size.
 - `pcb set-via` updates an existing via diameter, drill size, and optional net ID.
 - `pcb add-track` appends a straight copper track segment.
@@ -627,7 +628,7 @@ ctest --test-dir build-qt --output-on-failure
 .\build-qt\ccad.exe pcb add-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --name "Inner 1 copper" --kind copper --visible false
 .\build-qt\ccad.exe pcb set-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --name "Inner signal copper" --kind copper --visible true
 .\build-qt\ccad.exe pcb set-layer-visibility --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --visible true
-.\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
+.\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layers F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 .\build-qt\ccad.exe pcb add-via --file .\build-qt\canvas-demo.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
 .\build-qt\ccad.exe pcb set-via --file .\build-qt\canvas-demo.ccad.json --id V1 --diameter-mm 1.0 --drill-mm 0.5 --net N2
 .\build-qt\ccad.exe pcb add-track --file .\build-qt\canvas-demo.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25

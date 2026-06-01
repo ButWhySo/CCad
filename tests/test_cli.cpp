@@ -172,6 +172,45 @@ int main() {
   require(run(add_standard_layers_command) == 0,
           "pcb add-standard-layers is idempotent for already-complete boards");
 
+  const std::filesystem::path advanced_pad_path = temp / "advanced-pad-authoring.ccad.json";
+  require(run(quote(CCAD_BINARY) +
+              " init --name advanced-pad-authoring --width-mm 42 --height-mm 28 --out " +
+              quote(advanced_pad_path)) == 0,
+          "advanced pad board init exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb add-pad --file " + quote(advanced_pad_path) +
+              " --id P2 --component U1 --pin 2 --net N1 --layers F.Cu"
+              " --type smd --shape roundrect --roundrect-rratio 0.25"
+              " --x-mm 12 --y-mm 6 --width-mm 1.2 --height-mm 1.0") == 0,
+          "pcb add-pad accepts KiCad roundrect pad metadata");
+  require(run(quote(CCAD_BINARY) + " pcb add-pad --file " + quote(advanced_pad_path) +
+              " --id P3 --component U1 --pin 3 --net N1 --layers F.Cu"
+              " --type smd --shape chamfered_rect --chamfer-ratio 0.20"
+              " --x-mm 14 --y-mm 6 --width-mm 1.2 --height-mm 1.0") == 0,
+          "pcb add-pad accepts KiCad chamfered pad metadata");
+  require(run(quote(CCAD_BINARY) + " pcb add-pad --file " + quote(advanced_pad_path) +
+              " --id P4 --component U1 --pin 4 --net N1 --layers *.Cu,*.Mask"
+              " --type thru_hole --shape circle --drill-mm 0.7"
+              " --x-mm 16 --y-mm 6 --width-mm 1.5 --height-mm 1.5") == 0,
+          "pcb add-pad accepts KiCad through-hole pad metadata");
+  const std::string advanced_pad_json = readFile(advanced_pad_path);
+  require(advanced_pad_json.find("\"shape\": \"roundrect\"") != std::string::npos,
+          "pcb add-pad writes roundrect shape");
+  require(advanced_pad_json.find("\"roundrect_rratio\": 0.25") != std::string::npos,
+          "pcb add-pad writes roundrect ratio");
+  require(advanced_pad_json.find("\"shape\": \"chamfered_rect\"") != std::string::npos,
+          "pcb add-pad writes chamfered shape");
+  require(advanced_pad_json.find("\"chamfer_ratio\": 0.2") != std::string::npos,
+          "pcb add-pad writes chamfer ratio");
+  require(advanced_pad_json.find("\"type\": \"thru_hole\"") != std::string::npos,
+          "pcb add-pad writes through-hole type");
+  require(advanced_pad_json.find("\"drill_nm\": 700000") != std::string::npos,
+          "pcb add-pad writes through-hole drill");
+  require(run(quote(CCAD_BINARY) + " pcb add-pad --file " + quote(advanced_pad_path) +
+              " --id P_BAD --component U1 --pin 9 --net N1 --layers F.Cu"
+              " --shape roundrect --roundrect-rratio 0.75"
+              " --x-mm 18 --y-mm 6 --width-mm 1.0 --height-mm 1.0") != 0,
+          "pcb add-pad rejects invalid roundrect ratio");
+
   const std::string set_layer_visibility_command =
       quote(CCAD_BINARY) + " pcb set-layer-visibility --file " + quote(board_project_path) +
       " --id In1.Cu --visible true";
@@ -299,7 +338,6 @@ int main() {
   require(pad_json.find("\"id\": \"P1\"") != std::string::npos, "pcb add-pad writes id");
   require(pad_json.find("\"width_nm\": 1500000") != std::string::npos,
           "pcb add-pad writes width");
-
   const std::string add_via_command =
       quote(CCAD_BINARY) + " pcb add-via --file " + quote(board_project_path) +
       " --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4";
@@ -1016,6 +1054,20 @@ int main() {
           "pcb set-pad writes layer");
   require(set_pad_json.find("\"rotation_degrees\": 90") != std::string::npos,
           "pcb set-pad writes rotation");
+  require(run(quote(CCAD_BINARY) + " pcb set-pad --file " + quote(set_pad_board_path) +
+              " --id SPD1 --component U2 --pin 2 --net N2 --layers B.Cu"
+              " --type smd --shape roundrect --roundrect-rratio 0.15"
+              " --rotation-deg 90") == 0,
+          "pcb set-pad updates pad shape metadata");
+  const std::string set_pad_shape_json = readFile(set_pad_board_path);
+  require(set_pad_shape_json.find("\"shape\": \"roundrect\"") != std::string::npos,
+          "pcb set-pad writes shape");
+  require(set_pad_shape_json.find("\"roundrect_rratio\": 0.15") != std::string::npos,
+          "pcb set-pad writes roundrect ratio");
+  require(run(quote(CCAD_BINARY) + " pcb set-pad --file " + quote(set_pad_board_path) +
+              " --id SPD1 --component U2 --pin 2 --net N2 --layers B.Cu"
+              " --roundrect-rratio 0.75 --rotation-deg 90") != 0,
+          "pcb set-pad rejects invalid roundrect ratio");
   require(run(quote(CCAD_BINARY) + " pcb set-pad --file " + quote(set_pad_board_path) +
               " --id SPD1 --component U2 --pin 2 --net N2 --layers F.SilkS"
               " --rotation-deg 90") != 0,
