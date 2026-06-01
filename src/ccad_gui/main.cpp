@@ -91,6 +91,36 @@ int main(int argc, char** argv) {
     });
 
     return QApplication::exec();
+  } else if (argc == 5 && std::string(argv[1]) == "--ui-trigger-safe") {
+    const std::filesystem::path project_path(argv[2]);
+    const QString action_id = QString::fromLocal8Bit(argv[3]);
+    const std::filesystem::path output_path(argv[4]);
+    ReviewWindow window;
+    window.loadProjectPath(project_path);
+    window.show();
+
+    QTimer::singleShot(500, &window, [&window, action_id, output_path]() {
+      std::ofstream output(output_path, std::ios::binary);
+      if (!output) {
+        std::cerr << "failed to open UI action output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      const QByteArray bytes = window.triggerSafeUiActionJson(action_id).toUtf8();
+      output.write(bytes.constData(), bytes.size());
+      if (!output) {
+        std::cerr << "failed to write UI action output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      std::cout << "ui action result saved: " << output_path.string() << '\n';
+      std::cout.flush();
+      QCoreApplication::exit(0);
+    });
+
+    return QApplication::exec();
   } else if (argc == 6 && std::string(argv[1]) == "--ui-target-board-point") {
     const std::filesystem::path project_path(argv[2]);
     const double x_mm = std::stod(argv[3]);

@@ -117,4 +117,26 @@ int main(int argc, char** argv) {
   require(contains(outside, "\"found\":false"), "outside board point fails explicitly");
   require(contains(outside, "\"reason\":\"outside_board\""),
           "outside board point reports reason");
+
+  const QString zoom_action = window.triggerSafeUiActionJson("action:zoom_in");
+  require(contains(zoom_action, "\"performed\":true"), "safe zoom action triggers");
+  require(contains(zoom_action, "\"reason\":\"triggered\""), "safe action reports trigger");
+
+  const QString schematic_tab = window.triggerSafeUiActionJson("tab:schematic");
+  require(contains(schematic_tab, "\"performed\":true"), "safe schematic tab trigger works");
+  require(contains(window.uiTargetJsonById("tab:schematic"), "\"visible\":true"),
+          "schematic tab remains targetable after trigger");
+
+  const QString pcb_tab = window.triggerSafeUiActionJson("tab:pcb");
+  require(contains(pcb_tab, "\"performed\":true"), "safe PCB tab trigger works");
+
+  const QString unsafe = window.triggerSafeUiActionJson("action:save");
+  require(contains(unsafe, "\"performed\":false"), "unsafe action is refused");
+  require(contains(unsafe, "\"reason\":\"unsafe_action_requires_human_or_kernel_tool\""),
+          "unsafe action reports reason");
+
+  const QString unknown_action = window.triggerSafeUiActionJson("action:nope");
+  require(contains(unknown_action, "\"performed\":false"), "unknown action is refused");
+  require(contains(unknown_action, "\"reason\":\"unknown_or_not_allowlisted\""),
+          "unknown action reports reason");
 }

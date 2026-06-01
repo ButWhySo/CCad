@@ -41,6 +41,7 @@ class ReviewWindow final : public QMainWindow {
   QString validateUiMapTargetsJson(bool move_cursor) const;
   QString uiTargetJsonById(const QString& id) const;
   QString uiTargetJsonForBoardPoint(double x_mm, double y_mm) const;
+  QString triggerSafeUiActionJson(const QString& id);
 
  protected:
   bool eventFilter(QObject* obj, QEvent* event) override;
