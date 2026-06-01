@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 152 working on rich pad query contracts on branch `sprint-152-rich-pad-query-contract`.
+Progress counter: Phase 7 / 7, Sprint 153 working on route-job pad metadata on branch `sprint-153-route-job-pad-metadata`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -82,7 +82,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - CLI diff tests cover board-level physical object entries in executable JSON output.
 - CLI PCB authoring can list physical board net usage counts as compact JSON.
 - CLI PCB authoring can list route-request intent records and route completion status as compact JSON.
-- CLI PCB authoring can export compact route-job JSON for external router handoff.
+- CLI PCB authoring can export compact route-job JSON for external router handoff, including KiCad-style pad type, shape, drill, ratio, layer, and rotation metadata.
 - CLI PCB authoring can list board layer and physical object IDs as compact JSON, with optional type filtering.
 - CLI PCB authoring can inspect one board layer or physical object by stable ID as compact JSON, including route provenance for tracks.
 - CLI PCB authoring can remove physical board objects by stable ID.
@@ -460,7 +460,7 @@ What these do:
 - `pcb list-nets` emits compact physical net usage counts for pads, vias, and tracks.
 - `pcb route-status` emits compact route progress counts for open, partial, and completed route requests, derived from current route requests and track provenance.
 - `inspect` also reports board route progress in review JSON so GUI and agents share the same route-review contract.
-- `pcb export-route-job` emits a compact deterministic route-job JSON envelope with schema/version metadata, units, board outline, design rules, layers, pads, vias, tracks, keepouts, placement regions, and route requests; pass `--request-id <id>` to export one request.
+- `pcb export-route-job` emits a compact deterministic route-job JSON envelope with schema/version metadata, units, board outline, design rules, layers, pads, vias, tracks, keepouts, placement regions, and route requests; pass `--request-id <id>` to export one request. Pad entries include KiCad-style `pad_type`, `shape`, `layers`, optional `drill_nm`, optional `roundrect_rratio`, optional `chamfer_ratio`, position, rotation, and size so external routers and AI tools can reason about actual pad geometry.
 - `pcb list-objects` emits compact board layer and physical object rows as JSON, with optional type filtering for `layer`, `pad`, `via`, `track`, `keepout`, or `placement_region`. Pad rows include KiCad-style `pad_type`, `shape`, optional `drill_nm`, optional `roundrect_rratio`, and optional `chamfer_ratio`.
 - `pcb get-object` emits one board layer, pad, via, track, keepout, or placement region by stable ID as compact JSON. Pad objects include their KiCad-style type, shape, drill, ratio, layer, position, rotation, and size metadata.
 - `pcb set-outline` replaces the rectangular board outline while rejecting outlines that would leave existing pads, vias, tracks, keepouts, or placement regions outside the board.
