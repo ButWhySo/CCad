@@ -6,14 +6,14 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 147
-- Branch: `sprint-147-interactive-authoring`
+- Sprint: 148
+- Branch: `main`
 - Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
 
 **Current State**: 
-- **Sprint 144 (Drill Export)** is complete. It added `ccad pcb export-drill` to emit an Excellon drill file for manufacturing.
+- **Sprint 147 (Interactive Authoring)** is complete. It added interactive footprint placement via the GUI with a new `FootprintPlacementDialog` and extracted placement logic to `ccad_core`.
 
 ## Phase Roadmap
 
@@ -252,6 +252,8 @@ Sprint 139 completed Agent Benchmark Harness. Introduced `scripts/benchmark.py` 
 
 Sprint 140 completed Agent MCP Support and closed Phase 6. The `agent serve` loop now natively speaks the Model Context Protocol (MCP) by handling `initialize`, `tools/list`, and `tools/call`, allowing seamless integration with modern LLM-driven tooling.
 
+Sprint 147 completed Interactive Authoring. It introduced `ccad_core/placement.hpp` for core footprint placement logic, replacing inline CLI logic. It also added `FootprintPlacementDialog` to the GUI, allowing users to interactively place footprints on the board canvas through the 'Add Footprint' toolbar action.
+
 ## Reporting Rule
 
 
@@ -276,3 +278,5 @@ Because full CMake and CTest verification is heavy and token-consuming in this r
 ## External Reference Rule
 
 Every CCad feature or bugfix sprint must start with current external references for the feature domain before code edits begin. For KiCad-compatible PCB/CAD behavior, official KiCad documentation and KiCad developer file-format documentation are mandatory. Manufacturing, layer-stack, DRC, and fabrication work should add Altium or IPC-style industry references when relevant. Simulation work should add KiCad ngspice and ngspice references. AI harness and observability work should add OpenTelemetry, Langfuse, LangGraph, or equivalent primary references. The sprint file must include a "References Checked" section that records the sources, the behavior they imply, CCad's compatibility decision, and the verification evidence tied to that behavior. If internet lookup fails, record the failure and use local cached docs only as a temporary fallback.
+
+Sprint 148 is verified on branch `sprint-148-gui-kicad-parity`. The batch adds KiCad-style icon toolbars sourced from the local KiCad checkout, shape-aware pad and drill rendering for annular-ring visibility, core-owned interactive placement and movement, GUI symbol and footprint placement entry points, legacy pad `layer_id` JSON compatibility, and the official visual screenshot proof. The sprint file is `docs/devops/sprints/2026-06-01-sprint-148-gui-kicad-parity.md`. The final clean rebuild passed all 177 build steps, and CTest passed 33 of 33 tests.

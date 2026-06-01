@@ -20,12 +20,15 @@ struct CanvasLayer {
 struct CanvasPad {
   std::string id;
   std::string net_id;
-  std::string layer_id;
+  std::vector<std::string> layers;
+  std::string type;
+  std::string shape;
   double x_units = 0.0;
   double y_units = 0.0;
   double width_units = 0.0;
   double height_units = 0.0;
   double rotation_degrees = 0.0;
+  double drill_units = 0.0;
 };
 
 struct CanvasVia {

@@ -198,22 +198,22 @@ Invoke-Ccad pcb set-rules --file $Project --copper-clearance-mm 0.20 --min-track
 Invoke-Ccad pcb add-standard-layers --file $Project
 Invoke-Ccad pcb set-layer-visibility --file $Project --id In1.Cu --visible true
 Invoke-Ccad pcb set-layer-visibility --file $Project --id In1.Cu --visible false
-Invoke-Ccad pcb add-pad --file $Project --id JAC1.1 --component JAC1 --pin 1 --net AC1 --layer F.Cu --x-mm 8 --y-mm 17 --width-mm 1.8 --height-mm 1.4
-Invoke-Ccad pcb add-pad --file $Project --id JAC2.1 --component JAC2 --pin 1 --net AC2 --layer F.Cu --x-mm 32 --y-mm 17 --width-mm 1.8 --height-mm 1.4
-Invoke-Ccad pcb add-pad --file $Project --id JDC1.1 --component JDC1 --pin 1 --net DC_POS --layer F.Cu --x-mm 20 --y-mm 8 --width-mm 1.8 --height-mm 1.4
-Invoke-Ccad pcb add-pad --file $Project --id JDC2.1 --component JDC2 --pin 1 --net DC_NEG --layer F.Cu --x-mm 20 --y-mm 26 --width-mm 1.8 --height-mm 1.4
-Invoke-Ccad pcb add-pad --file $Project --id D1.A --component D1 --pin A --net AC1 --layer F.Cu --x-mm 10 --y-mm 15 --width-mm 1.3 --height-mm 1.0
-Invoke-Ccad pcb add-pad --file $Project --id D1.K --component D1 --pin K --net DC_POS --layer F.Cu --x-mm 18 --y-mm 10 --width-mm 1.3 --height-mm 1.0
-Invoke-Ccad pcb add-pad --file $Project --id D2.A --component D2 --pin A --net AC2 --layer F.Cu --x-mm 30 --y-mm 15 --width-mm 1.3 --height-mm 1.0
-Invoke-Ccad pcb add-pad --file $Project --id D2.K --component D2 --pin K --net DC_POS --layer F.Cu --x-mm 22 --y-mm 10 --width-mm 1.3 --height-mm 1.0
-Invoke-Ccad pcb add-pad --file $Project --id D3.A --component D3 --pin A --net DC_NEG --layer F.Cu --x-mm 18 --y-mm 24 --width-mm 1.3 --height-mm 1.0
-Invoke-Ccad pcb add-pad --file $Project --id D3.K --component D3 --pin K --net AC1 --layer F.Cu --x-mm 10 --y-mm 19 --width-mm 1.3 --height-mm 1.0
-Invoke-Ccad pcb add-pad --file $Project --id D4.A --component D4 --pin A --net DC_NEG --layer F.Cu --x-mm 22 --y-mm 24 --width-mm 1.3 --height-mm 1.0
-Invoke-Ccad pcb add-pad --file $Project --id D4.K --component D4 --pin K --net AC2 --layer F.Cu --x-mm 30 --y-mm 19 --width-mm 1.3 --height-mm 1.0
-Invoke-Ccad pcb add-pad --file $Project --id C1.1 --component C1 --pin 1 --net DC_POS --layer F.Cu --x-mm 25 --y-mm 10 --width-mm 1.4 --height-mm 1.2
-Invoke-Ccad pcb add-pad --file $Project --id C1.2 --component C1 --pin 2 --net DC_NEG --layer F.Cu --x-mm 25 --y-mm 24 --width-mm 1.4 --height-mm 1.2
-Invoke-Ccad pcb add-pad --file $Project --id RLOAD.1 --component RLOAD --pin 1 --net DC_POS --layer F.Cu --x-mm 36 --y-mm 12 --width-mm 1.4 --height-mm 1.2
-Invoke-Ccad pcb add-pad --file $Project --id RLOAD.2 --component RLOAD --pin 2 --net DC_NEG --layer F.Cu --x-mm 36 --y-mm 22 --width-mm 1.4 --height-mm 1.2
+Invoke-Ccad pcb add-pad --file $Project --id JAC1.1 --component JAC1 --pin 1 --net AC1 --layers F.Cu --x-mm 8 --y-mm 17 --width-mm 1.8 --height-mm 1.4
+Invoke-Ccad pcb add-pad --file $Project --id JAC2.1 --component JAC2 --pin 1 --net AC2 --layers F.Cu --x-mm 32 --y-mm 17 --width-mm 1.8 --height-mm 1.4
+Invoke-Ccad pcb add-pad --file $Project --id JDC1.1 --component JDC1 --pin 1 --net DC_POS --layers F.Cu --x-mm 20 --y-mm 8 --width-mm 1.8 --height-mm 1.4
+Invoke-Ccad pcb add-pad --file $Project --id JDC2.1 --component JDC2 --pin 1 --net DC_NEG --layers F.Cu --x-mm 20 --y-mm 26 --width-mm 1.8 --height-mm 1.4
+Invoke-Ccad pcb add-pad --file $Project --id D1.A --component D1 --pin A --net AC1 --layers F.Cu --x-mm 10 --y-mm 15 --width-mm 1.3 --height-mm 1.0
+Invoke-Ccad pcb add-pad --file $Project --id D1.K --component D1 --pin K --net DC_POS --layers F.Cu --x-mm 18 --y-mm 10 --width-mm 1.3 --height-mm 1.0
+Invoke-Ccad pcb add-pad --file $Project --id D2.A --component D2 --pin A --net AC2 --layers F.Cu --x-mm 30 --y-mm 15 --width-mm 1.3 --height-mm 1.0
+Invoke-Ccad pcb add-pad --file $Project --id D2.K --component D2 --pin K --net DC_POS --layers F.Cu --x-mm 22 --y-mm 10 --width-mm 1.3 --height-mm 1.0
+Invoke-Ccad pcb add-pad --file $Project --id D3.A --component D3 --pin A --net DC_NEG --layers F.Cu --x-mm 18 --y-mm 24 --width-mm 1.3 --height-mm 1.0
+Invoke-Ccad pcb add-pad --file $Project --id D3.K --component D3 --pin K --net AC1 --layers F.Cu --x-mm 10 --y-mm 19 --width-mm 1.3 --height-mm 1.0
+Invoke-Ccad pcb add-pad --file $Project --id D4.A --component D4 --pin A --net DC_NEG --layers F.Cu --x-mm 22 --y-mm 24 --width-mm 1.3 --height-mm 1.0
+Invoke-Ccad pcb add-pad --file $Project --id D4.K --component D4 --pin K --net AC2 --layers F.Cu --x-mm 30 --y-mm 19 --width-mm 1.3 --height-mm 1.0
+Invoke-Ccad pcb add-pad --file $Project --id C1.1 --component C1 --pin 1 --net DC_POS --layers F.Cu --x-mm 25 --y-mm 10 --width-mm 1.4 --height-mm 1.2
+Invoke-Ccad pcb add-pad --file $Project --id C1.2 --component C1 --pin 2 --net DC_NEG --layers F.Cu --x-mm 25 --y-mm 24 --width-mm 1.4 --height-mm 1.2
+Invoke-Ccad pcb add-pad --file $Project --id RLOAD.1 --component RLOAD --pin 1 --net DC_POS --layers F.Cu --x-mm 36 --y-mm 12 --width-mm 1.4 --height-mm 1.2
+Invoke-Ccad pcb add-pad --file $Project --id RLOAD.2 --component RLOAD --pin 2 --net DC_NEG --layers F.Cu --x-mm 36 --y-mm 22 --width-mm 1.4 --height-mm 1.2
 Invoke-Ccad pcb add-via --file $Project --id VPOS --net DC_POS --x-mm 28 --y-mm 10 --diameter-mm 0.8 --drill-mm 0.4
 Invoke-Ccad pcb add-via --file $Project --id VNEG --net DC_NEG --x-mm 28 --y-mm 24 --diameter-mm 0.8 --drill-mm 0.4
 Invoke-Ccad pcb add-track --file $Project --id TAC1.1 --net AC1 --layer F.Cu --start-x-mm 8 --start-y-mm 17 --end-x-mm 10 --end-y-mm 15 --width-mm 0.25

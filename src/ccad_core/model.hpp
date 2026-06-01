@@ -62,7 +62,9 @@ struct Pad {
   std::string component_id;
   std::string pin_name;
   std::string net_id;
-  std::string layer_id;
+  std::vector<std::string> layers;
+  std::string type;
+  std::string shape;
   Point position;
   double rotation_degrees = 0.0;
   Size size;

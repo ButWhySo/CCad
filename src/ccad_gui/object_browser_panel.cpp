@@ -135,7 +135,7 @@ void ObjectBrowserPanel::renderScene(const ccad::CanvasScene& scene) {
   addSection("Objects (" + QString::number(object_count) + ")");
   for (const ccad::CanvasPad& pad : scene.pads) {
     addRow("pad " + qstr(pad.id) + "  " + netText(pad.net_id) + "  " +
-               layerText(pad.layer_id),
+               layerText(pad.layers.empty() ? "" : pad.layers.front()),
            qstr(pad.id));
   }
   for (const ccad::CanvasVia& via : scene.vias) {

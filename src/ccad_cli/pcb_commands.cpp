@@ -96,8 +96,10 @@ std::vector<ccad::Point> parsePolylinePointsMm(const std::string& value) {
 
 void requireLayerUnused(const ccad::Board& board, const std::string& id) {
   for (const ccad::Pad& pad : board.pads) {
-    if (pad.layer_id == id) {
-      throw std::runtime_error("layer is referenced by pad: " + pad.id);
+    for (const std::string& l : pad.layers) {
+      if (l == id) {
+        throw std::runtime_error("layer is referenced by pad: " + pad.id);
+      }
     }
   }
   for (const ccad::TrackSegment& track : board.tracks) {
@@ -105,6 +107,16 @@ void requireLayerUnused(const ccad::Board& board, const std::string& id) {
       throw std::runtime_error("layer is referenced by track: " + track.id);
     }
   }
+}
+
+std::vector<std::string> splitLayers(const std::string& value) {
+  std::vector<std::string> layers;
+  std::stringstream ss(value);
+  std::string layer;
+  while (std::getline(ss, layer, ',')) {
+    layers.push_back(layer);
+  }
+  return layers;
 }
 
 ccad::Length requireMillimeters(const std::map<std::string, std::string>& options,
@@ -463,16 +475,19 @@ int pcbCommand(const std::vector<std::string>& args) {
 
     if (subcommand == "add-pad") {
       const std::map<std::string, std::string> options =
-          parseOptions(args, 1, {"--file", "--id", "--component", "--pin", "--net", "--layer",
+          parseOptions(args, 1, {"--file", "--id", "--component", "--pin", "--net", "--layers",
+                                 "--type", "--shape", "--drill-mm",
                                  "--x-mm", "--y-mm", "--width-mm", "--height-mm"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
       ccad::Board& board = requireBoard(project);
       const std::string id = requireOption(options, "--id");
-      const std::string layer_id = requireOption(options, "--layer");
+      const std::vector<std::string> layers = splitLayers(requireOption(options, "--layers"));
       requireUniquePadId(board, id);
       requireUniquePhysicalObjectId(board, id);
-      requireCopperLayer(board, layer_id);
+      for (const std::string& l : layers) {
+        if (!l.starts_with("*.")) requireCopperLayer(board, l);
+      }
       const ccad::Point position{
           .x = requirePositiveMillimeters(options, "--x-mm"),
           .y = requirePositiveMillimeters(options, "--y-mm"),
@@ -481,14 +496,21 @@ int pcbCommand(const std::vector<std::string>& args) {
       const ccad::Size size{.width = requirePositiveMillimeters(options, "--width-mm"),
                             .height = requirePositiveMillimeters(options, "--height-mm")};
       requireCenteredRectInsideBoard(board, position, size, "pad");
+      std::optional<ccad::Length> drill;
+      if (options.contains("--drill-mm")) {
+        drill = ccad::millimeters(requireDoubleOption(options, "--drill-mm"));
+      }
       board.pads.push_back(ccad::Pad{
           .id = id,
           .component_id = requireOption(options, "--component"),
           .pin_name = requireOption(options, "--pin"),
           .net_id = requireOption(options, "--net"),
-          .layer_id = layer_id,
+          .layers = layers,
+          .type = options.contains("--type") ? requireOption(options, "--type") : "smd",
+          .shape = options.contains("--shape") ? requireOption(options, "--shape") : "rect",
           .position = position,
           .size = size,
+          .drill = drill,
       });
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
@@ -499,15 +521,17 @@ int pcbCommand(const std::vector<std::string>& args) {
 
     if (subcommand == "set-pad") {
       const std::map<std::string, std::string> options =
-          parseOptions(args, 1, {"--file", "--id", "--component", "--pin", "--net", "--layer",
-                                 "--rotation-deg"});
+          parseOptions(args, 1, {"--file", "--id", "--component", "--pin", "--net", "--layers",
+                                 "--type", "--shape", "--rotation-deg"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
       ccad::Board& board = requireBoard(project);
       const std::string id = requireOption(options, "--id");
-      const std::string layer_id = requireOption(options, "--layer");
+      const std::vector<std::string> layers = splitLayers(requireOption(options, "--layers"));
       const double rotation_degrees = requireDoubleOption(options, "--rotation-deg");
-      requireCopperLayer(board, layer_id);
+      for (const std::string& l : layers) {
+        if (!l.starts_with("*.")) requireCopperLayer(board, l);
+      }
       bool updated = false;
       for (ccad::Pad& pad : board.pads) {
         if (pad.id == id) {
@@ -515,7 +539,9 @@ int pcbCommand(const std::vector<std::string>& args) {
           pad.component_id = requireOption(options, "--component");
           pad.pin_name = requireOption(options, "--pin");
           pad.net_id = requireOption(options, "--net");
-          pad.layer_id = layer_id;
+          pad.layers = layers;
+          if (options.contains("--type")) pad.type = requireOption(options, "--type");
+          if (options.contains("--shape")) pad.shape = requireOption(options, "--shape");
           pad.rotation_degrees = rotation_degrees;
           updated = true;
           break;

@@ -12,20 +12,26 @@
 #include "ccad_core/kicad_footprint_import.hpp"
 #include "ccad_core/placement.hpp"
 #include "ccad_core/json.hpp"
+#include "symbol_placement_dialog.hpp"
+#include "footprint_placement_dialog.hpp"
 
 #include <QAbstractItemView>
 #include <QAction>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QGuiApplication>
+#include <QGraphicsPathItem>
 #include <QGraphicsScene>
 #include <QDockWidget>
+#include <QIcon>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QPainter>
+#include <QPainterPath>
 #include <QKeySequence>
 #include <QScrollArea>
 #include <QScreen>
+#include <QSize>
 #include <QStatusBar>
 #include <QStringList>
 #include <QTabWidget>
@@ -34,10 +40,12 @@
 #include <QWidget>
 #include <QTextStream>
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <cstdlib>
 
 QString formatCursorStatus(const std::optional<ccad::Board>& board, const QPointF& scene_position) {
   constexpr double margin = 18.0;
@@ -83,6 +91,114 @@ void writeFile(const std::filesystem::path& path, const std::string& content) {
 
 QString qstr(const std::string& value) {
   return QString::fromStdString(value);
+}
+
+std::filesystem::path kicadSourceRoot() {
+  if (const char* env = std::getenv("CCAD_KICAD_SRC")) {
+    return std::filesystem::path(env);
+  }
+  const std::filesystem::path cwd = std::filesystem::current_path();
+  const std::filesystem::path sibling = cwd.parent_path() / "kicad_src";
+  if (std::filesystem::exists(sibling)) {
+    return sibling;
+  }
+  return cwd / "kicad_src";
+}
+
+QIcon kicadIcon(const std::string& name) {
+  const std::filesystem::path path =
+      kicadSourceRoot() / "resources" / "bitmaps_png" / "sources" / "light" / (name + ".svg");
+  if (std::filesystem::exists(path)) {
+    return QIcon(qstr(path.string()));
+  }
+  return QIcon();
+}
+
+QAction* addIconAction(QToolBar& toolbar, const std::string& icon_name, const QString& text) {
+  auto* action = toolbar.addAction(kicadIcon(icon_name), text);
+  action->setToolTip(text);
+  action->setStatusTip(text);
+  return action;
+}
+
+QPainterPath padPreviewPath(const double x_mm, const double y_mm, const double width_mm,
+                            const double height_mm, const std::string& shape,
+                            const double rotation_degrees) {
+  constexpr double scale = 10.0;
+  const QPointF center(x_mm * scale, y_mm * scale);
+  const QRectF rect(center.x() - ((width_mm * scale) / 2.0),
+                    center.y() - ((height_mm * scale) / 2.0), width_mm * scale,
+                    height_mm * scale);
+  QPainterPath path;
+  if (shape == "rect") {
+    path.addRect(rect);
+  } else if (shape == "roundrect" || shape == "rounded_rect") {
+    const double radius = std::min(rect.width(), rect.height()) * 0.25;
+    path.addRoundedRect(rect, radius, radius);
+  } else if (shape == "circle") {
+    const double diameter = std::min(rect.width(), rect.height());
+    path.addEllipse(QRectF(center.x() - (diameter / 2.0), center.y() - (diameter / 2.0),
+                           diameter, diameter));
+  } else {
+    path.addEllipse(rect);
+  }
+  if (rotation_degrees != 0.0) {
+    QTransform transform;
+    transform.translate(center.x(), center.y());
+    transform.rotate(rotation_degrees);
+    transform.translate(-center.x(), -center.y());
+    path = transform.map(path);
+  }
+  return path;
+}
+
+void addPadPreviewItems(QGraphicsScene& scene, std::vector<QGraphicsItem*>& items,
+                        const ccad::Footprint& footprint, const QColor& color) {
+  QPen pen(color.darker(130), 1.0);
+  QBrush brush(QColor(color.red(), color.green(), color.blue(), 150));
+  for (const auto& pad : footprint.pads) {
+    const double w = pad.size.width.nanometers / 1e6;
+    const double h = pad.size.height.nanometers / 1e6;
+    const double x = pad.position.x.nanometers / 1e6;
+    const double y = pad.position.y.nanometers / 1e6;
+    auto* item = scene.addPath(padPreviewPath(x, y, w, h, pad.shape, pad.rotation_degrees),
+                               pen, brush);
+    item->setZValue(1000);
+    items.push_back(item);
+    if (pad.drill.has_value()) {
+      constexpr double scale = 10.0;
+      const double drill = pad.drill->nanometers / 1e6 * scale;
+      auto* drill_item = scene.addEllipse((x * scale) - (drill / 2.0),
+                                          (y * scale) - (drill / 2.0), drill, drill,
+                                          QPen(Qt::NoPen), QBrush(QColor("#07111f")));
+      drill_item->setZValue(1001);
+      items.push_back(drill_item);
+    }
+  }
+}
+
+ccad::Point boardPointFromScene(const ccad::Board& board, const QPointF& scene_position) {
+  constexpr double margin = 18.0;
+  constexpr double scale = 10.0;
+  const double origin_x_mm = board.outline.origin.x.nanometers / 1e6;
+  const double origin_y_mm = board.outline.origin.y.nanometers / 1e6;
+  return {ccad::millimeters(origin_x_mm + ((scene_position.x() - margin) / scale)),
+          ccad::millimeters(origin_y_mm + ((scene_position.y() - margin) / scale))};
+}
+
+QPointF boardPositionToScene(const ccad::Board& board, const double x_mm, const double y_mm) {
+  constexpr double margin = 18.0;
+  constexpr double scale = 10.0;
+  const double origin_x_mm = board.outline.origin.x.nanometers / 1e6;
+  const double origin_y_mm = board.outline.origin.y.nanometers / 1e6;
+  return QPointF(margin + ((x_mm - origin_x_mm) * scale),
+                 margin + ((y_mm - origin_y_mm) * scale));
+}
+
+ccad::Point boardDeltaFromSceneDelta(const QPointF& scene_delta) {
+  constexpr double scale = 10.0;
+  return {.x = ccad::millimeters(scene_delta.x() / scale),
+          .y = ccad::millimeters(scene_delta.y() / scale)};
 }
 
 }  // namespace
@@ -146,6 +262,7 @@ ReviewWindow::ReviewWindow() {
   canvas_view_ = board_view;
   canvas_view_->setObjectName("boardCanvas");
   canvas_view_->setRenderHint(QPainter::Antialiasing);
+  canvas_view_->viewport()->installEventFilter(this);
   canvas_view_->setDragMode(QGraphicsView::NoDrag);
   canvas_view_->setFrameShape(QFrame::NoFrame);
   canvas_view_->setMouseTracking(true);
@@ -266,30 +383,63 @@ ReviewWindow::ReviewWindow() {
   top_toolbar->addAction(open_action);
   top_toolbar->addAction(reload_action);
   top_toolbar->addSeparator();
+  top_toolbar->addAction("Save"); // placeholder
+  top_toolbar->addAction("Board Setup"); // placeholder
+  top_toolbar->addSeparator();
+  top_toolbar->addAction("Undo"); // placeholder
+  top_toolbar->addAction("Redo"); // placeholder
+  top_toolbar->addSeparator();
   top_toolbar->addAction(fit_action);
-  top_toolbar->addAction(zoom_out_action);
   top_toolbar->addAction(zoom_in_action);
+  top_toolbar->addAction(zoom_out_action);
   top_toolbar->addAction(zoom_100_action);
+  top_toolbar->addSeparator();
+  top_toolbar->addAction("Run DRC"); // placeholder
 
   auto* left_toolbar = new QToolBar("Left Toolbar", this);
   left_toolbar->setMovable(false);
   left_toolbar->setOrientation(Qt::Vertical);
+  left_toolbar->setToolButtonStyle(Qt::ToolButtonIconOnly);
+  left_toolbar->setIconSize(QSize(24, 24));
   addToolBar(Qt::LeftToolBarArea, left_toolbar);
-  // Add some dummy actions for left toolbar to match KiCad
-  left_toolbar->addAction("Grid");
-  left_toolbar->addAction("Units");
-  left_toolbar->addAction("Cursor");
-  
+  addIconAction(*left_toolbar, "grid", "Toggle Grid");
+  addIconAction(*left_toolbar, "polar_coord", "Polar Coordinates");
+  left_toolbar->addSeparator();
+  addIconAction(*left_toolbar, "unit_inch", "Toggle Units");
+  left_toolbar->addSeparator();
+  addIconAction(*left_toolbar, "cursor_shape", "Crosshair Cursor");
+  left_toolbar->addSeparator();
+  addIconAction(*left_toolbar, "show_ratsnest", "Show Ratsnest");
+  addIconAction(*left_toolbar, "net_highlight", "Net Highlight");
+  left_toolbar->addSeparator();
+  addIconAction(*left_toolbar, "contrast_mode", "Display Modes");
+  left_toolbar->addSeparator();
+  addIconAction(*left_toolbar, "layers_manager", "Show Layers");
+  addIconAction(*left_toolbar, "part_properties", "Show Properties");
+
   auto* right_toolbar = new QToolBar("Right Toolbar", this);
   right_toolbar->setMovable(false);
   right_toolbar->setOrientation(Qt::Vertical);
+  right_toolbar->setToolButtonStyle(Qt::ToolButtonIconOnly);
+  right_toolbar->setIconSize(QSize(24, 24));
   addToolBar(Qt::RightToolBarArea, right_toolbar);
-  // Add some dummy actions for right toolbar to match KiCad
-  auto* select_action = right_toolbar->addAction("Select");
-  right_toolbar->addAction("Add Track");
-  right_toolbar->addAction("Add Via");
-  auto* add_footprint_action = right_toolbar->addAction("Add Footprint");
-  auto* measure_action = right_toolbar->addAction("Measure");
+  auto* select_action = addIconAction(*right_toolbar, "cursor", "Select");
+  addIconAction(*right_toolbar, "tool_ratsnest", "Local Ratsnest");
+  right_toolbar->addSeparator();
+  auto* add_footprint_action = addIconAction(*right_toolbar, "new_footprint", "Add Footprint");
+  add_footprint_action->setShortcut(QKeySequence(Qt::Key_O));
+  auto* add_symbol_action = addIconAction(*right_toolbar, "add_symbol_to_schematic", "Add Symbol");
+  add_symbol_action->setShortcut(QKeySequence(Qt::Key_A));
+  addIconAction(*right_toolbar, "add_tracks", "Route Track");
+  addIconAction(*right_toolbar, "add_via", "Add Via");
+  addIconAction(*right_toolbar, "add_zone", "Add Zone");
+  addIconAction(*right_toolbar, "add_keepout_area", "Add Keepout");
+  right_toolbar->addSeparator();
+  addIconAction(*right_toolbar, "add_graphical_segments", "Draw Graphic");
+  addIconAction(*right_toolbar, "text", "Place Text");
+  right_toolbar->addSeparator();
+  addIconAction(*right_toolbar, "delete_cursor", "Delete");
+  auto* measure_action = addIconAction(*right_toolbar, "measurement", "Measure");
 
   connect(add_footprint_action, &QAction::triggered, this, [this]() {
     if (!project_cache_.board.has_value()) {
@@ -300,11 +450,19 @@ ReviewWindow::ReviewWindow() {
     if (dialog.exec() != QDialog::Accepted) return;
     auto result = dialog.result();
     if (!result.has_value()) return;
+    enterPlaceFootprintMode(result->component_id, result->footprint, result->layer_id);
+  });
+
+  connect(add_symbol_action, &QAction::triggered, this, [this]() {
+    SymbolPlacementDialog dialog(project_cache_, this);
+    if (dialog.exec() != QDialog::Accepted) return;
+    auto result = dialog.result();
+    if (!result.has_value()) return;
     try {
-      ccad::placeFootprint(
-          project_cache_, result->footprint, result->component_id,
+      ccad::placeComponent(
+          project_cache_, result->symbol, result->component_id,
           {ccad::millimeters(result->x_mm), ccad::millimeters(result->y_mm)},
-          result->rotation_deg, result->layer_id);
+          result->rotation_deg);
       // Save the project
       std::ofstream out(current_path_);
       if (out) {
@@ -802,4 +960,151 @@ void ReviewWindow::showComponentWizard() {
   }
 }
 
+void ReviewWindow::cancelInteractionMode() {
+  for (QGraphicsItem* item : interaction_ghost_items_) {
+    canvas_scene_->removeItem(item);
+    delete item;
+  }
+  interaction_ghost_items_.clear();
+  interaction_mode_ = InteractionMode::Default;
+  interaction_component_id_.clear();
+  interaction_layer_id_.clear();
+}
 
+void ReviewWindow::enterPlaceFootprintMode(const std::string& component_id, const ccad::Footprint& footprint, const std::string& layer_id) {
+  cancelInteractionMode();
+  interaction_mode_ = InteractionMode::PlaceFootprint;
+  interaction_component_id_ = component_id;
+  interaction_footprint_ = footprint;
+  interaction_layer_id_ = layer_id;
+
+  try {
+    addPadPreviewItems(*canvas_scene_, interaction_ghost_items_, footprint, QColor(100, 255, 100));
+  } catch (const std::exception& e) {
+    QMessageBox::warning(this, "Error", "Failed to load footprint for placement preview: " + QString(e.what()));
+    cancelInteractionMode();
+  }
+}
+
+void ReviewWindow::enterMoveFootprintMode(const std::string& component_id) {
+  cancelInteractionMode();
+  if (!project_cache_.board.has_value()) return;
+  interaction_mode_ = InteractionMode::MoveFootprint;
+  interaction_component_id_ = component_id;
+  interaction_start_mouse_pos_ = canvas_view_->mapToScene(canvas_view_->mapFromGlobal(QCursor::pos()));
+  interaction_last_mouse_pos_ = interaction_start_mouse_pos_;
+
+  for (const auto& pad : project_cache_.board->pads) {
+    if (pad.component_id != component_id) {
+      continue;
+    }
+    const double w = pad.size.width.nanometers / 1e6;
+    const double h = pad.size.height.nanometers / 1e6;
+    const double x = pad.position.x.nanometers / 1e6;
+    const double y = pad.position.y.nanometers / 1e6;
+    const QPointF scene_center = boardPositionToScene(*project_cache_.board, x, y);
+    auto* item = canvas_scene_->addPath(padPreviewPath(scene_center.x() / 10.0,
+                                                       scene_center.y() / 10.0, w, h,
+                                                       pad.shape, pad.rotation_degrees),
+                                        QPen(QColor(100, 180, 80), 1.0),
+                                        QBrush(QColor(100, 255, 100, 150)));
+    item->setZValue(1000);
+    interaction_ghost_items_.push_back(item);
+    if (pad.drill.has_value()) {
+      constexpr double scale = 10.0;
+      const double drill = pad.drill->nanometers / 1e6 * scale;
+      auto* drill_item = canvas_scene_->addEllipse(scene_center.x() - (drill / 2.0),
+                                                   scene_center.y() - (drill / 2.0), drill, drill,
+                                                   QPen(Qt::NoPen), QBrush(QColor("#07111f")));
+      drill_item->setZValue(1001);
+      interaction_ghost_items_.push_back(drill_item);
+    }
+  }
+}
+
+bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
+  if (interaction_mode_ != InteractionMode::Default) {
+    if (obj == canvas_view_->viewport()) {
+      if (event->type() == QEvent::MouseMove) {
+        auto* me = static_cast<QMouseEvent*>(event);
+        QPointF scene_pos = canvas_view_->mapToScene(me->pos());
+        QPointF delta = scene_pos - interaction_last_mouse_pos_;
+
+        for (QGraphicsItem* item : interaction_ghost_items_) {
+          item->setPos(item->pos() + delta);
+        }
+        interaction_last_mouse_pos_ = scene_pos;
+        return true; // Consume event
+      } else if (event->type() == QEvent::MouseButtonPress) {
+        auto* me = static_cast<QMouseEvent*>(event);
+        if (me->button() == Qt::LeftButton) {
+          // Finalize placement
+          QPointF scene_pos = canvas_view_->mapToScene(me->pos());
+
+          if (interaction_mode_ == InteractionMode::PlaceFootprint) {
+            try {
+              if (!project_cache_.board.has_value()) {
+                throw std::runtime_error("cannot place footprint without a board");
+              }
+              ccad::placeFootprint(
+                  project_cache_, interaction_footprint_, interaction_component_id_,
+                  boardPointFromScene(*project_cache_.board, scene_pos),
+                  0.0, interaction_layer_id_);
+              // Save the project
+              std::ofstream out(current_path_);
+              if (out) {
+                out << ccad::dumpProjectJson(project_cache_);
+                reloadProject();
+              } else {
+                QMessageBox::critical(this, "Save Error", "Failed to write project file.");
+              }
+            } catch (const std::exception& e) {
+              QMessageBox::critical(this, "Placement Error", QString::fromUtf8(e.what()));
+            }
+          } else if (interaction_mode_ == InteractionMode::MoveFootprint) {
+            try {
+              QPointF delta = scene_pos - interaction_start_mouse_pos_;
+              ccad::moveFootprint(project_cache_, interaction_component_id_,
+                                  boardDeltaFromSceneDelta(delta));
+              std::ofstream out(current_path_);
+              if (out) {
+                out << ccad::dumpProjectJson(project_cache_);
+                reloadProject();
+              }
+            } catch (const std::exception& e) {
+              QMessageBox::critical(this, "Move Error", QString::fromUtf8(e.what()));
+            }
+          }
+          cancelInteractionMode();
+          return true; // Consume event
+        }
+      }
+    }
+  } else {
+    // If not in a specific interaction mode, handle general hotkeys if applicable
+    if (event->type() == QEvent::KeyPress) {
+      auto* ke = static_cast<QKeyEvent*>(event);
+      if (ke->key() == Qt::Key_M) {
+        auto selected = canvas_scene_->selectedItems();
+        if (!selected.empty() && project_cache_.board.has_value()) {
+          QString object_id = selected.first()->data(0).toString();
+          for (const auto& pad : project_cache_.board->pads) {
+            if (pad.id == object_id.toStdString()) {
+              enterMoveFootprintMode(pad.component_id);
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (interaction_mode_ != InteractionMode::Default && event->type() == QEvent::KeyPress) {
+    auto* ke = static_cast<QKeyEvent*>(event);
+    if (ke->key() == Qt::Key_Escape) {
+      cancelInteractionMode();
+      return true; // Consume event
+    }
+  }
+  return QMainWindow::eventFilter(obj, event);
+}

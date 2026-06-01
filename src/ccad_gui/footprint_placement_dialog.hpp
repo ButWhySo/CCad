@@ -18,8 +18,6 @@ struct FootprintPlacementResult {
   std::string footprint_path;
   std::string component_id;
   std::string layer_id;
-  double x_mm = 0.0;
-  double y_mm = 0.0;
   double rotation_deg = 0.0;
 };
 
@@ -40,11 +38,9 @@ class FootprintPlacementDialog : public QDialog {
 
   QPushButton* browse_button_ = nullptr;
   QLineEdit* footprint_path_edit_ = nullptr;
-  QLineEdit* component_id_edit_ = nullptr;
   QComboBox* layer_combo_ = nullptr;
-  QDoubleSpinBox* x_spin_ = nullptr;
-  QDoubleSpinBox* y_spin_ = nullptr;
   QDoubleSpinBox* rotation_spin_ = nullptr;
 
   std::optional<FootprintPlacementResult> result_;
+  const ccad::Board& board_;
 };

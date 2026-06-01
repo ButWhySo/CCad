@@ -92,7 +92,7 @@ void SelectionInspectorPanel::renderSelection(const std::optional<ccad::Board>& 
         setRow("Component ID", QString::fromStdString(pad.component_id));
         setRow("Pin Name", QString::fromStdString(pad.pin_name));
         setRow("Net", pad.net_id.empty() ? "--" : QString::fromStdString(pad.net_id));
-        setRow("Layer", QString::fromStdString(pad.layer_id));
+        setRow("Layer", pad.layers.empty() ? "--" : QString::fromStdString(pad.layers.front()));
         setRow("Position X", formatLength(pad.position.x));
         setRow("Position Y", formatLength(pad.position.y));
 

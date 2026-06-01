@@ -33,7 +33,9 @@ ccad::Project validBoardProject() {
                          .component_id = "U1",
                          .pin_name = "1",
                          .net_id = "N1",
-                         .layer_id = "F.Cu",
+                         .layers = {"F.Cu"},
+                         .type = "smd",
+                         .shape = "rect",
                          .position = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
                          .size = ccad::Size{.width = ccad::millimeters(1.5),
                                             .height = ccad::millimeters(1.0)}}},
@@ -132,7 +134,7 @@ int main() {
   ccad::Project non_copper_pad_layer = validBoardProject();
   non_copper_pad_layer.board->layers.push_back(
       ccad::Layer{.id = "F.SilkS", .name = "Front silkscreen", .kind = "silkscreen"});
-  non_copper_pad_layer.board->pads.at(0).layer_id = "F.SilkS";
+  non_copper_pad_layer.board->pads.at(0).layers = {"F.SilkS"};
   require(hasCode(ccad::runDrc(non_copper_pad_layer), "PAD_NON_COPPER_LAYER"),
           "drc reports pad on non-copper layer");
 
@@ -705,7 +707,9 @@ int main() {
       .component_id = "U2",
       .pin_name = "1",
       .net_id = "N2",
-      .layer_id = "F.Cu",
+      .layers = {"F.Cu"},
+      .type = "smd",
+      .shape = "rect",
       .position = ccad::Point{.x = ccad::millimeters(6.35), .y = ccad::millimeters(6)},
       .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(1.0)}});
   require(hasDiagnosticForObject(ccad::runDrc(pad_clearance), "COPPER_CLEARANCE", "P2"),
@@ -724,7 +728,7 @@ int main() {
           "drc does not report copper clearance for invalid pad geometry");
 
   ccad::Project cross_layer_pad_clearance = pad_clearance;
-  cross_layer_pad_clearance.board->pads.back().layer_id = "B.Cu";
+  cross_layer_pad_clearance.board->pads.back().layers = {"B.Cu"};
   require(!hasDiagnosticForObject(ccad::runDrc(cross_layer_pad_clearance), "COPPER_CLEARANCE",
                                   "P2"),
           "drc allows different-net pads to overlap on different copper layers");

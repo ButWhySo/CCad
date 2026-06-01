@@ -96,7 +96,7 @@ std::string exportSpecctraDsn(const Project& project) {
   }
   for (const auto& pad : board.pads) {
     out << "    (padstack " << quote("padstack_" + pad.id) << "\n"
-        << "      (shape (rect " << quote(pad.layer_id) << " "
+        << "      (shape (rect " << quote(pad.layers.empty() ? "" : pad.layers.front()) << " "
         << formatMm(-pad.size.width.nanometers / 2) << " " << formatMm(-pad.size.height.nanometers / 2) << " "
         << formatMm(pad.size.width.nanometers / 2) << " " << formatMm(pad.size.height.nanometers / 2) << "))\n"
         << "    )\n";

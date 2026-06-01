@@ -299,7 +299,13 @@ class JsonReader {
           } else if (key == "net_id") {
             pad.net_id = readString();
           } else if (key == "layer_id") {
-            pad.layer_id = readString();
+            pad.layers = {readString()};
+          } else if (key == "layers") {
+            pad.layers = readStringArray();
+          } else if (key == "type") {
+            pad.type = readString();
+          } else if (key == "shape") {
+            pad.shape = readString();
           } else if (key == "position") {
             pad.position = readPoint();
           } else if (key == "rotation_degrees") {
@@ -896,6 +902,24 @@ class JsonReader {
     return value;
   }
 
+  std::vector<std::string> readStringArray() {
+    std::vector<std::string> arr;
+    expect('[');
+    if (consume(']')) {
+      return arr;
+    }
+    while (true) {
+      arr.push_back(readString());
+      if (consume(']')) {
+        return arr;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in string array");
+      }
+    }
+  }
+
   bool consume(const char expected) {
     skipWhitespace();
     if (pos_ < source_.size() && source_[pos_] == expected) {
@@ -1064,7 +1088,14 @@ std::string dumpProjectJson(const Project& project) {
       writeField(out, 8, "component_id", pad.component_id);
       writeField(out, 8, "pin_name", pad.pin_name);
       writeField(out, 8, "net_id", pad.net_id);
-      writeField(out, 8, "layer_id", pad.layer_id);
+      out << "        \"layers\": [\n";
+      for (std::size_t j = 0; j < pad.layers.size(); ++j) {
+        out << "          \"" << escapeJson(pad.layers.at(j)) << "\""
+            << (j + 1 == pad.layers.size() ? "" : ",") << '\n';
+      }
+      out << "        ],\n";
+      writeField(out, 8, "type", pad.type);
+      writeField(out, 8, "shape", pad.shape);
       out << "        \"position\": ";
       writePoint(out, 0, pad.position);
       out << ",\n";

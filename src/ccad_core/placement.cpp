@@ -139,17 +139,68 @@ void placeFootprint(Project& project, const Footprint& footprint, const std::str
   for (const FootprintPad& footprint_pad : footprint.pads) {
     const Point placed_position =
         rotateAndTranslate(footprint_pad.position, origin, rotation_deg);
+    std::vector<std::string> pad_layers = footprint_pad.layers;
+    if (pad_layers.empty()) {
+      pad_layers.push_back(layer_id);
+    } else {
+      if (layer_id.starts_with("B.")) {
+        for (std::string& l : pad_layers) {
+          if (l.starts_with("F.")) {
+            l.replace(0, 2, "B.");
+          } else if (l.starts_with("B.")) {
+            l.replace(0, 2, "F.");
+          }
+        }
+      }
+    }
+
     board.pads.push_back(Pad{
         .id = component_id + "." + footprint_pad.number,
         .component_id = component_id,
         .pin_name = footprint_pad.number,
         .net_id = netIdForPin(project, component_id, footprint_pad.number),
-        .layer_id = layer_id,
+        .layers = pad_layers,
+        .type = footprint_pad.type,
+        .shape = footprint_pad.shape,
         .position = placed_position,
         .rotation_degrees = footprint_pad.rotation_degrees + rotation_deg,
         .size = footprint_pad.size,
         .drill = footprint_pad.drill,
     });
+  }
+}
+
+void placeComponent(Project& project, const Symbol& symbol, const std::string& component_id,
+                    const Point& origin, double rotation_deg) {
+  for (const Component& comp : project.components) {
+    if (comp.id == component_id) {
+      throw std::runtime_error("duplicate component id: " + component_id);
+    }
+  }
+
+  Component comp;
+  comp.id = component_id;
+  comp.part = symbol.name;
+  comp.position = origin;
+  comp.rotation_degrees = rotation_deg;
+  for (const SymbolPin& pin : symbol.pins) {
+    comp.pins.push_back(Pin{
+        .name = pin.number,
+        .kind = pin.electrical_type,
+    });
+  }
+  project.components.push_back(comp);
+}
+
+void moveFootprint(Project& project, const std::string& component_id, const Point& delta) {
+  if (!project.board.has_value()) {
+    throw std::runtime_error("project has no board");
+  }
+  for (auto& pad : project.board->pads) {
+    if (pad.component_id == component_id) {
+      pad.position.x.nanometers += delta.x.nanometers;
+      pad.position.y.nanometers += delta.y.nanometers;
+    }
   }
 }
 

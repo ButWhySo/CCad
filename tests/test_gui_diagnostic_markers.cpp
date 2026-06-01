@@ -15,8 +15,10 @@ ccad::CanvasScene sceneWithPad() {
   scene.pads.push_back(ccad::CanvasPad{
       .id = "P1",
       .net_id = "N1",
-      .layer_id = "F.Cu",
-      .x_units = 5.0,
+      .layers = {"F.Cu"},
+      .type = "smd",
+      .shape = "rect",
+      .x_units = 10.0,
       .y_units = 5.0,
       .width_units = 1.0,
       .height_units = 1.0,

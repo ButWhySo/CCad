@@ -13,4 +13,7 @@ std::vector<Symbol> importKiCadSymbolLibrary(const std::string& kicad_sym_conten
 // Dumps a list of symbols to JSON.
 std::string dumpSymbolsJson(const std::vector<Symbol>& symbols);
 
+// Loads a single symbol from JSON.
+Symbol loadSymbolJson(std::string_view source);
+
 }  // namespace ccad

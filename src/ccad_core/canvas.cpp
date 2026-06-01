@@ -60,12 +60,15 @@ CanvasScene buildCanvasScene(const Project& project) {
     scene.pads.push_back(CanvasPad{
         .id = pad.id,
         .net_id = pad.net_id,
-        .layer_id = pad.layer_id,
+        .layers = pad.layers,
+        .type = pad.type,
+        .shape = pad.shape,
         .x_units = toMillimeters(pad.position.x),
         .y_units = toMillimeters(pad.position.y),
         .width_units = toMillimeters(pad.size.width),
         .height_units = toMillimeters(pad.size.height),
         .rotation_degrees = pad.rotation_degrees,
+        .drill_units = pad.drill.has_value() ? toMillimeters(*pad.drill) : 0.0,
     });
   }
 
@@ -237,12 +240,15 @@ CanvasScene buildCanvasScene(const Footprint& footprint) {
     scene.pads.push_back(CanvasPad{
         .id = "pad_" + pad.number,
         .net_id = "",
-        .layer_id = pad.layers.empty() ? "" : pad.layers.front(),
+        .layers = pad.layers,
+        .type = pad.type,
+        .shape = pad.shape,
         .x_units = toMillimeters(pad.position.x),
         .y_units = toMillimeters(pad.position.y),
         .width_units = toMillimeters(pad.size.width),
         .height_units = toMillimeters(pad.size.height),
         .rotation_degrees = pad.rotation_degrees,
+        .drill_units = pad.drill.has_value() ? toMillimeters(*pad.drill) : 0.0,
     });
   }
   
@@ -321,7 +327,9 @@ CanvasScene buildCanvasScene(const Symbol& symbol) {
     scene.pads.push_back(CanvasPad{
         .id = "pin_" + pin.number,
         .net_id = "",
-        .layer_id = "symbol",
+        .layers = {"symbol"},
+        .type = "smd",
+        .shape = "rect",
         .x_units = toMillimeters(pin.position.x),
         .y_units = toMillimeters(pin.position.y),
         .width_units = toMillimeters(pin.length),

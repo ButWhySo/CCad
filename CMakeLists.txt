@@ -216,8 +216,8 @@ if(MINGW)
 endif()
 
 if(CCAD_BUILD_GUI)
-  find_package(Qt6 QUIET COMPONENTS Widgets)
-  if(Qt6Widgets_FOUND)
+  find_package(Qt6 QUIET COMPONENTS Widgets Test)
+  if(Qt6Widgets_FOUND AND Qt6Test_FOUND)
     set(CMAKE_AUTOMOC ON)
     set(CMAKE_AUTOUIC ON)
     set(CMAKE_AUTORCC ON)
@@ -225,6 +225,8 @@ if(CCAD_BUILD_GUI)
       src/ccad_gui/board_canvas_renderer.cpp
       src/ccad_gui/component_wizard_dialog.cpp
       src/ccad_gui/footprint_placement_dialog.cpp
+      src/ccad_gui/symbol_placement_dialog.cpp
+      src/ccad_gui/library_browser_dialog.cpp
       src/ccad_gui/diagnostics_panel.cpp
       src/ccad_gui/main.cpp
       src/ccad_gui/object_browser_panel.cpp
@@ -248,6 +250,30 @@ if(CCAD_BUILD_GUI)
         target_compile_options(ccad_gui PRIVATE -Werror)
       endif()
     endif()
+
+    add_executable(ccad_gui_footprint_placement_tests
+      tests/test_gui_footprint_placement.cpp
+      src/ccad_gui/footprint_placement_dialog.cpp
+      src/ccad_gui/library_browser_dialog.cpp
+    )
+    target_link_libraries(ccad_gui_footprint_placement_tests PRIVATE ccad_core Qt6::Widgets Qt6::Test)
+    target_include_directories(ccad_gui_footprint_placement_tests PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests
+    )
+    add_test(NAME gui_footprint_placement COMMAND ccad_gui_footprint_placement_tests)
+
+    add_executable(ccad_gui_symbol_placement_tests
+      tests/test_gui_symbol_placement.cpp
+      src/ccad_gui/symbol_placement_dialog.cpp
+      src/ccad_gui/library_browser_dialog.cpp
+    )
+    target_link_libraries(ccad_gui_symbol_placement_tests PRIVATE ccad_core Qt6::Widgets Qt6::Test)
+    target_include_directories(ccad_gui_symbol_placement_tests PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests
+    )
+    add_test(NAME gui_symbol_placement COMMAND ccad_gui_symbol_placement_tests)
 
     add_executable(ccad_gui_inspector_tests
       tests/test_gui_inspector_panel.cpp
@@ -451,6 +477,8 @@ if(CCAD_BUILD_GUI)
       src/ccad_gui/review_window.cpp
       src/ccad_gui/component_wizard_dialog.cpp
       src/ccad_gui/footprint_placement_dialog.cpp
+      src/ccad_gui/symbol_placement_dialog.cpp
+      src/ccad_gui/library_browser_dialog.cpp
       src/ccad_gui/project_summary_panel.cpp
       src/ccad_gui/diagnostics_panel.cpp
       src/ccad_gui/transaction_timeline_panel.cpp

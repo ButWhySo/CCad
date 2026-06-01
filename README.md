@@ -4,11 +4,11 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 ## Current Phase
 
-Phase 4 / 6: native GUI/editor.
+Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 4 / 6, Sprint 129 completed layer review summaries on branch `sprint-129-layer-review-summary`.
+Progress counter: Phase 7 / 7, Sprint 148 working on KiCad GUI Parity on branch `sprint-148-gui-kicad-parity`.
 
-Phase 3 is complete. CCad now has constrained route-request intent, route-job export, route-result application, route provenance on generated tracks, compact route progress reporting, DRC validity checks for route requests, and a clean boundary for future router integration. Phase 4 starts the native GUI/editor milestone while keeping the kernel and CLI as the source of truth.
+Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
 - Typed project model.
 - Deterministic JSON load/dump.
@@ -33,6 +33,13 @@ Phase 3 is complete. CCad now has constrained route-request intent, route-job ex
 - Native GUI has read-only transaction timeline panel groundwork.
 - Native GUI canvas items expose net metadata for net highlight groundwork.
 - Native GUI object browser has net rows for net-selection workflow.
+- Native GUI supports interactive footprint placement through the Add Footprint dialog, which calls `ccad_core` directly.
+- Native GUI supports schematic symbol placement through the Add Symbol dialog, populating `Project::components`.
+- Native GUI supports independent PCB and Schematic Canvas views through a tabbed editor interface.
+- Native GUI toolbar layout follows KiCad's pcbnew organization (Top, Left, Right toolbars) for visual parity.
+- Native GUI left and right PCB toolbars resolve KiCad SVG icons from `CCAD_KICAD_SRC` or a sibling `kicad_src` checkout, with tooltips preserving action names.
+- Native GUI canvas renders circular and oval pads as curved geometry and shows through-hole drill openings as visible annular rings.
+- Native GUI interactive footprint placement and movement use shape-aware ghost previews and convert canvas scene coordinates back to board millimeters before calling the core placement APIs.
 - Native GUI canvas toolbar has Fit, Zoom Out, Zoom In, and 100% review controls.
 - Sprint demo automation now has a robust screenshot fallback path that captures only the spawned CCad window by PID when `ccad_gui --screenshot` fails.
 - Native GUI canvas supports CAD-style pan with middle-drag, right-drag, or Shift+left-drag, plus clamped wheel zoom and expanded scene navigation bounds.

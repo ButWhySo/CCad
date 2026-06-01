@@ -94,7 +94,7 @@ int main() {
       .component_id = "U1",
       .pin_name = "VDD",
       .net_id = "N_3V3",
-      .layer_id = "F.Cu",
+      .layers = {"F.Cu"},
       .position = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
       .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(1.0)}});
   const ccad::ProjectReview drc_review = ccad::buildReview(drc_invalid);
@@ -137,7 +137,7 @@ int main() {
       .component_id = "U1",
       .pin_name = "VDD",
       .net_id = "N_3V3",
-      .layer_id = "F.Cu",
+      .layers = {"F.Cu"},
       .position = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
       .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(1.0)}});
   route_review_project.board->vias.push_back(ccad::Via{

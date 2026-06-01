@@ -16,7 +16,9 @@ ccad::CanvasScene sceneWithPadAndTrack() {
   scene.pads.push_back(ccad::CanvasPad{
       .id = "P1",
       .net_id = "N1",
-      .layer_id = "F.Cu",
+      .layers = {"F.Cu"},
+      .type = "smd",
+      .shape = "rect",
       .x_units = 5.0,
       .y_units = 5.0,
       .width_units = 1.0,
@@ -25,7 +27,9 @@ ccad::CanvasScene sceneWithPadAndTrack() {
   scene.pads.push_back(ccad::CanvasPad{
       .id = "P2",
       .net_id = "N2",
-      .layer_id = "F.Cu",
+      .layers = {"F.Cu"},
+      .type = "smd",
+      .shape = "rect",
       .x_units = 14.0,
       .y_units = 14.0,
       .width_units = 1.0,
@@ -71,7 +75,9 @@ ccad::CanvasScene originShiftedScene() {
   scene.pads.push_back(ccad::CanvasPad{
       .id = "P_ORIGIN",
       .net_id = "N1",
-      .layer_id = "F.Cu",
+      .layers = {"F.Cu"},
+      .type = "smd",
+      .shape = "rect",
       .x_units = 12.0,
       .y_units = 23.0,
       .width_units = 1.0,

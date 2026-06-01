@@ -205,6 +205,12 @@ std::vector<Symbol> importKiCadSymbolLibrary(const std::string& kicad_sym_conten
   return result;
 }
 
+#include "symbol_json_reader.cpp.tmp"
+
+Symbol loadSymbolJson(const std::string_view source) {
+  return SymbolJsonReader(source).readSymbol();
+}
+
 std::string dumpSymbolsJson(const std::vector<Symbol>& symbols) {
   std::ostringstream out;
   out << "[\n";

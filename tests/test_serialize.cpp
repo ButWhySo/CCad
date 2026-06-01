@@ -44,7 +44,7 @@ int main() {
                          .component_id = "U1",
                          .pin_name = "VDD",
                          .net_id = "N_3V3",
-                         .layer_id = "F.Cu",
+                         .layers = {"F.Cu"},
                          .position = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
                          .rotation_degrees = 90.0,
                          .size = ccad::Size{.width = ccad::millimeters(1.5),

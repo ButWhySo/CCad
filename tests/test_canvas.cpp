@@ -39,7 +39,7 @@ ccad::Project boardProject() {
                          .component_id = "U1",
                          .pin_name = "1",
                          .net_id = "N1",
-                         .layer_id = "F.Cu",
+                         .layers = {"F.Cu"},
                          .position = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
                          .rotation_degrees = 90.0,
                          .size = ccad::Size{.width = ccad::millimeters(1.5),
@@ -102,7 +102,7 @@ int main() {
   require(scene.keepouts.at(0).width_units == 4.0, "canvas keepout width is mm");
   require(scene.pads.size() == 1, "canvas has pad");
   require(scene.pads.at(0).net_id == "N1", "canvas pad net id");
-  require(scene.pads.at(0).layer_id == "F.Cu", "canvas pad layer id");
+  require(scene.pads.at(0).layers.empty() == false && scene.pads.at(0).layers.front() == "F.Cu", "canvas pad layer id");
   require(scene.pads.at(0).x_units == 5.0, "canvas pad x is mm");
   require(scene.pads.at(0).rotation_degrees == 90.0, "canvas pad rotation is degrees");
   require(scene.vias.size() == 1, "canvas has via");

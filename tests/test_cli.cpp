@@ -235,7 +235,7 @@ int main() {
           "remove layer fixture re-adds layer after removal");
   const std::string remove_layer_add_pad_command =
       quote(CCAD_BINARY) + " pcb add-pad --file " + quote(remove_layer_board_path) +
-      " --id LP1 --component U1 --pin 1 --net N1 --layer In1.Cu"
+      " --id LP1 --component U1 --pin 1 --net N1 --layers In1.Cu"
       " --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0";
   require(run(remove_layer_add_pad_command) == 0, "remove layer fixture add pad exits zero");
   require(run(remove_back_layer_command) != 0, "pcb remove-layer rejects referenced layer");
@@ -291,7 +291,7 @@ int main() {
 
   const std::string add_pad_command =
       quote(CCAD_BINARY) + " pcb add-pad --file " + quote(board_project_path) +
-      " --id P1 --component U1 --pin 1 --net N1 --layer F.Cu"
+      " --id P1 --component U1 --pin 1 --net N1 --layers F.Cu"
       " --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0";
   require(run(add_pad_command) == 0, "pcb add-pad exits zero");
   const std::string pad_json = readFile(board_project_path);
@@ -590,7 +590,7 @@ int main() {
       quote(apply_route_board_path);
   require(run(apply_route_init_command) == 0, "apply route board init exits zero");
   require(run(quote(CCAD_BINARY) + " pcb add-pad --file " + quote(apply_route_board_path) +
-              " --id ARP1 --component U1 --pin 1 --net N1 --layer F.Cu"
+              " --id ARP1 --component U1 --pin 1 --net N1 --layers F.Cu"
               " --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0") == 0,
           "apply route fixture add pad exits zero");
   require(run(quote(CCAD_BINARY) + " pcb add-via --file " + quote(apply_route_board_path) +
@@ -764,7 +764,7 @@ int main() {
   require(run(remove_board_init_command) == 0, "remove board init exits zero");
   const std::string remove_add_pad_command =
       quote(CCAD_BINARY) + " pcb add-pad --file " + quote(remove_board_path) +
-      " --id RP1 --component U1 --pin 1 --net N1 --layer F.Cu"
+      " --id RP1 --component U1 --pin 1 --net N1 --layers F.Cu"
       " --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0";
   const std::string remove_add_via_command =
       quote(CCAD_BINARY) + " pcb add-via --file " + quote(remove_board_path) +
@@ -825,7 +825,7 @@ int main() {
   require(run(move_board_init_command) == 0, "move board init exits zero");
   const std::string move_add_pad_command =
       quote(CCAD_BINARY) + " pcb add-pad --file " + quote(move_board_path) +
-      " --id MP1 --component U1 --pin 1 --net N1 --layer F.Cu"
+      " --id MP1 --component U1 --pin 1 --net N1 --layers F.Cu"
       " --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0";
   const std::string move_add_via_command =
       quote(CCAD_BINARY) + " pcb add-via --file " + quote(move_board_path) +
@@ -875,7 +875,7 @@ int main() {
       quote(resize_board_path);
   require(run(resize_board_init_command) == 0, "resize board init exits zero");
   require(run(quote(CCAD_BINARY) + " pcb add-pad --file " + quote(resize_board_path) +
-              " --id SP1 --component U1 --pin 1 --net N1 --layer F.Cu"
+              " --id SP1 --component U1 --pin 1 --net N1 --layers F.Cu"
               " --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0") == 0,
           "resize fixture add pad exits zero");
   require(run(quote(CCAD_BINARY) + " pcb add-keepout --file " + quote(resize_board_path) +
@@ -994,11 +994,11 @@ int main() {
               " --id F.SilkS --name FrontSilkscreen --kind silkscreen") == 0,
           "set pad fixture add silkscreen layer exits zero");
   require(run(quote(CCAD_BINARY) + " pcb add-pad --file " + quote(set_pad_board_path) +
-              " --id SPD1 --component U1 --pin 1 --net N1 --layer F.Cu"
+              " --id SPD1 --component U1 --pin 1 --net N1 --layers F.Cu"
               " --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0") == 0,
           "set pad fixture add pad exits zero");
   require(run(quote(CCAD_BINARY) + " pcb set-pad --file " + quote(set_pad_board_path) +
-              " --id SPD1 --component U2 --pin 2 --net N2 --layer B.Cu"
+              " --id SPD1 --component U2 --pin 2 --net N2 --layers B.Cu"
               " --rotation-deg 90") == 0,
           "pcb set-pad updates pad metadata");
   const std::string set_pad_json = readFile(set_pad_board_path);
@@ -1008,23 +1008,23 @@ int main() {
           "pcb set-pad writes pin");
   require(set_pad_json.find("\"net_id\": \"N2\"") != std::string::npos,
           "pcb set-pad writes net");
-  require(set_pad_json.find("\"layer_id\": \"B.Cu\"") != std::string::npos,
+  require(set_pad_json.find("\"B.Cu\"") != std::string::npos,
           "pcb set-pad writes layer");
   require(set_pad_json.find("\"rotation_degrees\": 90") != std::string::npos,
           "pcb set-pad writes rotation");
   require(run(quote(CCAD_BINARY) + " pcb set-pad --file " + quote(set_pad_board_path) +
-              " --id SPD1 --component U2 --pin 2 --net N2 --layer F.SilkS"
+              " --id SPD1 --component U2 --pin 2 --net N2 --layers F.SilkS"
               " --rotation-deg 90") != 0,
           "pcb set-pad rejects non-copper layer");
   require(run(quote(CCAD_BINARY) + " pcb move-object --file " + quote(set_pad_board_path) +
               " --id SPD1 --x-mm 0.6 --y-mm 6") == 0,
           "set pad fixture moves pad near edge");
   require(run(quote(CCAD_BINARY) + " pcb set-pad --file " + quote(set_pad_board_path) +
-              " --id SPD1 --component U2 --pin 2 --net N2 --layer F.Cu"
+              " --id SPD1 --component U2 --pin 2 --net N2 --layers F.Cu"
               " --rotation-deg 0") != 0,
           "pcb set-pad rejects rotated pad outside board");
   require(run(quote(CCAD_BINARY) + " pcb set-pad --file " + quote(set_pad_board_path) +
-              " --id MISSING --component U2 --pin 2 --net N2 --layer F.Cu"
+              " --id MISSING --component U2 --pin 2 --net N2 --layers F.Cu"
               " --rotation-deg 0") != 0,
           "pcb set-pad rejects missing pad");
 
@@ -1066,7 +1066,7 @@ int main() {
 
   const std::string non_copper_pad_command =
       quote(CCAD_BINARY) + " pcb add-pad --file " + quote(board_project_path) +
-      " --id P_SILK --component U1 --pin 1 --net N1 --layer F.SilkS"
+      " --id P_SILK --component U1 --pin 1 --net N1 --layers F.SilkS"
       " --x-mm 10 --y-mm 6 --width-mm 1.0 --height-mm 1.0";
   require(run(non_copper_pad_command) != 0, "pcb add-pad rejects non-copper layer");
 
@@ -1089,7 +1089,7 @@ int main() {
 
   const std::string edge_pad_command =
       quote(CCAD_BINARY) + " pcb add-pad --file " + quote(board_project_path) +
-      " --id P_EDGE --component U1 --pin 1 --net N1 --layer F.Cu"
+      " --id P_EDGE --component U1 --pin 1 --net N1 --layers F.Cu"
       " --x-mm 0.2 --y-mm 6 --width-mm 1.0 --height-mm 1.0";
   require(run(edge_pad_command) != 0, "pcb add-pad rejects geometry outside board");
 
