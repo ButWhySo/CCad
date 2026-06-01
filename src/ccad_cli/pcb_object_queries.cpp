@@ -59,7 +59,12 @@ std::string pcbPadObjectJson(const ccad::Pad& pad) {
       << "    \"component_id\": \"" << ccad::escapeJson(pad.component_id) << "\",\n"
       << "    \"pin_name\": \"" << ccad::escapeJson(pad.pin_name) << "\",\n"
       << "    \"net_id\": \"" << ccad::escapeJson(pad.net_id) << "\",\n"
-      << "    \"layer_id\": \"" << ccad::escapeJson(pad.layer_id) << "\",\n"
+      << "    \"layers\": [";
+  for (size_t i = 0; i < pad.layers.size(); ++i) {
+    if (i > 0) out << ", ";
+    out << "\"" << ccad::escapeJson(pad.layers[i]) << "\"";
+  }
+  out << "],\n"
       << "    \"position\": {\n";
   writePointJson(out, pad.position, 6);
   out << "\n    },\n"
@@ -159,7 +164,7 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
           << "\", \"component_id\": \"" << ccad::escapeJson(pad.component_id)
           << "\", \"pin_name\": \"" << ccad::escapeJson(pad.pin_name)
           << "\", \"net_id\": \"" << ccad::escapeJson(pad.net_id)
-          << "\", \"layer_id\": \"" << ccad::escapeJson(pad.layer_id) << "\"}";
+          << "\", \"layer_id\": \"" << ccad::escapeJson(pad.layers.empty() ? "" : pad.layers.front()) << "\"}";
       add_row(row);
     }
   }
@@ -404,7 +409,7 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
     const ccad::Pad& pad = board.pads.at(i);
     out << "        {\"id\": \"" << ccad::escapeJson(pad.id) << "\", \"net_id\": \""
         << ccad::escapeJson(pad.net_id) << "\", \"layer_id\": \""
-        << ccad::escapeJson(pad.layer_id) << "\", \"x_nm\": " << pad.position.x.nanometers
+        << ccad::escapeJson(pad.layers.empty() ? "" : pad.layers.front()) << "\", \"x_nm\": " << pad.position.x.nanometers
         << ", \"y_nm\": " << pad.position.y.nanometers << ", \"width_nm\": "
         << pad.size.width.nanometers << ", \"height_nm\": " << pad.size.height.nanometers
         << "}" << (i + 1 == board.pads.size() ? "" : ",") << '\n';

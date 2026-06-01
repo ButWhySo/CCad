@@ -2,8 +2,9 @@
 
 #include "ccad_core/kicad_footprint_import.hpp"
 
+#include "ccad_gui/library_browser_dialog.hpp"
 #include <QDialogButtonBox>
-#include <QFileDialog>
+#include <QFileInfo>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -15,7 +16,7 @@
 #include <sstream>
 
 FootprintPlacementDialog::FootprintPlacementDialog(const ccad::Board& board, QWidget* parent)
-    : QDialog(parent) {
+    : QDialog(parent), board_(board) {
   setWindowTitle("Place Footprint");
   setMinimumWidth(420);
 
@@ -39,27 +40,9 @@ FootprintPlacementDialog::FootprintPlacementDialog(const ccad::Board& board, QWi
   auto* params_group = new QGroupBox("Placement Parameters");
   auto* form = new QFormLayout(params_group);
 
-  component_id_edit_ = new QLineEdit(this);
-  component_id_edit_->setPlaceholderText("e.g. R1, U2, C3");
-  form->addRow("Component ID:", component_id_edit_);
-
   layer_combo_ = new QComboBox(this);
   populateLayers(board);
   form->addRow("Layer:", layer_combo_);
-
-  x_spin_ = new QDoubleSpinBox(this);
-  x_spin_->setRange(0.001, 9999.0);
-  x_spin_->setDecimals(3);
-  x_spin_->setSuffix(" mm");
-  x_spin_->setValue(10.0);
-  form->addRow("X Position:", x_spin_);
-
-  y_spin_ = new QDoubleSpinBox(this);
-  y_spin_->setRange(0.001, 9999.0);
-  y_spin_->setDecimals(3);
-  y_spin_->setSuffix(" mm");
-  y_spin_->setValue(10.0);
-  form->addRow("Y Position:", y_spin_);
 
   rotation_spin_ = new QDoubleSpinBox(this);
   rotation_spin_->setRange(-360.0, 360.0);
@@ -94,11 +77,11 @@ void FootprintPlacementDialog::populateLayers(const ccad::Board& board) {
 }
 
 void FootprintPlacementDialog::browseFootprint() {
-  const QString path = QFileDialog::getOpenFileName(
-      this, "Select Footprint File", QString(),
-      "CCad Footprint (*.ccad-footprint.json);;All Files (*)");
-  if (!path.isEmpty()) {
-    footprint_path_edit_->setText(path);
+  LibraryBrowserDialog dialog(LibraryType::Footprint, this);
+  if (dialog.exec() == QDialog::Accepted) {
+    if (auto result = dialog.result()) {
+      footprint_path_edit_->setText(QString::fromStdString(*result));
+    }
   }
 }
 
@@ -109,11 +92,26 @@ void FootprintPlacementDialog::onAccept() {
     return;
   }
 
-  const QString comp_id = component_id_edit_->text().trimmed();
-  if (comp_id.isEmpty()) {
-    QMessageBox::warning(this, "Missing Component ID", "Please enter a component ID.");
-    return;
+  QFileInfo fi(fp_path);
+  QString baseName = fi.baseName();
+  std::string prefix = "U";
+  if (baseName.startsWith("R_") || baseName.startsWith("R", Qt::CaseInsensitive)) prefix = "R";
+  else if (baseName.startsWith("C_") || baseName.startsWith("C", Qt::CaseInsensitive)) prefix = "C";
+  else if (baseName.startsWith("D_") || baseName.startsWith("D", Qt::CaseInsensitive)) prefix = "D";
+  else if (baseName.startsWith("Q_") || baseName.startsWith("Q", Qt::CaseInsensitive)) prefix = "Q";
+  else if (baseName.startsWith("L_") || baseName.startsWith("L", Qt::CaseInsensitive)) prefix = "L";
+
+  int max_num = 0;
+  for (const auto& pad : board_.pads) {
+    if (pad.component_id.starts_with(prefix)) {
+      std::string num_str = pad.component_id.substr(prefix.length());
+      try {
+        int num = std::stoi(num_str);
+        if (num > max_num) max_num = num;
+      } catch (...) {}
+    }
   }
+  const std::string comp_id = prefix + std::to_string(max_num + 1);
 
   const QString layer_id = layer_combo_->currentData().toString();
   if (layer_id.isEmpty()) {
@@ -141,10 +139,8 @@ void FootprintPlacementDialog::onAccept() {
     result_ = FootprintPlacementResult{
         .footprint = std::move(footprint),
         .footprint_path = fp_path.toStdString(),
-        .component_id = comp_id.toStdString(),
+        .component_id = comp_id,
         .layer_id = layer_id.toStdString(),
-        .x_mm = x_spin_->value(),
-        .y_mm = y_spin_->value(),
         .rotation_deg = rotation_spin_->value(),
     };
     accept();

@@ -24,7 +24,7 @@ void testDsnExport() {
   p1.component_id = "U1";
   p1.pin_name = "1";
   p1.net_id = "N1";
-  p1.layer_id = "F.Cu";
+  p1.layers = {"F.Cu"};
   p1.position = Point{nanometers(5000000), nanometers(6000000)};
   p1.size = Size{nanometers(1500000), nanometers(1000000)};
   board.pads.push_back(p1);

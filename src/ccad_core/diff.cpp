@@ -61,9 +61,13 @@ std::string sizeSignature(const Size& size) {
 }
 
 std::string padSignature(const Pad& pad) {
-  return pad.component_id + "\x1f" + pad.pin_name + "\x1f" + pad.net_id + "\x1f" +
-         pad.layer_id + "\x1f" + pointSignature(pad.position) + "\x1f" +
+  std::string sig = pad.component_id + "\x1f" + pad.pin_name + "\x1f" + pad.net_id + "\x1f";
+  for (const std::string& layer : pad.layers) {
+    sig += layer + "\x1e";
+  }
+  sig += "\x1f" + pad.type + "\x1f" + pad.shape + "\x1f" + pointSignature(pad.position) + "\x1f" +
          sizeSignature(pad.size) + "\x1f" + std::to_string(pad.rotation_degrees);
+  return sig;
 }
 
 std::string viaSignature(const Via& via) {

@@ -3,6 +3,7 @@
 
 #include <QApplication>
 #include <QColor>
+#include <QGraphicsPathItem>
 #include <QGraphicsScene>
 
 namespace {
@@ -26,11 +27,33 @@ ccad::CanvasScene selectionScene() {
   scene.pads.push_back(ccad::CanvasPad{
       .id = "P1",
       .net_id = "N1",
-      .layer_id = "F.Cu",
+      .layers = {"F.Cu"},
+      .type = "smd",
+      .shape = "rect",
       .x_units = 5.0,
       .y_units = 6.0,
       .width_units = 1.5,
       .height_units = 1.0,
+  });
+  return scene;
+}
+
+ccad::CanvasScene throughHoleScene() {
+  ccad::CanvasScene scene;
+  scene.has_board = true;
+  scene.view_width_units = 20.0;
+  scene.view_height_units = 20.0;
+  scene.pads.push_back(ccad::CanvasPad{
+      .id = "J1.1",
+      .net_id = "AC1",
+      .layers = {"*.Cu", "*.Mask"},
+      .type = "thru_hole",
+      .shape = "circle",
+      .x_units = 10.0,
+      .y_units = 10.0,
+      .width_units = 2.0,
+      .height_units = 2.0,
+      .drill_units = 1.0,
   });
   return scene;
 }
@@ -92,4 +115,21 @@ int main(int argc, char** argv) {
 
   require(saw_themed_track, "themed scene has selectable track");
   require(saw_themed_pad, "themed scene has selectable pad");
+
+  QGraphicsScene through_hole_scene;
+  renderBoardCanvas(through_hole_scene, throughHoleScene());
+  bool saw_round_pad_path = false;
+  bool saw_drill_hole = false;
+  for (QGraphicsItem* item : through_hole_scene.items()) {
+    if (canvasObjectType(*item) == "pad") {
+      auto* path_item = dynamic_cast<QGraphicsPathItem*>(item);
+      require(path_item != nullptr, "through-hole pad is rendered as a path item");
+      saw_round_pad_path = path_item->path().elementCount() > 5;
+    }
+    if (canvasObjectType(*item) == "pad-drill") {
+      saw_drill_hole = true;
+    }
+  }
+  require(saw_round_pad_path, "through-hole circular pad does not render as a rectangle");
+  require(saw_drill_hole, "through-hole circular pad renders a drill opening");
 }

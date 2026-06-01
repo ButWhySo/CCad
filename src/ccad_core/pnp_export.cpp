@@ -59,7 +59,11 @@ std::string exportToPnpCsv(const Project& project) {
           if (py < min_y) min_y = py;
           if (py > max_y) max_y = py;
 
-          if (pad->layer_id == "B.Cu") {
+          bool on_bottom = false;
+          for (const auto& l : pad->layers) {
+            if (l.starts_with("B.")) on_bottom = true;
+          }
+          if (on_bottom) {
               side = "Bottom";
           }
       }

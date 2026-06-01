@@ -136,11 +136,11 @@ std::string exportToKiCadPcb(const Project& project) {
       }
       out << ") (size " << pw << " " << ph << ")";
 
-      if (pad->layer_id == "B.Cu") {
-        out << " (layers \"B.Cu\" \"B.Paste\" \"B.Mask\")";
-      } else {
-        out << " (layers \"F.Cu\" \"F.Paste\" \"F.Mask\")";
+      out << " (layers";
+      for (const std::string& layer : pad->layers) {
+        out << " \"" << layer << "\"";
       }
+      out << ")";
 
       if (!pad->net_id.empty() && net_to_index.contains(pad->net_id)) {
         out << " (net " << net_to_index.at(pad->net_id) << " \"" << pad->net_id << "\")";

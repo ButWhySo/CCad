@@ -89,6 +89,34 @@ QGraphicsItem* findCanvasObjectById(QGraphicsScene& canvas_scene, const QString&
   return nullptr;
 }
 
+QPainterPath padShapePath(const QRectF& pad_rect, const QPointF& pad_center,
+                          const std::string& shape, const double rotation_degrees) {
+  QPainterPath pad_path;
+  if (shape == "circle") {
+    const double diameter = std::min(pad_rect.width(), pad_rect.height());
+    pad_path.addEllipse(QRectF(pad_center.x() - (diameter / 2.0),
+                               pad_center.y() - (diameter / 2.0), diameter, diameter));
+  } else if (shape == "oval") {
+    pad_path.addEllipse(pad_rect);
+  } else if (shape == "rect") {
+    pad_path.addRect(pad_rect);
+  } else if (shape == "roundrect" || shape == "rounded_rect") {
+    const double radius = std::min(pad_rect.width(), pad_rect.height()) * 0.25;
+    pad_path.addRoundedRect(pad_rect, radius, radius);
+  } else {
+    pad_path.addEllipse(pad_rect);
+  }
+
+  if (rotation_degrees != 0.0) {
+    QTransform transform;
+    transform.translate(pad_center.x(), pad_center.y());
+    transform.rotate(rotation_degrees);
+    transform.translate(-pad_center.x(), -pad_center.y());
+    pad_path = transform.map(pad_path);
+  }
+  return pad_path;
+}
+
 std::set<std::string> hiddenLayerIds(const ccad::CanvasScene& scene) {
   std::set<std::string> hidden;
   for (const ccad::CanvasLayer& layer : scene.layers) {
@@ -212,7 +240,14 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
   }
 
   for (const ccad::CanvasPad& pad : scene.pads) {
-    if (!layerIsVisible(hidden_layers, pad.layer_id)) {
+    bool is_visible = false;
+    for (const std::string& layer : pad.layers) {
+      if (layer.starts_with("*.") || !hidden_layers.contains(layer)) {
+        is_visible = true;
+        break;
+      }
+    }
+    if (!is_visible) {
       continue;
     }
     const QRectF pad_rect(sceneX(scene, pad.x_units, margin, scale) -
@@ -222,21 +257,27 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
                           pad.width_units * scale, pad.height_units * scale);
     const QPointF pad_center(sceneX(scene, pad.x_units, margin, scale),
                              sceneY(scene, pad.y_units, margin, scale));
-    QPainterPath pad_path;
-    pad_path.addRoundedRect(pad_rect, 2.0, 2.0);
-    if (pad.rotation_degrees != 0.0) {
-      QTransform transform;
-      transform.translate(pad_center.x(), pad_center.y());
-      transform.rotate(pad.rotation_degrees);
-      transform.translate(-pad_center.x(), -pad_center.y());
-      pad_path = transform.map(pad_path);
-    }
+    QPainterPath pad_path = padShapePath(pad_rect, pad_center, pad.shape, pad.rotation_degrees);
     auto* item =
         addHighlightPath(canvas_scene, pad_path, QPen(theme.pad_outline_color, 0.8),
                          QBrush(theme.pad_fill_color));
-    item->setToolTip("Pad " + qstr(pad.id));
-    tagObject(*item, "pad", qstr(pad.id), theme.pad_fill_color, qstr(pad.net_id),
-              qstr(pad.layer_id));
+    item->setToolTip("Pad " + qstr(pad.id) + " (" + qstr(pad.type) + ")");
+
+    QString layers_str;
+    for (const auto& l : pad.layers) layers_str += qstr(l) + ",";
+    if (!layers_str.isEmpty()) layers_str.chop(1);
+
+    tagObject(*item, "pad", qstr(pad.id), theme.pad_fill_color, qstr(pad.net_id), layers_str);
+
+    if (pad.drill_units > 0.0) {
+      const double drill = pad.drill_units * scale;
+      auto* drill_item = canvas_scene.addEllipse(pad_center.x() - (drill / 2.0),
+                                                 pad_center.y() - (drill / 2.0), drill,
+                                                 drill, QPen(Qt::NoPen),
+                                                 QBrush(theme.background_color));
+      drill_item->setData(kCanvasObjectTypeRole, "pad-drill");
+      drill_item->setData(kCanvasObjectIdRole, qstr(pad.id) + ".drill");
+    }
   }
 
   for (const ccad::CanvasVia& via : scene.vias) {

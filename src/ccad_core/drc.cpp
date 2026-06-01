@@ -433,8 +433,36 @@ bool isCopperLayer(const Board& board, const std::string& layer_id) {
 
 bool shareCopperLayer(const Board& board, const std::string& left_layer,
                       const std::string& right_layer) {
-  return left_layer == right_layer && isCopperLayer(board, left_layer);
+  if (left_layer == right_layer && isCopperLayer(board, left_layer)) return true;
+  if (left_layer.starts_with("*.") && right_layer.starts_with("*.")) return true; // simplified
+  if (left_layer.starts_with("*.") && isCopperLayer(board, right_layer)) return true;
+  if (right_layer.starts_with("*.") && isCopperLayer(board, left_layer)) return true;
+  return false;
 }
+
+bool padSharesCopperLayer(const Board& board, const Pad& pad, const std::string& layer) {
+  for (const std::string& l : pad.layers) {
+    if (shareCopperLayer(board, l, layer)) return true;
+  }
+  return false;
+}
+
+bool padsShareCopperLayer(const Board& board, const Pad& p1, const Pad& p2) {
+  for (const std::string& l1 : p1.layers) {
+    for (const std::string& l2 : p2.layers) {
+      if (shareCopperLayer(board, l1, l2)) return true;
+    }
+  }
+  return false;
+}
+
+bool padOnCopperLayer(const Board& board, const Pad& pad) {
+  for (const std::string& l : pad.layers) {
+    if (l.starts_with("*.") || isCopperLayer(board, l)) return true;
+  }
+  return false;
+}
+
 
 bool hasValidPadGeometry(const Pad& pad) {
   return isPositive(pad.size.width) && isPositive(pad.size.height);
@@ -464,7 +492,7 @@ bool endpointTouchesSameNetPrimitive(const Board& board, const TrackSegment& sou
 
   for (const Pad& pad : board.pads) {
     if (pad.net_id == source_track.net_id &&
-        shareCopperLayer(board, pad.layer_id, source_track.layer_id) &&
+        padSharesCopperLayer(board, pad, source_track.layer_id) &&
         pointInPolygon(endpoint, padCorners(pad))) {
       return true;
     }
@@ -515,10 +543,14 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
             makeDiagnostic("UNKNOWN_PAD_PIN", "Pad references an unknown component pin", pad.id));
       }
     }
-    if (!hasLayer(board, pad.layer_id)) {
+    bool has_unknown = false;
+    for (const std::string& l : pad.layers) {
+      if (!l.starts_with("*.") && !hasLayer(board, l)) has_unknown = true;
+    }
+    if (has_unknown) {
       diagnostics.push_back(
           makeDiagnostic("UNKNOWN_PAD_LAYER", "Pad references an unknown layer", pad.id));
-    } else if (!isCopperLayer(board, pad.layer_id)) {
+    } else if (!padOnCopperLayer(board, pad)) {
       diagnostics.push_back(
           makeDiagnostic("PAD_NON_COPPER_LAYER", "Pad must be on a copper layer", pad.id));
     }
@@ -984,7 +1016,7 @@ void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnosti
       if (!hasValidPadGeometry(left_pad) || !hasValidPadGeometry(right_pad) ||
           sameNonEmptyNet(left_pad.net_id, right_pad.net_id) ||
           !differentNonEmptyNets(left_pad.net_id, right_pad.net_id) ||
-          !shareCopperLayer(board, left_pad.layer_id, right_pad.layer_id)) {
+          !padsShareCopperLayer(board, left_pad, right_pad)) {
         continue;
       }
       if (distanceBetweenPolygons(padCorners(left_pad), padCorners(right_pad)) <
@@ -1022,7 +1054,7 @@ void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnosti
       if (!hasValidPadGeometry(pad) || !hasValidTrackGeometry(track) ||
           sameNonEmptyNet(pad.net_id, track.net_id) ||
           !differentNonEmptyNets(pad.net_id, track.net_id) ||
-          !shareCopperLayer(board, pad.layer_id, track.layer_id)) {
+          !padSharesCopperLayer(board, pad, track.layer_id)) {
         continue;
       }
       const long double edge_distance =
@@ -1058,7 +1090,7 @@ void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnosti
     for (const Pad& pad : board.pads) {
       if (!hasValidViaGeometry(via) || !hasValidPadGeometry(pad) ||
           sameNonEmptyNet(via.net_id, pad.net_id) ||
-          !differentNonEmptyNets(via.net_id, pad.net_id) || !isCopperLayer(board, pad.layer_id)) {
+          !differentNonEmptyNets(via.net_id, pad.net_id) || !padOnCopperLayer(board, pad)) {
         continue;
       }
       const long double edge_distance =

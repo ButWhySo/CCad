@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
   pad.size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(2.0)};
   pad.rotation_degrees = 90.0;
   pad.net_id = "GND";
-  pad.layer_id = "F.Cu";
+  pad.layers = {"F.Cu"};
   pad.component_id = "U1";
   pad.pin_name = "1";
   board.pads.push_back(pad);

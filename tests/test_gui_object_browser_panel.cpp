@@ -15,7 +15,7 @@ ccad::CanvasScene browserScene() {
   scene.layers.push_back(
       ccad::CanvasLayer{.id = "B.Cu", .name = "Back copper", .kind = "signal", .visible = false});
   scene.keepouts.push_back(ccad::CanvasKeepout{.id = "K1", .kind = "placement"});
-  scene.pads.push_back(ccad::CanvasPad{.id = "P1", .net_id = "N1", .layer_id = "F.Cu"});
+  scene.pads.push_back(ccad::CanvasPad{.id = "P1", .net_id = "N1", .layers = {"F.Cu"}, .type = "smd", .shape = "rect"});
   scene.vias.push_back(ccad::CanvasVia{.id = "V1", .net_id = "N1"});
   scene.tracks.push_back(ccad::CanvasTrack{
       .id = "T1", .net_id = "N1", .layer_id = "F.Cu", .source_route_request_id = "RR1"});

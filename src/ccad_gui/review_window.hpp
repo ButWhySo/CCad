@@ -22,6 +22,13 @@
 
 QString formatCursorStatus(const std::optional<ccad::Board>& board, const QPointF& scene_position);
 
+enum class InteractionMode {
+  Default,
+  PlaceFootprint,
+  PlaceSymbol,
+  MoveFootprint
+};
+
 class ReviewWindow final : public QMainWindow {
  public:
   ReviewWindow();
@@ -29,6 +36,9 @@ class ReviewWindow final : public QMainWindow {
   void loadProjectPath(const std::filesystem::path& path);
   void loadFootprintPreview(const std::filesystem::path& path);
   void loadSymbolPreview(const std::filesystem::path& path);
+
+ protected:
+  bool eventFilter(QObject* obj, QEvent* event) override;
 
  private:
   void applyStyle();
@@ -44,6 +54,9 @@ class ReviewWindow final : public QMainWindow {
                     const std::vector<ccad::Diagnostic>& diagnostics = {});
   void updateCursorStatus(const QPointF& scene_position, double zoom_factor);
   void updateSelectionStatus();
+  void enterPlaceFootprintMode(const std::string& component_id, const ccad::Footprint& footprint, const std::string& layer_id);
+  void enterMoveFootprintMode(const std::string& component_id);
+  void cancelInteractionMode();
 
   ProjectSummaryPanel* project_summary_ = nullptr;
   QLabel* cursor_status_ = nullptr;
@@ -62,4 +75,12 @@ class ReviewWindow final : public QMainWindow {
   TransactionTimelinePanel* transaction_timeline_ = nullptr;
   std::filesystem::path current_path_;
   ccad::Project project_cache_;
+
+  InteractionMode interaction_mode_ = InteractionMode::Default;
+  std::string interaction_component_id_;
+  ccad::Footprint interaction_footprint_;
+  std::string interaction_layer_id_;
+  std::vector<QGraphicsItem*> interaction_ghost_items_;
+  QPointF interaction_last_mouse_pos_;
+  QPointF interaction_start_mouse_pos_;
 };

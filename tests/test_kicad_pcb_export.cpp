@@ -36,7 +36,9 @@ int main() {
       .component_id = "U1",
       .pin_name = "1",
       .net_id = "GND",
-      .layer_id = "F.Cu",
+      .layers = {"F.Cu"},
+      .type = "smd",
+      .shape = "rect",
       .position = ccad::Point{.x = ccad::millimeters(10), .y = ccad::millimeters(20)},
       .rotation_degrees = 45.0,
       .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(2.0)}

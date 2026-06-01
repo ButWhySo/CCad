@@ -21,14 +21,18 @@ int main() {
       .id = "pad1",
       .component_id = "U1",
       .pin_name = "1",
-      .layer_id = "F.Cu",
+      .layers = {"F.Cu"},
+      .type = "smd",
+      .shape = "rect",
       .position = ccad::Point{.x = ccad::millimeters(10), .y = ccad::millimeters(10)}
   });
   board.pads.push_back(ccad::Pad{
       .id = "pad2",
       .component_id = "U1",
       .pin_name = "2",
-      .layer_id = "F.Cu",
+      .layers = {"F.Cu"},
+      .type = "smd",
+      .shape = "rect",
       .position = ccad::Point{.x = ccad::millimeters(30), .y = ccad::millimeters(30)}
   });
 
@@ -37,7 +41,9 @@ int main() {
       .id = "pad3",
       .component_id = "R1",
       .pin_name = "1",
-      .layer_id = "B.Cu",
+      .layers = {"B.Cu"},
+      .type = "smd",
+      .shape = "rect",
       .position = ccad::Point{.x = ccad::millimeters(50), .y = ccad::millimeters(50)}
   });
 
