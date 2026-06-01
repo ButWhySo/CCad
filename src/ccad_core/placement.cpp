@@ -166,6 +166,8 @@ void placeFootprint(Project& project, const Footprint& footprint, const std::str
         .rotation_degrees = footprint_pad.rotation_degrees + rotation_deg,
         .size = footprint_pad.size,
         .drill = footprint_pad.drill,
+        .roundrect_rratio = footprint_pad.roundrect_rratio,
+        .chamfer_ratio = footprint_pad.chamfer_ratio,
     });
   }
 }

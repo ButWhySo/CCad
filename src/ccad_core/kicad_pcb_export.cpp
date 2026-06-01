@@ -130,11 +130,21 @@ std::string exportToKiCadPcb(const Project& project) {
       double pw = pad->size.width.nanometers / 1000000.0;
       double ph = pad->size.height.nanometers / 1000000.0;
 
-      out << "    (pad \"" << pad->pin_name << "\" smd rect (at " << px << " " << py;
+      out << "    (pad \"" << pad->pin_name << "\" " << pad->type << " " << pad->shape << " (at "
+          << px << " " << py;
       if (pad->rotation_degrees != 0.0) {
         out << " " << pad->rotation_degrees;
       }
       out << ") (size " << pw << " " << ph << ")";
+      if (pad->drill.has_value()) {
+        out << " (drill " << (pad->drill->nanometers / 1000000.0) << ")";
+      }
+      if (pad->roundrect_rratio.has_value()) {
+        out << " (roundrect_rratio " << *pad->roundrect_rratio << ")";
+      }
+      if (pad->chamfer_ratio.has_value()) {
+        out << " (chamfer_ratio " << *pad->chamfer_ratio << ")";
+      }
 
       out << " (layers";
       for (const std::string& layer : pad->layers) {

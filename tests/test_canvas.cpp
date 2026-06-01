@@ -40,10 +40,13 @@ ccad::Project boardProject() {
                          .pin_name = "1",
                          .net_id = "N1",
                          .layers = {"F.Cu"},
+                         .type = "smd",
+                         .shape = "roundrect",
                          .position = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
                          .rotation_degrees = 90.0,
                          .size = ccad::Size{.width = ccad::millimeters(1.5),
-                                            .height = ccad::millimeters(1.0)}}},
+                                            .height = ccad::millimeters(1.0)},
+                         .roundrect_rratio = 0.25}},
       .vias = {ccad::Via{.id = "V1",
                          .net_id = "N1",
                          .position = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},
@@ -103,6 +106,8 @@ int main() {
   require(scene.pads.size() == 1, "canvas has pad");
   require(scene.pads.at(0).net_id == "N1", "canvas pad net id");
   require(scene.pads.at(0).layers.empty() == false && scene.pads.at(0).layers.front() == "F.Cu", "canvas pad layer id");
+  require(scene.pads.at(0).shape == "roundrect", "canvas pad shape");
+  require(scene.pads.at(0).roundrect_rratio.has_value(), "canvas pad roundrect ratio");
   require(scene.pads.at(0).x_units == 5.0, "canvas pad x is mm");
   require(scene.pads.at(0).rotation_degrees == 90.0, "canvas pad rotation is degrees");
   require(scene.vias.size() == 1, "canvas has via");

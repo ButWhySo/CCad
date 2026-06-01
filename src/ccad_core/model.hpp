@@ -69,6 +69,8 @@ struct Pad {
   double rotation_degrees = 0.0;
   Size size;
   std::optional<Length> drill;
+  std::optional<double> roundrect_rratio = std::nullopt;
+  std::optional<double> chamfer_ratio = std::nullopt;
 };
 
 struct Via {

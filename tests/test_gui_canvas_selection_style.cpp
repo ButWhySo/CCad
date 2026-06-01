@@ -38,6 +38,37 @@ ccad::CanvasScene selectionScene() {
   return scene;
 }
 
+ccad::CanvasScene complexPadShapeScene() {
+  ccad::CanvasScene scene;
+  scene.has_board = true;
+  scene.view_width_units = 24.0;
+  scene.view_height_units = 20.0;
+  scene.pads.push_back(ccad::CanvasPad{
+      .id = "TRAP",
+      .net_id = "N1",
+      .layers = {"F.Cu"},
+      .type = "smd",
+      .shape = "trapezoid",
+      .x_units = 6.0,
+      .y_units = 8.0,
+      .width_units = 3.0,
+      .height_units = 1.6,
+  });
+  scene.pads.push_back(ccad::CanvasPad{
+      .id = "CHAMFER",
+      .net_id = "N1",
+      .layers = {"F.Cu"},
+      .type = "smd",
+      .shape = "chamfered_rect",
+      .x_units = 14.0,
+      .y_units = 8.0,
+      .width_units = 3.0,
+      .height_units = 1.6,
+      .chamfer_ratio = 0.25,
+  });
+  return scene;
+}
+
 ccad::CanvasScene throughHoleScene() {
   ccad::CanvasScene scene;
   scene.has_board = true;
@@ -132,4 +163,23 @@ int main(int argc, char** argv) {
   }
   require(saw_round_pad_path, "through-hole circular pad does not render as a rectangle");
   require(saw_drill_hole, "through-hole circular pad renders a drill opening");
+
+  QGraphicsScene complex_scene;
+  renderBoardCanvas(complex_scene, complexPadShapeScene());
+  bool saw_trapezoid = false;
+  bool saw_chamfered_rect = false;
+  for (QGraphicsItem* item : complex_scene.items()) {
+    auto* path_item = dynamic_cast<QGraphicsPathItem*>(item);
+    if (path_item == nullptr) {
+      continue;
+    }
+    if (canvasObjectId(*item) == "TRAP") {
+      saw_trapezoid = path_item->path().elementCount() >= 5;
+    }
+    if (canvasObjectId(*item) == "CHAMFER") {
+      saw_chamfered_rect = path_item->path().elementCount() >= 6;
+    }
+  }
+  require(saw_trapezoid, "trapezoid pad renders as a polygon path");
+  require(saw_chamfered_rect, "chamfered pad renders as a chamfered polygon path");
 }

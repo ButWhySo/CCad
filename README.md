@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 148 working on KiCad GUI Parity on branch `sprint-148-gui-kicad-parity`.
+Progress counter: Phase 7 / 7, Sprint 149 working on pad shape and layer fidelity on branch `sprint-149-pad-shape-and-layer-fidelity`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -38,7 +38,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI supports independent PCB and Schematic Canvas views through a tabbed editor interface.
 - Native GUI toolbar layout follows KiCad's pcbnew organization (Top, Left, Right toolbars) for visual parity.
 - Native GUI left and right PCB toolbars resolve KiCad SVG icons from `CCAD_KICAD_SRC` or a sibling `kicad_src` checkout, with tooltips preserving action names.
-- Native GUI canvas renders circular and oval pads as curved geometry and shows through-hole drill openings as visible annular rings.
+- Native GUI canvas renders circular, oval, ratio-controlled round-rect, trapezoid, and chamfered pads as shape-aware geometry and shows through-hole drill openings as visible annular rings.
 - Native GUI interactive footprint placement and movement use shape-aware ghost previews and convert canvas scene coordinates back to board millimeters before calling the core placement APIs.
 - Native GUI canvas toolbar has Fit, Zoom Out, Zoom In, and 100% review controls.
 - Sprint demo automation now has a robust screenshot fallback path that captures only the spawned CCad window by PID when `ccad_gui --screenshot` fails.

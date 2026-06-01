@@ -43,6 +43,30 @@ int main() {
       .rotation_degrees = 45.0,
       .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(2.0)}
   });
+  board.pads.push_back(ccad::Pad{
+      .id = "pad2",
+      .component_id = "U1",
+      .pin_name = "2",
+      .net_id = "VCC",
+      .layers = {"F.Cu", "F.Paste", "F.Mask"},
+      .type = "smd",
+      .shape = "roundrect",
+      .position = ccad::Point{.x = ccad::millimeters(12), .y = ccad::millimeters(20)},
+      .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(1.5)},
+      .roundrect_rratio = 0.25
+  });
+  board.pads.push_back(ccad::Pad{
+      .id = "pad3",
+      .component_id = "U1",
+      .pin_name = "3",
+      .net_id = "VCC",
+      .layers = {"F.Cu", "F.Paste", "F.Mask"},
+      .type = "smd",
+      .shape = "chamfered_rect",
+      .position = ccad::Point{.x = ccad::millimeters(14), .y = ccad::millimeters(20)},
+      .size = ccad::Size{.width = ccad::millimeters(1.2), .height = ccad::millimeters(1.5)},
+      .chamfer_ratio = 0.2
+  });
 
   // Add a via
   board.vias.push_back(ccad::Via{
@@ -101,6 +125,10 @@ int main() {
   require(exported.find("property \"Reference\" \"U1\"") != std::string::npos, "Output must contain Reference U1");
   require(exported.find("(pad \"1\" smd rect (at 10.000000 20.000000 45.000000)") != std::string::npos, "Pad coordinates/rotation match");
   require(exported.find("(size 1.500000 2.000000)") != std::string::npos, "Pad size matches");
+  require(exported.find("(pad \"2\" smd roundrect (at 12.000000 20.000000)") != std::string::npos, "Roundrect pad shape exports");
+  require(exported.find("(roundrect_rratio 0.250000)") != std::string::npos, "Roundrect ratio exports");
+  require(exported.find("(pad \"3\" smd chamfered_rect (at 14.000000 20.000000)") != std::string::npos, "Chamfered pad shape exports");
+  require(exported.find("(chamfer_ratio 0.200000)") != std::string::npos, "Chamfer ratio exports");
 
   // Via details
   require(exported.find("(via (at 30.000000 40.000000) (size 0.800000) (drill 0.400000)") != std::string::npos, "Via details match");

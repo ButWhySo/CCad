@@ -67,6 +67,10 @@ std::string padSignature(const Pad& pad) {
   }
   sig += "\x1f" + pad.type + "\x1f" + pad.shape + "\x1f" + pointSignature(pad.position) + "\x1f" +
          sizeSignature(pad.size) + "\x1f" + std::to_string(pad.rotation_degrees);
+  sig += "\x1f" + (pad.drill.has_value() ? std::to_string(pad.drill->nanometers) : "");
+  sig += "\x1f" +
+         (pad.roundrect_rratio.has_value() ? std::to_string(*pad.roundrect_rratio) : "");
+  sig += "\x1f" + (pad.chamfer_ratio.has_value() ? std::to_string(*pad.chamfer_ratio) : "");
   return sig;
 }
 

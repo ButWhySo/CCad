@@ -1,6 +1,7 @@
 #include "ccad_core/canvas.hpp"
 
 #include <map>
+#include <optional>
 
 namespace ccad {
 namespace {
@@ -69,6 +70,8 @@ CanvasScene buildCanvasScene(const Project& project) {
         .height_units = toMillimeters(pad.size.height),
         .rotation_degrees = pad.rotation_degrees,
         .drill_units = pad.drill.has_value() ? toMillimeters(*pad.drill) : 0.0,
+        .roundrect_rratio = pad.roundrect_rratio,
+        .chamfer_ratio = pad.chamfer_ratio,
     });
   }
 
@@ -249,6 +252,8 @@ CanvasScene buildCanvasScene(const Footprint& footprint) {
         .height_units = toMillimeters(pad.size.height),
         .rotation_degrees = pad.rotation_degrees,
         .drill_units = pad.drill.has_value() ? toMillimeters(*pad.drill) : 0.0,
+        .roundrect_rratio = pad.roundrect_rratio,
+        .chamfer_ratio = pad.chamfer_ratio,
     });
   }
   
@@ -335,6 +340,8 @@ CanvasScene buildCanvasScene(const Symbol& symbol) {
         .width_units = toMillimeters(pin.length),
         .height_units = 0.5,
         .rotation_degrees = pin.rotation_degrees,
+        .roundrect_rratio = std::nullopt,
+        .chamfer_ratio = std::nullopt,
     });
   }
 
