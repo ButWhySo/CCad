@@ -6,6 +6,7 @@
 #include "ccad_core/serialize.hpp"
 #include "ccad_core/component_generator.hpp"
 #include "ccad_core/component_generator.hpp"
+#include "ccad_core/drc.hpp"
 #include "ccad_gui/component_wizard_dialog.hpp"
 #include "ccad_gui/footprint_placement_dialog.hpp"
 #include "ccad_core/kicad_symbol_import.hpp"
@@ -17,8 +18,12 @@
 
 #include <QAbstractItemView>
 #include <QAction>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QDoubleSpinBox>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFormLayout>
 #include <QGuiApplication>
 #include <QGraphicsPathItem>
 #include <QGraphicsScene>
@@ -39,6 +44,7 @@
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QTextStream>
+#include <QToolButton>
 
 #include <algorithm>
 #include <fstream>
@@ -363,16 +369,25 @@ ReviewWindow::ReviewWindow() {
   resizeDocks({project_dock, layers_dock}, {360, 320}, Qt::Horizontal);
   resizeDocks({project_dock, diagnostics_dock}, {620, 240}, Qt::Vertical);
 
-  auto* open_action = new QAction("Open", this);
-  auto* reload_action = new QAction("Reload", this);
+  auto* open_action = new QAction(kicadIcon("directory_open"), "Open", this);
+  auto* reload_action = new QAction(kicadIcon("reload"), "Reload", this);
+  auto* save_action = new QAction(kicadIcon("save"), "Save", this);
+  auto* board_setup_action = new QAction(kicadIcon("options_board"), "Board Setup", this);
+  undo_action_ = new QAction(kicadIcon("undo"), "Undo", this);
+  redo_action_ = new QAction(kicadIcon("redo"), "Redo", this);
+  auto* run_drc_action = new QAction(kicadIcon("drc"), "Run DRC", this);
+  auto* export_drc_action = new QAction(kicadIcon("export"), "Export DRC Report...", this);
   auto* preview_footprint_action = new QAction("Preview KiCad Footprint...", this);
   auto* preview_symbol_action = new QAction("Preview KiCad Symbol...", this);
-  auto* fit_action = new QAction("Fit", this);
-  auto* zoom_in_action = new QAction("Zoom In", this);
-  auto* zoom_out_action = new QAction("Zoom Out", this);
+  auto* fit_action = new QAction(kicadIcon("zoom_fit_in_page"), "Fit", this);
+  auto* zoom_in_action = new QAction(kicadIcon("zoom_in"), "Zoom In", this);
+  auto* zoom_out_action = new QAction(kicadIcon("zoom_out"), "Zoom Out", this);
   auto* zoom_100_action = new QAction("100%", this);
   auto* navigation_help_action = new QAction("Navigation Controls", this);
   auto* quit_action = new QAction("Quit", this);
+  save_action->setShortcut(QKeySequence::Save);
+  undo_action_->setShortcut(QKeySequence::Undo);
+  redo_action_->setShortcut(QKeySequence::Redo);
   fit_action->setShortcut(QKeySequence(Qt::Key_F));
   zoom_in_action->setShortcuts(
       {QKeySequence(Qt::Key_Plus), QKeySequence(Qt::CTRL | Qt::Key_Equal)});
@@ -382,6 +397,24 @@ ReviewWindow::ReviewWindow() {
 
   connect(open_action, &QAction::triggered, this, [this]() { openProject(); });
   connect(reload_action, &QAction::triggered, this, [this]() { reloadProject(); });
+  connect(save_action, &QAction::triggered, this, [this]() { saveProject(); });
+  connect(board_setup_action, &QAction::triggered, this, [this]() { showBoardSetup(); });
+  connect(undo_action_, &QAction::triggered, this, [this]() {
+    if (undo_stack_.empty()) return;
+    redo_stack_.push_back(project_cache_);
+    const ccad::Project snapshot = undo_stack_.back();
+    undo_stack_.pop_back();
+    restoreProjectSnapshot(snapshot);
+  });
+  connect(redo_action_, &QAction::triggered, this, [this]() {
+    if (redo_stack_.empty()) return;
+    undo_stack_.push_back(project_cache_);
+    const ccad::Project snapshot = redo_stack_.back();
+    redo_stack_.pop_back();
+    restoreProjectSnapshot(snapshot);
+  });
+  connect(run_drc_action, &QAction::triggered, this, [this]() { runDrcFromToolbar(); });
+  connect(export_drc_action, &QAction::triggered, this, [this]() { exportDrcReport(); });
   connect(preview_footprint_action, &QAction::triggered, this, [this]() { previewFootprint(); });
   connect(preview_symbol_action, &QAction::triggered, this, [this]() { previewSymbol(); });
   connect(fit_action, &QAction::triggered, this, [this]() {
@@ -411,27 +444,32 @@ ReviewWindow::ReviewWindow() {
 
   auto* tools_menu = menuBar()->addMenu(tr("&Tools"));
   tools_menu->addAction(tr("Component Wizard..."), this, &ReviewWindow::showComponentWizard);
+  tools_menu->addAction(run_drc_action);
+  tools_menu->addAction(export_drc_action);
 
   auto* help_menu = menuBar()->addMenu("Help");
   help_menu->addAction(navigation_help_action);
 
   auto* top_toolbar = addToolBar("Top Toolbar");
   top_toolbar->setMovable(false);
+  top_toolbar->setToolButtonStyle(Qt::ToolButtonIconOnly);
+  top_toolbar->setIconSize(QSize(24, 24));
   top_toolbar->addAction(open_action);
   top_toolbar->addAction(reload_action);
   top_toolbar->addSeparator();
-  top_toolbar->addAction("Save"); // placeholder
-  top_toolbar->addAction("Board Setup"); // placeholder
+  top_toolbar->addAction(save_action);
+  top_toolbar->addAction(board_setup_action);
   top_toolbar->addSeparator();
-  top_toolbar->addAction("Undo"); // placeholder
-  top_toolbar->addAction("Redo"); // placeholder
+  top_toolbar->addAction(undo_action_);
+  top_toolbar->addAction(redo_action_);
   top_toolbar->addSeparator();
   top_toolbar->addAction(fit_action);
   top_toolbar->addAction(zoom_in_action);
   top_toolbar->addAction(zoom_out_action);
   top_toolbar->addAction(zoom_100_action);
   top_toolbar->addSeparator();
-  top_toolbar->addAction("Run DRC"); // placeholder
+  top_toolbar->addAction(run_drc_action);
+  updateUndoRedoActions();
 
   auto* left_toolbar = new QToolBar("Left Toolbar", this);
   left_toolbar->setMovable(false);
@@ -496,6 +534,7 @@ ReviewWindow::ReviewWindow() {
     auto result = dialog.result();
     if (!result.has_value()) return;
     try {
+      pushUndoSnapshot();
       ccad::placeComponent(
           project_cache_, result->symbol, result->component_id,
           {ccad::millimeters(result->x_mm), ccad::millimeters(result->y_mm)},
@@ -543,6 +582,7 @@ ReviewWindow::ReviewWindow() {
     if (!project_cache_.board) {
       return;
     }
+    pushUndoSnapshot();
     for (auto& layer : project_cache_.board->layers) {
       if (QString::fromStdString(layer.id) == layer_id) {
         layer.visible = visible;
@@ -554,6 +594,7 @@ ReviewWindow::ReviewWindow() {
 
   selection_inspector_->setDesignRulesChangedCallback([this](const ccad::DesignRules& rules) {
     if (!project_cache_.board) return;
+    pushUndoSnapshot();
     project_cache_.board->design_rules = rules;
     try {
       writeFile(current_path_, ccad::dumpProjectJson(project_cache_));
@@ -567,6 +608,7 @@ ReviewWindow::ReviewWindow() {
 
   selection_inspector_->setTrackChangedCallback([this](const QString& id, double width_mm) {
     if (!project_cache_.board) return;
+    pushUndoSnapshot();
     for (auto& track : project_cache_.board->tracks) {
       if (QString::fromStdString(track.id) == id) {
         track.width = ccad::millimeters(width_mm);
@@ -585,6 +627,7 @@ ReviewWindow::ReviewWindow() {
 
   selection_inspector_->setViaChangedCallback([this](const QString& id, double diameter_mm, double drill_mm) {
     if (!project_cache_.board) return;
+    pushUndoSnapshot();
     for (auto& via : project_cache_.board->vias) {
       if (QString::fromStdString(via.id) == id) {
         via.diameter = ccad::millimeters(diameter_mm);
@@ -604,6 +647,7 @@ ReviewWindow::ReviewWindow() {
 
   selection_inspector_->setPadChangedCallback([this](const QString& id, double width_mm, double height_mm, double rotation_deg) {
     if (!project_cache_.board) return;
+    pushUndoSnapshot();
     for (auto& pad : project_cache_.board->pads) {
       if (QString::fromStdString(pad.id) == id) {
         pad.size.width = ccad::millimeters(width_mm);
@@ -624,6 +668,7 @@ ReviewWindow::ReviewWindow() {
 
   selection_inspector_->setKeepoutChangedCallback([this](const QString& id, double width_mm, double height_mm) {
     if (!project_cache_.board) return;
+    pushUndoSnapshot();
     for (auto& keepout : project_cache_.board->keepouts) {
       if (QString::fromStdString(keepout.id) == id) {
         keepout.area.size.width = ccad::millimeters(width_mm);
@@ -643,6 +688,7 @@ ReviewWindow::ReviewWindow() {
 
   selection_inspector_->setRegionChangedCallback([this](const QString& id, double width_mm, double height_mm) {
     if (!project_cache_.board) return;
+    pushUndoSnapshot();
     for (auto& pr : project_cache_.board->placement_regions) {
       if (QString::fromStdString(pr.id) == id) {
         pr.area.size.width = ccad::millimeters(width_mm);
@@ -683,8 +729,104 @@ void ReviewWindow::showNavigationHelp() {
   QMessageBox::information(this, "Navigation Controls", lines.join('\n'));
 }
 
+void ReviewWindow::pushUndoSnapshot() {
+  undo_stack_.push_back(project_cache_);
+  redo_stack_.clear();
+  updateUndoRedoActions();
+}
+
+void ReviewWindow::restoreProjectSnapshot(const ccad::Project& snapshot) {
+  project_cache_ = snapshot;
+  try {
+    if (!current_path_.empty()) {
+      writeFile(current_path_, ccad::dumpProjectJson(project_cache_));
+    }
+    renderReview(ccad::buildReview(project_cache_));
+    statusBar()->showMessage("Restored project snapshot");
+  } catch (const std::exception& e) {
+    QMessageBox::warning(this, "Restore failed", QString::fromStdString(e.what()));
+  }
+  updateUndoRedoActions();
+}
+
+void ReviewWindow::updateUndoRedoActions() {
+  if (undo_action_ != nullptr) {
+    undo_action_->setEnabled(!undo_stack_.empty());
+  }
+  if (redo_action_ != nullptr) {
+    redo_action_->setEnabled(!redo_stack_.empty());
+  }
+}
+
+void ReviewWindow::saveProject() {
+  if (current_path_.empty()) {
+    QMessageBox::warning(this, "Save Project", "No project file is loaded.");
+    return;
+  }
+  try {
+    writeFile(current_path_, ccad::dumpProjectJson(project_cache_));
+    statusBar()->showMessage("Saved project file");
+  } catch (const std::exception& e) {
+    QMessageBox::critical(this, "Save failed", QString::fromStdString(e.what()));
+  }
+}
+
+void ReviewWindow::showBoardSetup() {
+  if (!project_cache_.board.has_value()) {
+    QMessageBox::warning(this, "Board Setup", "Load a project with a board first.");
+    return;
+  }
+
+  QDialog dialog(this);
+  dialog.setWindowTitle("Board Setup");
+  auto* layout = new QVBoxLayout(&dialog);
+  auto* form = new QFormLayout();
+  auto* clearance = new QDoubleSpinBox(&dialog);
+  auto* min_track = new QDoubleSpinBox(&dialog);
+  auto* min_ring = new QDoubleSpinBox(&dialog);
+  for (QDoubleSpinBox* spin : {clearance, min_track, min_ring}) {
+    spin->setDecimals(3);
+    spin->setRange(0.001, 1000.0);
+    spin->setSuffix(" mm");
+  }
+  clearance->setValue(project_cache_.board->design_rules.copper_clearance.nanometers / 1e6);
+  min_track->setValue(project_cache_.board->design_rules.min_track_width.nanometers / 1e6);
+  min_ring->setValue(project_cache_.board->design_rules.min_via_annular_ring.nanometers / 1e6);
+  form->addRow("Copper clearance:", clearance);
+  form->addRow("Minimum track width:", min_track);
+  form->addRow("Minimum via annular ring:", min_ring);
+  layout->addLayout(form);
+  auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+  layout->addWidget(buttons);
+  connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+  connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+  if (dialog.exec() != QDialog::Accepted) {
+    return;
+  }
+
+  pushUndoSnapshot();
+  project_cache_.board->design_rules.copper_clearance = ccad::millimeters(clearance->value());
+  project_cache_.board->design_rules.min_track_width = ccad::millimeters(min_track->value());
+  project_cache_.board->design_rules.min_via_annular_ring = ccad::millimeters(min_ring->value());
+  saveProject();
+  renderReview(ccad::buildReview(project_cache_));
+}
+
+void ReviewWindow::runDrcFromToolbar() {
+  const std::vector<ccad::Diagnostic> diagnostics = ccad::runDrc(project_cache_);
+  diagnostics_->renderDiagnostics(diagnostics);
+  const ccad::CanvasScene pcb_scene = ccad::buildCanvasScene(project_cache_);
+  renderBoardCanvas(*canvas_scene_, pcb_scene);
+  addDiagnosticMarkers(*canvas_scene_, diagnostics);
+  object_browser_->renderScene(pcb_scene);
+  statusBar()->showMessage("DRC complete: " + QString::number(diagnostics.size()) + " findings");
+}
+
 void ReviewWindow::loadProjectPath(const std::filesystem::path& path) {
   current_path_ = path;
+  undo_stack_.clear();
+  redo_stack_.clear();
+  updateUndoRedoActions();
   reloadProject();
   if (project_cache_.board.has_value() && !project_cache_.board->pads.empty()) {
     const QString first_pad_id = QString::fromStdString(project_cache_.board->pads.front().id);
@@ -815,6 +957,9 @@ void ReviewWindow::openProject() {
     return;
   }
   current_path_ = selected.toStdString();
+  undo_stack_.clear();
+  redo_stack_.clear();
+  updateUndoRedoActions();
   reloadProject();
 }
 
@@ -949,7 +1094,35 @@ void ReviewWindow::loadSymbolPreview(const std::filesystem::path& path) {
 }
 
 void ReviewWindow::exportDrcReport() {
-  QMessageBox::information(this, "Export", "DRC Report export not implemented yet.");
+  if (current_path_.empty()) {
+    QMessageBox::warning(this, "Export DRC Report", "Load a project before exporting DRC.");
+    return;
+  }
+  const QString selected = QFileDialog::getSaveFileName(
+      this, "Export DRC Report", qstr(current_path_.stem().string() + ".drc.json"),
+      "JSON Files (*.json);;All files (*)");
+  if (selected.isEmpty()) {
+    return;
+  }
+  const std::vector<ccad::Diagnostic> diagnostics = ccad::runDrc(project_cache_);
+  std::ostringstream out;
+  out << "{\n  \"diagnostics\": [\n";
+  for (std::size_t i = 0; i < diagnostics.size(); ++i) {
+    const ccad::Diagnostic& diagnostic = diagnostics.at(i);
+    out << "    {\n";
+    out << "      \"severity\": \"" << ccad::escapeJson(diagnostic.severity) << "\",\n";
+    out << "      \"code\": \"" << ccad::escapeJson(diagnostic.code) << "\",\n";
+    out << "      \"message\": \"" << ccad::escapeJson(diagnostic.message) << "\",\n";
+    out << "      \"object_id\": \"" << ccad::escapeJson(diagnostic.object_id) << "\"\n";
+    out << "    }" << (i + 1 == diagnostics.size() ? "" : ",") << "\n";
+  }
+  out << "  ]\n}\n";
+  try {
+    writeFile(selected.toStdString(), out.str());
+    statusBar()->showMessage("Exported DRC report");
+  } catch (const std::exception& e) {
+    QMessageBox::critical(this, "Export failed", QString::fromStdString(e.what()));
+  }
 }
 
 void ReviewWindow::showComponentWizard() {
@@ -1084,6 +1257,7 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               if (!project_cache_.board.has_value()) {
                 throw std::runtime_error("cannot place footprint without a board");
               }
+              pushUndoSnapshot();
               ccad::placeFootprint(
                   project_cache_, interaction_footprint_, interaction_component_id_,
                   boardPointFromScene(*project_cache_.board, scene_pos),
@@ -1102,6 +1276,7 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
           } else if (interaction_mode_ == InteractionMode::MoveFootprint) {
             try {
               QPointF delta = scene_pos - interaction_start_mouse_pos_;
+              pushUndoSnapshot();
               ccad::moveFootprint(project_cache_, interaction_component_id_,
                                   boardDeltaFromSceneDelta(delta));
               std::ofstream out(current_path_);

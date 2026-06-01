@@ -43,6 +43,9 @@ class ReviewWindow final : public QMainWindow {
  private:
   void applyStyle();
   void exportDrcReport();
+  void saveProject();
+  void showBoardSetup();
+  void runDrcFromToolbar();
   void showComponentWizard();
   void openProject();
   void reloadProject();
@@ -57,6 +60,9 @@ class ReviewWindow final : public QMainWindow {
   void enterPlaceFootprintMode(const std::string& component_id, const ccad::Footprint& footprint, const std::string& layer_id);
   void enterMoveFootprintMode(const std::string& component_id);
   void cancelInteractionMode();
+  void pushUndoSnapshot();
+  void restoreProjectSnapshot(const ccad::Project& snapshot);
+  void updateUndoRedoActions();
 
   ProjectSummaryPanel* project_summary_ = nullptr;
   QLabel* cursor_status_ = nullptr;
@@ -75,6 +81,10 @@ class ReviewWindow final : public QMainWindow {
   TransactionTimelinePanel* transaction_timeline_ = nullptr;
   std::filesystem::path current_path_;
   ccad::Project project_cache_;
+  std::vector<ccad::Project> undo_stack_;
+  std::vector<ccad::Project> redo_stack_;
+  QAction* undo_action_ = nullptr;
+  QAction* redo_action_ = nullptr;
 
   InteractionMode interaction_mode_ = InteractionMode::Default;
   std::string interaction_component_id_;

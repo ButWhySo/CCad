@@ -14,6 +14,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <algorithm>
 
 SymbolPlacementDialog::SymbolPlacementDialog(const ccad::Project& board, QWidget* parent)
     : QDialog(parent), project_(board) {
@@ -124,7 +125,23 @@ void SymbolPlacementDialog::onAccept() {
   buffer << input.rdbuf();
 
   try {
-    ccad::Symbol symbol = ccad::loadSymbolJson(buffer.str());
+    ccad::Symbol symbol;
+    if (fi.suffix().compare("kicad_sym", Qt::CaseInsensitive) == 0) {
+      const std::vector<ccad::Symbol> symbols = ccad::importKiCadSymbolLibrary(buffer.str());
+      auto selected = std::find_if(symbols.begin(), symbols.end(), [](const ccad::Symbol& candidate) {
+        return !candidate.pins.empty();
+      });
+      if (selected == symbols.end() && !symbols.empty()) {
+        selected = symbols.begin();
+      }
+      if (selected == symbols.end()) {
+        QMessageBox::warning(this, "Invalid Symbol", "The KiCad symbol library has no symbols.");
+        return;
+      }
+      symbol = *selected;
+    } else {
+      symbol = ccad::loadSymbolJsonFileWithLocalInheritance(fi.absoluteFilePath().toStdString());
+    }
     if (symbol.pins.empty()) {
       QMessageBox::warning(this, "Invalid Symbol", "The symbol has no pins.");
       return;

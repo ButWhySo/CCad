@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 153
-- Branch: `sprint-153-route-job-pad-metadata`
+- Sprint: 154
+- Branch: `sprint-154-gui-actions-library-cache`
 - Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
@@ -18,7 +18,8 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - **Sprint 150 (Standard Layer Registry Fidelity)** is complete and merged to `main`. It aligns CCad's standard layer order and KiCad PCB export layer numbers with current KiCad source and exposes canonical layer numbers to agent-facing layer queries.
 - **Sprint 151 (KiCad Pad Authoring CLI)** is complete and merged to `main`. It exposes KiCad-style pad type, shape, drill, roundrect ratio, chamfer ratio, and multi-layer authoring through `ccad pcb add-pad` and `ccad pcb set-pad`.
 - **Sprint 152 (Rich Pad Query Contract)** is complete and merged to `main`. It exposes KiCad-style pad metadata through `ccad pcb get-object` and `ccad pcb list-objects --type pad` so agents can plan from command output instead of parsing raw project JSON.
-- **Sprint 153 (Route-Job Pad Metadata)** is active. It carries KiCad-style pad type, shape, drill, ratio, layer, and rotation metadata into `ccad pcb export-route-job` so external routers and AI tools see the same pad geometry intent.
+- **Sprint 153 (Route-Job Pad Metadata)** is complete and merged to `main`. It carries KiCad-style pad type, shape, drill, ratio, layer, and rotation metadata into `ccad pcb export-route-job` so external routers and AI tools see the same pad geometry intent.
+- **Sprint 154 (GUI Actions and Library Cache Placement)** is active. It replaces top-toolbar placeholders with real Save, Board Setup, Undo, Redo, Run DRC, and DRC export behavior, makes the library chooser more KiCad-like, and fixes converted symbol inheritance so library-cache symbol placement gets real pins.
 
 ## Phase Roadmap
 
@@ -285,3 +286,5 @@ Because full CMake and CTest verification is heavy and token-consuming in this r
 Every CCad feature or bugfix sprint must start with current external references for the feature domain before code edits begin. For KiCad-compatible PCB/CAD behavior, official KiCad documentation and KiCad developer file-format documentation are mandatory. Manufacturing, layer-stack, DRC, and fabrication work should add Altium or IPC-style industry references when relevant. Simulation work should add KiCad ngspice and ngspice references. AI harness and observability work should add OpenTelemetry, Langfuse, LangGraph, or equivalent primary references. The sprint file must include a "References Checked" section that records the sources, the behavior they imply, CCad's compatibility decision, and the verification evidence tied to that behavior. If internet lookup fails, record the failure and use local cached docs only as a temporary fallback.
 
 Sprint 148 is verified on branch `sprint-148-gui-kicad-parity`. The batch adds KiCad-style icon toolbars sourced from the local KiCad checkout, shape-aware pad and drill rendering for annular-ring visibility, core-owned interactive placement and movement, GUI symbol and footprint placement entry points, legacy pad `layer_id` JSON compatibility, and the official visual screenshot proof. The sprint file is `docs/devops/sprints/2026-06-01-sprint-148-gui-kicad-parity.md`. The final clean rebuild passed all 177 build steps, and CTest passed 33 of 33 tests.
+
+Sprint 154 is active on branch `sprint-154-gui-actions-library-cache`. The batch replaces visible GUI top-toolbar placeholders with real Save, Board Setup, Undo, Redo, Run DRC, and DRC export behavior; makes the local library chooser more KiCad-like with filter, library/name rows, detail metadata, and preview notes; resolves converted symbol `extends` inheritance from sibling `library-cache` JSON so derived symbols inherit pins before placement; and accepts raw KiCad `.kicad_mod` files from the footprint chooser.

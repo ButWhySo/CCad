@@ -4,6 +4,7 @@
 
 #include <string>
 #include <vector>
+#include <filesystem>
 
 namespace ccad {
 
@@ -15,5 +16,9 @@ std::string dumpSymbolsJson(const std::vector<Symbol>& symbols);
 
 // Loads a single symbol from JSON.
 Symbol loadSymbolJson(std::string_view source);
+
+// Loads a converted symbol JSON file and resolves a same-directory `extends`
+// parent when the child relies on inherited KiCad symbol pins or graphics.
+Symbol loadSymbolJsonFileWithLocalInheritance(const std::filesystem::path& path);
 
 }  // namespace ccad

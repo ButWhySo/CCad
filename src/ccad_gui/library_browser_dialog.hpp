@@ -7,6 +7,7 @@
 #include <QString>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QLabel>
 
 #include <string>
 #include <optional>
@@ -30,11 +31,14 @@ class LibraryBrowserDialog : public QDialog {
 
  private:
   void loadComponents();
+  void updateDetails();
 
   LibraryType type_;
   std::optional<std::string> result_;
 
   QLineEdit* search_edit_ = nullptr;
   QListWidget* component_list_ = nullptr;
+  QLabel* detail_label_ = nullptr;
+  QLabel* preview_label_ = nullptr;
   QPushButton* ok_button_ = nullptr;
 };

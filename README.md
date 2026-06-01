@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 153 working on route-job pad metadata on branch `sprint-153-route-job-pad-metadata`.
+Progress counter: Phase 7 / 7, Sprint 154 working on GUI actions and library-cache placement on branch `sprint-154-gui-actions-library-cache`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -40,6 +40,11 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI supports independent PCB and Schematic Canvas views through a tabbed editor interface.
 - Native GUI toolbar layout follows KiCad's pcbnew organization (Top, Left, Right toolbars) for visual parity.
 - Native GUI left and right PCB toolbars resolve KiCad SVG icons from `CCAD_KICAD_SRC` or a sibling `kicad_src` checkout, with tooltips preserving action names.
+- Native GUI top toolbar actions now resolve KiCad-style icons and perform real Save, Board Setup, Undo, Redo, and Run DRC behavior instead of placeholder buttons.
+- Native GUI can export a DRC report from the Tools menu.
+- Native GUI library chooser now has KiCad-style chooser context with filtered library/name rows, details, and preview metadata.
+- Native GUI symbol placement resolves locally converted KiCad `extends` inheritance from `library-cache`, so derived symbols such as diode variants inherit parent pins before placement.
+- Native GUI footprint placement accepts raw KiCad `.kicad_mod` files from the chooser as well as converted CCad footprint JSON.
 - Native GUI canvas renders circular, oval, ratio-controlled round-rect, trapezoid, and chamfered pads as shape-aware geometry and shows through-hole drill openings as visible annular rings.
 - Native GUI interactive footprint placement and movement use shape-aware ghost previews and convert canvas scene coordinates back to board millimeters before calling the core placement APIs.
 - Native GUI canvas toolbar has Fit, Zoom Out, Zoom In, and 100% review controls.

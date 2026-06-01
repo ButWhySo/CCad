@@ -3,12 +3,24 @@
 #include "ccad_core/sexpr_parser.hpp"
 
 #include <stdexcept>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 
 namespace ccad {
 
 namespace {
+
+std::string readTextFile(const std::filesystem::path& path) {
+  std::ifstream input(path, std::ios::binary);
+  if (!input) {
+    throw std::runtime_error("failed to open symbol file: " + path.string());
+  }
+  std::ostringstream buffer;
+  buffer << input.rdbuf();
+  return buffer.str();
+}
 
 Point parseAt(const SExpr* at_expr) {
   if (!at_expr || at_expr->children.size() < 3) return {0, 0};
@@ -209,6 +221,42 @@ std::vector<Symbol> importKiCadSymbolLibrary(const std::string& kicad_sym_conten
 
 Symbol loadSymbolJson(const std::string_view source) {
   return SymbolJsonReader(source).readSymbol();
+}
+
+Symbol loadSymbolJsonFileWithLocalInheritance(const std::filesystem::path& path) {
+  Symbol symbol = loadSymbolJson(readTextFile(path));
+  if (symbol.extends.empty()) {
+    return symbol;
+  }
+
+  const std::filesystem::path parent_path = path.parent_path() / (symbol.extends + ".json");
+  if (!std::filesystem::exists(parent_path)) {
+    return symbol;
+  }
+
+  Symbol parent = loadSymbolJsonFileWithLocalInheritance(parent_path);
+  if (symbol.pins.empty()) {
+    symbol.pins = parent.pins;
+  }
+  if (symbol.rectangles.empty()) {
+    symbol.rectangles = parent.rectangles;
+  }
+  if (symbol.lines.empty()) {
+    symbol.lines = parent.lines;
+  }
+  if (symbol.arcs.empty()) {
+    symbol.arcs = parent.arcs;
+  }
+  if (symbol.circles.empty()) {
+    symbol.circles = parent.circles;
+  }
+  if (symbol.polylines.empty()) {
+    symbol.polylines = parent.polylines;
+  }
+  if (symbol.texts.empty()) {
+    symbol.texts = parent.texts;
+  }
+  return symbol;
 }
 
 std::string dumpSymbolsJson(const std::vector<Symbol>& symbols) {
