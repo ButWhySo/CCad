@@ -450,10 +450,27 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
     const ccad::Pad& pad = board.pads.at(i);
     out << "        {\"id\": \"" << ccad::escapeJson(pad.id) << "\", \"net_id\": \""
         << ccad::escapeJson(pad.net_id) << "\", \"layer_id\": \""
-        << ccad::escapeJson(pad.layers.empty() ? "" : pad.layers.front()) << "\", \"x_nm\": " << pad.position.x.nanometers
+        << ccad::escapeJson(pad.layers.empty() ? "" : pad.layers.front())
+        << "\", \"pad_type\": \"" << ccad::escapeJson(pad.type)
+        << "\", \"shape\": \"" << ccad::escapeJson(pad.shape) << "\", \"layers\": [";
+    for (std::size_t layer_index = 0; layer_index < pad.layers.size(); ++layer_index) {
+      if (layer_index > 0) out << ", ";
+      out << "\"" << ccad::escapeJson(pad.layers.at(layer_index)) << "\"";
+    }
+    out << "], \"x_nm\": " << pad.position.x.nanometers
         << ", \"y_nm\": " << pad.position.y.nanometers << ", \"width_nm\": "
         << pad.size.width.nanometers << ", \"height_nm\": " << pad.size.height.nanometers
-        << "}" << (i + 1 == board.pads.size() ? "" : ",") << '\n';
+        << ", \"rotation_degrees\": " << pad.rotation_degrees;
+    if (pad.drill.has_value()) {
+      out << ", \"drill_nm\": " << pad.drill->nanometers;
+    }
+    if (pad.roundrect_rratio.has_value()) {
+      out << ", \"roundrect_rratio\": " << *pad.roundrect_rratio;
+    }
+    if (pad.chamfer_ratio.has_value()) {
+      out << ", \"chamfer_ratio\": " << *pad.chamfer_ratio;
+    }
+    out << "}" << (i + 1 == board.pads.size() ? "" : ",") << '\n';
   }
   out << "      ],\n"
       << "      \"vias\": [\n";

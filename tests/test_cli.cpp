@@ -243,6 +243,30 @@ int main() {
   require(advanced_pad_list_json.find("\"drill_nm\": 700000") != std::string::npos,
           "pcb list-objects writes compact drill size");
 
+  const std::filesystem::path advanced_pad_route_job_path =
+      temp / "advanced-pad-route-job.json";
+  require(run(quote(CCAD_BINARY) + " pcb export-route-job --file " +
+              quote(advanced_pad_path) + " > " + quote(advanced_pad_route_job_path)) == 0,
+          "pcb export-route-job exports KiCad pad metadata fixture");
+  const std::string advanced_pad_route_job_json = readFile(advanced_pad_route_job_path);
+  require(advanced_pad_route_job_json.find("\"pad_type\": \"smd\"") != std::string::npos,
+          "pcb export-route-job writes pad type metadata");
+  require(advanced_pad_route_job_json.find("\"shape\": \"roundrect\"") != std::string::npos,
+          "pcb export-route-job writes roundrect pad shape");
+  require(advanced_pad_route_job_json.find("\"roundrect_rratio\": 0.25") !=
+              std::string::npos,
+          "pcb export-route-job writes roundrect ratio");
+  require(advanced_pad_route_job_json.find("\"shape\": \"chamfered_rect\"") !=
+              std::string::npos,
+          "pcb export-route-job writes chamfered pad shape");
+  require(advanced_pad_route_job_json.find("\"chamfer_ratio\": 0.2") != std::string::npos,
+          "pcb export-route-job writes chamfer ratio");
+  require(advanced_pad_route_job_json.find("\"pad_type\": \"thru_hole\"") !=
+              std::string::npos,
+          "pcb export-route-job writes through-hole pad type");
+  require(advanced_pad_route_job_json.find("\"drill_nm\": 700000") != std::string::npos,
+          "pcb export-route-job writes through-hole pad drill");
+
   const std::string set_layer_visibility_command =
       quote(CCAD_BINARY) + " pcb set-layer-visibility --file " + quote(board_project_path) +
       " --id In1.Cu --visible true";
