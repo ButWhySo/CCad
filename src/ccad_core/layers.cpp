@@ -35,19 +35,6 @@ std::vector<Layer> buildStandardKiCadPcbLayers() {
   layers.push_back(
       Layer{.id = "F.Mask", .name = "Front solder mask", .kind = "mask", .visible = true});
   layers.push_back(
-      Layer{.id = "F.CrtYd", .name = "Front courtyard", .kind = "courtyard", .visible = false});
-  layers.push_back(
-      Layer{.id = "B.CrtYd", .name = "Back courtyard", .kind = "courtyard", .visible = false});
-  layers.push_back(Layer{
-      .id = "F.Fab", .name = "Front fabrication", .kind = "fabrication", .visible = false});
-  layers.push_back(
-      Layer{.id = "B.Fab", .name = "Back fabrication", .kind = "fabrication", .visible = false});
-
-  layers.push_back(
-      Layer{.id = "Edge.Cuts", .name = "Board outline", .kind = "board_edge", .visible = true});
-  layers.push_back(Layer{.id = "Margin", .name = "Board margin", .kind = "margin", .visible = false});
-
-  layers.push_back(
       Layer{.id = "Dwgs.User", .name = "User drawings", .kind = "user", .visible = false});
   layers.push_back(
       Layer{.id = "Cmts.User", .name = "User comments", .kind = "user", .visible = false});
@@ -55,6 +42,17 @@ std::vector<Layer> buildStandardKiCadPcbLayers() {
       Layer{.id = "Eco1.User", .name = "Engineering change order 1", .kind = "user", .visible = false});
   layers.push_back(
       Layer{.id = "Eco2.User", .name = "Engineering change order 2", .kind = "user", .visible = false});
+  layers.push_back(
+      Layer{.id = "Edge.Cuts", .name = "Board outline", .kind = "board_edge", .visible = true});
+  layers.push_back(Layer{.id = "Margin", .name = "Board margin", .kind = "margin", .visible = false});
+  layers.push_back(
+      Layer{.id = "B.CrtYd", .name = "Back courtyard", .kind = "courtyard", .visible = false});
+  layers.push_back(
+      Layer{.id = "F.CrtYd", .name = "Front courtyard", .kind = "courtyard", .visible = false});
+  layers.push_back(
+      Layer{.id = "B.Fab", .name = "Back fabrication", .kind = "fabrication", .visible = false});
+  layers.push_back(Layer{
+      .id = "F.Fab", .name = "Front fabrication", .kind = "fabrication", .visible = false});
   for (int index = 1; index <= 9; ++index) {
     layers.push_back(Layer{.id = "User." + std::to_string(index),
                            .name = "User " + std::to_string(index),
@@ -85,6 +83,16 @@ const Layer* findStandardKiCadPcbLayer(const std::string& id) {
   const auto it = std::find_if(layers.begin(), layers.end(),
                                [&id](const Layer& layer) { return layer.id == id; });
   return it == layers.end() ? nullptr : &*it;
+}
+
+std::optional<std::size_t> standardKiCadPcbLayerNumber(const std::string& id) {
+  const std::vector<Layer>& layers = standardKiCadPcbLayerStorage();
+  const auto it = std::find_if(layers.begin(), layers.end(),
+                               [&id](const Layer& layer) { return layer.id == id; });
+  if (it == layers.end()) {
+    return std::nullopt;
+  }
+  return static_cast<std::size_t>(std::distance(layers.begin(), it));
 }
 
 std::size_t appendMissingStandardKiCadPcbLayers(Board& board) {

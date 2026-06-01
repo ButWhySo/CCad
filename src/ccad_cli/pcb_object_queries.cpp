@@ -1,8 +1,10 @@
 #include "ccad_cli/pcb_object_queries.hpp"
 
 #include "ccad_core/json.hpp"
+#include "ccad_core/layers.hpp"
 
 #include <map>
+#include <optional>
 #include <ostream>
 #include <set>
 #include <sstream>
@@ -37,6 +39,7 @@ bool includeObjectType(const std::string& filter, const std::string& type) {
 }  // namespace
 
 std::string pcbLayerObjectJson(const ccad::Layer& layer) {
+  const std::optional<std::size_t> kicad_number = ccad::standardKiCadPcbLayerNumber(layer.id);
   std::ostringstream out;
   out << "{\n"
       << "  \"object\": {\n"
@@ -44,7 +47,12 @@ std::string pcbLayerObjectJson(const ccad::Layer& layer) {
       << "    \"id\": \"" << ccad::escapeJson(layer.id) << "\",\n"
       << "    \"name\": \"" << ccad::escapeJson(layer.name) << "\",\n"
       << "    \"kind\": \"" << ccad::escapeJson(layer.kind) << "\",\n"
-      << "    \"visible\": " << (layer.visible ? "true" : "false") << "\n"
+      << "    \"visible\": " << (layer.visible ? "true" : "false");
+  if (kicad_number.has_value()) {
+    out << ",\n"
+        << "    \"kicad_layer_number\": " << *kicad_number;
+  }
+  out << "\n"
       << "  }\n"
       << "}\n";
   return out.str();
@@ -149,11 +157,16 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
 
   if (includeObjectType(type_filter, "layer")) {
     for (const ccad::Layer& layer : board.layers) {
+      const std::optional<std::size_t> kicad_number = ccad::standardKiCadPcbLayerNumber(layer.id);
       std::ostringstream row;
       row << "    {\"type\": \"layer\", \"id\": \"" << ccad::escapeJson(layer.id)
           << "\", \"name\": \"" << ccad::escapeJson(layer.name) << "\", \"kind\": \""
           << ccad::escapeJson(layer.kind) << "\", \"visible\": "
-          << (layer.visible ? "true" : "false") << "}";
+          << (layer.visible ? "true" : "false");
+      if (kicad_number.has_value()) {
+        row << ", \"kicad_layer_number\": " << *kicad_number;
+      }
+      row << "}";
       add_row(row);
     }
   }
