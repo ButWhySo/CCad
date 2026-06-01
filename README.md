@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 149 working on pad shape and layer fidelity on branch `sprint-149-pad-shape-and-layer-fidelity`.
+Progress counter: Phase 7 / 7, Sprint 150 working on standard layer registry fidelity on branch `sprint-150-standard-layer-registry`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -98,7 +98,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - CLI PCB authoring can update typed route-request records by stable ID.
 - CLI PCB authoring can remove typed route-request records by stable ID.
 - CLI PCB authoring can apply one routed segment or one routed polyline from a route request into board tracks while preserving source request provenance.
-- Core PCB metadata includes the canonical KiCad named layer set used by `.kicad_pcb` files, including 32 copper layers, paired fabrication/assembly layers, board geometry layers, and user layers through `User.9`.
+- Core PCB metadata includes the canonical KiCad named layer set used by `.kicad_pcb` files, including 32 copper layers, paired fabrication/assembly layers, board geometry layers, user layers through `User.9`, and agent-visible KiCad layer numbers.
 - CLI PCB authoring can append missing KiCad standard layers with `ccad pcb add-standard-layers --file <path>` while preserving existing and custom layers.
 - `ccad inspect` and the native GUI project summary report layer breakdown counts for copper/non-copper and visible/hidden layers.
 

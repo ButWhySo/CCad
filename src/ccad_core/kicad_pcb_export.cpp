@@ -41,21 +41,21 @@ std::string exportToKiCadPcb(const Project& project) {
   out << "    (41 \"Cmts.User\" user \"User.Comments\")\n";
   out << "    (42 \"Eco1.User\" user \"User.Eco1\")\n";
   out << "    (43 \"Eco2.User\" user \"User.Eco2\")\n";
-  out << "    (44 \"B.CrtYd\" user \"B.Courtyard\")\n";
-  out << "    (45 \"F.CrtYd\" user \"F.Courtyard\")\n";
-  out << "    (46 \"B.Fab\" user \"B.Fab\")\n";
-  out << "    (47 \"F.Fab\" user \"F.Fab\")\n";
-  out << "    (48 \"User.1\" user \"User.1\")\n";
-  out << "    (49 \"User.2\" user \"User.2\")\n";
-  out << "    (50 \"User.3\" user \"User.3\")\n";
-  out << "    (51 \"User.4\" user \"User.4\")\n";
-  out << "    (52 \"User.5\" user \"User.5\")\n";
-  out << "    (53 \"User.6\" user \"User.6\")\n";
-  out << "    (54 \"User.7\" user \"User.7\")\n";
-  out << "    (55 \"User.8\" user \"User.8\")\n";
-  out << "    (56 \"User.9\" user \"User.9\")\n";
-  out << "    (58 \"Edge.Cuts\" user)\n";
-  out << "    (59 \"Margin\" user)\n";
+  out << "    (44 \"Edge.Cuts\" user)\n";
+  out << "    (45 \"Margin\" user)\n";
+  out << "    (46 \"B.CrtYd\" user \"B.Courtyard\")\n";
+  out << "    (47 \"F.CrtYd\" user \"F.Courtyard\")\n";
+  out << "    (48 \"B.Fab\" user \"B.Fab\")\n";
+  out << "    (49 \"F.Fab\" user \"F.Fab\")\n";
+  out << "    (50 \"User.1\" user)\n";
+  out << "    (51 \"User.2\" user)\n";
+  out << "    (52 \"User.3\" user)\n";
+  out << "    (53 \"User.4\" user)\n";
+  out << "    (54 \"User.5\" user)\n";
+  out << "    (55 \"User.6\" user)\n";
+  out << "    (56 \"User.7\" user)\n";
+  out << "    (57 \"User.8\" user)\n";
+  out << "    (58 \"User.9\" user)\n";
   out << "  )\n";
 
   // setup

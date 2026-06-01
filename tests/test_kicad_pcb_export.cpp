@@ -117,6 +117,16 @@ int main() {
   require(exported.find("(version 20211014)") != std::string::npos, "Output must contain version 20211014");
   require(exported.find("(generator ccad)") != std::string::npos, "Output must contain generator ccad");
   require(exported.find("Edge.Cuts") != std::string::npos, "Output must contain Edge.Cuts layer");
+  require(exported.find("(44 \"Edge.Cuts\" user)") != std::string::npos,
+          "Edge.Cuts uses KiCad canonical layer number 44");
+  require(exported.find("(45 \"Margin\" user)") != std::string::npos,
+          "Margin uses KiCad canonical layer number 45");
+  require(exported.find("(46 \"B.CrtYd\" user \"B.Courtyard\")") != std::string::npos,
+          "B.CrtYd uses KiCad canonical layer number 46");
+  require(exported.find("(47 \"F.CrtYd\" user \"F.Courtyard\")") != std::string::npos,
+          "F.CrtYd uses KiCad canonical layer number 47");
+  require(exported.find("(58 \"User.9\" user)") != std::string::npos,
+          "User.9 uses KiCad canonical layer number 58");
   require(exported.find("(net 1 \"GND\")") != std::string::npos, "Output must declare GND net");
   require(exported.find("(net 2 \"VCC\")") != std::string::npos, "Output must declare VCC net");
 

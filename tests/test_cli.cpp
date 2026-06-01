@@ -450,6 +450,10 @@ int main() {
           "pcb list-objects reports total");
   require(list_objects_json.find("\"type\": \"layer\"") != std::string::npos,
           "pcb list-objects includes layers");
+  require(list_objects_json.find("\"kicad_layer_number\": 0") != std::string::npos,
+          "pcb list-objects includes canonical layer number for F.Cu");
+  require(list_objects_json.find("\"kicad_layer_number\": 1") != std::string::npos,
+          "pcb list-objects includes canonical layer number for In1.Cu");
   require(list_objects_json.find("\"id\": \"P1\"") != std::string::npos,
           "pcb list-objects includes pad id");
   require(list_objects_json.find("\"net_id\": \"N1\"") != std::string::npos,

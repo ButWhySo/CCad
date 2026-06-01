@@ -10,6 +10,22 @@ int main() {
 
   require(layers.front().id == "F.Cu", "front copper is first layer");
   require(layers.back().id == "User.9", "User.9 is final layer");
+  require(layers.at(40).id == "Dwgs.User", "Dwgs.User uses KiCad canonical index 40");
+  require(layers.at(44).id == "Edge.Cuts", "Edge.Cuts uses KiCad canonical index 44");
+  require(layers.at(45).id == "Margin", "Margin uses KiCad canonical index 45");
+  require(layers.at(46).id == "B.CrtYd", "B.CrtYd uses KiCad canonical index 46");
+  require(layers.at(47).id == "F.CrtYd", "F.CrtYd uses KiCad canonical index 47");
+  require(layers.at(58).id == "User.9", "User.9 uses KiCad canonical index 58");
+  require(ccad::standardKiCadPcbLayerNumber("F.Cu").has_value(),
+          "canonical layer number exists for F.Cu");
+  require(*ccad::standardKiCadPcbLayerNumber("F.Cu") == 0,
+          "F.Cu canonical layer number is 0");
+  require(*ccad::standardKiCadPcbLayerNumber("Edge.Cuts") == 44,
+          "Edge.Cuts canonical layer number is 44");
+  require(*ccad::standardKiCadPcbLayerNumber("User.9") == 58,
+          "User.9 canonical layer number is 58");
+  require(!ccad::standardKiCadPcbLayerNumber("Custom.Mechanical").has_value(),
+          "custom layers do not claim KiCad canonical numbers");
   require(ccad::findStandardKiCadPcbLayer("In30.Cu") != nullptr, "registry includes In30.Cu");
   require(ccad::findStandardKiCadPcbLayer("Edge.Cuts") != nullptr,
           "registry includes Edge.Cuts");
