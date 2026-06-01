@@ -58,7 +58,11 @@ class ReviewWindow final : public QMainWindow {
   void updateCursorStatus(const QPointF& scene_position, double zoom_factor);
   void updateSelectionStatus();
   void enterPlaceFootprintMode(const std::string& component_id, const ccad::Footprint& footprint, const std::string& layer_id);
+  void enterPlaceSymbolMode(const std::string& component_id, const ccad::Symbol& symbol, double rotation_degrees);
   void enterMoveFootprintMode(const std::string& component_id);
+  void placeFromActiveEditor();
+  void chooseAndPlaceFootprint();
+  void chooseAndPlaceSymbol();
   void cancelInteractionMode();
   void pushUndoSnapshot();
   void restoreProjectSnapshot(const ccad::Project& snapshot);
@@ -89,6 +93,8 @@ class ReviewWindow final : public QMainWindow {
   InteractionMode interaction_mode_ = InteractionMode::Default;
   std::string interaction_component_id_;
   ccad::Footprint interaction_footprint_;
+  ccad::Symbol interaction_symbol_;
+  double interaction_rotation_degrees_ = 0.0;
   std::string interaction_layer_id_;
   std::vector<QGraphicsItem*> interaction_ghost_items_;
   QPointF interaction_last_mouse_pos_;

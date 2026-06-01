@@ -31,8 +31,8 @@ class ShapeHighlightPathItem final : public QGraphicsPathItem {
     }
 
     QPen highlight_pen(canvasSelectionHighlightColor(*this));
-    highlight_pen.setCosmetic(true);
-    highlight_pen.setWidthF(2.5);
+    highlight_pen.setCosmetic(false);
+    highlight_pen.setWidthF(canvasSelectionHighlightWidth(*this));
     highlight_pen.setJoinStyle(Qt::RoundJoin);
     highlight_pen.setCapStyle(Qt::RoundCap);
     painter->setPen(highlight_pen);
@@ -57,6 +57,13 @@ void tagObject(QGraphicsItem& item, const QString& type, const QString& id,
   item.setData(kCanvasObjectIdRole, id);
   item.setData(kCanvasShapeSelectionHighlightRole, true);
   item.setData(kCanvasSelectionHighlightColorRole, lighterHighlight(display_color));
+  double highlight_width = 2.5;
+  if (type == "track") {
+    if (auto* path_item = dynamic_cast<QGraphicsPathItem*>(&item)) {
+      highlight_width = std::max(3.5, path_item->pen().widthF() + 2.0);
+    }
+  }
+  item.setData(kCanvasSelectionHighlightWidthRole, highlight_width);
   if (!net_id.isEmpty()) {
     item.setData(kCanvasObjectNetIdRole, net_id);
   }
@@ -166,6 +173,31 @@ bool layerIsVisible(const std::set<std::string>& hidden_layers, const std::strin
   return layer_id.empty() || !hidden_layers.contains(layer_id);
 }
 
+QColor layerDisplayColor(const CanvasRenderTheme& theme, const std::string& layer_id) {
+  if (layer_id == "F.Cu") {
+    return theme.front_copper_color;
+  }
+  if (layer_id == "B.Cu") {
+    return theme.back_copper_color;
+  }
+  if (layer_id.starts_with("In")) {
+    return QColor("#5bc3eb");
+  }
+  return theme.track_color;
+}
+
+QColor padDisplayColor(const CanvasRenderTheme& theme, const ccad::CanvasPad& pad) {
+  for (const std::string& layer : pad.layers) {
+    if (layer == "F.Cu") {
+      return theme.front_copper_color;
+    }
+    if (layer == "B.Cu") {
+      return theme.back_copper_color;
+    }
+  }
+  return theme.pad_fill_color;
+}
+
 double sceneX(const ccad::CanvasScene& scene, const double board_x_units, const double margin,
               const double scale) {
   return margin + ((board_x_units - scene.board_origin_x_units) * scale);
@@ -262,6 +294,8 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     if (!layerIsVisible(hidden_layers, track.layer_id)) {
       continue;
     }
+    const QColor track_color = layerDisplayColor(theme, track.layer_id);
+    track_pen.setColor(track_color);
     track_pen.setWidthF(std::max(1.2, track.width_units * scale));
     QPainterPath track_path;
     track_path.moveTo(sceneX(scene, track.start_x_units, margin, scale),
@@ -270,7 +304,7 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
                       sceneY(scene, track.end_y_units, margin, scale));
     auto* item = addHighlightPath(canvas_scene, track_path, track_pen, QBrush(Qt::NoBrush));
     item->setToolTip("Track " + qstr(track.id));
-    tagObject(*item, "track", qstr(track.id), theme.track_color, qstr(track.net_id),
+    tagObject(*item, "track", qstr(track.id), track_color, qstr(track.net_id),
               qstr(track.layer_id), qstr(track.source_route_request_id));
   }
 
@@ -294,16 +328,17 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
                              sceneY(scene, pad.y_units, margin, scale));
     QPainterPath pad_path = padShapePath(pad_rect, pad_center, pad.shape, pad.rotation_degrees,
                                          pad.roundrect_rratio, pad.chamfer_ratio);
+    const QColor pad_color = padDisplayColor(theme, pad);
     auto* item =
-        addHighlightPath(canvas_scene, pad_path, QPen(theme.pad_outline_color, 0.8),
-                         QBrush(theme.pad_fill_color));
+        addHighlightPath(canvas_scene, pad_path, QPen(pad_color.lighter(130), 0.8),
+                         QBrush(pad_color));
     item->setToolTip("Pad " + qstr(pad.id) + " (" + qstr(pad.type) + ")");
 
     QString layers_str;
     for (const auto& l : pad.layers) layers_str += qstr(l) + ",";
     if (!layers_str.isEmpty()) layers_str.chop(1);
 
-    tagObject(*item, "pad", qstr(pad.id), theme.pad_fill_color, qstr(pad.net_id), layers_str);
+    tagObject(*item, "pad", qstr(pad.id), pad_color, qstr(pad.net_id), layers_str);
 
     if (pad.drill_units > 0.0) {
       const double drill = pad.drill_units * scale;
@@ -519,6 +554,14 @@ QColor canvasSelectionHighlightColor(const QGraphicsItem& item) {
     return QColor("#60a5fa");
   }
   return value.value<QColor>();
+}
+
+double canvasSelectionHighlightWidth(const QGraphicsItem& item) {
+  const QVariant value = item.data(kCanvasSelectionHighlightWidthRole);
+  if (!value.isValid()) {
+    return 2.5;
+  }
+  return value.toDouble();
 }
 
 bool selectCanvasObjectById(QGraphicsScene& canvas_scene, const QString& id) {
