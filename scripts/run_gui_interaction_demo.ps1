@@ -5,7 +5,10 @@ param(
   [string]$Name = "gui-interaction",
   [ValidateSet("Footprint", "Symbol")]
   [string]$Mode = "Footprint",
-  [int]$GuiWaitSeconds = 7
+  [int]$GuiWaitSeconds = 7,
+  [int]$InitialLoadMilliseconds = 5000,
+  [int]$PerActionMilliseconds = 800,
+  [int]$WindowReadySeconds = 7
 )
 
 $ErrorActionPreference = "Stop"
@@ -37,6 +40,8 @@ public static class CcadInput {
   [DllImport("user32.dll")]
   public static extern bool SetForegroundWindow(IntPtr hWnd);
   [DllImport("user32.dll")]
+  public static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")]
   public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
   [DllImport("user32.dll")]
   public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
@@ -65,6 +70,10 @@ function Invoke-Key {
   [CcadInput]::keybd_event($VirtualKey, 0, 0, [UIntPtr]::Zero)
   Start-Sleep -Milliseconds 80
   [CcadInput]::keybd_event($VirtualKey, 0, 0x0002, [UIntPtr]::Zero)
+}
+
+function Wait-ActionSettle {
+  Start-Sleep -Milliseconds ([Math]::Max(0, $PerActionMilliseconds))
 }
 
 function Invoke-PreTestBeep {
@@ -109,7 +118,7 @@ $process = Start-Process -FilePath $Gui -ArgumentList $ProjectPath -PassThru `
   -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
 
 try {
-  $deadline = (Get-Date).AddSeconds(20)
+  $deadline = (Get-Date).AddSeconds([Math]::Max(1, $WindowReadySeconds))
   while ((Get-Date) -lt $deadline) {
     $process.Refresh()
     if ($process.HasExited) {
@@ -129,29 +138,39 @@ try {
 
   [CcadInput]::ShowWindow($process.MainWindowHandle, 9) | Out-Null
   [CcadInput]::SetForegroundWindow($process.MainWindowHandle) | Out-Null
-  Start-Sleep -Milliseconds 1000
+  Start-Sleep -Milliseconds ([Math]::Max(0, $InitialLoadMilliseconds))
 
   $rect = New-Object CcadInput+RECT
   [CcadInput]::GetWindowRect($process.MainWindowHandle, [ref]$rect) | Out-Null
   if ($Mode -eq "Symbol") {
     Invoke-Click -X ($rect.Left + 535) -Y ($rect.Top + 120)
-    Start-Sleep -Milliseconds 500
+    Wait-ActionSettle
   }
 
   Invoke-Click -X ($rect.Left + 650) -Y ($rect.Top + 350)
-  Start-Sleep -Milliseconds 400
+  Wait-ActionSettle
   if ($Mode -eq "Symbol") {
     Invoke-Key -VirtualKey 0x41
   } else {
     Invoke-Key -VirtualKey 0x4F
   }
-  Start-Sleep -Seconds 3
+  Wait-ActionSettle
 
   $process.Refresh()
-  [CcadInput]::SetForegroundWindow($process.MainWindowHandle) | Out-Null
-  $chooserRowX = $rect.Left + 315
-  $chooserRowY = $rect.Top + 165
+  $chooserHandle = [CcadInput]::GetForegroundWindow()
+  if ($chooserHandle -eq [IntPtr]::Zero -or $chooserHandle -eq $process.MainWindowHandle) {
+    Wait-ActionSettle
+    $chooserHandle = [CcadInput]::GetForegroundWindow()
+  }
+  if ($chooserHandle -eq [IntPtr]::Zero) {
+    $chooserHandle = $process.MainWindowHandle
+  }
+  $chooserRect = New-Object CcadInput+RECT
+  [CcadInput]::GetWindowRect($chooserHandle, [ref]$chooserRect) | Out-Null
+  $chooserRowX = $chooserRect.Left + 40
+  $chooserRowY = $chooserRect.Top + 125
   Invoke-Click -X $chooserRowX -Y $chooserRowY
+  Wait-ActionSettle
 
   Start-Sleep -Seconds ([Math]::Max(1, $GuiWaitSeconds))
   $Timestamp = Get-Date -Format "yyyyMMdd-HHmmss"

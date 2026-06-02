@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 168
-- Branch: `sprint-168-left-toolbar-display-controls`
+- Sprint: 169
+- Branch: `sprint-169-visual-harness-timing`
 - Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
@@ -26,7 +26,7 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - **Sprint 158 (UI Target Queries)** is complete on `sprint-158-ui-target-queries`. It adds app-owned targeted coordinate queries by semantic ID and board-space point so agents can request one actionable target without dumping the full UI map.
 - **Sprint 159 (Safe UI Actions)** is complete on `sprint-159-safe-ui-actions`. It adds app-owned direct triggering for a small allowlist of safe view/navigation actions and explicit refusal for unsafe or mutating actions.
 - **Sprint 160 (Placement Crash, CI Fixes, Icon Recovery, and Backlog Ledger)** is complete and merged to `main`. It fixes left-click placement reload crashes, CI compile failures in KiCad symbol import and DSN export, robust KiCad SVG icon lookup, app-owned placement-click regression coverage, and the consolidated backlog ledger.
-- **Sprint 161 (UI Map Mouse Target Harness)** is complete and merged to `main`. It adds menu/panel nodes to the semantic UI map and an app-owned mouse-target screenshot harness with beep, 20-second waits, marker overlays, and resize-repeat evidence.
+- **Sprint 161 (UI Map Mouse Target Harness)** is complete and merged to `main`. It adds menu/panel nodes to the semantic UI map and an app-owned mouse-target screenshot harness with beep, fast policy waits, marker overlays, and resize-repeat evidence.
 - **Sprint 162 (Pad Layer Rendering Fidelity)** is complete and merged to `main`. It separates copper, solder-mask, and solder-paste pad rendering across the board canvas, footprint chooser preview, and footprint placement ghost.
 - **Sprint 163 (Live UI Map Server)** is complete and merged to `main`. It adds a local socket JSON Lines server for repeated `ui.map`, `ui.target`, and `ui.epoch` queries while the GUI stays open.
 - **Sprint 164 (Toolbar Action Contracts)** is complete on `sprint-164-toolbar-action-contracts`. It removes silent right-toolbar stubs by giving unfinished editor tools visible planned-tool status and an agent-readable `future_tool_not_implemented` safe-trigger response.
@@ -34,6 +34,7 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - **Sprint 166 (Left Toolbar Real Toggles)** is complete on `sprint-166-left-toolbar-real-toggles`. It turns Show Layers and Show Properties into real panel toggles with `panel_toggled` safe-trigger responses.
 - **Sprint 167 (Native Agent Panel Shell)** is complete on `sprint-167-agent-panel-shell`. It adds the first persistent Qt Agent panel for UI-map refreshes, safe UI action triggers, and `panel:agent` targeting without provider or secret integration. It also updates the GUI visual-validation timing policy to 7 seconds for single-preview screenshots and 5 seconds initial plus 800 ms per-target waits for multi-target GUI harness runs.
 - **Sprint 168 (Left Toolbar Display Controls)** is complete on `sprint-168-left-toolbar-display-controls`. It turns grid, polar coordinates, inch units, crosshair, ratsnest, net highlight, and display mode into real safe display actions, exposes checked state in the UI map, extends the target-sequence harness to exercise those controls, and fixes stale inspector editor overlap during rapid multi-selection changes.
+- **Sprint 169 (Visual Harness Timing Policy)** is complete on `sprint-169-visual-harness-timing`. It enforces the updated 7-second single-preview timing and 5-second initial plus 800 ms per-action multi-target timing through a dedicated CTest policy guard, updates the live interaction wrapper, and fixes chooser-row targeting so live footprint preview checks actually select a catalogue row.
 
 ## Phase Roadmap
 
