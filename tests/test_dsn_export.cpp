@@ -67,9 +67,28 @@ void testDsnExport() {
   assertContains(exported, "(via \"viastack_V1\" 8.0000 9.0000 (net \"N1\"))", "has via placement");
 }
 
+void testDsnExportKeepsLargeNanometerCoordinates() {
+  Project project;
+  project.name = "large_dsn";
+  Board board;
+  board.outline = Rect{Point{nanometers(3000000000LL), nanometers(4000000000LL)},
+                       Size{nanometers(42000000), nanometers(28000000)}};
+  board.layers.push_back(Layer{.id = "F.Cu", .name = "Front", .kind = "copper"});
+  board.design_rules = DesignRules{.copper_clearance = nanometers(200000),
+                                   .min_track_width = nanometers(150000),
+                                   .min_via_annular_ring = nanometers(100000)};
+  project.board = board;
+
+  const std::string exported = exportSpecctraDsn(project);
+  assertContains(exported,
+                 "(path pcb 0 3000.0000 4000.0000 3042.0000 4000.0000 3042.0000 4028.0000 3000.0000 4028.0000 3000.0000 4000.0000)",
+                 "keeps large 64-bit board boundary coordinates");
+}
+
 int main() {
   try {
     testDsnExport();
+    testDsnExportKeepsLargeNanometerCoordinates();
     std::cout << "PASS dsn export\n";
     return 0;
   } catch (const std::exception& e) {

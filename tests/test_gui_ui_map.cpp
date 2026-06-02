@@ -1,10 +1,12 @@
 #include "ccad_core/model.hpp"
+#include "ccad_core/kicad_footprint_import.hpp"
 #include "ccad_core/serialize.hpp"
 #include "ccad_gui/review_window.hpp"
 #include "test_support.hpp"
 
 #include <QApplication>
 
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -50,10 +52,39 @@ ccad::Project uiMapProject() {
 }
 
 std::filesystem::path writeProjectFixture() {
+  const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
   const std::filesystem::path path =
-      std::filesystem::temp_directory_path() / "ccad-ui-map-test.ccad.json";
+      std::filesystem::temp_directory_path() /
+      ("ccad-ui-map-test-" + std::to_string(stamp) + ".ccad.json");
   std::ofstream output(path, std::ios::binary);
   output << ccad::dumpProjectJson(uiMapProject());
+  output.close();
+  require(bool(output), "project fixture writes");
+  return path;
+}
+
+std::filesystem::path writeFootprintFixture() {
+  const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
+  ccad::Footprint footprint;
+  footprint.name = "UiMapFootprint";
+  footprint.pads.push_back(ccad::FootprintPad{.number = "1",
+                                              .type = "smd",
+                                              .shape = "rect",
+                                              .position = ccad::Point{},
+                                              .rotation_degrees = 0.0,
+                                              .size = ccad::Size{.width = ccad::millimeters(1.0),
+                                                                 .height = ccad::millimeters(1.0)},
+                                              .drill = std::nullopt,
+                                              .layers = {"F.Cu", "F.Paste", "F.Mask"},
+                                              .roundrect_rratio = std::nullopt,
+                                              .chamfer_ratio = std::nullopt});
+  const std::filesystem::path path =
+      std::filesystem::temp_directory_path() /
+      ("ccad-ui-map-footprint-" + std::to_string(stamp) + ".json");
+  std::ofstream output(path, std::ios::binary);
+  output << ccad::dumpFootprintJson(footprint);
+  output.close();
+  require(bool(output), "footprint fixture writes");
   return path;
 }
 
@@ -139,4 +170,10 @@ int main(int argc, char** argv) {
   require(contains(unknown_action, "\"performed\":false"), "unknown action is refused");
   require(contains(unknown_action, "\"reason\":\"unknown_or_not_allowlisted\""),
           "unknown action reports reason");
+
+  const QString placement =
+      window.commitFootprintPlacementForAutomation(writeFootprintFixture(), 12.0, 10.0);
+  require(contains(placement, "\"performed\":true"), "automation footprint placement succeeds");
+  require(contains(placement, "\"reason\":\"placed\""), "automation placement reports placed");
+  require(contains(placement, "\"pad_count\":2"), "automation placement adds one pad");
 }

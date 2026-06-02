@@ -1,6 +1,7 @@
 #include "dsn_export.hpp"
 
 #include <iomanip>
+#include <cstdint>
 #include <map>
 #include <sstream>
 #include <stdexcept>
@@ -10,8 +11,8 @@ namespace ccad {
 
 namespace {
 
-std::string formatMm(int32_t nanometers) {
-  double mm = nanometers / 1000000.0;
+std::string formatMm(std::int64_t nanometers) {
+  const double mm = static_cast<double>(nanometers) / 1000000.0;
   std::ostringstream out;
   out << std::fixed << std::setprecision(4) << mm;
   return out.str();

@@ -191,12 +191,26 @@ QString targetPointJson(const QPoint& point, const double device_pixel_ratio) {
 
 std::filesystem::path kicadSourceRoot() {
   if (const char* env = std::getenv("CCAD_KICAD_SRC")) {
-    return std::filesystem::path(env);
+    std::filesystem::path path(env);
+    if (std::filesystem::exists(path)) {
+      return path;
+    }
   }
   const std::filesystem::path cwd = std::filesystem::current_path();
-  const std::filesystem::path sibling = cwd.parent_path() / "kicad_src";
-  if (std::filesystem::exists(sibling)) {
-    return sibling;
+  const std::filesystem::path app_dir =
+      std::filesystem::path(QCoreApplication::applicationDirPath().toStdString());
+  const std::filesystem::path candidates[] = {
+      std::filesystem::path("F:/kicad_src"),
+      cwd / "kicad_src",
+      cwd.parent_path() / "kicad_src",
+      cwd.parent_path().parent_path() / "kicad_src",
+      app_dir / "kicad_src",
+      app_dir.parent_path() / "kicad_src",
+      app_dir.parent_path().parent_path() / "kicad_src"};
+  for (const std::filesystem::path& candidate : candidates) {
+    if (std::filesystem::exists(candidate)) {
+      return candidate;
+    }
   }
   return cwd / "kicad_src";
 }
@@ -1772,6 +1786,47 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
   return result(id, false, "action_not_found");
 }
 
+QString ReviewWindow::commitFootprintPlacementForAutomation(
+    const std::filesystem::path& footprint_path, const double x_mm, const double y_mm) {
+  const auto result = [](const bool performed, const QString& reason, const std::size_t pad_count) {
+    return QString("{\"schema_version\":1,\"performed\":%1,\"reason\":%2,\"pad_count\":%3}\n")
+        .arg(boolJson(performed))
+        .arg(jsonString(reason))
+        .arg(static_cast<qulonglong>(pad_count));
+  };
+  if (!project_cache_.board.has_value()) {
+    return result(false, "missing_board", 0);
+  }
+  const std::string layer_id = firstCopperLayerId(*project_cache_.board);
+  if (layer_id.empty()) {
+    return result(false, "missing_copper_layer", project_cache_.board->pads.size());
+  }
+  try {
+    ccad::Footprint footprint = loadFootprintSelection(footprint_path);
+    if (footprint.pads.empty()) {
+      return result(false, "footprint_has_no_pads", project_cache_.board->pads.size());
+    }
+    editor_tabs_->setCurrentWidget(canvas_view_);
+    const std::string component_id =
+        nextComponentId(project_cache_, placementPrefixFromName(footprint_path.stem().string()));
+    enterPlaceFootprintMode(component_id, footprint, layer_id);
+    const QPointF scene_point = boardPositionToScene(*project_cache_.board, x_mm, y_mm);
+    const QPoint viewport_point = canvas_view_->mapFromScene(scene_point);
+    QMouseEvent press(QEvent::MouseButtonPress, QPointF(viewport_point), QPointF(viewport_point),
+                      Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    QApplication::sendEvent(canvas_view_->viewport(), &press);
+    QApplication::processEvents();
+    const std::size_t pad_count = project_cache_.board.has_value() ? project_cache_.board->pads.size() : 0;
+    return result(true, "placed", pad_count);
+  } catch (const std::exception& e) {
+    if (interaction_mode_ != InteractionMode::Default) {
+      cancelInteractionMode();
+    }
+    const std::size_t pad_count = project_cache_.board.has_value() ? project_cache_.board->pads.size() : 0;
+    return result(false, QString::fromUtf8(e.what()), pad_count);
+  }
+}
+
 void ReviewWindow::updateCursorStatus(const QPointF& scene_position, const double zoom_factor) {
   cursor_status_->setText(formatCursorStatus(project_cache_.board, scene_position));
   zoom_status_->setText("Zoom " + QString::number(zoom_factor * 100.0, 'f', 0) + "%");
@@ -2057,7 +2112,13 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               std::ofstream out(current_path_);
               if (out) {
                 out << ccad::dumpProjectJson(project_cache_);
-                reloadProject();
+                out.close();
+                if (out) {
+                  cancelInteractionMode();
+                  reloadProject();
+                } else {
+                  QMessageBox::critical(this, "Save Error", "Failed to write project file.");
+                }
               } else {
                 QMessageBox::critical(this, "Save Error", "Failed to write project file.");
               }
@@ -2073,7 +2134,13 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               std::ofstream out(current_path_);
               if (out) {
                 out << ccad::dumpProjectJson(project_cache_);
-                reloadProject();
+                out.close();
+                if (out) {
+                  cancelInteractionMode();
+                  reloadProject();
+                } else {
+                  QMessageBox::critical(this, "Save Error", "Failed to write project file.");
+                }
               } else {
                 QMessageBox::critical(this, "Save Error", "Failed to write project file.");
               }
@@ -2089,13 +2156,21 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               std::ofstream out(current_path_);
               if (out) {
                 out << ccad::dumpProjectJson(project_cache_);
-                reloadProject();
+                out.close();
+                if (out) {
+                  cancelInteractionMode();
+                  reloadProject();
+                } else {
+                  QMessageBox::critical(this, "Save Error", "Failed to write project file.");
+                }
               }
             } catch (const std::exception& e) {
               QMessageBox::critical(this, "Move Error", QString::fromUtf8(e.what()));
             }
           }
-          cancelInteractionMode();
+          if (interaction_mode_ != InteractionMode::Default) {
+            cancelInteractionMode();
+          }
           return true; // Consume event
         }
       }

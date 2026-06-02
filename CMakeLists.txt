@@ -216,8 +216,8 @@ if(MINGW)
 endif()
 
 if(CCAD_BUILD_GUI)
-  find_package(Qt6 QUIET COMPONENTS Widgets Test)
-  if(Qt6Widgets_FOUND AND Qt6Test_FOUND)
+  find_package(Qt6 QUIET COMPONENTS Widgets Test Svg)
+  if(Qt6Widgets_FOUND AND Qt6Test_FOUND AND Qt6Svg_FOUND)
     set(CMAKE_AUTOMOC ON)
     set(CMAKE_AUTOUIC ON)
     set(CMAKE_AUTORCC ON)
@@ -235,7 +235,7 @@ if(CCAD_BUILD_GUI)
       src/ccad_gui/selection_inspector_panel.cpp
       src/ccad_gui/transaction_timeline_panel.cpp
     )
-    target_link_libraries(ccad_gui PRIVATE ccad_core Qt6::Widgets)
+    target_link_libraries(ccad_gui PRIVATE ccad_core Qt6::Widgets Qt6::Svg)
     if(MINGW)
       target_link_options(ccad_gui PRIVATE -static -static-libgcc -static-libstdc++)
     endif()
@@ -486,7 +486,7 @@ if(CCAD_BUILD_GUI)
       src/ccad_gui/selection_inspector_panel.cpp
       src/ccad_gui/board_canvas_renderer.cpp
     )
-    target_link_libraries(ccad_gui_ui_map_tests PRIVATE ccad_core Qt6::Widgets)
+    target_link_libraries(ccad_gui_ui_map_tests PRIVATE ccad_core Qt6::Widgets Qt6::Svg)
     target_include_directories(ccad_gui_ui_map_tests PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src
       ${CMAKE_CURRENT_SOURCE_DIR}/tests
@@ -518,7 +518,7 @@ if(CCAD_BUILD_GUI)
       src/ccad_gui/selection_inspector_panel.cpp
       src/ccad_gui/board_canvas_renderer.cpp
     )
-    target_link_libraries(ccad_gui_review_window_cursor_status_tests PRIVATE ccad_core Qt6::Widgets)
+    target_link_libraries(ccad_gui_review_window_cursor_status_tests PRIVATE ccad_core Qt6::Widgets Qt6::Svg)
     target_include_directories(ccad_gui_review_window_cursor_status_tests PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src
       ${CMAKE_CURRENT_SOURCE_DIR}/tests
@@ -536,7 +536,7 @@ if(CCAD_BUILD_GUI)
     endif()
     add_test(NAME gui_review_window_cursor_status COMMAND ccad_gui_review_window_cursor_status_tests)
   else()
-    message(STATUS "Qt6 Widgets not found; skipping ccad_gui target")
+    message(STATUS "Qt6 Widgets/Test/Svg not found; skipping ccad_gui target")
   endif()
 endif()
 target_compile_definitions(ccad_cli_tests PRIVATE
