@@ -90,6 +90,23 @@ int main(int argc, char** argv) {
                          .height = ccad::millimeters(1.5)};
   board.texts.push_back(text);
 
+  // Add board zone
+  ccad::BoardZone zone;
+  zone.id = "zone_1";
+  zone.name = "GND copper";
+  zone.net_id = "GND";
+  zone.layer_ids = {"F.Cu"};
+  zone.outline = {ccad::Point{.x = ccad::millimeters(2.0), .y = ccad::millimeters(2.0)},
+                  ccad::Point{.x = ccad::millimeters(20.0), .y = ccad::millimeters(2.0)},
+                  ccad::Point{.x = ccad::millimeters(20.0), .y = ccad::millimeters(12.0)},
+                  ccad::Point{.x = ccad::millimeters(2.0), .y = ccad::millimeters(12.0)}};
+  zone.priority = 2;
+  zone.clearance = ccad::millimeters(0.2);
+  zone.min_thickness = ccad::millimeters(0.25);
+  zone.fill_enabled = true;
+  zone.pad_connection = "thermal";
+  board.zones.push_back(zone);
+
   // Add Keepout
   ccad::Keepout keepout;
   keepout.id = "keepout_1";
@@ -178,6 +195,21 @@ int main(int argc, char** argv) {
   require(panel.rowText("Rotation") == "90.0 deg", "text rotation");
   require(panel.rowText("Size X") == "1.50 mm (59.06 mil)", "text size x");
   require(panel.rowText("Size Y") == "1.50 mm (59.06 mil)", "text size y");
+
+  // Test Zone Inspector Formatting
+  std::printf("Testing zone...\n");
+  std::fflush(stdout);
+  panel.renderSelection(board, "zone", "zone_1");
+  require(panel.titleText() == "Zone zone_1", "zone title");
+  require(panel.rowText("Type") == "zone", "zone type");
+  require(panel.rowText("Name") == "GND copper", "zone name");
+  require(panel.rowText("Net") == "GND", "zone net");
+  require(panel.rowText("Layers") == "F.Cu", "zone layers");
+  require(panel.rowText("Corners") == "4", "zone corner count");
+  require(panel.rowText("Priority") == "2", "zone priority");
+  require(panel.rowText("Clearance") == "0.20 mm (7.87 mil)", "zone clearance");
+  require(panel.rowText("Min Thickness") == "0.25 mm (9.84 mil)", "zone min thickness");
+  require(panel.rowText("Pad Connection") == "thermal", "zone pad connection");
 
   // Rapid selection changes can happen when net highlight selects several canvas objects.
   // Stale editors must be hidden immediately, not only after Qt processes deleteLater().

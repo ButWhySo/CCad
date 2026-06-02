@@ -55,6 +55,8 @@ int main() {
                   "single screenshot harness demonstrates board graphics");
   requireContains(single_harness, "pcb add-text",
                   "single screenshot harness demonstrates board text");
+  requireContains(single_harness, "pcb add-zone",
+                  "single screenshot harness demonstrates board zones");
 
   requireContains(target_harness, "[int]$InitialLoadMilliseconds = 5000",
                   "multi-target harness initial wait");

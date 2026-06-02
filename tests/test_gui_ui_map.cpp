@@ -63,6 +63,7 @@ ccad::Project uiMapProject() {
       .tracks = {},
       .graphics = {},
       .texts = {},
+      .zones = {},
       .route_requests = {},
   };
   project.nets = {ccad::Net{.id = "N1",
@@ -311,13 +312,12 @@ int main(int argc, char** argv) {
   require(!contains(window.uiMapJson(), "\"id\":\"canvas_object:U1.1\""),
           "UI map drops the deleted pad");
 
-  const QString future_tool = window.triggerSafeUiActionJson("action:add_zone");
-  require(contains(future_tool, "\"performed\":false"),
-          "unsupported zone toolbar action is still not silent");
-  require(contains(future_tool, "\"reason\":\"future_tool_not_implemented\""),
-          "unsupported zone toolbar action reports planned-tool reason");
-  require(contains(future_tool, "\"label\":\"Add Zone\""),
-          "unsupported zone toolbar action reports user-facing label");
+  const QString zone_tool = window.triggerSafeUiActionJson("action:add_zone");
+  require(contains(zone_tool, "\"performed\":true"), "add-zone tool enters edit mode");
+  require(contains(zone_tool, "\"reason\":\"editor_tool_selected\""),
+          "add-zone tool reports real editor-tool selection");
+  require(contains(zone_tool, "\"mode\":\"add_zone\""),
+          "add-zone tool reports selected mode");
 
   const QString grid_toggle = window.triggerSafeUiActionJson("action:grid");
   require(contains(grid_toggle, "\"performed\":true"), "grid toolbar action performs");
@@ -512,6 +512,21 @@ int main(int argc, char** argv) {
   require(contains(window.uiMapJson(), "\"id\":\"canvas_object:K1\""),
           "UI map exposes placed keepout");
 
+  const QString zone = window.commitZonePlacementForAutomation(2.0, 2.0, 20.0, 12.0);
+  require(contains(zone, "\"performed\":true"), "automation zone placement succeeds");
+  require(contains(zone, "\"reason\":\"placed\""),
+          "automation zone placement reports placed");
+  require(contains(zone, "\"zone_count\":1"), "automation zone placement adds one zone");
+  require(contains(window.uiMapJson(), "\"id\":\"canvas_object:Z1\""),
+          "UI map exposes placed zone");
+  const ccad::Project after_zone = ccad::loadProjectJson(readFile(project_path));
+  require(after_zone.board.has_value(), "zone fixture still has a board");
+  require(!after_zone.board->zones.empty(), "zone placement writes a zone to the file");
+  require(after_zone.board->zones.back().layer_ids.size() == 1,
+          "zone placement writes the active copper layer set");
+  require(after_zone.board->zones.back().net_id == "N2",
+          "zone placement writes the selected active net");
+
   const QString graphic =
       window.commitGraphicLinePlacementForAutomation(3.0, 4.0, 16.0, 4.0);
   require(contains(graphic, "\"performed\":true"), "automation graphic line placement succeeds");
@@ -556,6 +571,13 @@ int main(int argc, char** argv) {
           "automation delete reports text type");
   require(!contains(window.uiMapJson(), "\"id\":\"canvas_object:BT1\""),
           "UI map no longer exposes deleted board text");
+
+  const QString delete_zone = window.deleteBoardObjectForAutomation("Z1");
+  require(contains(delete_zone, "\"performed\":true"), "automation delete removes zone");
+  require(contains(delete_zone, "\"deleted_type\":\"zone\""),
+          "automation delete reports zone type");
+  require(!contains(window.uiMapJson(), "\"id\":\"canvas_object:Z1\""),
+          "UI map no longer exposes deleted zone");
 
   ccad::Project hidden_user_layer_project = uiMapProject();
   for (ccad::Layer& layer : hidden_user_layer_project.board->layers) {

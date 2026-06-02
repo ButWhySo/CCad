@@ -82,6 +82,21 @@ int main() {
                                 .rotation_degrees = 90.0,
                                 .size = ccad::Size{.width = ccad::millimeters(1.5),
                                                    .height = ccad::millimeters(1.5)}}},
+      .zones = {ccad::BoardZone{
+          .id = "Z_GND",
+          .name = "GND pour",
+          .net_id = "N_3V3",
+          .layer_ids = {"F.Cu", "B.Cu"},
+          .outline = {ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(2)},
+                      ccad::Point{.x = ccad::millimeters(20), .y = ccad::millimeters(2)},
+                      ccad::Point{.x = ccad::millimeters(20), .y = ccad::millimeters(12)},
+                      ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(12)}},
+          .priority = 1,
+          .clearance = ccad::millimeters(0.2),
+          .min_thickness = ccad::millimeters(0.25),
+          .fill_enabled = true,
+          .pad_connection = "thermal",
+      }},
       .route_requests = {ccad::RouteRequest{
           .id = "RR1",
           .net_id = "N_3V3",
@@ -131,6 +146,11 @@ int main() {
   require(json.find("\"texts\"") != std::string::npos, "board text emitted");
   require(json.find("\"text\": \"Bridge rectifier\"") != std::string::npos,
           "board text value emitted");
+  require(json.find("\"zones\"") != std::string::npos, "board zones emitted");
+  require(json.find("\"id\": \"Z_GND\"") != std::string::npos, "board zone id emitted");
+  require(json.find("\"layer_ids\"") != std::string::npos, "board zone layers emitted");
+  require(json.find("\"pad_connection\": \"thermal\"") != std::string::npos,
+          "board zone pad connection emitted");
   require(json.find("\"component_id\": \"U1\"") != std::string::npos, "net member emitted");
   require(json.find("\"roundrect_rratio\": 0.25") != std::string::npos,
           "pad roundrect ratio emitted");
@@ -181,6 +201,21 @@ int main() {
           "board text rotation round trips");
   require(loaded.board->texts.at(0).size.width.nanometers == 1500000,
           "board text size round trips");
+  require(loaded.board->zones.size() == 1, "board zones round trip");
+  require(loaded.board->zones.at(0).id == "Z_GND", "board zone id round trips");
+  require(loaded.board->zones.at(0).name == "GND pour", "board zone name round trips");
+  require(loaded.board->zones.at(0).net_id == "N_3V3", "board zone net round trips");
+  require(loaded.board->zones.at(0).layer_ids.size() == 2,
+          "board zone layer set round trips");
+  require(loaded.board->zones.at(0).outline.size() == 4, "board zone outline round trips");
+  require(loaded.board->zones.at(0).priority == 1, "board zone priority round trips");
+  require(loaded.board->zones.at(0).clearance.nanometers == 200000,
+          "board zone clearance round trips");
+  require(loaded.board->zones.at(0).min_thickness.nanometers == 250000,
+          "board zone min thickness round trips");
+  require(loaded.board->zones.at(0).fill_enabled, "board zone fill state round trips");
+  require(loaded.board->zones.at(0).pad_connection == "thermal",
+          "board zone pad connection round trips");
   require(loaded.board->route_requests.size() == 1, "route requests round trip");
   require(loaded.board->route_requests.at(0).from_object_id == "P1",
           "route request start object round trips");

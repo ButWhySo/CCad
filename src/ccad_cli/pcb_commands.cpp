@@ -118,6 +118,13 @@ void requireLayerUnused(const ccad::Board& board, const std::string& id) {
       throw std::runtime_error("layer is referenced by board text: " + text.id);
     }
   }
+  for (const ccad::BoardZone& zone : board.zones) {
+    for (const std::string& layer_id : zone.layer_ids) {
+      if (layer_id == id) {
+        throw std::runtime_error("layer is referenced by zone: " + zone.id);
+      }
+    }
+  }
 }
 
 std::vector<std::string> splitLayers(const std::string& value) {
@@ -147,6 +154,60 @@ std::optional<double> optionalRatio(const std::map<std::string, std::string>& op
   return ratio;
 }
 
+bool projectHasNet(const ccad::Project& project, const std::string& net_id) {
+  for (const ccad::Net& net : project.nets) {
+    if (net.id == net_id) {
+      return true;
+    }
+  }
+  if (project.board.has_value()) {
+    for (const ccad::Pad& pad : project.board->pads) {
+      if (pad.net_id == net_id) {
+        return true;
+      }
+    }
+    for (const ccad::Via& via : project.board->vias) {
+      if (via.net_id == net_id) {
+        return true;
+      }
+    }
+    for (const ccad::TrackSegment& track : project.board->tracks) {
+      if (track.net_id == net_id) {
+        return true;
+      }
+    }
+    for (const ccad::BoardZone& zone : project.board->zones) {
+      if (zone.net_id == net_id) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+int requireNonNegativeIntOption(const std::map<std::string, std::string>& options,
+                                const std::string& key) {
+  const std::string value = requireOption(options, key);
+  try {
+    std::size_t parsed = 0;
+    const int number = std::stoi(value, &parsed);
+    if (parsed != value.size() || number < 0) {
+      throw std::runtime_error(key + " must be a non-negative integer");
+    }
+    return number;
+  } catch (const std::exception&) {
+    throw std::runtime_error(key + " must be a non-negative integer");
+  }
+}
+
+std::string requireZonePadConnection(const std::map<std::string, std::string>& options) {
+  const std::string value = requireOption(options, "--pad-connection");
+  if (value != "thermal" && value != "solid" && value != "none") {
+    throw std::runtime_error("--pad-connection must be thermal, solid, or none");
+  }
+  return value;
+}
+
 void requireBoardObjectsInsideOutline(const ccad::Board& board) {
   for (const ccad::Pad& pad : board.pads) {
     requireRotatedRectInsideBoard(board, pad.position, pad.size, pad.rotation_degrees,
@@ -171,6 +232,11 @@ void requireBoardObjectsInsideOutline(const ccad::Board& board) {
   }
   for (const ccad::BoardText& text : board.texts) {
     requireInsideBoard(board, text.position, "board text " + text.id);
+  }
+  for (const ccad::BoardZone& zone : board.zones) {
+    for (const ccad::Point& point : zone.outline) {
+      requireInsideBoard(board, point, "zone " + zone.id);
+    }
   }
   for (const ccad::Keepout& keepout : board.keepouts) {
     requireRectInsideBoard(board, keepout.area, "keepout " + keepout.id);
@@ -340,6 +406,12 @@ int pcbCommand(const std::vector<std::string>& args) {
       for (const ccad::BoardText& text : board.texts) {
         if (text.id == id) {
           std::cout << pcbBoardTextObjectJson(text);
+          return 0;
+        }
+      }
+      for (const ccad::BoardZone& zone : board.zones) {
+        if (zone.id == id) {
+          std::cout << pcbBoardZoneObjectJson(zone);
           return 0;
         }
       }
@@ -1090,6 +1162,71 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "add-zone") {
+      const std::map<std::string, std::string> options = parseOptions(
+          args, 1,
+          {"--file", "--id", "--name", "--net", "--layers", "--x-mm", "--y-mm",
+           "--width-mm", "--height-mm", "--priority", "--clearance-mm", "--min-thickness-mm",
+           "--pad-connection"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      requireUniquePhysicalObjectId(board, id);
+      const std::vector<std::string> layer_ids = splitLayers(requireOption(options, "--layers"));
+      if (layer_ids.empty()) {
+        throw std::runtime_error("--layers must include at least one copper layer");
+      }
+      for (const std::string& layer_id : layer_ids) {
+        if (layer_id.empty()) {
+          throw std::runtime_error("--layers must not include an empty layer");
+        }
+        requireCopperLayer(board, layer_id);
+      }
+      std::string net_id;
+      if (options.contains("--net")) {
+        net_id = requireOption(options, "--net");
+        if (!projectHasNet(project, net_id)) {
+          throw std::runtime_error("unknown net: " + net_id);
+        }
+      }
+      const ccad::Point origin{
+          .x = requirePositiveMillimeters(options, "--x-mm"),
+          .y = requirePositiveMillimeters(options, "--y-mm"),
+      };
+      const ccad::Size size{.width = requirePositiveMillimeters(options, "--width-mm"),
+                            .height = requirePositiveMillimeters(options, "--height-mm")};
+      const ccad::Rect area{.origin = origin, .size = size};
+      requireRectInsideBoard(board, area, "zone area");
+      board.zones.push_back(ccad::BoardZone{
+          .id = id,
+          .name = options.contains("--name") ? requireOption(options, "--name") : "",
+          .net_id = net_id,
+          .layer_ids = layer_ids,
+          .outline = {origin,
+                      ccad::Point{.x = ccad::nanometers(origin.x.nanometers +
+                                                        size.width.nanometers),
+                                  .y = origin.y},
+                      ccad::Point{.x = ccad::nanometers(origin.x.nanometers +
+                                                        size.width.nanometers),
+                                  .y = ccad::nanometers(origin.y.nanometers +
+                                                        size.height.nanometers)},
+                      ccad::Point{.x = origin.x,
+                                  .y = ccad::nanometers(origin.y.nanometers +
+                                                        size.height.nanometers)}},
+          .priority = requireNonNegativeIntOption(options, "--priority"),
+          .clearance = requirePositiveMillimeters(options, "--clearance-mm"),
+          .min_thickness = requirePositiveMillimeters(options, "--min-thickness-mm"),
+          .fill_enabled = true,
+          .pad_connection = requireZonePadConnection(options),
+      });
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "add-placement-region") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--kind", "--x-mm", "--y-mm", "--width-mm",
@@ -1161,7 +1298,8 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::string id = requireOption(options, "--id");
       const bool removed = eraseById(board.pads, id) || eraseById(board.vias, id) ||
                            eraseById(board.tracks, id) || eraseById(board.graphics, id) ||
-                           eraseById(board.texts, id) || eraseById(board.keepouts, id) ||
+                           eraseById(board.texts, id) || eraseById(board.zones, id) ||
+                           eraseById(board.keepouts, id) ||
                            eraseById(board.placement_regions, id);
       if (!removed) {
         throw std::runtime_error("unknown physical object: " + id);

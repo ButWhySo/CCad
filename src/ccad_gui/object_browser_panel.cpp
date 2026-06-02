@@ -110,6 +110,9 @@ void ObjectBrowserPanel::renderScene(const ccad::CanvasScene& scene) {
   for (const ccad::CanvasTrack& track : scene.tracks) {
     countNet(net_counts, track.net_id);
   }
+  for (const ccad::CanvasZone& zone : scene.zones) {
+    countNet(net_counts, zone.net_id);
+  }
   addSection("Nets (" + QString::number(static_cast<int>(net_counts.size())) + ")");
   for (const auto& [net_id, count] : net_counts) {
     addRow("net " + qstr(net_id) + "  objects " + QString::number(count), {}, qstr(net_id));
@@ -132,7 +135,7 @@ void ObjectBrowserPanel::renderScene(const ccad::CanvasScene& scene) {
   const int object_count = static_cast<int>(scene.pads.size() + scene.vias.size() +
                                             scene.tracks.size() + scene.keepouts.size() +
                                             scene.placement_regions.size() + scene.lines.size() +
-                                            scene.texts.size());
+                                            scene.texts.size() + scene.zones.size());
   addSection("Objects (" + QString::number(object_count) + ")");
   for (const ccad::CanvasPad& pad : scene.pads) {
     addRow("pad " + qstr(pad.id) + "  " + netText(pad.net_id) + "  " +
@@ -154,6 +157,17 @@ void ObjectBrowserPanel::renderScene(const ccad::CanvasScene& scene) {
     addRow("text " + qstr(text.id) + "  " + layerText(text.layer_id) + "  " +
                qstr(text.text),
            qstr(text.id));
+  }
+  for (const ccad::CanvasZone& zone : scene.zones) {
+    QString layers;
+    for (std::size_t i = 0; i < zone.layer_ids.size(); ++i) {
+      if (i > 0) {
+        layers += ",";
+      }
+      layers += qstr(zone.layer_ids.at(i));
+    }
+    addRow("zone " + qstr(zone.id) + "  " + netText(zone.net_id) + "  layers " + layers,
+           qstr(zone.id));
   }
   for (const ccad::CanvasKeepout& keepout : scene.keepouts) {
     addRow("keepout " + qstr(keepout.id) + "  kind " + qstr(keepout.kind), qstr(keepout.id));

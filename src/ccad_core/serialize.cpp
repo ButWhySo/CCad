@@ -110,6 +110,8 @@ class JsonReader {
           board.graphics = readBoardGraphics();
         } else if (key == "texts") {
           board.texts = readBoardTexts();
+        } else if (key == "zones") {
+          board.zones = readBoardZones();
         } else if (key == "route_requests") {
           board.route_requests = readRouteRequests();
         } else {
@@ -621,6 +623,62 @@ class JsonReader {
     }
   }
 
+  std::vector<BoardZone> readBoardZones() {
+    std::vector<BoardZone> zones;
+    expect('[');
+    if (consume(']')) {
+      return zones;
+    }
+    while (true) {
+      BoardZone zone;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            zone.id = readString();
+          } else if (key == "name") {
+            zone.name = readString();
+          } else if (key == "net_id") {
+            zone.net_id = readString();
+          } else if (key == "layer_ids") {
+            zone.layer_ids = readStringArray();
+          } else if (key == "outline") {
+            zone.outline = readPointArray();
+          } else if (key == "priority") {
+            zone.priority = readInt();
+          } else if (key == "clearance_nm") {
+            zone.clearance = nanometers(readInt64());
+          } else if (key == "min_thickness_nm") {
+            zone.min_thickness = nanometers(readInt64());
+          } else if (key == "fill_enabled") {
+            zone.fill_enabled = readBool();
+          } else if (key == "pad_connection") {
+            zone.pad_connection = readString();
+          } else {
+            throw std::runtime_error("unknown board zone key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+          if (peek('}')) {
+            throw std::runtime_error("trailing comma in board zone object");
+          }
+        }
+      }
+      zones.push_back(zone);
+      if (consume(']')) {
+        return zones;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in board zones array");
+      }
+    }
+  }
+
   std::vector<RouteRequest> readRouteRequests() {
     std::vector<RouteRequest> route_requests;
     expect('[');
@@ -1024,6 +1082,24 @@ class JsonReader {
     }
   }
 
+  std::vector<Point> readPointArray() {
+    std::vector<Point> points;
+    expect('[');
+    if (consume(']')) {
+      return points;
+    }
+    while (true) {
+      points.push_back(readPoint());
+      if (consume(']')) {
+        return points;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in point array");
+      }
+    }
+  }
+
   bool consume(const char expected) {
     skipWhitespace();
     if (pos_ < source_.size() && source_[pos_] == expected) {
@@ -1269,6 +1345,33 @@ std::string dumpProjectJson(const Project& project) {
       writeSize(out, 0, text.size);
       out << "\n";
       out << "      }" << (i + 1 == board.texts.size() ? "" : ",") << '\n';
+    }
+    out << "    ],\n";
+    out << "    \"zones\": [\n";
+    for (std::size_t i = 0; i < board.zones.size(); ++i) {
+      const BoardZone& zone = board.zones.at(i);
+      out << "      {\n";
+      writeField(out, 8, "id", zone.id);
+      writeField(out, 8, "name", zone.name);
+      writeField(out, 8, "net_id", zone.net_id);
+      out << "        \"layer_ids\": [\n";
+      for (std::size_t j = 0; j < zone.layer_ids.size(); ++j) {
+        out << "          \"" << escapeJson(zone.layer_ids.at(j)) << "\""
+            << (j + 1 == zone.layer_ids.size() ? "" : ",") << '\n';
+      }
+      out << "        ],\n";
+      out << "        \"outline\": [\n";
+      for (std::size_t j = 0; j < zone.outline.size(); ++j) {
+        writePoint(out, 10, zone.outline.at(j));
+        out << (j + 1 == zone.outline.size() ? "" : ",") << '\n';
+      }
+      out << "        ],\n";
+      out << "        \"priority\": " << zone.priority << ",\n";
+      out << "        \"clearance_nm\": " << zone.clearance.nanometers << ",\n";
+      out << "        \"min_thickness_nm\": " << zone.min_thickness.nanometers << ",\n";
+      out << "        \"fill_enabled\": " << (zone.fill_enabled ? "true" : "false") << ",\n";
+      writeField(out, 8, "pad_connection", zone.pad_connection, false);
+      out << "      }" << (i + 1 == board.zones.size() ? "" : ",") << '\n';
     }
     out << "    ],\n";
     out << "    \"vias\": [\n";

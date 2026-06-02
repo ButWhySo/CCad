@@ -240,6 +240,61 @@ std::string exportToKiCadPcb(const Project& project) {
         << "  )\n";
   }
 
+  // copper zones
+  for (const BoardZone& zone : board.zones) {
+    const int net_number =
+        !zone.net_id.empty() && net_to_index.contains(zone.net_id) ? net_to_index.at(zone.net_id)
+                                                                   : 0;
+    const std::string net_name = net_number > 0 ? zone.net_id : "";
+    const std::string primary_layer = zone.layer_ids.empty() ? "F.Cu" : zone.layer_ids.front();
+    out << "  (zone (net " << net_number << ") (net_name \"" << escapeKiCadString(net_name)
+        << "\") ";
+    if (zone.layer_ids.size() > 1) {
+      out << "(layers";
+      for (const std::string& layer_id : zone.layer_ids) {
+        out << " \"" << escapeKiCadString(layer_id) << "\"";
+      }
+      out << ")";
+    } else {
+      out << "(layer \"" << escapeKiCadString(primary_layer) << "\")";
+    }
+    out << "\n";
+    if (!zone.name.empty()) {
+      out << "    (name \"" << escapeKiCadString(zone.name) << "\")\n";
+    }
+    out << "    (hatch none 0.508000)\n";
+    if (zone.priority > 0) {
+      out << "    (priority " << zone.priority << ")\n";
+    }
+    out << "    (connect_pads";
+    if (zone.pad_connection == "solid") {
+      out << " yes";
+    } else if (zone.pad_connection == "none") {
+      out << " no";
+    }
+    out << " (clearance " << (zone.clearance.nanometers / 1000000.0) << "))\n";
+    out << "    (min_thickness " << (zone.min_thickness.nanometers / 1000000.0) << ")\n";
+    out << "    (fill" << (zone.fill_enabled ? " yes" : "")
+        << " (thermal_gap 0.500000) (thermal_bridge_width 0.500000))\n";
+    out << "    (polygon (pts";
+    for (const Point& point : zone.outline) {
+      out << " (xy " << (point.x.nanometers / 1000000.0) << " "
+          << (point.y.nanometers / 1000000.0) << ")";
+    }
+    out << "))\n";
+    if (zone.fill_enabled) {
+      for (const std::string& layer_id : zone.layer_ids) {
+        out << "    (filled_polygon (layer \"" << escapeKiCadString(layer_id) << "\") (pts";
+        for (const Point& point : zone.outline) {
+          out << " (xy " << (point.x.nanometers / 1000000.0) << " "
+              << (point.y.nanometers / 1000000.0) << ")";
+        }
+        out << "))\n";
+      }
+    }
+    out << "  )\n";
+  }
+
   // keepouts
   for (const Keepout& keepout : board.keepouts) {
     double kx = keepout.area.origin.x.nanometers / 1000000.0;

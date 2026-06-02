@@ -821,6 +821,75 @@ void checkBoardTexts(const Board& board, std::vector<Diagnostic>& diagnostics) {
   }
 }
 
+bool isSupportedZonePadConnection(const std::string& pad_connection) {
+  return pad_connection == "thermal" || pad_connection == "solid" || pad_connection == "none";
+}
+
+void checkBoardZones(const Project& project, const Board& board,
+                     std::vector<Diagnostic>& diagnostics) {
+  std::set<std::string> ids;
+  for (const BoardZone& zone : board.zones) {
+    if (zone.id.empty()) {
+      diagnostics.push_back(makeDiagnostic("INVALID_ZONE_ID", "Zone ID must not be empty",
+                                           zone.id));
+    }
+    if (!ids.insert(zone.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_ZONE_ID",
+                                           "Zone ID appears more than once", zone.id));
+    }
+    if (zone.layer_ids.empty()) {
+      diagnostics.push_back(makeDiagnostic("INVALID_ZONE_LAYER_SET",
+                                           "Zone must reference at least one copper layer",
+                                           zone.id));
+    }
+    std::set<std::string> zone_layers;
+    for (const std::string& layer_id : zone.layer_ids) {
+      if (!zone_layers.insert(layer_id).second) {
+        diagnostics.push_back(makeDiagnostic("DUPLICATE_ZONE_LAYER",
+                                             "Zone layer appears more than once", zone.id));
+      }
+      if (!hasLayer(board, layer_id)) {
+        diagnostics.push_back(makeDiagnostic("UNKNOWN_ZONE_LAYER",
+                                             "Zone references an unknown layer", zone.id));
+      } else if (!isCopperLayer(board, layer_id)) {
+        diagnostics.push_back(makeDiagnostic("ZONE_NON_COPPER_LAYER",
+                                             "Zone must be on copper layers", zone.id));
+      }
+    }
+    if (!zone.net_id.empty() && !hasNet(project, zone.net_id)) {
+      diagnostics.push_back(makeDiagnostic("UNKNOWN_ZONE_NET",
+                                           "Zone references an unknown net", zone.id));
+    }
+    if (zone.outline.size() < 3) {
+      diagnostics.push_back(makeDiagnostic("INVALID_ZONE_OUTLINE",
+                                           "Zone outline must contain at least three corners",
+                                           zone.id));
+    }
+    for (const Point& point : zone.outline) {
+      if (!containsPoint(board, point)) {
+        diagnostics.push_back(makeDiagnostic("ZONE_OUTSIDE_BOARD",
+                                             "Zone outline point is outside board outline",
+                                             zone.id));
+        break;
+      }
+    }
+    if (!isPositive(zone.clearance)) {
+      diagnostics.push_back(makeDiagnostic("INVALID_ZONE_CLEARANCE",
+                                           "Zone clearance must be positive", zone.id));
+    }
+    if (!isPositive(zone.min_thickness)) {
+      diagnostics.push_back(makeDiagnostic("INVALID_ZONE_MIN_THICKNESS",
+                                           "Zone minimum thickness must be positive",
+                                           zone.id));
+    }
+    if (!isSupportedZonePadConnection(zone.pad_connection)) {
+      diagnostics.push_back(makeDiagnostic("INVALID_ZONE_PAD_CONNECTION",
+                                           "Zone pad connection mode is unsupported",
+                                           zone.id));
+    }
+  }
+}
+
 void checkRouteRequests(const Project& project, const Board& board,
                         std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
@@ -1076,6 +1145,13 @@ void checkPhysicalObjectIds(const Board& board, std::vector<Diagnostic>& diagnos
                                            text.id));
     }
   }
+  for (const BoardZone& zone : board.zones) {
+    if (!zone.id.empty() && !ids.insert(zone.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_PHYSICAL_OBJECT_ID",
+                                           "Physical object ID is reused across object types",
+                                           zone.id));
+    }
+  }
   for (const Keepout& keepout : board.keepouts) {
     if (!keepout.id.empty() && !ids.insert(keepout.id).second) {
       diagnostics.push_back(makeDiagnostic("DUPLICATE_PHYSICAL_OBJECT_ID",
@@ -1224,6 +1300,7 @@ std::vector<Diagnostic> runDrc(const Project& project) {
   checkTracks(project, board, diagnostics);
   checkBoardGraphics(board, diagnostics);
   checkBoardTexts(board, diagnostics);
+  checkBoardZones(project, board, diagnostics);
   checkRouteRequests(project, board, diagnostics);
   checkPlacementRegions(board, diagnostics);
   checkKeepouts(board, diagnostics);

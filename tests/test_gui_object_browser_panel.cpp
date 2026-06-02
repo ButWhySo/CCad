@@ -21,6 +21,14 @@ ccad::CanvasScene browserScene() {
       .id = "T1", .net_id = "N1", .layer_id = "F.Cu", .source_route_request_id = "RR1"});
   scene.lines.push_back(ccad::CanvasLine{.id = "G1", .layer_id = "Dwgs.User"});
   scene.texts.push_back(ccad::CanvasText{.id = "BT1", .layer_id = "F.SilkS", .text = "RECTIFIER"});
+  scene.zones.push_back(ccad::CanvasZone{
+      .id = "Z1",
+      .name = "GND copper",
+      .net_id = "N1",
+      .layer_ids = {"F.Cu"},
+      .pts_x_units = {2.0, 18.0, 18.0, 2.0},
+      .pts_y_units = {2.0, 2.0, 12.0, 12.0},
+      .pad_connection = "thermal"});
   scene.route_requests.push_back(ccad::CanvasRouteRequest{.id = "RR1",
                                                           .net_id = "N1",
                                                           .from_object_id = "P1",
@@ -43,24 +51,25 @@ int main(int argc, char** argv) {
   require(panel.itemText(0) == "No board objects", "empty browser status text");
 
   panel.renderScene(browserScene());
-  require(panel.itemCount() == 14, "browser has layer, net, route, and object rows");
+  require(panel.itemCount() == 15, "browser has layer, net, route, and object rows");
   require(panel.itemText(0) == "Layers (2)", "layer section row");
   require(panel.itemText(1) == "F.Cu - Front copper [signal, visible]", "front layer row");
   require(panel.itemText(2) == "B.Cu - Back copper [signal, hidden]", "hidden layer row");
   require(panel.itemText(3) == "Nets (1)", "net section row");
-  require(panel.itemText(4) == "net N1  objects 3", "net row summarizes member count");
+  require(panel.itemText(4) == "net N1  objects 4", "net row summarizes member count");
   require(panel.itemText(5) == "Route Requests (1)", "route request section row");
   require(panel.itemText(6) ==
               "route RR1  net N1  P1 -> V1  layer F.Cu  partial 1 segment(s)",
           "route request row summarizes routing intent");
-  require(panel.itemText(7) == "Objects (6)", "object section row");
+  require(panel.itemText(7) == "Objects (7)", "object section row");
   require(panel.itemText(8) == "pad P1  net N1  layer F.Cu", "pad object row");
   require(panel.itemText(9) == "via V1  net N1", "via object row");
   require(panel.itemText(10) == "track T1  net N1  layer F.Cu  route RR1",
           "track object row includes route provenance");
   require(panel.itemText(11) == "graphic G1  layer Dwgs.User", "graphic object row");
   require(panel.itemText(12) == "text BT1  layer F.SilkS  RECTIFIER", "text object row");
-  require(panel.itemText(13) == "keepout K1  kind placement", "keepout object row");
+  require(panel.itemText(13) == "zone Z1  net N1  layers F.Cu", "zone object row");
+  require(panel.itemText(14) == "keepout K1  kind placement", "keepout object row");
   require(panel.objectIdForRow(0).isEmpty(), "section rows do not expose object ids");
   require(panel.objectIdForRow(1).isEmpty(), "layer rows do not expose object ids");
   require(panel.objectIdForRow(4).isEmpty(), "net rows do not expose object ids");
@@ -71,7 +80,8 @@ int main(int argc, char** argv) {
   require(panel.objectIdForRow(10) == "T1", "track row exposes object id");
   require(panel.objectIdForRow(11) == "G1", "graphic row exposes object id");
   require(panel.objectIdForRow(12) == "BT1", "text row exposes object id");
-  require(panel.objectIdForRow(13) == "K1", "keepout row exposes object id");
+  require(panel.objectIdForRow(13) == "Z1", "zone row exposes object id");
+  require(panel.objectIdForRow(14) == "K1", "keepout row exposes object id");
   require(panel.objectIdForRow(99).isEmpty(), "out of range rows do not expose object ids");
   require(panel.netIdForRow(99).isEmpty(), "out of range rows do not expose net ids");
 

@@ -74,6 +74,7 @@ int initCommand(const std::vector<std::string>& args) {
         .tracks = {},
         .graphics = {},
         .texts = {},
+        .zones = {},
         .route_requests = {},
     };
   }

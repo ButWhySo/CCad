@@ -83,6 +83,21 @@ ccad::Project boardProject() {
                                                         .y = ccad::millimeters(20)},
                                 .size = ccad::Size{.width = ccad::millimeters(1.5),
                                                    .height = ccad::millimeters(1.5)}}},
+      .zones = {ccad::BoardZone{
+          .id = "Z1",
+          .name = "GND copper",
+          .net_id = "N1",
+          .layer_ids = {"F.Cu"},
+          .outline = {ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(2)},
+                      ccad::Point{.x = ccad::millimeters(18), .y = ccad::millimeters(2)},
+                      ccad::Point{.x = ccad::millimeters(18), .y = ccad::millimeters(12)},
+                      ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(12)}},
+          .priority = 2,
+          .clearance = ccad::millimeters(0.2),
+          .min_thickness = ccad::millimeters(0.25),
+          .fill_enabled = true,
+          .pad_connection = "solid",
+      }},
       .route_requests = {ccad::RouteRequest{.id = "RR1",
                                             .net_id = "N1",
                                             .from_object_id = "P1",
@@ -155,6 +170,11 @@ int main() {
   require(scene.texts.at(0).text == "RECTIFIER", "canvas board text value");
   require(scene.texts.at(0).x_units == 12.0, "canvas board text x is mm");
   require(scene.texts.at(0).size_x_units == 1.5, "canvas board text width is mm");
+  require(scene.zones.size() == 1, "canvas has board zone");
+  require(scene.zones.at(0).id == "Z1", "canvas board zone id");
+  require(scene.zones.at(0).layer_ids.size() == 1, "canvas board zone layer set");
+  require(scene.zones.at(0).pts_x_units.size() == 4, "canvas board zone outline points");
+  require(scene.zones.at(0).fill_enabled, "canvas board zone fill state");
   require(scene.route_requests.size() == 1, "canvas has route requests");
   require(scene.route_requests.at(0).id == "RR1", "canvas route request id");
   require(scene.route_requests.at(0).from_object_id == "P1", "canvas route from object id");

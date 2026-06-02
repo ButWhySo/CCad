@@ -127,6 +127,27 @@ CanvasScene buildCanvasScene(const Project& project) {
     });
   }
 
+  for (const BoardZone& zone : project.board->zones) {
+    CanvasZone canvas_zone{
+        .id = zone.id,
+        .name = zone.name,
+        .net_id = zone.net_id,
+        .layer_ids = zone.layer_ids,
+        .pts_x_units = {},
+        .pts_y_units = {},
+        .priority = zone.priority,
+        .clearance_units = toMillimeters(zone.clearance),
+        .min_thickness_units = toMillimeters(zone.min_thickness),
+        .fill_enabled = zone.fill_enabled,
+        .pad_connection = zone.pad_connection,
+    };
+    for (const Point& point : zone.outline) {
+      canvas_zone.pts_x_units.push_back(toMillimeters(point.x));
+      canvas_zone.pts_y_units.push_back(toMillimeters(point.y));
+    }
+    scene.zones.push_back(canvas_zone);
+  }
+
   std::map<std::string, std::size_t> routed_segment_counts;
   for (const TrackSegment& track : project.board->tracks) {
     if (!track.source_route_request_id.empty()) {

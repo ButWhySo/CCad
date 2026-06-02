@@ -144,6 +144,13 @@ const std::vector<CommandHelp>& commandHelp() {
                   .usage = "ccad pcb add-text --file <path> --id <id> --layer <id> "
                            "--text <value> --x-mm <n> --y-mm <n> --size-x-mm <n> "
                            "--size-y-mm <n> --rotation-deg <n>"},
+      CommandHelp{.name = "pcb add-zone",
+                  .summary = "Append one KiCad-style rectangular copper zone",
+                  .usage = "ccad pcb add-zone --file <path> --id <id> [--name <value>] "
+                           "[--net <id>] --layers <ids> --x-mm <n> --y-mm <n> "
+                           "--width-mm <n> --height-mm <n> --priority <n> "
+                           "--clearance-mm <n> --min-thickness-mm <n> "
+                           "--pad-connection thermal|solid|none"},
       CommandHelp{.name = "pcb add-route-request",
                   .summary = "Append one route-assistance request to a board project",
                   .usage = "ccad pcb add-route-request --file <path> --id <id> --net <id> "

@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 173 complete on `sprint-173-pcb-graphics-text-tools`.
+Progress counter: Phase 7 / 7, Sprint 174 complete on `sprint-174-pcb-zone-tool`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -14,14 +14,14 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Deterministic JSON load/dump.
 - Logical ERC diagnostics.
 - CLI: `ccad help --format json`, `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
-- CLI PCB authoring: `ccad pcb list-nets`, `ccad pcb list-objects`, `ccad pcb get-object`, `ccad pcb route-status`, `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-graphic-line`, `ccad pcb add-text`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
+- CLI PCB authoring: `ccad pcb list-nets`, `ccad pcb list-objects`, `ccad pcb get-object`, `ccad pcb route-status`, `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-graphic-line`, `ccad pcb add-text`, `ccad pcb add-zone`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - CLI PCB pad authoring supports KiCad-style pad type, shape, drill, roundrect ratio, chamfer ratio, and multi-layer metadata.
 - Agent-facing PCB pad queries expose KiCad-style pad type, shape, drill, roundrect ratio, chamfer ratio, and layer metadata through `pcb get-object` and `pcb list-objects --type pad`.
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
-- Physical board outline, layers, rectangular placement regions, rectangular keepouts, pads, vias, track segments, board graphic lines, and board text in project JSON.
+- Physical board outline, layers, copper zones, rectangular placement regions, rectangular keepouts, pads, vias, track segments, board graphic lines, and board text in project JSON.
 - Project review and `ccad inspect` report the full board outline rectangle and active board-level DRC rules.
-- Physical DRC for geometry, connectivity metadata, layer-aware copper connectivity and clearance, rectangular keepout occupancy, track crossing violations, board-level copper clearance, minimum track width, minimum via annular ring, design-rule value validation, stable physical object IDs, logical pad/net parity, route-request validity, route-request endpoint net parity, and route-request width policy.
+- Physical DRC for geometry, connectivity metadata, layer-aware copper connectivity and clearance, copper-zone identity/layer/net/outline validity, rectangular keepout occupancy, track crossing violations, board-level copper clearance, minimum track width, minimum via annular ring, design-rule value validation, stable physical object IDs, logical pad/net parity, route-request validity, route-request endpoint net parity, and route-request width policy.
 - Physical DRC rejects pads and tracks placed on non-copper layers.
 - Physical DRC track-endpoint connectivity now accepts geometric copper contact with same-net pads and vias, not only exact center-point matches.
 - Optional Qt 6 native GUI for human review and board canvas viewing.
@@ -50,7 +50,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI has app-owned placement-click regression automation so left-click footprint placement can be tested through the real Qt viewport event path without manual mouse control.
 - Native GUI has app-owned UI-map mouse-target automation that moves to semantic targets, captures marked screenshots, resizes the window, and repeats to prove scalable coordinates.
 - Native GUI can keep a local live UI-map socket open while the GUI runs, serving repeated JSON Lines `ui.map`, `ui.target`, and `ui.epoch` requests for agents.
-- Native GUI right-toolbar Add Via, Route Track, Add Keepout, Draw Graphic, Place Text, and Delete tools now enter real PCB edit modes and create or remove durable board primitives through the same Qt viewport event path used by app-owned tests.
+- Native GUI right-toolbar Add Via, Route Track, Add Zone, Add Keepout, Draw Graphic, Place Text, and Delete tools now enter real PCB edit modes and create or remove durable board primitives through the same Qt viewport event path used by app-owned tests.
 - Native GUI has a PCB active-layer selector, exposes it as `control:active_pcb_layer`, serves active-layer query/set methods to agents, and uses the selected copper layer for footprint placement and Route Track commits.
 - Native GUI unfinished toolbar tools now report visible planned-tool status and `future_tool_not_implemented` through the safe UI trigger contract instead of acting as silent stubs.
 - Native GUI left toolbar Show Layers and Show Properties actions now toggle their existing panels and report `panel_toggled` through the safe UI trigger contract.
@@ -100,7 +100,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Project diffs include board layer additions, removals, and changes.
 - Project diffs include board outline additions, removals, and changes.
 - Project diffs include board pad additions, removals, and changes.
-- Project diffs include board via, track, graphic-line, and text additions, removals, and changes.
+- Project diffs include board via, track, zone, graphic-line, and text additions, removals, and changes.
 - Project diffs include route-request intent additions, removals, and changes.
 - Project diffs include board keepout and placement-region additions, removals, and changes.
 - Project diffs include board design-rule changes.
@@ -109,7 +109,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - CLI PCB authoring can list route-request intent records and route completion status as compact JSON.
 - CLI PCB authoring can export compact route-job JSON for external router handoff, including KiCad-style pad type, shape, drill, ratio, layer, and rotation metadata.
 - CLI PCB authoring can list board layer and physical object IDs as compact JSON, with optional type filtering.
-- CLI PCB authoring can inspect one board layer or physical object by stable ID as compact JSON, including route provenance for tracks and layer/text metadata for board graphics and board text.
+- CLI PCB authoring can inspect one board layer or physical object by stable ID as compact JSON, including route provenance for tracks, zone copper-layer/net/fill metadata, and layer/text metadata for board graphics and board text.
 - CLI PCB authoring can remove physical board objects by stable ID.
 - CLI PCB authoring can remove unused board layers by stable ID.
 - CLI PCB authoring can update board layer name, kind, and visibility by stable ID.
@@ -524,10 +524,10 @@ Current command guards:
 - Rule dimensions must be positive.
 - Primitive IDs must be unique within their primitive type.
 - Layer IDs must be unique.
-- Removed layers must exist and must not be referenced by pads or tracks.
+- Removed layers must exist and must not be referenced by pads, tracks, zones, board graphics, or board text.
 - Dimensions must be positive.
-- Referenced layers must exist for pads and tracks.
-- Pad, track, and placed-footprint layers must be copper layers.
+- Referenced layers must exist for pads, tracks, and zones.
+- Pad, track, placed-footprint, and zone layers must be copper layers.
 - Updated pad layers must be copper layers, and updated pad rotation must remain inside the board outline.
 - Positions and track endpoints must be inside the board outline.
 - Updated track endpoints and copper width margin must remain inside the board outline.
@@ -535,7 +535,43 @@ Current command guards:
 - Updated via diameter and drill must stay valid and fully inside the board outline.
 - Moved pads, vias, keepouts, and placement regions must remain fully inside the board outline.
 - Resized pads, keepouts, and placement regions must remain fully inside the board outline.
-- Removal IDs must match an existing pad, via, track, keepout, or placement region.
+- Removal IDs must match an existing pad, via, track, zone, keepout, placement region, board graphic, or board text.
+
+Copper zones:
+
+- Zones are represented in project JSON, can be authored through the CLI, are visible in the Qt board canvas as translucent layer-colored copper polygons, are listed in compact object queries, are checked by DRC, and export to KiCad PCB S-expressions as `zone`, `polygon`, and deterministic first-slice `filled_polygon` records.
+- A zone has `id`, optional `name`, optional `net_id`, ordered copper `layer_ids`, outline points, priority, clearance, minimum thickness, fill enabled state, and pad connection mode.
+- Current zone authoring is a first slice. It creates deterministic rectangular or explicit-point outlines and filled previews, but it does not yet implement KiCad's full refill solver, thermal spokes, island removal, cutouts, or zone manager UI.
+
+Add a rectangular copper zone through the CLI:
+
+```cmd
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad.exe pcb add-zone --file build-qt\canvas-demo.ccad.json --id Z1 --name DC_NEG_FILL --net DC_NEG --layers B.Cu --x-mm 6 --y-mm 20 --width-mm 30 --height-mm 6 --priority 0 --clearance-mm 0.20 --min-thickness-mm 0.15 --pad-connection solid"
+```
+
+Example JSON fragment:
+
+```json
+"zones": [
+  {
+    "id": "Z1",
+    "name": "DC_NEG_FILL",
+    "net_id": "DC_NEG",
+    "layer_ids": ["B.Cu"],
+    "outline": [
+      { "x_nm": 6000000, "y_nm": 20000000 },
+      { "x_nm": 36000000, "y_nm": 20000000 },
+      { "x_nm": 36000000, "y_nm": 26000000 },
+      { "x_nm": 6000000, "y_nm": 26000000 }
+    ],
+    "priority": 0,
+    "clearance_nm": 200000,
+    "min_thickness_nm": 150000,
+    "fill_enabled": true,
+    "pad_connection": "solid"
+  }
+]
+```
 
 Rectangular keepouts:
 
@@ -679,7 +715,7 @@ $env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
 
 Only a small allowlist of view/navigation actions is executable this way. Mutating, dialog-opening, or file-writing actions return `performed:false` with a reason field.
 
-Left-toolbar display controls such as `action:grid`, `action:polar_coord`, `action:unit_inch`, `action:cursor_shape`, `action:show_ratsnest`, `action:net_highlight`, and `action:contrast_mode` are implemented safe display actions. They return `performed:true`, `reason:"display_state_toggled"`, and their current state, while the UI map exposes checked state for action nodes. Left-toolbar panel controls `action:layers_manager` and `action:part_properties` are implemented safe actions and return `reason:"panel_toggled"`. Right-toolbar PCB editor entries `action:add_tracks`, `action:add_via`, `action:add_keepout_area`, `action:add_graphical_segments`, and `action:text` now return `performed:true`, `reason:"editor_tool_selected"`, and a concrete mode value, while `action:delete_cursor` removes the selected board primitive when the model supports that object type. Remaining editor tools such as `action:add_zone` are not silently ignored; they still return `performed:false`, `reason:"future_tool_not_implemented"`, and the user-facing label while the GUI status bar shows the same planned-tool state.
+Left-toolbar display controls such as `action:grid`, `action:polar_coord`, `action:unit_inch`, `action:cursor_shape`, `action:show_ratsnest`, `action:net_highlight`, and `action:contrast_mode` are implemented safe display actions. They return `performed:true`, `reason:"display_state_toggled"`, and their current state, while the UI map exposes checked state for action nodes. Left-toolbar panel controls `action:layers_manager` and `action:part_properties` are implemented safe actions and return `reason:"panel_toggled"`. Right-toolbar PCB editor entries `action:add_tracks`, `action:add_via`, `action:add_zone`, `action:add_keepout_area`, `action:add_graphical_segments`, and `action:text` now return `performed:true`, `reason:"editor_tool_selected"`, and a concrete mode value, while `action:delete_cursor` removes the selected board primitive when the model supports that object type. Remaining editor tools are not silently ignored; unfinished actions return `performed:false`, `reason:"future_tool_not_implemented"`, and the user-facing label while the GUI status bar shows the same planned-tool state.
 
 Query or set the GUI PCB active layer:
 
@@ -713,11 +749,12 @@ The same app-owned viewport-click path can exercise first-batch PCB edit tools:
 ```cmd
 cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --test-place-via-click artifacts\demos\sprint170-pcb-edit-tool-entry-final.ccad.json 15 11 artifacts\demos\sprint170-via-result.json"
 cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --test-route-track-click artifacts\demos\sprint170-pcb-edit-tool-entry-final.ccad.json 8 9 15 11 artifacts\demos\sprint170-track-result.json"
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --test-place-zone-click artifacts\demos\sprint174-pcb-zone-tool-final.ccad.json 6 20 38 28 artifacts\demos\sprint174-zone-result.json"
 cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --test-place-keepout-click artifacts\demos\sprint170-pcb-edit-tool-entry-final.ccad.json 20 10 25 14 artifacts\demos\sprint170-keepout-result.json"
 cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --test-delete-board-object artifacts\demos\sprint170-pcb-edit-tool-entry-final.ccad.json V1 artifacts\demos\sprint170-delete-result.json"
 ```
 
-These modes enter the same Add Via, Route Track, Add Keepout, and Delete paths that humans invoke from the right toolbar, then return compact JSON such as `reason:"placed"` or `reason:"deleted"` with the updated object count or deleted type.
+These modes enter the same Add Via, Route Track, Add Zone, Add Keepout, and Delete paths that humans invoke from the right toolbar, then return compact JSON such as `reason:"placed"` or `reason:"deleted"` with the updated object count or deleted type.
 
 Run the app-owned UI-map mouse-target harness:
 
@@ -775,6 +812,7 @@ ctest --test-dir build-qt --output-on-failure
 .\build-qt\ccad.exe pcb add-layer --file .\build-qt\canvas-demo.ccad.json --id Dwgs.User --name "User drawings" --kind user --visible true
 .\build-qt\ccad.exe pcb add-graphic-line --file .\build-qt\canvas-demo.ccad.json --id G1 --layer Dwgs.User --start-x-mm 3 --start-y-mm 4 --end-x-mm 16 --end-y-mm 4 --width-mm 0.15
 .\build-qt\ccad.exe pcb add-text --file .\build-qt\canvas-demo.ccad.json --id BT1 --layer F.SilkS --text "Bridge rectifier" --x-mm 8 --y-mm 22 --size-x-mm 1.5 --size-y-mm 1.5 --rotation-deg 0
+.\build-qt\ccad.exe pcb add-zone --file .\build-qt\canvas-demo.ccad.json --id Z1 --name DC_NEG_FILL --net N2 --layers B.Cu --x-mm 6 --y-mm 20 --width-mm 30 --height-mm 6 --priority 0 --clearance-mm 0.20 --min-thickness-mm 0.15 --pad-connection solid
 .\build-qt\ccad.exe pcb add-placement-region --file .\build-qt\canvas-demo.ccad.json --id PR1 --kind component --x-mm 11 --y-mm 4 --width-mm 12 --height-mm 8
 .\build-qt\ccad.exe pcb add-keepout --file .\build-qt\canvas-demo.ccad.json --id K1 --kind placement --x-mm 20 --y-mm 10 --width-mm 4 --height-mm 3
 .\build-qt\ccad.exe inspect .\build-qt\canvas-demo.ccad.json
@@ -793,7 +831,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_sprint_demo.ps1 -Name spr
 What it does:
 
 - Creates `artifacts/demos/sprint42-gui-canvas-mvp-review.ccad.json`.
-- Sets a non-zero-origin board outline and board-level DRC rules, adds KiCad standard layers, toggles layer visibility, adds a full bridge rectifier PCB demo with pads, vias, tracks, board graphic lines, board text, a rectangular placement region, logical demo nets, and a rectangular keepout.
+- Sets a non-zero-origin board outline and board-level DRC rules, adds KiCad standard layers, toggles layer visibility, adds a full bridge rectifier PCB demo with pads, vias, tracks, a visible copper zone, board graphic lines, board text, a rectangular placement region, logical demo nets, and a rectangular keepout.
 - Writes inspect, validate, and DRC JSON reports.
 - Writes a sample KiCad `.kicad_mod` file and imports it to CCad footprint JSON.
 - Places the imported footprint onto the demo board.

@@ -97,6 +97,22 @@ std::string textSignature(const BoardText& text) {
          "\x1f" + std::to_string(text.rotation_degrees) + "\x1f" + sizeSignature(text.size);
 }
 
+std::string zoneSignature(const BoardZone& zone) {
+  std::string signature =
+      zone.name + "\x1f" + zone.net_id + "\x1f" + std::to_string(zone.priority) +
+      "\x1f" + std::to_string(zone.clearance.nanometers) + "\x1f" +
+      std::to_string(zone.min_thickness.nanometers) + "\x1f" +
+      (zone.fill_enabled ? "filled" : "outline") + "\x1f" + zone.pad_connection;
+  for (const std::string& layer_id : zone.layer_ids) {
+    signature += "\x1e" + layer_id;
+  }
+  signature += "\x1d";
+  for (const Point& point : zone.outline) {
+    signature += "\x1e" + pointSignature(point);
+  }
+  return signature;
+}
+
 std::string routeRequestSignature(const RouteRequest& route_request) {
   return route_request.net_id + "\x1f" + route_request.from_object_id + "\x1f" +
          route_request.to_object_id + "\x1f" + route_request.preferred_layer_id + "\x1f" +
@@ -197,6 +213,7 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
     diffObjectMap(diff, "graphic", before.board->graphics, after.board->graphics,
                   graphicSignature);
     diffObjectMap(diff, "text", before.board->texts, after.board->texts, textSignature);
+    diffObjectMap(diff, "zone", before.board->zones, after.board->zones, zoneSignature);
     diffObjectMap(diff, "route_request", before.board->route_requests,
                   after.board->route_requests, routeRequestSignature);
   } else if (!before.board.has_value() && after.board.has_value()) {
@@ -277,6 +294,15 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .object_type = "text",
           .object_id = text.id,
           .message = "text added",
+      });
+    }
+    diff.added_count += after.board->zones.size();
+    for (const BoardZone& zone : after.board->zones) {
+      diff.entries.push_back(DiffEntry{
+          .change = "added",
+          .object_type = "zone",
+          .object_id = zone.id,
+          .message = "zone added",
       });
     }
     diff.added_count += after.board->route_requests.size();
@@ -366,6 +392,15 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .object_type = "text",
           .object_id = text.id,
           .message = "text removed",
+      });
+    }
+    diff.removed_count += before.board->zones.size();
+    for (const BoardZone& zone : before.board->zones) {
+      diff.entries.push_back(DiffEntry{
+          .change = "removed",
+          .object_type = "zone",
+          .object_id = zone.id,
+          .message = "zone removed",
       });
     }
     diff.removed_count += before.board->route_requests.size();

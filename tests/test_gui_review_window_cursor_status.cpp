@@ -23,6 +23,7 @@ ccad::Board shiftedBoard() {
       .tracks = {},
       .graphics = {},
       .texts = {},
+      .zones = {},
       .route_requests = {},
   };
 }
