@@ -12,6 +12,7 @@ std::string pcbViaObjectJson(const ccad::Via& via);
 std::string pcbTrackObjectJson(const ccad::TrackSegment& track);
 std::string pcbBoardGraphicObjectJson(const ccad::BoardGraphic& graphic);
 std::string pcbBoardTextObjectJson(const ccad::BoardText& text);
+std::string pcbBoardZoneObjectJson(const ccad::BoardZone& zone);
 std::string pcbRegionObjectJson(const std::string& type, const std::string& id,
                                 const std::string& kind, const ccad::Rect& area);
 std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type_filter);

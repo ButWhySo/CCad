@@ -53,6 +53,21 @@ ccad::Project validBoardProject() {
                                     .width = ccad::millimeters(0.25)}},
       .graphics = {},
       .texts = {},
+      .zones = {ccad::BoardZone{
+          .id = "Z1",
+          .name = "GND copper",
+          .net_id = "N1",
+          .layer_ids = {"F.Cu"},
+          .outline = {ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(2)},
+                      ccad::Point{.x = ccad::millimeters(18), .y = ccad::millimeters(2)},
+                      ccad::Point{.x = ccad::millimeters(18), .y = ccad::millimeters(12)},
+                      ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(12)}},
+          .priority = 1,
+          .clearance = ccad::millimeters(0.2),
+          .min_thickness = ccad::millimeters(0.25),
+          .fill_enabled = true,
+          .pad_connection = "thermal",
+      }},
       .route_requests = {},
   };
   return project;
@@ -147,6 +162,49 @@ int main() {
   non_copper_track_layer.board->tracks.at(0).layer_id = "F.SilkS";
   require(hasCode(ccad::runDrc(non_copper_track_layer), "TRACK_NON_COPPER_LAYER"),
           "drc reports track on non-copper layer");
+
+  ccad::Project unknown_zone_layer = validBoardProject();
+  unknown_zone_layer.board->zones.at(0).layer_ids = {"Inner.Cu"};
+  require(hasCode(ccad::runDrc(unknown_zone_layer), "UNKNOWN_ZONE_LAYER"),
+          "drc reports unknown zone layer");
+
+  ccad::Project non_copper_zone_layer = validBoardProject();
+  non_copper_zone_layer.board->layers.push_back(
+      ccad::Layer{.id = "F.SilkS", .name = "Front silkscreen", .kind = "silkscreen"});
+  non_copper_zone_layer.board->zones.at(0).layer_ids = {"F.SilkS"};
+  require(hasCode(ccad::runDrc(non_copper_zone_layer), "ZONE_NON_COPPER_LAYER"),
+          "drc reports zone on non-copper layer");
+
+  ccad::Project unknown_zone_net = validBoardProject();
+  unknown_zone_net.board->zones.at(0).net_id = "NO_NET";
+  require(hasCode(ccad::runDrc(unknown_zone_net), "UNKNOWN_ZONE_NET"),
+          "drc reports unknown zone net");
+
+  ccad::Project invalid_zone_outline = validBoardProject();
+  invalid_zone_outline.board->zones.at(0).outline.pop_back();
+  invalid_zone_outline.board->zones.at(0).outline.pop_back();
+  require(hasCode(ccad::runDrc(invalid_zone_outline), "INVALID_ZONE_OUTLINE"),
+          "drc reports zone outline with fewer than three corners");
+
+  ccad::Project zone_outside = validBoardProject();
+  zone_outside.board->zones.at(0).outline.at(1).x = ccad::millimeters(99);
+  require(hasCode(ccad::runDrc(zone_outside), "ZONE_OUTSIDE_BOARD"),
+          "drc reports zone outside board");
+
+  ccad::Project invalid_zone_clearance = validBoardProject();
+  invalid_zone_clearance.board->zones.at(0).clearance = ccad::nanometers(0);
+  require(hasCode(ccad::runDrc(invalid_zone_clearance), "INVALID_ZONE_CLEARANCE"),
+          "drc reports non-positive zone clearance");
+
+  ccad::Project invalid_zone_min_thickness = validBoardProject();
+  invalid_zone_min_thickness.board->zones.at(0).min_thickness = ccad::nanometers(0);
+  require(hasCode(ccad::runDrc(invalid_zone_min_thickness), "INVALID_ZONE_MIN_THICKNESS"),
+          "drc reports non-positive zone minimum thickness");
+
+  ccad::Project invalid_zone_pad_connection = validBoardProject();
+  invalid_zone_pad_connection.board->zones.at(0).pad_connection = "mystery";
+  require(hasCode(ccad::runDrc(invalid_zone_pad_connection), "INVALID_ZONE_PAD_CONNECTION"),
+          "drc reports unsupported zone pad connection mode");
 
   ccad::Project duplicate_layer = validBoardProject();
   duplicate_layer.board->layers.push_back(duplicate_layer.board->layers.front());

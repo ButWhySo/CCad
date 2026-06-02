@@ -108,6 +108,23 @@ int main() {
                          .height = ccad::millimeters(1.5)}
   });
 
+  // Add a copper zone
+  board.zones.push_back(ccad::BoardZone{
+      .id = "Z_GND",
+      .name = "GND copper",
+      .net_id = "GND",
+      .layer_ids = {"F.Cu"},
+      .outline = {ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(2)},
+                  ccad::Point{.x = ccad::millimeters(40), .y = ccad::millimeters(2)},
+                  ccad::Point{.x = ccad::millimeters(40), .y = ccad::millimeters(30)},
+                  ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(30)}},
+      .priority = 1,
+      .clearance = ccad::millimeters(0.2),
+      .min_thickness = ccad::millimeters(0.25),
+      .fill_enabled = true,
+      .pad_connection = "thermal",
+  });
+
   // Add a keepout
   board.keepouts.push_back(ccad::Keepout{
       .id = "keepout1",
@@ -171,6 +188,15 @@ int main() {
   require(exported.find("(gr_line (start 3.000000 4.000000) (end 16.000000 4.000000) (stroke (width 0.150000) (type solid)) (layer \"Dwgs.User\"))") != std::string::npos, "Board graphic line exports");
   require(exported.find("(gr_text \"Bridge rectifier\" (at 8.000000 22.000000 90.000000) (layer \"F.SilkS\")") != std::string::npos, "Board text exports");
   require(exported.find("(effects (font (size 1.500000 1.500000) (thickness 0.150000)))") != std::string::npos, "Board text effects export");
+
+  // Zone details
+  require(exported.find("(zone (net 1) (net_name \"GND\") (layer \"F.Cu\")") != std::string::npos, "Board zone exports net and layer");
+  require(exported.find("(name \"GND copper\")") != std::string::npos, "Board zone name exports");
+  require(exported.find("(priority 1)") != std::string::npos, "Board zone priority exports");
+  require(exported.find("(connect_pads (clearance 0.200000))") != std::string::npos, "Board zone pad connection exports");
+  require(exported.find("(min_thickness 0.250000)") != std::string::npos, "Board zone min thickness exports");
+  require(exported.find("(polygon (pts (xy 2.000000 2.000000) (xy 40.000000 2.000000) (xy 40.000000 30.000000) (xy 2.000000 30.000000)))") != std::string::npos, "Board zone outline exports");
+  require(exported.find("(filled_polygon (layer \"F.Cu\") (pts (xy 2.000000 2.000000) (xy 40.000000 2.000000) (xy 40.000000 30.000000) (xy 2.000000 30.000000)))") != std::string::npos, "Board zone filled preview exports");
 
   // Keepout details
   require(exported.find("(keepout (tracks not_allowed) (vias not_allowed) (pads not_allowed) (copperareas not_allowed))") != std::string::npos, "Keepout rules match");

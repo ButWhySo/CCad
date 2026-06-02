@@ -198,9 +198,35 @@ std::string pcbRegionObjectJson(const std::string& type, const std::string& id,
   return out.str();
 }
 
+std::string pcbBoardZoneObjectJson(const ccad::BoardZone& zone) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"object\": {\n"
+      << "    \"type\": \"zone\",\n"
+      << "    \"id\": \"" << ccad::escapeJson(zone.id) << "\",\n"
+      << "    \"name\": \"" << ccad::escapeJson(zone.name) << "\",\n"
+      << "    \"net_id\": \"" << ccad::escapeJson(zone.net_id) << "\",\n"
+      << "    \"layer_ids\": [";
+  for (std::size_t i = 0; i < zone.layer_ids.size(); ++i) {
+    if (i > 0) out << ", ";
+    out << "\"" << ccad::escapeJson(zone.layer_ids.at(i)) << "\"";
+  }
+  out << "],\n"
+      << "    \"corner_count\": " << zone.outline.size() << ",\n"
+      << "    \"priority\": " << zone.priority << ",\n"
+      << "    \"clearance_nm\": " << zone.clearance.nanometers << ",\n"
+      << "    \"min_thickness_nm\": " << zone.min_thickness.nanometers << ",\n"
+      << "    \"fill_enabled\": " << (zone.fill_enabled ? "true" : "false") << ",\n"
+      << "    \"pad_connection\": \"" << ccad::escapeJson(zone.pad_connection) << "\"\n"
+      << "  }\n"
+      << "}\n";
+  return out.str();
+}
+
 void requireKnownPcbObjectType(const std::string& type) {
   if (type.empty() || type == "layer" || type == "pad" || type == "via" || type == "track" ||
-      type == "graphic" || type == "text" || type == "keepout" || type == "placement_region") {
+      type == "graphic" || type == "text" || type == "zone" || type == "keepout" ||
+      type == "placement_region") {
     return;
   }
   throw std::runtime_error("unknown object type: " + type);
@@ -285,6 +311,22 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
           << "\", \"layer_id\": \"" << ccad::escapeJson(text.layer_id)
           << "\", \"text\": \"" << ccad::escapeJson(text.text)
           << "\", \"rotation_degrees\": " << text.rotation_degrees << "}";
+      add_row(row);
+    }
+  }
+  if (includeObjectType(type_filter, "zone")) {
+    for (const ccad::BoardZone& zone : board.zones) {
+      std::ostringstream row;
+      row << "    {\"type\": \"zone\", \"id\": \"" << ccad::escapeJson(zone.id)
+          << "\", \"name\": \"" << ccad::escapeJson(zone.name)
+          << "\", \"net_id\": \"" << ccad::escapeJson(zone.net_id)
+          << "\", \"layer_ids\": [";
+      for (std::size_t i = 0; i < zone.layer_ids.size(); ++i) {
+        if (i > 0) row << ", ";
+        row << "\"" << ccad::escapeJson(zone.layer_ids.at(i)) << "\"";
+      }
+      row << "], \"corner_count\": " << zone.outline.size()
+          << ", \"priority\": " << zone.priority << "}";
       add_row(row);
     }
   }
@@ -479,6 +521,7 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
       << "      \"track_count\": " << board.tracks.size() << ",\n"
       << "      \"graphic_count\": " << board.graphics.size() << ",\n"
       << "      \"text_count\": " << board.texts.size() << ",\n"
+      << "      \"zone_count\": " << board.zones.size() << ",\n"
       << "      \"keepout_count\": " << board.keepouts.size() << ",\n"
       << "      \"placement_region_count\": " << board.placement_regions.size() << ",\n"
       << "      \"route_request_count\": " << route_requests.size() << "\n"
@@ -570,6 +613,25 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
         << keepout.area.size.width.nanometers << ", \"height_nm\": "
         << keepout.area.size.height.nanometers << "}"
         << (i + 1 == board.keepouts.size() ? "" : ",") << '\n';
+  }
+  out << "    ],\n"
+      << "    \"zones\": [\n";
+  for (std::size_t i = 0; i < board.zones.size(); ++i) {
+    const ccad::BoardZone& zone = board.zones.at(i);
+    out << "      {\"id\": \"" << ccad::escapeJson(zone.id) << "\", \"name\": \""
+        << ccad::escapeJson(zone.name) << "\", \"net_id\": \""
+        << ccad::escapeJson(zone.net_id) << "\", \"layer_ids\": [";
+    for (std::size_t layer_index = 0; layer_index < zone.layer_ids.size(); ++layer_index) {
+      if (layer_index > 0) out << ", ";
+      out << "\"" << ccad::escapeJson(zone.layer_ids.at(layer_index)) << "\"";
+    }
+    out << "], \"corner_count\": " << zone.outline.size()
+        << ", \"priority\": " << zone.priority << ", \"clearance_nm\": "
+        << zone.clearance.nanometers << ", \"min_thickness_nm\": "
+        << zone.min_thickness.nanometers << ", \"fill_enabled\": "
+        << (zone.fill_enabled ? "true" : "false") << ", \"pad_connection\": \""
+        << ccad::escapeJson(zone.pad_connection) << "\"}"
+        << (i + 1 == board.zones.size() ? "" : ",") << '\n';
   }
   out << "    ],\n"
       << "    \"placement_regions\": [\n";

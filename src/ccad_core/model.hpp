@@ -109,6 +109,19 @@ struct BoardText {
   Size size;
 };
 
+struct BoardZone {
+  std::string id;
+  std::string name;
+  std::string net_id;
+  std::vector<std::string> layer_ids;
+  std::vector<Point> outline;
+  int priority = 0;
+  Length clearance;
+  Length min_thickness;
+  bool fill_enabled = true;
+  std::string pad_connection;
+};
+
 struct RouteRequest {
   std::string id;
   std::string net_id;
@@ -142,6 +155,7 @@ struct Board {
   std::vector<TrackSegment> tracks;
   std::vector<BoardGraphic> graphics;
   std::vector<BoardText> texts;
+  std::vector<BoardZone> zones;
   std::vector<RouteRequest> route_requests;
 };
 

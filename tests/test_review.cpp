@@ -47,6 +47,7 @@ ccad::Project validProject() {
       .tracks = {},
       .graphics = {},
       .texts = {},
+      .zones = {},
       .route_requests = {},
   };
   return project;

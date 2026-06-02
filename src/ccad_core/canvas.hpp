@@ -141,6 +141,20 @@ struct CanvasPolygon {
   std::string fill_type;
 };
 
+struct CanvasZone {
+  std::string id;
+  std::string name;
+  std::string net_id;
+  std::vector<std::string> layer_ids;
+  std::vector<double> pts_x_units;
+  std::vector<double> pts_y_units;
+  int priority = 0;
+  double clearance_units = 0.0;
+  double min_thickness_units = 0.0;
+  bool fill_enabled = true;
+  std::string pad_connection;
+};
+
 struct CanvasText {
   std::string id;
   std::string layer_id;
@@ -173,6 +187,7 @@ struct CanvasScene {
   std::vector<CanvasCircle> circles;
   std::vector<CanvasPolygon> polygons;
   std::vector<CanvasText> texts;
+  std::vector<CanvasZone> zones;
 
   std::vector<CanvasComponent> components;
   std::vector<CanvasWire> wires;

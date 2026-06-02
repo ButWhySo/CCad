@@ -73,6 +73,7 @@ ccad::Project baseProject() {
                                     .width = ccad::millimeters(0.25)}},
       .graphics = {},
       .texts = {},
+      .zones = {},
       .route_requests = {},
   };
   return project;
@@ -270,6 +271,35 @@ int main() {
   removed_text.board->texts.clear();
   const ccad::ProjectDiff removed_text_diff = ccad::diffProjects(added_text, removed_text);
   require(hasEntry(removed_text_diff, "removed", "text", "BT1"), "removed text entry");
+
+  ccad::Project added_zone = baseProject();
+  added_zone.board->zones.push_back(ccad::BoardZone{
+      .id = "Z1",
+      .name = "GND copper",
+      .net_id = "N_3V3",
+      .layer_ids = {"F.Cu"},
+      .outline = {ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(2)},
+                  ccad::Point{.x = ccad::millimeters(20), .y = ccad::millimeters(2)},
+                  ccad::Point{.x = ccad::millimeters(20), .y = ccad::millimeters(12)},
+                  ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(12)}},
+      .priority = 1,
+      .clearance = ccad::millimeters(0.2),
+      .min_thickness = ccad::millimeters(0.25),
+      .fill_enabled = true,
+      .pad_connection = "thermal",
+  });
+  const ccad::ProjectDiff added_zone_diff = ccad::diffProjects(baseProject(), added_zone);
+  require(hasEntry(added_zone_diff, "added", "zone", "Z1"), "added zone entry");
+
+  ccad::Project changed_zone = added_zone;
+  changed_zone.board->zones.at(0).priority = 4;
+  const ccad::ProjectDiff changed_zone_diff = ccad::diffProjects(added_zone, changed_zone);
+  require(hasEntry(changed_zone_diff, "changed", "zone", "Z1"), "changed zone entry");
+
+  ccad::Project removed_zone = added_zone;
+  removed_zone.board->zones.clear();
+  const ccad::ProjectDiff removed_zone_diff = ccad::diffProjects(added_zone, removed_zone);
+  require(hasEntry(removed_zone_diff, "removed", "zone", "Z1"), "removed zone entry");
 
   ccad::Project added_route_request = baseProject();
   added_route_request.board->route_requests.push_back(ccad::RouteRequest{

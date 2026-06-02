@@ -236,6 +236,33 @@ void SelectionInspectorPanel::renderSelection(const std::optional<ccad::Board>& 
         return;
       }
     }
+  } else if (lowerType == "zone") {
+    for (const auto& zone : board->zones) {
+      if (QString::fromStdString(zone.id) == id) {
+        title_->setText("Zone " + id);
+        detail_->setText("Copper zone outline and fill settings.");
+        clearExtraRows();
+        QString layers;
+        for (std::size_t i = 0; i < zone.layer_ids.size(); ++i) {
+          if (i > 0) {
+            layers += ",";
+          }
+          layers += QString::fromStdString(zone.layer_ids.at(i));
+        }
+        setRow("Type", "zone");
+        setRow("ID", id);
+        setRow("Name", zone.name.empty() ? "--" : QString::fromStdString(zone.name));
+        setRow("Net", zone.net_id.empty() ? "--" : QString::fromStdString(zone.net_id));
+        setRow("Layers", layers.isEmpty() ? "--" : layers);
+        setRow("Corners", QString::number(static_cast<int>(zone.outline.size())));
+        setRow("Priority", QString::number(zone.priority));
+        setRow("Clearance", formatLength(zone.clearance));
+        setRow("Min Thickness", formatLength(zone.min_thickness));
+        setRow("Fill", zone.fill_enabled ? "enabled" : "disabled");
+        setRow("Pad Connection", QString::fromStdString(zone.pad_connection));
+        return;
+      }
+    }
   } else if (lowerType == "text") {
     for (const auto& text : board->texts) {
       if (QString::fromStdString(text.id) == id) {

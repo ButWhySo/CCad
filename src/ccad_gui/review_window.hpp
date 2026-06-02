@@ -35,6 +35,7 @@ enum class InteractionMode {
   MoveFootprint,
   AddVia,
   RouteTrack,
+  AddZone,
   AddKeepout,
   DrawGraphic,
   PlaceText
@@ -63,6 +64,8 @@ class ReviewWindow final : public QMainWindow {
   QString commitViaPlacementForAutomation(double x_mm, double y_mm);
   QString commitTrackPlacementForAutomation(double start_x_mm, double start_y_mm,
                                             double end_x_mm, double end_y_mm);
+  QString commitZonePlacementForAutomation(double start_x_mm, double start_y_mm,
+                                           double end_x_mm, double end_y_mm);
   QString commitKeepoutPlacementForAutomation(double start_x_mm, double start_y_mm,
                                               double end_x_mm, double end_y_mm);
   QString commitGraphicLinePlacementForAutomation(double start_x_mm, double start_y_mm,
@@ -95,6 +98,7 @@ class ReviewWindow final : public QMainWindow {
   void enterMoveFootprintMode(const std::string& component_id);
   void enterAddViaMode();
   void enterRouteTrackMode();
+  void enterAddZoneMode();
   void enterAddKeepoutMode();
   void enterDrawGraphicMode();
   void enterPlaceTextMode(const QString& text);

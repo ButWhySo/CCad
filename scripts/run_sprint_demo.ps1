@@ -288,6 +288,7 @@ Invoke-Ccad pcb apply-route-polyline --file $Project --request-id RR_NEG --track
 Invoke-Ccad pcb route-status --file $Project | Set-Content -Encoding UTF8 $RouteStatus
 Invoke-Ccad pcb add-placement-region --file $Project --id PR1 --kind component --x-mm 11 --y-mm 4 --width-mm 12 --height-mm 8
 Invoke-Ccad pcb add-keepout --file $Project --id K1 --kind placement --x-mm 38 --y-mm 26 --width-mm 4 --height-mm 3
+Invoke-Ccad pcb add-zone --file $Project --id Z_DC_NEG --name "DC negative copper pour" --net DC_NEG --layers B.Cu --x-mm 6 --y-mm 20 --width-mm 32 --height-mm 8 --priority 1 --clearance-mm 0.20 --min-thickness-mm 0.25 --pad-connection thermal
 
 Invoke-Ccad inspect $Project | Set-Content -Encoding UTF8 $Inspect
 Invoke-Ccad validate $Project | Set-Content -Encoding UTF8 $Validate

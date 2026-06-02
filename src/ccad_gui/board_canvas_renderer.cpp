@@ -314,6 +314,50 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     tagObject(*item, "keepout", qstr(keepout.id), theme.keepout_color);
   }
 
+  for (const ccad::CanvasZone& zone : scene.zones) {
+    if (zone.pts_x_units.size() < 3 || zone.pts_x_units.size() != zone.pts_y_units.size()) {
+      continue;
+    }
+    std::string visible_layer;
+    for (const std::string& layer_id : zone.layer_ids) {
+      if (layerIsVisible(hidden_layers, layer_id)) {
+        visible_layer = layer_id;
+        break;
+      }
+    }
+    if (visible_layer.empty()) {
+      continue;
+    }
+
+    QPolygonF polygon;
+    for (std::size_t index = 0; index < zone.pts_x_units.size(); ++index) {
+      polygon << QPointF(sceneX(scene, zone.pts_x_units.at(index), margin, scale),
+                         sceneY(scene, zone.pts_y_units.at(index), margin, scale));
+    }
+    QPainterPath zone_path;
+    zone_path.addPolygon(polygon);
+    zone_path.closeSubpath();
+
+    QString layers_str;
+    for (const std::string& layer_id : zone.layer_ids) {
+      layers_str += qstr(layer_id) + ",";
+    }
+    if (!layers_str.isEmpty()) {
+      layers_str.chop(1);
+    }
+
+    const QColor zone_color = colorForKiCadLayer(theme, visible_layer);
+    QPen zone_pen(zone_color.lighter(135),
+                  std::max(1.0, zone.min_thickness_units * scale));
+    zone_pen.setJoinStyle(Qt::RoundJoin);
+    QBrush zone_brush(zone.fill_enabled
+                          ? QColor(zone_color.red(), zone_color.green(), zone_color.blue(), 64)
+                          : QColor(Qt::transparent));
+    auto* item = addHighlightPath(canvas_scene, zone_path, zone_pen, zone_brush);
+    item->setToolTip("Zone " + qstr(zone.id) + " " + layers_str);
+    tagObject(*item, "zone", qstr(zone.id), zone_color, qstr(zone.net_id), layers_str);
+  }
+
   QPen track_pen(theme.track_color);
   track_pen.setCapStyle(Qt::RoundCap);
   for (const ccad::CanvasTrack& track : scene.tracks) {

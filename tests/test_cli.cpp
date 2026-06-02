@@ -569,6 +569,23 @@ int main() {
   require(keepout_json.find("\"width_nm\": 4000000") != std::string::npos,
           "pcb add-keepout writes width");
 
+  const std::string add_zone_command =
+      quote(CCAD_BINARY) + " pcb add-zone --file " + quote(board_project_path) +
+      " --id Z1 --name \"GND copper\" --net N1 --layers F.Cu"
+      " --x-mm 2 --y-mm 2 --width-mm 20 --height-mm 12"
+      " --priority 1 --clearance-mm 0.2 --min-thickness-mm 0.25"
+      " --pad-connection thermal";
+  require(run(add_zone_command) == 0, "pcb add-zone exits zero");
+  const std::string zone_json = readFile(board_project_path);
+  require(zone_json.find("\"zones\"") != std::string::npos, "pcb add-zone writes zones");
+  require(zone_json.find("\"id\": \"Z1\"") != std::string::npos, "pcb add-zone writes id");
+  require(zone_json.find("\"name\": \"GND copper\"") != std::string::npos,
+          "pcb add-zone writes name");
+  require(zone_json.find("\"net_id\": \"N1\"") != std::string::npos,
+          "pcb add-zone writes net");
+  require(zone_json.find("\"pad_connection\": \"thermal\"") != std::string::npos,
+          "pcb add-zone writes pad connection");
+
   const std::string add_placement_region_command =
       quote(CCAD_BINARY) + " pcb add-placement-region --file " + quote(board_project_path) +
       " --id PR1 --kind component --x-mm 2 --y-mm 3 --width-mm 10 --height-mm 6";
@@ -609,6 +626,19 @@ int main() {
   require(pad_lookup_json.find("\"width_nm\": 1500000") != std::string::npos,
           "pcb get-object writes pad width");
 
+  const std::filesystem::path zone_lookup_path = temp / "zone-lookup.json";
+  const std::string zone_lookup_command =
+      quote(CCAD_BINARY) + " pcb get-object --file " + quote(board_project_path) +
+      " --id Z1 > " + quote(zone_lookup_path);
+  require(run(zone_lookup_command) == 0, "pcb get-object finds zone");
+  const std::string zone_lookup_json = readFile(zone_lookup_path);
+  require(zone_lookup_json.find("\"type\": \"zone\"") != std::string::npos,
+          "pcb get-object writes zone type");
+  require(zone_lookup_json.find("\"name\": \"GND copper\"") != std::string::npos,
+          "pcb get-object writes zone name");
+  require(zone_lookup_json.find("\"layer_ids\"") != std::string::npos,
+          "pcb get-object writes zone layer set");
+
   const std::string missing_lookup_command =
       quote(CCAD_BINARY) + " pcb get-object --file " + quote(board_project_path) +
       " --id MISSING";
@@ -622,7 +652,7 @@ int main() {
   const std::string list_objects_json = readFile(list_objects_path);
   require(list_objects_json.find("\"summary\": {") != std::string::npos,
           "pcb list-objects writes summary");
-  require(list_objects_json.find("\"total\": 9") != std::string::npos,
+  require(list_objects_json.find("\"total\": 10") != std::string::npos,
           "pcb list-objects reports total");
   require(list_objects_json.find("\"type\": \"layer\"") != std::string::npos,
           "pcb list-objects includes layers");
@@ -647,6 +677,19 @@ int main() {
           "pcb list-objects filtered output includes track");
   require(list_tracks_json.find("\"type\": \"pad\"") == std::string::npos,
           "pcb list-objects filtered output excludes pad");
+
+  const std::filesystem::path list_zones_path = temp / "list-zones.json";
+  const std::string list_zones_command =
+      quote(CCAD_BINARY) + " pcb list-objects --file " + quote(board_project_path) +
+      " --type zone > " + quote(list_zones_path);
+  require(run(list_zones_command) == 0, "pcb list-objects filters zones by type");
+  const std::string list_zones_json = readFile(list_zones_path);
+  require(list_zones_json.find("\"total\": 1") != std::string::npos,
+          "pcb list-objects zone summary reports one zone");
+  require(list_zones_json.find("\"type\": \"zone\"") != std::string::npos,
+          "pcb list-objects zone output includes zone");
+  require(list_zones_json.find("\"id\": \"Z1\"") != std::string::npos,
+          "pcb list-objects zone output includes zone id");
 
   const std::string bad_list_objects_command =
       quote(CCAD_BINARY) + " pcb list-objects --file " + quote(board_project_path) +
@@ -720,6 +763,8 @@ int main() {
           "pcb export-route-job reports request count");
   require(route_job_json.find("\"keepout_count\": 1") != std::string::npos,
           "pcb export-route-job reports keepout count");
+  require(route_job_json.find("\"zone_count\": 1") != std::string::npos,
+          "pcb export-route-job reports zone count");
   require(route_job_json.find("\"placement_region_count\": 1") != std::string::npos,
           "pcb export-route-job reports placement region count");
   require(route_job_json.find("\"board_outline\"") != std::string::npos,
@@ -728,6 +773,8 @@ int main() {
           "pcb export-route-job includes physical objects");
   require(route_job_json.find("\"keepouts\"") != std::string::npos,
           "pcb export-route-job includes keepouts");
+  require(route_job_json.find("\"zones\"") != std::string::npos,
+          "pcb export-route-job includes zones");
   require(route_job_json.find("\"placement_regions\"") != std::string::npos,
           "pcb export-route-job includes placement regions");
   require(route_job_json.find("\"route_requests\"") != std::string::npos,
@@ -760,6 +807,7 @@ int main() {
 
   require(run(add_pad_command) != 0, "pcb add-pad rejects duplicate id");
   require(run(add_keepout_command) != 0, "pcb add-keepout rejects duplicate id");
+  require(run(add_zone_command) != 0, "pcb add-zone rejects duplicate id");
   require(run(add_placement_region_command) != 0,
           "pcb add-placement-region rejects duplicate id");
 
@@ -956,6 +1004,12 @@ int main() {
   const std::string remove_add_keepout_command =
       quote(CCAD_BINARY) + " pcb add-keepout --file " + quote(remove_board_path) +
       " --id RK1 --kind placement --x-mm 20 --y-mm 10 --width-mm 4 --height-mm 3";
+  const std::string remove_add_zone_command =
+      quote(CCAD_BINARY) + " pcb add-zone --file " + quote(remove_board_path) +
+      " --id RZ1 --name \"Remove zone\" --net N1 --layers F.Cu"
+      " --x-mm 3 --y-mm 3 --width-mm 12 --height-mm 8"
+      " --priority 1 --clearance-mm 0.2 --min-thickness-mm 0.25"
+      " --pad-connection thermal";
   const std::string remove_add_region_command =
       quote(CCAD_BINARY) + " pcb add-placement-region --file " + quote(remove_board_path) +
       " --id RPR1 --kind component --x-mm 2 --y-mm 3 --width-mm 10 --height-mm 6";
@@ -963,6 +1017,7 @@ int main() {
   require(run(remove_add_via_command) == 0, "remove fixture add via exits zero");
   require(run(remove_add_track_command) == 0, "remove fixture add track exits zero");
   require(run(remove_add_keepout_command) == 0, "remove fixture add keepout exits zero");
+  require(run(remove_add_zone_command) == 0, "remove fixture add zone exits zero");
   require(run(remove_add_region_command) == 0, "remove fixture add placement region exits zero");
 
   const std::string remove_pad_command =
@@ -977,6 +1032,9 @@ int main() {
   const std::string remove_keepout_command =
       quote(CCAD_BINARY) + " pcb remove-object --file " + quote(remove_board_path) +
       " --id RK1";
+  const std::string remove_zone_command =
+      quote(CCAD_BINARY) + " pcb remove-object --file " + quote(remove_board_path) +
+      " --id RZ1";
   const std::string remove_region_command =
       quote(CCAD_BINARY) + " pcb remove-object --file " + quote(remove_board_path) +
       " --id RPR1";
@@ -984,6 +1042,7 @@ int main() {
   require(run(remove_via_command) == 0, "pcb remove-object removes via");
   require(run(remove_track_command) == 0, "pcb remove-object removes track");
   require(run(remove_keepout_command) == 0, "pcb remove-object removes keepout");
+  require(run(remove_zone_command) == 0, "pcb remove-object removes zone");
   require(run(remove_region_command) == 0, "pcb remove-object removes placement region");
   const std::string removed_objects_json = readFile(remove_board_path);
   require(removed_objects_json.find("\"id\": \"RP1\"") == std::string::npos,
@@ -994,6 +1053,8 @@ int main() {
           "pcb remove-object deletes track id");
   require(removed_objects_json.find("\"id\": \"RK1\"") == std::string::npos,
           "pcb remove-object deletes keepout id");
+  require(removed_objects_json.find("\"id\": \"RZ1\"") == std::string::npos,
+          "pcb remove-object deletes zone id");
   require(removed_objects_json.find("\"id\": \"RPR1\"") == std::string::npos,
           "pcb remove-object deletes placement region id");
   require(run(remove_pad_command) != 0, "pcb remove-object rejects missing object");
