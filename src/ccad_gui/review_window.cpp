@@ -783,20 +783,23 @@ ReviewWindow::ReviewWindow() {
   left_toolbar->setToolButtonStyle(Qt::ToolButtonIconOnly);
   left_toolbar->setIconSize(QSize(24, 24));
   addToolBar(Qt::LeftToolBarArea, left_toolbar);
-  addIconAction(*left_toolbar, "grid", "Toggle Grid");
-  addIconAction(*left_toolbar, "polar_coord", "Polar Coordinates");
+  auto* toggle_grid_action = addIconAction(*left_toolbar, "grid", "Toggle Grid");
+  auto* polar_coordinates_action =
+      addIconAction(*left_toolbar, "polar_coord", "Polar Coordinates");
   left_toolbar->addSeparator();
-  addIconAction(*left_toolbar, "unit_inch", "Toggle Units");
+  auto* toggle_units_action = addIconAction(*left_toolbar, "unit_inch", "Toggle Units");
   left_toolbar->addSeparator();
-  addIconAction(*left_toolbar, "cursor_shape", "Crosshair Cursor");
+  auto* crosshair_cursor_action =
+      addIconAction(*left_toolbar, "cursor_shape", "Crosshair Cursor");
   left_toolbar->addSeparator();
-  addIconAction(*left_toolbar, "show_ratsnest", "Show Ratsnest");
-  addIconAction(*left_toolbar, "net_highlight", "Net Highlight");
+  auto* show_ratsnest_action = addIconAction(*left_toolbar, "show_ratsnest", "Show Ratsnest");
+  auto* net_highlight_action = addIconAction(*left_toolbar, "net_highlight", "Net Highlight");
   left_toolbar->addSeparator();
-  addIconAction(*left_toolbar, "contrast_mode", "Display Modes");
+  auto* display_modes_action = addIconAction(*left_toolbar, "contrast_mode", "Display Modes");
   left_toolbar->addSeparator();
-  addIconAction(*left_toolbar, "layers_manager", "Show Layers");
-  addIconAction(*left_toolbar, "part_properties", "Show Properties");
+  auto* show_layers_action = addIconAction(*left_toolbar, "layers_manager", "Show Layers");
+  auto* show_properties_action =
+      addIconAction(*left_toolbar, "part_properties", "Show Properties");
 
   auto* right_toolbar = new QToolBar("Right Toolbar", this);
   right_toolbar->setMovable(false);
@@ -843,6 +846,15 @@ ReviewWindow::ReviewWindow() {
   bind_future_tool(draw_graphic_action, "action:add_graphical_segments", "Draw Graphic");
   bind_future_tool(place_text_action, "action:text", "Place Text");
   bind_future_tool(delete_action, "action:delete_cursor", "Delete");
+  bind_future_tool(toggle_grid_action, "action:grid", "Toggle Grid");
+  bind_future_tool(polar_coordinates_action, "action:polar_coord", "Polar Coordinates");
+  bind_future_tool(toggle_units_action, "action:unit_inch", "Toggle Units");
+  bind_future_tool(crosshair_cursor_action, "action:cursor_shape", "Crosshair Cursor");
+  bind_future_tool(show_ratsnest_action, "action:show_ratsnest", "Show Ratsnest");
+  bind_future_tool(net_highlight_action, "action:net_highlight", "Net Highlight");
+  bind_future_tool(display_modes_action, "action:contrast_mode", "Display Modes");
+  bind_future_tool(show_layers_action, "action:layers_manager", "Show Layers");
+  bind_future_tool(show_properties_action, "action:part_properties", "Show Properties");
 
   connect(add_footprint_action, &QAction::triggered, this, [this]() { placeFromActiveEditor(); });
   connect(add_symbol_action, &QAction::triggered, this, [this]() { placeFromActiveEditor(); });
@@ -1921,7 +1933,11 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
   const QStringList future_tool_ids = {"action:add_tracks", "action:add_via",
                                        "action:add_zone", "action:add_keepout_area",
                                        "action:add_graphical_segments", "action:text",
-                                       "action:delete_cursor"};
+                                       "action:delete_cursor", "action:grid",
+                                       "action:polar_coord", "action:unit_inch",
+                                       "action:cursor_shape", "action:show_ratsnest",
+                                       "action:net_highlight", "action:contrast_mode",
+                                       "action:layers_manager", "action:part_properties"};
   const QStringList unsafe_action_ids = {"action:open", "action:reload", "action:save",
                                          "action:board_setup", "action:undo", "action:redo",
                                          "action:run_drc", "action:export_drc",

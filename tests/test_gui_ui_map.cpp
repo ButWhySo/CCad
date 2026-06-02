@@ -205,6 +205,14 @@ int main(int argc, char** argv) {
   require(contains(future_tool, "\"label\":\"Route Track\""),
           "future toolbar action reports user-facing label");
 
+  const QString left_future_tool = window.triggerSafeUiActionJson("action:grid");
+  require(contains(left_future_tool, "\"performed\":false"),
+          "left toolbar future action is not silent");
+  require(contains(left_future_tool, "\"reason\":\"future_tool_not_implemented\""),
+          "left toolbar future action reports planned-tool reason");
+  require(contains(left_future_tool, "\"label\":\"Toggle Grid\""),
+          "left toolbar future action reports user-facing label");
+
   const QString unknown_action = window.triggerSafeUiActionJson("action:nope");
   require(contains(unknown_action, "\"performed\":false"), "unknown action is refused");
   require(contains(unknown_action, "\"reason\":\"unknown_or_not_allowlisted\""),
