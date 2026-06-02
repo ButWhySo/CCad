@@ -213,6 +213,31 @@ int main(int argc, char** argv) {
   require(contains(left_future_tool, "\"label\":\"Toggle Grid\""),
           "left toolbar future action reports user-facing label");
 
+  const QString hide_layers = window.triggerSafeUiActionJson("action:layers_manager");
+  require(contains(hide_layers, "\"performed\":true"), "show layers action toggles panel");
+  require(contains(hide_layers, "\"reason\":\"panel_toggled\""),
+          "show layers action reports panel toggle");
+  require(contains(window.uiTargetJsonById("panel:layers_objects"), "\"visible\":false"),
+          "show layers action hides layers/object panel");
+
+  const QString show_layers = window.triggerSafeUiActionJson("action:layers_manager");
+  require(contains(show_layers, "\"performed\":true"), "show layers action toggles panel back");
+  require(contains(window.uiTargetJsonById("panel:layers_objects"), "\"visible\":true"),
+          "show layers action shows layers/object panel");
+
+  const QString hide_properties = window.triggerSafeUiActionJson("action:part_properties");
+  require(contains(hide_properties, "\"performed\":true"), "show properties action toggles panel");
+  require(contains(hide_properties, "\"reason\":\"panel_toggled\""),
+          "show properties action reports panel toggle");
+  require(contains(window.uiTargetJsonById("panel:properties"), "\"visible\":false"),
+          "show properties action hides properties panel");
+
+  const QString show_properties = window.triggerSafeUiActionJson("action:part_properties");
+  require(contains(show_properties, "\"performed\":true"),
+          "show properties action toggles panel back");
+  require(contains(window.uiTargetJsonById("panel:properties"), "\"visible\":true"),
+          "show properties action shows properties panel");
+
   const QString unknown_action = window.triggerSafeUiActionJson("action:nope");
   require(contains(unknown_action, "\"performed\":false"), "unknown action is refused");
   require(contains(unknown_action, "\"reason\":\"unknown_or_not_allowlisted\""),
