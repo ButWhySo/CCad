@@ -214,12 +214,39 @@ int main(int argc, char** argv) {
   require(contains(unsafe, "\"reason\":\"unsafe_action_requires_human_or_kernel_tool\""),
           "unsafe action reports reason");
 
-  const QString future_tool = window.triggerSafeUiActionJson("action:add_tracks");
-  require(contains(future_tool, "\"performed\":false"), "future toolbar action is not silent");
+  const QString route_tool = window.triggerSafeUiActionJson("action:add_tracks");
+  require(contains(route_tool, "\"performed\":true"), "route-track tool enters edit mode");
+  require(contains(route_tool, "\"reason\":\"editor_tool_selected\""),
+          "route-track tool reports real editor-tool selection");
+  require(contains(route_tool, "\"mode\":\"route_track\""),
+          "route-track tool reports selected mode");
+
+  const QString via_tool = window.triggerSafeUiActionJson("action:add_via");
+  require(contains(via_tool, "\"performed\":true"), "add-via tool enters edit mode");
+  require(contains(via_tool, "\"mode\":\"add_via\""), "add-via tool reports selected mode");
+
+  const QString keepout_tool = window.triggerSafeUiActionJson("action:add_keepout_area");
+  require(contains(keepout_tool, "\"performed\":true"), "add-keepout tool enters edit mode");
+  require(contains(keepout_tool, "\"mode\":\"add_keepout\""),
+          "add-keepout tool reports selected mode");
+
+  const QString delete_selected = window.triggerSafeUiActionJson("action:delete_cursor");
+  require(contains(delete_selected, "\"performed\":true"),
+          "delete action removes the selected board object");
+  require(contains(delete_selected, "\"reason\":\"deleted\""),
+          "delete action reports deletion");
+  require(contains(delete_selected, "\"deleted_type\":\"pad\""),
+          "delete action reports deleted object type");
+  require(!contains(window.uiMapJson(), "\"id\":\"canvas_object:U1.1\""),
+          "UI map drops the deleted pad");
+
+  const QString future_tool = window.triggerSafeUiActionJson("action:add_zone");
+  require(contains(future_tool, "\"performed\":false"),
+          "unsupported zone toolbar action is still not silent");
   require(contains(future_tool, "\"reason\":\"future_tool_not_implemented\""),
-          "future toolbar action reports planned-tool reason");
-  require(contains(future_tool, "\"label\":\"Route Track\""),
-          "future toolbar action reports user-facing label");
+          "unsupported zone toolbar action reports planned-tool reason");
+  require(contains(future_tool, "\"label\":\"Add Zone\""),
+          "unsupported zone toolbar action reports user-facing label");
 
   const QString grid_toggle = window.triggerSafeUiActionJson("action:grid");
   require(contains(grid_toggle, "\"performed\":true"), "grid toolbar action performs");
@@ -308,5 +335,36 @@ int main(int argc, char** argv) {
       window.commitFootprintPlacementForAutomation(writeFootprintFixture(), 12.0, 10.0);
   require(contains(placement, "\"performed\":true"), "automation footprint placement succeeds");
   require(contains(placement, "\"reason\":\"placed\""), "automation placement reports placed");
-  require(contains(placement, "\"pad_count\":2"), "automation placement adds one pad");
+  require(contains(placement, "\"pad_count\":1"), "automation placement adds one pad");
+
+  const QString via = window.commitViaPlacementForAutomation(15.0, 11.0);
+  require(contains(via, "\"performed\":true"), "automation via placement succeeds");
+  require(contains(via, "\"reason\":\"placed\""), "automation via placement reports placed");
+  require(contains(via, "\"via_count\":1"), "automation via placement adds one via");
+  require(contains(window.uiMapJson(), "\"id\":\"canvas_object:V1\""),
+          "UI map exposes placed via");
+
+  const QString track = window.commitTrackPlacementForAutomation(8.0, 9.0, 15.0, 11.0);
+  require(contains(track, "\"performed\":true"), "automation track routing succeeds");
+  require(contains(track, "\"reason\":\"placed\""), "automation track routing reports placed");
+  require(contains(track, "\"track_count\":1"), "automation track routing adds one track");
+  require(contains(window.uiMapJson(), "\"id\":\"canvas_object:T1\""),
+          "UI map exposes placed track");
+
+  const QString keepout = window.commitKeepoutPlacementForAutomation(20.0, 10.0, 25.0, 14.0);
+  require(contains(keepout, "\"performed\":true"), "automation keepout placement succeeds");
+  require(contains(keepout, "\"reason\":\"placed\""),
+          "automation keepout placement reports placed");
+  require(contains(keepout, "\"keepout_count\":1"),
+          "automation keepout placement adds one keepout");
+  require(contains(window.uiMapJson(), "\"id\":\"canvas_object:K1\""),
+          "UI map exposes placed keepout");
+
+  const QString delete_via = window.deleteBoardObjectForAutomation("V1");
+  require(contains(delete_via, "\"performed\":true"), "automation delete removes via");
+  require(contains(delete_via, "\"reason\":\"deleted\""), "automation delete reports deletion");
+  require(contains(delete_via, "\"deleted_type\":\"via\""),
+          "automation delete reports deleted type");
+  require(!contains(window.uiMapJson(), "\"id\":\"canvas_object:V1\""),
+          "UI map no longer exposes deleted via");
 }
