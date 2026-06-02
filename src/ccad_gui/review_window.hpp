@@ -53,6 +53,8 @@ class ReviewWindow final : public QMainWindow {
   QString triggerSafeUiActionJson(const QString& id);
   QString activePcbLayerJson() const;
   QString setActivePcbLayerForAutomation(const QString& layer_id);
+  QString activePcbNetJson() const;
+  QString setActivePcbNetForAutomation(const QString& net_id);
   QString commitFootprintPlacementForAutomation(const std::filesystem::path& footprint_path,
                                                 double x_mm,
                                                 double y_mm);
@@ -108,6 +110,10 @@ class ReviewWindow final : public QMainWindow {
   void rebuildActiveLayerSelector();
   void updateActiveLayerStatus();
   std::string activePcbLayerOrDefault() const;
+  void syncActivePcbNetFromProject();
+  void rebuildActiveNetSelector();
+  void updateActiveNetStatus();
+  std::string activePcbNetOrDefault() const;
   void pushUndoSnapshot();
   void restoreProjectSnapshot(const ccad::Project& snapshot);
   void updateUndoRedoActions();
@@ -121,6 +127,8 @@ class ReviewWindow final : public QMainWindow {
   QLabel* tool_status_ = nullptr;
   QLabel* layer_status_ = nullptr;
   QComboBox* active_layer_selector_ = nullptr;
+  QLabel* net_status_ = nullptr;
+  QComboBox* active_net_selector_ = nullptr;
   QLabel* selection_status_ = nullptr;
   SelectionInspectorPanel* selection_inspector_ = nullptr;
   ObjectBrowserPanel* object_browser_ = nullptr;
@@ -147,6 +155,7 @@ class ReviewWindow final : public QMainWindow {
   bool high_contrast_mode_ = false;
   QString highlighted_net_id_;
   std::string active_pcb_layer_id_;
+  std::string active_pcb_net_id_;
 
   InteractionMode interaction_mode_ = InteractionMode::Default;
   std::string interaction_component_id_;

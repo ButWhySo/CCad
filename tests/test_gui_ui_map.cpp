@@ -55,6 +55,10 @@ ccad::Project uiMapProject() {
       .tracks = {},
       .route_requests = {},
   };
+  project.nets = {ccad::Net{.id = "N1",
+                            .members = {ccad::NetMember{.component_id = "U1",
+                                                        .pin_name = "1"}}},
+                  ccad::Net{.id = "N2", .members = {}}};
   return project;
 }
 
@@ -154,12 +158,21 @@ int main(int argc, char** argv) {
           "UI map reports the default active PCB layer");
   require(contains(map, "\"id\":\"control:active_pcb_layer\""),
           "UI map exposes the active PCB layer selector");
+  require(contains(map, "\"active_pcb_net_id\":\"N1\""),
+          "UI map reports the default active PCB net");
+  require(contains(map, "\"id\":\"control:active_pcb_net\""),
+          "UI map exposes the active PCB net selector");
   require(contains(map, "\"target_x\":"), "UI map carries click target x coordinate");
   require(contains(map, "\"target_y\":"), "UI map carries click target y coordinate");
 
   const QString active_layer = window.activePcbLayerJson();
   require(contains(active_layer, "\"active_layer_id\":\"F.Cu\""),
           "agent active-layer query defaults to F.Cu");
+
+  const QString active_net = window.activePcbNetJson();
+  require(contains(active_net, "\"active_net_id\":\"N1\""),
+          "agent active-net query defaults to the first board net");
+  require(contains(active_net, "\"net_count\":2"), "agent active-net query reports net count");
 
   const QString validation = window.validateUiMapTargetsJson(false);
   require(contains(validation, "\"summary\":"), "UI map validation includes summary");
@@ -183,6 +196,12 @@ int main(int argc, char** argv) {
           "active layer selector is directly targetable");
   require(contains(active_layer_target, "\"role\":\"control\""),
           "active layer selector target reports control role");
+
+  const QString active_net_target = window.uiTargetJsonById("control:active_pcb_net");
+  require(contains(active_net_target, "\"found\":true"),
+          "active net selector is directly targetable");
+  require(contains(active_net_target, "\"role\":\"control\""),
+          "active net selector target reports control role");
 
   const QString panel_target = window.uiTargetJsonById("panel:layers_objects");
   require(contains(panel_target, "\"found\":true"), "panel target query finds layers panel");
@@ -365,6 +384,20 @@ int main(int argc, char** argv) {
       requestLine(socket, "{\"method\":\"ui.active_layer\"}");
   require(contains(active_layer_after_set, "\"active_layer_id\":\"B.Cu\""),
           "live server active-layer query reflects server-side set");
+  const QString active_net_response = requestLine(socket, "{\"method\":\"ui.active_net\"}");
+  require(contains(active_net_response, "\"ok\":true"),
+          "live server returns successful ui.active_net");
+  require(contains(active_net_response, "\"active_net_id\":\"N1\""),
+          "live server reports default active net");
+  const QString set_active_net_response =
+      requestLine(socket, "{\"method\":\"ui.set_active_net\",\"net_id\":\"N2\"}");
+  require(contains(set_active_net_response, "\"ok\":true"),
+          "live server returns successful ui.set_active_net");
+  require(contains(set_active_net_response, "\"active_net_id\":\"N2\""),
+          "live server sets active net");
+  const QString active_net_after_set = requestLine(socket, "{\"method\":\"ui.active_net\"}");
+  require(contains(active_net_after_set, "\"active_net_id\":\"N2\""),
+          "live server active-net query reflects server-side set");
   const QString bad_response = requestLine(socket, "{\"method\":\"ui.unknown\"}");
   require(contains(bad_response, "\"ok\":false"), "live server refuses unsupported methods");
   socket.disconnectFromServer();
@@ -386,6 +419,20 @@ int main(int argc, char** argv) {
   require(contains(window.uiMapJson(), "\"active_pcb_layer_id\":\"B.Cu\""),
           "UI map reflects the selected active layer");
 
+  const QString invalid_net = window.setActivePcbNetForAutomation("NOPE");
+  require(contains(invalid_net, "\"performed\":false"), "active net setter rejects unknown nets");
+  require(contains(invalid_net, "\"reason\":\"net_not_found\""),
+          "active net setter reports missing net");
+
+  const QString set_net = window.setActivePcbNetForAutomation("N2");
+  require(contains(set_net, "\"performed\":true"), "active net setter accepts N2");
+  require(contains(set_net, "\"active_net_id\":\"N2\""),
+          "active net setter reports selected net");
+  require(contains(window.activePcbNetJson(), "\"active_net_id\":\"N2\""),
+          "agent active-net query reflects N2");
+  require(contains(window.uiMapJson(), "\"active_pcb_net_id\":\"N2\""),
+          "UI map reflects the selected active net");
+
   const QString placement =
       window.commitFootprintPlacementForAutomation(writeFootprintFixture(), 12.0, 10.0);
   require(contains(placement, "\"performed\":true"), "automation footprint placement succeeds");
@@ -403,6 +450,11 @@ int main(int argc, char** argv) {
   require(contains(via, "\"via_count\":1"), "automation via placement adds one via");
   require(contains(window.uiMapJson(), "\"id\":\"canvas_object:V1\""),
           "UI map exposes placed via");
+  const ccad::Project after_via = ccad::loadProjectJson(readFile(project_path));
+  require(after_via.board.has_value(), "via fixture still has a board");
+  require(!after_via.board->vias.empty(), "via placement writes a via to the file");
+  require(after_via.board->vias.back().net_id == "N2",
+          "via placement writes the selected active net");
 
   const QString track = window.commitTrackPlacementForAutomation(8.0, 9.0, 15.0, 11.0);
   require(contains(track, "\"performed\":true"), "automation track routing succeeds");
@@ -415,6 +467,8 @@ int main(int argc, char** argv) {
   require(!after_track.board->tracks.empty(), "track routing writes a track to the file");
   require(after_track.board->tracks.back().layer_id == "B.Cu",
           "route track writes the selected B.Cu active layer");
+  require(after_track.board->tracks.back().net_id == "N2",
+          "route track writes the selected active net");
 
   const QString keepout = window.commitKeepoutPlacementForAutomation(20.0, 10.0, 25.0, 14.0);
   require(contains(keepout, "\"performed\":true"), "automation keepout placement succeeds");

@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 171 complete on `sprint-171-pcb-active-layer-context`.
+Progress counter: Phase 7 / 7, Sprint 172 complete on `sprint-172-pcb-active-net-context`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -689,6 +689,15 @@ cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --ui-
 ```
 
 The active layer is GUI/editor state, not extra board JSON. It lists and accepts board copper layers only. Footprint placement and Route Track use the selected active copper layer; via placement remains through-board but uses the active copper color for its placement ghost.
+
+Query or set the GUI PCB active net:
+
+```cmd
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --ui-active-net artifacts\demos\sprint172-pcb-active-net-context-final.ccad.json artifacts\demos\sprint172-active-net.json"
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --ui-set-active-net artifacts\demos\sprint172-pcb-active-net-context-final.ccad.json DC_NEG artifacts\demos\sprint172-set-active-net.json"
+```
+
+The active net is GUI/editor state, not extra board JSON. It derives available nets from top-level project nets and existing board copper net IDs, exposes `control:active_pcb_net` in the UI map, and is used by Add Via and Route Track when they create new copper. Footprint placement still maps pad nets from component-pin connectivity.
 
 Run the app-owned placement-click regression harness:
 

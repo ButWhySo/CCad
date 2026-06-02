@@ -489,6 +489,39 @@ QString layerDisplayName(const ccad::Layer& layer) {
   return name.isEmpty() ? id : id + " - " + name;
 }
 
+void appendUniqueNetId(std::vector<std::string>& net_ids, const std::string& net_id) {
+  if (net_id.empty()) {
+    return;
+  }
+  if (std::find(net_ids.begin(), net_ids.end(), net_id) == net_ids.end()) {
+    net_ids.push_back(net_id);
+  }
+}
+
+std::vector<std::string> availablePcbNetIds(const ccad::Project& project) {
+  std::vector<std::string> net_ids;
+  for (const ccad::Net& net : project.nets) {
+    appendUniqueNetId(net_ids, net.id);
+  }
+  if (project.board.has_value()) {
+    for (const ccad::Pad& pad : project.board->pads) {
+      appendUniqueNetId(net_ids, pad.net_id);
+    }
+    for (const ccad::Via& via : project.board->vias) {
+      appendUniqueNetId(net_ids, via.net_id);
+    }
+    for (const ccad::TrackSegment& track : project.board->tracks) {
+      appendUniqueNetId(net_ids, track.net_id);
+    }
+  }
+  return net_ids;
+}
+
+bool hasPcbNetId(const ccad::Project& project, const std::string& net_id) {
+  const std::vector<std::string> net_ids = availablePcbNetIds(project);
+  return std::find(net_ids.begin(), net_ids.end(), net_id) != net_ids.end();
+}
+
 int numericSuffixAfterPrefix(const std::string& value, const std::string& prefix) {
   if (!value.starts_with(prefix) || value.size() <= prefix.size()) {
     return 0;
@@ -736,12 +769,14 @@ ReviewWindow::ReviewWindow() {
   zoom_status_ = new QLabel("Zoom 100%", this);
   tool_status_ = new QLabel("Tool Select", this);
   layer_status_ = new QLabel("Layer F.Cu", this);
+  net_status_ = new QLabel("Net --", this);
   selection_status_ = new QLabel("Selected --", this);
   statusBar()->addPermanentWidget(cursor_status_);
   statusBar()->addPermanentWidget(zoom_status_);
   statusBar()->addPermanentWidget(selection_status_);
   statusBar()->addPermanentWidget(tool_status_);
   statusBar()->addPermanentWidget(layer_status_);
+  statusBar()->addPermanentWidget(net_status_);
   statusBar()->showMessage("Ready");
 
   board_view->setPanModeCallback([this](const bool space_mode, const bool dragging) {
@@ -902,6 +937,12 @@ ReviewWindow::ReviewWindow() {
   active_layer_selector_->setStatusTip("Active PCB Layer");
   active_layer_selector_->setMinimumWidth(170);
   top_toolbar->addWidget(active_layer_selector_);
+  active_net_selector_ = new QComboBox(top_toolbar);
+  active_net_selector_->setObjectName("activeNetSelector");
+  active_net_selector_->setToolTip("Active PCB Net");
+  active_net_selector_->setStatusTip("Active PCB Net");
+  active_net_selector_->setMinimumWidth(130);
+  top_toolbar->addWidget(active_net_selector_);
   top_toolbar->addSeparator();
   top_toolbar->addAction(run_drc_action);
   updateUndoRedoActions();
@@ -919,6 +960,22 @@ ReviewWindow::ReviewWindow() {
     }
     active_pcb_layer_id_ = layer_id_string;
     updateActiveLayerStatus();
+    markUiMapChanged();
+  });
+  connect(active_net_selector_, &QComboBox::currentIndexChanged, this, [this](const int index) {
+    if (active_net_selector_ == nullptr || index < 0 || !project_cache_.board.has_value()) {
+      return;
+    }
+    const QString net_id = active_net_selector_->itemData(index).toString();
+    if (net_id.isEmpty()) {
+      return;
+    }
+    const std::string net_id_string = net_id.toStdString();
+    if (!hasPcbNetId(project_cache_, net_id_string)) {
+      return;
+    }
+    active_pcb_net_id_ = net_id_string;
+    updateActiveNetStatus();
     markUiMapChanged();
   });
 
@@ -1779,6 +1836,7 @@ void ReviewWindow::reloadProject() {
   } catch (const std::exception& error) {
     project_cache_ = ccad::Project{};
     syncActivePcbLayerFromBoard();
+    syncActivePcbNetFromProject();
     diagnostics_->setRowCount(0);
     renderCanvas(ccad::CanvasScene{});
     project_summary_->renderLoadFailure(qstr(current_path_.string()));
@@ -1789,6 +1847,7 @@ void ReviewWindow::reloadProject() {
 
 void ReviewWindow::renderReview(const ccad::ProjectReview& review) {
   syncActivePcbLayerFromBoard();
+  syncActivePcbNetFromProject();
   project_summary_->renderReview(review);
   diagnostics_->renderDiagnostics(review.diagnostics);
   
@@ -1945,6 +2004,107 @@ QString ReviewWindow::setActivePcbLayerForAutomation(const QString& layer_id) {
   return result(true, "set", qstr(layer->id), qstr(layer->name));
 }
 
+std::string ReviewWindow::activePcbNetOrDefault() const {
+  if (!project_cache_.board.has_value()) {
+    return {};
+  }
+  if (!active_pcb_net_id_.empty() && hasPcbNetId(project_cache_, active_pcb_net_id_)) {
+    return active_pcb_net_id_;
+  }
+  const std::vector<std::string> net_ids = availablePcbNetIds(project_cache_);
+  return net_ids.empty() ? std::string{} : net_ids.front();
+}
+
+void ReviewWindow::updateActiveNetStatus() {
+  if (net_status_ == nullptr) {
+    return;
+  }
+  const std::string net_id = activePcbNetOrDefault();
+  net_status_->setText(net_id.empty() ? QString("Net --") : QString("Net ") + qstr(net_id));
+}
+
+void ReviewWindow::rebuildActiveNetSelector() {
+  if (active_net_selector_ == nullptr) {
+    return;
+  }
+  const QSignalBlocker blocker(active_net_selector_);
+  active_net_selector_->clear();
+  if (!project_cache_.board.has_value()) {
+    active_net_selector_->setEnabled(false);
+    return;
+  }
+  const std::vector<std::string> net_ids = availablePcbNetIds(project_cache_);
+  int selected_index = -1;
+  for (const std::string& net_id : net_ids) {
+    const int index = active_net_selector_->count();
+    active_net_selector_->addItem(qstr(net_id), qstr(net_id));
+    if (net_id == active_pcb_net_id_) {
+      selected_index = index;
+    }
+  }
+  active_net_selector_->setEnabled(active_net_selector_->count() > 0);
+  if (selected_index >= 0) {
+    active_net_selector_->setCurrentIndex(selected_index);
+  } else if (active_net_selector_->count() > 0) {
+    active_net_selector_->setCurrentIndex(0);
+  }
+}
+
+void ReviewWindow::syncActivePcbNetFromProject() {
+  if (!project_cache_.board.has_value()) {
+    active_pcb_net_id_.clear();
+    rebuildActiveNetSelector();
+    updateActiveNetStatus();
+    return;
+  }
+  if (!hasPcbNetId(project_cache_, active_pcb_net_id_)) {
+    const std::vector<std::string> net_ids = availablePcbNetIds(project_cache_);
+    active_pcb_net_id_ = net_ids.empty() ? std::string{} : net_ids.front();
+  }
+  rebuildActiveNetSelector();
+  updateActiveNetStatus();
+}
+
+QString ReviewWindow::activePcbNetJson() const {
+  if (!project_cache_.board.has_value()) {
+    return QString("{\"schema_version\":1,\"available\":false,"
+                   "\"reason\":\"missing_board\",\"active_net_id\":\"\",\"net_count\":0}\n");
+  }
+  const std::vector<std::string> net_ids = availablePcbNetIds(project_cache_);
+  const std::string net_id = activePcbNetOrDefault();
+  if (net_id.empty()) {
+    return QString("{\"schema_version\":1,\"available\":false,"
+                   "\"reason\":\"missing_nets\",\"active_net_id\":\"\",\"net_count\":0}\n");
+  }
+  return QString("{\"schema_version\":1,\"available\":true,"
+                 "\"active_net_id\":%1,\"net_count\":%2}\n")
+      .arg(jsonString(qstr(net_id)))
+      .arg(static_cast<qulonglong>(net_ids.size()));
+}
+
+QString ReviewWindow::setActivePcbNetForAutomation(const QString& net_id) {
+  const auto result = [](const bool performed, const QString& reason,
+                         const QString& active_net_id) {
+    return QString("{\"schema_version\":1,\"performed\":%1,\"reason\":%2,"
+                   "\"active_net_id\":%3}\n")
+        .arg(boolJson(performed))
+        .arg(jsonString(reason))
+        .arg(jsonString(active_net_id));
+  };
+  if (!project_cache_.board.has_value()) {
+    return result(false, "missing_board", "");
+  }
+  const std::string net_id_string = net_id.toStdString();
+  if (!hasPcbNetId(project_cache_, net_id_string)) {
+    return result(false, "net_not_found", qstr(activePcbNetOrDefault()));
+  }
+  active_pcb_net_id_ = net_id_string;
+  rebuildActiveNetSelector();
+  updateActiveNetStatus();
+  markUiMapChanged();
+  return result(true, "set", qstr(active_pcb_net_id_));
+}
+
 QString ReviewWindow::uiMapJson() const {
   QStringList nodes;
   const QRect root_global_rect(mapToGlobal(QPoint(0, 0)), size());
@@ -2046,6 +2206,26 @@ QString ReviewWindow::uiMapJson() const {
                  .arg(jsonString(qstr(activePcbLayerOrDefault())))
                  .arg(boolJson(active_layer_selector_->isVisible()))
                  .arg(boolJson(active_layer_selector_->isEnabled()))
+                 .arg(rectJson(local_rect))
+                 .arg(rectJson(global_rect))
+                 .arg(global_rect.center().x())
+                 .arg(global_rect.center().y());
+  }
+
+  if (active_net_selector_ != nullptr) {
+    const QPoint local_top_left =
+        active_net_selector_->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
+    const QRect local_rect(local_top_left, active_net_selector_->size());
+    const QRect global_rect(active_net_selector_->mapToGlobal(QPoint(0, 0)),
+                            active_net_selector_->size());
+    nodes << QString("{\"id\":\"control:active_pcb_net\",\"role\":\"control\","
+                     "\"label\":\"Active PCB Net\",\"value\":%1,"
+                     "\"active_net_id\":%2,\"visible\":%3,\"enabled\":%4,"
+                     "\"local_rect\":%5,\"global_rect\":%6,\"target_x\":%7,\"target_y\":%8}")
+                 .arg(jsonString(active_net_selector_->currentText()))
+                 .arg(jsonString(qstr(activePcbNetOrDefault())))
+                 .arg(boolJson(active_net_selector_->isVisible()))
+                 .arg(boolJson(active_net_selector_->isEnabled()))
                  .arg(rectJson(local_rect))
                  .arg(rectJson(global_rect))
                  .arg(global_rect.center().x())
@@ -2158,9 +2338,10 @@ QString ReviewWindow::uiMapJson() const {
   appendCanvasObjects("canvas:schematic", schematic_view_, schematic_scene_);
 
   return QString("{\"schema_version\":1,\"ui_epoch\":%1,\"active_pcb_layer_id\":%2,"
-                 "\"nodes\":[%3]}\n")
+                 "\"active_pcb_net_id\":%3,\"nodes\":[%4]}\n")
       .arg(ui_map_epoch_)
       .arg(jsonString(qstr(activePcbLayerOrDefault())))
+      .arg(jsonString(qstr(activePcbNetOrDefault())))
       .arg(nodes.join(','));
 }
 
@@ -2232,6 +2413,19 @@ QString ReviewWindow::validateUiMapTargetsJson(const bool move_cursor) const {
                       active_layer_selector_->isAncestorOf(hit_widget));
     appendCheck("control:active_pcb_layer", "control", active_layer_selector_->isVisible(),
                 active_layer_selector_->isEnabled(), target, hit,
+                hit_widget != nullptr ? hit_widget->objectName() : "none");
+  }
+
+  if (active_net_selector_ != nullptr) {
+    const QRect global_rect(active_net_selector_->mapToGlobal(QPoint(0, 0)),
+                            active_net_selector_->size());
+    const QPoint target = global_rect.center();
+    QWidget* hit_widget = QApplication::widgetAt(target);
+    const bool hit = global_rect.contains(target) &&
+                     (hit_widget == nullptr || hit_widget == active_net_selector_ ||
+                      active_net_selector_->isAncestorOf(hit_widget));
+    appendCheck("control:active_pcb_net", "control", active_net_selector_->isVisible(),
+                active_net_selector_->isEnabled(), target, hit,
                 hit_widget != nullptr ? hit_widget->objectName() : "none");
   }
 
@@ -2356,6 +2550,13 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
                             active_layer_selector_->size());
     return foundTarget(id, "control", "Active PCB Layer", active_layer_selector_->isVisible(),
                        active_layer_selector_->isEnabled(), global_rect.center());
+  }
+
+  if (id == "control:active_pcb_net" && active_net_selector_ != nullptr) {
+    const QRect global_rect(active_net_selector_->mapToGlobal(QPoint(0, 0)),
+                            active_net_selector_->size());
+    return foundTarget(id, "control", "Active PCB Net", active_net_selector_->isVisible(),
+                       active_net_selector_->isEnabled(), global_rect.center());
   }
 
   if (menuBar() != nullptr) {
@@ -3183,7 +3384,9 @@ void ReviewWindow::enterAddViaMode() {
   item->setZValue(1000.0);
   interaction_ghost_items_.push_back(item);
   canvas_view_->viewport()->setCursor(Qt::CrossCursor);
-  tool_status_->setText("Tool Add Via");
+  const std::string net_id = activePcbNetOrDefault();
+  tool_status_->setText(net_id.empty() ? QString("Tool Add Via")
+                                       : QString("Tool Add Via ") + qstr(net_id));
 }
 
 void ReviewWindow::enterRouteTrackMode() {
@@ -3203,7 +3406,9 @@ void ReviewWindow::enterRouteTrackMode() {
   interaction_has_anchor_ = false;
   interaction_last_mouse_pos_ = canvas_view_->mapToScene(canvas_view_->mapFromGlobal(QCursor::pos()));
   canvas_view_->viewport()->setCursor(Qt::CrossCursor);
-  tool_status_->setText("Tool Route Track");
+  const std::string net_id = activePcbNetOrDefault();
+  tool_status_->setText(net_id.empty() ? QString("Tool Route Track")
+                                       : QString("Tool Route Track ") + qstr(net_id));
 }
 
 void ReviewWindow::enterAddKeepoutMode() {
@@ -3366,7 +3571,7 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               pushUndoSnapshot();
               ccad::Board& board = *project_cache_.board;
               board.vias.push_back(ccad::Via{.id = nextViaId(board),
-                                             .net_id = "",
+                                             .net_id = activePcbNetOrDefault(),
                                              .position = boardPointFromScene(board, scene_pos),
                                              .diameter = defaultViaDiameter(),
                                              .drill = defaultViaDrill()});
@@ -3394,7 +3599,7 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               ccad::Board& board = *project_cache_.board;
               board.tracks.push_back(
                   ccad::TrackSegment{.id = nextTrackId(board),
-                                     .net_id = "",
+                                     .net_id = activePcbNetOrDefault(),
                                      .layer_id = interaction_layer_id_,
                                      .start = boardPointFromScene(board, interaction_start_mouse_pos_),
                                      .end = boardPointFromScene(board, scene_pos),

@@ -155,6 +155,18 @@ QString UiMapServer::responseForLine(const QString& line) const {
     return "{\"schema_version\":1,\"ok\":true,\"method\":\"ui.set_active_layer\",\"result\":" +
            oneLineJson(window_.setActivePcbLayerForAutomation(layer_id)) + "}";
   }
+  if (method == "ui.active_net") {
+    return "{\"schema_version\":1,\"ok\":true,\"method\":\"ui.active_net\",\"result\":" +
+           oneLineJson(window_.activePcbNetJson()) + "}";
+  }
+  if (method == "ui.set_active_net") {
+    const QString net_id = extractJsonString(line, "net_id");
+    if (net_id.isEmpty()) {
+      return errorResponse("ui.set_active_net requires string net_id");
+    }
+    return "{\"schema_version\":1,\"ok\":true,\"method\":\"ui.set_active_net\",\"result\":" +
+           oneLineJson(window_.setActivePcbNetForAutomation(net_id)) + "}";
+  }
   if (method == "ui.epoch") {
     const QString map = window_.uiMapJson();
     const int key_index = map.indexOf("\"ui_epoch\":");

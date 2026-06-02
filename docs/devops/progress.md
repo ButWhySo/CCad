@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 171
-- Branch: `sprint-171-pcb-active-layer-context`
+- Sprint: 172
+- Branch: `sprint-172-pcb-active-net-context`
 - Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
@@ -37,6 +37,7 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - **Sprint 169 (Visual Harness Timing Policy)** is complete on `sprint-169-visual-harness-timing`. It enforces the updated 7-second single-preview timing and 5-second initial plus 800 ms per-action multi-target timing through a dedicated CTest policy guard, updates the live interaction wrapper, and fixes chooser-row targeting so live footprint preview checks actually select a catalogue row.
 - **Sprint 170 (PCB Edit Tool Entry)** is complete on `sprint-170-pcb-edit-tool-entry`. It promotes Add Via, Route Track, Add Keepout, and Delete from right-toolbar planned-tool status to real kernel-backed GUI edit entries with matching agent/test hooks, while keeping Add Zone, Draw Graphic, and Place Text as explicit planned tools until their durable board primitives exist. Focused GUI-map coverage passed, official visual validation produced a full bridge-rectifier screenshot, app-owned viewport hooks placed a via, track, and keepout before deleting the new via, and the full build plus CTest gate passed 36 of 36 tests.
 - **Sprint 171 (PCB Active Layer Context)** is complete on `sprint-171-pcb-active-layer-context`. It adds a top-toolbar active copper-layer selector, agent-readable/settable active-layer JSON, live UI-map socket active-layer methods, and active-layer-aware footprint placement plus Route Track commits. Focused GUI-map coverage passed, official visual validation produced `artifacts/screenshots/sprint171-pcb-active-layer-context-final-20260603-010814.png`, app-owned active-layer hooks returned `F.Cu`, set `B.Cu`, and resolved `control:active_pcb_layer`, and the full build plus CTest gate passed 36 of 36 tests.
+- **Sprint 172 (PCB Active Net Context)** is complete on `sprint-172-pcb-active-net-context`. It adds a top-toolbar active net selector, agent-readable/settable active-net JSON, live UI-map socket active-net methods, `control:active_pcb_net` targeting, and active-net-aware Add Via plus Route Track commits. Focused GUI-map coverage passed, official visual validation produced `artifacts/screenshots/sprint172-pcb-active-net-context-final-20260603-012426.png`, app-owned active-net hooks returned `AC1`, set `DC_NEG`, and resolved `control:active_pcb_net`, and the full build plus CTest gate passed 36 of 36 tests.
 
 ## Phase Roadmap
 
