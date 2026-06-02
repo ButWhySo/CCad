@@ -1357,6 +1357,55 @@ QString ReviewWindow::uiMapJson() const {
                .arg(root_global_rect.center().y());
 
   const QWidget* root = this;
+  if (menuBar() != nullptr) {
+    for (QAction* action : menuBar()->actions()) {
+      if (action == nullptr) {
+        continue;
+      }
+      const QRect local_rect = menuBar()->actionGeometry(action);
+      if (!local_rect.isValid()) {
+        continue;
+      }
+      const QRect global_rect(menuBar()->mapToGlobal(local_rect.topLeft()), local_rect.size());
+      nodes << QString("{\"id\":%1,\"role\":\"menu\",\"label\":%2,"
+                       "\"visible\":%3,\"enabled\":%4,\"local_rect\":%5,"
+                       "\"global_rect\":%6,\"target_x\":%7,\"target_y\":%8}")
+                   .arg(jsonString("menu:" + normalizedIdPart(action->text())))
+                   .arg(jsonString(action->text()))
+                   .arg(boolJson(menuBar()->isVisible() && action->isVisible()))
+                   .arg(boolJson(action->isEnabled()))
+                   .arg(rectJson(local_rect))
+                   .arg(rectJson(global_rect))
+                   .arg(global_rect.center().x())
+                   .arg(global_rect.center().y());
+    }
+  }
+
+  const auto appendPanelNode = [&nodes, root](const QString& id, const QString& label,
+                                              const QWidget* widget) {
+    if (widget == nullptr) {
+      return;
+    }
+    const QPoint local_top_left = widget->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
+    const QRect local_rect(local_top_left, widget->size());
+    const QRect global_rect(widget->mapToGlobal(QPoint(0, 0)), widget->size());
+    nodes << QString("{\"id\":%1,\"role\":\"panel\",\"label\":%2,"
+                     "\"visible\":%3,\"enabled\":%4,\"local_rect\":%5,"
+                     "\"global_rect\":%6,\"target_x\":%7,\"target_y\":%8}")
+                 .arg(jsonString(id))
+                 .arg(jsonString(label))
+                 .arg(boolJson(widget->isVisible()))
+                 .arg(boolJson(widget->isEnabled()))
+                 .arg(rectJson(local_rect))
+                 .arg(rectJson(global_rect))
+                 .arg(global_rect.center().x())
+                 .arg(global_rect.center().y());
+  };
+  appendPanelNode("panel:project", "Project", project_summary_);
+  appendPanelNode("panel:properties", "Properties / DRC Rules", selection_inspector_);
+  appendPanelNode("panel:layers_objects", "Layers / Objects", object_browser_);
+  appendPanelNode("panel:diagnostics", "Diagnostics", diagnostics_);
+
   const QList<QToolButton*> buttons = findChildren<QToolButton*>();
   for (const QToolButton* button : buttons) {
     const QAction* action = button->defaultAction();
@@ -1627,6 +1676,49 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
     const QRect global_rect(button->mapToGlobal(QPoint(0, 0)), button->size());
     return foundTarget(id, "action", action->text(), button->isVisible() && action->isVisible(),
                        button->isEnabled() && action->isEnabled(), global_rect.center());
+  }
+
+  if (menuBar() != nullptr) {
+    for (QAction* action : menuBar()->actions()) {
+      if (action == nullptr) {
+        continue;
+      }
+      const QString menu_id = "menu:" + normalizedIdPart(action->text());
+      if (menu_id != id) {
+        continue;
+      }
+      const QRect local_rect = menuBar()->actionGeometry(action);
+      const QRect global_rect(menuBar()->mapToGlobal(local_rect.topLeft()), local_rect.size());
+      return foundTarget(menu_id, "menu", action->text(),
+                         menuBar()->isVisible() && action->isVisible(),
+                         action->isEnabled(), global_rect.center());
+    }
+  }
+
+  const auto panelTarget = [&foundTarget, &id](const QString& panel_id, const QString& label,
+                                               const QWidget* widget) -> std::optional<QString> {
+    if (widget == nullptr || panel_id != id) {
+      return std::nullopt;
+    }
+    const QRect global_rect(widget->mapToGlobal(QPoint(0, 0)), widget->size());
+    return foundTarget(panel_id, "panel", label, widget->isVisible(), widget->isEnabled(),
+                       global_rect.center());
+  };
+  if (const std::optional<QString> target =
+          panelTarget("panel:project", "Project", project_summary_)) {
+    return *target;
+  }
+  if (const std::optional<QString> target =
+          panelTarget("panel:properties", "Properties / DRC Rules", selection_inspector_)) {
+    return *target;
+  }
+  if (const std::optional<QString> target =
+          panelTarget("panel:layers_objects", "Layers / Objects", object_browser_)) {
+    return *target;
+  }
+  if (const std::optional<QString> target =
+          panelTarget("panel:diagnostics", "Diagnostics", diagnostics_)) {
+    return *target;
   }
 
   if (editor_tabs_ != nullptr && editor_tabs_->tabBar() != nullptr) {

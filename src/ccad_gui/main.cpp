@@ -3,14 +3,69 @@
 #include "library_browser_dialog.hpp"
 
 #include <QApplication>
+#include <QCursor>
 #include <QElapsedTimer>
+#include <QDir>
+#include <QPainter>
 #include <QPixmap>
+#include <QThread>
 #include <QTimer>
 
 #include <QEventLoop>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <optional>
+#include <vector>
+
+namespace {
+
+QString jsonStringLocal(const QString& value) {
+  QString output = "\"";
+  for (const QChar ch : value) {
+    if (ch == '\\') {
+      output += "\\\\";
+    } else if (ch == '"') {
+      output += "\\\"";
+    } else if (ch == '\n') {
+      output += "\\n";
+    } else if (ch == '\r') {
+      output += "\\r";
+    } else if (ch == '\t') {
+      output += "\\t";
+    } else {
+      output += ch;
+    }
+  }
+  output += "\"";
+  return output;
+}
+
+std::optional<int> extractJsonInt(const QString& json, const QString& key) {
+  const int key_index = json.indexOf(key);
+  if (key_index < 0) {
+    return std::nullopt;
+  }
+  int index = key_index + key.size();
+  while (index < json.size() && json.at(index).isSpace()) {
+    ++index;
+  }
+  int end = index;
+  if (end < json.size() && json.at(end) == '-') {
+    ++end;
+  }
+  while (end < json.size() && json.at(end).isDigit()) {
+    ++end;
+  }
+  if (end == index) {
+    return std::nullopt;
+  }
+  bool ok = false;
+  const int value = json.mid(index, end - index).toInt(&ok);
+  return ok ? std::optional<int>(value) : std::nullopt;
+}
+
+}  // namespace
 
 int screenshotWindow(QWidget& window, const QString& screenshot_path, const char* screenshot_arg) {
   const QPixmap screenshot = window.grab();
@@ -147,6 +202,90 @@ int main(int argc, char** argv) {
         return;
       }
       std::cout << "ui target saved: " << output_path.string() << '\n';
+      std::cout.flush();
+      QCoreApplication::exit(0);
+    });
+
+    return QApplication::exec();
+  } else if (argc == 5 && std::string(argv[1]) == "--test-ui-map-target-sequence") {
+    const std::filesystem::path project_path(argv[2]);
+    const std::filesystem::path output_dir(argv[3]);
+    const QString name = QString::fromLocal8Bit(argv[4]);
+    std::filesystem::create_directories(output_dir);
+    ReviewWindow window;
+    window.loadProjectPath(project_path);
+    window.show();
+
+    QTimer::singleShot(1000, &window, [&window, output_dir, name]() {
+      QStringList entries;
+      const QStringList target_ids = {"action:cursor", "action:measurement", "action:save",
+                                      "menu:file", "panel:properties"};
+      const auto runPass = [&window, &entries, &output_dir, &name, &target_ids](
+                               const QString& pass_name) {
+        for (const QString& id : target_ids) {
+          const QString target_json = window.uiTargetJsonById(id);
+          const bool found = target_json.contains("\"found\":true");
+          const std::optional<int> x = extractJsonInt(target_json, "\"logical_x\":");
+          const std::optional<int> y = extractJsonInt(target_json, "\"logical_y\":");
+          QString screenshot_path;
+          if (found && x.has_value() && y.has_value()) {
+            QCursor::setPos(*x, *y);
+            QApplication::processEvents();
+            QThread::sleep(20);
+            QApplication::processEvents();
+            const QString safe_id = id;
+            QString slug = safe_id;
+            slug.replace(':', '_');
+            const std::filesystem::path path =
+                output_dir / (name + "-" + pass_name + "-" + slug + ".png").toStdString();
+            screenshot_path = QString::fromStdString(path.string());
+            QPixmap screenshot = window.grab();
+            QPainter painter(&screenshot);
+            painter.setRenderHint(QPainter::Antialiasing, true);
+            painter.setPen(QPen(QColor("#ff00cc"), 3));
+            const QPoint local_target = window.mapFromGlobal(QPoint(*x, *y));
+            painter.drawEllipse(local_target, 10, 10);
+            painter.drawLine(local_target.x() - 16, local_target.y(), local_target.x() + 16,
+                             local_target.y());
+            painter.drawLine(local_target.x(), local_target.y() - 16, local_target.x(),
+                             local_target.y() + 16);
+            painter.end();
+            screenshot.save(screenshot_path);
+          }
+          entries << QString("{\"pass\":%1,\"id\":%2,\"found\":%3,\"target\":%4,"
+                             "\"screenshot\":%5}")
+                         .arg(jsonStringLocal(pass_name))
+                         .arg(jsonStringLocal(id))
+                         .arg(found ? "true" : "false")
+                         .arg(found ? target_json.mid(target_json.indexOf("\"target\":") + 9)
+                                           .section('}', 0, 0) + "}"
+                                    : "null")
+                         .arg(jsonStringLocal(screenshot_path));
+        }
+      };
+
+      runPass("initial");
+      window.resize(1120, 720);
+      QApplication::processEvents();
+      QThread::sleep(1);
+      runPass("resized");
+
+      const std::filesystem::path output_path =
+          output_dir / (name + "-target-sequence.json").toStdString();
+      std::ofstream output(output_path, std::ios::binary);
+      const QString report =
+          QString("{\"schema_version\":1,\"name\":%1,\"entries\":[%2]}\n")
+              .arg(jsonStringLocal(name))
+              .arg(entries.join(','));
+      const QByteArray bytes = report.toUtf8();
+      output.write(bytes.constData(), bytes.size());
+      if (!output) {
+        std::cerr << "failed to write target sequence report: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      std::cout << "ui map target sequence saved: " << output_path.string() << '\n';
       std::cout.flush();
       QCoreApplication::exit(0);
     });
