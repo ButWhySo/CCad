@@ -89,6 +89,44 @@ ccad::CanvasScene throughHoleScene() {
   return scene;
 }
 
+ccad::CanvasScene maskPasteScene() {
+  ccad::CanvasScene scene;
+  scene.has_board = true;
+  scene.view_width_units = 20.0;
+  scene.view_height_units = 20.0;
+  scene.layers.push_back(ccad::CanvasLayer{
+      .id = "F.Cu",
+      .name = "Front copper",
+      .kind = "copper",
+      .visible = false,
+  });
+  scene.layers.push_back(ccad::CanvasLayer{
+      .id = "F.Mask",
+      .name = "Front solder mask",
+      .kind = "mask",
+      .visible = true,
+  });
+  scene.layers.push_back(ccad::CanvasLayer{
+      .id = "F.Paste",
+      .name = "Front solder paste",
+      .kind = "paste",
+      .visible = true,
+  });
+  scene.pads.push_back(ccad::CanvasPad{
+      .id = "U1.1",
+      .net_id = "N1",
+      .layers = {"F.Cu", "F.Mask", "F.Paste"},
+      .type = "smd",
+      .shape = "roundrect",
+      .x_units = 10.0,
+      .y_units = 10.0,
+      .width_units = 2.0,
+      .height_units = 1.2,
+      .roundrect_rratio = 0.25,
+  });
+  return scene;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -213,4 +251,36 @@ int main(int argc, char** argv) {
   }
   require(saw_trapezoid, "trapezoid pad renders as a polygon path");
   require(saw_chamfered_rect, "chamfered pad renders as a chamfered polygon path");
+
+  const CanvasRenderTheme default_theme;
+  require(colorForKiCadLayer(default_theme, "F.Mask") != colorForKiCadLayer(default_theme, "F.Cu"),
+          "front mask has a distinct layer color from front copper");
+  require(colorForKiCadLayer(default_theme, "F.Paste") != colorForKiCadLayer(default_theme, "F.Cu"),
+          "front paste has a distinct layer color from front copper");
+  require(colorForKiCadLayer(default_theme, "B.Mask") != colorForKiCadLayer(default_theme, "B.Cu"),
+          "back mask has a distinct layer color from back copper");
+  require(colorForKiCadLayer(default_theme, "B.Paste") != colorForKiCadLayer(default_theme, "B.Cu"),
+          "back paste has a distinct layer color from back copper");
+
+  QGraphicsScene mask_paste_scene;
+  renderBoardCanvas(mask_paste_scene, maskPasteScene());
+  bool saw_hidden_copper_pad = false;
+  bool saw_mask_aperture = false;
+  bool saw_paste_aperture = false;
+  for (QGraphicsItem* item : mask_paste_scene.items()) {
+    if (canvasObjectType(*item) == "pad") {
+      saw_hidden_copper_pad = true;
+    }
+    if (canvasObjectType(*item) == "pad-mask") {
+      saw_mask_aperture = true;
+      require(canvasObjectLayerId(*item) == "F.Mask", "mask aperture records mask layer");
+    }
+    if (canvasObjectType(*item) == "pad-paste") {
+      saw_paste_aperture = true;
+      require(canvasObjectLayerId(*item) == "F.Paste", "paste aperture records paste layer");
+    }
+  }
+  require(!saw_hidden_copper_pad, "hidden copper layer does not render as copper because mask is visible");
+  require(saw_mask_aperture, "visible solder mask aperture renders as a separate layer object");
+  require(saw_paste_aperture, "visible solder paste aperture renders as a separate layer object");
 }

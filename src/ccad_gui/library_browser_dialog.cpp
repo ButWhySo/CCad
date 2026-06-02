@@ -226,6 +226,31 @@ void renderFootprintPreview(QGraphicsScene& scene, const ccad::Footprint& footpr
     scene.addPath(padPreviewPath(x, y, w, h, pad.shape, pad.rotation_degrees,
                                  pad.roundrect_rratio, pad.chamfer_ratio),
                   copper_pen, copper_brush);
+    const auto addLayerAperture = [&](const std::string& layer_id, double inflate,
+                                      Qt::PenStyle style) {
+      const QColor layer_color = colorForKiCadLayer(theme, layer_id);
+      QPen aperture_pen(layer_color, 0.09 * scale);
+      aperture_pen.setStyle(style);
+      aperture_pen.setJoinStyle(Qt::RoundJoin);
+      aperture_pen.setCapStyle(Qt::RoundCap);
+      const QBrush aperture_brush(QColor(layer_color.red(), layer_color.green(),
+                                         layer_color.blue(), 42));
+      scene.addPath(padPreviewPath(x, y, w + inflate, h + inflate, pad.shape,
+                                   pad.rotation_degrees, pad.roundrect_rratio,
+                                   pad.chamfer_ratio),
+                    aperture_pen, aperture_brush);
+    };
+    for (const std::string& layer : pad.layers) {
+      if (layer == "F.Mask" || layer == "*.Mask") {
+        addLayerAperture("F.Mask", 2.4, Qt::DashLine);
+      } else if (layer == "B.Mask") {
+        addLayerAperture("B.Mask", 2.4, Qt::DashLine);
+      } else if (layer == "F.Paste" || layer == "*.Paste") {
+        addLayerAperture("F.Paste", 1.0, Qt::SolidLine);
+      } else if (layer == "B.Paste") {
+        addLayerAperture("B.Paste", 1.0, Qt::SolidLine);
+      }
+    }
     if (pad.drill.has_value()) {
       const double drill = pad.drill->nanometers / 1e6 * scale;
       scene.addEllipse(x - (drill / 2.0), y - (drill / 2.0), drill, drill,

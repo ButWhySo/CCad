@@ -299,10 +299,19 @@ QPainterPath padPreviewPath(const double x_mm, const double y_mm, const double w
 }
 
 void addPadPreviewItems(QGraphicsScene& scene, std::vector<QGraphicsItem*>& items,
-                        const ccad::Footprint& footprint, const QColor& color) {
-  QPen pen(color.darker(130), 1.0);
-  QBrush brush(QColor(color.red(), color.green(), color.blue(), 150));
+                        const ccad::Footprint& footprint) {
+  const CanvasRenderTheme theme;
   for (const auto& pad : footprint.pads) {
+    std::string primary_layer = "F.Cu";
+    for (const std::string& layer : pad.layers) {
+      if (layer.ends_with(".Cu") || layer == "*.Cu") {
+        primary_layer = layer == "*.Cu" ? "F.Cu" : layer;
+        break;
+      }
+    }
+    const QColor color = colorForKiCadLayer(theme, primary_layer);
+    QPen pen(color.darker(130), 1.0);
+    QBrush brush(QColor(color.red(), color.green(), color.blue(), 150));
     const double w = pad.size.width.nanometers / 1e6;
     const double h = pad.size.height.nanometers / 1e6;
     const double x = pad.position.x.nanometers / 1e6;
@@ -312,6 +321,32 @@ void addPadPreviewItems(QGraphicsScene& scene, std::vector<QGraphicsItem*>& item
                                pen, brush);
     item->setZValue(1000);
     items.push_back(item);
+    const auto addLayerAperture = [&](const std::string& layer_id, double inflate,
+                                      Qt::PenStyle style) {
+      const QColor layer_color = colorForKiCadLayer(theme, layer_id);
+      QPen aperture_pen(layer_color, 0.9);
+      aperture_pen.setStyle(style);
+      aperture_pen.setJoinStyle(Qt::RoundJoin);
+      aperture_pen.setCapStyle(Qt::RoundCap);
+      auto* aperture = scene.addPath(
+          padPreviewPath(x, y, w + inflate, h + inflate, pad.shape, pad.rotation_degrees,
+                         pad.roundrect_rratio, pad.chamfer_ratio),
+          aperture_pen,
+          QBrush(QColor(layer_color.red(), layer_color.green(), layer_color.blue(), 42)));
+      aperture->setZValue(1000.5);
+      items.push_back(aperture);
+    };
+    for (const std::string& layer : pad.layers) {
+      if (layer == "F.Mask" || layer == "*.Mask") {
+        addLayerAperture("F.Mask", 0.24, Qt::DashLine);
+      } else if (layer == "B.Mask") {
+        addLayerAperture("B.Mask", 0.24, Qt::DashLine);
+      } else if (layer == "F.Paste" || layer == "*.Paste") {
+        addLayerAperture("F.Paste", 0.10, Qt::SolidLine);
+      } else if (layer == "B.Paste") {
+        addLayerAperture("B.Paste", 0.10, Qt::SolidLine);
+      }
+    }
     if (pad.drill.has_value()) {
       constexpr double scale = 10.0;
       const double drill = pad.drill->nanometers / 1e6 * scale;
@@ -2103,7 +2138,7 @@ void ReviewWindow::enterPlaceFootprintMode(const std::string& component_id, cons
   interaction_layer_id_ = layer_id;
 
   try {
-    addPadPreviewItems(*canvas_scene_, interaction_ghost_items_, footprint, QColor(100, 255, 100));
+    addPadPreviewItems(*canvas_scene_, interaction_ghost_items_, footprint);
     interaction_last_mouse_pos_ = canvas_view_->mapToScene(canvas_view_->mapFromGlobal(QCursor::pos()));
     moveGhostTo(*canvas_view_, interaction_ghost_items_, interaction_last_mouse_pos_);
     tool_status_->setText("Tool Place Footprint");
