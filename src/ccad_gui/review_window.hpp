@@ -72,6 +72,7 @@ class ReviewWindow final : public QMainWindow {
   void placeFromActiveEditor();
   void chooseAndPlaceFootprint();
   void chooseAndPlaceSymbol();
+  void showFutureToolStatus(const QString& action_id, const QString& label);
   void cancelInteractionMode();
   void pushUndoSnapshot();
   void restoreProjectSnapshot(const ccad::Project& snapshot);

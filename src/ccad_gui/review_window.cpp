@@ -813,16 +813,36 @@ ReviewWindow::ReviewWindow() {
   auto* add_symbol_action = addIconAction(*right_toolbar, "add_symbol_to_schematic", "Add Symbol");
   add_symbol_action->setObjectName("action:add_symbol");
   add_symbol_action->setShortcut(QKeySequence(Qt::Key_A));
-  addIconAction(*right_toolbar, "add_tracks", "Route Track");
-  addIconAction(*right_toolbar, "add_via", "Add Via");
-  addIconAction(*right_toolbar, "add_zone", "Add Zone");
-  addIconAction(*right_toolbar, "add_keepout_area", "Add Keepout");
+  auto* route_track_action = addIconAction(*right_toolbar, "add_tracks", "Route Track");
+  auto* add_via_action = addIconAction(*right_toolbar, "add_via", "Add Via");
+  auto* add_zone_action = addIconAction(*right_toolbar, "add_zone", "Add Zone");
+  auto* add_keepout_action = addIconAction(*right_toolbar, "add_keepout_area", "Add Keepout");
   right_toolbar->addSeparator();
-  addIconAction(*right_toolbar, "add_graphical_segments", "Draw Graphic");
-  addIconAction(*right_toolbar, "text", "Place Text");
+  auto* draw_graphic_action = addIconAction(*right_toolbar, "add_graphical_segments", "Draw Graphic");
+  auto* place_text_action = addIconAction(*right_toolbar, "text", "Place Text");
   right_toolbar->addSeparator();
-  addIconAction(*right_toolbar, "delete_cursor", "Delete");
+  auto* delete_action = addIconAction(*right_toolbar, "delete_cursor", "Delete");
   auto* measure_action = addIconAction(*right_toolbar, "measurement", "Measure");
+
+  const auto bind_future_tool = [this](QAction* action, const QString& action_id,
+                                       const QString& label) {
+    if (action == nullptr) {
+      return;
+    }
+    const QString message =
+        label + " is planned; use the current CLI/kernel command surface for this operation.";
+    action->setStatusTip(message);
+    action->setWhatsThis(message);
+    connect(action, &QAction::triggered, this,
+            [this, action_id, label]() { showFutureToolStatus(action_id, label); });
+  };
+  bind_future_tool(route_track_action, "action:add_tracks", "Route Track");
+  bind_future_tool(add_via_action, "action:add_via", "Add Via");
+  bind_future_tool(add_zone_action, "action:add_zone", "Add Zone");
+  bind_future_tool(add_keepout_action, "action:add_keepout_area", "Add Keepout");
+  bind_future_tool(draw_graphic_action, "action:add_graphical_segments", "Draw Graphic");
+  bind_future_tool(place_text_action, "action:text", "Place Text");
+  bind_future_tool(delete_action, "action:delete_cursor", "Delete");
 
   connect(add_footprint_action, &QAction::triggered, this, [this]() { placeFromActiveEditor(); });
   connect(add_symbol_action, &QAction::triggered, this, [this]() { placeFromActiveEditor(); });
@@ -1123,6 +1143,16 @@ void ReviewWindow::placeFromActiveEditor() {
     return;
   }
   chooseAndPlaceFootprint();
+}
+
+void ReviewWindow::showFutureToolStatus(const QString& action_id, const QString& label) {
+  Q_UNUSED(action_id);
+  if (tool_status_ != nullptr) {
+    tool_status_->setText("Tool " + label + " (planned)");
+  }
+  statusBar()->showMessage(
+      label + " is planned; use the current CLI/kernel command surface for this operation.", 5000);
+  markUiMapChanged();
 }
 
 void ReviewWindow::chooseAndPlaceFootprint() {
@@ -1865,6 +1895,12 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
         .arg(boolJson(performed))
         .arg(jsonString(reason));
   };
+  const auto futureResult = [](const QString& action_id, const QString& label) {
+    return QString("{\"schema_version\":1,\"id\":%1,\"performed\":false,"
+                   "\"reason\":\"future_tool_not_implemented\",\"label\":%2}\n")
+        .arg(jsonString(action_id))
+        .arg(jsonString(label));
+  };
 
   if (id == "tab:pcb" || id == "tab:schematic") {
     if (editor_tabs_ == nullptr) {
@@ -1882,14 +1918,29 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
   const QStringList safe_action_ids = {"action:fit", "action:zoom_in", "action:zoom_out",
                                        "action:zoom_100", "action:cursor",
                                        "action:measurement"};
+  const QStringList future_tool_ids = {"action:add_tracks", "action:add_via",
+                                       "action:add_zone", "action:add_keepout_area",
+                                       "action:add_graphical_segments", "action:text",
+                                       "action:delete_cursor"};
   const QStringList unsafe_action_ids = {"action:open", "action:reload", "action:save",
                                          "action:board_setup", "action:undo", "action:redo",
                                          "action:run_drc", "action:export_drc",
                                          "action:add_footprint", "action:add_symbol",
-                                         "action:add_tracks", "action:add_via",
-                                         "action:add_zone", "action:add_keepout_area",
-                                         "action:add_graphical_segments", "action:text",
-                                         "action:delete_cursor", "action:quit"};
+                                         "action:quit"};
+  if (future_tool_ids.contains(id)) {
+    const QList<QAction*> actions = findChildren<QAction*>();
+    for (QAction* action : actions) {
+      if (actionMapId(*action) != id) {
+        continue;
+      }
+      if (action->isEnabled() && action->isVisible()) {
+        action->trigger();
+        QApplication::processEvents();
+      }
+      return futureResult(id, action->text());
+    }
+    return result(id, false, "action_not_found");
+  }
   if (unsafe_action_ids.contains(id)) {
     return result(id, false, "unsafe_action_requires_human_or_kernel_tool");
   }

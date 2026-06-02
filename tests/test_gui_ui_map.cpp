@@ -198,6 +198,13 @@ int main(int argc, char** argv) {
   require(contains(unsafe, "\"reason\":\"unsafe_action_requires_human_or_kernel_tool\""),
           "unsafe action reports reason");
 
+  const QString future_tool = window.triggerSafeUiActionJson("action:add_tracks");
+  require(contains(future_tool, "\"performed\":false"), "future toolbar action is not silent");
+  require(contains(future_tool, "\"reason\":\"future_tool_not_implemented\""),
+          "future toolbar action reports planned-tool reason");
+  require(contains(future_tool, "\"label\":\"Route Track\""),
+          "future toolbar action reports user-facing label");
+
   const QString unknown_action = window.triggerSafeUiActionJson("action:nope");
   require(contains(unknown_action, "\"performed\":false"), "unknown action is refused");
   require(contains(unknown_action, "\"reason\":\"unknown_or_not_allowlisted\""),
