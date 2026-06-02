@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 167 complete on `sprint-167-agent-panel-shell`.
+Progress counter: Phase 7 / 7, Sprint 168 complete on `sprint-168-left-toolbar-display-controls`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -53,6 +53,8 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI unfinished toolbar tools now report visible planned-tool status and `future_tool_not_implemented` through the safe UI trigger contract instead of acting as silent stubs.
 - Native GUI left toolbar Show Layers and Show Properties actions now toggle their existing panels and report `panel_toggled` through the safe UI trigger contract.
 - Native GUI has a bottom Agent panel shell that can refresh the current UI-map JSON, trigger allowlisted safe UI actions by semantic ID, and expose itself as `panel:agent` for automation targeting.
+- Native GUI left toolbar display controls now perform real view-state actions for grid visibility, polar cursor coordinates, inch units, full-window crosshair, ratsnest guides, net highlighting, and high-contrast display mode. Agent safe triggers return `display_state_toggled`, and UI-map action nodes expose checked state.
+- Native GUI selection inspector cleans up stale editor rows immediately during rapid multi-selection changes, so net highlight and display-mode workflows do not stack old pad or track editors in the properties panel.
 - Native GUI resolves KiCad SVG icons from `CCAD_KICAD_SRC`, `F:\kicad_src`, and executable/current-directory candidates, and the build now links Qt SVG explicitly for KiCad-style toolbar icon rendering.
 - Native GUI symbol placement resolves locally converted KiCad `extends` inheritance from `library-cache`, so derived symbols such as diode variants inherit parent pins before placement.
 - Native GUI footprint placement accepts raw KiCad `.kicad_mod` files from the chooser as well as converted CCad footprint JSON.
@@ -674,7 +676,7 @@ $env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
 
 Only a small allowlist of view/navigation actions is executable this way. Mutating, dialog-opening, or file-writing actions return `performed:false` with a reason field.
 
-Unfinished toolbar tools such as `action:grid`, `action:polar_coord`, `action:unit_inch`, `action:cursor_shape`, `action:show_ratsnest`, `action:net_highlight`, `action:contrast_mode`, `action:add_tracks`, `action:add_via`, `action:add_zone`, `action:add_keepout_area`, `action:add_graphical_segments`, `action:text`, and `action:delete_cursor` are not silently ignored. They return `performed:false`, `reason:"future_tool_not_implemented"`, and the user-facing label while the GUI status bar shows the same planned-tool state. Left-toolbar panel controls `action:layers_manager` and `action:part_properties` are implemented safe actions and return `reason:"panel_toggled"`.
+Left-toolbar display controls such as `action:grid`, `action:polar_coord`, `action:unit_inch`, `action:cursor_shape`, `action:show_ratsnest`, `action:net_highlight`, and `action:contrast_mode` are implemented safe display actions. They return `performed:true`, `reason:"display_state_toggled"`, and their current state, while the UI map exposes checked state for action nodes. Left-toolbar panel controls `action:layers_manager` and `action:part_properties` are implemented safe actions and return `reason:"panel_toggled"`. Remaining editor tools such as `action:add_tracks`, `action:add_via`, `action:add_zone`, `action:add_keepout_area`, `action:add_graphical_segments`, `action:text`, and `action:delete_cursor` are not silently ignored; they still return `performed:false`, `reason:"future_tool_not_implemented"`, and the user-facing label while the GUI status bar shows the same planned-tool state.
 
 Run the app-owned placement-click regression harness:
 

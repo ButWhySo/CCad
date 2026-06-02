@@ -221,13 +221,36 @@ int main(int argc, char** argv) {
   require(contains(future_tool, "\"label\":\"Route Track\""),
           "future toolbar action reports user-facing label");
 
-  const QString left_future_tool = window.triggerSafeUiActionJson("action:grid");
-  require(contains(left_future_tool, "\"performed\":false"),
-          "left toolbar future action is not silent");
-  require(contains(left_future_tool, "\"reason\":\"future_tool_not_implemented\""),
-          "left toolbar future action reports planned-tool reason");
-  require(contains(left_future_tool, "\"label\":\"Toggle Grid\""),
-          "left toolbar future action reports user-facing label");
+  const QString grid_toggle = window.triggerSafeUiActionJson("action:grid");
+  require(contains(grid_toggle, "\"performed\":true"), "grid toolbar action performs");
+  require(contains(grid_toggle, "\"reason\":\"display_state_toggled\""),
+          "grid toolbar action reports display-state toggle");
+  require(contains(grid_toggle, "\"state\":false"), "grid toolbar action reports disabled state");
+
+  const QString polar_toggle = window.triggerSafeUiActionJson("action:polar_coord");
+  require(contains(polar_toggle, "\"performed\":true"), "polar coordinates action performs");
+  require(contains(polar_toggle, "\"state\":true"), "polar coordinates action reports enabled state");
+
+  const QString units_toggle = window.triggerSafeUiActionJson("action:unit_inch");
+  require(contains(units_toggle, "\"performed\":true"), "unit toggle action performs");
+  require(contains(units_toggle, "\"units\":\"in\""), "unit toggle reports inch mode");
+
+  const QString crosshair_toggle = window.triggerSafeUiActionJson("action:cursor_shape");
+  require(contains(crosshair_toggle, "\"performed\":true"), "crosshair toolbar action performs");
+  require(contains(crosshair_toggle, "\"state\":true"), "crosshair action reports enabled state");
+
+  const QString ratsnest_toggle = window.triggerSafeUiActionJson("action:show_ratsnest");
+  require(contains(ratsnest_toggle, "\"performed\":true"), "ratsnest toolbar action performs");
+  require(contains(ratsnest_toggle, "\"state\":false"), "ratsnest action reports hidden state");
+
+  const QString net_highlight_toggle = window.triggerSafeUiActionJson("action:net_highlight");
+  require(contains(net_highlight_toggle, "\"performed\":true"), "net highlight action performs");
+  require(contains(net_highlight_toggle, "\"state\":true"), "net highlight action reports enabled state");
+
+  const QString contrast_toggle = window.triggerSafeUiActionJson("action:contrast_mode");
+  require(contains(contrast_toggle, "\"performed\":true"), "display modes action performs");
+  require(contains(contrast_toggle, "\"mode\":\"high_contrast\""),
+          "display modes action reports high-contrast mode");
 
   const QString hide_layers = window.triggerSafeUiActionJson("action:layers_manager");
   require(contains(hide_layers, "\"performed\":true"), "show layers action toggles panel");
