@@ -3,7 +3,7 @@ param(
   [string]$QtBin = "C:\Qt\6.11.1\mingw_64\bin",
   [string]$Name = "sprint-demo",
   [switch]$ClickSelection,
-  [int]$GuiWaitSeconds = 20,
+  [int]$GuiWaitSeconds = 7,
   [switch]$PreferInternalScreenshot
 )
 
@@ -99,8 +99,8 @@ public static class NativeWin {
       throw "ccad_gui window handle not available in fallback capture."
     }
 
-    # Even after a window handle appears, allow full UI/layout/project render to settle.
-    Start-Sleep -Milliseconds ([Math]::Max(15000, $WaitSeconds * 1000))
+    # Even after a window handle appears, allow the single screenshot preview to settle.
+    Start-Sleep -Milliseconds ([Math]::Max(1000, $WaitSeconds * 1000))
 
     $process.Refresh()
     if ($process.HasExited) {

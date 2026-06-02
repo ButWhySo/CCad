@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 166
-- Branch: `sprint-166-left-toolbar-real-toggles`
+- Sprint: 167
+- Branch: `sprint-167-agent-panel-shell`
 - Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
@@ -32,6 +32,7 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - **Sprint 164 (Toolbar Action Contracts)** is complete on `sprint-164-toolbar-action-contracts`. It removes silent right-toolbar stubs by giving unfinished editor tools visible planned-tool status and an agent-readable `future_tool_not_implemented` safe-trigger response.
 - **Sprint 165 (Left Toolbar Action Contracts)** is complete on `sprint-165-left-toolbar-action-contracts`. It extends the no-silent-stubs contract to unfinished left-toolbar display and panel controls.
 - **Sprint 166 (Left Toolbar Real Toggles)** is complete on `sprint-166-left-toolbar-real-toggles`. It turns Show Layers and Show Properties into real panel toggles with `panel_toggled` safe-trigger responses.
+- **Sprint 167 (Native Agent Panel Shell)** is complete on `sprint-167-agent-panel-shell`. It adds the first persistent Qt Agent panel for UI-map refreshes, safe UI action triggers, and `panel:agent` targeting without provider or secret integration. It also updates the GUI visual-validation timing policy to 7 seconds for single-preview screenshots and 5 seconds initial plus 800 ms per-target waits for multi-target GUI harness runs.
 
 ## Phase Roadmap
 

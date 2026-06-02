@@ -2,7 +2,9 @@ param(
   [string]$BuildDir = "build-qt",
   [string]$QtBin = "C:\Qt\6.11.1\mingw_64\bin",
   [string]$ProjectPath,
-  [string]$Name = "ui-map-mouse-targets"
+  [string]$Name = "ui-map-mouse-targets",
+  [int]$InitialLoadMilliseconds = 5000,
+  [int]$PerTargetMilliseconds = 800
 )
 
 $ErrorActionPreference = "Stop"
@@ -53,7 +55,8 @@ Invoke-PreTestBeep
 Start-Sleep -Seconds 2
 
 $process = Start-Process -FilePath $Gui `
-  -ArgumentList @("--test-ui-map-target-sequence", $ProjectPath, $ScreenshotDir, $Name) `
+  -ArgumentList @("--test-ui-map-target-sequence", $ProjectPath, $ScreenshotDir, $Name,
+                  [string]$InitialLoadMilliseconds, [string]$PerTargetMilliseconds) `
   -PassThru -Wait -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
 
 if ($process.ExitCode -ne 0) {

@@ -22,6 +22,8 @@
 
 QString formatCursorStatus(const std::optional<ccad::Board>& board, const QPointF& scene_position);
 
+class AgentPanel;
+
 enum class InteractionMode {
   Default,
   PlaceFootprint,
@@ -78,7 +80,9 @@ class ReviewWindow final : public QMainWindow {
   void restoreProjectSnapshot(const ccad::Project& snapshot);
   void updateUndoRedoActions();
   void markUiMapChanged();
+  void updateAgentPanelContext();
 
+  AgentPanel* agent_panel_ = nullptr;
   ProjectSummaryPanel* project_summary_ = nullptr;
   QLabel* cursor_status_ = nullptr;
   QLabel* zoom_status_ = nullptr;
@@ -92,6 +96,7 @@ class ReviewWindow final : public QMainWindow {
   QGraphicsScene* schematic_scene_ = nullptr;
   QGraphicsView* schematic_view_ = nullptr;
   QTabWidget* editor_tabs_ = nullptr;
+  QTabWidget* bottom_tabs_ = nullptr;
   DiagnosticsPanel* diagnostics_ = nullptr;
   TransactionTimelinePanel* transaction_timeline_ = nullptr;
   std::filesystem::path current_path_;

@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 156 complete on `sprint-156-lazy-library-chooser`.
+Progress counter: Phase 7 / 7, Sprint 167 complete on `sprint-167-agent-panel-shell`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -52,6 +52,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI can keep a local live UI-map socket open while the GUI runs, serving repeated JSON Lines `ui.map`, `ui.target`, and `ui.epoch` requests for agents.
 - Native GUI unfinished toolbar tools now report visible planned-tool status and `future_tool_not_implemented` through the safe UI trigger contract instead of acting as silent stubs.
 - Native GUI left toolbar Show Layers and Show Properties actions now toggle their existing panels and report `panel_toggled` through the safe UI trigger contract.
+- Native GUI has a bottom Agent panel shell that can refresh the current UI-map JSON, trigger allowlisted safe UI actions by semantic ID, and expose itself as `panel:agent` for automation targeting.
 - Native GUI resolves KiCad SVG icons from `CCAD_KICAD_SRC`, `F:\kicad_src`, and executable/current-directory candidates, and the build now links Qt SVG explicitly for KiCad-style toolbar icon rendering.
 - Native GUI symbol placement resolves locally converted KiCad `extends` inheritance from `library-cache`, so derived symbols such as diode variants inherit parent pins before placement.
 - Native GUI footprint placement accepts raw KiCad `.kicad_mod` files from the chooser as well as converted CCad footprint JSON.
@@ -646,6 +647,15 @@ $env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
 .\build-qt\ccad_gui.exe --ui-target-id .\artifacts\demos\sprint156-layer-color-final.ccad.json action:add_footprint .\artifacts\demos\ui-target-add-footprint.json
 ```
 
+The native GUI also exposes its bottom Agent panel as `panel:agent`:
+
+```powershell
+$env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
+.\build-qt\ccad_gui.exe --ui-target-id .\artifacts\demos\sprint156-layer-color-final.ccad.json panel:agent .\artifacts\demos\ui-target-agent-panel.json
+```
+
+The panel itself can refresh the current UI-map JSON and trigger allowlisted safe actions such as `action:zoom_in`. It is a local shell only; provider keys, BYOK routing, LangGraph orchestration, and OpenTelemetry/Langfuse tracing remain future integration work.
+
 Query one PCB board point:
 
 ```powershell
@@ -681,7 +691,7 @@ Run the app-owned UI-map mouse-target harness:
 powershell -ExecutionPolicy Bypass -File .\scripts\run_ui_map_mouse_target_demo.ps1 -Name sprint161-ui-map-mouse-targets -ProjectPath .\artifacts\demos\sprint160-placement-crash-ci-final.ccad.json
 ```
 
-The script plays the docs beep, waits two seconds, launches the GUI target-sequence mode, moves the cursor to semantic targets such as Select, Measure, Save, File, and the properties/DRC panel, waits 20 seconds before screenshots, saves marked PNGs, resizes the window, repeats the same targets, and writes a JSON report.
+The script plays the docs beep, waits two seconds, launches the GUI target-sequence mode, lets the window settle for five seconds, moves the cursor to semantic targets such as Select, Measure, Save, File, the properties/DRC panel, and the Agent tab, waits about 800 ms per target before screenshots, saves marked PNGs, resizes the window, repeats the same targets, and writes a JSON report.
 
 Run the live UI-map local socket server:
 
