@@ -5,7 +5,7 @@ param(
   [string]$Name = "gui-interaction",
   [ValidateSet("Footprint", "Symbol")]
   [string]$Mode = "Footprint",
-  [int]$GuiWaitSeconds = 20
+  [int]$GuiWaitSeconds = 7
 )
 
 $ErrorActionPreference = "Stop"
@@ -153,7 +153,7 @@ try {
   $chooserRowY = $rect.Top + 165
   Invoke-Click -X $chooserRowX -Y $chooserRowY
 
-  Start-Sleep -Seconds ([Math]::Max(20, $GuiWaitSeconds))
+  Start-Sleep -Seconds ([Math]::Max(1, $GuiWaitSeconds))
   $Timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
   $Screenshot = Join-Path $ScreenshotDir "$Name-$Timestamp.png"
   Save-WindowScreenshot -Handle $process.MainWindowHandle -Path $Screenshot

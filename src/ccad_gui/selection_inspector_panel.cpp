@@ -418,12 +418,19 @@ void SelectionInspectorPanel::setRow(const QString& label, const QString& value)
 
 void SelectionInspectorPanel::clearExtraRows() {
   if (form_ != nullptr) {
-    QLayoutItem* item;
-    while ((item = form_->takeAt(0)) != nullptr) {
-      if (item->widget() != nullptr) {
-        item->widget()->deleteLater();
+    const auto delete_item = [](QLayoutItem* item) {
+      if (item == nullptr) {
+        return;
+      }
+      if (QWidget* widget = item->widget()) {
+        widget->deleteLater();
       }
       delete item;
+    };
+    while (form_->rowCount() > 0) {
+      const QFormLayout::TakeRowResult row = form_->takeRow(0);
+      delete_item(row.labelItem);
+      delete_item(row.fieldItem);
     }
   }
   rows_.clear();

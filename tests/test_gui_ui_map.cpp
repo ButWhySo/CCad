@@ -131,8 +131,10 @@ int main(int argc, char** argv) {
   require(contains(map, "\"id\":\"panel:layers_objects\""),
           "UI map exposes layers/object panel");
   require(contains(map, "\"id\":\"panel:diagnostics\""), "UI map exposes diagnostics panel");
+  require(contains(map, "\"id\":\"panel:agent\""), "UI map exposes agent panel");
   require(contains(map, "\"id\":\"tab:pcb\""), "UI map exposes PCB tab");
   require(contains(map, "\"id\":\"tab:schematic\""), "UI map exposes schematic tab");
+  require(contains(map, "\"id\":\"tab:agent\""), "UI map exposes agent bottom tab");
   require(contains(map, "\"id\":\"canvas:pcb\""), "UI map exposes PCB canvas");
   require(contains(map, "\"id\":\"canvas_object:U1.1\""),
           "UI map exposes typed canvas object");
@@ -161,6 +163,15 @@ int main(int argc, char** argv) {
   const QString panel_target = window.uiTargetJsonById("panel:layers_objects");
   require(contains(panel_target, "\"found\":true"), "panel target query finds layers panel");
   require(contains(panel_target, "\"role\":\"panel\""), "panel target query reports role");
+
+  const QString agent_panel_target = window.uiTargetJsonById("panel:agent");
+  require(contains(agent_panel_target, "\"found\":true"), "panel target query finds agent panel");
+  require(contains(agent_panel_target, "\"role\":\"panel\""),
+          "agent panel target query reports role");
+
+  const QString agent_tab_target = window.uiTargetJsonById("tab:agent");
+  require(contains(agent_tab_target, "\"found\":true"), "tab target query finds agent tab");
+  require(contains(agent_tab_target, "\"role\":\"tab\""), "agent tab target query reports role");
 
   const QString pad_target = window.uiTargetJsonById("canvas_object:U1.1");
   require(contains(pad_target, "\"found\":true"), "canvas object target query finds pad");
@@ -192,6 +203,11 @@ int main(int argc, char** argv) {
 
   const QString pcb_tab = window.triggerSafeUiActionJson("tab:pcb");
   require(contains(pcb_tab, "\"performed\":true"), "safe PCB tab trigger works");
+
+  const QString agent_tab = window.triggerSafeUiActionJson("tab:agent");
+  require(contains(agent_tab, "\"performed\":true"), "safe agent tab trigger works");
+  require(contains(agent_tab, "\"reason\":\"tab_selected\""),
+          "safe agent tab trigger reports tab selection");
 
   const QString unsafe = window.triggerSafeUiActionJson("action:save");
   require(contains(unsafe, "\"performed\":false"), "unsafe action is refused");

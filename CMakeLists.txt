@@ -222,6 +222,7 @@ if(CCAD_BUILD_GUI)
     set(CMAKE_AUTOUIC ON)
     set(CMAKE_AUTORCC ON)
     add_executable(ccad_gui
+      src/ccad_gui/agent_panel.cpp
       src/ccad_gui/board_canvas_renderer.cpp
       src/ccad_gui/component_wizard_dialog.cpp
       src/ccad_gui/footprint_placement_dialog.cpp
@@ -473,8 +474,31 @@ if(CCAD_BUILD_GUI)
     endif()
     add_test(NAME gui_board_canvas_view COMMAND ccad_gui_board_canvas_view_tests)
 
+    add_executable(ccad_gui_agent_panel_tests
+      tests/test_gui_agent_panel.cpp
+      src/ccad_gui/agent_panel.cpp
+    )
+    target_link_libraries(ccad_gui_agent_panel_tests PRIVATE Qt6::Widgets)
+    target_include_directories(ccad_gui_agent_panel_tests PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests
+    )
+    if(MSVC)
+      target_compile_options(ccad_gui_agent_panel_tests PRIVATE /W4)
+      if(CCAD_WARNINGS_AS_ERRORS)
+        target_compile_options(ccad_gui_agent_panel_tests PRIVATE /WX)
+      endif()
+    else()
+      target_compile_options(ccad_gui_agent_panel_tests PRIVATE -Wall -Wextra -Wpedantic)
+      if(CCAD_WARNINGS_AS_ERRORS)
+        target_compile_options(ccad_gui_agent_panel_tests PRIVATE -Werror)
+      endif()
+    endif()
+    add_test(NAME gui_agent_panel COMMAND ccad_gui_agent_panel_tests)
+
     add_executable(ccad_gui_ui_map_tests
       tests/test_gui_ui_map.cpp
+      src/ccad_gui/agent_panel.cpp
       src/ccad_gui/review_window.cpp
       src/ccad_gui/component_wizard_dialog.cpp
       src/ccad_gui/footprint_placement_dialog.cpp
@@ -508,6 +532,7 @@ if(CCAD_BUILD_GUI)
 
     add_executable(ccad_gui_review_window_cursor_status_tests
       tests/test_gui_review_window_cursor_status.cpp
+      src/ccad_gui/agent_panel.cpp
       src/ccad_gui/review_window.cpp
       src/ccad_gui/component_wizard_dialog.cpp
       src/ccad_gui/footprint_placement_dialog.cpp

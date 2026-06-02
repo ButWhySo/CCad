@@ -18,9 +18,23 @@
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include <string>
 #include <vector>
 
 namespace {
+
+constexpr int kSingleScreenshotWaitMs = 7000;
+constexpr int kMultiTargetInitialWaitMs = 5000;
+constexpr int kMultiTargetPerTargetWaitMs = 800;
+
+int parsePositiveIntArg(char** argv, const int index, const int fallback) {
+  try {
+    const int value = std::stoi(argv[index]);
+    return value > 0 ? value : fallback;
+  } catch (...) {
+    return fallback;
+  }
+}
 
 QString jsonStringLocal(const QString& value) {
   QString output = "\"";
@@ -242,22 +256,35 @@ int main(int argc, char** argv) {
     });
 
     return QApplication::exec();
-  } else if (argc == 5 && std::string(argv[1]) == "--test-ui-map-target-sequence") {
+  } else if ((argc == 5 || argc == 7) &&
+             std::string(argv[1]) == "--test-ui-map-target-sequence") {
     const std::filesystem::path project_path(argv[2]);
     const std::filesystem::path output_dir(argv[3]);
     const QString name = QString::fromLocal8Bit(argv[4]);
+    const int initial_wait_ms =
+        argc == 7 ? parsePositiveIntArg(argv, 5, kMultiTargetInitialWaitMs)
+                  : kMultiTargetInitialWaitMs;
+    const int per_target_wait_ms =
+        argc == 7 ? parsePositiveIntArg(argv, 6, kMultiTargetPerTargetWaitMs)
+                  : kMultiTargetPerTargetWaitMs;
     std::filesystem::create_directories(output_dir);
     ReviewWindow window;
     window.loadProjectPath(project_path);
     window.show();
 
-    QTimer::singleShot(1000, &window, [&window, output_dir, name]() {
+    QTimer::singleShot(initial_wait_ms, &window,
+                       [&window, output_dir, name, initial_wait_ms, per_target_wait_ms]() {
       QStringList entries;
       const QStringList target_ids = {"action:cursor", "action:measurement", "action:save",
-                                      "menu:file", "panel:properties"};
-      const auto runPass = [&window, &entries, &output_dir, &name, &target_ids](
+                                      "menu:file", "panel:properties", "tab:agent"};
+      const auto runPass = [&window, &entries, &output_dir, &name, &target_ids,
+                            per_target_wait_ms](
                                const QString& pass_name) {
         for (const QString& id : target_ids) {
+          if (id == "tab:agent") {
+            window.triggerSafeUiActionJson(id);
+            QApplication::processEvents();
+          }
           const QString target_json = window.uiTargetJsonById(id);
           const bool found = target_json.contains("\"found\":true");
           const std::optional<int> x = extractJsonInt(target_json, "\"logical_x\":");
@@ -266,7 +293,7 @@ int main(int argc, char** argv) {
           if (found && x.has_value() && y.has_value()) {
             QCursor::setPos(*x, *y);
             QApplication::processEvents();
-            QThread::sleep(20);
+            QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
             QApplication::processEvents();
             const QString safe_id = id;
             QString slug = safe_id;
@@ -302,15 +329,18 @@ int main(int argc, char** argv) {
       runPass("initial");
       window.resize(1120, 720);
       QApplication::processEvents();
-      QThread::sleep(1);
+      QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
       runPass("resized");
 
       const std::filesystem::path output_path =
           output_dir / (name + "-target-sequence.json").toStdString();
       std::ofstream output(output_path, std::ios::binary);
       const QString report =
-          QString("{\"schema_version\":1,\"name\":%1,\"entries\":[%2]}\n")
+          QString("{\"schema_version\":1,\"name\":%1,\"initial_wait_ms\":%2,"
+                  "\"per_target_wait_ms\":%3,\"entries\":[%4]}\n")
               .arg(jsonStringLocal(name))
+              .arg(initial_wait_ms)
+              .arg(per_target_wait_ms)
               .arg(entries.join(','));
       const QByteArray bytes = report.toUtf8();
       output.write(bytes.constData(), bytes.size());
@@ -367,7 +397,8 @@ int main(int argc, char** argv) {
     window.loadProjectPath(project_path);
     window.show();
 
-    QTimer::singleShot(2000, &window, [&window, screenshot_path, screenshot_arg]() {
+    QTimer::singleShot(kSingleScreenshotWaitMs, &window,
+                       [&window, screenshot_path, screenshot_arg]() {
       const QPixmap screenshot = window.grab();
       if (!screenshot.save(screenshot_path)) {
         std::cerr << "failed to save GUI screenshot: " << screenshot_arg << '\n';
@@ -395,7 +426,8 @@ int main(int argc, char** argv) {
     }
     window.show();
     
-    QTimer::singleShot(2000, &window, [&window, screenshot_path, screenshot_arg]() {
+    QTimer::singleShot(kSingleScreenshotWaitMs, &window,
+                       [&window, screenshot_path, screenshot_arg]() {
       const QPixmap screenshot = window.grab();
       if (!screenshot.save(screenshot_path)) {
         std::cerr << "failed to save GUI screenshot: " << screenshot_arg << '\n';
@@ -426,7 +458,7 @@ int main(int argc, char** argv) {
         QCoreApplication::exit(3);
       }
     });
-    QTimer::singleShot(20000, dialog, [dialog, screenshot_path, screenshot_arg]() {
+    QTimer::singleShot(kSingleScreenshotWaitMs, dialog, [dialog, screenshot_path, screenshot_arg]() {
       QCoreApplication::exit(screenshotWindow(*dialog, screenshot_path, screenshot_arg));
     });
 
@@ -453,7 +485,8 @@ int main(int argc, char** argv) {
       }
     });
 
-    QTimer::singleShot(2000, &window, [&window, screenshot_path, screenshot_arg]() {
+    QTimer::singleShot(kSingleScreenshotWaitMs, &window,
+                       [&window, screenshot_path, screenshot_arg]() {
       const QPixmap screenshot = window.grab();
       if (!screenshot.save(screenshot_path)) {
         std::cerr << "failed to save GUI screenshot: " << screenshot_arg << '\n';

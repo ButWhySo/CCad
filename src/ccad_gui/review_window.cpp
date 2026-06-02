@@ -14,6 +14,7 @@
 #include "ccad_core/kicad_footprint_import.hpp"
 #include "ccad_core/placement.hpp"
 #include "ccad_core/json.hpp"
+#include "ccad_gui/agent_panel.hpp"
 #include "symbol_placement_dialog.hpp"
 #include "footprint_placement_dialog.hpp"
 
@@ -571,15 +572,21 @@ ReviewWindow::ReviewWindow() {
 
   diagnostics_ = new DiagnosticsPanel(this);
   transaction_timeline_ = new TransactionTimelinePanel(this);
+  agent_panel_ = new AgentPanel(this);
+  agent_panel_->setUiMapProvider([this]() { return uiMapJson(); });
+  agent_panel_->setSafeActionTrigger(
+      [this](const QString& id) { return triggerSafeUiActionJson(id); });
+  updateAgentPanelContext();
 
   auto* diagnostics_dock = new QDockWidget("Diagnostics", this);
   diagnostics_dock->setObjectName("diagnosticsDock");
   diagnostics_dock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
-  auto* bottom_tabs = new QTabWidget(diagnostics_dock);
-  bottom_tabs->setObjectName("bottomReviewTabs");
-  bottom_tabs->addTab(diagnostics_, "Diagnostics");
-  bottom_tabs->addTab(transaction_timeline_, "Transactions");
-  diagnostics_dock->setWidget(bottom_tabs);
+  bottom_tabs_ = new QTabWidget(diagnostics_dock);
+  bottom_tabs_->setObjectName("bottomReviewTabs");
+  bottom_tabs_->addTab(diagnostics_, "Diagnostics");
+  bottom_tabs_->addTab(transaction_timeline_, "Transactions");
+  bottom_tabs_->addTab(agent_panel_, "Agent");
+  diagnostics_dock->setWidget(bottom_tabs_);
   addDockWidget(Qt::BottomDockWidgetArea, diagnostics_dock);
 
   auto* right_panel = new QWidget(this);
@@ -863,6 +870,8 @@ ReviewWindow::ReviewWindow() {
             add_symbol_action->setVisible(!pcb_tab);
             markUiMapChanged();
           });
+  connect(bottom_tabs_, &QTabWidget::currentChanged, this,
+          [this](int) { markUiMapChanged(); });
   add_footprint_action->setVisible(true);
   add_symbol_action->setVisible(false);
 
@@ -1443,6 +1452,17 @@ void ReviewWindow::renderCanvas(const ccad::CanvasScene& scene,
 
 void ReviewWindow::markUiMapChanged() {
   ++ui_map_epoch_;
+  updateAgentPanelContext();
+}
+
+void ReviewWindow::updateAgentPanelContext() {
+  if (agent_panel_ == nullptr) {
+    return;
+  }
+  const QString project_label = current_path_.empty()
+                                    ? QString("none")
+                                    : QFileInfo(qstr(current_path_.string())).fileName();
+  agent_panel_->setProjectContext(project_label, ui_map_epoch_);
 }
 
 QString ReviewWindow::uiMapJson() const {
@@ -1507,6 +1527,7 @@ QString ReviewWindow::uiMapJson() const {
   appendPanelNode("panel:properties", "Properties / DRC Rules", selection_inspector_);
   appendPanelNode("panel:layers_objects", "Layers / Objects", object_browser_);
   appendPanelNode("panel:diagnostics", "Diagnostics", diagnostics_);
+  appendPanelNode("panel:agent", "Agent", agent_panel_);
 
   const QList<QToolButton*> buttons = findChildren<QToolButton*>();
   for (const QToolButton* button : buttons) {
@@ -1545,6 +1566,26 @@ QString ReviewWindow::uiMapJson() const {
                    .arg(boolJson(editor_tabs_->isVisible()))
                    .arg(boolJson(editor_tabs_->isTabEnabled(index)))
                    .arg(boolJson(editor_tabs_->currentIndex() == index))
+                   .arg(rectJson(global_rect))
+                   .arg(global_rect.center().x())
+                   .arg(global_rect.center().y());
+    }
+  }
+
+  if (bottom_tabs_ != nullptr && bottom_tabs_->tabBar() != nullptr) {
+    for (int index = 0; index < bottom_tabs_->count(); ++index) {
+      QString id = "tab:" + normalizedIdPart(bottom_tabs_->tabText(index));
+      const QRect tab_rect = bottom_tabs_->tabBar()->tabRect(index);
+      const QRect global_rect(bottom_tabs_->tabBar()->mapToGlobal(tab_rect.topLeft()),
+                              tab_rect.size());
+      nodes << QString("{\"id\":%1,\"role\":\"tab\",\"label\":%2,"
+                       "\"visible\":%3,\"enabled\":%4,\"selected\":%5,"
+                       "\"global_rect\":%6,\"target_x\":%7,\"target_y\":%8}")
+                   .arg(jsonString(id))
+                   .arg(jsonString(bottom_tabs_->tabText(index)))
+                   .arg(boolJson(bottom_tabs_->isVisible()))
+                   .arg(boolJson(bottom_tabs_->isTabEnabled(index)))
+                   .arg(boolJson(bottom_tabs_->currentIndex() == index))
                    .arg(rectJson(global_rect))
                    .arg(global_rect.center().x())
                    .arg(global_rect.center().y());
@@ -1693,6 +1734,20 @@ QString ReviewWindow::validateUiMapTargetsJson(const bool move_cursor) const {
     }
   }
 
+  if (bottom_tabs_ != nullptr && bottom_tabs_->tabBar() != nullptr) {
+    for (int index = 0; index < bottom_tabs_->count(); ++index) {
+      const QString id = "tab:" + normalizedIdPart(bottom_tabs_->tabText(index));
+      const QRect tab_rect = bottom_tabs_->tabBar()->tabRect(index);
+      const QRect global_rect(bottom_tabs_->tabBar()->mapToGlobal(tab_rect.topLeft()),
+                              tab_rect.size());
+      const QPoint target = global_rect.center();
+      const int tab_at_target = bottom_tabs_->tabBar()->tabAt(
+          bottom_tabs_->tabBar()->mapFromGlobal(target));
+      appendCheck(id, "tab", bottom_tabs_->isVisible(), bottom_tabs_->isTabEnabled(index),
+                  target, tab_at_target == index, QString::number(tab_at_target));
+    }
+  }
+
   const auto validateCanvas = [&appendCheck](const QString& id, const QGraphicsView* view) {
     if (view == nullptr) {
       return;
@@ -1822,6 +1877,9 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
           panelTarget("panel:diagnostics", "Diagnostics", diagnostics_)) {
     return *target;
   }
+  if (const std::optional<QString> target = panelTarget("panel:agent", "Agent", agent_panel_)) {
+    return *target;
+  }
 
   if (editor_tabs_ != nullptr && editor_tabs_->tabBar() != nullptr) {
     for (int index = 0; index < editor_tabs_->count(); ++index) {
@@ -1835,6 +1893,21 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
                               tab_rect.size());
       return foundTarget(tab_id, "tab", editor_tabs_->tabText(index), editor_tabs_->isVisible(),
                          editor_tabs_->isTabEnabled(index), global_rect.center());
+    }
+  }
+
+  if (bottom_tabs_ != nullptr && bottom_tabs_->tabBar() != nullptr) {
+    for (int index = 0; index < bottom_tabs_->count(); ++index) {
+      const QString tab_id = "tab:" + normalizedIdPart(bottom_tabs_->tabText(index));
+      if (tab_id != id) {
+        continue;
+      }
+      const QRect tab_rect = bottom_tabs_->tabBar()->tabRect(index);
+      const QRect global_rect(bottom_tabs_->tabBar()->mapToGlobal(tab_rect.topLeft()),
+                              tab_rect.size());
+      return foundTarget(tab_id, "tab", bottom_tabs_->tabText(index),
+                         bottom_tabs_->isVisible(), bottom_tabs_->isTabEnabled(index),
+                         global_rect.center());
     }
   }
 
@@ -1948,6 +2021,19 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
       return result(id, false, "disabled");
     }
     editor_tabs_->setCurrentIndex(index);
+    markUiMapChanged();
+    return result(id, true, "tab_selected");
+  }
+
+  if (id == "tab:diagnostics" || id == "tab:transactions" || id == "tab:agent") {
+    if (bottom_tabs_ == nullptr) {
+      return result(id, false, "tabs_unavailable");
+    }
+    const int index = id == "tab:diagnostics" ? 0 : id == "tab:transactions" ? 1 : 2;
+    if (!bottom_tabs_->isTabEnabled(index)) {
+      return result(id, false, "disabled");
+    }
+    bottom_tabs_->setCurrentIndex(index);
     markUiMapChanged();
     return result(id, true, "tab_selected");
   }
