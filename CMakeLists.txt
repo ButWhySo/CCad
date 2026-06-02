@@ -216,8 +216,8 @@ if(MINGW)
 endif()
 
 if(CCAD_BUILD_GUI)
-  find_package(Qt6 QUIET COMPONENTS Widgets Test Svg)
-  if(Qt6Widgets_FOUND AND Qt6Test_FOUND AND Qt6Svg_FOUND)
+  find_package(Qt6 QUIET COMPONENTS Widgets Test Svg Network)
+  if(Qt6Widgets_FOUND AND Qt6Test_FOUND AND Qt6Svg_FOUND AND Qt6Network_FOUND)
     set(CMAKE_AUTOMOC ON)
     set(CMAKE_AUTOUIC ON)
     set(CMAKE_AUTORCC ON)
@@ -227,6 +227,7 @@ if(CCAD_BUILD_GUI)
       src/ccad_gui/footprint_placement_dialog.cpp
       src/ccad_gui/symbol_placement_dialog.cpp
       src/ccad_gui/library_browser_dialog.cpp
+      src/ccad_gui/ui_map_server.cpp
       src/ccad_gui/diagnostics_panel.cpp
       src/ccad_gui/main.cpp
       src/ccad_gui/object_browser_panel.cpp
@@ -235,7 +236,7 @@ if(CCAD_BUILD_GUI)
       src/ccad_gui/selection_inspector_panel.cpp
       src/ccad_gui/transaction_timeline_panel.cpp
     )
-    target_link_libraries(ccad_gui PRIVATE ccad_core Qt6::Widgets Qt6::Svg)
+    target_link_libraries(ccad_gui PRIVATE ccad_core Qt6::Widgets Qt6::Svg Qt6::Network)
     if(MINGW)
       target_link_options(ccad_gui PRIVATE -static -static-libgcc -static-libstdc++)
     endif()
@@ -485,8 +486,9 @@ if(CCAD_BUILD_GUI)
       src/ccad_gui/object_browser_panel.cpp
       src/ccad_gui/selection_inspector_panel.cpp
       src/ccad_gui/board_canvas_renderer.cpp
+      src/ccad_gui/ui_map_server.cpp
     )
-    target_link_libraries(ccad_gui_ui_map_tests PRIVATE ccad_core Qt6::Widgets Qt6::Svg)
+    target_link_libraries(ccad_gui_ui_map_tests PRIVATE ccad_core Qt6::Widgets Qt6::Svg Qt6::Network)
     target_include_directories(ccad_gui_ui_map_tests PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src
       ${CMAKE_CURRENT_SOURCE_DIR}/tests

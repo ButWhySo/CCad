@@ -49,6 +49,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI can dump a read-only semantic UI map as JSON for LLM/automation tooling, including stable action IDs, tab/canvas bounds, canvas-object IDs, net/layer metadata, route provenance, and click target coordinates.
 - Native GUI has app-owned placement-click regression automation so left-click footprint placement can be tested through the real Qt viewport event path without manual mouse control.
 - Native GUI has app-owned UI-map mouse-target automation that moves to semantic targets, captures marked screenshots, resizes the window, and repeats to prove scalable coordinates.
+- Native GUI can keep a local live UI-map socket open while the GUI runs, serving repeated JSON Lines `ui.map`, `ui.target`, and `ui.epoch` requests for agents.
 - Native GUI resolves KiCad SVG icons from `CCAD_KICAD_SRC`, `F:\kicad_src`, and executable/current-directory candidates, and the build now links Qt SVG explicitly for KiCad-style toolbar icon rendering.
 - Native GUI symbol placement resolves locally converted KiCad `extends` inheritance from `library-cache`, so derived symbols such as diode variants inherit parent pins before placement.
 - Native GUI footprint placement accepts raw KiCad `.kicad_mod` files from the chooser as well as converted CCad footprint JSON.
@@ -677,6 +678,14 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_ui_map_mouse_target_demo.
 ```
 
 The script plays the docs beep, waits two seconds, launches the GUI target-sequence mode, moves the cursor to semantic targets such as Select, Measure, Save, File, and the properties/DRC panel, waits 20 seconds before screenshots, saves marked PNGs, resizes the window, repeats the same targets, and writes a JSON report.
+
+Run the live UI-map local socket server:
+
+```cmd
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --serve-ui-map artifacts\demos\sprint162-pad-layer-rendering-fidelity-final.ccad.json ccad-ui-map-demo artifacts\demos\ccad-ui-map-demo.ready.txt"
+```
+
+While the GUI stays open, connect to the named local socket and send one JSON request per line. Initial methods are `{"method":"ui.map"}`, `{"method":"ui.target","id":"menu:file"}`, and `{"method":"ui.epoch"}`. Responses are newline-delimited JSON values.
 
 What it does:
 
