@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 169 complete on `sprint-169-visual-harness-timing`.
+Progress counter: Phase 7 / 7, Sprint 171 complete on `sprint-171-pcb-active-layer-context`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -51,6 +51,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI has app-owned UI-map mouse-target automation that moves to semantic targets, captures marked screenshots, resizes the window, and repeats to prove scalable coordinates.
 - Native GUI can keep a local live UI-map socket open while the GUI runs, serving repeated JSON Lines `ui.map`, `ui.target`, and `ui.epoch` requests for agents.
 - Native GUI right-toolbar Add Via, Route Track, Add Keepout, and Delete tools now enter real PCB edit modes and create or remove durable board primitives through the same Qt viewport event path used by app-owned tests.
+- Native GUI has a PCB active-layer selector, exposes it as `control:active_pcb_layer`, serves active-layer query/set methods to agents, and uses the selected copper layer for footprint placement and Route Track commits.
 - Native GUI unfinished toolbar tools now report visible planned-tool status and `future_tool_not_implemented` through the safe UI trigger contract instead of acting as silent stubs.
 - Native GUI left toolbar Show Layers and Show Properties actions now toggle their existing panels and report `panel_toggled` through the safe UI trigger contract.
 - Native GUI has a bottom Agent panel shell that can refresh the current UI-map JSON, trigger allowlisted safe UI actions by semantic ID, and expose itself as `panel:agent` for automation targeting.
@@ -633,7 +634,7 @@ $env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
 .\build-qt\ccad_gui.exe --dump-ui-map .\artifacts\demos\sprint156-layer-color-final.ccad.json .\artifacts\demos\ui-map.json
 ```
 
-The map reports stable IDs such as `action:add_footprint`, `tab:pcb`, `canvas:pcb`, and `canvas_object:JAC1.1`, plus screen-space target coordinates and CAD metadata.
+The map reports stable IDs such as `action:add_footprint`, `control:active_pcb_layer`, `tab:pcb`, `canvas:pcb`, and `canvas_object:JAC1.1`, plus screen-space target coordinates and CAD metadata. The top-level map also reports `active_pcb_layer_id`.
 
 Validate the exported target coordinates against the live Qt window:
 
@@ -680,6 +681,15 @@ Only a small allowlist of view/navigation actions is executable this way. Mutati
 
 Left-toolbar display controls such as `action:grid`, `action:polar_coord`, `action:unit_inch`, `action:cursor_shape`, `action:show_ratsnest`, `action:net_highlight`, and `action:contrast_mode` are implemented safe display actions. They return `performed:true`, `reason:"display_state_toggled"`, and their current state, while the UI map exposes checked state for action nodes. Left-toolbar panel controls `action:layers_manager` and `action:part_properties` are implemented safe actions and return `reason:"panel_toggled"`. Right-toolbar PCB editor entries `action:add_tracks`, `action:add_via`, and `action:add_keepout_area` now return `performed:true`, `reason:"editor_tool_selected"`, and a concrete mode value, while `action:delete_cursor` removes the selected board primitive when the model supports that object type. Remaining editor tools such as `action:add_zone`, `action:add_graphical_segments`, and `action:text` are not silently ignored; they still return `performed:false`, `reason:"future_tool_not_implemented"`, and the user-facing label while the GUI status bar shows the same planned-tool state.
 
+Query or set the GUI PCB active layer:
+
+```cmd
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --ui-active-layer artifacts\demos\sprint171-pcb-active-layer-context-final.ccad.json artifacts\demos\sprint171-active-layer.json"
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --ui-set-active-layer artifacts\demos\sprint171-pcb-active-layer-context-final.ccad.json B.Cu artifacts\demos\sprint171-set-active-layer.json"
+```
+
+The active layer is GUI/editor state, not extra board JSON. It lists and accepts board copper layers only. Footprint placement and Route Track use the selected active copper layer; via placement remains through-board but uses the active copper color for its placement ghost.
+
 Run the app-owned placement-click regression harness:
 
 ```powershell
@@ -714,7 +724,7 @@ Run the live UI-map local socket server:
 cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --serve-ui-map artifacts\demos\sprint162-pad-layer-rendering-fidelity-final.ccad.json ccad-ui-map-demo artifacts\demos\ccad-ui-map-demo.ready.txt"
 ```
 
-While the GUI stays open, connect to the named local socket and send one JSON request per line. Initial methods are `{"method":"ui.map"}`, `{"method":"ui.target","id":"menu:file"}`, and `{"method":"ui.epoch"}`. Responses are newline-delimited JSON values.
+While the GUI stays open, connect to the named local socket and send one JSON request per line. Current methods are `{"method":"ui.map"}`, `{"method":"ui.target","id":"menu:file"}`, `{"method":"ui.epoch"}`, `{"method":"ui.active_layer"}`, and `{"method":"ui.set_active_layer","layer_id":"B.Cu"}`. Responses are newline-delimited JSON values.
 
 What it does:
 

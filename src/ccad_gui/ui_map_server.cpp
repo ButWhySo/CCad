@@ -143,6 +143,18 @@ QString UiMapServer::responseForLine(const QString& line) const {
     return "{\"schema_version\":1,\"ok\":true,\"method\":\"ui.target\",\"result\":" +
            oneLineJson(window_.uiTargetJsonById(id)) + "}";
   }
+  if (method == "ui.active_layer") {
+    return "{\"schema_version\":1,\"ok\":true,\"method\":\"ui.active_layer\",\"result\":" +
+           oneLineJson(window_.activePcbLayerJson()) + "}";
+  }
+  if (method == "ui.set_active_layer") {
+    const QString layer_id = extractJsonString(line, "layer_id");
+    if (layer_id.isEmpty()) {
+      return errorResponse("ui.set_active_layer requires string layer_id");
+    }
+    return "{\"schema_version\":1,\"ok\":true,\"method\":\"ui.set_active_layer\",\"result\":" +
+           oneLineJson(window_.setActivePcbLayerForAutomation(layer_id)) + "}";
+  }
   if (method == "ui.epoch") {
     const QString map = window_.uiMapJson();
     const int key_index = map.indexOf("\"ui_epoch\":");
