@@ -152,6 +152,39 @@ int main(int argc, char** argv) {
     });
 
     return QApplication::exec();
+  } else if (argc == 7 && std::string(argv[1]) == "--test-place-footprint-click") {
+    const std::filesystem::path project_path(argv[2]);
+    const std::filesystem::path footprint_path(argv[3]);
+    const double x_mm = std::stod(argv[4]);
+    const double y_mm = std::stod(argv[5]);
+    const std::filesystem::path output_path(argv[6]);
+    ReviewWindow window;
+    window.loadProjectPath(project_path);
+    window.show();
+
+    QTimer::singleShot(500, &window, [&window, footprint_path, x_mm, y_mm, output_path]() {
+      std::ofstream output(output_path, std::ios::binary);
+      if (!output) {
+        std::cerr << "failed to open placement output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      const QByteArray bytes =
+          window.commitFootprintPlacementForAutomation(footprint_path, x_mm, y_mm).toUtf8();
+      output.write(bytes.constData(), bytes.size());
+      if (!output) {
+        std::cerr << "failed to write placement output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      std::cout << "placement result saved: " << output_path.string() << '\n';
+      std::cout.flush();
+      QCoreApplication::exit(0);
+    });
+
+    return QApplication::exec();
   } else if (argc == 4 && std::string(argv[1]) == "--screenshot") {
     const std::filesystem::path project_path(argv[2]);
     const char* screenshot_arg = argv[3];

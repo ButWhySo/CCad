@@ -1,6 +1,7 @@
 #include "kicad_symbol_import.hpp"
 #include "ccad_core/json.hpp"
 #include "ccad_core/sexpr_parser.hpp"
+#include "ccad_core/symbol_json_reader.hpp"
 
 #include <stdexcept>
 #include <filesystem>
@@ -94,8 +95,8 @@ void parseSymbolRecursive(const SExpr* expr, Symbol& out_sym, const std::string&
           }
         }
         if (const SExpr* fill = findSExprChild(child.get(), "fill")) {
-          if (const SExpr* type = findSExprChild(fill, "type")) {
-             if (type->children.size() > 1) rect.fill_type = type->children[1]->value;
+          if (const SExpr* fill_type = findSExprChild(fill, "type")) {
+             if (fill_type->children.size() > 1) rect.fill_type = fill_type->children[1]->value;
           }
         }
         out_sym.rectangles.push_back(rect);
@@ -144,8 +145,8 @@ void parseSymbolRecursive(const SExpr* expr, Symbol& out_sym, const std::string&
           }
         }
         if (const SExpr* fill = findSExprChild(child.get(), "fill")) {
-          if (const SExpr* type = findSExprChild(fill, "type")) {
-             if (type->children.size() > 1) circle.fill_type = type->children[1]->value;
+          if (const SExpr* fill_type = findSExprChild(fill, "type")) {
+             if (fill_type->children.size() > 1) circle.fill_type = fill_type->children[1]->value;
           }
         }
         out_sym.circles.push_back(circle);
@@ -164,8 +165,8 @@ void parseSymbolRecursive(const SExpr* expr, Symbol& out_sym, const std::string&
           }
         }
         if (const SExpr* fill = findSExprChild(child.get(), "fill")) {
-          if (const SExpr* type = findSExprChild(fill, "type")) {
-             if (type->children.size() > 1) polyline.fill_type = type->children[1]->value;
+          if (const SExpr* fill_type = findSExprChild(fill, "type")) {
+             if (fill_type->children.size() > 1) polyline.fill_type = fill_type->children[1]->value;
           }
         }
         out_sym.polylines.push_back(polyline);
@@ -216,8 +217,6 @@ std::vector<Symbol> importKiCadSymbolLibrary(const std::string& kicad_sym_conten
   
   return result;
 }
-
-#include "symbol_json_reader.cpp.tmp"
 
 Symbol loadSymbolJson(const std::string_view source) {
   return SymbolJsonReader(source).readSymbol();

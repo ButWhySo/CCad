@@ -42,6 +42,9 @@ class ReviewWindow final : public QMainWindow {
   QString uiTargetJsonById(const QString& id) const;
   QString uiTargetJsonForBoardPoint(double x_mm, double y_mm) const;
   QString triggerSafeUiActionJson(const QString& id);
+  QString commitFootprintPlacementForAutomation(const std::filesystem::path& footprint_path,
+                                                double x_mm,
+                                                double y_mm);
 
  protected:
   bool eventFilter(QObject* obj, QEvent* event) override;
