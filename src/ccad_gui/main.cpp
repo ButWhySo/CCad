@@ -192,6 +192,65 @@ int main(int argc, char** argv) {
     });
 
     return QApplication::exec();
+  } else if (argc == 4 && std::string(argv[1]) == "--ui-active-layer") {
+    const std::filesystem::path project_path(argv[2]);
+    const std::filesystem::path output_path(argv[3]);
+    ReviewWindow window;
+    window.loadProjectPath(project_path);
+    window.show();
+
+    QTimer::singleShot(500, &window, [&window, output_path]() {
+      std::ofstream output(output_path, std::ios::binary);
+      if (!output) {
+        std::cerr << "failed to open active layer output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      const QByteArray bytes = window.activePcbLayerJson().toUtf8();
+      output.write(bytes.constData(), bytes.size());
+      if (!output) {
+        std::cerr << "failed to write active layer output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      std::cout << "active layer saved: " << output_path.string() << '\n';
+      std::cout.flush();
+      QCoreApplication::exit(0);
+    });
+
+    return QApplication::exec();
+  } else if (argc == 5 && std::string(argv[1]) == "--ui-set-active-layer") {
+    const std::filesystem::path project_path(argv[2]);
+    const QString layer_id = QString::fromLocal8Bit(argv[3]);
+    const std::filesystem::path output_path(argv[4]);
+    ReviewWindow window;
+    window.loadProjectPath(project_path);
+    window.show();
+
+    QTimer::singleShot(500, &window, [&window, layer_id, output_path]() {
+      std::ofstream output(output_path, std::ios::binary);
+      if (!output) {
+        std::cerr << "failed to open active layer output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      const QByteArray bytes = window.setActivePcbLayerForAutomation(layer_id).toUtf8();
+      output.write(bytes.constData(), bytes.size());
+      if (!output) {
+        std::cerr << "failed to write active layer output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      std::cout << "active layer result saved: " << output_path.string() << '\n';
+      std::cout.flush();
+      QCoreApplication::exit(0);
+    });
+
+    return QApplication::exec();
   } else if (argc == 5 && std::string(argv[1]) == "--serve-ui-map") {
     const std::filesystem::path project_path(argv[2]);
     const QString server_name = QString::fromLocal8Bit(argv[3]);

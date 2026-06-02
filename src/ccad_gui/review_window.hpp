@@ -18,6 +18,7 @@
 
 #include <filesystem>
 #include <optional>
+#include <string>
 #include <vector>
 
 QString formatCursorStatus(const std::optional<ccad::Board>& board, const QPointF& scene_position);
@@ -25,6 +26,7 @@ QString formatCursorStatus(const std::optional<ccad::Board>& board, const QPoint
                            bool use_inches, bool polar_coordinates);
 
 class AgentPanel;
+class QComboBox;
 
 enum class InteractionMode {
   Default,
@@ -49,6 +51,8 @@ class ReviewWindow final : public QMainWindow {
   QString uiTargetJsonById(const QString& id) const;
   QString uiTargetJsonForBoardPoint(double x_mm, double y_mm) const;
   QString triggerSafeUiActionJson(const QString& id);
+  QString activePcbLayerJson() const;
+  QString setActivePcbLayerForAutomation(const QString& layer_id);
   QString commitFootprintPlacementForAutomation(const std::filesystem::path& footprint_path,
                                                 double x_mm,
                                                 double y_mm);
@@ -100,6 +104,10 @@ class ReviewWindow final : public QMainWindow {
   bool saveProjectCacheAfterMutation(const QString& status_message);
   void createRouteOrKeepoutGhost(const QPointF& scene_position);
   void updateRouteOrKeepoutGhost(const QPointF& scene_position);
+  void syncActivePcbLayerFromBoard();
+  void rebuildActiveLayerSelector();
+  void updateActiveLayerStatus();
+  std::string activePcbLayerOrDefault() const;
   void pushUndoSnapshot();
   void restoreProjectSnapshot(const ccad::Project& snapshot);
   void updateUndoRedoActions();
@@ -112,6 +120,7 @@ class ReviewWindow final : public QMainWindow {
   QLabel* zoom_status_ = nullptr;
   QLabel* tool_status_ = nullptr;
   QLabel* layer_status_ = nullptr;
+  QComboBox* active_layer_selector_ = nullptr;
   QLabel* selection_status_ = nullptr;
   SelectionInspectorPanel* selection_inspector_ = nullptr;
   ObjectBrowserPanel* object_browser_ = nullptr;
@@ -137,6 +146,7 @@ class ReviewWindow final : public QMainWindow {
   bool net_highlight_enabled_ = false;
   bool high_contrast_mode_ = false;
   QString highlighted_net_id_;
+  std::string active_pcb_layer_id_;
 
   InteractionMode interaction_mode_ = InteractionMode::Default;
   std::string interaction_component_id_;

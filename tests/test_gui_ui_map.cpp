@@ -30,6 +30,10 @@ ccad::Project uiMapProject() {
       .layers = {ccad::Layer{.id = "F.Cu",
                               .name = "Front copper",
                               .kind = "copper",
+                              .visible = true},
+                 ccad::Layer{.id = "B.Cu",
+                              .name = "Back copper",
+                              .kind = "copper",
                               .visible = true}},
       .placement_regions = {},
       .keepouts = {},
@@ -64,6 +68,12 @@ std::filesystem::path writeProjectFixture() {
   output.close();
   require(bool(output), "project fixture writes");
   return path;
+}
+
+std::string readFile(const std::filesystem::path& path) {
+  std::ifstream input(path, std::ios::binary);
+  require(bool(input), "fixture file opens for reading");
+  return std::string(std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>());
 }
 
 std::filesystem::path writeFootprintFixture() {
@@ -140,8 +150,16 @@ int main(int argc, char** argv) {
           "UI map exposes typed canvas object");
   require(contains(map, "\"object_id\":\"U1.1\""), "UI map keeps original object id");
   require(contains(map, "\"layer_id\":\"F.Cu\""), "UI map carries layer metadata");
+  require(contains(map, "\"active_pcb_layer_id\":\"F.Cu\""),
+          "UI map reports the default active PCB layer");
+  require(contains(map, "\"id\":\"control:active_pcb_layer\""),
+          "UI map exposes the active PCB layer selector");
   require(contains(map, "\"target_x\":"), "UI map carries click target x coordinate");
   require(contains(map, "\"target_y\":"), "UI map carries click target y coordinate");
+
+  const QString active_layer = window.activePcbLayerJson();
+  require(contains(active_layer, "\"active_layer_id\":\"F.Cu\""),
+          "agent active-layer query defaults to F.Cu");
 
   const QString validation = window.validateUiMapTargetsJson(false);
   require(contains(validation, "\"summary\":"), "UI map validation includes summary");
@@ -159,6 +177,12 @@ int main(int argc, char** argv) {
   const QString menu_target = window.uiTargetJsonById("menu:file");
   require(contains(menu_target, "\"found\":true"), "menu target query finds File menu");
   require(contains(menu_target, "\"role\":\"menu\""), "menu target query reports role");
+
+  const QString active_layer_target = window.uiTargetJsonById("control:active_pcb_layer");
+  require(contains(active_layer_target, "\"found\":true"),
+          "active layer selector is directly targetable");
+  require(contains(active_layer_target, "\"role\":\"control\""),
+          "active layer selector target reports control role");
 
   const QString panel_target = window.uiTargetJsonById("panel:layers_objects");
   require(contains(panel_target, "\"found\":true"), "panel target query finds layers panel");
@@ -326,16 +350,52 @@ int main(int argc, char** argv) {
   require(contains(target_response, "\"found\":true"), "live server target finds File menu");
   const QString epoch_response = requestLine(socket, "{\"method\":\"ui.epoch\"}");
   require(contains(epoch_response, "\"ui_epoch\":"), "live server returns current UI epoch");
+  const QString active_layer_response = requestLine(socket, "{\"method\":\"ui.active_layer\"}");
+  require(contains(active_layer_response, "\"ok\":true"),
+          "live server returns successful ui.active_layer");
+  require(contains(active_layer_response, "\"active_layer_id\":\"F.Cu\""),
+          "live server reports default active layer");
+  const QString set_active_layer_response =
+      requestLine(socket, "{\"method\":\"ui.set_active_layer\",\"layer_id\":\"B.Cu\"}");
+  require(contains(set_active_layer_response, "\"ok\":true"),
+          "live server returns successful ui.set_active_layer");
+  require(contains(set_active_layer_response, "\"active_layer_id\":\"B.Cu\""),
+          "live server sets active layer");
+  const QString active_layer_after_set =
+      requestLine(socket, "{\"method\":\"ui.active_layer\"}");
+  require(contains(active_layer_after_set, "\"active_layer_id\":\"B.Cu\""),
+          "live server active-layer query reflects server-side set");
   const QString bad_response = requestLine(socket, "{\"method\":\"ui.unknown\"}");
   require(contains(bad_response, "\"ok\":false"), "live server refuses unsupported methods");
   socket.disconnectFromServer();
   server.close();
+
+  const QString invalid_layer = window.setActivePcbLayerForAutomation("F.SilkS");
+  require(contains(invalid_layer, "\"performed\":false"),
+          "active layer setter rejects non-board layers");
+  require(contains(invalid_layer, "\"reason\":\"layer_not_found\""),
+          "active layer setter reports missing layer");
+
+  const QString set_back_layer = window.setActivePcbLayerForAutomation("B.Cu");
+  require(contains(set_back_layer, "\"performed\":true"),
+          "active layer setter accepts B.Cu");
+  require(contains(set_back_layer, "\"active_layer_id\":\"B.Cu\""),
+          "active layer setter reports selected layer");
+  require(contains(window.activePcbLayerJson(), "\"active_layer_id\":\"B.Cu\""),
+          "agent active-layer query reflects B.Cu");
+  require(contains(window.uiMapJson(), "\"active_pcb_layer_id\":\"B.Cu\""),
+          "UI map reflects the selected active layer");
 
   const QString placement =
       window.commitFootprintPlacementForAutomation(writeFootprintFixture(), 12.0, 10.0);
   require(contains(placement, "\"performed\":true"), "automation footprint placement succeeds");
   require(contains(placement, "\"reason\":\"placed\""), "automation placement reports placed");
   require(contains(placement, "\"pad_count\":1"), "automation placement adds one pad");
+  const ccad::Project after_placement = ccad::loadProjectJson(readFile(project_path));
+  require(after_placement.board.has_value(), "placed fixture still has a board");
+  require(!after_placement.board->pads.empty(), "placed footprint adds a pad to the file");
+  require(after_placement.board->pads.back().layers.front() == "B.Cu",
+          "footprint placement writes the selected B.Cu active layer");
 
   const QString via = window.commitViaPlacementForAutomation(15.0, 11.0);
   require(contains(via, "\"performed\":true"), "automation via placement succeeds");
@@ -350,6 +410,11 @@ int main(int argc, char** argv) {
   require(contains(track, "\"track_count\":1"), "automation track routing adds one track");
   require(contains(window.uiMapJson(), "\"id\":\"canvas_object:T1\""),
           "UI map exposes placed track");
+  const ccad::Project after_track = ccad::loadProjectJson(readFile(project_path));
+  require(after_track.board.has_value(), "track fixture still has a board");
+  require(!after_track.board->tracks.empty(), "track routing writes a track to the file");
+  require(after_track.board->tracks.back().layer_id == "B.Cu",
+          "route track writes the selected B.Cu active layer");
 
   const QString keepout = window.commitKeepoutPlacementForAutomation(20.0, 10.0, 25.0, 14.0);
   require(contains(keepout, "\"performed\":true"), "automation keepout placement succeeds");

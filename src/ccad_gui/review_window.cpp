@@ -21,6 +21,7 @@
 #include <QAbstractItemView>
 #include <QAction>
 #include <QApplication>
+#include <QComboBox>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
@@ -43,6 +44,7 @@
 #include <QScrollArea>
 #include <QScreen>
 #include <QSize>
+#include <QSignalBlocker>
 #include <QStatusBar>
 #include <QStringList>
 #include <QTabBar>
@@ -463,6 +465,30 @@ std::string firstCopperLayerId(const ccad::Board& board) {
   return {};
 }
 
+const ccad::Layer* findBoardLayer(const ccad::Board& board, const std::string& layer_id) {
+  for (const ccad::Layer& layer : board.layers) {
+    if (layer.id == layer_id) {
+      return &layer;
+    }
+  }
+  return nullptr;
+}
+
+bool isCopperLayer(const ccad::Layer& layer) {
+  return layer.kind == "copper";
+}
+
+bool isCopperLayerId(const ccad::Board& board, const std::string& layer_id) {
+  const ccad::Layer* layer = findBoardLayer(board, layer_id);
+  return layer != nullptr && isCopperLayer(*layer);
+}
+
+QString layerDisplayName(const ccad::Layer& layer) {
+  const QString id = qstr(layer.id);
+  const QString name = qstr(layer.name);
+  return name.isEmpty() ? id : id + " - " + name;
+}
+
 int numericSuffixAfterPrefix(const std::string& value, const std::string& prefix) {
   if (!value.starts_with(prefix) || value.size() <= prefix.size()) {
     return 0;
@@ -870,8 +896,31 @@ ReviewWindow::ReviewWindow() {
   top_toolbar->addAction(zoom_out_action);
   top_toolbar->addAction(zoom_100_action);
   top_toolbar->addSeparator();
+  active_layer_selector_ = new QComboBox(top_toolbar);
+  active_layer_selector_->setObjectName("activeLayerSelector");
+  active_layer_selector_->setToolTip("Active PCB Layer");
+  active_layer_selector_->setStatusTip("Active PCB Layer");
+  active_layer_selector_->setMinimumWidth(170);
+  top_toolbar->addWidget(active_layer_selector_);
+  top_toolbar->addSeparator();
   top_toolbar->addAction(run_drc_action);
   updateUndoRedoActions();
+  connect(active_layer_selector_, &QComboBox::currentIndexChanged, this, [this](const int index) {
+    if (active_layer_selector_ == nullptr || index < 0 || !project_cache_.board.has_value()) {
+      return;
+    }
+    const QString layer_id = active_layer_selector_->itemData(index).toString();
+    if (layer_id.isEmpty()) {
+      return;
+    }
+    const std::string layer_id_string = layer_id.toStdString();
+    if (!isCopperLayerId(*project_cache_.board, layer_id_string)) {
+      return;
+    }
+    active_pcb_layer_id_ = layer_id_string;
+    updateActiveLayerStatus();
+    markUiMapChanged();
+  });
 
   auto* left_toolbar = new QToolBar("Left Toolbar", this);
   left_toolbar->setMovable(false);
@@ -1521,7 +1570,7 @@ void ReviewWindow::chooseAndPlaceFootprint() {
     QMessageBox::warning(this, "No Board", "Load a project with a board before placing footprints.");
     return;
   }
-  const std::string layer_id = firstCopperLayerId(*project_cache_.board);
+  const std::string layer_id = activePcbLayerOrDefault();
   if (layer_id.empty()) {
     QMessageBox::warning(this, "No Copper Layer", "No copper layer is available for footprint placement.");
     return;
@@ -1728,6 +1777,8 @@ void ReviewWindow::reloadProject() {
     renderReview(ccad::buildReview(project));
     setWindowTitle("CCad Review - " + QFileInfo(qstr(current_path_.string())).fileName());
   } catch (const std::exception& error) {
+    project_cache_ = ccad::Project{};
+    syncActivePcbLayerFromBoard();
     diagnostics_->setRowCount(0);
     renderCanvas(ccad::CanvasScene{});
     project_summary_->renderLoadFailure(qstr(current_path_.string()));
@@ -1737,6 +1788,7 @@ void ReviewWindow::reloadProject() {
 }
 
 void ReviewWindow::renderReview(const ccad::ProjectReview& review) {
+  syncActivePcbLayerFromBoard();
   project_summary_->renderReview(review);
   diagnostics_->renderDiagnostics(review.diagnostics);
   
@@ -1776,6 +1828,121 @@ void ReviewWindow::updateAgentPanelContext() {
                                     ? QString("none")
                                     : QFileInfo(qstr(current_path_.string())).fileName();
   agent_panel_->setProjectContext(project_label, ui_map_epoch_);
+}
+
+std::string ReviewWindow::activePcbLayerOrDefault() const {
+  if (!project_cache_.board.has_value()) {
+    return {};
+  }
+  if (!active_pcb_layer_id_.empty() &&
+      isCopperLayerId(*project_cache_.board, active_pcb_layer_id_)) {
+    return active_pcb_layer_id_;
+  }
+  return firstCopperLayerId(*project_cache_.board);
+}
+
+void ReviewWindow::updateActiveLayerStatus() {
+  if (layer_status_ == nullptr) {
+    return;
+  }
+  const std::string layer_id = activePcbLayerOrDefault();
+  layer_status_->setText(layer_id.empty() ? QString("Layer --") : QString("Layer ") + qstr(layer_id));
+}
+
+void ReviewWindow::rebuildActiveLayerSelector() {
+  if (active_layer_selector_ == nullptr) {
+    return;
+  }
+  const QSignalBlocker blocker(active_layer_selector_);
+  active_layer_selector_->clear();
+  if (!project_cache_.board.has_value()) {
+    active_layer_selector_->setEnabled(false);
+    return;
+  }
+  int selected_index = -1;
+  for (const ccad::Layer& layer : project_cache_.board->layers) {
+    if (!isCopperLayer(layer)) {
+      continue;
+    }
+    const int index = active_layer_selector_->count();
+    active_layer_selector_->addItem(layerDisplayName(layer), qstr(layer.id));
+    if (layer.id == active_pcb_layer_id_) {
+      selected_index = index;
+    }
+  }
+  active_layer_selector_->setEnabled(active_layer_selector_->count() > 0);
+  if (selected_index >= 0) {
+    active_layer_selector_->setCurrentIndex(selected_index);
+  } else if (active_layer_selector_->count() > 0) {
+    active_layer_selector_->setCurrentIndex(0);
+  }
+}
+
+void ReviewWindow::syncActivePcbLayerFromBoard() {
+  if (!project_cache_.board.has_value()) {
+    active_pcb_layer_id_.clear();
+    rebuildActiveLayerSelector();
+    updateActiveLayerStatus();
+    return;
+  }
+  if (!isCopperLayerId(*project_cache_.board, active_pcb_layer_id_)) {
+    active_pcb_layer_id_ = firstCopperLayerId(*project_cache_.board);
+  }
+  rebuildActiveLayerSelector();
+  updateActiveLayerStatus();
+}
+
+QString ReviewWindow::activePcbLayerJson() const {
+  if (!project_cache_.board.has_value()) {
+    return QString("{\"schema_version\":1,\"available\":false,"
+                   "\"reason\":\"missing_board\",\"active_layer_id\":\"\"}\n");
+  }
+  const std::string layer_id = activePcbLayerOrDefault();
+  const ccad::Layer* layer = findBoardLayer(*project_cache_.board, layer_id);
+  if (layer == nullptr) {
+    return QString("{\"schema_version\":1,\"available\":false,"
+                   "\"reason\":\"missing_copper_layer\",\"active_layer_id\":\"\"}\n");
+  }
+  int copper_count = 0;
+  for (const ccad::Layer& candidate : project_cache_.board->layers) {
+    if (isCopperLayer(candidate)) {
+      ++copper_count;
+    }
+  }
+  return QString("{\"schema_version\":1,\"available\":true,\"active_layer_id\":%1,"
+                 "\"layer_name\":%2,\"visible\":%3,\"copper_layer_count\":%4}\n")
+      .arg(jsonString(qstr(layer->id)))
+      .arg(jsonString(qstr(layer->name)))
+      .arg(boolJson(layer->visible))
+      .arg(copper_count);
+}
+
+QString ReviewWindow::setActivePcbLayerForAutomation(const QString& layer_id) {
+  const auto result = [](const bool performed, const QString& reason,
+                         const QString& active_layer_id, const QString& layer_name) {
+    return QString("{\"schema_version\":1,\"performed\":%1,\"reason\":%2,"
+                   "\"active_layer_id\":%3,\"layer_name\":%4}\n")
+        .arg(boolJson(performed))
+        .arg(jsonString(reason))
+        .arg(jsonString(active_layer_id))
+        .arg(jsonString(layer_name));
+  };
+  if (!project_cache_.board.has_value()) {
+    return result(false, "missing_board", "", "");
+  }
+  const std::string layer_id_string = layer_id.toStdString();
+  const ccad::Layer* layer = findBoardLayer(*project_cache_.board, layer_id_string);
+  if (layer == nullptr) {
+    return result(false, "layer_not_found", qstr(activePcbLayerOrDefault()), "");
+  }
+  if (!isCopperLayer(*layer)) {
+    return result(false, "non_copper_layer", qstr(activePcbLayerOrDefault()), qstr(layer->name));
+  }
+  active_pcb_layer_id_ = layer_id_string;
+  rebuildActiveLayerSelector();
+  updateActiveLayerStatus();
+  markUiMapChanged();
+  return result(true, "set", qstr(layer->id), qstr(layer->name));
 }
 
 QString ReviewWindow::uiMapJson() const {
@@ -1859,6 +2026,26 @@ QString ReviewWindow::uiMapJson() const {
                  .arg(boolJson(button->isVisible() && action->isVisible()))
                  .arg(boolJson(button->isEnabled() && action->isEnabled()))
                  .arg(boolJson(action->isCheckable() && action->isChecked()))
+                 .arg(rectJson(local_rect))
+                 .arg(rectJson(global_rect))
+                 .arg(global_rect.center().x())
+                 .arg(global_rect.center().y());
+  }
+
+  if (active_layer_selector_ != nullptr) {
+    const QPoint local_top_left =
+        active_layer_selector_->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
+    const QRect local_rect(local_top_left, active_layer_selector_->size());
+    const QRect global_rect(active_layer_selector_->mapToGlobal(QPoint(0, 0)),
+                            active_layer_selector_->size());
+    nodes << QString("{\"id\":\"control:active_pcb_layer\",\"role\":\"control\","
+                     "\"label\":\"Active PCB Layer\",\"value\":%1,"
+                     "\"active_layer_id\":%2,\"visible\":%3,\"enabled\":%4,"
+                     "\"local_rect\":%5,\"global_rect\":%6,\"target_x\":%7,\"target_y\":%8}")
+                 .arg(jsonString(active_layer_selector_->currentText()))
+                 .arg(jsonString(qstr(activePcbLayerOrDefault())))
+                 .arg(boolJson(active_layer_selector_->isVisible()))
+                 .arg(boolJson(active_layer_selector_->isEnabled()))
                  .arg(rectJson(local_rect))
                  .arg(rectJson(global_rect))
                  .arg(global_rect.center().x())
@@ -1970,8 +2157,10 @@ QString ReviewWindow::uiMapJson() const {
   appendCanvasObjects("canvas:pcb", canvas_view_, canvas_scene_);
   appendCanvasObjects("canvas:schematic", schematic_view_, schematic_scene_);
 
-  return QString("{\"schema_version\":1,\"ui_epoch\":%1,\"nodes\":[%2]}\n")
+  return QString("{\"schema_version\":1,\"ui_epoch\":%1,\"active_pcb_layer_id\":%2,"
+                 "\"nodes\":[%3]}\n")
       .arg(ui_map_epoch_)
+      .arg(jsonString(qstr(activePcbLayerOrDefault())))
       .arg(nodes.join(','));
 }
 
@@ -2030,6 +2219,19 @@ QString ReviewWindow::validateUiMapTargetsJson(const bool move_cursor) const {
                       button->isAncestorOf(hit_widget));
     appendCheck(actionMapId(*action), "action", button->isVisible() && action->isVisible(),
                 button->isEnabled() && action->isEnabled(), target, hit,
+                hit_widget != nullptr ? hit_widget->objectName() : "none");
+  }
+
+  if (active_layer_selector_ != nullptr) {
+    const QRect global_rect(active_layer_selector_->mapToGlobal(QPoint(0, 0)),
+                            active_layer_selector_->size());
+    const QPoint target = global_rect.center();
+    QWidget* hit_widget = QApplication::widgetAt(target);
+    const bool hit = global_rect.contains(target) &&
+                     (hit_widget == nullptr || hit_widget == active_layer_selector_ ||
+                      active_layer_selector_->isAncestorOf(hit_widget));
+    appendCheck("control:active_pcb_layer", "control", active_layer_selector_->isVisible(),
+                active_layer_selector_->isEnabled(), target, hit,
                 hit_widget != nullptr ? hit_widget->objectName() : "none");
   }
 
@@ -2147,6 +2349,13 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
     const QRect global_rect(button->mapToGlobal(QPoint(0, 0)), button->size());
     return foundTarget(id, "action", action->text(), button->isVisible() && action->isVisible(),
                        button->isEnabled() && action->isEnabled(), global_rect.center());
+  }
+
+  if (id == "control:active_pcb_layer" && active_layer_selector_ != nullptr) {
+    const QRect global_rect(active_layer_selector_->mapToGlobal(QPoint(0, 0)),
+                            active_layer_selector_->size());
+    return foundTarget(id, "control", "Active PCB Layer", active_layer_selector_->isVisible(),
+                       active_layer_selector_->isEnabled(), global_rect.center());
   }
 
   if (menuBar() != nullptr) {
@@ -2448,7 +2657,7 @@ QString ReviewWindow::commitFootprintPlacementForAutomation(
   if (!project_cache_.board.has_value()) {
     return result(false, "missing_board", 0);
   }
-  const std::string layer_id = firstCopperLayerId(*project_cache_.board);
+  const std::string layer_id = activePcbLayerOrDefault();
   if (layer_id.empty()) {
     return result(false, "missing_copper_layer", project_cache_.board->pads.size());
   }
@@ -2950,7 +3159,7 @@ void ReviewWindow::enterAddViaMode() {
     QMessageBox::warning(this, "No Board", "Load a project with a board before placing vias.");
     return;
   }
-  const std::string layer_id = firstCopperLayerId(*project_cache_.board);
+  const std::string layer_id = activePcbLayerOrDefault();
   if (layer_id.empty()) {
     QMessageBox::warning(this, "No Copper Layer", "No copper layer is available for via placement.");
     return;
@@ -2983,7 +3192,7 @@ void ReviewWindow::enterRouteTrackMode() {
     QMessageBox::warning(this, "No Board", "Load a project with a board before routing tracks.");
     return;
   }
-  const std::string layer_id = firstCopperLayerId(*project_cache_.board);
+  const std::string layer_id = activePcbLayerOrDefault();
   if (layer_id.empty()) {
     QMessageBox::warning(this, "No Copper Layer", "No copper layer is available for track routing.");
     return;
