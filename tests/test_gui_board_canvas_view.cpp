@@ -38,6 +38,17 @@ int main(int argc, char** argv) {
   scene.addRect(0.0, 0.0, 5000.0, 5000.0);
 
   BoardCanvasView view(&scene);
+  require(view.gridVisible(), "grid starts visible like KiCad edit canvases");
+  view.setGridVisible(false);
+  require(!view.gridVisible(), "grid visibility can be disabled by toolbar action");
+  view.setGridVisible(true);
+  require(view.gridVisible(), "grid visibility can be re-enabled by toolbar action");
+  require(!view.crosshairVisible(), "full-window crosshair starts disabled");
+  view.setCrosshairVisible(true);
+  require(view.crosshairVisible(), "crosshair visibility can be enabled by toolbar action");
+  view.setCrosshairVisible(false);
+  require(!view.crosshairVisible(), "crosshair visibility can be disabled by toolbar action");
+
   std::vector<std::pair<bool, bool>> pan_states;
   view.setPanModeCallback([&pan_states](const bool space_mode, const bool dragging) {
     pan_states.emplace_back(space_mode, dragging);

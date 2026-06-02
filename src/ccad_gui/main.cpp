@@ -276,12 +276,21 @@ int main(int argc, char** argv) {
                        [&window, output_dir, name, initial_wait_ms, per_target_wait_ms]() {
       QStringList entries;
       const QStringList target_ids = {"action:cursor", "action:measurement", "action:save",
-                                      "menu:file", "panel:properties", "tab:agent"};
+                                      "menu:file", "panel:properties", "action:grid",
+                                      "action:polar_coord", "action:unit_inch",
+                                      "action:cursor_shape", "action:show_ratsnest",
+                                      "action:net_highlight", "action:contrast_mode",
+                                      "tab:agent"};
+      const QStringList trigger_before_capture_ids = {
+          "action:grid",          "action:polar_coord",   "action:unit_inch",
+          "action:cursor_shape",  "action:show_ratsnest", "action:net_highlight",
+          "action:contrast_mode", "tab:agent"};
       const auto runPass = [&window, &entries, &output_dir, &name, &target_ids,
+                            &trigger_before_capture_ids,
                             per_target_wait_ms](
                                const QString& pass_name) {
         for (const QString& id : target_ids) {
-          if (id == "tab:agent") {
+          if (trigger_before_capture_ids.contains(id)) {
             window.triggerSafeUiActionJson(id);
             QApplication::processEvents();
           }

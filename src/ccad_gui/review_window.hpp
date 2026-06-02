@@ -21,6 +21,8 @@
 #include <vector>
 
 QString formatCursorStatus(const std::optional<ccad::Board>& board, const QPointF& scene_position);
+QString formatCursorStatus(const std::optional<ccad::Board>& board, const QPointF& scene_position,
+                           bool use_inches, bool polar_coordinates);
 
 class AgentPanel;
 
@@ -75,6 +77,12 @@ class ReviewWindow final : public QMainWindow {
   void chooseAndPlaceFootprint();
   void chooseAndPlaceSymbol();
   void showFutureToolStatus(const QString& action_id, const QString& label);
+  QString triggerDisplayStateActionJson(const QString& action_id);
+  void applyDisplayStateToViews();
+  void refreshCursorStatusFromActiveView();
+  void renderPcbScene(const ccad::CanvasScene& scene,
+                      const std::vector<ccad::Diagnostic>& diagnostics);
+  void addRatsnestOverlays(const ccad::CanvasScene& scene);
   void cancelInteractionMode();
   void pushUndoSnapshot();
   void restoreProjectSnapshot(const ccad::Project& snapshot);
@@ -105,6 +113,14 @@ class ReviewWindow final : public QMainWindow {
   std::vector<ccad::Project> redo_stack_;
   QAction* undo_action_ = nullptr;
   QAction* redo_action_ = nullptr;
+  bool grid_visible_ = true;
+  bool polar_coordinates_ = false;
+  bool use_inches_ = false;
+  bool crosshair_visible_ = false;
+  bool ratsnest_visible_ = true;
+  bool net_highlight_enabled_ = false;
+  bool high_contrast_mode_ = false;
+  QString highlighted_net_id_;
 
   InteractionMode interaction_mode_ = InteractionMode::Default;
   std::string interaction_component_id_;

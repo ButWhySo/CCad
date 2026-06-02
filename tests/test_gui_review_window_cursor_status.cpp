@@ -33,6 +33,12 @@ int main() {
           "off-board status accounts for shifted board origin");
   require(formatCursorStatus(board, QPointF(18.0, 18.0)) == "Board X 2.00 mm  Y 3.00 mm",
           "board origin point is inside shifted board");
+  require(formatCursorStatus(board, QPointF(28.0, 38.0), true, false) ==
+              "Board X 0.118 in  Y 0.197 in",
+          "inch coordinate status uses converted board coordinates");
+  require(formatCursorStatus(board, QPointF(28.0, 38.0), false, true) ==
+              "Board X 3.00 mm  Y 5.00 mm  R 2.24 mm  A 63.43 deg",
+          "polar coordinate status adds board-origin-relative radius and angle");
   require(formatCursorStatus(board, QPointF(458.0, 318.0)) == "Board X 46.00 mm  Y 33.00 mm",
           "board max point is inside shifted board");
   require(formatCursorStatus(board, QPointF(468.0, 328.0)) == "Canvas X 47.00 mm  Y 34.00 mm",

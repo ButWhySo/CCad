@@ -55,15 +55,22 @@
 #include <QToolButton>
 
 #include <algorithm>
+#include <cmath>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <optional>
 #include <sstream>
 #include <string>
-#include <cstdlib>
 #include <vector>
 
 QString formatCursorStatus(const std::optional<ccad::Board>& board, const QPointF& scene_position) {
+  return formatCursorStatus(board, scene_position, false, false);
+}
+
+QString formatCursorStatus(const std::optional<ccad::Board>& board, const QPointF& scene_position,
+                           const bool use_inches, const bool polar_coordinates) {
   constexpr double margin = 18.0;
   constexpr double scale = 10.0;
   if (!board.has_value()) {
@@ -81,8 +88,24 @@ QString formatCursorStatus(const std::optional<ccad::Board>& board, const QPoint
                             x_mm <= origin_x_mm + board_width_mm &&
                             y_mm <= origin_y_mm + board_height_mm;
 
-  return (inside_board ? "Board " : "Canvas ") + QString("X ") +
-         QString::number(x_mm, 'f', 2) + " mm  Y " + QString::number(y_mm, 'f', 2) + " mm";
+  const QString prefix = inside_board ? "Board " : "Canvas ";
+  if (use_inches) {
+    constexpr double mm_per_inch = 25.4;
+    return prefix + QString("X ") + QString::number(x_mm / mm_per_inch, 'f', 3) +
+           " in  Y " + QString::number(y_mm / mm_per_inch, 'f', 3) + " in";
+  }
+
+  QString status = prefix + QString("X ") + QString::number(x_mm, 'f', 2) + " mm  Y " +
+                   QString::number(y_mm, 'f', 2) + " mm";
+  if (polar_coordinates) {
+    const double dx = x_mm - origin_x_mm;
+    const double dy = y_mm - origin_y_mm;
+    const double radius = std::hypot(dx, dy);
+    const double angle = std::atan2(dy, dx) * 180.0 / 3.14159265358979323846;
+    status += "  R " + QString::number(radius, 'f', 2) + " mm  A " +
+              QString::number(angle, 'f', 2) + " deg";
+  }
+  return status;
 }
 
 namespace {
@@ -664,6 +687,7 @@ ReviewWindow::ReviewWindow() {
     if (space_mode) { tool_status_->setText("Tool Pan Ready"); return; }
     tool_status_->setText("Tool Select");
   });
+  applyDisplayStateToViews();
 
   editor_tabs_ = new QTabWidget(this);
   editor_tabs_->setObjectName("editorTabs");
@@ -807,6 +831,20 @@ ReviewWindow::ReviewWindow() {
   auto* show_layers_action = addIconAction(*left_toolbar, "layers_manager", "Show Layers");
   auto* show_properties_action =
       addIconAction(*left_toolbar, "part_properties", "Show Properties");
+  toggle_grid_action->setCheckable(true);
+  toggle_grid_action->setChecked(grid_visible_);
+  polar_coordinates_action->setCheckable(true);
+  polar_coordinates_action->setChecked(polar_coordinates_);
+  toggle_units_action->setCheckable(true);
+  toggle_units_action->setChecked(use_inches_);
+  crosshair_cursor_action->setCheckable(true);
+  crosshair_cursor_action->setChecked(crosshair_visible_);
+  show_ratsnest_action->setCheckable(true);
+  show_ratsnest_action->setChecked(ratsnest_visible_);
+  net_highlight_action->setCheckable(true);
+  net_highlight_action->setChecked(net_highlight_enabled_);
+  display_modes_action->setCheckable(true);
+  display_modes_action->setChecked(high_contrast_mode_);
 
   auto* right_toolbar = new QToolBar("Right Toolbar", this);
   right_toolbar->setMovable(false);
@@ -853,13 +891,21 @@ ReviewWindow::ReviewWindow() {
   bind_future_tool(draw_graphic_action, "action:add_graphical_segments", "Draw Graphic");
   bind_future_tool(place_text_action, "action:text", "Place Text");
   bind_future_tool(delete_action, "action:delete_cursor", "Delete");
-  bind_future_tool(toggle_grid_action, "action:grid", "Toggle Grid");
-  bind_future_tool(polar_coordinates_action, "action:polar_coord", "Polar Coordinates");
-  bind_future_tool(toggle_units_action, "action:unit_inch", "Toggle Units");
-  bind_future_tool(crosshair_cursor_action, "action:cursor_shape", "Crosshair Cursor");
-  bind_future_tool(show_ratsnest_action, "action:show_ratsnest", "Show Ratsnest");
-  bind_future_tool(net_highlight_action, "action:net_highlight", "Net Highlight");
-  bind_future_tool(display_modes_action, "action:contrast_mode", "Display Modes");
+
+  const auto bind_display_action = [this](QAction* action, const QString& action_id) {
+    if (action == nullptr) {
+      return;
+    }
+    connect(action, &QAction::triggered, this,
+            [this, action_id]() { triggerDisplayStateActionJson(action_id); });
+  };
+  bind_display_action(toggle_grid_action, "action:grid");
+  bind_display_action(polar_coordinates_action, "action:polar_coord");
+  bind_display_action(toggle_units_action, "action:unit_inch");
+  bind_display_action(crosshair_cursor_action, "action:cursor_shape");
+  bind_display_action(show_ratsnest_action, "action:show_ratsnest");
+  bind_display_action(net_highlight_action, "action:net_highlight");
+  bind_display_action(display_modes_action, "action:contrast_mode");
 
   connect(add_footprint_action, &QAction::triggered, this, [this]() { placeFromActiveEditor(); });
   connect(add_symbol_action, &QAction::triggered, this, [this]() { placeFromActiveEditor(); });
@@ -1177,8 +1223,7 @@ void ReviewWindow::runDrcFromToolbar() {
   const std::vector<ccad::Diagnostic> diagnostics = ccad::runDrc(project_cache_);
   diagnostics_->renderDiagnostics(diagnostics);
   const ccad::CanvasScene pcb_scene = ccad::buildCanvasScene(project_cache_);
-  renderBoardCanvas(*canvas_scene_, pcb_scene);
-  addDiagnosticMarkers(*canvas_scene_, diagnostics);
+  renderPcbScene(pcb_scene, diagnostics);
   object_browser_->renderScene(pcb_scene);
   statusBar()->showMessage("DRC complete: " + QString::number(diagnostics.size()) + " findings");
 }
@@ -1199,6 +1244,194 @@ void ReviewWindow::showFutureToolStatus(const QString& action_id, const QString&
   statusBar()->showMessage(
       label + " is planned; use the current CLI/kernel command surface for this operation.", 5000);
   markUiMapChanged();
+}
+
+void ReviewWindow::applyDisplayStateToViews() {
+  const auto apply_to_view = [this](QGraphicsView* view) {
+    if (auto* board_view = dynamic_cast<BoardCanvasView*>(view)) {
+      board_view->setGridVisible(grid_visible_);
+      board_view->setCrosshairVisible(crosshair_visible_);
+    }
+  };
+  apply_to_view(canvas_view_);
+  apply_to_view(schematic_view_);
+}
+
+void ReviewWindow::refreshCursorStatusFromActiveView() {
+  auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_ != nullptr ? editor_tabs_->currentWidget()
+                                                                     : canvas_view_);
+  if (view == nullptr || view->viewport() == nullptr) {
+    return;
+  }
+  updateCursorStatus(view->mapToScene(view->viewport()->rect().center()), view->zoomFactor());
+}
+
+void ReviewWindow::renderPcbScene(const ccad::CanvasScene& scene,
+                                  const std::vector<ccad::Diagnostic>& diagnostics) {
+  CanvasRenderTheme theme;
+  if (high_contrast_mode_) {
+    theme.background_color = QColor("#020617");
+    theme.board_fill_color = QColor("#050816");
+    theme.grid_color = QColor("#334155");
+    theme.front_copper_color = QColor("#ff4d4d");
+    theme.back_copper_color = QColor("#21c55d");
+    theme.inner_copper_color = QColor("#facc15");
+  }
+  renderBoardCanvas(*canvas_scene_, scene, theme);
+  addDiagnosticMarkers(*canvas_scene_, diagnostics, theme);
+  addRatsnestOverlays(scene);
+  if (net_highlight_enabled_) {
+    if (highlighted_net_id_.isEmpty()) {
+      for (const ccad::CanvasPad& pad : scene.pads) {
+        if (!pad.net_id.empty()) {
+          highlighted_net_id_ = qstr(pad.net_id);
+          break;
+        }
+      }
+    }
+    if (highlighted_net_id_.isEmpty()) {
+      for (const ccad::CanvasTrack& track : scene.tracks) {
+        if (!track.net_id.empty()) {
+          highlighted_net_id_ = qstr(track.net_id);
+          break;
+        }
+      }
+    }
+    selectCanvasObjectsByNetId(*canvas_scene_, highlighted_net_id_);
+  }
+}
+
+void ReviewWindow::addRatsnestOverlays(const ccad::CanvasScene& scene) {
+  if (!ratsnest_visible_ || canvas_scene_ == nullptr) {
+    return;
+  }
+  constexpr double margin = 18.0;
+  constexpr double scale = 10.0;
+  const auto scene_point = [&scene](const double x_units, const double y_units) {
+    return QPointF(margin + ((x_units - scene.board_origin_x_units) * scale),
+                   margin + ((y_units - scene.board_origin_y_units) * scale));
+  };
+
+  std::map<QString, std::vector<QPointF>> endpoints_by_net;
+  for (const ccad::CanvasPad& pad : scene.pads) {
+    if (!pad.net_id.empty()) {
+      endpoints_by_net[qstr(pad.net_id)].push_back(scene_point(pad.x_units, pad.y_units));
+    }
+  }
+  for (const ccad::CanvasVia& via : scene.vias) {
+    if (!via.net_id.empty()) {
+      endpoints_by_net[qstr(via.net_id)].push_back(scene_point(via.x_units, via.y_units));
+    }
+  }
+  for (const ccad::CanvasTrack& track : scene.tracks) {
+    if (!track.net_id.empty()) {
+      endpoints_by_net[qstr(track.net_id)].push_back(
+          scene_point(track.start_x_units, track.start_y_units));
+      endpoints_by_net[qstr(track.net_id)].push_back(
+          scene_point(track.end_x_units, track.end_y_units));
+    }
+  }
+
+  QPen ratsnest_pen(QColor("#fde047"));
+  ratsnest_pen.setStyle(Qt::DashLine);
+  ratsnest_pen.setCosmetic(true);
+  ratsnest_pen.setWidthF(1.0);
+  for (const auto& [net_id, endpoints] : endpoints_by_net) {
+    Q_UNUSED(net_id);
+    if (endpoints.size() < 2) {
+      continue;
+    }
+    for (std::size_t index = 1; index < endpoints.size(); ++index) {
+      auto* line =
+          canvas_scene_->addLine(QLineF(endpoints[index - 1], endpoints[index]), ratsnest_pen);
+      line->setZValue(350.0);
+      line->setData(kCanvasObjectTypeRole, "ratsnest");
+    }
+  }
+}
+
+QString ReviewWindow::triggerDisplayStateActionJson(const QString& action_id) {
+  QString label;
+  QString extra;
+  bool state = false;
+  const auto set_checked = [this](const QString& id, const bool checked) {
+    if (QAction* action = findChild<QAction*>(id)) {
+      action->setChecked(checked);
+    }
+  };
+  if (action_id == "action:grid") {
+    label = "Toggle Grid";
+    grid_visible_ = !grid_visible_;
+    state = grid_visible_;
+    applyDisplayStateToViews();
+  } else if (action_id == "action:polar_coord") {
+    label = "Polar Coordinates";
+    polar_coordinates_ = !polar_coordinates_;
+    state = polar_coordinates_;
+    refreshCursorStatusFromActiveView();
+  } else if (action_id == "action:unit_inch") {
+    label = "Toggle Units";
+    use_inches_ = !use_inches_;
+    state = use_inches_;
+    extra = QString(",\"units\":%1").arg(jsonString(use_inches_ ? "in" : "mm"));
+    refreshCursorStatusFromActiveView();
+  } else if (action_id == "action:cursor_shape") {
+    label = "Crosshair Cursor";
+    crosshair_visible_ = !crosshair_visible_;
+    state = crosshair_visible_;
+    applyDisplayStateToViews();
+  } else if (action_id == "action:show_ratsnest") {
+    label = "Show Ratsnest";
+    ratsnest_visible_ = !ratsnest_visible_;
+    state = ratsnest_visible_;
+    const std::vector<ccad::Diagnostic> diagnostics = ccad::runDrc(project_cache_);
+    renderPcbScene(ccad::buildCanvasScene(project_cache_), diagnostics);
+  } else if (action_id == "action:net_highlight") {
+    label = "Net Highlight";
+    net_highlight_enabled_ = !net_highlight_enabled_;
+    state = net_highlight_enabled_;
+    if (!net_highlight_enabled_) {
+      highlighted_net_id_.clear();
+      if (canvas_scene_ != nullptr) {
+        canvas_scene_->clearSelection();
+      }
+    } else if (canvas_scene_ != nullptr) {
+      for (QGraphicsItem* item : canvas_scene_->selectedItems()) {
+        const QString net_id = canvasObjectNetId(*item);
+        if (!net_id.isEmpty()) {
+          highlighted_net_id_ = net_id;
+          break;
+        }
+      }
+    }
+    const std::vector<ccad::Diagnostic> diagnostics = ccad::runDrc(project_cache_);
+    renderPcbScene(ccad::buildCanvasScene(project_cache_), diagnostics);
+  } else if (action_id == "action:contrast_mode") {
+    label = "Display Modes";
+    high_contrast_mode_ = !high_contrast_mode_;
+    state = high_contrast_mode_;
+    extra =
+        QString(",\"mode\":%1").arg(jsonString(high_contrast_mode_ ? "high_contrast" : "normal"));
+    const std::vector<ccad::Diagnostic> diagnostics = ccad::runDrc(project_cache_);
+    renderPcbScene(ccad::buildCanvasScene(project_cache_), diagnostics);
+  } else {
+    return QString("{\"schema_version\":1,\"id\":%1,\"performed\":false,"
+                   "\"reason\":\"unknown_action\"}\n")
+        .arg(jsonString(action_id));
+  }
+
+  set_checked(action_id, state);
+  if (tool_status_ != nullptr) {
+    tool_status_->setText("Tool " + label + (state ? " On" : " Off"));
+  }
+  statusBar()->showMessage(label + (state ? " enabled" : " disabled"), 5000);
+  markUiMapChanged();
+  return QString("{\"schema_version\":1,\"id\":%1,\"performed\":true,"
+                 "\"reason\":\"display_state_toggled\",\"label\":%2,\"state\":%3%4}\n")
+      .arg(jsonString(action_id))
+      .arg(jsonString(label))
+      .arg(boolJson(state))
+      .arg(extra);
 }
 
 void ReviewWindow::chooseAndPlaceFootprint() {
@@ -1426,8 +1659,7 @@ void ReviewWindow::renderReview(const ccad::ProjectReview& review) {
   diagnostics_->renderDiagnostics(review.diagnostics);
   
   const ccad::CanvasScene pcb_scene = ccad::buildCanvasScene(project_cache_);
-  renderBoardCanvas(*canvas_scene_, pcb_scene);
-  addDiagnosticMarkers(*canvas_scene_, review.diagnostics);
+  renderPcbScene(pcb_scene, review.diagnostics);
   object_browser_->renderScene(pcb_scene);
   
   const ccad::CanvasScene schematic_scene = ccad::buildSchematicScene(project_cache_);
@@ -1441,8 +1673,7 @@ void ReviewWindow::renderReview(const ccad::ProjectReview& review) {
 
 void ReviewWindow::renderCanvas(const ccad::CanvasScene& scene,
                                 const std::vector<ccad::Diagnostic>& diagnostics) {
-  renderBoardCanvas(*canvas_scene_, scene);
-  addDiagnosticMarkers(*canvas_scene_, diagnostics);
+  renderPcbScene(scene, diagnostics);
   object_browser_->renderScene(scene);
   if (auto* board_view = dynamic_cast<BoardCanvasView*>(canvas_view_)) {
     board_view->zoomToFit();
@@ -1539,12 +1770,13 @@ QString ReviewWindow::uiMapJson() const {
     const QRect local_rect(local_top_left, button->size());
     const QRect global_rect(button->mapToGlobal(QPoint(0, 0)), button->size());
     nodes << QString("{\"id\":%1,\"role\":\"action\",\"label\":%2,"
-                     "\"visible\":%3,\"enabled\":%4,\"local_rect\":%5,"
-                     "\"global_rect\":%6,\"target_x\":%7,\"target_y\":%8}")
+                     "\"visible\":%3,\"enabled\":%4,\"checked\":%5,\"local_rect\":%6,"
+                     "\"global_rect\":%7,\"target_x\":%8,\"target_y\":%9}")
                  .arg(jsonString(actionMapId(*action)))
                  .arg(jsonString(action->text()))
                  .arg(boolJson(button->isVisible() && action->isVisible()))
                  .arg(boolJson(button->isEnabled() && action->isEnabled()))
+                 .arg(boolJson(action->isCheckable() && action->isChecked()))
                  .arg(rectJson(local_rect))
                  .arg(rectJson(global_rect))
                  .arg(global_rect.center().x())
@@ -2042,13 +2274,14 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
                                        "action:zoom_100", "action:cursor",
                                        "action:measurement", "action:layers_manager",
                                        "action:part_properties"};
+  const QStringList display_action_ids = {"action:grid", "action:polar_coord",
+                                          "action:unit_inch", "action:cursor_shape",
+                                          "action:show_ratsnest", "action:net_highlight",
+                                          "action:contrast_mode"};
   const QStringList future_tool_ids = {"action:add_tracks", "action:add_via",
                                        "action:add_zone", "action:add_keepout_area",
                                        "action:add_graphical_segments", "action:text",
-                                       "action:delete_cursor", "action:grid",
-                                       "action:polar_coord", "action:unit_inch",
-                                       "action:cursor_shape", "action:show_ratsnest",
-                                       "action:net_highlight", "action:contrast_mode"};
+                                       "action:delete_cursor"};
   const QStringList unsafe_action_ids = {"action:open", "action:reload", "action:save",
                                          "action:board_setup", "action:undo", "action:redo",
                                          "action:run_drc", "action:export_drc",
@@ -2067,6 +2300,9 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
       return futureResult(id, action->text());
     }
     return result(id, false, "action_not_found");
+  }
+  if (display_action_ids.contains(id)) {
+    return triggerDisplayStateActionJson(id);
   }
   if (unsafe_action_ids.contains(id)) {
     return result(id, false, "unsafe_action_requires_human_or_kernel_tool");
@@ -2136,7 +2372,8 @@ QString ReviewWindow::commitFootprintPlacementForAutomation(
 }
 
 void ReviewWindow::updateCursorStatus(const QPointF& scene_position, const double zoom_factor) {
-  cursor_status_->setText(formatCursorStatus(project_cache_.board, scene_position));
+  cursor_status_->setText(
+      formatCursorStatus(project_cache_.board, scene_position, use_inches_, polar_coordinates_));
   zoom_status_->setText("Zoom " + QString::number(zoom_factor * 100.0, 'f', 0) + "%");
 }
 

@@ -4,11 +4,32 @@
 #include "test_support.hpp"
 
 #include <QApplication>
+#include <QLineEdit>
+
+namespace {
+
+int visibleLineEditCount(const SelectionInspectorPanel& panel) {
+  int count = 0;
+  for (const QLineEdit* input : panel.findChildren<QLineEdit*>()) {
+    if (input->isVisible()) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+int childLineEditCount(const SelectionInspectorPanel& panel) {
+  return panel.findChildren<QLineEdit*>().size();
+}
+
+}  // namespace
 
 int main(int argc, char** argv) {
   QApplication app(argc, argv);
 
   SelectionInspectorPanel panel;
+  panel.show();
+  QApplication::processEvents();
   require(panel.titleText() == "No selection", "empty inspector title");
   require(panel.detailText() == "Select a board object to inspect its stable identity.",
           "empty inspector detail");
@@ -108,6 +129,22 @@ int main(int argc, char** argv) {
   require(panel.rowText("Net") == "SIG_A", "track net");
   require(panel.rowText("Layer") == "B.Cu", "track layer");
   require(panel.rowText("Source Route Request") == "rr_1", "track route request");
+
+  // Rapid selection changes can happen when net highlight selects several canvas objects.
+  // Stale editors must be hidden immediately, not only after Qt processes deleteLater().
+  std::printf("Testing rapid selection rerender cleanup...\n");
+  std::fflush(stdout);
+  panel.renderSelection(board, "pad", "pad_1");
+  panel.renderSelection(board, "via", "via_1");
+  panel.renderSelection(board, "track", "track_1");
+  const int child_editors_after_rapid_selection = childLineEditCount(panel);
+  require(child_editors_after_rapid_selection == 1,
+          "rapid selection rerender leaves only current track editor owned, count=" +
+              std::to_string(child_editors_after_rapid_selection));
+  QApplication::processEvents();
+  require(visibleLineEditCount(panel) == 1,
+          "rapid selection rerender shows only current track editor after events");
+  require(panel.rowText("Width") == "0.2000", "rapid selection rerender keeps current width");
 
   // Test Keepout Inspector Formatting
   std::printf("Testing keepout...\n");

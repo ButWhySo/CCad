@@ -423,6 +423,8 @@ void SelectionInspectorPanel::clearExtraRows() {
         return;
       }
       if (QWidget* widget = item->widget()) {
+        widget->hide();
+        widget->setParent(nullptr);
         widget->deleteLater();
       }
       delete item;

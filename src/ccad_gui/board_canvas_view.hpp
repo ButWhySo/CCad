@@ -3,6 +3,7 @@
 #include <QGraphicsView>
 #include <QKeyEvent>
 #include <QMouseEvent>
+#include <QPainter>
 #include <QResizeEvent>
 #include <QScrollBar>
 #include <QWheelEvent>
@@ -58,8 +59,58 @@ class BoardCanvasView final : public QGraphicsView {
   }
 
   ToolMode getToolMode() const { return active_tool_; }
+  bool gridVisible() const { return grid_visible_; }
+  void setGridVisible(const bool visible) {
+    if (grid_visible_ == visible) {
+      return;
+    }
+    grid_visible_ = visible;
+    viewport()->update();
+  }
+  bool crosshairVisible() const { return crosshair_visible_; }
+  void setCrosshairVisible(const bool visible) {
+    if (crosshair_visible_ == visible) {
+      return;
+    }
+    crosshair_visible_ = visible;
+    viewport()->update();
+  }
 
  protected:
+  void drawBackground(QPainter* painter, const QRectF& rect) override {
+    QGraphicsView::drawBackground(painter, rect);
+    if (!grid_visible_ || painter == nullptr) {
+      return;
+    }
+    constexpr double grid_step = 10.0;
+    QPen grid_pen(QColor("#20304a"));
+    grid_pen.setCosmetic(true);
+    painter->setPen(grid_pen);
+    const double left = std::floor(rect.left() / grid_step) * grid_step;
+    const double top = std::floor(rect.top() / grid_step) * grid_step;
+    for (double x = left; x <= rect.right(); x += grid_step) {
+      painter->drawLine(QLineF(x, rect.top(), x, rect.bottom()));
+    }
+    for (double y = top; y <= rect.bottom(); y += grid_step) {
+      painter->drawLine(QLineF(rect.left(), y, rect.right(), y));
+    }
+  }
+
+  void drawForeground(QPainter* painter, const QRectF& rect) override {
+    QGraphicsView::drawForeground(painter, rect);
+    if (!crosshair_visible_ || painter == nullptr) {
+      return;
+    }
+    const QPointF cursor_scene =
+        last_cursor_scene_pos_.value_or(mapToScene(viewport()->rect().center()));
+    QPen crosshair_pen(QColor("#d6e4ff"));
+    crosshair_pen.setCosmetic(true);
+    crosshair_pen.setStyle(Qt::DashLine);
+    painter->setPen(crosshair_pen);
+    painter->drawLine(QLineF(rect.left(), cursor_scene.y(), rect.right(), cursor_scene.y()));
+    painter->drawLine(QLineF(cursor_scene.x(), rect.top(), cursor_scene.x(), rect.bottom()));
+  }
+
   void wheelEvent(QWheelEvent* event) override {
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     zoomBy(event->angleDelta().y() > 0 ? 1.18 : 1.0 / 1.18);
@@ -74,6 +125,10 @@ class BoardCanvasView final : public QGraphicsView {
   }
 
   void mouseMoveEvent(QMouseEvent* event) override {
+    last_cursor_scene_pos_ = mapToScene(event->pos());
+    if (crosshair_visible_) {
+      viewport()->update();
+    }
     if (panning_) {
       const QPoint delta = event->pos() - pan_last_pos_;
       if (horizontalScrollBar() != nullptr) {
@@ -316,7 +371,10 @@ class BoardCanvasView final : public QGraphicsView {
   bool user_view_ = false;
   bool panning_ = false;
   bool space_pan_mode_ = false;
+  bool grid_visible_ = true;
+  bool crosshair_visible_ = false;
   QPoint pan_last_pos_;
+  std::optional<QPointF> last_cursor_scene_pos_;
   std::function<void(QPointF, double)> coordinate_callback_;
   std::function<void(bool, bool)> pan_mode_callback_;
 };
