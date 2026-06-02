@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 164
-- Branch: `sprint-164-toolbar-action-contracts`
+- Sprint: 165
+- Branch: `sprint-165-left-toolbar-action-contracts`
 - Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
@@ -30,6 +30,7 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - **Sprint 162 (Pad Layer Rendering Fidelity)** is complete and merged to `main`. It separates copper, solder-mask, and solder-paste pad rendering across the board canvas, footprint chooser preview, and footprint placement ghost.
 - **Sprint 163 (Live UI Map Server)** is complete and merged to `main`. It adds a local socket JSON Lines server for repeated `ui.map`, `ui.target`, and `ui.epoch` queries while the GUI stays open.
 - **Sprint 164 (Toolbar Action Contracts)** is complete on `sprint-164-toolbar-action-contracts`. It removes silent right-toolbar stubs by giving unfinished editor tools visible planned-tool status and an agent-readable `future_tool_not_implemented` safe-trigger response.
+- **Sprint 165 (Left Toolbar Action Contracts)** is complete on `sprint-165-left-toolbar-action-contracts`. It extends the no-silent-stubs contract to unfinished left-toolbar display and panel controls.
 
 ## Phase Roadmap
 
