@@ -91,6 +91,10 @@ int main() {
           "help json describes outline authoring");
   require(help_json.find("\"name\": \"pcb set-track\"") != std::string::npos,
           "help json describes track editing");
+  require(help_json.find("\"name\": \"pcb add-graphic-line\"") != std::string::npos,
+          "help json describes board graphic line authoring");
+  require(help_json.find("\"name\": \"pcb add-text\"") != std::string::npos,
+          "help json describes board text authoring");
   require(help_json.find("\"name\": \"pcb add-route-request\"") != std::string::npos,
           "help json describes route request authoring");
   require(help_json.find("\"name\": \"pcb set-route-request\"") != std::string::npos,
@@ -171,6 +175,84 @@ int main() {
           "pcb add-standard-layers writes final user layer");
   require(run(add_standard_layers_command) == 0,
           "pcb add-standard-layers is idempotent for already-complete boards");
+
+  const std::string add_graphic_line_command =
+      quote(CCAD_BINARY) + " pcb add-graphic-line --file " + quote(standard_layers_path) +
+      " --id G1 --layer Dwgs.User --start-x-mm 3 --start-y-mm 4"
+      " --end-x-mm 16 --end-y-mm 4 --width-mm 0.15";
+  require(run(add_graphic_line_command) == 0, "pcb add-graphic-line exits zero");
+  const std::string add_board_text_command =
+      quote(CCAD_BINARY) + " pcb add-text --file " + quote(standard_layers_path) +
+      " --id BT1 --layer F.SilkS --text \"Bridge rectifier\" --x-mm 8 --y-mm 22"
+      " --size-x-mm 1.5 --size-y-mm 1.5 --rotation-deg 90";
+  require(run(add_board_text_command) == 0, "pcb add-text exits zero");
+  const std::string graphic_text_json = readFile(standard_layers_path);
+  require(graphic_text_json.find("\"graphics\"") != std::string::npos,
+          "pcb add-graphic-line writes graphics array");
+  require(graphic_text_json.find("\"id\": \"G1\"") != std::string::npos,
+          "pcb add-graphic-line writes graphic id");
+  require(graphic_text_json.find("\"layer_id\": \"Dwgs.User\"") != std::string::npos,
+          "pcb add-graphic-line writes graphic layer");
+  require(graphic_text_json.find("\"texts\"") != std::string::npos,
+          "pcb add-text writes texts array");
+  require(graphic_text_json.find("\"text\": \"Bridge rectifier\"") != std::string::npos,
+          "pcb add-text writes text value");
+  require(graphic_text_json.find("\"rotation_degrees\": 90") != std::string::npos,
+          "pcb add-text writes rotation");
+  const std::filesystem::path graphic_lookup_path = temp / "graphic-lookup.json";
+  require(run(quote(CCAD_BINARY) + " pcb get-object --file " + quote(standard_layers_path) +
+              " --id G1 > " + quote(graphic_lookup_path)) == 0,
+          "pcb get-object finds board graphic line");
+  const std::string graphic_lookup_json = readFile(graphic_lookup_path);
+  require(graphic_lookup_json.find("\"type\": \"graphic\"") != std::string::npos,
+          "pcb get-object writes graphic type");
+  require(graphic_lookup_json.find("\"kind\": \"line\"") != std::string::npos,
+          "pcb get-object writes graphic kind");
+  require(graphic_lookup_json.find("\"layer_id\": \"Dwgs.User\"") != std::string::npos,
+          "pcb get-object writes graphic layer");
+  require(graphic_lookup_json.find("\"width_nm\": 150000") != std::string::npos,
+          "pcb get-object writes graphic width");
+  const std::filesystem::path board_text_lookup_path = temp / "board-text-lookup.json";
+  require(run(quote(CCAD_BINARY) + " pcb get-object --file " + quote(standard_layers_path) +
+              " --id BT1 > " + quote(board_text_lookup_path)) == 0,
+          "pcb get-object finds board text");
+  const std::string board_text_lookup_json = readFile(board_text_lookup_path);
+  require(board_text_lookup_json.find("\"type\": \"text\"") != std::string::npos,
+          "pcb get-object writes text type");
+  require(board_text_lookup_json.find("\"text\": \"Bridge rectifier\"") != std::string::npos,
+          "pcb get-object writes text payload");
+  require(board_text_lookup_json.find("\"layer_id\": \"F.SilkS\"") != std::string::npos,
+          "pcb get-object writes text layer");
+  require(board_text_lookup_json.find("\"rotation_degrees\": 90") != std::string::npos,
+          "pcb get-object writes text rotation");
+  const std::filesystem::path graphic_list_path = temp / "graphic-list.json";
+  require(run(quote(CCAD_BINARY) + " pcb list-objects --file " + quote(standard_layers_path) +
+              " --type graphic > " + quote(graphic_list_path)) == 0,
+          "pcb list-objects filters board graphics");
+  const std::string graphic_list_json = readFile(graphic_list_path);
+  require(graphic_list_json.find("\"total\": 1") != std::string::npos,
+          "pcb list-objects graphic summary reports one row");
+  require(graphic_list_json.find("\"type\": \"graphic\"") != std::string::npos,
+          "pcb list-objects writes graphic row");
+  require(graphic_list_json.find("\"kind\": \"line\"") != std::string::npos,
+          "pcb list-objects writes graphic kind");
+  require(graphic_list_json.find("\"width_nm\": 150000") != std::string::npos,
+          "pcb list-objects writes graphic width");
+  const std::filesystem::path board_text_list_path = temp / "board-text-list.json";
+  require(run(quote(CCAD_BINARY) + " pcb list-objects --file " + quote(standard_layers_path) +
+              " --type text > " + quote(board_text_list_path)) == 0,
+          "pcb list-objects filters board texts");
+  const std::string board_text_list_json = readFile(board_text_list_path);
+  require(board_text_list_json.find("\"total\": 1") != std::string::npos,
+          "pcb list-objects text summary reports one row");
+  require(board_text_list_json.find("\"type\": \"text\"") != std::string::npos,
+          "pcb list-objects writes text row");
+  require(board_text_list_json.find("\"text\": \"Bridge rectifier\"") != std::string::npos,
+          "pcb list-objects writes text payload");
+  require(board_text_list_json.find("\"rotation_degrees\": 90") != std::string::npos,
+          "pcb list-objects writes text rotation");
+  require(run(add_graphic_line_command) != 0, "pcb add-graphic-line rejects duplicate id");
+  require(run(add_board_text_command) != 0, "pcb add-text rejects duplicate id");
 
   const std::filesystem::path advanced_pad_path = temp / "advanced-pad-authoring.ccad.json";
   require(run(quote(CCAD_BINARY) +

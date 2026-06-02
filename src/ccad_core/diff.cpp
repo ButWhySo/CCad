@@ -86,6 +86,17 @@ std::string trackSignature(const TrackSegment& track) {
          std::to_string(track.width.nanometers) + "\x1f" + track.source_route_request_id;
 }
 
+std::string graphicSignature(const BoardGraphic& graphic) {
+  return graphic.kind + "\x1f" + graphic.layer_id + "\x1f" + pointSignature(graphic.start) +
+         "\x1f" + pointSignature(graphic.end) + "\x1f" +
+         std::to_string(graphic.width.nanometers);
+}
+
+std::string textSignature(const BoardText& text) {
+  return text.layer_id + "\x1f" + text.text + "\x1f" + pointSignature(text.position) +
+         "\x1f" + std::to_string(text.rotation_degrees) + "\x1f" + sizeSignature(text.size);
+}
+
 std::string routeRequestSignature(const RouteRequest& route_request) {
   return route_request.net_id + "\x1f" + route_request.from_object_id + "\x1f" +
          route_request.to_object_id + "\x1f" + route_request.preferred_layer_id + "\x1f" +
@@ -183,6 +194,9 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
     diffObjectMap(diff, "pad", before.board->pads, after.board->pads, padSignature);
     diffObjectMap(diff, "via", before.board->vias, after.board->vias, viaSignature);
     diffObjectMap(diff, "track", before.board->tracks, after.board->tracks, trackSignature);
+    diffObjectMap(diff, "graphic", before.board->graphics, after.board->graphics,
+                  graphicSignature);
+    diffObjectMap(diff, "text", before.board->texts, after.board->texts, textSignature);
     diffObjectMap(diff, "route_request", before.board->route_requests,
                   after.board->route_requests, routeRequestSignature);
   } else if (!before.board.has_value() && after.board.has_value()) {
@@ -245,6 +259,24 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .object_type = "track",
           .object_id = track.id,
           .message = "track added",
+      });
+    }
+    diff.added_count += after.board->graphics.size();
+    for (const BoardGraphic& graphic : after.board->graphics) {
+      diff.entries.push_back(DiffEntry{
+          .change = "added",
+          .object_type = "graphic",
+          .object_id = graphic.id,
+          .message = "graphic added",
+      });
+    }
+    diff.added_count += after.board->texts.size();
+    for (const BoardText& text : after.board->texts) {
+      diff.entries.push_back(DiffEntry{
+          .change = "added",
+          .object_type = "text",
+          .object_id = text.id,
+          .message = "text added",
       });
     }
     diff.added_count += after.board->route_requests.size();
@@ -316,6 +348,24 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .object_type = "track",
           .object_id = track.id,
           .message = "track removed",
+      });
+    }
+    diff.removed_count += before.board->graphics.size();
+    for (const BoardGraphic& graphic : before.board->graphics) {
+      diff.entries.push_back(DiffEntry{
+          .change = "removed",
+          .object_type = "graphic",
+          .object_id = graphic.id,
+          .message = "graphic removed",
+      });
+    }
+    diff.removed_count += before.board->texts.size();
+    for (const BoardText& text : before.board->texts) {
+      diff.entries.push_back(DiffEntry{
+          .change = "removed",
+          .object_type = "text",
+          .object_id = text.id,
+          .message = "text removed",
       });
     }
     diff.removed_count += before.board->route_requests.size();

@@ -25,6 +25,7 @@ ccad::Project validBoardProject() {
           .origin = ccad::Point{.x = ccad::nanometers(0), .y = ccad::nanometers(0)},
           .size = ccad::Size{.width = ccad::millimeters(42), .height = ccad::millimeters(28)},
       },
+      .design_rules = ccad::DesignRules{},
       .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true},
                  ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true}},
       .placement_regions = {},
@@ -50,6 +51,8 @@ ccad::Project validBoardProject() {
                                     .start = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
                                     .end = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},
                                     .width = ccad::millimeters(0.25)}},
+      .graphics = {},
+      .texts = {},
       .route_requests = {},
   };
   return project;
@@ -252,6 +255,108 @@ int main() {
   duplicate_physical_object_id.board->vias.at(0).id = "P1";
   require(hasCode(ccad::runDrc(duplicate_physical_object_id), "DUPLICATE_PHYSICAL_OBJECT_ID"),
           "drc reports physical object id reused across types");
+
+  ccad::Project valid_board_graphic_text = validBoardProject();
+  valid_board_graphic_text.board->layers.push_back(
+      ccad::Layer{.id = "Dwgs.User", .name = "User drawings", .kind = "user"});
+  valid_board_graphic_text.board->layers.push_back(
+      ccad::Layer{.id = "F.SilkS", .name = "Front silkscreen", .kind = "silkscreen"});
+  valid_board_graphic_text.board->graphics.push_back(ccad::BoardGraphic{
+      .id = "G1",
+      .kind = "line",
+      .layer_id = "Dwgs.User",
+      .start = ccad::Point{.x = ccad::millimeters(3), .y = ccad::millimeters(4)},
+      .end = ccad::Point{.x = ccad::millimeters(15), .y = ccad::millimeters(4)},
+      .width = ccad::millimeters(0.15)});
+  valid_board_graphic_text.board->texts.push_back(ccad::BoardText{
+      .id = "BT1",
+      .layer_id = "F.SilkS",
+      .text = "RECTIFIER",
+      .position = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(20)},
+      .size = ccad::Size{.width = ccad::millimeters(1.5),
+                         .height = ccad::millimeters(1.5)}});
+  require(ccad::runDrc(valid_board_graphic_text).empty(),
+          "valid board graphic and text have no drc diagnostics");
+
+  ccad::Project empty_graphic_id = valid_board_graphic_text;
+  empty_graphic_id.board->graphics.at(0).id.clear();
+  require(hasCode(ccad::runDrc(empty_graphic_id), "INVALID_BOARD_GRAPHIC_ID"),
+          "drc reports empty board graphic id");
+
+  ccad::Project duplicate_graphic_id = valid_board_graphic_text;
+  duplicate_graphic_id.board->graphics.push_back(duplicate_graphic_id.board->graphics.front());
+  require(hasCode(ccad::runDrc(duplicate_graphic_id), "DUPLICATE_BOARD_GRAPHIC_ID"),
+          "drc reports duplicate board graphic ids");
+
+  ccad::Project unknown_graphic_layer = valid_board_graphic_text;
+  unknown_graphic_layer.board->graphics.at(0).layer_id = "Missing.User";
+  require(hasCode(ccad::runDrc(unknown_graphic_layer), "UNKNOWN_BOARD_GRAPHIC_LAYER"),
+          "drc reports board graphic unknown layer");
+
+  ccad::Project invalid_graphic_width = valid_board_graphic_text;
+  invalid_graphic_width.board->graphics.at(0).width = ccad::nanometers(0);
+  require(hasCode(ccad::runDrc(invalid_graphic_width), "INVALID_BOARD_GRAPHIC_WIDTH"),
+          "drc reports non-positive board graphic width");
+
+  ccad::Project zero_length_graphic = valid_board_graphic_text;
+  zero_length_graphic.board->graphics.at(0).end =
+      zero_length_graphic.board->graphics.at(0).start;
+  require(hasCode(ccad::runDrc(zero_length_graphic), "ZERO_LENGTH_BOARD_GRAPHIC"),
+          "drc reports zero length board graphic line");
+
+  ccad::Project graphic_outside = valid_board_graphic_text;
+  graphic_outside.board->graphics.at(0).end =
+      ccad::Point{.x = ccad::millimeters(50), .y = ccad::millimeters(4)};
+  require(hasCode(ccad::runDrc(graphic_outside), "BOARD_GRAPHIC_OUTSIDE_BOARD"),
+          "drc reports board graphic outside outline");
+
+  ccad::Project unsupported_graphic_kind = valid_board_graphic_text;
+  unsupported_graphic_kind.board->graphics.at(0).kind = "arc";
+  require(hasCode(ccad::runDrc(unsupported_graphic_kind), "UNSUPPORTED_BOARD_GRAPHIC_KIND"),
+          "drc reports unsupported board graphic kind");
+
+  ccad::Project empty_text_id = valid_board_graphic_text;
+  empty_text_id.board->texts.at(0).id.clear();
+  require(hasCode(ccad::runDrc(empty_text_id), "INVALID_BOARD_TEXT_ID"),
+          "drc reports empty board text id");
+
+  ccad::Project duplicate_text_id = valid_board_graphic_text;
+  duplicate_text_id.board->texts.push_back(duplicate_text_id.board->texts.front());
+  require(hasCode(ccad::runDrc(duplicate_text_id), "DUPLICATE_BOARD_TEXT_ID"),
+          "drc reports duplicate board text ids");
+
+  ccad::Project unknown_text_layer = valid_board_graphic_text;
+  unknown_text_layer.board->texts.at(0).layer_id = "Missing.SilkS";
+  require(hasCode(ccad::runDrc(unknown_text_layer), "UNKNOWN_BOARD_TEXT_LAYER"),
+          "drc reports board text unknown layer");
+
+  ccad::Project empty_text_value = valid_board_graphic_text;
+  empty_text_value.board->texts.at(0).text.clear();
+  require(hasCode(ccad::runDrc(empty_text_value), "EMPTY_BOARD_TEXT"),
+          "drc reports empty board text value");
+
+  ccad::Project invalid_text_size = valid_board_graphic_text;
+  invalid_text_size.board->texts.at(0).size.width = ccad::nanometers(0);
+  require(hasCode(ccad::runDrc(invalid_text_size), "INVALID_BOARD_TEXT_SIZE"),
+          "drc reports non-positive board text size");
+
+  ccad::Project text_outside = valid_board_graphic_text;
+  text_outside.board->texts.at(0).position =
+      ccad::Point{.x = ccad::millimeters(50), .y = ccad::millimeters(20)};
+  require(hasCode(ccad::runDrc(text_outside), "BOARD_TEXT_OUTSIDE_BOARD"),
+          "drc reports board text outside outline");
+
+  ccad::Project graphic_duplicate_physical_object_id = valid_board_graphic_text;
+  graphic_duplicate_physical_object_id.board->graphics.at(0).id = "P1";
+  require(hasCode(ccad::runDrc(graphic_duplicate_physical_object_id),
+                  "DUPLICATE_PHYSICAL_OBJECT_ID"),
+          "drc reports board graphic id reused by another physical object");
+
+  ccad::Project text_duplicate_physical_object_id = valid_board_graphic_text;
+  text_duplicate_physical_object_id.board->texts.at(0).id = "P1";
+  require(hasCode(ccad::runDrc(text_duplicate_physical_object_id),
+                  "DUPLICATE_PHYSICAL_OBJECT_ID"),
+          "drc reports board text id reused by another physical object");
 
   ccad::Project valid_route_request = validBoardProject();
   valid_route_request.board->route_requests.push_back(ccad::RouteRequest{

@@ -35,7 +35,9 @@ enum class InteractionMode {
   MoveFootprint,
   AddVia,
   RouteTrack,
-  AddKeepout
+  AddKeepout,
+  DrawGraphic,
+  PlaceText
 };
 
 class ReviewWindow final : public QMainWindow {
@@ -63,6 +65,9 @@ class ReviewWindow final : public QMainWindow {
                                             double end_x_mm, double end_y_mm);
   QString commitKeepoutPlacementForAutomation(double start_x_mm, double start_y_mm,
                                               double end_x_mm, double end_y_mm);
+  QString commitGraphicLinePlacementForAutomation(double start_x_mm, double start_y_mm,
+                                                  double end_x_mm, double end_y_mm);
+  QString commitBoardTextPlacementForAutomation(const QString& text, double x_mm, double y_mm);
   QString deleteBoardObjectForAutomation(const QString& object_id);
 
  protected:
@@ -91,6 +96,8 @@ class ReviewWindow final : public QMainWindow {
   void enterAddViaMode();
   void enterRouteTrackMode();
   void enterAddKeepoutMode();
+  void enterDrawGraphicMode();
+  void enterPlaceTextMode(const QString& text);
   void placeFromActiveEditor();
   void chooseAndPlaceFootprint();
   void chooseAndPlaceSymbol();
@@ -161,6 +168,7 @@ class ReviewWindow final : public QMainWindow {
   std::string interaction_component_id_;
   ccad::Footprint interaction_footprint_;
   ccad::Symbol interaction_symbol_;
+  QString interaction_board_text_;
   double interaction_rotation_degrees_ = 0.0;
   std::string interaction_layer_id_;
   std::vector<QGraphicsItem*> interaction_ghost_items_;

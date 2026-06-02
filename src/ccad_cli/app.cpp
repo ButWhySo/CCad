@@ -134,6 +134,16 @@ const std::vector<CommandHelp>& commandHelp() {
                   .usage = "ccad pcb add-track --file <path> --id <id> --net <id> --layer <id> "
                            "--start-x-mm <n> --start-y-mm <n> --end-x-mm <n> "
                            "--end-y-mm <n> --width-mm <n>"},
+      CommandHelp{.name = "pcb add-graphic-line",
+                  .summary = "Append one KiCad-style board graphic line",
+                  .usage = "ccad pcb add-graphic-line --file <path> --id <id> --layer <id> "
+                           "--start-x-mm <n> --start-y-mm <n> --end-x-mm <n> "
+                           "--end-y-mm <n> --width-mm <n>"},
+      CommandHelp{.name = "pcb add-text",
+                  .summary = "Append one KiCad-style board text object",
+                  .usage = "ccad pcb add-text --file <path> --id <id> --layer <id> "
+                           "--text <value> --x-mm <n> --y-mm <n> --size-x-mm <n> "
+                           "--size-y-mm <n> --rotation-deg <n>"},
       CommandHelp{.name = "pcb add-route-request",
                   .summary = "Append one route-assistance request to a board project",
                   .usage = "ccad pcb add-route-request --file <path> --id <id> --net <id> "

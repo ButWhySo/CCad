@@ -28,9 +28,11 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFormLayout>
+#include <QFont>
 #include <QGuiApplication>
 #include <QGraphicsPathItem>
 #include <QGraphicsScene>
+#include <QGraphicsTextItem>
 #include <QDockWidget>
 #include <QIcon>
 #include <QCursor>
@@ -557,6 +559,72 @@ std::string nextKeepoutId(const ccad::Board& board) {
   return "K" + std::to_string(max_num + 1);
 }
 
+std::string nextGraphicId(const ccad::Board& board) {
+  int max_num = 0;
+  for (const ccad::BoardGraphic& graphic : board.graphics) {
+    max_num = std::max(max_num, numericSuffixAfterPrefix(graphic.id, "G"));
+  }
+  return "G" + std::to_string(max_num + 1);
+}
+
+std::string nextBoardTextId(const ccad::Board& board) {
+  int max_num = 0;
+  for (const ccad::BoardText& text : board.texts) {
+    max_num = std::max(max_num, numericSuffixAfterPrefix(text.id, "BT"));
+  }
+  return "BT" + std::to_string(max_num + 1);
+}
+
+bool hasBoardLayer(const ccad::Board& board, const std::string& layer_id) {
+  return findBoardLayer(board, layer_id) != nullptr;
+}
+
+bool hasVisibleBoardLayer(const ccad::Board& board, const std::string& layer_id) {
+  const ccad::Layer* layer = findBoardLayer(board, layer_id);
+  return layer != nullptr && layer->visible;
+}
+
+std::string defaultGraphicLayerId(const ccad::Board& board, const std::string& active_layer_id) {
+  if (hasVisibleBoardLayer(board, "Dwgs.User")) {
+    return "Dwgs.User";
+  }
+  if (hasVisibleBoardLayer(board, "F.SilkS")) {
+    return "F.SilkS";
+  }
+  if (!active_layer_id.empty() && hasVisibleBoardLayer(board, active_layer_id)) {
+    return active_layer_id;
+  }
+  if (hasBoardLayer(board, "Dwgs.User")) {
+    return "Dwgs.User";
+  }
+  if (!active_layer_id.empty() && hasBoardLayer(board, active_layer_id)) {
+    return active_layer_id;
+  }
+  return board.layers.empty() ? std::string{} : board.layers.front().id;
+}
+
+std::string defaultBoardTextLayerId(const ccad::Board& board, const std::string& active_layer_id) {
+  if (hasVisibleBoardLayer(board, "F.SilkS")) {
+    return "F.SilkS";
+  }
+  if (hasVisibleBoardLayer(board, "Dwgs.User")) {
+    return "Dwgs.User";
+  }
+  if (!active_layer_id.empty() && hasVisibleBoardLayer(board, active_layer_id)) {
+    return active_layer_id;
+  }
+  if (hasBoardLayer(board, "F.SilkS")) {
+    return "F.SilkS";
+  }
+  if (hasBoardLayer(board, "Dwgs.User")) {
+    return "Dwgs.User";
+  }
+  if (!active_layer_id.empty() && hasBoardLayer(board, active_layer_id)) {
+    return active_layer_id;
+  }
+  return board.layers.empty() ? std::string{} : board.layers.front().id;
+}
+
 ccad::Length defaultTrackWidth(const ccad::Board& board) {
   if (board.design_rules.min_track_width.nanometers > 0) {
     return board.design_rules.min_track_width;
@@ -570,6 +638,15 @@ ccad::Length defaultViaDiameter() {
 
 ccad::Length defaultViaDrill() {
   return ccad::millimeters(0.40);
+}
+
+ccad::Length defaultGraphicWidth() {
+  return ccad::millimeters(0.15);
+}
+
+ccad::Size defaultBoardTextSize() {
+  return ccad::Size{.width = ccad::millimeters(1.50),
+                    .height = ccad::millimeters(1.50)};
 }
 
 QPainterPath sceneTrackPath(const QPointF& start, const QPointF& end) {
@@ -1056,12 +1133,13 @@ ReviewWindow::ReviewWindow() {
             [this, action_id, label]() { showFutureToolStatus(action_id, label); });
   };
   bind_future_tool(add_zone_action, "action:add_zone", "Add Zone");
-  bind_future_tool(draw_graphic_action, "action:add_graphical_segments", "Draw Graphic");
-  bind_future_tool(place_text_action, "action:text", "Place Text");
 
   connect(route_track_action, &QAction::triggered, this, [this]() { enterRouteTrackMode(); });
   connect(add_via_action, &QAction::triggered, this, [this]() { enterAddViaMode(); });
   connect(add_keepout_action, &QAction::triggered, this, [this]() { enterAddKeepoutMode(); });
+  connect(draw_graphic_action, &QAction::triggered, this, [this]() { enterDrawGraphicMode(); });
+  connect(place_text_action, &QAction::triggered, this,
+          [this]() { enterPlaceTextMode("TEXT"); });
   connect(delete_action, &QAction::triggered, this, [this]() { deleteSelectedBoardObject(); });
 
   const auto bind_display_action = [this](QAction* action, const QString& action_id) {
@@ -2776,8 +2854,7 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
                                           "action:unit_inch", "action:cursor_shape",
                                           "action:show_ratsnest", "action:net_highlight",
                                           "action:contrast_mode"};
-  const QStringList future_tool_ids = {"action:add_zone", "action:add_graphical_segments",
-                                       "action:text"};
+  const QStringList future_tool_ids = {"action:add_zone"};
   const QStringList unsafe_action_ids = {"action:open", "action:reload", "action:save",
                                          "action:board_setup", "action:undo", "action:redo",
                                          "action:run_drc", "action:export_drc",
@@ -2800,6 +2877,18 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
     QApplication::processEvents();
     markUiMapChanged();
     return editorToolResult(id, "add_keepout");
+  }
+  if (id == "action:add_graphical_segments") {
+    enterDrawGraphicMode();
+    QApplication::processEvents();
+    markUiMapChanged();
+    return editorToolResult(id, "draw_graphic");
+  }
+  if (id == "action:text") {
+    enterPlaceTextMode("TEXT");
+    QApplication::processEvents();
+    markUiMapChanged();
+    return editorToolResult(id, "place_text");
   }
   if (id == "action:delete_cursor") {
     return deleteSelectedBoardObject();
@@ -3008,6 +3097,85 @@ QString ReviewWindow::commitKeepoutPlacementForAutomation(const double start_x_m
   }
 }
 
+QString ReviewWindow::commitGraphicLinePlacementForAutomation(const double start_x_mm,
+                                                              const double start_y_mm,
+                                                              const double end_x_mm,
+                                                              const double end_y_mm) {
+  const auto result = [](const bool performed, const QString& reason,
+                         const std::size_t graphic_count) {
+    return QString("{\"schema_version\":1,\"performed\":%1,\"reason\":%2,\"graphic_count\":%3}\n")
+        .arg(boolJson(performed))
+        .arg(jsonString(reason))
+        .arg(static_cast<qulonglong>(graphic_count));
+  };
+  if (!project_cache_.board.has_value()) {
+    return result(false, "missing_board", 0);
+  }
+  try {
+    enterDrawGraphicMode();
+    if (interaction_mode_ != InteractionMode::DrawGraphic) {
+      return result(false, "tool_unavailable", project_cache_.board->graphics.size());
+    }
+    const auto click = [this](const QPointF& scene_point) {
+      const QPoint viewport_point = canvas_view_->mapFromScene(scene_point);
+      QMouseEvent press(QEvent::MouseButtonPress, QPointF(viewport_point), QPointF(viewport_point),
+                        Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+      QApplication::sendEvent(canvas_view_->viewport(), &press);
+      QApplication::processEvents();
+    };
+    click(boardPositionToScene(*project_cache_.board, start_x_mm, start_y_mm));
+    if (project_cache_.board.has_value()) {
+      click(boardPositionToScene(*project_cache_.board, end_x_mm, end_y_mm));
+    }
+    const std::size_t graphic_count =
+        project_cache_.board.has_value() ? project_cache_.board->graphics.size() : 0;
+    return result(true, "placed", graphic_count);
+  } catch (const std::exception& e) {
+    if (interaction_mode_ != InteractionMode::Default) {
+      cancelInteractionMode();
+    }
+    const std::size_t graphic_count =
+        project_cache_.board.has_value() ? project_cache_.board->graphics.size() : 0;
+    return result(false, QString::fromUtf8(e.what()), graphic_count);
+  }
+}
+
+QString ReviewWindow::commitBoardTextPlacementForAutomation(const QString& text,
+                                                            const double x_mm,
+                                                            const double y_mm) {
+  const auto result = [](const bool performed, const QString& reason, const std::size_t text_count) {
+    return QString("{\"schema_version\":1,\"performed\":%1,\"reason\":%2,\"text_count\":%3}\n")
+        .arg(boolJson(performed))
+        .arg(jsonString(reason))
+        .arg(static_cast<qulonglong>(text_count));
+  };
+  if (!project_cache_.board.has_value()) {
+    return result(false, "missing_board", 0);
+  }
+  try {
+    enterPlaceTextMode(text);
+    if (interaction_mode_ != InteractionMode::PlaceText) {
+      return result(false, "tool_unavailable", project_cache_.board->texts.size());
+    }
+    const QPointF scene_point = boardPositionToScene(*project_cache_.board, x_mm, y_mm);
+    const QPoint viewport_point = canvas_view_->mapFromScene(scene_point);
+    QMouseEvent press(QEvent::MouseButtonPress, QPointF(viewport_point), QPointF(viewport_point),
+                      Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    QApplication::sendEvent(canvas_view_->viewport(), &press);
+    QApplication::processEvents();
+    const std::size_t text_count =
+        project_cache_.board.has_value() ? project_cache_.board->texts.size() : 0;
+    return result(true, "placed", text_count);
+  } catch (const std::exception& e) {
+    if (interaction_mode_ != InteractionMode::Default) {
+      cancelInteractionMode();
+    }
+    const std::size_t text_count =
+        project_cache_.board.has_value() ? project_cache_.board->texts.size() : 0;
+    return result(false, QString::fromUtf8(e.what()), text_count);
+  }
+}
+
 QString ReviewWindow::deleteBoardObjectForAutomation(const QString& object_id) {
   const auto result = [](const bool performed, const QString& reason, const QString& id,
                          const QString& deleted_type) {
@@ -3059,6 +3227,24 @@ QString ReviewWindow::deleteBoardObjectForAutomation(const QString& object_id) {
     board.tracks.erase(erase_track);
     saveProjectCacheAfterMutation("Deleted track " + object_id);
     return result(true, "deleted", object_id, "track");
+  }
+  const auto erase_graphic = std::find_if(
+      board.graphics.begin(), board.graphics.end(),
+      [&id](const ccad::BoardGraphic& graphic) { return graphic.id == id; });
+  if (erase_graphic != board.graphics.end()) {
+    pushUndoSnapshot();
+    board.graphics.erase(erase_graphic);
+    saveProjectCacheAfterMutation("Deleted graphic " + object_id);
+    return result(true, "deleted", object_id, "graphic");
+  }
+  const auto erase_text = std::find_if(
+      board.texts.begin(), board.texts.end(),
+      [&id](const ccad::BoardText& text) { return text.id == id; });
+  if (erase_text != board.texts.end()) {
+    pushUndoSnapshot();
+    board.texts.erase(erase_text);
+    saveProjectCacheAfterMutation("Deleted text " + object_id);
+    return result(true, "deleted", object_id, "text");
   }
   const auto erase_keepout = std::find_if(
       board.keepouts.begin(), board.keepouts.end(),
@@ -3273,6 +3459,7 @@ void ReviewWindow::cancelInteractionMode() {
   interaction_ghost_items_.clear();
   interaction_mode_ = InteractionMode::Default;
   interaction_component_id_.clear();
+  interaction_board_text_.clear();
   interaction_layer_id_.clear();
   interaction_rotation_degrees_ = 0.0;
   interaction_has_anchor_ = false;
@@ -3425,6 +3612,59 @@ void ReviewWindow::enterAddKeepoutMode() {
   tool_status_->setText("Tool Add Keepout");
 }
 
+void ReviewWindow::enterDrawGraphicMode() {
+  cancelInteractionMode();
+  if (!project_cache_.board.has_value()) {
+    QMessageBox::warning(this, "No Board", "Load a project with a board before drawing graphics.");
+    return;
+  }
+  const std::string layer_id =
+      defaultGraphicLayerId(*project_cache_.board, activePcbLayerOrDefault());
+  if (layer_id.empty()) {
+    QMessageBox::warning(this, "No Layer", "No board layer is available for graphic placement.");
+    return;
+  }
+  editor_tabs_->setCurrentWidget(canvas_view_);
+  interaction_mode_ = InteractionMode::DrawGraphic;
+  interaction_layer_id_ = layer_id;
+  interaction_has_anchor_ = false;
+  interaction_last_mouse_pos_ = canvas_view_->mapToScene(canvas_view_->mapFromGlobal(QCursor::pos()));
+  canvas_view_->viewport()->setCursor(Qt::CrossCursor);
+  tool_status_->setText(QString("Tool Draw Graphic ") + qstr(layer_id));
+}
+
+void ReviewWindow::enterPlaceTextMode(const QString& text) {
+  cancelInteractionMode();
+  if (!project_cache_.board.has_value()) {
+    QMessageBox::warning(this, "No Board", "Load a project with a board before placing text.");
+    return;
+  }
+  const std::string layer_id =
+      defaultBoardTextLayerId(*project_cache_.board, activePcbLayerOrDefault());
+  if (layer_id.empty()) {
+    QMessageBox::warning(this, "No Layer", "No board layer is available for text placement.");
+    return;
+  }
+  editor_tabs_->setCurrentWidget(canvas_view_);
+  interaction_mode_ = InteractionMode::PlaceText;
+  interaction_layer_id_ = layer_id;
+  interaction_board_text_ = text.trimmed().isEmpty() ? QString("TEXT") : text.trimmed();
+  interaction_has_anchor_ = false;
+  interaction_last_mouse_pos_ = canvas_view_->mapToScene(canvas_view_->mapFromGlobal(QCursor::pos()));
+
+  const CanvasRenderTheme theme;
+  const QColor layer_color = colorForKiCadLayer(theme, layer_id);
+  QFont font;
+  font.setPointSizeF(12.0);
+  auto* item = canvas_scene_->addText(interaction_board_text_, font);
+  item->setDefaultTextColor(layer_color.lighter(130));
+  item->setPos(interaction_last_mouse_pos_);
+  item->setZValue(1000.0);
+  interaction_ghost_items_.push_back(item);
+  canvas_view_->viewport()->setCursor(Qt::CrossCursor);
+  tool_status_->setText(QString("Tool Place Text ") + qstr(layer_id));
+}
+
 void ReviewWindow::createRouteOrKeepoutGhost(const QPointF& scene_position) {
   if (canvas_scene_ == nullptr) {
     return;
@@ -3434,10 +3674,12 @@ void ReviewWindow::createRouteOrKeepoutGhost(const QPointF& scene_position) {
     return;
   }
   QGraphicsPathItem* item = nullptr;
-  if (interaction_mode_ == InteractionMode::RouteTrack) {
+  if (interaction_mode_ == InteractionMode::RouteTrack ||
+      interaction_mode_ == InteractionMode::DrawGraphic) {
     const CanvasRenderTheme theme;
-    const QColor copper = colorForKiCadLayer(theme, interaction_layer_id_);
-    QPen pen(copper.lighter(130), 2.0);
+    const QColor color = colorForKiCadLayer(theme, interaction_layer_id_);
+    QPen pen(color.lighter(130),
+             interaction_mode_ == InteractionMode::DrawGraphic ? 1.6 : 2.0);
     pen.setCapStyle(Qt::RoundCap);
     item = canvas_scene_->addPath(sceneTrackPath(interaction_start_mouse_pos_, scene_position),
                                   pen, QBrush(Qt::NoBrush));
@@ -3461,7 +3703,8 @@ void ReviewWindow::updateRouteOrKeepoutGhost(const QPointF& scene_position) {
   if (item == nullptr) {
     return;
   }
-  if (interaction_mode_ == InteractionMode::RouteTrack) {
+  if (interaction_mode_ == InteractionMode::RouteTrack ||
+      interaction_mode_ == InteractionMode::DrawGraphic) {
     item->setPath(sceneTrackPath(interaction_start_mouse_pos_, scene_position));
   } else if (interaction_mode_ == InteractionMode::AddKeepout) {
     item->setPath(sceneKeepoutPath(interaction_start_mouse_pos_, scene_position));
@@ -3477,6 +3720,7 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
         auto* me = static_cast<QMouseEvent*>(event);
         QPointF scene_pos = active_view->mapToScene(me->pos());
         if ((interaction_mode_ == InteractionMode::RouteTrack ||
+             interaction_mode_ == InteractionMode::DrawGraphic ||
              interaction_mode_ == InteractionMode::AddKeepout) &&
             interaction_has_anchor_) {
           updateRouteOrKeepoutGhost(scene_pos);
@@ -3542,6 +3786,26 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               }
             } catch (const std::exception& e) {
               QMessageBox::critical(this, "Placement Error", QString::fromUtf8(e.what()));
+            }
+          } else if (interaction_mode_ == InteractionMode::PlaceText) {
+            try {
+              if (!project_cache_.board.has_value()) {
+                throw std::runtime_error("cannot place text without a board");
+              }
+              pushUndoSnapshot();
+              ccad::Board& board = *project_cache_.board;
+              board.texts.push_back(ccad::BoardText{.id = nextBoardTextId(board),
+                                                    .layer_id = interaction_layer_id_,
+                                                    .text = interaction_board_text_.toStdString(),
+                                                    .position = boardPointFromScene(board, scene_pos),
+                                                    .rotation_degrees = 0.0,
+                                                    .size = defaultBoardTextSize()});
+              const QString text_id = qstr(board.texts.back().id);
+              cancelInteractionMode();
+              saveProjectCacheAfterMutation("Placed text " + text_id);
+              selectCanvasObjectById(*canvas_scene_, text_id);
+            } catch (const std::exception& e) {
+              QMessageBox::critical(this, "Text Error", QString::fromUtf8(e.what()));
             }
           } else if (interaction_mode_ == InteractionMode::MoveFootprint) {
             try {
@@ -3611,6 +3875,41 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               selectCanvasObjectById(*canvas_scene_, track_id);
             } catch (const std::exception& e) {
               QMessageBox::critical(this, "Track Error", QString::fromUtf8(e.what()));
+            }
+          } else if (interaction_mode_ == InteractionMode::DrawGraphic) {
+            try {
+              if (!project_cache_.board.has_value()) {
+                throw std::runtime_error("cannot draw graphic without a board");
+              }
+              if (!interaction_has_anchor_) {
+                interaction_start_mouse_pos_ = scene_pos;
+                interaction_last_mouse_pos_ = scene_pos;
+                interaction_has_anchor_ = true;
+                createRouteOrKeepoutGhost(scene_pos);
+                tool_status_->setText("Tool Draw Graphic Anchor");
+                return true;
+              }
+              const ccad::Point start =
+                  boardPointFromScene(*project_cache_.board, interaction_start_mouse_pos_);
+              const ccad::Point end = boardPointFromScene(*project_cache_.board, scene_pos);
+              if (start.x.nanometers == end.x.nanometers &&
+                  start.y.nanometers == end.y.nanometers) {
+                throw std::runtime_error("graphic line requires distinct start and end points");
+              }
+              pushUndoSnapshot();
+              ccad::Board& board = *project_cache_.board;
+              board.graphics.push_back(ccad::BoardGraphic{.id = nextGraphicId(board),
+                                                          .kind = "line",
+                                                          .layer_id = interaction_layer_id_,
+                                                          .start = start,
+                                                          .end = end,
+                                                          .width = defaultGraphicWidth()});
+              const QString graphic_id = qstr(board.graphics.back().id);
+              cancelInteractionMode();
+              saveProjectCacheAfterMutation("Drew graphic " + graphic_id);
+              selectCanvasObjectById(*canvas_scene_, graphic_id);
+            } catch (const std::exception& e) {
+              QMessageBox::critical(this, "Graphic Error", QString::fromUtf8(e.what()));
             }
           } else if (interaction_mode_ == InteractionMode::AddKeepout) {
             try {

@@ -748,6 +748,79 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
   }
 }
 
+void checkBoardGraphics(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  std::set<std::string> ids;
+  for (const BoardGraphic& graphic : board.graphics) {
+    if (graphic.id.empty()) {
+      diagnostics.push_back(makeDiagnostic("INVALID_BOARD_GRAPHIC_ID",
+                                           "Board graphic ID must not be empty", graphic.id));
+    }
+    if (!ids.insert(graphic.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_BOARD_GRAPHIC_ID",
+                                           "Board graphic ID appears more than once",
+                                           graphic.id));
+    }
+    if (graphic.kind != "line") {
+      diagnostics.push_back(makeDiagnostic("UNSUPPORTED_BOARD_GRAPHIC_KIND",
+                                           "Board graphic kind is not supported yet",
+                                           graphic.id));
+    }
+    if (!hasLayer(board, graphic.layer_id)) {
+      diagnostics.push_back(makeDiagnostic("UNKNOWN_BOARD_GRAPHIC_LAYER",
+                                           "Board graphic references an unknown layer",
+                                           graphic.id));
+    }
+    if (!isPositive(graphic.width)) {
+      diagnostics.push_back(makeDiagnostic("INVALID_BOARD_GRAPHIC_WIDTH",
+                                           "Board graphic width must be positive",
+                                           graphic.id));
+    }
+    if (samePoint(graphic.start, graphic.end)) {
+      diagnostics.push_back(makeDiagnostic("ZERO_LENGTH_BOARD_GRAPHIC",
+                                           "Board graphic line start and end must be different",
+                                           graphic.id));
+    }
+    if (!containsPoint(board, graphic.start) || !containsPoint(board, graphic.end)) {
+      diagnostics.push_back(makeDiagnostic("BOARD_GRAPHIC_OUTSIDE_BOARD",
+                                           "Board graphic endpoint is outside board outline",
+                                           graphic.id));
+    }
+  }
+}
+
+void checkBoardTexts(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  std::set<std::string> ids;
+  for (const BoardText& text : board.texts) {
+    if (text.id.empty()) {
+      diagnostics.push_back(makeDiagnostic("INVALID_BOARD_TEXT_ID",
+                                           "Board text ID must not be empty", text.id));
+    }
+    if (!ids.insert(text.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_BOARD_TEXT_ID",
+                                           "Board text ID appears more than once",
+                                           text.id));
+    }
+    if (!hasLayer(board, text.layer_id)) {
+      diagnostics.push_back(makeDiagnostic("UNKNOWN_BOARD_TEXT_LAYER",
+                                           "Board text references an unknown layer", text.id));
+    }
+    if (text.text.empty()) {
+      diagnostics.push_back(makeDiagnostic("EMPTY_BOARD_TEXT", "Board text must not be empty",
+                                           text.id));
+    }
+    if (!isPositive(text.size.width) || !isPositive(text.size.height)) {
+      diagnostics.push_back(makeDiagnostic("INVALID_BOARD_TEXT_SIZE",
+                                           "Board text width and height must be positive",
+                                           text.id));
+    }
+    if (!containsPoint(board, text.position)) {
+      diagnostics.push_back(makeDiagnostic("BOARD_TEXT_OUTSIDE_BOARD",
+                                           "Board text origin is outside board outline",
+                                           text.id));
+    }
+  }
+}
+
 void checkRouteRequests(const Project& project, const Board& board,
                         std::vector<Diagnostic>& diagnostics) {
   std::set<std::string> ids;
@@ -989,6 +1062,20 @@ void checkPhysicalObjectIds(const Board& board, std::vector<Diagnostic>& diagnos
                                            track.id));
     }
   }
+  for (const BoardGraphic& graphic : board.graphics) {
+    if (!graphic.id.empty() && !ids.insert(graphic.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_PHYSICAL_OBJECT_ID",
+                                           "Physical object ID is reused across object types",
+                                           graphic.id));
+    }
+  }
+  for (const BoardText& text : board.texts) {
+    if (!text.id.empty() && !ids.insert(text.id).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_PHYSICAL_OBJECT_ID",
+                                           "Physical object ID is reused across object types",
+                                           text.id));
+    }
+  }
   for (const Keepout& keepout : board.keepouts) {
     if (!keepout.id.empty() && !ids.insert(keepout.id).second) {
       diagnostics.push_back(makeDiagnostic("DUPLICATE_PHYSICAL_OBJECT_ID",
@@ -1135,6 +1222,8 @@ std::vector<Diagnostic> runDrc(const Project& project) {
   checkPads(project, board, diagnostics);
   checkVias(project, board, diagnostics);
   checkTracks(project, board, diagnostics);
+  checkBoardGraphics(board, diagnostics);
+  checkBoardTexts(board, diagnostics);
   checkRouteRequests(project, board, diagnostics);
   checkPlacementRegions(board, diagnostics);
   checkKeepouts(board, diagnostics);

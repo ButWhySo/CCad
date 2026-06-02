@@ -34,6 +34,14 @@ ccad::Project uiMapProject() {
                  ccad::Layer{.id = "B.Cu",
                               .name = "Back copper",
                               .kind = "copper",
+                              .visible = true},
+                 ccad::Layer{.id = "F.SilkS",
+                              .name = "Front silkscreen",
+                              .kind = "silkscreen",
+                              .visible = true},
+                 ccad::Layer{.id = "Dwgs.User",
+                              .name = "User drawings",
+                              .kind = "user",
                               .visible = true}},
       .placement_regions = {},
       .keepouts = {},
@@ -53,6 +61,8 @@ ccad::Project uiMapProject() {
                          .chamfer_ratio = std::nullopt}},
       .vias = {},
       .tracks = {},
+      .graphics = {},
+      .texts = {},
       .route_requests = {},
   };
   project.nets = {ccad::Net{.id = "N1",
@@ -62,16 +72,20 @@ ccad::Project uiMapProject() {
   return project;
 }
 
-std::filesystem::path writeProjectFixture() {
+std::filesystem::path writeProjectFixture(ccad::Project project) {
   const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
   const std::filesystem::path path =
       std::filesystem::temp_directory_path() /
       ("ccad-ui-map-test-" + std::to_string(stamp) + ".ccad.json");
   std::ofstream output(path, std::ios::binary);
-  output << ccad::dumpProjectJson(uiMapProject());
+  output << ccad::dumpProjectJson(project);
   output.close();
   require(bool(output), "project fixture writes");
   return path;
+}
+
+std::filesystem::path writeProjectFixture() {
+  return writeProjectFixture(uiMapProject());
 }
 
 std::string readFile(const std::filesystem::path& path) {
@@ -273,6 +287,20 @@ int main(int argc, char** argv) {
   require(contains(keepout_tool, "\"mode\":\"add_keepout\""),
           "add-keepout tool reports selected mode");
 
+  const QString graphic_tool = window.triggerSafeUiActionJson("action:add_graphical_segments");
+  require(contains(graphic_tool, "\"performed\":true"), "draw-graphic tool enters edit mode");
+  require(contains(graphic_tool, "\"reason\":\"editor_tool_selected\""),
+          "draw-graphic tool reports real editor-tool selection");
+  require(contains(graphic_tool, "\"mode\":\"draw_graphic\""),
+          "draw-graphic tool reports selected mode");
+
+  const QString text_tool = window.triggerSafeUiActionJson("action:text");
+  require(contains(text_tool, "\"performed\":true"), "place-text tool enters edit mode");
+  require(contains(text_tool, "\"reason\":\"editor_tool_selected\""),
+          "place-text tool reports real editor-tool selection");
+  require(contains(text_tool, "\"mode\":\"place_text\""),
+          "place-text tool reports selected mode");
+
   const QString delete_selected = window.triggerSafeUiActionJson("action:delete_cursor");
   require(contains(delete_selected, "\"performed\":true"),
           "delete action removes the selected board object");
@@ -403,11 +431,16 @@ int main(int argc, char** argv) {
   socket.disconnectFromServer();
   server.close();
 
+  const QString missing_layer = window.setActivePcbLayerForAutomation("NOPE");
+  require(contains(missing_layer, "\"performed\":false"),
+          "active layer setter rejects missing layers");
+  require(contains(missing_layer, "\"reason\":\"layer_not_found\""),
+          "active layer setter reports missing layer");
   const QString invalid_layer = window.setActivePcbLayerForAutomation("F.SilkS");
   require(contains(invalid_layer, "\"performed\":false"),
-          "active layer setter rejects non-board layers");
-  require(contains(invalid_layer, "\"reason\":\"layer_not_found\""),
-          "active layer setter reports missing layer");
+          "active layer setter rejects non-copper board layers");
+  require(contains(invalid_layer, "\"reason\":\"non_copper_layer\""),
+          "active layer setter reports non-copper layer");
 
   const QString set_back_layer = window.setActivePcbLayerForAutomation("B.Cu");
   require(contains(set_back_layer, "\"performed\":true"),
@@ -478,6 +511,74 @@ int main(int argc, char** argv) {
           "automation keepout placement adds one keepout");
   require(contains(window.uiMapJson(), "\"id\":\"canvas_object:K1\""),
           "UI map exposes placed keepout");
+
+  const QString graphic =
+      window.commitGraphicLinePlacementForAutomation(3.0, 4.0, 16.0, 4.0);
+  require(contains(graphic, "\"performed\":true"), "automation graphic line placement succeeds");
+  require(contains(graphic, "\"reason\":\"placed\""),
+          "automation graphic line placement reports placed");
+  require(contains(graphic, "\"graphic_count\":1"),
+          "automation graphic line placement adds one graphic");
+  require(contains(window.uiMapJson(), "\"id\":\"canvas_object:G1\""),
+          "UI map exposes placed board graphic");
+  const ccad::Project after_graphic = ccad::loadProjectJson(readFile(project_path));
+  require(after_graphic.board.has_value(), "graphic fixture still has a board");
+  require(!after_graphic.board->graphics.empty(), "graphic placement writes a graphic to the file");
+  require(after_graphic.board->graphics.back().layer_id == "Dwgs.User",
+          "graphic placement writes the default drawing layer");
+
+  const QString text = window.commitBoardTextPlacementForAutomation("GUI TEXT", 8.0, 22.0);
+  require(contains(text, "\"performed\":true"), "automation board text placement succeeds");
+  require(contains(text, "\"reason\":\"placed\""),
+          "automation board text placement reports placed");
+  require(contains(text, "\"text_count\":1"),
+          "automation board text placement adds one text object");
+  require(contains(window.uiMapJson(), "\"id\":\"canvas_object:BT1\""),
+          "UI map exposes placed board text");
+  const ccad::Project after_text = ccad::loadProjectJson(readFile(project_path));
+  require(after_text.board.has_value(), "text fixture still has a board");
+  require(!after_text.board->texts.empty(), "text placement writes text to the file");
+  require(after_text.board->texts.back().layer_id == "F.SilkS",
+          "text placement writes the default silkscreen layer");
+  require(after_text.board->texts.back().text == "GUI TEXT",
+          "text placement writes the requested label");
+
+  const QString delete_graphic = window.deleteBoardObjectForAutomation("G1");
+  require(contains(delete_graphic, "\"performed\":true"), "automation delete removes graphic");
+  require(contains(delete_graphic, "\"deleted_type\":\"graphic\""),
+          "automation delete reports graphic type");
+  require(!contains(window.uiMapJson(), "\"id\":\"canvas_object:G1\""),
+          "UI map no longer exposes deleted graphic");
+
+  const QString delete_text = window.deleteBoardObjectForAutomation("BT1");
+  require(contains(delete_text, "\"performed\":true"), "automation delete removes board text");
+  require(contains(delete_text, "\"deleted_type\":\"text\""),
+          "automation delete reports text type");
+  require(!contains(window.uiMapJson(), "\"id\":\"canvas_object:BT1\""),
+          "UI map no longer exposes deleted board text");
+
+  ccad::Project hidden_user_layer_project = uiMapProject();
+  for (ccad::Layer& layer : hidden_user_layer_project.board->layers) {
+    if (layer.id == "Dwgs.User") {
+      layer.visible = false;
+    }
+  }
+  const std::filesystem::path hidden_user_layer_path =
+      writeProjectFixture(hidden_user_layer_project);
+  ReviewWindow hidden_user_layer_window;
+  hidden_user_layer_window.loadProjectPath(hidden_user_layer_path);
+  QApplication::processEvents();
+  const QString hidden_user_layer_graphic =
+      hidden_user_layer_window.commitGraphicLinePlacementForAutomation(3.0, 4.0, 16.0, 4.0);
+  require(contains(hidden_user_layer_graphic, "\"performed\":true"),
+          "automation graphic placement succeeds when Dwgs.User is hidden");
+  const ccad::Project hidden_user_layer_after =
+      ccad::loadProjectJson(readFile(hidden_user_layer_path));
+  require(hidden_user_layer_after.board.has_value(), "hidden-layer fixture still has a board");
+  require(!hidden_user_layer_after.board->graphics.empty(),
+          "hidden-layer graphic placement writes a graphic");
+  require(hidden_user_layer_after.board->graphics.back().layer_id == "F.SilkS",
+          "graphic placement avoids hidden Dwgs.User by using visible silkscreen");
 
   const QString delete_via = window.deleteBoardObjectForAutomation("V1");
   require(contains(delete_via, "\"performed\":true"), "automation delete removes via");

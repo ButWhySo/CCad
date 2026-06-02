@@ -106,6 +106,10 @@ class JsonReader {
           board.vias = readVias();
         } else if (key == "tracks") {
           board.tracks = readTracks();
+        } else if (key == "graphics") {
+          board.graphics = readBoardGraphics();
+        } else if (key == "texts") {
+          board.texts = readBoardTexts();
         } else if (key == "route_requests") {
           board.route_requests = readRouteRequests();
         } else {
@@ -517,6 +521,102 @@ class JsonReader {
       expect(',');
       if (peek(']')) {
         throw std::runtime_error("trailing comma in tracks array");
+      }
+    }
+  }
+
+  std::vector<BoardGraphic> readBoardGraphics() {
+    std::vector<BoardGraphic> graphics;
+    expect('[');
+    if (consume(']')) {
+      return graphics;
+    }
+    while (true) {
+      BoardGraphic graphic;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            graphic.id = readString();
+          } else if (key == "kind") {
+            graphic.kind = readString();
+          } else if (key == "layer_id") {
+            graphic.layer_id = readString();
+          } else if (key == "start") {
+            graphic.start = readPoint();
+          } else if (key == "end") {
+            graphic.end = readPoint();
+          } else if (key == "width_nm") {
+            graphic.width = nanometers(readInt64());
+          } else {
+            throw std::runtime_error("unknown board graphic key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+          if (peek('}')) {
+            throw std::runtime_error("trailing comma in board graphic object");
+          }
+        }
+      }
+      graphics.push_back(graphic);
+      if (consume(']')) {
+        return graphics;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in board graphics array");
+      }
+    }
+  }
+
+  std::vector<BoardText> readBoardTexts() {
+    std::vector<BoardText> texts;
+    expect('[');
+    if (consume(']')) {
+      return texts;
+    }
+    while (true) {
+      BoardText text;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            text.id = readString();
+          } else if (key == "layer_id") {
+            text.layer_id = readString();
+          } else if (key == "text") {
+            text.text = readString();
+          } else if (key == "position") {
+            text.position = readPoint();
+          } else if (key == "rotation_degrees") {
+            text.rotation_degrees = readDouble();
+          } else if (key == "size") {
+            text.size = readSize();
+          } else {
+            throw std::runtime_error("unknown board text key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+          if (peek('}')) {
+            throw std::runtime_error("trailing comma in board text object");
+          }
+        }
+      }
+      texts.push_back(text);
+      if (consume(']')) {
+        return texts;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in board texts array");
       }
     }
   }
@@ -1135,6 +1235,40 @@ std::string dumpProjectJson(const Project& project) {
       out << "        \"width_nm\": " << track.width.nanometers << ",\n";
       writeField(out, 8, "source_route_request_id", track.source_route_request_id, false);
       out << "      }" << (i + 1 == board.tracks.size() ? "" : ",") << '\n';
+    }
+    out << "    ],\n";
+    out << "    \"graphics\": [\n";
+    for (std::size_t i = 0; i < board.graphics.size(); ++i) {
+      const BoardGraphic& graphic = board.graphics.at(i);
+      out << "      {\n";
+      writeField(out, 8, "id", graphic.id);
+      writeField(out, 8, "kind", graphic.kind);
+      writeField(out, 8, "layer_id", graphic.layer_id);
+      out << "        \"start\": ";
+      writePoint(out, 0, graphic.start);
+      out << ",\n";
+      out << "        \"end\": ";
+      writePoint(out, 0, graphic.end);
+      out << ",\n";
+      out << "        \"width_nm\": " << graphic.width.nanometers << "\n";
+      out << "      }" << (i + 1 == board.graphics.size() ? "" : ",") << '\n';
+    }
+    out << "    ],\n";
+    out << "    \"texts\": [\n";
+    for (std::size_t i = 0; i < board.texts.size(); ++i) {
+      const BoardText& text = board.texts.at(i);
+      out << "      {\n";
+      writeField(out, 8, "id", text.id);
+      writeField(out, 8, "layer_id", text.layer_id);
+      writeField(out, 8, "text", text.text);
+      out << "        \"position\": ";
+      writePoint(out, 0, text.position);
+      out << ",\n";
+      out << "        \"rotation_degrees\": " << text.rotation_degrees << ",\n";
+      out << "        \"size\": ";
+      writeSize(out, 0, text.size);
+      out << "\n";
+      out << "      }" << (i + 1 == board.texts.size() ? "" : ",") << '\n';
     }
     out << "    ],\n";
     out << "    \"vias\": [\n";

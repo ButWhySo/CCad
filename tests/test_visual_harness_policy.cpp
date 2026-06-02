@@ -51,6 +51,10 @@ int main() {
   requireNotContains(single_harness, "20 seconds", "single screenshot harness wording");
   requireNotContains(single_harness, "Start-Sleep -Seconds 20",
                      "single screenshot harness sleeps");
+  requireContains(single_harness, "pcb add-graphic-line",
+                  "single screenshot harness demonstrates board graphics");
+  requireContains(single_harness, "pcb add-text",
+                  "single screenshot harness demonstrates board text");
 
   requireContains(target_harness, "[int]$InitialLoadMilliseconds = 5000",
                   "multi-target harness initial wait");

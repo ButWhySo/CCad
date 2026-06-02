@@ -139,6 +139,46 @@ std::string pcbTrackObjectJson(const ccad::TrackSegment& track) {
   return out.str();
 }
 
+std::string pcbBoardGraphicObjectJson(const ccad::BoardGraphic& graphic) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"object\": {\n"
+      << "    \"type\": \"graphic\",\n"
+      << "    \"id\": \"" << ccad::escapeJson(graphic.id) << "\",\n"
+      << "    \"kind\": \"" << ccad::escapeJson(graphic.kind) << "\",\n"
+      << "    \"layer_id\": \"" << ccad::escapeJson(graphic.layer_id) << "\",\n"
+      << "    \"start\": {\n";
+  writePointJson(out, graphic.start, 6);
+  out << "\n    },\n"
+      << "    \"end\": {\n";
+  writePointJson(out, graphic.end, 6);
+  out << "\n    },\n"
+      << "    \"width_nm\": " << graphic.width.nanometers << "\n"
+      << "  }\n"
+      << "}\n";
+  return out.str();
+}
+
+std::string pcbBoardTextObjectJson(const ccad::BoardText& text) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"object\": {\n"
+      << "    \"type\": \"text\",\n"
+      << "    \"id\": \"" << ccad::escapeJson(text.id) << "\",\n"
+      << "    \"layer_id\": \"" << ccad::escapeJson(text.layer_id) << "\",\n"
+      << "    \"text\": \"" << ccad::escapeJson(text.text) << "\",\n"
+      << "    \"position\": {\n";
+  writePointJson(out, text.position, 6);
+  out << "\n    },\n"
+      << "    \"rotation_degrees\": " << text.rotation_degrees << ",\n"
+      << "    \"size\": {\n";
+  writeSizeJson(out, text.size, 6);
+  out << "\n    }\n"
+      << "  }\n"
+      << "}\n";
+  return out.str();
+}
+
 std::string pcbRegionObjectJson(const std::string& type, const std::string& id,
                                 const std::string& kind, const ccad::Rect& area) {
   std::ostringstream out;
@@ -160,7 +200,7 @@ std::string pcbRegionObjectJson(const std::string& type, const std::string& id,
 
 void requireKnownPcbObjectType(const std::string& type) {
   if (type.empty() || type == "layer" || type == "pad" || type == "via" || type == "track" ||
-      type == "keepout" || type == "placement_region") {
+      type == "graphic" || type == "text" || type == "keepout" || type == "placement_region") {
     return;
   }
   throw std::runtime_error("unknown object type: " + type);
@@ -225,6 +265,26 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
           << "\", \"layer_id\": \"" << ccad::escapeJson(track.layer_id)
           << "\", \"source_route_request_id\": \""
           << ccad::escapeJson(track.source_route_request_id) << "\"}";
+      add_row(row);
+    }
+  }
+  if (includeObjectType(type_filter, "graphic")) {
+    for (const ccad::BoardGraphic& graphic : board.graphics) {
+      std::ostringstream row;
+      row << "    {\"type\": \"graphic\", \"id\": \"" << ccad::escapeJson(graphic.id)
+          << "\", \"kind\": \"" << ccad::escapeJson(graphic.kind)
+          << "\", \"layer_id\": \"" << ccad::escapeJson(graphic.layer_id)
+          << "\", \"width_nm\": " << graphic.width.nanometers << "}";
+      add_row(row);
+    }
+  }
+  if (includeObjectType(type_filter, "text")) {
+    for (const ccad::BoardText& text : board.texts) {
+      std::ostringstream row;
+      row << "    {\"type\": \"text\", \"id\": \"" << ccad::escapeJson(text.id)
+          << "\", \"layer_id\": \"" << ccad::escapeJson(text.layer_id)
+          << "\", \"text\": \"" << ccad::escapeJson(text.text)
+          << "\", \"rotation_degrees\": " << text.rotation_degrees << "}";
       add_row(row);
     }
   }
@@ -417,6 +477,8 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
       << "      \"pad_count\": " << board.pads.size() << ",\n"
       << "      \"via_count\": " << board.vias.size() << ",\n"
       << "      \"track_count\": " << board.tracks.size() << ",\n"
+      << "      \"graphic_count\": " << board.graphics.size() << ",\n"
+      << "      \"text_count\": " << board.texts.size() << ",\n"
       << "      \"keepout_count\": " << board.keepouts.size() << ",\n"
       << "      \"placement_region_count\": " << board.placement_regions.size() << ",\n"
       << "      \"route_request_count\": " << route_requests.size() << "\n"

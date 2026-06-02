@@ -100,6 +100,33 @@ CanvasScene buildCanvasScene(const Project& project) {
     });
   }
 
+  for (const BoardGraphic& graphic : project.board->graphics) {
+    if (graphic.kind == "line") {
+      scene.lines.push_back(CanvasLine{
+          .id = graphic.id,
+          .layer_id = graphic.layer_id,
+          .start_x_units = toMillimeters(graphic.start.x),
+          .start_y_units = toMillimeters(graphic.start.y),
+          .end_x_units = toMillimeters(graphic.end.x),
+          .end_y_units = toMillimeters(graphic.end.y),
+          .width_units = toMillimeters(graphic.width),
+      });
+    }
+  }
+
+  for (const BoardText& text : project.board->texts) {
+    scene.texts.push_back(CanvasText{
+        .id = text.id,
+        .layer_id = text.layer_id,
+        .text = text.text,
+        .x_units = toMillimeters(text.position.x),
+        .y_units = toMillimeters(text.position.y),
+        .rotation_degrees = text.rotation_degrees,
+        .size_x_units = toMillimeters(text.size.width),
+        .size_y_units = toMillimeters(text.size.height),
+    });
+  }
+
   std::map<std::string, std::size_t> routed_segment_counts;
   for (const TrackSegment& track : project.board->tracks) {
     if (!track.source_route_request_id.empty()) {

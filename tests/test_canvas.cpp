@@ -13,6 +13,7 @@ ccad::Project boardProject() {
           .origin = ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(3)},
           .size = ccad::Size{.width = ccad::millimeters(42), .height = ccad::millimeters(28)},
       },
+      .design_rules = ccad::DesignRules{},
       .layers = {ccad::Layer{.id = "F.Cu",
                               .name = "Front copper",
                               .kind = "signal",
@@ -20,7 +21,15 @@ ccad::Project boardProject() {
                  ccad::Layer{.id = "B.Cu",
                               .name = "Back copper",
                               .kind = "signal",
-                              .visible = false}},
+                              .visible = false},
+                 ccad::Layer{.id = "F.SilkS",
+                              .name = "Front silkscreen",
+                              .kind = "silkscreen",
+                              .visible = true},
+                 ccad::Layer{.id = "Dwgs.User",
+                              .name = "User drawings",
+                              .kind = "user",
+                              .visible = true}},
       .placement_regions = {ccad::PlacementRegion{
           .id = "PR1",
           .kind = "component",
@@ -59,6 +68,21 @@ ccad::Project boardProject() {
                                     .end = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},
                                     .width = ccad::millimeters(0.25),
                                     .source_route_request_id = "RR1"}},
+      .graphics = {ccad::BoardGraphic{.id = "G1",
+                                       .kind = "line",
+                                       .layer_id = "Dwgs.User",
+                                       .start = ccad::Point{.x = ccad::millimeters(4),
+                                                           .y = ccad::millimeters(5)},
+                                       .end = ccad::Point{.x = ccad::millimeters(16),
+                                                         .y = ccad::millimeters(5)},
+                                       .width = ccad::millimeters(0.15)}},
+      .texts = {ccad::BoardText{.id = "BT1",
+                                .layer_id = "F.SilkS",
+                                .text = "RECTIFIER",
+                                .position = ccad::Point{.x = ccad::millimeters(12),
+                                                        .y = ccad::millimeters(20)},
+                                .size = ccad::Size{.width = ccad::millimeters(1.5),
+                                                   .height = ccad::millimeters(1.5)}}},
       .route_requests = {ccad::RouteRequest{.id = "RR1",
                                             .net_id = "N1",
                                             .from_object_id = "P1",
@@ -88,7 +112,7 @@ int main() {
   require(scene.board_origin_y_units == 3.0, "board origin y is mm");
   require(scene.view_width_units == 42.0, "view width is mm");
   require(scene.view_height_units == 28.0, "view height is mm");
-  require(scene.layers.size() == 2, "canvas has board layers");
+  require(scene.layers.size() == 4, "canvas has board layers");
   require(scene.layers.at(0).id == "F.Cu", "canvas layer id");
   require(scene.layers.at(0).name == "Front copper", "canvas layer name");
   require(scene.layers.at(0).kind == "signal", "canvas layer kind");
@@ -119,6 +143,18 @@ int main() {
   require(scene.tracks.at(0).source_route_request_id == "RR1",
           "canvas track exposes route provenance");
   require(scene.tracks.at(0).width_units == 0.25, "canvas track width is mm");
+  require(scene.lines.size() == 1, "canvas has board graphic line");
+  require(scene.lines.at(0).id == "G1", "canvas board graphic id");
+  require(scene.lines.at(0).layer_id == "Dwgs.User", "canvas board graphic layer id");
+  require(scene.lines.at(0).start_x_units == 4.0, "canvas board graphic start x is mm");
+  require(scene.lines.at(0).end_x_units == 16.0, "canvas board graphic end x is mm");
+  require(scene.lines.at(0).width_units == 0.15, "canvas board graphic width is mm");
+  require(scene.texts.size() == 1, "canvas has board text");
+  require(scene.texts.at(0).id == "BT1", "canvas board text id");
+  require(scene.texts.at(0).layer_id == "F.SilkS", "canvas board text layer id");
+  require(scene.texts.at(0).text == "RECTIFIER", "canvas board text value");
+  require(scene.texts.at(0).x_units == 12.0, "canvas board text x is mm");
+  require(scene.texts.at(0).size_x_units == 1.5, "canvas board text width is mm");
   require(scene.route_requests.size() == 1, "canvas has route requests");
   require(scene.route_requests.at(0).id == "RR1", "canvas route request id");
   require(scene.route_requests.at(0).from_object_id == "P1", "canvas route from object id");
