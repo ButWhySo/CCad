@@ -1,11 +1,13 @@
 #include "review_window.hpp"
 #include "board_canvas_view.hpp"
 #include "library_browser_dialog.hpp"
+#include "ui_map_server.hpp"
 
 #include <QApplication>
 #include <QCursor>
 #include <QElapsedTimer>
 #include <QDir>
+#include <QFile>
 #include <QPainter>
 #include <QPixmap>
 #include <QThread>
@@ -173,6 +175,39 @@ int main(int argc, char** argv) {
       std::cout << "ui action result saved: " << output_path.string() << '\n';
       std::cout.flush();
       QCoreApplication::exit(0);
+    });
+
+    return QApplication::exec();
+  } else if (argc == 5 && std::string(argv[1]) == "--serve-ui-map") {
+    const std::filesystem::path project_path(argv[2]);
+    const QString server_name = QString::fromLocal8Bit(argv[3]);
+    const QString ready_path = QString::fromLocal8Bit(argv[4]);
+    auto* window = new ReviewWindow();
+    window->loadProjectPath(project_path);
+    window->show();
+    auto* server = new UiMapServer(*window);
+    if (!server->listen(server_name)) {
+      std::cerr << "failed to listen on UI map server: " << server->errorString().toStdString()
+                << '\n';
+      std::cerr.flush();
+      delete server;
+      delete window;
+      return 2;
+    }
+    QFile ready_file(ready_path);
+    if (!ready_file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+      std::cerr << "failed to write UI map server ready file: " << ready_path.toStdString()
+                << '\n';
+      std::cerr.flush();
+      delete server;
+      delete window;
+      return 2;
+    }
+    ready_file.write(("server=" + server_name + "\n").toUtf8());
+    ready_file.close();
+    QObject::connect(&app, &QCoreApplication::aboutToQuit, window, [server]() {
+      server->close();
+      delete server;
     });
 
     return QApplication::exec();

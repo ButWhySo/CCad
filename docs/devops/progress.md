@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 162
-- Branch: `sprint-162-pad-layer-rendering-fidelity`
+- Sprint: 163
+- Branch: `sprint-163-live-ui-map-server`
 - Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
@@ -28,6 +28,7 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - **Sprint 160 (Placement Crash, CI Fixes, Icon Recovery, and Backlog Ledger)** is complete and merged to `main`. It fixes left-click placement reload crashes, CI compile failures in KiCad symbol import and DSN export, robust KiCad SVG icon lookup, app-owned placement-click regression coverage, and the consolidated backlog ledger.
 - **Sprint 161 (UI Map Mouse Target Harness)** is complete and merged to `main`. It adds menu/panel nodes to the semantic UI map and an app-owned mouse-target screenshot harness with beep, 20-second waits, marker overlays, and resize-repeat evidence.
 - **Sprint 162 (Pad Layer Rendering Fidelity)** is complete and merged to `main`. It separates copper, solder-mask, and solder-paste pad rendering across the board canvas, footprint chooser preview, and footprint placement ghost.
+- **Sprint 163 (Live UI Map Server)** is complete and merged to `main`. It adds a local socket JSON Lines server for repeated `ui.map`, `ui.target`, and `ui.epoch` queries while the GUI stays open.
 
 ## Phase Roadmap
 

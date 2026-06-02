@@ -2,9 +2,12 @@
 #include "ccad_core/kicad_footprint_import.hpp"
 #include "ccad_core/serialize.hpp"
 #include "ccad_gui/review_window.hpp"
+#include "ccad_gui/ui_map_server.hpp"
 #include "test_support.hpp"
 
 #include <QApplication>
+#include <QElapsedTimer>
+#include <QLocalSocket>
 
 #include <chrono>
 #include <filesystem>
@@ -90,6 +93,23 @@ std::filesystem::path writeFootprintFixture() {
 
 bool contains(const QString& haystack, const char* needle) {
   return haystack.contains(QString::fromUtf8(needle));
+}
+
+void processUntil(bool (*predicate)(QLocalSocket&), QLocalSocket& socket, const char* message) {
+  QElapsedTimer timer;
+  timer.start();
+  while (!predicate(socket) && timer.elapsed() < 3000) {
+    QApplication::processEvents();
+  }
+  require(predicate(socket), message);
+}
+
+QString requestLine(QLocalSocket& socket, const QString& line) {
+  socket.write((line + "\n").toUtf8());
+  socket.flush();
+  processUntil([](QLocalSocket& s) { return s.canReadLine(); }, socket,
+               "UI map server writes a response line");
+  return QString::fromUtf8(socket.readLine()).trimmed();
 }
 
 }  // namespace
@@ -182,6 +202,28 @@ int main(int argc, char** argv) {
   require(contains(unknown_action, "\"performed\":false"), "unknown action is refused");
   require(contains(unknown_action, "\"reason\":\"unknown_or_not_allowlisted\""),
           "unknown action reports reason");
+
+  const QString server_name = "ccad-ui-map-test-" + QString::number(QCoreApplication::applicationPid());
+  UiMapServer server(window);
+  require(server.listen(server_name), "UI map server starts on a local socket");
+  QLocalSocket socket;
+  socket.connectToServer(server_name);
+  processUntil([](QLocalSocket& s) { return s.state() == QLocalSocket::ConnectedState; }, socket,
+               "UI map server accepts a local socket connection");
+  const QString map_response = requestLine(socket, "{\"method\":\"ui.map\"}");
+  require(contains(map_response, "\"ok\":true"), "live server returns successful ui.map");
+  require(contains(map_response, "\"id\":\"action:add_footprint\""),
+          "live server ui.map includes action IDs");
+  const QString target_response =
+      requestLine(socket, "{\"method\":\"ui.target\",\"id\":\"menu:file\"}");
+  require(contains(target_response, "\"ok\":true"), "live server returns successful ui.target");
+  require(contains(target_response, "\"found\":true"), "live server target finds File menu");
+  const QString epoch_response = requestLine(socket, "{\"method\":\"ui.epoch\"}");
+  require(contains(epoch_response, "\"ui_epoch\":"), "live server returns current UI epoch");
+  const QString bad_response = requestLine(socket, "{\"method\":\"ui.unknown\"}");
+  require(contains(bad_response, "\"ok\":false"), "live server refuses unsupported methods");
+  socket.disconnectFromServer();
+  server.close();
 
   const QString placement =
       window.commitFootprintPlacementForAutomation(writeFootprintFixture(), 12.0, 10.0);
