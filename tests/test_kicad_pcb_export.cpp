@@ -87,6 +87,27 @@ int main() {
       .width = ccad::millimeters(0.25)
   });
 
+  // Add a board graphic line
+  board.graphics.push_back(ccad::BoardGraphic{
+      .id = "G1",
+      .kind = "line",
+      .layer_id = "Dwgs.User",
+      .start = ccad::Point{.x = ccad::millimeters(3), .y = ccad::millimeters(4)},
+      .end = ccad::Point{.x = ccad::millimeters(16), .y = ccad::millimeters(4)},
+      .width = ccad::millimeters(0.15)
+  });
+
+  // Add board text
+  board.texts.push_back(ccad::BoardText{
+      .id = "BT1",
+      .layer_id = "F.SilkS",
+      .text = "Bridge rectifier",
+      .position = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(22)},
+      .rotation_degrees = 90.0,
+      .size = ccad::Size{.width = ccad::millimeters(1.5),
+                         .height = ccad::millimeters(1.5)}
+  });
+
   // Add a keepout
   board.keepouts.push_back(ccad::Keepout{
       .id = "keepout1",
@@ -145,6 +166,11 @@ int main() {
 
   // Track details
   require(exported.find("(segment (start 10.000000 20.000000) (end 30.000000 40.000000) (width 0.250000)") != std::string::npos, "Track details match");
+
+  // Board graphics and text details
+  require(exported.find("(gr_line (start 3.000000 4.000000) (end 16.000000 4.000000) (stroke (width 0.150000) (type solid)) (layer \"Dwgs.User\"))") != std::string::npos, "Board graphic line exports");
+  require(exported.find("(gr_text \"Bridge rectifier\" (at 8.000000 22.000000 90.000000) (layer \"F.SilkS\")") != std::string::npos, "Board text exports");
+  require(exported.find("(effects (font (size 1.500000 1.500000) (thickness 0.150000)))") != std::string::npos, "Board text effects export");
 
   // Keepout details
   require(exported.find("(keepout (tracks not_allowed) (vias not_allowed) (pads not_allowed) (copperareas not_allowed))") != std::string::npos, "Keepout rules match");

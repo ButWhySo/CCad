@@ -91,6 +91,24 @@ struct TrackSegment {
   std::string source_route_request_id;
 };
 
+struct BoardGraphic {
+  std::string id;
+  std::string kind;
+  std::string layer_id;
+  Point start;
+  Point end;
+  Length width;
+};
+
+struct BoardText {
+  std::string id;
+  std::string layer_id;
+  std::string text;
+  Point position;
+  double rotation_degrees = 0.0;
+  Size size;
+};
+
 struct RouteRequest {
   std::string id;
   std::string net_id;
@@ -122,6 +140,8 @@ struct Board {
   std::vector<Pad> pads;
   std::vector<Via> vias;
   std::vector<TrackSegment> tracks;
+  std::vector<BoardGraphic> graphics;
+  std::vector<BoardText> texts;
   std::vector<RouteRequest> route_requests;
 };
 

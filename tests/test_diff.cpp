@@ -31,6 +31,7 @@ ccad::Project baseProject() {
           .origin = ccad::Point{.x = ccad::nanometers(0), .y = ccad::nanometers(0)},
           .size = ccad::Size{.width = ccad::millimeters(42), .height = ccad::millimeters(28)},
       },
+      .design_rules = ccad::DesignRules{},
       .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper",
                              .visible = true}},
       .placement_regions = {ccad::PlacementRegion{
@@ -70,6 +71,8 @@ ccad::Project baseProject() {
                                     .end = ccad::Point{.x = ccad::millimeters(8),
                                                        .y = ccad::millimeters(9)},
                                     .width = ccad::millimeters(0.25)}},
+      .graphics = {},
+      .texts = {},
       .route_requests = {},
   };
   return project;
@@ -221,6 +224,52 @@ int main() {
   removed_track.board->tracks.clear();
   const ccad::ProjectDiff removed_track_diff = ccad::diffProjects(baseProject(), removed_track);
   require(hasEntry(removed_track_diff, "removed", "track", "T1"), "removed track entry");
+
+  ccad::Project added_graphic = baseProject();
+  added_graphic.board->graphics.push_back(ccad::BoardGraphic{
+      .id = "G1",
+      .kind = "line",
+      .layer_id = "Dwgs.User",
+      .start = ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(3)},
+      .end = ccad::Point{.x = ccad::millimeters(12), .y = ccad::millimeters(3)},
+      .width = ccad::millimeters(0.15)});
+  const ccad::ProjectDiff added_graphic_diff = ccad::diffProjects(baseProject(), added_graphic);
+  require(hasEntry(added_graphic_diff, "added", "graphic", "G1"), "added graphic entry");
+
+  ccad::Project changed_graphic = added_graphic;
+  changed_graphic.board->graphics.at(0).width = ccad::millimeters(0.2);
+  const ccad::ProjectDiff changed_graphic_diff =
+      ccad::diffProjects(added_graphic, changed_graphic);
+  require(hasEntry(changed_graphic_diff, "changed", "graphic", "G1"),
+          "changed graphic entry");
+
+  ccad::Project removed_graphic = added_graphic;
+  removed_graphic.board->graphics.clear();
+  const ccad::ProjectDiff removed_graphic_diff =
+      ccad::diffProjects(added_graphic, removed_graphic);
+  require(hasEntry(removed_graphic_diff, "removed", "graphic", "G1"),
+          "removed graphic entry");
+
+  ccad::Project added_text = baseProject();
+  added_text.board->texts.push_back(ccad::BoardText{
+      .id = "BT1",
+      .layer_id = "F.SilkS",
+      .text = "Full bridge rectifier",
+      .position = ccad::Point{.x = ccad::millimeters(4), .y = ccad::millimeters(5)},
+      .rotation_degrees = 0.0,
+      .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(1.5)}});
+  const ccad::ProjectDiff added_text_diff = ccad::diffProjects(baseProject(), added_text);
+  require(hasEntry(added_text_diff, "added", "text", "BT1"), "added text entry");
+
+  ccad::Project changed_text = added_text;
+  changed_text.board->texts.at(0).text = "DC output";
+  const ccad::ProjectDiff changed_text_diff = ccad::diffProjects(added_text, changed_text);
+  require(hasEntry(changed_text_diff, "changed", "text", "BT1"), "changed text entry");
+
+  ccad::Project removed_text = added_text;
+  removed_text.board->texts.clear();
+  const ccad::ProjectDiff removed_text_diff = ccad::diffProjects(added_text, removed_text);
+  require(hasEntry(removed_text_diff, "removed", "text", "BT1"), "removed text entry");
 
   ccad::Project added_route_request = baseProject();
   added_route_request.board->route_requests.push_back(ccad::RouteRequest{

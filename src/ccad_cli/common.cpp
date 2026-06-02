@@ -423,6 +423,16 @@ void requireUniquePhysicalObjectId(const ccad::Board& board, const std::string& 
       throw std::runtime_error("duplicate physical object id: " + id);
     }
   }
+  for (const ccad::BoardGraphic& graphic : board.graphics) {
+    if (graphic.id == id) {
+      throw std::runtime_error("duplicate physical object id: " + id);
+    }
+  }
+  for (const ccad::BoardText& text : board.texts) {
+    if (text.id == id) {
+      throw std::runtime_error("duplicate physical object id: " + id);
+    }
+  }
   for (const ccad::Keepout& keepout : board.keepouts) {
     if (keepout.id == id) {
       throw std::runtime_error("duplicate physical object id: " + id);

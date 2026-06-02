@@ -108,6 +108,16 @@ void requireLayerUnused(const ccad::Board& board, const std::string& id) {
       throw std::runtime_error("layer is referenced by track: " + track.id);
     }
   }
+  for (const ccad::BoardGraphic& graphic : board.graphics) {
+    if (graphic.layer_id == id) {
+      throw std::runtime_error("layer is referenced by board graphic: " + graphic.id);
+    }
+  }
+  for (const ccad::BoardText& text : board.texts) {
+    if (text.layer_id == id) {
+      throw std::runtime_error("layer is referenced by board text: " + text.id);
+    }
+  }
 }
 
 std::vector<std::string> splitLayers(const std::string& value) {
@@ -151,6 +161,16 @@ void requireBoardObjectsInsideOutline(const ccad::Board& board) {
     const ccad::Length half_width = ccad::nanometers(track.width.nanometers / 2);
     requirePointWithMarginInsideBoard(board, track.start, half_width, "track " + track.id);
     requirePointWithMarginInsideBoard(board, track.end, half_width, "track " + track.id);
+  }
+  for (const ccad::BoardGraphic& graphic : board.graphics) {
+    const ccad::Length half_width = ccad::nanometers(graphic.width.nanometers / 2);
+    requirePointWithMarginInsideBoard(board, graphic.start, half_width,
+                                      "board graphic " + graphic.id);
+    requirePointWithMarginInsideBoard(board, graphic.end, half_width,
+                                      "board graphic " + graphic.id);
+  }
+  for (const ccad::BoardText& text : board.texts) {
+    requireInsideBoard(board, text.position, "board text " + text.id);
   }
   for (const ccad::Keepout& keepout : board.keepouts) {
     requireRectInsideBoard(board, keepout.area, "keepout " + keepout.id);
@@ -308,6 +328,18 @@ int pcbCommand(const std::vector<std::string>& args) {
       for (const ccad::TrackSegment& track : board.tracks) {
         if (track.id == id) {
           std::cout << pcbTrackObjectJson(track);
+          return 0;
+        }
+      }
+      for (const ccad::BoardGraphic& graphic : board.graphics) {
+        if (graphic.id == id) {
+          std::cout << pcbBoardGraphicObjectJson(graphic);
+          return 0;
+        }
+      }
+      for (const ccad::BoardText& text : board.texts) {
+        if (text.id == id) {
+          std::cout << pcbBoardTextObjectJson(text);
           return 0;
         }
       }
@@ -695,6 +727,84 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "add-graphic-line") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--layer", "--start-x-mm", "--start-y-mm",
+                                 "--end-x-mm", "--end-y-mm", "--width-mm"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const std::string layer_id = requireOption(options, "--layer");
+      requireUniquePhysicalObjectId(board, id);
+      requireLayer(board, layer_id);
+      const ccad::Point start{
+          .x = requirePositiveMillimeters(options, "--start-x-mm"),
+          .y = requirePositiveMillimeters(options, "--start-y-mm"),
+      };
+      const ccad::Point end{
+          .x = requirePositiveMillimeters(options, "--end-x-mm"),
+          .y = requirePositiveMillimeters(options, "--end-y-mm"),
+      };
+      if (start.x.nanometers == end.x.nanometers && start.y.nanometers == end.y.nanometers) {
+        throw std::runtime_error("graphic line start and end must be different");
+      }
+      const ccad::Length width = requirePositiveMillimeters(options, "--width-mm");
+      const ccad::Length half_width = ccad::nanometers(width.nanometers / 2);
+      requirePointWithMarginInsideBoard(board, start, half_width, "graphic line start");
+      requirePointWithMarginInsideBoard(board, end, half_width, "graphic line end");
+      board.graphics.push_back(ccad::BoardGraphic{
+          .id = id,
+          .kind = "line",
+          .layer_id = layer_id,
+          .start = start,
+          .end = end,
+          .width = width,
+      });
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "add-text") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--layer", "--text", "--x-mm", "--y-mm",
+                                 "--size-x-mm", "--size-y-mm", "--rotation-deg"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const std::string layer_id = requireOption(options, "--layer");
+      const std::string text = requireOption(options, "--text");
+      if (text.empty()) {
+        throw std::runtime_error("--text must not be empty");
+      }
+      requireUniquePhysicalObjectId(board, id);
+      requireLayer(board, layer_id);
+      const ccad::Point position{
+          .x = requirePositiveMillimeters(options, "--x-mm"),
+          .y = requirePositiveMillimeters(options, "--y-mm"),
+      };
+      requireInsideBoard(board, position, "text position");
+      const ccad::Size size{.width = requirePositiveMillimeters(options, "--size-x-mm"),
+                            .height = requirePositiveMillimeters(options, "--size-y-mm")};
+      board.texts.push_back(ccad::BoardText{
+          .id = id,
+          .layer_id = layer_id,
+          .text = text,
+          .position = position,
+          .rotation_degrees = requireDoubleOption(options, "--rotation-deg"),
+          .size = size,
+      });
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "add-route-request") {
       const std::map<std::string, std::string> options = parseOptions(
           args, 1,
@@ -1050,7 +1160,8 @@ int pcbCommand(const std::vector<std::string>& args) {
       ccad::Board& board = requireBoard(project);
       const std::string id = requireOption(options, "--id");
       const bool removed = eraseById(board.pads, id) || eraseById(board.vias, id) ||
-                           eraseById(board.tracks, id) || eraseById(board.keepouts, id) ||
+                           eraseById(board.tracks, id) || eraseById(board.graphics, id) ||
+                           eraseById(board.texts, id) || eraseById(board.keepouts, id) ||
                            eraseById(board.placement_regions, id);
       if (!removed) {
         throw std::runtime_error("unknown physical object: " + id);

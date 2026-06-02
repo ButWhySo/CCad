@@ -40,6 +40,13 @@ ccad::Project validProject() {
                  ccad::Layer{.id = "F.Mask", .name = "Front mask", .kind = "mask", .visible = true},
                  ccad::Layer{.id = "Edge.Cuts", .name = "Board outline", .kind = "board_edge", .visible = true},
                  ccad::Layer{.id = "User.9", .name = "User 9", .kind = "user", .visible = false}},
+      .placement_regions = {},
+      .keepouts = {},
+      .pads = {},
+      .vias = {},
+      .tracks = {},
+      .graphics = {},
+      .texts = {},
       .route_requests = {},
   };
   return project;

@@ -25,7 +25,9 @@ int main() {
                                         .min_track_width = ccad::millimeters(0.12),
                                         .min_via_annular_ring = ccad::millimeters(0.08)},
       .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true},
-                 ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true}},
+                 ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true},
+                 ccad::Layer{.id = "F.SilkS", .name = "Front silkscreen", .kind = "silkscreen", .visible = true},
+                 ccad::Layer{.id = "Dwgs.User", .name = "User drawings", .kind = "user", .visible = true}},
       .placement_regions = {ccad::PlacementRegion{
           .id = "PR1",
           .kind = "component",
@@ -64,6 +66,22 @@ int main() {
           .width = ccad::millimeters(0.25),
           .source_route_request_id = "RR1",
       }},
+      .graphics = {ccad::BoardGraphic{.id = "G1",
+                                       .kind = "line",
+                                       .layer_id = "Dwgs.User",
+                                       .start = ccad::Point{.x = ccad::millimeters(3),
+                                                           .y = ccad::millimeters(4)},
+                                       .end = ccad::Point{.x = ccad::millimeters(16),
+                                                         .y = ccad::millimeters(4)},
+                                       .width = ccad::millimeters(0.15)}},
+      .texts = {ccad::BoardText{.id = "BT1",
+                                .layer_id = "F.SilkS",
+                                .text = "Bridge rectifier",
+                                .position = ccad::Point{.x = ccad::millimeters(7),
+                                                        .y = ccad::millimeters(22)},
+                                .rotation_degrees = 90.0,
+                                .size = ccad::Size{.width = ccad::millimeters(1.5),
+                                                   .height = ccad::millimeters(1.5)}}},
       .route_requests = {ccad::RouteRequest{
           .id = "RR1",
           .net_id = "N_3V3",
@@ -107,6 +125,12 @@ int main() {
   require(json.find("\"policy\": \"shortest_safe\"") != std::string::npos,
           "route request policy emitted");
   require(json.find("\"keepouts\"") != std::string::npos, "keepouts emitted");
+  require(json.find("\"graphics\"") != std::string::npos, "board graphics emitted");
+  require(json.find("\"kind\": \"line\"") != std::string::npos,
+          "board graphic line kind emitted");
+  require(json.find("\"texts\"") != std::string::npos, "board text emitted");
+  require(json.find("\"text\": \"Bridge rectifier\"") != std::string::npos,
+          "board text value emitted");
   require(json.find("\"component_id\": \"U1\"") != std::string::npos, "net member emitted");
   require(json.find("\"roundrect_rratio\": 0.25") != std::string::npos,
           "pad roundrect ratio emitted");
@@ -123,7 +147,9 @@ int main() {
           "minimum track width rule round trips");
   require(loaded.board->design_rules.min_via_annular_ring.nanometers == 80000,
           "minimum via annular ring rule round trips");
-  require(loaded.board->layers.size() == 2, "board layers round trip");
+  require(loaded.board->layers.size() == 4, "board layers round trip");
+  require(loaded.board->layers.at(2).id == "F.SilkS", "front silkscreen layer round trips");
+  require(loaded.board->layers.at(3).id == "Dwgs.User", "user drawing layer round trips");
   require(loaded.board->placement_regions.size() == 1, "board placement regions round trip");
   require(loaded.board->placement_regions.at(0).area.size.width.nanometers == 10000000,
           "placement region width round trips");
@@ -141,6 +167,20 @@ int main() {
   require(loaded.board->tracks.at(0).width.nanometers == 250000, "track width round trips");
   require(loaded.board->tracks.at(0).source_route_request_id == "RR1",
           "track route request provenance round trips");
+  require(loaded.board->graphics.size() == 1, "board graphics round trip");
+  require(loaded.board->graphics.at(0).kind == "line", "board graphic kind round trips");
+  require(loaded.board->graphics.at(0).layer_id == "Dwgs.User",
+          "board graphic layer round trips");
+  require(loaded.board->graphics.at(0).width.nanometers == 150000,
+          "board graphic width round trips");
+  require(loaded.board->texts.size() == 1, "board texts round trip");
+  require(loaded.board->texts.at(0).layer_id == "F.SilkS", "board text layer round trips");
+  require(loaded.board->texts.at(0).text == "Bridge rectifier",
+          "board text value round trips");
+  require(loaded.board->texts.at(0).rotation_degrees == 90.0,
+          "board text rotation round trips");
+  require(loaded.board->texts.at(0).size.width.nanometers == 1500000,
+          "board text size round trips");
   require(loaded.board->route_requests.size() == 1, "route requests round trip");
   require(loaded.board->route_requests.at(0).from_object_id == "P1",
           "route request start object round trips");

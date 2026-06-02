@@ -69,6 +69,27 @@ int main(int argc, char** argv) {
   track.source_route_request_id = "rr_1";
   board.tracks.push_back(track);
 
+  // Add board graphic
+  ccad::BoardGraphic graphic;
+  graphic.id = "graphic_1";
+  graphic.kind = "line";
+  graphic.layer_id = "Dwgs.User";
+  graphic.start = ccad::Point{.x = ccad::millimeters(3.0), .y = ccad::millimeters(4.0)};
+  graphic.end = ccad::Point{.x = ccad::millimeters(16.0), .y = ccad::millimeters(4.0)};
+  graphic.width = ccad::millimeters(0.15);
+  board.graphics.push_back(graphic);
+
+  // Add board text
+  ccad::BoardText text;
+  text.id = "text_1";
+  text.layer_id = "F.SilkS";
+  text.text = "Bridge rectifier";
+  text.position = ccad::Point{.x = ccad::millimeters(8.0), .y = ccad::millimeters(22.0)};
+  text.rotation_degrees = 90.0;
+  text.size = ccad::Size{.width = ccad::millimeters(1.5),
+                         .height = ccad::millimeters(1.5)};
+  board.texts.push_back(text);
+
   // Add Keepout
   ccad::Keepout keepout;
   keepout.id = "keepout_1";
@@ -129,6 +150,34 @@ int main(int argc, char** argv) {
   require(panel.rowText("Net") == "SIG_A", "track net");
   require(panel.rowText("Layer") == "B.Cu", "track layer");
   require(panel.rowText("Source Route Request") == "rr_1", "track route request");
+
+  // Test Graphic Inspector Formatting
+  std::printf("Testing graphic...\n");
+  std::fflush(stdout);
+  panel.renderSelection(board, "line", "graphic_1");
+  require(panel.titleText() == "Graphic graphic_1", "graphic title");
+  require(panel.rowText("Type") == "graphic", "graphic type");
+  require(panel.rowText("Kind") == "line", "graphic kind");
+  require(panel.rowText("Layer") == "Dwgs.User", "graphic layer");
+  require(panel.rowText("Start X") == "3.00 mm (118.11 mil)", "graphic start X");
+  require(panel.rowText("Start Y") == "4.00 mm (157.48 mil)", "graphic start Y");
+  require(panel.rowText("End X") == "16.00 mm (629.92 mil)", "graphic end X");
+  require(panel.rowText("End Y") == "4.00 mm (157.48 mil)", "graphic end Y");
+  require(panel.rowText("Width") == "0.15 mm (5.91 mil)", "graphic width");
+
+  // Test Text Inspector Formatting
+  std::printf("Testing text...\n");
+  std::fflush(stdout);
+  panel.renderSelection(board, "text", "text_1");
+  require(panel.titleText() == "Text text_1", "text title");
+  require(panel.rowText("Type") == "text", "text type");
+  require(panel.rowText("Layer") == "F.SilkS", "text layer");
+  require(panel.rowText("Text") == "Bridge rectifier", "text payload");
+  require(panel.rowText("Position X") == "8.00 mm (314.96 mil)", "text X");
+  require(panel.rowText("Position Y") == "22.00 mm (866.14 mil)", "text Y");
+  require(panel.rowText("Rotation") == "90.0 deg", "text rotation");
+  require(panel.rowText("Size X") == "1.50 mm (59.06 mil)", "text size x");
+  require(panel.rowText("Size Y") == "1.50 mm (59.06 mil)", "text size y");
 
   // Rapid selection changes can happen when net highlight selects several canvas objects.
   // Stale editors must be hidden immediately, not only after Qt processes deleteLater().

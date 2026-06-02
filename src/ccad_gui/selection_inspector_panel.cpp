@@ -218,6 +218,42 @@ void SelectionInspectorPanel::renderSelection(const std::optional<ccad::Board>& 
         return;
       }
     }
+  } else if (lowerType == "line" || lowerType == "graphic") {
+    for (const auto& graphic : board->graphics) {
+      if (QString::fromStdString(graphic.id) == id) {
+        title_->setText("Graphic " + id);
+        detail_->setText("Board graphical object. Graphics are visual board annotations and do not carry nets.");
+        clearExtraRows();
+        setRow("Type", "graphic");
+        setRow("ID", id);
+        setRow("Kind", QString::fromStdString(graphic.kind));
+        setRow("Layer", QString::fromStdString(graphic.layer_id));
+        setRow("Start X", formatLength(graphic.start.x));
+        setRow("Start Y", formatLength(graphic.start.y));
+        setRow("End X", formatLength(graphic.end.x));
+        setRow("End Y", formatLength(graphic.end.y));
+        setRow("Width", formatLength(graphic.width));
+        return;
+      }
+    }
+  } else if (lowerType == "text") {
+    for (const auto& text : board->texts) {
+      if (QString::fromStdString(text.id) == id) {
+        title_->setText("Text " + id);
+        detail_->setText("Board text object. Text can annotate any board layer and remains netless.");
+        clearExtraRows();
+        setRow("Type", "text");
+        setRow("ID", id);
+        setRow("Layer", QString::fromStdString(text.layer_id));
+        setRow("Text", QString::fromStdString(text.text));
+        setRow("Position X", formatLength(text.position.x));
+        setRow("Position Y", formatLength(text.position.y));
+        setRow("Rotation", QString::number(text.rotation_degrees, 'f', 1) + " deg");
+        setRow("Size X", formatLength(text.size.width));
+        setRow("Size Y", formatLength(text.size.height));
+        return;
+      }
+    }
   } else if (lowerType == "keepout") {
     for (const auto& keepout : board->keepouts) {
       if (QString::fromStdString(keepout.id) == id) {

@@ -2,6 +2,7 @@
 
 #include <QBrush>
 #include <QColor>
+#include <QFont>
 #include <QGraphicsEllipseItem>
 #include <QGraphicsPathItem>
 #include <QGraphicsTextItem>
@@ -499,12 +500,19 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
 
   for (const ccad::CanvasText& text_item : scene.texts) {
     if (hidden_layers.count(text_item.layer_id)) continue;
-    
+    const QColor layer_color = colorForKiCadLayer(theme, text_item.layer_id);
     QGraphicsTextItem* text = canvas_scene.addText(QString::fromStdString(text_item.text));
-    text->setDefaultTextColor(colorForKiCadLayer(theme, text_item.layer_id));
+    text->setDefaultTextColor(layer_color);
     text->setPos(sceneX(scene, text_item.x_units, margin, scale), 
                  sceneY(scene, text_item.y_units, margin, scale));
     text->setRotation(text_item.rotation_degrees);
+    if (text_item.size_y_units > 0.0) {
+      QFont font = text->font();
+      font.setPointSizeF(std::max(4.0, text_item.size_y_units * scale));
+      text->setFont(font);
+    }
+    text->setToolTip("Text " + qstr(text_item.id));
+    tagObject(*text, "text", qstr(text_item.id), layer_color, "", qstr(text_item.layer_id));
   }
 
   // Render Schematic Components

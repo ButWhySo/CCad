@@ -64,8 +64,17 @@ int initCommand(const std::vector<std::string>& args) {
             .size = ccad::Size{.width = ccad::millimeters(*width_mm),
                                 .height = ccad::millimeters(*height_mm)},
         },
+        .design_rules = ccad::DesignRules{},
         .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true},
                    ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true}},
+        .placement_regions = {},
+        .keepouts = {},
+        .pads = {},
+        .vias = {},
+        .tracks = {},
+        .graphics = {},
+        .texts = {},
+        .route_requests = {},
     };
   }
 

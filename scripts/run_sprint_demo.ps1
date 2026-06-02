@@ -198,6 +198,7 @@ Invoke-Ccad pcb set-rules --file $Project --copper-clearance-mm 0.20 --min-track
 Invoke-Ccad pcb add-standard-layers --file $Project
 Invoke-Ccad pcb set-layer-visibility --file $Project --id In1.Cu --visible true
 Invoke-Ccad pcb set-layer-visibility --file $Project --id In1.Cu --visible false
+Invoke-Ccad pcb set-layer-visibility --file $Project --id Dwgs.User --visible true
 Invoke-Ccad pcb add-pad --file $Project --id JAC1.1 --component JAC1 --pin 1 --net AC1 --layers F.Cu --x-mm 8 --y-mm 17 --width-mm 1.8 --height-mm 1.4
 Invoke-Ccad pcb add-pad --file $Project --id JAC2.1 --component JAC2 --pin 1 --net AC2 --layers F.Cu --x-mm 32 --y-mm 17 --width-mm 1.8 --height-mm 1.4
 Invoke-Ccad pcb add-pad --file $Project --id JDC1.1 --component JDC1 --pin 1 --net DC_POS --layers F.Cu --x-mm 20 --y-mm 8 --width-mm 1.8 --height-mm 1.4
@@ -226,6 +227,9 @@ Invoke-Ccad pcb add-track --file $Project --id TNEG.1 --net DC_NEG --layer F.Cu 
 Invoke-Ccad pcb add-track --file $Project --id TNEG.2 --net DC_NEG --layer F.Cu --start-x-mm 22 --start-y-mm 24 --end-x-mm 20 --end-y-mm 26 --width-mm 0.25
 Invoke-Ccad pcb add-track --file $Project --id TLOAD.1 --net DC_POS --layer F.Cu --start-x-mm 28 --start-y-mm 10 --end-x-mm 36 --end-y-mm 12 --width-mm 0.25
 Invoke-Ccad pcb add-track --file $Project --id TLOAD.2 --net DC_NEG --layer F.Cu --start-x-mm 28 --start-y-mm 24 --end-x-mm 36 --end-y-mm 22 --width-mm 0.25
+Invoke-Ccad pcb add-graphic-line --file $Project --id G_TITLE_UNDERLINE --layer Dwgs.User --start-x-mm 5 --start-y-mm 6.2 --end-x-mm 28 --end-y-mm 6.2 --width-mm 0.15
+Invoke-Ccad pcb add-graphic-line --file $Project --id G_BOARD_REFERENCE --layer Dwgs.User --start-x-mm 5 --start-y-mm 27 --end-x-mm 40 --end-y-mm 27 --width-mm 0.20
+Invoke-Ccad pcb add-text --file $Project --id BT_TITLE --layer F.SilkS --text "FULL BRIDGE RECTIFIER" --x-mm 5 --y-mm 5 --size-x-mm 1.4 --size-y-mm 1.4 --rotation-deg 0
 
 $ProjectObject = Get-Content -Raw $Project | ConvertFrom-Json
 $ProjectObject.components = @(

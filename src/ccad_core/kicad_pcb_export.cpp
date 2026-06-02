@@ -7,6 +7,21 @@
 #include <vector>
 
 namespace ccad {
+namespace {
+
+std::string escapeKiCadString(const std::string& value) {
+  std::string escaped;
+  escaped.reserve(value.size());
+  for (const char ch : value) {
+    if (ch == '\\' || ch == '"') {
+      escaped.push_back('\\');
+    }
+    escaped.push_back(ch);
+  }
+  return escaped;
+}
+
+}  // namespace
 
 std::string exportToKiCadPcb(const Project& project) {
   if (!project.board.has_value()) {
@@ -194,6 +209,35 @@ std::string exportToKiCadPcb(const Project& project) {
       out << " (net 0)";
     }
     out << ")\n";
+  }
+
+  // board graphics
+  for (const BoardGraphic& graphic : board.graphics) {
+    if (graphic.kind != "line") {
+      continue;
+    }
+    const double sx = graphic.start.x.nanometers / 1000000.0;
+    const double sy = graphic.start.y.nanometers / 1000000.0;
+    const double ex = graphic.end.x.nanometers / 1000000.0;
+    const double ey = graphic.end.y.nanometers / 1000000.0;
+    const double width = graphic.width.nanometers / 1000000.0;
+    const std::string layer = graphic.layer_id.empty() ? "Dwgs.User" : graphic.layer_id;
+    out << "  (gr_line (start " << sx << " " << sy << ") (end " << ex << " " << ey
+        << ") (stroke (width " << width << ") (type solid)) (layer \"" << layer << "\"))\n";
+  }
+
+  // board text
+  for (const BoardText& text : board.texts) {
+    const double x = text.position.x.nanometers / 1000000.0;
+    const double y = text.position.y.nanometers / 1000000.0;
+    const double width = text.size.width.nanometers / 1000000.0;
+    const double height = text.size.height.nanometers / 1000000.0;
+    const std::string layer = text.layer_id.empty() ? "F.SilkS" : text.layer_id;
+    out << "  (gr_text \"" << escapeKiCadString(text.text) << "\" (at " << x << " " << y
+        << " " << text.rotation_degrees << ") (layer \"" << layer << "\")\n"
+        << "    (effects (font (size " << width << " " << height
+        << ") (thickness 0.150000)))\n"
+        << "  )\n";
   }
 
   // keepouts
