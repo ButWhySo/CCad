@@ -47,6 +47,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI footprint previews and the board canvas use a shared KiCad-inspired layer palette so copper, silkscreen, fabrication, courtyard, edge, and user graphics do not collapse into one generic color.
 - Native GUI can dump a read-only semantic UI map as JSON for LLM/automation tooling, including stable action IDs, tab/canvas bounds, canvas-object IDs, net/layer metadata, route provenance, and click target coordinates.
 - Native GUI has app-owned placement-click regression automation so left-click footprint placement can be tested through the real Qt viewport event path without manual mouse control.
+- Native GUI has app-owned UI-map mouse-target automation that moves to semantic targets, captures marked screenshots, resizes the window, and repeats to prove scalable coordinates.
 - Native GUI resolves KiCad SVG icons from `CCAD_KICAD_SRC`, `F:\kicad_src`, and executable/current-directory candidates, and the build now links Qt SVG explicitly for KiCad-style toolbar icon rendering.
 - Native GUI symbol placement resolves locally converted KiCad `extends` inheritance from `library-cache`, so derived symbols such as diode variants inherit parent pins before placement.
 - Native GUI footprint placement accepts raw KiCad `.kicad_mod` files from the chooser as well as converted CCad footprint JSON.
@@ -667,6 +668,14 @@ $env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
 ```
 
 This loads the project in the native GUI, enters footprint placement mode, sends the placement click through the real Qt viewport event path, writes compact result JSON, and exits. It is intended for regression and agent harness work, not for normal user authoring.
+
+Run the app-owned UI-map mouse-target harness:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_ui_map_mouse_target_demo.ps1 -Name sprint161-ui-map-mouse-targets -ProjectPath .\artifacts\demos\sprint160-placement-crash-ci-final.ccad.json
+```
+
+The script plays the docs beep, waits two seconds, launches the GUI target-sequence mode, moves the cursor to semantic targets such as Select, Measure, Save, File, and the properties/DRC panel, waits 20 seconds before screenshots, saves marked PNGs, resizes the window, repeats the same targets, and writes a JSON report.
 
 What it does:
 

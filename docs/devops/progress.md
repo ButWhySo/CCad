@@ -25,7 +25,8 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - **Sprint 157 (Read-only GUI UI Map)** is complete on `sprint-157-readonly-ui-map`. It adds an app-owned semantic UI map dump and live target validation for future LLM/native automation tooling, with stable action IDs, tab and canvas bounds, canvas object metadata, route/layer/net context, and target coordinates proven by Qt hit-testing.
 - **Sprint 158 (UI Target Queries)** is complete on `sprint-158-ui-target-queries`. It adds app-owned targeted coordinate queries by semantic ID and board-space point so agents can request one actionable target without dumping the full UI map.
 - **Sprint 159 (Safe UI Actions)** is complete on `sprint-159-safe-ui-actions`. It adds app-owned direct triggering for a small allowlist of safe view/navigation actions and explicit refusal for unsafe or mutating actions.
-- **Sprint 160 (Placement Crash, CI Fixes, Icon Recovery, and Backlog Ledger)** is active on `sprint-160-placement-crash-ci-backlog`. It fixes left-click placement reload crashes, CI compile failures in KiCad symbol import and DSN export, robust KiCad SVG icon lookup, app-owned placement-click regression coverage, and the consolidated backlog ledger.
+- **Sprint 160 (Placement Crash, CI Fixes, Icon Recovery, and Backlog Ledger)** is complete and merged to `main`. It fixes left-click placement reload crashes, CI compile failures in KiCad symbol import and DSN export, robust KiCad SVG icon lookup, app-owned placement-click regression coverage, and the consolidated backlog ledger.
+- **Sprint 161 (UI Map Mouse Target Harness)** is complete and merged to `main`. It adds menu/panel nodes to the semantic UI map and an app-owned mouse-target screenshot harness with beep, 20-second waits, marker overlays, and resize-repeat evidence.
 
 ## Phase Roadmap
 
