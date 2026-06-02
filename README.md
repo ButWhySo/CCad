@@ -51,6 +51,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI has app-owned UI-map mouse-target automation that moves to semantic targets, captures marked screenshots, resizes the window, and repeats to prove scalable coordinates.
 - Native GUI can keep a local live UI-map socket open while the GUI runs, serving repeated JSON Lines `ui.map`, `ui.target`, and `ui.epoch` requests for agents.
 - Native GUI unfinished toolbar tools now report visible planned-tool status and `future_tool_not_implemented` through the safe UI trigger contract instead of acting as silent stubs.
+- Native GUI left toolbar Show Layers and Show Properties actions now toggle their existing panels and report `panel_toggled` through the safe UI trigger contract.
 - Native GUI resolves KiCad SVG icons from `CCAD_KICAD_SRC`, `F:\kicad_src`, and executable/current-directory candidates, and the build now links Qt SVG explicitly for KiCad-style toolbar icon rendering.
 - Native GUI symbol placement resolves locally converted KiCad `extends` inheritance from `library-cache`, so derived symbols such as diode variants inherit parent pins before placement.
 - Native GUI footprint placement accepts raw KiCad `.kicad_mod` files from the chooser as well as converted CCad footprint JSON.
@@ -663,7 +664,7 @@ $env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
 
 Only a small allowlist of view/navigation actions is executable this way. Mutating, dialog-opening, or file-writing actions return `performed:false` with a reason field.
 
-Unfinished toolbar tools such as `action:grid`, `action:polar_coord`, `action:unit_inch`, `action:cursor_shape`, `action:show_ratsnest`, `action:net_highlight`, `action:contrast_mode`, `action:layers_manager`, `action:part_properties`, `action:add_tracks`, `action:add_via`, `action:add_zone`, `action:add_keepout_area`, `action:add_graphical_segments`, `action:text`, and `action:delete_cursor` are not silently ignored. They return `performed:false`, `reason:"future_tool_not_implemented"`, and the user-facing label while the GUI status bar shows the same planned-tool state.
+Unfinished toolbar tools such as `action:grid`, `action:polar_coord`, `action:unit_inch`, `action:cursor_shape`, `action:show_ratsnest`, `action:net_highlight`, `action:contrast_mode`, `action:add_tracks`, `action:add_via`, `action:add_zone`, `action:add_keepout_area`, `action:add_graphical_segments`, `action:text`, and `action:delete_cursor` are not silently ignored. They return `performed:false`, `reason:"future_tool_not_implemented"`, and the user-facing label while the GUI status bar shows the same planned-tool state. Left-toolbar panel controls `action:layers_manager` and `action:part_properties` are implemented safe actions and return `reason:"panel_toggled"`.
 
 Run the app-owned placement-click regression harness:
 

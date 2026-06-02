@@ -853,8 +853,6 @@ ReviewWindow::ReviewWindow() {
   bind_future_tool(show_ratsnest_action, "action:show_ratsnest", "Show Ratsnest");
   bind_future_tool(net_highlight_action, "action:net_highlight", "Net Highlight");
   bind_future_tool(display_modes_action, "action:contrast_mode", "Display Modes");
-  bind_future_tool(show_layers_action, "action:layers_manager", "Show Layers");
-  bind_future_tool(show_properties_action, "action:part_properties", "Show Properties");
 
   connect(add_footprint_action, &QAction::triggered, this, [this]() { placeFromActiveEditor(); });
   connect(add_symbol_action, &QAction::triggered, this, [this]() { placeFromActiveEditor(); });
@@ -880,6 +878,33 @@ ReviewWindow::ReviewWindow() {
       view->setToolMode(ToolMode::Measure);
       tool_status_->setText("Tool Measure");
     }
+  });
+  connect(show_layers_action, &QAction::triggered, this, [this]() {
+    if (object_browser_ == nullptr) {
+      return;
+    }
+    object_browser_->setVisible(!object_browser_->isVisible());
+    if (tool_status_ != nullptr) {
+      tool_status_->setText(object_browser_->isVisible() ? "Layers Shown" : "Layers Hidden");
+    }
+    statusBar()->showMessage(object_browser_->isVisible() ? "Layers / Objects panel shown"
+                                                          : "Layers / Objects panel hidden",
+                             5000);
+    markUiMapChanged();
+  });
+  connect(show_properties_action, &QAction::triggered, this, [this]() {
+    if (selection_inspector_ == nullptr) {
+      return;
+    }
+    selection_inspector_->setVisible(!selection_inspector_->isVisible());
+    if (tool_status_ != nullptr) {
+      tool_status_->setText(selection_inspector_->isVisible() ? "Properties Shown"
+                                                             : "Properties Hidden");
+    }
+    statusBar()->showMessage(selection_inspector_->isVisible() ? "Properties panel shown"
+                                                              : "Properties panel hidden",
+                             5000);
+    markUiMapChanged();
   });
 
   connect(canvas_scene_, &QGraphicsScene::selectionChanged, this,
@@ -1929,15 +1954,15 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
 
   const QStringList safe_action_ids = {"action:fit", "action:zoom_in", "action:zoom_out",
                                        "action:zoom_100", "action:cursor",
-                                       "action:measurement"};
+                                       "action:measurement", "action:layers_manager",
+                                       "action:part_properties"};
   const QStringList future_tool_ids = {"action:add_tracks", "action:add_via",
                                        "action:add_zone", "action:add_keepout_area",
                                        "action:add_graphical_segments", "action:text",
                                        "action:delete_cursor", "action:grid",
                                        "action:polar_coord", "action:unit_inch",
                                        "action:cursor_shape", "action:show_ratsnest",
-                                       "action:net_highlight", "action:contrast_mode",
-                                       "action:layers_manager", "action:part_properties"};
+                                       "action:net_highlight", "action:contrast_mode"};
   const QStringList unsafe_action_ids = {"action:open", "action:reload", "action:save",
                                          "action:board_setup", "action:undo", "action:redo",
                                          "action:run_drc", "action:export_drc",
@@ -1975,6 +2000,9 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
     action->trigger();
     QApplication::processEvents();
     markUiMapChanged();
+    if (id == "action:layers_manager" || id == "action:part_properties") {
+      return result(id, true, "panel_toggled");
+    }
     return result(id, true, "triggered");
   }
   return result(id, false, "action_not_found");
