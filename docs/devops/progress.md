@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 169
-- Branch: `sprint-169-visual-harness-timing`
+- Sprint: 170
+- Branch: `sprint-170-pcb-edit-tool-entry`
 - Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
@@ -35,6 +35,7 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - **Sprint 167 (Native Agent Panel Shell)** is complete on `sprint-167-agent-panel-shell`. It adds the first persistent Qt Agent panel for UI-map refreshes, safe UI action triggers, and `panel:agent` targeting without provider or secret integration. It also updates the GUI visual-validation timing policy to 7 seconds for single-preview screenshots and 5 seconds initial plus 800 ms per-target waits for multi-target GUI harness runs.
 - **Sprint 168 (Left Toolbar Display Controls)** is complete on `sprint-168-left-toolbar-display-controls`. It turns grid, polar coordinates, inch units, crosshair, ratsnest, net highlight, and display mode into real safe display actions, exposes checked state in the UI map, extends the target-sequence harness to exercise those controls, and fixes stale inspector editor overlap during rapid multi-selection changes.
 - **Sprint 169 (Visual Harness Timing Policy)** is complete on `sprint-169-visual-harness-timing`. It enforces the updated 7-second single-preview timing and 5-second initial plus 800 ms per-action multi-target timing through a dedicated CTest policy guard, updates the live interaction wrapper, and fixes chooser-row targeting so live footprint preview checks actually select a catalogue row.
+- **Sprint 170 (PCB Edit Tool Entry)** is complete on `sprint-170-pcb-edit-tool-entry`. It promotes Add Via, Route Track, Add Keepout, and Delete from right-toolbar planned-tool status to real kernel-backed GUI edit entries with matching agent/test hooks, while keeping Add Zone, Draw Graphic, and Place Text as explicit planned tools until their durable board primitives exist. Focused GUI-map coverage passed, official visual validation produced a full bridge-rectifier screenshot, app-owned viewport hooks placed a via, track, and keepout before deleting the new via, and the full build plus CTest gate passed 36 of 36 tests.
 
 ## Phase Roadmap
 

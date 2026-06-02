@@ -30,7 +30,10 @@ enum class InteractionMode {
   Default,
   PlaceFootprint,
   PlaceSymbol,
-  MoveFootprint
+  MoveFootprint,
+  AddVia,
+  RouteTrack,
+  AddKeepout
 };
 
 class ReviewWindow final : public QMainWindow {
@@ -49,6 +52,12 @@ class ReviewWindow final : public QMainWindow {
   QString commitFootprintPlacementForAutomation(const std::filesystem::path& footprint_path,
                                                 double x_mm,
                                                 double y_mm);
+  QString commitViaPlacementForAutomation(double x_mm, double y_mm);
+  QString commitTrackPlacementForAutomation(double start_x_mm, double start_y_mm,
+                                            double end_x_mm, double end_y_mm);
+  QString commitKeepoutPlacementForAutomation(double start_x_mm, double start_y_mm,
+                                              double end_x_mm, double end_y_mm);
+  QString deleteBoardObjectForAutomation(const QString& object_id);
 
  protected:
   bool eventFilter(QObject* obj, QEvent* event) override;
@@ -73,17 +82,24 @@ class ReviewWindow final : public QMainWindow {
   void enterPlaceFootprintMode(const std::string& component_id, const ccad::Footprint& footprint, const std::string& layer_id);
   void enterPlaceSymbolMode(const std::string& component_id, const ccad::Symbol& symbol, double rotation_degrees);
   void enterMoveFootprintMode(const std::string& component_id);
+  void enterAddViaMode();
+  void enterRouteTrackMode();
+  void enterAddKeepoutMode();
   void placeFromActiveEditor();
   void chooseAndPlaceFootprint();
   void chooseAndPlaceSymbol();
   void showFutureToolStatus(const QString& action_id, const QString& label);
   QString triggerDisplayStateActionJson(const QString& action_id);
+  QString deleteSelectedBoardObject();
   void applyDisplayStateToViews();
   void refreshCursorStatusFromActiveView();
   void renderPcbScene(const ccad::CanvasScene& scene,
                       const std::vector<ccad::Diagnostic>& diagnostics);
   void addRatsnestOverlays(const ccad::CanvasScene& scene);
   void cancelInteractionMode();
+  bool saveProjectCacheAfterMutation(const QString& status_message);
+  void createRouteOrKeepoutGhost(const QPointF& scene_position);
+  void updateRouteOrKeepoutGhost(const QPointF& scene_position);
   void pushUndoSnapshot();
   void restoreProjectSnapshot(const ccad::Project& snapshot);
   void updateUndoRedoActions();
@@ -131,5 +147,6 @@ class ReviewWindow final : public QMainWindow {
   std::vector<QGraphicsItem*> interaction_ghost_items_;
   QPointF interaction_last_mouse_pos_;
   QPointF interaction_start_mouse_pos_;
+  bool interaction_has_anchor_ = false;
   int ui_map_epoch_ = 1;
 };

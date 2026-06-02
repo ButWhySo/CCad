@@ -463,6 +463,71 @@ std::string firstCopperLayerId(const ccad::Board& board) {
   return {};
 }
 
+int numericSuffixAfterPrefix(const std::string& value, const std::string& prefix) {
+  if (!value.starts_with(prefix) || value.size() <= prefix.size()) {
+    return 0;
+  }
+  try {
+    return std::stoi(value.substr(prefix.size()));
+  } catch (...) {
+    return 0;
+  }
+}
+
+std::string nextViaId(const ccad::Board& board) {
+  int max_num = 0;
+  for (const ccad::Via& via : board.vias) {
+    max_num = std::max(max_num, numericSuffixAfterPrefix(via.id, "V"));
+  }
+  return "V" + std::to_string(max_num + 1);
+}
+
+std::string nextTrackId(const ccad::Board& board) {
+  int max_num = 0;
+  for (const ccad::TrackSegment& track : board.tracks) {
+    max_num = std::max(max_num, numericSuffixAfterPrefix(track.id, "T"));
+  }
+  return "T" + std::to_string(max_num + 1);
+}
+
+std::string nextKeepoutId(const ccad::Board& board) {
+  int max_num = 0;
+  for (const ccad::Keepout& keepout : board.keepouts) {
+    max_num = std::max(max_num, numericSuffixAfterPrefix(keepout.id, "K"));
+  }
+  return "K" + std::to_string(max_num + 1);
+}
+
+ccad::Length defaultTrackWidth(const ccad::Board& board) {
+  if (board.design_rules.min_track_width.nanometers > 0) {
+    return board.design_rules.min_track_width;
+  }
+  return ccad::millimeters(0.15);
+}
+
+ccad::Length defaultViaDiameter() {
+  return ccad::millimeters(0.80);
+}
+
+ccad::Length defaultViaDrill() {
+  return ccad::millimeters(0.40);
+}
+
+QPainterPath sceneTrackPath(const QPointF& start, const QPointF& end) {
+  QPainterPath path;
+  path.moveTo(start);
+  path.lineTo(end);
+  return path;
+}
+
+QPainterPath sceneKeepoutPath(const QPointF& start, const QPointF& end) {
+  const QRectF rect(QPointF(std::min(start.x(), end.x()), std::min(start.y(), end.y())),
+                    QPointF(std::max(start.x(), end.x()), std::max(start.y(), end.y())));
+  QPainterPath path;
+  path.addRect(rect);
+  return path;
+}
+
 ccad::Footprint loadFootprintSelection(const std::filesystem::path& path) {
   const std::string content = readFile(path);
   const std::string extension = path.extension().string();
@@ -884,13 +949,14 @@ ReviewWindow::ReviewWindow() {
     connect(action, &QAction::triggered, this,
             [this, action_id, label]() { showFutureToolStatus(action_id, label); });
   };
-  bind_future_tool(route_track_action, "action:add_tracks", "Route Track");
-  bind_future_tool(add_via_action, "action:add_via", "Add Via");
   bind_future_tool(add_zone_action, "action:add_zone", "Add Zone");
-  bind_future_tool(add_keepout_action, "action:add_keepout_area", "Add Keepout");
   bind_future_tool(draw_graphic_action, "action:add_graphical_segments", "Draw Graphic");
   bind_future_tool(place_text_action, "action:text", "Place Text");
-  bind_future_tool(delete_action, "action:delete_cursor", "Delete");
+
+  connect(route_track_action, &QAction::triggered, this, [this]() { enterRouteTrackMode(); });
+  connect(add_via_action, &QAction::triggered, this, [this]() { enterAddViaMode(); });
+  connect(add_keepout_action, &QAction::triggered, this, [this]() { enterAddKeepoutMode(); });
+  connect(delete_action, &QAction::triggered, this, [this]() { deleteSelectedBoardObject(); });
 
   const auto bind_display_action = [this](QAction* action, const QString& action_id) {
     if (action == nullptr) {
@@ -1175,6 +1241,22 @@ void ReviewWindow::saveProject() {
     statusBar()->showMessage("Saved project file");
   } catch (const std::exception& e) {
     QMessageBox::critical(this, "Save failed", QString::fromStdString(e.what()));
+  }
+}
+
+bool ReviewWindow::saveProjectCacheAfterMutation(const QString& status_message) {
+  if (current_path_.empty()) {
+    QMessageBox::warning(this, "Save Project", "No project file is loaded.");
+    return false;
+  }
+  try {
+    writeFile(current_path_, ccad::dumpProjectJson(project_cache_));
+    statusBar()->showMessage(status_message);
+    renderReview(ccad::buildReview(project_cache_));
+    return true;
+  } catch (const std::exception& e) {
+    QMessageBox::critical(this, "Save failed", QString::fromStdString(e.what()));
+    return false;
   }
 }
 
@@ -2243,6 +2325,12 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
         .arg(jsonString(action_id))
         .arg(jsonString(label));
   };
+  const auto editorToolResult = [](const QString& action_id, const QString& mode) {
+    return QString("{\"schema_version\":1,\"id\":%1,\"performed\":true,"
+                   "\"reason\":\"editor_tool_selected\",\"mode\":%2}\n")
+        .arg(jsonString(action_id))
+        .arg(jsonString(mode));
+  };
 
   if (id == "tab:pcb" || id == "tab:schematic") {
     if (editor_tabs_ == nullptr) {
@@ -2278,15 +2366,34 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
                                           "action:unit_inch", "action:cursor_shape",
                                           "action:show_ratsnest", "action:net_highlight",
                                           "action:contrast_mode"};
-  const QStringList future_tool_ids = {"action:add_tracks", "action:add_via",
-                                       "action:add_zone", "action:add_keepout_area",
-                                       "action:add_graphical_segments", "action:text",
-                                       "action:delete_cursor"};
+  const QStringList future_tool_ids = {"action:add_zone", "action:add_graphical_segments",
+                                       "action:text"};
   const QStringList unsafe_action_ids = {"action:open", "action:reload", "action:save",
                                          "action:board_setup", "action:undo", "action:redo",
                                          "action:run_drc", "action:export_drc",
                                          "action:add_footprint", "action:add_symbol",
                                          "action:quit"};
+  if (id == "action:add_tracks") {
+    enterRouteTrackMode();
+    QApplication::processEvents();
+    markUiMapChanged();
+    return editorToolResult(id, "route_track");
+  }
+  if (id == "action:add_via") {
+    enterAddViaMode();
+    QApplication::processEvents();
+    markUiMapChanged();
+    return editorToolResult(id, "add_via");
+  }
+  if (id == "action:add_keepout_area") {
+    enterAddKeepoutMode();
+    QApplication::processEvents();
+    markUiMapChanged();
+    return editorToolResult(id, "add_keepout");
+  }
+  if (id == "action:delete_cursor") {
+    return deleteSelectedBoardObject();
+  }
   if (future_tool_ids.contains(id)) {
     const QList<QAction*> actions = findChildren<QAction*>();
     for (QAction* action : actions) {
@@ -2369,6 +2476,220 @@ QString ReviewWindow::commitFootprintPlacementForAutomation(
     const std::size_t pad_count = project_cache_.board.has_value() ? project_cache_.board->pads.size() : 0;
     return result(false, QString::fromUtf8(e.what()), pad_count);
   }
+}
+
+QString ReviewWindow::commitViaPlacementForAutomation(const double x_mm, const double y_mm) {
+  const auto result = [](const bool performed, const QString& reason, const std::size_t via_count) {
+    return QString("{\"schema_version\":1,\"performed\":%1,\"reason\":%2,\"via_count\":%3}\n")
+        .arg(boolJson(performed))
+        .arg(jsonString(reason))
+        .arg(static_cast<qulonglong>(via_count));
+  };
+  if (!project_cache_.board.has_value()) {
+    return result(false, "missing_board", 0);
+  }
+  try {
+    enterAddViaMode();
+    if (interaction_mode_ != InteractionMode::AddVia) {
+      return result(false, "tool_unavailable", project_cache_.board->vias.size());
+    }
+    const QPointF scene_point = boardPositionToScene(*project_cache_.board, x_mm, y_mm);
+    const QPoint viewport_point = canvas_view_->mapFromScene(scene_point);
+    QMouseEvent press(QEvent::MouseButtonPress, QPointF(viewport_point), QPointF(viewport_point),
+                      Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    QApplication::sendEvent(canvas_view_->viewport(), &press);
+    QApplication::processEvents();
+    const std::size_t via_count =
+        project_cache_.board.has_value() ? project_cache_.board->vias.size() : 0;
+    return result(true, "placed", via_count);
+  } catch (const std::exception& e) {
+    if (interaction_mode_ != InteractionMode::Default) {
+      cancelInteractionMode();
+    }
+    const std::size_t via_count =
+        project_cache_.board.has_value() ? project_cache_.board->vias.size() : 0;
+    return result(false, QString::fromUtf8(e.what()), via_count);
+  }
+}
+
+QString ReviewWindow::commitTrackPlacementForAutomation(const double start_x_mm,
+                                                        const double start_y_mm,
+                                                        const double end_x_mm,
+                                                        const double end_y_mm) {
+  const auto result = [](const bool performed, const QString& reason,
+                         const std::size_t track_count) {
+    return QString("{\"schema_version\":1,\"performed\":%1,\"reason\":%2,\"track_count\":%3}\n")
+        .arg(boolJson(performed))
+        .arg(jsonString(reason))
+        .arg(static_cast<qulonglong>(track_count));
+  };
+  if (!project_cache_.board.has_value()) {
+    return result(false, "missing_board", 0);
+  }
+  try {
+    enterRouteTrackMode();
+    if (interaction_mode_ != InteractionMode::RouteTrack) {
+      return result(false, "tool_unavailable", project_cache_.board->tracks.size());
+    }
+    const auto click = [this](const QPointF& scene_point) {
+      const QPoint viewport_point = canvas_view_->mapFromScene(scene_point);
+      QMouseEvent press(QEvent::MouseButtonPress, QPointF(viewport_point), QPointF(viewport_point),
+                        Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+      QApplication::sendEvent(canvas_view_->viewport(), &press);
+      QApplication::processEvents();
+    };
+    click(boardPositionToScene(*project_cache_.board, start_x_mm, start_y_mm));
+    if (project_cache_.board.has_value()) {
+      click(boardPositionToScene(*project_cache_.board, end_x_mm, end_y_mm));
+    }
+    const std::size_t track_count =
+        project_cache_.board.has_value() ? project_cache_.board->tracks.size() : 0;
+    return result(true, "placed", track_count);
+  } catch (const std::exception& e) {
+    if (interaction_mode_ != InteractionMode::Default) {
+      cancelInteractionMode();
+    }
+    const std::size_t track_count =
+        project_cache_.board.has_value() ? project_cache_.board->tracks.size() : 0;
+    return result(false, QString::fromUtf8(e.what()), track_count);
+  }
+}
+
+QString ReviewWindow::commitKeepoutPlacementForAutomation(const double start_x_mm,
+                                                          const double start_y_mm,
+                                                          const double end_x_mm,
+                                                          const double end_y_mm) {
+  const auto result = [](const bool performed, const QString& reason,
+                         const std::size_t keepout_count) {
+    return QString("{\"schema_version\":1,\"performed\":%1,\"reason\":%2,\"keepout_count\":%3}\n")
+        .arg(boolJson(performed))
+        .arg(jsonString(reason))
+        .arg(static_cast<qulonglong>(keepout_count));
+  };
+  if (!project_cache_.board.has_value()) {
+    return result(false, "missing_board", 0);
+  }
+  try {
+    enterAddKeepoutMode();
+    if (interaction_mode_ != InteractionMode::AddKeepout) {
+      return result(false, "tool_unavailable", project_cache_.board->keepouts.size());
+    }
+    const auto click = [this](const QPointF& scene_point) {
+      const QPoint viewport_point = canvas_view_->mapFromScene(scene_point);
+      QMouseEvent press(QEvent::MouseButtonPress, QPointF(viewport_point), QPointF(viewport_point),
+                        Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+      QApplication::sendEvent(canvas_view_->viewport(), &press);
+      QApplication::processEvents();
+    };
+    click(boardPositionToScene(*project_cache_.board, start_x_mm, start_y_mm));
+    if (project_cache_.board.has_value()) {
+      click(boardPositionToScene(*project_cache_.board, end_x_mm, end_y_mm));
+    }
+    const std::size_t keepout_count =
+        project_cache_.board.has_value() ? project_cache_.board->keepouts.size() : 0;
+    return result(true, "placed", keepout_count);
+  } catch (const std::exception& e) {
+    if (interaction_mode_ != InteractionMode::Default) {
+      cancelInteractionMode();
+    }
+    const std::size_t keepout_count =
+        project_cache_.board.has_value() ? project_cache_.board->keepouts.size() : 0;
+    return result(false, QString::fromUtf8(e.what()), keepout_count);
+  }
+}
+
+QString ReviewWindow::deleteBoardObjectForAutomation(const QString& object_id) {
+  const auto result = [](const bool performed, const QString& reason, const QString& id,
+                         const QString& deleted_type) {
+    QString extra;
+    if (!deleted_type.isEmpty()) {
+      extra = QString(",\"deleted_type\":%1").arg(jsonString(deleted_type));
+    }
+    return QString("{\"schema_version\":1,\"id\":%1,\"performed\":%2,\"reason\":%3,"
+                   "\"object_id\":%4%5}\n")
+        .arg(jsonString("action:delete_cursor"))
+        .arg(boolJson(performed))
+        .arg(jsonString(reason))
+        .arg(jsonString(id))
+        .arg(extra);
+  };
+  if (!project_cache_.board.has_value()) {
+    return result(false, "missing_board", object_id, {});
+  }
+  if (object_id.isEmpty()) {
+    return result(false, "missing_object_id", object_id, {});
+  }
+  if (interaction_mode_ != InteractionMode::Default) {
+    cancelInteractionMode();
+  }
+
+  ccad::Board& board = *project_cache_.board;
+  const std::string id = object_id.toStdString();
+  const auto erase_pad = std::find_if(board.pads.begin(), board.pads.end(),
+                                      [&id](const ccad::Pad& pad) { return pad.id == id; });
+  if (erase_pad != board.pads.end()) {
+    pushUndoSnapshot();
+    board.pads.erase(erase_pad);
+    saveProjectCacheAfterMutation("Deleted pad " + object_id);
+    return result(true, "deleted", object_id, "pad");
+  }
+  const auto erase_via = std::find_if(board.vias.begin(), board.vias.end(),
+                                      [&id](const ccad::Via& via) { return via.id == id; });
+  if (erase_via != board.vias.end()) {
+    pushUndoSnapshot();
+    board.vias.erase(erase_via);
+    saveProjectCacheAfterMutation("Deleted via " + object_id);
+    return result(true, "deleted", object_id, "via");
+  }
+  const auto erase_track = std::find_if(
+      board.tracks.begin(), board.tracks.end(),
+      [&id](const ccad::TrackSegment& track) { return track.id == id; });
+  if (erase_track != board.tracks.end()) {
+    pushUndoSnapshot();
+    board.tracks.erase(erase_track);
+    saveProjectCacheAfterMutation("Deleted track " + object_id);
+    return result(true, "deleted", object_id, "track");
+  }
+  const auto erase_keepout = std::find_if(
+      board.keepouts.begin(), board.keepouts.end(),
+      [&id](const ccad::Keepout& keepout) { return keepout.id == id; });
+  if (erase_keepout != board.keepouts.end()) {
+    pushUndoSnapshot();
+    board.keepouts.erase(erase_keepout);
+    saveProjectCacheAfterMutation("Deleted keepout " + object_id);
+    return result(true, "deleted", object_id, "keepout");
+  }
+  const auto erase_region = std::find_if(
+      board.placement_regions.begin(), board.placement_regions.end(),
+      [&id](const ccad::PlacementRegion& region) { return region.id == id; });
+  if (erase_region != board.placement_regions.end()) {
+    pushUndoSnapshot();
+    board.placement_regions.erase(erase_region);
+    saveProjectCacheAfterMutation("Deleted placement region " + object_id);
+    return result(true, "deleted", object_id, "placement_region");
+  }
+  return result(false, "object_not_found", object_id, {});
+}
+
+QString ReviewWindow::deleteSelectedBoardObject() {
+  if (canvas_scene_ == nullptr) {
+    return QString("{\"schema_version\":1,\"id\":\"action:delete_cursor\",\"performed\":false,"
+                   "\"reason\":\"canvas_unavailable\"}\n");
+  }
+  const QList<QGraphicsItem*> selected_items = canvas_scene_->selectedItems();
+  if (selected_items.isEmpty()) {
+    if (interaction_mode_ != InteractionMode::Default) {
+      cancelInteractionMode();
+    }
+    return QString("{\"schema_version\":1,\"id\":\"action:delete_cursor\",\"performed\":false,"
+                   "\"reason\":\"nothing_selected\"}\n");
+  }
+  const QString object_id = canvasObjectId(*selected_items.first());
+  if (object_id.isEmpty()) {
+    return QString("{\"schema_version\":1,\"id\":\"action:delete_cursor\",\"performed\":false,"
+                   "\"reason\":\"selection_has_no_object_id\"}\n");
+  }
+  return deleteBoardObjectForAutomation(object_id);
 }
 
 void ReviewWindow::updateCursorStatus(const QPointF& scene_position, const double zoom_factor) {
@@ -2544,6 +2865,7 @@ void ReviewWindow::cancelInteractionMode() {
   interaction_component_id_.clear();
   interaction_layer_id_.clear();
   interaction_rotation_degrees_ = 0.0;
+  interaction_has_anchor_ = false;
   canvas_view_->viewport()->unsetCursor();
   schematic_view_->viewport()->unsetCursor();
 }
@@ -2622,6 +2944,116 @@ void ReviewWindow::enterMoveFootprintMode(const std::string& component_id) {
   }
 }
 
+void ReviewWindow::enterAddViaMode() {
+  cancelInteractionMode();
+  if (!project_cache_.board.has_value()) {
+    QMessageBox::warning(this, "No Board", "Load a project with a board before placing vias.");
+    return;
+  }
+  const std::string layer_id = firstCopperLayerId(*project_cache_.board);
+  if (layer_id.empty()) {
+    QMessageBox::warning(this, "No Copper Layer", "No copper layer is available for via placement.");
+    return;
+  }
+  editor_tabs_->setCurrentWidget(canvas_view_);
+  interaction_mode_ = InteractionMode::AddVia;
+  interaction_layer_id_ = layer_id;
+  interaction_has_anchor_ = false;
+  interaction_last_mouse_pos_ = canvas_view_->mapToScene(canvas_view_->mapFromGlobal(QCursor::pos()));
+
+  const CanvasRenderTheme theme;
+  const QColor copper = colorForKiCadLayer(theme, layer_id);
+  constexpr double scale = 10.0;
+  const double diameter = defaultViaDiameter().nanometers / 1e6 * scale;
+  auto* item = canvas_scene_->addEllipse(interaction_last_mouse_pos_.x() - (diameter / 2.0),
+                                         interaction_last_mouse_pos_.y() - (diameter / 2.0),
+                                         diameter, diameter,
+                                         QPen(copper.lighter(135), 1.2),
+                                         QBrush(QColor(copper.red(), copper.green(),
+                                                       copper.blue(), 150)));
+  item->setZValue(1000.0);
+  interaction_ghost_items_.push_back(item);
+  canvas_view_->viewport()->setCursor(Qt::CrossCursor);
+  tool_status_->setText("Tool Add Via");
+}
+
+void ReviewWindow::enterRouteTrackMode() {
+  cancelInteractionMode();
+  if (!project_cache_.board.has_value()) {
+    QMessageBox::warning(this, "No Board", "Load a project with a board before routing tracks.");
+    return;
+  }
+  const std::string layer_id = firstCopperLayerId(*project_cache_.board);
+  if (layer_id.empty()) {
+    QMessageBox::warning(this, "No Copper Layer", "No copper layer is available for track routing.");
+    return;
+  }
+  editor_tabs_->setCurrentWidget(canvas_view_);
+  interaction_mode_ = InteractionMode::RouteTrack;
+  interaction_layer_id_ = layer_id;
+  interaction_has_anchor_ = false;
+  interaction_last_mouse_pos_ = canvas_view_->mapToScene(canvas_view_->mapFromGlobal(QCursor::pos()));
+  canvas_view_->viewport()->setCursor(Qt::CrossCursor);
+  tool_status_->setText("Tool Route Track");
+}
+
+void ReviewWindow::enterAddKeepoutMode() {
+  cancelInteractionMode();
+  if (!project_cache_.board.has_value()) {
+    QMessageBox::warning(this, "No Board", "Load a project with a board before drawing keepouts.");
+    return;
+  }
+  editor_tabs_->setCurrentWidget(canvas_view_);
+  interaction_mode_ = InteractionMode::AddKeepout;
+  interaction_has_anchor_ = false;
+  interaction_last_mouse_pos_ = canvas_view_->mapToScene(canvas_view_->mapFromGlobal(QCursor::pos()));
+  canvas_view_->viewport()->setCursor(Qt::CrossCursor);
+  tool_status_->setText("Tool Add Keepout");
+}
+
+void ReviewWindow::createRouteOrKeepoutGhost(const QPointF& scene_position) {
+  if (canvas_scene_ == nullptr) {
+    return;
+  }
+  if (!interaction_ghost_items_.empty()) {
+    updateRouteOrKeepoutGhost(scene_position);
+    return;
+  }
+  QGraphicsPathItem* item = nullptr;
+  if (interaction_mode_ == InteractionMode::RouteTrack) {
+    const CanvasRenderTheme theme;
+    const QColor copper = colorForKiCadLayer(theme, interaction_layer_id_);
+    QPen pen(copper.lighter(130), 2.0);
+    pen.setCapStyle(Qt::RoundCap);
+    item = canvas_scene_->addPath(sceneTrackPath(interaction_start_mouse_pos_, scene_position),
+                                  pen, QBrush(Qt::NoBrush));
+  } else if (interaction_mode_ == InteractionMode::AddKeepout) {
+    QPen pen(QColor("#f97316"), 1.2, Qt::DashLine);
+    item = canvas_scene_->addPath(
+        sceneKeepoutPath(interaction_start_mouse_pos_, scene_position), pen,
+        QBrush(QColor(249, 115, 22, 48)));
+  }
+  if (item != nullptr) {
+    item->setZValue(1000.0);
+    interaction_ghost_items_.push_back(item);
+  }
+}
+
+void ReviewWindow::updateRouteOrKeepoutGhost(const QPointF& scene_position) {
+  if (interaction_ghost_items_.empty()) {
+    return;
+  }
+  auto* item = dynamic_cast<QGraphicsPathItem*>(interaction_ghost_items_.front());
+  if (item == nullptr) {
+    return;
+  }
+  if (interaction_mode_ == InteractionMode::RouteTrack) {
+    item->setPath(sceneTrackPath(interaction_start_mouse_pos_, scene_position));
+  } else if (interaction_mode_ == InteractionMode::AddKeepout) {
+    item->setPath(sceneKeepoutPath(interaction_start_mouse_pos_, scene_position));
+  }
+}
+
 bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
   if (interaction_mode_ != InteractionMode::Default) {
     QGraphicsView* active_view = interaction_mode_ == InteractionMode::PlaceSymbol ? schematic_view_
@@ -2630,10 +3062,15 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
       if (event->type() == QEvent::MouseMove) {
         auto* me = static_cast<QMouseEvent*>(event);
         QPointF scene_pos = active_view->mapToScene(me->pos());
-        QPointF delta = scene_pos - interaction_last_mouse_pos_;
-
-        for (QGraphicsItem* item : interaction_ghost_items_) {
-          item->setPos(item->pos() + delta);
+        if ((interaction_mode_ == InteractionMode::RouteTrack ||
+             interaction_mode_ == InteractionMode::AddKeepout) &&
+            interaction_has_anchor_) {
+          updateRouteOrKeepoutGhost(scene_pos);
+        } else {
+          QPointF delta = scene_pos - interaction_last_mouse_pos_;
+          for (QGraphicsItem* item : interaction_ghost_items_) {
+            item->setPos(item->pos() + delta);
+          }
         }
         interaction_last_mouse_pos_ = scene_pos;
         return true; // Consume event
@@ -2711,6 +3148,94 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               }
             } catch (const std::exception& e) {
               QMessageBox::critical(this, "Move Error", QString::fromUtf8(e.what()));
+            }
+          } else if (interaction_mode_ == InteractionMode::AddVia) {
+            try {
+              if (!project_cache_.board.has_value()) {
+                throw std::runtime_error("cannot place via without a board");
+              }
+              pushUndoSnapshot();
+              ccad::Board& board = *project_cache_.board;
+              board.vias.push_back(ccad::Via{.id = nextViaId(board),
+                                             .net_id = "",
+                                             .position = boardPointFromScene(board, scene_pos),
+                                             .diameter = defaultViaDiameter(),
+                                             .drill = defaultViaDrill()});
+              const QString via_id = qstr(board.vias.back().id);
+              cancelInteractionMode();
+              saveProjectCacheAfterMutation("Placed via " + via_id);
+              selectCanvasObjectById(*canvas_scene_, via_id);
+            } catch (const std::exception& e) {
+              QMessageBox::critical(this, "Via Error", QString::fromUtf8(e.what()));
+            }
+          } else if (interaction_mode_ == InteractionMode::RouteTrack) {
+            try {
+              if (!project_cache_.board.has_value()) {
+                throw std::runtime_error("cannot route track without a board");
+              }
+              if (!interaction_has_anchor_) {
+                interaction_start_mouse_pos_ = scene_pos;
+                interaction_last_mouse_pos_ = scene_pos;
+                interaction_has_anchor_ = true;
+                createRouteOrKeepoutGhost(scene_pos);
+                tool_status_->setText("Tool Route Track Anchor");
+                return true;
+              }
+              pushUndoSnapshot();
+              ccad::Board& board = *project_cache_.board;
+              board.tracks.push_back(
+                  ccad::TrackSegment{.id = nextTrackId(board),
+                                     .net_id = "",
+                                     .layer_id = interaction_layer_id_,
+                                     .start = boardPointFromScene(board, interaction_start_mouse_pos_),
+                                     .end = boardPointFromScene(board, scene_pos),
+                                     .width = defaultTrackWidth(board),
+                                     .source_route_request_id = ""});
+              const QString track_id = qstr(board.tracks.back().id);
+              cancelInteractionMode();
+              saveProjectCacheAfterMutation("Routed track " + track_id);
+              selectCanvasObjectById(*canvas_scene_, track_id);
+            } catch (const std::exception& e) {
+              QMessageBox::critical(this, "Track Error", QString::fromUtf8(e.what()));
+            }
+          } else if (interaction_mode_ == InteractionMode::AddKeepout) {
+            try {
+              if (!project_cache_.board.has_value()) {
+                throw std::runtime_error("cannot draw keepout without a board");
+              }
+              if (!interaction_has_anchor_) {
+                interaction_start_mouse_pos_ = scene_pos;
+                interaction_last_mouse_pos_ = scene_pos;
+                interaction_has_anchor_ = true;
+                createRouteOrKeepoutGhost(scene_pos);
+                tool_status_->setText("Tool Add Keepout Anchor");
+                return true;
+              }
+              const ccad::Point start = boardPointFromScene(*project_cache_.board,
+                                                            interaction_start_mouse_pos_);
+              const ccad::Point end = boardPointFromScene(*project_cache_.board, scene_pos);
+              const std::int64_t min_x = std::min(start.x.nanometers, end.x.nanometers);
+              const std::int64_t min_y = std::min(start.y.nanometers, end.y.nanometers);
+              const std::int64_t width = std::llabs(end.x.nanometers - start.x.nanometers);
+              const std::int64_t height = std::llabs(end.y.nanometers - start.y.nanometers);
+              if (width == 0 || height == 0) {
+                throw std::runtime_error("keepout requires a non-zero rectangle");
+              }
+              pushUndoSnapshot();
+              ccad::Board& board = *project_cache_.board;
+              board.keepouts.push_back(ccad::Keepout{
+                  .id = nextKeepoutId(board),
+                  .kind = "routing",
+                  .area = ccad::Rect{.origin = ccad::Point{.x = ccad::nanometers(min_x),
+                                                           .y = ccad::nanometers(min_y)},
+                                     .size = ccad::Size{.width = ccad::nanometers(width),
+                                                        .height = ccad::nanometers(height)}}});
+              const QString keepout_id = qstr(board.keepouts.back().id);
+              cancelInteractionMode();
+              saveProjectCacheAfterMutation("Added keepout " + keepout_id);
+              selectCanvasObjectById(*canvas_scene_, keepout_id);
+            } catch (const std::exception& e) {
+              QMessageBox::critical(this, "Keepout Error", QString::fromUtf8(e.what()));
             }
           }
           if (interaction_mode_ != InteractionMode::Default) {

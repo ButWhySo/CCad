@@ -50,6 +50,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI has app-owned placement-click regression automation so left-click footprint placement can be tested through the real Qt viewport event path without manual mouse control.
 - Native GUI has app-owned UI-map mouse-target automation that moves to semantic targets, captures marked screenshots, resizes the window, and repeats to prove scalable coordinates.
 - Native GUI can keep a local live UI-map socket open while the GUI runs, serving repeated JSON Lines `ui.map`, `ui.target`, and `ui.epoch` requests for agents.
+- Native GUI right-toolbar Add Via, Route Track, Add Keepout, and Delete tools now enter real PCB edit modes and create or remove durable board primitives through the same Qt viewport event path used by app-owned tests.
 - Native GUI unfinished toolbar tools now report visible planned-tool status and `future_tool_not_implemented` through the safe UI trigger contract instead of acting as silent stubs.
 - Native GUI left toolbar Show Layers and Show Properties actions now toggle their existing panels and report `panel_toggled` through the safe UI trigger contract.
 - Native GUI has a bottom Agent panel shell that can refresh the current UI-map JSON, trigger allowlisted safe UI actions by semantic ID, and expose itself as `panel:agent` for automation targeting.
@@ -677,7 +678,7 @@ $env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
 
 Only a small allowlist of view/navigation actions is executable this way. Mutating, dialog-opening, or file-writing actions return `performed:false` with a reason field.
 
-Left-toolbar display controls such as `action:grid`, `action:polar_coord`, `action:unit_inch`, `action:cursor_shape`, `action:show_ratsnest`, `action:net_highlight`, and `action:contrast_mode` are implemented safe display actions. They return `performed:true`, `reason:"display_state_toggled"`, and their current state, while the UI map exposes checked state for action nodes. Left-toolbar panel controls `action:layers_manager` and `action:part_properties` are implemented safe actions and return `reason:"panel_toggled"`. Remaining editor tools such as `action:add_tracks`, `action:add_via`, `action:add_zone`, `action:add_keepout_area`, `action:add_graphical_segments`, `action:text`, and `action:delete_cursor` are not silently ignored; they still return `performed:false`, `reason:"future_tool_not_implemented"`, and the user-facing label while the GUI status bar shows the same planned-tool state.
+Left-toolbar display controls such as `action:grid`, `action:polar_coord`, `action:unit_inch`, `action:cursor_shape`, `action:show_ratsnest`, `action:net_highlight`, and `action:contrast_mode` are implemented safe display actions. They return `performed:true`, `reason:"display_state_toggled"`, and their current state, while the UI map exposes checked state for action nodes. Left-toolbar panel controls `action:layers_manager` and `action:part_properties` are implemented safe actions and return `reason:"panel_toggled"`. Right-toolbar PCB editor entries `action:add_tracks`, `action:add_via`, and `action:add_keepout_area` now return `performed:true`, `reason:"editor_tool_selected"`, and a concrete mode value, while `action:delete_cursor` removes the selected board primitive when the model supports that object type. Remaining editor tools such as `action:add_zone`, `action:add_graphical_segments`, and `action:text` are not silently ignored; they still return `performed:false`, `reason:"future_tool_not_implemented"`, and the user-facing label while the GUI status bar shows the same planned-tool state.
 
 Run the app-owned placement-click regression harness:
 
@@ -687,6 +688,17 @@ $env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
 ```
 
 This loads the project in the native GUI, enters footprint placement mode, sends the placement click through the real Qt viewport event path, writes compact result JSON, and exits. It is intended for regression and agent harness work, not for normal user authoring.
+
+The same app-owned viewport-click path can exercise first-batch PCB edit tools:
+
+```cmd
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --test-place-via-click artifacts\demos\sprint170-pcb-edit-tool-entry-final.ccad.json 15 11 artifacts\demos\sprint170-via-result.json"
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --test-route-track-click artifacts\demos\sprint170-pcb-edit-tool-entry-final.ccad.json 8 9 15 11 artifacts\demos\sprint170-track-result.json"
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --test-place-keepout-click artifacts\demos\sprint170-pcb-edit-tool-entry-final.ccad.json 20 10 25 14 artifacts\demos\sprint170-keepout-result.json"
+cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --test-delete-board-object artifacts\demos\sprint170-pcb-edit-tool-entry-final.ccad.json V1 artifacts\demos\sprint170-delete-result.json"
+```
+
+These modes enter the same Add Via, Route Track, Add Keepout, and Delete paths that humans invoke from the right toolbar, then return compact JSON such as `reason:"placed"` or `reason:"deleted"` with the updated object count or deleted type.
 
 Run the app-owned UI-map mouse-target harness:
 

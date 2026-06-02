@@ -398,6 +398,141 @@ int main(int argc, char** argv) {
     });
 
     return QApplication::exec();
+  } else if (argc == 6 && std::string(argv[1]) == "--test-place-via-click") {
+    const std::filesystem::path project_path(argv[2]);
+    const double x_mm = std::stod(argv[3]);
+    const double y_mm = std::stod(argv[4]);
+    const std::filesystem::path output_path(argv[5]);
+    ReviewWindow window;
+    window.loadProjectPath(project_path);
+    window.show();
+
+    QTimer::singleShot(500, &window, [&window, x_mm, y_mm, output_path]() {
+      std::ofstream output(output_path, std::ios::binary);
+      if (!output) {
+        std::cerr << "failed to open via placement output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      const QByteArray bytes = window.commitViaPlacementForAutomation(x_mm, y_mm).toUtf8();
+      output.write(bytes.constData(), bytes.size());
+      if (!output) {
+        std::cerr << "failed to write via placement output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      std::cout << "via placement result saved: " << output_path.string() << '\n';
+      std::cout.flush();
+      QCoreApplication::exit(0);
+    });
+
+    return QApplication::exec();
+  } else if (argc == 8 && std::string(argv[1]) == "--test-route-track-click") {
+    const std::filesystem::path project_path(argv[2]);
+    const double start_x_mm = std::stod(argv[3]);
+    const double start_y_mm = std::stod(argv[4]);
+    const double end_x_mm = std::stod(argv[5]);
+    const double end_y_mm = std::stod(argv[6]);
+    const std::filesystem::path output_path(argv[7]);
+    ReviewWindow window;
+    window.loadProjectPath(project_path);
+    window.show();
+
+    QTimer::singleShot(500, &window, [&window, start_x_mm, start_y_mm, end_x_mm, end_y_mm,
+                                      output_path]() {
+      std::ofstream output(output_path, std::ios::binary);
+      if (!output) {
+        std::cerr << "failed to open track placement output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      const QByteArray bytes = window
+                                   .commitTrackPlacementForAutomation(start_x_mm, start_y_mm,
+                                                                      end_x_mm, end_y_mm)
+                                   .toUtf8();
+      output.write(bytes.constData(), bytes.size());
+      if (!output) {
+        std::cerr << "failed to write track placement output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      std::cout << "track placement result saved: " << output_path.string() << '\n';
+      std::cout.flush();
+      QCoreApplication::exit(0);
+    });
+
+    return QApplication::exec();
+  } else if (argc == 8 && std::string(argv[1]) == "--test-place-keepout-click") {
+    const std::filesystem::path project_path(argv[2]);
+    const double start_x_mm = std::stod(argv[3]);
+    const double start_y_mm = std::stod(argv[4]);
+    const double end_x_mm = std::stod(argv[5]);
+    const double end_y_mm = std::stod(argv[6]);
+    const std::filesystem::path output_path(argv[7]);
+    ReviewWindow window;
+    window.loadProjectPath(project_path);
+    window.show();
+
+    QTimer::singleShot(500, &window, [&window, start_x_mm, start_y_mm, end_x_mm, end_y_mm,
+                                      output_path]() {
+      std::ofstream output(output_path, std::ios::binary);
+      if (!output) {
+        std::cerr << "failed to open keepout placement output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      const QByteArray bytes = window
+                                   .commitKeepoutPlacementForAutomation(start_x_mm, start_y_mm,
+                                                                        end_x_mm, end_y_mm)
+                                   .toUtf8();
+      output.write(bytes.constData(), bytes.size());
+      if (!output) {
+        std::cerr << "failed to write keepout placement output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      std::cout << "keepout placement result saved: " << output_path.string() << '\n';
+      std::cout.flush();
+      QCoreApplication::exit(0);
+    });
+
+    return QApplication::exec();
+  } else if (argc == 5 && std::string(argv[1]) == "--test-delete-board-object") {
+    const std::filesystem::path project_path(argv[2]);
+    const QString object_id = QString::fromLocal8Bit(argv[3]);
+    const std::filesystem::path output_path(argv[4]);
+    ReviewWindow window;
+    window.loadProjectPath(project_path);
+    window.show();
+
+    QTimer::singleShot(500, &window, [&window, object_id, output_path]() {
+      std::ofstream output(output_path, std::ios::binary);
+      if (!output) {
+        std::cerr << "failed to open delete output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      const QByteArray bytes = window.deleteBoardObjectForAutomation(object_id).toUtf8();
+      output.write(bytes.constData(), bytes.size());
+      if (!output) {
+        std::cerr << "failed to write delete output: " << output_path.string() << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+        return;
+      }
+      std::cout << "delete result saved: " << output_path.string() << '\n';
+      std::cout.flush();
+      QCoreApplication::exit(0);
+    });
+
+    return QApplication::exec();
   } else if (argc == 4 && std::string(argv[1]) == "--screenshot") {
     const std::filesystem::path project_path(argv[2]);
     const char* screenshot_arg = argv[3];
