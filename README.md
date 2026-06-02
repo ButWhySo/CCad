@@ -45,6 +45,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI library chooser now has KiCad-style chooser context with filtered library/name rows, details, and visual symbol/footprint previews.
 - Native GUI library chooser indexes local `library-cache` entries without parsing every symbol or footprint on dialog open; selected rows are parsed lazily for details, preview, and final placement.
 - Native GUI footprint previews and the board canvas use a shared KiCad-inspired layer palette so copper, silkscreen, fabrication, courtyard, edge, and user graphics do not collapse into one generic color.
+- Native GUI pad rendering separates copper from solder-mask and solder-paste aperture overlays, so visible mask or paste layers no longer force hidden copper to render.
 - Native GUI can dump a read-only semantic UI map as JSON for LLM/automation tooling, including stable action IDs, tab/canvas bounds, canvas-object IDs, net/layer metadata, route provenance, and click target coordinates.
 - Native GUI has app-owned placement-click regression automation so left-click footprint placement can be tested through the real Qt viewport event path without manual mouse control.
 - Native GUI has app-owned UI-map mouse-target automation that moves to semantic targets, captures marked screenshots, resizes the window, and repeats to prove scalable coordinates.
@@ -56,7 +57,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI no longer exposes raw KiCad symbol/footprint file preview entries as normal File menu placement actions.
 - Native GUI renders front and back copper with distinct KiCad-inspired default colors, and selected tracks highlight across their visible copper width.
 - Native GUI canvas renders circular, oval, ratio-controlled round-rect, trapezoid, and chamfered pads as shape-aware geometry and shows through-hole drill openings as visible annular rings.
-- Native GUI interactive footprint placement and movement use shape-aware ghost previews and convert canvas scene coordinates back to board millimeters before calling the core placement APIs.
+- Native GUI interactive footprint placement and movement use shape-aware, layer-colored ghost previews and convert canvas scene coordinates back to board millimeters before calling the core placement APIs.
 - Native GUI canvas toolbar has Fit, Zoom Out, Zoom In, and 100% review controls.
 - Sprint demo automation now has a robust screenshot fallback path that captures only the spawned CCad window by PID when `ccad_gui --screenshot` fails.
 - Native GUI canvas supports CAD-style pan with middle-drag, right-drag, or Shift+left-drag, plus clamped wheel zoom and expanded scene navigation bounds.

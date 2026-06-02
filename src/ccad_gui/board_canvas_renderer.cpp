@@ -173,13 +173,54 @@ bool layerIsVisible(const std::set<std::string>& hidden_layers, const std::strin
   return layer_id.empty() || !hidden_layers.contains(layer_id);
 }
 
-QColor padDisplayColor(const CanvasRenderTheme& theme, const ccad::CanvasPad& pad) {
+bool wildcardLayerClassVisible(const std::set<std::string>& hidden_layers, const std::string& suffix) {
+  if (suffix == ".Cu") {
+    if (!hidden_layers.contains("F.Cu") || !hidden_layers.contains("B.Cu")) {
+      return true;
+    }
+    for (int index = 1; index <= 30; ++index) {
+      if (!hidden_layers.contains("In" + std::to_string(index) + ".Cu")) {
+        return true;
+      }
+    }
+    return false;
+  }
+  if (suffix == ".Mask") {
+    return !hidden_layers.contains("F.Mask") || !hidden_layers.contains("B.Mask");
+  }
+  if (suffix == ".Paste") {
+    return !hidden_layers.contains("F.Paste") || !hidden_layers.contains("B.Paste");
+  }
+  return true;
+}
+
+bool padLayerIsVisible(const std::set<std::string>& hidden_layers, const std::string& layer_id) {
+  if (layer_id.starts_with("*.")) {
+    return wildcardLayerClassVisible(hidden_layers, layer_id.substr(1));
+  }
+  return layerIsVisible(hidden_layers, layer_id);
+}
+
+bool padLayerMatches(const std::string& layer_id, const std::string& exact_layer,
+                     const std::string& wildcard_layer) {
+  return layer_id == exact_layer || layer_id == wildcard_layer;
+}
+
+std::optional<std::string> visiblePadCopperLayer(const std::set<std::string>& hidden_layers,
+                                                 const ccad::CanvasPad& pad) {
   for (const std::string& layer : pad.layers) {
-    if (layer.ends_with(".Cu") || layer == "*.Cu") {
-      return colorForKiCadLayer(theme, layer == "*.Cu" ? "F.Cu" : layer);
+    if ((layer.ends_with(".Cu") || layer == "*.Cu") && padLayerIsVisible(hidden_layers, layer)) {
+      return layer == "*.Cu" ? std::optional<std::string>("F.Cu") : std::optional<std::string>(layer);
     }
   }
-  return theme.pad_fill_color;
+  return std::nullopt;
+}
+
+void tagLayerOverlay(QGraphicsItem& item, const QString& type, const QString& id,
+                     const QString& layer_id) {
+  item.setData(kCanvasObjectTypeRole, type);
+  item.setData(kCanvasObjectIdRole, id);
+  item.setData(kCanvasObjectLayerIdRole, layer_id);
 }
 
 double sceneX(const ccad::CanvasScene& scene, const double board_x_units, const double margin,
@@ -293,16 +334,6 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
   }
 
   for (const ccad::CanvasPad& pad : scene.pads) {
-    bool is_visible = false;
-    for (const std::string& layer : pad.layers) {
-      if (layer.starts_with("*.") || !hidden_layers.contains(layer)) {
-        is_visible = true;
-        break;
-      }
-    }
-    if (!is_visible) {
-      continue;
-    }
     const QRectF pad_rect(sceneX(scene, pad.x_units, margin, scale) -
                               ((pad.width_units * scale) / 2.0),
                           sceneY(scene, pad.y_units, margin, scale) -
@@ -312,17 +343,57 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
                              sceneY(scene, pad.y_units, margin, scale));
     QPainterPath pad_path = padShapePath(pad_rect, pad_center, pad.shape, pad.rotation_degrees,
                                          pad.roundrect_rratio, pad.chamfer_ratio);
-    const QColor pad_color = padDisplayColor(theme, pad);
-    auto* item =
-        addHighlightPath(canvas_scene, pad_path, QPen(pad_color.lighter(130), 0.8),
-                         QBrush(pad_color));
-    item->setToolTip("Pad " + qstr(pad.id) + " (" + qstr(pad.type) + ")");
+    if (const std::optional<std::string> copper_layer = visiblePadCopperLayer(hidden_layers, pad)) {
+      const QColor pad_color = colorForKiCadLayer(theme, *copper_layer);
+      auto* item =
+          addHighlightPath(canvas_scene, pad_path, QPen(pad_color.lighter(130), 0.8),
+                           QBrush(pad_color));
+      item->setToolTip("Pad " + qstr(pad.id) + " (" + qstr(pad.type) + ")");
 
-    QString layers_str;
-    for (const auto& l : pad.layers) layers_str += qstr(l) + ",";
-    if (!layers_str.isEmpty()) layers_str.chop(1);
+      QString layers_str;
+      for (const auto& l : pad.layers) layers_str += qstr(l) + ",";
+      if (!layers_str.isEmpty()) layers_str.chop(1);
 
-    tagObject(*item, "pad", qstr(pad.id), pad_color, qstr(pad.net_id), layers_str);
+      tagObject(*item, "pad", qstr(pad.id), pad_color, qstr(pad.net_id), layers_str);
+    }
+
+    const auto addPadLayerAperture = [&](const QString& type, const std::string& layer_id,
+                                         const QColor& layer_color, double inflate,
+                                         Qt::PenStyle style) {
+      const QRectF aperture_rect = pad_rect.adjusted(-inflate, -inflate, inflate, inflate);
+      QPainterPath aperture_path = padShapePath(aperture_rect, aperture_rect.center(), pad.shape,
+                                                pad.rotation_degrees, pad.roundrect_rratio,
+                                                pad.chamfer_ratio);
+      QPen aperture_pen(layer_color, 0.9);
+      aperture_pen.setStyle(style);
+      aperture_pen.setJoinStyle(Qt::RoundJoin);
+      aperture_pen.setCapStyle(Qt::RoundCap);
+      auto* aperture = addHighlightPath(canvas_scene, aperture_path, aperture_pen,
+                                        QBrush(QColor(layer_color.red(), layer_color.green(),
+                                                      layer_color.blue(), 42)));
+      aperture->setFlag(QGraphicsItem::ItemIsSelectable, false);
+      aperture->setToolTip(type + " " + qstr(pad.id) + " " + qstr(layer_id));
+      tagLayerOverlay(*aperture, type, qstr(pad.id) + ":" + qstr(layer_id), qstr(layer_id));
+    };
+
+    for (const std::string& layer : pad.layers) {
+      if (!padLayerIsVisible(hidden_layers, layer)) {
+        continue;
+      }
+      if (padLayerMatches(layer, "F.Mask", "*.Mask")) {
+        addPadLayerAperture("pad-mask", "F.Mask", colorForKiCadLayer(theme, "F.Mask"), 1.2,
+                            Qt::DashLine);
+      } else if (layer == "B.Mask") {
+        addPadLayerAperture("pad-mask", "B.Mask", colorForKiCadLayer(theme, "B.Mask"), 1.2,
+                            Qt::DashLine);
+      } else if (padLayerMatches(layer, "F.Paste", "*.Paste")) {
+        addPadLayerAperture("pad-paste", "F.Paste", colorForKiCadLayer(theme, "F.Paste"), 0.5,
+                            Qt::SolidLine);
+      } else if (layer == "B.Paste") {
+        addPadLayerAperture("pad-paste", "B.Paste", colorForKiCadLayer(theme, "B.Paste"), 0.5,
+                            Qt::SolidLine);
+      }
+    }
 
     if (pad.drill_units > 0.0) {
       const double drill = pad.drill_units * scale;

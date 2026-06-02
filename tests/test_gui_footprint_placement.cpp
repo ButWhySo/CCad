@@ -13,6 +13,7 @@
 #include <QTemporaryDir>
 #include <QTreeWidget>
 #include <QGraphicsView>
+#include <QGraphicsPathItem>
 #include <QDir>
 #include <QFile>
 
@@ -20,6 +21,7 @@
 #include <iostream>
 
 #include "ccad_gui/library_browser_dialog.hpp"
+#include "ccad_gui/board_canvas_renderer.hpp"
 
 class TestGuiFootprintPlacement : public QObject {
   Q_OBJECT
@@ -135,6 +137,62 @@ class TestGuiFootprintPlacement : public QObject {
     QVERIFY(preview != nullptr);
     QVERIFY(preview->scene() != nullptr);
     QVERIFY(preview->scene()->items().size() > 0);
+  }
+
+  void testLibraryChooserPreviewUsesDistinctMaskAndPasteColors() {
+    QTemporaryDir temp_dir;
+    QVERIFY(temp_dir.isValid());
+    QDir root(temp_dir.path());
+    QVERIFY(root.mkpath("footprints/Layered.pretty"));
+
+    QFile footprint(root.filePath("footprints/Layered.pretty/LayeredPad.json"));
+    QVERIFY(footprint.open(QIODevice::WriteOnly | QIODevice::Text));
+    footprint.write(R"({
+      "name": "LayeredPad",
+      "pads": [
+        {
+          "number": "1",
+          "type": "smd",
+          "shape": "roundrect",
+          "x_nm": 0, "y_nm": 0,
+          "rotation_degrees": 0,
+          "width_nm": 1800000,
+          "height_nm": 1200000,
+          "roundrect_rratio": 0.25,
+          "layers": ["F.Cu", "F.Mask", "F.Paste"]
+        }
+      ]
+    })");
+    footprint.close();
+
+    LibraryBrowserDialog dialog(LibraryType::Footprint, temp_dir.path());
+    auto* tree = dialog.findChild<QTreeWidget*>();
+    QVERIFY(tree != nullptr);
+    QCOMPARE(tree->topLevelItemCount(), 1);
+    tree->setCurrentItem(tree->topLevelItem(0));
+    QApplication::processEvents();
+
+    auto* preview = dialog.findChild<QGraphicsView*>();
+    QVERIFY(preview != nullptr);
+    QVERIFY(preview->scene() != nullptr);
+
+    const CanvasRenderTheme theme;
+    bool saw_copper = false;
+    bool saw_mask = false;
+    bool saw_paste = false;
+    for (QGraphicsItem* item : preview->scene()->items()) {
+      auto* path = dynamic_cast<QGraphicsPathItem*>(item);
+      if (path == nullptr) {
+        continue;
+      }
+      const QColor color = path->pen().color();
+      saw_copper = saw_copper || color == colorForKiCadLayer(theme, "F.Cu").lighter(125);
+      saw_mask = saw_mask || color == colorForKiCadLayer(theme, "F.Mask");
+      saw_paste = saw_paste || color == colorForKiCadLayer(theme, "F.Paste");
+    }
+    QVERIFY(saw_copper);
+    QVERIFY(saw_mask);
+    QVERIFY(saw_paste);
   }
 };
 

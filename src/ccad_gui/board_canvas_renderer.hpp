@@ -31,6 +31,10 @@ struct CanvasRenderTheme {
   QColor front_copper_color = QColor("#c83434");
   QColor back_copper_color = QColor("#237a45");
   QColor inner_copper_color = QColor("#c08b2c");
+  QColor front_paste_color = QColor("#d8d2d8");
+  QColor back_paste_color = QColor("#9ca3af");
+  QColor front_mask_color = QColor("#7c3aed");
+  QColor back_mask_color = QColor("#2563eb");
   QColor front_silkscreen_color = QColor("#d8d2b8");
   QColor back_silkscreen_color = QColor("#8fb6ff");
   QColor front_fab_color = QColor("#c9cfd8");
@@ -57,6 +61,18 @@ inline QColor colorForKiCadLayer(const CanvasRenderTheme& theme, const std::stri
   }
   if (layer_id.starts_with("In") && layer_id.ends_with(".Cu")) {
     return theme.inner_copper_color;
+  }
+  if (layer_id == "F.Paste") {
+    return theme.front_paste_color;
+  }
+  if (layer_id == "B.Paste") {
+    return theme.back_paste_color;
+  }
+  if (layer_id == "F.Mask") {
+    return theme.front_mask_color;
+  }
+  if (layer_id == "B.Mask") {
+    return theme.back_mask_color;
   }
   if (layer_id == "F.SilkS") {
     return theme.front_silkscreen_color;
