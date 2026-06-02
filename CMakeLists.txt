@@ -207,6 +207,20 @@ if(MINGW)
 endif()
 add_test(NAME drill_export COMMAND ccad_drill_export_tests)
 
+add_executable(ccad_visual_harness_policy_tests
+  tests/test_visual_harness_policy.cpp
+)
+target_include_directories(ccad_visual_harness_policy_tests PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests
+)
+target_compile_definitions(ccad_visual_harness_policy_tests PRIVATE
+  CCAD_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MINGW)
+  target_link_options(ccad_visual_harness_policy_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME visual_harness_policy COMMAND ccad_visual_harness_policy_tests)
+
 add_executable(ccad_cli_tests
   tests/test_cli.cpp
 )

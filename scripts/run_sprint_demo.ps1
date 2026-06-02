@@ -126,7 +126,7 @@ public static class NativeWin {
 
     [NativeWin]::ShowWindow($process.MainWindowHandle, 9) | Out-Null
     [NativeWin]::SetForegroundWindow($process.MainWindowHandle) | Out-Null
-    Start-Sleep -Milliseconds 1200
+    Start-Sleep -Milliseconds 800
 
     $rect = New-Object NativeWin+RECT
     if (-not [NativeWin]::GetWindowRect($process.MainWindowHandle, [ref]$rect)) {
