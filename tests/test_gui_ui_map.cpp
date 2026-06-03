@@ -337,6 +337,52 @@ int main(int argc, char** argv) {
   require(contains(role_nodes, "\"id\":\"action:add_footprint\""),
           "agent role-index query returns action nodes");
 
+  const QString method_catalog = window.runAgentUiQueryJson("agent.methods", "{}");
+  require(contains(method_catalog, "\"ok\":true"), "agent method catalog query routes");
+  require(contains(method_catalog, "\"schema_version\":1"),
+          "agent method catalog reports schema version");
+  require(contains(method_catalog, "\"method\":\"ui.map\""),
+          "agent method catalog includes UI map query");
+  require(contains(method_catalog, "\"method\":\"ui.watch_delta\""),
+          "agent method catalog includes watch-delta query");
+  require(contains(method_catalog, "\"method\":\"project.drc\""),
+          "agent method catalog includes DRC query");
+  require(contains(method_catalog, "\"read_only\":true"),
+          "agent method catalog marks read-only calls");
+  require(contains(method_catalog, "\"supports_dry_run\":true"),
+          "agent method catalog marks dry-run capable calls");
+
+  const QString watch_schema =
+      window.runAgentUiQueryJson("agent.method_schema", "{\"method\":\"ui.watch_delta\"}");
+  require(contains(watch_schema, "\"ok\":true"), "agent method schema query routes");
+  require(contains(watch_schema, "\"found\":true"),
+          "agent method schema finds a known method");
+  require(contains(watch_schema, "\"method\":\"ui.watch_delta\""),
+          "agent method schema returns the requested method");
+  require(contains(watch_schema, "\"since_epoch\""),
+          "agent method schema documents watch-delta epoch input");
+  require(contains(watch_schema, "\"timeout_ms\""),
+          "agent method schema documents watch-delta timeout input");
+  require(contains(watch_schema, "\"max_events\""),
+          "agent method schema documents watch-delta event bound input");
+
+  const QString missing_schema =
+      window.runAgentUiQueryJson("agent.method_schema", "{\"method\":\"ui.nope\"}");
+  require(contains(missing_schema, "\"ok\":true"), "agent method schema handles misses");
+  require(contains(missing_schema, "\"found\":false"),
+          "agent method schema reports unknown methods without failing the request");
+
+  const QString quickstart = window.runAgentUiQueryJson("agent.quickstart", "{}");
+  require(contains(quickstart, "\"ok\":true"), "agent quickstart query routes");
+  require(contains(quickstart, "\"workflow\":\"ui_map_agent_loop\""),
+          "agent quickstart reports the UI-map workflow");
+  require(contains(quickstart, "\"ui.index_stats\""),
+          "agent quickstart points agents to indexed lookup first");
+  require(contains(quickstart, "\"ui.watch_delta\""),
+          "agent quickstart points agents to live delta watching");
+  require(contains(quickstart, "\"ui.screenshot\""),
+          "agent quickstart explains screenshot use");
+
   const int before_watch_epoch = extractInt(window.uiMapJson(), "\"ui_epoch\":");
   window.triggerSafeUiActionJson("tab:diagnostics");
   window.triggerSafeUiActionJson("tab:agent");
@@ -954,6 +1000,26 @@ int main(int argc, char** argv) {
           "live server returns successful ui.role_summary");
   require(contains(role_summary_response, "\"role\":\"action\""),
           "live server role summary includes action role");
+  const QString method_catalog_response = requestLine(socket, "{\"method\":\"agent.methods\"}");
+  require(contains(method_catalog_response, "\"ok\":true"),
+          "live server returns successful agent.methods");
+  require(contains(method_catalog_response, "\"method\":\"ui.map\""),
+          "live server agent.methods includes UI map query");
+  require(contains(method_catalog_response, "\"method\":\"project.drc\""),
+          "live server agent.methods includes DRC query");
+  const QString method_schema_response =
+      requestLine(socket, "{\"method\":\"agent.method_schema\",\"method_name\":\"ui.watch_delta\"}");
+  require(contains(method_schema_response, "\"ok\":true"),
+          "live server returns successful agent.method_schema");
+  require(contains(method_schema_response, "\"found\":true"),
+          "live server agent.method_schema finds watch-delta");
+  require(contains(method_schema_response, "\"since_epoch\""),
+          "live server agent.method_schema documents watch-delta input");
+  const QString quickstart_response = requestLine(socket, "{\"method\":\"agent.quickstart\"}");
+  require(contains(quickstart_response, "\"ok\":true"),
+          "live server returns successful agent.quickstart");
+  require(contains(quickstart_response, "\"workflow\":\"ui_map_agent_loop\""),
+          "live server agent.quickstart reports workflow");
   const QString index_stats_response = requestLine(socket, "{\"method\":\"ui.index_stats\"}");
   require(contains(index_stats_response, "\"ok\":true"),
           "live server returns successful ui.index_stats");
