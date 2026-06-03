@@ -137,6 +137,22 @@ class TestGuiFootprintPlacement : public QObject {
     QVERIFY(preview != nullptr);
     QVERIFY(preview->scene() != nullptr);
     QVERIFY(preview->scene()->items().size() > 0);
+
+    auto* button_box = dialog.findChild<QDialogButtonBox*>();
+    QVERIFY(button_box != nullptr);
+    QPushButton* ok_button = button_box->button(QDialogButtonBox::Ok);
+    QVERIFY(ok_button != nullptr);
+    QTimer::singleShot(0, [&]() {
+      ok_button->click();
+    });
+    dialog.exec();
+
+    const auto selection = dialog.selection();
+    QVERIFY(selection.has_value());
+    QCOMPARE(QString::fromStdString(selection->item_name), QString("OnePad"));
+    QCOMPARE(QString::fromStdString(selection->library_name), QString("Bad.pretty"));
+    QCOMPARE(QString::fromStdString(selection->source_kind), QString("CCad footprint JSON"));
+    QCOMPARE(QString::fromStdString(selection->path), footprint.fileName());
   }
 
   void testLibraryChooserPreviewUsesDistinctMaskAndPasteColors() {

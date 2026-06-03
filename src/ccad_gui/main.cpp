@@ -764,6 +764,29 @@ int main(int argc, char** argv) {
     });
 
     return QApplication::exec();
+  } else if (argc == 4 && std::string(argv[1]) == "--screenshot-project") {
+    const std::filesystem::path project_path(argv[2]);
+    const char* screenshot_arg = argv[3];
+    const QString screenshot_path = QString::fromLocal8Bit(screenshot_arg);
+    ReviewWindow window;
+    window.loadProjectPath(project_path);
+    window.show();
+
+    QTimer::singleShot(kSingleScreenshotWaitMs, &window,
+                       [&window, screenshot_path, screenshot_arg]() {
+      const QPixmap screenshot = window.grab();
+      if (!screenshot.save(screenshot_path)) {
+        std::cerr << "failed to save GUI screenshot: " << screenshot_arg << '\n';
+        std::cerr.flush();
+        QCoreApplication::exit(2);
+      } else {
+        std::cout << "screenshot saved: " << screenshot_arg << '\n';
+        std::cout.flush();
+        QCoreApplication::exit(0);
+      }
+    });
+
+    return QApplication::exec();
   } else if (argc == 4 && std::string(argv[1]) == "--screenshot-measure") {
     const std::filesystem::path project_path(argv[2]);
     const char* screenshot_arg = argv[3];

@@ -565,15 +565,20 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
   for (const ccad::CanvasComponent& comp : scene.components) {
     const double cx = sceneX(scene, comp.x_units, margin, scale);
     const double cy = sceneY(scene, comp.y_units, margin, scale);
-    
-    auto* rect = canvas_scene.addRect(cx - 15.0, cy - 15.0, 30.0, 30.0, component_pen);
-    rect->setData(kCanvasObjectIdRole, QString::fromStdString(comp.id));
-    rect->setData(kCanvasObjectTypeRole, "Component");
-    rect->setToolTip(QString::fromStdString(comp.id + " (" + comp.part + ")"));
+
+    if (!comp.has_symbol_graphics) {
+      auto* rect = canvas_scene.addRect(cx - 15.0, cy - 15.0, 30.0, 30.0, component_pen);
+      rect->setData(kCanvasObjectIdRole, QString::fromStdString(comp.id));
+      rect->setData(kCanvasObjectTypeRole, "Component");
+      rect->setToolTip(QString::fromStdString(comp.id + " (" + comp.part + ")"));
+    }
     
     auto* label = canvas_scene.addText(QString::fromStdString(comp.id));
     label->setDefaultTextColor(theme.board_label_color);
     label->setPos(cx - 15.0, cy - 35.0);
+    label->setData(kCanvasObjectIdRole, QString::fromStdString(comp.id));
+    label->setData(kCanvasObjectTypeRole, "Component");
+    label->setToolTip(QString::fromStdString(comp.id + " (" + comp.part + ")"));
   }
 
   // Render Schematic Wires

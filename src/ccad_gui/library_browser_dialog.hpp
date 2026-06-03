@@ -19,6 +19,14 @@ enum class LibraryType {
   Symbol
 };
 
+struct LibrarySelection {
+  std::string path;
+  std::string library_name;
+  std::string item_name;
+  std::string file_name;
+  std::string source_kind;
+};
+
 class LibraryBrowserDialog : public QDialog {
   Q_OBJECT
 
@@ -27,6 +35,7 @@ class LibraryBrowserDialog : public QDialog {
   explicit LibraryBrowserDialog(LibraryType type, const QString& cache_root, QWidget* parent = nullptr);
 
   std::optional<std::string> result() const;
+  std::optional<LibrarySelection> selection() const;
   bool selectFirstVisibleItemForTest();
 
  private slots:
@@ -42,6 +51,7 @@ class LibraryBrowserDialog : public QDialog {
   LibraryType type_;
   QString cache_root_;
   std::optional<std::string> result_;
+  std::optional<LibrarySelection> selection_;
 
   QLineEdit* search_edit_ = nullptr;
   QTreeWidget* component_list_ = nullptr;

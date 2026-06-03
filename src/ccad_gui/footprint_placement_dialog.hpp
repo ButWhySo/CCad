@@ -2,6 +2,7 @@
 
 #include "ccad_core/footprint.hpp"
 #include "ccad_core/model.hpp"
+#include "ccad_gui/library_browser_dialog.hpp"
 
 #include <QDialog>
 #include <QDoubleSpinBox>
@@ -16,6 +17,9 @@
 struct FootprintPlacementResult {
   ccad::Footprint footprint;
   std::string footprint_path;
+  std::string footprint_library_name;
+  std::string footprint_item_name;
+  std::string footprint_source_kind;
   std::string component_id;
   std::string layer_id;
   double rotation_deg = 0.0;
@@ -41,6 +45,7 @@ class FootprintPlacementDialog : public QDialog {
   QComboBox* layer_combo_ = nullptr;
   QDoubleSpinBox* rotation_spin_ = nullptr;
 
+  std::optional<LibrarySelection> selected_footprint_;
   std::optional<FootprintPlacementResult> result_;
   const ccad::Board& board_;
 };

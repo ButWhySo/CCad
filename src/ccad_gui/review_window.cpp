@@ -2790,6 +2790,11 @@ void ReviewWindow::renderReview(const ccad::ProjectReview& review) {
   const ccad::CanvasScene schematic_scene = ccad::buildSchematicScene(project_cache_);
   renderBoardCanvas(*schematic_scene_, schematic_scene);
 
+  if (!project_cache_.board.has_value() &&
+      (!project_cache_.components.empty() || !project_cache_.wires.empty())) {
+    editor_tabs_->setCurrentWidget(schematic_view_);
+  }
+
   if (auto* board_view = dynamic_cast<BoardCanvasView*>(canvas_view_)) board_view->zoomToFit();
   if (auto* schem_view = dynamic_cast<BoardCanvasView*>(schematic_view_)) schem_view->zoomToFit();
   statusBar()->showMessage(qstr(review.status));

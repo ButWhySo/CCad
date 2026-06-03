@@ -48,6 +48,8 @@ struct CanvasRenderTheme {
   QColor via_outline_color = QColor("#fde68a");
   QColor via_fill_color = QColor("#f59e0b");
   QColor board_label_color = QColor("#cbd5e1");
+  QColor symbol_body_color = QColor("#840000");
+  QColor symbol_pin_color = QColor("#008484");
   QColor error_marker_color = QColor("#ef4444");
   QColor warning_marker_color = QColor("#f59e0b");
 };
@@ -98,6 +100,12 @@ inline QColor colorForKiCadLayer(const CanvasRenderTheme& theme, const std::stri
   if (layer_id == "Dwgs.User" || layer_id == "Cmts.User" || layer_id.starts_with("Eco") ||
       layer_id.starts_with("User.")) {
     return theme.drawing_color;
+  }
+  if (layer_id == "symbol") {
+    return theme.symbol_body_color;
+  }
+  if (layer_id == "symbol_pin") {
+    return theme.symbol_pin_color;
   }
   return theme.track_color;
 }

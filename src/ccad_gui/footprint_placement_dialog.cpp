@@ -79,7 +79,11 @@ void FootprintPlacementDialog::populateLayers(const ccad::Board& board) {
 void FootprintPlacementDialog::browseFootprint() {
   LibraryBrowserDialog dialog(LibraryType::Footprint, this);
   if (dialog.exec() == QDialog::Accepted) {
-    if (auto result = dialog.result()) {
+    selected_footprint_.reset();
+    if (auto selection = dialog.selection()) {
+      selected_footprint_ = *selection;
+      footprint_path_edit_->setText(QString::fromStdString(selection->path));
+    } else if (auto result = dialog.result()) {
       footprint_path_edit_->setText(QString::fromStdString(*result));
     }
   }
@@ -92,6 +96,10 @@ void FootprintPlacementDialog::onAccept() {
     return;
   }
 
+  const std::string selected_path = fp_path.toStdString();
+  const LibrarySelection* selection =
+      (selected_footprint_.has_value() && selected_footprint_->path == selected_path) ? &*selected_footprint_
+                                                                                      : nullptr;
   QFileInfo fi(fp_path);
   QString baseName = fi.baseName();
   std::string prefix = "U";
@@ -140,7 +148,10 @@ void FootprintPlacementDialog::onAccept() {
 
     result_ = FootprintPlacementResult{
         .footprint = std::move(footprint),
-        .footprint_path = fp_path.toStdString(),
+        .footprint_path = selected_path,
+        .footprint_library_name = selection != nullptr ? selection->library_name : std::string{},
+        .footprint_item_name = selection != nullptr ? selection->item_name : baseName.toStdString(),
+        .footprint_source_kind = selection != nullptr ? selection->source_kind : std::string{},
         .component_id = comp_id,
         .layer_id = layer_id.toStdString(),
         .rotation_deg = rotation_spin_->value(),

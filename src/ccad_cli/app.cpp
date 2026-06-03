@@ -3,6 +3,7 @@
 #include "ccad_cli/lib_commands.hpp"
 #include "ccad_cli/pcb_commands.hpp"
 #include "ccad_cli/project_commands.hpp"
+#include "ccad_cli/sch_commands.hpp"
 #include "ccad_cli/agent_commands.hpp"
 #include "ccad_cli/common.hpp"
 #include "ccad_core/json.hpp"
@@ -62,6 +63,11 @@ const std::vector<CommandHelp>& commandHelp() {
                   .summary = "Place imported footprint pads onto a board",
                   .usage = "ccad pcb place-footprint --file <path> --footprint <path.json> "
                            "--component <id> --at-x-mm <n> --at-y-mm <n> --layer <id> "
+                           "[--rotation-deg <n>]"},
+      CommandHelp{.name = "sch place-symbol",
+                  .summary = "Place one converted KiCad symbol snapshot onto the schematic",
+                  .usage = "ccad sch place-symbol --file <path> --symbol <path.json> "
+                           "--component <id> --at-x-mm <n> --at-y-mm <n> "
                            "[--rotation-deg <n>]"},
       CommandHelp{.name = "pcb add-layer",
                   .summary = "Append one board layer to a board project",
@@ -304,6 +310,9 @@ int run(int argc, char** argv) {
   }
   if (command == "pcb") {
     return pcbCommand(args);
+  }
+  if (command == "sch" || command == "schematic") {
+    return schCommand(args);
   }
   if (command == "lib") {
     return libCommand(args);

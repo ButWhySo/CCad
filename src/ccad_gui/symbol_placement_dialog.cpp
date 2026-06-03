@@ -79,7 +79,11 @@ SymbolPlacementDialog::SymbolPlacementDialog(const ccad::Project& board, QWidget
 void SymbolPlacementDialog::browseSymbol() {
   LibraryBrowserDialog dialog(LibraryType::Symbol, this);
   if (dialog.exec() == QDialog::Accepted) {
-    if (auto result = dialog.result()) {
+    selected_symbol_.reset();
+    if (auto selection = dialog.selection()) {
+      selected_symbol_ = *selection;
+      symbol_path_edit_->setText(QString::fromStdString(selection->path));
+    } else if (auto result = dialog.result()) {
       symbol_path_edit_->setText(QString::fromStdString(*result));
     }
   }
@@ -92,6 +96,9 @@ void SymbolPlacementDialog::onAccept() {
     return;
   }
 
+  const std::string selected_path = fp_path.toStdString();
+  const LibrarySelection* selection =
+      (selected_symbol_.has_value() && selected_symbol_->path == selected_path) ? &*selected_symbol_ : nullptr;
   QFileInfo fi(fp_path);
   QString baseName = fi.baseName();
   std::string prefix = "U";
@@ -128,9 +135,17 @@ void SymbolPlacementDialog::onAccept() {
     ccad::Symbol symbol;
     if (fi.suffix().compare("kicad_sym", Qt::CaseInsensitive) == 0) {
       const std::vector<ccad::Symbol> symbols = ccad::importKiCadSymbolLibrary(buffer.str());
-      auto selected = std::find_if(symbols.begin(), symbols.end(), [](const ccad::Symbol& candidate) {
-        return !candidate.pins.empty();
-      });
+      const std::string requested_name = selection != nullptr ? selection->item_name : std::string{};
+      auto selected = requested_name.empty()
+                          ? symbols.end()
+                          : std::find_if(symbols.begin(), symbols.end(), [&](const ccad::Symbol& candidate) {
+                              return candidate.name == requested_name;
+                            });
+      if (selected == symbols.end()) {
+        selected = std::find_if(symbols.begin(), symbols.end(), [](const ccad::Symbol& candidate) {
+          return !candidate.pins.empty();
+        });
+      }
       if (selected == symbols.end() && !symbols.empty()) {
         selected = symbols.begin();
       }
@@ -149,7 +164,10 @@ void SymbolPlacementDialog::onAccept() {
 
     result_ = SymbolPlacementResult{
         .symbol = std::move(symbol),
-        .symbol_path = fp_path.toStdString(),
+        .symbol_path = selected_path,
+        .symbol_library_name = selection != nullptr ? selection->library_name : std::string{},
+        .symbol_item_name = selection != nullptr ? selection->item_name : baseName.toStdString(),
+        .symbol_source_kind = selection != nullptr ? selection->source_kind : std::string{},
         .component_id = comp_id,
         .layer_id = "",
         .x_mm = x_spin_->value(),

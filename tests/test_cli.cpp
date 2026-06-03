@@ -63,6 +63,8 @@ int main() {
   require(help_json.find("\"commands\"") != std::string::npos, "help json has commands");
   require(help_json.find("\"name\": \"pcb place-footprint\"") != std::string::npos,
           "help json describes footprint placement");
+  require(help_json.find("\"name\": \"sch place-symbol\"") != std::string::npos,
+          "help json describes schematic symbol placement");
   require(help_json.find("\"name\": \"pcb add-layer\"") != std::string::npos,
           "help json describes layer authoring");
   require(help_json.find("\"name\": \"pcb add-standard-layers\"") != std::string::npos,
@@ -129,6 +131,55 @@ int main() {
           "help json describes catalog search");
   require(help_json.find("--rotation-deg") != std::string::npos,
           "help json exposes rotation option");
+
+  const std::filesystem::path schematic_project_path = temp / "schematic.ccad.json";
+  require(run(quote(CCAD_BINARY) + " init --name schematic --out " +
+              quote(schematic_project_path)) == 0,
+          "schematic project init exits zero");
+  const std::filesystem::path diode_symbol_path = temp / "diode.ccad-symbol.json";
+  writeFile(diode_symbol_path,
+            "{\n"
+            "  \"name\": \"D\",\n"
+            "  \"extends\": \"\",\n"
+            "  \"pins\": [\n"
+            "    {\n"
+            "      \"name\": \"A\",\n"
+            "      \"number\": \"1\",\n"
+            "      \"electrical_type\": \"passive\",\n"
+            "      \"graphical_style\": \"line\",\n"
+            "      \"x_nm\": -3540000,\n"
+            "      \"y_nm\": 0,\n"
+            "      \"rotation_degrees\": 0,\n"
+            "      \"length_nm\": 2540000\n"
+            "    }\n"
+            "  ],\n"
+            "  \"properties\": [],\n"
+            "  \"rectangles\": [\n"
+            "    {\"start_x\": -1000000, \"start_y\": -1000000, \"end_x\": 1000000, "
+            "\"end_y\": 1000000, \"stroke_width\": 120000, \"fill_type\": \"none\"}\n"
+            "  ],\n"
+            "  \"lines\": [\n"
+            "    {\"start_x\": -1000000, \"start_y\": 0, \"end_x\": 1000000, "
+            "\"end_y\": 0, \"stroke_width\": 120000}\n"
+            "  ],\n"
+            "  \"arcs\": [],\n"
+            "  \"circles\": [],\n"
+            "  \"polylines\": [],\n"
+            "  \"texts\": []\n"
+            "}\n");
+  const std::string place_symbol_command =
+      quote(CCAD_BINARY) + " sch place-symbol --file " + quote(schematic_project_path) +
+      " --symbol " + quote(diode_symbol_path) +
+      " --component D1 --at-x-mm 20 --at-y-mm 15 --rotation-deg 90";
+  require(run(place_symbol_command) == 0, "sch place-symbol exits zero");
+  const std::string placed_symbol_project = readFile(schematic_project_path);
+  require(placed_symbol_project.find("\"id\": \"D1\"") != std::string::npos,
+          "sch place-symbol writes component id");
+  require(placed_symbol_project.find("\"symbol\"") != std::string::npos,
+          "sch place-symbol writes symbol snapshot");
+  require(placed_symbol_project.find("\"length_nm\": 2540000") != std::string::npos,
+          "sch place-symbol preserves pin lead length");
+  require(run(place_symbol_command) != 0, "sch place-symbol rejects duplicate component id");
 
   const std::filesystem::path board_project_path = temp / "board.ccad.json";
   const std::string board_init_command = quote(CCAD_BINARY) +
