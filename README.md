@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 176 complete on `sprint-176-ui-map-compact-deltas`.
+Progress counter: Phase 7 / 7, Sprint 177 complete on `sprint-177-agent-ui-interaction-tools`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -55,6 +55,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI unfinished toolbar tools now report visible planned-tool status and `future_tool_not_implemented` through the safe UI trigger contract instead of acting as silent stubs.
 - Native GUI left toolbar Show Layers and Show Properties actions now toggle their existing panels and report `panel_toggled` through the safe UI trigger contract.
 - Native GUI has a bottom Agent panel shell that can refresh the current UI-map JSON, trigger allowlisted safe UI actions by semantic ID, run live UI-map protocol queries from method/payload inputs, and expose itself as `panel:agent` for automation targeting.
+- Native GUI Agent-panel and live-socket protocol can now perform first-batch semantic UI interactions: dry-run click targeting, safe action/tab clicks, Agent-control focus and text entry, Escape cancellation, PCB canvas-object selection, selection inspection, and bounded UI epoch waits.
 - Native GUI left toolbar display controls now perform real view-state actions for grid visibility, polar cursor coordinates, inch units, full-window crosshair, ratsnest guides, net highlighting, and high-contrast display mode. Agent safe triggers return `display_state_toggled`, and UI-map action nodes expose checked state.
 - Native GUI selection inspector cleans up stale editor rows immediately during rapid multi-selection changes, so net highlight and display-mode workflows do not stack old pad or track editors in the properties panel.
 - Native GUI visual-validation harness timing is policy-guarded: single-preview screenshots settle for 7 seconds, while multi-target GUI validation uses a 5-second initial load and 800 ms per target/action.
@@ -695,7 +696,7 @@ $env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
 .\build-qt\ccad_gui.exe --ui-target-id .\artifacts\demos\sprint156-layer-color-final.ccad.json panel:agent .\artifacts\demos\ui-target-agent-panel.json
 ```
 
-The panel itself can refresh the current UI-map JSON, trigger allowlisted safe actions such as `action:zoom_in`, and run live protocol queries such as `ui.find`, `ui.map_compact`, `ui.hit_test`, or `ui.map_delta` through method/payload inputs. It is a local shell only; provider keys, BYOK routing, LangGraph orchestration, and OpenTelemetry/Langfuse tracing remain future integration work.
+The panel itself can refresh the current UI-map JSON, trigger allowlisted safe actions such as `action:zoom_in`, focus and type into its own agent controls through semantic IDs, select rendered PCB canvas objects, and run live protocol queries such as `ui.find`, `ui.map_compact`, `ui.hit_test`, `ui.click`, `ui.type_text`, `ui.get_selection`, or `ui.map_delta` through method/payload inputs. It is a local shell only; provider keys, BYOK routing, LangGraph orchestration, and OpenTelemetry/Langfuse tracing remain future integration work.
 
 Query one PCB board point:
 
@@ -770,7 +771,7 @@ Run the live UI-map local socket server:
 cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --serve-ui-map artifacts\demos\sprint162-pad-layer-rendering-fidelity-final.ccad.json ccad-ui-map-demo artifacts\demos\ccad-ui-map-demo.ready.txt"
 ```
 
-While the GUI stays open, connect to the named local socket and send one JSON request per line. Current methods are `{"method":"ui.map"}`, `{"method":"ui.map_compact","role":"action","limit":20}`, `{"method":"ui.role_summary"}`, `{"method":"ui.map_delta","since_epoch":0}`, `{"method":"ui.find","query":"add","role":"action","limit":8}`, `{"method":"ui.hit_test","x":120,"y":80}`, `{"method":"ui.target","id":"menu:file"}`, `{"method":"ui.target_board_point","x_mm":8,"y_mm":9}`, `{"method":"ui.nearest_canvas_object","canvas":"canvas:pcb","x_mm":8,"y_mm":9}`, `{"method":"ui.trigger_safe","id":"tab:agent"}`, `{"method":"ui.epoch"}`, `{"method":"ui.active_layer"}`, `{"method":"ui.set_active_layer","layer_id":"B.Cu"}`, `{"method":"ui.active_net"}`, and `{"method":"ui.set_active_net","net_id":"DC_NEG"}`. Responses are newline-delimited JSON values.
+While the GUI stays open, connect to the named local socket and send one JSON request per line. Current methods are `{"method":"ui.map"}`, `{"method":"ui.map_compact","role":"action","limit":20}`, `{"method":"ui.role_summary"}`, `{"method":"ui.map_delta","since_epoch":0}`, `{"method":"ui.find","query":"add","role":"action","limit":8}`, `{"method":"ui.hit_test","x":120,"y":80}`, `{"method":"ui.target","id":"menu:file"}`, `{"method":"ui.target_board_point","x_mm":8,"y_mm":9}`, `{"method":"ui.nearest_canvas_object","canvas":"canvas:pcb","x_mm":8,"y_mm":9}`, `{"method":"ui.click","id":"action:zoom_in","dry_run":true}`, `{"method":"ui.double_click","id":"menu:file","dry_run":true}`, `{"method":"ui.type_text","id":"control:agent_live_method","text":"ui.role_summary"}`, `{"method":"ui.key","key":"Escape"}`, `{"method":"ui.select_canvas_object","id":"U1.1"}`, `{"method":"ui.get_selection"}`, `{"method":"ui.wait_for_epoch","minimum_epoch":1,"timeout_ms":20}`, `{"method":"ui.trigger_safe","id":"tab:agent"}`, `{"method":"ui.epoch"}`, `{"method":"ui.active_layer"}`, `{"method":"ui.set_active_layer","layer_id":"B.Cu"}`, `{"method":"ui.active_net"}`, and `{"method":"ui.set_active_net","net_id":"DC_NEG"}`. Responses are newline-delimited JSON values.
 
 What it does:
 

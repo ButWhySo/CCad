@@ -344,6 +344,81 @@ int main(int argc, char** argv) {
   require(contains(nearest_pad, "\"scene_distance\":"),
           "nearest canvas-object query reports scene distance");
 
+  const QString dry_click =
+      window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:zoom_in\",\"dry_run\":true}");
+  require(contains(dry_click, "\"ok\":true"), "agent click dry run routes successfully");
+  require(contains(dry_click, "\"dry_run\":true"), "agent click dry run reports dry-run mode");
+  require(contains(dry_click, "\"id\":\"action:zoom_in\""),
+          "agent click dry run resolves target id");
+
+  const QString zoom_click =
+      window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:zoom_in\"}");
+  require(contains(zoom_click, "\"ok\":true"), "agent click routes to safe actions");
+  require(contains(zoom_click, "\"performed\":true"), "agent click performs safe action");
+  require(contains(zoom_click, "\"reason\":\"triggered\""),
+          "agent click preserves safe-trigger reason");
+
+  const QString unsafe_click = window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:save\"}");
+  require(contains(unsafe_click, "\"ok\":true"), "agent click reports unsafe actions structurally");
+  require(contains(unsafe_click, "\"performed\":false"),
+          "agent click refuses unsafe actions");
+  require(contains(unsafe_click, "\"reason\":\"unsafe_action_requires_human_or_kernel_tool\""),
+          "agent click keeps safe-trigger refusal reason");
+
+  const QString double_click =
+      window.runAgentUiQueryJson("ui.double_click", "{\"id\":\"menu:file\",\"dry_run\":true}");
+  require(contains(double_click, "\"ok\":true"), "agent double-click dry run routes");
+  require(contains(double_click, "\"dry_run\":true"), "agent double-click supports dry run");
+  require(contains(double_click, "\"id\":\"menu:file\""),
+          "agent double-click resolves target id");
+
+  const QString agent_tab_click = window.runAgentUiQueryJson("ui.click", "{\"id\":\"tab:agent\"}");
+  require(contains(agent_tab_click, "\"performed\":true"),
+          "agent click can select the Agent tab");
+  require(contains(agent_tab_click, "\"reason\":\"tab_selected\""),
+          "agent click uses tab safe-trigger behavior");
+  const QString type_method = window.runAgentUiQueryJson(
+      "ui.type_text", "{\"id\":\"control:agent_live_method\",\"text\":\"ui.role_summary\"}");
+  require(contains(type_method, "\"performed\":true"),
+          "agent type_text writes into the live method control");
+  require(contains(type_method, "\"value\":\"ui.role_summary\""),
+          "agent type_text reports live method value");
+  const QString type_payload = window.runAgentUiQueryJson(
+      "ui.type_text", "{\"id\":\"control:agent_live_payload\",\"text\":\"{}\"}");
+  require(contains(type_payload, "\"performed\":true"),
+          "agent type_text writes into the live payload control");
+  const QString live_query_click =
+      window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_live_query\"}");
+  require(contains(live_query_click, "\"performed\":true"),
+          "agent click can trigger the Agent panel live-query button");
+  require(contains(live_query_click, "\"reason\":\"button_clicked\""),
+          "agent click reports direct button click");
+  window.triggerSafeUiActionJson("tab:pcb");
+
+  window.triggerSafeUiActionJson("action:add_tracks");
+  const QString escape_key = window.runAgentUiQueryJson("ui.key", "{\"key\":\"Escape\"}");
+  require(contains(escape_key, "\"performed\":true"), "agent key sends Escape");
+  require(contains(escape_key, "\"reason\":\"escape_cancelled\""),
+          "agent key reports Escape cancellation");
+  require(contains(escape_key, "\"mode\":\"default\""), "agent key returns to default mode");
+
+  const QString select_pad = window.runAgentUiQueryJson(
+      "ui.select_canvas_object", "{\"id\":\"U1.1\",\"canvas\":\"canvas:pcb\"}");
+  require(contains(select_pad, "\"performed\":true"),
+          "agent can select a canvas object by stable id");
+  require(contains(select_pad, "\"id\":\"canvas_object:U1.1\""),
+          "agent canvas selection reports selected node id");
+  const QString selection = window.runAgentUiQueryJson("ui.get_selection", "{}");
+  require(contains(selection, "\"count\":1"), "agent selection query reports selected count");
+  require(contains(selection, "\"object_id\":\"U1.1\""),
+          "agent selection query reports selected object id");
+
+  const QString epoch_wait = window.runAgentUiQueryJson(
+      "ui.wait_for_epoch",
+      QString("{\"minimum_epoch\":%1,\"timeout_ms\":20}").arg(initial_epoch));
+  require(contains(epoch_wait, "\"ok\":true"), "agent wait-for-epoch routes");
+  require(contains(epoch_wait, "\"reached\":true"), "agent wait-for-epoch reaches current epoch");
+
   const QString unknown = window.uiTargetJsonById("action:not_real");
   require(contains(unknown, "\"found\":false"), "unknown target id fails explicitly");
   require(contains(unknown, "\"reason\":\"unknown_id\""), "unknown target id reports reason");
@@ -518,6 +593,29 @@ int main(int argc, char** argv) {
           "live server returns successful ui.nearest_canvas_object");
   require(contains(nearest_response, "\"id\":\"canvas_object:U1.1\""),
           "live server nearest canvas-object resolves the first pad");
+  const QString click_response =
+      requestLine(socket, "{\"method\":\"ui.click\",\"id\":\"action:zoom_out\",\"dry_run\":true}");
+  require(contains(click_response, "\"ok\":true"),
+          "live server returns successful ui.click");
+  require(contains(click_response, "\"dry_run\":true"),
+          "live server ui.click supports dry run");
+  const QString select_response =
+      requestLine(socket, "{\"method\":\"ui.select_canvas_object\",\"id\":\"U1.1\"}");
+  require(contains(select_response, "\"ok\":true"),
+          "live server returns successful ui.select_canvas_object");
+  require(contains(select_response, "\"performed\":true"),
+          "live server selects a canvas object");
+  const QString selection_response = requestLine(socket, "{\"method\":\"ui.get_selection\"}");
+  require(contains(selection_response, "\"ok\":true"),
+          "live server returns successful ui.get_selection");
+  require(contains(selection_response, "\"object_id\":\"U1.1\""),
+          "live server selection query reports selected object id");
+  const QString epoch_wait_response =
+      requestLine(socket, "{\"method\":\"ui.wait_for_epoch\",\"minimum_epoch\":1,\"timeout_ms\":20}");
+  require(contains(epoch_wait_response, "\"ok\":true"),
+          "live server returns successful ui.wait_for_epoch");
+  require(contains(epoch_wait_response, "\"reached\":true"),
+          "live server wait-for-epoch reaches current epoch");
   const QString find_response =
       requestLine(socket, "{\"method\":\"ui.find\",\"query\":\"add\",\"role\":\"action\",\"limit\":5}");
   require(contains(find_response, "\"ok\":true"), "live server returns successful ui.find");
