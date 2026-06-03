@@ -15,6 +15,7 @@
 #include <QMainWindow>
 #include <QPointF>
 #include <QString>
+#include <QStringList>
 
 #include <filesystem>
 #include <optional>
@@ -91,6 +92,7 @@ class ReviewWindow final : public QMainWindow {
   QString uiSelectCanvasObjectJson(const QString& id, const QString& canvas_id);
   QString uiSelectionJson() const;
   QString uiWaitForEpochJson(int minimum_epoch, int timeout_ms);
+  QString uiWaitForDeltaJson(int since_epoch, int timeout_ms);
   QString triggerSafeUiActionJson(const QString& id);
   QString runAgentUiQueryJson(const QString& method, const QString& payload);
   QString activePcbLayerJson() const;
@@ -167,7 +169,8 @@ class ReviewWindow final : public QMainWindow {
   void pushUndoSnapshot();
   void restoreProjectSnapshot(const ccad::Project& snapshot);
   void updateUndoRedoActions();
-  void markUiMapChanged();
+  QString buildUiMapJson() const;
+  void markUiMapChanged(const QStringList& dirty_ids = {}, const QStringList& dirty_roles = {});
   void updateAgentPanelContext();
 
   AgentPanel* agent_panel_ = nullptr;
@@ -219,4 +222,8 @@ class ReviewWindow final : public QMainWindow {
   QPointF interaction_start_mouse_pos_;
   bool interaction_has_anchor_ = false;
   int ui_map_epoch_ = 1;
+  mutable QStringList dirty_ui_map_ids_;
+  mutable QStringList dirty_ui_map_roles_;
+  mutable int dirty_ui_map_since_epoch_ = 1;
+  mutable bool dirty_ui_map_full_snapshot_ = true;
 };

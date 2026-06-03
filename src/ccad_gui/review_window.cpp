@@ -350,6 +350,36 @@ CompactUiMapNodes compactUiMapNodesFromMapObject(const QJsonObject& map_object,
   return result;
 }
 
+void appendUnique(QStringList& values, const QString& value) {
+  const QString trimmed = value.trimmed();
+  if (trimmed.isEmpty() || values.contains(trimmed)) {
+    return;
+  }
+  values.append(trimmed);
+}
+
+CompactUiMapNodes compactUiMapNodesFromDirtySet(const QJsonObject& map_object,
+                                                const QStringList& dirty_ids,
+                                                const QStringList& dirty_roles) {
+  CompactUiMapNodes result;
+  const QJsonArray nodes = map_object.value("nodes").toArray();
+  result.total_node_count = static_cast<int>(nodes.size());
+  for (const QJsonValue& value : nodes) {
+    if (!value.isObject()) {
+      continue;
+    }
+    const QJsonObject node = value.toObject();
+    const QString id = node.value("id").toString();
+    const QString role = node.value("role").toString();
+    if (!dirty_ids.contains(id) && !dirty_roles.contains(role)) {
+      continue;
+    }
+    ++result.match_count;
+    result.nodes.append(compactUiMapNode(node));
+  }
+  return result;
+}
+
 std::optional<QRect> globalRectFromUiMapNode(const QJsonObject& node) {
   const QJsonValue rect_value = node.value("global_rect");
   if (!rect_value.isObject()) {
@@ -1381,7 +1411,7 @@ ReviewWindow::ReviewWindow() {
     }
     active_pcb_layer_id_ = layer_id_string;
     updateActiveLayerStatus();
-    markUiMapChanged();
+    markUiMapChanged({"control:active_pcb_layer"}, {"control"});
   });
   connect(active_net_selector_, &QComboBox::currentIndexChanged, this, [this](const int index) {
     if (active_net_selector_ == nullptr || index < 0 || !project_cache_.board.has_value()) {
@@ -1397,7 +1427,7 @@ ReviewWindow::ReviewWindow() {
     }
     active_pcb_net_id_ = net_id_string;
     updateActiveNetStatus();
-    markUiMapChanged();
+    markUiMapChanged({"control:active_pcb_net"}, {"control"});
   });
 
   auto* left_toolbar = new QToolBar("Left Toolbar", this);
@@ -1495,10 +1525,18 @@ ReviewWindow::ReviewWindow() {
             const bool pcb_tab = index == 0;
             add_footprint_action->setVisible(pcb_tab);
             add_symbol_action->setVisible(!pcb_tab);
-            markUiMapChanged();
+            markUiMapChanged({"tab:pcb", "tab:schematic", "action:add_footprint",
+                              "action:add_symbol", "canvas:pcb", "canvas:schematic"},
+                             {"tab", "action", "canvas"});
           });
   connect(bottom_tabs_, &QTabWidget::currentChanged, this,
-          [this](int) { markUiMapChanged(); });
+          [this](int) {
+            markUiMapChanged({"tab:diagnostics", "tab:transactions", "tab:agent",
+                              "panel:diagnostics", "panel:transactions", "panel:agent",
+                              "control:agent_live_method", "control:agent_live_payload",
+                              "action:agent_live_query"},
+                             {"tab", "panel", "control", "action"});
+          });
   add_footprint_action->setVisible(true);
   add_symbol_action->setVisible(false);
 
@@ -1526,7 +1564,8 @@ ReviewWindow::ReviewWindow() {
     statusBar()->showMessage(object_browser_->isVisible() ? "Layers / Objects panel shown"
                                                           : "Layers / Objects panel hidden",
                              5000);
-    markUiMapChanged();
+    markUiMapChanged({"action:layers_manager", "panel:layers_objects"},
+                     {"action", "panel"});
   });
   connect(show_properties_action, &QAction::triggered, this, [this]() {
     if (selection_inspector_ == nullptr) {
@@ -1540,7 +1579,8 @@ ReviewWindow::ReviewWindow() {
     statusBar()->showMessage(selection_inspector_->isVisible() ? "Properties panel shown"
                                                               : "Properties panel hidden",
                              5000);
-    markUiMapChanged();
+    markUiMapChanged({"action:part_properties", "panel:properties"},
+                     {"action", "panel"});
   });
 
   connect(canvas_scene_, &QGraphicsScene::selectionChanged, this,
@@ -2283,8 +2323,22 @@ void ReviewWindow::renderCanvas(const ccad::CanvasScene& scene,
   markUiMapChanged();
 }
 
-void ReviewWindow::markUiMapChanged() {
+void ReviewWindow::markUiMapChanged(const QStringList& dirty_ids, const QStringList& dirty_roles) {
+  if (dirty_ui_map_ids_.isEmpty() && dirty_ui_map_roles_.isEmpty() &&
+      !dirty_ui_map_full_snapshot_) {
+    dirty_ui_map_since_epoch_ = ui_map_epoch_;
+  }
   ++ui_map_epoch_;
+  if (dirty_ids.isEmpty() && dirty_roles.isEmpty()) {
+    dirty_ui_map_full_snapshot_ = true;
+  } else {
+    for (const QString& id : dirty_ids) {
+      appendUnique(dirty_ui_map_ids_, id);
+    }
+    for (const QString& role : dirty_roles) {
+      appendUnique(dirty_ui_map_roles_, role);
+    }
+  }
   updateAgentPanelContext();
 }
 
@@ -2409,7 +2463,7 @@ QString ReviewWindow::setActivePcbLayerForAutomation(const QString& layer_id) {
   active_pcb_layer_id_ = layer_id_string;
   rebuildActiveLayerSelector();
   updateActiveLayerStatus();
-  markUiMapChanged();
+  markUiMapChanged({"control:active_pcb_layer"}, {"control"});
   return result(true, "set", qstr(layer->id), qstr(layer->name));
 }
 
@@ -2510,11 +2564,11 @@ QString ReviewWindow::setActivePcbNetForAutomation(const QString& net_id) {
   active_pcb_net_id_ = net_id_string;
   rebuildActiveNetSelector();
   updateActiveNetStatus();
-  markUiMapChanged();
+  markUiMapChanged({"control:active_pcb_net"}, {"control"});
   return result(true, "set", qstr(active_pcb_net_id_));
 }
 
-QString ReviewWindow::uiMapJson() const {
+QString ReviewWindow::buildUiMapJson() const {
   QStringList nodes;
   const QRect root_global_rect(mapToGlobal(QPoint(0, 0)), size());
   nodes << QString("{\"id\":\"window:review\",\"role\":\"window\",\"label\":%1,"
@@ -2800,8 +2854,17 @@ QString ReviewWindow::uiMapJson() const {
       .arg(nodes.join(','));
 }
 
+QString ReviewWindow::uiMapJson() const {
+  const QString map = buildUiMapJson();
+  dirty_ui_map_ids_.clear();
+  dirty_ui_map_roles_.clear();
+  dirty_ui_map_since_epoch_ = ui_map_epoch_;
+  dirty_ui_map_full_snapshot_ = false;
+  return map;
+}
+
 QString ReviewWindow::uiMapCompactJson(const QString& role, const int limit) const {
-  const std::optional<QJsonObject> map_object = parseJsonObject(uiMapJson());
+  const std::optional<QJsonObject> map_object = parseJsonObject(buildUiMapJson());
   const QString trimmed_role = role.trimmed();
   const int normalized_limit = normalizedUiMapLimit(limit);
   if (!map_object.has_value()) {
@@ -2833,7 +2896,7 @@ QString ReviewWindow::uiMapCompactJson(const QString& role, const int limit) con
 }
 
 QString ReviewWindow::uiRoleSummaryJson() const {
-  const std::optional<QJsonObject> map_object = parseJsonObject(uiMapJson());
+  const std::optional<QJsonObject> map_object = parseJsonObject(buildUiMapJson());
   QJsonObject response;
   response.insert("schema_version", 1);
   response.insert("ui_epoch", ui_map_epoch_);
@@ -2884,27 +2947,46 @@ QString ReviewWindow::uiRoleSummaryJson() const {
 }
 
 QString ReviewWindow::uiMapDeltaJson(const int since_epoch) const {
-  const QString map = uiMapJson();
+  const QString map = buildUiMapJson();
   const std::optional<QJsonObject> map_object = parseJsonObject(map);
   const int total_node_count =
       map_object.has_value() ? map_object->value("nodes").toArray().size() : map.count("\"id\":");
   if (since_epoch >= ui_map_epoch_) {
     return QString("{\"schema_version\":1,\"since_epoch\":%1,\"ui_epoch\":%2,"
-                   "\"changed\":false,\"total_node_count\":%3,\"nodes\":[]}\n")
+                   "\"changed\":false,\"total_node_count\":%3,\"dirty_node_count\":0,"
+                   "\"changed_roles\":[],\"nodes\":[]}\n")
         .arg(since_epoch)
         .arg(ui_map_epoch_)
         .arg(total_node_count);
   }
+  const bool needs_full_snapshot = dirty_ui_map_full_snapshot_ ||
+                                   since_epoch < dirty_ui_map_since_epoch_ ||
+                                   (dirty_ui_map_ids_.isEmpty() && dirty_ui_map_roles_.isEmpty());
   const CompactUiMapNodes compact =
       map_object.has_value()
-          ? compactUiMapNodesFromMapObject(*map_object, {}, std::numeric_limits<int>::max())
+          ? (needs_full_snapshot
+                 ? compactUiMapNodesFromMapObject(*map_object, {}, std::numeric_limits<int>::max())
+                 : compactUiMapNodesFromDirtySet(*map_object, dirty_ui_map_ids_,
+                                                dirty_ui_map_roles_))
           : CompactUiMapNodes{};
+  QJsonArray dirty_ids;
+  for (const QString& id : dirty_ui_map_ids_) {
+    dirty_ids.append(id);
+  }
+  QJsonArray changed_roles;
+  for (const QString& role : dirty_ui_map_roles_) {
+    changed_roles.append(role);
+  }
   QJsonObject response;
   response.insert("schema_version", 1);
   response.insert("since_epoch", since_epoch);
   response.insert("ui_epoch", ui_map_epoch_);
   response.insert("changed", true);
   response.insert("total_node_count", total_node_count);
+  response.insert("full_snapshot", needs_full_snapshot);
+  response.insert("dirty_node_count", compact.match_count);
+  response.insert("changed_roles", changed_roles);
+  response.insert("dirty_ids", dirty_ids);
   response.insert("truncated", false);
   response.insert("nodes", compact.nodes);
   if (!map_object.has_value()) {
@@ -2914,7 +2996,7 @@ QString ReviewWindow::uiMapDeltaJson(const int since_epoch) const {
 }
 
 QString ReviewWindow::uiFindJson(const QString& query, const QString& role, const int limit) const {
-  const QString map = uiMapJson();
+  const QString map = buildUiMapJson();
   QJsonParseError error;
   const QJsonDocument document = QJsonDocument::fromJson(map.toUtf8(), &error);
   if (error.error != QJsonParseError::NoError || !document.isObject()) {
@@ -2982,7 +3064,7 @@ QString ReviewWindow::uiFindJson(const QString& query, const QString& role, cons
 }
 
 QString ReviewWindow::uiHitTestJson(const int logical_x, const int logical_y) const {
-  const std::optional<QJsonObject> map_object = parseJsonObject(uiMapJson());
+  const std::optional<QJsonObject> map_object = parseJsonObject(buildUiMapJson());
   QJsonObject response;
   response.insert("schema_version", 1);
   response.insert("ui_epoch", ui_map_epoch_);
@@ -3461,10 +3543,18 @@ QString ReviewWindow::uiNearestCanvasObjectJson(const double x_mm, const double 
   const QPointF scene_point = boardPositionToScene(*project_cache_.board, x_mm, y_mm);
   struct Candidate {
     double distance = 0.0;
+    int cell_x = 0;
+    int cell_y = 0;
     QJsonObject node;
   };
-  std::vector<Candidate> candidates;
+  std::vector<Candidate> indexed_candidates;
   const double device_pixel_ratio = screenDevicePixelRatio(canvas_view_);
+  constexpr double grid_cell_size = 80.0;
+  const auto cellFor = [](const double value) {
+    return static_cast<int>(std::floor(value / grid_cell_size));
+  };
+  const int query_cell_x = cellFor(scene_point.x());
+  const int query_cell_y = cellFor(scene_point.y());
   for (const QGraphicsItem* item : canvas_scene_->items()) {
     if (item == nullptr) {
       continue;
@@ -3480,6 +3570,8 @@ QString ReviewWindow::uiNearestCanvasObjectJson(const double x_mm, const double 
     const QRectF scene_rect = item->sceneBoundingRect();
     const QPointF delta = scene_rect.center() - scene_point;
     const double distance = std::hypot(delta.x(), delta.y());
+    const int cell_x = cellFor(scene_rect.center().x());
+    const int cell_y = cellFor(scene_rect.center().y());
     const QPoint target =
         canvas_view_->viewport()->mapToGlobal(canvas_view_->mapFromScene(scene_rect.center()));
     QJsonObject node;
@@ -3501,24 +3593,45 @@ QString ReviewWindow::uiNearestCanvasObjectJson(const double x_mm, const double 
     copyStringFieldIfPresent(
         node, QJsonObject{{"route_request_id", canvasObjectRouteRequestId(*item)}},
         "route_request_id");
-    candidates.push_back(Candidate{distance, node});
+    indexed_candidates.push_back(Candidate{distance, cell_x, cell_y, node});
   }
-  std::sort(candidates.begin(), candidates.end(), [](const Candidate& left,
-                                                     const Candidate& right) {
-    if (left.distance == right.distance) {
-      return left.node.value("id").toString() < right.node.value("id").toString();
+
+  std::vector<const Candidate*> candidates;
+  for (int radius = 0; radius <= 8 && candidates.empty(); ++radius) {
+    for (const Candidate& candidate : indexed_candidates) {
+      const int dx = std::abs(candidate.cell_x - query_cell_x);
+      const int dy = std::abs(candidate.cell_y - query_cell_y);
+      if (dx <= radius && dy <= radius) {
+        candidates.push_back(&candidate);
+      }
     }
-    return left.distance < right.distance;
+  }
+  if (candidates.empty()) {
+    for (const Candidate& candidate : indexed_candidates) {
+      candidates.push_back(&candidate);
+    }
+  }
+
+  std::sort(candidates.begin(), candidates.end(), [](const Candidate* left,
+                                                     const Candidate* right) {
+    if (left->distance == right->distance) {
+      return left->node.value("id").toString() < right->node.value("id").toString();
+    }
+    return left->distance < right->distance;
   });
 
   QJsonArray candidate_nodes;
-  for (const Candidate& candidate : candidates) {
+  for (const Candidate* candidate : candidates) {
     if (candidate_nodes.size() >= normalized_limit) {
       break;
     }
-    candidate_nodes.append(candidate.node);
+    candidate_nodes.append(candidate->node);
   }
-  if (candidates.empty()) {
+  response.insert("index_kind", "uniform_grid");
+  response.insert("grid_cell_size_scene_units", grid_cell_size);
+  response.insert("indexed_object_count", static_cast<int>(indexed_candidates.size()));
+  response.insert("scanned_candidate_count", static_cast<int>(candidates.size()));
+  if (indexed_candidates.empty()) {
     response.insert("found", false);
     response.insert("reason", "no_canvas_objects");
     response.insert("candidate_count", 0);
@@ -3526,7 +3639,7 @@ QString ReviewWindow::uiNearestCanvasObjectJson(const double x_mm, const double 
     response.insert("candidates", candidate_nodes);
     return jsonObjectLine(response);
   }
-  const QJsonObject nearest = candidates.front().node;
+  const QJsonObject nearest = candidates.front()->node;
   response.insert("found", true);
   response.insert("id", nearest.value("id"));
   response.insert("role", nearest.value("role"));
@@ -3534,7 +3647,7 @@ QString ReviewWindow::uiNearestCanvasObjectJson(const double x_mm, const double 
   response.insert("type", nearest.value("type"));
   response.insert("scene_distance", nearest.value("scene_distance"));
   response.insert("target", nearest.value("target"));
-  response.insert("candidate_count", static_cast<int>(candidates.size()));
+  response.insert("candidate_count", static_cast<int>(indexed_candidates.size()));
   response.insert("truncated", candidates.size() > static_cast<std::size_t>(candidate_nodes.size()));
   response.insert("candidates", candidate_nodes);
   return jsonObjectLine(response);
@@ -4437,6 +4550,20 @@ QString ReviewWindow::uiWaitForEpochJson(const int minimum_epoch, const int time
   return jsonObjectLine(response);
 }
 
+QString ReviewWindow::uiWaitForDeltaJson(const int since_epoch, const int timeout_ms) {
+  const int normalized_timeout_ms = std::clamp(timeout_ms < 0 ? 0 : timeout_ms, 0, 5000);
+  QElapsedTimer timer;
+  timer.start();
+  while (ui_map_epoch_ <= since_epoch && timer.elapsed() < normalized_timeout_ms) {
+    QApplication::processEvents(QEventLoop::AllEvents, 10);
+  }
+  QJsonObject response = parsedJsonObjectOrRaw(uiMapDeltaJson(since_epoch));
+  response.insert("timeout_ms", normalized_timeout_ms);
+  response.insert("elapsed_ms", static_cast<int>(timer.elapsed()));
+  response.insert("reached", ui_map_epoch_ > since_epoch);
+  return jsonObjectLine(response);
+}
+
 QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& payload) {
   const QString trimmed_method = method.trimmed();
   const std::optional<QJsonObject> request = parseJsonObject(payload.isEmpty() ? "{}" : payload);
@@ -4787,6 +4914,16 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
     return agentQueryResponse(trimmed_method, true, {},
                               uiWaitForEpochJson(minimum_epoch, timeout_ms));
   }
+  if (trimmed_method == "ui.wait_for_delta") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const int since_epoch = object->value("since_epoch").toInt(ui_map_epoch_);
+    const int timeout_ms = object->value("timeout_ms").toInt(0);
+    return agentQueryResponse(trimmed_method, true, {},
+                              uiWaitForDeltaJson(since_epoch, timeout_ms));
+  }
   if (trimmed_method == "ui.active_layer") {
     return agentQueryResponse(trimmed_method, true, {}, activePcbLayerJson());
   }
@@ -4848,7 +4985,9 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
       return result(id, false, "disabled");
     }
     editor_tabs_->setCurrentIndex(index);
-    markUiMapChanged();
+    markUiMapChanged({"tab:pcb", "tab:schematic", "action:add_footprint",
+                      "action:add_symbol", "canvas:pcb", "canvas:schematic"},
+                     {"tab", "action", "canvas"});
     return result(id, true, "tab_selected");
   }
 
@@ -4861,7 +5000,11 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
       return result(id, false, "disabled");
     }
     bottom_tabs_->setCurrentIndex(index);
-    markUiMapChanged();
+    markUiMapChanged({"tab:diagnostics", "tab:transactions", "tab:agent",
+                      "panel:diagnostics", "panel:transactions", "panel:agent",
+                      "control:agent_live_method", "control:agent_live_payload",
+                      "action:agent_live_query"},
+                     {"tab", "panel", "control", "action"});
     return result(id, true, "tab_selected");
   }
 
