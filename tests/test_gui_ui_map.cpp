@@ -255,6 +255,34 @@ int main(int argc, char** argv) {
   require(!contains(stale_delta, "\"map\":"),
           "stale UI map delta does not embed a full nested map");
 
+  const int before_agent_tab_epoch = extractInt(window.uiMapJson(), "\"ui_epoch\":");
+  const QString agent_tab_delta_trigger = window.triggerSafeUiActionJson("tab:agent");
+  require(contains(agent_tab_delta_trigger, "\"performed\":true"),
+          "tab trigger switches to Agent tab before delta check");
+  const QString agent_tab_delta = window.uiMapDeltaJson(before_agent_tab_epoch);
+  require(contains(agent_tab_delta, "\"changed\":true"),
+          "dirty UI map delta reports Agent tab change");
+  require(contains(agent_tab_delta, "\"dirty_node_count\":"),
+          "dirty UI map delta reports dirty node count");
+  require(contains(agent_tab_delta, "\"changed_roles\":["),
+          "dirty UI map delta reports changed roles");
+  require(contains(agent_tab_delta, "\"id\":\"tab:agent\""),
+          "dirty UI map delta includes the changed Agent tab");
+  require(contains(agent_tab_delta, "\"id\":\"panel:agent\""),
+          "dirty UI map delta includes the changed Agent panel");
+  require(!contains(agent_tab_delta, "\"id\":\"canvas_object:U1.1\""),
+          "dirty UI map delta avoids unrelated canvas objects");
+
+  const QString wait_delta_current = window.runAgentUiQueryJson(
+      "ui.wait_for_delta",
+      QString("{\"since_epoch\":%1,\"timeout_ms\":1}").arg(extractInt(window.uiMapJson(),
+                                                                     "\"ui_epoch\":")));
+  require(contains(wait_delta_current, "\"ok\":true"),
+          "agent wait-for-delta query routes successfully");
+  require(contains(wait_delta_current, "\"changed\":false"),
+          "agent wait-for-delta returns unchanged for the current epoch");
+  window.triggerSafeUiActionJson("tab:pcb");
+
   const QString compact_actions = window.uiMapCompactJson("action", 80);
   require(contains(compact_actions, "\"role\":\"action\""),
           "compact UI map includes action nodes");
@@ -370,6 +398,12 @@ int main(int argc, char** argv) {
           "nearest canvas-object query resolves the pad at the board point");
   require(contains(nearest_pad, "\"scene_distance\":"),
           "nearest canvas-object query reports scene distance");
+  require(contains(nearest_pad, "\"index_kind\":\"uniform_grid\""),
+          "nearest canvas-object query reports indexed lookup strategy");
+  require(contains(nearest_pad, "\"indexed_object_count\":"),
+          "nearest canvas-object query reports indexed object count");
+  require(contains(nearest_pad, "\"scanned_candidate_count\":"),
+          "nearest canvas-object query reports filtered candidate scan count");
 
   const QString dry_click =
       window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:zoom_in\",\"dry_run\":true}");
@@ -886,6 +920,14 @@ int main(int argc, char** argv) {
           "live server returns successful ui.nearest_canvas_object");
   require(contains(nearest_response, "\"id\":\"canvas_object:U1.1\""),
           "live server nearest canvas-object resolves the first pad");
+  require(contains(nearest_response, "\"index_kind\":\"uniform_grid\""),
+          "live server nearest canvas-object reports indexed lookup");
+  const QString wait_delta_response =
+      requestLine(socket, "{\"method\":\"ui.wait_for_delta\",\"since_epoch\":999999,\"timeout_ms\":1}");
+  require(contains(wait_delta_response, "\"ok\":true"),
+          "live server returns successful ui.wait_for_delta");
+  require(contains(wait_delta_response, "\"changed\":false"),
+          "live server wait-for-delta can return unchanged without closing the socket");
   const QString click_response =
       requestLine(socket, "{\"method\":\"ui.click\",\"id\":\"action:zoom_out\",\"dry_run\":true}");
   require(contains(click_response, "\"ok\":true"),

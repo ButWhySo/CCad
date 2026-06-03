@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 180
-- Branch: `sprint-180-agent-project-evidence-tools`
+- Sprint: 181
+- Branch: `sprint-181-ui-map-dirty-index`
 - Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
@@ -46,6 +46,7 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - **Sprint 178 (Map-Driven Viewport Input)** is complete on `sprint-178-map-driven-viewport-input`. It adds `ui.canvas_click` and `ui.canvas_drag` to the shared Agent-panel/live-socket dispatcher so agents can resolve PCB board-space coordinates and send real Qt viewport mouse events through the same GUI tool event path as human clicks. Focused `gui_ui_map` and `gui_agent_panel` tests passed, official visual validation produced `artifacts/screenshots/sprint178-map-driven-viewport-input-final-20260603-115354.png`, the target harness proved semantic coordinates in `artifacts/screenshots/sprint178-map-driven-viewport-input-targets-final-target-sequence.json`, and the full build plus CTest gate passed 36 of 36 tests.
 - **Sprint 179 (Agent PCB Workflow Tools)** is complete on `sprint-179-agent-pcb-workflow-tools`. It adds higher-level Agent-panel/live-socket workflow methods `ui.current_tool`, `ui.cancel_tool`, `ui.place_via`, `ui.route_track`, `ui.add_zone`, `ui.add_keepout`, `ui.draw_graphic`, `ui.place_text`, and `ui.delete_object`, all composed from safe action activation plus real viewport input or canvas-object selection. Focused `gui_ui_map` and `gui_agent_panel` tests passed, official visual validation produced `artifacts/screenshots/sprint179-agent-pcb-workflow-tools-final-20260603-121454.png`, the target harness proved semantic coordinates in `artifacts/screenshots/sprint179-agent-pcb-workflow-tools-targets-final-target-sequence.json`, and the full build plus CTest gate passed 36 of 36 tests.
 - **Sprint 180 (Agent Project Evidence Tools)** is complete on `sprint-180-agent-project-evidence-tools`. It adds `ui.screenshot`, `project.context`, `project.object_counts`, `project.review`, `project.erc`, `project.drc`, and `project.diagnostics` to the shared Agent-panel/live-socket dispatcher so agents can capture app-owned GUI evidence and query loaded-project health without shelling out or scraping files. Focused `gui_ui_map`, `gui_agent_panel`, and `review` tests passed, official visual validation produced `artifacts/screenshots/sprint180-agent-project-evidence-tools-final-20260603-123654.png`, the target harness proved semantic coordinates in `artifacts/screenshots/sprint180-agent-project-evidence-tools-targets-final-target-sequence.json`, and the full build plus CTest gate passed 36 of 36 tests.
+- **Sprint 181 (UI Map Dirty Deltas and Canvas Index)** is complete on `sprint-181-ui-map-dirty-index`. It upgrades the Agent-panel/live-socket UI-map surface with first-slice dirty semantic IDs, changed roles, bounded `ui.wait_for_delta`, and indexed `ui.nearest_canvas_object` metadata over rendered selectable canvas objects. Focused `gui_ui_map` and `gui_agent_panel` tests passed, official visual validation produced `artifacts/screenshots/sprint181-ui-map-dirty-index-final-20260603-131018.png`, the target harness proved semantic coordinates in `artifacts/screenshots/sprint181-ui-map-dirty-index-targets-final-target-sequence.json`, and the full build plus CTest gate passed 36 of 36 tests.
 
 ## Phase Roadmap
 
