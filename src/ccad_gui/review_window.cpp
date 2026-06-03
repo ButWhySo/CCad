@@ -22,6 +22,7 @@
 #include <QAction>
 #include <QApplication>
 #include <QComboBox>
+#include <QDateTime>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
@@ -49,6 +50,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPixmap>
 #include <QKeySequence>
 #include <QScrollArea>
 #include <QScreen>
@@ -419,6 +421,118 @@ void copyBoardObjectCounts(QJsonObject& destination, const QJsonObject& source) 
       destination.insert(key, source.value(key));
     }
   }
+}
+
+QJsonObject diagnosticJsonObject(const ccad::Diagnostic& diagnostic) {
+  QJsonObject object;
+  object.insert("severity", qstr(diagnostic.severity));
+  object.insert("code", qstr(diagnostic.code));
+  object.insert("message", qstr(diagnostic.message));
+  object.insert("object_id", qstr(diagnostic.object_id));
+  return object;
+}
+
+QJsonArray diagnosticsJsonArray(const std::vector<ccad::Diagnostic>& diagnostics) {
+  QJsonArray array;
+  for (const ccad::Diagnostic& diagnostic : diagnostics) {
+    array.append(diagnosticJsonObject(diagnostic));
+  }
+  return array;
+}
+
+void insertDiagnosticCounts(QJsonObject& response,
+                            const std::vector<ccad::Diagnostic>& diagnostics) {
+  int error_count = 0;
+  int warning_count = 0;
+  for (const ccad::Diagnostic& diagnostic : diagnostics) {
+    if (diagnostic.severity == "error") {
+      ++error_count;
+    } else if (diagnostic.severity == "warning") {
+      ++warning_count;
+    }
+  }
+  response.insert("diagnostic_count", static_cast<int>(diagnostics.size()));
+  response.insert("error_count", error_count);
+  response.insert("warning_count", warning_count);
+}
+
+QJsonObject projectObjectCountsObject(const ccad::Project& project) {
+  QJsonObject response;
+  response.insert("project_id", qstr(project.id));
+  response.insert("project_name", qstr(project.name));
+  response.insert("project_schema_version", project.schema_version);
+  response.insert("component_count", static_cast<int>(project.components.size()));
+  response.insert("net_count", static_cast<int>(project.nets.size()));
+  response.insert("wire_count", static_cast<int>(project.wires.size()));
+  response.insert("constraint_count", static_cast<int>(project.constraints.size()));
+  response.insert("has_board", project.board.has_value());
+  insertBoardObjectCounts(response, project.board);
+  if (project.board.has_value()) {
+    int copper_layer_count = 0;
+    int visible_layer_count = 0;
+    for (const ccad::Layer& layer : project.board->layers) {
+      if (layer.kind == "copper") {
+        ++copper_layer_count;
+      }
+      if (layer.visible) {
+        ++visible_layer_count;
+      }
+    }
+    response.insert("layer_count", static_cast<int>(project.board->layers.size()));
+    response.insert("copper_layer_count", copper_layer_count);
+    response.insert("visible_layer_count", visible_layer_count);
+    response.insert("route_request_count",
+                    static_cast<int>(project.board->route_requests.size()));
+    response.insert("placement_region_count",
+                    static_cast<int>(project.board->placement_regions.size()));
+  } else {
+    response.insert("layer_count", 0);
+    response.insert("copper_layer_count", 0);
+    response.insert("visible_layer_count", 0);
+    response.insert("route_request_count", 0);
+    response.insert("placement_region_count", 0);
+  }
+  return response;
+}
+
+QJsonObject projectReviewJsonObject(const ccad::ProjectReview& review) {
+  QJsonObject response;
+  response.insert("project_id", qstr(review.project_id));
+  response.insert("project_name", qstr(review.project_name));
+  response.insert("component_count", static_cast<int>(review.component_count));
+  response.insert("net_count", static_cast<int>(review.net_count));
+  response.insert("constraint_count", static_cast<int>(review.constraint_count));
+  response.insert("has_board", review.has_board);
+  response.insert("board_origin_x_nm", QString::number(review.board_origin_x_nm));
+  response.insert("board_origin_y_nm", QString::number(review.board_origin_y_nm));
+  response.insert("board_width_nm", QString::number(review.board_width_nm));
+  response.insert("board_height_nm", QString::number(review.board_height_nm));
+  response.insert("copper_clearance_nm", QString::number(review.copper_clearance_nm));
+  response.insert("min_track_width_nm", QString::number(review.min_track_width_nm));
+  response.insert("min_via_annular_ring_nm",
+                  QString::number(review.min_via_annular_ring_nm));
+  response.insert("layer_count", static_cast<int>(review.layer_count));
+  response.insert("copper_layer_count", static_cast<int>(review.copper_layer_count));
+  response.insert("non_copper_layer_count", static_cast<int>(review.non_copper_layer_count));
+  response.insert("visible_layer_count", static_cast<int>(review.visible_layer_count));
+  response.insert("hidden_layer_count", static_cast<int>(review.hidden_layer_count));
+  response.insert("pad_count", static_cast<int>(review.pad_count));
+  response.insert("via_count", static_cast<int>(review.via_count));
+  response.insert("track_count", static_cast<int>(review.track_count));
+  response.insert("placement_region_count",
+                  static_cast<int>(review.placement_region_count));
+  response.insert("keepout_count", static_cast<int>(review.keepout_count));
+  response.insert("route_request_count", static_cast<int>(review.route_request_count));
+  response.insert("routed_segment_count", static_cast<int>(review.routed_segment_count));
+  response.insert("open_route_count", static_cast<int>(review.open_route_count));
+  response.insert("partial_route_count", static_cast<int>(review.partial_route_count));
+  response.insert("completed_route_count", static_cast<int>(review.completed_route_count));
+  response.insert("diagnostic_count", static_cast<int>(review.diagnostics.size()));
+  response.insert("error_count", static_cast<int>(review.error_count));
+  response.insert("warning_count", static_cast<int>(review.warning_count));
+  response.insert("status", qstr(review.status));
+  response.insert("diagnostics", diagnosticsJsonArray(review.diagnostics));
+  return response;
 }
 
 std::filesystem::path kicadSourceRoot() {
@@ -3807,6 +3921,124 @@ QString ReviewWindow::uiCancelToolJson() {
   return jsonObjectLine(response);
 }
 
+QString ReviewWindow::uiScreenshotJson(const QString& path, const bool dry_run) {
+  QApplication::processEvents();
+  std::filesystem::path target_path;
+  const QString trimmed_path = path.trimmed();
+  if (trimmed_path.isEmpty()) {
+    const QString timestamp =
+        QDateTime::currentDateTimeUtc().toString("yyyyMMdd-hhmmss-zzz");
+    target_path = std::filesystem::current_path() / "artifacts" / "screenshots" /
+                  ("agent-ui-screenshot-" + timestamp.toStdString() + ".png");
+  } else {
+    target_path = std::filesystem::path(trimmed_path.toStdString());
+  }
+
+  const QPixmap pixmap = grab();
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("path", qstr(target_path.generic_string()));
+  response.insert("format", "png");
+  response.insert("dry_run", dry_run);
+  response.insert("width", pixmap.width());
+  response.insert("height", pixmap.height());
+  response.insert("device_pixel_ratio", pixmap.devicePixelRatio());
+
+  if (pixmap.isNull()) {
+    response.insert("performed", false);
+    response.insert("reason", "grab_failed");
+    return jsonObjectLine(response);
+  }
+  if (dry_run) {
+    response.insert("performed", false);
+    response.insert("reason", "dry_run");
+    return jsonObjectLine(response);
+  }
+
+  const std::filesystem::path parent = target_path.parent_path();
+  if (!parent.empty()) {
+    std::error_code error;
+    std::filesystem::create_directories(parent, error);
+    if (error) {
+      response.insert("performed", false);
+      response.insert("reason", "directory_create_failed");
+      response.insert("error", qstr(error.message()));
+      return jsonObjectLine(response);
+    }
+  }
+
+  const bool saved = pixmap.save(qstr(target_path.generic_string()), "PNG");
+  response.insert("performed", saved);
+  response.insert("reason", saved ? "saved" : "save_failed");
+  return jsonObjectLine(response);
+}
+
+QString ReviewWindow::projectContextJson() const {
+  QJsonObject response = projectObjectCountsObject(project_cache_);
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("project_path", qstr(current_path_.generic_string()));
+  response.insert("active_pcb_layer_id", qstr(activePcbLayerOrDefault()));
+  response.insert("active_pcb_net_id", qstr(activePcbNetOrDefault()));
+  response.insert("interaction_mode", interactionModeName(interaction_mode_));
+  response.insert("has_interaction_anchor", interaction_has_anchor_);
+  return jsonObjectLine(response);
+}
+
+QString ReviewWindow::projectObjectCountsJson() const {
+  QJsonObject response = projectObjectCountsObject(project_cache_);
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  return jsonObjectLine(response);
+}
+
+QString ReviewWindow::projectReviewJson() const {
+  QJsonObject response = projectReviewJsonObject(ccad::buildReview(project_cache_));
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  return jsonObjectLine(response);
+}
+
+QString ReviewWindow::projectErcJson() const {
+  const std::vector<ccad::Diagnostic> diagnostics = ccad::runErc(project_cache_);
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("engine", "erc");
+  insertDiagnosticCounts(response, diagnostics);
+  response.insert("diagnostics", diagnosticsJsonArray(diagnostics));
+  return jsonObjectLine(response);
+}
+
+QString ReviewWindow::projectDrcJson() const {
+  const std::vector<ccad::Diagnostic> diagnostics = ccad::runDrc(project_cache_);
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("engine", "drc");
+  insertDiagnosticCounts(response, diagnostics);
+  response.insert("diagnostics", diagnosticsJsonArray(diagnostics));
+  return jsonObjectLine(response);
+}
+
+QString ReviewWindow::projectDiagnosticsJson() const {
+  const std::vector<ccad::Diagnostic> erc_diagnostics = ccad::runErc(project_cache_);
+  const std::vector<ccad::Diagnostic> drc_diagnostics = ccad::runDrc(project_cache_);
+  std::vector<ccad::Diagnostic> combined = erc_diagnostics;
+  combined.insert(combined.end(), drc_diagnostics.begin(), drc_diagnostics.end());
+
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("erc_count", static_cast<int>(erc_diagnostics.size()));
+  response.insert("drc_count", static_cast<int>(drc_diagnostics.size()));
+  insertDiagnosticCounts(response, combined);
+  response.insert("erc_diagnostics", diagnosticsJsonArray(erc_diagnostics));
+  response.insert("drc_diagnostics", diagnosticsJsonArray(drc_diagnostics));
+  return jsonObjectLine(response);
+}
+
 QString ReviewWindow::uiWorkflowPlaceViaJson(const double x_mm, const double y_mm,
                                              const bool dry_run, const QString& canvas_id) {
   QJsonObject response;
@@ -4217,6 +4449,33 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
 
   if (trimmed_method == "ui.map") {
     return agentQueryResponse(trimmed_method, true, {}, uiMapJson());
+  }
+  if (trimmed_method == "ui.screenshot") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    return agentQueryResponse(trimmed_method, true, {},
+                              uiScreenshotJson(object->value("path").toString(),
+                                               object->value("dry_run").toBool(false)));
+  }
+  if (trimmed_method == "project.context") {
+    return agentQueryResponse(trimmed_method, true, {}, projectContextJson());
+  }
+  if (trimmed_method == "project.object_counts") {
+    return agentQueryResponse(trimmed_method, true, {}, projectObjectCountsJson());
+  }
+  if (trimmed_method == "project.review") {
+    return agentQueryResponse(trimmed_method, true, {}, projectReviewJson());
+  }
+  if (trimmed_method == "project.erc") {
+    return agentQueryResponse(trimmed_method, true, {}, projectErcJson());
+  }
+  if (trimmed_method == "project.drc") {
+    return agentQueryResponse(trimmed_method, true, {}, projectDrcJson());
+  }
+  if (trimmed_method == "project.diagnostics") {
+    return agentQueryResponse(trimmed_method, true, {}, projectDiagnosticsJson());
   }
   if (trimmed_method == "ui.map_compact") {
     const std::optional<QJsonObject> object = requireObject();
