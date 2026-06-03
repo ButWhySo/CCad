@@ -8,6 +8,15 @@
 
 namespace ccad {
 
+struct KiCadSymbolLibraryItem {
+  std::string name;
+  std::string extends;
+};
+
+// Lists top-level symbols in a KiCad symbol library without expanding all
+// graphics into CCad symbol objects. Nested unit symbols are not returned.
+std::vector<KiCadSymbolLibraryItem> listKiCadSymbolLibraryItems(const std::string& kicad_sym_content);
+
 // Parses a KiCad symbol library file and returns all symbols found in it.
 std::vector<Symbol> importKiCadSymbolLibrary(const std::string& kicad_sym_content);
 

@@ -65,6 +65,31 @@ void testLocalSymbolInheritance() {
   require(child.pins.at(1).name == "A", "derived symbol inherits pin name");
 }
 
+void testTopLevelSymbolLibraryItemListing() {
+  const std::string content =
+      "(kicad_symbol_lib\n"
+      "  (version 20240101)\n"
+      "  (generator ccad-test)\n"
+      "  (symbol \"Parent\"\n"
+      "    (property \"Reference\" \"U\" (id 0) (at 0 0 0))\n"
+      "    (symbol \"Parent_1_1\"\n"
+      "      (pin passive line (at 0 0 0) (length 2.54) (name \"A\") (number \"1\"))\n"
+      "    )\n"
+      "  )\n"
+      "  (symbol \"Derived\"\n"
+      "    (extends \"Parent\")\n"
+      "    (property \"Reference\" \"U\" (id 0) (at 0 0 0))\n"
+      "  )\n"
+      ")\n";
+
+  const auto items = ccad::listKiCadSymbolLibraryItems(content);
+  require(items.size() == 2, "top-level item listing ignores nested unit symbols");
+  require(items.at(0).name == "Parent", "first top-level symbol is listed");
+  require(items.at(0).extends.empty(), "parent has no extends metadata");
+  require(items.at(1).name == "Derived", "second top-level symbol is listed");
+  require(items.at(1).extends == "Parent", "extends metadata is listed");
+}
+
 int main(int argc, char** argv) {
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0] << " <file.kicad_sym>\n";
@@ -77,6 +102,7 @@ int main(int argc, char** argv) {
     for (const auto& sym : symbols) {
       std::cout << "Symbol: " << sym.name << " (Pins: " << sym.pins.size() << ")\n";
     }
+    testTopLevelSymbolLibraryItemListing();
     testLocalSymbolInheritance();
     return 0;
   } catch (const std::exception& e) {

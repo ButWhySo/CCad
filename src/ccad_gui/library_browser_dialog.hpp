@@ -25,6 +25,7 @@ struct LibrarySelection {
   std::string item_name;
   std::string file_name;
   std::string source_kind;
+  std::string extends;
 };
 
 class LibraryBrowserDialog : public QDialog {
@@ -45,7 +46,7 @@ class LibraryBrowserDialog : public QDialog {
  private:
   void loadComponents();
   void updateDetails();
-  void renderSelectedPreview(const QString& path);
+  void renderSelectedPreview(const QString& path, const QString& item_name);
   void clearPreview(const QString& message);
 
   LibraryType type_;
