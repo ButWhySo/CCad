@@ -309,6 +309,53 @@ int main(int argc, char** argv) {
   require(contains(role_summary, "\"total_node_count\":"),
           "UI role summary reports total node count");
 
+  const QString index_stats = window.runAgentUiQueryJson("ui.index_stats", "{}");
+  require(contains(index_stats, "\"ok\":true"), "agent UI index stats route successfully");
+  require(contains(index_stats, "\"cache_state\":\"fresh\""),
+          "agent UI index stats report a fresh cache");
+  require(contains(index_stats, "\"id_index_count\":"),
+          "agent UI index stats report ID index size");
+  require(contains(index_stats, "\"role_index_count\":"),
+          "agent UI index stats report role index size");
+  require(contains(index_stats, "\"canvas_object_count\":"),
+          "agent UI index stats report canvas-object count");
+
+  const QString indexed_node =
+      window.runAgentUiQueryJson("ui.get_node", "{\"id\":\"tab:agent\"}");
+  require(contains(indexed_node, "\"ok\":true"), "agent indexed node query routes");
+  require(contains(indexed_node, "\"found\":true"), "agent indexed node query finds a node");
+  require(contains(indexed_node, "\"lookup_kind\":\"id_index\""),
+          "agent indexed node query reports ID-index lookup");
+  require(contains(indexed_node, "\"id\":\"tab:agent\""),
+          "agent indexed node query returns the requested node");
+
+  const QString role_nodes =
+      window.runAgentUiQueryJson("ui.nodes_by_role", "{\"role\":\"action\",\"limit\":80}");
+  require(contains(role_nodes, "\"ok\":true"), "agent role-index query routes");
+  require(contains(role_nodes, "\"lookup_kind\":\"role_index\""),
+          "agent role-index query reports role-index lookup");
+  require(contains(role_nodes, "\"id\":\"action:add_footprint\""),
+          "agent role-index query returns action nodes");
+
+  const int before_watch_epoch = extractInt(window.uiMapJson(), "\"ui_epoch\":");
+  window.triggerSafeUiActionJson("tab:diagnostics");
+  window.triggerSafeUiActionJson("tab:agent");
+  const QString watched_delta = window.runAgentUiQueryJson(
+      "ui.watch_delta",
+      QString("{\"since_epoch\":%1,\"timeout_ms\":1,\"max_events\":4}").arg(before_watch_epoch));
+  require(contains(watched_delta, "\"ok\":true"), "agent watch-delta query routes");
+  require(contains(watched_delta, "\"event_count\":2"),
+          "agent watch-delta returns bounded dirty event history");
+  require(contains(watched_delta, "\"from_epoch\":"),
+          "agent watch-delta reports per-event source epochs");
+  require(contains(watched_delta, "\"id\":\"tab:agent\""),
+          "agent watch-delta includes Agent tab dirty nodes");
+  const QString aggregate_delta = window.uiMapDeltaJson(before_watch_epoch);
+  require(contains(aggregate_delta, "\"dirty_event_count\":2"),
+          "UI map delta reports aggregated dirty event count");
+  require(contains(aggregate_delta, "\"id\":\"tab:agent\""),
+          "UI map delta aggregates dirty history since the requested epoch");
+
   const QString find_actions = window.uiFindJson("add", "action", 6);
   require(contains(find_actions, "\"match_count\":"), "UI map find reports match count");
   require(contains(find_actions, "\"id\":\"action:add_footprint\""),
@@ -907,6 +954,33 @@ int main(int argc, char** argv) {
           "live server returns successful ui.role_summary");
   require(contains(role_summary_response, "\"role\":\"action\""),
           "live server role summary includes action role");
+  const QString index_stats_response = requestLine(socket, "{\"method\":\"ui.index_stats\"}");
+  require(contains(index_stats_response, "\"ok\":true"),
+          "live server returns successful ui.index_stats");
+  require(contains(index_stats_response, "\"cache_state\":\"fresh\""),
+          "live server UI index stats report a fresh cache");
+  const QString get_node_response =
+      requestLine(socket, "{\"method\":\"ui.get_node\",\"id\":\"menu:file\"}");
+  require(contains(get_node_response, "\"ok\":true"),
+          "live server returns successful ui.get_node");
+  require(contains(get_node_response, "\"lookup_kind\":\"id_index\""),
+          "live server ui.get_node uses the ID index");
+  require(contains(get_node_response, "\"id\":\"menu:file\""),
+          "live server ui.get_node returns the requested menu node");
+  const QString nodes_by_role_response =
+      requestLine(socket, "{\"method\":\"ui.nodes_by_role\",\"role\":\"action\",\"limit\":80}");
+  require(contains(nodes_by_role_response, "\"ok\":true"),
+          "live server returns successful ui.nodes_by_role");
+  require(contains(nodes_by_role_response, "\"lookup_kind\":\"role_index\""),
+          "live server ui.nodes_by_role uses the role index");
+  require(contains(nodes_by_role_response, "\"id\":\"action:add_footprint\""),
+          "live server ui.nodes_by_role returns action nodes");
+  const QString watch_delta_response = requestLine(
+      socket, "{\"method\":\"ui.watch_delta\",\"since_epoch\":0,\"timeout_ms\":1,\"max_events\":2}");
+  require(contains(watch_delta_response, "\"ok\":true"),
+          "live server returns successful ui.watch_delta");
+  require(contains(watch_delta_response, "\"event_count\":"),
+          "live server ui.watch_delta reports event count");
   const QString hit_response = requestLine(
       socket,
       QString("{\"method\":\"ui.hit_test\",\"x\":%1,\"y\":%2}").arg(file_menu_x).arg(file_menu_y));

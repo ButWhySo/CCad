@@ -14,6 +14,9 @@
 #include <QLabel>
 #include <QMainWindow>
 #include <QPointF>
+#include <QHash>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QString>
 #include <QStringList>
 
@@ -54,6 +57,10 @@ class ReviewWindow final : public QMainWindow {
   QString uiMapCompactJson(const QString& role, int limit) const;
   QString uiRoleSummaryJson() const;
   QString uiMapDeltaJson(int since_epoch) const;
+  QString uiIndexStatsJson() const;
+  QString uiGetNodeJson(const QString& id) const;
+  QString uiNodesByRoleJson(const QString& role, int limit) const;
+  QString uiWatchDeltaJson(int since_epoch, int timeout_ms, int max_events);
   QString uiFindJson(const QString& query, const QString& role, int limit) const;
   QString uiHitTestJson(int logical_x, int logical_y) const;
   QString validateUiMapTargetsJson(bool move_cursor) const;
@@ -170,8 +177,26 @@ class ReviewWindow final : public QMainWindow {
   void restoreProjectSnapshot(const ccad::Project& snapshot);
   void updateUndoRedoActions();
   QString buildUiMapJson() const;
+  void rebuildUiMapIndexCache() const;
   void markUiMapChanged(const QStringList& dirty_ids = {}, const QStringList& dirty_roles = {});
   void updateAgentPanelContext();
+
+  struct UiMapDirtyRecord {
+    int from_epoch = 0;
+    int ui_epoch = 0;
+    QStringList dirty_ids;
+    QStringList dirty_roles;
+    bool full_snapshot = false;
+  };
+
+  struct UiMapIndexCache {
+    int ui_epoch = -1;
+    QJsonObject map_object;
+    QHash<QString, QJsonObject> by_id;
+    QHash<QString, QJsonArray> by_role;
+    int node_count = 0;
+    bool valid = false;
+  };
 
   AgentPanel* agent_panel_ = nullptr;
   ProjectSummaryPanel* project_summary_ = nullptr;
@@ -226,4 +251,6 @@ class ReviewWindow final : public QMainWindow {
   mutable QStringList dirty_ui_map_roles_;
   mutable int dirty_ui_map_since_epoch_ = 1;
   mutable bool dirty_ui_map_full_snapshot_ = true;
+  mutable UiMapIndexCache ui_map_index_cache_;
+  mutable std::vector<UiMapDirtyRecord> ui_map_dirty_history_;
 };

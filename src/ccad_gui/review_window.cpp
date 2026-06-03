@@ -358,6 +358,20 @@ void appendUnique(QStringList& values, const QString& value) {
   values.append(trimmed);
 }
 
+void appendUniqueList(QStringList& values, const QStringList& additions) {
+  for (const QString& value : additions) {
+    appendUnique(values, value);
+  }
+}
+
+QJsonArray stringListToJsonArray(const QStringList& values) {
+  QJsonArray array;
+  for (const QString& value : values) {
+    array.append(value);
+  }
+  return array;
+}
+
 CompactUiMapNodes compactUiMapNodesFromDirtySet(const QJsonObject& map_object,
                                                 const QStringList& dirty_ids,
                                                 const QStringList& dirty_roles) {
@@ -2324,20 +2338,33 @@ void ReviewWindow::renderCanvas(const ccad::CanvasScene& scene,
 }
 
 void ReviewWindow::markUiMapChanged(const QStringList& dirty_ids, const QStringList& dirty_roles) {
+  const int from_epoch = ui_map_epoch_;
   if (dirty_ui_map_ids_.isEmpty() && dirty_ui_map_roles_.isEmpty() &&
       !dirty_ui_map_full_snapshot_) {
     dirty_ui_map_since_epoch_ = ui_map_epoch_;
   }
   ++ui_map_epoch_;
+  UiMapDirtyRecord record;
+  record.from_epoch = from_epoch;
+  record.ui_epoch = ui_map_epoch_;
+  record.full_snapshot = dirty_ids.isEmpty() && dirty_roles.isEmpty();
+  record.dirty_ids = dirty_ids;
+  record.dirty_roles = dirty_roles;
+  ui_map_dirty_history_.push_back(record);
+  constexpr std::size_t max_dirty_history = 128;
+  if (ui_map_dirty_history_.size() > max_dirty_history) {
+    ui_map_dirty_history_.erase(ui_map_dirty_history_.begin(),
+                                ui_map_dirty_history_.begin() +
+                                    static_cast<std::ptrdiff_t>(
+                                        ui_map_dirty_history_.size() - max_dirty_history));
+  }
+  ui_map_index_cache_.ui_epoch = -1;
+  ui_map_index_cache_.valid = false;
   if (dirty_ids.isEmpty() && dirty_roles.isEmpty()) {
     dirty_ui_map_full_snapshot_ = true;
   } else {
-    for (const QString& id : dirty_ids) {
-      appendUnique(dirty_ui_map_ids_, id);
-    }
-    for (const QString& role : dirty_roles) {
-      appendUnique(dirty_ui_map_roles_, role);
-    }
+    appendUniqueList(dirty_ui_map_ids_, dirty_ids);
+    appendUniqueList(dirty_ui_map_roles_, dirty_roles);
   }
   updateAgentPanelContext();
 }
@@ -2946,6 +2973,112 @@ QString ReviewWindow::uiRoleSummaryJson() const {
   return jsonObjectLine(response);
 }
 
+void ReviewWindow::rebuildUiMapIndexCache() const {
+  if (ui_map_index_cache_.valid && ui_map_index_cache_.ui_epoch == ui_map_epoch_) {
+    return;
+  }
+  UiMapIndexCache rebuilt;
+  rebuilt.ui_epoch = ui_map_epoch_;
+  const std::optional<QJsonObject> map_object = parseJsonObject(buildUiMapJson());
+  if (!map_object.has_value()) {
+    rebuilt.valid = false;
+    ui_map_index_cache_ = rebuilt;
+    return;
+  }
+  rebuilt.map_object = *map_object;
+  const QJsonArray nodes = map_object->value("nodes").toArray();
+  rebuilt.node_count = static_cast<int>(nodes.size());
+  for (const QJsonValue& value : nodes) {
+    if (!value.isObject()) {
+      continue;
+    }
+    const QJsonObject compact = compactUiMapNode(value.toObject());
+    const QString id = compact.value("id").toString();
+    const QString role = compact.value("role").toString();
+    if (!id.isEmpty()) {
+      rebuilt.by_id.insert(id, compact);
+    }
+    if (!role.isEmpty()) {
+      QJsonArray role_nodes = rebuilt.by_role.value(role);
+      role_nodes.append(compact);
+      rebuilt.by_role.insert(role, role_nodes);
+    }
+  }
+  rebuilt.valid = true;
+  ui_map_index_cache_ = rebuilt;
+}
+
+QString ReviewWindow::uiIndexStatsJson() const {
+  rebuildUiMapIndexCache();
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("cache_epoch", ui_map_index_cache_.ui_epoch);
+  response.insert("cache_state", ui_map_index_cache_.valid ? "fresh" : "invalid");
+  response.insert("node_count", ui_map_index_cache_.node_count);
+  response.insert("id_index_count", ui_map_index_cache_.by_id.size());
+  response.insert("role_index_count", ui_map_index_cache_.by_role.size());
+  response.insert("action_count", ui_map_index_cache_.by_role.value("action").size());
+  response.insert("control_count", ui_map_index_cache_.by_role.value("control").size());
+  response.insert("canvas_object_count",
+                  ui_map_index_cache_.by_role.value("canvas_object").size());
+  return jsonObjectLine(response);
+}
+
+QString ReviewWindow::uiGetNodeJson(const QString& id) const {
+  rebuildUiMapIndexCache();
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("lookup_kind", "id_index");
+  response.insert("id", id.trimmed());
+  if (!ui_map_index_cache_.valid) {
+    response.insert("found", false);
+    response.insert("reason", "map_parse_failed");
+    return jsonObjectLine(response);
+  }
+  const QString trimmed_id = id.trimmed();
+  if (trimmed_id.isEmpty() || !ui_map_index_cache_.by_id.contains(trimmed_id)) {
+    response.insert("found", false);
+    response.insert("reason", trimmed_id.isEmpty() ? "missing_id" : "node_not_found");
+    return jsonObjectLine(response);
+  }
+  response.insert("found", true);
+  response.insert("node", ui_map_index_cache_.by_id.value(trimmed_id));
+  return jsonObjectLine(response);
+}
+
+QString ReviewWindow::uiNodesByRoleJson(const QString& role, const int limit) const {
+  rebuildUiMapIndexCache();
+  const QString trimmed_role = role.trimmed();
+  const int normalized_limit = normalizedUiMapLimit(limit, 50);
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("lookup_kind", "role_index");
+  response.insert("role", trimmed_role);
+  response.insert("limit", normalized_limit);
+  if (!ui_map_index_cache_.valid) {
+    response.insert("match_count", 0);
+    response.insert("truncated", false);
+    response.insert("nodes", QJsonArray{});
+    response.insert("reason", "map_parse_failed");
+    return jsonObjectLine(response);
+  }
+  const QJsonArray role_nodes = ui_map_index_cache_.by_role.value(trimmed_role);
+  QJsonArray limited_nodes;
+  for (const QJsonValue& value : role_nodes) {
+    if (limited_nodes.size() >= normalized_limit) {
+      break;
+    }
+    limited_nodes.append(value);
+  }
+  response.insert("match_count", role_nodes.size());
+  response.insert("truncated", role_nodes.size() > limited_nodes.size());
+  response.insert("nodes", limited_nodes);
+  return jsonObjectLine(response);
+}
+
 QString ReviewWindow::uiMapDeltaJson(const int since_epoch) const {
   const QString map = buildUiMapJson();
   const std::optional<QJsonObject> map_object = parseJsonObject(map);
@@ -2954,29 +3087,37 @@ QString ReviewWindow::uiMapDeltaJson(const int since_epoch) const {
   if (since_epoch >= ui_map_epoch_) {
     return QString("{\"schema_version\":1,\"since_epoch\":%1,\"ui_epoch\":%2,"
                    "\"changed\":false,\"total_node_count\":%3,\"dirty_node_count\":0,"
-                   "\"changed_roles\":[],\"nodes\":[]}\n")
+                   "\"dirty_event_count\":0,\"changed_roles\":[],\"nodes\":[]}\n")
         .arg(since_epoch)
         .arg(ui_map_epoch_)
         .arg(total_node_count);
   }
+  QStringList dirty_ids;
+  QStringList dirty_roles;
+  int dirty_event_count = 0;
+  bool event_history_full_snapshot = false;
+  for (const UiMapDirtyRecord& record : ui_map_dirty_history_) {
+    if (record.ui_epoch <= since_epoch) {
+      continue;
+    }
+    ++dirty_event_count;
+    event_history_full_snapshot = event_history_full_snapshot || record.full_snapshot;
+    appendUniqueList(dirty_ids, record.dirty_ids);
+    appendUniqueList(dirty_roles, record.dirty_roles);
+  }
+  const bool history_too_old = !ui_map_dirty_history_.empty() &&
+                               since_epoch < ui_map_dirty_history_.front().from_epoch;
   const bool needs_full_snapshot = dirty_ui_map_full_snapshot_ ||
+                                   event_history_full_snapshot ||
+                                   history_too_old ||
                                    since_epoch < dirty_ui_map_since_epoch_ ||
-                                   (dirty_ui_map_ids_.isEmpty() && dirty_ui_map_roles_.isEmpty());
+                                   (dirty_ids.isEmpty() && dirty_roles.isEmpty());
   const CompactUiMapNodes compact =
       map_object.has_value()
           ? (needs_full_snapshot
                  ? compactUiMapNodesFromMapObject(*map_object, {}, std::numeric_limits<int>::max())
-                 : compactUiMapNodesFromDirtySet(*map_object, dirty_ui_map_ids_,
-                                                dirty_ui_map_roles_))
+                 : compactUiMapNodesFromDirtySet(*map_object, dirty_ids, dirty_roles))
           : CompactUiMapNodes{};
-  QJsonArray dirty_ids;
-  for (const QString& id : dirty_ui_map_ids_) {
-    dirty_ids.append(id);
-  }
-  QJsonArray changed_roles;
-  for (const QString& role : dirty_ui_map_roles_) {
-    changed_roles.append(role);
-  }
   QJsonObject response;
   response.insert("schema_version", 1);
   response.insert("since_epoch", since_epoch);
@@ -2985,8 +3126,9 @@ QString ReviewWindow::uiMapDeltaJson(const int since_epoch) const {
   response.insert("total_node_count", total_node_count);
   response.insert("full_snapshot", needs_full_snapshot);
   response.insert("dirty_node_count", compact.match_count);
-  response.insert("changed_roles", changed_roles);
-  response.insert("dirty_ids", dirty_ids);
+  response.insert("dirty_event_count", dirty_event_count);
+  response.insert("changed_roles", stringListToJsonArray(dirty_roles));
+  response.insert("dirty_ids", stringListToJsonArray(dirty_ids));
   response.insert("truncated", false);
   response.insert("nodes", compact.nodes);
   if (!map_object.has_value()) {
@@ -4564,6 +4706,84 @@ QString ReviewWindow::uiWaitForDeltaJson(const int since_epoch, const int timeou
   return jsonObjectLine(response);
 }
 
+QString ReviewWindow::uiWatchDeltaJson(const int since_epoch, const int timeout_ms,
+                                        const int max_events) {
+  const int normalized_timeout_ms = std::clamp(timeout_ms < 0 ? 0 : timeout_ms, 0, 5000);
+  const int normalized_max_events = std::clamp(max_events <= 0 ? 10 : max_events, 1, 50);
+  QElapsedTimer timer;
+  timer.start();
+  const auto hasNewerRecord = [this, since_epoch]() {
+    for (const UiMapDirtyRecord& record : ui_map_dirty_history_) {
+      if (record.ui_epoch > since_epoch) {
+        return true;
+      }
+    }
+    return false;
+  };
+  while (!hasNewerRecord() && ui_map_epoch_ <= since_epoch &&
+         timer.elapsed() < normalized_timeout_ms) {
+    QApplication::processEvents(QEventLoop::AllEvents, 10);
+  }
+
+  const QString map = buildUiMapJson();
+  const std::optional<QJsonObject> map_object = parseJsonObject(map);
+  const int total_node_count =
+      map_object.has_value() ? map_object->value("nodes").toArray().size() : map.count("\"id\":");
+  const bool history_too_old = !ui_map_dirty_history_.empty() &&
+                               since_epoch < ui_map_dirty_history_.front().from_epoch;
+  bool force_next_full_snapshot = history_too_old;
+  QJsonArray events;
+  int newest_event_epoch = since_epoch;
+  for (const UiMapDirtyRecord& record : ui_map_dirty_history_) {
+    if (record.ui_epoch <= since_epoch) {
+      continue;
+    }
+    if (events.size() >= normalized_max_events) {
+      break;
+    }
+    QStringList dirty_ids = record.dirty_ids;
+    QStringList dirty_roles = record.dirty_roles;
+    const bool full_snapshot = force_next_full_snapshot || record.full_snapshot ||
+                               (dirty_ids.isEmpty() && dirty_roles.isEmpty());
+    const CompactUiMapNodes compact =
+        map_object.has_value()
+            ? (full_snapshot
+                   ? compactUiMapNodesFromMapObject(*map_object, {},
+                                                    std::numeric_limits<int>::max())
+                   : compactUiMapNodesFromDirtySet(*map_object, dirty_ids, dirty_roles))
+            : CompactUiMapNodes{};
+    QJsonObject event;
+    event.insert("from_epoch", record.from_epoch);
+    event.insert("ui_epoch", record.ui_epoch);
+    event.insert("full_snapshot", full_snapshot);
+    event.insert("dirty_node_count", compact.match_count);
+    event.insert("changed_roles", stringListToJsonArray(dirty_roles));
+    event.insert("dirty_ids", stringListToJsonArray(dirty_ids));
+    event.insert("nodes", compact.nodes);
+    events.append(event);
+    newest_event_epoch = record.ui_epoch;
+    force_next_full_snapshot = false;
+  }
+
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("since_epoch", since_epoch);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("latest_event_epoch", newest_event_epoch);
+  response.insert("changed", !events.isEmpty());
+  response.insert("event_count", events.size());
+  response.insert("max_events", normalized_max_events);
+  response.insert("timeout_ms", normalized_timeout_ms);
+  response.insert("elapsed_ms", static_cast<int>(timer.elapsed()));
+  response.insert("history_too_old", history_too_old);
+  response.insert("total_node_count", total_node_count);
+  response.insert("events", events);
+  if (!map_object.has_value()) {
+    response.insert("error", "map_parse_failed");
+  }
+  return jsonObjectLine(response);
+}
+
 QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& payload) {
   const QString trimmed_method = method.trimmed();
   const std::optional<QJsonObject> request = parseJsonObject(payload.isEmpty() ? "{}" : payload);
@@ -4616,6 +4836,32 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
   if (trimmed_method == "ui.role_summary") {
     return agentQueryResponse(trimmed_method, true, {}, uiRoleSummaryJson());
   }
+  if (trimmed_method == "ui.index_stats") {
+    return agentQueryResponse(trimmed_method, true, {}, uiIndexStatsJson());
+  }
+  if (trimmed_method == "ui.get_node") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QString id = object->value("id").toString();
+    if (id.trimmed().isEmpty()) {
+      return agentQueryResponse(trimmed_method, false, "ui.get_node requires string id");
+    }
+    return agentQueryResponse(trimmed_method, true, {}, uiGetNodeJson(id));
+  }
+  if (trimmed_method == "ui.nodes_by_role") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QString role = object->value("role").toString();
+    if (role.trimmed().isEmpty()) {
+      return agentQueryResponse(trimmed_method, false, "ui.nodes_by_role requires string role");
+    }
+    const int limit = object->value("limit").toInt(50);
+    return agentQueryResponse(trimmed_method, true, {}, uiNodesByRoleJson(role, limit));
+  }
   if (trimmed_method == "ui.map_delta") {
     const std::optional<QJsonObject> object = requireObject();
     if (!object.has_value()) {
@@ -4623,6 +4869,17 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
     }
     const int since_epoch = object->value("since_epoch").toInt(ui_map_epoch_);
     return agentQueryResponse(trimmed_method, true, {}, uiMapDeltaJson(since_epoch));
+  }
+  if (trimmed_method == "ui.watch_delta") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const int since_epoch = object->value("since_epoch").toInt(ui_map_epoch_);
+    const int timeout_ms = object->value("timeout_ms").toInt(0);
+    const int max_events = object->value("max_events").toInt(10);
+    return agentQueryResponse(trimmed_method, true, {},
+                              uiWatchDeltaJson(since_epoch, timeout_ms, max_events));
   }
   if (trimmed_method == "ui.find") {
     const std::optional<QJsonObject> object = requireObject();
@@ -4985,9 +5242,6 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
       return result(id, false, "disabled");
     }
     editor_tabs_->setCurrentIndex(index);
-    markUiMapChanged({"tab:pcb", "tab:schematic", "action:add_footprint",
-                      "action:add_symbol", "canvas:pcb", "canvas:schematic"},
-                     {"tab", "action", "canvas"});
     return result(id, true, "tab_selected");
   }
 
@@ -5000,11 +5254,6 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
       return result(id, false, "disabled");
     }
     bottom_tabs_->setCurrentIndex(index);
-    markUiMapChanged({"tab:diagnostics", "tab:transactions", "tab:agent",
-                      "panel:diagnostics", "panel:transactions", "panel:agent",
-                      "control:agent_live_method", "control:agent_live_payload",
-                      "action:agent_live_query"},
-                     {"tab", "panel", "control", "action"});
     return result(id, true, "tab_selected");
   }
 
