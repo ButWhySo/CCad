@@ -124,6 +124,33 @@ bool contains(const QString& haystack, const char* needle) {
   return haystack.contains(QString::fromUtf8(needle));
 }
 
+QString jsonStringLiteral(const QString& value) {
+  QString escaped;
+  escaped.reserve(value.size() + 2);
+  escaped.append('"');
+  for (const QChar ch : value) {
+    if (ch == '\\') {
+      escaped.append("\\\\");
+    } else if (ch == '"') {
+      escaped.append("\\\"");
+    } else if (ch == '\n') {
+      escaped.append("\\n");
+    } else if (ch == '\r') {
+      escaped.append("\\r");
+    } else if (ch == '\t') {
+      escaped.append("\\t");
+    } else {
+      escaped.append(ch);
+    }
+  }
+  escaped.append('"');
+  return escaped;
+}
+
+QString jsonStringLiteral(const std::filesystem::path& path) {
+  return jsonStringLiteral(QString::fromStdString(path.generic_string()));
+}
+
 int extractInt(const QString& json, const char* key_text) {
   const QString key = QString::fromUtf8(key_text);
   int index = json.indexOf(key);
@@ -593,6 +620,98 @@ int main(int argc, char** argv) {
   require(!contains(workflow_window.uiMapJson(), "\"id\":\"canvas_object:V1\""),
           "agent delete-object workflow removes the via from the UI map");
 
+  const std::filesystem::path evidence_path = writeProjectFixture();
+  ReviewWindow evidence_window;
+  evidence_window.loadProjectPath(evidence_path);
+  evidence_window.show();
+  QApplication::processEvents();
+  const auto evidence_stamp = std::chrono::steady_clock::now().time_since_epoch().count();
+  const std::filesystem::path screenshot_path =
+      std::filesystem::temp_directory_path() /
+      ("ccad-ui-map-evidence-" + std::to_string(evidence_stamp) + ".png");
+  const QString screenshot_payload =
+      QString("{\"path\":%1}").arg(jsonStringLiteral(screenshot_path));
+  const QString screenshot_dry_payload =
+      QString("{\"path\":%1,\"dry_run\":true}").arg(jsonStringLiteral(screenshot_path));
+  const QString screenshot_dry =
+      evidence_window.runAgentUiQueryJson("ui.screenshot", screenshot_dry_payload);
+  require(contains(screenshot_dry, "\"ok\":true"), "agent screenshot dry-run query routes");
+  require(contains(screenshot_dry, "\"dry_run\":true"),
+          "agent screenshot dry-run reports dry-run mode");
+  require(contains(screenshot_dry, "\"performed\":false"),
+          "agent screenshot dry-run does not write an image");
+  require(!std::filesystem::exists(screenshot_path),
+          "agent screenshot dry-run leaves the target path unwritten");
+  const QString screenshot_capture =
+      evidence_window.runAgentUiQueryJson("ui.screenshot", screenshot_payload);
+  require(contains(screenshot_capture, "\"ok\":true"), "agent screenshot capture query routes");
+  require(contains(screenshot_capture, "\"performed\":true"),
+          "agent screenshot capture writes a PNG");
+  require(contains(screenshot_capture, "\"width\":"),
+          "agent screenshot capture reports pixel width");
+  require(contains(screenshot_capture, "\"height\":"),
+          "agent screenshot capture reports pixel height");
+  require(std::filesystem::exists(screenshot_path),
+          "agent screenshot capture creates the requested PNG");
+  require(std::filesystem::file_size(screenshot_path) > 0,
+          "agent screenshot capture creates a non-empty PNG");
+  std::filesystem::remove(screenshot_path);
+
+  const QString project_context =
+      evidence_window.runAgentUiQueryJson("project.context", "{}");
+  require(contains(project_context, "\"ok\":true"), "agent project-context query routes");
+  require(contains(project_context, "\"project_id\":\"proj-ui-map\""),
+          "agent project-context reports project id");
+  require(contains(project_context, "\"project_name\":\"UI map\""),
+          "agent project-context reports project name");
+  require(contains(project_context, "\"has_board\":true"),
+          "agent project-context reports board presence");
+  require(contains(project_context, "\"active_pcb_layer_id\":\"F.Cu\""),
+          "agent project-context reports active layer");
+  require(contains(project_context, "\"active_pcb_net_id\":\"N1\""),
+          "agent project-context reports active net");
+
+  const QString project_counts =
+      evidence_window.runAgentUiQueryJson("project.object_counts", "{}");
+  require(contains(project_counts, "\"ok\":true"), "agent object-count query routes");
+  require(contains(project_counts, "\"pad_count\":1"),
+          "agent object-count query reports board pad count");
+  require(contains(project_counts, "\"net_count\":2"),
+          "agent object-count query reports project net count");
+
+  const QString project_review =
+      evidence_window.runAgentUiQueryJson("project.review", "{}");
+  require(contains(project_review, "\"ok\":true"), "agent project-review query routes");
+  require(contains(project_review, "\"diagnostic_count\":"),
+          "agent project-review reports diagnostic count");
+  require(contains(project_review, "\"status\":"),
+          "agent project-review reports review status");
+
+  const QString project_erc = evidence_window.runAgentUiQueryJson("project.erc", "{}");
+  require(contains(project_erc, "\"ok\":true"), "agent project-erc query routes");
+  require(contains(project_erc, "\"diagnostic_count\":"),
+          "agent project-erc reports diagnostic count");
+  require(contains(project_erc, "\"diagnostics\":["),
+          "agent project-erc includes diagnostic evidence");
+
+  const QString project_drc = evidence_window.runAgentUiQueryJson("project.drc", "{}");
+  require(contains(project_drc, "\"ok\":true"), "agent project-drc query routes");
+  require(contains(project_drc, "\"diagnostic_count\":"),
+          "agent project-drc reports diagnostic count");
+  require(contains(project_drc, "\"diagnostics\":["),
+          "agent project-drc includes diagnostic evidence");
+
+  const QString project_diagnostics =
+      evidence_window.runAgentUiQueryJson("project.diagnostics", "{}");
+  require(contains(project_diagnostics, "\"ok\":true"),
+          "agent project-diagnostics query routes");
+  require(contains(project_diagnostics, "\"erc_count\":"),
+          "agent project-diagnostics reports ERC count");
+  require(contains(project_diagnostics, "\"drc_count\":"),
+          "agent project-diagnostics reports DRC count");
+  require(contains(project_diagnostics, "\"error_count\":"),
+          "agent project-diagnostics reports error count");
+
   const QString unknown = window.uiTargetJsonById("action:not_real");
   require(contains(unknown, "\"found\":false"), "unknown target id fails explicitly");
   require(contains(unknown, "\"reason\":\"unknown_id\""), "unknown target id reports reason");
@@ -865,6 +984,29 @@ int main(int argc, char** argv) {
   const QString active_net_after_set = requestLine(socket, "{\"method\":\"ui.active_net\"}");
   require(contains(active_net_after_set, "\"active_net_id\":\"N2\""),
           "live server active-net query reflects server-side set");
+  const QString live_context_response = requestLine(socket, "{\"method\":\"project.context\"}");
+  require(contains(live_context_response, "\"ok\":true"),
+          "live server returns successful project.context");
+  require(contains(live_context_response, "\"project_id\":\"proj-ui-map\""),
+          "live server project.context reports project id");
+  const QString live_counts_response =
+      requestLine(socket, "{\"method\":\"project.object_counts\"}");
+  require(contains(live_counts_response, "\"ok\":true"),
+          "live server returns successful project.object_counts");
+  require(contains(live_counts_response, "\"pad_count\":1"),
+          "live server project.object_counts reports pad count");
+  const QString live_diagnostics_response =
+      requestLine(socket, "{\"method\":\"project.diagnostics\"}");
+  require(contains(live_diagnostics_response, "\"ok\":true"),
+          "live server returns successful project.diagnostics");
+  require(contains(live_diagnostics_response, "\"drc_count\":"),
+          "live server project.diagnostics reports DRC count");
+  const QString live_screenshot_dry_response =
+      requestLine(socket, "{\"method\":\"ui.screenshot\",\"dry_run\":true}");
+  require(contains(live_screenshot_dry_response, "\"ok\":true"),
+          "live server returns successful ui.screenshot dry-run");
+  require(contains(live_screenshot_dry_response, "\"dry_run\":true"),
+          "live server ui.screenshot reports dry-run mode");
   const QString bad_response = requestLine(socket, "{\"method\":\"ui.unknown\"}");
   require(contains(bad_response, "\"ok\":false"), "live server refuses unsupported methods");
   socket.disconnectFromServer();

@@ -79,6 +79,13 @@ class ReviewWindow final : public QMainWindow {
   QString uiWorkflowPlaceTextJson(double x_mm, double y_mm, const QString& text,
                                   bool dry_run, const QString& canvas_id);
   QString uiWorkflowDeleteObjectJson(const QString& object_id, const QString& canvas_id);
+  QString uiScreenshotJson(const QString& path, bool dry_run);
+  QString projectContextJson() const;
+  QString projectObjectCountsJson() const;
+  QString projectReviewJson() const;
+  QString projectErcJson() const;
+  QString projectDrcJson() const;
+  QString projectDiagnosticsJson() const;
   QString uiTypeTextJson(const QString& id, const QString& text);
   QString uiKeyJson(const QString& key);
   QString uiSelectCanvasObjectJson(const QString& id, const QString& canvas_id);
