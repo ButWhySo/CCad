@@ -16,6 +16,8 @@ int main(int argc, char** argv) {
   QApplication app(argc, argv);
 
   AgentPanel panel;
+  QString live_method_seen;
+  QString live_payload_seen;
   panel.setProjectContext("bridge-demo.ccad.json", 17);
   panel.setUiMapProvider([]() {
     return QString("{\"schema_version\":1,\"ui_epoch\":17,\"nodes\":["
@@ -25,6 +27,13 @@ int main(int argc, char** argv) {
     return QString("{\"schema_version\":1,\"id\":\"%1\",\"performed\":true,"
                    "\"reason\":\"triggered\"}\n")
         .arg(id);
+  });
+  panel.setLiveQueryProvider([&](const QString& method, const QString& payload) {
+    live_method_seen = method;
+    live_payload_seen = payload;
+    return QString("{\"schema_version\":1,\"ok\":true,\"method\":\"%1\","
+                   "\"result\":{\"match_count\":1,\"nodes\":[{\"id\":\"action:add_footprint\"}]}}\n")
+        .arg(method);
   });
 
   require(panel.projectText() == "Project bridge-demo.ccad.json",
@@ -43,4 +52,17 @@ int main(int argc, char** argv) {
           "agent panel runs safe action callback");
   require(contains(panel.outputText(), "\"performed\":true"),
           "agent panel preserves safe action result JSON");
+
+  panel.setLiveQuery("ui.find", "{\"query\":\"add\",\"role\":\"action\",\"limit\":4}");
+  require(panel.liveMethodText() == "ui.find", "agent panel stores live query method");
+  require(panel.livePayloadText().contains("\"query\":\"add\""),
+          "agent panel stores live query payload");
+  panel.runLiveQuery();
+  require(live_method_seen == "ui.find", "agent panel sends live query method");
+  require(live_payload_seen.contains("\"role\":\"action\""),
+          "agent panel sends live query payload");
+  require(contains(panel.outputText(), "\"id\":\"action:add_footprint\""),
+          "agent panel renders live query result");
+  require(contains(panel.statusText(), "Live query ui.find"),
+          "agent panel reports live query status");
 }

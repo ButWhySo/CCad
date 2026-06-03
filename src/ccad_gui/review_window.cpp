@@ -37,6 +37,11 @@
 #include <QIcon>
 #include <QCursor>
 #include <QKeyEvent>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonParseError>
+#include <QLineEdit>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QMouseEvent>
@@ -57,6 +62,7 @@
 #include <QWindow>
 #include <QTextStream>
 #include <QToolButton>
+#include <QPushButton>
 
 #include <algorithm>
 #include <cmath>
@@ -199,6 +205,33 @@ QString rectFJson(const QRectF& rect) {
 
 QString boolJson(const bool value) {
   return value ? "true" : "false";
+}
+
+QString oneLineJson(QString json) {
+  json.remove('\n');
+  json.remove('\r');
+  return json;
+}
+
+std::optional<QJsonObject> parseJsonObject(const QString& json) {
+  QJsonParseError error;
+  const QJsonDocument document = QJsonDocument::fromJson(json.toUtf8(), &error);
+  if (error.error != QJsonParseError::NoError || !document.isObject()) {
+    return std::nullopt;
+  }
+  return document.object();
+}
+
+QString agentQueryResponse(const QString& method, const bool ok, const QString& reason,
+                           const QString& result = "{}") {
+  if (ok) {
+    return QString("{\"schema_version\":1,\"ok\":true,\"method\":%1,\"result\":%2}\n")
+        .arg(jsonString(method))
+        .arg(oneLineJson(result));
+  }
+  return QString("{\"schema_version\":1,\"ok\":false,\"method\":%1,\"reason\":%2}\n")
+      .arg(jsonString(method))
+      .arg(jsonString(reason));
 }
 
 double screenDevicePixelRatio(const QWidget* widget) {
@@ -822,6 +855,10 @@ ReviewWindow::ReviewWindow() {
   agent_panel_->setUiMapProvider([this]() { return uiMapJson(); });
   agent_panel_->setSafeActionTrigger(
       [this](const QString& id) { return triggerSafeUiActionJson(id); });
+  agent_panel_->setLiveQueryProvider(
+      [this](const QString& method, const QString& payload) {
+        return runAgentUiQueryJson(method, payload);
+      });
   updateAgentPanelContext();
 
   auto* diagnostics_dock = new QDockWidget("Diagnostics", this);
@@ -2279,6 +2316,52 @@ QString ReviewWindow::uiMapJson() const {
                  .arg(global_rect.center().y());
   }
 
+  for (const QPushButton* button : findChildren<QPushButton*>()) {
+    const QString id = button->objectName();
+    if (!id.startsWith("action:")) {
+      continue;
+    }
+    const QPoint local_top_left = button->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
+    const QRect local_rect(local_top_left, button->size());
+    const QRect global_rect(button->mapToGlobal(QPoint(0, 0)), button->size());
+    const QString label = button->accessibleName().isEmpty() ? button->text()
+                                                             : button->accessibleName();
+    nodes << QString("{\"id\":%1,\"role\":\"action\",\"label\":%2,"
+                     "\"visible\":%3,\"enabled\":%4,\"checked\":false,\"local_rect\":%5,"
+                     "\"global_rect\":%6,\"target_x\":%7,\"target_y\":%8}")
+                 .arg(jsonString(id))
+                 .arg(jsonString(label))
+                 .arg(boolJson(button->isVisible()))
+                 .arg(boolJson(button->isEnabled()))
+                 .arg(rectJson(local_rect))
+                 .arg(rectJson(global_rect))
+                 .arg(global_rect.center().x())
+                 .arg(global_rect.center().y());
+  }
+
+  for (const QLineEdit* input : findChildren<QLineEdit*>()) {
+    const QString id = input->objectName();
+    if (!id.startsWith("control:")) {
+      continue;
+    }
+    const QPoint local_top_left = input->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
+    const QRect local_rect(local_top_left, input->size());
+    const QRect global_rect(input->mapToGlobal(QPoint(0, 0)), input->size());
+    const QString label = input->accessibleName().isEmpty() ? id : input->accessibleName();
+    nodes << QString("{\"id\":%1,\"role\":\"control\",\"label\":%2,"
+                     "\"value\":%3,\"visible\":%4,\"enabled\":%5,\"local_rect\":%6,"
+                     "\"global_rect\":%7,\"target_x\":%8,\"target_y\":%9}")
+                 .arg(jsonString(id))
+                 .arg(jsonString(label))
+                 .arg(jsonString(input->text()))
+                 .arg(boolJson(input->isVisible()))
+                 .arg(boolJson(input->isEnabled()))
+                 .arg(rectJson(local_rect))
+                 .arg(rectJson(global_rect))
+                 .arg(global_rect.center().x())
+                 .arg(global_rect.center().y());
+  }
+
   if (active_layer_selector_ != nullptr) {
     const QPoint local_top_left =
         active_layer_selector_->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
@@ -2430,6 +2513,92 @@ QString ReviewWindow::uiMapJson() const {
       .arg(jsonString(qstr(activePcbLayerOrDefault())))
       .arg(jsonString(qstr(activePcbNetOrDefault())))
       .arg(nodes.join(','));
+}
+
+QString ReviewWindow::uiMapDeltaJson(const int since_epoch) const {
+  const QString map = uiMapJson();
+  const int total_node_count = map.count("\"id\":");
+  if (since_epoch >= ui_map_epoch_) {
+    return QString("{\"schema_version\":1,\"since_epoch\":%1,\"ui_epoch\":%2,"
+                   "\"changed\":false,\"total_node_count\":%3,\"nodes\":[]}\n")
+        .arg(since_epoch)
+        .arg(ui_map_epoch_)
+        .arg(total_node_count);
+  }
+  return QString("{\"schema_version\":1,\"since_epoch\":%1,\"ui_epoch\":%2,"
+                 "\"changed\":true,\"total_node_count\":%3,\"map\":%4}\n")
+      .arg(since_epoch)
+      .arg(ui_map_epoch_)
+      .arg(total_node_count)
+      .arg(oneLineJson(map));
+}
+
+QString ReviewWindow::uiFindJson(const QString& query, const QString& role, const int limit) const {
+  const QString map = uiMapJson();
+  QJsonParseError error;
+  const QJsonDocument document = QJsonDocument::fromJson(map.toUtf8(), &error);
+  if (error.error != QJsonParseError::NoError || !document.isObject()) {
+    return QString("{\"schema_version\":1,\"ui_epoch\":%1,\"query\":%2,\"role\":%3,"
+                   "\"limit\":0,\"match_count\":0,\"truncated\":false,\"nodes\":[]}\n")
+        .arg(ui_map_epoch_)
+        .arg(jsonString(query))
+        .arg(jsonString(role));
+  }
+
+  const QString trimmed_query = query.trimmed();
+  const QString trimmed_role = role.trimmed();
+  const int normalized_limit = std::clamp(limit <= 0 ? 20 : limit, 1, 50);
+  int match_count = 0;
+  QStringList matches;
+  const QJsonArray nodes = document.object().value("nodes").toArray();
+  for (const QJsonValue& value : nodes) {
+    if (!value.isObject()) {
+      continue;
+    }
+    const QJsonObject node = value.toObject();
+    const QString node_id = node.value("id").toString();
+    const QString node_role = node.value("role").toString();
+    const QString label = node.value("label").toString();
+    const QString object_id = node.value("object_id").toString();
+    const QString net_id = node.value("net_id").toString();
+    const QString layer_id = node.value("layer_id").toString();
+    if (!trimmed_role.isEmpty() && node_role != trimmed_role) {
+      continue;
+    }
+    const bool query_matches =
+        trimmed_query.isEmpty() ||
+        node_id.contains(trimmed_query, Qt::CaseInsensitive) ||
+        label.contains(trimmed_query, Qt::CaseInsensitive) ||
+        object_id.contains(trimmed_query, Qt::CaseInsensitive) ||
+        net_id.contains(trimmed_query, Qt::CaseInsensitive) ||
+        layer_id.contains(trimmed_query, Qt::CaseInsensitive);
+    if (!query_matches) {
+      continue;
+    }
+    ++match_count;
+    if (matches.size() >= normalized_limit) {
+      continue;
+    }
+    matches << QString("{\"id\":%1,\"role\":%2,\"label\":%3,\"visible\":%4,"
+                       "\"enabled\":%5,\"target_x\":%6,\"target_y\":%7}")
+                   .arg(jsonString(node_id))
+                   .arg(jsonString(node_role))
+                   .arg(jsonString(label))
+                   .arg(boolJson(node.value("visible").toBool()))
+                   .arg(boolJson(node.value("enabled").toBool()))
+                   .arg(node.value("target_x").toInt())
+                   .arg(node.value("target_y").toInt());
+  }
+
+  return QString("{\"schema_version\":1,\"ui_epoch\":%1,\"query\":%2,\"role\":%3,"
+                 "\"limit\":%4,\"match_count\":%5,\"truncated\":%6,\"nodes\":[%7]}\n")
+      .arg(ui_map_epoch_)
+      .arg(jsonString(trimmed_query))
+      .arg(jsonString(trimmed_role))
+      .arg(normalized_limit)
+      .arg(match_count)
+      .arg(boolJson(match_count > static_cast<int>(matches.size())))
+      .arg(matches.join(','));
 }
 
 QString ReviewWindow::validateUiMapTargetsJson(const bool move_cursor) const {
@@ -2632,6 +2801,27 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
                        button->isEnabled() && action->isEnabled(), global_rect.center());
   }
 
+  for (const QPushButton* button : findChildren<QPushButton*>()) {
+    if (button->objectName() != id || !id.startsWith("action:")) {
+      continue;
+    }
+    const QRect global_rect(button->mapToGlobal(QPoint(0, 0)), button->size());
+    const QString label = button->accessibleName().isEmpty() ? button->text()
+                                                             : button->accessibleName();
+    return foundTarget(id, "action", label, button->isVisible(), button->isEnabled(),
+                       global_rect.center());
+  }
+
+  for (const QLineEdit* input : findChildren<QLineEdit*>()) {
+    if (input->objectName() != id || !id.startsWith("control:")) {
+      continue;
+    }
+    const QRect global_rect(input->mapToGlobal(QPoint(0, 0)), input->size());
+    const QString label = input->accessibleName().isEmpty() ? id : input->accessibleName();
+    return foundTarget(id, "control", label, input->isVisible(), input->isEnabled(),
+                       global_rect.center());
+  }
+
   if (id == "control:active_pcb_layer" && active_layer_selector_ != nullptr) {
     const QRect global_rect(active_layer_selector_->mapToGlobal(QPoint(0, 0)),
                             active_layer_selector_->size());
@@ -2807,6 +2997,111 @@ QString ReviewWindow::uiTargetJsonForBoardPoint(const double x_mm, const double 
       .arg(scene_point.y(), 0, 'f', 3)
       .arg(boolJson(canvas_view_->isVisible()))
       .arg(targetPointJson(target, screenDevicePixelRatio(canvas_view_)));
+}
+
+QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& payload) {
+  const QString trimmed_method = method.trimmed();
+  const std::optional<QJsonObject> request = parseJsonObject(payload.isEmpty() ? "{}" : payload);
+  const auto requireObject = [&]() -> std::optional<QJsonObject> {
+    if (!request.has_value()) {
+      return std::nullopt;
+    }
+    return request;
+  };
+
+  if (trimmed_method == "ui.map") {
+    return agentQueryResponse(trimmed_method, true, {}, uiMapJson());
+  }
+  if (trimmed_method == "ui.map_delta") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const int since_epoch = object->value("since_epoch").toInt(ui_map_epoch_);
+    return agentQueryResponse(trimmed_method, true, {}, uiMapDeltaJson(since_epoch));
+  }
+  if (trimmed_method == "ui.find") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QString query = object->value("query").toString();
+    const QString role = object->value("role").toString();
+    const int limit = object->value("limit").toInt(20);
+    return agentQueryResponse(trimmed_method, true, {}, uiFindJson(query, role, limit));
+  }
+  if (trimmed_method == "ui.target") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QString id = object->value("id").toString();
+    if (id.isEmpty()) {
+      return agentQueryResponse(trimmed_method, false, "ui.target requires string id");
+    }
+    return agentQueryResponse(trimmed_method, true, {}, uiTargetJsonById(id));
+  }
+  if (trimmed_method == "ui.target_board_point") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QJsonValue x_value = object->value("x_mm");
+    const QJsonValue y_value = object->value("y_mm");
+    if (!x_value.isDouble() || !y_value.isDouble()) {
+      return agentQueryResponse(trimmed_method, false,
+                                "ui.target_board_point requires numeric x_mm and y_mm");
+    }
+    return agentQueryResponse(trimmed_method, true, {},
+                              uiTargetJsonForBoardPoint(x_value.toDouble(), y_value.toDouble()));
+  }
+  if (trimmed_method == "ui.trigger_safe") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QString id = object->value("id").toString();
+    if (id.isEmpty()) {
+      return agentQueryResponse(trimmed_method, false, "ui.trigger_safe requires string id");
+    }
+    return agentQueryResponse(trimmed_method, true, {}, triggerSafeUiActionJson(id));
+  }
+  if (trimmed_method == "ui.active_layer") {
+    return agentQueryResponse(trimmed_method, true, {}, activePcbLayerJson());
+  }
+  if (trimmed_method == "ui.set_active_layer") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QString layer_id = object->value("layer_id").toString();
+    if (layer_id.isEmpty()) {
+      return agentQueryResponse(trimmed_method, false,
+                                "ui.set_active_layer requires string layer_id");
+    }
+    return agentQueryResponse(trimmed_method, true, {},
+                              setActivePcbLayerForAutomation(layer_id));
+  }
+  if (trimmed_method == "ui.active_net") {
+    return agentQueryResponse(trimmed_method, true, {}, activePcbNetJson());
+  }
+  if (trimmed_method == "ui.set_active_net") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QString net_id = object->value("net_id").toString();
+    if (net_id.isEmpty()) {
+      return agentQueryResponse(trimmed_method, false, "ui.set_active_net requires string net_id");
+    }
+    return agentQueryResponse(trimmed_method, true, {}, setActivePcbNetForAutomation(net_id));
+  }
+  if (trimmed_method == "ui.epoch") {
+    return QString("{\"schema_version\":1,\"ok\":true,\"method\":\"ui.epoch\","
+                   "\"ui_epoch\":%1}\n")
+        .arg(ui_map_epoch_);
+  }
+  return agentQueryResponse(trimmed_method, false, "unsupported method");
 }
 
 QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {

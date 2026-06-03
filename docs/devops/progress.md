@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 174
-- Branch: `sprint-174-pcb-zone-tool`
+- Sprint: 175
+- Branch: `sprint-175-agent-panel-live-map`
 - Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
@@ -40,6 +40,7 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - **Sprint 172 (PCB Active Net Context)** is complete on `sprint-172-pcb-active-net-context`. It adds a top-toolbar active net selector, agent-readable/settable active-net JSON, live UI-map socket active-net methods, `control:active_pcb_net` targeting, and active-net-aware Add Via plus Route Track commits. Focused GUI-map coverage passed, official visual validation produced `artifacts/screenshots/sprint172-pcb-active-net-context-final-20260603-012426.png`, app-owned active-net hooks returned `AC1`, set `DC_NEG`, and resolved `control:active_pcb_net`, and the full build plus CTest gate passed 36 of 36 tests.
 - **Sprint 173 (PCB Graphics and Text Tools)** is complete on `sprint-173-pcb-graphics-text-tools`. It adds durable `BoardGraphic` and `BoardText` primitives, CLI authoring and compact queries, DRC/diff/KiCad PCB export support, real Draw Graphic and Place Text GUI edit modes, object-browser and inspector support, hidden-layer-safe defaults, and the official bridge-rectifier visual proof at `artifacts/screenshots/sprint173-pcb-graphics-text-tools-final-20260603-021600.png`. Focused tests passed, the official visual screenshot was inspected, and the full build plus CTest gate passed 36 of 36 tests.
 - **Sprint 174 (PCB Zone Tool First Slice)** is complete on `sprint-174-pcb-zone-tool`. It adds durable KiCad-compatible first-slice `BoardZone` primitives with CLI `pcb add-zone`, compact query/list and route-job exposure, DRC/diff/KiCad PCB export support, real Add Zone GUI edit mode, object-browser and inspector support, app-owned zone placement through the Qt viewport event path, and the official bridge-rectifier zone visual proof at `artifacts/screenshots/sprint174-pcb-zone-tool-final-20260603-031321.png`. Focused tests passed, the official visual screenshot was inspected, and the full build plus CTest gate passed 36 of 36 tests.
+- **Sprint 175 (Agent Panel Live UI Map)** is complete on `sprint-175-agent-panel-live-map`. It connects the native Agent panel to the same live UI-map protocol as the local socket, adds `ui.map_delta`, `ui.find`, `ui.target_board_point`, and `ui.trigger_safe` live methods, exposes Agent method/payload/action controls as targetable UI-map nodes, parses live socket requests with Qt JSON APIs, and ingests `docs/req_agentHarness.md` into the local backlog. Focused tests passed, official visual validation produced `artifacts/screenshots/sprint175-agent-panel-live-map-final-20260603-102936.png`, the target harness proved Agent controls in `artifacts/screenshots/sprint175-agent-panel-live-map-targets-final-target-sequence.json`, and the full build plus CTest gate passed 36 of 36 tests.
 
 ## Phase Roadmap
 

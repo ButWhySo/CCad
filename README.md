@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 174 complete on `sprint-174-pcb-zone-tool`.
+Progress counter: Phase 7 / 7, Sprint 175 complete on `sprint-175-agent-panel-live-map`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -49,12 +49,12 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI can dump a read-only semantic UI map as JSON for LLM/automation tooling, including stable action IDs, tab/canvas bounds, canvas-object IDs, net/layer metadata, route provenance, and click target coordinates.
 - Native GUI has app-owned placement-click regression automation so left-click footprint placement can be tested through the real Qt viewport event path without manual mouse control.
 - Native GUI has app-owned UI-map mouse-target automation that moves to semantic targets, captures marked screenshots, resizes the window, and repeats to prove scalable coordinates.
-- Native GUI can keep a local live UI-map socket open while the GUI runs, serving repeated JSON Lines `ui.map`, `ui.target`, and `ui.epoch` requests for agents.
+- Native GUI can keep a local live UI-map socket open while the GUI runs, serving repeated JSON Lines `ui.map`, `ui.map_delta`, `ui.find`, `ui.target`, `ui.target_board_point`, `ui.trigger_safe`, `ui.epoch`, active-layer, and active-net requests for agents.
 - Native GUI right-toolbar Add Via, Route Track, Add Zone, Add Keepout, Draw Graphic, Place Text, and Delete tools now enter real PCB edit modes and create or remove durable board primitives through the same Qt viewport event path used by app-owned tests.
 - Native GUI has a PCB active-layer selector, exposes it as `control:active_pcb_layer`, serves active-layer query/set methods to agents, and uses the selected copper layer for footprint placement and Route Track commits.
 - Native GUI unfinished toolbar tools now report visible planned-tool status and `future_tool_not_implemented` through the safe UI trigger contract instead of acting as silent stubs.
 - Native GUI left toolbar Show Layers and Show Properties actions now toggle their existing panels and report `panel_toggled` through the safe UI trigger contract.
-- Native GUI has a bottom Agent panel shell that can refresh the current UI-map JSON, trigger allowlisted safe UI actions by semantic ID, and expose itself as `panel:agent` for automation targeting.
+- Native GUI has a bottom Agent panel shell that can refresh the current UI-map JSON, trigger allowlisted safe UI actions by semantic ID, run live UI-map protocol queries from method/payload inputs, and expose itself as `panel:agent` for automation targeting.
 - Native GUI left toolbar display controls now perform real view-state actions for grid visibility, polar cursor coordinates, inch units, full-window crosshair, ratsnest guides, net highlighting, and high-contrast display mode. Agent safe triggers return `display_state_toggled`, and UI-map action nodes expose checked state.
 - Native GUI selection inspector cleans up stale editor rows immediately during rapid multi-selection changes, so net highlight and display-mode workflows do not stack old pad or track editors in the properties panel.
 - Native GUI visual-validation harness timing is policy-guarded: single-preview screenshots settle for 7 seconds, while multi-target GUI validation uses a 5-second initial load and 800 ms per target/action.
@@ -695,7 +695,7 @@ $env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
 .\build-qt\ccad_gui.exe --ui-target-id .\artifacts\demos\sprint156-layer-color-final.ccad.json panel:agent .\artifacts\demos\ui-target-agent-panel.json
 ```
 
-The panel itself can refresh the current UI-map JSON and trigger allowlisted safe actions such as `action:zoom_in`. It is a local shell only; provider keys, BYOK routing, LangGraph orchestration, and OpenTelemetry/Langfuse tracing remain future integration work.
+The panel itself can refresh the current UI-map JSON, trigger allowlisted safe actions such as `action:zoom_in`, and run live protocol queries such as `ui.find` or `ui.map_delta` through method/payload inputs. It is a local shell only; provider keys, BYOK routing, LangGraph orchestration, and OpenTelemetry/Langfuse tracing remain future integration work.
 
 Query one PCB board point:
 
@@ -770,7 +770,7 @@ Run the live UI-map local socket server:
 cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && build-qt\ccad_gui.exe --serve-ui-map artifacts\demos\sprint162-pad-layer-rendering-fidelity-final.ccad.json ccad-ui-map-demo artifacts\demos\ccad-ui-map-demo.ready.txt"
 ```
 
-While the GUI stays open, connect to the named local socket and send one JSON request per line. Current methods are `{"method":"ui.map"}`, `{"method":"ui.target","id":"menu:file"}`, `{"method":"ui.epoch"}`, `{"method":"ui.active_layer"}`, and `{"method":"ui.set_active_layer","layer_id":"B.Cu"}`. Responses are newline-delimited JSON values.
+While the GUI stays open, connect to the named local socket and send one JSON request per line. Current methods are `{"method":"ui.map"}`, `{"method":"ui.map_delta","since_epoch":0}`, `{"method":"ui.find","query":"add","role":"action","limit":8}`, `{"method":"ui.target","id":"menu:file"}`, `{"method":"ui.target_board_point","x_mm":8,"y_mm":9}`, `{"method":"ui.trigger_safe","id":"tab:agent"}`, `{"method":"ui.epoch"}`, `{"method":"ui.active_layer"}`, `{"method":"ui.set_active_layer","layer_id":"B.Cu"}`, `{"method":"ui.active_net"}`, and `{"method":"ui.set_active_net","net_id":"DC_NEG"}`. Responses are newline-delimited JSON values.
 
 What it does:
 
