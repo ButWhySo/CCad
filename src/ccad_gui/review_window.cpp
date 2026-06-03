@@ -383,6 +383,26 @@ QString targetPointJson(const QPoint& point, const double device_pixel_ratio) {
       QJsonDocument(targetPointObject(point, device_pixel_ratio)).toJson(QJsonDocument::Compact));
 }
 
+void insertBoardObjectCounts(QJsonObject& response, const std::optional<ccad::Board>& board) {
+  if (!board.has_value()) {
+    response.insert("pad_count", 0);
+    response.insert("via_count", 0);
+    response.insert("track_count", 0);
+    response.insert("zone_count", 0);
+    response.insert("keepout_count", 0);
+    response.insert("graphic_count", 0);
+    response.insert("text_count", 0);
+    return;
+  }
+  response.insert("pad_count", static_cast<int>(board->pads.size()));
+  response.insert("via_count", static_cast<int>(board->vias.size()));
+  response.insert("track_count", static_cast<int>(board->tracks.size()));
+  response.insert("zone_count", static_cast<int>(board->zones.size()));
+  response.insert("keepout_count", static_cast<int>(board->keepouts.size()));
+  response.insert("graphic_count", static_cast<int>(board->graphics.size()));
+  response.insert("text_count", static_cast<int>(board->texts.size()));
+}
+
 std::filesystem::path kicadSourceRoot() {
   if (const char* env = std::getenv("CCAD_KICAD_SRC")) {
     std::filesystem::path path(env);
@@ -3517,6 +3537,234 @@ QString ReviewWindow::uiClickJson(const QString& id, const bool dry_run, const b
   return jsonObjectLine(response);
 }
 
+QString ReviewWindow::uiCanvasClickJson(const double x_mm, const double y_mm,
+                                        const bool dry_run, const QString& canvas_id,
+                                        const QString& text) {
+  const QString normalized_canvas =
+      canvas_id.trimmed().isEmpty() ? QString("canvas:pcb") : canvas_id.trimmed();
+  const InteractionMode mode_before = interaction_mode_;
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("canvas", normalized_canvas);
+  response.insert("dry_run", dry_run);
+  response.insert("board_x_mm", x_mm);
+  response.insert("board_y_mm", y_mm);
+  response.insert("mode_before", interactionModeName(mode_before));
+  if (normalized_canvas != "canvas:pcb") {
+    response.insert("ui_epoch", ui_map_epoch_);
+    response.insert("found", false);
+    response.insert("performed", false);
+    response.insert("reason", "unsupported_canvas");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    insertBoardObjectCounts(response, project_cache_.board);
+    return jsonObjectLine(response);
+  }
+  if (!project_cache_.board.has_value() || canvas_view_ == nullptr) {
+    response.insert("ui_epoch", ui_map_epoch_);
+    response.insert("found", false);
+    response.insert("performed", false);
+    response.insert("reason", "missing_board");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    insertBoardObjectCounts(response, project_cache_.board);
+    return jsonObjectLine(response);
+  }
+
+  const std::optional<QJsonObject> target =
+      parseJsonObject(uiTargetJsonForBoardPoint(x_mm, y_mm));
+  if (!target.has_value()) {
+    response.insert("ui_epoch", ui_map_epoch_);
+    response.insert("found", false);
+    response.insert("performed", false);
+    response.insert("reason", "target_parse_failed");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    insertBoardObjectCounts(response, project_cache_.board);
+    return jsonObjectLine(response);
+  }
+  response.insert("found", target->value("found").toBool(false));
+  if (target->contains("target")) {
+    response.insert("target", target->value("target"));
+  }
+  copyStringFieldIfPresent(response, *target, "reason");
+  if (!target->value("found").toBool(false)) {
+    response.insert("ui_epoch", ui_map_epoch_);
+    response.insert("performed", false);
+    if (!response.contains("reason")) {
+      response.insert("reason", "target_not_found");
+    }
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    insertBoardObjectCounts(response, project_cache_.board);
+    return jsonObjectLine(response);
+  }
+
+  const QPointF scene_point = boardPositionToScene(*project_cache_.board, x_mm, y_mm);
+  const QPoint viewport_point = canvas_view_->mapFromScene(scene_point);
+  const QPoint global_point = canvas_view_->viewport()->mapToGlobal(viewport_point);
+  response.insert("scene_x", scene_point.x());
+  response.insert("scene_y", scene_point.y());
+  response.insert("viewport_x", viewport_point.x());
+  response.insert("viewport_y", viewport_point.y());
+  response.insert("global_x", global_point.x());
+  response.insert("global_y", global_point.y());
+  if (dry_run) {
+    response.insert("ui_epoch", ui_map_epoch_);
+    response.insert("performed", false);
+    response.insert("reason", "dry_run");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    insertBoardObjectCounts(response, project_cache_.board);
+    return jsonObjectLine(response);
+  }
+
+  const QString trimmed_text = text.trimmed();
+  if (interaction_mode_ == InteractionMode::PlaceText && !trimmed_text.isEmpty()) {
+    interaction_board_text_ = trimmed_text;
+  }
+  if (editor_tabs_ != nullptr) {
+    editor_tabs_->setCurrentWidget(canvas_view_);
+  }
+  canvas_view_->viewport()->setFocus(Qt::MouseFocusReason);
+  QMouseEvent press(QEvent::MouseButtonPress, QPointF(viewport_point), QPointF(global_point),
+                    Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+  QApplication::sendEvent(canvas_view_->viewport(), &press);
+  QMouseEvent release(QEvent::MouseButtonRelease, QPointF(viewport_point), QPointF(global_point),
+                      Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+  QApplication::sendEvent(canvas_view_->viewport(), &release);
+  QApplication::processEvents();
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("performed", true);
+  response.insert("reason", "event_sent");
+  response.insert("mode_after", interactionModeName(interaction_mode_));
+  response.insert("focused", canvas_view_->viewport()->hasFocus() || canvas_view_->hasFocus());
+  insertBoardObjectCounts(response, project_cache_.board);
+  markUiMapChanged();
+  return jsonObjectLine(response);
+}
+
+QString ReviewWindow::uiCanvasDragJson(const double start_x_mm, const double start_y_mm,
+                                       const double end_x_mm, const double end_y_mm,
+                                       const bool dry_run, const QString& canvas_id) {
+  const QString normalized_canvas =
+      canvas_id.trimmed().isEmpty() ? QString("canvas:pcb") : canvas_id.trimmed();
+  const InteractionMode mode_before = interaction_mode_;
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("canvas", normalized_canvas);
+  response.insert("dry_run", dry_run);
+  response.insert("start_x_mm", start_x_mm);
+  response.insert("start_y_mm", start_y_mm);
+  response.insert("end_x_mm", end_x_mm);
+  response.insert("end_y_mm", end_y_mm);
+  response.insert("mode_before", interactionModeName(mode_before));
+  if (normalized_canvas != "canvas:pcb") {
+    response.insert("ui_epoch", ui_map_epoch_);
+    response.insert("found", false);
+    response.insert("performed", false);
+    response.insert("reason", "unsupported_canvas");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    insertBoardObjectCounts(response, project_cache_.board);
+    return jsonObjectLine(response);
+  }
+  if (!project_cache_.board.has_value() || canvas_view_ == nullptr) {
+    response.insert("ui_epoch", ui_map_epoch_);
+    response.insert("found", false);
+    response.insert("performed", false);
+    response.insert("reason", "missing_board");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    insertBoardObjectCounts(response, project_cache_.board);
+    return jsonObjectLine(response);
+  }
+
+  const std::optional<QJsonObject> start_target =
+      parseJsonObject(uiTargetJsonForBoardPoint(start_x_mm, start_y_mm));
+  const std::optional<QJsonObject> end_target =
+      parseJsonObject(uiTargetJsonForBoardPoint(end_x_mm, end_y_mm));
+  if (!start_target.has_value() || !end_target.has_value()) {
+    response.insert("ui_epoch", ui_map_epoch_);
+    response.insert("found", false);
+    response.insert("performed", false);
+    response.insert("reason", "target_parse_failed");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    insertBoardObjectCounts(response, project_cache_.board);
+    return jsonObjectLine(response);
+  }
+  const bool found_start = start_target->value("found").toBool(false);
+  const bool found_end = end_target->value("found").toBool(false);
+  response.insert("found", found_start && found_end);
+  if (start_target->contains("target")) {
+    response.insert("start_target", start_target->value("target"));
+  }
+  if (end_target->contains("target")) {
+    response.insert("end_target", end_target->value("target"));
+  }
+  if (!found_start || !found_end) {
+    response.insert("ui_epoch", ui_map_epoch_);
+    response.insert("performed", false);
+    response.insert("reason", found_start ? "end_target_not_found" : "start_target_not_found");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    insertBoardObjectCounts(response, project_cache_.board);
+    return jsonObjectLine(response);
+  }
+
+  QPointF start_scene = boardPositionToScene(*project_cache_.board, start_x_mm, start_y_mm);
+  QPoint start_viewport = canvas_view_->mapFromScene(start_scene);
+  QPoint start_global = canvas_view_->viewport()->mapToGlobal(start_viewport);
+  QPointF end_scene = boardPositionToScene(*project_cache_.board, end_x_mm, end_y_mm);
+  QPoint end_viewport = canvas_view_->mapFromScene(end_scene);
+  QPoint end_global = canvas_view_->viewport()->mapToGlobal(end_viewport);
+  response.insert("start_scene_x", start_scene.x());
+  response.insert("start_scene_y", start_scene.y());
+  response.insert("end_scene_x", end_scene.x());
+  response.insert("end_scene_y", end_scene.y());
+  response.insert("start_viewport_x", start_viewport.x());
+  response.insert("start_viewport_y", start_viewport.y());
+  response.insert("end_viewport_x", end_viewport.x());
+  response.insert("end_viewport_y", end_viewport.y());
+  if (dry_run) {
+    response.insert("ui_epoch", ui_map_epoch_);
+    response.insert("performed", false);
+    response.insert("reason", "dry_run");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    insertBoardObjectCounts(response, project_cache_.board);
+    return jsonObjectLine(response);
+  }
+
+  if (editor_tabs_ != nullptr) {
+    editor_tabs_->setCurrentWidget(canvas_view_);
+  }
+  canvas_view_->viewport()->setFocus(Qt::MouseFocusReason);
+  const auto send_click = [this](const QPoint& viewport_point, const QPoint& global_point) {
+    QMouseEvent press(QEvent::MouseButtonPress, QPointF(viewport_point), QPointF(global_point),
+                      Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    QApplication::sendEvent(canvas_view_->viewport(), &press);
+    QMouseEvent release(QEvent::MouseButtonRelease, QPointF(viewport_point), QPointF(global_point),
+                        Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+    QApplication::sendEvent(canvas_view_->viewport(), &release);
+    QApplication::processEvents();
+  };
+  const auto send_move = [this](const QPoint& viewport_point, const QPoint& global_point) {
+    QMouseEvent move(QEvent::MouseMove, QPointF(viewport_point), QPointF(global_point),
+                     Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+    QApplication::sendEvent(canvas_view_->viewport(), &move);
+    QApplication::processEvents();
+  };
+
+  send_click(start_viewport, start_global);
+  if (project_cache_.board.has_value()) {
+    end_scene = boardPositionToScene(*project_cache_.board, end_x_mm, end_y_mm);
+    end_viewport = canvas_view_->mapFromScene(end_scene);
+    end_global = canvas_view_->viewport()->mapToGlobal(end_viewport);
+    send_move(end_viewport, end_global);
+    send_click(end_viewport, end_global);
+  }
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("performed", true);
+  response.insert("reason", "events_sent");
+  response.insert("mode_after", interactionModeName(interaction_mode_));
+  response.insert("focused", canvas_view_->viewport()->hasFocus() || canvas_view_->hasFocus());
+  insertBoardObjectCounts(response, project_cache_.board);
+  markUiMapChanged();
+  return jsonObjectLine(response);
+}
+
 QString ReviewWindow::uiTypeTextJson(const QString& id, const QString& text) {
   const QString trimmed_id = id.trimmed();
   const QStringList allowed_ids = {"control:agent_action_id", "control:agent_live_method",
@@ -3783,6 +4031,46 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
     return agentQueryResponse(trimmed_method, true, {},
                               uiNearestCanvasObjectJson(x_value.toDouble(), y_value.toDouble(),
                                                         canvas, limit));
+  }
+  if (trimmed_method == "ui.canvas_click") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QJsonValue x_value = object->value("x_mm");
+    const QJsonValue y_value = object->value("y_mm");
+    if (!x_value.isDouble() || !y_value.isDouble()) {
+      return agentQueryResponse(trimmed_method, false,
+                                "ui.canvas_click requires numeric x_mm and y_mm");
+    }
+    return agentQueryResponse(
+        trimmed_method, true, {},
+        uiCanvasClickJson(x_value.toDouble(), y_value.toDouble(),
+                          object->value("dry_run").toBool(false),
+                          object->value("canvas").toString("canvas:pcb"),
+                          object->value("text").toString()));
+  }
+  if (trimmed_method == "ui.canvas_drag") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QJsonValue start_x_value = object->value("start_x_mm");
+    const QJsonValue start_y_value = object->value("start_y_mm");
+    const QJsonValue end_x_value = object->value("end_x_mm");
+    const QJsonValue end_y_value = object->value("end_y_mm");
+    if (!start_x_value.isDouble() || !start_y_value.isDouble() ||
+        !end_x_value.isDouble() || !end_y_value.isDouble()) {
+      return agentQueryResponse(
+          trimmed_method, false,
+          "ui.canvas_drag requires numeric start_x_mm, start_y_mm, end_x_mm, and end_y_mm");
+    }
+    return agentQueryResponse(
+        trimmed_method, true, {},
+        uiCanvasDragJson(start_x_value.toDouble(), start_y_value.toDouble(),
+                         end_x_value.toDouble(), end_y_value.toDouble(),
+                         object->value("dry_run").toBool(false),
+                         object->value("canvas").toString("canvas:pcb")));
   }
   if (trimmed_method == "ui.trigger_safe") {
     const std::optional<QJsonObject> object = requireObject();
