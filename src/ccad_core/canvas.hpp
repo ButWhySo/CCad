@@ -72,6 +72,7 @@ struct CanvasComponent {
   double y_units = 0.0;
   double rotation_degrees = 0.0;
   bool selected = false;
+  bool has_symbol_graphics = false;
 };
 
 struct CanvasWire {

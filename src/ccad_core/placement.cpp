@@ -185,6 +185,7 @@ void placeComponent(Project& project, const Symbol& symbol, const std::string& c
   comp.part = symbol.name;
   comp.position = origin;
   comp.rotation_degrees = rotation_deg;
+  comp.symbol = symbol;
   for (const SymbolPin& pin : symbol.pins) {
     comp.pins.push_back(Pin{
         .name = pin.number,

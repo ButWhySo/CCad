@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 183 complete on `sprint-183-agent-protocol-catalog`.
+Progress counter: Phase 7 / 7, Sprint 184 complete on `sprint-184-library-placement-stability`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -16,6 +16,8 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - CLI: `ccad help --format json`, `ccad init`, `ccad validate`, `ccad inspect`, and `ccad diff`.
 - CLI PCB authoring: `ccad pcb list-nets`, `ccad pcb list-objects`, `ccad pcb get-object`, `ccad pcb route-status`, `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-graphic-line`, `ccad pcb add-text`, `ccad pcb add-zone`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
+- CLI schematic authoring can place a converted KiCad/CCad symbol snapshot through `ccad sch place-symbol`.
+- Placed schematic components persist symbol geometry in project JSON so pins and primitives survive reload.
 - CLI PCB pad authoring supports KiCad-style pad type, shape, drill, roundrect ratio, chamfer ratio, and multi-layer metadata.
 - Agent-facing PCB pad queries expose KiCad-style pad type, shape, drill, roundrect ratio, chamfer ratio, and layer metadata through `pcb get-object` and `pcb list-objects --type pad`.
 - Native library catalog metadata, lookup, and search for local/offline component-library caches.
@@ -44,6 +46,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI can export a DRC report from the Tools menu.
 - Native GUI library chooser now has KiCad-style chooser context with filtered library/name rows, details, and visual symbol/footprint previews.
 - Native GUI library chooser indexes local `library-cache` entries without parsing every symbol or footprint on dialog open; selected rows are parsed lazily for details, preview, and final placement.
+- Native GUI library chooser returns concrete row identity metadata for accepted symbols and footprints, including source path, library name, item name, file name, and source kind.
 - Native GUI footprint previews and the board canvas use a shared KiCad-inspired layer palette so copper, silkscreen, fabrication, courtyard, edge, and user graphics do not collapse into one generic color.
 - Native GUI pad rendering separates copper from solder-mask and solder-paste aperture overlays, so visible mask or paste layers no longer force hidden copper to render.
 - Native GUI can dump a read-only semantic UI map as JSON for LLM/automation tooling, including stable action IDs, tab/canvas bounds, canvas-object IDs, net/layer metadata, route provenance, and click target coordinates.
@@ -64,12 +67,14 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI footprint placement accepts raw KiCad `.kicad_mod` files from the chooser as well as converted CCad footprint JSON.
 - Native GUI Add behavior is editor-tab aware: PCB opens cache-backed footprint placement, while Schematic opens cache-backed symbol placement.
 - Native GUI placement uses mouse-following footprint and symbol ghosts; left click commits through the core placement API, and Escape cancels before commit.
+- Native GUI schematic-only projects open directly on the Schematic tab and render placed symbol body graphics plus pin leads instead of generic placeholder boxes.
 - Native GUI no longer exposes raw KiCad symbol/footprint file preview entries as normal File menu placement actions.
 - Native GUI renders front and back copper with distinct KiCad-inspired default colors, and selected tracks highlight across their visible copper width.
 - Native GUI canvas renders circular, oval, ratio-controlled round-rect, trapezoid, and chamfered pads as shape-aware geometry and shows through-hole drill openings as visible annular rings.
 - Native GUI interactive footprint placement and movement use shape-aware, layer-colored ghost previews and convert canvas scene coordinates back to board millimeters before calling the core placement APIs.
 - Native GUI canvas toolbar has Fit, Zoom Out, Zoom In, and 100% review controls.
 - Sprint demo automation now has a robust screenshot fallback path that captures only the spawned CCad window by PID when `ccad_gui --screenshot` fails.
+- Native GUI has a clean `--screenshot-project` mode for screenshotting a loaded project without entering a measurement overlay.
 - Native GUI canvas supports CAD-style pan with middle-drag, right-drag, or Shift+left-drag, plus clamped wheel zoom and expanded scene navigation bounds.
 - GUI panel/canvas test binaries are now registered in CTest and run in the default `ctest` gate.
 - Native GUI canvas supports keyboard navigation: `+`, `-`, `0`, `F`, `Home`, arrow-key panning, and `W/A/S/D` panning.
@@ -447,7 +452,25 @@ When to run:
 Current limitation:
 
 - Pads without a matching logical net member keep an empty `net_id` and DRC reports that as a warning.
-- Flipping, courtyard checks, automatic symbol-footprint assignment, and full schematic parity are later work.
+- Flipping, courtyard checks, automatic symbol-footprint assignment, and complete schematic-layout parity remain later work.
+
+Place a schematic symbol through the CLI:
+
+```powershell
+.\build-qt\ccad.exe init --name schematic-demo --out .\build-qt\schematic-demo.ccad.json
+.\build-qt\ccad.exe sch place-symbol --file .\build-qt\schematic-demo.ccad.json --symbol .\library-cache\symbols\1N4007.json --component D1 --at-x-mm 20 --at-y-mm 15 --rotation-deg 0
+```
+
+What it does:
+
+- Loads one converted CCad/KiCad symbol JSON file, resolving local converted-symbol inheritance when needed.
+- Adds one logical component at the requested schematic position.
+- Stores a `symbol` snapshot inside that component so the schematic canvas can render body primitives and pin leads after save and reload.
+- Rejects duplicate component IDs, missing symbol files, empty symbols, and malformed symbol JSON.
+
+Current limitation:
+
+- `sch place-symbol` places symbol geometry and pins only. It does not yet create wires, labels, hierarchical sheets, automatic reference annotation, or symbol-footprint assignment.
 
 Add PCB primitives through the CLI:
 
@@ -662,6 +685,13 @@ Open a project directly:
 ```powershell
 $env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
 .\build-qt\ccad_gui.exe .\build-qt\canvas-demo.ccad.json
+```
+
+Capture a clean project screenshot without entering a measurement overlay:
+
+```powershell
+$env:PATH = 'C:\Qt\6.11.1\mingw_64\bin;' + $env:PATH
+.\build-qt\ccad_gui.exe --screenshot-project .\build-qt\canvas-demo.ccad.json .\artifacts\screenshots\canvas-demo.png
 ```
 
 Dump a read-only semantic UI map for agent tooling:

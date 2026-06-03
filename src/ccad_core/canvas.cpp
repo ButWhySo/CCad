@@ -1,13 +1,120 @@
 #include "ccad_core/canvas.hpp"
 
+#include <cmath>
 #include <map>
 #include <optional>
+#include <string>
 
 namespace ccad {
 namespace {
 
 double toMillimeters(const Length& length) {
   return static_cast<double>(length.nanometers) / 1000000.0;
+}
+
+struct CanvasPoint {
+  double x_units = 0.0;
+  double y_units = 0.0;
+};
+
+CanvasPoint rotatePoint(const double x_units, const double y_units, const double rotation_degrees) {
+  constexpr double pi = 3.14159265358979323846;
+  const double radians = rotation_degrees * pi / 180.0;
+  const double cos_theta = std::cos(radians);
+  const double sin_theta = std::sin(radians);
+  return CanvasPoint{
+      .x_units = (x_units * cos_theta) - (y_units * sin_theta),
+      .y_units = (x_units * sin_theta) + (y_units * cos_theta),
+  };
+}
+
+CanvasPoint transformSymbolPoint(const Component& component, const double x_units,
+                                 const double y_units) {
+  const CanvasPoint rotated = rotatePoint(x_units, y_units, component.rotation_degrees);
+  return CanvasPoint{
+      .x_units = toMillimeters(component.position.x) + rotated.x_units,
+      .y_units = toMillimeters(component.position.y) + rotated.y_units,
+  };
+}
+
+void includeBounds(double& min_x, double& min_y, double& max_x, double& max_y,
+                   const double x_units, const double y_units) {
+  if (x_units < min_x) min_x = x_units;
+  if (y_units < min_y) min_y = y_units;
+  if (x_units > max_x) max_x = x_units;
+  if (y_units > max_y) max_y = y_units;
+}
+
+void mergePlacedSymbolScene(CanvasScene& scene, const Component& component,
+                            const CanvasScene& symbol_scene, double& min_x, double& min_y,
+                            double& max_x, double& max_y) {
+  const std::string prefix = component.id + ".";
+
+  for (CanvasLine line : symbol_scene.lines) {
+    const CanvasPoint start =
+        transformSymbolPoint(component, line.start_x_units, line.start_y_units);
+    const CanvasPoint end = transformSymbolPoint(component, line.end_x_units, line.end_y_units);
+    line.id = prefix + line.id;
+    line.start_x_units = start.x_units;
+    line.start_y_units = start.y_units;
+    line.end_x_units = end.x_units;
+    line.end_y_units = end.y_units;
+    scene.lines.push_back(line);
+    includeBounds(min_x, min_y, max_x, max_y, line.start_x_units, line.start_y_units);
+    includeBounds(min_x, min_y, max_x, max_y, line.end_x_units, line.end_y_units);
+  }
+
+  for (CanvasArc arc : symbol_scene.arcs) {
+    const CanvasPoint start = transformSymbolPoint(component, arc.start_x_units, arc.start_y_units);
+    const CanvasPoint mid = transformSymbolPoint(component, arc.mid_x_units, arc.mid_y_units);
+    const CanvasPoint end = transformSymbolPoint(component, arc.end_x_units, arc.end_y_units);
+    arc.id = prefix + arc.id;
+    arc.start_x_units = start.x_units;
+    arc.start_y_units = start.y_units;
+    arc.mid_x_units = mid.x_units;
+    arc.mid_y_units = mid.y_units;
+    arc.end_x_units = end.x_units;
+    arc.end_y_units = end.y_units;
+    scene.arcs.push_back(arc);
+    includeBounds(min_x, min_y, max_x, max_y, arc.start_x_units, arc.start_y_units);
+    includeBounds(min_x, min_y, max_x, max_y, arc.mid_x_units, arc.mid_y_units);
+    includeBounds(min_x, min_y, max_x, max_y, arc.end_x_units, arc.end_y_units);
+  }
+
+  for (CanvasCircle circle : symbol_scene.circles) {
+    const CanvasPoint center =
+        transformSymbolPoint(component, circle.center_x_units, circle.center_y_units);
+    circle.id = prefix + circle.id;
+    circle.center_x_units = center.x_units;
+    circle.center_y_units = center.y_units;
+    scene.circles.push_back(circle);
+    includeBounds(min_x, min_y, max_x, max_y, circle.center_x_units - circle.radius_units,
+                  circle.center_y_units - circle.radius_units);
+    includeBounds(min_x, min_y, max_x, max_y, circle.center_x_units + circle.radius_units,
+                  circle.center_y_units + circle.radius_units);
+  }
+
+  for (CanvasPolygon polygon : symbol_scene.polygons) {
+    polygon.id = prefix + polygon.id;
+    for (std::size_t i = 0; i < polygon.pts_x_units.size(); ++i) {
+      const CanvasPoint point =
+          transformSymbolPoint(component, polygon.pts_x_units.at(i), polygon.pts_y_units.at(i));
+      polygon.pts_x_units.at(i) = point.x_units;
+      polygon.pts_y_units.at(i) = point.y_units;
+      includeBounds(min_x, min_y, max_x, max_y, point.x_units, point.y_units);
+    }
+    scene.polygons.push_back(polygon);
+  }
+
+  for (CanvasText text : symbol_scene.texts) {
+    const CanvasPoint position = transformSymbolPoint(component, text.x_units, text.y_units);
+    text.id = prefix + text.id;
+    text.x_units = position.x_units;
+    text.y_units = position.y_units;
+    text.rotation_degrees += component.rotation_degrees;
+    scene.texts.push_back(text);
+    includeBounds(min_x, min_y, max_x, max_y, text.x_units, text.y_units);
+  }
 }
 
 }  // namespace
@@ -177,6 +284,18 @@ CanvasScene buildSchematicScene(const Project& project) {
   double min_y = 0;
   double max_x = 0;
   double max_y = 0;
+  bool has_bounds = false;
+  const auto includeSchematicBounds = [&](const double x_units, const double y_units) {
+    if (!has_bounds) {
+      min_x = x_units;
+      min_y = y_units;
+      max_x = x_units;
+      max_y = y_units;
+      has_bounds = true;
+      return;
+    }
+    includeBounds(min_x, min_y, max_x, max_y, x_units, y_units);
+  };
 
   for (const Component& comp : project.components) {
     CanvasComponent cc;
@@ -185,12 +304,14 @@ CanvasScene buildSchematicScene(const Project& project) {
     cc.x_units = toMillimeters(comp.position.x);
     cc.y_units = toMillimeters(comp.position.y);
     cc.rotation_degrees = comp.rotation_degrees;
+    cc.has_symbol_graphics = comp.symbol.has_value();
     scene.components.push_back(cc);
 
-    if (cc.x_units < min_x) min_x = cc.x_units;
-    if (cc.y_units < min_y) min_y = cc.y_units;
-    if (cc.x_units > max_x) max_x = cc.x_units;
-    if (cc.y_units > max_y) max_y = cc.y_units;
+    includeSchematicBounds(cc.x_units, cc.y_units);
+    if (comp.symbol.has_value()) {
+      mergePlacedSymbolScene(scene, comp, buildCanvasScene(*comp.symbol), min_x, min_y, max_x,
+                             max_y);
+    }
   }
 
   for (const WireSegment& wire : project.wires) {
@@ -202,19 +323,20 @@ CanvasScene buildSchematicScene(const Project& project) {
     cw.end_y_units = toMillimeters(wire.end.y);
     scene.wires.push_back(cw);
 
-    if (cw.start_x_units < min_x) min_x = cw.start_x_units;
-    if (cw.start_y_units < min_y) min_y = cw.start_y_units;
-    if (cw.end_x_units < min_x) min_x = cw.end_x_units;
-    if (cw.end_y_units < min_y) min_y = cw.end_y_units;
-    
-    if (cw.start_x_units > max_x) max_x = cw.start_x_units;
-    if (cw.start_y_units > max_y) max_y = cw.start_y_units;
-    if (cw.end_x_units > max_x) max_x = cw.end_x_units;
-    if (cw.end_y_units > max_y) max_y = cw.end_y_units;
+    includeSchematicBounds(cw.start_x_units, cw.start_y_units);
+    includeSchematicBounds(cw.end_x_units, cw.end_y_units);
   }
 
-  scene.view_width_units = max_x - min_x + 50.0;
-  scene.view_height_units = max_y - min_y + 50.0;
+  if (has_bounds) {
+    constexpr double padding_units = 10.0;
+    scene.board_origin_x_units = min_x - (padding_units / 2.0);
+    scene.board_origin_y_units = min_y - (padding_units / 2.0);
+    scene.view_width_units = (max_x - min_x) + padding_units;
+    scene.view_height_units = (max_y - min_y) + padding_units;
+  } else {
+    scene.view_width_units = 50.0;
+    scene.view_height_units = 50.0;
+  }
 
   return scene;
 }
@@ -311,6 +433,27 @@ CanvasScene buildCanvasScene(const Footprint& footprint) {
 CanvasScene buildCanvasScene(const Symbol& symbol) {
   CanvasScene scene;
   scene.has_board = false;
+
+  for (const SymbolRectangle& rectangle : symbol.rectangles) {
+    CanvasPolygon canvas_rectangle;
+    canvas_rectangle.id = "rect_" + std::to_string(scene.polygons.size());
+    canvas_rectangle.layer_id = "symbol";
+    canvas_rectangle.width_units = toMillimeters(rectangle.stroke_width);
+    canvas_rectangle.fill_type = rectangle.fill_type;
+    canvas_rectangle.pts_x_units = {
+        toMillimeters(rectangle.start.x),
+        toMillimeters(rectangle.end.x),
+        toMillimeters(rectangle.end.x),
+        toMillimeters(rectangle.start.x),
+    };
+    canvas_rectangle.pts_y_units = {
+        toMillimeters(rectangle.start.y),
+        toMillimeters(rectangle.start.y),
+        toMillimeters(rectangle.end.y),
+        toMillimeters(rectangle.end.y),
+    };
+    scene.polygons.push_back(canvas_rectangle);
+  }
   
   for (const SymbolLine& line : symbol.lines) {
     scene.lines.push_back(CanvasLine{
@@ -377,19 +520,19 @@ CanvasScene buildCanvasScene(const Symbol& symbol) {
   }
 
   for (const SymbolPin& pin : symbol.pins) {
-    scene.pads.push_back(CanvasPad{
+    const double start_x_units = toMillimeters(pin.position.x);
+    const double start_y_units = toMillimeters(pin.position.y);
+    const double pin_length_units =
+        pin.length.nanometers == 0 ? 2.54 : toMillimeters(pin.length);
+    const CanvasPoint pin_vector = rotatePoint(pin_length_units, 0.0, pin.rotation_degrees);
+    scene.lines.push_back(CanvasLine{
         .id = "pin_" + pin.number,
-        .net_id = "",
-        .layers = {"symbol"},
-        .type = "smd",
-        .shape = "rect",
-        .x_units = toMillimeters(pin.position.x),
-        .y_units = toMillimeters(pin.position.y),
-        .width_units = toMillimeters(pin.length),
-        .height_units = 0.5,
-        .rotation_degrees = pin.rotation_degrees,
-        .roundrect_rratio = std::nullopt,
-        .chamfer_ratio = std::nullopt,
+        .layer_id = "symbol_pin",
+        .start_x_units = start_x_units,
+        .start_y_units = start_y_units,
+        .end_x_units = start_x_units + pin_vector.x_units,
+        .end_y_units = start_y_units + pin_vector.y_units,
+        .width_units = 0.12,
     });
   }
 

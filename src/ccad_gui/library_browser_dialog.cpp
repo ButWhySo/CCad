@@ -397,6 +397,8 @@ void LibraryBrowserDialog::loadComponents() {
     item->setData(0, Qt::UserRole, file.absoluteFilePath());
     item->setData(0, Qt::UserRole + 1, library_name);
     item->setData(0, Qt::UserRole + 2, file.fileName());
+    item->setData(0, Qt::UserRole + 3, file.completeBaseName());
+    item->setData(0, Qt::UserRole + 4, description);
   }
 }
 
@@ -412,7 +414,16 @@ void LibraryBrowserDialog::filterComponents(const QString& text) {
 void LibraryBrowserDialog::onAccept() {
   auto selected = component_list_->selectedItems();
   if (!selected.isEmpty()) {
-    result_ = selected.first()->data(0, Qt::UserRole).toString().toStdString();
+    const QTreeWidgetItem* item = selected.first();
+    const QString path = item->data(0, Qt::UserRole).toString();
+    selection_ = LibrarySelection{
+        .path = path.toStdString(),
+        .library_name = item->data(0, Qt::UserRole + 1).toString().toStdString(),
+        .item_name = item->data(0, Qt::UserRole + 3).toString().toStdString(),
+        .file_name = item->data(0, Qt::UserRole + 2).toString().toStdString(),
+        .source_kind = item->data(0, Qt::UserRole + 4).toString().toStdString(),
+    };
+    result_ = selection_->path;
     accept();
   }
 }
@@ -437,6 +448,10 @@ void LibraryBrowserDialog::updateDetails() {
 
 std::optional<std::string> LibraryBrowserDialog::result() const {
   return result_;
+}
+
+std::optional<LibrarySelection> LibraryBrowserDialog::selection() const {
+  return selection_;
 }
 
 bool LibraryBrowserDialog::selectFirstVisibleItemForTest() {

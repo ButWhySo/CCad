@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ccad_core/geometry.hpp"
+#include "ccad_core/symbol.hpp"
 
 #include <optional>
 #include <string>
@@ -19,6 +20,7 @@ struct Component {
   std::vector<Pin> pins;
   Point position;
   double rotation_degrees = 0.0;
+  std::optional<Symbol> symbol = std::nullopt;
 };
 
 struct NetMember {

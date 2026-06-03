@@ -7,6 +7,8 @@
 #include <QDir>
 #include <QFile>
 #include <QGraphicsView>
+#include <QDialogButtonBox>
+#include <QPushButton>
 #include <QTemporaryDir>
 #include <QTreeWidget>
 
@@ -77,6 +79,22 @@ private slots:
     QVERIFY(preview != nullptr);
     QVERIFY(preview->scene() != nullptr);
     QVERIFY(preview->scene()->items().size() > 0);
+
+    auto* button_box = dialog.findChild<QDialogButtonBox*>();
+    QVERIFY(button_box != nullptr);
+    QPushButton* ok_button = button_box->button(QDialogButtonBox::Ok);
+    QVERIFY(ok_button != nullptr);
+    QTimer::singleShot(0, [&]() {
+      ok_button->click();
+    });
+    dialog.exec();
+
+    const auto selection = dialog.selection();
+    QVERIFY(selection.has_value());
+    QCOMPARE(QString::fromStdString(selection->item_name), QString("OnePin"));
+    QCOMPARE(QString::fromStdString(selection->library_name), QString("Bad.kicad_sym"));
+    QCOMPARE(QString::fromStdString(selection->source_kind), QString("CCad symbol JSON"));
+    QCOMPARE(QString::fromStdString(selection->path), symbol.fileName());
   }
 };
 

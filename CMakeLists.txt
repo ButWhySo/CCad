@@ -58,6 +58,7 @@ add_executable(ccad
   src/ccad_cli/pcb_commands.cpp
   src/ccad_cli/pcb_object_queries.cpp
   src/ccad_cli/project_commands.cpp
+  src/ccad_cli/sch_commands.cpp
   src/ccad_cli/agent_commands.cpp
 )
 target_link_libraries(ccad PRIVATE ccad_core)
@@ -157,6 +158,7 @@ add_executable(ccad_agent_serve_tests
   src/ccad_cli/pcb_commands.cpp
   src/ccad_cli/pcb_object_queries.cpp
   src/ccad_cli/project_commands.cpp
+  src/ccad_cli/sch_commands.cpp
   src/ccad_cli/agent_commands.cpp
 )
 target_link_libraries(ccad_agent_serve_tests PRIVATE ccad_core)
