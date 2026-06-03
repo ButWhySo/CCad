@@ -69,6 +69,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <optional>
 #include <sstream>
@@ -222,6 +223,10 @@ std::optional<QJsonObject> parseJsonObject(const QString& json) {
   return document.object();
 }
 
+QString jsonObjectLine(const QJsonObject& object) {
+  return QString::fromUtf8(QJsonDocument(object).toJson(QJsonDocument::Compact)) + "\n";
+}
+
 QString agentQueryResponse(const QString& method, const bool ok, const QString& reason,
                            const QString& result = "{}") {
   if (ok) {
@@ -234,20 +239,120 @@ QString agentQueryResponse(const QString& method, const bool ok, const QString& 
       .arg(jsonString(reason));
 }
 
+int normalizedUiMapLimit(const int limit, const int fallback = 100) {
+  return std::clamp(limit <= 0 ? fallback : limit, 1, 500);
+}
+
+void copyStringFieldIfPresent(QJsonObject& destination, const QJsonObject& source,
+                              const QString& key) {
+  const QString value = source.value(key).toString();
+  if (!value.isEmpty()) {
+    destination.insert(key, value);
+  }
+}
+
+QJsonObject compactUiMapNode(const QJsonObject& node) {
+  const QString id = node.value("id").toString();
+  const QString role = node.value("role").toString();
+  QString label = node.value("label").toString();
+  const QString object_id = node.value("object_id").toString();
+  const QString type = node.value("type").toString();
+  if (label.isEmpty() && !object_id.isEmpty()) {
+    label = type.isEmpty() ? object_id : type + ":" + object_id;
+  }
+
+  QJsonObject compact;
+  compact.insert("id", id);
+  compact.insert("role", role);
+  compact.insert("label", label);
+  compact.insert("visible", node.value("visible").toBool());
+  compact.insert("enabled", node.contains("enabled") ? node.value("enabled").toBool()
+                                                     : node.value("interactive").toBool(false));
+  if (node.contains("interactive")) {
+    compact.insert("interactive", node.value("interactive").toBool());
+  }
+  if (node.contains("selected")) {
+    compact.insert("selected", node.value("selected").toBool());
+  }
+  if (node.contains("checked")) {
+    compact.insert("checked", node.value("checked").toBool());
+  }
+  compact.insert("target_x", node.value("target_x").toInt());
+  compact.insert("target_y", node.value("target_y").toInt());
+  copyStringFieldIfPresent(compact, node, "canvas");
+  copyStringFieldIfPresent(compact, node, "type");
+  copyStringFieldIfPresent(compact, node, "object_id");
+  copyStringFieldIfPresent(compact, node, "net_id");
+  copyStringFieldIfPresent(compact, node, "layer_id");
+  copyStringFieldIfPresent(compact, node, "route_request_id");
+  return compact;
+}
+
+struct CompactUiMapNodes {
+  QJsonArray nodes;
+  int total_node_count = 0;
+  int match_count = 0;
+  bool truncated = false;
+};
+
+CompactUiMapNodes compactUiMapNodesFromMapObject(const QJsonObject& map_object,
+                                                 const QString& role_filter,
+                                                 const int limit) {
+  CompactUiMapNodes result;
+  const QJsonArray nodes = map_object.value("nodes").toArray();
+  result.total_node_count = static_cast<int>(nodes.size());
+  for (const QJsonValue& value : nodes) {
+    if (!value.isObject()) {
+      continue;
+    }
+    const QJsonObject node = value.toObject();
+    const QString role = node.value("role").toString();
+    if (!role_filter.isEmpty() && role != role_filter) {
+      continue;
+    }
+    ++result.match_count;
+    if (result.nodes.size() >= limit) {
+      result.truncated = true;
+      continue;
+    }
+    result.nodes.append(compactUiMapNode(node));
+  }
+  return result;
+}
+
+std::optional<QRect> globalRectFromUiMapNode(const QJsonObject& node) {
+  const QJsonValue rect_value = node.value("global_rect");
+  if (!rect_value.isObject()) {
+    return std::nullopt;
+  }
+  const QJsonObject rect_object = rect_value.toObject();
+  const int width = rect_object.value("width").toInt();
+  const int height = rect_object.value("height").toInt();
+  if (width <= 0 || height <= 0) {
+    return std::nullopt;
+  }
+  return QRect(rect_object.value("x").toInt(), rect_object.value("y").toInt(), width, height);
+}
+
 double screenDevicePixelRatio(const QWidget* widget) {
   const QWindow* window = widget != nullptr ? widget->windowHandle() : nullptr;
   const QScreen* screen = window != nullptr ? window->screen() : QGuiApplication::primaryScreen();
   return screen != nullptr ? screen->devicePixelRatio() : 1.0;
 }
 
+QJsonObject targetPointObject(const QPoint& point, const double device_pixel_ratio) {
+  QJsonObject target;
+  target.insert("logical_x", point.x());
+  target.insert("logical_y", point.y());
+  target.insert("physical_x", point.x() * device_pixel_ratio);
+  target.insert("physical_y", point.y() * device_pixel_ratio);
+  target.insert("device_pixel_ratio", device_pixel_ratio);
+  return target;
+}
+
 QString targetPointJson(const QPoint& point, const double device_pixel_ratio) {
-  return QString("{\"logical_x\":%1,\"logical_y\":%2,\"physical_x\":%3,"
-                 "\"physical_y\":%4,\"device_pixel_ratio\":%5}")
-      .arg(point.x())
-      .arg(point.y())
-      .arg(point.x() * device_pixel_ratio, 0, 'f', 3)
-      .arg(point.y() * device_pixel_ratio, 0, 'f', 3)
-      .arg(device_pixel_ratio, 0, 'f', 3);
+  return QString::fromUtf8(
+      QJsonDocument(targetPointObject(point, device_pixel_ratio)).toJson(QJsonDocument::Compact));
 }
 
 std::filesystem::path kicadSourceRoot() {
@@ -2515,9 +2620,94 @@ QString ReviewWindow::uiMapJson() const {
       .arg(nodes.join(','));
 }
 
+QString ReviewWindow::uiMapCompactJson(const QString& role, const int limit) const {
+  const std::optional<QJsonObject> map_object = parseJsonObject(uiMapJson());
+  const QString trimmed_role = role.trimmed();
+  const int normalized_limit = normalizedUiMapLimit(limit);
+  if (!map_object.has_value()) {
+    QJsonObject response;
+    response.insert("schema_version", 1);
+    response.insert("ui_epoch", ui_map_epoch_);
+    response.insert("role", trimmed_role);
+    response.insert("limit", normalized_limit);
+    response.insert("total_node_count", 0);
+    response.insert("match_count", 0);
+    response.insert("truncated", false);
+    response.insert("nodes", QJsonArray{});
+    response.insert("error", "map_parse_failed");
+    return jsonObjectLine(response);
+  }
+
+  const CompactUiMapNodes compact =
+      compactUiMapNodesFromMapObject(*map_object, trimmed_role, normalized_limit);
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("role", trimmed_role);
+  response.insert("limit", normalized_limit);
+  response.insert("total_node_count", compact.total_node_count);
+  response.insert("match_count", compact.match_count);
+  response.insert("truncated", compact.truncated);
+  response.insert("nodes", compact.nodes);
+  return jsonObjectLine(response);
+}
+
+QString ReviewWindow::uiRoleSummaryJson() const {
+  const std::optional<QJsonObject> map_object = parseJsonObject(uiMapJson());
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  if (!map_object.has_value()) {
+    response.insert("total_node_count", 0);
+    response.insert("roles", QJsonArray{});
+    response.insert("error", "map_parse_failed");
+    return jsonObjectLine(response);
+  }
+
+  struct RoleCounts {
+    int count = 0;
+    int visible_count = 0;
+    int enabled_count = 0;
+  };
+  std::map<QString, RoleCounts> role_counts;
+  const QJsonArray nodes = map_object->value("nodes").toArray();
+  for (const QJsonValue& value : nodes) {
+    if (!value.isObject()) {
+      continue;
+    }
+    const QJsonObject node = value.toObject();
+    const QString role = node.value("role").toString("unknown");
+    RoleCounts& counts = role_counts[role];
+    ++counts.count;
+    if (node.value("visible").toBool()) {
+      ++counts.visible_count;
+    }
+    const bool enabled = node.contains("enabled") ? node.value("enabled").toBool()
+                                                  : node.value("interactive").toBool(false);
+    if (enabled) {
+      ++counts.enabled_count;
+    }
+  }
+
+  QJsonArray roles;
+  for (const auto& [role, counts] : role_counts) {
+    QJsonObject role_object;
+    role_object.insert("role", role);
+    role_object.insert("count", counts.count);
+    role_object.insert("visible_count", counts.visible_count);
+    role_object.insert("enabled_count", counts.enabled_count);
+    roles.append(role_object);
+  }
+  response.insert("total_node_count", static_cast<int>(nodes.size()));
+  response.insert("roles", roles);
+  return jsonObjectLine(response);
+}
+
 QString ReviewWindow::uiMapDeltaJson(const int since_epoch) const {
   const QString map = uiMapJson();
-  const int total_node_count = map.count("\"id\":");
+  const std::optional<QJsonObject> map_object = parseJsonObject(map);
+  const int total_node_count =
+      map_object.has_value() ? map_object->value("nodes").toArray().size() : map.count("\"id\":");
   if (since_epoch >= ui_map_epoch_) {
     return QString("{\"schema_version\":1,\"since_epoch\":%1,\"ui_epoch\":%2,"
                    "\"changed\":false,\"total_node_count\":%3,\"nodes\":[]}\n")
@@ -2525,12 +2715,22 @@ QString ReviewWindow::uiMapDeltaJson(const int since_epoch) const {
         .arg(ui_map_epoch_)
         .arg(total_node_count);
   }
-  return QString("{\"schema_version\":1,\"since_epoch\":%1,\"ui_epoch\":%2,"
-                 "\"changed\":true,\"total_node_count\":%3,\"map\":%4}\n")
-      .arg(since_epoch)
-      .arg(ui_map_epoch_)
-      .arg(total_node_count)
-      .arg(oneLineJson(map));
+  const CompactUiMapNodes compact =
+      map_object.has_value()
+          ? compactUiMapNodesFromMapObject(*map_object, {}, std::numeric_limits<int>::max())
+          : CompactUiMapNodes{};
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("since_epoch", since_epoch);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("changed", true);
+  response.insert("total_node_count", total_node_count);
+  response.insert("truncated", false);
+  response.insert("nodes", compact.nodes);
+  if (!map_object.has_value()) {
+    response.insert("error", "map_parse_failed");
+  }
+  return jsonObjectLine(response);
 }
 
 QString ReviewWindow::uiFindJson(const QString& query, const QString& role, const int limit) const {
@@ -2599,6 +2799,61 @@ QString ReviewWindow::uiFindJson(const QString& query, const QString& role, cons
       .arg(match_count)
       .arg(boolJson(match_count > static_cast<int>(matches.size())))
       .arg(matches.join(','));
+}
+
+QString ReviewWindow::uiHitTestJson(const int logical_x, const int logical_y) const {
+  const std::optional<QJsonObject> map_object = parseJsonObject(uiMapJson());
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("logical_x", logical_x);
+  response.insert("logical_y", logical_y);
+  if (!map_object.has_value()) {
+    response.insert("found", false);
+    response.insert("reason", "map_parse_failed");
+    return jsonObjectLine(response);
+  }
+
+  const QPoint point(logical_x, logical_y);
+  QJsonObject best_node;
+  int best_area = std::numeric_limits<int>::max();
+  const QJsonArray nodes = map_object->value("nodes").toArray();
+  for (const QJsonValue& value : nodes) {
+    if (!value.isObject()) {
+      continue;
+    }
+    const QJsonObject node = value.toObject();
+    if (!node.value("visible").toBool()) {
+      continue;
+    }
+    const bool enabled = node.contains("enabled") ? node.value("enabled").toBool()
+                                                  : node.value("interactive").toBool(false);
+    if (!enabled && node.value("role").toString() != "window") {
+      continue;
+    }
+    const std::optional<QRect> rect = globalRectFromUiMapNode(node);
+    if (!rect.has_value() || !rect->contains(point)) {
+      continue;
+    }
+    const int area = rect->width() * rect->height();
+    if (area < best_area) {
+      best_area = area;
+      best_node = node;
+    }
+  }
+
+  if (best_node.isEmpty()) {
+    response.insert("found", false);
+    response.insert("reason", "no_hit");
+    return jsonObjectLine(response);
+  }
+  const QJsonObject compact = compactUiMapNode(best_node);
+  response.insert("found", true);
+  response.insert("id", compact.value("id"));
+  response.insert("role", compact.value("role"));
+  response.insert("label", compact.value("label"));
+  response.insert("node", compact);
+  return jsonObjectLine(response);
 }
 
 QString ReviewWindow::validateUiMapTargetsJson(const bool move_cursor) const {
@@ -2999,6 +3254,112 @@ QString ReviewWindow::uiTargetJsonForBoardPoint(const double x_mm, const double 
       .arg(targetPointJson(target, screenDevicePixelRatio(canvas_view_)));
 }
 
+QString ReviewWindow::uiNearestCanvasObjectJson(const double x_mm, const double y_mm,
+                                                const QString& canvas_id, const int limit) const {
+  const QString normalized_canvas = canvas_id.trimmed().isEmpty() ? "canvas:pcb" : canvas_id.trimmed();
+  const int normalized_limit = normalizedUiMapLimit(limit, 10);
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("canvas", normalized_canvas);
+  response.insert("x_mm", x_mm);
+  response.insert("y_mm", y_mm);
+  response.insert("limit", normalized_limit);
+  if (normalized_canvas != "canvas:pcb") {
+    response.insert("found", false);
+    response.insert("reason", "unsupported_canvas");
+    response.insert("candidates", QJsonArray{});
+    return jsonObjectLine(response);
+  }
+  if (!project_cache_.board.has_value() || canvas_view_ == nullptr || canvas_scene_ == nullptr) {
+    response.insert("found", false);
+    response.insert("reason", "missing_board");
+    response.insert("candidates", QJsonArray{});
+    return jsonObjectLine(response);
+  }
+
+  const QPointF scene_point = boardPositionToScene(*project_cache_.board, x_mm, y_mm);
+  struct Candidate {
+    double distance = 0.0;
+    QJsonObject node;
+  };
+  std::vector<Candidate> candidates;
+  const double device_pixel_ratio = screenDevicePixelRatio(canvas_view_);
+  for (const QGraphicsItem* item : canvas_scene_->items()) {
+    if (item == nullptr) {
+      continue;
+    }
+    const QString object_id = canvasObjectId(*item);
+    const QString object_type = canvasObjectType(*item);
+    if (object_id.isEmpty() || object_type.isEmpty()) {
+      continue;
+    }
+    if (!item->isVisible() || !(item->flags() & QGraphicsItem::ItemIsSelectable)) {
+      continue;
+    }
+    const QRectF scene_rect = item->sceneBoundingRect();
+    const QPointF delta = scene_rect.center() - scene_point;
+    const double distance = std::hypot(delta.x(), delta.y());
+    const QPoint target =
+        canvas_view_->viewport()->mapToGlobal(canvas_view_->mapFromScene(scene_rect.center()));
+    QJsonObject node;
+    node.insert("id", QString("canvas_object:") + object_id);
+    node.insert("role", "canvas_object");
+    node.insert("label", normalized_canvas + ":" + object_type);
+    node.insert("canvas", normalized_canvas);
+    node.insert("type", object_type);
+    node.insert("object_id", object_id);
+    node.insert("visible", canvas_view_->isVisible() && item->isVisible());
+    node.insert("enabled", true);
+    node.insert("interactive", true);
+    node.insert("target_x", target.x());
+    node.insert("target_y", target.y());
+    node.insert("scene_distance", distance);
+    node.insert("target", targetPointObject(target, device_pixel_ratio));
+    copyStringFieldIfPresent(node, QJsonObject{{"net_id", canvasObjectNetId(*item)}}, "net_id");
+    copyStringFieldIfPresent(node, QJsonObject{{"layer_id", canvasObjectLayerId(*item)}}, "layer_id");
+    copyStringFieldIfPresent(
+        node, QJsonObject{{"route_request_id", canvasObjectRouteRequestId(*item)}},
+        "route_request_id");
+    candidates.push_back(Candidate{distance, node});
+  }
+  std::sort(candidates.begin(), candidates.end(), [](const Candidate& left,
+                                                     const Candidate& right) {
+    if (left.distance == right.distance) {
+      return left.node.value("id").toString() < right.node.value("id").toString();
+    }
+    return left.distance < right.distance;
+  });
+
+  QJsonArray candidate_nodes;
+  for (const Candidate& candidate : candidates) {
+    if (candidate_nodes.size() >= normalized_limit) {
+      break;
+    }
+    candidate_nodes.append(candidate.node);
+  }
+  if (candidates.empty()) {
+    response.insert("found", false);
+    response.insert("reason", "no_canvas_objects");
+    response.insert("candidate_count", 0);
+    response.insert("truncated", false);
+    response.insert("candidates", candidate_nodes);
+    return jsonObjectLine(response);
+  }
+  const QJsonObject nearest = candidates.front().node;
+  response.insert("found", true);
+  response.insert("id", nearest.value("id"));
+  response.insert("role", nearest.value("role"));
+  response.insert("object_id", nearest.value("object_id"));
+  response.insert("type", nearest.value("type"));
+  response.insert("scene_distance", nearest.value("scene_distance"));
+  response.insert("target", nearest.value("target"));
+  response.insert("candidate_count", static_cast<int>(candidates.size()));
+  response.insert("truncated", candidates.size() > static_cast<std::size_t>(candidate_nodes.size()));
+  response.insert("candidates", candidate_nodes);
+  return jsonObjectLine(response);
+}
+
 QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& payload) {
   const QString trimmed_method = method.trimmed();
   const std::optional<QJsonObject> request = parseJsonObject(payload.isEmpty() ? "{}" : payload);
@@ -3011,6 +3372,18 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
 
   if (trimmed_method == "ui.map") {
     return agentQueryResponse(trimmed_method, true, {}, uiMapJson());
+  }
+  if (trimmed_method == "ui.map_compact") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QString role = object->value("role").toString();
+    const int limit = object->value("limit").toInt(100);
+    return agentQueryResponse(trimmed_method, true, {}, uiMapCompactJson(role, limit));
+  }
+  if (trimmed_method == "ui.role_summary") {
+    return agentQueryResponse(trimmed_method, true, {}, uiRoleSummaryJson());
   }
   if (trimmed_method == "ui.map_delta") {
     const std::optional<QJsonObject> object = requireObject();
@@ -3029,6 +3402,19 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
     const QString role = object->value("role").toString();
     const int limit = object->value("limit").toInt(20);
     return agentQueryResponse(trimmed_method, true, {}, uiFindJson(query, role, limit));
+  }
+  if (trimmed_method == "ui.hit_test") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QJsonValue x_value = object->value("x");
+    const QJsonValue y_value = object->value("y");
+    if (!x_value.isDouble() || !y_value.isDouble()) {
+      return agentQueryResponse(trimmed_method, false, "ui.hit_test requires numeric x and y");
+    }
+    return agentQueryResponse(trimmed_method, true, {},
+                              uiHitTestJson(x_value.toInt(), y_value.toInt()));
   }
   if (trimmed_method == "ui.target") {
     const std::optional<QJsonObject> object = requireObject();
@@ -3054,6 +3440,23 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
     }
     return agentQueryResponse(trimmed_method, true, {},
                               uiTargetJsonForBoardPoint(x_value.toDouble(), y_value.toDouble()));
+  }
+  if (trimmed_method == "ui.nearest_canvas_object") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QJsonValue x_value = object->value("x_mm");
+    const QJsonValue y_value = object->value("y_mm");
+    if (!x_value.isDouble() || !y_value.isDouble()) {
+      return agentQueryResponse(trimmed_method, false,
+                                "ui.nearest_canvas_object requires numeric x_mm and y_mm");
+    }
+    const QString canvas = object->value("canvas").toString("canvas:pcb");
+    const int limit = object->value("limit").toInt(10);
+    return agentQueryResponse(trimmed_method, true, {},
+                              uiNearestCanvasObjectJson(x_value.toDouble(), y_value.toDouble(),
+                                                        canvas, limit));
   }
   if (trimmed_method == "ui.trigger_safe") {
     const std::optional<QJsonObject> object = requireObject();

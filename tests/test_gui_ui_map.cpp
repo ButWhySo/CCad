@@ -222,8 +222,37 @@ int main(int argc, char** argv) {
   const QString stale_delta = window.uiMapDeltaJson(initial_epoch - 1);
   require(contains(stale_delta, "\"changed\":true"),
           "UI map delta returns changed data for a stale epoch");
+  require(contains(stale_delta, "\"nodes\":["), "stale UI map delta returns compact nodes");
   require(contains(stale_delta, "\"id\":\"action:add_footprint\""),
-          "UI map delta includes the current map when stale");
+          "stale UI map delta includes current compact nodes");
+  require(!contains(stale_delta, "\"map\":"),
+          "stale UI map delta does not embed a full nested map");
+
+  const QString compact_actions = window.uiMapCompactJson("action", 80);
+  require(contains(compact_actions, "\"role\":\"action\""),
+          "compact UI map includes action nodes");
+  require(contains(compact_actions, "\"id\":\"action:add_footprint\""),
+          "compact UI map can filter to add-footprint action");
+  require(contains(compact_actions, "\"limit\":80"),
+          "compact UI map reports normalized limit");
+  require(!contains(compact_actions, "\"global_rect\":"),
+          "compact UI map omits heavy target rectangles");
+
+  const QString compact_canvas_objects = window.uiMapCompactJson("canvas_object", 20);
+  require(contains(compact_canvas_objects, "\"id\":\"canvas_object:U1.1\""),
+          "compact UI map returns canvas objects");
+  require(contains(compact_canvas_objects, "\"object_id\":\"U1.1\""),
+          "compact UI map preserves CAD object ids");
+  require(contains(compact_canvas_objects, "\"layer_id\":\"F.Cu\""),
+          "compact UI map preserves layer metadata");
+
+  const QString role_summary = window.uiRoleSummaryJson();
+  require(contains(role_summary, "\"role\":\"action\""),
+          "UI role summary includes action role");
+  require(contains(role_summary, "\"role\":\"canvas_object\""),
+          "UI role summary includes canvas-object role");
+  require(contains(role_summary, "\"total_node_count\":"),
+          "UI role summary reports total node count");
 
   const QString find_actions = window.uiFindJson("add", "action", 6);
   require(contains(find_actions, "\"match_count\":"), "UI map find reports match count");
@@ -248,6 +277,11 @@ int main(int argc, char** argv) {
   const QString menu_target = window.uiTargetJsonById("menu:file");
   require(contains(menu_target, "\"found\":true"), "menu target query finds File menu");
   require(contains(menu_target, "\"role\":\"menu\""), "menu target query reports role");
+  const int file_menu_x = extractInt(menu_target, "\"logical_x\":");
+  const int file_menu_y = extractInt(menu_target, "\"logical_y\":");
+  const QString file_hit = window.uiHitTestJson(file_menu_x, file_menu_y);
+  require(contains(file_hit, "\"found\":true"), "UI hit-test finds a node under target");
+  require(contains(file_hit, "\"id\":\"menu:file\""), "UI hit-test resolves File menu");
 
   const QString active_layer_target = window.uiTargetJsonById("control:active_pcb_layer");
   require(contains(active_layer_target, "\"found\":true"),
@@ -301,6 +335,14 @@ int main(int argc, char** argv) {
   require(contains(board_point, "\"found\":true"), "board point target query finds point");
   require(contains(board_point, "\"space\":\"board\""), "board point target reports space");
   require(contains(board_point, "\"scene_x\":"), "board point target reports scene mapping");
+
+  const QString nearest_pad = window.uiNearestCanvasObjectJson(8.0, 9.0, "canvas:pcb", 4);
+  require(contains(nearest_pad, "\"found\":true"),
+          "nearest canvas-object query finds a board object");
+  require(contains(nearest_pad, "\"id\":\"canvas_object:U1.1\""),
+          "nearest canvas-object query resolves the pad at the board point");
+  require(contains(nearest_pad, "\"scene_distance\":"),
+          "nearest canvas-object query reports scene distance");
 
   const QString unknown = window.uiTargetJsonById("action:not_real");
   require(contains(unknown, "\"found\":false"), "unknown target id fails explicitly");
@@ -362,16 +404,6 @@ int main(int argc, char** argv) {
           "place-text tool reports real editor-tool selection");
   require(contains(text_tool, "\"mode\":\"place_text\""),
           "place-text tool reports selected mode");
-
-  const QString delete_selected = window.triggerSafeUiActionJson("action:delete_cursor");
-  require(contains(delete_selected, "\"performed\":true"),
-          "delete action removes the selected board object");
-  require(contains(delete_selected, "\"reason\":\"deleted\""),
-          "delete action reports deletion");
-  require(contains(delete_selected, "\"deleted_type\":\"pad\""),
-          "delete action reports deleted object type");
-  require(!contains(window.uiMapJson(), "\"id\":\"canvas_object:U1.1\""),
-          "UI map drops the deleted pad");
 
   const QString zone_tool = window.triggerSafeUiActionJson("action:add_zone");
   require(contains(zone_tool, "\"performed\":true"), "add-zone tool enters edit mode");
@@ -458,6 +490,34 @@ int main(int argc, char** argv) {
           "live server returns successful ui.map_delta");
   require(contains(delta_response, "\"changed\":true"),
           "live server UI map delta reports stale clients");
+  require(!contains(delta_response, "\"map\":"),
+          "live server UI map delta avoids full nested maps");
+  const QString compact_response =
+      requestLine(socket, "{\"method\":\"ui.map_compact\",\"role\":\"action\",\"limit\":80}");
+  require(contains(compact_response, "\"ok\":true"),
+          "live server returns successful ui.map_compact");
+  require(contains(compact_response, "\"id\":\"action:add_footprint\""),
+          "live server compact map returns action IDs");
+  require(!contains(compact_response, "\"global_rect\":"),
+          "live server compact map omits heavy rectangles");
+  const QString role_summary_response = requestLine(socket, "{\"method\":\"ui.role_summary\"}");
+  require(contains(role_summary_response, "\"ok\":true"),
+          "live server returns successful ui.role_summary");
+  require(contains(role_summary_response, "\"role\":\"action\""),
+          "live server role summary includes action role");
+  const QString hit_response = requestLine(
+      socket,
+      QString("{\"method\":\"ui.hit_test\",\"x\":%1,\"y\":%2}").arg(file_menu_x).arg(file_menu_y));
+  require(contains(hit_response, "\"ok\":true"), "live server returns successful ui.hit_test");
+  require(contains(hit_response, "\"id\":\"menu:file\""),
+          "live server hit-test resolves File menu");
+  const QString nearest_response = requestLine(
+      socket,
+      "{\"method\":\"ui.nearest_canvas_object\",\"canvas\":\"canvas:pcb\",\"x_mm\":8,\"y_mm\":9,\"limit\":4}");
+  require(contains(nearest_response, "\"ok\":true"),
+          "live server returns successful ui.nearest_canvas_object");
+  require(contains(nearest_response, "\"id\":\"canvas_object:U1.1\""),
+          "live server nearest canvas-object resolves the first pad");
   const QString find_response =
       requestLine(socket, "{\"method\":\"ui.find\",\"query\":\"add\",\"role\":\"action\",\"limit\":5}");
   require(contains(find_response, "\"ok\":true"), "live server returns successful ui.find");
@@ -514,6 +574,16 @@ int main(int argc, char** argv) {
   require(contains(bad_response, "\"ok\":false"), "live server refuses unsupported methods");
   socket.disconnectFromServer();
   server.close();
+
+  const QString delete_selected = window.triggerSafeUiActionJson("action:delete_cursor");
+  require(contains(delete_selected, "\"performed\":true"),
+          "delete action removes the selected board object");
+  require(contains(delete_selected, "\"reason\":\"deleted\""),
+          "delete action reports deletion");
+  require(contains(delete_selected, "\"deleted_type\":\"pad\""),
+          "delete action reports deleted object type");
+  require(!contains(window.uiMapJson(), "\"id\":\"canvas_object:U1.1\""),
+          "UI map drops the deleted pad");
 
   const QString missing_layer = window.setActivePcbLayerForAutomation("NOPE");
   require(contains(missing_layer, "\"performed\":false"),
