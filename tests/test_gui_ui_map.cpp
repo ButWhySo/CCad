@@ -508,6 +508,91 @@ int main(int argc, char** argv) {
   require(after_canvas_text.board->texts.back().text == "AGENT TEXT",
           "canvas interaction text placement writes the requested label");
 
+  const std::filesystem::path workflow_path = writeProjectFixture();
+  ReviewWindow workflow_window;
+  workflow_window.loadProjectPath(workflow_path);
+  workflow_window.show();
+  QApplication::processEvents();
+
+  const QString current_tool =
+      workflow_window.runAgentUiQueryJson("ui.current_tool", "{}");
+  require(contains(current_tool, "\"ok\":true"), "agent current-tool query routes");
+  require(contains(current_tool, "\"mode\":\"default\""),
+          "agent current-tool query reports default mode");
+
+  workflow_window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:add_tracks\"}");
+  const QString armed_tool =
+      workflow_window.runAgentUiQueryJson("ui.current_tool", "{}");
+  require(contains(armed_tool, "\"mode\":\"route_track\""),
+          "agent current-tool query reports an armed route tool");
+  const QString cancel_tool =
+      workflow_window.runAgentUiQueryJson("ui.cancel_tool", "{}");
+  require(contains(cancel_tool, "\"ok\":true"), "agent cancel-tool query routes");
+  require(contains(cancel_tool, "\"performed\":true"),
+          "agent cancel-tool sends Escape through the GUI path");
+  require(contains(cancel_tool, "\"mode\":\"default\""),
+          "agent cancel-tool returns to default mode");
+
+  const QString workflow_via =
+      workflow_window.runAgentUiQueryJson("ui.place_via", "{\"x_mm\":14,\"y_mm\":10}");
+  require(contains(workflow_via, "\"ok\":true"), "agent place-via workflow routes");
+  require(contains(workflow_via, "\"performed\":true"),
+          "agent place-via workflow places through viewport input");
+  require(contains(workflow_via, "\"via_count\":1"),
+          "agent place-via workflow reports updated via count");
+  require(contains(workflow_window.uiMapJson(), "\"id\":\"canvas_object:V1\""),
+          "agent place-via workflow exposes the placed via");
+
+  const QString workflow_track = workflow_window.runAgentUiQueryJson(
+      "ui.route_track", "{\"start_x_mm\":8,\"start_y_mm\":9,\"end_x_mm\":18,\"end_y_mm\":12}");
+  require(contains(workflow_track, "\"performed\":true"),
+          "agent route-track workflow places through viewport input");
+  require(contains(workflow_track, "\"track_count\":1"),
+          "agent route-track workflow reports updated track count");
+
+  const QString workflow_zone = workflow_window.runAgentUiQueryJson(
+      "ui.add_zone", "{\"start_x_mm\":2,\"start_y_mm\":2,\"end_x_mm\":20,\"end_y_mm\":12}");
+  require(contains(workflow_zone, "\"performed\":true"),
+          "agent add-zone workflow places through viewport input");
+  require(contains(workflow_zone, "\"zone_count\":1"),
+          "agent add-zone workflow reports updated zone count");
+
+  const QString workflow_keepout = workflow_window.runAgentUiQueryJson(
+      "ui.add_keepout", "{\"start_x_mm\":22,\"start_y_mm\":8,\"end_x_mm\":28,\"end_y_mm\":14}");
+  require(contains(workflow_keepout, "\"performed\":true"),
+          "agent add-keepout workflow places through viewport input");
+  require(contains(workflow_keepout, "\"keepout_count\":1"),
+          "agent add-keepout workflow reports updated keepout count");
+
+  const QString workflow_graphic = workflow_window.runAgentUiQueryJson(
+      "ui.draw_graphic", "{\"start_x_mm\":4,\"start_y_mm\":24,\"end_x_mm\":18,\"end_y_mm\":24}");
+  require(contains(workflow_graphic, "\"performed\":true"),
+          "agent draw-graphic workflow places through viewport input");
+  require(contains(workflow_graphic, "\"graphic_count\":1"),
+          "agent draw-graphic workflow reports updated graphic count");
+
+  const QString workflow_text = workflow_window.runAgentUiQueryJson(
+      "ui.place_text", "{\"x_mm\":8,\"y_mm\":22,\"text\":\"FLOW TEXT\"}");
+  require(contains(workflow_text, "\"performed\":true"),
+          "agent place-text workflow places through viewport input");
+  require(contains(workflow_text, "\"text_count\":1"),
+          "agent place-text workflow reports updated text count");
+  const ccad::Project after_workflow_text = ccad::loadProjectJson(readFile(workflow_path));
+  require(after_workflow_text.board.has_value(), "workflow fixture still has a board");
+  require(!after_workflow_text.board->texts.empty(),
+          "workflow text placement writes a board text object");
+  require(after_workflow_text.board->texts.back().text == "FLOW TEXT",
+          "workflow text placement writes the requested label");
+
+  const QString workflow_delete =
+      workflow_window.runAgentUiQueryJson("ui.delete_object", "{\"id\":\"V1\"}");
+  require(contains(workflow_delete, "\"performed\":true"),
+          "agent delete-object workflow deletes a selected object");
+  require(contains(workflow_delete, "\"deleted_type\":\"via\""),
+          "agent delete-object workflow reports deleted object type");
+  require(!contains(workflow_window.uiMapJson(), "\"id\":\"canvas_object:V1\""),
+          "agent delete-object workflow removes the via from the UI map");
+
   const QString unknown = window.uiTargetJsonById("action:not_real");
   require(contains(unknown, "\"found\":false"), "unknown target id fails explicitly");
   require(contains(unknown, "\"reason\":\"unknown_id\""), "unknown target id reports reason");
@@ -733,6 +818,16 @@ int main(int argc, char** argv) {
           "live server returns successful ui.canvas_drag");
   require(contains(canvas_drag_response, "\"dry_run\":true"),
           "live server ui.canvas_drag supports dry run");
+  const QString cancel_tool_response = requestLine(socket, "{\"method\":\"ui.cancel_tool\"}");
+  require(contains(cancel_tool_response, "\"ok\":true"),
+          "live server returns successful ui.cancel_tool");
+  require(contains(cancel_tool_response, "\"performed\":true"),
+          "live server cancel-tool query sends Escape");
+  const QString current_tool_response = requestLine(socket, "{\"method\":\"ui.current_tool\"}");
+  require(contains(current_tool_response, "\"ok\":true"),
+          "live server returns successful ui.current_tool");
+  require(contains(current_tool_response, "\"mode\":\"default\""),
+          "live server current-tool query reports default mode after cancellation");
   const QString safe_trigger_response =
       requestLine(socket, "{\"method\":\"ui.trigger_safe\",\"id\":\"tab:agent\"}");
   require(contains(safe_trigger_response, "\"ok\":true"),

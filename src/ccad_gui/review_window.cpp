@@ -403,6 +403,24 @@ void insertBoardObjectCounts(QJsonObject& response, const std::optional<ccad::Bo
   response.insert("text_count", static_cast<int>(board->texts.size()));
 }
 
+QJsonObject parsedJsonObjectOrRaw(const QString& json) {
+  if (const std::optional<QJsonObject> parsed = parseJsonObject(json)) {
+    return *parsed;
+  }
+  return QJsonObject{{"raw", json.trimmed()}};
+}
+
+void copyBoardObjectCounts(QJsonObject& destination, const QJsonObject& source) {
+  static const QStringList count_keys = {"pad_count", "via_count", "track_count",
+                                         "zone_count", "keepout_count",
+                                         "graphic_count", "text_count"};
+  for (const QString& key : count_keys) {
+    if (source.contains(key)) {
+      destination.insert(key, source.value(key));
+    }
+  }
+}
+
 std::filesystem::path kicadSourceRoot() {
   if (const char* env = std::getenv("CCAD_KICAD_SRC")) {
     std::filesystem::path path(env);
@@ -3765,6 +3783,259 @@ QString ReviewWindow::uiCanvasDragJson(const double start_x_mm, const double sta
   return jsonObjectLine(response);
 }
 
+QString ReviewWindow::uiCurrentToolJson() const {
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("mode", interactionModeName(interaction_mode_));
+  response.insert("has_anchor", interaction_has_anchor_);
+  response.insert("active_layer_id", qstr(activePcbLayerOrDefault()));
+  response.insert("active_net_id", qstr(activePcbNetOrDefault()));
+  response.insert("canvas", "canvas:pcb");
+  return jsonObjectLine(response);
+}
+
+QString ReviewWindow::uiCancelToolJson() {
+  const QJsonObject key_result = parsedJsonObjectOrRaw(uiKeyJson("Escape"));
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("performed", key_result.value("performed").toBool(false));
+  response.insert("reason", key_result.value("reason").toString("key_sent"));
+  response.insert("mode", interactionModeName(interaction_mode_));
+  response.insert("key_result", key_result);
+  return jsonObjectLine(response);
+}
+
+QString ReviewWindow::uiWorkflowPlaceViaJson(const double x_mm, const double y_mm,
+                                             const bool dry_run, const QString& canvas_id) {
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("action_id", "action:add_via");
+  response.insert("dry_run", dry_run);
+  response.insert("x_mm", x_mm);
+  response.insert("y_mm", y_mm);
+  response.insert("mode_before", interactionModeName(interaction_mode_));
+  if (dry_run) {
+    const QJsonObject target = parsedJsonObjectOrRaw(uiCanvasClickJson(x_mm, y_mm, true,
+                                                                       canvas_id, {}));
+    response.insert("activation", QJsonObject{{"performed", false}, {"reason", "dry_run"}});
+    response.insert("gesture", target);
+    response.insert("performed", false);
+    response.insert("reason", "dry_run");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    copyBoardObjectCounts(response, target);
+    return jsonObjectLine(response);
+  }
+
+  const QJsonObject activation = parsedJsonObjectOrRaw(triggerSafeUiActionJson("action:add_via"));
+  response.insert("activation", activation);
+  if (!activation.value("performed").toBool(false)) {
+    response.insert("performed", false);
+    response.insert("reason", "activation_failed");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    insertBoardObjectCounts(response, project_cache_.board);
+    return jsonObjectLine(response);
+  }
+
+  const QJsonObject gesture = parsedJsonObjectOrRaw(uiCanvasClickJson(x_mm, y_mm, false,
+                                                                      canvas_id, {}));
+  response.insert("gesture", gesture);
+  response.insert("performed", gesture.value("performed").toBool(false));
+  response.insert("reason", gesture.value("performed").toBool(false)
+                                ? "workflow_completed"
+                                : gesture.value("reason").toString("gesture_failed"));
+  response.insert("mode_after", interactionModeName(interaction_mode_));
+  copyBoardObjectCounts(response, gesture);
+  return jsonObjectLine(response);
+}
+
+QString ReviewWindow::uiWorkflowRouteTrackJson(const double start_x_mm, const double start_y_mm,
+                                               const double end_x_mm, const double end_y_mm,
+                                               const bool dry_run, const QString& canvas_id) {
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("action_id", "action:add_tracks");
+  response.insert("dry_run", dry_run);
+  response.insert("start_x_mm", start_x_mm);
+  response.insert("start_y_mm", start_y_mm);
+  response.insert("end_x_mm", end_x_mm);
+  response.insert("end_y_mm", end_y_mm);
+  response.insert("mode_before", interactionModeName(interaction_mode_));
+  if (dry_run) {
+    const QJsonObject target = parsedJsonObjectOrRaw(
+        uiCanvasDragJson(start_x_mm, start_y_mm, end_x_mm, end_y_mm, true, canvas_id));
+    response.insert("activation", QJsonObject{{"performed", false}, {"reason", "dry_run"}});
+    response.insert("gesture", target);
+    response.insert("performed", false);
+    response.insert("reason", "dry_run");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    copyBoardObjectCounts(response, target);
+    return jsonObjectLine(response);
+  }
+
+  const QJsonObject activation = parsedJsonObjectOrRaw(triggerSafeUiActionJson("action:add_tracks"));
+  response.insert("activation", activation);
+  if (!activation.value("performed").toBool(false)) {
+    response.insert("performed", false);
+    response.insert("reason", "activation_failed");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    insertBoardObjectCounts(response, project_cache_.board);
+    return jsonObjectLine(response);
+  }
+
+  const QJsonObject start_click = parsedJsonObjectOrRaw(uiCanvasClickJson(start_x_mm, start_y_mm,
+                                                                          false, canvas_id, {}));
+  response.insert("start_click", start_click);
+  if (!start_click.value("performed").toBool(false)) {
+    response.insert("performed", false);
+    response.insert("reason", "start_click_failed");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    copyBoardObjectCounts(response, start_click);
+    return jsonObjectLine(response);
+  }
+  const QJsonObject end_click = parsedJsonObjectOrRaw(uiCanvasClickJson(end_x_mm, end_y_mm,
+                                                                        false, canvas_id, {}));
+  response.insert("end_click", end_click);
+  response.insert("performed", end_click.value("performed").toBool(false));
+  response.insert("reason", end_click.value("performed").toBool(false)
+                                ? "workflow_completed"
+                                : end_click.value("reason").toString("end_click_failed"));
+  response.insert("mode_after", interactionModeName(interaction_mode_));
+  copyBoardObjectCounts(response, end_click);
+  return jsonObjectLine(response);
+}
+
+QString ReviewWindow::uiWorkflowRectangleToolJson(const QString& action_id,
+                                                  const double start_x_mm,
+                                                  const double start_y_mm,
+                                                  const double end_x_mm,
+                                                  const double end_y_mm,
+                                                  const bool dry_run,
+                                                  const QString& canvas_id) {
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("action_id", action_id);
+  response.insert("dry_run", dry_run);
+  response.insert("start_x_mm", start_x_mm);
+  response.insert("start_y_mm", start_y_mm);
+  response.insert("end_x_mm", end_x_mm);
+  response.insert("end_y_mm", end_y_mm);
+  response.insert("mode_before", interactionModeName(interaction_mode_));
+  if (dry_run) {
+    const QJsonObject target = parsedJsonObjectOrRaw(
+        uiCanvasDragJson(start_x_mm, start_y_mm, end_x_mm, end_y_mm, true, canvas_id));
+    response.insert("activation", QJsonObject{{"performed", false}, {"reason", "dry_run"}});
+    response.insert("gesture", target);
+    response.insert("performed", false);
+    response.insert("reason", "dry_run");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    copyBoardObjectCounts(response, target);
+    return jsonObjectLine(response);
+  }
+
+  const QJsonObject activation = parsedJsonObjectOrRaw(triggerSafeUiActionJson(action_id));
+  response.insert("activation", activation);
+  if (!activation.value("performed").toBool(false)) {
+    response.insert("performed", false);
+    response.insert("reason", "activation_failed");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    insertBoardObjectCounts(response, project_cache_.board);
+    return jsonObjectLine(response);
+  }
+
+  const QJsonObject gesture = parsedJsonObjectOrRaw(
+      uiCanvasDragJson(start_x_mm, start_y_mm, end_x_mm, end_y_mm, false, canvas_id));
+  response.insert("gesture", gesture);
+  response.insert("performed", gesture.value("performed").toBool(false));
+  response.insert("reason", gesture.value("performed").toBool(false)
+                                ? "workflow_completed"
+                                : gesture.value("reason").toString("gesture_failed"));
+  response.insert("mode_after", interactionModeName(interaction_mode_));
+  copyBoardObjectCounts(response, gesture);
+  return jsonObjectLine(response);
+}
+
+QString ReviewWindow::uiWorkflowPlaceTextJson(const double x_mm, const double y_mm,
+                                              const QString& text, const bool dry_run,
+                                              const QString& canvas_id) {
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("action_id", "action:text");
+  response.insert("dry_run", dry_run);
+  response.insert("x_mm", x_mm);
+  response.insert("y_mm", y_mm);
+  response.insert("text", text);
+  response.insert("mode_before", interactionModeName(interaction_mode_));
+  if (dry_run) {
+    const QJsonObject target = parsedJsonObjectOrRaw(uiCanvasClickJson(x_mm, y_mm, true,
+                                                                       canvas_id, text));
+    response.insert("activation", QJsonObject{{"performed", false}, {"reason", "dry_run"}});
+    response.insert("gesture", target);
+    response.insert("performed", false);
+    response.insert("reason", "dry_run");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    copyBoardObjectCounts(response, target);
+    return jsonObjectLine(response);
+  }
+
+  const QJsonObject activation = parsedJsonObjectOrRaw(triggerSafeUiActionJson("action:text"));
+  response.insert("activation", activation);
+  if (!activation.value("performed").toBool(false)) {
+    response.insert("performed", false);
+    response.insert("reason", "activation_failed");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    insertBoardObjectCounts(response, project_cache_.board);
+    return jsonObjectLine(response);
+  }
+
+  const QJsonObject gesture = parsedJsonObjectOrRaw(uiCanvasClickJson(x_mm, y_mm, false,
+                                                                      canvas_id, text));
+  response.insert("gesture", gesture);
+  response.insert("performed", gesture.value("performed").toBool(false));
+  response.insert("reason", gesture.value("performed").toBool(false)
+                                ? "workflow_completed"
+                                : gesture.value("reason").toString("gesture_failed"));
+  response.insert("mode_after", interactionModeName(interaction_mode_));
+  copyBoardObjectCounts(response, gesture);
+  return jsonObjectLine(response);
+}
+
+QString ReviewWindow::uiWorkflowDeleteObjectJson(const QString& object_id,
+                                                 const QString& canvas_id) {
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("action_id", "action:delete_cursor");
+  response.insert("object_id", object_id);
+  response.insert("mode_before", interactionModeName(interaction_mode_));
+
+  const QJsonObject selection = parsedJsonObjectOrRaw(uiSelectCanvasObjectJson(object_id, canvas_id));
+  response.insert("selection", selection);
+  if (!selection.value("performed").toBool(false)) {
+    response.insert("performed", false);
+    response.insert("reason", "selection_failed");
+    response.insert("mode_after", interactionModeName(interaction_mode_));
+    insertBoardObjectCounts(response, project_cache_.board);
+    return jsonObjectLine(response);
+  }
+
+  const QJsonObject deletion = parsedJsonObjectOrRaw(triggerSafeUiActionJson("action:delete_cursor"));
+  response.insert("deletion", deletion);
+  response.insert("performed", deletion.value("performed").toBool(false));
+  response.insert("reason", deletion.value("reason").toString("delete_failed"));
+  if (deletion.contains("deleted_type")) {
+    response.insert("deleted_type", deletion.value("deleted_type"));
+  }
+  response.insert("mode_after", interactionModeName(interaction_mode_));
+  insertBoardObjectCounts(response, project_cache_.board);
+  return jsonObjectLine(response);
+}
+
 QString ReviewWindow::uiTypeTextJson(const QString& id, const QString& text) {
   const QString trimmed_id = id.trimmed();
   const QStringList allowed_ids = {"control:agent_action_id", "control:agent_live_method",
@@ -4071,6 +4342,112 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
                          end_x_value.toDouble(), end_y_value.toDouble(),
                          object->value("dry_run").toBool(false),
                          object->value("canvas").toString("canvas:pcb")));
+  }
+  if (trimmed_method == "ui.current_tool") {
+    return agentQueryResponse(trimmed_method, true, {}, uiCurrentToolJson());
+  }
+  if (trimmed_method == "ui.cancel_tool") {
+    return agentQueryResponse(trimmed_method, true, {}, uiCancelToolJson());
+  }
+  if (trimmed_method == "ui.place_via") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QJsonValue x_value = object->value("x_mm");
+    const QJsonValue y_value = object->value("y_mm");
+    if (!x_value.isDouble() || !y_value.isDouble()) {
+      return agentQueryResponse(trimmed_method, false, "ui.place_via requires numeric x_mm and y_mm");
+    }
+    return agentQueryResponse(
+        trimmed_method, true, {},
+        uiWorkflowPlaceViaJson(x_value.toDouble(), y_value.toDouble(),
+                               object->value("dry_run").toBool(false),
+                               object->value("canvas").toString("canvas:pcb")));
+  }
+  if (trimmed_method == "ui.route_track") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QJsonValue start_x_value = object->value("start_x_mm");
+    const QJsonValue start_y_value = object->value("start_y_mm");
+    const QJsonValue end_x_value = object->value("end_x_mm");
+    const QJsonValue end_y_value = object->value("end_y_mm");
+    if (!start_x_value.isDouble() || !start_y_value.isDouble() ||
+        !end_x_value.isDouble() || !end_y_value.isDouble()) {
+      return agentQueryResponse(
+          trimmed_method, false,
+          "ui.route_track requires numeric start_x_mm, start_y_mm, end_x_mm, and end_y_mm");
+    }
+    return agentQueryResponse(
+        trimmed_method, true, {},
+        uiWorkflowRouteTrackJson(start_x_value.toDouble(), start_y_value.toDouble(),
+                                 end_x_value.toDouble(), end_y_value.toDouble(),
+                                 object->value("dry_run").toBool(false),
+                                 object->value("canvas").toString("canvas:pcb")));
+  }
+  if (trimmed_method == "ui.add_zone" || trimmed_method == "ui.add_keepout" ||
+      trimmed_method == "ui.draw_graphic") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QJsonValue start_x_value = object->value("start_x_mm");
+    const QJsonValue start_y_value = object->value("start_y_mm");
+    const QJsonValue end_x_value = object->value("end_x_mm");
+    const QJsonValue end_y_value = object->value("end_y_mm");
+    if (!start_x_value.isDouble() || !start_y_value.isDouble() ||
+        !end_x_value.isDouble() || !end_y_value.isDouble()) {
+      return agentQueryResponse(
+          trimmed_method, false,
+          trimmed_method + " requires numeric start_x_mm, start_y_mm, end_x_mm, and end_y_mm");
+    }
+    const QString action_id = trimmed_method == "ui.add_zone"
+                                  ? QString("action:add_zone")
+                                  : trimmed_method == "ui.add_keepout"
+                                        ? QString("action:add_keepout_area")
+                                        : QString("action:add_graphical_segments");
+    return agentQueryResponse(
+        trimmed_method, true, {},
+        uiWorkflowRectangleToolJson(action_id, start_x_value.toDouble(),
+                                    start_y_value.toDouble(), end_x_value.toDouble(),
+                                    end_y_value.toDouble(),
+                                    object->value("dry_run").toBool(false),
+                                    object->value("canvas").toString("canvas:pcb")));
+  }
+  if (trimmed_method == "ui.place_text") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QJsonValue x_value = object->value("x_mm");
+    const QJsonValue y_value = object->value("y_mm");
+    if (!x_value.isDouble() || !y_value.isDouble()) {
+      return agentQueryResponse(trimmed_method, false, "ui.place_text requires numeric x_mm and y_mm");
+    }
+    if (!object->contains("text") || !object->value("text").isString()) {
+      return agentQueryResponse(trimmed_method, false, "ui.place_text requires string text");
+    }
+    return agentQueryResponse(
+        trimmed_method, true, {},
+        uiWorkflowPlaceTextJson(x_value.toDouble(), y_value.toDouble(),
+                                object->value("text").toString(),
+                                object->value("dry_run").toBool(false),
+                                object->value("canvas").toString("canvas:pcb")));
+  }
+  if (trimmed_method == "ui.delete_object") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QString id = object->value("id").toString();
+    if (id.isEmpty()) {
+      return agentQueryResponse(trimmed_method, false, "ui.delete_object requires string id");
+    }
+    return agentQueryResponse(trimmed_method, true, {},
+                              uiWorkflowDeleteObjectJson(
+                                  id, object->value("canvas").toString("canvas:pcb")));
   }
   if (trimmed_method == "ui.trigger_safe") {
     const std::optional<QJsonObject> object = requireObject();

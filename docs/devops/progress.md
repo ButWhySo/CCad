@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 178
-- Branch: `sprint-178-map-driven-viewport-input`
+- Sprint: 179
+- Branch: `sprint-179-agent-pcb-workflow-tools`
 - Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
@@ -44,6 +44,7 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - **Sprint 176 (UI Map Compact Deltas)** is complete on `sprint-176-ui-map-compact-deltas`. It adds `ui.map_compact`, `ui.role_summary`, `ui.hit_test`, and `ui.nearest_canvas_object` to the shared Agent-panel/live-socket dispatcher, changes stale `ui.map_delta` responses to compact nodes instead of full nested maps, keeps current-epoch deltas empty, and covers direct plus socket routing in GUI-map tests. Focused tests passed, official visual validation produced `artifacts/screenshots/sprint176-ui-map-compact-deltas-final-20260603-110523.png`, the target harness proved semantic coordinates in `artifacts/screenshots/sprint176-ui-map-compact-deltas-targets-final-target-sequence.json`, and the full build plus CTest gate passed 36 of 36 tests.
 - **Sprint 177 (Agent UI Interaction Tools)** is complete on `sprint-177-agent-ui-interaction-tools`. It adds the first direct semantic interaction tools on top of the shared Agent-panel/live-socket dispatcher: dry-run click targeting, safe action/tab clicks, Agent-control focus and text entry, Escape cancellation, PCB canvas-object selection, selection inspection, and bounded UI epoch waits. Focused `gui_ui_map` and `gui_agent_panel` tests passed, official visual validation produced `artifacts/screenshots/sprint177-agent-ui-interaction-tools-final-20260603-112907.png`, the target harness proved semantic coordinates in `artifacts/screenshots/sprint177-agent-ui-interaction-tools-targets-final-target-sequence.json`, and the full build plus CTest gate passed 36 of 36 tests.
 - **Sprint 178 (Map-Driven Viewport Input)** is complete on `sprint-178-map-driven-viewport-input`. It adds `ui.canvas_click` and `ui.canvas_drag` to the shared Agent-panel/live-socket dispatcher so agents can resolve PCB board-space coordinates and send real Qt viewport mouse events through the same GUI tool event path as human clicks. Focused `gui_ui_map` and `gui_agent_panel` tests passed, official visual validation produced `artifacts/screenshots/sprint178-map-driven-viewport-input-final-20260603-115354.png`, the target harness proved semantic coordinates in `artifacts/screenshots/sprint178-map-driven-viewport-input-targets-final-target-sequence.json`, and the full build plus CTest gate passed 36 of 36 tests.
+- **Sprint 179 (Agent PCB Workflow Tools)** is complete on `sprint-179-agent-pcb-workflow-tools`. It adds higher-level Agent-panel/live-socket workflow methods `ui.current_tool`, `ui.cancel_tool`, `ui.place_via`, `ui.route_track`, `ui.add_zone`, `ui.add_keepout`, `ui.draw_graphic`, `ui.place_text`, and `ui.delete_object`, all composed from safe action activation plus real viewport input or canvas-object selection. Focused `gui_ui_map` and `gui_agent_panel` tests passed, official visual validation produced `artifacts/screenshots/sprint179-agent-pcb-workflow-tools-final-20260603-121454.png`, the target harness proved semantic coordinates in `artifacts/screenshots/sprint179-agent-pcb-workflow-tools-targets-final-target-sequence.json`, and the full build plus CTest gate passed 36 of 36 tests.
 
 ## Phase Roadmap
 
