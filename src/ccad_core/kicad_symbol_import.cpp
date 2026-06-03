@@ -199,6 +199,30 @@ void parseSymbolRecursive(const SExpr* expr, Symbol& out_sym, const std::string&
 
 } // namespace
 
+std::vector<KiCadSymbolLibraryItem> listKiCadSymbolLibraryItems(const std::string& kicad_sym_content) {
+  std::vector<KiCadSymbolLibraryItem> result;
+  std::unique_ptr<SExpr> root = parseSExpr(kicad_sym_content);
+  if (!root || !root->is_list || root->children.empty() || root->children[0]->value != "kicad_symbol_lib") {
+    throw std::runtime_error("Invalid KiCad symbol library file.");
+  }
+
+  for (const auto& child : root->children) {
+    if (!child->is_list || child->children.size() < 2 || child->children[0]->value != "symbol") {
+      continue;
+    }
+
+    KiCadSymbolLibraryItem item;
+    item.name = child->children[1]->value;
+    if (const SExpr* extends = findSExprChild(child.get(), "extends")) {
+      if (extends->children.size() > 1) {
+        item.extends = extends->children[1]->value;
+      }
+    }
+    result.push_back(std::move(item));
+  }
+  return result;
+}
+
 std::vector<Symbol> importKiCadSymbolLibrary(const std::string& kicad_sym_content) {
   std::vector<Symbol> result;
   std::unique_ptr<SExpr> root = parseSExpr(kicad_sym_content);

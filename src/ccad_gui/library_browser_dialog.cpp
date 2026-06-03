@@ -45,12 +45,19 @@ ccad::Footprint loadFootprintFile(const QFileInfo& file) {
              : ccad::loadFootprintJson(content);
 }
 
-ccad::Symbol loadSymbolFile(const QFileInfo& file) {
+ccad::Symbol loadSymbolFile(const QFileInfo& file, const QString& item_name = QString()) {
   if (file.suffix().compare("kicad_sym", Qt::CaseInsensitive) == 0) {
     const std::vector<ccad::Symbol> symbols = ccad::importKiCadSymbolLibrary(readCacheFile(file.absoluteFilePath()));
-    auto selected = std::find_if(symbols.begin(), symbols.end(), [](const ccad::Symbol& symbol) {
-      return !symbol.pins.empty();
-    });
+    auto selected = item_name.isEmpty()
+                        ? symbols.end()
+                        : std::find_if(symbols.begin(), symbols.end(), [&](const ccad::Symbol& symbol) {
+                            return QString::fromStdString(symbol.name) == item_name;
+                          });
+    if (selected == symbols.end()) {
+      selected = std::find_if(symbols.begin(), symbols.end(), [](const ccad::Symbol& symbol) {
+        return !symbol.pins.empty();
+      });
+    }
     if (selected != symbols.end()) {
       return *selected;
     }
@@ -71,9 +78,9 @@ QString describeFootprintFile(const QFileInfo& file) {
   }
 }
 
-QString describeSymbolFile(const QFileInfo& file) {
+QString describeSymbolFile(const QFileInfo& file, const QString& item_name = QString()) {
   try {
-    const ccad::Symbol symbol = loadSymbolFile(file);
+    const ccad::Symbol symbol = loadSymbolFile(file, item_name);
     return QString::number(symbol.pins.size()) + " pins";
   } catch (...) {
     return "Symbol";
@@ -100,9 +107,9 @@ QString catalogueDescription(const QFileInfo& file, LibraryType type) {
   return "Symbol";
 }
 
-QString selectedMetadata(const QFileInfo& file, LibraryType type) {
+QString selectedMetadata(const QFileInfo& file, LibraryType type, const QString& item_name) {
   try {
-    return type == LibraryType::Footprint ? describeFootprintFile(file) : describeSymbolFile(file);
+    return type == LibraryType::Footprint ? describeFootprintFile(file) : describeSymbolFile(file, item_name);
   } catch (const std::exception& error) {
     return "Metadata unavailable: " + QString::fromStdString(error.what());
   }
@@ -388,8 +395,37 @@ void LibraryBrowserDialog::loadComponents() {
     const QFileInfo file(it.next());
     const QString relative_library_path = QDir::fromNativeSeparators(dir.relativeFilePath(file.absolutePath()));
     const QString library = relative_library_path.section('/', 0, 0);
-    const QString library_name = library == "." ? dir.dirName() : library;
+    const QString library_name =
+        library == "." && type_ == LibraryType::Symbol &&
+                file.suffix().compare("kicad_sym", Qt::CaseInsensitive) == 0
+            ? file.completeBaseName()
+            : (library == "." ? dir.dirName() : library);
     const QString description = catalogueDescription(file, type_);
+    if (type_ == LibraryType::Symbol && file.suffix().compare("kicad_sym", Qt::CaseInsensitive) == 0) {
+      try {
+        const std::vector<ccad::KiCadSymbolLibraryItem> items =
+            ccad::listKiCadSymbolLibraryItems(readCacheFile(file.absoluteFilePath()));
+        if (!items.empty()) {
+          for (const ccad::KiCadSymbolLibraryItem& symbol_item : items) {
+            auto* item = new QTreeWidgetItem(component_list_);
+            item->setText(0, QString::fromStdString(symbol_item.name));
+            item->setText(1, symbol_item.extends.empty()
+                                  ? "KiCad symbol"
+                                  : QString("KiCad symbol extends ") + QString::fromStdString(symbol_item.extends));
+            item->setText(2, library_name);
+            item->setData(0, Qt::UserRole, file.absoluteFilePath());
+            item->setData(0, Qt::UserRole + 1, library_name);
+            item->setData(0, Qt::UserRole + 2, file.fileName());
+            item->setData(0, Qt::UserRole + 3, QString::fromStdString(symbol_item.name));
+            item->setData(0, Qt::UserRole + 4, description);
+            item->setData(0, Qt::UserRole + 5, QString::fromStdString(symbol_item.extends));
+          }
+          continue;
+        }
+      } catch (...) {
+        // Fall through to one row for malformed or not-yet-supported symbol libraries.
+      }
+    }
     auto* item = new QTreeWidgetItem(component_list_);
     item->setText(0, file.completeBaseName());
     item->setText(1, description);
@@ -399,6 +435,7 @@ void LibraryBrowserDialog::loadComponents() {
     item->setData(0, Qt::UserRole + 2, file.fileName());
     item->setData(0, Qt::UserRole + 3, file.completeBaseName());
     item->setData(0, Qt::UserRole + 4, description);
+    item->setData(0, Qt::UserRole + 5, QString());
   }
 }
 
@@ -406,7 +443,8 @@ void LibraryBrowserDialog::filterComponents(const QString& text) {
   for (int i = 0; i < component_list_->topLevelItemCount(); ++i) {
     QTreeWidgetItem* item = component_list_->topLevelItem(i);
     const QString haystack = item->text(0) + " " + item->text(1) + " " + item->text(2) + " " +
-                             item->data(0, Qt::UserRole + 2).toString();
+                             item->data(0, Qt::UserRole + 2).toString() + " " +
+                             item->data(0, Qt::UserRole + 5).toString();
     item->setHidden(!haystack.contains(text, Qt::CaseInsensitive));
   }
 }
@@ -422,6 +460,7 @@ void LibraryBrowserDialog::onAccept() {
         .item_name = item->data(0, Qt::UserRole + 3).toString().toStdString(),
         .file_name = item->data(0, Qt::UserRole + 2).toString().toStdString(),
         .source_kind = item->data(0, Qt::UserRole + 4).toString().toStdString(),
+        .extends = item->data(0, Qt::UserRole + 5).toString().toStdString(),
     };
     result_ = selection_->path;
     accept();
@@ -438,12 +477,15 @@ void LibraryBrowserDialog::updateDetails() {
   const QTreeWidgetItem* item = selected.first();
   const QFileInfo file(item->data(0, Qt::UserRole).toString());
   const QString library = item->data(0, Qt::UserRole + 1).toString();
-  const QString metadata = selectedMetadata(file, type_);
+  const QString item_name = item->data(0, Qt::UserRole + 3).toString();
+  const QString extends = item->data(0, Qt::UserRole + 5).toString();
+  const QString metadata = selectedMetadata(file, type_, item_name);
   detail_label_->setText("<b>Library</b>: " + library + "<br><b>Name</b>: " +
-                         file.completeBaseName() + "<br><b>File</b>: " + file.fileName() +
+                         item_name + "<br><b>File</b>: " + file.fileName() +
+                         (extends.isEmpty() ? "" : "<br><b>Extends</b>: " + extends) +
                          "<br><b>Metadata</b>: " + metadata + "<br><b>Path</b>: " +
                          file.absoluteFilePath());
-  renderSelectedPreview(file.absoluteFilePath());
+  renderSelectedPreview(file.absoluteFilePath(), item_name);
 }
 
 std::optional<std::string> LibraryBrowserDialog::result() const {
@@ -476,7 +518,7 @@ void LibraryBrowserDialog::clearPreview(const QString& message) {
   }
 }
 
-void LibraryBrowserDialog::renderSelectedPreview(const QString& path) {
+void LibraryBrowserDialog::renderSelectedPreview(const QString& path, const QString& item_name) {
   if (preview_scene_ == nullptr || preview_view_ == nullptr) {
     return;
   }
@@ -488,7 +530,7 @@ void LibraryBrowserDialog::renderSelectedPreview(const QString& path) {
       preview_status_label_->setText(
           "Footprint preview. This selected row is parsed lazily; final placement imports the accepted item.");
     } else {
-      renderSymbolPreview(*preview_scene_, loadSymbolFile(file));
+      renderSymbolPreview(*preview_scene_, loadSymbolFile(file, item_name));
       preview_status_label_->setText(
           "Symbol preview. This selected row is parsed lazily; final placement resolves inherited pins.");
     }

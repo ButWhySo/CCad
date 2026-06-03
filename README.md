@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 184 complete on `sprint-184-library-placement-stability`.
+Progress counter: Phase 7 / 7, Sprint 185 complete on `sprint-185-kicad-symbol-catalog-scale`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -47,6 +47,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI library chooser now has KiCad-style chooser context with filtered library/name rows, details, and visual symbol/footprint previews.
 - Native GUI library chooser indexes local `library-cache` entries without parsing every symbol or footprint on dialog open; selected rows are parsed lazily for details, preview, and final placement.
 - Native GUI library chooser returns concrete row identity metadata for accepted symbols and footprints, including source path, library name, item name, file name, and source kind.
+- Native GUI symbol chooser expands raw KiCad `.kicad_sym` library files into one row per top-level symbol, while nested unit symbols remain inside their parent.
 - Native GUI footprint previews and the board canvas use a shared KiCad-inspired layer palette so copper, silkscreen, fabrication, courtyard, edge, and user graphics do not collapse into one generic color.
 - Native GUI pad rendering separates copper from solder-mask and solder-paste aperture overlays, so visible mask or paste layers no longer force hidden copper to render.
 - Native GUI can dump a read-only semantic UI map as JSON for LLM/automation tooling, including stable action IDs, tab/canvas bounds, canvas-object IDs, net/layer metadata, route provenance, and click target coordinates.

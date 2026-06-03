@@ -96,6 +96,67 @@ private slots:
     QCOMPARE(QString::fromStdString(selection->source_kind), QString("CCad symbol JSON"));
     QCOMPARE(QString::fromStdString(selection->path), symbol.fileName());
   }
+
+  void testKicadSymbolLibraryExpandsTopLevelSymbols() {
+    QTemporaryDir temp_dir;
+    QVERIFY(temp_dir.isValid());
+    QDir root(temp_dir.path());
+    QVERIFY(root.mkpath("symbols"));
+
+    QFile symbol_lib(root.filePath("symbols/Device.kicad_sym"));
+    QVERIFY(symbol_lib.open(QIODevice::WriteOnly | QIODevice::Text));
+    symbol_lib.write(R"(
+(kicad_symbol_lib
+  (version 20240101)
+  (generator ccad-test)
+  (symbol "Parent"
+    (property "Reference" "U" (id 0) (at 0 0 0))
+    (symbol "Parent_1_1"
+      (rectangle (start -1 -1) (end 1 1) (stroke (width 0.1)) (fill (type none)))
+      (pin passive line (at 0 0 0) (length 2.54) (name "A") (number "1"))
+    )
+  )
+  (symbol "Derived"
+    (extends "Parent")
+    (property "Reference" "U" (id 0) (at 0 0 0))
+  )
+)
+)");
+    symbol_lib.close();
+
+    LibraryBrowserDialog dialog(LibraryType::Symbol, temp_dir.path());
+    auto* tree = dialog.findChild<QTreeWidget*>();
+    QVERIFY(tree != nullptr);
+    QCOMPARE(tree->topLevelItemCount(), 2);
+    QCOMPARE(tree->topLevelItem(0)->text(0), QString("Parent"));
+    QCOMPARE(tree->topLevelItem(1)->text(0), QString("Derived"));
+    QCOMPARE(tree->topLevelItem(1)->text(2), QString("Device"));
+    QVERIFY(tree->topLevelItem(1)->text(1).contains("extends Parent"));
+
+    tree->setCurrentItem(tree->topLevelItem(1));
+    QApplication::processEvents();
+    auto* preview = dialog.findChild<QGraphicsView*>();
+    QVERIFY(preview != nullptr);
+    QVERIFY(preview->scene() != nullptr);
+    QVERIFY(preview->scene()->items().size() > 0);
+
+    auto* button_box = dialog.findChild<QDialogButtonBox*>();
+    QVERIFY(button_box != nullptr);
+    QPushButton* ok_button = button_box->button(QDialogButtonBox::Ok);
+    QVERIFY(ok_button != nullptr);
+    QTimer::singleShot(0, [&]() {
+      ok_button->click();
+    });
+    dialog.exec();
+
+    const auto selection = dialog.selection();
+    QVERIFY(selection.has_value());
+    QCOMPARE(QString::fromStdString(selection->item_name), QString("Derived"));
+    QCOMPARE(QString::fromStdString(selection->library_name), QString("Device"));
+    QCOMPARE(QString::fromStdString(selection->source_kind), QString("KiCad symbol library"));
+    QCOMPARE(QString::fromStdString(selection->extends), QString("Parent"));
+    QCOMPARE(QString::fromStdString(selection->path), symbol_lib.fileName());
+  }
 };
 
 QTEST_MAIN(TestGuiSymbolPlacement)
