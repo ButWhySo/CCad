@@ -2,6 +2,9 @@
 
 #include "review_window.hpp"
 
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonParseError>
 #include <QLocalSocket>
 
 namespace {
@@ -25,44 +28,6 @@ QString jsonString(const QString& value) {
   }
   output += "\"";
   return output;
-}
-
-QString extractJsonString(const QString& json, const QString& key) {
-  const QString token = "\"" + key + "\":";
-  const int token_index = json.indexOf(token);
-  if (token_index < 0) {
-    return {};
-  }
-  int index = token_index + token.size();
-  while (index < json.size() && json.at(index).isSpace()) {
-    ++index;
-  }
-  if (index >= json.size() || json.at(index) != '"') {
-    return {};
-  }
-  ++index;
-  QString value;
-  while (index < json.size()) {
-    const QChar ch = json.at(index++);
-    if (ch == '"') {
-      return value;
-    }
-    if (ch == '\\' && index < json.size()) {
-      const QChar escaped = json.at(index++);
-      if (escaped == 'n') {
-        value += '\n';
-      } else if (escaped == 'r') {
-        value += '\r';
-      } else if (escaped == 't') {
-        value += '\t';
-      } else {
-        value += escaped;
-      }
-    } else {
-      value += ch;
-    }
-  }
-  return {};
 }
 
 QString errorResponse(const QString& reason) {
@@ -130,62 +95,15 @@ void UiMapServer::handleReadyRead(QLocalSocket& socket) {
 }
 
 QString UiMapServer::responseForLine(const QString& line) const {
-  const QString method = extractJsonString(line, "method");
-  if (method == "ui.map") {
-    return "{\"schema_version\":1,\"ok\":true,\"method\":\"ui.map\",\"result\":" +
-           oneLineJson(window_.uiMapJson()) + "}";
+  QJsonParseError error;
+  const QJsonDocument document = QJsonDocument::fromJson(line.toUtf8(), &error);
+  if (error.error != QJsonParseError::NoError || !document.isObject()) {
+    return errorResponse("invalid json request");
   }
-  if (method == "ui.target") {
-    const QString id = extractJsonString(line, "id");
-    if (id.isEmpty()) {
-      return errorResponse("ui.target requires string id");
-    }
-    return "{\"schema_version\":1,\"ok\":true,\"method\":\"ui.target\",\"result\":" +
-           oneLineJson(window_.uiTargetJsonById(id)) + "}";
+  const QJsonObject request = document.object();
+  const QString method = request.value("method").toString();
+  if (method.isEmpty()) {
+    return errorResponse("request requires string method");
   }
-  if (method == "ui.active_layer") {
-    return "{\"schema_version\":1,\"ok\":true,\"method\":\"ui.active_layer\",\"result\":" +
-           oneLineJson(window_.activePcbLayerJson()) + "}";
-  }
-  if (method == "ui.set_active_layer") {
-    const QString layer_id = extractJsonString(line, "layer_id");
-    if (layer_id.isEmpty()) {
-      return errorResponse("ui.set_active_layer requires string layer_id");
-    }
-    return "{\"schema_version\":1,\"ok\":true,\"method\":\"ui.set_active_layer\",\"result\":" +
-           oneLineJson(window_.setActivePcbLayerForAutomation(layer_id)) + "}";
-  }
-  if (method == "ui.active_net") {
-    return "{\"schema_version\":1,\"ok\":true,\"method\":\"ui.active_net\",\"result\":" +
-           oneLineJson(window_.activePcbNetJson()) + "}";
-  }
-  if (method == "ui.set_active_net") {
-    const QString net_id = extractJsonString(line, "net_id");
-    if (net_id.isEmpty()) {
-      return errorResponse("ui.set_active_net requires string net_id");
-    }
-    return "{\"schema_version\":1,\"ok\":true,\"method\":\"ui.set_active_net\",\"result\":" +
-           oneLineJson(window_.setActivePcbNetForAutomation(net_id)) + "}";
-  }
-  if (method == "ui.epoch") {
-    const QString map = window_.uiMapJson();
-    const int key_index = map.indexOf("\"ui_epoch\":");
-    QString epoch = "0";
-    if (key_index >= 0) {
-      int index = key_index + 11;
-      while (index < map.size() && map.at(index).isSpace()) {
-        ++index;
-      }
-      int end = index;
-      while (end < map.size() && map.at(end).isDigit()) {
-        ++end;
-      }
-      if (end > index) {
-        epoch = map.mid(index, end - index);
-      }
-    }
-    return "{\"schema_version\":1,\"ok\":true,\"method\":\"ui.epoch\",\"ui_epoch\":" + epoch +
-           "}";
-  }
-  return errorResponse("unsupported method");
+  return oneLineJson(window_.runAgentUiQueryJson(method, line));
 }

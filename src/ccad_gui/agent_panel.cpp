@@ -44,7 +44,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
       color: #111827;
       font-weight: 600;
     }
-    QLineEdit#agentActionIdInput,
+    QLineEdit,
     QPlainTextEdit#agentOutput {
       background: #ffffff;
       color: #111827;
@@ -75,16 +75,38 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   action_row->setSpacing(6);
   auto* action_label = new QLabel("Action ID", this);
   action_id_input_ = new QLineEdit("action:zoom_in", this);
-  action_id_input_->setObjectName("agentActionIdInput");
+  action_id_input_->setObjectName("control:agent_action_id");
+  action_id_input_->setAccessibleName("Agent action ID");
   auto* refresh_button = new QPushButton("Refresh Map", this);
-  refresh_button->setObjectName("agentRefreshMapButton");
+  refresh_button->setObjectName("action:agent_refresh_map");
+  refresh_button->setAccessibleName("Refresh agent UI map");
   auto* trigger_button = new QPushButton("Trigger Safe", this);
-  trigger_button->setObjectName("agentTriggerSafeButton");
+  trigger_button->setObjectName("action:agent_trigger_safe");
+  trigger_button->setAccessibleName("Trigger safe agent action");
   action_row->addWidget(action_label);
   action_row->addWidget(action_id_input_, 1);
   action_row->addWidget(refresh_button);
   action_row->addWidget(trigger_button);
   root->addLayout(action_row);
+
+  auto* live_row = new QHBoxLayout();
+  live_row->setSpacing(6);
+  auto* live_method_label = new QLabel("Method", this);
+  live_method_input_ = new QLineEdit("ui.find", this);
+  live_method_input_->setObjectName("control:agent_live_method");
+  live_method_input_->setAccessibleName("Agent live query method");
+  live_payload_input_ =
+      new QLineEdit("{\"query\":\"add\",\"role\":\"action\",\"limit\":8}", this);
+  live_payload_input_->setObjectName("control:agent_live_payload");
+  live_payload_input_->setAccessibleName("Agent live query payload");
+  auto* live_query_button = new QPushButton("Live Query", this);
+  live_query_button->setObjectName("action:agent_live_query");
+  live_query_button->setAccessibleName("Run agent live query");
+  live_row->addWidget(live_method_label);
+  live_row->addWidget(live_method_input_);
+  live_row->addWidget(live_payload_input_, 1);
+  live_row->addWidget(live_query_button);
+  root->addLayout(live_row);
 
   output_ = new QPlainTextEdit(this);
   output_->setObjectName("agentOutput");
@@ -97,6 +119,9 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   connect(trigger_button, &QPushButton::clicked, this, [this]() { triggerSafeAction(); });
   connect(action_id_input_, &QLineEdit::returnPressed, this,
           [this]() { triggerSafeAction(); });
+  connect(live_query_button, &QPushButton::clicked, this, [this]() { runLiveQuery(); });
+  connect(live_method_input_, &QLineEdit::returnPressed, this, [this]() { runLiveQuery(); });
+  connect(live_payload_input_, &QLineEdit::returnPressed, this, [this]() { runLiveQuery(); });
 }
 
 void AgentPanel::setUiMapProvider(UiMapProvider provider) {
@@ -107,6 +132,10 @@ void AgentPanel::setSafeActionTrigger(SafeActionTrigger trigger) {
   safe_action_trigger_ = std::move(trigger);
 }
 
+void AgentPanel::setLiveQueryProvider(LiveQueryProvider provider) {
+  live_query_provider_ = std::move(provider);
+}
+
 void AgentPanel::setProjectContext(const QString& project_label, const int ui_map_epoch) {
   project_label_->setText("Project " + (project_label.isEmpty() ? QString("none") : project_label));
   epoch_label_->setText("UI map epoch " + QString::number(ui_map_epoch));
@@ -114,6 +143,11 @@ void AgentPanel::setProjectContext(const QString& project_label, const int ui_ma
 
 void AgentPanel::setActionId(const QString& action_id) {
   action_id_input_->setText(action_id);
+}
+
+void AgentPanel::setLiveQuery(const QString& method, const QString& payload) {
+  live_method_input_->setText(method);
+  live_payload_input_->setText(payload);
 }
 
 void AgentPanel::refreshUiMap() {
@@ -148,6 +182,28 @@ void AgentPanel::triggerSafeAction() {
   status_label_->setText("Safe action " + action_id);
 }
 
+void AgentPanel::runLiveQuery() {
+  if (!live_query_provider_) {
+    status_label_->setText("Live query unavailable");
+    output_->setPlainText("{\"error\":\"live_query_unavailable\"}");
+    return;
+  }
+  const QString method = live_method_input_->text().trimmed();
+  if (method.isEmpty()) {
+    status_label_->setText("Live method required");
+    output_->setPlainText("{\"error\":\"empty_live_method\"}");
+    return;
+  }
+  const QString payload = live_payload_input_->text().trimmed();
+  const QString result = live_query_provider_(method, payload.isEmpty() ? "{}" : payload);
+  output_->setPlainText(result);
+  const QString epoch = extractUiEpoch(result);
+  if (!epoch.isEmpty()) {
+    epoch_label_->setText("UI map epoch " + epoch);
+  }
+  status_label_->setText("Live query " + method);
+}
+
 QString AgentPanel::projectText() const {
   return project_label_->text();
 }
@@ -162,6 +218,14 @@ QString AgentPanel::statusText() const {
 
 QString AgentPanel::actionIdText() const {
   return action_id_input_->text();
+}
+
+QString AgentPanel::liveMethodText() const {
+  return live_method_input_->text();
+}
+
+QString AgentPanel::livePayloadText() const {
+  return live_payload_input_->text();
 }
 
 QString AgentPanel::outputText() const {

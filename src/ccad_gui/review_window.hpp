@@ -50,10 +50,13 @@ class ReviewWindow final : public QMainWindow {
   void loadFootprintPreview(const std::filesystem::path& path);
   void loadSymbolPreview(const std::filesystem::path& path);
   QString uiMapJson() const;
+  QString uiMapDeltaJson(int since_epoch) const;
+  QString uiFindJson(const QString& query, const QString& role, int limit) const;
   QString validateUiMapTargetsJson(bool move_cursor) const;
   QString uiTargetJsonById(const QString& id) const;
   QString uiTargetJsonForBoardPoint(double x_mm, double y_mm) const;
   QString triggerSafeUiActionJson(const QString& id);
+  QString runAgentUiQueryJson(const QString& method, const QString& payload);
   QString activePcbLayerJson() const;
   QString setActivePcbLayerForAutomation(const QString& layer_id);
   QString activePcbNetJson() const;

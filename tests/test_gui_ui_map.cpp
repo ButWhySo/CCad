@@ -124,6 +124,24 @@ bool contains(const QString& haystack, const char* needle) {
   return haystack.contains(QString::fromUtf8(needle));
 }
 
+int extractInt(const QString& json, const char* key_text) {
+  const QString key = QString::fromUtf8(key_text);
+  int index = json.indexOf(key);
+  require(index >= 0, "integer key exists in json");
+  index += key.size();
+  while (index < json.size() && json.at(index).isSpace()) {
+    ++index;
+  }
+  int end = index;
+  while (end < json.size() && json.at(end).isDigit()) {
+    ++end;
+  }
+  bool ok = false;
+  const int value = json.mid(index, end - index).toInt(&ok);
+  require(ok, "integer value parses from json");
+  return value;
+}
+
 void processUntil(bool (*predicate)(QLocalSocket&), QLocalSocket& socket, const char* message) {
   QElapsedTimer timer;
   timer.start();
@@ -161,6 +179,12 @@ int main(int argc, char** argv) {
           "UI map exposes layers/object panel");
   require(contains(map, "\"id\":\"panel:diagnostics\""), "UI map exposes diagnostics panel");
   require(contains(map, "\"id\":\"panel:agent\""), "UI map exposes agent panel");
+  require(contains(map, "\"id\":\"control:agent_live_method\""),
+          "UI map exposes agent live-query method input");
+  require(contains(map, "\"id\":\"control:agent_live_payload\""),
+          "UI map exposes agent live-query payload input");
+  require(contains(map, "\"id\":\"action:agent_live_query\""),
+          "UI map exposes agent live-query button");
   require(contains(map, "\"id\":\"tab:pcb\""), "UI map exposes PCB tab");
   require(contains(map, "\"id\":\"tab:schematic\""), "UI map exposes schematic tab");
   require(contains(map, "\"id\":\"tab:agent\""), "UI map exposes agent bottom tab");
@@ -188,6 +212,25 @@ int main(int argc, char** argv) {
   require(contains(active_net, "\"active_net_id\":\"N1\""),
           "agent active-net query defaults to the first board net");
   require(contains(active_net, "\"net_count\":2"), "agent active-net query reports net count");
+
+  const int initial_epoch = extractInt(map, "\"ui_epoch\":");
+  const QString current_delta = window.uiMapDeltaJson(initial_epoch);
+  require(contains(current_delta, "\"changed\":false"),
+          "UI map delta is empty for the current epoch");
+  require(contains(current_delta, "\"nodes\":[]"),
+          "UI map delta returns no changed nodes for the current epoch");
+  const QString stale_delta = window.uiMapDeltaJson(initial_epoch - 1);
+  require(contains(stale_delta, "\"changed\":true"),
+          "UI map delta returns changed data for a stale epoch");
+  require(contains(stale_delta, "\"id\":\"action:add_footprint\""),
+          "UI map delta includes the current map when stale");
+
+  const QString find_actions = window.uiFindJson("add", "action", 6);
+  require(contains(find_actions, "\"match_count\":"), "UI map find reports match count");
+  require(contains(find_actions, "\"id\":\"action:add_footprint\""),
+          "UI map find returns matching action IDs");
+  require(!contains(find_actions, "\"id\":\"panel:agent\""),
+          "UI map find respects the requested role");
 
   const QString validation = window.validateUiMapTargetsJson(false);
   require(contains(validation, "\"summary\":"), "UI map validation includes summary");
@@ -230,6 +273,24 @@ int main(int argc, char** argv) {
   const QString agent_tab_target = window.uiTargetJsonById("tab:agent");
   require(contains(agent_tab_target, "\"found\":true"), "tab target query finds agent tab");
   require(contains(agent_tab_target, "\"role\":\"tab\""), "agent tab target query reports role");
+  window.triggerSafeUiActionJson("tab:agent");
+  const QString agent_live_method_target =
+      window.uiTargetJsonById("control:agent_live_method");
+  require(contains(agent_live_method_target, "\"found\":true"),
+          "target query finds agent live method control");
+  require(contains(agent_live_method_target, "\"role\":\"control\""),
+          "agent live method target reports control role");
+  const QString agent_live_payload_target =
+      window.uiTargetJsonById("control:agent_live_payload");
+  require(contains(agent_live_payload_target, "\"found\":true"),
+          "target query finds agent live payload control");
+  const QString agent_live_query_target =
+      window.uiTargetJsonById("action:agent_live_query");
+  require(contains(agent_live_query_target, "\"found\":true"),
+          "target query finds agent live query action");
+  require(contains(agent_live_query_target, "\"role\":\"action\""),
+          "agent live query target reports action role");
+  window.triggerSafeUiActionJson("tab:pcb");
 
   const QString pad_target = window.uiTargetJsonById("canvas_object:U1.1");
   require(contains(pad_target, "\"found\":true"), "canvas object target query finds pad");
@@ -391,10 +452,33 @@ int main(int argc, char** argv) {
   require(contains(map_response, "\"ok\":true"), "live server returns successful ui.map");
   require(contains(map_response, "\"id\":\"action:add_footprint\""),
           "live server ui.map includes action IDs");
+  const QString delta_response =
+      requestLine(socket, "{\"method\":\"ui.map_delta\",\"since_epoch\":0}");
+  require(contains(delta_response, "\"ok\":true"),
+          "live server returns successful ui.map_delta");
+  require(contains(delta_response, "\"changed\":true"),
+          "live server UI map delta reports stale clients");
+  const QString find_response =
+      requestLine(socket, "{\"method\":\"ui.find\",\"query\":\"add\",\"role\":\"action\",\"limit\":5}");
+  require(contains(find_response, "\"ok\":true"), "live server returns successful ui.find");
+  require(contains(find_response, "\"id\":\"action:add_footprint\""),
+          "live server ui.find returns compact action matches");
   const QString target_response =
       requestLine(socket, "{\"method\":\"ui.target\",\"id\":\"menu:file\"}");
   require(contains(target_response, "\"ok\":true"), "live server returns successful ui.target");
   require(contains(target_response, "\"found\":true"), "live server target finds File menu");
+  const QString board_point_response =
+      requestLine(socket, "{\"method\":\"ui.target_board_point\",\"x_mm\":8,\"y_mm\":9}");
+  require(contains(board_point_response, "\"ok\":true"),
+          "live server returns successful ui.target_board_point");
+  require(contains(board_point_response, "\"found\":true"),
+          "live server board-point targeting finds an in-board point");
+  const QString safe_trigger_response =
+      requestLine(socket, "{\"method\":\"ui.trigger_safe\",\"id\":\"tab:agent\"}");
+  require(contains(safe_trigger_response, "\"ok\":true"),
+          "live server returns successful ui.trigger_safe");
+  require(contains(safe_trigger_response, "\"performed\":true"),
+          "live server safe trigger forwards allowlisted actions");
   const QString epoch_response = requestLine(socket, "{\"method\":\"ui.epoch\"}");
   require(contains(epoch_response, "\"ui_epoch\":"), "live server returns current UI epoch");
   const QString active_layer_response = requestLine(socket, "{\"method\":\"ui.active_layer\"}");
