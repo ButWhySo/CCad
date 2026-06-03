@@ -372,6 +372,475 @@ QJsonArray stringListToJsonArray(const QStringList& values) {
   return array;
 }
 
+QJsonObject schemaProperty(const QString& type, const QString& description) {
+  QJsonObject property;
+  property.insert("type", type);
+  property.insert("description", description);
+  return property;
+}
+
+QJsonObject schemaObject(const QJsonObject& properties, const QStringList& required) {
+  QJsonObject schema;
+  schema.insert("type", "object");
+  schema.insert("properties", properties);
+  schema.insert("required", stringListToJsonArray(required));
+  return schema;
+}
+
+QJsonObject agentMethodEntry(const QString& method, const QString& category,
+                             const QString& title, const QString& description,
+                             const bool read_only, const bool mutates_ui,
+                             const bool mutates_project, const bool requires_project,
+                             const bool supports_dry_run, const QJsonObject& input_schema,
+                             const QString& output_summary,
+                             const QJsonObject& example_payload = QJsonObject{}) {
+  QJsonObject entry;
+  entry.insert("method", method);
+  entry.insert("category", category);
+  entry.insert("title", title);
+  entry.insert("description", description);
+  entry.insert("read_only", read_only);
+  entry.insert("mutates_ui", mutates_ui);
+  entry.insert("mutates_project", mutates_project);
+  entry.insert("requires_project", requires_project);
+  entry.insert("supports_dry_run", supports_dry_run);
+  entry.insert("inputSchema", input_schema);
+  entry.insert("output_summary", output_summary);
+  QJsonArray examples;
+  QJsonObject example;
+  example.insert("method", method);
+  for (auto it = example_payload.constBegin(); it != example_payload.constEnd(); ++it) {
+    example.insert(it.key(), it.value());
+  }
+  examples.append(example);
+  entry.insert("examples", examples);
+  return entry;
+}
+
+QJsonObject idSchema(const QString& description = "Stable UI-map node id.") {
+  QJsonObject properties;
+  properties.insert("id", schemaProperty("string", description));
+  return schemaObject(properties, {"id"});
+}
+
+QJsonObject emptySchema() {
+  return schemaObject(QJsonObject{}, {});
+}
+
+QJsonObject dryRunProperty() {
+  QJsonObject property = schemaProperty("boolean", "When true, describe the target or action without changing UI or project state.");
+  property.insert("default", false);
+  return property;
+}
+
+QJsonObject canvasProperty() {
+  QJsonObject property = schemaProperty("string", "Canvas id. CCad currently supports canvas:pcb.");
+  property.insert("default", "canvas:pcb");
+  return property;
+}
+
+QJsonObject boardPointSchema(const bool with_dry_run) {
+  QJsonObject properties;
+  properties.insert("x_mm", schemaProperty("number", "Board X coordinate in millimeters."));
+  properties.insert("y_mm", schemaProperty("number", "Board Y coordinate in millimeters."));
+  properties.insert("canvas", canvasProperty());
+  if (with_dry_run) {
+    properties.insert("dry_run", dryRunProperty());
+  }
+  return schemaObject(properties, {"x_mm", "y_mm"});
+}
+
+QJsonObject boardDragSchema(const bool with_dry_run) {
+  QJsonObject properties;
+  properties.insert("start_x_mm", schemaProperty("number", "Start X coordinate in millimeters."));
+  properties.insert("start_y_mm", schemaProperty("number", "Start Y coordinate in millimeters."));
+  properties.insert("end_x_mm", schemaProperty("number", "End X coordinate in millimeters."));
+  properties.insert("end_y_mm", schemaProperty("number", "End Y coordinate in millimeters."));
+  properties.insert("canvas", canvasProperty());
+  if (with_dry_run) {
+    properties.insert("dry_run", dryRunProperty());
+  }
+  return schemaObject(properties, {"start_x_mm", "start_y_mm", "end_x_mm", "end_y_mm"});
+}
+
+QJsonObject roleLimitSchema() {
+  QJsonObject properties;
+  properties.insert("role", schemaProperty("string", "Optional UI-map role filter such as action, control, panel, tab, or canvas_object."));
+  properties.insert("limit", schemaProperty("integer", "Maximum compact nodes to return."));
+  return schemaObject(properties, {});
+}
+
+QJsonObject epochTimeoutSchema() {
+  QJsonObject properties;
+  properties.insert("since_epoch", schemaProperty("integer", "UI epoch already observed by the caller."));
+  properties.insert("timeout_ms", schemaProperty("integer", "Maximum wait before returning the current state."));
+  return schemaObject(properties, {});
+}
+
+QJsonObject agentMethodLookupSchema() {
+  QJsonObject properties;
+  properties.insert("method_name", schemaProperty("string", "Preferred target method name to inspect."));
+  properties.insert("method", schemaProperty("string", "Target method name when calling directly from the agent panel."));
+  properties.insert("name", schemaProperty("string", "Alias for method_name."));
+  return schemaObject(properties, {});
+}
+
+QJsonArray agentMethodCatalogArray() {
+  QJsonArray catalog;
+
+  auto append = [&catalog](const QJsonObject& entry) { catalog.append(entry); };
+
+  append(agentMethodEntry("agent.methods", "agent", "List Agent Methods",
+                          "Return the stable CCad agent protocol catalog.",
+                          true, false, false, false, false, emptySchema(),
+                          "Catalog entries with method names, schemas, safety flags, and examples."));
+  append(agentMethodEntry("agent.method_schema", "agent", "Inspect One Agent Method",
+                          "Return one catalog entry by method name.",
+                          true, false, false, false, false, agentMethodLookupSchema(),
+                          "A found flag and the matching catalog entry.",
+                          QJsonObject{{"method_name", "ui.watch_delta"}}));
+  append(agentMethodEntry("agent.quickstart", "agent", "Agent Quickstart",
+                          "Return the recommended UI-map loop for agents.",
+                          true, false, false, false, false, emptySchema(),
+                          "A compact operating guide for live UI-map automation."));
+
+  append(agentMethodEntry("ui.map", "ui_map", "Full UI Map",
+                          "Return the full live UI region map with rectangles, roles, labels, and targets.",
+                          true, false, false, false, false, emptySchema(),
+                          "Full UI map JSON."));
+  append(agentMethodEntry("ui.map_compact", "ui_map", "Compact UI Map",
+                          "Return compact UI nodes, optionally filtered by role.",
+                          true, false, false, false, false, roleLimitSchema(),
+                          "Compact UI-map nodes.",
+                          QJsonObject{{"role", "action"}, {"limit", 20}}));
+  append(agentMethodEntry("ui.role_summary", "ui_map", "Role Summary",
+                          "Return node counts by role.",
+                          true, false, false, false, false, emptySchema(),
+                          "Role counts and total node count."));
+  append(agentMethodEntry("ui.index_stats", "ui_map", "Index Stats",
+                          "Return the state of the UI-map ID and role indexes.",
+                          true, false, false, false, false, emptySchema(),
+                          "Index counts and cache state."));
+  append(agentMethodEntry("ui.get_node", "ui_map", "Get Node By ID",
+                          "Resolve one compact UI-map node through the ID index.",
+                          true, false, false, false, false, idSchema(),
+                          "A found flag and compact node.",
+                          QJsonObject{{"id", "menu:file"}}));
+  append(agentMethodEntry("ui.nodes_by_role", "ui_map", "Nodes By Role",
+                          "Resolve compact UI-map nodes through the role index.",
+                          true, false, false, false, false, roleLimitSchema(),
+                          "Matching compact nodes.",
+                          QJsonObject{{"role", "action"}, {"limit", 20}}));
+  append(agentMethodEntry("ui.map_delta", "ui_map", "UI Map Delta",
+                          "Return dirty UI-map nodes since a previously observed epoch.",
+                          true, false, false, false, false, epochTimeoutSchema(),
+                          "Changed flag and compact dirty nodes.",
+                          QJsonObject{{"since_epoch", 0}}));
+  QJsonObject watch_properties = epochTimeoutSchema();
+  QJsonObject watch_schema = watch_properties;
+  QJsonObject watch_props = watch_schema.value("properties").toObject();
+  watch_props.insert("max_events", schemaProperty("integer", "Maximum retained dirty events to return."));
+  watch_schema.insert("properties", watch_props);
+  append(agentMethodEntry("ui.watch_delta", "ui_map", "Watch UI Deltas",
+                          "Wait briefly and return bounded dirty UI-map event history.",
+                          true, false, false, false, false, watch_schema,
+                          "Dirty-event history with compact nodes.",
+                          QJsonObject{{"since_epoch", 0}, {"timeout_ms", 20}, {"max_events", 4}}));
+  append(agentMethodEntry("ui.wait_for_delta", "ui_map", "Wait For Delta",
+                          "Wait until the UI epoch advances or timeout expires.",
+                          true, false, false, false, false, epochTimeoutSchema(),
+                          "Delta response plus wait timing.",
+                          QJsonObject{{"since_epoch", 0}, {"timeout_ms", 20}}));
+  append(agentMethodEntry("ui.find", "ui_map", "Find UI Nodes",
+                          "Search compact UI nodes by id, label, object id, net, or layer.",
+                          true, false, false, false, false, roleLimitSchema(),
+                          "Compact search results.",
+                          QJsonObject{{"query", "add"}, {"role", "action"}, {"limit", 8}}));
+  QJsonObject hit_props;
+  hit_props.insert("x", schemaProperty("integer", "Logical screen X coordinate."));
+  hit_props.insert("y", schemaProperty("integer", "Logical screen Y coordinate."));
+  append(agentMethodEntry("ui.hit_test", "ui_map", "Hit Test",
+                          "Return the smallest targetable UI-map node under a logical coordinate.",
+                          true, false, false, false, false, schemaObject(hit_props, {"x", "y"}),
+                          "A found flag and matching node.",
+                          QJsonObject{{"x", 120}, {"y", 80}}));
+  append(agentMethodEntry("ui.target", "ui_map", "Target By ID",
+                          "Return screen coordinates for a targetable UI-map node.",
+                          true, false, false, false, false, idSchema(),
+                          "Target coordinates and node role.",
+                          QJsonObject{{"id", "menu:file"}}));
+  append(agentMethodEntry("ui.target_board_point", "ui_map", "Target Board Point",
+                          "Convert board millimeter coordinates to a screen target on the PCB canvas.",
+                          true, false, false, true, false, boardPointSchema(false),
+                          "A found flag and screen target.",
+                          QJsonObject{{"x_mm", 8}, {"y_mm", 9}}));
+  QJsonObject nearest_schema = boardPointSchema(false);
+  QJsonObject nearest_props = nearest_schema.value("properties").toObject();
+  nearest_props.insert("limit", schemaProperty("integer", "Maximum nearby canvas objects to return."));
+  nearest_schema.insert("properties", nearest_props);
+  append(agentMethodEntry("ui.nearest_canvas_object", "ui_map", "Nearest Canvas Object",
+                          "Return indexed nearby PCB canvas objects for a board point.",
+                          true, false, false, true, false, nearest_schema,
+                          "Nearest object and candidate list.",
+                          QJsonObject{{"canvas", "canvas:pcb"}, {"x_mm", 8}, {"y_mm", 9}}));
+
+  append(agentMethodEntry("ui.screenshot", "evidence", "Capture Screenshot",
+                          "Capture an app-owned GUI screenshot, or describe it in dry-run mode.",
+                          true, false, false, false, true,
+                          schemaObject(QJsonObject{{"path", schemaProperty("string", "Optional output path.")},
+                                                   {"dry_run", dryRunProperty()}}, {}),
+                          "Screenshot path, size, and dry-run flag.",
+                          QJsonObject{{"dry_run", true}}));
+
+  append(agentMethodEntry("ui.click", "input", "Click UI Node",
+                          "Click an allowlisted UI-map target by id.",
+                          false, true, false, false, true,
+                          schemaObject(QJsonObject{{"id", schemaProperty("string", "Target UI-map node id.")},
+                                                   {"dry_run", dryRunProperty()}}, {"id"}),
+                          "Target, dry-run flag, and action result.",
+                          QJsonObject{{"id", "action:zoom_in"}, {"dry_run", true}}));
+  append(agentMethodEntry("ui.double_click", "input", "Double Click UI Node",
+                          "Double-click an allowlisted UI-map target by id.",
+                          false, true, false, false, true,
+                          schemaObject(QJsonObject{{"id", schemaProperty("string", "Target UI-map node id.")},
+                                                   {"dry_run", dryRunProperty()}}, {"id"}),
+                          "Target, dry-run flag, and action result.",
+                          QJsonObject{{"id", "menu:file"}, {"dry_run", true}}));
+  append(agentMethodEntry("ui.canvas_click", "input", "Canvas Click",
+                          "Click a board coordinate on the PCB canvas.",
+                          false, true, true, true, true, boardPointSchema(true),
+                          "Click target and optional placement result.",
+                          QJsonObject{{"x_mm", 8}, {"y_mm", 9}, {"dry_run", true}}));
+  append(agentMethodEntry("ui.canvas_drag", "input", "Canvas Drag",
+                          "Drag between two board coordinates on the PCB canvas.",
+                          false, true, true, true, true, boardDragSchema(true),
+                          "Drag target and optional placement result.",
+                          QJsonObject{{"start_x_mm", 8}, {"start_y_mm", 9},
+                                      {"end_x_mm", 12}, {"end_y_mm", 12}, {"dry_run", true}}));
+  append(agentMethodEntry("ui.type_text", "input", "Type Text",
+                          "Set text in allowlisted agent-panel inputs.",
+                          false, true, false, false, false,
+                          schemaObject(QJsonObject{{"id", schemaProperty("string", "Target input id.")},
+                                                   {"text", schemaProperty("string", "Text to set.")}},
+                                       {"id", "text"}),
+                          "Whether the text was set.",
+                          QJsonObject{{"id", "control:agent_live_method"}, {"text", "ui.role_summary"}}));
+  append(agentMethodEntry("ui.key", "input", "Keyboard Key",
+                          "Send a supported key event. Escape cancels active tools.",
+                          false, true, false, false, false,
+                          schemaObject(QJsonObject{{"key", schemaProperty("string", "Supported key name.")}},
+                                       {"key"}),
+                          "Whether the key was sent and resulting tool mode.",
+                          QJsonObject{{"key", "Escape"}}));
+  append(agentMethodEntry("ui.trigger_safe", "input", "Safe Trigger",
+                          "Trigger a named allowlisted UI action.",
+                          false, true, true, false, false, idSchema("Allowlisted action or tab id."),
+                          "Whether the action ran and why.",
+                          QJsonObject{{"id", "tab:agent"}}));
+
+  append(agentMethodEntry("ui.current_tool", "workflow", "Current Tool",
+                          "Return the active interaction mode.",
+                          true, false, false, false, false, emptySchema(),
+                          "Current interaction mode."));
+  append(agentMethodEntry("ui.cancel_tool", "workflow", "Cancel Tool",
+                          "Cancel the active interaction mode by sending Escape.",
+                          false, true, false, false, false, emptySchema(),
+                          "Cancellation result and resulting mode."));
+  append(agentMethodEntry("ui.place_via", "workflow", "Place Via",
+                          "Activate via placement and place a via at a board point.",
+                          false, true, true, true, true, boardPointSchema(true),
+                          "Via placement result and board counts.",
+                          QJsonObject{{"x_mm", 14}, {"y_mm", 10}}));
+  append(agentMethodEntry("ui.route_track", "workflow", "Route Track",
+                          "Activate track routing and route one track between two board points.",
+                          false, true, true, true, true, boardDragSchema(true),
+                          "Track placement result and board counts.",
+                          QJsonObject{{"start_x_mm", 8}, {"start_y_mm", 9},
+                                      {"end_x_mm", 18}, {"end_y_mm", 12}}));
+  append(agentMethodEntry("ui.add_zone", "workflow", "Add Zone",
+                          "Draw a rectangular copper zone on the active PCB layer.",
+                          false, true, true, true, true, boardDragSchema(true),
+                          "Zone placement result and board counts."));
+  append(agentMethodEntry("ui.add_keepout", "workflow", "Add Keepout",
+                          "Draw a rectangular routing keepout.",
+                          false, true, true, true, true, boardDragSchema(true),
+                          "Keepout placement result and board counts."));
+  append(agentMethodEntry("ui.draw_graphic", "workflow", "Draw Graphic",
+                          "Draw a board graphic line.",
+                          false, true, true, true, true, boardDragSchema(true),
+                          "Graphic placement result and board counts."));
+  QJsonObject text_point_schema = boardPointSchema(true);
+  QJsonObject text_props = text_point_schema.value("properties").toObject();
+  text_props.insert("text", schemaProperty("string", "Board text content."));
+  text_point_schema.insert("properties", text_props);
+  text_point_schema.insert("required", stringListToJsonArray({"x_mm", "y_mm", "text"}));
+  append(agentMethodEntry("ui.place_text", "workflow", "Place Text",
+                          "Place board text on the default visible silkscreen layer.",
+                          false, true, true, true, true, text_point_schema,
+                          "Board text placement result and board counts.",
+                          QJsonObject{{"x_mm", 8}, {"y_mm", 22}, {"text", "FLOW TEXT"}}));
+  append(agentMethodEntry("ui.delete_object", "workflow", "Delete Object",
+                          "Select and delete a PCB canvas object by CAD object id.",
+                          false, true, true, true, false, idSchema("CAD object id or canvas_object:id."),
+                          "Deletion result and board counts.",
+                          QJsonObject{{"id", "V1"}}));
+  append(agentMethodEntry("ui.select_canvas_object", "workflow", "Select Canvas Object",
+                          "Select a PCB canvas object by CAD object id.",
+                          false, true, false, true, false, idSchema("CAD object id or canvas_object:id."),
+                          "Selection result and selected count.",
+                          QJsonObject{{"id", "U1.1"}}));
+  append(agentMethodEntry("ui.get_selection", "workflow", "Get Selection",
+                          "Return currently selected PCB canvas objects.",
+                          true, false, false, false, false, emptySchema(),
+                          "Selected object list."));
+  append(agentMethodEntry("ui.wait_for_epoch", "workflow", "Wait For Epoch",
+                          "Wait until the live UI-map epoch reaches a minimum value.",
+                          true, false, false, false, false,
+                          schemaObject(QJsonObject{{"minimum_epoch", schemaProperty("integer", "Required UI epoch.")},
+                                                   {"timeout_ms", schemaProperty("integer", "Maximum wait before returning.")}},
+                                       {}),
+                          "Wait timing and reached flag.",
+                          QJsonObject{{"minimum_epoch", 1}, {"timeout_ms", 20}}));
+
+  append(agentMethodEntry("ui.active_layer", "pcb_state", "Active PCB Layer",
+                          "Return the active PCB routing layer.",
+                          true, false, false, true, false, emptySchema(),
+                          "Active layer id and layer list."));
+  append(agentMethodEntry("ui.set_active_layer", "pcb_state", "Set Active PCB Layer",
+                          "Set the active PCB routing layer to a visible copper layer.",
+                          false, true, false, true, false,
+                          schemaObject(QJsonObject{{"layer_id", schemaProperty("string", "Copper layer id such as F.Cu or B.Cu.")}},
+                                       {"layer_id"}),
+                          "Active layer setter result.",
+                          QJsonObject{{"layer_id", "B.Cu"}}));
+  append(agentMethodEntry("ui.active_net", "pcb_state", "Active PCB Net",
+                          "Return the active PCB net.",
+                          true, false, false, true, false, emptySchema(),
+                          "Active net id and net list."));
+  append(agentMethodEntry("ui.set_active_net", "pcb_state", "Set Active PCB Net",
+                          "Set the active PCB net for future routing and placement workflows.",
+                          false, true, false, true, false,
+                          schemaObject(QJsonObject{{"net_id", schemaProperty("string", "Existing project net id.")}},
+                                       {"net_id"}),
+                          "Active net setter result.",
+                          QJsonObject{{"net_id", "N2"}}));
+  append(agentMethodEntry("ui.epoch", "ui_map", "Current UI Epoch",
+                          "Return the current UI-map epoch without wrapping it in result.",
+                          true, false, false, false, false, emptySchema(),
+                          "Current UI epoch."));
+
+  append(agentMethodEntry("project.context", "project", "Project Context",
+                          "Return a compact project and board summary.",
+                          true, false, false, false, false, emptySchema(),
+                          "Project id, board summary, and active state."));
+  append(agentMethodEntry("project.object_counts", "project", "Object Counts",
+                          "Return project and board object counts.",
+                          true, false, false, false, false, emptySchema(),
+                          "Board object counts."));
+  append(agentMethodEntry("project.review", "project", "Project Review",
+                          "Return a compact review payload for the current project.",
+                          true, false, false, false, false, emptySchema(),
+                          "Review summary."));
+  append(agentMethodEntry("project.erc", "project", "Run ERC",
+                          "Run schematic electrical checks for the current project.",
+                          true, false, false, false, false, emptySchema(),
+                          "ERC diagnostics and counts."));
+  append(agentMethodEntry("project.drc", "project", "Run DRC",
+                          "Run physical board DRC checks for the current project.",
+                          true, false, false, true, false, emptySchema(),
+                          "DRC diagnostics and counts."));
+  append(agentMethodEntry("project.diagnostics", "project", "Project Diagnostics",
+                          "Return ERC and DRC diagnostics together.",
+                          true, false, false, false, false, emptySchema(),
+                          "Combined diagnostic counts and items."));
+
+  return catalog;
+}
+
+QJsonObject agentMethodsJsonObject() {
+  const QJsonArray methods = agentMethodCatalogArray();
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("catalog_kind", "ccad_agent_protocol");
+  response.insert("method_count", methods.size());
+  response.insert("methods", methods);
+  response.insert("reference_model",
+                  "KiCad-style named actions plus MCP-style tool schemas for LLM-native use.");
+  return response;
+}
+
+std::optional<QJsonObject> agentMethodCatalogEntry(const QString& method_name) {
+  const QString trimmed = method_name.trimmed();
+  for (const QJsonValue& value : agentMethodCatalogArray()) {
+    if (!value.isObject()) {
+      continue;
+    }
+    const QJsonObject entry = value.toObject();
+    if (entry.value("method").toString() == trimmed) {
+      return entry;
+    }
+  }
+  return std::nullopt;
+}
+
+QString agentMethodsJson() {
+  return jsonObjectLine(agentMethodsJsonObject());
+}
+
+QString agentMethodSchemaJson(const QString& method_name) {
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("method", method_name.trimmed());
+  const std::optional<QJsonObject> entry = agentMethodCatalogEntry(method_name);
+  response.insert("found", entry.has_value());
+  if (entry.has_value()) {
+    response.insert("entry", *entry);
+  } else {
+    response.insert("reason", method_name.trimmed().isEmpty() ? "missing_method" : "method_not_found");
+  }
+  return jsonObjectLine(response);
+}
+
+QString agentQuickstartJson() {
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("workflow", "ui_map_agent_loop");
+  response.insert("summary",
+                  "Discover methods once, use indexed UI-map calls for most targeting, watch deltas while the GUI stays open, and reserve screenshots for visual proof.");
+  QJsonArray steps;
+  steps.append(QJsonObject{{"step", "discover"},
+                           {"method", "agent.methods"},
+                           {"purpose", "Load method names, input schemas, safety flags, and examples."}});
+  steps.append(QJsonObject{{"step", "context"},
+                           {"method", "project.context"},
+                           {"purpose", "Learn the project id, board presence, active layer, and active net."}});
+  steps.append(QJsonObject{{"step", "index"},
+                           {"method", "ui.index_stats"},
+                           {"purpose", "Confirm the live UI-map ID and role indexes are fresh before targeting."}});
+  steps.append(QJsonObject{{"step", "target"},
+                           {"method", "ui.get_node"},
+                           {"fallback", "ui.nodes_by_role"},
+                           {"purpose", "Resolve exact semantic ids first, then role-filtered candidates."}});
+  steps.append(QJsonObject{{"step", "act"},
+                           {"method", "ui.click"},
+                           {"fallback", "ui.canvas_click"},
+                           {"purpose", "Use dry_run before mutating clicks or canvas gestures when a target is uncertain."}});
+  steps.append(QJsonObject{{"step", "observe"},
+                           {"method", "ui.watch_delta"},
+                           {"purpose", "Read dirty UI-map events instead of polling full screenshots after every action."}});
+  steps.append(QJsonObject{{"step", "prove"},
+                           {"method", "ui.screenshot"},
+                           {"purpose", "Capture screenshots through the visual harness for final visual validation."}});
+  response.insert("steps", steps);
+  response.insert("first_methods",
+                  QJsonArray{"agent.methods", "project.context", "ui.index_stats", "ui.watch_delta"});
+  response.insert("screenshot_rule",
+                  "Use screenshots for visual validation, after the project harness beep and current settle waits.");
+  response.insert("unsafe_rule",
+                  "Treat mutates_project and mutates_ui methods as state changing unless dry_run is true.");
+  return jsonObjectLine(response);
+}
+
 CompactUiMapNodes compactUiMapNodesFromDirtySet(const QJsonObject& map_object,
                                                 const QStringList& dirty_ids,
                                                 const QStringList& dirty_roles) {
@@ -4794,6 +5263,29 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
     return request;
   };
 
+  if (trimmed_method == "agent.methods") {
+    return agentQueryResponse(trimmed_method, true, {}, agentMethodsJson());
+  }
+  if (trimmed_method == "agent.method_schema") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    QString method_name = object->value("method_name").toString().trimmed();
+    if (method_name.isEmpty()) {
+      method_name = object->value("name").toString().trimmed();
+    }
+    if (method_name.isEmpty()) {
+      const QString candidate = object->value("method").toString().trimmed();
+      if (candidate != trimmed_method) {
+        method_name = candidate;
+      }
+    }
+    return agentQueryResponse(trimmed_method, true, {}, agentMethodSchemaJson(method_name));
+  }
+  if (trimmed_method == "agent.quickstart") {
+    return agentQueryResponse(trimmed_method, true, {}, agentQuickstartJson());
+  }
   if (trimmed_method == "ui.map") {
     return agentQueryResponse(trimmed_method, true, {}, uiMapJson());
   }
