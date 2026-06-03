@@ -59,6 +59,12 @@ class ReviewWindow final : public QMainWindow {
   QString uiTargetJsonById(const QString& id) const;
   QString uiTargetJsonForBoardPoint(double x_mm, double y_mm) const;
   QString uiNearestCanvasObjectJson(double x_mm, double y_mm, const QString& canvas_id, int limit) const;
+  QString uiClickJson(const QString& id, bool dry_run, bool double_click);
+  QString uiTypeTextJson(const QString& id, const QString& text);
+  QString uiKeyJson(const QString& key);
+  QString uiSelectCanvasObjectJson(const QString& id, const QString& canvas_id);
+  QString uiSelectionJson() const;
+  QString uiWaitForEpochJson(int minimum_epoch, int timeout_ms);
   QString triggerSafeUiActionJson(const QString& id);
   QString runAgentUiQueryJson(const QString& method, const QString& payload);
   QString activePcbLayerJson() const;
