@@ -419,6 +419,95 @@ int main(int argc, char** argv) {
   require(contains(epoch_wait, "\"ok\":true"), "agent wait-for-epoch routes");
   require(contains(epoch_wait, "\"reached\":true"), "agent wait-for-epoch reaches current epoch");
 
+  const std::filesystem::path canvas_input_path = writeProjectFixture();
+  ReviewWindow canvas_input_window;
+  canvas_input_window.loadProjectPath(canvas_input_path);
+  canvas_input_window.show();
+  QApplication::processEvents();
+
+  const QString canvas_click_dry_run = canvas_input_window.runAgentUiQueryJson(
+      "ui.canvas_click", "{\"x_mm\":12,\"y_mm\":10,\"dry_run\":true}");
+  require(contains(canvas_click_dry_run, "\"ok\":true"),
+          "agent canvas_click dry run routes through dispatcher");
+  require(contains(canvas_click_dry_run, "\"dry_run\":true"),
+          "agent canvas_click reports dry-run mode");
+  require(contains(canvas_click_dry_run, "\"board_x_mm\":"),
+          "agent canvas_click reports board coordinate mapping");
+  require(contains(canvas_click_dry_run, "\"mode_before\":\"default\""),
+          "agent canvas_click reports interaction mode before event");
+
+  canvas_input_window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:add_via\"}");
+  const QString canvas_via =
+      canvas_input_window.runAgentUiQueryJson("ui.canvas_click", "{\"x_mm\":15,\"y_mm\":11}");
+  require(contains(canvas_via, "\"ok\":true"), "agent canvas_click routes via placement");
+  require(contains(canvas_via, "\"performed\":true"),
+          "agent canvas_click sends a real viewport click");
+  require(contains(canvas_via, "\"reason\":\"event_sent\""),
+          "agent canvas_click reports injected event delivery");
+  require(contains(canvas_via, "\"mode_before\":\"add_via\""),
+          "agent canvas_click sees the active Add Via tool");
+  require(contains(canvas_via, "\"mode_after\":\"default\""),
+          "agent canvas_click returns Add Via to default mode");
+  require(contains(canvas_via, "\"via_count\":1"),
+          "agent canvas_click places a via through the GUI event path");
+  require(contains(canvas_input_window.uiMapJson(), "\"id\":\"canvas_object:V1\""),
+          "agent canvas_click exposes the placed via in the UI map");
+
+  canvas_input_window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:add_tracks\"}");
+  const QString route_start =
+      canvas_input_window.runAgentUiQueryJson("ui.canvas_click", "{\"x_mm\":8,\"y_mm\":9}");
+  require(contains(route_start, "\"performed\":true"),
+          "agent canvas_click sends the first route anchor click");
+  require(contains(route_start, "\"mode_after\":\"route_track\""),
+          "agent canvas_click keeps Route Track active after the first point");
+  const QString route_end =
+      canvas_input_window.runAgentUiQueryJson("ui.canvas_click", "{\"x_mm\":18,\"y_mm\":12}");
+  require(contains(route_end, "\"performed\":true"),
+          "agent canvas_click sends the second route click");
+  require(contains(route_end, "\"track_count\":1"),
+          "agent canvas_click places a track through the GUI event path");
+  require(contains(canvas_input_window.uiMapJson(), "\"id\":\"canvas_object:T1\""),
+          "agent canvas_click exposes the placed track in the UI map");
+
+  canvas_input_window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:add_zone\"}");
+  const QString zone_drag = canvas_input_window.runAgentUiQueryJson(
+      "ui.canvas_drag", "{\"start_x_mm\":2,\"start_y_mm\":2,\"end_x_mm\":20,\"end_y_mm\":12}");
+  require(contains(zone_drag, "\"ok\":true"), "agent canvas_drag routes zone placement");
+  require(contains(zone_drag, "\"performed\":true"),
+          "agent canvas_drag sends real viewport events");
+  require(contains(zone_drag, "\"zone_count\":1"),
+          "agent canvas_drag places a zone through the GUI event path");
+
+  canvas_input_window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:add_keepout_area\"}");
+  const QString keepout_drag = canvas_input_window.runAgentUiQueryJson(
+      "ui.canvas_drag", "{\"start_x_mm\":22,\"start_y_mm\":8,\"end_x_mm\":28,\"end_y_mm\":14}");
+  require(contains(keepout_drag, "\"performed\":true"),
+          "agent canvas_drag routes keepout placement");
+  require(contains(keepout_drag, "\"keepout_count\":1"),
+          "agent canvas_drag places a keepout through the GUI event path");
+
+  canvas_input_window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:add_graphical_segments\"}");
+  const QString graphic_drag = canvas_input_window.runAgentUiQueryJson(
+      "ui.canvas_drag", "{\"start_x_mm\":4,\"start_y_mm\":24,\"end_x_mm\":18,\"end_y_mm\":24}");
+  require(contains(graphic_drag, "\"performed\":true"),
+          "agent canvas_drag routes graphic line placement");
+  require(contains(graphic_drag, "\"graphic_count\":1"),
+          "agent canvas_drag places a graphic line through the GUI event path");
+
+  canvas_input_window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:text\"}");
+  const QString text_click = canvas_input_window.runAgentUiQueryJson(
+      "ui.canvas_click", "{\"x_mm\":8,\"y_mm\":22,\"text\":\"AGENT TEXT\"}");
+  require(contains(text_click, "\"performed\":true"),
+          "agent canvas_click routes text placement");
+  require(contains(text_click, "\"text_count\":1"),
+          "agent canvas_click places board text through the GUI event path");
+  const ccad::Project after_canvas_text = ccad::loadProjectJson(readFile(canvas_input_path));
+  require(after_canvas_text.board.has_value(), "canvas interaction fixture still has a board");
+  require(!after_canvas_text.board->texts.empty(),
+          "canvas interaction text placement writes a board text object");
+  require(after_canvas_text.board->texts.back().text == "AGENT TEXT",
+          "canvas interaction text placement writes the requested label");
+
   const QString unknown = window.uiTargetJsonById("action:not_real");
   require(contains(unknown, "\"found\":false"), "unknown target id fails explicitly");
   require(contains(unknown, "\"reason\":\"unknown_id\""), "unknown target id reports reason");
@@ -631,6 +720,19 @@ int main(int argc, char** argv) {
           "live server returns successful ui.target_board_point");
   require(contains(board_point_response, "\"found\":true"),
           "live server board-point targeting finds an in-board point");
+  const QString canvas_click_response =
+      requestLine(socket, "{\"method\":\"ui.canvas_click\",\"x_mm\":8,\"y_mm\":9,\"dry_run\":true}");
+  require(contains(canvas_click_response, "\"ok\":true"),
+          "live server returns successful ui.canvas_click");
+  require(contains(canvas_click_response, "\"dry_run\":true"),
+          "live server ui.canvas_click supports dry run");
+  const QString canvas_drag_response = requestLine(
+      socket,
+      "{\"method\":\"ui.canvas_drag\",\"start_x_mm\":8,\"start_y_mm\":9,\"end_x_mm\":12,\"end_y_mm\":12,\"dry_run\":true}");
+  require(contains(canvas_drag_response, "\"ok\":true"),
+          "live server returns successful ui.canvas_drag");
+  require(contains(canvas_drag_response, "\"dry_run\":true"),
+          "live server ui.canvas_drag supports dry run");
   const QString safe_trigger_response =
       requestLine(socket, "{\"method\":\"ui.trigger_safe\",\"id\":\"tab:agent\"}");
   require(contains(safe_trigger_response, "\"ok\":true"),

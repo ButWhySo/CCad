@@ -60,6 +60,11 @@ class ReviewWindow final : public QMainWindow {
   QString uiTargetJsonForBoardPoint(double x_mm, double y_mm) const;
   QString uiNearestCanvasObjectJson(double x_mm, double y_mm, const QString& canvas_id, int limit) const;
   QString uiClickJson(const QString& id, bool dry_run, bool double_click);
+  QString uiCanvasClickJson(double x_mm, double y_mm, bool dry_run,
+                            const QString& canvas_id, const QString& text);
+  QString uiCanvasDragJson(double start_x_mm, double start_y_mm,
+                           double end_x_mm, double end_y_mm,
+                           bool dry_run, const QString& canvas_id);
   QString uiTypeTextJson(const QString& id, const QString& text);
   QString uiKeyJson(const QString& key);
   QString uiSelectCanvasObjectJson(const QString& id, const QString& canvas_id);
