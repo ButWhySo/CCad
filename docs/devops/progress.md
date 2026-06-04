@@ -4,16 +4,16 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 ## Current Position
 
--New idea/thought, maybe we could implment the functionality of instead of using fixed otel, maybe let user input their otel for whatever otel we use(like langfuse) and instead route the otel to their langfuse, instead of loading our own, this empowers users and orgs?
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 187
-- Branch: `sprint-187-agent-panel-workspace`
-- Phase 6 sprint budget: Sprints 136 through 140 planned. (Completed)
+- Sprint: 190
+- Branch: `sprint-190-agent-harness-backlog-map`
+- Phase 7 sprint budget: Sprints 186 through 200 for the current Agent harness, GUI parity, and verification backlog slice.
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
 
 **Current State**: 
+- **Sprint 190 (Agent Harness Backlog Map)** is complete on `sprint-190-agent-harness-backlog-map`. It ingested `docs/req_agentHarness.md` into a structured backlog map, recorded external references for current agent UI, durable execution, MCP, OpenTelemetry/Langfuse, KiCad CLI, KiCad/ngspice simulation, and Altium automation, corrected the stale progress counter, and defined the next bounded agent-harness sprint sequence. `git diff --check` passed, the Qt build passed, and CTest passed 36 of 36 tests.
 - **Sprint 148 (KiCad GUI Parity)** is complete and merged to `main`. It added KiCad-style icon toolbars, GUI footprint/symbol placement flows, and shape-aware pad/drill rendering.
 - **Sprint 149 (Pad Shape and Layer Fidelity)** is complete and merged to `main`. It carries KiCad pad shape metadata through import, placement, project JSON, KiCad export, diffs, and GUI rendering.
 - **Sprint 150 (Standard Layer Registry Fidelity)** is complete and merged to `main`. It aligns CCad's standard layer order and KiCad PCB export layer numbers with current KiCad source and exposes canonical layer numbers to agent-facing layer queries.

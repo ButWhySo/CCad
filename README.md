@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 189 complete on `sprint-189-agent-approval-workspace`.
+Progress counter: Phase 7 / 7, Sprint 190 complete on `sprint-190-agent-harness-backlog-map`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -61,6 +61,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI left toolbar Show Layers and Show Properties actions now toggle their existing panels and report `panel_toggled` through the safe UI trigger contract.
 - Native GUI has a right-side Agent dock shell that can refresh the current UI-map JSON, trigger allowlisted safe UI actions by semantic ID, run live UI-map protocol queries from method/payload inputs, and expose itself as `panel:agent` plus `tab:agent` for automation targeting.
 - Native GUI Agent dock now shows a compact workspace context strip for project, UI-map epoch, active view, active PCB layer, active PCB net, current tool mode, cached diagnostic counts, result state, staged task goal, bounded pinned evidence, one-click Context, Diagnostics, Tool Guide, Stage Goal, Pin Evidence, Clear Evidence, local approval request, Accept, Decline, Cancel, and Clear actions.
+- Agent-harness planning now treats the current dock as a functional skeleton, with the next backlog target being a full-height vertical workspace with session controls, goal input, task checklist, reasoning/tool stream, evidence cards, approval cards, trace links, CLI parity, durable sessions, and BYOK/BYOT configuration.
 - Native GUI Agent-panel and live-socket protocol can now perform semantic UI interactions: dry-run click targeting, safe action/tab clicks, Agent-control focus and text entry, Escape cancellation, PCB canvas-object selection, selection inspection, bounded UI epoch waits, map-driven PCB board-point click/drag gestures, and high-level PCB workflows through the real Qt viewport event path.
 - Native GUI left toolbar display controls now perform real view-state actions for grid visibility, polar cursor coordinates, inch units, full-window crosshair, ratsnest guides, net highlighting, and high-contrast display mode. Agent safe triggers return `display_state_toggled`, and UI-map action nodes expose checked state.
 - Native GUI selection inspector cleans up stale editor rows immediately during rapid multi-selection changes, so net highlight and display-mode workflows do not stack old pad or track editors in the properties panel.
