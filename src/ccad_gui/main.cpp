@@ -402,7 +402,13 @@ int main(int argc, char** argv) {
                                       "control:agent_live_payload",
                                       "action:agent_live_query", "control:agent_goal",
                                       "action:agent_stage_goal", "action:agent_pin_evidence",
-                                      "action:agent_clear_evidence"};
+                                      "action:agent_clear_evidence",
+                                      "control:agent_approval_request",
+                                      "action:agent_request_approval",
+                                      "action:agent_approve_next",
+                                      "action:agent_decline_next",
+                                      "action:agent_cancel_approval",
+                                      "action:agent_clear_approvals"};
       const QStringList trigger_before_capture_ids = {
           "action:grid",          "action:polar_coord",   "action:unit_inch",
           "action:cursor_shape",  "action:show_ratsnest", "action:net_highlight",

@@ -228,6 +228,18 @@ int main(int argc, char** argv) {
           "UI map exposes agent pin-evidence action");
   require(contains(map, "\"id\":\"action:agent_clear_evidence\""),
           "UI map exposes agent clear-evidence action");
+  require(contains(map, "\"id\":\"control:agent_approval_request\""),
+          "UI map exposes agent approval request input");
+  require(contains(map, "\"id\":\"action:agent_request_approval\""),
+          "UI map exposes request-approval action");
+  require(contains(map, "\"id\":\"action:agent_approve_next\""),
+          "UI map exposes approve-next action");
+  require(contains(map, "\"id\":\"action:agent_decline_next\""),
+          "UI map exposes decline-next action");
+  require(contains(map, "\"id\":\"action:agent_cancel_approval\""),
+          "UI map exposes cancel-approval action");
+  require(contains(map, "\"id\":\"action:agent_clear_approvals\""),
+          "UI map exposes clear-approvals action");
   require(contains(map, "\"id\":\"tab:pcb\""), "UI map exposes PCB tab");
   require(contains(map, "\"id\":\"tab:schematic\""), "UI map exposes schematic tab");
   require(contains(map, "\"id\":\"tab:agent\""), "UI map exposes agent dock tab alias");
@@ -449,6 +461,8 @@ int main(int argc, char** argv) {
           "agent workspace state query routes");
   require(contains(workspace_state_initial, "\"evidence_count\":0"),
           "agent workspace state starts with no pinned evidence");
+  require(contains(workspace_state_initial, "\"approval_pending_count\":0"),
+          "agent workspace state starts with no pending approvals");
 
   const QString observability_config =
       window.runAgentUiQueryJson("agent.observability_config", "{}");
@@ -612,6 +626,28 @@ int main(int argc, char** argv) {
   const QString clear_evidence_target = window.uiTargetJsonById("action:agent_clear_evidence");
   require(contains(clear_evidence_target, "\"found\":true"),
           "target query finds agent clear-evidence action");
+  const QString approval_request_target =
+      window.uiTargetJsonById("control:agent_approval_request");
+  require(contains(approval_request_target, "\"found\":true"),
+          "target query finds agent approval request input");
+  const QString request_approval_target =
+      window.uiTargetJsonById("action:agent_request_approval");
+  require(contains(request_approval_target, "\"found\":true"),
+          "target query finds request-approval action");
+  const QString approve_next_target = window.uiTargetJsonById("action:agent_approve_next");
+  require(contains(approve_next_target, "\"found\":true"),
+          "target query finds approve-next action");
+  const QString decline_next_target = window.uiTargetJsonById("action:agent_decline_next");
+  require(contains(decline_next_target, "\"found\":true"),
+          "target query finds decline-next action");
+  const QString cancel_approval_target =
+      window.uiTargetJsonById("action:agent_cancel_approval");
+  require(contains(cancel_approval_target, "\"found\":true"),
+          "target query finds cancel-approval action");
+  const QString clear_approvals_target =
+      window.uiTargetJsonById("action:agent_clear_approvals");
+  require(contains(clear_approvals_target, "\"found\":true"),
+          "target query finds clear-approvals action");
   window.triggerSafeUiActionJson("tab:pcb");
 
   const QString pad_target = window.uiTargetJsonById("canvas_object:U1.1");
@@ -728,6 +764,65 @@ int main(int argc, char** argv) {
       window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_clear_evidence\"}");
   require(contains(clear_evidence_click, "\"performed\":true"),
           "agent click can clear pinned evidence");
+  const QString type_approval = window.runAgentUiQueryJson(
+      "ui.type_text",
+      "{\"id\":\"control:agent_approval_request\",\"text\":\"Approve tool-run before DRC\"}");
+  require(contains(type_approval, "\"performed\":true"),
+          "agent can type into the approval request control");
+  const QString request_approval_click =
+      window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_request_approval\"}");
+  require(contains(request_approval_click, "\"performed\":true"),
+          "agent click can request approval");
+  QString approval_workspace_state =
+      window.runAgentUiQueryJson("agent.workspace_state", "{}");
+  require(contains(approval_workspace_state, "\"approval_pending_count\":1"),
+          "workspace state reports one pending approval");
+  require(contains(approval_workspace_state,
+                   "\"approval_request\":\"Approve tool-run before DRC\""),
+          "workspace state reports the approval request text");
+  const QString approve_next_click =
+      window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_approve_next\"}");
+  require(contains(approve_next_click, "\"performed\":true"),
+          "agent click can accept approval");
+  approval_workspace_state = window.runAgentUiQueryJson("agent.workspace_state", "{}");
+  require(contains(approval_workspace_state, "\"approval_last_decision\":\"accept\""),
+          "workspace state reports accepted approval decision");
+
+  window.runAgentUiQueryJson(
+      "ui.type_text",
+      "{\"id\":\"control:agent_approval_request\",\"text\":\"Decline destructive action\"}");
+  window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_request_approval\"}");
+  const QString decline_next_click =
+      window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_decline_next\"}");
+  require(contains(decline_next_click, "\"performed\":true"),
+          "agent click can decline approval");
+  approval_workspace_state = window.runAgentUiQueryJson("agent.workspace_state", "{}");
+  require(contains(approval_workspace_state, "\"approval_last_decision\":\"decline\""),
+          "workspace state reports declined approval decision");
+
+  window.runAgentUiQueryJson(
+      "ui.type_text",
+      "{\"id\":\"control:agent_approval_request\",\"text\":\"Cancel stale action\"}");
+  window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_request_approval\"}");
+  const QString cancel_approval_click =
+      window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_cancel_approval\"}");
+  require(contains(cancel_approval_click, "\"performed\":true"),
+          "agent click can cancel approval");
+  approval_workspace_state = window.runAgentUiQueryJson("agent.workspace_state", "{}");
+  require(contains(approval_workspace_state, "\"approval_last_decision\":\"cancel\""),
+          "workspace state reports canceled approval decision");
+
+  window.runAgentUiQueryJson(
+      "ui.type_text",
+      "{\"id\":\"control:agent_approval_request\",\"text\":\"Clear approval lane\"}");
+  window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_request_approval\"}");
+  const QString clear_approvals_click =
+      window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_clear_approvals\"}");
+  require(contains(clear_approvals_click, "\"performed\":true"),
+          "agent click can clear approval state");
+  approval_workspace_state = window.runAgentUiQueryJson("agent.workspace_state", "{}");
+  require(contains(approval_workspace_state, "\"approval_pending_count\":0"),
+          "workspace state reports cleared approvals");
   window.triggerSafeUiActionJson("tab:pcb");
 
   window.triggerSafeUiActionJson("action:add_tracks");

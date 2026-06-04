@@ -93,7 +93,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
     QLabel#agentWorkspaceLabel,
     QLabel#agentDiagnosticsLabel,
     QLabel#agentTaskStateLabel,
-    QLabel#agentEvidenceLabel {
+    QLabel#agentEvidenceLabel,
+    QLabel#agentApprovalStatusLabel {
       color: #334155;
     }
     QLineEdit,
@@ -202,7 +203,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   output_ = new QPlainTextEdit(this);
   output_->setObjectName("agentOutput");
   output_->setReadOnly(true);
-  output_->setMinimumHeight(48);
+  output_->setMinimumHeight(36);
   output_->setPlainText("{}");
   root->addWidget(output_, 1);
 
@@ -258,6 +259,54 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   connect(goal_input_, &QLineEdit::returnPressed, this, [this]() { stageGoal(); });
   connect(pin_evidence_button, &QPushButton::clicked, this, [this]() { pinEvidence(); });
   connect(clear_evidence_button, &QPushButton::clicked, this, [this]() { clearEvidence(); });
+
+  auto* approval_request_row = new QHBoxLayout();
+  approval_request_row->setSpacing(6);
+  auto* approval_label = new QLabel("Approval", this);
+  approval_request_input_ = new QLineEdit(this);
+  approval_request_input_->setObjectName("control:agent_approval_request");
+  approval_request_input_->setAccessibleName("Agent approval request");
+  approval_request_input_->setPlaceholderText("Approval request");
+  auto* request_approval_button = new QPushButton("Request", this);
+  request_approval_button->setObjectName("action:agent_request_approval");
+  request_approval_button->setAccessibleName("Request agent approval");
+  approval_request_row->addWidget(approval_label);
+  approval_request_row->addWidget(approval_request_input_, 1);
+  approval_request_row->addWidget(request_approval_button);
+  root->insertLayout(6, approval_request_row);
+
+  auto* approval_status_row = new QHBoxLayout();
+  approval_status_row->setSpacing(6);
+  approval_status_label_ = new QLabel("Approvals 0 pending", this);
+  approval_status_label_->setObjectName("agentApprovalStatusLabel");
+  approval_status_label_->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  approval_status_label_->setWordWrap(true);
+  auto* approve_button = new QPushButton("Accept", this);
+  approve_button->setObjectName("action:agent_approve_next");
+  approve_button->setAccessibleName("Accept pending agent approval");
+  auto* decline_button = new QPushButton("Decline", this);
+  decline_button->setObjectName("action:agent_decline_next");
+  decline_button->setAccessibleName("Decline pending agent approval");
+  auto* cancel_button = new QPushButton("Cancel", this);
+  cancel_button->setObjectName("action:agent_cancel_approval");
+  cancel_button->setAccessibleName("Cancel pending agent approval");
+  auto* clear_approvals_button = new QPushButton("Clear", this);
+  clear_approvals_button->setObjectName("action:agent_clear_approvals");
+  clear_approvals_button->setAccessibleName("Clear agent approval state");
+  approval_status_row->addWidget(approval_status_label_, 1);
+  approval_status_row->addWidget(approve_button);
+  approval_status_row->addWidget(decline_button);
+  approval_status_row->addWidget(cancel_button);
+  approval_status_row->addWidget(clear_approvals_button);
+  root->insertLayout(7, approval_status_row);
+
+  connect(request_approval_button, &QPushButton::clicked, this, [this]() { requestApproval(); });
+  connect(approval_request_input_, &QLineEdit::returnPressed, this,
+          [this]() { requestApproval(); });
+  connect(approve_button, &QPushButton::clicked, this, [this]() { approveNextApproval(); });
+  connect(decline_button, &QPushButton::clicked, this, [this]() { declineNextApproval(); });
+  connect(cancel_button, &QPushButton::clicked, this, [this]() { cancelApproval(); });
+  connect(clear_approvals_button, &QPushButton::clicked, this, [this]() { clearApprovals(); });
 }
 
 void AgentPanel::setUiMapProvider(UiMapProvider provider) {
@@ -444,6 +493,81 @@ void AgentPanel::clearEvidence() {
   result_state_label_->setText("Result Evidence cleared");
 }
 
+void AgentPanel::setApprovalRequestText(const QString& request) {
+  approval_request_input_->setText(request);
+}
+
+void AgentPanel::requestApproval() {
+  const QString trimmed_request = approval_request_input_->text().trimmed();
+  if (trimmed_request.isEmpty()) {
+    pending_approval_request_.clear();
+    approval_last_decision_ = "none";
+    approval_status_label_->setText("Approvals 0 pending");
+    status_label_->setText("Approval request required");
+    result_state_label_->setText("Result Approval required");
+    return;
+  }
+  pending_approval_request_ = trimmed_request;
+  approval_last_decision_ = "pending";
+  approval_status_label_->setText("Approval pending: " + pending_approval_request_);
+  status_label_->setText("Approval pending");
+  result_state_label_->setText("Result Approval pending");
+}
+
+void AgentPanel::approveNextApproval() {
+  if (pending_approval_request_.trimmed().isEmpty()) {
+    approval_status_label_->setText("Approvals 0 pending");
+    status_label_->setText("No approval pending");
+    result_state_label_->setText("Result No approval pending");
+    return;
+  }
+  const QString request = pending_approval_request_;
+  pending_approval_request_.clear();
+  approval_last_decision_ = "accept";
+  approval_status_label_->setText("Approval accepted: " + request);
+  status_label_->setText("Approval accepted");
+  result_state_label_->setText("Result Approval accepted");
+}
+
+void AgentPanel::declineNextApproval() {
+  if (pending_approval_request_.trimmed().isEmpty()) {
+    approval_status_label_->setText("Approvals 0 pending");
+    status_label_->setText("No approval pending");
+    result_state_label_->setText("Result No approval pending");
+    return;
+  }
+  const QString request = pending_approval_request_;
+  pending_approval_request_.clear();
+  approval_last_decision_ = "decline";
+  approval_status_label_->setText("Approval declined: " + request);
+  status_label_->setText("Approval declined");
+  result_state_label_->setText("Result Approval declined");
+}
+
+void AgentPanel::cancelApproval() {
+  if (pending_approval_request_.trimmed().isEmpty()) {
+    approval_status_label_->setText("Approvals 0 pending");
+    status_label_->setText("No approval pending");
+    result_state_label_->setText("Result No approval pending");
+    return;
+  }
+  const QString request = pending_approval_request_;
+  pending_approval_request_.clear();
+  approval_last_decision_ = "cancel";
+  approval_status_label_->setText("Approval canceled: " + request);
+  status_label_->setText("Approval canceled");
+  result_state_label_->setText("Result Approval canceled");
+}
+
+void AgentPanel::clearApprovals() {
+  pending_approval_request_.clear();
+  approval_request_input_->clear();
+  approval_last_decision_ = "none";
+  approval_status_label_->setText("Approvals 0 pending");
+  status_label_->setText("Approvals cleared");
+  result_state_label_->setText("Result Approvals cleared");
+}
+
 QString AgentPanel::projectText() const {
   return project_label_->text();
 }
@@ -492,6 +616,18 @@ QString AgentPanel::evidenceText() const {
   return evidence_label_->text();
 }
 
+QString AgentPanel::approvalRequestText() const {
+  return approval_request_input_->text();
+}
+
+QString AgentPanel::approvalStatusText() const {
+  return approval_status_label_->text();
+}
+
+int AgentPanel::pendingApprovalCount() const {
+  return pending_approval_request_.trimmed().isEmpty() ? 0 : 1;
+}
+
 QString AgentPanel::outputText() const {
   return output_->toPlainText();
 }
@@ -509,6 +645,11 @@ QString AgentPanel::workspaceStateJson() const {
   response.insert("task_state", taskStateText());
   response.insert("evidence_count", evidence_entries_.size());
   response.insert("evidence", evidence);
+  response.insert("approval_pending_count", pendingApprovalCount());
+  response.insert("approval_request", pending_approval_request_);
+  response.insert("approval_input", approvalRequestText());
+  response.insert("approval_status", approvalStatusText());
+  response.insert("approval_last_decision", approval_last_decision_);
   response.insert("project", projectText());
   response.insert("ui_epoch", epochText());
   response.insert("workspace", workspaceText());

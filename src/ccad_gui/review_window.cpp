@@ -55,6 +55,7 @@
 #include <QScrollArea>
 #include <QScreen>
 #include <QSize>
+#include <QSizePolicy>
 #include <QSignalBlocker>
 #include <QStatusBar>
 #include <QStyle>
@@ -1912,13 +1913,17 @@ ReviewWindow::ReviewWindow() {
   right_layout->setSpacing(8);
   selection_inspector_ = new SelectionInspectorPanel(right_panel);
   selection_inspector_->setObjectName("selectionInspectorPanel");
+  selection_inspector_->setMaximumHeight(280);
+  selection_inspector_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
   object_browser_ = new ObjectBrowserPanel(right_panel);
+  object_browser_->setMinimumHeight(80);
   right_layout->addWidget(selection_inspector_);
   right_layout->addWidget(object_browser_, 1);
   auto* layers_dock = new QDockWidget("Layers / Objects", this);
   layers_dock->setObjectName("layersDock");
   layers_dock->setAllowedAreas(Qt::RightDockWidgetArea | Qt::LeftDockWidgetArea);
   layers_dock->setMinimumWidth(280);
+  layers_dock->setMinimumHeight(180);
   layers_dock->setWidget(right_panel);
   addDockWidget(Qt::RightDockWidgetArea, layers_dock);
 
@@ -1926,15 +1931,26 @@ ReviewWindow::ReviewWindow() {
   agent_dock_->setObjectName("agentDock");
   agent_dock_->setAllowedAreas(Qt::RightDockWidgetArea | Qt::LeftDockWidgetArea);
   agent_dock_->setMinimumWidth(360);
-  agent_dock_->setMinimumHeight(260);
+  agent_dock_->setMinimumHeight(340);
   agent_dock_->setWidget(agent_panel_);
   addDockWidget(Qt::RightDockWidgetArea, agent_dock_);
   splitDockWidget(layers_dock, agent_dock_, Qt::Vertical);
   connect(agent_dock_, &QDockWidget::visibilityChanged, this, [this](bool) {
-    markUiMapChanged({"tab:agent", "panel:agent", "control:agent_live_method",
-                      "control:agent_live_payload", "action:agent_live_query",
-                      "control:agent_goal", "action:agent_stage_goal",
-                      "action:agent_pin_evidence", "action:agent_clear_evidence"},
+    markUiMapChanged({"tab:agent",
+                      "panel:agent",
+                      "control:agent_live_method",
+                      "control:agent_live_payload",
+                      "action:agent_live_query",
+                      "control:agent_goal",
+                      "action:agent_stage_goal",
+                      "action:agent_pin_evidence",
+                      "action:agent_clear_evidence",
+                      "control:agent_approval_request",
+                      "action:agent_request_approval",
+                      "action:agent_approve_next",
+                      "action:agent_decline_next",
+                      "action:agent_cancel_approval",
+                      "action:agent_clear_approvals"},
                      {"tab", "panel", "control", "action"});
   });
 
@@ -2010,6 +2026,7 @@ ReviewWindow::ReviewWindow() {
   setDockNestingEnabled(true);
   resizeDocks({project_dock, layers_dock}, {360, 320}, Qt::Horizontal);
   resizeDocks({project_dock, diagnostics_dock}, {620, 240}, Qt::Vertical);
+  resizeDocks({layers_dock, agent_dock_}, {280, 360}, Qt::Vertical);
 
   auto* open_action = new QAction(kicadIcon("directory_open"), "Open", this);
   auto* reload_action = new QAction(kicadIcon("reload"), "Reload", this);
@@ -2271,7 +2288,11 @@ ReviewWindow::ReviewWindow() {
                               "control:agent_live_method", "control:agent_live_payload",
                               "action:agent_live_query", "control:agent_goal",
                               "action:agent_stage_goal", "action:agent_pin_evidence",
-                              "action:agent_clear_evidence"},
+                              "action:agent_clear_evidence",
+                              "control:agent_approval_request",
+                              "action:agent_request_approval", "action:agent_approve_next",
+                              "action:agent_decline_next", "action:agent_cancel_approval",
+                              "action:agent_clear_approvals"},
                              {"tab", "panel", "control", "action"});
           });
   add_footprint_action->setVisible(true);
@@ -5390,7 +5411,8 @@ QString ReviewWindow::uiWorkflowDeleteObjectJson(const QString& object_id,
 QString ReviewWindow::uiTypeTextJson(const QString& id, const QString& text) {
   const QString trimmed_id = id.trimmed();
   const QStringList allowed_ids = {"control:agent_action_id", "control:agent_live_method",
-                                   "control:agent_live_payload", "control:agent_goal"};
+                                   "control:agent_live_payload", "control:agent_goal",
+                                   "control:agent_approval_request"};
   QJsonObject response;
   response.insert("schema_version", 1);
   response.insert("ui_epoch", ui_map_epoch_);
@@ -6184,10 +6206,21 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
     }
     agent_dock_->show();
     agent_dock_->raise();
-    markUiMapChanged({"tab:agent", "panel:agent", "control:agent_live_method",
-                      "control:agent_live_payload", "action:agent_live_query",
-                      "control:agent_goal", "action:agent_stage_goal",
-                      "action:agent_pin_evidence", "action:agent_clear_evidence"},
+    markUiMapChanged({"tab:agent",
+                      "panel:agent",
+                      "control:agent_live_method",
+                      "control:agent_live_payload",
+                      "action:agent_live_query",
+                      "control:agent_goal",
+                      "action:agent_stage_goal",
+                      "action:agent_pin_evidence",
+                      "action:agent_clear_evidence",
+                      "control:agent_approval_request",
+                      "action:agent_request_approval",
+                      "action:agent_approve_next",
+                      "action:agent_decline_next",
+                      "action:agent_cancel_approval",
+                      "action:agent_clear_approvals"},
                      {"tab", "panel", "control", "action"});
     return result(id, true, "tab_selected");
   }

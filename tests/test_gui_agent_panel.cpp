@@ -120,6 +120,51 @@ int main(int argc, char** argv) {
   require(contains(panel.evidenceText(), "Evidence 0"),
           "agent panel clears pinned evidence");
 
+  panel.setApprovalRequestText("Approve routing across DC bus");
+  require(panel.approvalRequestText() == "Approve routing across DC bus",
+          "agent panel stores approval request text");
+  panel.requestApproval();
+  require(contains(panel.approvalStatusText(), "Approval pending"),
+          "agent panel creates a pending local approval");
+  require(panel.pendingApprovalCount() == 1,
+          "agent panel reports one pending approval");
+  QString approval_state = panel.workspaceStateJson();
+  require(contains(approval_state, "\"approval_pending_count\":1"),
+          "agent panel workspace state serializes pending approval count");
+  require(contains(approval_state, "\"approval_request\":\"Approve routing across DC bus\""),
+          "agent panel workspace state serializes pending approval request");
+
+  panel.approveNextApproval();
+  require(panel.pendingApprovalCount() == 0,
+          "agent panel accept clears the pending approval");
+  require(contains(panel.approvalStatusText(), "accepted"),
+          "agent panel records accepted approval status");
+  approval_state = panel.workspaceStateJson();
+  require(contains(approval_state, "\"approval_last_decision\":\"accept\""),
+          "agent panel workspace state serializes accepted decision");
+
+  panel.setApprovalRequestText("Decline risky delete");
+  panel.requestApproval();
+  panel.declineNextApproval();
+  approval_state = panel.workspaceStateJson();
+  require(contains(approval_state, "\"approval_last_decision\":\"decline\""),
+          "agent panel workspace state serializes declined decision");
+
+  panel.setApprovalRequestText("Cancel stale prompt");
+  panel.requestApproval();
+  panel.cancelApproval();
+  approval_state = panel.workspaceStateJson();
+  require(contains(approval_state, "\"approval_last_decision\":\"cancel\""),
+          "agent panel workspace state serializes canceled decision");
+
+  panel.setApprovalRequestText("Clear approvals");
+  panel.requestApproval();
+  panel.clearApprovals();
+  require(panel.pendingApprovalCount() == 0,
+          "agent panel clear approvals resets pending approval count");
+  require(contains(panel.approvalStatusText(), "Approvals 0"),
+          "agent panel clear approvals resets visible status");
+
   panel.clearOutput();
   require(panel.outputText().isEmpty(), "agent panel clear action clears output");
   require(contains(panel.statusText(), "Output cleared"), "agent panel clear action updates status");
