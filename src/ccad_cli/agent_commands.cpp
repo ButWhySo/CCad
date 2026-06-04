@@ -113,6 +113,12 @@ std::string agentProtocolCatalogJson() {
       agentMethodEntryJson("agent.methods", "agent", "List Agent Methods", true, false, false),
       agentMethodEntryJson("agent.quickstart", "agent", "Agent Quickstart", true, false, false),
       agentMethodEntryJson("agent.harness_context", "agent", "Harness Context", true, false, false),
+      agentMethodEntryJson("agent.state", "agent", "Workspace State", true, false, false),
+      agentMethodEntryJson("agent.workspace_state", "agent", "Workspace State Alias", true, false,
+                           false),
+      agentMethodEntryJson("agent.tasks", "agent", "Task State", true, false, false),
+      agentMethodEntryJson("agent.evidence", "agent", "Evidence State", true, false, false),
+      agentMethodEntryJson("agent.approvals", "agent", "Approval State", true, false, false),
       agentMethodEntryJson("agent.run_profile", "agent", "Run Profile", true, false, false),
       agentMethodEntryJson("agent.safety_policy", "agent", "Safety Policy", true, false, false),
       agentMethodEntryJson("agent.provider_policy", "agent", "Provider Policy", true, false, false),
@@ -138,7 +144,7 @@ std::string agentProtocolCatalogJson() {
 std::string agentQuickstartJson() {
   return "{\"schema_version\":1,\"workflow\":\"ccad_cli_agent_loop\","
          "\"summary\":\"Discover methods, inspect project state with CLI commands, run deterministic tools, and use GUI map or screenshots only when visual proof is required.\","
-         "\"first_methods\":[\"agent.methods\",\"agent.harness_context\",\"agent.tool_guide\",\"tools/list\"],"
+         "\"first_methods\":[\"agent.methods\",\"agent.state\",\"agent.tasks\",\"agent.evidence\",\"agent.approvals\",\"agent.harness_context\",\"agent.tool_guide\",\"tools/list\"],"
          "\"screenshot_rule\":\"GUI screenshots must use the project visual-validation harness with beep and current settle waits\","
          "\"unsafe_rule\":\"Write commands require explicit --allow-write in agent serve and direct human approval when policy requires it\"}";
 }
@@ -149,10 +155,56 @@ std::string agentHarnessContextJson() {
          "\"ui_epoch\":null,\"selected_object_ids\":[],\"provider_configured\":false,"
          "\"last_verified_visual_artifact\":null,\"transaction_id\":null},"
          "\"pending_diagnostics\":{\"erc_count\":0,\"drc_count\":0,\"error_count\":0,\"warning_count\":0},"
-         "\"capabilities\":[\"agent.methods\",\"agent.tool_guide\",\"ccad_execute\",\"mcp_stdio\"],"
+         "\"capabilities\":[\"agent.methods\",\"agent.state\",\"agent.tasks\",\"agent.evidence\","
+         "\"agent.approvals\",\"agent.tool_guide\",\"ccad_execute\",\"mcp_stdio\"],"
          "\"visual_validation_policy\":{\"single_preview_wait_seconds\":7,"
          "\"multi_action_initial_wait_seconds\":5,\"multi_action_step_wait_ms\":800,"
          "\"beep_before_gui_test\":true}}";
+}
+
+std::string agentWorkspaceStateJson() {
+  return "{\"schema_version\":1,\"workspace_kind\":\"ccad_agent_workspace_state\","
+         "\"surface\":\"headless_cli\",\"panel_layout\":\"headless_cli_workspace\","
+         "\"session\":{\"session_id\":null,\"session_title\":\"Headless CLI Agent\","
+         "\"model_label\":\"none\",\"mode_label\":\"local read-only\"},"
+         "\"project\":null,\"ui_epoch\":null,"
+         "\"workspace_context\":{\"active_view\":\"headless\",\"active_layer\":null,"
+         "\"active_net\":null,\"interaction_mode\":\"none\"},"
+         "\"goal\":\"\",\"task_state\":\"Task idle\",\"tasks\":[],"
+         "\"evidence_count\":0,\"evidence\":[],"
+         "\"approval_pending_count\":0,\"approval_request\":\"\",\"approval_input\":\"\","
+         "\"approval_status\":\"No pending approval\",\"approval_last_decision\":\"none\","
+         "\"command_input\":\"\",\"staged_command\":\"\","
+         "\"durable_store\":\"not_configured\",\"provider_configured\":false,"
+         "\"trace_export_configured\":false}";
+}
+
+std::string agentTasksJson() {
+  return "{\"schema_version\":1,\"state_kind\":\"ccad_agent_tasks\","
+         "\"surface\":\"headless_cli\",\"durable_store\":\"not_configured\","
+         "\"current_goal\":\"\",\"task_count\":0,\"tasks\":[],"
+         "\"persistence_note\":\"Sprint 192 is read-only CLI parity; Sprint 193 adds durable session files\","
+         "\"next_step\":\"sprint_193_durable_session_schema\"}";
+}
+
+std::string agentEvidenceJson() {
+  return "{\"schema_version\":1,\"state_kind\":\"ccad_agent_evidence\","
+         "\"surface\":\"headless_cli\",\"durable_store\":\"not_configured\","
+         "\"evidence_count\":0,\"evidence\":[],"
+         "\"manifest_schema_method\":\"agent.evidence_manifest_schema\","
+         "\"artifact_policy\":{\"screenshots_require_visual_harness\":true,"
+         "\"drc_and_erc_reports_are_structured_artifacts\":true,"
+         "\"secrets_must_not_enter_evidence\":true}}";
+}
+
+std::string agentApprovalsJson() {
+  return "{\"schema_version\":1,\"state_kind\":\"ccad_agent_approvals\","
+         "\"surface\":\"headless_cli\",\"durable_store\":\"not_configured\","
+         "\"pending_count\":0,\"pending\":[],\"last_decision\":\"none\","
+         "\"approval_required_actions\":[\"delete_file\",\"overwrite_project\","
+         "\"fabrication_export\",\"release_gerbers\",\"remote_model_upload\","
+         "\"broad_filesystem_action\",\"external_network_action\"],"
+         "\"outcomes\":[\"accept\",\"decline\",\"cancel\"]}";
 }
 
 std::string agentRunProfileJson() {
@@ -204,6 +256,10 @@ std::string agentEvidenceManifestSchemaJson() {
 }
 
 std::string preferredSurfaceForMethod(const std::string& method) {
+  if (method == "agent.state" || method == "agent.workspace_state" || method == "agent.tasks" ||
+      method == "agent.evidence" || method == "agent.approvals") {
+    return "headless_cli_workspace_state";
+  }
   if (method.rfind("agent.", 0) == 0) {
     return "read_only_protocol_metadata";
   }
@@ -217,6 +273,9 @@ std::string agentToolGuideJson(const std::string& method) {
   const bool found = method == "agent.methods" || method == "agent.quickstart" ||
                      method == "agent.harness_context" || method == "agent.run_profile" ||
                      method == "agent.safety_policy" || method == "agent.provider_policy" ||
+                     method == "agent.state" || method == "agent.workspace_state" ||
+                     method == "agent.tasks" || method == "agent.evidence" ||
+                     method == "agent.approvals" ||
                      method == "agent.observability_config" ||
                      method == "agent.evidence_manifest_schema" || method == "agent.tool_guide" ||
                      method == "ccad_execute";
@@ -243,6 +302,12 @@ std::string agentMetadataJson(const std::string& command, const std::string& met
   if (command == "methods") return agentProtocolCatalogJson();
   if (command == "quickstart") return agentQuickstartJson();
   if (command == "harness-context" || command == "harness_context") return agentHarnessContextJson();
+  if (command == "state" || command == "workspace-state" || command == "workspace_state") {
+    return agentWorkspaceStateJson();
+  }
+  if (command == "tasks") return agentTasksJson();
+  if (command == "evidence") return agentEvidenceJson();
+  if (command == "approvals") return agentApprovalsJson();
   if (command == "run-profile" || command == "run_profile") return agentRunProfileJson();
   if (command == "safety-policy" || command == "safety_policy") return agentSafetyPolicyJson();
   if (command == "provider-policy" || command == "provider_policy") return agentProviderPolicyJson();
@@ -260,7 +325,7 @@ std::string agentMetadataJson(const std::string& command, const std::string& met
 
 int agentCommand(const std::vector<std::string>& args) {
   if (args.empty()) {
-    std::cerr << "Usage: ccad agent <serve|methods|quickstart|harness-context|run-profile|safety-policy|provider-policy|observability-config|evidence-manifest-schema|tool-guide>\n";
+    std::cerr << "Usage: ccad agent <serve|methods|quickstart|harness-context|state|tasks|evidence|approvals|run-profile|safety-policy|provider-policy|observability-config|evidence-manifest-schema|tool-guide>\n";
     return 1;
   }
 
@@ -276,7 +341,7 @@ int agentCommand(const std::vector<std::string>& args) {
       std::cout << metadata << "\n";
       return 0;
     }
-    std::cerr << "Usage: ccad agent <serve|methods|quickstart|harness-context|run-profile|safety-policy|provider-policy|observability-config|evidence-manifest-schema|tool-guide>\n";
+    std::cerr << "Usage: ccad agent <serve|methods|quickstart|harness-context|state|tasks|evidence|approvals|run-profile|safety-policy|provider-policy|observability-config|evidence-manifest-schema|tool-guide>\n";
     return 1;
   }
 
@@ -319,6 +384,18 @@ int agentCommand(const std::vector<std::string>& args) {
       std::cout.flush();
     } else if (method == "agent.harness_context") {
       std::cout << formatSuccess(id, agentHarnessContextJson()) << "\n";
+      std::cout.flush();
+    } else if (method == "agent.state" || method == "agent.workspace_state") {
+      std::cout << formatSuccess(id, agentWorkspaceStateJson()) << "\n";
+      std::cout.flush();
+    } else if (method == "agent.tasks") {
+      std::cout << formatSuccess(id, agentTasksJson()) << "\n";
+      std::cout.flush();
+    } else if (method == "agent.evidence") {
+      std::cout << formatSuccess(id, agentEvidenceJson()) << "\n";
+      std::cout.flush();
+    } else if (method == "agent.approvals") {
+      std::cout << formatSuccess(id, agentApprovalsJson()) << "\n";
       std::cout.flush();
     } else if (method == "agent.run_profile") {
       std::cout << formatSuccess(id, agentRunProfileJson()) << "\n";

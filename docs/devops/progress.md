@@ -6,13 +6,14 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 7 / 7 (Phase 6 complete)
 - Phase name: Final Polish & Release
-- Sprint: 191
-- Branch: `sprint-191-agent-panel-vertical-workspace`
+- Sprint: 192
+- Branch: `sprint-192-agent-cli-workspace-state`
 - Phase 7 sprint budget: Sprints 186 through 200 for the current Agent harness, GUI parity, and verification backlog slice.
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness.
 
 **Current State**: 
+- **Sprint 192 (Agent CLI Workspace State)** is complete on `sprint-192-agent-cli-workspace-state`. It adds headless CLI parity for the first Agent workspace state slice with direct `ccad agent state`, `ccad agent tasks`, `ccad agent evidence`, and `ccad agent approvals` commands; matching JSON-RPC routes `agent.state`, `agent.workspace_state`, `agent.tasks`, `agent.evidence`, and `agent.approvals`; method-catalog and tool-guide discovery for those state surfaces; and explicit `durable_store:"not_configured"` fields so the CLI does not pretend to read GUI-only in-memory state before Sprint 193 durable sessions. Focused `agent_serve` coverage passed after a red test proved the missing routes, CLI spot checks returned deterministic JSON, `git diff --check` passed, and the full Qt build plus CTest gate passed 36 of 36 tests.
 - **Sprint 191 (Agent Panel Vertical Workspace)** is complete on `sprint-191-agent-panel-vertical-workspace`. It moves the Agent dock from a stacked lower right pane into a full-height right-side workspace column beside Layers / Objects, redesigns the panel into a compact dark workspace with session header, workspace context, goal/task area, approval card, fixed command prompt, visible Request Context and Trigger DRC actions, command staging state, and preserved semantic IDs for existing agent tools. Focused `gui_agent_panel` and `gui_ui_map` tests passed, official visual validation produced `artifacts/screenshots/sprint191-agent-panel-vertical-workspace-v6-20260605-031347.png`, target validation produced `artifacts/screenshots/sprint191-agent-panel-vertical-workspace-v6-targets-target-sequence.json` with no `found:false` entries and empty stderr, `git diff --check` passed, and the full Qt build plus CTest gate passed 36 of 36 tests.
 - **Sprint 190 (Agent Harness Backlog Map)** is complete on `sprint-190-agent-harness-backlog-map`. It ingested `docs/req_agentHarness.md` into a structured backlog map, recorded external references for current agent UI, durable execution, MCP, OpenTelemetry/Langfuse, KiCad CLI, KiCad/ngspice simulation, and Altium automation, corrected the stale progress counter, and defined the next bounded agent-harness sprint sequence. `git diff --check` passed, the Qt build passed, and CTest passed 36 of 36 tests.
 - **Sprint 148 (KiCad GUI Parity)** is complete and merged to `main`. It added KiCad-style icon toolbars, GUI footprint/symbol placement flows, and shape-aware pad/drill rendering.
