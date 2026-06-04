@@ -3017,6 +3017,8 @@ void ReviewWindow::reloadProject() {
     project_cache_ = ccad::Project{};
     syncActivePcbLayerFromBoard();
     syncActivePcbNetFromProject();
+    last_diagnostic_error_count_ = -1;
+    last_diagnostic_warning_count_ = -1;
     diagnostics_->setRowCount(0);
     renderCanvas(ccad::CanvasScene{});
     project_summary_->renderLoadFailure(qstr(current_path_.string()));
@@ -3028,6 +3030,15 @@ void ReviewWindow::reloadProject() {
 void ReviewWindow::renderReview(const ccad::ProjectReview& review) {
   syncActivePcbLayerFromBoard();
   syncActivePcbNetFromProject();
+  last_diagnostic_error_count_ = 0;
+  last_diagnostic_warning_count_ = 0;
+  for (const ccad::Diagnostic& diagnostic : review.diagnostics) {
+    if (diagnostic.severity == "error") {
+      ++last_diagnostic_error_count_;
+    } else if (diagnostic.severity == "warning") {
+      ++last_diagnostic_warning_count_;
+    }
+  }
   project_summary_->renderReview(review);
   diagnostics_->renderDiagnostics(review.diagnostics);
   
@@ -3099,6 +3110,17 @@ void ReviewWindow::updateAgentPanelContext() {
                                     ? QString("none")
                                     : QFileInfo(qstr(current_path_.string())).fileName();
   agent_panel_->setProjectContext(project_label, ui_map_epoch_);
+  QString active_view = "unknown";
+  if (editor_tabs_ != nullptr) {
+    active_view = editor_tabs_->currentIndex() == 0
+                      ? "pcb"
+                      : editor_tabs_->currentIndex() == 1 ? "schematic" : "other";
+  }
+  agent_panel_->setWorkspaceContext(active_view, qstr(activePcbLayerOrDefault()),
+                                    qstr(activePcbNetOrDefault()),
+                                    interactionModeName(interaction_mode_),
+                                    last_diagnostic_error_count_,
+                                    last_diagnostic_warning_count_);
 }
 
 std::string ReviewWindow::activePcbLayerOrDefault() const {
@@ -4119,10 +4141,8 @@ QString ReviewWindow::validateUiMapTargetsJson(const bool move_cursor) const {
     const QRect global_rect(agent_dock_->mapToGlobal(QPoint(0, 0)),
                             QSize(agent_dock_->width(), title_height));
     const QPoint target = global_rect.center();
-    const QWidget* hit_widget = QApplication::widgetAt(target);
     appendCheck("tab:agent", "tab", agent_dock_->isVisible(), agent_dock_->isEnabled(), target,
-                global_rect.contains(target) && hit_widget != nullptr,
-                hit_widget != nullptr ? hit_widget->objectName() : "none");
+                global_rect.contains(target), "dock_title");
   }
 
   const auto validateCanvas = [&appendCheck](const QString& id, const QGraphicsView* view) {

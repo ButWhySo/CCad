@@ -212,6 +212,14 @@ int main(int argc, char** argv) {
           "UI map exposes agent live-query payload input");
   require(contains(map, "\"id\":\"action:agent_live_query\""),
           "UI map exposes agent live-query button");
+  require(contains(map, "\"id\":\"action:agent_preset_harness_context\""),
+          "UI map exposes agent harness-context preset");
+  require(contains(map, "\"id\":\"action:agent_preset_project_diagnostics\""),
+          "UI map exposes agent diagnostics preset");
+  require(contains(map, "\"id\":\"action:agent_preset_tool_guide\""),
+          "UI map exposes agent tool-guide preset");
+  require(contains(map, "\"id\":\"action:agent_clear_output\""),
+          "UI map exposes agent clear-output action");
   require(contains(map, "\"id\":\"tab:pcb\""), "UI map exposes PCB tab");
   require(contains(map, "\"id\":\"tab:schematic\""), "UI map exposes schematic tab");
   require(contains(map, "\"id\":\"tab:agent\""), "UI map exposes agent dock tab alias");
@@ -560,6 +568,21 @@ int main(int argc, char** argv) {
           "target query finds agent live query action");
   require(contains(agent_live_query_target, "\"role\":\"action\""),
           "agent live query target reports action role");
+  const QString harness_preset_target =
+      window.uiTargetJsonById("action:agent_preset_harness_context");
+  require(contains(harness_preset_target, "\"found\":true"),
+          "target query finds agent harness-context preset");
+  const QString diagnostics_preset_target =
+      window.uiTargetJsonById("action:agent_preset_project_diagnostics");
+  require(contains(diagnostics_preset_target, "\"found\":true"),
+          "target query finds agent diagnostics preset");
+  const QString tool_guide_preset_target =
+      window.uiTargetJsonById("action:agent_preset_tool_guide");
+  require(contains(tool_guide_preset_target, "\"found\":true"),
+          "target query finds agent tool-guide preset");
+  const QString clear_output_target = window.uiTargetJsonById("action:agent_clear_output");
+  require(contains(clear_output_target, "\"found\":true"),
+          "target query finds agent clear-output action");
   window.triggerSafeUiActionJson("tab:pcb");
 
   const QString pad_target = window.uiTargetJsonById("canvas_object:U1.1");
@@ -635,6 +658,22 @@ int main(int argc, char** argv) {
           "agent click can trigger the Agent panel live-query button");
   require(contains(live_query_click, "\"reason\":\"button_clicked\""),
           "agent click reports direct button click");
+  const QString harness_preset_click = window.runAgentUiQueryJson(
+      "ui.click", "{\"id\":\"action:agent_preset_harness_context\"}");
+  require(contains(harness_preset_click, "\"performed\":true"),
+          "agent click can trigger the harness-context preset");
+  const QString diagnostics_preset_click = window.runAgentUiQueryJson(
+      "ui.click", "{\"id\":\"action:agent_preset_project_diagnostics\"}");
+  require(contains(diagnostics_preset_click, "\"performed\":true"),
+          "agent click can trigger the diagnostics preset");
+  const QString tool_guide_preset_click = window.runAgentUiQueryJson(
+      "ui.click", "{\"id\":\"action:agent_preset_tool_guide\"}");
+  require(contains(tool_guide_preset_click, "\"performed\":true"),
+          "agent click can trigger the tool-guide preset");
+  const QString clear_output_click =
+      window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_clear_output\"}");
+  require(contains(clear_output_click, "\"performed\":true"),
+          "agent click can trigger the clear-output action");
   window.triggerSafeUiActionJson("tab:pcb");
 
   window.triggerSafeUiActionJson("action:add_tracks");

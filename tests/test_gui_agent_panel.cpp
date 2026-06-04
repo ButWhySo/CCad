@@ -40,11 +40,21 @@ int main(int argc, char** argv) {
           "agent panel displays project context");
   require(panel.epochText() == "UI map epoch 17", "agent panel displays UI map epoch");
   require(panel.actionIdText() == "action:zoom_in", "agent panel has safe default action id");
+  panel.setWorkspaceContext("pcb", "F.Cu", "DC_POS", "route_track", 1, 2);
+  require(contains(panel.workspaceText(), "View pcb"), "agent panel displays active view");
+  require(contains(panel.workspaceText(), "Layer F.Cu"), "agent panel displays active layer");
+  require(contains(panel.workspaceText(), "Net DC_POS"), "agent panel displays active net");
+  require(contains(panel.workspaceText(), "Tool route_track"),
+          "agent panel displays interaction mode");
+  require(contains(panel.diagnosticsText(), "Diagnostics 1 errors / 2 warnings"),
+          "agent panel displays diagnostic summary");
 
   panel.refreshUiMap();
   require(contains(panel.outputText(), "\"id\":\"panel:agent\""),
           "agent panel refreshes UI map output");
   require(contains(panel.statusText(), "UI map nodes 2"), "agent panel summarizes UI map nodes");
+  require(contains(panel.resultStateText(), "Map refreshed"),
+          "agent panel summarizes refreshed map result");
 
   panel.setActionId("tab:schematic");
   panel.triggerSafeAction();
@@ -52,6 +62,8 @@ int main(int argc, char** argv) {
           "agent panel runs safe action callback");
   require(contains(panel.outputText(), "\"performed\":true"),
           "agent panel preserves safe action result JSON");
+  require(contains(panel.resultStateText(), "Performed"),
+          "agent panel summarizes performed safe action result");
 
   panel.setLiveQuery("ui.find", "{\"query\":\"add\",\"role\":\"action\",\"limit\":4}");
   require(panel.liveMethodText() == "ui.find", "agent panel stores live query method");
@@ -65,4 +77,27 @@ int main(int argc, char** argv) {
           "agent panel renders live query result");
   require(contains(panel.statusText(), "Live query ui.find"),
           "agent panel reports live query status");
+  require(contains(panel.resultStateText(), "OK"),
+          "agent panel summarizes successful live query result");
+
+  panel.runHarnessContextPreset();
+  require(live_method_seen == "agent.harness_context",
+          "agent panel harness preset sends harness context query");
+  require(live_payload_seen == "{}", "agent panel harness preset sends empty payload");
+
+  panel.runDiagnosticsPreset();
+  require(live_method_seen == "project.diagnostics",
+          "agent panel diagnostics preset sends diagnostics query");
+  require(live_payload_seen == "{}", "agent panel diagnostics preset sends empty payload");
+
+  panel.runToolGuidePreset();
+  require(live_method_seen == "agent.tool_guide",
+          "agent panel tool-guide preset sends tool-guide query");
+  require(contains(live_payload_seen, "ui.route_track"),
+          "agent panel tool-guide preset documents a concrete workflow method");
+
+  panel.clearOutput();
+  require(panel.outputText().isEmpty(), "agent panel clear action clears output");
+  require(contains(panel.statusText(), "Output cleared"), "agent panel clear action updates status");
+  require(contains(panel.resultStateText(), "Idle"), "agent panel clear action resets result state");
 }

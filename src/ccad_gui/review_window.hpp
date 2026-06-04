@@ -237,6 +237,8 @@ class ReviewWindow final : public QMainWindow {
   QString highlighted_net_id_;
   std::string active_pcb_layer_id_;
   std::string active_pcb_net_id_;
+  int last_diagnostic_error_count_ = -1;
+  int last_diagnostic_warning_count_ = -1;
 
   InteractionMode interaction_mode_ = InteractionMode::Default;
   std::string interaction_component_id_;
