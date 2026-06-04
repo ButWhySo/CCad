@@ -1,6 +1,7 @@
 #include "ccad_gui/agent_panel.hpp"
 
 #include <QHBoxLayout>
+#include <QDateTime>
 #include <QFrame>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -11,8 +12,10 @@
 #include <QPushButton>
 #include <QScrollArea>
 #include <QSizePolicy>
+#include <QStringList>
 #include <QVBoxLayout>
 
+#include <algorithm>
 #include <utility>
 
 namespace {
@@ -70,6 +73,129 @@ QString resultSummaryFromJson(const QString& json, const QString& fallback) {
     return QString("Result Error ") + object.value("error").toString();
   }
   return fallback;
+}
+
+QJsonObject resultObjectFromAgentOutput(const QJsonObject& root) {
+  const QJsonValue result = root.value("result");
+  if (result.isObject()) {
+    return result.toObject();
+  }
+  return root;
+}
+
+QString methodFromAgentOutput(const QJsonObject& root, const QString& fallback) {
+  const QString method = root.value("method").toString().trimmed();
+  return method.isEmpty() ? fallback.trimmed() : method;
+}
+
+QString evidenceKindForMethod(const QString& method) {
+  if (method == "ui.screenshot") {
+    return "screenshot";
+  }
+  if (method == "project.drc") {
+    return "drc_report";
+  }
+  if (method == "project.erc") {
+    return "erc_report";
+  }
+  if (method == "project.diagnostics") {
+    return "diagnostics_report";
+  }
+  if (method == "project.review") {
+    return "review_report";
+  }
+  return "tool_result";
+}
+
+QString evidenceTitleForMethod(const QString& method, const QString& kind) {
+  if (method.isEmpty()) {
+    return kind == "tool_result" ? QString("Agent Evidence") : kind;
+  }
+  return method;
+}
+
+int intValueFromJson(const QJsonObject& object, const QString& key) {
+  const QJsonValue value = object.value(key);
+  if (value.isDouble()) {
+    return value.toInt();
+  }
+  if (value.isString()) {
+    bool ok = false;
+    const int parsed = value.toString().toInt(&ok);
+    if (ok) {
+      return parsed;
+    }
+  }
+  return -1;
+}
+
+QString stringValueFromJson(const QJsonObject& object, const QStringList& keys) {
+  for (const QString& key : keys) {
+    const QString value = object.value(key).toString().trimmed();
+    if (!value.isEmpty()) {
+      return value;
+    }
+  }
+  return {};
+}
+
+QString summarizeEvidenceCard(const QString& kind,
+                              const QString& result_state,
+                              const QJsonObject& result,
+                              const QString& output_text) {
+  const int diagnostic_count = intValueFromJson(result, "diagnostic_count");
+  const int error_count = intValueFromJson(result, "error_count");
+  const int warning_count = intValueFromJson(result, "warning_count");
+  if (kind == "screenshot") {
+    const int width = intValueFromJson(result, "width");
+    const int height = intValueFromJson(result, "height");
+    const QString path = stringValueFromJson(result, {"artifact_path", "path", "target_path"});
+    QString summary = "Screenshot";
+    if (width >= 0 && height >= 0) {
+      summary += " " + QString::number(width) + " x " + QString::number(height);
+    }
+    if (!path.isEmpty()) {
+      summary += " | " + path;
+    }
+    return summary;
+  }
+  if (kind == "drc_report" || kind == "erc_report") {
+    QString summary = kind == "drc_report" ? "DRC report" : "ERC report";
+    if (diagnostic_count >= 0) {
+      summary += " | diagnostics " + QString::number(diagnostic_count);
+    }
+    if (error_count >= 0 || warning_count >= 0) {
+      summary += " | " + QString::number(std::max(error_count, 0)) + " errors / " +
+                 QString::number(std::max(warning_count, 0)) + " warnings";
+    }
+    return summary;
+  }
+  if (kind == "diagnostics_report") {
+    QString summary = "Project diagnostics";
+    const int erc_count = intValueFromJson(result, "erc_count");
+    const int drc_count = intValueFromJson(result, "drc_count");
+    if (erc_count >= 0) {
+      summary += " | ERC " + QString::number(erc_count);
+    }
+    if (drc_count >= 0) {
+      summary += " | DRC " + QString::number(drc_count);
+    }
+    if (error_count >= 0 || warning_count >= 0) {
+      summary += " | " + QString::number(std::max(error_count, 0)) + " errors / " +
+                 QString::number(std::max(warning_count, 0)) + " warnings";
+    }
+    return summary;
+  }
+
+  const QString trimmed_state = result_state.trimmed();
+  if (!trimmed_state.isEmpty()) {
+    return trimmed_state;
+  }
+  QString output_summary = output_text.simplified();
+  if (output_summary.size() > 160) {
+    output_summary = output_summary.left(160) + "...";
+  }
+  return output_summary.isEmpty() ? QString("Pinned agent output") : output_summary;
 }
 
 QString contextValue(const QString& value, const QString& fallback) {
@@ -137,6 +263,23 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
       border: 1px solid #4b5563;
       border-radius: 4px;
       padding: 3px 6px;
+    }
+    QFrame[agentRole="evidenceCard"] {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 4px;
+    }
+    QLabel[agentRole="evidenceKind"] {
+      color: #93c5fd;
+      font-weight: 600;
+    }
+    QLabel[agentRole="evidenceTitle"] {
+      color: #f8fafc;
+      font-weight: 700;
+    }
+    QLabel[agentRole="evidenceMeta"] {
+      color: #94a3b8;
     }
     QLabel#agentProjectLabel,
     QLabel#agentEpochLabel,
@@ -385,6 +528,10 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   evidence_row->addWidget(pin_evidence_button);
   evidence_row->addWidget(clear_evidence_button);
   evidence_layout->addLayout(evidence_row);
+  evidence_cards_layout_ = new QVBoxLayout();
+  evidence_cards_layout_->setContentsMargins(0, 0, 0, 0);
+  evidence_cards_layout_->setSpacing(4);
+  evidence_layout->addLayout(evidence_cards_layout_);
 
   connect(pin_evidence_button, &QPushButton::clicked, this, [this]() { pinEvidence(); });
   connect(clear_evidence_button, &QPushButton::clicked, this, [this]() { clearEvidence(); });
@@ -433,8 +580,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   approval_status_row->addWidget(clear_approvals_button);
   approval_layout->addLayout(approval_status_row);
   approval_layout->addWidget(approval_status_label_);
-  content_layout->addWidget(approval_section);
   content_layout->addWidget(evidence_section);
+  content_layout->addWidget(approval_section);
   content_layout->addWidget(stream_section, 1);
   content_layout->addStretch(1);
 
@@ -637,39 +784,111 @@ void AgentPanel::stageGoal() {
   result_state_label_->setText("Result Goal staged");
 }
 
+void AgentPanel::renderEvidenceCards() {
+  if (evidence_cards_layout_ == nullptr) {
+    return;
+  }
+  while (QLayoutItem* item = evidence_cards_layout_->takeAt(0)) {
+    if (QWidget* widget = item->widget()) {
+      delete widget;
+    }
+    delete item;
+  }
+
+  for (int i = 0; i < evidence_cards_.size(); ++i) {
+    const EvidenceCard& card = evidence_cards_.at(i);
+    auto* frame = new QFrame(this);
+    frame->setObjectName("card:agent_evidence_" + QString::number(i + 1));
+    frame->setProperty("agentRole", "evidenceCard");
+    auto* layout = new QVBoxLayout(frame);
+    layout->setContentsMargins(6, 5, 6, 5);
+    layout->setSpacing(2);
+
+    auto* title_row = new QHBoxLayout();
+    title_row->setSpacing(6);
+    auto* kind_label = new QLabel(card.kind, frame);
+    kind_label->setObjectName("label:agent_evidence_" + QString::number(i + 1) + "_kind");
+    kind_label->setProperty("agentRole", "evidenceKind");
+    auto* title_label = new QLabel(card.title, frame);
+    title_label->setObjectName("label:agent_evidence_" + QString::number(i + 1) + "_title");
+    title_label->setProperty("agentRole", "evidenceTitle");
+    title_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    title_row->addWidget(kind_label);
+    title_row->addWidget(title_label, 1);
+    layout->addLayout(title_row);
+
+    auto* summary_label = new QLabel(card.summary, frame);
+    summary_label->setObjectName("label:agent_evidence_" + QString::number(i + 1) + "_summary");
+    summary_label->setWordWrap(true);
+    summary_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    layout->addWidget(summary_label);
+
+    QString meta = card.method;
+    if (!card.artifact_path.isEmpty()) {
+      meta += meta.isEmpty() ? card.artifact_path : " | " + card.artifact_path;
+    }
+    if (!card.id.isEmpty()) {
+      meta += meta.isEmpty() ? card.id : " | " + card.id;
+    }
+    auto* meta_label = new QLabel(meta, frame);
+    meta_label->setObjectName("label:agent_evidence_" + QString::number(i + 1) + "_meta");
+    meta_label->setProperty("agentRole", "evidenceMeta");
+    meta_label->setWordWrap(true);
+    meta_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    layout->addWidget(meta_label);
+
+    evidence_cards_layout_->addWidget(frame);
+  }
+}
+
 void AgentPanel::pinEvidence() {
-  QString entry = "Evidence " + QString::number(evidence_entries_.size() + 1);
+  const QJsonObject root = parsedObject(output_->toPlainText());
+  const QJsonObject result = resultObjectFromAgentOutput(root);
+  const QString method = methodFromAgentOutput(root, live_method_input_->text());
+  const QString kind = evidenceKindForMethod(method);
+
+  EvidenceCard card;
+  card.id = "ev-" + QString::number(++evidence_sequence_);
+  card.kind = kind;
+  card.title = evidenceTitleForMethod(method, kind);
+  card.method = method;
+  card.artifact_path =
+      stringValueFromJson(result, {"artifact_path", "path", "target_path", "report_path",
+                                   "screenshot_path"});
+  card.created_at = QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs);
+  card.trace_id = root.value("trace_id").toString();
+  card.span_id = root.value("span_id").toString();
+  card.source = "agent_panel";
+  card.diagnostic_count = intValueFromJson(result, "diagnostic_count");
+  card.error_count = intValueFromJson(result, "error_count");
+  card.warning_count = intValueFromJson(result, "warning_count");
+  card.drc_count = intValueFromJson(result, "drc_count");
+  card.erc_count = intValueFromJson(result, "erc_count");
+  card.width = intValueFromJson(result, "width");
+  card.height = intValueFromJson(result, "height");
+  card.summary =
+      summarizeEvidenceCard(kind, result_state_label_->text(), result, output_->toPlainText());
+
   const QString goal = staged_goal_.trimmed().isEmpty() ? goal_input_->text().trimmed() : staged_goal_;
   if (!goal.isEmpty()) {
-    entry += " | goal " + goal;
+    card.summary += " | goal " + goal;
   }
-  const QString method = live_method_input_->text().trimmed();
-  if (!method.isEmpty()) {
-    entry += " | method " + method;
+
+  evidence_cards_.append(card);
+  while (evidence_cards_.size() > 8) {
+    evidence_cards_.removeFirst();
   }
-  const QString result_state = result_state_label_->text().trimmed();
-  if (!result_state.isEmpty()) {
-    entry += " | " + result_state;
-  }
-  QString output_summary = output_->toPlainText().simplified();
-  if (!output_summary.isEmpty()) {
-    if (output_summary.size() > 240) {
-      output_summary = output_summary.left(240) + "...";
-    }
-    entry += " | output " + output_summary;
-  }
-  evidence_entries_.append(entry);
-  while (evidence_entries_.size() > 8) {
-    evidence_entries_.removeFirst();
-  }
-  evidence_label_->setText("Evidence " + QString::number(evidence_entries_.size()) + " pinned");
+  renderEvidenceCards();
+  evidence_label_->setText("Evidence " + QString::number(evidence_cards_.size()) +
+                           " pinned | last " + card.kind);
   status_label_->setText("Evidence pinned");
   result_state_label_->setText("Result Evidence pinned");
 }
 
 void AgentPanel::clearEvidence() {
-  evidence_entries_.clear();
-  evidence_label_->setText("Evidence 0 pinned");
+  evidence_cards_.clear();
+  renderEvidenceCards();
+  evidence_label_->setText("Evidence 0 pinned | no cards yet");
   status_label_->setText("Evidence cleared");
   result_state_label_->setText("Result Evidence cleared");
 }
@@ -846,15 +1065,61 @@ QString AgentPanel::outputText() const {
   return output_->toPlainText();
 }
 
+QJsonObject AgentPanel::evidenceCardJson(const EvidenceCard& card) const {
+  QJsonObject object;
+  object.insert("id", card.id);
+  object.insert("kind", card.kind);
+  object.insert("title", card.title);
+  object.insert("summary", card.summary);
+  object.insert("method", card.method);
+  object.insert("artifact_path", card.artifact_path);
+  object.insert("created_at", card.created_at);
+  object.insert("trace_id", card.trace_id);
+  object.insert("span_id", card.span_id);
+  object.insert("source", card.source);
+  if (card.diagnostic_count >= 0) {
+    object.insert("diagnostic_count", card.diagnostic_count);
+  }
+  if (card.error_count >= 0) {
+    object.insert("error_count", card.error_count);
+  }
+  if (card.warning_count >= 0) {
+    object.insert("warning_count", card.warning_count);
+  }
+  if (card.drc_count >= 0) {
+    object.insert("drc_count", card.drc_count);
+  }
+  if (card.erc_count >= 0) {
+    object.insert("erc_count", card.erc_count);
+  }
+  if (card.width >= 0) {
+    object.insert("width", card.width);
+  }
+  if (card.height >= 0) {
+    object.insert("height", card.height);
+  }
+  return object;
+}
+
 QString AgentPanel::workspaceStateJson() const {
   QJsonArray evidence;
-  for (const QString& entry : evidence_entries_) {
-    evidence.append(entry);
+  QJsonArray evidence_cards;
+  for (const EvidenceCard& card : evidence_cards_) {
+    QString legacy_summary = card.title;
+    if (!card.summary.isEmpty()) {
+      legacy_summary += " | " + card.summary;
+    }
+    if (!card.method.isEmpty()) {
+      legacy_summary += " | method " + card.method;
+    }
+    evidence.append(legacy_summary);
+    evidence_cards.append(evidenceCardJson(card));
   }
 
   QJsonObject response;
   response.insert("schema_version", 1);
   response.insert("workspace_kind", "ccad_agent_workspace_state");
+  response.insert("evidence_manifest_kind", "ccad_agent_evidence_manifest");
   response.insert("panel_layout", "vertical_agent_workspace");
   response.insert("session_title", session_title_label_->text());
   response.insert("model_label", model_chip_label_->text());
@@ -863,8 +1128,9 @@ QString AgentPanel::workspaceStateJson() const {
   response.insert("command_input", commandText());
   response.insert("goal", staged_goal_.isEmpty() ? goal_input_->text().trimmed() : staged_goal_);
   response.insert("task_state", taskStateText());
-  response.insert("evidence_count", evidence_entries_.size());
+  response.insert("evidence_count", evidence_cards_.size());
   response.insert("evidence", evidence);
+  response.insert("evidence_cards", evidence_cards);
   response.insert("approval_pending_count", pendingApprovalCount());
   response.insert("approval_request", pending_approval_request_);
   response.insert("approval_input", approvalRequestText());

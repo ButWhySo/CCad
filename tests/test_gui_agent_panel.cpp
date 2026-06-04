@@ -35,6 +35,29 @@ int main(int argc, char** argv) {
   panel.setLiveQueryProvider([&](const QString& method, const QString& payload) {
     live_method_seen = method;
     live_payload_seen = payload;
+    if (method == "ui.screenshot") {
+      return QString("{\"schema_version\":1,\"ok\":true,\"method\":\"ui.screenshot\","
+                     "\"result\":{\"performed\":true,"
+                     "\"path\":\"artifacts/screenshots/bridge-proof.png\","
+                     "\"width\":1280,\"height\":720}}\n");
+    }
+    if (method == "project.drc") {
+      return QString("{\"schema_version\":1,\"ok\":true,\"method\":\"project.drc\","
+                     "\"result\":{\"diagnostic_count\":2,\"error_count\":1,"
+                     "\"warning_count\":1,\"report_path\":\"artifacts/reports/drc.json\","
+                     "\"diagnostics\":[]}}\n");
+    }
+    if (method == "project.erc") {
+      return QString("{\"schema_version\":1,\"ok\":true,\"method\":\"project.erc\","
+                     "\"result\":{\"diagnostic_count\":1,\"error_count\":0,"
+                     "\"warning_count\":1,\"report_path\":\"artifacts/reports/erc.json\","
+                     "\"diagnostics\":[]}}\n");
+    }
+    if (method == "project.diagnostics") {
+      return QString("{\"schema_version\":1,\"ok\":true,\"method\":\"project.diagnostics\","
+                     "\"result\":{\"erc_count\":1,\"drc_count\":2,"
+                     "\"error_count\":1,\"warning_count\":2}}\n");
+    }
     return QString("{\"schema_version\":1,\"ok\":true,\"method\":\"%1\","
                    "\"result\":{\"match_count\":1,\"nodes\":[{\"id\":\"action:add_footprint\"}]}}\n")
         .arg(method);
@@ -56,6 +79,14 @@ int main(int argc, char** argv) {
           "agent panel exposes an evidence tray section");
   require(panel.findChild<QWidget*>("panel:agent_approval_card") != nullptr,
           "agent panel exposes an approval-card section");
+  panel.resize(420, 760);
+  panel.show();
+  QApplication::processEvents();
+  auto* evidence_section = panel.findChild<QWidget*>("panel:agent_evidence_tray");
+  auto* approval_section = panel.findChild<QWidget*>("panel:agent_approval_card");
+  require(evidence_section->mapTo(&panel, QPoint(0, 0)).y() <
+              approval_section->mapTo(&panel, QPoint(0, 0)).y(),
+          "agent panel shows pinned evidence before approval cards");
   require(panel.findChild<QLineEdit*>("control:agent_command_input") != nullptr,
           "agent panel exposes a bottom command input");
   require(panel.findChild<QPushButton*>("action:agent_submit_command") != nullptr,
@@ -160,10 +191,77 @@ int main(int argc, char** argv) {
           "agent panel workspace state serializes evidence count");
   require(contains(workspace_state, "agent.tool_guide"),
           "agent panel workspace state serializes evidence entries");
+  require(contains(workspace_state, "\"evidence_cards\":["),
+          "agent panel workspace state serializes evidence cards");
+  require(contains(workspace_state, "\"kind\":\"tool_result\""),
+          "agent panel stores generic tool-guide evidence as a tool-result card");
+  require(contains(workspace_state, "\"method\":\"agent.tool_guide\""),
+          "agent panel evidence cards keep the producer method");
+  require(contains(workspace_state, "\"title\":\"agent.tool_guide\""),
+          "agent panel evidence cards expose a compact title");
+  require(contains(workspace_state, "\"trace_id\":\"\""),
+          "agent panel evidence cards include trace-ready trace_id");
+  require(contains(workspace_state, "\"span_id\":\"\""),
+          "agent panel evidence cards include trace-ready span_id");
+  require(contains(workspace_state, "\"source\":\"agent_panel\""),
+          "agent panel evidence cards identify their local source");
+  require(panel.findChild<QWidget*>("card:agent_evidence_1") != nullptr,
+          "agent panel renders the first pinned evidence as a targetable card widget");
 
   panel.clearEvidence();
   require(contains(panel.evidenceText(), "Evidence 0"),
           "agent panel clears pinned evidence");
+  require(panel.findChild<QWidget*>("card:agent_evidence_1") == nullptr,
+          "agent panel clear removes evidence card widgets");
+
+  panel.setLiveQuery("ui.screenshot", "{\"path\":\"artifacts/screenshots/bridge-proof.png\"}");
+  panel.runLiveQuery();
+  panel.pinEvidence();
+  QString evidence_cards_state = panel.workspaceStateJson();
+  require(contains(evidence_cards_state, "\"kind\":\"screenshot\""),
+          "agent panel classifies screenshot outputs as screenshot evidence");
+  require(contains(evidence_cards_state,
+                   "\"artifact_path\":\"artifacts/screenshots/bridge-proof.png\""),
+          "agent panel screenshot evidence stores the artifact path");
+  require(contains(evidence_cards_state, "\"width\":1280"),
+          "agent panel screenshot evidence stores image width metadata");
+  require(contains(evidence_cards_state, "\"height\":720"),
+          "agent panel screenshot evidence stores image height metadata");
+
+  panel.setLiveQuery("project.drc", "{}");
+  panel.runLiveQuery();
+  panel.pinEvidence();
+  evidence_cards_state = panel.workspaceStateJson();
+  require(contains(evidence_cards_state, "\"kind\":\"drc_report\""),
+          "agent panel classifies DRC outputs as DRC report evidence");
+  require(contains(evidence_cards_state, "\"error_count\":1"),
+          "agent panel DRC evidence stores error count metadata");
+  require(contains(evidence_cards_state, "\"warning_count\":1"),
+          "agent panel DRC evidence stores warning count metadata");
+
+  panel.setLiveQuery("project.erc", "{}");
+  panel.runLiveQuery();
+  panel.pinEvidence();
+  evidence_cards_state = panel.workspaceStateJson();
+  require(contains(evidence_cards_state, "\"kind\":\"erc_report\""),
+          "agent panel classifies ERC outputs as ERC report evidence");
+  require(contains(evidence_cards_state, "\"diagnostic_count\":1"),
+          "agent panel ERC evidence stores diagnostic count metadata");
+
+  panel.setLiveQuery("project.diagnostics", "{}");
+  panel.runLiveQuery();
+  panel.pinEvidence();
+  evidence_cards_state = panel.workspaceStateJson();
+  require(contains(evidence_cards_state, "\"kind\":\"diagnostics_report\""),
+          "agent panel classifies combined diagnostics outputs as diagnostics evidence");
+  require(contains(evidence_cards_state, "\"drc_count\":2"),
+          "agent panel diagnostics evidence stores DRC count metadata");
+  require(contains(evidence_cards_state, "\"erc_count\":1"),
+          "agent panel diagnostics evidence stores ERC count metadata");
+
+  panel.clearEvidence();
+  require(contains(panel.evidenceText(), "Evidence 0"),
+          "agent panel clears typed evidence cards");
 
   panel.setApprovalRequestText("Approve routing across DC bus");
   require(panel.approvalRequestText() == "Approve routing across DC bus",

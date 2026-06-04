@@ -417,13 +417,21 @@ int main(int argc, char** argv) {
           "action:grid",          "action:polar_coord",   "action:unit_inch",
           "action:cursor_shape",  "action:show_ratsnest", "action:net_highlight",
           "action:contrast_mode", "tab:agent"};
+      const QStringList click_before_capture_ids = {"action:agent_footer_trigger_drc",
+                                                    "action:agent_pin_evidence"};
       const auto runPass = [&window, &entries, &output_dir, &name, &target_ids,
                             &trigger_before_capture_ids,
+                            &click_before_capture_ids,
                             per_target_wait_ms](
                                const QString& pass_name) {
         for (const QString& id : target_ids) {
           if (trigger_before_capture_ids.contains(id)) {
             window.triggerSafeUiActionJson(id);
+            QApplication::processEvents();
+          }
+          if (click_before_capture_ids.contains(id)) {
+            const QString payload = QString("{\"id\":%1}").arg(jsonStringLocal(id));
+            window.runAgentUiQueryJson("ui.click", payload);
             QApplication::processEvents();
           }
           const QString target_json = window.uiTargetJsonById(id);

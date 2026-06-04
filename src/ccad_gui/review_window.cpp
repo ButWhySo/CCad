@@ -1006,6 +1006,19 @@ QString agentEvidenceManifestSchemaJson() {
   response.insert("artifact_fields",
                   QJsonArray{"kind", "path", "created_at", "sha256", "producer_method",
                              "project_id", "transaction_id", "ui_epoch"});
+  response.insert("evidence_cards",
+                  QJsonObject{{"producer", "AgentPanel::pinEvidence"},
+                              {"workspace_state_field", "evidence_cards"},
+                              {"bounded_count", 8},
+                              {"inline_payload_policy", "metadata_and_summaries_only"}});
+  response.insert("card_fields",
+                  QJsonArray{"id", "kind", "title", "summary", "method", "artifact_path",
+                             "created_at", "trace_id", "span_id", "source",
+                             "diagnostic_count", "error_count", "warning_count",
+                             "drc_count", "erc_count", "width", "height"});
+  response.insert("card_kinds",
+                  QJsonArray{"tool_result", "screenshot", "drc_report", "erc_report",
+                             "diagnostics_report", "review_report"});
   response.insert("source_references",
                   QJsonObject{{"required_for", QJsonArray{"cad_behavior", "kicad_compatibility",
                                                           "manufacturing", "simulation",

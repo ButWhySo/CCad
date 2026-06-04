@@ -276,7 +276,15 @@ std::string agentEvidenceManifestSchemaJson() {
          "\"tool_calls\",\"screenshots\",\"drc_reports\",\"erc_reports\",\"design_artifacts\","
          "\"decisions\",\"redactions\"],"
          "\"artifact_fields\":[\"kind\",\"path\",\"created_at\",\"sha256\",\"producer_method\","
-         "\"project_id\",\"transaction_id\",\"ui_epoch\"]}";
+         "\"project_id\",\"transaction_id\",\"ui_epoch\"],"
+         "\"evidence_cards\":{\"producer\":\"AgentPanel::pinEvidence\","
+         "\"workspace_state_field\":\"evidence_cards\",\"bounded_count\":8,"
+         "\"inline_payload_policy\":\"metadata_and_summaries_only\"},"
+         "\"card_fields\":[\"id\",\"kind\",\"title\",\"summary\",\"method\",\"artifact_path\","
+         "\"created_at\",\"trace_id\",\"span_id\",\"source\",\"diagnostic_count\","
+         "\"error_count\",\"warning_count\",\"drc_count\",\"erc_count\",\"width\",\"height\"],"
+         "\"card_kinds\":[\"tool_result\",\"screenshot\",\"drc_report\",\"erc_report\","
+         "\"diagnostics_report\",\"review_report\"]}";
 }
 
 std::string preferredSurfaceForMethod(const std::string& method) {

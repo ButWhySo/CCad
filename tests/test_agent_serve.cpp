@@ -139,6 +139,8 @@ void testAgentMethodsCommand() {
                  "agent methods command includes policy check");
   assertContains(out.str(), "\"method\":\"agent.observability_config\"",
                  "agent methods command includes observability config");
+  assertContains(out.str(), "\"method\":\"agent.evidence_manifest_schema\"",
+                 "agent methods command includes evidence manifest schema");
 }
 
 void testAgentMetadataCommands() {
@@ -156,6 +158,27 @@ void testAgentMetadataCommands() {
   assertContains(out.str(), "\"session_state\"", "CLI harness context includes session state");
   assertContains(out.str(), "\"pending_diagnostics\"",
                  "CLI harness context includes pending diagnostics");
+
+  out.str("");
+  out.clear();
+  oldCout = std::cout.rdbuf(out.rdbuf());
+  std::vector<std::string> schema_args = {"evidence-manifest-schema"};
+  result = ccad_cli::agentCommand(schema_args);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) {
+    std::cerr << "FAIL testAgentMetadataCommands evidence schema exited with " << result << "\n";
+    std::exit(1);
+  }
+  assertContains(out.str(), "\"manifest_kind\":\"ccad_agent_evidence_manifest\"",
+                 "CLI evidence manifest schema reports kind");
+  assertContains(out.str(), "\"evidence_cards\"",
+                 "CLI evidence manifest schema documents evidence cards");
+  assertContains(out.str(), "\"card_fields\"",
+                 "CLI evidence manifest schema documents card fields");
+  assertContains(out.str(), "\"artifact_path\"",
+                 "CLI evidence manifest schema documents artifact paths");
+  assertContains(out.str(), "\"trace_id\"",
+                 "CLI evidence manifest schema includes trace-ready fields");
 }
 
 void testAgentWorkspaceParityCommands() {

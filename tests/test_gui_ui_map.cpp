@@ -530,6 +530,14 @@ int main(int argc, char** argv) {
           "agent evidence schema tracks DRC artifacts");
   require(contains(evidence_schema, "\"source_references\""),
           "agent evidence schema tracks external references");
+  require(contains(evidence_schema, "\"evidence_cards\""),
+          "agent evidence schema documents workspace evidence cards");
+  require(contains(evidence_schema, "\"card_fields\""),
+          "agent evidence schema documents card fields");
+  require(contains(evidence_schema, "\"artifact_path\""),
+          "agent evidence schema documents artifact path fields");
+  require(contains(evidence_schema, "\"trace_id\""),
+          "agent evidence schema includes trace-ready fields");
 
   const QString route_track_guide =
       window.runAgentUiQueryJson("agent.tool_guide", "{\"method_name\":\"ui.route_track\"}");
@@ -841,6 +849,14 @@ int main(int argc, char** argv) {
           "workspace state reports the staged goal");
   require(contains(workspace_state_after, "\"evidence_count\":1"),
           "workspace state reports pinned evidence");
+  require(contains(workspace_state_after, "\"evidence_cards\":["),
+          "workspace state reports structured evidence cards");
+  require(contains(workspace_state_after, "\"kind\":\"tool_result\""),
+          "workspace state classifies pinned tool-guide evidence");
+  require(contains(workspace_state_after, "\"method\":\"agent.tool_guide\""),
+          "workspace state keeps the evidence producer method");
+  require(contains(workspace_state_after, "\"trace_id\":\"\""),
+          "workspace state evidence cards include trace-ready metadata");
   const QString clear_evidence_click =
       window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_clear_evidence\"}");
   require(contains(clear_evidence_click, "\"performed\":true"),

@@ -1,14 +1,16 @@
 #pragma once
 
 #include <QWidget>
+#include <QJsonObject>
 #include <QString>
-#include <QStringList>
+#include <QVector>
 
 #include <functional>
 
 class QLabel;
 class QLineEdit;
 class QPlainTextEdit;
+class QVBoxLayout;
 
 class AgentPanel final : public QWidget {
  public:
@@ -71,6 +73,29 @@ class AgentPanel final : public QWidget {
   QString workspaceStateJson() const;
 
  private:
+  struct EvidenceCard {
+    QString id;
+    QString kind;
+    QString title;
+    QString summary;
+    QString method;
+    QString artifact_path;
+    QString created_at;
+    QString trace_id;
+    QString span_id;
+    QString source;
+    int diagnostic_count = -1;
+    int error_count = -1;
+    int warning_count = -1;
+    int drc_count = -1;
+    int erc_count = -1;
+    int width = -1;
+    int height = -1;
+  };
+
+  void renderEvidenceCards();
+  QJsonObject evidenceCardJson(const EvidenceCard& card) const;
+
   QLabel* session_title_label_ = nullptr;
   QLabel* model_chip_label_ = nullptr;
   QLabel* mode_chip_label_ = nullptr;
@@ -82,6 +107,7 @@ class AgentPanel final : public QWidget {
   QLabel* result_state_label_ = nullptr;
   QLabel* task_state_label_ = nullptr;
   QLabel* evidence_label_ = nullptr;
+  QVBoxLayout* evidence_cards_layout_ = nullptr;
   QLabel* approval_status_label_ = nullptr;
   QLineEdit* action_id_input_ = nullptr;
   QLineEdit* live_method_input_ = nullptr;
@@ -95,7 +121,8 @@ class AgentPanel final : public QWidget {
   LiveQueryProvider live_query_provider_;
   QString staged_goal_;
   QString staged_command_;
-  QStringList evidence_entries_;
+  QVector<EvidenceCard> evidence_cards_;
+  int evidence_sequence_ = 0;
   QString pending_approval_request_;
   QString approval_last_decision_ = "none";
 };
