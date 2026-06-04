@@ -660,7 +660,8 @@ QJsonArray agentMethodCatalogArray() {
                                                    {"text", schemaProperty("string", "Text to set.")}},
                                        {"id", "text"}),
                           "Whether the text was set.",
-                          QJsonObject{{"id", "control:agent_live_method"}, {"text", "ui.role_summary"}}));
+                          QJsonObject{{"id", "control:agent_command_input"},
+                                      {"text", "Inspect current DRC state"}}));
   append(agentMethodEntry("ui.key", "input", "Keyboard Key",
                           "Send a supported key event. Escape cancels active tools.",
                           false, true, false, false, false,
@@ -1934,10 +1935,14 @@ ReviewWindow::ReviewWindow() {
   agent_dock_->setMinimumHeight(340);
   agent_dock_->setWidget(agent_panel_);
   addDockWidget(Qt::RightDockWidgetArea, agent_dock_);
-  splitDockWidget(layers_dock, agent_dock_, Qt::Vertical);
+  splitDockWidget(layers_dock, agent_dock_, Qt::Horizontal);
   connect(agent_dock_, &QDockWidget::visibilityChanged, this, [this](bool) {
     markUiMapChanged({"tab:agent",
                       "panel:agent",
+                      "control:agent_command_input",
+                      "action:agent_submit_command",
+                      "action:agent_footer_request_context",
+                      "action:agent_footer_trigger_drc",
                       "control:agent_live_method",
                       "control:agent_live_payload",
                       "action:agent_live_query",
@@ -2026,7 +2031,7 @@ ReviewWindow::ReviewWindow() {
   setDockNestingEnabled(true);
   resizeDocks({project_dock, layers_dock}, {360, 320}, Qt::Horizontal);
   resizeDocks({project_dock, diagnostics_dock}, {620, 240}, Qt::Vertical);
-  resizeDocks({layers_dock, agent_dock_}, {280, 360}, Qt::Vertical);
+  resizeDocks({layers_dock, agent_dock_}, {300, 380}, Qt::Horizontal);
 
   auto* open_action = new QAction(kicadIcon("directory_open"), "Open", this);
   auto* reload_action = new QAction(kicadIcon("reload"), "Reload", this);
@@ -2285,6 +2290,9 @@ ReviewWindow::ReviewWindow() {
           [this](int) {
             markUiMapChanged({"tab:diagnostics", "tab:transactions", "tab:agent",
                               "panel:diagnostics", "panel:transactions", "panel:agent",
+                              "control:agent_command_input", "action:agent_submit_command",
+                              "action:agent_footer_request_context",
+                              "action:agent_footer_trigger_drc",
                               "control:agent_live_method", "control:agent_live_payload",
                               "action:agent_live_query", "control:agent_goal",
                               "action:agent_stage_goal", "action:agent_pin_evidence",
@@ -5412,6 +5420,7 @@ QString ReviewWindow::uiTypeTextJson(const QString& id, const QString& text) {
   const QString trimmed_id = id.trimmed();
   const QStringList allowed_ids = {"control:agent_action_id", "control:agent_live_method",
                                    "control:agent_live_payload", "control:agent_goal",
+                                   "control:agent_command_input",
                                    "control:agent_approval_request"};
   QJsonObject response;
   response.insert("schema_version", 1);
@@ -6208,6 +6217,10 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
     agent_dock_->raise();
     markUiMapChanged({"tab:agent",
                       "panel:agent",
+                      "control:agent_command_input",
+                      "action:agent_submit_command",
+                      "action:agent_footer_request_context",
+                      "action:agent_footer_trigger_drc",
                       "control:agent_live_method",
                       "control:agent_live_payload",
                       "action:agent_live_query",

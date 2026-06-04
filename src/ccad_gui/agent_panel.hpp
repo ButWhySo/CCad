@@ -31,6 +31,7 @@ class AgentPanel final : public QWidget {
   void setActionId(const QString& action_id);
   void setLiveQuery(const QString& method, const QString& payload);
   void setGoalText(const QString& goal);
+  void setCommandText(const QString& command);
 
   void refreshUiMap();
   void triggerSafeAction();
@@ -44,6 +45,7 @@ class AgentPanel final : public QWidget {
   void clearEvidence();
   void setApprovalRequestText(const QString& request);
   void requestApproval();
+  void submitCommand();
   void approveNextApproval();
   void declineNextApproval();
   void cancelApproval();
@@ -59,6 +61,7 @@ class AgentPanel final : public QWidget {
   QString liveMethodText() const;
   QString livePayloadText() const;
   QString goalText() const;
+  QString commandText() const;
   QString taskStateText() const;
   QString evidenceText() const;
   QString approvalRequestText() const;
@@ -68,6 +71,9 @@ class AgentPanel final : public QWidget {
   QString workspaceStateJson() const;
 
  private:
+  QLabel* session_title_label_ = nullptr;
+  QLabel* model_chip_label_ = nullptr;
+  QLabel* mode_chip_label_ = nullptr;
   QLabel* project_label_ = nullptr;
   QLabel* epoch_label_ = nullptr;
   QLabel* status_label_ = nullptr;
@@ -81,12 +87,14 @@ class AgentPanel final : public QWidget {
   QLineEdit* live_method_input_ = nullptr;
   QLineEdit* live_payload_input_ = nullptr;
   QLineEdit* goal_input_ = nullptr;
+  QLineEdit* command_input_ = nullptr;
   QLineEdit* approval_request_input_ = nullptr;
   QPlainTextEdit* output_ = nullptr;
   UiMapProvider ui_map_provider_;
   SafeActionTrigger safe_action_trigger_;
   LiveQueryProvider live_query_provider_;
   QString staged_goal_;
+  QString staged_command_;
   QStringList evidence_entries_;
   QString pending_approval_request_;
   QString approval_last_decision_ = "none";

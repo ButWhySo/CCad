@@ -7,6 +7,9 @@
 
 #include <QApplication>
 #include <QElapsedTimer>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QLocalSocket>
 
 #include <chrono>
@@ -169,6 +172,33 @@ int extractInt(const QString& json, const char* key_text) {
   return value;
 }
 
+QJsonObject jsonObjectFromLine(const QString& json) {
+  QJsonParseError error{};
+  const QJsonDocument document = QJsonDocument::fromJson(json.toUtf8(), &error);
+  require(error.error == QJsonParseError::NoError, "json parses");
+  require(document.isObject(), "json root is an object");
+  return document.object();
+}
+
+QJsonObject nodeById(const QString& map_json, const QString& id) {
+  const QJsonObject map = jsonObjectFromLine(map_json);
+  const QJsonArray nodes = map.value("nodes").toArray();
+  for (const QJsonValue& node_value : nodes) {
+    const QJsonObject node = node_value.toObject();
+    if (node.value("id").toString() == id) {
+      return node;
+    }
+  }
+  require(false, "ui map node exists");
+  return {};
+}
+
+int nodeRectValue(const QJsonObject& node, const char* key) {
+  const QJsonObject rect = node.value("global_rect").toObject();
+  require(rect.contains(key), "ui map node has requested rect key");
+  return rect.value(key).toInt();
+}
+
 void processUntil(bool (*predicate)(QLocalSocket&), QLocalSocket& socket, const char* message) {
   QElapsedTimer timer;
   timer.start();
@@ -206,6 +236,14 @@ int main(int argc, char** argv) {
           "UI map exposes layers/object panel");
   require(contains(map, "\"id\":\"panel:diagnostics\""), "UI map exposes diagnostics panel");
   require(contains(map, "\"id\":\"panel:agent\""), "UI map exposes agent panel");
+  require(contains(map, "\"id\":\"control:agent_command_input\""),
+          "UI map exposes agent command input");
+  require(contains(map, "\"id\":\"action:agent_submit_command\""),
+          "UI map exposes agent command submit action");
+  require(contains(map, "\"id\":\"action:agent_footer_request_context\""),
+          "UI map exposes visible agent request-context footer action");
+  require(contains(map, "\"id\":\"action:agent_footer_trigger_drc\""),
+          "UI map exposes visible agent DRC footer action");
   require(contains(map, "\"id\":\"control:agent_live_method\""),
           "UI map exposes agent live-query method input");
   require(contains(map, "\"id\":\"control:agent_live_payload\""),
@@ -245,6 +283,12 @@ int main(int argc, char** argv) {
   require(contains(map, "\"id\":\"tab:agent\""), "UI map exposes agent dock tab alias");
   require(contains(map, "\"dock_area\":\"right\""),
           "UI map reports the Agent pane as a right-side dock");
+  const QJsonObject layers_node = nodeById(map, "panel:layers_objects");
+  const QJsonObject agent_node = nodeById(map, "panel:agent");
+  require(nodeRectValue(agent_node, "x") > nodeRectValue(layers_node, "x"),
+          "Agent pane is a right-side column beside Layers/Objects, not stacked below it");
+  require(nodeRectValue(agent_node, "height") >= nodeRectValue(layers_node, "height") - 24,
+          "Agent pane is a full-height vertical workspace beside Layers/Objects");
   require(contains(map, "\"id\":\"canvas:pcb\""), "UI map exposes PCB canvas");
   require(contains(map, "\"id\":\"canvas_object:U1.1\""),
           "UI map exposes typed canvas object");
@@ -583,6 +627,25 @@ int main(int argc, char** argv) {
   require(contains(agent_tab_target, "\"found\":true"), "tab target query finds agent tab");
   require(contains(agent_tab_target, "\"role\":\"tab\""), "agent tab target query reports role");
   window.triggerSafeUiActionJson("tab:agent");
+  const QString agent_command_target =
+      window.uiTargetJsonById("control:agent_command_input");
+  require(contains(agent_command_target, "\"found\":true"),
+          "target query finds agent command input");
+  require(contains(agent_command_target, "\"role\":\"control\""),
+          "agent command input target reports control role");
+  const QString agent_submit_target =
+      window.uiTargetJsonById("action:agent_submit_command");
+  require(contains(agent_submit_target, "\"found\":true"),
+          "target query finds agent submit action");
+  require(contains(agent_submit_target, "\"role\":\"action\""),
+          "agent submit target reports action role");
+  const QString footer_context_target =
+      window.uiTargetJsonById("action:agent_footer_request_context");
+  require(contains(footer_context_target, "\"found\":true"),
+          "target query finds visible agent footer context action");
+  const QString footer_drc_target = window.uiTargetJsonById("action:agent_footer_trigger_drc");
+  require(contains(footer_drc_target, "\"found\":true"),
+          "target query finds visible agent footer DRC action");
   const QString agent_live_method_target =
       window.uiTargetJsonById("control:agent_live_method");
   require(contains(agent_live_method_target, "\"found\":true"),
@@ -707,6 +770,24 @@ int main(int argc, char** argv) {
           "agent click can select the Agent tab");
   require(contains(agent_tab_click, "\"reason\":\"tab_selected\""),
           "agent click uses tab safe-trigger behavior");
+  const QString type_command = window.runAgentUiQueryJson(
+      "ui.type_text", "{\"id\":\"control:agent_command_input\",\"text\":\"Inspect DRC\"}");
+  require(contains(type_command, "\"performed\":true"),
+          "agent type_text writes into the command input");
+  require(contains(type_command, "\"value\":\"Inspect DRC\""),
+          "agent type_text reports command input value");
+  const QString submit_command_click =
+      window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_submit_command\"}");
+  require(contains(submit_command_click, "\"performed\":true"),
+          "agent click can submit the command input");
+  const QString footer_context_click = window.runAgentUiQueryJson(
+      "ui.click", "{\"id\":\"action:agent_footer_request_context\"}");
+  require(contains(footer_context_click, "\"performed\":true"),
+          "agent click can trigger the visible footer context action");
+  const QString footer_drc_click =
+      window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_footer_trigger_drc\"}");
+  require(contains(footer_drc_click, "\"performed\":true"),
+          "agent click can trigger the visible footer DRC action");
   const QString type_method = window.runAgentUiQueryJson(
       "ui.type_text", "{\"id\":\"control:agent_live_method\",\"text\":\"ui.role_summary\"}");
   require(contains(type_method, "\"performed\":true"),

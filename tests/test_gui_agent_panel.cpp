@@ -2,6 +2,10 @@
 #include "test_support.hpp"
 
 #include <QApplication>
+#include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QWidget>
 #include <QString>
 
 namespace {
@@ -40,6 +44,26 @@ int main(int argc, char** argv) {
           "agent panel displays project context");
   require(panel.epochText() == "UI map epoch 17", "agent panel displays UI map epoch");
   require(panel.actionIdText() == "action:zoom_in", "agent panel has safe default action id");
+  require(contains(panel.workspaceStateJson(), "\"panel_layout\":\"vertical_agent_workspace\""),
+          "agent panel exposes the vertical workspace layout contract");
+  require(panel.findChild<QLabel*>("label:agent_session_title") != nullptr,
+          "agent panel exposes a session title for UI-map agents");
+  require(panel.findChild<QWidget*>("panel:agent_command_stream") != nullptr,
+          "agent panel exposes a command stream section");
+  require(panel.findChild<QWidget*>("panel:agent_task_list") != nullptr,
+          "agent panel exposes a task-list section");
+  require(panel.findChild<QWidget*>("panel:agent_evidence_tray") != nullptr,
+          "agent panel exposes an evidence tray section");
+  require(panel.findChild<QWidget*>("panel:agent_approval_card") != nullptr,
+          "agent panel exposes an approval-card section");
+  require(panel.findChild<QLineEdit*>("control:agent_command_input") != nullptr,
+          "agent panel exposes a bottom command input");
+  require(panel.findChild<QPushButton*>("action:agent_submit_command") != nullptr,
+          "agent panel exposes a command submit action");
+  require(panel.findChild<QPushButton*>("action:agent_footer_request_context") != nullptr,
+          "agent panel exposes a visible request-context footer action");
+  require(panel.findChild<QPushButton*>("action:agent_footer_trigger_drc") != nullptr,
+          "agent panel exposes a visible trigger-DRC footer action");
   panel.setWorkspaceContext("pcb", "F.Cu", "DC_POS", "route_track", 1, 2);
   require(contains(panel.workspaceText(), "View pcb"), "agent panel displays active view");
   require(contains(panel.workspaceText(), "Layer F.Cu"), "agent panel displays active layer");
@@ -80,6 +104,19 @@ int main(int argc, char** argv) {
   require(contains(panel.resultStateText(), "OK"),
           "agent panel summarizes successful live query result");
 
+  panel.setCommandText("Inspect DRC before routing");
+  require(panel.commandText() == "Inspect DRC before routing",
+          "agent panel stores command prompt text");
+  panel.submitCommand();
+  require(contains(panel.statusText(), "Command staged"),
+          "agent panel stages command prompt text");
+  require(contains(panel.resultStateText(), "Command staged"),
+          "agent panel reports staged command result");
+  require(contains(panel.outputText(), "agent_command_staged"),
+          "agent panel writes command staging JSON to the stream");
+  require(contains(panel.workspaceStateJson(), "\"command\":\"Inspect DRC before routing\""),
+          "agent panel workspace state serializes the staged command");
+
   panel.runHarnessContextPreset();
   require(live_method_seen == "agent.harness_context",
           "agent panel harness preset sends harness context query");
@@ -95,6 +132,14 @@ int main(int argc, char** argv) {
           "agent panel tool-guide preset sends tool-guide query");
   require(contains(live_payload_seen, "ui.route_track"),
           "agent panel tool-guide preset documents a concrete workflow method");
+
+  panel.findChild<QPushButton*>("action:agent_footer_request_context")->click();
+  require(live_method_seen == "agent.harness_context",
+          "agent panel footer context action reuses the harness-context preset");
+  panel.findChild<QPushButton*>("action:agent_footer_trigger_drc")->click();
+  require(live_method_seen == "project.diagnostics",
+          "agent panel footer DRC action reuses the diagnostics preset");
+  panel.runToolGuidePreset();
 
   panel.setGoalText("Inspect bridge rectifier placement");
   require(panel.goalText() == "Inspect bridge rectifier placement",
