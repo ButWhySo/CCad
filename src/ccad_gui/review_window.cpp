@@ -57,6 +57,7 @@
 #include <QSize>
 #include <QSignalBlocker>
 #include <QStatusBar>
+#include <QStyle>
 #include <QStringList>
 #include <QTabBar>
 #include <QTabWidget>
@@ -315,6 +316,7 @@ QJsonObject compactUiMapNode(const QJsonObject& node) {
   copyStringFieldIfPresent(compact, node, "net_id");
   copyStringFieldIfPresent(compact, node, "layer_id");
   copyStringFieldIfPresent(compact, node, "route_request_id");
+  copyStringFieldIfPresent(compact, node, "dock_area");
   return compact;
 }
 
@@ -503,6 +505,35 @@ QJsonArray agentMethodCatalogArray() {
                           "Return the recommended UI-map loop for agents.",
                           true, false, false, false, false, emptySchema(),
                           "A compact operating guide for live UI-map automation."));
+  append(agentMethodEntry("agent.harness_context", "agent", "Harness Context",
+                          "Return the live native GUI agent state needed to resume or verify a run.",
+                          true, false, false, false, false, emptySchema(),
+                          "Session state, diagnostics, active view, and latest visual evidence slot."));
+  append(agentMethodEntry("agent.run_profile", "agent", "Run Profile",
+                          "Return the durable run-loop, retry, circuit-breaker, and stop-condition policy.",
+                          true, false, false, false, false, emptySchema(),
+                          "Execution profile metadata for long-running CCad agent loops."));
+  append(agentMethodEntry("agent.safety_policy", "agent", "Safety Policy",
+                          "Return approval gates, secret-handling rules, and forbidden execution paths.",
+                          true, false, false, false, false, emptySchema(),
+                          "Safety policy for GUI, CLI, provider, and fabrication actions."));
+  append(agentMethodEntry("agent.provider_policy", "agent", "Provider Policy",
+                          "Return the accepted model-provider integration paths for BYOK and local models.",
+                          true, false, false, false, false, emptySchema(),
+                          "Provider policy with supported and disallowed model access paths."));
+  append(agentMethodEntry("agent.observability_config", "agent", "Observability Config",
+                          "Return the current OpenTelemetry/Langfuse-style tracing configuration shape.",
+                          true, false, false, false, false, emptySchema(),
+                          "Trace span plan, backend options, environment flags, and redaction policy."));
+  append(agentMethodEntry("agent.evidence_manifest_schema", "agent", "Evidence Manifest Schema",
+                          "Return the artifact manifest shape for screenshots, reports, and references.",
+                          true, false, false, false, false, emptySchema(),
+                          "Expected evidence manifest fields for sprint and agent verification."));
+  append(agentMethodEntry("agent.tool_guide", "agent", "Tool Guide",
+                          "Return LLM-facing usage, verification, and recovery guidance for one method.",
+                          true, false, false, false, false, agentMethodLookupSchema(),
+                          "A found flag plus per-tool operating guide.",
+                          QJsonObject{{"method_name", "ui.route_track"}}));
 
   append(agentMethodEntry("ui.map", "ui_map", "Full UI Map",
                           "Return the full live UI region map with rectangles, roles, labels, and targets.",
@@ -838,6 +869,208 @@ QString agentQuickstartJson() {
                   "Use screenshots for visual validation, after the project harness beep and current settle waits.");
   response.insert("unsafe_rule",
                   "Treat mutates_project and mutates_ui methods as state changing unless dry_run is true.");
+  return jsonObjectLine(response);
+}
+
+QJsonObject envPresenceObject(const QString& name) {
+  const QByteArray bytes = name.toLocal8Bit();
+  const char* value = std::getenv(bytes.constData());
+  return QJsonObject{{"name", name}, {"configured", value != nullptr && value[0] != '\0'}};
+}
+
+QString agentRunProfileJson() {
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("profile_kind", "ccad_agent_run_profile");
+  response.insert("durability_reference", "langgraph");
+  response.insert("loop",
+                  QJsonArray{"plan", "act", "observe", "verify", "repair_or_stop"});
+  response.insert("durable_state_keys",
+                  QJsonArray{"project_path", "transaction_id", "ui_epoch", "active_view",
+                             "selected_object_ids", "pending_diagnostics", "tool_budget",
+                             "provider_config", "last_verified_visual_artifact"});
+  response.insert("retry_policy",
+                  QJsonObject{{"default_max_attempts", 3},
+                              {"backoff", "exponential_with_jitter"},
+                              {"retry_on", QJsonArray{"stale_ui_epoch", "transient_io",
+                                                       "preview_not_loaded", "drc_fixable"}},
+                              {"do_not_retry_on", QJsonArray{"approval_required",
+                                                             "unsafe_action",
+                                                             "invalid_project_file",
+                                                             "unknown_method"}}});
+  response.insert("circuit_breaker",
+                  QJsonObject{{"max_repeated_same_failure", 3},
+                              {"max_consecutive_tool_errors", 5},
+                              {"on_open", "stop_and_record_blocker"},
+                              {"requires_state_snapshot", true}});
+  response.insert("stop_conditions",
+                  QJsonArray{"phase_or_sprint_done", "human_approval_required",
+                             "circuit_breaker_open", "verification_gate_failed_after_retries",
+                             "token_or_time_budget_exhausted"});
+  response.insert("reference_notes",
+                  QJsonArray{"LangGraph durable execution and interrupts are the orchestration reference.",
+                             "KiCad-style named actions remain the GUI action reference."});
+  return jsonObjectLine(response);
+}
+
+QString agentSafetyPolicyJson() {
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("policy_kind", "ccad_agent_safety_policy");
+  response.insert("no_project_file_execution", true);
+  response.insert("design_files_are_data", true);
+  response.insert("secret_storage", "env_or_os_credential_store_only");
+  response.insert("project_file_secret_storage_allowed", false);
+  response.insert("human_approval_required",
+                  QJsonArray{"delete_file", "overwrite_project", "fabrication_export",
+                             "release_gerbers", "remote_model_upload",
+                             "broad_filesystem_action", "external_network_action",
+                             "high_current_power_rf_or_safety_change"});
+  response.insert("approval_response", "approval_required");
+  response.insert("safe_defaults",
+                  QJsonObject{{"read_only_introspection", true},
+                              {"dry_run_before_uncertain_input", true},
+                              {"local_only_mode_supported", true},
+                              {"gui_actions_use_semantic_ids_first", true}});
+  return jsonObjectLine(response);
+}
+
+QString agentProviderPolicyJson() {
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("policy_kind", "ccad_agent_provider_policy");
+  response.insert("preferred_model_access", "byok");
+  response.insert("allowed_paths",
+                  QJsonArray{"official_api", "openai_compatible_api", "anthropic_api",
+                             "google_gemini_api", "local_model_server",
+                             "future_user_installed_connector"});
+  response.insert("disallowed_paths", QJsonArray{"no_consumer_web_ui_automation"});
+  response.insert("secret_storage", "environment_or_os_credential_store");
+  response.insert("project_file_secret_storage", false);
+  response.insert("data_routing_policy",
+                  QJsonObject{{"show_provider_before_run", true},
+                              {"remote_design_upload_requires_approval", true},
+                              {"local_model_server", "preferred_for_private_designs"}});
+  response.insert("provider_env_flags",
+                  QJsonArray{envPresenceObject("OPENAI_API_KEY"),
+                             envPresenceObject("ANTHROPIC_API_KEY"),
+                             envPresenceObject("GOOGLE_API_KEY"),
+                             envPresenceObject("CCAD_OPENAI_COMPATIBLE_BASE_URL"),
+                             envPresenceObject("CCAD_LOCAL_MODEL_BASE_URL")});
+  return jsonObjectLine(response);
+}
+
+QString agentObservabilityConfigJson() {
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("config_kind", "ccad_agent_observability_config");
+  response.insert("status", "disabled_until_user_configured");
+  response.insert("protocol", "opentelemetry");
+  response.insert("otel_backend_options", QJsonArray{"langfuse", "otlp_http", "otlp_grpc",
+                                                     "local_collector"});
+  response.insert("env_flags",
+                  QJsonArray{envPresenceObject("CCAD_AGENT_OTEL_ENABLED"),
+                             envPresenceObject("OTEL_EXPORTER_OTLP_ENDPOINT"),
+                             envPresenceObject("OTEL_SERVICE_NAME"),
+                             envPresenceObject("LANGFUSE_PUBLIC_KEY"),
+                             envPresenceObject("LANGFUSE_SECRET_KEY"),
+                             envPresenceObject("LANGFUSE_HOST")});
+  response.insert("span_plan",
+                  QJsonArray{"agent.run", "prompt.assembly", "model.call", "tool.call",
+                             "gui.map_query", "gui.screenshot_capture", "project.drc",
+                             "project.erc", "file.write", "retry", "interrupt",
+                             "final_verification"});
+  response.insert("redaction_policy",
+                  QJsonObject{{"export_design_files_by_default", false},
+                              {"export_screenshots_by_default", false},
+                              {"export_prompt_content_by_default", false},
+                              {"store_cost_tokens_provider_model", true},
+                              {"store_project_and_transaction_ids", true}});
+  return jsonObjectLine(response);
+}
+
+QString agentEvidenceManifestSchemaJson() {
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("manifest_kind", "ccad_agent_evidence_manifest");
+  response.insert("required_fields",
+                  QJsonArray{"sprint_id", "project_path", "source_references",
+                             "tool_calls", "screenshots", "drc_reports", "erc_reports",
+                             "design_artifacts", "decisions", "redactions"});
+  response.insert("artifact_fields",
+                  QJsonArray{"kind", "path", "created_at", "sha256", "producer_method",
+                             "project_id", "transaction_id", "ui_epoch"});
+  response.insert("source_references",
+                  QJsonObject{{"required_for", QJsonArray{"cad_behavior", "kicad_compatibility",
+                                                          "manufacturing", "simulation",
+                                                          "agent_observability"}},
+                              {"fields", QJsonArray{"title", "url_or_local_path",
+                                                    "checked_at", "behavior_implication"}}});
+  response.insert("screenshots",
+                  QJsonObject{{"producer", "scripts/run_sprint_demo.ps1"},
+                              {"single_preview_wait_seconds", 7},
+                              {"multi_action_initial_wait_seconds", 5},
+                              {"multi_action_step_wait_ms", 800}});
+  response.insert("drc_reports", QJsonObject{{"format", "ccad_json"}, {"required_at_sprint_end", true}});
+  response.insert("erc_reports", QJsonObject{{"format", "ccad_json"}, {"required_when_schematic_changes", true}});
+  return jsonObjectLine(response);
+}
+
+QString preferredSurfaceForAgentMethod(const QJsonObject& entry) {
+  const QString method = entry.value("method").toString();
+  if (method.startsWith("project.")) {
+    return "kernel_or_cli_first";
+  }
+  if (method.startsWith("ui.")) {
+    if (entry.value("mutates_project").toBool()) {
+      return "kernel_transaction_when_available_then_gui_map_fallback";
+    }
+    return "qt_semantic_action_or_ui_map";
+  }
+  if (method.startsWith("agent.")) {
+    return "read_only_protocol_metadata";
+  }
+  return "agent_protocol";
+}
+
+QString agentToolGuideJson(const QString& method_name) {
+  const QString trimmed_method = method_name.trimmed();
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("guide_kind", "ccad_agent_tool_guide");
+  response.insert("method", trimmed_method);
+  const std::optional<QJsonObject> entry = agentMethodCatalogEntry(trimmed_method);
+  response.insert("found", entry.has_value());
+  if (!entry.has_value()) {
+    response.insert("reason", trimmed_method.isEmpty() ? "missing_method" : "method_not_found");
+    response.insert("recovery_loop", QJsonArray{"call agent.methods", "choose a known method",
+                                                "retry with method_name"});
+    return jsonObjectLine(response);
+  }
+
+  response.insert("entry", *entry);
+  response.insert("preferred_surface", preferredSurfaceForAgentMethod(*entry));
+  response.insert("preferred_kernel_or_cli_command",
+                  trimmed_method == "project.drc"
+                      ? "ccad project/pcb DRC command when available; GUI project.drc is read-only fallback"
+                      : trimmed_method == "project.erc"
+                            ? "ccad schematic/ERC command when available; GUI project.erc is read-only fallback"
+                            : trimmed_method == "ui.route_track"
+                                  ? "future kernel route transaction; current GUI map workflow ui.route_track"
+                                  : "agent.methods describes the current stable surface");
+  response.insert("verification",
+                  QJsonArray{"read result.ok/performed and reason",
+                             "run project.diagnostics after design mutations",
+                             "watch ui.watch_delta for GUI state changes",
+                             "capture final screenshot through the visual validation harness when visual behavior changes"});
+  response.insert("common_failures",
+                  QJsonArray{"payload_must_be_json_object", "unknown_method", "unknown_id",
+                             "disabled", "stale_ui_epoch", "unsafe_action_requires_human_or_kernel_tool",
+                             "approval_required"});
+  response.insert("recovery_loop",
+                  QJsonArray{"inspect agent.method_schema", "dry_run if supported",
+                             "prefer semantic id targeting", "observe ui.watch_delta",
+                             "repair diagnostics or stop after retry budget"});
   return jsonObjectLine(response);
 }
 
@@ -1649,7 +1882,7 @@ ReviewWindow::ReviewWindow() {
 
   diagnostics_ = new DiagnosticsPanel(this);
   transaction_timeline_ = new TransactionTimelinePanel(this);
-  agent_panel_ = new AgentPanel(this);
+  agent_panel_ = new AgentPanel();
   agent_panel_->setUiMapProvider([this]() { return uiMapJson(); });
   agent_panel_->setSafeActionTrigger(
       [this](const QString& id) { return triggerSafeUiActionJson(id); });
@@ -1666,7 +1899,6 @@ ReviewWindow::ReviewWindow() {
   bottom_tabs_->setObjectName("bottomReviewTabs");
   bottom_tabs_->addTab(diagnostics_, "Diagnostics");
   bottom_tabs_->addTab(transaction_timeline_, "Transactions");
-  bottom_tabs_->addTab(agent_panel_, "Agent");
   diagnostics_dock->setWidget(bottom_tabs_);
   addDockWidget(Qt::BottomDockWidgetArea, diagnostics_dock);
 
@@ -1685,6 +1917,19 @@ ReviewWindow::ReviewWindow() {
   layers_dock->setMinimumWidth(280);
   layers_dock->setWidget(right_panel);
   addDockWidget(Qt::RightDockWidgetArea, layers_dock);
+
+  agent_dock_ = new QDockWidget("Agent", this);
+  agent_dock_->setObjectName("agentDock");
+  agent_dock_->setAllowedAreas(Qt::RightDockWidgetArea | Qt::LeftDockWidgetArea);
+  agent_dock_->setMinimumWidth(360);
+  agent_dock_->setWidget(agent_panel_);
+  addDockWidget(Qt::RightDockWidgetArea, agent_dock_);
+  splitDockWidget(layers_dock, agent_dock_, Qt::Vertical);
+  connect(agent_dock_, &QDockWidget::visibilityChanged, this, [this](bool) {
+    markUiMapChanged({"tab:agent", "panel:agent", "control:agent_live_method",
+                      "control:agent_live_payload", "action:agent_live_query"},
+                     {"tab", "panel", "control", "action"});
+  });
 
   canvas_scene_ = new QGraphicsScene(this);
   auto* board_view = new BoardCanvasView(canvas_scene_, this);
@@ -2236,6 +2481,9 @@ void ReviewWindow::pushUndoSnapshot() {
 }
 
 ReviewWindow::~ReviewWindow() {
+  if (agent_dock_ != nullptr) {
+    disconnect(agent_dock_, nullptr, this, nullptr);
+  }
   if (canvas_scene_ != nullptr) {
     disconnect(canvas_scene_, nullptr, this, nullptr);
     canvas_scene_->clearSelection();
@@ -3108,16 +3356,19 @@ QString ReviewWindow::buildUiMapJson() const {
   }
 
   const auto appendPanelNode = [&nodes, root](const QString& id, const QString& label,
-                                              const QWidget* widget) {
+                                              const QWidget* widget,
+                                              const QString& dock_area) {
     if (widget == nullptr) {
       return;
     }
     const QPoint local_top_left = widget->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
     const QRect local_rect(local_top_left, widget->size());
     const QRect global_rect(widget->mapToGlobal(QPoint(0, 0)), widget->size());
+    const QString dock_json =
+        dock_area.isEmpty() ? QString() : QString(",\"dock_area\":%1").arg(jsonString(dock_area));
     nodes << QString("{\"id\":%1,\"role\":\"panel\",\"label\":%2,"
                      "\"visible\":%3,\"enabled\":%4,\"local_rect\":%5,"
-                     "\"global_rect\":%6,\"target_x\":%7,\"target_y\":%8}")
+                     "\"global_rect\":%6,\"target_x\":%7,\"target_y\":%8%9}")
                  .arg(jsonString(id))
                  .arg(jsonString(label))
                  .arg(boolJson(widget->isVisible()))
@@ -3125,13 +3376,14 @@ QString ReviewWindow::buildUiMapJson() const {
                  .arg(rectJson(local_rect))
                  .arg(rectJson(global_rect))
                  .arg(global_rect.center().x())
-                 .arg(global_rect.center().y());
+                 .arg(global_rect.center().y())
+                 .arg(dock_json);
   };
-  appendPanelNode("panel:project", "Project", project_summary_);
-  appendPanelNode("panel:properties", "Properties / DRC Rules", selection_inspector_);
-  appendPanelNode("panel:layers_objects", "Layers / Objects", object_browser_);
-  appendPanelNode("panel:diagnostics", "Diagnostics", diagnostics_);
-  appendPanelNode("panel:agent", "Agent", agent_panel_);
+  appendPanelNode("panel:project", "Project", project_summary_, "left");
+  appendPanelNode("panel:properties", "Properties / DRC Rules", selection_inspector_, "right");
+  appendPanelNode("panel:layers_objects", "Layers / Objects", object_browser_, "right");
+  appendPanelNode("panel:diagnostics", "Diagnostics", diagnostics_, "bottom");
+  appendPanelNode("panel:agent", "Agent", agent_panel_, "right");
 
   const QList<QToolButton*> buttons = findChildren<QToolButton*>();
   for (const QToolButton* button : buttons) {
@@ -3281,6 +3533,21 @@ QString ReviewWindow::buildUiMapJson() const {
                    .arg(global_rect.center().x())
                    .arg(global_rect.center().y());
     }
+  }
+
+  if (agent_dock_ != nullptr) {
+    const int title_height = std::max(24, agent_dock_->style()->pixelMetric(QStyle::PM_TitleBarHeight));
+    const QRect global_rect(agent_dock_->mapToGlobal(QPoint(0, 0)),
+                            QSize(agent_dock_->width(), title_height));
+    nodes << QString("{\"id\":\"tab:agent\",\"role\":\"tab\",\"label\":\"Agent\","
+                     "\"visible\":%1,\"enabled\":%2,\"selected\":%3,\"dock_area\":\"right\","
+                     "\"global_rect\":%4,\"target_x\":%5,\"target_y\":%6}")
+                 .arg(boolJson(agent_dock_->isVisible()))
+                 .arg(boolJson(agent_dock_->isEnabled()))
+                 .arg(boolJson(agent_dock_->isVisible()))
+                 .arg(rectJson(global_rect))
+                 .arg(global_rect.center().x())
+                 .arg(global_rect.center().y());
   }
 
   const auto appendViewNode = [&nodes](const QString& id, const QString& label,
@@ -3847,6 +4114,17 @@ QString ReviewWindow::validateUiMapTargetsJson(const bool move_cursor) const {
     }
   }
 
+  if (agent_dock_ != nullptr) {
+    const int title_height = std::max(24, agent_dock_->style()->pixelMetric(QStyle::PM_TitleBarHeight));
+    const QRect global_rect(agent_dock_->mapToGlobal(QPoint(0, 0)),
+                            QSize(agent_dock_->width(), title_height));
+    const QPoint target = global_rect.center();
+    const QWidget* hit_widget = QApplication::widgetAt(target);
+    appendCheck("tab:agent", "tab", agent_dock_->isVisible(), agent_dock_->isEnabled(), target,
+                global_rect.contains(target) && hit_widget != nullptr,
+                hit_widget != nullptr ? hit_widget->objectName() : "none");
+  }
+
   const auto validateCanvas = [&appendCheck](const QString& id, const QGraphicsView* view) {
     if (view == nullptr) {
       return;
@@ -4011,8 +4289,14 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
           panelTarget("panel:diagnostics", "Diagnostics", diagnostics_)) {
     return *target;
   }
-  if (const std::optional<QString> target = panelTarget("panel:agent", "Agent", agent_panel_)) {
-    return *target;
+  if (id == "panel:agent" && agent_panel_ != nullptr) {
+    const QRect global_rect(agent_panel_->mapToGlobal(QPoint(0, 0)), agent_panel_->size());
+    return QString("{\"schema_version\":1,\"found\":true,\"id\":\"panel:agent\","
+                   "\"role\":\"panel\",\"label\":\"Agent\",\"visible\":%1,"
+                   "\"enabled\":%2,\"dock_area\":\"right\",\"target\":%3}\n")
+        .arg(boolJson(agent_panel_->isVisible()))
+        .arg(boolJson(agent_panel_->isEnabled()))
+        .arg(targetPointJson(global_rect.center(), dpr));
   }
 
   if (editor_tabs_ != nullptr && editor_tabs_->tabBar() != nullptr) {
@@ -4043,6 +4327,18 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
                          bottom_tabs_->isVisible(), bottom_tabs_->isTabEnabled(index),
                          global_rect.center());
     }
+  }
+
+  if (id == "tab:agent" && agent_dock_ != nullptr) {
+    const int title_height = std::max(24, agent_dock_->style()->pixelMetric(QStyle::PM_TitleBarHeight));
+    const QRect global_rect(agent_dock_->mapToGlobal(QPoint(0, 0)),
+                            QSize(agent_dock_->width(), title_height));
+    return QString("{\"schema_version\":1,\"found\":true,\"id\":\"tab:agent\","
+                   "\"role\":\"tab\",\"label\":\"Agent\",\"visible\":%1,"
+                   "\"enabled\":%2,\"dock_area\":\"right\",\"target\":%3}\n")
+        .arg(boolJson(agent_dock_->isVisible()))
+        .arg(boolJson(agent_dock_->isEnabled()))
+        .arg(targetPointJson(global_rect.center(), dpr));
   }
 
   const auto canvasTarget = [&foundTarget, &id](const QString& canvas_id, const QString& label,
@@ -4703,6 +4999,59 @@ QString ReviewWindow::uiScreenshotJson(const QString& path, const bool dry_run) 
   return jsonObjectLine(response);
 }
 
+QString ReviewWindow::agentHarnessContextJson() const {
+  const std::vector<ccad::Diagnostic> erc_diagnostics = ccad::runErc(project_cache_);
+  const std::vector<ccad::Diagnostic> drc_diagnostics = ccad::runDrc(project_cache_);
+  std::vector<ccad::Diagnostic> combined = erc_diagnostics;
+  combined.insert(combined.end(), drc_diagnostics.begin(), drc_diagnostics.end());
+
+  QJsonObject pending_diagnostics;
+  pending_diagnostics.insert("erc_count", static_cast<int>(erc_diagnostics.size()));
+  pending_diagnostics.insert("drc_count", static_cast<int>(drc_diagnostics.size()));
+  insertDiagnosticCounts(pending_diagnostics, combined);
+
+  QString active_view = "unknown";
+  if (editor_tabs_ != nullptr) {
+    active_view = editor_tabs_->currentIndex() == 0
+                      ? "pcb"
+                      : editor_tabs_->currentIndex() == 1 ? "schematic" : "other";
+  }
+
+  QJsonObject session_state;
+  session_state.insert("project_path", qstr(current_path_.generic_string()));
+  session_state.insert("project_id", qstr(project_cache_.id));
+  session_state.insert("active_view", active_view);
+  session_state.insert("active_pcb_layer_id", qstr(activePcbLayerOrDefault()));
+  session_state.insert("active_pcb_net_id", qstr(activePcbNetOrDefault()));
+  session_state.insert("interaction_mode", interactionModeName(interaction_mode_));
+  session_state.insert("has_interaction_anchor", interaction_has_anchor_);
+  session_state.insert("ui_epoch", ui_map_epoch_);
+  session_state.insert("agent_panel_location", "right_dock");
+  session_state.insert("tool_budget", QJsonObject{{"configured", false},
+                                                   {"remaining_steps", QJsonValue::Null},
+                                                   {"remaining_tokens", QJsonValue::Null}});
+  session_state.insert("provider_configured", false);
+  session_state.insert("pending_diagnostics", pending_diagnostics);
+  session_state.insert("last_verified_visual_artifact", QJsonValue::Null);
+  session_state.insert("transaction_id", QJsonValue::Null);
+
+  QJsonObject response = projectObjectCountsObject(project_cache_);
+  response.insert("schema_version", 1);
+  response.insert("harness_kind", "ccad_native_qt_agent_surface");
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("project_path", qstr(current_path_.generic_string()));
+  response.insert("agent_panel_location", "right_dock");
+  response.insert("session_state", session_state);
+  response.insert("pending_diagnostics", pending_diagnostics);
+  response.insert("last_verified_visual_artifact", QJsonValue::Null);
+  response.insert("visual_validation_policy",
+                  QJsonObject{{"single_preview_wait_seconds", 7},
+                              {"multi_action_initial_wait_seconds", 5},
+                              {"multi_action_step_wait_ms", 800},
+                              {"beep_before_gui_test", true}});
+  return jsonObjectLine(response);
+}
+
 QString ReviewWindow::projectContextJson() const {
   QJsonObject response = projectObjectCountsObject(project_cache_);
   response.insert("schema_version", 1);
@@ -5291,6 +5640,38 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
   if (trimmed_method == "agent.quickstart") {
     return agentQueryResponse(trimmed_method, true, {}, agentQuickstartJson());
   }
+  if (trimmed_method == "agent.harness_context") {
+    return agentQueryResponse(trimmed_method, true, {}, agentHarnessContextJson());
+  }
+  if (trimmed_method == "agent.run_profile") {
+    return agentQueryResponse(trimmed_method, true, {}, agentRunProfileJson());
+  }
+  if (trimmed_method == "agent.safety_policy") {
+    return agentQueryResponse(trimmed_method, true, {}, agentSafetyPolicyJson());
+  }
+  if (trimmed_method == "agent.provider_policy") {
+    return agentQueryResponse(trimmed_method, true, {}, agentProviderPolicyJson());
+  }
+  if (trimmed_method == "agent.observability_config") {
+    return agentQueryResponse(trimmed_method, true, {}, agentObservabilityConfigJson());
+  }
+  if (trimmed_method == "agent.evidence_manifest_schema") {
+    return agentQueryResponse(trimmed_method, true, {}, agentEvidenceManifestSchemaJson());
+  }
+  if (trimmed_method == "agent.tool_guide") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    QString method_name = object->value("method_name").toString().trimmed();
+    if (method_name.isEmpty()) {
+      method_name = object->value("method").toString().trimmed();
+    }
+    if (method_name.isEmpty()) {
+      method_name = object->value("name").toString().trimmed();
+    }
+    return agentQueryResponse(trimmed_method, true, {}, agentToolGuideJson(method_name));
+  }
   if (trimmed_method == "ui.map") {
     return agentQueryResponse(trimmed_method, true, {}, uiMapJson());
   }
@@ -5742,15 +6123,26 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
     return result(id, true, "tab_selected");
   }
 
-  if (id == "tab:diagnostics" || id == "tab:transactions" || id == "tab:agent") {
+  if (id == "tab:diagnostics" || id == "tab:transactions") {
     if (bottom_tabs_ == nullptr) {
       return result(id, false, "tabs_unavailable");
     }
-    const int index = id == "tab:diagnostics" ? 0 : id == "tab:transactions" ? 1 : 2;
+    const int index = id == "tab:diagnostics" ? 0 : 1;
     if (!bottom_tabs_->isTabEnabled(index)) {
       return result(id, false, "disabled");
     }
     bottom_tabs_->setCurrentIndex(index);
+    return result(id, true, "tab_selected");
+  }
+  if (id == "tab:agent") {
+    if (agent_dock_ == nullptr) {
+      return result(id, false, "dock_unavailable");
+    }
+    agent_dock_->show();
+    agent_dock_->raise();
+    markUiMapChanged({"tab:agent", "panel:agent", "control:agent_live_method",
+                      "control:agent_live_payload", "action:agent_live_query"},
+                     {"tab", "panel", "control", "action"});
     return result(id, true, "tab_selected");
   }
 

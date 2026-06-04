@@ -214,7 +214,9 @@ int main(int argc, char** argv) {
           "UI map exposes agent live-query button");
   require(contains(map, "\"id\":\"tab:pcb\""), "UI map exposes PCB tab");
   require(contains(map, "\"id\":\"tab:schematic\""), "UI map exposes schematic tab");
-  require(contains(map, "\"id\":\"tab:agent\""), "UI map exposes agent bottom tab");
+  require(contains(map, "\"id\":\"tab:agent\""), "UI map exposes agent dock tab alias");
+  require(contains(map, "\"dock_area\":\"right\""),
+          "UI map reports the Agent pane as a right-side dock");
   require(contains(map, "\"id\":\"canvas:pcb\""), "UI map exposes PCB canvas");
   require(contains(map, "\"id\":\"canvas_object:U1.1\""),
           "UI map exposes typed canvas object");
@@ -383,6 +385,90 @@ int main(int argc, char** argv) {
   require(contains(quickstart, "\"ui.screenshot\""),
           "agent quickstart explains screenshot use");
 
+  const QString harness_context = window.runAgentUiQueryJson("agent.harness_context", "{}");
+  require(contains(harness_context, "\"ok\":true"), "agent harness context query routes");
+  require(contains(harness_context, "\"harness_kind\":\"ccad_native_qt_agent_surface\""),
+          "agent harness context identifies the native Qt harness surface");
+  require(contains(harness_context, "\"session_state\""),
+          "agent harness context includes durable-session state shape");
+  require(contains(harness_context, "\"pending_diagnostics\""),
+          "agent harness context includes pending diagnostic counts");
+  require(contains(harness_context, "\"last_verified_visual_artifact\""),
+          "agent harness context reserves the last verified visual artifact field");
+
+  const QString run_profile = window.runAgentUiQueryJson("agent.run_profile", "{}");
+  require(contains(run_profile, "\"ok\":true"), "agent run profile query routes");
+  require(contains(run_profile, "\"durability_reference\":\"langgraph\""),
+          "agent run profile records LangGraph as the durability reference");
+  require(contains(run_profile, "\"retry_policy\""),
+          "agent run profile includes retry policy metadata");
+  require(contains(run_profile, "\"circuit_breaker\""),
+          "agent run profile includes circuit-breaker metadata");
+  require(contains(run_profile, "\"stop_conditions\""),
+          "agent run profile includes stop conditions");
+
+  const QString safety_policy = window.runAgentUiQueryJson("agent.safety_policy", "{}");
+  require(contains(safety_policy, "\"ok\":true"), "agent safety policy query routes");
+  require(contains(safety_policy, "\"human_approval_required\""),
+          "agent safety policy names human approval gates");
+  require(contains(safety_policy, "\"env_or_os_credential_store_only\""),
+          "agent safety policy keeps secrets out of project files");
+  require(contains(safety_policy, "\"no_project_file_execution\""),
+          "agent safety policy forbids executing design files");
+
+  const QString provider_policy = window.runAgentUiQueryJson("agent.provider_policy", "{}");
+  require(contains(provider_policy, "\"ok\":true"), "agent provider policy query routes");
+  require(contains(provider_policy, "\"byok\""),
+          "agent provider policy exposes BYOK as the intended model path");
+  require(contains(provider_policy, "\"no_consumer_web_ui_automation\""),
+          "agent provider policy rejects consumer web UI automation as a clean integration path");
+  require(contains(provider_policy, "\"local_model_server\""),
+          "agent provider policy includes local model servers");
+
+  const QString observability_config =
+      window.runAgentUiQueryJson("agent.observability_config", "{}");
+  require(contains(observability_config, "\"ok\":true"),
+          "agent observability config query routes");
+  require(contains(observability_config, "\"opentelemetry\""),
+          "agent observability config names OpenTelemetry");
+  require(contains(observability_config, "\"langfuse\""),
+          "agent observability config names Langfuse as an OTEL backend option");
+  require(contains(observability_config, "\"redaction_policy\""),
+          "agent observability config includes redaction policy");
+
+  const QString evidence_schema =
+      window.runAgentUiQueryJson("agent.evidence_manifest_schema", "{}");
+  require(contains(evidence_schema, "\"ok\":true"), "agent evidence schema query routes");
+  require(contains(evidence_schema, "\"ccad_agent_evidence_manifest\""),
+          "agent evidence schema identifies the manifest kind");
+  require(contains(evidence_schema, "\"screenshots\""),
+          "agent evidence schema tracks screenshot artifacts");
+  require(contains(evidence_schema, "\"drc_reports\""),
+          "agent evidence schema tracks DRC artifacts");
+  require(contains(evidence_schema, "\"source_references\""),
+          "agent evidence schema tracks external references");
+
+  const QString route_track_guide =
+      window.runAgentUiQueryJson("agent.tool_guide", "{\"method_name\":\"ui.route_track\"}");
+  require(contains(route_track_guide, "\"ok\":true"), "agent tool guide query routes");
+  require(contains(route_track_guide, "\"found\":true"),
+          "agent tool guide finds a known method");
+  require(contains(route_track_guide, "\"method\":\"ui.route_track\""),
+          "agent tool guide names the requested method");
+  require(contains(route_track_guide, "\"preferred_surface\""),
+          "agent tool guide includes preferred surface guidance");
+  require(contains(route_track_guide, "\"verification\""),
+          "agent tool guide includes verification guidance");
+  require(contains(route_track_guide, "\"recovery_loop\""),
+          "agent tool guide includes recovery-loop guidance");
+
+  const QString missing_guide =
+      window.runAgentUiQueryJson("agent.tool_guide", "{\"method_name\":\"agent.nope\"}");
+  require(contains(missing_guide, "\"ok\":true"), "agent tool guide handles misses");
+  require(contains(missing_guide, "\"found\":false"),
+          "agent tool guide reports unknown methods without failing the request");
+
+  window.triggerSafeUiActionJson("tab:transactions");
   const int before_watch_epoch = extractInt(window.uiMapJson(), "\"ui_epoch\":");
   window.triggerSafeUiActionJson("tab:diagnostics");
   window.triggerSafeUiActionJson("tab:agent");
@@ -451,6 +537,8 @@ int main(int argc, char** argv) {
   require(contains(agent_panel_target, "\"found\":true"), "panel target query finds agent panel");
   require(contains(agent_panel_target, "\"role\":\"panel\""),
           "agent panel target query reports role");
+  require(contains(agent_panel_target, "\"dock_area\":\"right\""),
+          "agent panel target reports right dock placement");
 
   const QString agent_tab_target = window.uiTargetJsonById("tab:agent");
   require(contains(agent_tab_target, "\"found\":true"), "tab target query finds agent tab");
@@ -1020,6 +1108,18 @@ int main(int argc, char** argv) {
           "live server returns successful agent.quickstart");
   require(contains(quickstart_response, "\"workflow\":\"ui_map_agent_loop\""),
           "live server agent.quickstart reports workflow");
+  const QString harness_context_response =
+      requestLine(socket, "{\"method\":\"agent.harness_context\"}");
+  require(contains(harness_context_response, "\"ok\":true"),
+          "live server returns successful agent.harness_context");
+  require(contains(harness_context_response, "\"harness_kind\":\"ccad_native_qt_agent_surface\""),
+          "live server harness context identifies the native Qt surface");
+  const QString tool_guide_response =
+      requestLine(socket, "{\"method\":\"agent.tool_guide\",\"method_name\":\"ui.route_track\"}");
+  require(contains(tool_guide_response, "\"ok\":true"),
+          "live server returns successful agent.tool_guide");
+  require(contains(tool_guide_response, "\"preferred_surface\""),
+          "live server tool guide includes preferred surface guidance");
   const QString index_stats_response = requestLine(socket, "{\"method\":\"ui.index_stats\"}");
   require(contains(index_stats_response, "\"ok\":true"),
           "live server returns successful ui.index_stats");

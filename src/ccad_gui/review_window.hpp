@@ -31,6 +31,7 @@ QString formatCursorStatus(const std::optional<ccad::Board>& board, const QPoint
 
 class AgentPanel;
 class QComboBox;
+class QDockWidget;
 
 enum class InteractionMode {
   Default,
@@ -88,6 +89,7 @@ class ReviewWindow final : public QMainWindow {
                                   bool dry_run, const QString& canvas_id);
   QString uiWorkflowDeleteObjectJson(const QString& object_id, const QString& canvas_id);
   QString uiScreenshotJson(const QString& path, bool dry_run);
+  QString agentHarnessContextJson() const;
   QString projectContextJson() const;
   QString projectObjectCountsJson() const;
   QString projectReviewJson() const;
@@ -199,6 +201,7 @@ class ReviewWindow final : public QMainWindow {
   };
 
   AgentPanel* agent_panel_ = nullptr;
+  QDockWidget* agent_dock_ = nullptr;
   ProjectSummaryPanel* project_summary_ = nullptr;
   QLabel* cursor_status_ = nullptr;
   QLabel* zoom_status_ = nullptr;

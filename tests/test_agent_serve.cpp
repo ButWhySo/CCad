@@ -97,6 +97,65 @@ void testMCPToolsCall() {
   assertContains(out.str(), "\"isError\": false", "has isError false");
 }
 
+void testAgentMethodsCommand() {
+  std::ostringstream out;
+  auto oldCout = std::cout.rdbuf(out.rdbuf());
+  std::vector<std::string> args = {"methods"};
+  int result = ccad_cli::agentCommand(args);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) {
+    std::cerr << "FAIL testAgentMethodsCommand exited with " << result << "\n";
+    std::exit(1);
+  }
+  assertContains(out.str(), "\"catalog_kind\":\"ccad_agent_protocol\"",
+                 "agent methods command prints protocol catalog");
+  assertContains(out.str(), "\"method\":\"agent.harness_context\"",
+                 "agent methods command includes harness context");
+  assertContains(out.str(), "\"method\":\"agent.observability_config\"",
+                 "agent methods command includes observability config");
+}
+
+void testAgentMetadataCommands() {
+  std::ostringstream out;
+  auto oldCout = std::cout.rdbuf(out.rdbuf());
+  std::vector<std::string> args = {"harness-context"};
+  int result = ccad_cli::agentCommand(args);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) {
+    std::cerr << "FAIL testAgentMetadataCommands exited with " << result << "\n";
+    std::exit(1);
+  }
+  assertContains(out.str(), "\"harness_kind\":\"ccad_headless_cli_agent_surface\"",
+                 "CLI harness context identifies the headless surface");
+  assertContains(out.str(), "\"session_state\"", "CLI harness context includes session state");
+  assertContains(out.str(), "\"pending_diagnostics\"",
+                 "CLI harness context includes pending diagnostics");
+}
+
+void testAgentMetadataJsonRpc() {
+  std::istringstream in(
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.harness_context\", \"id\": 6}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.tool_guide\", \"params\": {\"method_name\": \"agent.harness_context\"}, \"id\": 7}\n");
+  std::ostringstream out;
+  auto oldCin = std::cin.rdbuf(in.rdbuf());
+  auto oldCout = std::cout.rdbuf(out.rdbuf());
+  std::vector<std::string> args = {"serve", "--allow-read"};
+  int result = ccad_cli::agentCommand(args);
+  std::cin.rdbuf(oldCin);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) {
+    std::cerr << "FAIL testAgentMetadataJsonRpc exited with " << result << "\n";
+    std::exit(1);
+  }
+  assertContains(out.str(), "\"id\": 6", "has harness context request id");
+  assertContains(out.str(), "\"harness_kind\":\"ccad_headless_cli_agent_surface\"",
+                 "JSON-RPC exposes headless harness context");
+  assertContains(out.str(), "\"id\": 7", "has tool guide request id");
+  assertContains(out.str(), "\"found\":true", "JSON-RPC tool guide finds known method");
+  assertContains(out.str(), "\"preferred_surface\"",
+                 "JSON-RPC tool guide includes preferred surface");
+}
+
 int main() {
   try {
     testPing();
@@ -104,6 +163,9 @@ int main() {
     testMCPInitialize();
     testMCPToolsList();
     testMCPToolsCall();
+    testAgentMethodsCommand();
+    testAgentMetadataCommands();
+    testAgentMetadataJsonRpc();
     std::cout << "PASS agent serve\n";
     return 0;
   } catch (const std::exception& e) {

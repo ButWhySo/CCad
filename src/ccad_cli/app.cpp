@@ -226,6 +226,15 @@ const std::vector<CommandHelp>& commandHelp() {
       CommandHelp{.name = "agent serve",
                   .summary = "Start JSON-RPC agent over standard I/O",
                   .usage = "ccad agent serve [--allow-read] [--allow-write]"},
+      CommandHelp{.name = "agent methods",
+                  .summary = "Print the headless CCad agent method catalog",
+                  .usage = "ccad agent methods"},
+      CommandHelp{.name = "agent harness-context",
+                  .summary = "Print the headless agent session-state contract",
+                  .usage = "ccad agent harness-context"},
+      CommandHelp{.name = "agent tool-guide",
+                  .summary = "Print LLM-facing guidance for one agent method",
+                  .usage = "ccad agent tool-guide --method <name>"},
   };
   return commands;
 }
