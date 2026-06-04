@@ -1,6 +1,7 @@
 #include "ccad_gui/agent_panel.hpp"
 
 #include <QHBoxLayout>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLabel>
@@ -90,7 +91,9 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
       font-weight: 600;
     }
     QLabel#agentWorkspaceLabel,
-    QLabel#agentDiagnosticsLabel {
+    QLabel#agentDiagnosticsLabel,
+    QLabel#agentTaskStateLabel,
+    QLabel#agentEvidenceLabel {
       color: #334155;
     }
     QLineEdit,
@@ -104,8 +107,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   )");
 
   auto* root = new QVBoxLayout(this);
-  root->setContentsMargins(8, 8, 8, 8);
-  root->setSpacing(6);
+  root->setContentsMargins(6, 6, 6, 6);
+  root->setSpacing(4);
 
   auto* status_row = new QHBoxLayout();
   status_row->setSpacing(12);
@@ -199,7 +202,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   output_ = new QPlainTextEdit(this);
   output_->setObjectName("agentOutput");
   output_->setReadOnly(true);
-  output_->setMinimumHeight(72);
+  output_->setMinimumHeight(48);
   output_->setPlainText("{}");
   root->addWidget(output_, 1);
 
@@ -214,6 +217,47 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   connect(diagnostics_button, &QPushButton::clicked, this, [this]() { runDiagnosticsPreset(); });
   connect(tool_guide_button, &QPushButton::clicked, this, [this]() { runToolGuidePreset(); });
   connect(clear_button, &QPushButton::clicked, this, [this]() { clearOutput(); });
+
+  auto* goal_row = new QHBoxLayout();
+  goal_row->setSpacing(6);
+  auto* goal_label = new QLabel("Goal", this);
+  goal_input_ = new QLineEdit(this);
+  goal_input_->setObjectName("control:agent_goal");
+  goal_input_->setAccessibleName("Agent task goal");
+  goal_input_->setPlaceholderText("Task goal");
+  auto* stage_goal_button = new QPushButton("Stage Goal", this);
+  stage_goal_button->setObjectName("action:agent_stage_goal");
+  stage_goal_button->setAccessibleName("Stage agent task goal");
+  goal_row->addWidget(goal_label);
+  goal_row->addWidget(goal_input_, 1);
+  goal_row->addWidget(stage_goal_button);
+  root->insertLayout(4, goal_row);
+
+  auto* task_row = new QHBoxLayout();
+  task_row->setSpacing(6);
+  task_state_label_ = new QLabel("Task idle", this);
+  task_state_label_->setObjectName("agentTaskStateLabel");
+  task_state_label_->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  task_state_label_->setWordWrap(true);
+  evidence_label_ = new QLabel("Evidence 0 pinned", this);
+  evidence_label_->setObjectName("agentEvidenceLabel");
+  evidence_label_->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  auto* pin_evidence_button = new QPushButton("Pin Evidence", this);
+  pin_evidence_button->setObjectName("action:agent_pin_evidence");
+  pin_evidence_button->setAccessibleName("Pin current agent output as evidence");
+  auto* clear_evidence_button = new QPushButton("Clear Evidence", this);
+  clear_evidence_button->setObjectName("action:agent_clear_evidence");
+  clear_evidence_button->setAccessibleName("Clear pinned agent evidence");
+  task_row->addWidget(task_state_label_, 1);
+  task_row->addWidget(evidence_label_);
+  task_row->addWidget(pin_evidence_button);
+  task_row->addWidget(clear_evidence_button);
+  root->insertLayout(5, task_row);
+
+  connect(stage_goal_button, &QPushButton::clicked, this, [this]() { stageGoal(); });
+  connect(goal_input_, &QLineEdit::returnPressed, this, [this]() { stageGoal(); });
+  connect(pin_evidence_button, &QPushButton::clicked, this, [this]() { pinEvidence(); });
+  connect(clear_evidence_button, &QPushButton::clicked, this, [this]() { clearEvidence(); });
 }
 
 void AgentPanel::setUiMapProvider(UiMapProvider provider) {
@@ -259,6 +303,10 @@ void AgentPanel::setActionId(const QString& action_id) {
 void AgentPanel::setLiveQuery(const QString& method, const QString& payload) {
   live_method_input_->setText(method);
   live_payload_input_->setText(payload);
+}
+
+void AgentPanel::setGoalText(const QString& goal) {
+  goal_input_->setText(goal);
 }
 
 void AgentPanel::refreshUiMap() {
@@ -344,6 +392,58 @@ void AgentPanel::clearOutput() {
   result_state_label_->setText("Result Idle");
 }
 
+void AgentPanel::stageGoal() {
+  const QString trimmed_goal = goal_input_->text().trimmed();
+  if (trimmed_goal.isEmpty()) {
+    staged_goal_.clear();
+    task_state_label_->setText("Task idle");
+    status_label_->setText("Goal required");
+    result_state_label_->setText("Result Error empty_goal");
+    return;
+  }
+  staged_goal_ = trimmed_goal;
+  task_state_label_->setText("Goal staged: " + staged_goal_);
+  status_label_->setText("Goal staged");
+  result_state_label_->setText("Result Goal staged");
+}
+
+void AgentPanel::pinEvidence() {
+  QString entry = "Evidence " + QString::number(evidence_entries_.size() + 1);
+  const QString goal = staged_goal_.trimmed().isEmpty() ? goal_input_->text().trimmed() : staged_goal_;
+  if (!goal.isEmpty()) {
+    entry += " | goal " + goal;
+  }
+  const QString method = live_method_input_->text().trimmed();
+  if (!method.isEmpty()) {
+    entry += " | method " + method;
+  }
+  const QString result_state = result_state_label_->text().trimmed();
+  if (!result_state.isEmpty()) {
+    entry += " | " + result_state;
+  }
+  QString output_summary = output_->toPlainText().simplified();
+  if (!output_summary.isEmpty()) {
+    if (output_summary.size() > 240) {
+      output_summary = output_summary.left(240) + "...";
+    }
+    entry += " | output " + output_summary;
+  }
+  evidence_entries_.append(entry);
+  while (evidence_entries_.size() > 8) {
+    evidence_entries_.removeFirst();
+  }
+  evidence_label_->setText("Evidence " + QString::number(evidence_entries_.size()) + " pinned");
+  status_label_->setText("Evidence pinned");
+  result_state_label_->setText("Result Evidence pinned");
+}
+
+void AgentPanel::clearEvidence() {
+  evidence_entries_.clear();
+  evidence_label_->setText("Evidence 0 pinned");
+  status_label_->setText("Evidence cleared");
+  result_state_label_->setText("Result Evidence cleared");
+}
+
 QString AgentPanel::projectText() const {
   return project_label_->text();
 }
@@ -380,6 +480,43 @@ QString AgentPanel::livePayloadText() const {
   return live_payload_input_->text();
 }
 
+QString AgentPanel::goalText() const {
+  return goal_input_->text();
+}
+
+QString AgentPanel::taskStateText() const {
+  return task_state_label_->text();
+}
+
+QString AgentPanel::evidenceText() const {
+  return evidence_label_->text();
+}
+
 QString AgentPanel::outputText() const {
   return output_->toPlainText();
+}
+
+QString AgentPanel::workspaceStateJson() const {
+  QJsonArray evidence;
+  for (const QString& entry : evidence_entries_) {
+    evidence.append(entry);
+  }
+
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("workspace_kind", "ccad_agent_workspace_state");
+  response.insert("goal", staged_goal_.isEmpty() ? goal_input_->text().trimmed() : staged_goal_);
+  response.insert("task_state", taskStateText());
+  response.insert("evidence_count", evidence_entries_.size());
+  response.insert("evidence", evidence);
+  response.insert("project", projectText());
+  response.insert("ui_epoch", epochText());
+  response.insert("workspace", workspaceText());
+  response.insert("diagnostics", diagnosticsText());
+  response.insert("status", statusText());
+  response.insert("result_state", resultStateText());
+  response.insert("action_id", actionIdText());
+  response.insert("live_method", liveMethodText());
+  response.insert("live_payload", livePayloadText());
+  return QString::fromUtf8(QJsonDocument(response).toJson(QJsonDocument::Compact)) + "\n";
 }

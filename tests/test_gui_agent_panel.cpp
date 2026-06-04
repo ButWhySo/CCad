@@ -96,6 +96,30 @@ int main(int argc, char** argv) {
   require(contains(live_payload_seen, "ui.route_track"),
           "agent panel tool-guide preset documents a concrete workflow method");
 
+  panel.setGoalText("Inspect bridge rectifier placement");
+  require(panel.goalText() == "Inspect bridge rectifier placement",
+          "agent panel stores task goal text");
+  panel.stageGoal();
+  require(contains(panel.taskStateText(), "Goal staged"),
+          "agent panel stages a local task goal");
+  require(contains(panel.taskStateText(), "Inspect bridge rectifier placement"),
+          "agent panel task state includes staged goal");
+
+  panel.pinEvidence();
+  require(contains(panel.evidenceText(), "Evidence 1"),
+          "agent panel pins current result as evidence");
+  const QString workspace_state = panel.workspaceStateJson();
+  require(contains(workspace_state, "\"goal\":\"Inspect bridge rectifier placement\""),
+          "agent panel workspace state serializes staged goal");
+  require(contains(workspace_state, "\"evidence_count\":1"),
+          "agent panel workspace state serializes evidence count");
+  require(contains(workspace_state, "agent.tool_guide"),
+          "agent panel workspace state serializes evidence entries");
+
+  panel.clearEvidence();
+  require(contains(panel.evidenceText(), "Evidence 0"),
+          "agent panel clears pinned evidence");
+
   panel.clearOutput();
   require(panel.outputText().isEmpty(), "agent panel clear action clears output");
   require(contains(panel.statusText(), "Output cleared"), "agent panel clear action updates status");

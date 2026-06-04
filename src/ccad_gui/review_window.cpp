@@ -509,6 +509,10 @@ QJsonArray agentMethodCatalogArray() {
                           "Return the live native GUI agent state needed to resume or verify a run.",
                           true, false, false, false, false, emptySchema(),
                           "Session state, diagnostics, active view, and latest visual evidence slot."));
+  append(agentMethodEntry("agent.workspace_state", "agent", "Workspace State",
+                          "Return the right-side Agent dock goal, task state, evidence queue, and live controls.",
+                          true, false, false, false, false, emptySchema(),
+                          "Current local Agent workspace goal, evidence count, and panel state."));
   append(agentMethodEntry("agent.run_profile", "agent", "Run Profile",
                           "Return the durable run-loop, retry, circuit-breaker, and stop-condition policy.",
                           true, false, false, false, false, emptySchema(),
@@ -1922,12 +1926,15 @@ ReviewWindow::ReviewWindow() {
   agent_dock_->setObjectName("agentDock");
   agent_dock_->setAllowedAreas(Qt::RightDockWidgetArea | Qt::LeftDockWidgetArea);
   agent_dock_->setMinimumWidth(360);
+  agent_dock_->setMinimumHeight(260);
   agent_dock_->setWidget(agent_panel_);
   addDockWidget(Qt::RightDockWidgetArea, agent_dock_);
   splitDockWidget(layers_dock, agent_dock_, Qt::Vertical);
   connect(agent_dock_, &QDockWidget::visibilityChanged, this, [this](bool) {
     markUiMapChanged({"tab:agent", "panel:agent", "control:agent_live_method",
-                      "control:agent_live_payload", "action:agent_live_query"},
+                      "control:agent_live_payload", "action:agent_live_query",
+                      "control:agent_goal", "action:agent_stage_goal",
+                      "action:agent_pin_evidence", "action:agent_clear_evidence"},
                      {"tab", "panel", "control", "action"});
   });
 
@@ -2262,7 +2269,9 @@ ReviewWindow::ReviewWindow() {
             markUiMapChanged({"tab:diagnostics", "tab:transactions", "tab:agent",
                               "panel:diagnostics", "panel:transactions", "panel:agent",
                               "control:agent_live_method", "control:agent_live_payload",
-                              "action:agent_live_query"},
+                              "action:agent_live_query", "control:agent_goal",
+                              "action:agent_stage_goal", "action:agent_pin_evidence",
+                              "action:agent_clear_evidence"},
                              {"tab", "panel", "control", "action"});
           });
   add_footprint_action->setVisible(true);
@@ -5137,6 +5146,18 @@ QString ReviewWindow::projectDiagnosticsJson() const {
   return jsonObjectLine(response);
 }
 
+QString ReviewWindow::agentWorkspaceStateJson() const {
+  if (agent_panel_ == nullptr) {
+    QJsonObject response;
+    response.insert("schema_version", 1);
+    response.insert("workspace_kind", "ccad_agent_workspace_state");
+    response.insert("available", false);
+    response.insert("error", "agent_panel_unavailable");
+    return jsonObjectLine(response);
+  }
+  return agent_panel_->workspaceStateJson();
+}
+
 QString ReviewWindow::uiWorkflowPlaceViaJson(const double x_mm, const double y_mm,
                                              const bool dry_run, const QString& canvas_id) {
   QJsonObject response;
@@ -5369,7 +5390,7 @@ QString ReviewWindow::uiWorkflowDeleteObjectJson(const QString& object_id,
 QString ReviewWindow::uiTypeTextJson(const QString& id, const QString& text) {
   const QString trimmed_id = id.trimmed();
   const QStringList allowed_ids = {"control:agent_action_id", "control:agent_live_method",
-                                   "control:agent_live_payload"};
+                                   "control:agent_live_payload", "control:agent_goal"};
   QJsonObject response;
   response.insert("schema_version", 1);
   response.insert("ui_epoch", ui_map_epoch_);
@@ -5662,6 +5683,9 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
   }
   if (trimmed_method == "agent.harness_context") {
     return agentQueryResponse(trimmed_method, true, {}, agentHarnessContextJson());
+  }
+  if (trimmed_method == "agent.workspace_state") {
+    return agentQueryResponse(trimmed_method, true, {}, agentWorkspaceStateJson());
   }
   if (trimmed_method == "agent.run_profile") {
     return agentQueryResponse(trimmed_method, true, {}, agentRunProfileJson());
@@ -6161,7 +6185,9 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
     agent_dock_->show();
     agent_dock_->raise();
     markUiMapChanged({"tab:agent", "panel:agent", "control:agent_live_method",
-                      "control:agent_live_payload", "action:agent_live_query"},
+                      "control:agent_live_payload", "action:agent_live_query",
+                      "control:agent_goal", "action:agent_stage_goal",
+                      "action:agent_pin_evidence", "action:agent_clear_evidence"},
                      {"tab", "panel", "control", "action"});
     return result(id, true, "tab_selected");
   }

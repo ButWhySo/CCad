@@ -2,6 +2,7 @@
 
 #include <QWidget>
 #include <QString>
+#include <QStringList>
 
 #include <functional>
 
@@ -29,6 +30,7 @@ class AgentPanel final : public QWidget {
                            int warning_count);
   void setActionId(const QString& action_id);
   void setLiveQuery(const QString& method, const QString& payload);
+  void setGoalText(const QString& goal);
 
   void refreshUiMap();
   void triggerSafeAction();
@@ -37,6 +39,9 @@ class AgentPanel final : public QWidget {
   void runDiagnosticsPreset();
   void runToolGuidePreset();
   void clearOutput();
+  void stageGoal();
+  void pinEvidence();
+  void clearEvidence();
 
   QString projectText() const;
   QString epochText() const;
@@ -47,7 +52,11 @@ class AgentPanel final : public QWidget {
   QString actionIdText() const;
   QString liveMethodText() const;
   QString livePayloadText() const;
+  QString goalText() const;
+  QString taskStateText() const;
+  QString evidenceText() const;
   QString outputText() const;
+  QString workspaceStateJson() const;
 
  private:
   QLabel* project_label_ = nullptr;
@@ -56,11 +65,16 @@ class AgentPanel final : public QWidget {
   QLabel* workspace_label_ = nullptr;
   QLabel* diagnostics_label_ = nullptr;
   QLabel* result_state_label_ = nullptr;
+  QLabel* task_state_label_ = nullptr;
+  QLabel* evidence_label_ = nullptr;
   QLineEdit* action_id_input_ = nullptr;
   QLineEdit* live_method_input_ = nullptr;
   QLineEdit* live_payload_input_ = nullptr;
+  QLineEdit* goal_input_ = nullptr;
   QPlainTextEdit* output_ = nullptr;
   UiMapProvider ui_map_provider_;
   SafeActionTrigger safe_action_trigger_;
   LiveQueryProvider live_query_provider_;
+  QString staged_goal_;
+  QStringList evidence_entries_;
 };

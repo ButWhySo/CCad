@@ -96,6 +96,7 @@ class ReviewWindow final : public QMainWindow {
   QString projectErcJson() const;
   QString projectDrcJson() const;
   QString projectDiagnosticsJson() const;
+  QString agentWorkspaceStateJson() const;
   QString uiTypeTextJson(const QString& id, const QString& text);
   QString uiKeyJson(const QString& key);
   QString uiSelectCanvasObjectJson(const QString& id, const QString& canvas_id);

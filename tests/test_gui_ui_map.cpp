@@ -220,6 +220,14 @@ int main(int argc, char** argv) {
           "UI map exposes agent tool-guide preset");
   require(contains(map, "\"id\":\"action:agent_clear_output\""),
           "UI map exposes agent clear-output action");
+  require(contains(map, "\"id\":\"control:agent_goal\""),
+          "UI map exposes agent goal input");
+  require(contains(map, "\"id\":\"action:agent_stage_goal\""),
+          "UI map exposes agent stage-goal action");
+  require(contains(map, "\"id\":\"action:agent_pin_evidence\""),
+          "UI map exposes agent pin-evidence action");
+  require(contains(map, "\"id\":\"action:agent_clear_evidence\""),
+          "UI map exposes agent clear-evidence action");
   require(contains(map, "\"id\":\"tab:pcb\""), "UI map exposes PCB tab");
   require(contains(map, "\"id\":\"tab:schematic\""), "UI map exposes schematic tab");
   require(contains(map, "\"id\":\"tab:agent\""), "UI map exposes agent dock tab alias");
@@ -355,6 +363,8 @@ int main(int argc, char** argv) {
           "agent method catalog includes UI map query");
   require(contains(method_catalog, "\"method\":\"ui.watch_delta\""),
           "agent method catalog includes watch-delta query");
+  require(contains(method_catalog, "\"method\":\"agent.workspace_state\""),
+          "agent method catalog includes workspace-state query");
   require(contains(method_catalog, "\"method\":\"project.drc\""),
           "agent method catalog includes DRC query");
   require(contains(method_catalog, "\"read_only\":true"),
@@ -432,6 +442,13 @@ int main(int argc, char** argv) {
           "agent provider policy rejects consumer web UI automation as a clean integration path");
   require(contains(provider_policy, "\"local_model_server\""),
           "agent provider policy includes local model servers");
+
+  const QString workspace_state_initial =
+      window.runAgentUiQueryJson("agent.workspace_state", "{}");
+  require(contains(workspace_state_initial, "\"ok\":true"),
+          "agent workspace state query routes");
+  require(contains(workspace_state_initial, "\"evidence_count\":0"),
+          "agent workspace state starts with no pinned evidence");
 
   const QString observability_config =
       window.runAgentUiQueryJson("agent.observability_config", "{}");
@@ -583,6 +600,18 @@ int main(int argc, char** argv) {
   const QString clear_output_target = window.uiTargetJsonById("action:agent_clear_output");
   require(contains(clear_output_target, "\"found\":true"),
           "target query finds agent clear-output action");
+  const QString goal_input_target = window.uiTargetJsonById("control:agent_goal");
+  require(contains(goal_input_target, "\"found\":true"),
+          "target query finds agent goal input");
+  const QString stage_goal_target = window.uiTargetJsonById("action:agent_stage_goal");
+  require(contains(stage_goal_target, "\"found\":true"),
+          "target query finds agent stage-goal action");
+  const QString pin_evidence_target = window.uiTargetJsonById("action:agent_pin_evidence");
+  require(contains(pin_evidence_target, "\"found\":true"),
+          "target query finds agent pin-evidence action");
+  const QString clear_evidence_target = window.uiTargetJsonById("action:agent_clear_evidence");
+  require(contains(clear_evidence_target, "\"found\":true"),
+          "target query finds agent clear-evidence action");
   window.triggerSafeUiActionJson("tab:pcb");
 
   const QString pad_target = window.uiTargetJsonById("canvas_object:U1.1");
@@ -674,6 +703,31 @@ int main(int argc, char** argv) {
       window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_clear_output\"}");
   require(contains(clear_output_click, "\"performed\":true"),
           "agent click can trigger the clear-output action");
+  const QString type_goal = window.runAgentUiQueryJson(
+      "ui.type_text",
+      "{\"id\":\"control:agent_goal\",\"text\":\"Inspect bridge rectifier evidence\"}");
+  require(contains(type_goal, "\"performed\":true"),
+          "agent can type into the task goal control");
+  require(contains(type_goal, "\"value\":\"Inspect bridge rectifier evidence\""),
+          "agent goal typing reports the typed value");
+  const QString stage_goal_click =
+      window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_stage_goal\"}");
+  require(contains(stage_goal_click, "\"performed\":true"),
+          "agent click can stage the task goal");
+  const QString pin_evidence_click =
+      window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_pin_evidence\"}");
+  require(contains(pin_evidence_click, "\"performed\":true"),
+          "agent click can pin the current output as evidence");
+  const QString workspace_state_after =
+      window.runAgentUiQueryJson("agent.workspace_state", "{}");
+  require(contains(workspace_state_after, "\"goal\":\"Inspect bridge rectifier evidence\""),
+          "workspace state reports the staged goal");
+  require(contains(workspace_state_after, "\"evidence_count\":1"),
+          "workspace state reports pinned evidence");
+  const QString clear_evidence_click =
+      window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_clear_evidence\"}");
+  require(contains(clear_evidence_click, "\"performed\":true"),
+          "agent click can clear pinned evidence");
   window.triggerSafeUiActionJson("tab:pcb");
 
   window.triggerSafeUiActionJson("action:add_tracks");

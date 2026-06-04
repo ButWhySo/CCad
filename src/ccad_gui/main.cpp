@@ -400,7 +400,9 @@ int main(int argc, char** argv) {
                                       "action:net_highlight", "action:contrast_mode",
                                       "tab:agent", "control:agent_live_method",
                                       "control:agent_live_payload",
-                                      "action:agent_live_query"};
+                                      "action:agent_live_query", "control:agent_goal",
+                                      "action:agent_stage_goal", "action:agent_pin_evidence",
+                                      "action:agent_clear_evidence"};
       const QStringList trigger_before_capture_ids = {
           "action:grid",          "action:polar_coord",   "action:unit_inch",
           "action:cursor_shape",  "action:show_ratsnest", "action:net_highlight",
