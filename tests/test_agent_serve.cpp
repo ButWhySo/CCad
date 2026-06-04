@@ -1,5 +1,7 @@
 #include "ccad_cli/agent_commands.hpp"
 
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -9,6 +11,12 @@ void assertContains(const std::string& content, const std::string& pattern, cons
     std::cerr << "FAIL " << label << "\n  pattern not found: " << pattern << '\n';
     std::exit(1);
   }
+}
+
+std::string tempSessionPath(const std::string& name) {
+  const std::filesystem::path path = std::filesystem::temp_directory_path() / name;
+  std::filesystem::remove(path);
+  return path.string();
 }
 
 void testPing() {
@@ -119,6 +127,12 @@ void testAgentMethodsCommand() {
                  "agent methods command includes headless evidence state");
   assertContains(out.str(), "\"method\":\"agent.approvals\"",
                  "agent methods command includes headless approval state");
+  assertContains(out.str(), "\"method\":\"agent.session_schema\"",
+                 "agent methods command includes durable session schema");
+  assertContains(out.str(), "\"method\":\"agent.session_state\"",
+                 "agent methods command includes durable session state");
+  assertContains(out.str(), "\"method\":\"agent.replay_manifest\"",
+                 "agent methods command includes replay manifest");
   assertContains(out.str(), "\"method\":\"agent.observability_config\"",
                  "agent methods command includes observability config");
 }
@@ -216,6 +230,141 @@ void testAgentWorkspaceParityCommands() {
   }
 }
 
+void testAgentSessionCheckpointCommands() {
+  const std::string session_path = tempSessionPath("ccad-agent-session-test.ccad-agent-session.json");
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"session-schema"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentSessionCheckpointCommands schema exited with " << result
+                << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"schema_kind\":\"ccad_agent_session_schema\"",
+                   "agent session schema reports schema kind");
+    assertContains(out.str(), "\"checkpoint_fields\"",
+                   "agent session schema reports checkpoint fields");
+    assertContains(out.str(), "\"resource_uri\"",
+                   "agent session schema includes MCP-ready resource URI field");
+  }
+
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"session-new",
+                                     "--out",
+                                     session_path,
+                                     "--session-id",
+                                     "sess-test",
+                                     "--title",
+                                     "Bridge run",
+                                     "--project",
+                                     "demo.ccad.json",
+                                     "--created-at",
+                                     "2026-06-05T00:00:00Z"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentSessionCheckpointCommands session-new exited with " << result
+                << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"created\":true", "agent session-new reports file creation");
+    assertContains(out.str(), "\"session_id\":\"sess-test\"", "agent session-new reports id");
+    if (!std::filesystem::exists(session_path)) {
+      std::cerr << "FAIL session file was not created\n";
+      std::exit(1);
+    }
+  }
+
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"session-state", "--session", session_path};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentSessionCheckpointCommands session-state exited with " << result
+                << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"session_kind\":\"ccad_agent_session\"",
+                   "agent session-state reads session file");
+    assertContains(out.str(), "\"thread_id\":\"sess-test\"",
+                   "agent session-state preserves thread id");
+    assertContains(out.str(), "\"checkpoint_count\":0",
+                   "new session starts with no checkpoints");
+  }
+
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"checkpoint-add",
+                                     "--session",
+                                     session_path,
+                                     "--checkpoint-id",
+                                     "cp-001",
+                                     "--kind",
+                                     "planning",
+                                     "--summary",
+                                     "Plan bridge rectifier checks",
+                                     "--artifact",
+                                     "artifacts/screenshots/bridge.png",
+                                     "--created-at",
+                                     "2026-06-05T00:01:00Z"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentSessionCheckpointCommands checkpoint-add exited with " << result
+                << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"checkpoint_added\":true",
+                   "agent checkpoint-add reports append");
+    assertContains(out.str(), "\"sequence\":1", "agent checkpoint-add assigns sequence");
+  }
+
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"session-state", "--session", session_path};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentSessionCheckpointCommands session-state after append exited with "
+                << result << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"checkpoint_count\":1",
+                   "agent session-state sees appended checkpoint");
+    assertContains(out.str(), "\"checkpoint_id\":\"cp-001\"",
+                   "agent session-state includes checkpoint id");
+    assertContains(out.str(), "\"resource_uri\":\"ccad-agent-checkpoint:sess-test/cp-001\"",
+                   "agent session-state includes checkpoint resource URI");
+  }
+
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"replay", "--session", session_path};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentSessionCheckpointCommands replay exited with " << result
+                << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"manifest_kind\":\"ccad_agent_replay_manifest\"",
+                   "agent replay returns manifest");
+    assertContains(out.str(), "\"replayable\":true", "agent replay marks manifest replayable");
+    assertContains(out.str(), "\"latest_checkpoint_id\":\"cp-001\"",
+                   "agent replay reports latest checkpoint");
+  }
+}
+
 void testAgentMetadataJsonRpc() {
   std::istringstream in(
       "{\"jsonrpc\": \"2.0\", \"method\": \"agent.harness_context\", \"id\": 6}\n"
@@ -281,6 +430,57 @@ void testAgentWorkspaceParityJsonRpc() {
                  "JSON-RPC tool guide points state methods to the headless workspace surface");
 }
 
+void testAgentSessionJsonRpc() {
+  const std::string session_path =
+      tempSessionPath("ccad-agent-session-json-rpc-test.ccad-agent-session.json");
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"session-new",
+                                     "--out",
+                                     session_path,
+                                     "--session-id",
+                                     "sess-rpc",
+                                     "--title",
+                                     "RPC run",
+                                     "--created-at",
+                                     "2026-06-05T00:02:00Z"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentSessionJsonRpc setup exited with " << result << "\n";
+      std::exit(1);
+    }
+  }
+
+  std::istringstream in(
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.session_schema\", \"id\": 14}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.session_state\", \"params\": {\"session_path\": \"" +
+      session_path +
+      "\"}, \"id\": 15}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.replay_manifest\", \"params\": {\"session_path\": \"" +
+      session_path + "\"}, \"id\": 16}\n");
+  std::ostringstream out;
+  auto oldCin = std::cin.rdbuf(in.rdbuf());
+  auto oldCout = std::cout.rdbuf(out.rdbuf());
+  std::vector<std::string> args = {"serve", "--allow-read"};
+  int result = ccad_cli::agentCommand(args);
+  std::cin.rdbuf(oldCin);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) {
+    std::cerr << "FAIL testAgentSessionJsonRpc exited with " << result << "\n";
+    std::exit(1);
+  }
+  assertContains(out.str(), "\"id\": 14", "has session schema request id");
+  assertContains(out.str(), "\"schema_kind\":\"ccad_agent_session_schema\"",
+                 "JSON-RPC exposes session schema");
+  assertContains(out.str(), "\"id\": 15", "has session state request id");
+  assertContains(out.str(), "\"session_id\":\"sess-rpc\"", "JSON-RPC reads session file");
+  assertContains(out.str(), "\"id\": 16", "has replay request id");
+  assertContains(out.str(), "\"manifest_kind\":\"ccad_agent_replay_manifest\"",
+                 "JSON-RPC exposes replay manifest");
+}
+
 int main() {
   try {
     testPing();
@@ -291,8 +491,10 @@ int main() {
     testAgentMethodsCommand();
     testAgentMetadataCommands();
     testAgentWorkspaceParityCommands();
+    testAgentSessionCheckpointCommands();
     testAgentMetadataJsonRpc();
     testAgentWorkspaceParityJsonRpc();
+    testAgentSessionJsonRpc();
     std::cout << "PASS agent serve\n";
     return 0;
   } catch (const std::exception& e) {

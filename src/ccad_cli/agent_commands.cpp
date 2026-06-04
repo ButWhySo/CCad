@@ -1,9 +1,12 @@
 #include "agent_commands.hpp"
 
+#include "agent_session.hpp"
 #include "app.hpp"
 #include "ccad_core/json.hpp"
+#include "common.hpp"
 
 #include <iostream>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 
@@ -108,6 +111,15 @@ std::string agentMethodEntryJson(const std::string& method, const std::string& c
   return out.str();
 }
 
+std::string optionOrEmpty(const std::map<std::string, std::string>& options,
+                          const std::string& key) {
+  const auto found = options.find(key);
+  if (found == options.end()) {
+    return "";
+  }
+  return found->second;
+}
+
 std::string agentProtocolCatalogJson() {
   const std::vector<std::string> methods = {
       agentMethodEntryJson("agent.methods", "agent", "List Agent Methods", true, false, false),
@@ -119,6 +131,10 @@ std::string agentProtocolCatalogJson() {
       agentMethodEntryJson("agent.tasks", "agent", "Task State", true, false, false),
       agentMethodEntryJson("agent.evidence", "agent", "Evidence State", true, false, false),
       agentMethodEntryJson("agent.approvals", "agent", "Approval State", true, false, false),
+      agentMethodEntryJson("agent.session_schema", "agent", "Session Schema", true, false, false),
+      agentMethodEntryJson("agent.session_state", "agent", "Session State", true, false, false),
+      agentMethodEntryJson("agent.replay_manifest", "agent", "Replay Manifest", true, false,
+                           false),
       agentMethodEntryJson("agent.run_profile", "agent", "Run Profile", true, false, false),
       agentMethodEntryJson("agent.safety_policy", "agent", "Safety Policy", true, false, false),
       agentMethodEntryJson("agent.provider_policy", "agent", "Provider Policy", true, false, false),
@@ -144,7 +160,9 @@ std::string agentProtocolCatalogJson() {
 std::string agentQuickstartJson() {
   return "{\"schema_version\":1,\"workflow\":\"ccad_cli_agent_loop\","
          "\"summary\":\"Discover methods, inspect project state with CLI commands, run deterministic tools, and use GUI map or screenshots only when visual proof is required.\","
-         "\"first_methods\":[\"agent.methods\",\"agent.state\",\"agent.tasks\",\"agent.evidence\",\"agent.approvals\",\"agent.harness_context\",\"agent.tool_guide\",\"tools/list\"],"
+         "\"first_methods\":[\"agent.methods\",\"agent.state\",\"agent.session_schema\","
+         "\"agent.session_state\",\"agent.replay_manifest\",\"agent.tasks\",\"agent.evidence\","
+         "\"agent.approvals\",\"agent.harness_context\",\"agent.tool_guide\",\"tools/list\"],"
          "\"screenshot_rule\":\"GUI screenshots must use the project visual-validation harness with beep and current settle waits\","
          "\"unsafe_rule\":\"Write commands require explicit --allow-write in agent serve and direct human approval when policy requires it\"}";
 }
@@ -155,7 +173,8 @@ std::string agentHarnessContextJson() {
          "\"ui_epoch\":null,\"selected_object_ids\":[],\"provider_configured\":false,"
          "\"last_verified_visual_artifact\":null,\"transaction_id\":null},"
          "\"pending_diagnostics\":{\"erc_count\":0,\"drc_count\":0,\"error_count\":0,\"warning_count\":0},"
-         "\"capabilities\":[\"agent.methods\",\"agent.state\",\"agent.tasks\",\"agent.evidence\","
+         "\"capabilities\":[\"agent.methods\",\"agent.state\",\"agent.session_schema\","
+         "\"agent.session_state\",\"agent.replay_manifest\",\"agent.tasks\",\"agent.evidence\","
          "\"agent.approvals\",\"agent.tool_guide\",\"ccad_execute\",\"mcp_stdio\"],"
          "\"visual_validation_policy\":{\"single_preview_wait_seconds\":7,"
          "\"multi_action_initial_wait_seconds\":5,\"multi_action_step_wait_ms\":800,"
@@ -260,6 +279,10 @@ std::string preferredSurfaceForMethod(const std::string& method) {
       method == "agent.evidence" || method == "agent.approvals") {
     return "headless_cli_workspace_state";
   }
+  if (method == "agent.session_schema" || method == "agent.session_state" ||
+      method == "agent.replay_manifest") {
+    return "local_agent_session_file";
+  }
   if (method.rfind("agent.", 0) == 0) {
     return "read_only_protocol_metadata";
   }
@@ -276,6 +299,8 @@ std::string agentToolGuideJson(const std::string& method) {
                      method == "agent.state" || method == "agent.workspace_state" ||
                      method == "agent.tasks" || method == "agent.evidence" ||
                      method == "agent.approvals" ||
+                     method == "agent.session_schema" || method == "agent.session_state" ||
+                     method == "agent.replay_manifest" ||
                      method == "agent.observability_config" ||
                      method == "agent.evidence_manifest_schema" || method == "agent.tool_guide" ||
                      method == "ccad_execute";
@@ -308,6 +333,7 @@ std::string agentMetadataJson(const std::string& command, const std::string& met
   if (command == "tasks") return agentTasksJson();
   if (command == "evidence") return agentEvidenceJson();
   if (command == "approvals") return agentApprovalsJson();
+  if (command == "session-schema" || command == "session_schema") return agentSessionSchemaJson();
   if (command == "run-profile" || command == "run_profile") return agentRunProfileJson();
   if (command == "safety-policy" || command == "safety_policy") return agentSafetyPolicyJson();
   if (command == "provider-policy" || command == "provider_policy") return agentProviderPolicyJson();
@@ -325,11 +351,53 @@ std::string agentMetadataJson(const std::string& command, const std::string& met
 
 int agentCommand(const std::vector<std::string>& args) {
   if (args.empty()) {
-    std::cerr << "Usage: ccad agent <serve|methods|quickstart|harness-context|state|tasks|evidence|approvals|run-profile|safety-policy|provider-policy|observability-config|evidence-manifest-schema|tool-guide>\n";
+    std::cerr << "Usage: ccad agent <serve|methods|quickstart|harness-context|state|tasks|evidence|approvals|session-schema|session-new|session-state|checkpoint-add|replay|run-profile|safety-policy|provider-policy|observability-config|evidence-manifest-schema|tool-guide>\n";
     return 1;
   }
 
   if (args[0] != "serve") {
+    try {
+      if (args[0] == "session-new") {
+        const std::map<std::string, std::string> options =
+            parseOptions(args, 1, {"--out", "--session-id", "--title", "--project", "--created-at"});
+        std::cout << createAgentSessionFile(requireOption(options, "--out"),
+                                            requireOption(options, "--session-id"),
+                                            optionOrEmpty(options, "--title"),
+                                            optionOrEmpty(options, "--project"),
+                                            optionOrEmpty(options, "--created-at"))
+                  << "\n";
+        return 0;
+      }
+      if (args[0] == "session-state") {
+        const std::map<std::string, std::string> options =
+            parseOptions(args, 1, {"--session"});
+        std::cout << loadAgentSessionFileJson(requireOption(options, "--session")) << "\n";
+        return 0;
+      }
+      if (args[0] == "checkpoint-add") {
+        const std::map<std::string, std::string> options =
+            parseOptions(args, 1, {"--session", "--checkpoint-id", "--kind", "--summary",
+                                  "--artifact", "--created-at"});
+        std::cout << appendAgentCheckpointFile(requireOption(options, "--session"),
+                                               requireOption(options, "--checkpoint-id"),
+                                               optionOrEmpty(options, "--kind"),
+                                               optionOrEmpty(options, "--summary"),
+                                               optionOrEmpty(options, "--artifact"),
+                                               optionOrEmpty(options, "--created-at"))
+                  << "\n";
+        return 0;
+      }
+      if (args[0] == "replay") {
+        const std::map<std::string, std::string> options =
+            parseOptions(args, 1, {"--session"});
+        std::cout << agentReplayManifestForFile(requireOption(options, "--session")) << "\n";
+        return 0;
+      }
+    } catch (const std::exception& error) {
+      std::cerr << error.what() << "\n";
+      return 2;
+    }
+
     std::string method_name;
     for (std::size_t i = 1; i + 1 < args.size(); ++i) {
       if (args[i] == "--method" || args[i] == "--method-name") {
@@ -341,7 +409,7 @@ int agentCommand(const std::vector<std::string>& args) {
       std::cout << metadata << "\n";
       return 0;
     }
-    std::cerr << "Usage: ccad agent <serve|methods|quickstart|harness-context|state|tasks|evidence|approvals|run-profile|safety-policy|provider-policy|observability-config|evidence-manifest-schema|tool-guide>\n";
+    std::cerr << "Usage: ccad agent <serve|methods|quickstart|harness-context|state|tasks|evidence|approvals|session-schema|session-new|session-state|checkpoint-add|replay|run-profile|safety-policy|provider-policy|observability-config|evidence-manifest-schema|tool-guide>\n";
     return 1;
   }
 
@@ -396,6 +464,33 @@ int agentCommand(const std::vector<std::string>& args) {
       std::cout.flush();
     } else if (method == "agent.approvals") {
       std::cout << formatSuccess(id, agentApprovalsJson()) << "\n";
+      std::cout.flush();
+    } else if (method == "agent.session_schema") {
+      std::cout << formatSuccess(id, agentSessionSchemaJson()) << "\n";
+      std::cout.flush();
+    } else if (method == "agent.session_state") {
+      const std::string session_path = extractStringValue(line, "session_path");
+      if (session_path.empty()) {
+        std::cout << formatError(id, -32602, "Invalid params: session_path required") << "\n";
+      } else {
+        try {
+          std::cout << formatSuccess(id, loadAgentSessionFileJson(session_path)) << "\n";
+        } catch (const std::exception& error) {
+          std::cout << formatError(id, -32603, error.what()) << "\n";
+        }
+      }
+      std::cout.flush();
+    } else if (method == "agent.replay_manifest") {
+      const std::string session_path = extractStringValue(line, "session_path");
+      if (session_path.empty()) {
+        std::cout << formatError(id, -32602, "Invalid params: session_path required") << "\n";
+      } else {
+        try {
+          std::cout << formatSuccess(id, agentReplayManifestForFile(session_path)) << "\n";
+        } catch (const std::exception& error) {
+          std::cout << formatError(id, -32603, error.what()) << "\n";
+        }
+      }
       std::cout.flush();
     } else if (method == "agent.run_profile") {
       std::cout << formatSuccess(id, agentRunProfileJson()) << "\n";
