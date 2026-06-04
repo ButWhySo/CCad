@@ -133,6 +133,10 @@ void testAgentMethodsCommand() {
                  "agent methods command includes durable session state");
   assertContains(out.str(), "\"method\":\"agent.replay_manifest\"",
                  "agent methods command includes replay manifest");
+  assertContains(out.str(), "\"method\":\"agent.policy_schema\"",
+                 "agent methods command includes policy schema");
+  assertContains(out.str(), "\"method\":\"agent.policy_check\"",
+                 "agent methods command includes policy check");
   assertContains(out.str(), "\"method\":\"agent.observability_config\"",
                  "agent methods command includes observability config");
 }
@@ -365,6 +369,79 @@ void testAgentSessionCheckpointCommands() {
   }
 }
 
+void testAgentPolicyCommands() {
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"policy-schema"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentPolicyCommands policy-schema exited with " << result << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"schema_kind\":\"ccad_agent_policy_schema\"",
+                   "agent policy schema reports schema kind");
+    assertContains(out.str(), "\"approval_required\"", "agent policy schema has approval field");
+    assertContains(out.str(), "\"dry_run_supported\"", "agent policy schema has dry-run field");
+  }
+
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"policy-check", "--", "help", "--format", "json"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentPolicyCommands read policy exited with " << result << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"policy_kind\":\"ccad_agent_command_policy\"",
+                   "agent policy-check returns policy kind");
+    assertContains(out.str(), "\"read_only\":true", "agent policy-check identifies read command");
+    assertContains(out.str(), "\"requires_allow_read\":true",
+                   "agent policy-check requires read permission");
+    assertContains(out.str(), "\"decision\":\"allow_read\"",
+                   "agent policy-check allows read command");
+  }
+
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"policy-check", "--", "pcb", "add-via", "--file", "board.ccad.json"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentPolicyCommands write policy exited with " << result << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"read_only\":false", "agent policy-check identifies write command");
+    assertContains(out.str(), "\"mutates_project\":true",
+                   "agent policy-check marks project mutation");
+    assertContains(out.str(), "\"requires_allow_write\":true",
+                   "agent policy-check requires write permission");
+    assertContains(out.str(), "\"approval_required\":true",
+                   "agent policy-check requires approval for write command");
+    assertContains(out.str(), "\"decision\":\"approval_required\"",
+                   "agent policy-check reports approval decision");
+  }
+
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"dry-run", "--", "pcb", "add-via", "--file", "board.ccad.json"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentPolicyCommands dry-run exited with " << result << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"dry_run\":true", "agent dry-run marks dry run");
+    assertContains(out.str(), "\"would_execute\":false", "agent dry-run does not execute");
+    assertContains(out.str(), "\"decision\":\"dry_run_only\"", "agent dry-run reports dry-run decision");
+  }
+}
+
 void testAgentMetadataJsonRpc() {
   std::istringstream in(
       "{\"jsonrpc\": \"2.0\", \"method\": \"agent.harness_context\", \"id\": 6}\n"
@@ -481,6 +558,51 @@ void testAgentSessionJsonRpc() {
                  "JSON-RPC exposes replay manifest");
 }
 
+void testAgentPolicyJsonRpc() {
+  std::istringstream in(
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.policy_schema\", \"id\": 17}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.policy_check\", \"params\": {\"args\": [\"pcb\", \"add-via\", \"--file\", \"board.ccad.json\"], \"dry_run\": true}, \"id\": 18}\n");
+  std::ostringstream out;
+  auto oldCin = std::cin.rdbuf(in.rdbuf());
+  auto oldCout = std::cout.rdbuf(out.rdbuf());
+  std::vector<std::string> args = {"serve", "--allow-read"};
+  int result = ccad_cli::agentCommand(args);
+  std::cin.rdbuf(oldCin);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) {
+    std::cerr << "FAIL testAgentPolicyJsonRpc exited with " << result << "\n";
+    std::exit(1);
+  }
+  assertContains(out.str(), "\"id\": 17", "has policy schema request id");
+  assertContains(out.str(), "\"schema_kind\":\"ccad_agent_policy_schema\"",
+                 "JSON-RPC exposes policy schema");
+  assertContains(out.str(), "\"id\": 18", "has policy check request id");
+  assertContains(out.str(), "\"approval_required\":true",
+                 "JSON-RPC policy check reports approval required");
+  assertContains(out.str(), "\"dry_run\":true", "JSON-RPC policy check accepts dry_run");
+  assertContains(out.str(), "\"decision\":\"dry_run_only\"",
+                 "JSON-RPC policy check reports dry-run decision");
+}
+
+void testAgentServePermissionGatesReportApproval() {
+  std::istringstream in(
+      "{\"jsonrpc\": \"2.0\", \"method\": \"execute\", \"params\": {\"args\": [\"pcb\", \"add-via\", \"--file\", \"board.ccad.json\"]}, \"id\": 19}\n");
+  std::ostringstream out;
+  auto oldCin = std::cin.rdbuf(in.rdbuf());
+  auto oldCout = std::cout.rdbuf(out.rdbuf());
+  std::vector<std::string> args = {"serve", "--allow-read"};
+  int result = ccad_cli::agentCommand(args);
+  std::cin.rdbuf(oldCin);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) {
+    std::cerr << "FAIL testAgentServePermissionGatesReportApproval exited with " << result << "\n";
+    std::exit(1);
+  }
+  assertContains(out.str(), "\"code\": -32604", "write command without write permission is denied");
+  assertContains(out.str(), "Approval required", "write denial says approval is required");
+  assertContains(out.str(), "project_mutation", "write denial includes approval reason");
+}
+
 int main() {
   try {
     testPing();
@@ -492,9 +614,12 @@ int main() {
     testAgentMetadataCommands();
     testAgentWorkspaceParityCommands();
     testAgentSessionCheckpointCommands();
+    testAgentPolicyCommands();
     testAgentMetadataJsonRpc();
     testAgentWorkspaceParityJsonRpc();
     testAgentSessionJsonRpc();
+    testAgentPolicyJsonRpc();
+    testAgentServePermissionGatesReportApproval();
     std::cout << "PASS agent serve\n";
     return 0;
   } catch (const std::exception& e) {

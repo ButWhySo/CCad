@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 193 complete on `sprint-193-agent-session-checkpoints`.
+Progress counter: Phase 7 / 7, Sprint 194 complete on `sprint-194-agent-policy-gates`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -17,6 +17,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - CLI agent metadata: `ccad agent methods`, `ccad agent harness-context`, and `ccad agent tool-guide --method <name>` expose the headless harness contract without launching Qt.
 - CLI agent workspace state: `ccad agent state`, `ccad agent tasks`, `ccad agent evidence`, and `ccad agent approvals` expose deterministic provider-free Agent workspace state for headless tooling, with matching `agent.state`, `agent.workspace_state`, `agent.tasks`, `agent.evidence`, and `agent.approvals` JSON-RPC routes.
 - CLI agent local sessions: `ccad agent session-schema`, `ccad agent session-new`, `ccad agent session-state`, `ccad agent checkpoint-add`, and `ccad agent replay` create, inspect, checkpoint, and replay provider-free local Agent session files, with read-only `agent.session_schema`, `agent.session_state`, and `agent.replay_manifest` JSON-RPC routes.
+- CLI agent policy gates: `ccad agent policy-schema`, `ccad agent policy-check`, and `ccad agent dry-run` classify command risk, read/write permission needs, approval-required state, and dry-run decisions before execution, with matching `agent.policy_schema` and `agent.policy_check` JSON-RPC routes.
 - CLI PCB authoring: `ccad pcb list-nets`, `ccad pcb list-objects`, `ccad pcb get-object`, `ccad pcb route-status`, `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-graphic-line`, `ccad pcb add-text`, `ccad pcb add-zone`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - CLI schematic authoring can place a converted KiCad/CCad symbol snapshot through `ccad sch place-symbol`.
@@ -63,7 +64,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native GUI left toolbar Show Layers and Show Properties actions now toggle their existing panels and report `panel_toggled` through the safe UI trigger contract.
 - Native GUI has a right-side Agent dock shell that can refresh the current UI-map JSON, trigger allowlisted safe UI actions by semantic ID, run live UI-map protocol queries from method/payload inputs, and expose itself as `panel:agent` plus `tab:agent` for automation targeting.
 - Native GUI Agent dock is now a full-height right-side workspace column beside Layers / Objects, with a session header, workspace context cards, goal/task area, visible approval card with Accept/Decline controls, fixed command prompt, and visible Request Context / Trigger DRC actions.
-- Agent-harness planning now treats the current dock as the first real vertical workspace shell; headless `ccad agent` commands expose the first workspace-state parity slice and local session checkpoint files. The next backlog targets are policy gates, richer evidence cards, reasoning/tool stream polish, trace links, and BYOK/BYOT configuration.
+- Agent-harness planning now treats the current dock as the first real vertical workspace shell; headless `ccad agent` commands expose workspace-state parity, local session checkpoint files, and the first deterministic policy gate. The next backlog targets are richer evidence cards, reasoning/tool stream polish, trace links, and BYOK/BYOT configuration.
 - Native GUI Agent-panel and live-socket protocol can now perform semantic UI interactions: dry-run click targeting, safe action/tab clicks, Agent-control focus and text entry, Escape cancellation, PCB canvas-object selection, selection inspection, bounded UI epoch waits, map-driven PCB board-point click/drag gestures, and high-level PCB workflows through the real Qt viewport event path.
 - Native GUI left toolbar display controls now perform real view-state actions for grid visibility, polar cursor coordinates, inch units, full-window crosshair, ratsnest guides, net highlighting, and high-contrast display mode. Agent safe triggers return `display_state_toggled`, and UI-map action nodes expose checked state.
 - Native GUI selection inspector cleans up stale editor rows immediately during rapid multi-selection changes, so net highlight and display-mode workflows do not stack old pad or track editors in the properties panel.
