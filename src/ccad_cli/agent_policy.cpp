@@ -152,6 +152,10 @@ AgentCommandPolicy classifyAgentCommandPolicy(const std::vector<std::string>& ar
       markFileMutation(policy, "agent_session_write");
       return policy;
     }
+    if (sub == "kicad-evidence-run") {
+      markFileMutation(policy, "external_process_file_write");
+      return policy;
+    }
     markRead(policy);
     return policy;
   }
@@ -176,7 +180,8 @@ std::string agentPolicySchemaJson() {
          "\"decisions\":[\"allow_read\",\"approval_required\",\"dry_run_only\","
          "\"invalid_params\"],"
          "\"approval_reasons\":[\"project_mutation\",\"file_write\","
-         "\"agent_session_write\",\"unknown_command\",\"missing_command_args\"],"
+         "\"agent_session_write\",\"external_process_file_write\","
+         "\"unknown_command\",\"missing_command_args\"],"
          "\"guardrail_reference\":\"tool_boundary_policy_check\"}";
 }
 

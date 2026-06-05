@@ -60,6 +60,7 @@ add_executable(ccad
   src/ccad_cli/project_commands.cpp
   src/ccad_cli/sch_commands.cpp
   src/ccad_cli/agent_commands.cpp
+  src/ccad_cli/agent_kicad_evidence.cpp
   src/ccad_cli/agent_observability_config.cpp
   src/ccad_cli/agent_policy.cpp
   src/ccad_cli/agent_provider_config.cpp
@@ -164,6 +165,7 @@ add_executable(ccad_agent_serve_tests
   src/ccad_cli/project_commands.cpp
   src/ccad_cli/sch_commands.cpp
   src/ccad_cli/agent_commands.cpp
+  src/ccad_cli/agent_kicad_evidence.cpp
   src/ccad_cli/agent_observability_config.cpp
   src/ccad_cli/agent_policy.cpp
   src/ccad_cli/agent_provider_config.cpp

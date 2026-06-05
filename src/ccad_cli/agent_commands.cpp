@@ -1,6 +1,7 @@
 #include "agent_commands.hpp"
 
 #include "agent_observability_config.hpp"
+#include "agent_kicad_evidence.hpp"
 #include "agent_policy.hpp"
 #include "agent_provider_config.hpp"
 #include "agent_session.hpp"
@@ -159,6 +160,14 @@ std::string agentProtocolCatalogJson() {
                            false, false),
       agentMethodEntryJson("agent.trace_export_dry_run", "agent", "Trace Export Dry Run", true,
                            false, false),
+      agentMethodEntryJson("agent.kicad_evidence_schema", "agent", "KiCad Evidence Schema", true,
+                           false, false),
+      agentMethodEntryJson("agent.kicad_evidence_plan", "agent", "KiCad Evidence Plan", true,
+                           false, false),
+      agentMethodEntryJson("agent.kicad_evidence_dry_run", "agent", "KiCad Evidence Dry Run", true,
+                           false, false),
+      agentMethodEntryJson("agent.kicad_evidence_run", "agent", "KiCad Evidence Run", false,
+                           false, false),
       agentMethodEntryJson("agent.evidence_manifest_schema", "agent", "Evidence Manifest Schema",
                            true, false, false),
       agentMethodEntryJson("agent.tool_guide", "agent", "Tool Guide", true, false, false),
@@ -184,7 +193,8 @@ std::string agentQuickstartJson() {
          "\"agent.replay_manifest\",\"agent.provider_config_schema\","
          "\"agent.provider_config_template\",\"agent.provider_status\","
          "\"agent.trace_export_schema\",\"agent.trace_export_dry_run\",\"agent.tasks\","
-         "\"agent.evidence\",\"agent.approvals\",\"agent.harness_context\","
+         "\"agent.kicad_evidence_schema\",\"agent.kicad_evidence_plan\","
+         "\"agent.kicad_evidence_dry_run\",\"agent.evidence\",\"agent.approvals\",\"agent.harness_context\","
          "\"agent.tool_guide\",\"tools/list\"],"
          "\"screenshot_rule\":\"GUI screenshots must use the project visual-validation harness with beep and current settle waits\","
          "\"unsafe_rule\":\"Write commands require explicit --allow-write in agent serve and direct human approval when policy requires it\"}";
@@ -200,8 +210,10 @@ std::string agentHarnessContextJson() {
          "\"agent.policy_schema\",\"agent.policy_check\",\"agent.session_state\","
          "\"agent.replay_manifest\",\"agent.provider_config_schema\","
          "\"agent.provider_config_template\",\"agent.provider_status\","
-         "\"agent.trace_export_schema\",\"agent.trace_export_dry_run\",\"agent.tasks\","
-         "\"agent.evidence\",\"agent.approvals\",\"agent.tool_guide\",\"ccad_execute\","
+         "\"agent.trace_export_schema\",\"agent.trace_export_dry_run\","
+         "\"agent.kicad_evidence_schema\",\"agent.kicad_evidence_plan\","
+         "\"agent.kicad_evidence_dry_run\",\"agent.tasks\",\"agent.evidence\","
+         "\"agent.approvals\",\"agent.tool_guide\",\"ccad_execute\","
          "\"mcp_stdio\"],"
          "\"visual_validation_policy\":{\"single_preview_wait_seconds\":7,"
          "\"multi_action_initial_wait_seconds\":5,\"multi_action_step_wait_ms\":800,"
@@ -323,6 +335,10 @@ std::string preferredSurfaceForMethod(const std::string& method) {
       method == "agent.trace_export_dry_run") {
     return "headless_cli_observability_config";
   }
+  if (method == "agent.kicad_evidence_schema" || method == "agent.kicad_evidence_plan" ||
+      method == "agent.kicad_evidence_dry_run" || method == "agent.kicad_evidence_run") {
+    return "headless_cli_kicad_evidence";
+  }
   if (method.rfind("agent.", 0) == 0) {
     return "read_only_protocol_metadata";
   }
@@ -350,6 +366,10 @@ std::string agentToolGuideJson(const std::string& method) {
                      method == "agent.trace_export_template" ||
                      method == "agent.trace_redaction_policy" ||
                      method == "agent.trace_export_dry_run" ||
+                     method == "agent.kicad_evidence_schema" ||
+                     method == "agent.kicad_evidence_plan" ||
+                     method == "agent.kicad_evidence_dry_run" ||
+                     method == "agent.kicad_evidence_run" ||
                      method == "agent.evidence_manifest_schema" || method == "agent.tool_guide" ||
                      method == "ccad_execute";
   std::ostringstream out;
@@ -410,6 +430,9 @@ std::string agentMetadataJson(const std::string& command, const std::string& met
   if (command == "trace-export-dry-run" || command == "trace_export_dry_run") {
     return agentTraceExportDryRunJson();
   }
+  if (command == "kicad-evidence-schema" || command == "kicad_evidence_schema") {
+    return agentKiCadEvidenceSchemaJson();
+  }
   if (command == "evidence-manifest-schema" || command == "evidence_manifest_schema") {
     return agentEvidenceManifestSchemaJson();
   }
@@ -417,11 +440,40 @@ std::string agentMetadataJson(const std::string& command, const std::string& met
   return "";
 }
 
+std::map<std::string, std::string> extractKiCadEvidenceOptions(const std::string& line) {
+  std::map<std::string, std::string> options;
+  const auto addString = [&options, &line](const std::string& key) {
+    const std::string value = extractStringValue(line, key);
+    if (!value.empty()) options.emplace(key, value);
+  };
+  const auto addBool = [&options, &line](const std::string& key) {
+    if (extractRawValue(line, key) == "true") options.emplace(key, "true");
+  };
+  addString("kind");
+  addString("input_path");
+  addString("output_path");
+  addString("format");
+  addString("units");
+  addString("severity");
+  addString("layers");
+  addString("common_layers");
+  addString("side");
+  addString("kicad_cli");
+  addBool("exit_code_violations");
+  addBool("schematic_parity");
+  addBool("refill_zones");
+  addBool("save_board");
+  addBool("generate_map");
+  addBool("generate_report");
+  addBool("execute");
+  return options;
+}
+
 }  // namespace
 
 int agentCommand(const std::vector<std::string>& args) {
   if (args.empty()) {
-    std::cerr << "Usage: ccad agent <serve|methods|quickstart|harness-context|state|tasks|evidence|approvals|session-schema|session-new|session-state|checkpoint-add|replay|policy-schema|policy-check|dry-run|run-profile|safety-policy|provider-policy|provider-config-schema|provider-config-template|provider-status|observability-config|trace-export-schema|trace-export-template|trace-redaction-policy|trace-export-dry-run|evidence-manifest-schema|tool-guide>\n";
+    std::cerr << "Usage: ccad agent <serve|methods|quickstart|harness-context|state|tasks|evidence|approvals|session-schema|session-new|session-state|checkpoint-add|replay|policy-schema|policy-check|dry-run|run-profile|safety-policy|provider-policy|provider-config-schema|provider-config-template|provider-status|observability-config|trace-export-schema|trace-export-template|trace-redaction-policy|trace-export-dry-run|kicad-evidence-schema|kicad-evidence-plan|kicad-evidence-dry-run|kicad-evidence-run|evidence-manifest-schema|tool-guide>\n";
     return 1;
   }
 
@@ -471,6 +523,18 @@ int agentCommand(const std::vector<std::string>& args) {
         std::cout << agentCommandPolicyJson(command_args, args[0] == "dry-run") << "\n";
         return 0;
       }
+      if (args[0] == "kicad-evidence-plan") {
+        std::cout << agentKiCadEvidencePlanJson(args, 1) << "\n";
+        return 0;
+      }
+      if (args[0] == "kicad-evidence-dry-run") {
+        std::cout << agentKiCadEvidenceDryRunJson(args, 1) << "\n";
+        return 0;
+      }
+      if (args[0] == "kicad-evidence-run") {
+        std::cout << agentKiCadEvidenceRunJson(args, 1) << "\n";
+        return 0;
+      }
     } catch (const std::exception& error) {
       std::cerr << error.what() << "\n";
       return 2;
@@ -487,7 +551,7 @@ int agentCommand(const std::vector<std::string>& args) {
       std::cout << metadata << "\n";
       return 0;
     }
-    std::cerr << "Usage: ccad agent <serve|methods|quickstart|harness-context|state|tasks|evidence|approvals|session-schema|session-new|session-state|checkpoint-add|replay|policy-schema|policy-check|dry-run|run-profile|safety-policy|provider-policy|provider-config-schema|provider-config-template|provider-status|observability-config|trace-export-schema|trace-export-template|trace-redaction-policy|trace-export-dry-run|evidence-manifest-schema|tool-guide>\n";
+    std::cerr << "Usage: ccad agent <serve|methods|quickstart|harness-context|state|tasks|evidence|approvals|session-schema|session-new|session-state|checkpoint-add|replay|policy-schema|policy-check|dry-run|run-profile|safety-policy|provider-policy|provider-config-schema|provider-config-template|provider-status|observability-config|trace-export-schema|trace-export-template|trace-redaction-policy|trace-export-dry-run|kicad-evidence-schema|kicad-evidence-plan|kicad-evidence-dry-run|kicad-evidence-run|evidence-manifest-schema|tool-guide>\n";
     return 1;
   }
 
@@ -610,6 +674,40 @@ int agentCommand(const std::vector<std::string>& args) {
       std::cout.flush();
     } else if (method == "agent.trace_export_dry_run") {
       std::cout << formatSuccess(id, agentTraceExportDryRunJson()) << "\n";
+      std::cout.flush();
+    } else if (method == "agent.kicad_evidence_schema") {
+      std::cout << formatSuccess(id, agentKiCadEvidenceSchemaJson()) << "\n";
+      std::cout.flush();
+    } else if (method == "agent.kicad_evidence_plan") {
+      try {
+        std::cout << formatSuccess(id, agentKiCadEvidencePlanJson(extractKiCadEvidenceOptions(line)))
+                  << "\n";
+      } catch (const std::exception& error) {
+        std::cout << formatError(id, -32602, error.what()) << "\n";
+      }
+      std::cout.flush();
+    } else if (method == "agent.kicad_evidence_dry_run") {
+      try {
+        std::cout << formatSuccess(id,
+                                   agentKiCadEvidenceDryRunJson(extractKiCadEvidenceOptions(line)))
+                  << "\n";
+      } catch (const std::exception& error) {
+        std::cout << formatError(id, -32602, error.what()) << "\n";
+      }
+      std::cout.flush();
+    } else if (method == "agent.kicad_evidence_run") {
+      try {
+        const std::map<std::string, std::string> options = extractKiCadEvidenceOptions(line);
+        if (optionOrEmpty(options, "execute") == "true" && !allow_write) {
+          const AgentCommandPolicy policy =
+              classifyAgentCommandPolicy({"agent", "kicad-evidence-run"}, false);
+          std::cout << formatError(id, -32604, agentPolicyApprovalMessage(policy)) << "\n";
+        } else {
+          std::cout << formatSuccess(id, agentKiCadEvidenceRunJson(options)) << "\n";
+        }
+      } catch (const std::exception& error) {
+        std::cout << formatError(id, -32602, error.what()) << "\n";
+      }
       std::cout.flush();
     } else if (method == "agent.evidence_manifest_schema") {
       std::cout << formatSuccess(id, agentEvidenceManifestSchemaJson()) << "\n";

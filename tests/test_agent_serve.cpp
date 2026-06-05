@@ -153,6 +153,14 @@ void testAgentMethodsCommand() {
                  "agent methods command includes trace redaction policy");
   assertContains(out.str(), "\"method\":\"agent.trace_export_dry_run\"",
                  "agent methods command includes trace export dry run");
+  assertContains(out.str(), "\"method\":\"agent.kicad_evidence_schema\"",
+                 "agent methods command includes KiCad evidence schema");
+  assertContains(out.str(), "\"method\":\"agent.kicad_evidence_plan\"",
+                 "agent methods command includes KiCad evidence plan");
+  assertContains(out.str(), "\"method\":\"agent.kicad_evidence_dry_run\"",
+                 "agent methods command includes KiCad evidence dry run");
+  assertContains(out.str(), "\"method\":\"agent.kicad_evidence_run\"",
+                 "agent methods command includes guarded KiCad evidence run");
   assertContains(out.str(), "\"method\":\"agent.evidence_manifest_schema\"",
                  "agent methods command includes evidence manifest schema");
 }
@@ -364,6 +372,141 @@ void testAgentObservabilityConfigCommands() {
                    "trace export dry run applies redaction");
     assertContains(out.str(), "\"headers_value\":\"redacted\"",
                    "trace export dry run redacts header values");
+  }
+}
+
+void testAgentKiCadEvidenceCommands() {
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"kicad-evidence-schema"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentKiCadEvidenceCommands schema exited with " << result
+                << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"schema_kind\":\"ccad_agent_kicad_evidence_schema\"",
+                   "KiCad evidence schema reports schema kind");
+    assertContains(out.str(), "\"tool\":\"kicad-cli\"",
+                   "KiCad evidence schema identifies the external tool");
+    assertContains(out.str(), "\"pcb-drc\"", "KiCad evidence schema includes PCB DRC");
+    assertContains(out.str(), "\"sch-erc\"", "KiCad evidence schema includes schematic ERC");
+    assertContains(out.str(), "\"pcb-export-gerbers\"",
+                   "KiCad evidence schema includes Gerber export");
+    assertContains(out.str(), "\"pcb-export-drill\"",
+                   "KiCad evidence schema includes drill export");
+    assertContains(out.str(), "\"pcb-export-pos\"",
+                   "KiCad evidence schema includes placement export");
+    assertContains(out.str(), "\"pcb-export-ipc2581\"",
+                   "KiCad evidence schema includes IPC-2581 export");
+    assertContains(out.str(), "\"pcb-export-odb\"",
+                   "KiCad evidence schema includes ODB++ export");
+  }
+
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"kicad-evidence-plan",
+                                     "--kind",
+                                     "pcb-drc",
+                                     "--input",
+                                     "board.kicad_pcb",
+                                     "--output",
+                                     "artifacts/kicad/drc.json",
+                                     "--format",
+                                     "json",
+                                     "--units",
+                                     "mm",
+                                     "--severity",
+                                     "all",
+                                     "--exit-code-violations"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentKiCadEvidenceCommands plan exited with " << result
+                << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"plan_kind\":\"ccad_agent_kicad_evidence_plan\"",
+                   "KiCad evidence plan reports plan kind");
+    assertContains(out.str(), "\"command_kind\":\"pcb-drc\"",
+                   "KiCad evidence plan carries the requested kind");
+    assertContains(out.str(), "\"command\":[\"kicad-cli\",\"pcb\",\"drc\"",
+                   "KiCad evidence plan builds a structured command array");
+    assertContains(out.str(), "\"--format\",\"json\"",
+                   "KiCad evidence plan includes KiCad report format");
+    assertContains(out.str(), "\"--units\",\"mm\"",
+                   "KiCad evidence plan includes KiCad units");
+    assertContains(out.str(), "\"--severity-all\"",
+                   "KiCad evidence plan maps severity all to KiCad flag");
+    assertContains(out.str(), "\"--exit-code-violations\"",
+                   "KiCad evidence plan includes violation exit-code flag");
+    assertContains(out.str(), "\"artifact_path\":\"artifacts/kicad/drc.json\"",
+                   "KiCad evidence plan records output artifact path");
+  }
+
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"kicad-evidence-dry-run",
+                                     "--kind",
+                                     "pcb-export-gerbers",
+                                     "--input",
+                                     "board.kicad_pcb",
+                                     "--output",
+                                     "artifacts/fab/gerbers",
+                                     "--layers",
+                                     "F.Cu,B.Cu",
+                                     "--kicad-cli",
+                                     "Z:/missing/kicad-cli.exe"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentKiCadEvidenceCommands dry-run exited with " << result
+                << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"dry_run_kind\":\"ccad_agent_kicad_evidence_dry_run\"",
+                   "KiCad evidence dry run reports dry-run kind");
+    assertContains(out.str(), "\"would_execute\":false",
+                   "KiCad evidence dry run does not execute");
+    assertContains(out.str(), "\"executable_configured\":true",
+                   "KiCad evidence dry run sees explicit executable path");
+    assertContains(out.str(), "\"executable_found\":false",
+                   "KiCad evidence dry run reports missing executable");
+    assertContains(out.str(), "\"network_access\":false",
+                   "KiCad evidence dry run declares no network access");
+    assertContains(out.str(), "\"project_file_secret_storage\":false",
+                   "KiCad evidence dry run keeps secrets out of project files");
+  }
+
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"kicad-evidence-run",
+                                     "--kind",
+                                     "sch-erc",
+                                     "--input",
+                                     "root.kicad_sch",
+                                     "--output",
+                                     "artifacts/kicad/erc.json",
+                                     "--format",
+                                     "json"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentKiCadEvidenceCommands run guard exited with " << result
+                << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"run_kind\":\"ccad_agent_kicad_evidence_run\"",
+                   "KiCad evidence run reports run kind");
+    assertContains(out.str(), "\"executed\":false",
+                   "KiCad evidence run refuses execution without explicit flag");
+    assertContains(out.str(), "\"reason\":\"execute_flag_required\"",
+                   "KiCad evidence run explains missing execute flag");
   }
 }
 
@@ -649,6 +792,37 @@ void testAgentPolicyCommands() {
     assertContains(out.str(), "\"would_execute\":false", "agent dry-run does not execute");
     assertContains(out.str(), "\"decision\":\"dry_run_only\"", "agent dry-run reports dry-run decision");
   }
+
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"policy-check",
+                                     "--",
+                                     "agent",
+                                     "kicad-evidence-run",
+                                     "--kind",
+                                     "pcb-drc",
+                                     "--input",
+                                     "board.kicad_pcb",
+                                     "--output",
+                                     "artifacts/kicad/drc.json",
+                                     "--execute"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentPolicyCommands KiCad evidence policy exited with " << result
+                << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"mutates_files\":true",
+                   "agent policy-check marks KiCad evidence run as file-writing");
+    assertContains(out.str(), "\"approval_required\":true",
+                   "agent policy-check requires approval for KiCad evidence run");
+    assertContains(out.str(), "\"approval_reason\":\"external_process_file_write\"",
+                   "agent policy-check reports external process write reason");
+    assertContains(out.str(), "\"decision\":\"approval_required\"",
+                   "agent policy-check blocks KiCad evidence run until approval");
+  }
 }
 
 void testAgentMetadataJsonRpc() {
@@ -863,6 +1037,47 @@ void testAgentObservabilityConfigJsonRpc() {
                  "JSON-RPC tool guide points trace config to the headless observability surface");
 }
 
+void testAgentKiCadEvidenceJsonRpc() {
+  std::istringstream in(
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.kicad_evidence_schema\", \"id\": 29}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.kicad_evidence_plan\", \"params\": {\"kind\": \"pcb-drc\", \"input_path\": \"board.kicad_pcb\", \"output_path\": \"artifacts/kicad/drc.json\", \"format\": \"json\", \"units\": \"mm\", \"severity\": \"all\", \"exit_code_violations\": true}, \"id\": 30}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.kicad_evidence_dry_run\", \"params\": {\"kind\": \"pcb-export-drill\", \"input_path\": \"board.kicad_pcb\", \"output_path\": \"artifacts/fab/drill\", \"format\": \"excellon\"}, \"id\": 31}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.tool_guide\", \"params\": {\"method_name\": \"agent.kicad_evidence_plan\"}, \"id\": 32}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.kicad_evidence_run\", \"params\": {\"kind\": \"pcb-drc\", \"input_path\": \"board.kicad_pcb\", \"output_path\": \"artifacts/kicad/drc.json\", \"execute\": true}, \"id\": 33}\n");
+  std::ostringstream out;
+  auto oldCin = std::cin.rdbuf(in.rdbuf());
+  auto oldCout = std::cout.rdbuf(out.rdbuf());
+  std::vector<std::string> args = {"serve", "--allow-read"};
+  int result = ccad_cli::agentCommand(args);
+  std::cin.rdbuf(oldCin);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) {
+    std::cerr << "FAIL testAgentKiCadEvidenceJsonRpc exited with " << result << "\n";
+    std::exit(1);
+  }
+  assertContains(out.str(), "\"id\": 29", "has KiCad evidence schema request id");
+  assertContains(out.str(), "\"schema_kind\":\"ccad_agent_kicad_evidence_schema\"",
+                 "JSON-RPC exposes KiCad evidence schema");
+  assertContains(out.str(), "\"id\": 30", "has KiCad evidence plan request id");
+  assertContains(out.str(), "\"plan_kind\":\"ccad_agent_kicad_evidence_plan\"",
+                 "JSON-RPC exposes KiCad evidence plan");
+  assertContains(out.str(), "\"--severity-all\"",
+                 "JSON-RPC KiCad evidence plan maps severity flag");
+  assertContains(out.str(), "\"id\": 31", "has KiCad evidence dry-run request id");
+  assertContains(out.str(), "\"dry_run_kind\":\"ccad_agent_kicad_evidence_dry_run\"",
+                 "JSON-RPC exposes KiCad evidence dry run");
+  assertContains(out.str(), "\"id\": 32", "has KiCad evidence tool-guide request id");
+  assertContains(out.str(), "\"method\":\"agent.kicad_evidence_plan\"",
+                 "JSON-RPC tool guide finds KiCad evidence plan");
+  assertContains(out.str(), "\"preferred_surface\":\"headless_cli_kicad_evidence\"",
+                 "JSON-RPC tool guide points KiCad evidence to the headless surface");
+  assertContains(out.str(), "\"id\": 33", "has guarded KiCad evidence run request id");
+  assertContains(out.str(), "\"code\": -32604",
+                 "read-only JSON-RPC denies executing KiCad evidence run");
+  assertContains(out.str(), "external_process_file_write",
+                 "KiCad evidence run denial includes external process write reason");
+}
+
 void testAgentServePermissionGatesReportApproval() {
   std::istringstream in(
       "{\"jsonrpc\": \"2.0\", \"method\": \"execute\", \"params\": {\"args\": [\"pcb\", \"add-via\", \"--file\", \"board.ccad.json\"]}, \"id\": 19}\n");
@@ -893,6 +1108,7 @@ int main() {
     testAgentMetadataCommands();
     testAgentProviderConfigCommands();
     testAgentObservabilityConfigCommands();
+    testAgentKiCadEvidenceCommands();
     testAgentWorkspaceParityCommands();
     testAgentSessionCheckpointCommands();
     testAgentPolicyCommands();
@@ -902,6 +1118,7 @@ int main() {
     testAgentPolicyJsonRpc();
     testAgentProviderConfigJsonRpc();
     testAgentObservabilityConfigJsonRpc();
+    testAgentKiCadEvidenceJsonRpc();
     testAgentServePermissionGatesReportApproval();
     std::cout << "PASS agent serve\n";
     return 0;

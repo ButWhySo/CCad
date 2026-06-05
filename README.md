@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 199 complete on `sprint-199-agent-panel-ui-polish`.
+Progress counter: Phase 7 / 7, Sprint 200 complete on `sprint-200-kicad-cli-evidence`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -20,6 +20,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - CLI agent policy gates: `ccad agent policy-schema`, `ccad agent policy-check`, and `ccad agent dry-run` classify command risk, read/write permission needs, approval-required state, and dry-run decisions before execution, with matching `agent.policy_schema` and `agent.policy_check` JSON-RPC routes.
 - CLI agent provider configuration: `ccad agent provider-config-schema`, `ccad agent provider-config-template`, and `ccad agent provider-status` expose BYOK/BYOT env-var metadata, no-secret templates, and presence-only readiness checks, with matching `agent.provider_config_schema`, `agent.provider_config_template`, and `agent.provider_status` JSON-RPC routes.
 - CLI agent observability configuration: `ccad agent trace-export-schema`, `ccad agent trace-export-template`, `ccad agent trace-redaction-policy`, and `ccad agent trace-export-dry-run` expose disabled-by-default OpenTelemetry/Langfuse trace-export metadata, redaction policy, and no-network dry-run status, with matching `agent.trace_export_schema`, `agent.trace_export_template`, `agent.trace_redaction_policy`, and `agent.trace_export_dry_run` JSON-RPC routes.
+- CLI agent KiCad evidence integration: `ccad agent kicad-evidence-schema`, `ccad agent kicad-evidence-plan`, `ccad agent kicad-evidence-dry-run`, and guarded `ccad agent kicad-evidence-run --execute` expose structured `kicad-cli` DRC/ERC/export command plans, readiness checks, artifact manifests, JSON-RPC routes, tool-guide discovery, and policy-gated execution for local KiCad evidence.
 - CLI PCB authoring: `ccad pcb list-nets`, `ccad pcb list-objects`, `ccad pcb get-object`, `ccad pcb route-status`, `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-graphic-line`, `ccad pcb add-text`, `ccad pcb add-zone`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - CLI schematic authoring can place a converted KiCad/CCad symbol snapshot through `ccad sch place-symbol`.
@@ -416,6 +417,28 @@ When to run:
 - After adding pads, vias, or tracks.
 - Before opening the GUI for review.
 - Before treating a generated board as a valid intermediate artifact.
+
+Plan KiCad CLI evidence for an external KiCad project:
+
+```cmd
+cmd /c "build-qt\ccad.exe agent kicad-evidence-schema"
+cmd /c "build-qt\ccad.exe agent kicad-evidence-plan --kind pcb-drc --input board.kicad_pcb --output artifacts\kicad\drc.json --format json --units mm --severity all --exit-code-violations"
+cmd /c "build-qt\ccad.exe agent kicad-evidence-dry-run --kind pcb-export-gerbers --input board.kicad_pcb --output artifacts\fab\gerbers --layers F.Cu,B.Cu"
+cmd /c "build-qt\ccad.exe agent kicad-evidence-run --kind sch-erc --input root.kicad_sch --output artifacts\kicad\erc.json --format json"
+```
+
+What it does:
+
+- Reports the supported `kicad-cli` evidence kinds for DRC, ERC, Gerbers, drill, position, IPC-2581, and ODB++ export.
+- Emits structured command arrays and artifact manifests instead of asking agents to build shell strings.
+- Checks whether the KiCad executable and input file are ready without running KiCad.
+- Refuses to execute until `kicad-evidence-run` receives `--execute`; read-only JSON-RPC `agent serve` also rejects `execute:true` with approval reason `external_process_file_write`.
+
+When to run:
+
+- When an agent needs KiCad DRC/ERC/export evidence for a referenced KiCad design.
+- Before creating fabrication artifacts from KiCad input.
+- When CI or an external runner needs deterministic KiCad command planning without launching the CCad GUI.
 
 Import a KiCad footprint:
 
