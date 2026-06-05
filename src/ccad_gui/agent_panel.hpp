@@ -18,6 +18,16 @@ class AgentPanel final : public QWidget {
   using SafeActionTrigger = std::function<QString(const QString&)>;
   using LiveQueryProvider = std::function<QString(const QString&, const QString&)>;
 
+  struct AgentSessionMetadata {
+    QString session_id;
+    QString thread_id;
+    QString title;
+    QString project_path;
+    QString latest_checkpoint_id;
+    int checkpoint_count = 0;
+    bool replayable = false;
+  };
+
   explicit AgentPanel(QWidget* parent = nullptr);
 
   void setUiMapProvider(UiMapProvider provider);
@@ -34,6 +44,7 @@ class AgentPanel final : public QWidget {
   void setLiveQuery(const QString& method, const QString& payload);
   void setGoalText(const QString& goal);
   void setCommandText(const QString& command);
+  void setSessionFilePath(const QString& path);
 
   void refreshUiMap();
   void triggerSafeAction();
@@ -48,6 +59,8 @@ class AgentPanel final : public QWidget {
   void setApprovalRequestText(const QString& request);
   void requestApproval();
   void submitCommand();
+  void bindSessionFile(const QString& path);
+  void checkpointSession();
   void approveNextApproval();
   void declineNextApproval();
   void cancelApproval();
@@ -66,6 +79,8 @@ class AgentPanel final : public QWidget {
   QString commandText() const;
   QString taskStateText() const;
   QString evidenceText() const;
+  QString sessionPathText() const;
+  QString sessionStatusText() const;
   QString approvalRequestText() const;
   QString approvalStatusText() const;
   int pendingApprovalCount() const;
@@ -114,6 +129,8 @@ class AgentPanel final : public QWidget {
   void pauseRun();
   void resumeRun();
   void stopRun();
+  void applySessionMetadata(const AgentSessionMetadata& metadata, const QString& path);
+  void resetSessionBinding(const QString& status);
 
   QLabel* session_title_label_ = nullptr;
   QLabel* model_chip_label_ = nullptr;
@@ -122,6 +139,7 @@ class AgentPanel final : public QWidget {
   QLabel* trace_chip_label_ = nullptr;
   QLabel* session_chip_label_ = nullptr;
   QLabel* run_state_chip_label_ = nullptr;
+  QLabel* session_status_label_ = nullptr;
   QLabel* project_label_ = nullptr;
   QLabel* epoch_label_ = nullptr;
   QLabel* status_label_ = nullptr;
@@ -134,6 +152,7 @@ class AgentPanel final : public QWidget {
   QVBoxLayout* evidence_cards_layout_ = nullptr;
   QLabel* approval_status_label_ = nullptr;
   QLineEdit* action_id_input_ = nullptr;
+  QLineEdit* session_path_input_ = nullptr;
   QLineEdit* live_method_input_ = nullptr;
   QLineEdit* live_payload_input_ = nullptr;
   QLineEdit* goal_input_ = nullptr;
@@ -146,6 +165,13 @@ class AgentPanel final : public QWidget {
   QString staged_goal_;
   QString staged_command_;
   QString run_state_ = "idle";
+  QString session_file_path_;
+  QString durable_session_id_;
+  QString durable_thread_id_;
+  QString latest_checkpoint_id_;
+  bool durable_session_bound_ = false;
+  bool session_replayable_ = false;
+  int session_checkpoint_count_ = 0;
   QVector<ActivityEvent> activity_events_;
   QVector<EvidenceCard> evidence_cards_;
   int activity_sequence_ = 0;

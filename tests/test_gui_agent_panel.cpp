@@ -5,6 +5,9 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QTemporaryDir>
+#include <QFile>
+#include <QTextStream>
 #include <QWidget>
 #include <QString>
 
@@ -109,6 +112,18 @@ int main(int argc, char** argv) {
           "agent panel exposes the session chip");
   require(panel.findChild<QWidget*>("panel:agent_trace_strip") != nullptr,
           "agent panel exposes a trace/session strip");
+  require(panel.findChild<QWidget*>("panel:agent_session_binding") != nullptr,
+          "agent panel exposes a durable session binding strip");
+  require(panel.findChild<QLineEdit*>("control:agent_session_path") != nullptr,
+          "agent panel exposes a local session path input");
+  require(panel.findChild<QPushButton*>("action:agent_load_session") != nullptr,
+          "agent panel exposes a local session load action");
+  require(panel.findChild<QPushButton*>("action:agent_checkpoint_session") != nullptr,
+          "agent panel exposes a local checkpoint action");
+  require(panel.findChild<QLabel*>("label:agent_session_status") != nullptr,
+          "agent panel exposes durable session status");
+  require(contains(panel.workspaceStateJson(), "\"durable_session_bound\":false"),
+          "agent panel starts without a bound durable session");
   require(panel.findChild<QWidget*>("panel:agent_run_controls") != nullptr,
           "agent panel exposes a local run-control strip");
   require(panel.findChild<QWidget*>("panel:agent_status_rail") != nullptr,
@@ -146,6 +161,66 @@ int main(int argc, char** argv) {
   panel.findChild<QPushButton*>("action:agent_stop_run")->click();
   require(contains(panel.workspaceStateJson(), "\"run_state\":\"stopped\""),
           "agent panel stop action updates local run state");
+
+  QTemporaryDir session_dir;
+  require(session_dir.isValid(), "agent panel test creates a temporary session directory");
+  const QString session_path = session_dir.path() + "/demo.ccad-agent-session.json";
+  QFile session_file(session_path);
+  require(session_file.open(QIODevice::WriteOnly | QIODevice::Text),
+          "agent panel test writes a local session file");
+  QTextStream session_out(&session_file);
+  session_out << "{\"schema_version\":1,"
+              << "\"session_kind\":\"ccad_agent_session\","
+              << "\"session_id\":\"gui-run-001\","
+              << "\"thread_id\":\"gui-thread-001\","
+              << "\"title\":\"GUI durable session\","
+              << "\"project_path\":\"bridge-demo.ccad.json\","
+              << "\"created_at\":\"2026-06-05T00:00:00Z\","
+              << "\"updated_at\":\"2026-06-05T00:01:00Z\","
+              << "\"durability\":\"local_json_checkpoint_file\","
+              << "\"resource_uri\":\"ccad-agent-session:gui-run-001\","
+              << "\"checkpoint_count\":1,"
+              << "\"checkpoints\":[{\"checkpoint_id\":\"cp-001\","
+              << "\"sequence\":1,\"kind\":\"visual\","
+              << "\"summary\":\"initial screenshot\","
+              << "\"artifact_path\":\"artifacts/screenshots/session.png\","
+              << "\"created_at\":\"2026-06-05T00:01:00Z\","
+              << "\"resource_uri\":\"ccad-agent-checkpoint:gui-run-001/cp-001\"}]}";
+  session_file.close();
+
+  panel.setSessionFilePath(session_path);
+  panel.bindSessionFile(session_path);
+  QString session_state = panel.workspaceStateJson();
+  require(contains(session_state, "\"durable_session_bound\":true"),
+          "agent panel marks a loaded local session as bound");
+  require(contains(session_state, "\"session_file_path\":"),
+          "agent panel serializes the local session path");
+  require(contains(session_state, "\"durable_session_id\":\"gui-run-001\""),
+          "agent panel serializes the durable session id");
+  require(contains(session_state, "\"thread_id\":\"gui-thread-001\""),
+          "agent panel serializes the durable thread id");
+  require(contains(session_state, "\"checkpoint_count\":1"),
+          "agent panel serializes existing checkpoint count");
+  require(contains(session_state, "\"latest_checkpoint_id\":\"cp-001\""),
+          "agent panel serializes the latest checkpoint id");
+  require(contains(session_state, "\"replayable\":true"),
+          "agent panel marks a session with checkpoints as replayable");
+  require(contains(panel.sessionStatusText(), "gui-run-001"),
+          "agent panel displays bound session status");
+
+  panel.checkpointSession();
+  session_state = panel.workspaceStateJson();
+  require(contains(session_state, "\"checkpoint_count\":2"),
+          "agent panel increments checkpoint count after local checkpoint");
+  require(contains(session_state, "\"latest_checkpoint_id\":\"gui-checkpoint-2\""),
+          "agent panel reports the new GUI checkpoint id");
+  QFile updated_session(session_path);
+  require(updated_session.open(QIODevice::ReadOnly | QIODevice::Text),
+          "agent panel test reads updated local session file");
+  const QString updated_json = QString::fromUtf8(updated_session.readAll());
+  require(contains(updated_json, "\"checkpoint_id\":\"gui-checkpoint-2\""),
+          "agent panel writes metadata-only checkpoint to the local session file");
+
   require(panel.findChild<QPushButton*>("action:agent_header_request_context") != nullptr,
           "agent panel exposes a functional header context action");
   require(panel.findChild<QPushButton*>("action:agent_header_trigger_drc") != nullptr,

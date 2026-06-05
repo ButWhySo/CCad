@@ -2,16 +2,21 @@
 
 #include <QHBoxLayout>
 #include <QDateTime>
+#include <QFile>
+#include <QFileDialog>
+#include <QFileInfo>
 #include <QFrame>
 #include <QIcon>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonParseError>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPlainTextEdit>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QSaveFile>
 #include <QScrollArea>
 #include <QSizePolicy>
 #include <QStyle>
@@ -48,6 +53,101 @@ QJsonObject parsedObject(const QString& json) {
     return {};
   }
   return document.object();
+}
+
+QJsonObject readJsonFileObject(const QString& path, QString* error_message) {
+  QFile file(path);
+  if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    if (error_message != nullptr) {
+      *error_message = "failed to open session file";
+    }
+    return {};
+  }
+  QJsonParseError parse_error{};
+  const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &parse_error);
+  if (parse_error.error != QJsonParseError::NoError || !document.isObject()) {
+    if (error_message != nullptr) {
+      *error_message = "malformed session JSON";
+    }
+    return {};
+  }
+  return document.object();
+}
+
+bool writeJsonFileObject(const QString& path,
+                         const QJsonObject& object,
+                         QString* error_message) {
+  QSaveFile file(path);
+  if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    if (error_message != nullptr) {
+      *error_message = "failed to write session file";
+    }
+    return false;
+  }
+  file.write(QJsonDocument(object).toJson(QJsonDocument::Compact));
+  if (!file.commit()) {
+    if (error_message != nullptr) {
+      *error_message = "failed to commit session file";
+    }
+    return false;
+  }
+  return true;
+}
+
+QString checkpointResourceUri(const QString& session_id, const QString& checkpoint_id) {
+  return "ccad-agent-checkpoint:" + session_id + "/" + checkpoint_id;
+}
+
+QString nextGuiCheckpointId(const QJsonArray& checkpoints) {
+  int sequence = checkpoints.size() + 1;
+  while (true) {
+    const QString candidate = "gui-checkpoint-" + QString::number(sequence);
+    bool exists = false;
+    for (const QJsonValue& value : checkpoints) {
+      if (value.isObject() &&
+          value.toObject().value("checkpoint_id").toString() == candidate) {
+        exists = true;
+        break;
+      }
+    }
+    if (!exists) {
+      return candidate;
+    }
+    ++sequence;
+  }
+}
+
+AgentPanel::AgentSessionMetadata metadataFromSessionObject(const QJsonObject& object,
+                                                           QString* error_message) {
+  AgentPanel::AgentSessionMetadata metadata;
+  const QString kind = object.value("session_kind").toString();
+  if (!kind.isEmpty() && kind != "ccad_agent_session") {
+    if (error_message != nullptr) {
+      *error_message = "not a CCad agent session";
+    }
+    return metadata;
+  }
+  metadata.session_id = object.value("session_id").toString().trimmed();
+  if (metadata.session_id.isEmpty()) {
+    if (error_message != nullptr) {
+      *error_message = "session_id missing";
+    }
+    return metadata;
+  }
+  metadata.thread_id = object.value("thread_id").toString().trimmed();
+  if (metadata.thread_id.isEmpty()) {
+    metadata.thread_id = metadata.session_id;
+  }
+  metadata.title = object.value("title").toString().trimmed();
+  metadata.project_path = object.value("project_path").toString().trimmed();
+  const QJsonArray checkpoints = object.value("checkpoints").toArray();
+  metadata.checkpoint_count = checkpoints.size();
+  metadata.replayable = metadata.checkpoint_count > 0;
+  if (!checkpoints.isEmpty() && checkpoints.last().isObject()) {
+    metadata.latest_checkpoint_id =
+        checkpoints.last().toObject().value("checkpoint_id").toString().trimmed();
+  }
+  return metadata;
 }
 
 QString resultSummaryFromJson(const QString& json, const QString& fallback) {
@@ -552,6 +652,36 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   trace_strip_layout->addStretch(1);
   header_layout->addWidget(trace_strip);
 
+  auto* session_binding = makePanelSection("panel:agent_session_binding", header);
+  session_binding->setProperty("agentRole", "modeStrip");
+  auto* session_binding_layout = new QVBoxLayout(session_binding);
+  session_binding_layout->setContentsMargins(3, 3, 3, 3);
+  session_binding_layout->setSpacing(4);
+  auto* session_path_row = new QHBoxLayout();
+  session_path_row->setSpacing(4);
+  session_path_input_ = new QLineEdit(session_binding);
+  session_path_input_->setObjectName("control:agent_session_path");
+  session_path_input_->setPlaceholderText("Local .ccad-agent-session.json");
+  session_path_input_->setAccessibleName("Agent session file path");
+  auto* load_session_button =
+      makeIconButton("action:agent_load_session", "Load local agent session file",
+                     style()->standardIcon(QStyle::SP_DialogOpenButton), session_binding);
+  auto* checkpoint_session_button =
+      makeIconButton("action:agent_checkpoint_session",
+                     "Append local agent session checkpoint",
+                     style()->standardIcon(QStyle::SP_DialogSaveButton), session_binding);
+  session_path_row->addWidget(session_path_input_, 1);
+  session_path_row->addWidget(load_session_button);
+  session_path_row->addWidget(checkpoint_session_button);
+  session_binding_layout->addLayout(session_path_row);
+  session_status_label_ = new QLabel("Session not bound | local JSON", session_binding);
+  session_status_label_->setObjectName("label:agent_session_status");
+  session_status_label_->setProperty("agentRole", "evidenceMeta");
+  session_status_label_->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  session_status_label_->setWordWrap(true);
+  session_binding_layout->addWidget(session_status_label_);
+  header_layout->addWidget(session_binding);
+
   auto* run_controls = makePanelSection("panel:agent_run_controls", header);
   run_controls->setProperty("agentRole", "modeStrip");
   auto* run_controls_layout = new QHBoxLayout(run_controls);
@@ -733,6 +863,19 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
           [this]() { runHarnessContextPreset(); });
   connect(header_drc_button, &QPushButton::clicked, this, [this]() { runDiagnosticsPreset(); });
   connect(header_clear_button, &QPushButton::clicked, this, [this]() { clearOutput(); });
+  connect(load_session_button, &QPushButton::clicked, this, [this]() {
+    QString path = session_path_input_->text().trimmed();
+    if (path.isEmpty()) {
+      path = QFileDialog::getOpenFileName(
+          this, "Load CCad Agent Session", "",
+          "CCad Agent Session (*.ccad-agent-session.json);;JSON Files (*.json)");
+    }
+    if (!path.isEmpty()) {
+      bindSessionFile(path);
+    }
+  });
+  connect(checkpoint_session_button, &QPushButton::clicked, this,
+          [this]() { checkpointSession(); });
   connect(action_id_input_, &QLineEdit::returnPressed, this,
           [this]() { triggerSafeAction(); });
   connect(live_query_button, &QPushButton::clicked, this, [this]() { runLiveQuery(); });
@@ -1003,6 +1146,162 @@ void AgentPanel::setGoalText(const QString& goal) {
 
 void AgentPanel::setCommandText(const QString& command) {
   command_input_->setText(command);
+}
+
+void AgentPanel::setSessionFilePath(const QString& path) {
+  session_path_input_->setText(path);
+}
+
+void AgentPanel::applySessionMetadata(const AgentSessionMetadata& metadata, const QString& path) {
+  session_file_path_ = QFileInfo(path).absoluteFilePath();
+  durable_session_id_ = metadata.session_id;
+  durable_thread_id_ = metadata.thread_id;
+  latest_checkpoint_id_ = metadata.latest_checkpoint_id;
+  session_checkpoint_count_ = metadata.checkpoint_count;
+  session_replayable_ = metadata.replayable;
+  durable_session_bound_ = true;
+  session_path_input_->setText(session_file_path_);
+  const QString compact_id = durable_session_id_.isEmpty() ? "local" : durable_session_id_;
+  session_chip_label_->setText("Session: " + compact_id);
+  session_status_label_->setText(
+      "Session " + compact_id + " | thread " + durable_thread_id_ + " | checkpoints " +
+      QString::number(session_checkpoint_count_));
+  status_label_->setText("Session loaded");
+  result_state_label_->setText("Result Session loaded");
+  addActivityEvent("session", "Session loaded",
+                   compact_id + " | checkpoints " + QString::number(session_checkpoint_count_),
+                   "agent.session_state");
+}
+
+void AgentPanel::resetSessionBinding(const QString& status) {
+  session_file_path_.clear();
+  durable_session_id_.clear();
+  durable_thread_id_.clear();
+  latest_checkpoint_id_.clear();
+  session_checkpoint_count_ = 0;
+  session_replayable_ = false;
+  durable_session_bound_ = false;
+  session_chip_label_->setText("Session: local");
+  session_status_label_->setText(status);
+}
+
+void AgentPanel::bindSessionFile(const QString& path) {
+  const QString trimmed_path = path.trimmed();
+  if (trimmed_path.isEmpty()) {
+    resetSessionBinding("Session path required");
+    status_label_->setText("Session path required");
+    result_state_label_->setText("Result Error session_path_required");
+    addActivityEvent("error", "Session path required",
+                     "No local session file was selected", "agent.session_state");
+    return;
+  }
+
+  QString error_message;
+  const QJsonObject object = readJsonFileObject(trimmed_path, &error_message);
+  if (object.isEmpty()) {
+    resetSessionBinding(error_message);
+    status_label_->setText("Session load failed");
+    result_state_label_->setText("Result Error session_load_failed");
+    addActivityEvent("error", "Session load failed", error_message,
+                     "agent.session_state");
+    return;
+  }
+
+  const AgentSessionMetadata metadata = metadataFromSessionObject(object, &error_message);
+  if (metadata.session_id.isEmpty()) {
+    resetSessionBinding(error_message);
+    status_label_->setText("Session load failed");
+    result_state_label_->setText("Result Error session_load_failed");
+    addActivityEvent("error", "Session load failed", error_message,
+                     "agent.session_state");
+    return;
+  }
+
+  applySessionMetadata(metadata, trimmed_path);
+}
+
+void AgentPanel::checkpointSession() {
+  QString path = session_file_path_.trimmed();
+  if (path.isEmpty()) {
+    path = session_path_input_->text().trimmed();
+  }
+  if (!durable_session_bound_) {
+    if (!path.isEmpty()) {
+      bindSessionFile(path);
+    }
+    if (!durable_session_bound_) {
+      status_label_->setText("Session checkpoint skipped");
+      result_state_label_->setText("Result Error session_not_bound");
+      addActivityEvent("error", "Session checkpoint skipped",
+                       "No valid local session is bound", "agent.checkpoint");
+      return;
+    }
+  }
+
+  QString error_message;
+  QJsonObject object = readJsonFileObject(path, &error_message);
+  if (object.isEmpty()) {
+    resetSessionBinding(error_message);
+    status_label_->setText("Session checkpoint failed");
+    result_state_label_->setText("Result Error session_checkpoint_failed");
+    addActivityEvent("error", "Session checkpoint failed", error_message,
+                     "agent.checkpoint");
+    return;
+  }
+
+  const QString session_id = object.value("session_id").toString().trimmed();
+  if (session_id.isEmpty()) {
+    resetSessionBinding("session_id missing");
+    status_label_->setText("Session checkpoint failed");
+    result_state_label_->setText("Result Error session_checkpoint_failed");
+    addActivityEvent("error", "Session checkpoint failed", "session_id missing",
+                     "agent.checkpoint");
+    return;
+  }
+
+  QJsonArray checkpoints = object.value("checkpoints").toArray();
+  const QString checkpoint_id = nextGuiCheckpointId(checkpoints);
+  const QString created_at = QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs);
+  QString summary = statusText().trimmed();
+  if (!resultStateText().trimmed().isEmpty()) {
+    summary += " | " + resultStateText().trimmed();
+  }
+  if (!staged_goal_.trimmed().isEmpty()) {
+    summary += " | goal " + staged_goal_.trimmed();
+  }
+  if (summary.trimmed().isEmpty()) {
+    summary = "GUI metadata checkpoint";
+  }
+
+  QJsonObject checkpoint;
+  checkpoint.insert("checkpoint_id", checkpoint_id);
+  checkpoint.insert("sequence", checkpoints.size() + 1);
+  checkpoint.insert("kind", "gui_checkpoint");
+  checkpoint.insert("summary", summary);
+  checkpoint.insert("artifact_path", QJsonValue());
+  checkpoint.insert("created_at", created_at);
+  checkpoint.insert("resource_uri", checkpointResourceUri(session_id, checkpoint_id));
+  checkpoints.append(checkpoint);
+  object.insert("updated_at", created_at);
+  object.insert("checkpoint_count", checkpoints.size());
+  object.insert("checkpoints", checkpoints);
+  if (!writeJsonFileObject(path, object, &error_message)) {
+    status_label_->setText("Session checkpoint failed");
+    result_state_label_->setText("Result Error session_checkpoint_failed");
+    addActivityEvent("error", "Session checkpoint failed", error_message,
+                     "agent.checkpoint");
+    return;
+  }
+
+  const AgentSessionMetadata metadata = metadataFromSessionObject(object, &error_message);
+  applySessionMetadata(metadata, path);
+  status_label_->setText("Session checkpointed");
+  result_state_label_->setText("Result Session checkpointed");
+  output_->setPlainText(
+      "{\"schema_version\":1,\"checkpoint_added\":true,\"checkpoint_id\":\"" +
+      checkpoint_id + "\",\"checkpoint_count\":" + QString::number(checkpoints.size()) + "}\n");
+  addActivityEvent("session", "Session checkpointed",
+                   checkpoint_id + " | local metadata only", "agent.checkpoint");
 }
 
 void AgentPanel::refreshUiMap() {
@@ -1512,6 +1811,14 @@ QString AgentPanel::evidenceText() const {
   return evidence_label_->text();
 }
 
+QString AgentPanel::sessionPathText() const {
+  return session_path_input_->text();
+}
+
+QString AgentPanel::sessionStatusText() const {
+  return session_status_label_->text();
+}
+
 QString AgentPanel::approvalRequestText() const {
   return approval_request_input_->text();
 }
@@ -1618,6 +1925,7 @@ QString AgentPanel::workspaceStateJson() const {
                   QJsonArray{"session_strip",
                              "mode_strip",
                              "trace_strip",
+                             "session_binding",
                              "run_controls",
                              "status_rail",
                              "command_stream",
@@ -1637,6 +1945,15 @@ QString AgentPanel::workspaceStateJson() const {
   response.insert("permission_label", permission_chip_label_->text());
   response.insert("trace_label", trace_chip_label_->text());
   response.insert("session_label", session_chip_label_->text());
+  response.insert("durable_session_bound", durable_session_bound_);
+  response.insert("session_file_path", session_file_path_);
+  response.insert("session_path_input", sessionPathText());
+  response.insert("durable_session_id", durable_session_id_);
+  response.insert("thread_id", durable_thread_id_);
+  response.insert("checkpoint_count", session_checkpoint_count_);
+  response.insert("latest_checkpoint_id", latest_checkpoint_id_);
+  response.insert("replayable", session_replayable_);
+  response.insert("session_status", sessionStatusText());
   response.insert("run_state", run_state_);
   response.insert("run_label", run_state_chip_label_->text());
   response.insert("plan_item_count", plan_items.size());
