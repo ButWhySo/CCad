@@ -240,6 +240,26 @@ int main(int argc, char** argv) {
           "UI map exposes the agent session strip");
   require(contains(map, "\"id\":\"panel:agent_mode_strip\""),
           "UI map exposes the agent mode strip");
+  require(contains(map, "\"id\":\"panel:agent_run_controls\""),
+          "UI map exposes the agent run-control strip");
+  require(contains(map, "\"id\":\"label:agent_run_state_chip\""),
+          "UI map exposes the agent run-state chip");
+  require(contains(map, "\"id\":\"label:agent_trace_chip\""),
+          "UI map exposes the agent trace chip");
+  require(contains(map, "\"id\":\"label:agent_session_chip\""),
+          "UI map exposes the agent session chip");
+  require(contains(map, "\"id\":\"panel:agent_trace_strip\""),
+          "UI map exposes the agent trace/session strip");
+  require(contains(map, "\"id\":\"action:agent_pause_run\""),
+          "UI map exposes the agent pause action");
+  require(contains(map, "\"id\":\"action:agent_resume_run\""),
+          "UI map exposes the agent resume action");
+  require(contains(map, "\"id\":\"action:agent_stop_run\""),
+          "UI map exposes the agent stop action");
+  require(contains(map, "\"id\":\"panel:agent_active_plan\""),
+          "UI map exposes the agent active-plan section");
+  require(contains(map, "\"id\":\"panel:agent_plan_row_1\""),
+          "UI map exposes the first agent plan row");
   require(contains(map, "\"id\":\"panel:agent_activity_stream\""),
           "UI map exposes the agent activity stream");
   require(contains(map, "\"id\":\"tab:agent_command\""),
@@ -664,6 +684,35 @@ int main(int argc, char** argv) {
   const QString agent_mode_strip_target = window.uiTargetJsonById("panel:agent_mode_strip");
   require(contains(agent_mode_strip_target, "\"found\":true"),
           "target query finds agent mode strip");
+  const QString agent_run_controls_target =
+      window.uiTargetJsonById("panel:agent_run_controls");
+  require(contains(agent_run_controls_target, "\"found\":true"),
+          "target query finds agent run-control strip");
+  const QString agent_run_state_target =
+      window.uiTargetJsonById("label:agent_run_state_chip");
+  require(contains(agent_run_state_target, "\"found\":true"),
+          "target query finds agent run-state chip");
+  const QString agent_trace_chip_target = window.uiTargetJsonById("label:agent_trace_chip");
+  require(contains(agent_trace_chip_target, "\"found\":true"),
+          "target query finds agent trace chip");
+  const QString agent_trace_strip_target = window.uiTargetJsonById("panel:agent_trace_strip");
+  require(contains(agent_trace_strip_target, "\"found\":true"),
+          "target query finds agent trace/session strip");
+  const QString agent_pause_target = window.uiTargetJsonById("action:agent_pause_run");
+  require(contains(agent_pause_target, "\"found\":true"),
+          "target query finds agent pause action");
+  const QString agent_resume_target = window.uiTargetJsonById("action:agent_resume_run");
+  require(contains(agent_resume_target, "\"found\":true"),
+          "target query finds agent resume action");
+  const QString agent_stop_target = window.uiTargetJsonById("action:agent_stop_run");
+  require(contains(agent_stop_target, "\"found\":true"),
+          "target query finds agent stop action");
+  const QString agent_plan_target = window.uiTargetJsonById("panel:agent_active_plan");
+  require(contains(agent_plan_target, "\"found\":true"),
+          "target query finds agent active-plan section");
+  const QString agent_plan_row_target = window.uiTargetJsonById("panel:agent_plan_row_1");
+  require(contains(agent_plan_row_target, "\"found\":true"),
+          "target query finds agent plan row");
   const QString agent_activity_target =
       window.uiTargetJsonById("panel:agent_activity_stream");
   require(contains(agent_activity_target, "\"found\":true"),

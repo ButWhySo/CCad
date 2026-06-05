@@ -110,11 +110,18 @@ class AgentPanel final : public QWidget {
                         const QString& method);
   void renderActivityEvents();
   QJsonObject activityEventJson(const ActivityEvent& event) const;
+  void updateRunState(const QString& state, const QString& title, const QString& detail);
+  void pauseRun();
+  void resumeRun();
+  void stopRun();
 
   QLabel* session_title_label_ = nullptr;
   QLabel* model_chip_label_ = nullptr;
   QLabel* mode_chip_label_ = nullptr;
   QLabel* permission_chip_label_ = nullptr;
+  QLabel* trace_chip_label_ = nullptr;
+  QLabel* session_chip_label_ = nullptr;
+  QLabel* run_state_chip_label_ = nullptr;
   QLabel* project_label_ = nullptr;
   QLabel* epoch_label_ = nullptr;
   QLabel* status_label_ = nullptr;
@@ -138,6 +145,7 @@ class AgentPanel final : public QWidget {
   LiveQueryProvider live_query_provider_;
   QString staged_goal_;
   QString staged_command_;
+  QString run_state_ = "idle";
   QVector<ActivityEvent> activity_events_;
   QVector<EvidenceCard> evidence_cards_;
   int activity_sequence_ = 0;

@@ -69,10 +69,16 @@ int main(int argc, char** argv) {
   require(panel.actionIdText() == "action:zoom_in", "agent panel has safe default action id");
   require(contains(panel.workspaceStateJson(), "\"panel_layout\":\"vertical_agent_workspace\""),
           "agent panel exposes the vertical workspace layout contract");
-  require(contains(panel.workspaceStateJson(), "\"visual_style\":\"command_center_dark\""),
-          "agent panel exposes the command-center visual style contract");
-  require(contains(panel.workspaceStateJson(), "\"workspace_layout_version\":2"),
-          "agent panel exposes the second workspace layout version");
+  require(contains(panel.workspaceStateJson(), "\"visual_style\":\"agent_command_center_dense\""),
+          "agent panel exposes the dense command-center visual style contract");
+  require(contains(panel.workspaceStateJson(), "\"workspace_layout_version\":3"),
+          "agent panel exposes the third workspace layout version");
+  require(contains(panel.workspaceStateJson(), "\"run_state\":\"idle\""),
+          "agent panel exposes local run state");
+  require(contains(panel.workspaceStateJson(), "\"trace_label\":\"Trace: local-off\""),
+          "agent panel exposes local trace state without enabling telemetry");
+  require(contains(panel.workspaceStateJson(), "\"plan_items\":["),
+          "agent panel serializes visible active plan rows");
   require(contains(panel.workspaceStateJson(), "\"visible_sections\":["),
           "agent panel serializes the visible command-center sections");
   require(panel.findChild<QLabel*>("label:agent_session_title") != nullptr,
@@ -87,6 +93,22 @@ int main(int argc, char** argv) {
           "agent panel exposes the mode chip");
   require(panel.findChild<QLabel*>("label:agent_permission_chip") != nullptr,
           "agent panel exposes the local permission chip");
+  require(panel.findChild<QLabel*>("label:agent_trace_chip") != nullptr,
+          "agent panel exposes the trace chip");
+  require(panel.findChild<QLabel*>("label:agent_session_chip") != nullptr,
+          "agent panel exposes the session chip");
+  require(panel.findChild<QWidget*>("panel:agent_trace_strip") != nullptr,
+          "agent panel exposes a trace/session strip");
+  require(panel.findChild<QWidget*>("panel:agent_run_controls") != nullptr,
+          "agent panel exposes a local run-control strip");
+  require(panel.findChild<QLabel*>("label:agent_run_state_chip") != nullptr,
+          "agent panel exposes a local run-state chip");
+  require(panel.findChild<QPushButton*>("action:agent_pause_run") != nullptr,
+          "agent panel exposes a safe pause run action");
+  require(panel.findChild<QPushButton*>("action:agent_resume_run") != nullptr,
+          "agent panel exposes a safe resume run action");
+  require(panel.findChild<QPushButton*>("action:agent_stop_run") != nullptr,
+          "agent panel exposes a safe stop run action");
   require(panel.findChild<QWidget*>("tab:agent_command") != nullptr,
           "agent panel exposes a command tab selector");
   require(panel.findChild<QWidget*>("tab:agent_evidence") != nullptr,
@@ -97,6 +119,21 @@ int main(int argc, char** argv) {
           "agent panel exposes a command activity stream");
   require(panel.findChild<QWidget*>("card:agent_activity_1") != nullptr,
           "agent panel renders an initial activity event");
+  require(panel.findChild<QWidget*>("panel:agent_active_plan") != nullptr,
+          "agent panel exposes a visible active-plan section");
+  require(panel.findChild<QWidget*>("panel:agent_plan_row_1") != nullptr,
+          "agent panel exposes the first active-plan row");
+  require(panel.findChild<QWidget*>("panel:agent_plan_row_2") != nullptr,
+          "agent panel exposes the second active-plan row");
+  panel.findChild<QPushButton*>("action:agent_pause_run")->click();
+  require(contains(panel.workspaceStateJson(), "\"run_state\":\"paused\""),
+          "agent panel pause action updates local run state");
+  panel.findChild<QPushButton*>("action:agent_resume_run")->click();
+  require(contains(panel.workspaceStateJson(), "\"run_state\":\"running\""),
+          "agent panel resume action updates local run state");
+  panel.findChild<QPushButton*>("action:agent_stop_run")->click();
+  require(contains(panel.workspaceStateJson(), "\"run_state\":\"stopped\""),
+          "agent panel stop action updates local run state");
   require(panel.findChild<QPushButton*>("action:agent_header_request_context") != nullptr,
           "agent panel exposes a functional header context action");
   require(panel.findChild<QPushButton*>("action:agent_header_trigger_drc") != nullptr,

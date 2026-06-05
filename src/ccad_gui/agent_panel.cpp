@@ -10,6 +10,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPlainTextEdit>
+#include <QProgressBar>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QSizePolicy>
@@ -243,6 +244,47 @@ QPushButton* makeIconButton(const QString& object_name,
   return button;
 }
 
+QFrame* makePlanRow(const QString& object_name,
+                    const QString& title,
+                    const QString& detail,
+                    const QString& state,
+                    const int progress,
+                    QWidget* parent) {
+  auto* row = new QFrame(parent);
+  row->setObjectName(object_name);
+  row->setProperty("agentRole", "planRow");
+  auto* layout = new QVBoxLayout(row);
+  layout->setContentsMargins(6, 5, 6, 5);
+  layout->setSpacing(3);
+
+  auto* title_row = new QHBoxLayout();
+  title_row->setSpacing(6);
+  auto* title_label = new QLabel(title, row);
+  title_label->setProperty("agentRole", "planTitle");
+  title_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  auto* state_label = new QLabel(state, row);
+  state_label->setProperty("agentRole", "planState");
+  state_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  title_row->addWidget(title_label, 1);
+  title_row->addWidget(state_label);
+  layout->addLayout(title_row);
+
+  auto* detail_label = new QLabel(detail, row);
+  detail_label->setProperty("agentRole", "planDetail");
+  detail_label->setWordWrap(true);
+  detail_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  layout->addWidget(detail_label);
+
+  auto* progress_bar = new QProgressBar(row);
+  progress_bar->setObjectName(object_name + ":progress");
+  progress_bar->setRange(0, 100);
+  progress_bar->setValue(progress);
+  progress_bar->setTextVisible(false);
+  progress_bar->setFixedHeight(6);
+  layout->addWidget(progress_bar);
+  return row;
+}
+
 }  // namespace
 
 AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
@@ -307,6 +349,14 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
       padding: 3px 6px;
       font-weight: 600;
     }
+    QLabel[agentRole="runStateChip"] {
+      background: #17253a;
+      color: #a7d2ff;
+      border: 1px solid #355a86;
+      border-radius: 4px;
+      padding: 3px 6px;
+      font-weight: 700;
+    }
     QLabel[agentRole="tabChip"] {
       background: #252b34;
       color: #d7deea;
@@ -334,6 +384,32 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
       border: 1px solid #354050;
       border-radius: 6px;
       padding: 4px;
+    }
+    QFrame[agentRole="planRow"] {
+      background: #161b22;
+      border: 1px solid #303a48;
+      border-radius: 6px;
+      padding: 3px;
+    }
+    QLabel[agentRole="planTitle"] {
+      color: #f8fafc;
+      font-weight: 650;
+    }
+    QLabel[agentRole="planState"] {
+      color: #8bd5a7;
+      font-weight: 650;
+    }
+    QLabel[agentRole="planDetail"] {
+      color: #b8c2d0;
+    }
+    QProgressBar {
+      background: #0f1318;
+      border: 0;
+      border-radius: 3px;
+    }
+    QProgressBar::chunk {
+      background: #69b7ff;
+      border-radius: 3px;
     }
     QLabel[agentRole="evidenceKind"] {
       color: #9fd1ff;
@@ -448,6 +524,41 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   mode_strip_layout->addStretch(1);
   header_layout->addWidget(mode_strip);
 
+  auto* trace_strip = makePanelSection("panel:agent_trace_strip", header);
+  trace_strip->setProperty("agentRole", "modeStrip");
+  auto* trace_strip_layout = new QHBoxLayout(trace_strip);
+  trace_strip_layout->setContentsMargins(4, 4, 4, 4);
+  trace_strip_layout->setSpacing(5);
+  trace_chip_label_ = makeChip("label:agent_trace_chip", "Trace: local-off", trace_strip);
+  session_chip_label_ = makeChip("label:agent_session_chip", "Session: local", trace_strip);
+  trace_strip_layout->addWidget(trace_chip_label_);
+  trace_strip_layout->addWidget(session_chip_label_);
+  trace_strip_layout->addStretch(1);
+  header_layout->addWidget(trace_strip);
+
+  auto* run_controls = makePanelSection("panel:agent_run_controls", header);
+  run_controls->setProperty("agentRole", "modeStrip");
+  auto* run_controls_layout = new QHBoxLayout(run_controls);
+  run_controls_layout->setContentsMargins(4, 4, 4, 4);
+  run_controls_layout->setSpacing(5);
+  run_state_chip_label_ = makeChip("label:agent_run_state_chip", "Run: idle", run_controls);
+  run_state_chip_label_->setProperty("agentRole", "runStateChip");
+  auto* pause_run_button =
+      makeIconButton("action:agent_pause_run", "Pause local agent run",
+                     style()->standardIcon(QStyle::SP_MediaPause), run_controls);
+  auto* resume_run_button =
+      makeIconButton("action:agent_resume_run", "Resume local agent run",
+                     style()->standardIcon(QStyle::SP_MediaPlay), run_controls);
+  auto* stop_run_button =
+      makeIconButton("action:agent_stop_run", "Stop local agent run",
+                     style()->standardIcon(QStyle::SP_MediaStop), run_controls);
+  run_controls_layout->addWidget(run_state_chip_label_);
+  run_controls_layout->addWidget(pause_run_button);
+  run_controls_layout->addWidget(resume_run_button);
+  run_controls_layout->addWidget(stop_run_button);
+  run_controls_layout->addStretch(1);
+  header_layout->addWidget(run_controls);
+
   auto* tab_strip = makePanelSection("panel:agent_tab_strip", header);
   tab_strip->setProperty("agentRole", "tabStrip");
   auto* tab_strip_layout = new QHBoxLayout(tab_strip);
@@ -507,7 +618,6 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   result_row->addWidget(diagnostics_label_, 1);
   result_row->addWidget(result_state_label_);
   context_layout->addLayout(result_row);
-  content_layout->addWidget(context_section);
 
   auto* stream_section = makePanelSection("panel:agent_command_stream", content);
   auto* stream_layout = new QVBoxLayout(stream_section);
@@ -606,6 +716,23 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   task_layout->setContentsMargins(6, 6, 6, 6);
   task_layout->setSpacing(4);
   task_layout->addWidget(makeSectionTitle("Plan", task_section));
+
+  auto* active_plan_section = makePanelSection("panel:agent_active_plan", task_section);
+  auto* active_plan_layout = new QVBoxLayout(active_plan_section);
+  active_plan_layout->setContentsMargins(6, 6, 6, 6);
+  active_plan_layout->setSpacing(4);
+  active_plan_layout->addWidget(makeSectionTitle("Active Plan", active_plan_section));
+  active_plan_layout->addWidget(makePlanRow("panel:agent_plan_row_1", "Read workspace context",
+                                            "Project, layer, net, selection, and diagnostics are cached for the next action.",
+                                            "ready", 100, active_plan_section));
+  active_plan_layout->addWidget(makePlanRow("panel:agent_plan_row_2", "Collect evidence",
+                                            "Use DRC/ERC reports, screenshots, and pinned artifacts before proposing edits.",
+                                            "active", 62, active_plan_section));
+  active_plan_layout->addWidget(makePlanRow("panel:agent_plan_row_3", "Apply bounded changes",
+                                            "Mutating tools require policy checks and explicit verification artifacts.",
+                                            "queued", 18, active_plan_section));
+  task_layout->addWidget(active_plan_section);
+
   auto* goal_row = new QHBoxLayout();
   goal_row->setSpacing(6);
   auto* goal_label = new QLabel("Goal", task_section);
@@ -630,6 +757,12 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
 
   connect(stage_goal_button, &QPushButton::clicked, this, [this]() { stageGoal(); });
   connect(goal_input_, &QLineEdit::returnPressed, this, [this]() { stageGoal(); });
+  connect(pause_run_button, &QPushButton::clicked, this, [this]() { pauseRun(); });
+  connect(resume_run_button, &QPushButton::clicked, this, [this]() { resumeRun(); });
+  connect(stop_run_button, &QPushButton::clicked, this, [this]() { stopRun(); });
+
+  content_layout->addWidget(task_section);
+  content_layout->addWidget(context_section);
 
   auto* activity_section = makePanelSection("panel:agent_activity_stream", content);
   auto* activity_layout = new QVBoxLayout(activity_section);
@@ -642,7 +775,6 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   activity_layout->addLayout(activity_events_layout_);
   content_layout->addWidget(activity_section);
   addActivityEvent("session", "Agent ready", "Local workspace loaded", "agent.workspace");
-  content_layout->addWidget(task_section);
 
   auto* evidence_section = makePanelSection("panel:agent_evidence_tray", content);
   auto* evidence_layout = new QVBoxLayout(evidence_section);
@@ -919,6 +1051,30 @@ void AgentPanel::clearOutput() {
   status_label_->setText("Output cleared");
   result_state_label_->setText("Result Idle");
   addActivityEvent("session", "Output cleared", "Raw JSON stream cleared", "agent.clear");
+}
+
+void AgentPanel::updateRunState(const QString& state,
+                                const QString& title,
+                                const QString& detail) {
+  run_state_ = contextValue(state, "idle");
+  if (run_state_chip_label_ != nullptr) {
+    run_state_chip_label_->setText("Run: " + run_state_);
+  }
+  status_label_->setText(title);
+  result_state_label_->setText("Result " + title);
+  addActivityEvent("run", title, detail, "agent.run");
+}
+
+void AgentPanel::pauseRun() {
+  updateRunState("paused", "Run paused", "Local run state paused; no provider call was made.");
+}
+
+void AgentPanel::resumeRun() {
+  updateRunState("running", "Run resumed", "Local run state resumed; durable runner binding is pending.");
+}
+
+void AgentPanel::stopRun() {
+  updateRunState("stopped", "Run stopped", "Local run state stopped; queued provider work remains disabled.");
 }
 
 void AgentPanel::stageGoal() {
@@ -1362,6 +1518,7 @@ QString AgentPanel::workspaceStateJson() const {
   QJsonArray evidence;
   QJsonArray evidence_cards;
   QJsonArray activity_events;
+  QJsonArray plan_items;
   for (const ActivityEvent& event : activity_events_) {
     activity_events.append(activityEventJson(event));
   }
@@ -1376,20 +1533,45 @@ QString AgentPanel::workspaceStateJson() const {
     evidence.append(legacy_summary);
     evidence_cards.append(evidenceCardJson(card));
   }
+  auto append_plan_item = [&plan_items](const QString& id,
+                                        const QString& title,
+                                        const QString& state,
+                                        const QString& detail,
+                                        const int progress) {
+    QJsonObject item;
+    item.insert("id", id);
+    item.insert("title", title);
+    item.insert("state", state);
+    item.insert("detail", detail);
+    item.insert("progress", progress);
+    plan_items.append(item);
+  };
+  append_plan_item("plan-1", "Read workspace context", "ready",
+                   "Project, layer, net, selection, and diagnostics are cached for the next action.",
+                   100);
+  append_plan_item("plan-2", "Collect evidence", "active",
+                   "Use DRC/ERC reports, screenshots, and pinned artifacts before proposing edits.",
+                   62);
+  append_plan_item("plan-3", "Apply bounded changes", "queued",
+                   "Mutating tools require policy checks and explicit verification artifacts.",
+                   18);
 
   QJsonObject response;
   response.insert("schema_version", 1);
   response.insert("workspace_kind", "ccad_agent_workspace_state");
   response.insert("evidence_manifest_kind", "ccad_agent_evidence_manifest");
   response.insert("panel_layout", "vertical_agent_workspace");
-  response.insert("visual_style", "command_center_dark");
-  response.insert("workspace_layout_version", 2);
+  response.insert("visual_style", "agent_command_center_dense");
+  response.insert("workspace_layout_version", 3);
   response.insert("active_agent_tab", "command");
   response.insert("visible_sections",
                   QJsonArray{"session_strip",
                              "mode_strip",
+                             "trace_strip",
+                             "run_controls",
                              "command_stream",
                              "task_list",
+                             "active_plan",
                              "activity_stream",
                              "pinned_evidence",
                              "approval_card",
@@ -1398,6 +1580,12 @@ QString AgentPanel::workspaceStateJson() const {
   response.insert("model_label", model_chip_label_->text());
   response.insert("mode_label", mode_chip_label_->text());
   response.insert("permission_label", permission_chip_label_->text());
+  response.insert("trace_label", trace_chip_label_->text());
+  response.insert("session_label", session_chip_label_->text());
+  response.insert("run_state", run_state_);
+  response.insert("run_label", run_state_chip_label_->text());
+  response.insert("plan_item_count", plan_items.size());
+  response.insert("plan_items", plan_items);
   response.insert("command", staged_command_.isEmpty() ? commandText().trimmed() : staged_command_);
   response.insert("command_input", commandText());
   response.insert("goal", staged_goal_.isEmpty() ? goal_input_->text().trimmed() : staged_goal_);
