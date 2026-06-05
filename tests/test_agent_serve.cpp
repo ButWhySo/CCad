@@ -145,6 +145,14 @@ void testAgentMethodsCommand() {
                  "agent methods command includes provider readiness status");
   assertContains(out.str(), "\"method\":\"agent.observability_config\"",
                  "agent methods command includes observability config");
+  assertContains(out.str(), "\"method\":\"agent.trace_export_schema\"",
+                 "agent methods command includes trace export schema");
+  assertContains(out.str(), "\"method\":\"agent.trace_export_template\"",
+                 "agent methods command includes trace export template");
+  assertContains(out.str(), "\"method\":\"agent.trace_redaction_policy\"",
+                 "agent methods command includes trace redaction policy");
+  assertContains(out.str(), "\"method\":\"agent.trace_export_dry_run\"",
+                 "agent methods command includes trace export dry run");
   assertContains(out.str(), "\"method\":\"agent.evidence_manifest_schema\"",
                  "agent methods command includes evidence manifest schema");
 }
@@ -260,6 +268,102 @@ void testAgentProviderConfigCommands() {
                    "provider status does not contain secret values");
     assertContains(out.str(), "\"provider_execution\":false",
                    "provider status does not run providers");
+  }
+}
+
+void testAgentObservabilityConfigCommands() {
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"trace-export-schema"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentObservabilityConfigCommands schema exited with " << result
+                << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"schema_kind\":\"ccad_agent_trace_export_schema\"",
+                   "trace export schema reports schema kind");
+    assertContains(out.str(), "\"OTEL_EXPORTER_OTLP_ENDPOINT\"",
+                   "trace export schema documents OTLP endpoint env var");
+    assertContains(out.str(), "\"OTEL_EXPORTER_OTLP_HEADERS\"",
+                   "trace export schema documents OTLP headers env var");
+    assertContains(out.str(), "\"langfuse\"", "trace export schema includes Langfuse backend");
+    assertContains(out.str(), "\"gen_ai\"", "trace export schema references GenAI conventions");
+    assertContains(out.str(), "\"export_enabled\":false",
+                   "trace export schema keeps export disabled");
+  }
+
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"trace-export-template"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentObservabilityConfigCommands template exited with " << result
+                << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"template_kind\":\"ccad_agent_trace_export_template\"",
+                   "trace export template reports template kind");
+    assertContains(out.str(), "\"secret_values_present\":false",
+                   "trace export template contains no secret values");
+    assertContains(out.str(), "\"default_export_enabled\":false",
+                   "trace export template defaults export off");
+    assertContains(out.str(), "\"endpoint_env\":\"OTEL_EXPORTER_OTLP_ENDPOINT\"",
+                   "trace export template uses OTLP endpoint env var");
+    assertContains(out.str(), "\"headers_env\":\"OTEL_EXPORTER_OTLP_HEADERS\"",
+                   "trace export template stores header env var name only");
+  }
+
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"trace-redaction-policy"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentObservabilityConfigCommands redaction exited with " << result
+                << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"policy_kind\":\"ccad_agent_trace_redaction_policy\"",
+                   "trace redaction policy reports policy kind");
+    assertContains(out.str(), "\"export_prompt_content_by_default\":false",
+                   "trace redaction policy defaults prompt export off");
+    assertContains(out.str(), "\"export_tool_payloads_by_default\":false",
+                   "trace redaction policy defaults tool payload export off");
+    assertContains(out.str(), "\"export_screenshots_by_default\":false",
+                   "trace redaction policy defaults screenshot export off");
+    assertContains(out.str(), "\"export_design_files_by_default\":false",
+                   "trace redaction policy defaults design file export off");
+    assertContains(out.str(), "\"secret_values\":\"never\"",
+                   "trace redaction policy refuses secret values");
+  }
+
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"trace-export-dry-run"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentObservabilityConfigCommands dry-run exited with " << result
+                << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"dry_run_kind\":\"ccad_agent_trace_export_dry_run\"",
+                   "trace export dry run reports dry-run kind");
+    assertContains(out.str(), "\"network_probe_performed\":false",
+                   "trace export dry run performs no network probe");
+    assertContains(out.str(), "\"would_export\":false",
+                   "trace export dry run does not export by default");
+    assertContains(out.str(), "\"redaction_applied\":true",
+                   "trace export dry run applies redaction");
+    assertContains(out.str(), "\"headers_value\":\"redacted\"",
+                   "trace export dry run redacts header values");
   }
 }
 
@@ -722,6 +826,43 @@ void testAgentProviderConfigJsonRpc() {
                  "JSON-RPC tool guide points provider config to the headless config surface");
 }
 
+void testAgentObservabilityConfigJsonRpc() {
+  std::istringstream in(
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.trace_export_schema\", \"id\": 24}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.trace_export_template\", \"id\": 25}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.trace_redaction_policy\", \"id\": 26}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.trace_export_dry_run\", \"id\": 27}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.tool_guide\", \"params\": {\"method_name\": \"agent.trace_export_schema\"}, \"id\": 28}\n");
+  std::ostringstream out;
+  auto oldCin = std::cin.rdbuf(in.rdbuf());
+  auto oldCout = std::cout.rdbuf(out.rdbuf());
+  std::vector<std::string> args = {"serve", "--allow-read"};
+  int result = ccad_cli::agentCommand(args);
+  std::cin.rdbuf(oldCin);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) {
+    std::cerr << "FAIL testAgentObservabilityConfigJsonRpc exited with " << result << "\n";
+    std::exit(1);
+  }
+  assertContains(out.str(), "\"id\": 24", "has trace schema request id");
+  assertContains(out.str(), "\"schema_kind\":\"ccad_agent_trace_export_schema\"",
+                 "JSON-RPC exposes trace export schema");
+  assertContains(out.str(), "\"id\": 25", "has trace template request id");
+  assertContains(out.str(), "\"template_kind\":\"ccad_agent_trace_export_template\"",
+                 "JSON-RPC exposes trace export template");
+  assertContains(out.str(), "\"id\": 26", "has trace redaction request id");
+  assertContains(out.str(), "\"policy_kind\":\"ccad_agent_trace_redaction_policy\"",
+                 "JSON-RPC exposes trace redaction policy");
+  assertContains(out.str(), "\"id\": 27", "has trace dry-run request id");
+  assertContains(out.str(), "\"dry_run_kind\":\"ccad_agent_trace_export_dry_run\"",
+                 "JSON-RPC exposes trace export dry run");
+  assertContains(out.str(), "\"id\": 28", "has trace schema tool guide request id");
+  assertContains(out.str(), "\"method\":\"agent.trace_export_schema\"",
+                 "JSON-RPC tool guide finds trace export schema");
+  assertContains(out.str(), "\"preferred_surface\":\"headless_cli_observability_config\"",
+                 "JSON-RPC tool guide points trace config to the headless observability surface");
+}
+
 void testAgentServePermissionGatesReportApproval() {
   std::istringstream in(
       "{\"jsonrpc\": \"2.0\", \"method\": \"execute\", \"params\": {\"args\": [\"pcb\", \"add-via\", \"--file\", \"board.ccad.json\"]}, \"id\": 19}\n");
@@ -751,6 +892,7 @@ int main() {
     testAgentMethodsCommand();
     testAgentMetadataCommands();
     testAgentProviderConfigCommands();
+    testAgentObservabilityConfigCommands();
     testAgentWorkspaceParityCommands();
     testAgentSessionCheckpointCommands();
     testAgentPolicyCommands();
@@ -759,6 +901,7 @@ int main() {
     testAgentSessionJsonRpc();
     testAgentPolicyJsonRpc();
     testAgentProviderConfigJsonRpc();
+    testAgentObservabilityConfigJsonRpc();
     testAgentServePermissionGatesReportApproval();
     std::cout << "PASS agent serve\n";
     return 0;
