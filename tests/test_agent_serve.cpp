@@ -137,6 +137,12 @@ void testAgentMethodsCommand() {
                  "agent methods command includes policy schema");
   assertContains(out.str(), "\"method\":\"agent.policy_check\"",
                  "agent methods command includes policy check");
+  assertContains(out.str(), "\"method\":\"agent.provider_config_schema\"",
+                 "agent methods command includes provider config schema");
+  assertContains(out.str(), "\"method\":\"agent.provider_config_template\"",
+                 "agent methods command includes provider config template");
+  assertContains(out.str(), "\"method\":\"agent.provider_status\"",
+                 "agent methods command includes provider readiness status");
   assertContains(out.str(), "\"method\":\"agent.observability_config\"",
                  "agent methods command includes observability config");
   assertContains(out.str(), "\"method\":\"agent.evidence_manifest_schema\"",
@@ -179,6 +185,82 @@ void testAgentMetadataCommands() {
                  "CLI evidence manifest schema documents artifact paths");
   assertContains(out.str(), "\"trace_id\"",
                  "CLI evidence manifest schema includes trace-ready fields");
+}
+
+void testAgentProviderConfigCommands() {
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"provider-config-schema"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentProviderConfigCommands schema exited with " << result << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"schema_kind\":\"ccad_agent_provider_config_schema\"",
+                   "provider config schema reports schema kind");
+    assertContains(out.str(), "\"providers\"", "provider config schema lists providers");
+    assertContains(out.str(), "\"OPENAI_API_KEY\"",
+                   "provider config schema documents OpenAI env var");
+    assertContains(out.str(), "\"ANTHROPIC_API_KEY\"",
+                   "provider config schema documents Anthropic env var");
+    assertContains(out.str(), "\"GEMINI_API_KEY\"",
+                   "provider config schema documents Gemini env var");
+    assertContains(out.str(), "\"GOOGLE_API_KEY\"",
+                   "provider config schema documents Google Gemini alias env var");
+    assertContains(out.str(), "\"project_file_secret_storage\":false",
+                   "provider config schema refuses project-file secrets");
+    assertContains(out.str(), "\"secret_value_policy\":\"never_emit_secret_values\"",
+                   "provider config schema forbids secret emission");
+  }
+
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"provider-config-template"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentProviderConfigCommands template exited with " << result
+                << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"template_kind\":\"ccad_agent_provider_config_template\"",
+                   "provider config template reports template kind");
+    assertContains(out.str(), "\"provider_execution\":false",
+                   "provider config template does not enable execution");
+    assertContains(out.str(), "\"secret_values_present\":false",
+                   "provider config template does not contain secret values");
+    assertContains(out.str(), "\"CCAD_OPENAI_COMPATIBLE_BASE_URL\"",
+                   "provider config template includes OpenAI-compatible base URL env var");
+    assertContains(out.str(), "\"CCAD_LOCAL_MODEL_BASE_URL\"",
+                   "provider config template includes local model base URL env var");
+    assertContains(out.str(), "\"GEMINI_API_KEY\"",
+                   "provider config template includes Gemini API key env var");
+  }
+
+  {
+    std::ostringstream out;
+    auto oldCout = std::cout.rdbuf(out.rdbuf());
+    std::vector<std::string> args = {"provider-status"};
+    int result = ccad_cli::agentCommand(args);
+    std::cout.rdbuf(oldCout);
+    if (result != 0) {
+      std::cerr << "FAIL testAgentProviderConfigCommands status exited with " << result << "\n";
+      std::exit(1);
+    }
+    assertContains(out.str(), "\"status_kind\":\"ccad_agent_provider_status\"",
+                   "provider status reports status kind");
+    assertContains(out.str(), "\"env_value_redaction\":\"presence_only\"",
+                   "provider status reports presence only");
+    assertContains(out.str(), "\"provider_configured\"",
+                   "provider status reports aggregate configuration");
+    assertContains(out.str(), "\"secret_values_present\":false",
+                   "provider status does not contain secret values");
+    assertContains(out.str(), "\"provider_execution\":false",
+                   "provider status does not run providers");
+  }
 }
 
 void testAgentWorkspaceParityCommands() {
@@ -607,6 +689,39 @@ void testAgentPolicyJsonRpc() {
                  "JSON-RPC policy check reports dry-run decision");
 }
 
+void testAgentProviderConfigJsonRpc() {
+  std::istringstream in(
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.provider_config_schema\", \"id\": 20}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.provider_config_template\", \"id\": 21}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.provider_status\", \"id\": 22}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.tool_guide\", \"params\": {\"method_name\": \"agent.provider_config_schema\"}, \"id\": 23}\n");
+  std::ostringstream out;
+  auto oldCin = std::cin.rdbuf(in.rdbuf());
+  auto oldCout = std::cout.rdbuf(out.rdbuf());
+  std::vector<std::string> args = {"serve", "--allow-read"};
+  int result = ccad_cli::agentCommand(args);
+  std::cin.rdbuf(oldCin);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) {
+    std::cerr << "FAIL testAgentProviderConfigJsonRpc exited with " << result << "\n";
+    std::exit(1);
+  }
+  assertContains(out.str(), "\"id\": 20", "has provider schema request id");
+  assertContains(out.str(), "\"schema_kind\":\"ccad_agent_provider_config_schema\"",
+                 "JSON-RPC exposes provider config schema");
+  assertContains(out.str(), "\"id\": 21", "has provider template request id");
+  assertContains(out.str(), "\"template_kind\":\"ccad_agent_provider_config_template\"",
+                 "JSON-RPC exposes provider config template");
+  assertContains(out.str(), "\"id\": 22", "has provider status request id");
+  assertContains(out.str(), "\"status_kind\":\"ccad_agent_provider_status\"",
+                 "JSON-RPC exposes provider status");
+  assertContains(out.str(), "\"id\": 23", "has provider config tool guide request id");
+  assertContains(out.str(), "\"method\":\"agent.provider_config_schema\"",
+                 "JSON-RPC tool guide finds provider config schema");
+  assertContains(out.str(), "\"preferred_surface\":\"headless_cli_provider_config\"",
+                 "JSON-RPC tool guide points provider config to the headless config surface");
+}
+
 void testAgentServePermissionGatesReportApproval() {
   std::istringstream in(
       "{\"jsonrpc\": \"2.0\", \"method\": \"execute\", \"params\": {\"args\": [\"pcb\", \"add-via\", \"--file\", \"board.ccad.json\"]}, \"id\": 19}\n");
@@ -635,6 +750,7 @@ int main() {
     testMCPToolsCall();
     testAgentMethodsCommand();
     testAgentMetadataCommands();
+    testAgentProviderConfigCommands();
     testAgentWorkspaceParityCommands();
     testAgentSessionCheckpointCommands();
     testAgentPolicyCommands();
@@ -642,6 +758,7 @@ int main() {
     testAgentWorkspaceParityJsonRpc();
     testAgentSessionJsonRpc();
     testAgentPolicyJsonRpc();
+    testAgentProviderConfigJsonRpc();
     testAgentServePermissionGatesReportApproval();
     std::cout << "PASS agent serve\n";
     return 0;

@@ -1,6 +1,7 @@
 #include "agent_commands.hpp"
 
 #include "agent_policy.hpp"
+#include "agent_provider_config.hpp"
 #include "agent_session.hpp"
 #include "app.hpp"
 #include "ccad_core/json.hpp"
@@ -141,6 +142,12 @@ std::string agentProtocolCatalogJson() {
       agentMethodEntryJson("agent.run_profile", "agent", "Run Profile", true, false, false),
       agentMethodEntryJson("agent.safety_policy", "agent", "Safety Policy", true, false, false),
       agentMethodEntryJson("agent.provider_policy", "agent", "Provider Policy", true, false, false),
+      agentMethodEntryJson("agent.provider_config_schema", "agent", "Provider Config Schema", true,
+                           false, false),
+      agentMethodEntryJson("agent.provider_config_template", "agent", "Provider Config Template",
+                           true, false, false),
+      agentMethodEntryJson("agent.provider_status", "agent", "Provider Status", true, false,
+                           false),
       agentMethodEntryJson("agent.observability_config", "agent", "Observability Config", true, false,
                            false),
       agentMethodEntryJson("agent.evidence_manifest_schema", "agent", "Evidence Manifest Schema",
@@ -165,8 +172,10 @@ std::string agentQuickstartJson() {
          "\"summary\":\"Discover methods, inspect project state with CLI commands, run deterministic tools, and use GUI map or screenshots only when visual proof is required.\","
          "\"first_methods\":[\"agent.methods\",\"agent.state\",\"agent.session_schema\","
          "\"agent.policy_schema\",\"agent.policy_check\",\"agent.session_state\","
-         "\"agent.replay_manifest\",\"agent.tasks\",\"agent.evidence\",\"agent.approvals\","
-         "\"agent.harness_context\",\"agent.tool_guide\",\"tools/list\"],"
+         "\"agent.replay_manifest\",\"agent.provider_config_schema\","
+         "\"agent.provider_config_template\",\"agent.provider_status\",\"agent.tasks\","
+         "\"agent.evidence\",\"agent.approvals\",\"agent.harness_context\","
+         "\"agent.tool_guide\",\"tools/list\"],"
          "\"screenshot_rule\":\"GUI screenshots must use the project visual-validation harness with beep and current settle waits\","
          "\"unsafe_rule\":\"Write commands require explicit --allow-write in agent serve and direct human approval when policy requires it\"}";
 }
@@ -179,8 +188,10 @@ std::string agentHarnessContextJson() {
          "\"pending_diagnostics\":{\"erc_count\":0,\"drc_count\":0,\"error_count\":0,\"warning_count\":0},"
          "\"capabilities\":[\"agent.methods\",\"agent.state\",\"agent.session_schema\","
          "\"agent.policy_schema\",\"agent.policy_check\",\"agent.session_state\","
-         "\"agent.replay_manifest\",\"agent.tasks\",\"agent.evidence\",\"agent.approvals\","
-         "\"agent.tool_guide\",\"ccad_execute\",\"mcp_stdio\"],"
+         "\"agent.replay_manifest\",\"agent.provider_config_schema\","
+         "\"agent.provider_config_template\",\"agent.provider_status\",\"agent.tasks\","
+         "\"agent.evidence\",\"agent.approvals\",\"agent.tool_guide\",\"ccad_execute\","
+         "\"mcp_stdio\"],"
          "\"visual_validation_policy\":{\"single_preview_wait_seconds\":7,"
          "\"multi_action_initial_wait_seconds\":5,\"multi_action_step_wait_ms\":800,"
          "\"beep_before_gui_test\":true}}";
@@ -256,7 +267,10 @@ std::string agentProviderPolicyJson() {
          "\"google_gemini_api\",\"local_model_server\",\"future_user_installed_connector\"],"
          "\"disallowed_paths\":[\"no_consumer_web_ui_automation\"],"
          "\"secret_storage\":\"environment_or_os_credential_store\","
-         "\"project_file_secret_storage\":false}";
+         "\"project_file_secret_storage\":false,"
+         "\"configuration_schema_method\":\"agent.provider_config_schema\","
+         "\"configuration_template_method\":\"agent.provider_config_template\","
+         "\"status_method\":\"agent.provider_status\"}";
 }
 
 std::string agentObservabilityConfigJson() {
@@ -299,6 +313,11 @@ std::string preferredSurfaceForMethod(const std::string& method) {
   if (method == "agent.policy_schema" || method == "agent.policy_check") {
     return "headless_cli_policy_gate";
   }
+  if (method == "agent.provider_config_schema" ||
+      method == "agent.provider_config_template" ||
+      method == "agent.provider_status") {
+    return "headless_cli_provider_config";
+  }
   if (method.rfind("agent.", 0) == 0) {
     return "read_only_protocol_metadata";
   }
@@ -318,6 +337,9 @@ std::string agentToolGuideJson(const std::string& method) {
                      method == "agent.session_schema" || method == "agent.session_state" ||
                      method == "agent.replay_manifest" ||
                      method == "agent.policy_schema" || method == "agent.policy_check" ||
+                     method == "agent.provider_config_schema" ||
+                     method == "agent.provider_config_template" ||
+                     method == "agent.provider_status" ||
                      method == "agent.observability_config" ||
                      method == "agent.evidence_manifest_schema" || method == "agent.tool_guide" ||
                      method == "ccad_execute";
@@ -355,6 +377,15 @@ std::string agentMetadataJson(const std::string& command, const std::string& met
   if (command == "run-profile" || command == "run_profile") return agentRunProfileJson();
   if (command == "safety-policy" || command == "safety_policy") return agentSafetyPolicyJson();
   if (command == "provider-policy" || command == "provider_policy") return agentProviderPolicyJson();
+  if (command == "provider-config-schema" || command == "provider_config_schema") {
+    return agentProviderConfigSchemaJson();
+  }
+  if (command == "provider-config-template" || command == "provider_config_template") {
+    return agentProviderConfigTemplateJson();
+  }
+  if (command == "provider-status" || command == "provider_status") {
+    return agentProviderStatusJson();
+  }
   if (command == "observability-config" || command == "observability_config") {
     return agentObservabilityConfigJson();
   }
@@ -369,7 +400,7 @@ std::string agentMetadataJson(const std::string& command, const std::string& met
 
 int agentCommand(const std::vector<std::string>& args) {
   if (args.empty()) {
-    std::cerr << "Usage: ccad agent <serve|methods|quickstart|harness-context|state|tasks|evidence|approvals|session-schema|session-new|session-state|checkpoint-add|replay|policy-schema|policy-check|dry-run|run-profile|safety-policy|provider-policy|observability-config|evidence-manifest-schema|tool-guide>\n";
+    std::cerr << "Usage: ccad agent <serve|methods|quickstart|harness-context|state|tasks|evidence|approvals|session-schema|session-new|session-state|checkpoint-add|replay|policy-schema|policy-check|dry-run|run-profile|safety-policy|provider-policy|provider-config-schema|provider-config-template|provider-status|observability-config|evidence-manifest-schema|tool-guide>\n";
     return 1;
   }
 
@@ -435,7 +466,7 @@ int agentCommand(const std::vector<std::string>& args) {
       std::cout << metadata << "\n";
       return 0;
     }
-    std::cerr << "Usage: ccad agent <serve|methods|quickstart|harness-context|state|tasks|evidence|approvals|session-schema|session-new|session-state|checkpoint-add|replay|policy-schema|policy-check|dry-run|run-profile|safety-policy|provider-policy|observability-config|evidence-manifest-schema|tool-guide>\n";
+    std::cerr << "Usage: ccad agent <serve|methods|quickstart|harness-context|state|tasks|evidence|approvals|session-schema|session-new|session-state|checkpoint-add|replay|policy-schema|policy-check|dry-run|run-profile|safety-policy|provider-policy|provider-config-schema|provider-config-template|provider-status|observability-config|evidence-manifest-schema|tool-guide>\n";
     return 1;
   }
 
@@ -534,6 +565,15 @@ int agentCommand(const std::vector<std::string>& args) {
       std::cout.flush();
     } else if (method == "agent.provider_policy") {
       std::cout << formatSuccess(id, agentProviderPolicyJson()) << "\n";
+      std::cout.flush();
+    } else if (method == "agent.provider_config_schema") {
+      std::cout << formatSuccess(id, agentProviderConfigSchemaJson()) << "\n";
+      std::cout.flush();
+    } else if (method == "agent.provider_config_template") {
+      std::cout << formatSuccess(id, agentProviderConfigTemplateJson()) << "\n";
+      std::cout.flush();
+    } else if (method == "agent.provider_status") {
+      std::cout << formatSuccess(id, agentProviderStatusJson()) << "\n";
       std::cout.flush();
     } else if (method == "agent.observability_config") {
       std::cout << formatSuccess(id, agentObservabilityConfigJson()) << "\n";
