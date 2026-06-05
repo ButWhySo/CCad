@@ -245,6 +245,18 @@ int main(int argc, char** argv) {
           "UI map exposes the agent run-control strip");
   require(contains(map, "\"id\":\"label:agent_run_state_chip\""),
           "UI map exposes the agent run-state chip");
+  require(contains(map, "\"id\":\"panel:agent_run_queue\""),
+          "UI map exposes the local agent run queue panel");
+  require(contains(map, "\"id\":\"label:agent_run_queue_status\""),
+          "UI map exposes the local agent run queue status");
+  require(contains(map, "\"id\":\"label:agent_run_queue_counts\""),
+          "UI map exposes local agent run queue counts");
+  require(contains(map, "\"id\":\"label:agent_run_queue_current_step\""),
+          "UI map exposes the local agent run queue current step");
+  require(contains(map, "\"id\":\"action:agent_cancel_run_queue\""),
+          "UI map exposes the local agent run queue cancel action");
+  require(contains(map, "\"id\":\"action:agent_clear_run_queue\""),
+          "UI map exposes the local agent run queue clear action");
   require(contains(map, "\"id\":\"label:agent_trace_chip\""),
           "UI map exposes the agent trace chip");
   require(contains(map, "\"id\":\"label:agent_session_chip\""),
@@ -732,6 +744,33 @@ int main(int argc, char** argv) {
       window.uiTargetJsonById("label:agent_run_state_chip");
   require(contains(agent_run_state_target, "\"found\":true"),
           "target query finds agent run-state chip");
+  const QString agent_run_queue_target = window.uiTargetJsonById("panel:agent_run_queue");
+  require(contains(agent_run_queue_target, "\"found\":true"),
+          "target query finds agent run queue panel");
+  require(contains(agent_run_queue_target, "\"role\":\"panel\""),
+          "agent run queue panel target reports panel role");
+  const QString agent_run_queue_status_target =
+      window.uiTargetJsonById("label:agent_run_queue_status");
+  require(contains(agent_run_queue_status_target, "\"found\":true"),
+          "target query finds agent run queue status label");
+  const QString agent_run_queue_counts_target =
+      window.uiTargetJsonById("label:agent_run_queue_counts");
+  require(contains(agent_run_queue_counts_target, "\"found\":true"),
+          "target query finds agent run queue counts label");
+  const QString agent_run_queue_step_target =
+      window.uiTargetJsonById("label:agent_run_queue_current_step");
+  require(contains(agent_run_queue_step_target, "\"found\":true"),
+          "target query finds agent run queue current step label");
+  const QString agent_cancel_queue_target =
+      window.uiTargetJsonById("action:agent_cancel_run_queue");
+  require(contains(agent_cancel_queue_target, "\"found\":true"),
+          "target query finds agent run queue cancel action");
+  require(contains(agent_cancel_queue_target, "\"role\":\"action\""),
+          "agent run queue cancel target reports action role");
+  const QString agent_clear_queue_target =
+      window.uiTargetJsonById("action:agent_clear_run_queue");
+  require(contains(agent_clear_queue_target, "\"found\":true"),
+          "target query finds agent run queue clear action");
   const QString agent_trace_chip_target = window.uiTargetJsonById("label:agent_trace_chip");
   require(contains(agent_trace_chip_target, "\"found\":true"),
           "target query finds agent trace chip");
@@ -1048,6 +1087,31 @@ int main(int argc, char** argv) {
           "workspace state keeps provider execution disabled");
   require(contains(provider_workspace_state, "\"provider_secret_value_visible\":false"),
           "workspace state confirms provider secrets are not visible");
+  const QString queue_workspace_state = window.runAgentUiQueryJson("agent.workspace_state", "{}");
+  require(contains(queue_workspace_state, "\"run_queue_available\":true"),
+          "workspace state reports local run queue availability");
+  require(contains(queue_workspace_state, "\"run_queue_status\":\"idle\""),
+          "workspace state reports initial local run queue status");
+  require(contains(queue_workspace_state, "\"run_queue_provider_execution_enabled\":false"),
+          "workspace state keeps provider execution disabled for the queue");
+  const QString cancel_queue_click =
+      window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_cancel_run_queue\"}");
+  require(contains(cancel_queue_click, "\"performed\":true"),
+          "agent click can cancel the local run queue");
+  require(contains(cancel_queue_click, "\"reason\":\"button_clicked\""),
+          "agent run queue cancel reports direct button click");
+  const QString canceled_queue_state = window.runAgentUiQueryJson("agent.workspace_state", "{}");
+  require(contains(canceled_queue_state, "\"run_queue_status\":\"canceled\""),
+          "workspace state reports canceled local run queue");
+  const QString clear_queue_click =
+      window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_clear_run_queue\"}");
+  require(contains(clear_queue_click, "\"performed\":true"),
+          "agent click can clear the local run queue");
+  const QString cleared_queue_state = window.runAgentUiQueryJson("agent.workspace_state", "{}");
+  require(contains(cleared_queue_state, "\"run_queue_status\":\"cleared\""),
+          "workspace state reports cleared local run queue");
+  require(contains(cleared_queue_state, "\"run_queue_depth\":0"),
+          "workspace state reports an empty cleared local run queue");
   const QString submit_command_click =
       window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_submit_command\"}");
   require(contains(submit_command_click, "\"performed\":true"),

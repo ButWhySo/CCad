@@ -129,6 +129,10 @@ class AgentPanel final : public QWidget {
   void renderActivityEvents();
   QJsonObject activityEventJson(const ActivityEvent& event) const;
   void updateRunState(const QString& state, const QString& title, const QString& detail);
+  void updateRunQueueLabels();
+  QJsonObject runQueueStateObject() const;
+  void cancelRunQueue();
+  void clearRunQueue();
   void pauseRun();
   void resumeRun();
   void stopRun();
@@ -153,6 +157,9 @@ class AgentPanel final : public QWidget {
   QLabel* trace_status_label_ = nullptr;
   QLabel* trace_export_status_label_ = nullptr;
   QLabel* run_state_chip_label_ = nullptr;
+  QLabel* run_queue_status_label_ = nullptr;
+  QLabel* run_queue_counts_label_ = nullptr;
+  QLabel* run_queue_current_step_label_ = nullptr;
   QLabel* session_status_label_ = nullptr;
   QLabel* policy_decision_label_ = nullptr;
   QLabel* policy_risk_label_ = nullptr;
@@ -187,6 +194,14 @@ class AgentPanel final : public QWidget {
   QString staged_goal_;
   QString staged_command_;
   QString run_state_ = "idle";
+  QString run_queue_id_ = "local-run-queue-1";
+  QString run_queue_status_ = "idle";
+  QString run_queue_current_step_ = "Collect evidence";
+  int run_queue_depth_ = 3;
+  int run_queue_completed_count_ = 0;
+  int run_queue_failed_count_ = 0;
+  int run_steps_total_ = 3;
+  bool run_queue_cancelable_ = true;
   QString trace_id_;
   QString span_id_;
   QString trace_status_ = "local_off";

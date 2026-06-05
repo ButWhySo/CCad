@@ -2005,6 +2005,12 @@ ReviewWindow::ReviewWindow() {
                       "panel:agent_mode_strip",
                       "panel:agent_run_controls",
                       "label:agent_run_state_chip",
+                      "panel:agent_run_queue",
+                      "label:agent_run_queue_status",
+                      "label:agent_run_queue_counts",
+                      "label:agent_run_queue_current_step",
+                      "action:agent_cancel_run_queue",
+                      "action:agent_clear_run_queue",
                       "label:agent_trace_chip",
                       "label:agent_session_chip",
                       "panel:agent_trace_strip",
@@ -4312,7 +4318,9 @@ QString ReviewWindow::validateUiMapTargetsJson(const bool move_cursor) const {
   }
 
   const QStringList visible_agent_buttons = {"action:agent_new_trace_context",
-                                             "action:agent_provider_refresh_status"};
+                                             "action:agent_provider_refresh_status",
+                                             "action:agent_cancel_run_queue",
+                                             "action:agent_clear_run_queue"};
   for (const QPushButton* button : findChildren<QPushButton*>()) {
     const QString id = button->objectName();
     if (!visible_agent_buttons.contains(id)) {
@@ -6649,6 +6657,12 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
                       "panel:agent_mode_strip",
                       "panel:agent_run_controls",
                       "label:agent_run_state_chip",
+                      "panel:agent_run_queue",
+                      "label:agent_run_queue_status",
+                      "label:agent_run_queue_counts",
+                      "label:agent_run_queue_current_step",
+                      "action:agent_cancel_run_queue",
+                      "action:agent_clear_run_queue",
                       "label:agent_trace_chip",
                       "label:agent_session_chip",
                       "panel:agent_trace_strip",

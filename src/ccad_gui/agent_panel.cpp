@@ -1004,6 +1004,41 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   run_controls_layout->addStretch(1);
   header_layout->addWidget(run_controls);
 
+  auto* run_queue = makePanelSection("panel:agent_run_queue", header);
+  run_queue->setProperty("agentRole", "modeStrip");
+  auto* run_queue_layout = new QVBoxLayout(run_queue);
+  run_queue_layout->setContentsMargins(3, 3, 3, 3);
+  run_queue_layout->setSpacing(4);
+  auto* run_queue_title_row = new QHBoxLayout();
+  run_queue_title_row->setSpacing(4);
+  auto* run_queue_title = new QLabel("Run Queue", run_queue);
+  run_queue_title->setProperty("agentRole", "sectionTitle");
+  auto* cancel_queue_button =
+      makeIconButton("action:agent_cancel_run_queue", "Cancel local run queue",
+                     style()->standardIcon(QStyle::SP_DialogCancelButton), run_queue);
+  auto* clear_queue_button =
+      makeIconButton("action:agent_clear_run_queue", "Clear local run queue",
+                     style()->standardIcon(QStyle::SP_DialogResetButton), run_queue);
+  run_queue_title_row->addWidget(run_queue_title);
+  run_queue_title_row->addWidget(cancel_queue_button);
+  run_queue_title_row->addWidget(clear_queue_button);
+  run_queue_title_row->addStretch(1);
+  run_queue_layout->addLayout(run_queue_title_row);
+  run_queue_status_label_ =
+      makeChip("label:agent_run_queue_status", "Queue: idle", run_queue);
+  run_queue_counts_label_ =
+      makeChip("label:agent_run_queue_counts", "Steps: 0/3 done | 0 failed | 3 queued",
+               run_queue);
+  run_queue_current_step_label_ =
+      makeChip("label:agent_run_queue_current_step", "Current: Collect evidence", run_queue);
+  run_queue_status_label_->setWordWrap(true);
+  run_queue_counts_label_->setWordWrap(true);
+  run_queue_current_step_label_->setWordWrap(true);
+  run_queue_layout->addWidget(run_queue_status_label_);
+  run_queue_layout->addWidget(run_queue_counts_label_);
+  run_queue_layout->addWidget(run_queue_current_step_label_);
+  header_layout->insertWidget(3, run_queue);
+
   auto* tab_strip = makePanelSection("panel:agent_tab_strip", header);
   tab_strip->setProperty("agentRole", "tabStrip");
   auto* tab_strip_layout = new QHBoxLayout(tab_strip);
@@ -1248,6 +1283,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   connect(pause_run_button, &QPushButton::clicked, this, [this]() { pauseRun(); });
   connect(resume_run_button, &QPushButton::clicked, this, [this]() { resumeRun(); });
   connect(stop_run_button, &QPushButton::clicked, this, [this]() { stopRun(); });
+  connect(cancel_queue_button, &QPushButton::clicked, this, [this]() { cancelRunQueue(); });
+  connect(clear_queue_button, &QPushButton::clicked, this, [this]() { clearRunQueue(); });
   connect(new_trace_button, &QPushButton::clicked, this, [this]() { createLocalTraceContext(); });
 
   content_layout->addWidget(task_section);
@@ -1401,6 +1438,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   connect(footer_drc_button, &QPushButton::clicked, this, [this]() { runDiagnosticsPreset(); });
   connect(submit_command_button, &QPushButton::clicked, this, [this]() { submitCommand(); });
   connect(command_input_, &QLineEdit::returnPressed, this, [this]() { submitCommand(); });
+  updateRunQueueLabels();
   updateProviderControls();
 }
 
@@ -1515,6 +1553,115 @@ void AgentPanel::updateProviderControls() {
   if (provider_execution_status_label_ != nullptr) {
     provider_execution_status_label_->setText("Execution: disabled | no network probe");
   }
+}
+
+void AgentPanel::updateRunQueueLabels() {
+  if (run_queue_status_label_ != nullptr) {
+    run_queue_status_label_->setText("Queue: " + run_queue_status_ + " | local metadata");
+  }
+  if (run_queue_counts_label_ != nullptr) {
+    run_queue_counts_label_->setText(
+        "Steps: " + QString::number(run_queue_completed_count_) + "/" +
+        QString::number(run_steps_total_) + " done | " +
+        QString::number(run_queue_failed_count_) + " failed | " +
+        QString::number(run_queue_depth_) + " queued");
+  }
+  if (run_queue_current_step_label_ != nullptr) {
+    const QString step = run_queue_current_step_.trimmed().isEmpty()
+                             ? QString("none")
+                             : run_queue_current_step_;
+    run_queue_current_step_label_->setText("Current: " + step);
+  }
+}
+
+QJsonObject AgentPanel::runQueueStateObject() const {
+  QJsonArray steps;
+  auto append_step = [&steps](const QString& id,
+                              const QString& title,
+                              const QString& kind,
+                              const QString& state) {
+    QJsonObject step;
+    step.insert("id", id);
+    step.insert("title", title);
+    step.insert("kind", kind);
+    step.insert("state", state);
+    steps.append(step);
+  };
+  append_step("queue-step-1", "Read workspace context", "context", "queued");
+  append_step("queue-step-2", "Collect evidence", "evidence", "active");
+  append_step("queue-step-3", "Apply bounded changes", "tool_plan", "queued");
+
+  QJsonObject queue;
+  queue.insert("run_queue_available", true);
+  queue.insert("run_queue_id", run_queue_id_);
+  queue.insert("run_queue_thread_id", durable_thread_id_);
+  queue.insert("run_queue_session_id", durable_session_id_);
+  queue.insert("run_queue_status", run_queue_status_);
+  queue.insert("run_queue_depth", run_queue_depth_);
+  queue.insert("run_queue_completed_count", run_queue_completed_count_);
+  queue.insert("run_queue_failed_count", run_queue_failed_count_);
+  queue.insert("run_steps_total", run_steps_total_);
+  queue.insert("run_step_current", run_queue_current_step_);
+  queue.insert("run_step_current_index", run_queue_current_step_.trimmed().isEmpty() ? 0 : 2);
+  queue.insert("run_queue_cancelable", run_queue_cancelable_);
+  queue.insert("run_queue_provider_execution_enabled", false);
+  queue.insert("run_queue_worker_thread_enabled", false);
+  queue.insert("run_queue_trace_export_enabled", false);
+  queue.insert("run_queue_external_process_enabled", false);
+  queue.insert("run_queue_project_mutation_enabled", false);
+  queue.insert("run_queue_persistence", "local_in_memory_checkpoint_shape");
+  queue.insert("run_queue_policy", "local_metadata_only_no_provider_calls");
+  queue.insert("run_queue_steps", steps);
+  return queue;
+}
+
+void AgentPanel::cancelRunQueue() {
+  run_queue_status_ = "canceled";
+  run_queue_cancelable_ = false;
+  run_state_ = "stopped";
+  if (run_state_chip_label_ != nullptr) {
+    run_state_chip_label_->setText("Run: stopped");
+  }
+  updateRunQueueLabels();
+
+  QJsonObject event = runQueueStateObject();
+  event.insert("schema_version", 1);
+  event.insert("event", "agent_run_queue_canceled");
+  event.insert("provider_execution_performed", false);
+  event.insert("worker_thread_started", false);
+  event.insert("trace_export_performed", false);
+  output_->setPlainText(QString::fromUtf8(QJsonDocument(event).toJson(QJsonDocument::Compact)) +
+                        "\n");
+  status_label_->setText("Run queue canceled");
+  result_state_label_->setText("Result Run queue canceled");
+  addActivityEvent("run", "Queue canceled",
+                   "Local queue canceled; provider execution remains disabled.",
+                   "agent.run_queue.cancel");
+}
+
+void AgentPanel::clearRunQueue() {
+  run_queue_status_ = "cleared";
+  run_queue_current_step_.clear();
+  run_queue_depth_ = 0;
+  run_queue_completed_count_ = 0;
+  run_queue_failed_count_ = 0;
+  run_steps_total_ = 0;
+  run_queue_cancelable_ = false;
+  updateRunQueueLabels();
+
+  QJsonObject event = runQueueStateObject();
+  event.insert("schema_version", 1);
+  event.insert("event", "agent_run_queue_cleared");
+  event.insert("provider_execution_performed", false);
+  event.insert("worker_thread_started", false);
+  event.insert("trace_export_performed", false);
+  output_->setPlainText(QString::fromUtf8(QJsonDocument(event).toJson(QJsonDocument::Compact)) +
+                        "\n");
+  status_label_->setText("Run queue cleared");
+  result_state_label_->setText("Result Run queue cleared");
+  addActivityEvent("run", "Queue cleared",
+                   "Local queue metadata cleared; no queued external work existed.",
+                   "agent.run_queue.clear");
 }
 
 void AgentPanel::refreshProviderStatus() {
@@ -1872,9 +2019,16 @@ void AgentPanel::updateRunState(const QString& state,
                                 const QString& title,
                                 const QString& detail) {
   run_state_ = contextValue(state, "idle");
+  run_queue_status_ = run_state_;
+  if (run_queue_status_ == "stopped") {
+    run_queue_cancelable_ = false;
+  } else if (run_queue_status_ == "running" || run_queue_status_ == "paused") {
+    run_queue_cancelable_ = true;
+  }
   if (run_state_chip_label_ != nullptr) {
     run_state_chip_label_->setText("Run: " + run_state_);
   }
+  updateRunQueueLabels();
   status_label_->setText(title);
   result_state_label_->setText("Result " + title);
   addActivityEvent("run", title, detail, "agent.run");
@@ -2441,6 +2595,7 @@ QString AgentPanel::workspaceStateJson() const {
                   QJsonArray{"session_strip",
                              "mode_strip",
                              "trace_strip",
+                             "run_queue",
                              "trace_links",
                              "provider_controls",
                              "session_binding",
@@ -2487,6 +2642,10 @@ QString AgentPanel::workspaceStateJson() const {
   response.insert("session_status", sessionStatusText());
   response.insert("run_state", run_state_);
   response.insert("run_label", run_state_chip_label_->text());
+  const QJsonObject queue = runQueueStateObject();
+  for (auto it = queue.begin(); it != queue.end(); ++it) {
+    response.insert(it.key(), it.value());
+  }
   response.insert("plan_item_count", plan_items.size());
   response.insert("plan_items", plan_items);
   response.insert("command", staged_command_.isEmpty() ? commandText().trimmed() : staged_command_);

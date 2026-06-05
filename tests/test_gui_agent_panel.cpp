@@ -211,6 +211,51 @@ int main(int argc, char** argv) {
           "agent panel still keeps provider execution disabled after refresh");
   require(contains(panel.outputText(), "\"event\":\"agent_provider_status_refreshed\""),
           "agent panel emits a local provider status refresh event");
+  require(panel.findChild<QWidget*>("panel:agent_run_queue") != nullptr,
+          "agent panel exposes a local run queue panel");
+  require(panel.findChild<QLabel*>("label:agent_run_queue_status") != nullptr,
+          "agent panel exposes a local run queue status label");
+  require(panel.findChild<QLabel*>("label:agent_run_queue_counts") != nullptr,
+          "agent panel exposes local run queue count metadata");
+  require(panel.findChild<QLabel*>("label:agent_run_queue_current_step") != nullptr,
+          "agent panel exposes the current run queue step");
+  require(panel.findChild<QPushButton*>("action:agent_cancel_run_queue") != nullptr,
+          "agent panel exposes a semantic local queue cancel action");
+  require(panel.findChild<QPushButton*>("action:agent_clear_run_queue") != nullptr,
+          "agent panel exposes a semantic local queue clear action");
+  QString queue_state = panel.workspaceStateJson();
+  require(contains(queue_state, "\"run_queue_available\":true"),
+          "agent panel reports local run queue availability");
+  require(contains(queue_state, "\"run_queue_id\":\"local-run-queue-1\""),
+          "agent panel reports a stable local run queue id");
+  require(contains(queue_state, "\"run_queue_status\":\"idle\""),
+          "agent panel reports the initial run queue status");
+  require(contains(queue_state, "\"run_queue_depth\":3"),
+          "agent panel reports queued local run steps");
+  require(contains(queue_state, "\"run_steps_total\":3"),
+          "agent panel reports total run steps");
+  require(contains(queue_state, "\"run_step_current\":\"Collect evidence\""),
+          "agent panel reports the current queued run step");
+  require(contains(queue_state, "\"run_queue_cancelable\":true"),
+          "agent panel reports whether the local queue can be canceled");
+  require(contains(queue_state, "\"run_queue_provider_execution_enabled\":false"),
+          "agent panel keeps provider execution disabled for local queue state");
+  require(contains(queue_state, "\"run_queue_worker_thread_enabled\":false"),
+          "agent panel does not pretend a background runner thread exists");
+  require(contains(queue_state, "\"run_queue_trace_export_enabled\":false"),
+          "agent panel does not pretend queue trace export is enabled");
+  panel.findChild<QPushButton*>("action:agent_cancel_run_queue")->click();
+  queue_state = panel.workspaceStateJson();
+  require(contains(queue_state, "\"run_queue_status\":\"canceled\""),
+          "agent panel queue cancel updates local queue status");
+  require(contains(panel.outputText(), "\"event\":\"agent_run_queue_canceled\""),
+          "agent panel queue cancel emits a local queue event");
+  panel.findChild<QPushButton*>("action:agent_clear_run_queue")->click();
+  queue_state = panel.workspaceStateJson();
+  require(contains(queue_state, "\"run_queue_status\":\"cleared\""),
+          "agent panel queue clear updates local queue status");
+  require(contains(queue_state, "\"run_queue_depth\":0"),
+          "agent panel queue clear removes local queued steps");
   require(panel.findChild<QWidget*>("panel:agent_run_controls") != nullptr,
           "agent panel exposes a local run-control strip");
   require(panel.findChild<QWidget*>("panel:agent_status_rail") != nullptr,
