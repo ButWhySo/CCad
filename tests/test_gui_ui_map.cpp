@@ -239,6 +239,8 @@ int main(int argc, char** argv) {
   require(contains(map, "\"id\":\"panel:agent\""), "UI map exposes agent panel");
   require(contains(map, "\"id\":\"panel:agent_session_strip\""),
           "UI map exposes the agent session strip");
+  require(contains(map, "\"id\":\"panel:agent_header_action_bar\""),
+          "UI map exposes the compact agent header action bar");
   require(contains(map, "\"id\":\"panel:agent_mode_strip\""),
           "UI map exposes the agent mode strip");
   require(contains(map, "\"id\":\"panel:agent_run_controls\""),
@@ -323,6 +325,30 @@ int main(int argc, char** argv) {
           "UI map exposes visible agent request-context footer action");
   require(contains(map, "\"id\":\"action:agent_footer_trigger_drc\""),
           "UI map exposes visible agent DRC footer action");
+  require(contains(map, "\"id\":\"panel:agent_footer_quick_actions\""),
+          "UI map exposes fixed agent footer quick actions");
+  require(contains(map, "\"id\":\"action:agent_quick_request_context\""),
+          "UI map exposes the reference-style context quick action");
+  require(contains(map, "\"id\":\"action:agent_quick_trigger_drc\""),
+          "UI map exposes the reference-style DRC quick action");
+  require(contains(map, "\"id\":\"panel:agent_evidence_thumbnail_strip\""),
+          "UI map exposes the agent evidence thumbnail strip");
+  require(contains(map, "\"id\":\"card:agent_evidence_thumbnail_datasheet\""),
+          "UI map exposes the datasheet evidence thumbnail");
+  require(contains(map, "\"id\":\"card:agent_evidence_thumbnail_drc\""),
+          "UI map exposes the DRC evidence thumbnail");
+  require(contains(map, "\"id\":\"card:agent_evidence_thumbnail_schematic\""),
+          "UI map exposes the schematic evidence thumbnail");
+  require(contains(map, "\"id\":\"card:agent_evidence_thumbnail_revision\""),
+          "UI map exposes the revision evidence thumbnail");
+  require(contains(map, "\"id\":\"panel:agent_approval_preview\""),
+          "UI map exposes the agent approval preview panel");
+  require(contains(map, "\"id\":\"panel:agent_approval_preview_artifact\""),
+          "UI map exposes the agent approval artifact preview");
+  require(contains(map, "\"id\":\"label:agent_approval_preview_summary\""),
+          "UI map exposes the approval preview summary label");
+  require(contains(map, "\"id\":\"label:agent_approval_preview_delta\""),
+          "UI map exposes the approval preview delta label");
   require(contains(map, "\"id\":\"control:agent_live_method\""),
           "UI map exposes agent live-query method input");
   require(contains(map, "\"id\":\"control:agent_live_payload\""),
@@ -894,6 +920,59 @@ int main(int argc, char** argv) {
       window.uiTargetJsonById("action:agent_header_clear_output");
   require(contains(agent_header_clear_target, "\"found\":true"),
           "target query finds agent header clear action");
+  const QString agent_header_action_bar_target =
+      window.uiTargetJsonById("panel:agent_header_action_bar");
+  require(contains(agent_header_action_bar_target, "\"found\":true"),
+          "target query finds the compact agent header action bar");
+  const QString agent_footer_quick_actions_target =
+      window.uiTargetJsonById("panel:agent_footer_quick_actions");
+  require(contains(agent_footer_quick_actions_target, "\"found\":true"),
+          "target query finds the fixed footer quick-action strip");
+  const QString agent_quick_context_target =
+      window.uiTargetJsonById("action:agent_quick_request_context");
+  require(contains(agent_quick_context_target, "\"found\":true"),
+          "target query finds the reference-style context quick action");
+  require(contains(agent_quick_context_target, "\"role\":\"action\""),
+          "context quick action target reports action role");
+  const QString agent_quick_drc_target =
+      window.uiTargetJsonById("action:agent_quick_trigger_drc");
+  require(contains(agent_quick_drc_target, "\"found\":true"),
+          "target query finds the reference-style DRC quick action");
+  require(contains(agent_quick_drc_target, "\"role\":\"action\""),
+          "DRC quick action target reports action role");
+  const QString agent_quick_context_click =
+      window.uiClickJson("action:agent_quick_request_context", false, false);
+  require(contains(agent_quick_context_click, "\"performed\":true"),
+          "agent quick context action can be clicked semantically");
+  const QString agent_evidence_thumbnails_target =
+      window.uiTargetJsonById("panel:agent_evidence_thumbnail_strip");
+  require(contains(agent_evidence_thumbnails_target, "\"found\":true"),
+          "target query finds the agent evidence thumbnail strip");
+  require(contains(window.uiTargetJsonById("card:agent_evidence_thumbnail_datasheet"),
+                   "\"found\":true"),
+          "target query finds the datasheet evidence thumbnail");
+  require(contains(window.uiTargetJsonById("card:agent_evidence_thumbnail_drc"),
+                   "\"found\":true"),
+          "target query finds the DRC evidence thumbnail");
+  require(contains(window.uiTargetJsonById("card:agent_evidence_thumbnail_schematic"),
+                   "\"found\":true"),
+          "target query finds the schematic evidence thumbnail");
+  require(contains(window.uiTargetJsonById("card:agent_evidence_thumbnail_revision"),
+                   "\"found\":true"),
+          "target query finds the revision evidence thumbnail");
+  const QString agent_approval_preview_target =
+      window.uiTargetJsonById("panel:agent_approval_preview");
+  require(contains(agent_approval_preview_target, "\"found\":true"),
+          "target query finds the agent approval preview panel");
+  require(contains(window.uiTargetJsonById("panel:agent_approval_preview_artifact"),
+                   "\"found\":true"),
+          "target query finds the agent approval artifact preview");
+  require(contains(window.uiTargetJsonById("label:agent_approval_preview_summary"),
+                   "\"found\":true"),
+          "target query finds the approval preview summary label");
+  require(contains(window.uiTargetJsonById("label:agent_approval_preview_delta"),
+                   "\"found\":true"),
+          "target query finds the approval preview delta label");
   const QString agent_command_target =
       window.uiTargetJsonById("control:agent_command_input");
   require(contains(agent_command_target, "\"found\":true"),

@@ -74,10 +74,10 @@ int main(int argc, char** argv) {
   require(panel.actionIdText() == "action:zoom_in", "agent panel has safe default action id");
   require(contains(panel.workspaceStateJson(), "\"panel_layout\":\"vertical_agent_workspace\""),
           "agent panel exposes the vertical workspace layout contract");
-  require(contains(panel.workspaceStateJson(), "\"visual_style\":\"agent_reference_panel_v4\""),
-          "agent panel exposes the reference-inspired visual style contract");
-  require(contains(panel.workspaceStateJson(), "\"workspace_layout_version\":4"),
-          "agent panel exposes the fourth workspace layout version");
+  require(contains(panel.workspaceStateJson(), "\"visual_style\":\"agent_reference_panel_v5\""),
+          "agent panel exposes the fifth reference-inspired visual style contract");
+  require(contains(panel.workspaceStateJson(), "\"workspace_layout_version\":5"),
+          "agent panel exposes the fifth workspace layout version");
   require(contains(panel.workspaceStateJson(), "\"run_state\":\"idle\""),
           "agent panel exposes local run state");
   require(contains(panel.workspaceStateJson(), "\"trace_label\":\"Trace: local-off\""),
@@ -104,8 +104,22 @@ int main(int argc, char** argv) {
           "agent panel reports a compact evidence lane");
   require(contains(panel.workspaceStateJson(), "\"approval_lane\""),
           "agent panel reports a compact approval lane");
+  require(contains(panel.workspaceStateJson(), "\"header_action_bar\""),
+          "agent panel reports the compact header action bar");
+  require(contains(panel.workspaceStateJson(), "\"evidence_thumbnail_strip\""),
+          "agent panel reports the reference-style evidence thumbnail strip");
+  require(contains(panel.workspaceStateJson(), "\"approval_preview\""),
+          "agent panel reports the reference-style approval preview");
+  require(contains(panel.workspaceStateJson(), "\"footer_quick_actions\""),
+          "agent panel reports fixed footer quick actions");
+  require(contains(panel.workspaceStateJson(), "\"reference_layout_density\":\"compact_sidebar\""),
+          "agent panel reports compact sidebar density for visual automation");
+  require(contains(panel.workspaceStateJson(), "\"reference_inspiration\":\"provided_agent_sidebar_samples\""),
+          "agent panel records the provided agent-sidebar visual inspiration");
   require(panel.findChild<QLabel*>("label:agent_session_title") != nullptr,
           "agent panel exposes a session title for UI-map agents");
+  require(panel.findChild<QWidget*>("panel:agent_header_action_bar") != nullptr,
+          "agent panel exposes a targetable header action bar");
   require(panel.findChild<QWidget*>("panel:agent_session_strip") != nullptr,
           "agent panel exposes a compact session strip");
   require(panel.findChild<QWidget*>("panel:agent_mode_strip") != nullptr,
@@ -392,10 +406,28 @@ int main(int argc, char** argv) {
           "agent panel exposes an evidence tray section");
   require(panel.findChild<QWidget*>("panel:agent_evidence_lane") != nullptr,
           "agent panel exposes a compact evidence lane");
+  require(panel.findChild<QWidget*>("panel:agent_evidence_thumbnail_strip") != nullptr,
+          "agent panel exposes an evidence thumbnail strip");
+  require(panel.findChild<QWidget*>("card:agent_evidence_thumbnail_datasheet") != nullptr,
+          "agent panel exposes the datasheet evidence thumbnail");
+  require(panel.findChild<QWidget*>("card:agent_evidence_thumbnail_drc") != nullptr,
+          "agent panel exposes the DRC report evidence thumbnail");
+  require(panel.findChild<QWidget*>("card:agent_evidence_thumbnail_schematic") != nullptr,
+          "agent panel exposes the schematic evidence thumbnail");
+  require(panel.findChild<QWidget*>("card:agent_evidence_thumbnail_revision") != nullptr,
+          "agent panel exposes the revision evidence thumbnail");
   require(panel.findChild<QWidget*>("panel:agent_approval_card") != nullptr,
           "agent panel exposes an approval-card section");
   require(panel.findChild<QWidget*>("panel:agent_approval_lane") != nullptr,
           "agent panel exposes a compact approval lane");
+  require(panel.findChild<QWidget*>("panel:agent_approval_preview") != nullptr,
+          "agent panel exposes an approval preview panel");
+  require(panel.findChild<QWidget*>("panel:agent_approval_preview_artifact") != nullptr,
+          "agent panel exposes a visual approval artifact preview");
+  require(panel.findChild<QLabel*>("label:agent_approval_preview_summary") != nullptr,
+          "agent panel exposes approval preview summary text");
+  require(panel.findChild<QLabel*>("label:agent_approval_preview_delta") != nullptr,
+          "agent panel exposes approval preview delta text");
   panel.resize(420, 760);
   panel.show();
   QApplication::processEvents();
@@ -412,6 +444,12 @@ int main(int argc, char** argv) {
           "agent panel exposes a visible request-context footer action");
   require(panel.findChild<QPushButton*>("action:agent_footer_trigger_drc") != nullptr,
           "agent panel exposes a visible trigger-DRC footer action");
+  require(panel.findChild<QWidget*>("panel:agent_footer_quick_actions") != nullptr,
+          "agent panel exposes a fixed footer quick-action strip");
+  require(panel.findChild<QPushButton*>("action:agent_quick_request_context") != nullptr,
+          "agent panel exposes a reference-style context quick action");
+  require(panel.findChild<QPushButton*>("action:agent_quick_trigger_drc") != nullptr,
+          "agent panel exposes a reference-style DRC quick action");
   panel.setWorkspaceContext("pcb", "F.Cu", "DC_POS", "route_track", 1, 2);
   require(contains(panel.workspaceText(), "View pcb"), "agent panel displays active view");
   require(contains(panel.workspaceText(), "Layer F.Cu"), "agent panel displays active layer");

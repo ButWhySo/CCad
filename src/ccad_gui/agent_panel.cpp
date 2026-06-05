@@ -519,6 +519,31 @@ QPushButton* makeIconButton(const QString& object_name,
   return button;
 }
 
+QFrame* makeEvidenceThumbnail(const QString& object_name,
+                              const QString& kind,
+                              const QString& title,
+                              QWidget* parent) {
+  auto* card = new QFrame(parent);
+  card->setObjectName(object_name);
+  card->setProperty("agentRole", "evidenceThumbnail");
+  auto* layout = new QVBoxLayout(card);
+  layout->setContentsMargins(6, 5, 6, 5);
+  layout->setSpacing(3);
+
+  auto* kind_label = new QLabel(kind, card);
+  kind_label->setProperty("agentRole", "thumbnailKind");
+  kind_label->setAlignment(Qt::AlignCenter);
+  kind_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  auto* title_label = new QLabel(title, card);
+  title_label->setProperty("agentRole", "thumbnailTitle");
+  title_label->setAlignment(Qt::AlignCenter);
+  title_label->setWordWrap(true);
+  title_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  layout->addWidget(kind_label);
+  layout->addWidget(title_label);
+  return card;
+}
+
 QFrame* makePlanRow(const QString& object_name,
                     const QString& title,
                     const QString& detail,
@@ -591,6 +616,12 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
       border-radius: 6px;
       padding: 2px;
     }
+    QFrame[agentRole="headerActionBar"] {
+      background: #171b21;
+      border: 1px solid #333b47;
+      border-radius: 6px;
+      padding: 2px;
+    }
     QFrame[agentRole="tabStrip"] {
       background: #171b21;
       border: 1px solid #303743;
@@ -616,6 +647,41 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
       border: 1px solid #334155;
       border-radius: 6px;
       padding: 4px;
+    }
+    QFrame[agentRole="evidenceThumbnailStrip"] {
+      background: #141922;
+      border: 1px solid #2f3a49;
+      border-radius: 6px;
+      padding: 3px;
+    }
+    QFrame[agentRole="evidenceThumbnail"] {
+      background: #202732;
+      border: 1px solid #485365;
+      border-radius: 6px;
+      padding: 3px;
+      min-width: 58px;
+      max-width: 76px;
+      min-height: 60px;
+    }
+    QFrame[agentRole="approvalPreview"] {
+      background: #1b222b;
+      border: 1px solid #536173;
+      border-radius: 6px;
+      padding: 4px;
+    }
+    QFrame[agentRole="approvalArtifact"] {
+      background: #07090c;
+      border: 1px solid #586576;
+      border-radius: 6px;
+      padding: 3px;
+      min-width: 92px;
+      min-height: 46px;
+    }
+    QFrame[agentRole="footerQuickActions"] {
+      background: #171b21;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 3px;
     }
     QLabel {
       color: #e9edf3;
@@ -717,6 +783,26 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
     QLabel[agentRole="evidenceMeta"] {
       color: #a7b3c5;
     }
+    QLabel[agentRole="thumbnailKind"] {
+      color: #f8fafc;
+      background: #2a3441;
+      border: 1px solid #5b6676;
+      border-radius: 4px;
+      padding: 4px;
+      font-weight: 750;
+    }
+    QLabel[agentRole="thumbnailTitle"] {
+      color: #cbd5e1;
+      font-size: 10px;
+    }
+    QLabel[agentRole="approvalPreviewText"] {
+      color: #f8fafc;
+      font-weight: 650;
+    }
+    QLabel[agentRole="approvalPreviewDelta"] {
+      color: #f87171;
+      font-weight: 700;
+    }
     QLabel#agentProjectLabel,
     QLabel#agentEpochLabel,
     QLabel#agentStatusLabel,
@@ -796,18 +882,24 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   session_title_label_->setObjectName("label:agent_session_title");
   session_title_label_->setProperty("agentRole", "panelTitle");
   title_row->addWidget(session_title_label_, 1);
+  auto* header_action_bar = makePanelSection("panel:agent_header_action_bar", header);
+  header_action_bar->setProperty("agentRole", "headerActionBar");
+  auto* header_action_bar_layout = new QHBoxLayout(header_action_bar);
+  header_action_bar_layout->setContentsMargins(2, 2, 2, 2);
+  header_action_bar_layout->setSpacing(3);
   auto* header_context_button =
       makeIconButton("action:agent_header_request_context", "Request agent workspace context",
-                     style()->standardIcon(QStyle::SP_BrowserReload), header);
+                     style()->standardIcon(QStyle::SP_BrowserReload), header_action_bar);
   auto* header_drc_button =
       makeIconButton("action:agent_header_trigger_drc", "Trigger agent diagnostics query",
-                     style()->standardIcon(QStyle::SP_MessageBoxWarning), header);
+                     style()->standardIcon(QStyle::SP_MessageBoxWarning), header_action_bar);
   auto* header_clear_button =
       makeIconButton("action:agent_header_clear_output", "Clear agent output",
-                     style()->standardIcon(QStyle::SP_DialogResetButton), header);
-  title_row->addWidget(header_context_button);
-  title_row->addWidget(header_drc_button);
-  title_row->addWidget(header_clear_button);
+                     style()->standardIcon(QStyle::SP_DialogResetButton), header_action_bar);
+  header_action_bar_layout->addWidget(header_context_button);
+  header_action_bar_layout->addWidget(header_drc_button);
+  header_action_bar_layout->addWidget(header_clear_button);
+  title_row->addWidget(header_action_bar);
   header_layout->addLayout(title_row);
 
   auto* mode_strip = makePanelSection("panel:agent_mode_strip", header);
@@ -885,7 +977,6 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   provider_layout->addWidget(provider_status_label_);
   provider_layout->addWidget(provider_env_label_);
   provider_layout->addWidget(provider_execution_status_label_);
-  header_layout->addWidget(provider_controls);
 
   auto* trace_links = makePanelSection("panel:agent_trace_links", header);
   trace_links->setProperty("agentRole", "modeStrip");
@@ -919,7 +1010,6 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   trace_links_layout->addWidget(span_id_label_);
   trace_links_layout->addWidget(trace_status_label_);
   trace_links_layout->addWidget(trace_export_status_label_);
-  header_layout->addWidget(trace_links);
 
   auto* session_binding = makePanelSection("panel:agent_session_binding", header);
   session_binding->setProperty("agentRole", "modeStrip");
@@ -949,7 +1039,6 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   session_status_label_->setTextInteractionFlags(Qt::TextSelectableByMouse);
   session_status_label_->setWordWrap(true);
   session_binding_layout->addWidget(session_status_label_);
-  header_layout->addWidget(session_binding);
 
   auto* policy_surface = makePanelSection("panel:agent_policy_surface", header);
   policy_surface->setProperty("agentRole", "modeStrip");
@@ -979,7 +1068,6 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   policy_row->addWidget(policy_dry_run_checkbox_);
   policy_row->addWidget(policy_preview_button);
   policy_layout->addLayout(policy_row);
-  header_layout->addWidget(policy_surface);
 
   auto* run_controls = makePanelSection("panel:agent_run_controls", header);
   run_controls->setProperty("agentRole", "modeStrip");
@@ -1002,7 +1090,6 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   run_controls_layout->addWidget(resume_run_button);
   run_controls_layout->addWidget(stop_run_button);
   run_controls_layout->addStretch(1);
-  header_layout->addWidget(run_controls);
 
   auto* run_queue = makePanelSection("panel:agent_run_queue", header);
   run_queue->setProperty("agentRole", "modeStrip");
@@ -1287,8 +1374,6 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   connect(clear_queue_button, &QPushButton::clicked, this, [this]() { clearRunQueue(); });
   connect(new_trace_button, &QPushButton::clicked, this, [this]() { createLocalTraceContext(); });
 
-  content_layout->addWidget(task_section);
-
   auto* activity_section = makePanelSection("panel:agent_activity_stream", content);
   auto* activity_layout = new QVBoxLayout(activity_section);
   activity_layout->setContentsMargins(6, 6, 6, 6);
@@ -1326,6 +1411,22 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   evidence_row->addWidget(pin_evidence_button);
   evidence_row->addWidget(clear_evidence_button);
   evidence_lane_layout->addLayout(evidence_row);
+  auto* evidence_thumbnail_strip =
+      makePanelSection("panel:agent_evidence_thumbnail_strip", evidence_lane);
+  evidence_thumbnail_strip->setProperty("agentRole", "evidenceThumbnailStrip");
+  auto* evidence_thumbnail_layout = new QHBoxLayout(evidence_thumbnail_strip);
+  evidence_thumbnail_layout->setContentsMargins(4, 4, 4, 4);
+  evidence_thumbnail_layout->setSpacing(5);
+  evidence_thumbnail_layout->addWidget(makeEvidenceThumbnail(
+      "card:agent_evidence_thumbnail_datasheet", "PDF", "Datasheet", evidence_thumbnail_strip));
+  evidence_thumbnail_layout->addWidget(makeEvidenceThumbnail(
+      "card:agent_evidence_thumbnail_drc", "DRC", "Report", evidence_thumbnail_strip));
+  evidence_thumbnail_layout->addWidget(makeEvidenceThumbnail(
+      "card:agent_evidence_thumbnail_schematic", "SCH", "Snippet", evidence_thumbnail_strip));
+  evidence_thumbnail_layout->addWidget(makeEvidenceThumbnail(
+      "card:agent_evidence_thumbnail_revision", "REV", "Older rev", evidence_thumbnail_strip));
+  evidence_thumbnail_layout->addStretch(1);
+  evidence_lane_layout->addWidget(evidence_thumbnail_strip);
   evidence_layout->addWidget(evidence_lane);
   evidence_cards_layout_ = new QVBoxLayout();
   evidence_cards_layout_->setContentsMargins(0, 0, 0, 0);
@@ -1345,6 +1446,44 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   auto* approval_lane_layout = new QVBoxLayout(approval_lane);
   approval_lane_layout->setContentsMargins(5, 5, 5, 5);
   approval_lane_layout->setSpacing(4);
+  auto* approval_preview = makePanelSection("panel:agent_approval_preview", approval_lane);
+  approval_preview->setProperty("agentRole", "approvalPreview");
+  auto* approval_preview_layout = new QHBoxLayout(approval_preview);
+  approval_preview_layout->setContentsMargins(5, 5, 5, 5);
+  approval_preview_layout->setSpacing(6);
+  auto* approval_artifact =
+      makePanelSection("panel:agent_approval_preview_artifact", approval_preview);
+  approval_artifact->setProperty("agentRole", "approvalArtifact");
+  auto* approval_artifact_layout = new QVBoxLayout(approval_artifact);
+  approval_artifact_layout->setContentsMargins(5, 4, 5, 4);
+  approval_artifact_layout->setSpacing(2);
+  auto* approval_artifact_top = new QLabel("+5V route", approval_artifact);
+  approval_artifact_top->setProperty("agentRole", "evidenceKind");
+  auto* approval_artifact_mid = new QLabel("GND clear", approval_artifact);
+  approval_artifact_mid->setProperty("agentRole", "evidenceMeta");
+  auto* approval_artifact_bottom = new QLabel("DRC clean", approval_artifact);
+  approval_artifact_bottom->setProperty("agentRole", "evidenceMeta");
+  approval_artifact_layout->addWidget(approval_artifact_top);
+  approval_artifact_layout->addWidget(approval_artifact_mid);
+  approval_artifact_layout->addWidget(approval_artifact_bottom);
+  auto* approval_preview_text = new QVBoxLayout();
+  approval_preview_text->setSpacing(3);
+  auto* approval_preview_summary =
+      new QLabel("Change 2 tracks, net +5V, preserve clearance", approval_preview);
+  approval_preview_summary->setObjectName("label:agent_approval_preview_summary");
+  approval_preview_summary->setProperty("agentRole", "approvalPreviewText");
+  approval_preview_summary->setWordWrap(true);
+  approval_preview_summary->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  auto* approval_preview_delta = new QLabel("Length: -15 mm | risk: low", approval_preview);
+  approval_preview_delta->setObjectName("label:agent_approval_preview_delta");
+  approval_preview_delta->setProperty("agentRole", "approvalPreviewDelta");
+  approval_preview_delta->setWordWrap(true);
+  approval_preview_delta->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  approval_preview_text->addWidget(approval_preview_summary);
+  approval_preview_text->addWidget(approval_preview_delta);
+  approval_preview_layout->addWidget(approval_artifact);
+  approval_preview_layout->addLayout(approval_preview_text, 1);
+  approval_lane_layout->addWidget(approval_preview);
   auto* approval_request_row = new QHBoxLayout();
   approval_request_row->setSpacing(6);
   approval_request_input_ = new QLineEdit(approval_section);
@@ -1387,6 +1526,12 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   approval_layout->addWidget(approval_lane);
   content_layout->addWidget(evidence_section);
   content_layout->addWidget(approval_section);
+  content_layout->addWidget(task_section);
+  content_layout->addWidget(run_controls);
+  content_layout->addWidget(provider_controls);
+  content_layout->addWidget(trace_links);
+  content_layout->addWidget(session_binding);
+  content_layout->addWidget(policy_surface);
   content_layout->addWidget(context_section);
   content_layout->addWidget(activity_section);
   content_layout->addWidget(stream_section, 1);
@@ -1407,19 +1552,35 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   auto* command_bar_layout = new QVBoxLayout(command_bar);
   command_bar_layout->setContentsMargins(6, 6, 6, 6);
   command_bar_layout->setSpacing(4);
-  auto* footer_action_row = new QHBoxLayout();
+  auto* footer_quick_actions = makePanelSection("panel:agent_footer_quick_actions", command_bar);
+  footer_quick_actions->setProperty("agentRole", "footerQuickActions");
+  auto* footer_action_row = new QHBoxLayout(footer_quick_actions);
+  footer_action_row->setContentsMargins(3, 3, 3, 3);
   footer_action_row->setSpacing(6);
+  auto* quick_context_button =
+      makeIconButton("action:agent_quick_request_context", "Request agent workspace context",
+                     style()->standardIcon(QStyle::SP_BrowserReload), footer_quick_actions);
+  auto* quick_drc_button =
+      makeIconButton("action:agent_quick_trigger_drc", "Trigger agent diagnostics query",
+                     style()->standardIcon(QStyle::SP_MessageBoxWarning), footer_quick_actions);
   auto* footer_context_button = new QPushButton("Request Context", command_bar);
   footer_context_button->setObjectName("action:agent_footer_request_context");
   footer_context_button->setAccessibleName("Request agent workspace context");
+  footer_context_button->setToolTip("Request agent workspace context");
+  footer_context_button->setIcon(style()->standardIcon(QStyle::SP_BrowserReload));
+  footer_context_button->setIconSize(QSize(16, 16));
+  footer_context_button->setText("");
+  footer_context_button->setProperty("agentRole", "iconButton");
+  footer_context_button->setFixedSize(28, 26);
   auto* footer_drc_button = new QPushButton("Trigger DRC", command_bar);
   footer_drc_button->setObjectName("action:agent_footer_trigger_drc");
   footer_drc_button->setAccessibleName("Trigger agent diagnostics query");
-  footer_action_row->addWidget(footer_context_button);
-  footer_action_row->addWidget(footer_drc_button);
-  command_bar_layout->addLayout(footer_action_row);
-  auto* prompt_row = new QHBoxLayout();
-  prompt_row->setSpacing(6);
+  footer_drc_button->setToolTip("Trigger agent diagnostics query");
+  footer_drc_button->setIcon(style()->standardIcon(QStyle::SP_MessageBoxWarning));
+  footer_drc_button->setIconSize(QSize(16, 16));
+  footer_drc_button->setText("");
+  footer_drc_button->setProperty("agentRole", "iconButton");
+  footer_drc_button->setFixedSize(28, 26);
   command_input_ = new QLineEdit(command_bar);
   command_input_->setObjectName("control:agent_command_input");
   command_input_->setAccessibleName("Agent command prompt");
@@ -1428,14 +1589,21 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   auto* submit_command_button = new QPushButton("Send", command_bar);
   submit_command_button->setObjectName("action:agent_submit_command");
   submit_command_button->setAccessibleName("Submit agent command");
-  prompt_row->addWidget(command_input_, 1);
-  prompt_row->addWidget(submit_command_button);
-  command_bar_layout->addLayout(prompt_row);
+  footer_action_row->addWidget(quick_context_button);
+  footer_action_row->addWidget(quick_drc_button);
+  footer_action_row->addWidget(footer_context_button);
+  footer_action_row->addWidget(footer_drc_button);
+  footer_action_row->addWidget(command_input_, 1);
+  footer_action_row->addWidget(submit_command_button);
+  command_bar_layout->addWidget(footer_quick_actions);
   root->addWidget(command_bar);
 
   connect(footer_context_button, &QPushButton::clicked, this,
           [this]() { runHarnessContextPreset(); });
   connect(footer_drc_button, &QPushButton::clicked, this, [this]() { runDiagnosticsPreset(); });
+  connect(quick_context_button, &QPushButton::clicked, this,
+          [this]() { runHarnessContextPreset(); });
+  connect(quick_drc_button, &QPushButton::clicked, this, [this]() { runDiagnosticsPreset(); });
   connect(submit_command_button, &QPushButton::clicked, this, [this]() { submitCommand(); });
   connect(command_input_, &QLineEdit::returnPressed, this, [this]() { submitCommand(); });
   updateRunQueueLabels();
@@ -2588,11 +2756,14 @@ QString AgentPanel::workspaceStateJson() const {
   response.insert("workspace_kind", "ccad_agent_workspace_state");
   response.insert("evidence_manifest_kind", "ccad_agent_evidence_manifest");
   response.insert("panel_layout", "vertical_agent_workspace");
-  response.insert("visual_style", "agent_reference_panel_v4");
-  response.insert("workspace_layout_version", 4);
+  response.insert("visual_style", "agent_reference_panel_v5");
+  response.insert("workspace_layout_version", 5);
+  response.insert("reference_layout_density", "compact_sidebar");
+  response.insert("reference_inspiration", "provided_agent_sidebar_samples");
   response.insert("active_agent_tab", "command");
   response.insert("visible_sections",
                   QJsonArray{"session_strip",
+                             "header_action_bar",
                              "mode_strip",
                              "trace_strip",
                              "run_queue",
@@ -2610,8 +2781,11 @@ QString AgentPanel::workspaceStateJson() const {
                              "activity_stream",
                              "pinned_evidence",
                              "evidence_lane",
+                             "evidence_thumbnail_strip",
                              "approval_card",
                              "approval_lane",
+                             "approval_preview",
+                             "footer_quick_actions",
                              "command_bar"});
   response.insert("session_title", session_title_label_->text());
   response.insert("model_label", model_chip_label_->text());
