@@ -263,6 +263,20 @@ int main(int argc, char** argv) {
           "UI map exposes the agent trace export status label");
   require(contains(map, "\"id\":\"action:agent_new_trace_context\""),
           "UI map exposes the local trace context action");
+  require(contains(map, "\"id\":\"panel:agent_provider_controls\""),
+          "UI map exposes the agent provider controls panel");
+  require(contains(map, "\"id\":\"control:agent_provider_family\""),
+          "UI map exposes the agent provider family selector");
+  require(contains(map, "\"id\":\"control:agent_provider_model\""),
+          "UI map exposes the agent provider model hint input");
+  require(contains(map, "\"id\":\"action:agent_provider_refresh_status\""),
+          "UI map exposes the agent provider status refresh action");
+  require(contains(map, "\"id\":\"label:agent_provider_status\""),
+          "UI map exposes the agent provider status label");
+  require(contains(map, "\"id\":\"label:agent_provider_env\""),
+          "UI map exposes the agent provider env-var label");
+  require(contains(map, "\"id\":\"label:agent_provider_execution_status\""),
+          "UI map exposes the agent provider execution-status label");
   require(contains(map, "\"id\":\"action:agent_pause_run\""),
           "UI map exposes the agent pause action");
   require(contains(map, "\"id\":\"action:agent_resume_run\""),
@@ -651,6 +665,12 @@ int main(int argc, char** argv) {
           "UI map validation covers agent policy dry-run control");
   require(contains(validation, "\"id\":\"action:agent_new_trace_context\""),
           "UI map validation covers agent trace context action");
+  require(contains(validation, "\"id\":\"control:agent_provider_family\""),
+          "UI map validation covers agent provider family selector");
+  require(contains(validation, "\"id\":\"control:agent_provider_model\""),
+          "UI map validation covers agent provider model input");
+  require(contains(validation, "\"id\":\"action:agent_provider_refresh_status\""),
+          "UI map validation covers agent provider refresh action");
   require(contains(validation, "\"id\":\"canvas_object:U1.1\""),
           "UI map validation covers canvas object target");
 
@@ -754,6 +774,47 @@ int main(int argc, char** argv) {
           "agent trace context action can be clicked semantically");
   require(contains(agent_new_trace_click, "\"reason\":\"button_clicked\""),
           "agent trace context click reports direct button click");
+  const QString agent_provider_panel_target =
+      window.uiTargetJsonById("panel:agent_provider_controls");
+  require(contains(agent_provider_panel_target, "\"found\":true"),
+          "target query finds agent provider controls panel");
+  require(contains(agent_provider_panel_target, "\"role\":\"panel\""),
+          "agent provider controls panel target reports panel role");
+  const QString agent_provider_family_target =
+      window.uiTargetJsonById("control:agent_provider_family");
+  require(contains(agent_provider_family_target, "\"found\":true"),
+          "target query finds agent provider family selector");
+  require(contains(agent_provider_family_target, "\"role\":\"control\""),
+          "agent provider family target reports control role");
+  require(contains(agent_provider_family_target, "\"visible\":true"),
+          "agent provider family target scrolls into a visible viewport");
+  require(extractInt(agent_provider_family_target, "\"logical_y\":") >= 0,
+          "agent provider family target reports an on-screen y coordinate");
+  const QString agent_provider_model_target =
+      window.uiTargetJsonById("control:agent_provider_model");
+  require(contains(agent_provider_model_target, "\"found\":true"),
+          "target query finds agent provider model hint input");
+  require(contains(agent_provider_model_target, "\"role\":\"control\""),
+          "agent provider model target reports control role");
+  const QString agent_provider_refresh_target =
+      window.uiTargetJsonById("action:agent_provider_refresh_status");
+  require(contains(agent_provider_refresh_target, "\"found\":true"),
+          "target query finds agent provider refresh action");
+  require(contains(agent_provider_refresh_target, "\"role\":\"action\""),
+          "agent provider refresh target reports action role");
+  require(contains(window.uiTargetJsonById("label:agent_provider_status"), "\"found\":true"),
+          "target query finds agent provider status label");
+  require(contains(window.uiTargetJsonById("label:agent_provider_env"), "\"found\":true"),
+          "target query finds agent provider env label");
+  require(contains(window.uiTargetJsonById("label:agent_provider_execution_status"),
+                   "\"found\":true"),
+          "target query finds agent provider execution-status label");
+  const QString agent_provider_family_click =
+      window.uiClickJson("control:agent_provider_family", false, false);
+  require(contains(agent_provider_family_click, "\"performed\":true"),
+          "agent provider family selector can be focused semantically");
+  require(contains(agent_provider_family_click, "\"reason\":\"control_focused\""),
+          "agent provider family click reports control focus");
   const QString agent_pause_target = window.uiTargetJsonById("action:agent_pause_run");
   require(contains(agent_pause_target, "\"found\":true"),
           "target query finds agent pause action");
@@ -963,6 +1024,30 @@ int main(int argc, char** argv) {
           "agent type_text writes into the command input");
   require(contains(type_command, "\"value\":\"Inspect DRC\""),
           "agent type_text reports command input value");
+  const QString type_provider_model = window.runAgentUiQueryJson(
+      "ui.type_text", "{\"id\":\"control:agent_provider_model\",\"text\":\"gpt-5.1-cad-check\"}");
+  require(contains(type_provider_model, "\"performed\":true"),
+          "agent type_text writes into the provider model hint input");
+  require(contains(type_provider_model, "\"value\":\"gpt-5.1-cad-check\""),
+          "agent type_text reports provider model hint value");
+  const QString provider_refresh_click = window.runAgentUiQueryJson(
+      "ui.click", "{\"id\":\"action:agent_provider_refresh_status\"}");
+  require(contains(provider_refresh_click, "\"performed\":true"),
+          "agent click can refresh provider readiness metadata");
+  require(contains(provider_refresh_click, "\"reason\":\"button_clicked\""),
+          "agent provider refresh click reports direct button click");
+  const QString provider_workspace_state =
+      window.runAgentUiQueryJson("agent.workspace_state", "{}");
+  require(contains(provider_workspace_state, "\"provider_panel_available\":true"),
+          "workspace state reports provider panel availability");
+  require(contains(provider_workspace_state, "\"provider_id\":\"openai\""),
+          "workspace state reports selected provider id");
+  require(contains(provider_workspace_state, "\"provider_model_hint\":\"gpt-5.1-cad-check\""),
+          "workspace state reports typed provider model hint");
+  require(contains(provider_workspace_state, "\"provider_execution_enabled\":false"),
+          "workspace state keeps provider execution disabled");
+  require(contains(provider_workspace_state, "\"provider_secret_value_visible\":false"),
+          "workspace state confirms provider secrets are not visible");
   const QString submit_command_click =
       window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_submit_command\"}");
   require(contains(submit_command_click, "\"performed\":true"),

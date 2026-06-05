@@ -2014,6 +2014,13 @@ ReviewWindow::ReviewWindow() {
                       "label:agent_trace_status",
                       "label:agent_trace_export_status",
                       "action:agent_new_trace_context",
+                      "panel:agent_provider_controls",
+                      "control:agent_provider_family",
+                      "control:agent_provider_model",
+                      "action:agent_provider_refresh_status",
+                      "label:agent_provider_status",
+                      "label:agent_provider_env",
+                      "label:agent_provider_execution_status",
                       "panel:agent_session_binding",
                       "control:agent_session_path",
                       "action:agent_load_session",
@@ -3613,6 +3620,34 @@ QString ReviewWindow::buildUiMapJson() const {
                  .arg(global_rect.center().y());
   }
 
+  for (const QComboBox* combo : findChildren<QComboBox*>()) {
+    const QString id = combo->objectName();
+    if (!id.startsWith("control:")) {
+      continue;
+    }
+    const QPoint local_top_left = combo->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
+    const QRect local_rect(local_top_left, combo->size());
+    const QRect global_rect = visibleWidgetGlobalRect(combo);
+    const QString label = combo->accessibleName().isEmpty() ? id : combo->accessibleName();
+    QString value = combo->currentData().toString();
+    if (value.isEmpty()) {
+      value = combo->currentText();
+    }
+    nodes << QString("{\"id\":%1,\"role\":\"control\",\"label\":%2,"
+                     "\"value\":%3,\"current_text\":%4,\"visible\":%5,\"enabled\":%6,"
+                     "\"local_rect\":%7,\"global_rect\":%8,\"target_x\":%9,\"target_y\":%10}")
+                 .arg(jsonString(id))
+                 .arg(jsonString(label))
+                 .arg(jsonString(value))
+                 .arg(jsonString(combo->currentText()))
+                 .arg(boolJson(combo->isVisible()))
+                 .arg(boolJson(combo->isEnabled()))
+                 .arg(rectJson(local_rect))
+                 .arg(rectJson(global_rect))
+                 .arg(global_rect.center().x())
+                 .arg(global_rect.center().y());
+  }
+
   for (const QCheckBox* checkbox : findChildren<QCheckBox*>()) {
     const QString id = checkbox->objectName();
     if (!id.startsWith("control:")) {
@@ -4276,12 +4311,14 @@ QString ReviewWindow::validateUiMapTargetsJson(const bool move_cursor) const {
                 hit_widget != nullptr ? hit_widget->objectName() : "none");
   }
 
-  const QStringList visible_agent_buttons = {"action:agent_new_trace_context"};
+  const QStringList visible_agent_buttons = {"action:agent_new_trace_context",
+                                             "action:agent_provider_refresh_status"};
   for (const QPushButton* button : findChildren<QPushButton*>()) {
     const QString id = button->objectName();
     if (!visible_agent_buttons.contains(id)) {
       continue;
     }
+    ensureWidgetVisibleInAncestorScrollAreas(button);
     const QRect clipped_rect = clippedWidgetGlobalRect(button);
     const QRect global_rect = clipped_rect.isEmpty()
                                   ? QRect(button->mapToGlobal(QPoint(0, 0)), button->size())
@@ -4301,18 +4338,76 @@ QString ReviewWindow::validateUiMapTargetsJson(const bool move_cursor) const {
                 hit_widget != nullptr ? hit_widget->objectName() : "none");
   }
 
+  for (const QLineEdit* input : findChildren<QLineEdit*>()) {
+    const QString id = input->objectName();
+    if (!id.startsWith("control:")) {
+      continue;
+    }
+    ensureWidgetVisibleInAncestorScrollAreas(input);
+    const QRect clipped_rect = clippedWidgetGlobalRect(input);
+    const QRect global_rect = clipped_rect.isEmpty()
+                                  ? QRect(input->mapToGlobal(QPoint(0, 0)), input->size())
+                                  : clipped_rect;
+    const QPoint target = global_rect.center();
+    QWidget* hit_widget = QApplication::widgetAt(target);
+    const QPoint local_target = input->mapFromGlobal(target);
+    const bool target_is_on_input =
+        input->rect().contains(local_target) && input->visibleRegion().contains(local_target);
+    const bool hit = !clipped_rect.isEmpty() && global_rect.contains(target) &&
+                     target_is_on_input &&
+                     (hit_widget == nullptr || hit_widget == input ||
+                      input->isAncestorOf(hit_widget) || hit_widget->isAncestorOf(input));
+    appendCheck(id, "control", input->isVisible() && !clipped_rect.isEmpty(),
+                input->isEnabled(), target, hit,
+                hit_widget != nullptr ? hit_widget->objectName() : "none");
+  }
+
   for (const QCheckBox* checkbox : findChildren<QCheckBox*>()) {
     const QString id = checkbox->objectName();
     if (!id.startsWith("control:")) {
       continue;
     }
-    const QRect global_rect = visibleWidgetGlobalRect(checkbox);
+    ensureWidgetVisibleInAncestorScrollAreas(checkbox);
+    const QRect clipped_rect = clippedWidgetGlobalRect(checkbox);
+    const QRect global_rect = clipped_rect.isEmpty()
+                                  ? QRect(checkbox->mapToGlobal(QPoint(0, 0)), checkbox->size())
+                                  : clipped_rect;
     const QPoint target = global_rect.center();
     QWidget* hit_widget = QApplication::widgetAt(target);
-    const bool hit = global_rect.contains(target) &&
+    const QPoint local_target = checkbox->mapFromGlobal(target);
+    const bool target_is_on_checkbox =
+        checkbox->rect().contains(local_target) &&
+        checkbox->visibleRegion().contains(local_target);
+    const bool hit = !clipped_rect.isEmpty() && global_rect.contains(target) &&
+                     target_is_on_checkbox &&
                      (hit_widget == nullptr || hit_widget == checkbox ||
-                      checkbox->isAncestorOf(hit_widget));
-    appendCheck(id, "control", checkbox->isVisible(), checkbox->isEnabled(), target, hit,
+                      checkbox->isAncestorOf(hit_widget) || hit_widget->isAncestorOf(checkbox));
+    appendCheck(id, "control", checkbox->isVisible() && !clipped_rect.isEmpty(),
+                checkbox->isEnabled(), target, hit,
+                hit_widget != nullptr ? hit_widget->objectName() : "none");
+  }
+
+  for (const QComboBox* combo : findChildren<QComboBox*>()) {
+    const QString id = combo->objectName();
+    if (!id.startsWith("control:")) {
+      continue;
+    }
+    ensureWidgetVisibleInAncestorScrollAreas(combo);
+    const QRect clipped_rect = clippedWidgetGlobalRect(combo);
+    const QRect global_rect = clipped_rect.isEmpty()
+                                  ? QRect(combo->mapToGlobal(QPoint(0, 0)), combo->size())
+                                  : clipped_rect;
+    const QPoint target = global_rect.center();
+    QWidget* hit_widget = QApplication::widgetAt(target);
+    const QPoint local_target = combo->mapFromGlobal(target);
+    const bool target_is_on_combo =
+        combo->rect().contains(local_target) && combo->visibleRegion().contains(local_target);
+    const bool hit = !clipped_rect.isEmpty() && global_rect.contains(target) &&
+                     target_is_on_combo &&
+                     (hit_widget == nullptr || hit_widget == combo ||
+                      combo->isAncestorOf(hit_widget) || hit_widget->isAncestorOf(combo));
+    appendCheck(id, "control", combo->isVisible() && !clipped_rect.isEmpty(),
+                combo->isEnabled(), target, hit,
                 hit_widget != nullptr ? hit_widget->objectName() : "none");
   }
 
@@ -4530,6 +4625,20 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
     const QString label = input->accessibleName().isEmpty() ? id : input->accessibleName();
     return foundTarget(id, "control", label, input->isVisible() && !clipped_rect.isEmpty(),
                        input->isEnabled(), global_rect.center());
+  }
+
+  for (const QComboBox* combo : findChildren<QComboBox*>()) {
+    if (combo->objectName() != id || !id.startsWith("control:")) {
+      continue;
+    }
+    ensureWidgetVisibleInAncestorScrollAreas(combo);
+    const QRect clipped_rect = clippedWidgetGlobalRect(combo);
+    const QRect global_rect = clipped_rect.isEmpty()
+                                  ? QRect(combo->mapToGlobal(QPoint(0, 0)), combo->size())
+                                  : clipped_rect;
+    const QString label = combo->accessibleName().isEmpty() ? id : combo->accessibleName();
+    return foundTarget(id, "control", label, combo->isVisible() && !clipped_rect.isEmpty(),
+                       combo->isEnabled(), global_rect.center());
   }
 
   for (const QCheckBox* checkbox : findChildren<QCheckBox*>()) {
@@ -5006,6 +5115,25 @@ QString ReviewWindow::uiClickJson(const QString& id, const bool dry_run, const b
       response.insert("reason", "control_focused");
       response.insert("focused", input->hasFocus());
       markUiMapChanged();
+      return jsonObjectLine(response);
+    }
+    for (QComboBox* combo : findChildren<QComboBox*>()) {
+      if (combo == nullptr || combo->objectName() != trimmed_id) {
+        continue;
+      }
+      if (!combo->isVisible() || !combo->isEnabled()) {
+        response.insert("performed", false);
+        response.insert("reason", "disabled_or_hidden");
+        return jsonObjectLine(response);
+      }
+      combo->setFocus(Qt::MouseFocusReason);
+      QApplication::processEvents();
+      response.insert("performed", true);
+      response.insert("reason", "control_focused");
+      response.insert("focused", combo->hasFocus());
+      response.insert("value", combo->currentData().toString());
+      response.insert("current_text", combo->currentText());
+      markUiMapChanged({trimmed_id}, {"control"});
       return jsonObjectLine(response);
     }
     if (trimmed_id == "control:active_pcb_layer" && active_layer_selector_ != nullptr) {
@@ -5720,6 +5848,7 @@ QString ReviewWindow::uiTypeTextJson(const QString& id, const QString& text) {
   const QStringList allowed_ids = {"control:agent_action_id", "control:agent_live_method",
                                    "control:agent_live_payload", "control:agent_goal",
                                    "control:agent_command_input",
+                                   "control:agent_provider_model",
                                    "control:agent_approval_request"};
   QJsonObject response;
   response.insert("schema_version", 1);
@@ -6529,6 +6658,13 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
                       "label:agent_trace_status",
                       "label:agent_trace_export_status",
                       "action:agent_new_trace_context",
+                      "panel:agent_provider_controls",
+                      "control:agent_provider_family",
+                      "control:agent_provider_model",
+                      "action:agent_provider_refresh_status",
+                      "label:agent_provider_status",
+                      "label:agent_provider_env",
+                      "label:agent_provider_execution_status",
                       "panel:agent_session_binding",
                       "control:agent_session_path",
                       "action:agent_load_session",

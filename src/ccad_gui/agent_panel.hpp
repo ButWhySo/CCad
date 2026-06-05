@@ -10,6 +10,7 @@
 
 class QLabel;
 class QCheckBox;
+class QComboBox;
 class QLineEdit;
 class QPlainTextEdit;
 class QVBoxLayout;
@@ -132,6 +133,9 @@ class AgentPanel final : public QWidget {
   void resumeRun();
   void stopRun();
   void createLocalTraceContext();
+  void refreshProviderStatus();
+  void updateProviderControls();
+  QJsonObject providerStateObject() const;
   void previewCommandPolicy();
   void classifyCommandPolicy(const QString& command, bool record_activity);
   QJsonObject policyStateObject() const;
@@ -152,6 +156,9 @@ class AgentPanel final : public QWidget {
   QLabel* session_status_label_ = nullptr;
   QLabel* policy_decision_label_ = nullptr;
   QLabel* policy_risk_label_ = nullptr;
+  QLabel* provider_status_label_ = nullptr;
+  QLabel* provider_env_label_ = nullptr;
+  QLabel* provider_execution_status_label_ = nullptr;
   QLabel* project_label_ = nullptr;
   QLabel* epoch_label_ = nullptr;
   QLabel* status_label_ = nullptr;
@@ -165,6 +172,8 @@ class AgentPanel final : public QWidget {
   QLabel* approval_status_label_ = nullptr;
   QLineEdit* action_id_input_ = nullptr;
   QLineEdit* session_path_input_ = nullptr;
+  QComboBox* provider_selector_ = nullptr;
+  QLineEdit* provider_model_input_ = nullptr;
   QLineEdit* live_method_input_ = nullptr;
   QLineEdit* live_payload_input_ = nullptr;
   QLineEdit* goal_input_ = nullptr;
@@ -200,6 +209,8 @@ class AgentPanel final : public QWidget {
   bool policy_mutates_files_ = false;
   bool policy_dry_run_ = false;
   bool policy_would_execute_ = false;
+  QString provider_status_ = "env_unchecked";
+  bool provider_env_present_ = false;
   QVector<ActivityEvent> activity_events_;
   QVector<EvidenceCard> evidence_cards_;
   int activity_sequence_ = 0;

@@ -2,7 +2,9 @@
 
 #include "ccad_core/agent_policy.hpp"
 
+#include <QByteArray>
 #include <QCheckBox>
+#include <QComboBox>
 #include <QHBoxLayout>
 #include <QDateTime>
 #include <QFile>
@@ -28,6 +30,7 @@
 #include <QVBoxLayout>
 
 #include <algorithm>
+#include <cstdlib>
 #include <string>
 #include <utility>
 #include <vector>
@@ -400,6 +403,83 @@ QString contextValue(const QString& value, const QString& fallback) {
   return trimmed.isEmpty() ? fallback : trimmed;
 }
 
+struct AgentProviderSpec {
+  QString id;
+  QString label;
+  QString access_path;
+  QStringList env_vars;
+  QString model_env;
+  QString security_note;
+};
+
+const QVector<AgentProviderSpec>& agentProviderSpecs() {
+  static const QVector<AgentProviderSpec> specs = {
+      {"openai",
+       "OpenAI API",
+       "official_api",
+       {"OPENAI_API_KEY", "OPENAI_ORG_ID", "OPENAI_PROJECT_ID", "CCAD_OPENAI_MODEL"},
+       "CCAD_OPENAI_MODEL",
+       "Use environment or secret-manager credentials only."},
+      {"anthropic",
+       "Anthropic Claude API",
+       "anthropic_api",
+       {"ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL", "CCAD_ANTHROPIC_MODEL"},
+       "CCAD_ANTHROPIC_MODEL",
+       "Do not automate consumer Claude browser sessions."},
+      {"google_gemini",
+       "Google Gemini API",
+       "google_gemini_api",
+       {"GEMINI_API_KEY", "GOOGLE_API_KEY", "CCAD_GEMINI_MODEL"},
+       "CCAD_GEMINI_MODEL",
+       "Treat Gemini keys like passwords and restrict them where possible."},
+      {"openai_compatible",
+       "OpenAI-compatible API",
+       "openai_compatible_api",
+       {"CCAD_OPENAI_COMPATIBLE_API_KEY", "CCAD_OPENAI_COMPATIBLE_BASE_URL",
+        "CCAD_OPENAI_COMPATIBLE_MODEL"},
+       "CCAD_OPENAI_COMPATIBLE_MODEL",
+       "Use only provider-approved compatible endpoints."},
+      {"local_model_server",
+       "Local model server",
+       "local_model_server",
+       {"CCAD_LOCAL_MODEL_BASE_URL", "CCAD_LOCAL_MODEL_NAME", "CCAD_LOCAL_MODEL_API_KEY"},
+       "CCAD_LOCAL_MODEL_NAME",
+       "Keep localhost model access explicit and auditable."}};
+  return specs;
+}
+
+AgentProviderSpec providerSpecForId(const QString& id) {
+  for (const AgentProviderSpec& spec : agentProviderSpecs()) {
+    if (spec.id == id) {
+      return spec;
+    }
+  }
+  return agentProviderSpecs().front();
+}
+
+AgentProviderSpec currentProviderSpec(const QComboBox* selector) {
+  if (selector == nullptr) {
+    return agentProviderSpecs().front();
+  }
+  const QString id = selector->currentData().toString().trimmed();
+  return providerSpecForId(id.isEmpty() ? "openai" : id);
+}
+
+bool environmentVariablePresent(const QString& name) {
+  const QByteArray bytes = name.toUtf8();
+  const char* value = std::getenv(bytes.constData());
+  return value != nullptr && value[0] != '\0';
+}
+
+bool providerEnvironmentPresent(const AgentProviderSpec& spec) {
+  for (const QString& env_var : spec.env_vars) {
+    if (environmentVariablePresent(env_var)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 QFrame* makePanelSection(const QString& object_name, QWidget* parent) {
   auto* section = new QFrame(parent);
   section->setObjectName(object_name);
@@ -651,6 +731,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
     QLabel#agentApprovalStatusLabel {
       color: #cbd3df;
     }
+    QComboBox,
     QLineEdit,
     QPlainTextEdit[agentRole="rawOutput"] {
       background: #101318;
@@ -755,6 +836,56 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   trace_strip_layout->addWidget(session_chip_label_);
   trace_strip_layout->addStretch(1);
   header_layout->addWidget(trace_strip);
+
+  auto* provider_controls = makePanelSection("panel:agent_provider_controls", header);
+  provider_controls->setProperty("agentRole", "modeStrip");
+  auto* provider_layout = new QVBoxLayout(provider_controls);
+  provider_layout->setContentsMargins(3, 3, 3, 3);
+  provider_layout->setSpacing(4);
+  auto* provider_title_row = new QHBoxLayout();
+  provider_title_row->setSpacing(4);
+  auto* provider_title = new QLabel("Provider", provider_controls);
+  provider_title->setProperty("agentRole", "sectionTitle");
+  auto* provider_refresh_button =
+      makeIconButton("action:agent_provider_refresh_status", "Refresh provider readiness",
+                     style()->standardIcon(QStyle::SP_BrowserReload), provider_controls);
+  provider_title_row->addWidget(provider_title);
+  provider_title_row->addWidget(provider_refresh_button);
+  provider_title_row->addStretch(1);
+  provider_layout->addLayout(provider_title_row);
+
+  auto* provider_row = new QVBoxLayout();
+  provider_row->setSpacing(4);
+  provider_selector_ = new QComboBox(provider_controls);
+  provider_selector_->setObjectName("control:agent_provider_family");
+  provider_selector_->setAccessibleName("Agent provider family");
+  provider_selector_->setToolTip("Agent provider family");
+  provider_selector_->setMinimumWidth(0);
+  for (const AgentProviderSpec& spec : agentProviderSpecs()) {
+    provider_selector_->addItem(spec.label, spec.id);
+  }
+  provider_model_input_ = new QLineEdit(provider_controls);
+  provider_model_input_->setObjectName("control:agent_provider_model");
+  provider_model_input_->setAccessibleName("Agent provider model hint");
+  provider_model_input_->setPlaceholderText("model hint");
+  provider_model_input_->setMinimumWidth(0);
+  provider_row->addWidget(provider_selector_);
+  provider_row->addWidget(provider_model_input_);
+  provider_layout->addLayout(provider_row);
+
+  provider_status_label_ =
+      makeChip("label:agent_provider_status", "Provider: env unchecked", provider_controls);
+  provider_env_label_ =
+      makeChip("label:agent_provider_env", "Env: OPENAI_API_KEY unchecked", provider_controls);
+  provider_execution_status_label_ =
+      makeChip("label:agent_provider_execution_status", "Execution: disabled", provider_controls);
+  provider_status_label_->setWordWrap(true);
+  provider_env_label_->setWordWrap(true);
+  provider_execution_status_label_->setWordWrap(true);
+  provider_layout->addWidget(provider_status_label_);
+  provider_layout->addWidget(provider_env_label_);
+  provider_layout->addWidget(provider_execution_status_label_);
+  header_layout->addWidget(provider_controls);
 
   auto* trace_links = makePanelSection("panel:agent_trace_links", header);
   trace_links->setProperty("agentRole", "modeStrip");
@@ -1044,6 +1175,12 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   });
   connect(checkpoint_session_button, &QPushButton::clicked, this,
           [this]() { checkpointSession(); });
+  connect(provider_refresh_button, &QPushButton::clicked, this,
+          [this]() { refreshProviderStatus(); });
+  connect(provider_selector_, &QComboBox::currentIndexChanged, this,
+          [this](int) { updateProviderControls(); });
+  connect(provider_model_input_, &QLineEdit::textChanged, this,
+          [this](const QString&) { updateProviderControls(); });
   connect(policy_preview_button, &QPushButton::clicked, this,
           [this]() { previewCommandPolicy(); });
   connect(action_id_input_, &QLineEdit::returnPressed, this,
@@ -1264,6 +1401,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   connect(footer_drc_button, &QPushButton::clicked, this, [this]() { runDiagnosticsPreset(); });
   connect(submit_command_button, &QPushButton::clicked, this, [this]() { submitCommand(); });
   connect(command_input_, &QLineEdit::returnPressed, this, [this]() { submitCommand(); });
+  updateProviderControls();
 }
 
 void AgentPanel::setUiMapProvider(UiMapProvider provider) {
@@ -1317,6 +1455,83 @@ void AgentPanel::setGoalText(const QString& goal) {
 
 void AgentPanel::setCommandText(const QString& command) {
   command_input_->setText(command);
+}
+
+QJsonObject AgentPanel::providerStateObject() const {
+  const AgentProviderSpec spec = currentProviderSpec(provider_selector_);
+  const bool env_present = providerEnvironmentPresent(spec);
+  QJsonArray env_vars;
+  for (const QString& env_var : spec.env_vars) {
+    env_vars.append(env_var);
+  }
+
+  QJsonObject provider;
+  provider.insert("provider_panel_available", provider_selector_ != nullptr &&
+                                                  provider_model_input_ != nullptr);
+  provider.insert("provider_id", spec.id);
+  provider.insert("provider_label", spec.label);
+  provider.insert("provider_access_path", spec.access_path);
+  provider.insert("provider_model_hint",
+                  provider_model_input_ == nullptr ? QString()
+                                                   : provider_model_input_->text().trimmed());
+  provider.insert("provider_model_env", spec.model_env);
+  provider.insert("provider_api_key_env",
+                  spec.env_vars.isEmpty() ? QString() : spec.env_vars.front());
+  provider.insert("provider_env_vars", env_vars);
+  provider.insert("provider_env_present", env_present);
+  provider.insert("provider_configured", env_present);
+  provider.insert("provider_status", env_present ? "env_present" : "env_missing");
+  provider.insert("provider_status_method", "agent.provider_status");
+  provider.insert("provider_config_schema_method", "agent.provider_config_schema");
+  provider.insert("provider_config_template_method", "agent.provider_config_template");
+  provider.insert("provider_execution_enabled", false);
+  provider.insert("provider_secret_value_visible", false);
+  provider.insert("provider_network_probe_enabled", false);
+  provider.insert("provider_browser_account_automation_enabled", false);
+  provider.insert("provider_project_file_secret_storage", false);
+  provider.insert("provider_secret_value_policy", "never_emit_secret_values");
+  provider.insert("provider_readiness_policy", "env_presence_only_no_network_probe");
+  provider.insert("provider_security_note", spec.security_note);
+  return provider;
+}
+
+void AgentPanel::updateProviderControls() {
+  const AgentProviderSpec spec = currentProviderSpec(provider_selector_);
+  provider_env_present_ = providerEnvironmentPresent(spec);
+  provider_status_ = provider_env_present_ ? "env_present" : "env_missing";
+
+  const QString primary_env = spec.env_vars.isEmpty() ? QString("env") : spec.env_vars.front();
+  if (model_chip_label_ != nullptr) {
+    model_chip_label_->setText("Model: " + spec.label + " off");
+  }
+  if (provider_status_label_ != nullptr) {
+    provider_status_label_->setText("Provider: " + spec.label + " | " + provider_status_);
+  }
+  if (provider_env_label_ != nullptr) {
+    provider_env_label_->setText("Env: " + primary_env +
+                                 (provider_env_present_ ? " present" : " missing") +
+                                 " | values hidden");
+  }
+  if (provider_execution_status_label_ != nullptr) {
+    provider_execution_status_label_->setText("Execution: disabled | no network probe");
+  }
+}
+
+void AgentPanel::refreshProviderStatus() {
+  updateProviderControls();
+  QJsonObject event = providerStateObject();
+  event.insert("schema_version", 1);
+  event.insert("event", "agent_provider_status_refreshed");
+  event.insert("secret_values_present", false);
+  event.insert("network_probe_performed", false);
+  output_->setPlainText(QString::fromUtf8(QJsonDocument(event).toJson(QJsonDocument::Compact)) +
+                        "\n");
+  status_label_->setText("Provider status refreshed");
+  result_state_label_->setText("Result Provider local status");
+  addActivityEvent("provider", "Provider status refreshed",
+                   event.value("provider_label").toString() + " | " +
+                       event.value("provider_status").toString(),
+                   "agent.provider_status");
 }
 
 QJsonObject AgentPanel::policyStateObject() const {
@@ -2227,6 +2442,7 @@ QString AgentPanel::workspaceStateJson() const {
                              "mode_strip",
                              "trace_strip",
                              "trace_links",
+                             "provider_controls",
                              "session_binding",
                              "policy_surface",
                              "run_controls",
@@ -2296,6 +2512,10 @@ QString AgentPanel::workspaceStateJson() const {
   response.insert("action_id", actionIdText());
   response.insert("live_method", liveMethodText());
   response.insert("live_payload", livePayloadText());
+  const QJsonObject provider = providerStateObject();
+  for (auto it = provider.begin(); it != provider.end(); ++it) {
+    response.insert(it.key(), it.value());
+  }
   const QJsonObject policy = policyStateObject();
   for (auto it = policy.begin(); it != policy.end(); ++it) {
     response.insert(it.key(), it.value());

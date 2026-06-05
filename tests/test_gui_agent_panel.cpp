@@ -3,6 +3,7 @@
 
 #include <QApplication>
 #include <QCheckBox>
+#include <QComboBox>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
@@ -162,6 +163,54 @@ int main(int argc, char** argv) {
           "agent panel exposes command policy preview action");
   require(contains(panel.workspaceStateJson(), "\"policy_decision\":\"not_classified\""),
           "agent panel starts with unclassified command policy");
+  require(panel.findChild<QWidget*>("panel:agent_provider_controls") != nullptr,
+          "agent panel exposes provider controls");
+  auto* provider_selector = panel.findChild<QComboBox*>("control:agent_provider_family");
+  require(provider_selector != nullptr,
+          "agent panel exposes a native provider family selector");
+  require(provider_selector->count() >= 5,
+          "agent panel lists OpenAI, Anthropic, Gemini, compatible, and local providers");
+  require(panel.findChild<QLineEdit*>("control:agent_provider_model") != nullptr,
+          "agent panel exposes a provider model hint input");
+  require(panel.findChild<QPushButton*>("action:agent_provider_refresh_status") != nullptr,
+          "agent panel exposes provider status refresh action");
+  require(panel.findChild<QLabel*>("label:agent_provider_status") != nullptr,
+          "agent panel exposes provider readiness status");
+  require(panel.findChild<QLabel*>("label:agent_provider_env") != nullptr,
+          "agent panel exposes provider env-var status");
+  require(panel.findChild<QLabel*>("label:agent_provider_execution_status") != nullptr,
+          "agent panel exposes provider execution-disabled status");
+  QString provider_state = panel.workspaceStateJson();
+  require(contains(provider_state, "\"provider_panel_available\":true"),
+          "agent panel workspace state reports provider controls are available");
+  require(contains(provider_state, "\"provider_id\":\"openai\""),
+          "agent panel defaults to the OpenAI provider metadata row");
+  require(contains(provider_state, "\"provider_api_key_env\":\"OPENAI_API_KEY\""),
+          "agent panel reports the selected provider env var name without value");
+  require(contains(provider_state, "\"provider_execution_enabled\":false"),
+          "agent panel keeps provider execution disabled");
+  require(contains(provider_state, "\"provider_secret_value_visible\":false"),
+          "agent panel never exposes provider secret values");
+  require(contains(provider_state, "\"provider_network_probe_enabled\":false"),
+          "agent panel does not probe provider endpoints from the GUI");
+  require(contains(provider_state, "\"provider_status_method\":\"agent.provider_status\""),
+          "agent panel points to the existing headless provider status method");
+  const int anthropic_index = provider_selector->findData("anthropic");
+  require(anthropic_index >= 0, "agent panel can select Anthropic by stable provider id");
+  provider_selector->setCurrentIndex(anthropic_index);
+  panel.findChild<QLineEdit*>("control:agent_provider_model")->setText("claude-sonnet-4-6");
+  panel.findChild<QPushButton*>("action:agent_provider_refresh_status")->click();
+  provider_state = panel.workspaceStateJson();
+  require(contains(provider_state, "\"provider_id\":\"anthropic\""),
+          "agent panel updates provider metadata when the provider selector changes");
+  require(contains(provider_state, "\"provider_api_key_env\":\"ANTHROPIC_API_KEY\""),
+          "agent panel reports Anthropic env-var readiness metadata");
+  require(contains(provider_state, "\"provider_model_hint\":\"claude-sonnet-4-6\""),
+          "agent panel serializes the local model hint without executing it");
+  require(contains(provider_state, "\"provider_execution_enabled\":false"),
+          "agent panel still keeps provider execution disabled after refresh");
+  require(contains(panel.outputText(), "\"event\":\"agent_provider_status_refreshed\""),
+          "agent panel emits a local provider status refresh event");
   require(panel.findChild<QWidget*>("panel:agent_run_controls") != nullptr,
           "agent panel exposes a local run-control strip");
   require(panel.findChild<QWidget*>("panel:agent_status_rail") != nullptr,
