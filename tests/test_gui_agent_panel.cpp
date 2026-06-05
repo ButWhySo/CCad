@@ -69,10 +69,10 @@ int main(int argc, char** argv) {
   require(panel.actionIdText() == "action:zoom_in", "agent panel has safe default action id");
   require(contains(panel.workspaceStateJson(), "\"panel_layout\":\"vertical_agent_workspace\""),
           "agent panel exposes the vertical workspace layout contract");
-  require(contains(panel.workspaceStateJson(), "\"visual_style\":\"agent_command_center_dense\""),
-          "agent panel exposes the dense command-center visual style contract");
-  require(contains(panel.workspaceStateJson(), "\"workspace_layout_version\":3"),
-          "agent panel exposes the third workspace layout version");
+  require(contains(panel.workspaceStateJson(), "\"visual_style\":\"agent_reference_panel_v4\""),
+          "agent panel exposes the reference-inspired visual style contract");
+  require(contains(panel.workspaceStateJson(), "\"workspace_layout_version\":4"),
+          "agent panel exposes the fourth workspace layout version");
   require(contains(panel.workspaceStateJson(), "\"run_state\":\"idle\""),
           "agent panel exposes local run state");
   require(contains(panel.workspaceStateJson(), "\"trace_label\":\"Trace: local-off\""),
@@ -81,6 +81,16 @@ int main(int argc, char** argv) {
           "agent panel serializes visible active plan rows");
   require(contains(panel.workspaceStateJson(), "\"visible_sections\":["),
           "agent panel serializes the visible command-center sections");
+  require(contains(panel.workspaceStateJson(), "\"status_rail\""),
+          "agent panel reports a compact status rail");
+  require(contains(panel.workspaceStateJson(), "\"command_composer\""),
+          "agent panel reports a command composer region");
+  require(contains(panel.workspaceStateJson(), "\"plan_deck\""),
+          "agent panel reports a plan deck region");
+  require(contains(panel.workspaceStateJson(), "\"evidence_lane\""),
+          "agent panel reports a compact evidence lane");
+  require(contains(panel.workspaceStateJson(), "\"approval_lane\""),
+          "agent panel reports a compact approval lane");
   require(panel.findChild<QLabel*>("label:agent_session_title") != nullptr,
           "agent panel exposes a session title for UI-map agents");
   require(panel.findChild<QWidget*>("panel:agent_session_strip") != nullptr,
@@ -101,6 +111,8 @@ int main(int argc, char** argv) {
           "agent panel exposes a trace/session strip");
   require(panel.findChild<QWidget*>("panel:agent_run_controls") != nullptr,
           "agent panel exposes a local run-control strip");
+  require(panel.findChild<QWidget*>("panel:agent_status_rail") != nullptr,
+          "agent panel exposes a compact status rail");
   require(panel.findChild<QLabel*>("label:agent_run_state_chip") != nullptr,
           "agent panel exposes a local run-state chip");
   require(panel.findChild<QPushButton*>("action:agent_pause_run") != nullptr,
@@ -142,12 +154,20 @@ int main(int argc, char** argv) {
           "agent panel exposes a functional header clear action");
   require(panel.findChild<QWidget*>("panel:agent_command_stream") != nullptr,
           "agent panel exposes a command stream section");
+  require(panel.findChild<QWidget*>("panel:agent_command_composer") != nullptr,
+          "agent panel exposes a command composer section");
   require(panel.findChild<QWidget*>("panel:agent_task_list") != nullptr,
           "agent panel exposes a task-list section");
+  require(panel.findChild<QWidget*>("panel:agent_plan_deck") != nullptr,
+          "agent panel exposes a plan deck section");
   require(panel.findChild<QWidget*>("panel:agent_evidence_tray") != nullptr,
           "agent panel exposes an evidence tray section");
+  require(panel.findChild<QWidget*>("panel:agent_evidence_lane") != nullptr,
+          "agent panel exposes a compact evidence lane");
   require(panel.findChild<QWidget*>("panel:agent_approval_card") != nullptr,
           "agent panel exposes an approval-card section");
+  require(panel.findChild<QWidget*>("panel:agent_approval_lane") != nullptr,
+          "agent panel exposes a compact approval lane");
   panel.resize(420, 760);
   panel.show();
   QApplication::processEvents();

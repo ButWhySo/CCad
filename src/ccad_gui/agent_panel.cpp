@@ -308,19 +308,39 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
       background: #191d23;
       border: 1px solid #333b47;
       border-radius: 6px;
-      padding: 4px;
+      padding: 2px;
     }
     QFrame[agentRole="modeStrip"] {
       background: #242932;
       border: 1px solid #3b4350;
       border-radius: 6px;
-      padding: 4px;
+      padding: 2px;
     }
     QFrame[agentRole="tabStrip"] {
       background: #171b21;
       border: 1px solid #303743;
       border-radius: 6px;
       padding: 3px;
+    }
+    QFrame[agentRole="statusRail"] {
+      background: #101820;
+      border: 1px solid #35516b;
+      border-radius: 6px;
+      padding: 4px;
+    }
+    QFrame[agentRole="commandComposer"] {
+      background: #151a21;
+      border: 1px solid #415166;
+      border-radius: 6px;
+      padding: 4px;
+    }
+    QFrame[agentRole="planDeck"],
+    QFrame[agentRole="evidenceLane"],
+    QFrame[agentRole="approvalLane"] {
+      background: #161b22;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 4px;
     }
     QLabel {
       color: #e9edf3;
@@ -339,14 +359,14 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
       color: #dfe7f2;
       border: 1px solid #444c59;
       border-radius: 4px;
-      padding: 3px 6px;
+      padding: 2px 5px;
     }
     QLabel[agentRole="permissionChip"] {
       background: #203629;
       color: #9ae6b4;
       border: 1px solid #3a6b4b;
       border-radius: 4px;
-      padding: 3px 6px;
+      padding: 2px 5px;
       font-weight: 600;
     }
     QLabel[agentRole="runStateChip"] {
@@ -354,7 +374,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
       color: #a7d2ff;
       border: 1px solid #355a86;
       border-radius: 4px;
-      padding: 3px 6px;
+      padding: 2px 5px;
       font-weight: 700;
     }
     QLabel[agentRole="tabChip"] {
@@ -483,7 +503,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   auto* header = makePanelSection("panel:agent_session_strip", content);
   header->setProperty("agentRole", "sessionStrip");
   auto* header_layout = new QVBoxLayout(header);
-  header_layout->setContentsMargins(6, 6, 6, 6);
+  header_layout->setContentsMargins(5, 5, 5, 5);
   header_layout->setSpacing(3);
   auto* title_row = new QHBoxLayout();
   title_row->setSpacing(8);
@@ -500,20 +520,16 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   auto* header_clear_button =
       makeIconButton("action:agent_header_clear_output", "Clear agent output",
                      style()->standardIcon(QStyle::SP_DialogResetButton), header);
+  title_row->addWidget(header_context_button);
+  title_row->addWidget(header_drc_button);
+  title_row->addWidget(header_clear_button);
   header_layout->addLayout(title_row);
-  auto* header_actions_row = new QHBoxLayout();
-  header_actions_row->setSpacing(6);
-  header_actions_row->addWidget(header_context_button);
-  header_actions_row->addWidget(header_drc_button);
-  header_actions_row->addWidget(header_clear_button);
-  header_actions_row->addStretch(1);
-  header_layout->addLayout(header_actions_row);
 
   auto* mode_strip = makePanelSection("panel:agent_mode_strip", header);
   mode_strip->setProperty("agentRole", "modeStrip");
   auto* mode_strip_layout = new QHBoxLayout(mode_strip);
-  mode_strip_layout->setContentsMargins(4, 4, 4, 4);
-  mode_strip_layout->setSpacing(5);
+  mode_strip_layout->setContentsMargins(3, 3, 3, 3);
+  mode_strip_layout->setSpacing(4);
   model_chip_label_ = makeChip("label:agent_model_chip", "Model: local", header);
   mode_chip_label_ = makeChip("label:agent_mode_chip", "Mode: plan", header);
   permission_chip_label_ = makeChip("label:agent_permission_chip", "Policy: local-only", header);
@@ -527,8 +543,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   auto* trace_strip = makePanelSection("panel:agent_trace_strip", header);
   trace_strip->setProperty("agentRole", "modeStrip");
   auto* trace_strip_layout = new QHBoxLayout(trace_strip);
-  trace_strip_layout->setContentsMargins(4, 4, 4, 4);
-  trace_strip_layout->setSpacing(5);
+  trace_strip_layout->setContentsMargins(3, 3, 3, 3);
+  trace_strip_layout->setSpacing(4);
   trace_chip_label_ = makeChip("label:agent_trace_chip", "Trace: local-off", trace_strip);
   session_chip_label_ = makeChip("label:agent_session_chip", "Session: local", trace_strip);
   trace_strip_layout->addWidget(trace_chip_label_);
@@ -539,8 +555,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   auto* run_controls = makePanelSection("panel:agent_run_controls", header);
   run_controls->setProperty("agentRole", "modeStrip");
   auto* run_controls_layout = new QHBoxLayout(run_controls);
-  run_controls_layout->setContentsMargins(4, 4, 4, 4);
-  run_controls_layout->setSpacing(5);
+  run_controls_layout->setContentsMargins(3, 3, 3, 3);
+  run_controls_layout->setSpacing(4);
   run_state_chip_label_ = makeChip("label:agent_run_state_chip", "Run: idle", run_controls);
   run_state_chip_label_->setProperty("agentRole", "runStateChip");
   auto* pause_run_button =
@@ -579,11 +595,21 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   tab_strip_layout->addStretch(1);
   header_layout->addWidget(tab_strip);
 
-  status_label_ = new QLabel("Agent ready", header);
+  auto* status_rail = makePanelSection("panel:agent_status_rail", header);
+  status_rail->setProperty("agentRole", "statusRail");
+  auto* status_rail_layout = new QHBoxLayout(status_rail);
+  status_rail_layout->setContentsMargins(5, 4, 5, 4);
+  status_rail_layout->setSpacing(6);
+  status_label_ = new QLabel("Agent ready", status_rail);
   status_label_->setObjectName("agentStatusLabel");
   status_label_->setTextInteractionFlags(Qt::TextSelectableByMouse);
   status_label_->setWordWrap(true);
-  header_layout->addWidget(status_label_);
+  auto* status_tail = new QLabel("local only", status_rail);
+  status_tail->setProperty("agentRole", "evidenceMeta");
+  status_tail->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  status_rail_layout->addWidget(status_label_, 1);
+  status_rail_layout->addWidget(status_tail);
+  header_layout->addWidget(status_rail);
   content_layout->addWidget(header);
 
   auto* context_section = makePanelSection("panel:agent_context", content);
@@ -624,6 +650,11 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   stream_layout->setContentsMargins(6, 6, 6, 6);
   stream_layout->setSpacing(4);
   stream_layout->addWidget(makeSectionTitle("Command", stream_section));
+  auto* command_composer = makePanelSection("panel:agent_command_composer", stream_section);
+  command_composer->setProperty("agentRole", "commandComposer");
+  auto* command_composer_layout = new QVBoxLayout(command_composer);
+  command_composer_layout->setContentsMargins(5, 5, 5, 5);
+  command_composer_layout->setSpacing(5);
   auto* preset_row = new QHBoxLayout();
   preset_row->setSpacing(6);
   auto* harness_button = new QPushButton("Context", stream_section);
@@ -643,7 +674,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   preset_row->addWidget(tool_guide_button);
   preset_row->addStretch(1);
   preset_row->addWidget(clear_button);
-  stream_layout->addLayout(preset_row);
+  command_composer_layout->addLayout(preset_row);
 
   auto* action_row = new QHBoxLayout();
   action_row->setSpacing(6);
@@ -662,7 +693,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   action_row->addWidget(action_id_input_, 1);
   action_row->addWidget(refresh_button);
   action_row->addWidget(trigger_button);
-  stream_layout->addLayout(action_row);
+  command_composer_layout->addLayout(action_row);
 
   auto* live_row = new QHBoxLayout();
   live_row->setSpacing(6);
@@ -683,7 +714,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   live_row->addWidget(live_method_input_);
   live_row->addWidget(live_payload_input_, 1);
   live_row->addWidget(live_query_button);
-  stream_layout->addLayout(live_row);
+  command_composer_layout->addLayout(live_row);
+  stream_layout->addWidget(command_composer);
 
   stream_layout->addWidget(makeSectionTitle("Raw JSON", stream_section));
   output_ = new QPlainTextEdit(stream_section);
@@ -722,15 +754,21 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   active_plan_layout->setContentsMargins(6, 6, 6, 6);
   active_plan_layout->setSpacing(4);
   active_plan_layout->addWidget(makeSectionTitle("Active Plan", active_plan_section));
-  active_plan_layout->addWidget(makePlanRow("panel:agent_plan_row_1", "Read workspace context",
-                                            "Project, layer, net, selection, and diagnostics are cached for the next action.",
-                                            "ready", 100, active_plan_section));
-  active_plan_layout->addWidget(makePlanRow("panel:agent_plan_row_2", "Collect evidence",
-                                            "Use DRC/ERC reports, screenshots, and pinned artifacts before proposing edits.",
-                                            "active", 62, active_plan_section));
-  active_plan_layout->addWidget(makePlanRow("panel:agent_plan_row_3", "Apply bounded changes",
-                                            "Mutating tools require policy checks and explicit verification artifacts.",
-                                            "queued", 18, active_plan_section));
+  auto* plan_deck = makePanelSection("panel:agent_plan_deck", active_plan_section);
+  plan_deck->setProperty("agentRole", "planDeck");
+  auto* plan_deck_layout = new QVBoxLayout(plan_deck);
+  plan_deck_layout->setContentsMargins(5, 5, 5, 5);
+  plan_deck_layout->setSpacing(4);
+  plan_deck_layout->addWidget(makePlanRow("panel:agent_plan_row_1", "Read workspace context",
+                                          "Project, layer, net, selection, and diagnostics are cached for the next action.",
+                                          "ready", 100, plan_deck));
+  plan_deck_layout->addWidget(makePlanRow("panel:agent_plan_row_2", "Collect evidence",
+                                          "Use DRC/ERC reports, screenshots, and pinned artifacts before proposing edits.",
+                                          "active", 62, plan_deck));
+  plan_deck_layout->addWidget(makePlanRow("panel:agent_plan_row_3", "Apply bounded changes",
+                                          "Mutating tools require policy checks and explicit verification artifacts.",
+                                          "queued", 18, plan_deck));
+  active_plan_layout->addWidget(plan_deck);
   task_layout->addWidget(active_plan_section);
 
   auto* goal_row = new QHBoxLayout();
@@ -762,7 +800,6 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   connect(stop_run_button, &QPushButton::clicked, this, [this]() { stopRun(); });
 
   content_layout->addWidget(task_section);
-  content_layout->addWidget(context_section);
 
   auto* activity_section = makePanelSection("panel:agent_activity_stream", content);
   auto* activity_layout = new QVBoxLayout(activity_section);
@@ -773,7 +810,6 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   activity_events_layout_->setContentsMargins(0, 0, 0, 0);
   activity_events_layout_->setSpacing(4);
   activity_layout->addLayout(activity_events_layout_);
-  content_layout->addWidget(activity_section);
   addActivityEvent("session", "Agent ready", "Local workspace loaded", "agent.workspace");
 
   auto* evidence_section = makePanelSection("panel:agent_evidence_tray", content);
@@ -781,6 +817,11 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   evidence_layout->setContentsMargins(6, 6, 6, 6);
   evidence_layout->setSpacing(4);
   evidence_layout->addWidget(makeSectionTitle("Pinned Evidence", evidence_section));
+  auto* evidence_lane = makePanelSection("panel:agent_evidence_lane", evidence_section);
+  evidence_lane->setProperty("agentRole", "evidenceLane");
+  auto* evidence_lane_layout = new QVBoxLayout(evidence_lane);
+  evidence_lane_layout->setContentsMargins(5, 5, 5, 5);
+  evidence_lane_layout->setSpacing(4);
   auto* evidence_row = new QHBoxLayout();
   evidence_row->setSpacing(6);
   evidence_label_ = new QLabel("Evidence 0 pinned | no cards yet", evidence_section);
@@ -796,7 +837,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   evidence_row->addWidget(evidence_label_, 1);
   evidence_row->addWidget(pin_evidence_button);
   evidence_row->addWidget(clear_evidence_button);
-  evidence_layout->addLayout(evidence_row);
+  evidence_lane_layout->addLayout(evidence_row);
+  evidence_layout->addWidget(evidence_lane);
   evidence_cards_layout_ = new QVBoxLayout();
   evidence_cards_layout_->setContentsMargins(0, 0, 0, 0);
   evidence_cards_layout_->setSpacing(4);
@@ -810,6 +852,11 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   approval_layout->setContentsMargins(6, 6, 6, 6);
   approval_layout->setSpacing(4);
   approval_layout->addWidget(makeSectionTitle("Approval Pending", approval_section));
+  auto* approval_lane = makePanelSection("panel:agent_approval_lane", approval_section);
+  approval_lane->setProperty("agentRole", "approvalLane");
+  auto* approval_lane_layout = new QVBoxLayout(approval_lane);
+  approval_lane_layout->setContentsMargins(5, 5, 5, 5);
+  approval_lane_layout->setSpacing(4);
   auto* approval_request_row = new QHBoxLayout();
   approval_request_row->setSpacing(6);
   approval_request_input_ = new QLineEdit(approval_section);
@@ -822,7 +869,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   request_approval_button->setAccessibleName("Request agent approval");
   approval_request_row->addWidget(approval_request_input_, 1);
   approval_request_row->addWidget(request_approval_button);
-  approval_layout->addLayout(approval_request_row);
+  approval_lane_layout->addLayout(approval_request_row);
 
   auto* approval_status_row = new QHBoxLayout();
   approval_status_row->setSpacing(6);
@@ -847,10 +894,13 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   approval_status_row->addWidget(decline_button);
   approval_status_row->addWidget(cancel_button);
   approval_status_row->addWidget(clear_approvals_button);
-  approval_layout->addLayout(approval_status_row);
-  approval_layout->addWidget(approval_status_label_);
+  approval_lane_layout->addLayout(approval_status_row);
+  approval_lane_layout->addWidget(approval_status_label_);
+  approval_layout->addWidget(approval_lane);
   content_layout->addWidget(evidence_section);
   content_layout->addWidget(approval_section);
+  content_layout->addWidget(context_section);
+  content_layout->addWidget(activity_section);
   content_layout->addWidget(stream_section, 1);
   content_layout->addStretch(1);
 
@@ -1561,20 +1611,25 @@ QString AgentPanel::workspaceStateJson() const {
   response.insert("workspace_kind", "ccad_agent_workspace_state");
   response.insert("evidence_manifest_kind", "ccad_agent_evidence_manifest");
   response.insert("panel_layout", "vertical_agent_workspace");
-  response.insert("visual_style", "agent_command_center_dense");
-  response.insert("workspace_layout_version", 3);
+  response.insert("visual_style", "agent_reference_panel_v4");
+  response.insert("workspace_layout_version", 4);
   response.insert("active_agent_tab", "command");
   response.insert("visible_sections",
                   QJsonArray{"session_strip",
                              "mode_strip",
                              "trace_strip",
                              "run_controls",
+                             "status_rail",
                              "command_stream",
+                             "command_composer",
                              "task_list",
                              "active_plan",
+                             "plan_deck",
                              "activity_stream",
                              "pinned_evidence",
+                             "evidence_lane",
                              "approval_card",
+                             "approval_lane",
                              "command_bar"});
   response.insert("session_title", session_title_label_->text());
   response.insert("model_label", model_chip_label_->text());
