@@ -236,10 +236,30 @@ int main(int argc, char** argv) {
           "UI map exposes layers/object panel");
   require(contains(map, "\"id\":\"panel:diagnostics\""), "UI map exposes diagnostics panel");
   require(contains(map, "\"id\":\"panel:agent\""), "UI map exposes agent panel");
+  require(contains(map, "\"id\":\"panel:agent_session_strip\""),
+          "UI map exposes the agent session strip");
+  require(contains(map, "\"id\":\"panel:agent_mode_strip\""),
+          "UI map exposes the agent mode strip");
+  require(contains(map, "\"id\":\"panel:agent_activity_stream\""),
+          "UI map exposes the agent activity stream");
+  require(contains(map, "\"id\":\"tab:agent_command\""),
+          "UI map exposes the agent command tab selector");
+  require(contains(map, "\"id\":\"tab:agent_evidence\""),
+          "UI map exposes the agent evidence tab selector");
+  require(contains(map, "\"id\":\"tab:agent_approvals\""),
+          "UI map exposes the agent approvals tab selector");
+  require(contains(map, "\"id\":\"label:agent_permission_chip\""),
+          "UI map exposes the agent permission chip");
   require(contains(map, "\"id\":\"control:agent_command_input\""),
           "UI map exposes agent command input");
   require(contains(map, "\"id\":\"action:agent_submit_command\""),
           "UI map exposes agent command submit action");
+  require(contains(map, "\"id\":\"action:agent_header_request_context\""),
+          "UI map exposes agent header context action");
+  require(contains(map, "\"id\":\"action:agent_header_trigger_drc\""),
+          "UI map exposes agent header diagnostics action");
+  require(contains(map, "\"id\":\"action:agent_header_clear_output\""),
+          "UI map exposes agent header clear action");
   require(contains(map, "\"id\":\"action:agent_footer_request_context\""),
           "UI map exposes visible agent request-context footer action");
   require(contains(map, "\"id\":\"action:agent_footer_trigger_drc\""),
@@ -635,6 +655,40 @@ int main(int argc, char** argv) {
   require(contains(agent_tab_target, "\"found\":true"), "tab target query finds agent tab");
   require(contains(agent_tab_target, "\"role\":\"tab\""), "agent tab target query reports role");
   window.triggerSafeUiActionJson("tab:agent");
+  const QString agent_session_strip_target =
+      window.uiTargetJsonById("panel:agent_session_strip");
+  require(contains(agent_session_strip_target, "\"found\":true"),
+          "target query finds agent session strip");
+  require(contains(agent_session_strip_target, "\"role\":\"panel\""),
+          "agent session strip target reports panel role");
+  const QString agent_mode_strip_target = window.uiTargetJsonById("panel:agent_mode_strip");
+  require(contains(agent_mode_strip_target, "\"found\":true"),
+          "target query finds agent mode strip");
+  const QString agent_activity_target =
+      window.uiTargetJsonById("panel:agent_activity_stream");
+  require(contains(agent_activity_target, "\"found\":true"),
+          "target query finds agent activity stream");
+  const QString agent_permission_chip_target =
+      window.uiTargetJsonById("label:agent_permission_chip");
+  require(contains(agent_permission_chip_target, "\"found\":true"),
+          "target query finds agent permission chip");
+  require(contains(agent_permission_chip_target, "\"role\":\"label\""),
+          "agent permission chip target reports label role");
+  const QString agent_command_tab_target = window.uiTargetJsonById("tab:agent_command");
+  require(contains(agent_command_tab_target, "\"found\":true"),
+          "target query finds agent command tab selector");
+  const QString agent_header_context_target =
+      window.uiTargetJsonById("action:agent_header_request_context");
+  require(contains(agent_header_context_target, "\"found\":true"),
+          "target query finds agent header context action");
+  const QString agent_header_drc_target =
+      window.uiTargetJsonById("action:agent_header_trigger_drc");
+  require(contains(agent_header_drc_target, "\"found\":true"),
+          "target query finds agent header diagnostics action");
+  const QString agent_header_clear_target =
+      window.uiTargetJsonById("action:agent_header_clear_output");
+  require(contains(agent_header_clear_target, "\"found\":true"),
+          "target query finds agent header clear action");
   const QString agent_command_target =
       window.uiTargetJsonById("control:agent_command_input");
   require(contains(agent_command_target, "\"found\":true"),

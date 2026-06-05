@@ -3,6 +3,7 @@
 #include <QHBoxLayout>
 #include <QDateTime>
 #include <QFrame>
+#include <QIcon>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -12,6 +13,7 @@
 #include <QPushButton>
 #include <QScrollArea>
 #include <QSizePolicy>
+#include <QStyle>
 #include <QStringList>
 #include <QVBoxLayout>
 
@@ -226,52 +228,115 @@ QLabel* makeChip(const QString& object_name, const QString& text, QWidget* paren
   return label;
 }
 
+QPushButton* makeIconButton(const QString& object_name,
+                            const QString& accessible_name,
+                            const QIcon& icon,
+                            QWidget* parent) {
+  auto* button = new QPushButton(parent);
+  button->setObjectName(object_name);
+  button->setAccessibleName(accessible_name);
+  button->setToolTip(accessible_name);
+  button->setIcon(icon);
+  button->setProperty("agentRole", "iconButton");
+  button->setFixedSize(28, 26);
+  button->setFocusPolicy(Qt::StrongFocus);
+  return button;
+}
+
 }  // namespace
 
 AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   setObjectName("agentPanel");
   setStyleSheet(R"(
     QWidget#agentPanel {
-      background: #111827;
-      color: #e5e7eb;
+      background: #14171c;
+      color: #e9edf3;
     }
     QScrollArea#agentScrollArea {
-      background: #111827;
+      background: #14171c;
       border: 0;
     }
     QFrame[agentRole="section"] {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: #20242b;
+      border: 1px solid #363d48;
       border-radius: 6px;
       padding: 4px;
     }
+    QFrame[agentRole="sessionStrip"] {
+      background: #191d23;
+      border: 1px solid #333b47;
+      border-radius: 6px;
+      padding: 4px;
+    }
+    QFrame[agentRole="modeStrip"] {
+      background: #242932;
+      border: 1px solid #3b4350;
+      border-radius: 6px;
+      padding: 4px;
+    }
+    QFrame[agentRole="tabStrip"] {
+      background: #171b21;
+      border: 1px solid #303743;
+      border-radius: 6px;
+      padding: 3px;
+    }
     QLabel {
-      color: #e5e7eb;
+      color: #e9edf3;
     }
     QLabel[agentRole="panelTitle"] {
-      color: #f9fafb;
+      color: #f8fafc;
       font-size: 15px;
       font-weight: 700;
     }
     QLabel[agentRole="sectionTitle"] {
-      color: #f9fafb;
+      color: #f8fafc;
       font-weight: 600;
     }
     QLabel[agentRole="chip"] {
-      background: #374151;
-      color: #dbeafe;
-      border: 1px solid #4b5563;
+      background: #2b3038;
+      color: #dfe7f2;
+      border: 1px solid #444c59;
       border-radius: 4px;
       padding: 3px 6px;
     }
+    QLabel[agentRole="permissionChip"] {
+      background: #203629;
+      color: #9ae6b4;
+      border: 1px solid #3a6b4b;
+      border-radius: 4px;
+      padding: 3px 6px;
+      font-weight: 600;
+    }
+    QLabel[agentRole="tabChip"] {
+      background: #252b34;
+      color: #d7deea;
+      border: 1px solid #404856;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-weight: 600;
+    }
+    QLabel[agentRole="tabChipSelected"] {
+      background: #1d2d3d;
+      color: #9fd1ff;
+      border: 1px solid #4d83b6;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-weight: 700;
+    }
     QFrame[agentRole="evidenceCard"] {
-      background: #0f172a;
-      border: 1px solid #334155;
+      background: #171c23;
+      border: 1px solid #3c4552;
+      border-radius: 6px;
+      padding: 4px;
+    }
+    QFrame[agentRole="activityCard"] {
+      background: #181d23;
+      border: 1px solid #354050;
       border-radius: 6px;
       padding: 4px;
     }
     QLabel[agentRole="evidenceKind"] {
-      color: #93c5fd;
+      color: #9fd1ff;
       font-weight: 600;
     }
     QLabel[agentRole="evidenceTitle"] {
@@ -279,13 +344,13 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
       font-weight: 700;
     }
     QLabel[agentRole="evidenceMeta"] {
-      color: #94a3b8;
+      color: #a7b3c5;
     }
     QLabel#agentProjectLabel,
     QLabel#agentEpochLabel,
     QLabel#agentStatusLabel,
     QLabel#agentResultStateLabel {
-      color: #f9fafb;
+      color: #f8fafc;
       font-weight: 600;
     }
     QLabel#agentWorkspaceLabel,
@@ -293,29 +358,34 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
     QLabel#agentTaskStateLabel,
     QLabel#agentEvidenceLabel,
     QLabel#agentApprovalStatusLabel {
-      color: #cbd5e1;
+      color: #cbd3df;
     }
     QLineEdit,
-    QPlainTextEdit#agentOutput {
-      background: #0f172a;
-      color: #e5e7eb;
-      border: 1px solid #475569;
+    QPlainTextEdit[agentRole="rawOutput"] {
+      background: #101318;
+      color: #e9edf3;
+      border: 1px solid #444c59;
       border-radius: 4px;
       padding: 5px;
-      selection-background-color: #2563eb;
+      selection-background-color: #2f6fb0;
     }
     QPushButton {
-      background: #263244;
+      background: #252b34;
       color: #f8fafc;
-      border: 1px solid #475569;
+      border: 1px solid #444c59;
       border-radius: 4px;
       padding: 5px 8px;
     }
+    QPushButton[agentRole="iconButton"] {
+      background: #222832;
+      border: 1px solid #404856;
+      padding: 3px;
+    }
     QPushButton:hover {
-      background: #334155;
+      background: #303743;
     }
     QPushButton:pressed {
-      background: #1d4ed8;
+      background: #295b89;
     }
   )");
 
@@ -334,7 +404,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   content_layout->setContentsMargins(6, 6, 6, 6);
   content_layout->setSpacing(6);
 
-  auto* header = makePanelSection("panel:agent_header", content);
+  auto* header = makePanelSection("panel:agent_session_strip", content);
+  header->setProperty("agentRole", "sessionStrip");
   auto* header_layout = new QVBoxLayout(header);
   header_layout->setContentsMargins(6, 6, 6, 6);
   header_layout->setSpacing(3);
@@ -344,11 +415,59 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   session_title_label_->setObjectName("label:agent_session_title");
   session_title_label_->setProperty("agentRole", "panelTitle");
   title_row->addWidget(session_title_label_, 1);
+  auto* header_context_button =
+      makeIconButton("action:agent_header_request_context", "Request agent workspace context",
+                     style()->standardIcon(QStyle::SP_BrowserReload), header);
+  auto* header_drc_button =
+      makeIconButton("action:agent_header_trigger_drc", "Trigger agent diagnostics query",
+                     style()->standardIcon(QStyle::SP_MessageBoxWarning), header);
+  auto* header_clear_button =
+      makeIconButton("action:agent_header_clear_output", "Clear agent output",
+                     style()->standardIcon(QStyle::SP_DialogResetButton), header);
+  header_layout->addLayout(title_row);
+  auto* header_actions_row = new QHBoxLayout();
+  header_actions_row->setSpacing(6);
+  header_actions_row->addWidget(header_context_button);
+  header_actions_row->addWidget(header_drc_button);
+  header_actions_row->addWidget(header_clear_button);
+  header_actions_row->addStretch(1);
+  header_layout->addLayout(header_actions_row);
+
+  auto* mode_strip = makePanelSection("panel:agent_mode_strip", header);
+  mode_strip->setProperty("agentRole", "modeStrip");
+  auto* mode_strip_layout = new QHBoxLayout(mode_strip);
+  mode_strip_layout->setContentsMargins(4, 4, 4, 4);
+  mode_strip_layout->setSpacing(5);
   model_chip_label_ = makeChip("label:agent_model_chip", "Model: local", header);
   mode_chip_label_ = makeChip("label:agent_mode_chip", "Mode: plan", header);
-  title_row->addWidget(model_chip_label_);
-  title_row->addWidget(mode_chip_label_);
-  header_layout->addLayout(title_row);
+  permission_chip_label_ = makeChip("label:agent_permission_chip", "Policy: local-only", header);
+  permission_chip_label_->setProperty("agentRole", "permissionChip");
+  mode_strip_layout->addWidget(model_chip_label_);
+  mode_strip_layout->addWidget(mode_chip_label_);
+  mode_strip_layout->addWidget(permission_chip_label_);
+  mode_strip_layout->addStretch(1);
+  header_layout->addWidget(mode_strip);
+
+  auto* tab_strip = makePanelSection("panel:agent_tab_strip", header);
+  tab_strip->setProperty("agentRole", "tabStrip");
+  auto* tab_strip_layout = new QHBoxLayout(tab_strip);
+  tab_strip_layout->setContentsMargins(3, 3, 3, 3);
+  tab_strip_layout->setSpacing(4);
+  auto* command_tab = new QLabel("Command", tab_strip);
+  command_tab->setObjectName("tab:agent_command");
+  command_tab->setProperty("agentRole", "tabChipSelected");
+  auto* evidence_tab = new QLabel("Evidence", tab_strip);
+  evidence_tab->setObjectName("tab:agent_evidence");
+  evidence_tab->setProperty("agentRole", "tabChip");
+  auto* approvals_tab = new QLabel("Approvals", tab_strip);
+  approvals_tab->setObjectName("tab:agent_approvals");
+  approvals_tab->setProperty("agentRole", "tabChip");
+  tab_strip_layout->addWidget(command_tab);
+  tab_strip_layout->addWidget(evidence_tab);
+  tab_strip_layout->addWidget(approvals_tab);
+  tab_strip_layout->addStretch(1);
+  header_layout->addWidget(tab_strip);
+
   status_label_ = new QLabel("Agent ready", header);
   status_label_->setObjectName("agentStatusLabel");
   status_label_->setTextInteractionFlags(Qt::TextSelectableByMouse);
@@ -456,8 +575,10 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   live_row->addWidget(live_query_button);
   stream_layout->addLayout(live_row);
 
+  stream_layout->addWidget(makeSectionTitle("Raw JSON", stream_section));
   output_ = new QPlainTextEdit(stream_section);
-  output_->setObjectName("agentOutput");
+  output_->setObjectName("panel:agent_raw_output");
+  output_->setProperty("agentRole", "rawOutput");
   output_->setReadOnly(true);
   output_->setMinimumHeight(64);
   output_->setMaximumHeight(88);
@@ -466,6 +587,10 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
 
   connect(refresh_button, &QPushButton::clicked, this, [this]() { refreshUiMap(); });
   connect(trigger_button, &QPushButton::clicked, this, [this]() { triggerSafeAction(); });
+  connect(header_context_button, &QPushButton::clicked, this,
+          [this]() { runHarnessContextPreset(); });
+  connect(header_drc_button, &QPushButton::clicked, this, [this]() { runDiagnosticsPreset(); });
+  connect(header_clear_button, &QPushButton::clicked, this, [this]() { clearOutput(); });
   connect(action_id_input_, &QLineEdit::returnPressed, this,
           [this]() { triggerSafeAction(); });
   connect(live_query_button, &QPushButton::clicked, this, [this]() { runLiveQuery(); });
@@ -502,10 +627,22 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   task_state_label_->setTextInteractionFlags(Qt::TextSelectableByMouse);
   task_state_label_->setWordWrap(true);
   task_layout->addWidget(task_state_label_);
-  content_layout->addWidget(task_section);
 
   connect(stage_goal_button, &QPushButton::clicked, this, [this]() { stageGoal(); });
   connect(goal_input_, &QLineEdit::returnPressed, this, [this]() { stageGoal(); });
+
+  auto* activity_section = makePanelSection("panel:agent_activity_stream", content);
+  auto* activity_layout = new QVBoxLayout(activity_section);
+  activity_layout->setContentsMargins(6, 6, 6, 6);
+  activity_layout->setSpacing(4);
+  activity_layout->addWidget(makeSectionTitle("Activity", activity_section));
+  activity_events_layout_ = new QVBoxLayout();
+  activity_events_layout_->setContentsMargins(0, 0, 0, 0);
+  activity_events_layout_->setSpacing(4);
+  activity_layout->addLayout(activity_events_layout_);
+  content_layout->addWidget(activity_section);
+  addActivityEvent("session", "Agent ready", "Local workspace loaded", "agent.workspace");
+  content_layout->addWidget(task_section);
 
   auto* evidence_section = makePanelSection("panel:agent_evidence_tray", content);
   auto* evidence_layout = new QVBoxLayout(evidence_section);
@@ -691,6 +828,8 @@ void AgentPanel::refreshUiMap() {
     status_label_->setText("UI map unavailable");
     output_->setPlainText("{\"error\":\"ui_map_unavailable\"}");
     result_state_label_->setText("Result Error ui_map_unavailable");
+    addActivityEvent("error", "UI map unavailable", "No UI-map provider is connected",
+                     "ui.map");
     return;
   }
   const QString json = ui_map_provider_();
@@ -701,6 +840,8 @@ void AgentPanel::refreshUiMap() {
   }
   status_label_->setText("UI map nodes " + QString::number(countUiMapNodes(json)));
   result_state_label_->setText("Result Map refreshed");
+  addActivityEvent("context", "UI map refreshed",
+                   "Nodes " + QString::number(countUiMapNodes(json)), "ui.map");
 }
 
 void AgentPanel::triggerSafeAction() {
@@ -708,6 +849,8 @@ void AgentPanel::triggerSafeAction() {
     status_label_->setText("Safe trigger unavailable");
     output_->setPlainText("{\"error\":\"safe_trigger_unavailable\"}");
     result_state_label_->setText("Result Error safe_trigger_unavailable");
+    addActivityEvent("error", "Safe trigger unavailable",
+                     "No safe action trigger is connected", "ui.trigger_safe");
     return;
   }
   const QString action_id = action_id_input_->text().trimmed();
@@ -715,12 +858,15 @@ void AgentPanel::triggerSafeAction() {
     status_label_->setText("Action ID required");
     output_->setPlainText("{\"error\":\"empty_action_id\"}");
     result_state_label_->setText("Result Error empty_action_id");
+    addActivityEvent("error", "Action ID required", "Safe trigger was not run",
+                     "ui.trigger_safe");
     return;
   }
   const QString result = safe_action_trigger_(action_id);
   output_->setPlainText(result);
   status_label_->setText("Safe action " + action_id);
   result_state_label_->setText(resultSummaryFromJson(result, "Result Safe action"));
+  addActivityEvent("action", "Safe action", action_id, "ui.trigger_safe");
 }
 
 void AgentPanel::runLiveQuery() {
@@ -728,6 +874,8 @@ void AgentPanel::runLiveQuery() {
     status_label_->setText("Live query unavailable");
     output_->setPlainText("{\"error\":\"live_query_unavailable\"}");
     result_state_label_->setText("Result Error live_query_unavailable");
+    addActivityEvent("error", "Live query unavailable",
+                     "No live query provider is connected", "agent.query");
     return;
   }
   const QString method = live_method_input_->text().trimmed();
@@ -735,6 +883,8 @@ void AgentPanel::runLiveQuery() {
     status_label_->setText("Live method required");
     output_->setPlainText("{\"error\":\"empty_live_method\"}");
     result_state_label_->setText("Result Error empty_live_method");
+    addActivityEvent("error", "Live method required", "Live query was not run",
+                     "agent.query");
     return;
   }
   const QString payload = live_payload_input_->text().trimmed();
@@ -746,6 +896,7 @@ void AgentPanel::runLiveQuery() {
   }
   status_label_->setText("Live query " + method);
   result_state_label_->setText(resultSummaryFromJson(result, "Result Live query"));
+  addActivityEvent("tool", "Live query", result_state_label_->text(), method);
 }
 
 void AgentPanel::runHarnessContextPreset() {
@@ -767,6 +918,7 @@ void AgentPanel::clearOutput() {
   output_->clear();
   status_label_->setText("Output cleared");
   result_state_label_->setText("Result Idle");
+  addActivityEvent("session", "Output cleared", "Raw JSON stream cleared", "agent.clear");
 }
 
 void AgentPanel::stageGoal() {
@@ -776,12 +928,96 @@ void AgentPanel::stageGoal() {
     task_state_label_->setText("Task idle");
     status_label_->setText("Goal required");
     result_state_label_->setText("Result Error empty_goal");
+    addActivityEvent("error", "Goal required", "Task goal was cleared", "agent.goal");
     return;
   }
   staged_goal_ = trimmed_goal;
   task_state_label_->setText("Goal staged: " + staged_goal_);
   status_label_->setText("Goal staged");
   result_state_label_->setText("Result Goal staged");
+  addActivityEvent("plan", "Goal staged", staged_goal_, "agent.goal");
+}
+
+QJsonObject AgentPanel::activityEventJson(const ActivityEvent& event) const {
+  QJsonObject object;
+  object.insert("id", event.id);
+  object.insert("kind", event.kind);
+  object.insert("title", event.title);
+  object.insert("detail", event.detail);
+  object.insert("method", event.method);
+  object.insert("created_at", event.created_at);
+  return object;
+}
+
+void AgentPanel::addActivityEvent(const QString& kind,
+                                  const QString& title,
+                                  const QString& detail,
+                                  const QString& method) {
+  ActivityEvent event;
+  event.id = "act-" + QString::number(++activity_sequence_);
+  event.kind = contextValue(kind, "event");
+  event.title = contextValue(title, "Agent event");
+  event.detail = detail.trimmed();
+  event.method = method.trimmed();
+  event.created_at = QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs);
+  activity_events_.append(event);
+  while (activity_events_.size() > 8) {
+    activity_events_.removeFirst();
+  }
+  renderActivityEvents();
+}
+
+void AgentPanel::renderActivityEvents() {
+  if (activity_events_layout_ == nullptr) {
+    return;
+  }
+  while (QLayoutItem* item = activity_events_layout_->takeAt(0)) {
+    if (QWidget* widget = item->widget()) {
+      delete widget;
+    }
+    delete item;
+  }
+
+  for (int i = 0; i < activity_events_.size(); ++i) {
+    const ActivityEvent& event = activity_events_.at(i);
+    auto* frame = new QFrame(this);
+    frame->setObjectName("card:agent_activity_" + QString::number(i + 1));
+    frame->setProperty("agentRole", "activityCard");
+    auto* layout = new QVBoxLayout(frame);
+    layout->setContentsMargins(6, 5, 6, 5);
+    layout->setSpacing(2);
+
+    auto* title_row = new QHBoxLayout();
+    title_row->setSpacing(6);
+    auto* kind_label = new QLabel(event.kind, frame);
+    kind_label->setObjectName("label:agent_activity_" + QString::number(i + 1) + "_kind");
+    kind_label->setProperty("agentRole", "evidenceKind");
+    auto* title_label = new QLabel(event.title, frame);
+    title_label->setObjectName("label:agent_activity_" + QString::number(i + 1) + "_title");
+    title_label->setProperty("agentRole", "evidenceTitle");
+    title_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    title_row->addWidget(kind_label);
+    title_row->addWidget(title_label, 1);
+    layout->addLayout(title_row);
+
+    if (!event.detail.isEmpty()) {
+      auto* detail_label = new QLabel(event.detail, frame);
+      detail_label->setObjectName("label:agent_activity_" + QString::number(i + 1) + "_detail");
+      detail_label->setWordWrap(true);
+      detail_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+      layout->addWidget(detail_label);
+    }
+
+    const QString meta = event.method.isEmpty() ? event.id : event.method + " | " + event.id;
+    auto* meta_label = new QLabel(meta, frame);
+    meta_label->setObjectName("label:agent_activity_" + QString::number(i + 1) + "_meta");
+    meta_label->setProperty("agentRole", "evidenceMeta");
+    meta_label->setWordWrap(true);
+    meta_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    layout->addWidget(meta_label);
+
+    activity_events_layout_->addWidget(frame);
+  }
 }
 
 void AgentPanel::renderEvidenceCards() {
@@ -883,6 +1119,8 @@ void AgentPanel::pinEvidence() {
                            " pinned | last " + card.kind);
   status_label_->setText("Evidence pinned");
   result_state_label_->setText("Result Evidence pinned");
+  addActivityEvent("evidence", "Evidence pinned", card.title + " | " + card.kind,
+                   "agent.evidence");
 }
 
 void AgentPanel::clearEvidence() {
@@ -891,6 +1129,8 @@ void AgentPanel::clearEvidence() {
   evidence_label_->setText("Evidence 0 pinned | no cards yet");
   status_label_->setText("Evidence cleared");
   result_state_label_->setText("Result Evidence cleared");
+  addActivityEvent("evidence", "Evidence cleared", "Pinned evidence queue reset",
+                   "agent.evidence");
 }
 
 void AgentPanel::setApprovalRequestText(const QString& request) {
@@ -905,6 +1145,8 @@ void AgentPanel::requestApproval() {
     approval_status_label_->setText("Approvals 0 pending");
     status_label_->setText("Approval request required");
     result_state_label_->setText("Result Approval required");
+    addActivityEvent("error", "Approval request required",
+                     "Approval lane returned to idle", "agent.approval");
     return;
   }
   pending_approval_request_ = trimmed_request;
@@ -912,6 +1154,8 @@ void AgentPanel::requestApproval() {
   approval_status_label_->setText("Approval pending: " + pending_approval_request_);
   status_label_->setText("Approval pending");
   result_state_label_->setText("Result Approval pending");
+  addActivityEvent("approval", "Approval pending", pending_approval_request_,
+                   "agent.approval");
 }
 
 void AgentPanel::submitCommand() {
@@ -921,6 +1165,7 @@ void AgentPanel::submitCommand() {
     status_label_->setText("Command required");
     result_state_label_->setText("Result Error empty_command");
     output_->setPlainText("{\"error\":\"empty_command\"}\n");
+    addActivityEvent("error", "Command required", "No command was staged", "agent.command");
     return;
   }
 
@@ -941,6 +1186,7 @@ void AgentPanel::submitCommand() {
   event.insert("diagnostics", diagnosticsText());
   output_->setPlainText(QString::fromUtf8(QJsonDocument(event).toJson(QJsonDocument::Compact)) +
                         "\n");
+  addActivityEvent("command", "Command staged", staged_command_, "agent.command");
 }
 
 void AgentPanel::approveNextApproval() {
@@ -948,6 +1194,8 @@ void AgentPanel::approveNextApproval() {
     approval_status_label_->setText("Approvals 0 pending");
     status_label_->setText("No approval pending");
     result_state_label_->setText("Result No approval pending");
+    addActivityEvent("approval", "No approval pending", "Accept skipped",
+                     "agent.approval");
     return;
   }
   const QString request = pending_approval_request_;
@@ -956,6 +1204,7 @@ void AgentPanel::approveNextApproval() {
   approval_status_label_->setText("Approval accepted: " + request);
   status_label_->setText("Approval accepted");
   result_state_label_->setText("Result Approval accepted");
+  addActivityEvent("approval", "Approval accepted", request, "agent.approval");
 }
 
 void AgentPanel::declineNextApproval() {
@@ -963,6 +1212,8 @@ void AgentPanel::declineNextApproval() {
     approval_status_label_->setText("Approvals 0 pending");
     status_label_->setText("No approval pending");
     result_state_label_->setText("Result No approval pending");
+    addActivityEvent("approval", "No approval pending", "Decline skipped",
+                     "agent.approval");
     return;
   }
   const QString request = pending_approval_request_;
@@ -971,6 +1222,7 @@ void AgentPanel::declineNextApproval() {
   approval_status_label_->setText("Approval declined: " + request);
   status_label_->setText("Approval declined");
   result_state_label_->setText("Result Approval declined");
+  addActivityEvent("approval", "Approval declined", request, "agent.approval");
 }
 
 void AgentPanel::cancelApproval() {
@@ -978,6 +1230,8 @@ void AgentPanel::cancelApproval() {
     approval_status_label_->setText("Approvals 0 pending");
     status_label_->setText("No approval pending");
     result_state_label_->setText("Result No approval pending");
+    addActivityEvent("approval", "No approval pending", "Cancel skipped",
+                     "agent.approval");
     return;
   }
   const QString request = pending_approval_request_;
@@ -986,6 +1240,7 @@ void AgentPanel::cancelApproval() {
   approval_status_label_->setText("Approval canceled: " + request);
   status_label_->setText("Approval canceled");
   result_state_label_->setText("Result Approval canceled");
+  addActivityEvent("approval", "Approval canceled", request, "agent.approval");
 }
 
 void AgentPanel::clearApprovals() {
@@ -995,6 +1250,8 @@ void AgentPanel::clearApprovals() {
   approval_status_label_->setText("Approvals 0 pending");
   status_label_->setText("Approvals cleared");
   result_state_label_->setText("Result Approvals cleared");
+  addActivityEvent("approval", "Approvals cleared", "Approval lane reset",
+                   "agent.approval");
 }
 
 QString AgentPanel::projectText() const {
@@ -1104,6 +1361,10 @@ QJsonObject AgentPanel::evidenceCardJson(const EvidenceCard& card) const {
 QString AgentPanel::workspaceStateJson() const {
   QJsonArray evidence;
   QJsonArray evidence_cards;
+  QJsonArray activity_events;
+  for (const ActivityEvent& event : activity_events_) {
+    activity_events.append(activityEventJson(event));
+  }
   for (const EvidenceCard& card : evidence_cards_) {
     QString legacy_summary = card.title;
     if (!card.summary.isEmpty()) {
@@ -1121,13 +1382,28 @@ QString AgentPanel::workspaceStateJson() const {
   response.insert("workspace_kind", "ccad_agent_workspace_state");
   response.insert("evidence_manifest_kind", "ccad_agent_evidence_manifest");
   response.insert("panel_layout", "vertical_agent_workspace");
+  response.insert("visual_style", "command_center_dark");
+  response.insert("workspace_layout_version", 2);
+  response.insert("active_agent_tab", "command");
+  response.insert("visible_sections",
+                  QJsonArray{"session_strip",
+                             "mode_strip",
+                             "command_stream",
+                             "task_list",
+                             "activity_stream",
+                             "pinned_evidence",
+                             "approval_card",
+                             "command_bar"});
   response.insert("session_title", session_title_label_->text());
   response.insert("model_label", model_chip_label_->text());
   response.insert("mode_label", mode_chip_label_->text());
+  response.insert("permission_label", permission_chip_label_->text());
   response.insert("command", staged_command_.isEmpty() ? commandText().trimmed() : staged_command_);
   response.insert("command_input", commandText());
   response.insert("goal", staged_goal_.isEmpty() ? goal_input_->text().trimmed() : staged_goal_);
   response.insert("task_state", taskStateText());
+  response.insert("activity_event_count", activity_events_.size());
+  response.insert("activity_events", activity_events);
   response.insert("evidence_count", evidence_cards_.size());
   response.insert("evidence", evidence);
   response.insert("evidence_cards", evidence_cards);

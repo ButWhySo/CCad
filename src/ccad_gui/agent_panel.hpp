@@ -93,12 +93,28 @@ class AgentPanel final : public QWidget {
     int height = -1;
   };
 
+  struct ActivityEvent {
+    QString id;
+    QString kind;
+    QString title;
+    QString detail;
+    QString method;
+    QString created_at;
+  };
+
   void renderEvidenceCards();
   QJsonObject evidenceCardJson(const EvidenceCard& card) const;
+  void addActivityEvent(const QString& kind,
+                        const QString& title,
+                        const QString& detail,
+                        const QString& method);
+  void renderActivityEvents();
+  QJsonObject activityEventJson(const ActivityEvent& event) const;
 
   QLabel* session_title_label_ = nullptr;
   QLabel* model_chip_label_ = nullptr;
   QLabel* mode_chip_label_ = nullptr;
+  QLabel* permission_chip_label_ = nullptr;
   QLabel* project_label_ = nullptr;
   QLabel* epoch_label_ = nullptr;
   QLabel* status_label_ = nullptr;
@@ -107,6 +123,7 @@ class AgentPanel final : public QWidget {
   QLabel* result_state_label_ = nullptr;
   QLabel* task_state_label_ = nullptr;
   QLabel* evidence_label_ = nullptr;
+  QVBoxLayout* activity_events_layout_ = nullptr;
   QVBoxLayout* evidence_cards_layout_ = nullptr;
   QLabel* approval_status_label_ = nullptr;
   QLineEdit* action_id_input_ = nullptr;
@@ -121,7 +138,9 @@ class AgentPanel final : public QWidget {
   LiveQueryProvider live_query_provider_;
   QString staged_goal_;
   QString staged_command_;
+  QVector<ActivityEvent> activity_events_;
   QVector<EvidenceCard> evidence_cards_;
+  int activity_sequence_ = 0;
   int evidence_sequence_ = 0;
   QString pending_approval_request_;
   QString approval_last_decision_ = "none";

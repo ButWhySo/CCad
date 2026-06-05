@@ -44,6 +44,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
+#include <QLabel>
 #include <QLineEdit>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -200,6 +201,25 @@ QString rectJson(const QRect& rect) {
       .arg(rect.y())
       .arg(rect.width())
       .arg(rect.height());
+}
+
+QRect visibleWidgetGlobalRect(const QWidget* widget) {
+  const QRect full_rect(widget->mapToGlobal(QPoint(0, 0)), widget->size());
+  QRect clipped_rect = full_rect;
+  for (const QWidget* parent = widget->parentWidget(); parent != nullptr;
+       parent = parent->parentWidget()) {
+    const auto* scroll_area = qobject_cast<const QScrollArea*>(parent);
+    if (scroll_area == nullptr || scroll_area->viewport() == nullptr) {
+      continue;
+    }
+    const QRect viewport_rect(scroll_area->viewport()->mapToGlobal(QPoint(0, 0)),
+                              scroll_area->viewport()->size());
+    clipped_rect = clipped_rect.intersected(viewport_rect);
+    if (clipped_rect.isEmpty()) {
+      return full_rect;
+    }
+  }
+  return clipped_rect;
 }
 
 QString rectFJson(const QRectF& rect) {
@@ -1952,6 +1972,16 @@ ReviewWindow::ReviewWindow() {
   connect(agent_dock_, &QDockWidget::visibilityChanged, this, [this](bool) {
     markUiMapChanged({"tab:agent",
                       "panel:agent",
+                      "panel:agent_session_strip",
+                      "panel:agent_mode_strip",
+                      "panel:agent_activity_stream",
+                      "tab:agent_command",
+                      "tab:agent_evidence",
+                      "tab:agent_approvals",
+                      "label:agent_permission_chip",
+                      "action:agent_header_request_context",
+                      "action:agent_header_trigger_drc",
+                      "action:agent_header_clear_output",
                       "control:agent_command_input",
                       "action:agent_submit_command",
                       "action:agent_footer_request_context",
@@ -1969,7 +1999,7 @@ ReviewWindow::ReviewWindow() {
                       "action:agent_decline_next",
                       "action:agent_cancel_approval",
                       "action:agent_clear_approvals"},
-                     {"tab", "panel", "control", "action"});
+                     {"tab", "panel", "label", "control", "action"});
   });
 
   canvas_scene_ = new QGraphicsScene(this);
@@ -3527,6 +3557,39 @@ QString ReviewWindow::buildUiMapJson() const {
                  .arg(global_rect.center().y());
   }
 
+  for (const QWidget* widget : findChildren<QWidget*>()) {
+    const QString id = widget->objectName();
+    const bool supported_prefix =
+        id.startsWith("panel:") || id.startsWith("tab:") || id.startsWith("label:") ||
+        id.startsWith("card:");
+    if (!supported_prefix) {
+      continue;
+    }
+    const QPoint local_top_left = widget->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
+    const QRect local_rect(local_top_left, widget->size());
+    const QRect global_rect = visibleWidgetGlobalRect(widget);
+    const QString role = id.left(id.indexOf(':'));
+    QString label = id;
+    if (const auto* text_label = qobject_cast<const QLabel*>(widget)) {
+      label = text_label->text().simplified();
+      if (label.isEmpty()) {
+        label = id;
+      }
+    }
+    nodes << QString("{\"id\":%1,\"role\":%2,\"label\":%3,"
+                     "\"visible\":%4,\"enabled\":%5,\"interactive\":false,"
+                     "\"local_rect\":%6,\"global_rect\":%7,\"target_x\":%8,\"target_y\":%9}")
+                 .arg(jsonString(id))
+                 .arg(jsonString(role))
+                 .arg(jsonString(label))
+                 .arg(boolJson(widget->isVisible()))
+                 .arg(boolJson(widget->isEnabled()))
+                 .arg(rectJson(local_rect))
+                 .arg(rectJson(global_rect))
+                 .arg(global_rect.center().x())
+                 .arg(global_rect.center().y());
+  }
+
   if (active_layer_selector_ != nullptr) {
     const QPoint local_top_left =
         active_layer_selector_->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
@@ -4301,6 +4364,27 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
     const QRect global_rect(input->mapToGlobal(QPoint(0, 0)), input->size());
     const QString label = input->accessibleName().isEmpty() ? id : input->accessibleName();
     return foundTarget(id, "control", label, input->isVisible(), input->isEnabled(),
+                       global_rect.center());
+  }
+
+  for (const QWidget* widget : findChildren<QWidget*>()) {
+    const QString widget_id = widget->objectName();
+    const bool supported_prefix =
+        widget_id.startsWith("panel:") || widget_id.startsWith("tab:") ||
+        widget_id.startsWith("label:") || widget_id.startsWith("card:");
+    if (widget_id != id || !supported_prefix) {
+      continue;
+    }
+    const QRect global_rect = visibleWidgetGlobalRect(widget);
+    const QString role = widget_id.left(widget_id.indexOf(':'));
+    QString label = widget_id;
+    if (const auto* text_label = qobject_cast<const QLabel*>(widget)) {
+      label = text_label->text().simplified();
+      if (label.isEmpty()) {
+        label = widget_id;
+      }
+    }
+    return foundTarget(widget_id, role, label, widget->isVisible(), widget->isEnabled(),
                        global_rect.center());
   }
 
@@ -6230,6 +6314,16 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
     agent_dock_->raise();
     markUiMapChanged({"tab:agent",
                       "panel:agent",
+                      "panel:agent_session_strip",
+                      "panel:agent_mode_strip",
+                      "panel:agent_activity_stream",
+                      "tab:agent_command",
+                      "tab:agent_evidence",
+                      "tab:agent_approvals",
+                      "label:agent_permission_chip",
+                      "action:agent_header_request_context",
+                      "action:agent_header_trigger_drc",
+                      "action:agent_header_clear_output",
                       "control:agent_command_input",
                       "action:agent_submit_command",
                       "action:agent_footer_request_context",
@@ -6247,7 +6341,7 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
                       "action:agent_decline_next",
                       "action:agent_cancel_approval",
                       "action:agent_clear_approvals"},
-                     {"tab", "panel", "control", "action"});
+                     {"tab", "panel", "label", "control", "action"});
     return result(id, true, "tab_selected");
   }
 

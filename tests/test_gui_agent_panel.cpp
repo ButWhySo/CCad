@@ -69,8 +69,40 @@ int main(int argc, char** argv) {
   require(panel.actionIdText() == "action:zoom_in", "agent panel has safe default action id");
   require(contains(panel.workspaceStateJson(), "\"panel_layout\":\"vertical_agent_workspace\""),
           "agent panel exposes the vertical workspace layout contract");
+  require(contains(panel.workspaceStateJson(), "\"visual_style\":\"command_center_dark\""),
+          "agent panel exposes the command-center visual style contract");
+  require(contains(panel.workspaceStateJson(), "\"workspace_layout_version\":2"),
+          "agent panel exposes the second workspace layout version");
+  require(contains(panel.workspaceStateJson(), "\"visible_sections\":["),
+          "agent panel serializes the visible command-center sections");
   require(panel.findChild<QLabel*>("label:agent_session_title") != nullptr,
           "agent panel exposes a session title for UI-map agents");
+  require(panel.findChild<QWidget*>("panel:agent_session_strip") != nullptr,
+          "agent panel exposes a compact session strip");
+  require(panel.findChild<QWidget*>("panel:agent_mode_strip") != nullptr,
+          "agent panel exposes model, mode, and permission chips as one strip");
+  require(panel.findChild<QLabel*>("label:agent_model_chip") != nullptr,
+          "agent panel exposes the model chip");
+  require(panel.findChild<QLabel*>("label:agent_mode_chip") != nullptr,
+          "agent panel exposes the mode chip");
+  require(panel.findChild<QLabel*>("label:agent_permission_chip") != nullptr,
+          "agent panel exposes the local permission chip");
+  require(panel.findChild<QWidget*>("tab:agent_command") != nullptr,
+          "agent panel exposes a command tab selector");
+  require(panel.findChild<QWidget*>("tab:agent_evidence") != nullptr,
+          "agent panel exposes an evidence tab selector");
+  require(panel.findChild<QWidget*>("tab:agent_approvals") != nullptr,
+          "agent panel exposes an approvals tab selector");
+  require(panel.findChild<QWidget*>("panel:agent_activity_stream") != nullptr,
+          "agent panel exposes a command activity stream");
+  require(panel.findChild<QWidget*>("card:agent_activity_1") != nullptr,
+          "agent panel renders an initial activity event");
+  require(panel.findChild<QPushButton*>("action:agent_header_request_context") != nullptr,
+          "agent panel exposes a functional header context action");
+  require(panel.findChild<QPushButton*>("action:agent_header_trigger_drc") != nullptr,
+          "agent panel exposes a functional header diagnostics action");
+  require(panel.findChild<QPushButton*>("action:agent_header_clear_output") != nullptr,
+          "agent panel exposes a functional header clear action");
   require(panel.findChild<QWidget*>("panel:agent_command_stream") != nullptr,
           "agent panel exposes a command stream section");
   require(panel.findChild<QWidget*>("panel:agent_task_list") != nullptr,
@@ -147,6 +179,12 @@ int main(int argc, char** argv) {
           "agent panel writes command staging JSON to the stream");
   require(contains(panel.workspaceStateJson(), "\"command\":\"Inspect DRC before routing\""),
           "agent panel workspace state serializes the staged command");
+  require(contains(panel.workspaceStateJson(), "\"activity_events\":["),
+          "agent panel workspace state serializes activity events");
+  require(contains(panel.workspaceStateJson(), "\"title\":\"Command staged\""),
+          "agent panel activity stream records command staging");
+  require(panel.findChild<QWidget*>("card:agent_activity_2") != nullptr,
+          "agent panel appends command staging as a targetable activity card");
 
   panel.runHarnessContextPreset();
   require(live_method_seen == "agent.harness_context",
