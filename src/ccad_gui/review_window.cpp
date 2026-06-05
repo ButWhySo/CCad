@@ -204,7 +204,7 @@ QString rectJson(const QRect& rect) {
       .arg(rect.height());
 }
 
-QRect visibleWidgetGlobalRect(const QWidget* widget) {
+QRect clippedWidgetGlobalRect(const QWidget* widget) {
   const QRect full_rect(widget->mapToGlobal(QPoint(0, 0)), widget->size());
   QRect clipped_rect = full_rect;
   for (const QWidget* parent = widget->parentWidget(); parent != nullptr;
@@ -217,10 +217,38 @@ QRect visibleWidgetGlobalRect(const QWidget* widget) {
                               scroll_area->viewport()->size());
     clipped_rect = clipped_rect.intersected(viewport_rect);
     if (clipped_rect.isEmpty()) {
-      return full_rect;
+      return clipped_rect;
     }
   }
   return clipped_rect;
+}
+
+QRect visibleWidgetGlobalRect(const QWidget* widget) {
+  const QRect clipped_rect = clippedWidgetGlobalRect(widget);
+  if (!clipped_rect.isEmpty()) {
+    return clipped_rect;
+  }
+  return QRect(widget->mapToGlobal(QPoint(0, 0)), widget->size());
+}
+
+void ensureWidgetVisibleInAncestorScrollAreas(const QWidget* widget) {
+  if (widget == nullptr) {
+    return;
+  }
+  auto* mutable_widget = const_cast<QWidget*>(widget);
+  bool scrolled = false;
+  for (QWidget* parent = mutable_widget->parentWidget(); parent != nullptr;
+       parent = parent->parentWidget()) {
+    auto* scroll_area = qobject_cast<QScrollArea*>(parent);
+    if (scroll_area == nullptr) {
+      continue;
+    }
+    scroll_area->ensureWidgetVisible(mutable_widget, 8, 8);
+    scrolled = true;
+  }
+  if (scrolled) {
+    QApplication::processEvents();
+  }
 }
 
 QString rectFJson(const QRectF& rect) {
@@ -1980,6 +2008,12 @@ ReviewWindow::ReviewWindow() {
                       "label:agent_trace_chip",
                       "label:agent_session_chip",
                       "panel:agent_trace_strip",
+                      "panel:agent_trace_links",
+                      "label:agent_trace_id",
+                      "label:agent_span_id",
+                      "label:agent_trace_status",
+                      "label:agent_trace_export_status",
+                      "action:agent_new_trace_context",
                       "panel:agent_session_binding",
                       "control:agent_session_path",
                       "action:agent_load_session",
@@ -3539,7 +3573,8 @@ QString ReviewWindow::buildUiMapJson() const {
     }
     const QPoint local_top_left = button->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
     const QRect local_rect(local_top_left, button->size());
-    const QRect global_rect(button->mapToGlobal(QPoint(0, 0)), button->size());
+    const QRect global_rect = visibleWidgetGlobalRect(button);
+    const QRect clipped_rect = clippedWidgetGlobalRect(button);
     const QString label = button->accessibleName().isEmpty() ? button->text()
                                                              : button->accessibleName();
     nodes << QString("{\"id\":%1,\"role\":\"action\",\"label\":%2,"
@@ -3547,7 +3582,7 @@ QString ReviewWindow::buildUiMapJson() const {
                      "\"global_rect\":%6,\"target_x\":%7,\"target_y\":%8}")
                  .arg(jsonString(id))
                  .arg(jsonString(label))
-                 .arg(boolJson(button->isVisible()))
+                 .arg(boolJson(button->isVisible() && !clipped_rect.isEmpty()))
                  .arg(boolJson(button->isEnabled()))
                  .arg(rectJson(local_rect))
                  .arg(rectJson(global_rect))
@@ -4241,6 +4276,31 @@ QString ReviewWindow::validateUiMapTargetsJson(const bool move_cursor) const {
                 hit_widget != nullptr ? hit_widget->objectName() : "none");
   }
 
+  const QStringList visible_agent_buttons = {"action:agent_new_trace_context"};
+  for (const QPushButton* button : findChildren<QPushButton*>()) {
+    const QString id = button->objectName();
+    if (!visible_agent_buttons.contains(id)) {
+      continue;
+    }
+    const QRect clipped_rect = clippedWidgetGlobalRect(button);
+    const QRect global_rect = clipped_rect.isEmpty()
+                                  ? QRect(button->mapToGlobal(QPoint(0, 0)), button->size())
+                                  : clipped_rect;
+    const QPoint target = global_rect.center();
+    QWidget* hit_widget = QApplication::widgetAt(target);
+    const QPoint local_target = button->mapFromGlobal(target);
+    const bool target_is_on_button =
+        button->rect().contains(local_target) && button->visibleRegion().contains(local_target);
+    const bool hit = !clipped_rect.isEmpty() && global_rect.contains(target) &&
+                     target_is_on_button &&
+                     (hit_widget == nullptr || hit_widget == button ||
+                      button->isAncestorOf(hit_widget) ||
+                      hit_widget->isAncestorOf(button));
+    appendCheck(id, "action", button->isVisible() && !clipped_rect.isEmpty(),
+                button->isEnabled(), target, hit,
+                hit_widget != nullptr ? hit_widget->objectName() : "none");
+  }
+
   for (const QCheckBox* checkbox : findChildren<QCheckBox*>()) {
     const QString id = checkbox->objectName();
     if (!id.startsWith("control:")) {
@@ -4342,6 +4402,17 @@ QString ReviewWindow::validateUiMapTargetsJson(const bool move_cursor) const {
     if (view == nullptr || scene == nullptr) {
       return;
     }
+    const auto hitCanvasObjectAt = [scene](const QPointF& scene_point,
+                                           const QString& object_id,
+                                           const QGraphicsItem* item) {
+      const QList<QGraphicsItem*> hit_items = scene->items(scene_point);
+      for (const QGraphicsItem* hit_item : hit_items) {
+        if (hit_item == item || canvasObjectId(*hit_item) == object_id) {
+          return true;
+        }
+      }
+      return false;
+    };
     for (const QGraphicsItem* item : scene->items()) {
       const QString object_id = canvasObjectId(*item);
       const QString object_type = canvasObjectType(*item);
@@ -4349,16 +4420,41 @@ QString ReviewWindow::validateUiMapTargetsJson(const bool move_cursor) const {
         continue;
       }
       const QRectF scene_rect = item->sceneBoundingRect();
-      const QPoint target = view->viewport()->mapToGlobal(
-          view->mapFromScene(scene_rect.center()));
-      const QPoint viewport_target = view->viewport()->mapFromGlobal(target);
-      const QList<QGraphicsItem*> hit_items = scene->items(view->mapToScene(viewport_target));
+      std::vector<QPointF> probe_points;
+      probe_points.reserve(9);
+      probe_points.push_back(scene_rect.center());
+      const double left = scene_rect.left();
+      const double top = scene_rect.top();
+      const double mid_x = scene_rect.center().x();
+      const double mid_y = scene_rect.center().y();
+      const double q1_x = left + scene_rect.width() * 0.25;
+      const double q3_x = left + scene_rect.width() * 0.75;
+      const double q1_y = top + scene_rect.height() * 0.25;
+      const double q3_y = top + scene_rect.height() * 0.75;
+      probe_points.push_back(QPointF(q1_x, mid_y));
+      probe_points.push_back(QPointF(q3_x, mid_y));
+      probe_points.push_back(QPointF(mid_x, q1_y));
+      probe_points.push_back(QPointF(mid_x, q3_y));
+      probe_points.push_back(QPointF(q1_x, q1_y));
+      probe_points.push_back(QPointF(q3_x, q1_y));
+      probe_points.push_back(QPointF(q1_x, q3_y));
+      probe_points.push_back(QPointF(q3_x, q3_y));
+      QPointF scene_target = scene_rect.center();
       bool hit = false;
-      for (const QGraphicsItem* hit_item : hit_items) {
-        if (hit_item == item || canvasObjectId(*hit_item) == object_id) {
+      for (const QPointF& probe_point : probe_points) {
+        if (!scene_rect.contains(probe_point)) {
+          continue;
+        }
+        if (hitCanvasObjectAt(probe_point, object_id, item)) {
+          scene_target = probe_point;
           hit = true;
           break;
         }
+      }
+      const QPoint target = view->viewport()->mapToGlobal(view->mapFromScene(scene_target));
+      const QPoint viewport_target = view->viewport()->mapFromGlobal(target);
+      if (!hit) {
+        hit = hitCanvasObjectAt(view->mapToScene(viewport_target), object_id, item);
       }
       appendCheck(QString("canvas_object:") + object_id, "canvas_object",
                   view->isVisible() && item->isVisible(),
@@ -4411,31 +4507,44 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
     if (button->objectName() != id || !id.startsWith("action:")) {
       continue;
     }
-    const QRect global_rect(button->mapToGlobal(QPoint(0, 0)), button->size());
+    ensureWidgetVisibleInAncestorScrollAreas(button);
+    const QRect clipped_rect = clippedWidgetGlobalRect(button);
+    const QRect global_rect = clipped_rect.isEmpty()
+                                  ? QRect(button->mapToGlobal(QPoint(0, 0)), button->size())
+                                  : clipped_rect;
     const QString label = button->accessibleName().isEmpty() ? button->text()
                                                              : button->accessibleName();
-    return foundTarget(id, "action", label, button->isVisible(), button->isEnabled(),
-                       global_rect.center());
+    return foundTarget(id, "action", label, button->isVisible() && !clipped_rect.isEmpty(),
+                       button->isEnabled(), global_rect.center());
   }
 
   for (const QLineEdit* input : findChildren<QLineEdit*>()) {
     if (input->objectName() != id || !id.startsWith("control:")) {
       continue;
     }
-    const QRect global_rect(input->mapToGlobal(QPoint(0, 0)), input->size());
+    ensureWidgetVisibleInAncestorScrollAreas(input);
+    const QRect clipped_rect = clippedWidgetGlobalRect(input);
+    const QRect global_rect = clipped_rect.isEmpty()
+                                  ? QRect(input->mapToGlobal(QPoint(0, 0)), input->size())
+                                  : clipped_rect;
     const QString label = input->accessibleName().isEmpty() ? id : input->accessibleName();
-    return foundTarget(id, "control", label, input->isVisible(), input->isEnabled(),
-                       global_rect.center());
+    return foundTarget(id, "control", label, input->isVisible() && !clipped_rect.isEmpty(),
+                       input->isEnabled(), global_rect.center());
   }
 
   for (const QCheckBox* checkbox : findChildren<QCheckBox*>()) {
     if (checkbox->objectName() != id || !id.startsWith("control:")) {
       continue;
     }
-    const QRect global_rect = visibleWidgetGlobalRect(checkbox);
+    ensureWidgetVisibleInAncestorScrollAreas(checkbox);
+    const QRect clipped_rect = clippedWidgetGlobalRect(checkbox);
+    const QRect global_rect = clipped_rect.isEmpty()
+                                  ? QRect(checkbox->mapToGlobal(QPoint(0, 0)), checkbox->size())
+                                  : clipped_rect;
     const QString label = checkbox->accessibleName().isEmpty() ? checkbox->text()
                                                                : checkbox->accessibleName();
-    return foundTarget(id, "control", label.isEmpty() ? id : label, checkbox->isVisible(),
+    return foundTarget(id, "control", label.isEmpty() ? id : label,
+                       checkbox->isVisible() && !clipped_rect.isEmpty(),
                        checkbox->isEnabled(), global_rect.center());
   }
 
@@ -4447,7 +4556,11 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
     if (widget_id != id || !supported_prefix) {
       continue;
     }
-    const QRect global_rect = visibleWidgetGlobalRect(widget);
+    ensureWidgetVisibleInAncestorScrollAreas(widget);
+    const QRect clipped_rect = clippedWidgetGlobalRect(widget);
+    const QRect global_rect = clipped_rect.isEmpty()
+                                  ? QRect(widget->mapToGlobal(QPoint(0, 0)), widget->size())
+                                  : clipped_rect;
     const QString role = widget_id.left(widget_id.indexOf(':'));
     QString label = widget_id;
     if (const auto* text_label = qobject_cast<const QLabel*>(widget)) {
@@ -4456,8 +4569,8 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
         label = widget_id;
       }
     }
-    return foundTarget(widget_id, role, label, widget->isVisible(), widget->isEnabled(),
-                       global_rect.center());
+    return foundTarget(widget_id, role, label, widget->isVisible() && !clipped_rect.isEmpty(),
+                       widget->isEnabled(), global_rect.center());
   }
 
   if (id == "control:active_pcb_layer" && active_layer_selector_ != nullptr) {
@@ -6410,6 +6523,12 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
                       "label:agent_trace_chip",
                       "label:agent_session_chip",
                       "panel:agent_trace_strip",
+                      "panel:agent_trace_links",
+                      "label:agent_trace_id",
+                      "label:agent_span_id",
+                      "label:agent_trace_status",
+                      "label:agent_trace_export_status",
+                      "action:agent_new_trace_context",
                       "panel:agent_session_binding",
                       "control:agent_session_path",
                       "action:agent_load_session",

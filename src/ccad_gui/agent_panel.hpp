@@ -131,6 +131,7 @@ class AgentPanel final : public QWidget {
   void pauseRun();
   void resumeRun();
   void stopRun();
+  void createLocalTraceContext();
   void previewCommandPolicy();
   void classifyCommandPolicy(const QString& command, bool record_activity);
   QJsonObject policyStateObject() const;
@@ -143,6 +144,10 @@ class AgentPanel final : public QWidget {
   QLabel* permission_chip_label_ = nullptr;
   QLabel* trace_chip_label_ = nullptr;
   QLabel* session_chip_label_ = nullptr;
+  QLabel* trace_id_label_ = nullptr;
+  QLabel* span_id_label_ = nullptr;
+  QLabel* trace_status_label_ = nullptr;
+  QLabel* trace_export_status_label_ = nullptr;
   QLabel* run_state_chip_label_ = nullptr;
   QLabel* session_status_label_ = nullptr;
   QLabel* policy_decision_label_ = nullptr;
@@ -173,6 +178,10 @@ class AgentPanel final : public QWidget {
   QString staged_goal_;
   QString staged_command_;
   QString run_state_ = "idle";
+  QString trace_id_;
+  QString span_id_;
+  QString trace_status_ = "local_off";
+  QString trace_export_status_ = "export_disabled";
   QString session_file_path_;
   QString durable_session_id_;
   QString durable_thread_id_;
@@ -195,6 +204,7 @@ class AgentPanel final : public QWidget {
   QVector<EvidenceCard> evidence_cards_;
   int activity_sequence_ = 0;
   int evidence_sequence_ = 0;
+  int trace_sequence_ = 0;
   QString pending_approval_request_;
   QString approval_last_decision_ = "none";
 };

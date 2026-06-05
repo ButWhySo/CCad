@@ -15,6 +15,7 @@
 #include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <string>
 
 namespace {
@@ -250,6 +251,18 @@ int main(int argc, char** argv) {
           "UI map exposes the agent session chip");
   require(contains(map, "\"id\":\"panel:agent_trace_strip\""),
           "UI map exposes the agent trace/session strip");
+  require(contains(map, "\"id\":\"panel:agent_trace_links\""),
+          "UI map exposes the agent trace-link metadata panel");
+  require(contains(map, "\"id\":\"label:agent_trace_id\""),
+          "UI map exposes the agent trace id label");
+  require(contains(map, "\"id\":\"label:agent_span_id\""),
+          "UI map exposes the agent span id label");
+  require(contains(map, "\"id\":\"label:agent_trace_status\""),
+          "UI map exposes the agent trace status label");
+  require(contains(map, "\"id\":\"label:agent_trace_export_status\""),
+          "UI map exposes the agent trace export status label");
+  require(contains(map, "\"id\":\"action:agent_new_trace_context\""),
+          "UI map exposes the local trace context action");
   require(contains(map, "\"id\":\"action:agent_pause_run\""),
           "UI map exposes the agent pause action");
   require(contains(map, "\"id\":\"action:agent_resume_run\""),
@@ -628,11 +641,16 @@ int main(int argc, char** argv) {
 
   const QString validation = window.validateUiMapTargetsJson(false);
   require(contains(validation, "\"summary\":"), "UI map validation includes summary");
+  if (!contains(validation, "\"failures\":0")) {
+    std::cerr << validation.toStdString() << '\n';
+  }
   require(contains(validation, "\"failures\":0"), "UI map validation has no misses");
   require(contains(validation, "\"id\":\"action:add_footprint\""),
           "UI map validation covers add footprint action");
   require(contains(validation, "\"id\":\"control:agent_policy_dry_run\""),
           "UI map validation covers agent policy dry-run control");
+  require(contains(validation, "\"id\":\"action:agent_new_trace_context\""),
+          "UI map validation covers agent trace context action");
   require(contains(validation, "\"id\":\"canvas_object:U1.1\""),
           "UI map validation covers canvas object target");
 
@@ -700,6 +718,42 @@ int main(int argc, char** argv) {
   const QString agent_trace_strip_target = window.uiTargetJsonById("panel:agent_trace_strip");
   require(contains(agent_trace_strip_target, "\"found\":true"),
           "target query finds agent trace/session strip");
+  const QString agent_trace_links_target =
+      window.uiTargetJsonById("panel:agent_trace_links");
+  require(contains(agent_trace_links_target, "\"found\":true"),
+          "target query finds agent trace-link metadata panel");
+  require(contains(agent_trace_links_target, "\"role\":\"panel\""),
+          "agent trace-link panel target reports panel role");
+  const QString agent_trace_id_target = window.uiTargetJsonById("label:agent_trace_id");
+  require(contains(agent_trace_id_target, "\"found\":true"),
+          "target query finds agent trace id label");
+  const QString agent_span_id_target = window.uiTargetJsonById("label:agent_span_id");
+  require(contains(agent_span_id_target, "\"found\":true"),
+          "target query finds agent span id label");
+  const QString agent_trace_status_target =
+      window.uiTargetJsonById("label:agent_trace_status");
+  require(contains(agent_trace_status_target, "\"found\":true"),
+          "target query finds agent trace status label");
+  const QString agent_trace_export_status_target =
+      window.uiTargetJsonById("label:agent_trace_export_status");
+  require(contains(agent_trace_export_status_target, "\"found\":true"),
+          "target query finds agent trace export status label");
+  const QString agent_new_trace_target =
+      window.uiTargetJsonById("action:agent_new_trace_context");
+  require(contains(agent_new_trace_target, "\"found\":true"),
+          "target query finds agent trace context action");
+  require(contains(agent_new_trace_target, "\"role\":\"action\""),
+          "agent trace context target reports action role");
+  require(contains(agent_new_trace_target, "\"visible\":true"),
+          "agent trace context target scrolls into a visible viewport");
+  require(extractInt(agent_new_trace_target, "\"logical_y\":") >= 0,
+          "agent trace context target reports an on-screen y coordinate");
+  const QString agent_new_trace_click =
+      window.uiClickJson("action:agent_new_trace_context", false, false);
+  require(contains(agent_new_trace_click, "\"performed\":true"),
+          "agent trace context action can be clicked semantically");
+  require(contains(agent_new_trace_click, "\"reason\":\"button_clicked\""),
+          "agent trace context click reports direct button click");
   const QString agent_pause_target = window.uiTargetJsonById("action:agent_pause_run");
   require(contains(agent_pause_target, "\"found\":true"),
           "target query finds agent pause action");
@@ -968,10 +1022,20 @@ int main(int argc, char** argv) {
       window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_pin_evidence\"}");
   require(contains(pin_evidence_click, "\"performed\":true"),
           "agent click can pin the current output as evidence");
+  const QString new_trace_click =
+      window.runAgentUiQueryJson("ui.click", "{\"id\":\"action:agent_new_trace_context\"}");
+  require(contains(new_trace_click, "\"performed\":true"),
+          "agent live query click can create local trace context");
   const QString workspace_state_after =
       window.runAgentUiQueryJson("agent.workspace_state", "{}");
   require(contains(workspace_state_after, "\"goal\":\"Inspect bridge rectifier evidence\""),
           "workspace state reports the staged goal");
+  require(contains(workspace_state_after, "\"trace_id\":\"ccad-local-trace-2\""),
+          "workspace state reports local trace id after semantic click");
+  require(contains(workspace_state_after, "\"span_id\":\"ccad-local-span-2\""),
+          "workspace state reports local span id after semantic click");
+  require(contains(workspace_state_after, "\"trace_export_enabled\":false"),
+          "workspace state keeps trace export disabled after local trace creation");
   require(contains(workspace_state_after, "\"evidence_count\":1"),
           "workspace state reports pinned evidence");
   require(contains(workspace_state_after, "\"evidence_cards\":["),

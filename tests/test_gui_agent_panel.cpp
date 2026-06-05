@@ -81,6 +81,14 @@ int main(int argc, char** argv) {
           "agent panel exposes local run state");
   require(contains(panel.workspaceStateJson(), "\"trace_label\":\"Trace: local-off\""),
           "agent panel exposes local trace state without enabling telemetry");
+  require(contains(panel.workspaceStateJson(), "\"trace_id\":\"\""),
+          "agent panel starts without a local trace id");
+  require(contains(panel.workspaceStateJson(), "\"span_id\":\"\""),
+          "agent panel starts without a local span id");
+  require(contains(panel.workspaceStateJson(), "\"trace_export_enabled\":false"),
+          "agent panel keeps trace export disabled by default");
+  require(contains(panel.workspaceStateJson(), "\"trace_link_available\":false"),
+          "agent panel reports no external trace link before export is configured");
   require(contains(panel.workspaceStateJson(), "\"plan_items\":["),
           "agent panel serializes visible active plan rows");
   require(contains(panel.workspaceStateJson(), "\"visible_sections\":["),
@@ -113,6 +121,23 @@ int main(int argc, char** argv) {
           "agent panel exposes the session chip");
   require(panel.findChild<QWidget*>("panel:agent_trace_strip") != nullptr,
           "agent panel exposes a trace/session strip");
+  require(panel.findChild<QWidget*>("panel:agent_trace_links") != nullptr,
+          "agent panel exposes a trace-link metadata panel");
+  require(panel.findChild<QLabel*>("label:agent_trace_id") != nullptr,
+          "agent panel exposes a selectable trace id label");
+  require(panel.findChild<QLabel*>("label:agent_span_id") != nullptr,
+          "agent panel exposes a selectable span id label");
+  require(panel.findChild<QLabel*>("label:agent_trace_status") != nullptr,
+          "agent panel exposes trace status");
+  require(panel.findChild<QLabel*>("label:agent_trace_export_status") != nullptr,
+          "agent panel exposes trace export status");
+  auto* trace_context_button = panel.findChild<QPushButton*>("action:agent_new_trace_context");
+  require(trace_context_button != nullptr,
+          "agent panel exposes a local trace context action");
+  require(!trace_context_button->icon().isNull(),
+          "agent panel gives the local trace action a visible icon affordance");
+  require(trace_context_button->property("agentTraceAction").toBool(),
+          "agent panel marks the local trace action as visually prominent");
   require(panel.findChild<QWidget*>("panel:agent_session_binding") != nullptr,
           "agent panel exposes a durable session binding strip");
   require(panel.findChild<QLineEdit*>("control:agent_session_path") != nullptr,
@@ -233,6 +258,27 @@ int main(int argc, char** argv) {
   const QString updated_json = QString::fromUtf8(updated_session.readAll());
   require(contains(updated_json, "\"checkpoint_id\":\"gui-checkpoint-2\""),
           "agent panel writes metadata-only checkpoint to the local session file");
+
+  trace_context_button->click();
+  QString trace_state = panel.workspaceStateJson();
+  require(contains(trace_state, "\"trace_id\":\"ccad-local-trace-1\""),
+          "agent panel creates a deterministic local trace id");
+  require(contains(trace_state, "\"span_id\":\"ccad-local-span-1\""),
+          "agent panel creates a deterministic local span id");
+  require(contains(trace_state, "\"trace_status\":\"local_ready\""),
+          "agent panel marks local trace metadata as ready");
+  require(contains(trace_state, "\"trace_export_status\":\"export_disabled\""),
+          "agent panel keeps exporter status explicit");
+  require(contains(trace_state, "\"trace_backend\":\"local_metadata_only\""),
+          "agent panel reports local metadata-only trace backend");
+  require(contains(trace_state, "\"trace_session_id\":\"gui-run-001\""),
+          "agent panel links trace metadata to the bound local session");
+  require(contains(trace_state, "\"trace_thread_id\":\"gui-thread-001\""),
+          "agent panel links trace metadata to the durable thread id");
+  require(contains(trace_state, "\"trace_content_policy\":\"metadata_only_no_prompt_tool_or_design_payloads\""),
+          "agent panel records the trace redaction/content policy");
+  require(contains(panel.outputText(), "\"event\":\"agent_trace_context_ready\""),
+          "agent panel emits a local trace context event");
 
   require(panel.findChild<QPushButton*>("action:agent_header_request_context") != nullptr,
           "agent panel exposes a functional header context action");

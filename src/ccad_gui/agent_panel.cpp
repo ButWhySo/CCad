@@ -21,6 +21,7 @@
 #include <QPushButton>
 #include <QSaveFile>
 #include <QScrollArea>
+#include <QSize>
 #include <QSizePolicy>
 #include <QStyle>
 #include <QStringList>
@@ -431,6 +432,7 @@ QPushButton* makeIconButton(const QString& object_name,
   button->setAccessibleName(accessible_name);
   button->setToolTip(accessible_name);
   button->setIcon(icon);
+  button->setIconSize(QSize(16, 16));
   button->setProperty("agentRole", "iconButton");
   button->setFixedSize(28, 26);
   button->setFocusPolicy(Qt::StrongFocus);
@@ -670,6 +672,15 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
       border: 1px solid #404856;
       padding: 3px;
     }
+    QPushButton[agentTraceAction="true"] {
+      background: #173552;
+      border: 1px solid #4d83b6;
+      padding: 3px;
+    }
+    QPushButton[agentTraceAction="true"]:hover {
+      background: #21486d;
+      border: 1px solid #69b7ff;
+    }
     QPushButton:hover {
       background: #303743;
     }
@@ -744,6 +755,40 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   trace_strip_layout->addWidget(session_chip_label_);
   trace_strip_layout->addStretch(1);
   header_layout->addWidget(trace_strip);
+
+  auto* trace_links = makePanelSection("panel:agent_trace_links", header);
+  trace_links->setProperty("agentRole", "modeStrip");
+  auto* trace_links_layout = new QVBoxLayout(trace_links);
+  trace_links_layout->setContentsMargins(3, 3, 3, 3);
+  trace_links_layout->setSpacing(4);
+  auto* trace_links_title_row = new QHBoxLayout();
+  trace_links_title_row->setSpacing(4);
+  auto* trace_links_title = new QLabel("Trace Links", trace_links);
+  trace_links_title->setProperty("agentRole", "sectionTitle");
+  auto* new_trace_button =
+      makeIconButton("action:agent_new_trace_context", "Create local trace context",
+                     style()->standardIcon(QStyle::SP_BrowserReload), trace_links);
+  new_trace_button->setProperty("agentTraceAction", true);
+  new_trace_button->setFixedSize(32, 28);
+  trace_links_title_row->addWidget(trace_links_title);
+  trace_links_title_row->addWidget(new_trace_button);
+  trace_links_title_row->addStretch(1);
+  trace_links_layout->addLayout(trace_links_title_row);
+  trace_id_label_ = makeChip("label:agent_trace_id", "Trace ID: none", trace_links);
+  span_id_label_ = makeChip("label:agent_span_id", "Span ID: none", trace_links);
+  trace_status_label_ =
+      makeChip("label:agent_trace_status", "Trace status: local_off", trace_links);
+  trace_export_status_label_ =
+      makeChip("label:agent_trace_export_status", "Export: disabled", trace_links);
+  trace_id_label_->setWordWrap(true);
+  span_id_label_->setWordWrap(true);
+  trace_status_label_->setWordWrap(true);
+  trace_export_status_label_->setWordWrap(true);
+  trace_links_layout->addWidget(trace_id_label_);
+  trace_links_layout->addWidget(span_id_label_);
+  trace_links_layout->addWidget(trace_status_label_);
+  trace_links_layout->addWidget(trace_export_status_label_);
+  header_layout->addWidget(trace_links);
 
   auto* session_binding = makePanelSection("panel:agent_session_binding", header);
   session_binding->setProperty("agentRole", "modeStrip");
@@ -1066,6 +1111,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   connect(pause_run_button, &QPushButton::clicked, this, [this]() { pauseRun(); });
   connect(resume_run_button, &QPushButton::clicked, this, [this]() { resumeRun(); });
   connect(stop_run_button, &QPushButton::clicked, this, [this]() { stopRun(); });
+  connect(new_trace_button, &QPushButton::clicked, this, [this]() { createLocalTraceContext(); });
 
   content_layout->addWidget(task_section);
 
@@ -1631,6 +1677,51 @@ void AgentPanel::stopRun() {
   updateRunState("stopped", "Run stopped", "Local run state stopped; queued provider work remains disabled.");
 }
 
+void AgentPanel::createLocalTraceContext() {
+  ++trace_sequence_;
+  trace_id_ = "ccad-local-trace-" + QString::number(trace_sequence_);
+  span_id_ = "ccad-local-span-" + QString::number(trace_sequence_);
+  trace_status_ = "local_ready";
+  trace_export_status_ = "export_disabled";
+
+  if (trace_chip_label_ != nullptr) {
+    trace_chip_label_->setText("Trace: local-" + QString::number(trace_sequence_));
+  }
+  if (trace_id_label_ != nullptr) {
+    trace_id_label_->setText("Trace ID: " + trace_id_);
+  }
+  if (span_id_label_ != nullptr) {
+    span_id_label_->setText("Span ID: " + span_id_);
+  }
+  if (trace_status_label_ != nullptr) {
+    trace_status_label_->setText("Trace status: " + trace_status_);
+  }
+  if (trace_export_status_label_ != nullptr) {
+    trace_export_status_label_->setText("Export: disabled");
+  }
+
+  QJsonObject event;
+  event.insert("schema_version", 1);
+  event.insert("event", "agent_trace_context_ready");
+  event.insert("trace_id", trace_id_);
+  event.insert("span_id", span_id_);
+  event.insert("trace_status", trace_status_);
+  event.insert("trace_export_status", trace_export_status_);
+  event.insert("trace_export_enabled", false);
+  event.insert("trace_link_available", false);
+  event.insert("trace_backend", "local_metadata_only");
+  event.insert("trace_session_id", durable_session_id_);
+  event.insert("trace_thread_id", durable_thread_id_);
+  event.insert("trace_content_policy",
+               "metadata_only_no_prompt_tool_or_design_payloads");
+  output_->setPlainText(QString::fromUtf8(QJsonDocument(event).toJson(QJsonDocument::Compact)) +
+                        "\n");
+  status_label_->setText("Trace context ready");
+  result_state_label_->setText("Result Trace context ready");
+  addActivityEvent("trace", "Trace context ready",
+                   trace_id_ + " | export disabled | local metadata only", "agent.trace");
+}
+
 void AgentPanel::stageGoal() {
   const QString trimmed_goal = goal_input_->text().trimmed();
   if (trimmed_goal.isEmpty()) {
@@ -2135,6 +2226,7 @@ QString AgentPanel::workspaceStateJson() const {
                   QJsonArray{"session_strip",
                              "mode_strip",
                              "trace_strip",
+                             "trace_links",
                              "session_binding",
                              "policy_surface",
                              "run_controls",
@@ -2155,6 +2247,18 @@ QString AgentPanel::workspaceStateJson() const {
   response.insert("mode_label", mode_chip_label_->text());
   response.insert("permission_label", permission_chip_label_->text());
   response.insert("trace_label", trace_chip_label_->text());
+  response.insert("trace_id", trace_id_);
+  response.insert("span_id", span_id_);
+  response.insert("trace_status", trace_status_);
+  response.insert("trace_export_status", trace_export_status_);
+  response.insert("trace_backend", "local_metadata_only");
+  response.insert("trace_export_enabled", false);
+  response.insert("trace_link", "");
+  response.insert("trace_link_available", false);
+  response.insert("trace_session_id", durable_session_id_);
+  response.insert("trace_thread_id", durable_thread_id_);
+  response.insert("trace_content_policy",
+                  "metadata_only_no_prompt_tool_or_design_payloads");
   response.insert("session_label", session_chip_label_->text());
   response.insert("durable_session_bound", durable_session_bound_);
   response.insert("session_file_path", session_file_path_);

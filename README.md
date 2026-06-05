@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 7 / 7: Final Polish & Release.
 
-Progress counter: Phase 7 / 7, Sprint 203 complete on `sprint-203-agent-policy-gui-binding`.
+Progress counter: Phase 7 / 7, Sprint 204 complete on `sprint-204-agent-trace-links-gui-binding`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 focuses on final polish, interactive footprint placement via the GUI, and GUI layout parity with KiCad.
 
@@ -24,6 +24,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native Agent pane visual refinement: the right-side Agent pane now reports `visual_style:"agent_reference_panel_v4"` and `workspace_layout_version:4`, with targetable status rail, command composer, plan deck, evidence lane, and approval lane subregions while preserving the existing local-only controls and UI-map IDs.
 - Native Agent pane durable session binding: the right-side Agent pane can bind a local `.ccad-agent-session.json` file, display session ID, thread ID, checkpoint count, latest checkpoint ID, replayable state, and append a metadata-only GUI checkpoint without provider execution, telemetry export, secrets, or project mutation.
 - Native Agent pane command policy binding: the right-side Agent pane uses the shared core command-policy classifier to preview read/write risk, approval reason, dry-run-only decisions, and would-execute state for staged CCad CLI-shaped commands, with targetable policy widgets and UI-map checkbox support while still performing no provider execution, telemetry export, or hidden project mutation.
+- Native Agent pane trace-link binding: the right-side Agent pane exposes local trace ID, span ID, trace status, export-disabled state, and a targetable new-trace action through `agent.workspace_state` and semantic UI-map IDs, without provider execution, OpenTelemetry export, Langfuse network calls, prompt/tool payload capture, secrets, or project mutation.
 - CLI PCB authoring: `ccad pcb list-nets`, `ccad pcb list-objects`, `ccad pcb get-object`, `ccad pcb route-status`, `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-graphic-line`, `ccad pcb add-text`, `ccad pcb add-zone`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - CLI schematic authoring can place a converted KiCad/CCad symbol snapshot through `ccad sch place-symbol`.
