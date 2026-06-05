@@ -3,11 +3,13 @@
 #include <QWidget>
 #include <QJsonObject>
 #include <QString>
+#include <QStringList>
 #include <QVector>
 
 #include <functional>
 
 class QLabel;
+class QCheckBox;
 class QLineEdit;
 class QPlainTextEdit;
 class QVBoxLayout;
@@ -129,6 +131,9 @@ class AgentPanel final : public QWidget {
   void pauseRun();
   void resumeRun();
   void stopRun();
+  void previewCommandPolicy();
+  void classifyCommandPolicy(const QString& command, bool record_activity);
+  QJsonObject policyStateObject() const;
   void applySessionMetadata(const AgentSessionMetadata& metadata, const QString& path);
   void resetSessionBinding(const QString& status);
 
@@ -140,6 +145,8 @@ class AgentPanel final : public QWidget {
   QLabel* session_chip_label_ = nullptr;
   QLabel* run_state_chip_label_ = nullptr;
   QLabel* session_status_label_ = nullptr;
+  QLabel* policy_decision_label_ = nullptr;
+  QLabel* policy_risk_label_ = nullptr;
   QLabel* project_label_ = nullptr;
   QLabel* epoch_label_ = nullptr;
   QLabel* status_label_ = nullptr;
@@ -158,6 +165,7 @@ class AgentPanel final : public QWidget {
   QLineEdit* goal_input_ = nullptr;
   QLineEdit* command_input_ = nullptr;
   QLineEdit* approval_request_input_ = nullptr;
+  QCheckBox* policy_dry_run_checkbox_ = nullptr;
   QPlainTextEdit* output_ = nullptr;
   UiMapProvider ui_map_provider_;
   SafeActionTrigger safe_action_trigger_;
@@ -172,6 +180,17 @@ class AgentPanel final : public QWidget {
   bool durable_session_bound_ = false;
   bool session_replayable_ = false;
   int session_checkpoint_count_ = 0;
+  QString policy_decision_ = "not_classified";
+  QString policy_risk_level_ = "none";
+  QString policy_approval_reason_;
+  QString policy_command_;
+  QStringList policy_args_;
+  bool policy_approval_required_ = false;
+  bool policy_read_only_ = false;
+  bool policy_mutates_project_ = false;
+  bool policy_mutates_files_ = false;
+  bool policy_dry_run_ = false;
+  bool policy_would_execute_ = false;
   QVector<ActivityEvent> activity_events_;
   QVector<EvidenceCard> evidence_cards_;
   int activity_sequence_ = 0;

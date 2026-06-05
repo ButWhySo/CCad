@@ -1,5 +1,8 @@
 #include "ccad_gui/agent_panel.hpp"
 
+#include "ccad_core/agent_policy.hpp"
+
+#include <QCheckBox>
 #include <QHBoxLayout>
 #include <QDateTime>
 #include <QFile>
@@ -24,7 +27,9 @@
 #include <QVBoxLayout>
 
 #include <algorithm>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace {
 
@@ -53,6 +58,94 @@ QJsonObject parsedObject(const QString& json) {
     return {};
   }
   return document.object();
+}
+
+QStringList splitPolicyCommandLine(const QString& command) {
+  QStringList tokens;
+  QString token;
+  bool in_quote = false;
+  QChar quote_char;
+  bool escaping = false;
+  for (const QChar ch : command.trimmed()) {
+    if (escaping) {
+      token.append(ch);
+      escaping = false;
+      continue;
+    }
+    if (ch == '\\') {
+      escaping = true;
+      continue;
+    }
+    if (in_quote) {
+      if (ch == quote_char) {
+        in_quote = false;
+      } else {
+        token.append(ch);
+      }
+      continue;
+    }
+    if (ch == '\'' || ch == '"') {
+      in_quote = true;
+      quote_char = ch;
+      continue;
+    }
+    if (ch.isSpace()) {
+      if (!token.isEmpty()) {
+        tokens.append(token);
+        token.clear();
+      }
+      continue;
+    }
+    token.append(ch);
+  }
+  if (!token.isEmpty()) {
+    tokens.append(token);
+  }
+  return tokens;
+}
+
+bool isCcadExecutableToken(const QString& token) {
+  const QString file_name = QFileInfo(token).fileName().toLower();
+  return file_name == "ccad" || file_name == "ccad.exe";
+}
+
+bool isKnownCcadCommandHead(const QString& token) {
+  static const QStringList commands = {"help",      "validate", "drc", "inspect",
+                                       "diff",      "init",     "project",
+                                       "pcb",       "sch",      "schematic",
+                                       "lib",       "agent"};
+  return commands.contains(token);
+}
+
+std::vector<std::string> policyArgsFromCommand(const QString& command,
+                                               QStringList* normalized_args) {
+  QStringList tokens = splitPolicyCommandLine(command);
+  bool explicit_ccad = false;
+  if (!tokens.isEmpty() && isCcadExecutableToken(tokens.front())) {
+    explicit_ccad = true;
+    tokens.removeFirst();
+  }
+  if (tokens.isEmpty()) {
+    if (normalized_args != nullptr) {
+      normalized_args->clear();
+    }
+    return {};
+  }
+  if (!explicit_ccad && !isKnownCcadCommandHead(tokens.front())) {
+    if (normalized_args != nullptr) {
+      normalized_args->clear();
+    }
+    return {};
+  }
+  std::vector<std::string> args;
+  args.reserve(static_cast<std::size_t>(tokens.size()));
+  for (const QString& token : tokens) {
+    args.push_back(token.toStdString());
+  }
+  if (normalized_args != nullptr) {
+    *normalized_args = tokens;
+  }
+  return args;
 }
 
 QJsonObject readJsonFileObject(const QString& path, QString* error_message) {
@@ -682,6 +775,36 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   session_binding_layout->addWidget(session_status_label_);
   header_layout->addWidget(session_binding);
 
+  auto* policy_surface = makePanelSection("panel:agent_policy_surface", header);
+  policy_surface->setProperty("agentRole", "modeStrip");
+  auto* policy_layout = new QVBoxLayout(policy_surface);
+  policy_layout->setContentsMargins(3, 3, 3, 3);
+  policy_layout->setSpacing(4);
+  auto* policy_row = new QHBoxLayout();
+  policy_row->setSpacing(4);
+  policy_decision_label_ = new QLabel("Policy: not classified", policy_surface);
+  policy_decision_label_->setObjectName("label:agent_policy_decision");
+  policy_decision_label_->setProperty("agentRole", "chip");
+  policy_decision_label_->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  policy_risk_label_ = new QLabel("Risk: none", policy_surface);
+  policy_risk_label_->setObjectName("label:agent_policy_risk");
+  policy_risk_label_->setProperty("agentRole", "chip");
+  policy_risk_label_->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  policy_dry_run_checkbox_ = new QCheckBox("dry", policy_surface);
+  policy_dry_run_checkbox_->setObjectName("control:agent_policy_dry_run");
+  policy_dry_run_checkbox_->setAccessibleName("Preview command policy as dry run");
+  policy_dry_run_checkbox_->setToolTip("Preview command policy as dry run");
+  policy_dry_run_checkbox_->setProperty("agentRole", "chip");
+  auto* policy_preview_button =
+      makeIconButton("action:agent_policy_preview", "Preview command policy",
+                     style()->standardIcon(QStyle::SP_DialogApplyButton), policy_surface);
+  policy_row->addWidget(policy_decision_label_, 1);
+  policy_row->addWidget(policy_risk_label_);
+  policy_row->addWidget(policy_dry_run_checkbox_);
+  policy_row->addWidget(policy_preview_button);
+  policy_layout->addLayout(policy_row);
+  header_layout->addWidget(policy_surface);
+
   auto* run_controls = makePanelSection("panel:agent_run_controls", header);
   run_controls->setProperty("agentRole", "modeStrip");
   auto* run_controls_layout = new QHBoxLayout(run_controls);
@@ -876,6 +999,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   });
   connect(checkpoint_session_button, &QPushButton::clicked, this,
           [this]() { checkpointSession(); });
+  connect(policy_preview_button, &QPushButton::clicked, this,
+          [this]() { previewCommandPolicy(); });
   connect(action_id_input_, &QLineEdit::returnPressed, this,
           [this]() { triggerSafeAction(); });
   connect(live_query_button, &QPushButton::clicked, this, [this]() { runLiveQuery(); });
@@ -1146,6 +1271,86 @@ void AgentPanel::setGoalText(const QString& goal) {
 
 void AgentPanel::setCommandText(const QString& command) {
   command_input_->setText(command);
+}
+
+QJsonObject AgentPanel::policyStateObject() const {
+  QJsonArray args;
+  for (const QString& arg : policy_args_) {
+    args.append(arg);
+  }
+  QJsonObject policy;
+  policy.insert("policy_decision", policy_decision_);
+  policy.insert("policy_risk_level", policy_risk_level_);
+  policy.insert("policy_approval_required", policy_approval_required_);
+  policy.insert("policy_approval_reason", policy_approval_reason_);
+  policy.insert("policy_dry_run", policy_dry_run_);
+  policy.insert("policy_would_execute", policy_would_execute_);
+  policy.insert("policy_read_only", policy_read_only_);
+  policy.insert("policy_mutates_project", policy_mutates_project_);
+  policy.insert("policy_mutates_files", policy_mutates_files_);
+  policy.insert("policy_command", policy_command_);
+  policy.insert("policy_args", args);
+  return policy;
+}
+
+void AgentPanel::classifyCommandPolicy(const QString& command, const bool record_activity) {
+  const QString trimmed_command = command.trimmed();
+  policy_command_ = trimmed_command;
+  policy_dry_run_ = policy_dry_run_checkbox_ != nullptr && policy_dry_run_checkbox_->isChecked();
+  std::vector<std::string> args = policyArgsFromCommand(trimmed_command, &policy_args_);
+  if (args.empty()) {
+    policy_decision_ = trimmed_command.isEmpty() ? "not_classified" : "not_cli_command";
+    policy_risk_level_ = "none";
+    policy_approval_required_ = false;
+    policy_approval_reason_.clear();
+    policy_would_execute_ = false;
+    policy_read_only_ = false;
+    policy_mutates_project_ = false;
+    policy_mutates_files_ = false;
+    policy_decision_label_->setText("Policy: " + policy_decision_);
+    policy_risk_label_->setText("Risk: none");
+    if (record_activity && !trimmed_command.isEmpty()) {
+      addActivityEvent("policy", "Policy not classified",
+                       "Command text is not a CCad CLI-shaped command", "agent.policy_check");
+    }
+    return;
+  }
+
+  const ccad::AgentCommandPolicy policy =
+      ccad::classifyAgentCommandPolicy(args, policy_dry_run_);
+  policy_decision_ = QString::fromStdString(policy.decision);
+  policy_risk_level_ = QString::fromStdString(policy.risk_level);
+  policy_approval_required_ = policy.approval_required;
+  policy_approval_reason_ = QString::fromStdString(policy.approval_reason);
+  policy_would_execute_ = policy.would_execute;
+  policy_read_only_ = policy.read_only;
+  policy_mutates_project_ = policy.mutates_project;
+  policy_mutates_files_ = policy.mutates_files;
+  policy_decision_label_->setText("Policy: " + policy_decision_);
+  policy_risk_label_->setText("Risk: " + policy_risk_level_);
+
+  if (policy_approval_required_ && !policy_dry_run_) {
+    pending_approval_request_ =
+        "Approve command: " + trimmed_command + " | " + policy_approval_reason_;
+    approval_last_decision_ = "pending";
+    approval_status_label_->setText("Approval pending: " + pending_approval_request_);
+  }
+  if (record_activity) {
+    addActivityEvent("policy", "Policy " + policy_decision_,
+                     policy_risk_level_ + " | " + policy_approval_reason_,
+                     "agent.policy_check");
+  }
+}
+
+void AgentPanel::previewCommandPolicy() {
+  classifyCommandPolicy(commandText(), true);
+  QJsonObject event = policyStateObject();
+  event.insert("schema_version", 1);
+  event.insert("event", "agent_command_policy_preview");
+  output_->setPlainText(QString::fromUtf8(QJsonDocument(event).toJson(QJsonDocument::Compact)) +
+                        "\n");
+  status_label_->setText("Policy previewed");
+  result_state_label_->setText("Result Policy " + policy_decision_);
 }
 
 void AgentPanel::setSessionFilePath(const QString& path) {
@@ -1675,6 +1880,7 @@ void AgentPanel::submitCommand() {
   }
 
   staged_command_ = trimmed_command;
+  classifyCommandPolicy(staged_command_, true);
   task_state_label_->setText("Command staged: " + staged_command_);
   status_label_->setText("Command staged");
   result_state_label_->setText("Result Command staged");
@@ -1686,6 +1892,10 @@ void AgentPanel::submitCommand() {
   const QString goal = staged_goal_.isEmpty() ? goal_input_->text().trimmed() : staged_goal_;
   if (!goal.isEmpty()) {
     event.insert("goal", goal);
+  }
+  const QJsonObject policy = policyStateObject();
+  for (auto it = policy.begin(); it != policy.end(); ++it) {
+    event.insert(it.key(), it.value());
   }
   event.insert("workspace", workspaceText());
   event.insert("diagnostics", diagnosticsText());
@@ -1926,6 +2136,7 @@ QString AgentPanel::workspaceStateJson() const {
                              "mode_strip",
                              "trace_strip",
                              "session_binding",
+                             "policy_surface",
                              "run_controls",
                              "status_rail",
                              "command_stream",
@@ -1981,5 +2192,9 @@ QString AgentPanel::workspaceStateJson() const {
   response.insert("action_id", actionIdText());
   response.insert("live_method", liveMethodText());
   response.insert("live_payload", livePayloadText());
+  const QJsonObject policy = policyStateObject();
+  for (auto it = policy.begin(); it != policy.end(); ++it) {
+    response.insert(it.key(), it.value());
+  }
   return QString::fromUtf8(QJsonDocument(response).toJson(QJsonDocument::Compact)) + "\n";
 }

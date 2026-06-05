@@ -46,6 +46,7 @@
 #include <QJsonParseError>
 #include <QLabel>
 #include <QLineEdit>
+#include <QCheckBox>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QMouseEvent>
@@ -1984,6 +1985,11 @@ ReviewWindow::ReviewWindow() {
                       "action:agent_load_session",
                       "action:agent_checkpoint_session",
                       "label:agent_session_status",
+                      "panel:agent_policy_surface",
+                      "label:agent_policy_decision",
+                      "label:agent_policy_risk",
+                      "control:agent_policy_dry_run",
+                      "action:agent_policy_preview",
                       "action:agent_pause_run",
                       "action:agent_resume_run",
                       "action:agent_stop_run",
@@ -3572,6 +3578,31 @@ QString ReviewWindow::buildUiMapJson() const {
                  .arg(global_rect.center().y());
   }
 
+  for (const QCheckBox* checkbox : findChildren<QCheckBox*>()) {
+    const QString id = checkbox->objectName();
+    if (!id.startsWith("control:")) {
+      continue;
+    }
+    const QPoint local_top_left = checkbox->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
+    const QRect local_rect(local_top_left, checkbox->size());
+    const QRect global_rect = visibleWidgetGlobalRect(checkbox);
+    const QString label = checkbox->accessibleName().isEmpty() ? checkbox->text()
+                                                               : checkbox->accessibleName();
+    nodes << QString("{\"id\":%1,\"role\":\"control\",\"label\":%2,"
+                     "\"value\":%3,\"checked\":%4,\"visible\":%5,\"enabled\":%6,"
+                     "\"local_rect\":%7,\"global_rect\":%8,\"target_x\":%9,\"target_y\":%10}")
+                 .arg(jsonString(id))
+                 .arg(jsonString(label.isEmpty() ? id : label))
+                 .arg(jsonString(checkbox->isChecked() ? "checked" : "unchecked"))
+                 .arg(boolJson(checkbox->isChecked()))
+                 .arg(boolJson(checkbox->isVisible()))
+                 .arg(boolJson(checkbox->isEnabled()))
+                 .arg(rectJson(local_rect))
+                 .arg(rectJson(global_rect))
+                 .arg(global_rect.center().x())
+                 .arg(global_rect.center().y());
+  }
+
   for (const QWidget* widget : findChildren<QWidget*>()) {
     const QString id = widget->objectName();
     const bool supported_prefix =
@@ -4210,6 +4241,21 @@ QString ReviewWindow::validateUiMapTargetsJson(const bool move_cursor) const {
                 hit_widget != nullptr ? hit_widget->objectName() : "none");
   }
 
+  for (const QCheckBox* checkbox : findChildren<QCheckBox*>()) {
+    const QString id = checkbox->objectName();
+    if (!id.startsWith("control:")) {
+      continue;
+    }
+    const QRect global_rect = visibleWidgetGlobalRect(checkbox);
+    const QPoint target = global_rect.center();
+    QWidget* hit_widget = QApplication::widgetAt(target);
+    const bool hit = global_rect.contains(target) &&
+                     (hit_widget == nullptr || hit_widget == checkbox ||
+                      checkbox->isAncestorOf(hit_widget));
+    appendCheck(id, "control", checkbox->isVisible(), checkbox->isEnabled(), target, hit,
+                hit_widget != nullptr ? hit_widget->objectName() : "none");
+  }
+
   if (active_layer_selector_ != nullptr) {
     const QRect global_rect(active_layer_selector_->mapToGlobal(QPoint(0, 0)),
                             active_layer_selector_->size());
@@ -4380,6 +4426,17 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
     const QString label = input->accessibleName().isEmpty() ? id : input->accessibleName();
     return foundTarget(id, "control", label, input->isVisible(), input->isEnabled(),
                        global_rect.center());
+  }
+
+  for (const QCheckBox* checkbox : findChildren<QCheckBox*>()) {
+    if (checkbox->objectName() != id || !id.startsWith("control:")) {
+      continue;
+    }
+    const QRect global_rect = visibleWidgetGlobalRect(checkbox);
+    const QString label = checkbox->accessibleName().isEmpty() ? checkbox->text()
+                                                               : checkbox->accessibleName();
+    return foundTarget(id, "control", label.isEmpty() ? id : label, checkbox->isVisible(),
+                       checkbox->isEnabled(), global_rect.center());
   }
 
   for (const QWidget* widget : findChildren<QWidget*>()) {
@@ -4804,6 +4861,23 @@ QString ReviewWindow::uiClickJson(const QString& id, const bool dry_run, const b
   }
 
   if (trimmed_id.startsWith("control:")) {
+    for (QCheckBox* checkbox : findChildren<QCheckBox*>()) {
+      if (checkbox == nullptr || checkbox->objectName() != trimmed_id) {
+        continue;
+      }
+      if (!checkbox->isVisible() || !checkbox->isEnabled()) {
+        response.insert("performed", false);
+        response.insert("reason", "disabled_or_hidden");
+        return jsonObjectLine(response);
+      }
+      checkbox->click();
+      QApplication::processEvents();
+      response.insert("performed", true);
+      response.insert("reason", "checkbox_toggled");
+      response.insert("checked", checkbox->isChecked());
+      markUiMapChanged({trimmed_id}, {"control"});
+      return jsonObjectLine(response);
+    }
     for (QLineEdit* input : findChildren<QLineEdit*>()) {
       if (input == nullptr || input->objectName() != trimmed_id) {
         continue;
@@ -6341,6 +6415,11 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
                       "action:agent_load_session",
                       "action:agent_checkpoint_session",
                       "label:agent_session_status",
+                      "panel:agent_policy_surface",
+                      "label:agent_policy_decision",
+                      "label:agent_policy_risk",
+                      "control:agent_policy_dry_run",
+                      "action:agent_policy_preview",
                       "action:agent_pause_run",
                       "action:agent_resume_run",
                       "action:agent_stop_run",

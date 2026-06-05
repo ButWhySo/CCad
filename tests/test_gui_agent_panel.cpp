@@ -2,6 +2,7 @@
 #include "test_support.hpp"
 
 #include <QApplication>
+#include <QCheckBox>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
@@ -124,6 +125,18 @@ int main(int argc, char** argv) {
           "agent panel exposes durable session status");
   require(contains(panel.workspaceStateJson(), "\"durable_session_bound\":false"),
           "agent panel starts without a bound durable session");
+  require(panel.findChild<QWidget*>("panel:agent_policy_surface") != nullptr,
+          "agent panel exposes command policy surface");
+  require(panel.findChild<QLabel*>("label:agent_policy_decision") != nullptr,
+          "agent panel exposes command policy decision label");
+  require(panel.findChild<QLabel*>("label:agent_policy_risk") != nullptr,
+          "agent panel exposes command policy risk label");
+  require(panel.findChild<QCheckBox*>("control:agent_policy_dry_run") != nullptr,
+          "agent panel exposes command policy dry-run toggle");
+  require(panel.findChild<QPushButton*>("action:agent_policy_preview") != nullptr,
+          "agent panel exposes command policy preview action");
+  require(contains(panel.workspaceStateJson(), "\"policy_decision\":\"not_classified\""),
+          "agent panel starts with unclassified command policy");
   require(panel.findChild<QWidget*>("panel:agent_run_controls") != nullptr,
           "agent panel exposes a local run-control strip");
   require(panel.findChild<QWidget*>("panel:agent_status_rail") != nullptr,
@@ -317,6 +330,43 @@ int main(int argc, char** argv) {
           "agent panel activity stream records command staging");
   require(panel.findChild<QWidget*>("card:agent_activity_2") != nullptr,
           "agent panel appends command staging as a targetable activity card");
+
+  panel.setCommandText("help --format json");
+  panel.submitCommand();
+  QString policy_state = panel.workspaceStateJson();
+  require(contains(policy_state, "\"policy_decision\":\"allow_read\""),
+          "agent panel classifies read commands as allow_read");
+  require(contains(policy_state, "\"policy_risk_level\":\"low\""),
+          "agent panel classifies read commands as low risk");
+  require(contains(policy_state, "\"policy_approval_required\":false"),
+          "agent panel does not require approval for read commands");
+  require(contains(policy_state, "\"policy_would_execute\":true"),
+          "agent panel reports read command would execute outside dry run");
+
+  panel.setCommandText("pcb add-via --file board.ccad.json");
+  panel.submitCommand();
+  policy_state = panel.workspaceStateJson();
+  require(contains(policy_state, "\"policy_decision\":\"approval_required\""),
+          "agent panel classifies write commands as approval_required");
+  require(contains(policy_state, "\"policy_approval_reason\":\"project_mutation\""),
+          "agent panel reports project mutation approval reason");
+  require(contains(policy_state, "\"policy_risk_level\":\"high\""),
+          "agent panel classifies project mutation as high risk");
+  require(panel.pendingApprovalCount() == 1,
+          "agent panel creates a pending approval from write policy preview");
+  require(contains(panel.approvalStatusText(), "project_mutation"),
+          "agent panel approval lane carries the policy reason");
+
+  panel.findChild<QCheckBox*>("control:agent_policy_dry_run")->setChecked(true);
+  panel.setCommandText("pcb add-via --file board.ccad.json");
+  panel.findChild<QPushButton*>("action:agent_policy_preview")->click();
+  policy_state = panel.workspaceStateJson();
+  require(contains(policy_state, "\"policy_dry_run\":true"),
+          "agent panel policy preview honors dry-run toggle");
+  require(contains(policy_state, "\"policy_decision\":\"dry_run_only\""),
+          "agent panel reports dry-run-only policy decision");
+  require(contains(policy_state, "\"policy_would_execute\":false"),
+          "agent panel dry-run policy reports no execution");
 
   panel.runHarnessContextPreset();
   require(live_method_seen == "agent.harness_context",

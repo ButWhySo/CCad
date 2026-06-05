@@ -631,6 +631,8 @@ int main(int argc, char** argv) {
   require(contains(validation, "\"failures\":0"), "UI map validation has no misses");
   require(contains(validation, "\"id\":\"action:add_footprint\""),
           "UI map validation covers add footprint action");
+  require(contains(validation, "\"id\":\"control:agent_policy_dry_run\""),
+          "UI map validation covers agent policy dry-run control");
   require(contains(validation, "\"id\":\"canvas_object:U1.1\""),
           "UI map validation covers canvas object target");
 
@@ -750,6 +752,26 @@ int main(int argc, char** argv) {
           "target query finds agent submit action");
   require(contains(agent_submit_target, "\"role\":\"action\""),
           "agent submit target reports action role");
+  const QString agent_policy_surface_target =
+      window.uiTargetJsonById("panel:agent_policy_surface");
+  require(contains(agent_policy_surface_target, "\"found\":true"),
+          "target query finds agent policy surface");
+  require(contains(agent_policy_surface_target, "\"role\":\"panel\""),
+          "agent policy surface target reports panel role");
+  const QString agent_policy_dry_run_target =
+      window.uiTargetJsonById("control:agent_policy_dry_run");
+  require(contains(agent_policy_dry_run_target, "\"found\":true"),
+          "target query finds agent policy dry-run control");
+  require(contains(agent_policy_dry_run_target, "\"role\":\"control\""),
+          "agent policy dry-run target reports control role");
+  const QString agent_policy_dry_run_click =
+      window.uiClickJson("control:agent_policy_dry_run", false, false);
+  require(contains(agent_policy_dry_run_click, "\"performed\":true"),
+          "agent policy dry-run control can be clicked semantically");
+  require(contains(agent_policy_dry_run_click, "\"reason\":\"checkbox_toggled\""),
+          "agent policy dry-run click reports checkbox toggle");
+  require(contains(agent_policy_dry_run_click, "\"checked\":true"),
+          "agent policy dry-run click reports checked state");
   const QString footer_context_target =
       window.uiTargetJsonById("action:agent_footer_request_context");
   require(contains(footer_context_target, "\"found\":true"),

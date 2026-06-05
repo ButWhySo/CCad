@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(ccad_core
+  src/ccad_core/agent_policy.cpp
   src/ccad_core/canvas.cpp
   src/ccad_core/model.cpp
   src/ccad_core/component_generator.cpp
@@ -62,7 +63,6 @@ add_executable(ccad
   src/ccad_cli/agent_commands.cpp
   src/ccad_cli/agent_kicad_evidence.cpp
   src/ccad_cli/agent_observability_config.cpp
-  src/ccad_cli/agent_policy.cpp
   src/ccad_cli/agent_provider_config.cpp
   src/ccad_cli/agent_session.cpp
 )
@@ -167,7 +167,6 @@ add_executable(ccad_agent_serve_tests
   src/ccad_cli/agent_commands.cpp
   src/ccad_cli/agent_kicad_evidence.cpp
   src/ccad_cli/agent_observability_config.cpp
-  src/ccad_cli/agent_policy.cpp
   src/ccad_cli/agent_provider_config.cpp
   src/ccad_cli/agent_session.cpp
 )
@@ -504,7 +503,7 @@ if(CCAD_BUILD_GUI)
       tests/test_gui_agent_panel.cpp
       src/ccad_gui/agent_panel.cpp
     )
-    target_link_libraries(ccad_gui_agent_panel_tests PRIVATE Qt6::Widgets)
+    target_link_libraries(ccad_gui_agent_panel_tests PRIVATE ccad_core Qt6::Widgets)
     target_include_directories(ccad_gui_agent_panel_tests PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src
       ${CMAKE_CURRENT_SOURCE_DIR}/tests
