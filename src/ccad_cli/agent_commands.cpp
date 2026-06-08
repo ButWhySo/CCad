@@ -8,6 +8,7 @@
 #include "app.hpp"
 #include "ccad_core/json.hpp"
 #include "common.hpp"
+#include "agent_orchestrator_cli.hpp"
 
 #include <iostream>
 #include <map>
@@ -479,6 +480,9 @@ int agentCommand(const std::vector<std::string>& args) {
 
   if (args[0] != "serve") {
     try {
+      if (args[0] == "orchestrate" || args[0] == "plan" || args[0] == "orchestrator-schema") {
+        return agentOrchestratorCommand(args);
+      }
       if (args[0] == "session-new") {
         const std::map<std::string, std::string> options =
             parseOptions(args, 1, {"--out", "--session-id", "--title", "--project", "--created-at"});
@@ -722,6 +726,8 @@ int agentCommand(const std::vector<std::string>& args) {
       }
       std::cout << formatSuccess(id, agentToolGuideJson(method_name)) << "\n";
       std::cout.flush();
+    } else if (method == "agent.orchestrator_schema" || method == "agent.plan" || method == "agent.orchestrate") {
+      handleOrchestratorJsonRpc(method, line, id, allow_read, allow_write);
     } else if (method == "execute" || method == "tools/call") {
       std::vector<std::string> cmdArgs = extractStringArray(line, "args");
       if (cmdArgs.empty()) {

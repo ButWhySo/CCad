@@ -66,6 +66,7 @@ add_executable(ccad
   src/ccad_cli/agent_observability_config.cpp
   src/ccad_cli/agent_provider_config.cpp
   src/ccad_cli/agent_session.cpp
+  src/ccad_cli/agent_orchestrator_cli.cpp
 )
 target_link_libraries(ccad PRIVATE ccad_core)
 
@@ -170,6 +171,7 @@ add_executable(ccad_agent_serve_tests
   src/ccad_cli/agent_observability_config.cpp
   src/ccad_cli/agent_provider_config.cpp
   src/ccad_cli/agent_session.cpp
+  src/ccad_cli/agent_orchestrator_cli.cpp
 )
 target_link_libraries(ccad_agent_serve_tests PRIVATE ccad_core)
 add_test(NAME agent_serve COMMAND ccad_agent_serve_tests)
