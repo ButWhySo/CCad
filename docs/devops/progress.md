@@ -15,14 +15,14 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 **Current State**: 
 - [x] Phase 4: LangGraph Python Bridge Architecture Refactoring (Sprint 211)
 - [x] Phase 5: Python IPC Process Wrapper Implementation (Sprint 212)
-- [ ] Phase 6: True Tool Bridging with ToolBroker and ContextBuilder
+- [x] Phase 6: True Tool Bridging with ToolBroker and ContextBuilder
 - [ ] Phase 7: Live LangGraph Integration with Context
 - [ ] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
-- **Sprint 212**: Python LangGraph IPC Bridge
-  - **Goal**: Implement `QProcess` based JSON-RPC bridging between the C++ GUI/CLI and the Python `orchestrator.py` backend.
-  - **Status**: Completed. Chat input is now routed to the subprocess, which emits LangGraph echo responses and mock tool calls parsed back into the UI.
+- **Sprint 213**: True Tool Bridging
+  - **Goal**: Connect the Python LangGraph tool output via JSON-RPC to the C++ ToolBroker, allowing the Python orchestrator to invoke native C++ tools and receive results back. Ensure the ContextBuilder is wired to deliver the `ProjectContext` on every chat event.
+  - **Status**: Completed.
 
 ## Backlog
 - **Sprint 211 (Python Orchestrator Transition)** is complete on `sprint-211-python-orchestrator-chat-ui`. It initializes the `src/ccad_agent/` directory with `requirements.txt` for `langgraph`, `langchain`, `langfuse`, and `langsmith`. It authors `orchestrator.py` defining the initial `StateGraph` skeleton. The C++ `AgentOrchestrator` was cleaned up by removing deterministic planning (Sprint 210 overhaul), moving toward IPC JSON-RPC integration. The Qt GUI and tests successfully built and passed 37 of 37 tests.

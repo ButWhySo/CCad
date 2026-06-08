@@ -7,7 +7,9 @@
 #include <QVector>
 
 #include <functional>
+#include <memory>
 
+#include "ccad_core/agent_orchestrator.hpp"
 class QLabel;
 class QCheckBox;
 class QComboBox;
@@ -23,6 +25,7 @@ class AgentPanel final : public QWidget {
   using UiMapProvider = std::function<QString()>;
   using SafeActionTrigger = std::function<QString(const QString&)>;
   using LiveQueryProvider = std::function<QString(const QString&, const QString&)>;
+  using ContextProvider = std::function<std::string()>;
 
   struct AgentSessionMetadata {
     QString session_id;
@@ -39,6 +42,7 @@ class AgentPanel final : public QWidget {
   void setUiMapProvider(UiMapProvider provider);
   void setSafeActionTrigger(SafeActionTrigger trigger);
   void setLiveQueryProvider(LiveQueryProvider provider);
+  void setContextProvider(ContextProvider provider);
   void setProjectContext(const QString& project_label, int ui_map_epoch);
   void setWorkspaceContext(const QString& active_view,
                            const QString& active_layer,
@@ -254,4 +258,6 @@ class AgentPanel final : public QWidget {
   QString approval_last_decision_ = "none";
 
   QProcess* python_process_ = nullptr;
+  std::unique_ptr<ccad::AgentOrchestrator> orchestrator_;
+  ContextProvider context_provider_;
 };

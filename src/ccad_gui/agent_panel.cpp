@@ -489,7 +489,7 @@ bool providerEnvironmentPresent(const AgentProviderSpec& spec) {
 
 }  // namespace
 
-AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
+AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::make_unique<ccad::AgentOrchestrator>()) {
   setObjectName("agentPanel");
   setStyleSheet(R"(
     QWidget#agentPanel {
@@ -814,11 +814,24 @@ void AgentPanel::handlePythonOutput() {
         QString tool = params["tool"].toString();
         QString args = QJsonDocument(params["args"].toObject()).toJson(QJsonDocument::Compact);
         appendChatMessage("agent", "<TOOL>" + tool + " " + args);
-        // Execute tool here (we'll implement the actual bridge later, just mock success for now)
         QJsonObject result;
         result["jsonrpc"] = "2.0";
-        result["result"] = QJsonObject{{"status", "success"}};
         if (obj.contains("id")) result["id"] = obj["id"];
+
+        if (orchestrator_) {
+            ccad::OrchestratorConfig cfg;
+            std::string res_str = orchestrator_->execute_tool(tool.toStdString(), args.toStdString(), cfg);
+            QJsonParseError res_err;
+            QJsonDocument res_doc = QJsonDocument::fromJson(QString::fromStdString(res_str).toUtf8(), &res_err);
+            if (res_err.error == QJsonParseError::NoError && res_doc.isObject()) {
+                result["result"] = res_doc.object();
+            } else {
+                result["result"] = QString::fromStdString(res_str);
+            }
+        } else {
+            result["error"] = QJsonObject{{"code", -32601}, {"message", "ToolBroker not initialized"}};
+        }
+        
         python_process_->write(QJsonDocument(result).toJson(QJsonDocument::Compact) + "\n");
       } else if (obj.contains("method") && obj["method"].toString() == "message") {
         appendChatMessage("agent", obj["params"].toObject()["text"].toString());
@@ -844,7 +857,12 @@ void AgentPanel::submitChat() {
     QJsonObject payload;
     payload["jsonrpc"] = "2.0";
     payload["method"] = "human_message";
-    payload["params"] = QJsonObject{{"text", text}};
+    QJsonObject params;
+    params["text"] = text;
+    if (context_provider_) {
+        params["context"] = QString::fromStdString(context_provider_());
+    }
+    payload["params"] = params;
     python_process_->write(QJsonDocument(payload).toJson(QJsonDocument::Compact) + "\n");
   }
 }
@@ -858,6 +876,44 @@ void AgentPanel::setSafeActionTrigger(SafeActionTrigger trigger) {
 
 void AgentPanel::setLiveQueryProvider(LiveQueryProvider provider) {
   live_query_provider_ = std::move(provider);
+  
+  if (orchestrator_ && live_query_provider_) {
+      auto register_ui_tool = [this](const std::string& name, ccad::TaskRisk risk) {
+          orchestrator_->register_tool({
+              name, "UI Map Tool", risk, "{}",
+              [this, name](const std::string& args) -> std::string {
+                  if (live_query_provider_) {
+                      return live_query_provider_(QString::fromStdString(name), QString::fromStdString(args)).toStdString();
+                  }
+                  return "{\"error\":\"no provider\"}";
+              }
+          });
+      };
+      
+      register_ui_tool("ui.place_via", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.route_track", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.add_zone", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.add_keepout", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.draw_graphic", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.place_text", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.delete_object", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.trigger_safe", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.click", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.double_click", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.type_text", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.key", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.select_canvas_object", ccad::TaskRisk::ReadOnly);
+      register_ui_tool("ui.get_selection", ccad::TaskRisk::ReadOnly);
+      register_ui_tool("ui.active_layer", ccad::TaskRisk::ReadOnly);
+      register_ui_tool("ui.set_active_layer", ccad::TaskRisk::ReadOnly);
+      register_ui_tool("ui.active_net", ccad::TaskRisk::ReadOnly);
+      register_ui_tool("ui.set_active_net", ccad::TaskRisk::ReadOnly);
+      register_ui_tool("project.review", ccad::TaskRisk::ReadOnly);
+  }
+}
+
+void AgentPanel::setContextProvider(ContextProvider provider) {
+    context_provider_ = std::move(provider);
 }
 
 void AgentPanel::setProjectContext(const QString& project_label, const int ui_map_epoch) {

@@ -187,6 +187,7 @@ public:
     void register_tool(const OrchestratorTool& tool);
     std::vector<std::string> list_tools() const;
     std::optional<OrchestratorTool> get_tool(const std::string& name) const;
+    std::string execute_tool(const std::string& name, const std::string& args_json, const OrchestratorConfig& cfg);
 
     AgentGoal plan(const std::string& goal_description,
                    const ProjectContext& context);

@@ -7,6 +7,7 @@
 #include "ccad_core/component_generator.hpp"
 #include "ccad_core/component_generator.hpp"
 #include "ccad_core/drc.hpp"
+#include "ccad_core/agent_orchestrator.hpp"
 #include "ccad_gui/component_wizard_dialog.hpp"
 #include "ccad_gui/footprint_placement_dialog.hpp"
 #include "ccad_gui/library_browser_dialog.hpp"
@@ -1958,6 +1959,20 @@ ReviewWindow::ReviewWindow() {
       [this](const QString& method, const QString& payload) {
         return runAgentUiQueryJson(method, payload);
       });
+  agent_panel_->setContextProvider([this]() {
+      ccad::ProjectContext ctx;
+      ctx.project_id = "Current Workspace";
+      ctx.component_count = project_cache_.components.size();
+      ctx.net_count = project_cache_.nets.size();
+      if (project_cache_.board) {
+          ctx.has_board = true;
+          ctx.track_count = project_cache_.board->tracks.size();
+          ctx.pad_count = project_cache_.board->pads.size();
+          ctx.via_count = project_cache_.board->vias.size();
+          ctx.zone_count = project_cache_.board->zones.size();
+      }
+      return ccad::ContextBuilder().build_context(ctx);
+  });
   updateAgentPanelContext();
 
   auto* diagnostics_dock = new QDockWidget("Diagnostics", this);

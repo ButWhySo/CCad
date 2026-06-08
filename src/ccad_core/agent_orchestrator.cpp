@@ -289,6 +289,10 @@ std::optional<OrchestratorTool> AgentOrchestrator::get_tool(const std::string& n
     return tool_broker_.get_tool(name);
 }
 
+std::string AgentOrchestrator::execute_tool(const std::string& name, const std::string& args_json, const OrchestratorConfig& cfg) {
+    return tool_broker_.execute_tool(name, args_json, cfg);
+}
+
 AgentGoal AgentOrchestrator::plan(const std::string& goal_description, const ProjectContext& context) {
     AgentGoal goal;
     goal.id = make_goal_id();

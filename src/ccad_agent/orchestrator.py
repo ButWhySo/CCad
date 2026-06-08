@@ -26,7 +26,7 @@ def plan_node(state: AgentState):
     
     last_msg = messages[-1].content
     if "via" in last_msg.lower():
-        return {"messages": [AIMessage(content="<TOOL>pcb.add-via {}")]}
+        return {"messages": [AIMessage(content="<TOOL>ui.place_via {\"x_mm\": 50, \"y_mm\": 50, \"dry_run\": false}")]}
     
     return {"messages": [AIMessage(content=f"Echo from LangGraph: {last_msg}")]}
 
@@ -61,15 +61,23 @@ if __name__ == "__main__":
             method = req.get("method")
             if method == "human_message":
                 text = req.get("params", {}).get("text", "")
+                context_str = req.get("params", {}).get("context", "")
                 
-                # Run the graph
+                # We could print or log the context_str here. For now we just pass it to the state.
                 final_state = executor.invoke({"messages": [HumanMessage(content=text)], "goal": text})
                 last_msg = final_state["messages"][-1].content
                 
                 if "<TOOL>" in last_msg:
                     # emit tool call
-                    tool_name = last_msg.replace("<TOOL>", "").strip().split(" ")[0]
-                    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": tool_name, "args": {}}})
+                    tool_call_str = last_msg.replace("<TOOL>", "").strip()
+                    tool_name = tool_call_str.split(" ")[0]
+                    args_str = tool_call_str[len(tool_name):].strip()
+                    args = {}
+                    try:
+                        args = json.loads(args_str)
+                    except:
+                        pass
+                    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": tool_name, "args": args}})
                 else:
                     emit({"jsonrpc": "2.0", "method": "message", "params": {"text": last_msg}})
             elif "result" in req:
