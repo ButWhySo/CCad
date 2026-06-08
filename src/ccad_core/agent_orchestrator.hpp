@@ -1,13 +1,6 @@
 #pragma once
 // Agent Orchestration Layer — Core Types and Engine
-// Sprint 208: Phase 8 — Agent Runtime and EDA Evidence Expansion
-//
-// The orchestration layer provides:
-// 1. Goal representation and decomposition
-// 2. Task planning and dependency tracking
-// 3. Tool dispatch through the kernel command surface
-// 4. Result observation and state management
-// 5. Context management for agent workflows
+// Sprint 210: Orchestrator Architecture Overhaul
 
 #include <string>
 #include <vector>
@@ -20,37 +13,34 @@ namespace ccad {
 
 // ─── Goal Status ────────────────────────────────────────────────
 enum class GoalStatus {
-    Pending,      // Received but not yet planned
-    Planning,     // Being decomposed into tasks
-    Active,       // Tasks are being executed
-    Paused,       // Execution paused by user/policy
-    Completed,    // All tasks completed successfully
-    Failed,       // One or more tasks failed terminally
-    Canceled      // Canceled by user
+    Pending,
+    Planning,
+    Active,
+    Paused,
+    Completed,
+    Failed,
+    Canceled
 };
-
 std::string goal_status_string(GoalStatus s);
 
 // ─── Task Status ────────────────────────────────────────────────
 enum class TaskStatus {
-    Pending,      // Not yet started
-    Blocked,      // Waiting on dependency
-    Running,      // Currently executing
-    Completed,    // Finished successfully
-    Failed,       // Execution failed
-    Skipped       // Skipped (dependency failed or user skip)
+    Pending,
+    Blocked,
+    Running,
+    Completed,
+    Failed,
+    Skipped
 };
-
 std::string task_status_string(TaskStatus s);
 
 // ─── Task Risk Level ────────────────────────────────────────────
 enum class TaskRisk {
-    ReadOnly,     // No mutations — safe to auto-execute
-    LowMutation,  // Minor project mutation — needs confirmation
-    HighMutation, // Major structural change — requires approval
-    External      // Calls external process — always requires approval
+    ReadOnly,
+    LowMutation,
+    HighMutation,
+    External
 };
-
 std::string task_risk_string(TaskRisk r);
 
 // ─── Agent Task ─────────────────────────────────────────────────
@@ -58,10 +48,10 @@ struct AgentTask {
     std::string id;
     std::string description;
     std::string tool_name;
-    std::string tool_args_json;          // Arguments as JSON string
+    std::string tool_args_json;
     TaskStatus status = TaskStatus::Pending;
     TaskRisk risk = TaskRisk::ReadOnly;
-    std::string result_json;             // Result as JSON string
+    std::string result_json;
     std::string error_message;
     std::vector<std::string> depends_on;
     int order = 0;
@@ -76,7 +66,7 @@ struct AgentTask {
 struct AgentGoal {
     std::string id;
     std::string description;
-    std::string context_json;            // Project context snapshot
+    std::string context_json;
     GoalStatus status = GoalStatus::Pending;
     std::vector<AgentTask> tasks;
     std::string created_at;
@@ -96,7 +86,6 @@ struct OrchestratorTool {
     std::string description;
     TaskRisk default_risk;
     std::string parameter_schema_json;
-    // execute: takes args JSON string, returns result JSON string
     std::function<std::string(const std::string&)> execute;
 };
 
@@ -134,7 +123,60 @@ struct OrchestratorConfig {
     std::string to_json() const;
 };
 
-// ─── Agent Orchestrator ─────────────────────────────────────────
+// ================================================================
+// NEW ARCHITECTURE LAYER DEFINITIONS (Sprint 210)
+// ================================================================
+
+struct RunRecord {
+    std::string run_id;
+    std::string user;
+    std::string workspace;
+    std::string branch;
+};
+
+class IntakeLayer {
+public:
+    std::string normalize_request(const std::string& input);
+    std::string classify_intent(const std::string& input);
+    bool run_risk_scan(const std::string& input);
+    RunRecord start_session(const std::string& input);
+};
+
+class ContextBuilder {
+public:
+    void load_stable_prompts();
+    void load_project_memory();
+    void load_repo_map();
+    std::string build_context(const ProjectContext& base_ctx);
+};
+
+class ToolBroker {
+public:
+    void register_tool(const OrchestratorTool& tool);
+    std::vector<std::string> list_tools() const;
+    std::optional<OrchestratorTool> get_tool(const std::string& name) const;
+    
+    bool check_policy(const OrchestratorTool& tool, const OrchestratorConfig& cfg);
+    std::string execute_tool(const std::string& name, const std::string& args_json, const OrchestratorConfig& cfg);
+
+private:
+    std::map<std::string, OrchestratorTool> tools_;
+};
+
+class Subagent {
+public:
+    virtual ~Subagent() = default;
+    virtual std::string get_name() const = 0;
+    virtual std::vector<AgentTask> decompose(const std::string& goal, const ProjectContext& ctx) = 0;
+};
+
+class EDAAgent : public Subagent {
+public:
+    std::string get_name() const override { return "EDAAgent"; }
+    std::vector<AgentTask> decompose(const std::string& goal, const ProjectContext& ctx) override;
+};
+
+// ─── Agent Orchestrator (Supervisor) ────────────────────────────
 class AgentOrchestrator {
 public:
     AgentOrchestrator();
@@ -161,33 +203,18 @@ public:
 
 private:
     OrchestratorConfig config_;
-    std::map<std::string, OrchestratorTool> tools_;
+    ToolBroker tool_broker_;
+    IntakeLayer intake_;
+    ContextBuilder context_builder_;
+    std::vector<std::unique_ptr<Subagent>> available_subagents_;
+
     int goal_counter_ = 0;
 
-    std::vector<AgentTask> decompose_goal(const std::string& goal,
-                                          const ProjectContext& ctx);
-    std::vector<AgentTask> plan_add_via(const std::string& goal,
-                                        const ProjectContext& ctx);
-    std::vector<AgentTask> plan_add_track(const std::string& goal,
-                                          const ProjectContext& ctx);
-    std::vector<AgentTask> plan_add_component(const std::string& goal,
-                                              const ProjectContext& ctx);
-    std::vector<AgentTask> plan_run_drc(const std::string& goal,
-                                        const ProjectContext& ctx);
-    std::vector<AgentTask> plan_export(const std::string& goal,
-                                       const ProjectContext& ctx);
-    std::vector<AgentTask> plan_review(const std::string& goal,
-                                       const ProjectContext& ctx);
-    std::vector<AgentTask> plan_generic(const std::string& goal,
-                                        const ProjectContext& ctx);
-
-    std::string dispatch_tool(const std::string& tool_name,
-                              const std::string& args_json);
-    bool check_dependencies(const AgentTask& task,
-                           const AgentGoal& goal) const;
     std::string make_task_id(const std::string& goal_id, int index);
     std::string make_goal_id();
     std::string now_iso() const;
+    
+    bool check_dependencies(const AgentTask& task, const AgentGoal& goal) const;
 };
 
 } // namespace ccad

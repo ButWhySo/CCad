@@ -499,6 +499,9 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
       background: #14171c;
       border: 0;
     }
+    QWidget#agentScrollContainer {
+      background: #14171c;
+    }
     QFrame[agentRole="section"] {
       background: #20242b;
       border: 1px solid #363d48;
@@ -506,18 +509,40 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
       padding: 4px;
     }
     QFrame[agentRole="chatBubbleAgent"] {
-      background: #1d232b;
-      border: 1px solid #363d48;
-      border-radius: 8px;
-      padding: 8px;
+      background: transparent;
+      border: none;
+      padding: 4px 0px;
       margin: 4px 8px;
     }
     QFrame[agentRole="chatBubbleUser"] {
-      background: #233446;
-      border: 1px solid #36506b;
-      border-radius: 8px;
+      background: #2b2d31;
+      border: 1px solid #3f4147;
+      border-radius: 6px;
       padding: 8px;
       margin: 4px 8px;
+      margin-left: 32px;
+    }
+    QTextBrowser {
+      background: transparent;
+      border: none;
+      color: #cccccc;
+      font-family: "Segoe UI", Inter, sans-serif;
+      font-size: 13px;
+    }
+    QFrame[agentRole="toolCard"] {
+      background: #252526;
+      border: 1px solid #3c3c3c;
+      border-radius: 6px;
+      padding: 6px;
+      margin-top: 4px;
+      margin-bottom: 4px;
+      margin-left: 12px;
+      margin-right: 12px;
+    }
+    QLabel[agentRole="toolTitle"] {
+      color: #dcdcaa;
+      font-family: monospace;
+      font-size: 12px;
     }
     QFrame[agentRole="modifiedCard"] {
       background: #18221c;
@@ -615,6 +640,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   
   chat_input_ = new QTextEdit(composer_container);
   chat_input_->setObjectName("chatInput");
+  chat_input_->setProperty("target_id", "control:agent_chat_input");
   chat_input_->setPlaceholderText("Message Agent...");
   chat_input_->setFixedHeight(60);
   composer_layout->addWidget(chat_input_);
@@ -638,6 +664,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   
   auto* send_btn = new QPushButton("->", composer_container); // Send arrow
   send_btn->setProperty("agentRole", "iconButton");
+  send_btn->setProperty("target_id", "action:agent_submit_chat");
   send_btn->setFixedSize(24, 24);
 
   actions_layout->addWidget(paperclip_btn);
@@ -692,16 +719,54 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   approval_request_input_ = new QLineEdit(this); approval_request_input_->hide();
   policy_dry_run_checkbox_ = new QCheckBox(this); policy_dry_run_checkbox_->hide();
   output_ = new QPlainTextEdit(this); output_->hide();
+
+  // Mock chat messages for visual validation of new Copilot-style UI
+  appendChatMessage("user", "Can you route the DC positive and negative buses?");
+  appendChatMessage("agent", "I'll route the `DC_POS` and `DC_NEG` nets using a 0.25mm track width.\n\nHere is the plan:\n1. Review the board layout.\n2. Apply the tracks for both buses.\n3. Run DRC.");
+  appendChatMessage("agent", "<TOOL>pcb.add-track {\"net\":\"DC_POS\", \"layer\":\"F.Cu\"}");
+  appendChatMessage("agent", "<TOOL>pcb.add-track {\"net\":\"DC_NEG\", \"layer\":\"F.Cu\"}");
+  appendChatMessage("agent", "Tracks added successfully. DRC passed with no errors.");
 }
+
+#include <QTextBrowser>
 
 void AgentPanel::appendChatMessage(const QString& role, const QString& text) {
   auto* bubble = new QFrame();
   bubble->setProperty("agentRole", role == "agent" ? "chatBubbleAgent" : "chatBubbleUser");
   auto* layout = new QVBoxLayout(bubble);
   layout->setContentsMargins(8, 8, 8, 8);
-  auto* label = new QLabel(text, bubble);
-  label->setWordWrap(true);
-  layout->addWidget(label);
+  
+  if (text.startsWith("<TOOL>")) {
+      // Create a mock Tool Card
+      QString tool_text = text.mid(6);
+      bubble->setProperty("agentRole", "toolCard");
+      
+      auto* header_layout = new QHBoxLayout();
+      auto* icon = new QLabel("<>", bubble);
+      icon->setProperty("agentRole", "toolTitle");
+      auto* title = new QLabel(tool_text, bubble);
+      title->setProperty("agentRole", "toolTitle");
+      header_layout->addWidget(icon);
+      header_layout->addWidget(title);
+      header_layout->addStretch();
+      
+      layout->addLayout(header_layout);
+  } else {
+      auto* browser = new QTextBrowser(bubble);
+      browser->setOpenExternalLinks(true);
+      browser->setMarkdown(text);
+      browser->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+      browser->document()->setTextWidth(-1);
+      
+      // Auto-resize QTextBrowser to fit content
+      browser->document()->adjustSize();
+      int docHeight = browser->document()->size().height() + 10;
+      browser->setMinimumHeight(docHeight);
+      browser->setMaximumHeight(docHeight);
+      
+      layout->addWidget(browser);
+  }
+  
   chat_history_layout_->addWidget(bubble);
 }
 
@@ -1771,31 +1836,8 @@ QString AgentPanel::workspaceStateJson() const {
   response.insert("reference_inspiration", "provided_agent_sidebar_samples");
   response.insert("active_agent_tab", "command");
   response.insert("visible_sections",
-                  QJsonArray{"session_strip",
-                             "header_action_bar",
-                             "mode_strip",
-                             "trace_strip",
-                             "run_queue",
-                             "trace_links",
-                             "provider_controls",
-                             "session_binding",
-                             "policy_surface",
-                             "run_controls",
-                             "status_rail",
-                             "command_stream",
-                             "command_composer",
-                             "task_list",
-                             "active_plan",
-                             "plan_deck",
-                             "activity_stream",
-                             "pinned_evidence",
-                             "evidence_lane",
-                             "evidence_thumbnail_strip",
-                             "approval_card",
-                             "approval_lane",
-                             "approval_preview",
-                             "footer_quick_actions",
-                             "command_bar"});
+                  QJsonArray{"header_action_bar",
+                             "command_composer"});
   response.insert("session_title", session_title_label_->text());
   response.insert("model_label", model_chip_label_->text());
   response.insert("mode_label", mode_chip_label_->text());

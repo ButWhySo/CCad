@@ -1,0 +1,6 @@
+langgraph>=0.0.60
+langchain-core>=0.2.0
+langchain-openai>=0.1.0
+langfuse>=2.30.0
+langsmith>=0.1.0
+pydantic>=2.0.0

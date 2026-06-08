@@ -1,8 +1,8 @@
 // Agent Orchestration Layer — Implementation
-// Sprint 208: Phase 8
+// Sprint 210: Orchestrator Architecture Overhaul
 
 #include "agent_orchestrator.hpp"
-#include "ccad_core/json.hpp" // for escapeJson
+#include "ccad_core/json.hpp"
 #include <algorithm>
 #include <chrono>
 #include <iomanip>
@@ -141,7 +141,133 @@ std::string OrchestratorConfig::to_json() const {
     return out.str();
 }
 
-AgentOrchestrator::AgentOrchestrator() = default;
+// ─── IntakeLayer ────────────────────────────────────────────────
+std::string IntakeLayer::normalize_request(const std::string& input) {
+    return input;
+}
+
+std::string IntakeLayer::classify_intent(const std::string& /*input*/) {
+    return "EDA";
+}
+
+bool IntakeLayer::run_risk_scan(const std::string& /*input*/) {
+    return true;
+}
+
+RunRecord IntakeLayer::start_session(const std::string& /*input*/) {
+    return {"run_001", "user", "workspace", "main"};
+}
+
+// ─── ContextBuilder ─────────────────────────────────────────────
+void ContextBuilder::load_stable_prompts() {}
+void ContextBuilder::load_project_memory() {}
+void ContextBuilder::load_repo_map() {}
+std::string ContextBuilder::build_context(const ProjectContext& base_ctx) {
+    return base_ctx.to_json();
+}
+
+// ─── ToolBroker ─────────────────────────────────────────────────
+void ToolBroker::register_tool(const OrchestratorTool& tool) {
+    tools_[tool.name] = tool;
+}
+
+std::vector<std::string> ToolBroker::list_tools() const {
+    std::vector<std::string> names;
+    for (auto& [name, _] : tools_) names.push_back(name);
+    std::sort(names.begin(), names.end());
+    return names;
+}
+
+std::optional<OrchestratorTool> ToolBroker::get_tool(const std::string& name) const {
+    auto it = tools_.find(name);
+    if (it != tools_.end()) return it->second;
+    return std::nullopt;
+}
+
+bool ToolBroker::check_policy(const OrchestratorTool& tool, const OrchestratorConfig& cfg) {
+    if (!cfg.project_mutation_enabled && tool.default_risk != TaskRisk::ReadOnly) {
+        return false;
+    }
+    return true;
+}
+
+std::string ToolBroker::execute_tool(const std::string& name, const std::string& args_json, const OrchestratorConfig& cfg) {
+    auto it = tools_.find(name);
+    if (it == tools_.end()) {
+        return "{\"error\":\"tool_not_registered\",\"tool_name\":\"" + escapeJson(name) + "\"}";
+    }
+    if (!check_policy(it->second, cfg)) {
+        return "{\"error\":\"project_mutation_disabled\",\"tool_name\":\"" + escapeJson(name) + "\"}";
+    }
+    return it->second.execute(args_json);
+}
+
+// ─── EDAAgent ───────────────────────────────────────────────────
+AgentTask make_task(const std::string& desc, const std::string& tool, const std::string& args, TaskRisk risk) {
+    AgentTask t;
+    t.description = desc;
+    t.tool_name = tool;
+    t.tool_args_json = args;
+    t.risk = risk;
+    return t;
+}
+
+std::vector<AgentTask> EDAAgent::decompose(const std::string& goal, const ProjectContext& /*ctx*/) {
+    std::string lower_goal = goal;
+    std::transform(lower_goal.begin(), lower_goal.end(), lower_goal.begin(), ::tolower);
+    std::vector<AgentTask> tasks;
+
+    if (lower_goal.find("add") != std::string::npos && lower_goal.find("via") != std::string::npos) {
+        tasks.push_back(make_task("Review current board state before adding via", "project.review", "{}", TaskRisk::ReadOnly));
+        tasks.push_back(make_task("Run DRC to check current board health", "pcb.drc", "{}", TaskRisk::ReadOnly));
+        auto add = make_task("Add via as requested: " + goal, "pcb.add-via", "{\"goal_text\":\"" + escapeJson(goal) + "\"}", TaskRisk::LowMutation);
+        add.depends_on.push_back("");
+        tasks.push_back(add);
+        tasks.push_back(make_task("Run DRC to verify via placement doesn't violate rules", "pcb.drc", "{}", TaskRisk::ReadOnly));
+        return tasks;
+    }
+    if (lower_goal.find("route") != std::string::npos || (lower_goal.find("add") != std::string::npos && lower_goal.find("track") != std::string::npos)) {
+        tasks.push_back(make_task("Review board state and net connectivity", "project.review", "{}", TaskRisk::ReadOnly));
+        tasks.push_back(make_task("Add track/route: " + goal, "pcb.add-track", "{\"goal_text\":\"" + escapeJson(goal) + "\"}", TaskRisk::LowMutation));
+        tasks.push_back(make_task("Run DRC after routing", "pcb.drc", "{}", TaskRisk::ReadOnly));
+        return tasks;
+    }
+    if (lower_goal.find("place") != std::string::npos || (lower_goal.find("add") != std::string::npos && lower_goal.find("component") != std::string::npos) || (lower_goal.find("add") != std::string::npos && lower_goal.find("footprint") != std::string::npos)) {
+        tasks.push_back(make_task("Review current board/schematic state", "project.review", "{}", TaskRisk::ReadOnly));
+        tasks.push_back(make_task("Place component: " + goal, "pcb.place-footprint", "{\"goal_text\":\"" + escapeJson(goal) + "\"}", TaskRisk::LowMutation));
+        tasks.push_back(make_task("Run DRC after placement", "pcb.drc", "{}", TaskRisk::ReadOnly));
+        return tasks;
+    }
+    if (lower_goal.find("drc") != std::string::npos || lower_goal.find("design rule") != std::string::npos || lower_goal.find("check") != std::string::npos) {
+        tasks.push_back(make_task("Run Design Rule Check: " + goal, "pcb.drc", "{}", TaskRisk::ReadOnly));
+        tasks.push_back(make_task("Review DRC results", "project.diagnostics", "{}", TaskRisk::ReadOnly));
+        return tasks;
+    }
+    if (lower_goal.find("export") != std::string::npos || lower_goal.find("gerber") != std::string::npos || lower_goal.find("drill") != std::string::npos) {
+        tasks.push_back(make_task("Run DRC before export", "pcb.drc", "{}", TaskRisk::ReadOnly));
+        tasks.push_back(make_task("Export: " + goal, "pcb.export", "{\"goal_text\":\"" + escapeJson(goal) + "\"}", TaskRisk::External));
+        return tasks;
+    }
+    if (lower_goal.find("review") != std::string::npos || lower_goal.find("inspect") != std::string::npos || lower_goal.find("status") != std::string::npos) {
+        tasks.push_back(make_task("Review project: " + goal, "project.review", "{}", TaskRisk::ReadOnly));
+        tasks.push_back(make_task("Get object counts", "project.object_counts", "{}", TaskRisk::ReadOnly));
+        tasks.push_back(make_task("Run diagnostics", "project.diagnostics", "{}", TaskRisk::ReadOnly));
+        return tasks;
+    }
+    
+    // Generic
+    tasks.push_back(make_task("Gather project context for goal: " + goal, "project.context", "{}", TaskRisk::ReadOnly));
+    auto plan_task = make_task("Goal requires LLM planning (provider not enabled): " + goal, "agent.plan_with_provider", "{\"goal\":\"" + escapeJson(goal) + "\"}", TaskRisk::External);
+    plan_task.status = TaskStatus::Blocked;
+    plan_task.error_message = "provider_execution_disabled";
+    tasks.push_back(plan_task);
+    return tasks;
+}
+
+// ─── AgentOrchestrator ──────────────────────────────────────────
+AgentOrchestrator::AgentOrchestrator() {
+    available_subagents_.push_back(std::make_unique<EDAAgent>());
+}
 
 void AgentOrchestrator::set_config(const OrchestratorConfig& cfg) {
     config_ = cfg;
@@ -152,33 +278,33 @@ OrchestratorConfig AgentOrchestrator::get_config() const {
 }
 
 void AgentOrchestrator::register_tool(const OrchestratorTool& tool) {
-    tools_[tool.name] = tool;
+    tool_broker_.register_tool(tool);
 }
 
 std::vector<std::string> AgentOrchestrator::list_tools() const {
-    std::vector<std::string> names;
-    for (auto& [name, _] : tools_) names.push_back(name);
-    std::sort(names.begin(), names.end());
-    return names;
+    return tool_broker_.list_tools();
 }
 
-std::optional<OrchestratorTool> AgentOrchestrator::get_tool(
-    const std::string& name) const {
-    auto it = tools_.find(name);
-    if (it != tools_.end()) return it->second;
-    return std::nullopt;
+std::optional<OrchestratorTool> AgentOrchestrator::get_tool(const std::string& name) const {
+    return tool_broker_.get_tool(name);
 }
 
-AgentGoal AgentOrchestrator::plan(const std::string& goal_description,
-                                  const ProjectContext& context) {
+AgentGoal AgentOrchestrator::plan(const std::string& goal_description, const ProjectContext& context) {
     AgentGoal goal;
     goal.id = make_goal_id();
-    goal.description = goal_description;
-    goal.context_json = context.to_json();
+    goal.description = intake_.normalize_request(goal_description);
+    intake_.run_risk_scan(goal.description);
+    intake_.start_session(goal.description);
+    
+    goal.context_json = context_builder_.build_context(context);
     goal.status = GoalStatus::Planning;
     goal.created_at = now_iso();
 
-    goal.tasks = decompose_goal(goal_description, context);
+    // Use the first subagent for decomposition (EDAAgent)
+    if (!available_subagents_.empty()) {
+        goal.tasks = available_subagents_[0]->decompose(goal.description, context);
+    }
+    
     goal.total_count = static_cast<int>(goal.tasks.size());
 
     for (int i = 0; i < (int)goal.tasks.size(); ++i) {
@@ -204,39 +330,30 @@ AgentGoal AgentOrchestrator::plan(const std::string& goal_description,
 }
 
 AgentGoal AgentOrchestrator::execute(AgentGoal& goal) {
-    if (goal.status == GoalStatus::Canceled ||
-        goal.status == GoalStatus::Completed) {
+    if (goal.status == GoalStatus::Canceled || goal.status == GoalStatus::Completed) {
         return goal;
     }
-
     goal.status = GoalStatus::Active;
     goal.started_at = now_iso();
 
     for (auto& task : goal.tasks) {
-        if (task.status != TaskStatus::Pending &&
-            task.status != TaskStatus::Blocked) {
+        if (task.status != TaskStatus::Pending && task.status != TaskStatus::Blocked) {
             continue;
         }
-
         if (!check_dependencies(task, goal)) {
             task.status = TaskStatus::Blocked;
             continue;
         }
-
         if (config_.dry_run) {
             task.status = TaskStatus::Skipped;
             task.error_message = "dry_run_only";
             continue;
         }
-
-        if (config_.require_approval &&
-            task.risk != TaskRisk::ReadOnly &&
-            !config_.auto_execute_reads) {
+        if (config_.require_approval && task.risk != TaskRisk::ReadOnly && !config_.auto_execute_reads) {
             task.status = TaskStatus::Blocked;
             task.error_message = "approval_required";
             continue;
         }
-
         if (task.risk == TaskRisk::ReadOnly || !config_.require_approval) {
             task = execute_task(goal, task.id);
         } else if (config_.auto_execute_reads && task.risk == TaskRisk::ReadOnly) {
@@ -257,22 +374,18 @@ AgentGoal AgentOrchestrator::execute(AgentGoal& goal) {
     if (goal.completed_count == goal.total_count) {
         goal.status = GoalStatus::Completed;
         goal.completed_at = now_iso();
-    } else if (goal.failed_count > 0 &&
-               goal.completed_count + goal.failed_count == goal.total_count) {
+    } else if (goal.failed_count > 0 && goal.completed_count + goal.failed_count == goal.total_count) {
         goal.status = GoalStatus::Failed;
         goal.completed_at = now_iso();
     }
-
     return goal;
 }
 
-AgentTask AgentOrchestrator::execute_task(AgentGoal& goal,
-                                          const std::string& task_id) {
+AgentTask AgentOrchestrator::execute_task(AgentGoal& goal, const std::string& task_id) {
     AgentTask* task_ptr = nullptr;
     for (auto& t : goal.tasks) {
         if (t.id == task_id) { task_ptr = &t; break; }
     }
-
     if (!task_ptr) {
         AgentTask err;
         err.id = task_id;
@@ -286,7 +399,7 @@ AgentTask AgentOrchestrator::execute_task(AgentGoal& goal,
     task.started_at = now_iso();
 
     try {
-        task.result_json = dispatch_tool(task.tool_name, task.tool_args_json);
+        task.result_json = tool_broker_.execute_tool(task.tool_name, task.tool_args_json, config_);
         task.status = TaskStatus::Completed;
         task.completed_at = now_iso();
     } catch (const std::exception& e) {
@@ -294,13 +407,10 @@ AgentTask AgentOrchestrator::execute_task(AgentGoal& goal,
         task.error_message = e.what();
         task.completed_at = now_iso();
     }
-
     return task;
 }
 
-AgentGoal AgentOrchestrator::orchestrate(
-    const std::string& goal_description,
-    const ProjectContext& context) {
+AgentGoal AgentOrchestrator::orchestrate(const std::string& goal_description, const ProjectContext& context) {
     auto goal = plan(goal_description, context);
     if (goal.status == GoalStatus::Failed) return goal;
     return execute(goal);
@@ -310,22 +420,18 @@ void AgentOrchestrator::cancel(AgentGoal& goal) {
     goal.status = GoalStatus::Canceled;
     goal.completed_at = now_iso();
     for (auto& t : goal.tasks) {
-        if (t.status == TaskStatus::Pending ||
-            t.status == TaskStatus::Blocked ||
-            t.status == TaskStatus::Running) {
+        if (t.status == TaskStatus::Pending || t.status == TaskStatus::Blocked || t.status == TaskStatus::Running) {
             t.status = TaskStatus::Skipped;
             t.error_message = "goal_canceled";
         }
     }
 }
 
-std::string AgentOrchestrator::goal_status_json(
-    const AgentGoal& goal) const {
+std::string AgentOrchestrator::goal_status_json(const AgentGoal& goal) const {
     return goal.to_json();
 }
 
-std::string AgentOrchestrator::task_list_json(
-    const AgentGoal& goal) const {
+std::string AgentOrchestrator::task_list_json(const AgentGoal& goal) const {
     std::ostringstream out;
     out << "[";
     for (size_t i = 0; i < goal.tasks.size(); ++i) {
@@ -340,296 +446,47 @@ std::string AgentOrchestrator::orchestrator_schema() const {
     std::ostringstream out;
     out << "{"
         << "\"name\":\"agent_orchestrator\","
-        << "\"version\":\"0.1.0\","
-        << "\"description\":\"CCad Agent Orchestration Layer - deterministic goal decomposition and kernel tool dispatch\","
+        << "\"version\":\"0.2.0\","
+        << "\"description\":\"CCad Agent Orchestration Layer (Sprint 210 refactor) - multi-agent framework\","
         << "\"config\":" << config_.to_json() << ","
         << "\"registered_tools\":[";
     
     bool first = true;
-    for (auto& [name, tool] : tools_) {
+    for (auto name : tool_broker_.list_tools()) {
+        auto tool = tool_broker_.get_tool(name);
+        if (!tool) continue;
         if (!first) out << ",";
         first = false;
         out << "{"
-            << "\"name\":\"" << escapeJson(name) << "\","
-            << "\"description\":\"" << escapeJson(tool.description) << "\","
-            << "\"risk\":\"" << escapeJson(task_risk_string(tool.default_risk)) << "\"";
-        if (!tool.parameter_schema_json.empty()) {
-            out << ",\"parameters\":" << tool.parameter_schema_json;
+            << "\"name\":\"" << escapeJson(tool->name) << "\","
+            << "\"description\":\"" << escapeJson(tool->description) << "\","
+            << "\"risk\":\"" << escapeJson(task_risk_string(tool->default_risk)) << "\"";
+        if (!tool->parameter_schema_json.empty()) {
+            out << ",\"parameters\":" << tool->parameter_schema_json;
         }
         out << "}";
     }
     
     out << "],"
-        << "\"registered_tool_count\":" << tools_.size() << ","
-        << "\"capabilities\":[\"goal_decomposition\",\"task_planning\",\"dependency_tracking\",\"tool_dispatch\",\"result_observation\",\"risk_classification\",\"dry_run\",\"approval_gating\"],"
+        << "\"registered_tool_count\":" << tool_broker_.list_tools().size() << ","
+        << "\"capabilities\":[\"intake_layer\",\"context_fabric\",\"supervisor_orchestrator\",\"subagents\",\"tool_broker\"],"
         << "\"provider_execution_enabled\":" << (config_.provider_execution_enabled ? "true" : "false") << ","
         << "\"project_mutation_enabled\":" << (config_.project_mutation_enabled ? "true" : "false")
         << "}";
     return out.str();
 }
 
-std::vector<AgentTask> AgentOrchestrator::decompose_goal(
-    const std::string& goal, const ProjectContext& ctx) {
-
-    std::string lower_goal = goal;
-    std::transform(lower_goal.begin(), lower_goal.end(),
-                   lower_goal.begin(), ::tolower);
-
-    if (lower_goal.find("add") != std::string::npos &&
-        lower_goal.find("via") != std::string::npos) {
-        return plan_add_via(goal, ctx);
-    }
-    if (lower_goal.find("route") != std::string::npos ||
-        (lower_goal.find("add") != std::string::npos &&
-         lower_goal.find("track") != std::string::npos)) {
-        return plan_add_track(goal, ctx);
-    }
-    if (lower_goal.find("place") != std::string::npos ||
-        (lower_goal.find("add") != std::string::npos &&
-         lower_goal.find("component") != std::string::npos) ||
-        (lower_goal.find("add") != std::string::npos &&
-         lower_goal.find("footprint") != std::string::npos)) {
-        return plan_add_component(goal, ctx);
-    }
-    if (lower_goal.find("drc") != std::string::npos ||
-        lower_goal.find("design rule") != std::string::npos ||
-        lower_goal.find("check") != std::string::npos) {
-        return plan_run_drc(goal, ctx);
-    }
-    if (lower_goal.find("export") != std::string::npos ||
-        lower_goal.find("gerber") != std::string::npos ||
-        lower_goal.find("drill") != std::string::npos) {
-        return plan_export(goal, ctx);
-    }
-    if (lower_goal.find("review") != std::string::npos ||
-        lower_goal.find("inspect") != std::string::npos ||
-        lower_goal.find("status") != std::string::npos) {
-        return plan_review(goal, ctx);
-    }
-
-    return plan_generic(goal, ctx);
-}
-
-std::vector<AgentTask> AgentOrchestrator::plan_add_via(
-    const std::string& goal, const ProjectContext& /*ctx*/) {
-    std::vector<AgentTask> tasks;
-
-    AgentTask review;
-    review.description = "Review current board state before adding via";
-    review.tool_name = "project.review";
-    review.tool_args_json = "{}";
-    review.risk = TaskRisk::ReadOnly;
-    tasks.push_back(review);
-
-    AgentTask drc_before;
-    drc_before.description = "Run DRC to check current board health";
-    drc_before.tool_name = "pcb.drc";
-    drc_before.tool_args_json = "{}";
-    drc_before.risk = TaskRisk::ReadOnly;
-    tasks.push_back(drc_before);
-
-    AgentTask add_via;
-    add_via.description = "Add via as requested: " + goal;
-    add_via.tool_name = "pcb.add-via";
-    add_via.tool_args_json = "{\"goal_text\":\"" + escapeJson(goal) + "\"}";
-    add_via.risk = TaskRisk::LowMutation;
-    add_via.depends_on = {""};
-    tasks.push_back(add_via);
-
-    AgentTask drc_after;
-    drc_after.description = "Run DRC to verify via placement doesn't violate rules";
-    drc_after.tool_name = "pcb.drc";
-    drc_after.tool_args_json = "{}";
-    drc_after.risk = TaskRisk::ReadOnly;
-    tasks.push_back(drc_after);
-
-    return tasks;
-}
-
-std::vector<AgentTask> AgentOrchestrator::plan_add_track(
-    const std::string& goal, const ProjectContext& /*ctx*/) {
-    std::vector<AgentTask> tasks;
-
-    AgentTask review;
-    review.description = "Review board state and net connectivity";
-    review.tool_name = "project.review";
-    review.tool_args_json = "{}";
-    review.risk = TaskRisk::ReadOnly;
-    tasks.push_back(review);
-
-    AgentTask add_track;
-    add_track.description = "Add track/route: " + goal;
-    add_track.tool_name = "pcb.add-track";
-    add_track.tool_args_json = "{\"goal_text\":\"" + escapeJson(goal) + "\"}";
-    add_track.risk = TaskRisk::LowMutation;
-    tasks.push_back(add_track);
-
-    AgentTask drc;
-    drc.description = "Run DRC after routing";
-    drc.tool_name = "pcb.drc";
-    drc.tool_args_json = "{}";
-    drc.risk = TaskRisk::ReadOnly;
-    tasks.push_back(drc);
-
-    return tasks;
-}
-
-std::vector<AgentTask> AgentOrchestrator::plan_add_component(
-    const std::string& goal, const ProjectContext& /*ctx*/) {
-    std::vector<AgentTask> tasks;
-
-    AgentTask review;
-    review.description = "Review current board/schematic state";
-    review.tool_name = "project.review";
-    review.tool_args_json = "{}";
-    review.risk = TaskRisk::ReadOnly;
-    tasks.push_back(review);
-
-    AgentTask place;
-    place.description = "Place component: " + goal;
-    place.tool_name = "pcb.place-footprint";
-    place.tool_args_json = "{\"goal_text\":\"" + escapeJson(goal) + "\"}";
-    place.risk = TaskRisk::LowMutation;
-    tasks.push_back(place);
-
-    AgentTask drc;
-    drc.description = "Run DRC after placement";
-    drc.tool_name = "pcb.drc";
-    drc.tool_args_json = "{}";
-    drc.risk = TaskRisk::ReadOnly;
-    tasks.push_back(drc);
-
-    return tasks;
-}
-
-std::vector<AgentTask> AgentOrchestrator::plan_run_drc(
-    const std::string& goal, const ProjectContext& /*ctx*/) {
-    std::vector<AgentTask> tasks;
-
-    AgentTask drc;
-    drc.description = "Run Design Rule Check: " + goal;
-    drc.tool_name = "pcb.drc";
-    drc.tool_args_json = "{}";
-    drc.risk = TaskRisk::ReadOnly;
-    tasks.push_back(drc);
-
-    AgentTask review;
-    review.description = "Review DRC results";
-    review.tool_name = "project.diagnostics";
-    review.tool_args_json = "{}";
-    review.risk = TaskRisk::ReadOnly;
-    tasks.push_back(review);
-
-    return tasks;
-}
-
-std::vector<AgentTask> AgentOrchestrator::plan_export(
-    const std::string& goal, const ProjectContext& /*ctx*/) {
-    std::vector<AgentTask> tasks;
-
-    AgentTask drc;
-    drc.description = "Run DRC before export";
-    drc.tool_name = "pcb.drc";
-    drc.tool_args_json = "{}";
-    drc.risk = TaskRisk::ReadOnly;
-    tasks.push_back(drc);
-
-    AgentTask exp;
-    exp.description = "Export: " + goal;
-    exp.tool_name = "pcb.export";
-    exp.tool_args_json = "{\"goal_text\":\"" + escapeJson(goal) + "\"}";
-    exp.risk = TaskRisk::External;
-    tasks.push_back(exp);
-
-    return tasks;
-}
-
-std::vector<AgentTask> AgentOrchestrator::plan_review(
-    const std::string& goal, const ProjectContext& /*ctx*/) {
-    std::vector<AgentTask> tasks;
-
-    AgentTask review;
-    review.description = "Review project: " + goal;
-    review.tool_name = "project.review";
-    review.tool_args_json = "{}";
-    review.risk = TaskRisk::ReadOnly;
-    tasks.push_back(review);
-
-    AgentTask counts;
-    counts.description = "Get object counts";
-    counts.tool_name = "project.object_counts";
-    counts.tool_args_json = "{}";
-    counts.risk = TaskRisk::ReadOnly;
-    tasks.push_back(counts);
-
-    AgentTask diag;
-    diag.description = "Run diagnostics";
-    diag.tool_name = "project.diagnostics";
-    diag.tool_args_json = "{}";
-    diag.risk = TaskRisk::ReadOnly;
-    tasks.push_back(diag);
-
-    return tasks;
-}
-
-std::vector<AgentTask> AgentOrchestrator::plan_generic(
-    const std::string& goal, const ProjectContext& /*ctx*/) {
-    std::vector<AgentTask> tasks;
-
-    AgentTask context_task;
-    context_task.description = "Gather project context for goal: " + goal;
-    context_task.tool_name = "project.context";
-    context_task.tool_args_json = "{}";
-    context_task.risk = TaskRisk::ReadOnly;
-    tasks.push_back(context_task);
-
-    AgentTask plan_task;
-    plan_task.description = "Goal requires LLM planning (provider not enabled): " + goal;
-    plan_task.tool_name = "agent.plan_with_provider";
-    plan_task.tool_args_json = "{\"goal\":\"" + escapeJson(goal) + "\"}";
-    plan_task.risk = TaskRisk::External;
-    plan_task.status = TaskStatus::Blocked;
-    plan_task.error_message = "provider_execution_disabled";
-    tasks.push_back(plan_task);
-
-    return tasks;
-}
-
-std::string AgentOrchestrator::dispatch_tool(
-    const std::string& tool_name, const std::string& args_json) {
-
-    auto it = tools_.find(tool_name);
-    if (it == tools_.end()) {
-        std::ostringstream err;
-        err << "{\"error\":\"tool_not_registered\",\"tool_name\":\"" << escapeJson(tool_name) << "\"}";
-        return err.str();
-    }
-
-    if (!config_.project_mutation_enabled &&
-        it->second.default_risk != TaskRisk::ReadOnly) {
-        std::ostringstream err;
-        err << "{\"error\":\"project_mutation_disabled\",\"tool_name\":\"" << escapeJson(tool_name) << "\"}";
-        return err.str();
-    }
-
-    return it->second.execute(args_json);
-}
-
-bool AgentOrchestrator::check_dependencies(
-    const AgentTask& task, const AgentGoal& goal) const {
+bool AgentOrchestrator::check_dependencies(const AgentTask& task, const AgentGoal& goal) const {
     for (auto& dep_id : task.depends_on) {
         if (dep_id.empty()) continue;
         for (auto& t : goal.tasks) {
-            if (t.id == dep_id && t.status != TaskStatus::Completed) {
-                return false;
-            }
+            if (t.id == dep_id && t.status != TaskStatus::Completed) return false;
         }
     }
     return true;
 }
 
-std::string AgentOrchestrator::make_task_id(
-    const std::string& goal_id, int index) {
+std::string AgentOrchestrator::make_task_id(const std::string& goal_id, int index) {
     return goal_id + "_t" + std::to_string(index);
 }
 
