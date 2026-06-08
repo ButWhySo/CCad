@@ -13,6 +13,18 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 starts the bounded runtime and EDA evidence expansion.
 
 **Current State**: 
+- [x] Phase 4: LangGraph Python Bridge Architecture Refactoring (Sprint 211)
+- [x] Phase 5: Python IPC Process Wrapper Implementation (Sprint 212)
+- [ ] Phase 6: True Tool Bridging with ToolBroker and ContextBuilder
+- [ ] Phase 7: Live LangGraph Integration with Context
+- [ ] Phase 8: Multi-Agent Refinement
+
+## Current Sprint
+- **Sprint 212**: Python LangGraph IPC Bridge
+  - **Goal**: Implement `QProcess` based JSON-RPC bridging between the C++ GUI/CLI and the Python `orchestrator.py` backend.
+  - **Status**: Completed. Chat input is now routed to the subprocess, which emits LangGraph echo responses and mock tool calls parsed back into the UI.
+
+## Backlog
 - **Sprint 211 (Python Orchestrator Transition)** is complete on `sprint-211-python-orchestrator-chat-ui`. It initializes the `src/ccad_agent/` directory with `requirements.txt` for `langgraph`, `langchain`, `langfuse`, and `langsmith`. It authors `orchestrator.py` defining the initial `StateGraph` skeleton. The C++ `AgentOrchestrator` was cleaned up by removing deterministic planning (Sprint 210 overhaul), moving toward IPC JSON-RPC integration. The Qt GUI and tests successfully built and passed 37 of 37 tests.
 - **Sprint 210 (Orchestrator Architecture Overhaul)** is complete. It refactored `src/ccad_core/agent_orchestrator.hpp/.cpp` to remove deterministic planning logic and introduced `IntakeLayer`, `ToolBroker`, `ContextBuilder`, and `Subagent` C++ stubs to prepare for the Python backend JSON-RPC integration.
 - **Sprint 209 (Agent Chat UI Redesign)** is complete on `sprint-209-agent-chat-ui`. It replaced the dense vertical orchestrator 'lane' UI with a unified, chat-focused interface as requested by user wireframes. It removes legacy diagnostic/approval lane logic, implements the base layout for a chat history area, and adds the skeleton `AgentMarketplaceDialog` to house future integrations. The sprint-end Qt build plus CTest gate passed 37 of 37 tests (legacy test suites stubbed), and visual validation produced `artifacts/screenshots/sprint-demo-*.png` verifying the structure matches the hand-drawn layout.

@@ -19,6 +19,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPlainTextEdit>
+#include <QProcess>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QSaveFile>
@@ -666,6 +667,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   send_btn->setProperty("agentRole", "iconButton");
   send_btn->setProperty("target_id", "action:agent_submit_chat");
   send_btn->setFixedSize(24, 24);
+  connect(send_btn, &QPushButton::clicked, this, &AgentPanel::submitChat);
 
   actions_layout->addWidget(paperclip_btn);
   actions_layout->addWidget(marketplace_btn);
@@ -726,6 +728,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent) {
   appendChatMessage("agent", "<TOOL>pcb.add-track {\"net\":\"DC_POS\", \"layer\":\"F.Cu\"}");
   appendChatMessage("agent", "<TOOL>pcb.add-track {\"net\":\"DC_NEG\", \"layer\":\"F.Cu\"}");
   appendChatMessage("agent", "Tracks added successfully. DRC passed with no errors.");
+
+  startPythonBackend();
 }
 
 #include <QTextBrowser>
@@ -785,6 +789,64 @@ void AgentPanel::renderChatChecklist() {
     layout->addWidget(cb);
   }
   chat_history_layout_->addWidget(bubble);
+}
+
+void AgentPanel::startPythonBackend() {
+  python_process_ = new QProcess(this);
+  python_process_->setProgram("python");
+  python_process_->setArguments({"src/ccad_agent/orchestrator.py"});
+  connect(python_process_, &QProcess::readyReadStandardOutput, this, &AgentPanel::handlePythonOutput);
+  connect(python_process_, &QProcess::readyReadStandardError, this, &AgentPanel::handlePythonError);
+  python_process_->start();
+}
+
+void AgentPanel::handlePythonOutput() {
+  if (!python_process_) return;
+  while (python_process_->canReadLine()) {
+    QByteArray line = python_process_->readLine().trimmed();
+    if (line.isEmpty()) continue;
+    QJsonParseError err;
+    QJsonDocument doc = QJsonDocument::fromJson(line, &err);
+    if (err.error == QJsonParseError::NoError && doc.isObject()) {
+      QJsonObject obj = doc.object();
+      if (obj.contains("method") && obj["method"].toString() == "tool_call") {
+        QJsonObject params = obj["params"].toObject();
+        QString tool = params["tool"].toString();
+        QString args = QJsonDocument(params["args"].toObject()).toJson(QJsonDocument::Compact);
+        appendChatMessage("agent", "<TOOL>" + tool + " " + args);
+        // Execute tool here (we'll implement the actual bridge later, just mock success for now)
+        QJsonObject result;
+        result["jsonrpc"] = "2.0";
+        result["result"] = QJsonObject{{"status", "success"}};
+        if (obj.contains("id")) result["id"] = obj["id"];
+        python_process_->write(QJsonDocument(result).toJson(QJsonDocument::Compact) + "\n");
+      } else if (obj.contains("method") && obj["method"].toString() == "message") {
+        appendChatMessage("agent", obj["params"].toObject()["text"].toString());
+      }
+    }
+  }
+}
+
+void AgentPanel::handlePythonError() {
+  if (!python_process_) return;
+  QByteArray error = python_process_->readAllStandardError();
+  // Optional: log to output
+}
+
+void AgentPanel::submitChat() {
+  QString text = chat_input_->toPlainText().trimmed();
+  if (text.isEmpty()) return;
+  
+  appendChatMessage("user", text);
+  chat_input_->clear();
+  
+  if (python_process_ && python_process_->state() == QProcess::Running) {
+    QJsonObject payload;
+    payload["jsonrpc"] = "2.0";
+    payload["method"] = "human_message";
+    payload["params"] = QJsonObject{{"text", text}};
+    python_process_->write(QJsonDocument(payload).toJson(QJsonDocument::Compact) + "\n");
+  }
 }
 void AgentPanel::setUiMapProvider(UiMapProvider provider) {
   ui_map_provider_ = std::move(provider);

@@ -16,6 +16,7 @@ class QPlainTextEdit;
 class QTextEdit;
 class QVBoxLayout;
 class QScrollArea;
+class QProcess;
 
 class AgentPanel final : public QWidget {
  public:
@@ -152,6 +153,12 @@ class AgentPanel final : public QWidget {
   void appendChatMessage(const QString& role, const QString& text);
   void renderChatChecklist();
 
+  // Python IPC
+  void startPythonBackend();
+  void handlePythonOutput();
+  void handlePythonError();
+  void submitChat();
+
   // Chat UI Elements
   QVBoxLayout* chat_history_layout_ = nullptr;
   QScrollArea* chat_scroll_area_ = nullptr;
@@ -245,4 +252,6 @@ class AgentPanel final : public QWidget {
   int trace_sequence_ = 0;
   QString pending_approval_request_;
   QString approval_last_decision_ = "none";
+
+  QProcess* python_process_ = nullptr;
 };
