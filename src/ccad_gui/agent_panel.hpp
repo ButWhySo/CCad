@@ -13,7 +13,9 @@ class QCheckBox;
 class QComboBox;
 class QLineEdit;
 class QPlainTextEdit;
+class QTextEdit;
 class QVBoxLayout;
+class QScrollArea;
 
 class AgentPanel final : public QWidget {
  public:
@@ -145,7 +147,17 @@ class AgentPanel final : public QWidget {
   QJsonObject policyStateObject() const;
   void applySessionMetadata(const AgentSessionMetadata& metadata, const QString& path);
   void resetSessionBinding(const QString& status);
+  
+  // New UI mapping methods for the Chat layout
+  void appendChatMessage(const QString& role, const QString& text);
+  void renderChatChecklist();
 
+  // Chat UI Elements
+  QVBoxLayout* chat_history_layout_ = nullptr;
+  QScrollArea* chat_scroll_area_ = nullptr;
+  QTextEdit* chat_input_ = nullptr;
+
+  // Preserved logic labels (hidden or refactored as needed)
   QLabel* session_title_label_ = nullptr;
   QLabel* model_chip_label_ = nullptr;
   QLabel* mode_chip_label_ = nullptr;
@@ -174,9 +186,8 @@ class AgentPanel final : public QWidget {
   QLabel* result_state_label_ = nullptr;
   QLabel* task_state_label_ = nullptr;
   QLabel* evidence_label_ = nullptr;
-  QVBoxLayout* activity_events_layout_ = nullptr;
-  QVBoxLayout* evidence_cards_layout_ = nullptr;
   QLabel* approval_status_label_ = nullptr;
+
   QLineEdit* action_id_input_ = nullptr;
   QLineEdit* session_path_input_ = nullptr;
   QComboBox* provider_selector_ = nullptr;
@@ -188,6 +199,7 @@ class AgentPanel final : public QWidget {
   QLineEdit* approval_request_input_ = nullptr;
   QCheckBox* policy_dry_run_checkbox_ = nullptr;
   QPlainTextEdit* output_ = nullptr;
+
   UiMapProvider ui_map_provider_;
   SafeActionTrigger safe_action_trigger_;
   LiveQueryProvider live_query_provider_;
