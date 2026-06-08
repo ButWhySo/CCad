@@ -16,12 +16,12 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - [x] Phase 4: LangGraph Python Bridge Architecture Refactoring (Sprint 211)
 - [x] Phase 5: Python IPC Process Wrapper Implementation (Sprint 212)
 - [x] Phase 6: True Tool Bridging with ToolBroker and ContextBuilder
-- [ ] Phase 7: Live LangGraph Integration with Context
+- [x] Phase 7: Live LangGraph Integration with Context
 - [ ] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
-- **Sprint 213**: True Tool Bridging
-  - **Goal**: Connect the Python LangGraph tool output via JSON-RPC to the C++ ToolBroker, allowing the Python orchestrator to invoke native C++ tools and receive results back. Ensure the ContextBuilder is wired to deliver the `ProjectContext` on every chat event.
+- **Sprint 214**: Live LangGraph Integration with Context
+  - **Goal**: Integrate the Python `orchestrator.py` with an actual LangChain LLM model (`ChatOpenAI`), pass the board context directly in the System Message, and allow the model to select tools natively using LangChain's `bind_tools`.
   - **Status**: Completed.
 
 ## Backlog
