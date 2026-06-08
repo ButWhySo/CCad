@@ -19,6 +19,8 @@ class QTextEdit;
 class QVBoxLayout;
 class QScrollArea;
 class QProcess;
+class QProgressBar;
+class QListWidget;
 
 class AgentPanel final : public QWidget {
  public:
@@ -162,11 +164,18 @@ class AgentPanel final : public QWidget {
   void handlePythonOutput();
   void handlePythonError();
   void submitChat();
+  bool eventFilter(QObject* obj, QEvent* event) override;
+
+  void showSlashPopup();
+  void hideSlashPopup();
+  void filterSlashCommands();
+  void executeSlashCommand(const QString& cmd);
 
   // Chat UI Elements
   QVBoxLayout* chat_history_layout_ = nullptr;
   QScrollArea* chat_scroll_area_ = nullptr;
   QTextEdit* chat_input_ = nullptr;
+  QListWidget* slash_popup_ = nullptr;
 
   // Preserved logic labels (hidden or refactored as needed)
   QLabel* session_title_label_ = nullptr;

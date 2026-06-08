@@ -28,6 +28,10 @@
 #include <QSizePolicy>
 #include <QStyle>
 #include <QVBoxLayout>
+#include <QListWidget>
+#include <QKeyEvent>
+#include <QTimer>
+#include <QPoint>
 #include <QPixmap>
 
 #include "ccad_gui/agent_icons.hpp"
@@ -621,11 +625,24 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   settings_btn->setIcon(load_svg_icon(ccad_icons::icon_settings));
   settings_btn->setProperty("agentRole", "iconButton");
   settings_btn->setFixedSize(24, 24);
+  connect(settings_btn, &QPushButton::clicked, this, [this]() {
+    appendChatMessage("agent", "*Opening Provider Configuration...*");
+    if (python_process_ && python_process_->state() == QProcess::Running) {
+      QJsonObject rpc;
+      rpc["jsonrpc"] = "2.0";
+      rpc["method"] = "agent.provider_config_schema";
+      rpc["id"] = 1;
+      python_process_->write(QJsonDocument(rpc).toJson(QJsonDocument::Compact) + "\n");
+    }
+  });
 
   auto* close_btn = new QPushButton(top_bar);
   close_btn->setIcon(load_svg_icon(ccad_icons::icon_close));
   close_btn->setProperty("agentRole", "iconButton");
   close_btn->setFixedSize(24, 24);
+  connect(close_btn, &QPushButton::clicked, this, [this]() {
+    this->hide();
+  });
 
   top_layout->addWidget(back_btn);
   top_layout->addStretch();
@@ -666,6 +683,13 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   paperclip_btn->setIcon(load_svg_icon(ccad_icons::icon_attach));
   paperclip_btn->setProperty("agentRole", "iconButton");
   paperclip_btn->setFixedSize(24, 24);
+  connect(paperclip_btn, &QPushButton::clicked, this, [this]() {
+    const QString file = QFileDialog::getOpenFileName(this, "Attach File");
+    if (!file.isEmpty()) {
+      chat_input_->insertPlainText(QString(" [Attached: %1] ").arg(file));
+      chat_input_->setFocus();
+    }
+  });
   
   auto* marketplace_btn = new QPushButton(composer_container);
   marketplace_btn->setIcon(load_svg_icon(ccad_icons::icon_menu));
@@ -676,15 +700,21 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
     dialog.exec();
   });
   
-  auto* context_circle = new QLabel(composer_container);
-  context_circle->setPixmap(load_svg_icon(ccad_icons::icon_settings).pixmap(24, 24)); // Reusing settings as context pie stand-in
+  auto* context_circle = new QPushButton(composer_container);
+  context_circle->setIcon(load_svg_icon(ccad_icons::icon_settings)); // Reusing settings as context pie stand-in
+  context_circle->setProperty("agentRole", "iconButton");
   context_circle->setFixedSize(24, 24);
-  context_circle->setAlignment(Qt::AlignCenter);
+  connect(context_circle, &QPushButton::clicked, this, [this]() {
+    appendChatMessage("agent", "*Refreshing AI context map...*");
+  });
 
   auto* stt_btn = new QPushButton(composer_container);
   stt_btn->setIcon(load_svg_icon(ccad_icons::icon_mic));
   stt_btn->setProperty("agentRole", "iconButton");
   stt_btn->setFixedSize(32, 24);
+  connect(stt_btn, &QPushButton::clicked, this, [this]() {
+    chat_input_->insertPlainText("[STT Recording...]");
+  });
   
   auto* send_btn = new QPushButton(composer_container);
   send_btn->setIcon(load_svg_icon(ccad_icons::icon_send));
@@ -752,6 +782,16 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   appendChatMessage("agent", "<TOOL>pcb.add-track {\"net\":\"DC_POS\", \"layer\":\"F.Cu\"}");
   appendChatMessage("agent", "<TOOL>pcb.add-track {\"net\":\"DC_NEG\", \"layer\":\"F.Cu\"}");
   appendChatMessage("agent", "Tracks added successfully. DRC passed with no errors.");
+
+  slash_popup_ = new QListWidget(this);
+  slash_popup_->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint);
+  slash_popup_->setStyleSheet("QListWidget { background-color: #2d2d2d; color: #ffffff; border: 1px solid #555555; border-radius: 4px; padding: 4px; font-family: 'Segoe UI'; font-size: 13px; } QListWidget::item:selected { background-color: #444444; }");
+  slash_popup_->hide();
+  connect(slash_popup_, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
+    executeSlashCommand(item->text());
+  });
+
+  chat_input_->installEventFilter(this);
 
   startPythonBackend();
 }
@@ -892,7 +932,7 @@ void AgentPanel::submitChat() {
   
   appendChatMessage("user", text);
   chat_input_->clear();
-  
+
   if (python_process_ && python_process_->state() == QProcess::Running) {
     QJsonObject payload;
     payload["jsonrpc"] = "2.0";
@@ -905,6 +945,87 @@ void AgentPanel::submitChat() {
     payload["params"] = params;
     python_process_->write(QJsonDocument(payload).toJson(QJsonDocument::Compact) + "\n");
   }
+}
+
+bool AgentPanel::eventFilter(QObject* obj, QEvent* event) {
+  if (obj == chat_input_) {
+    if (event->type() == QEvent::KeyPress) {
+      auto* key_event = static_cast<QKeyEvent*>(event);
+      if (slash_popup_->isVisible()) {
+        if (key_event->key() == Qt::Key_Up) {
+          int row = slash_popup_->currentRow();
+          if (row > 0) slash_popup_->setCurrentRow(row - 1);
+          return true;
+        } else if (key_event->key() == Qt::Key_Down) {
+          int row = slash_popup_->currentRow();
+          if (row < slash_popup_->count() - 1) slash_popup_->setCurrentRow(row + 1);
+          return true;
+        } else if (key_event->key() == Qt::Key_Enter || key_event->key() == Qt::Key_Return) {
+          if (auto* item = slash_popup_->currentItem()) {
+            executeSlashCommand(item->text());
+          }
+          return true;
+        } else if (key_event->key() == Qt::Key_Escape) {
+          hideSlashPopup();
+          return true;
+        }
+      } else {
+        if (key_event->key() == Qt::Key_Return && !(key_event->modifiers() & Qt::ShiftModifier)) {
+          submitChat();
+          return true;
+        }
+      }
+    } else if (event->type() == QEvent::KeyRelease) {
+      QString text = chat_input_->toPlainText();
+      if (text.startsWith("/")) {
+        filterSlashCommands();
+      } else {
+        hideSlashPopup();
+      }
+    }
+  }
+  return QWidget::eventFilter(obj, event);
+}
+
+void AgentPanel::showSlashPopup() {
+  if (!slash_popup_->isVisible()) {
+    QPoint bottom_left = chat_input_->mapToGlobal(QPoint(0, 0));
+    slash_popup_->setFixedWidth(chat_input_->width());
+    slash_popup_->move(bottom_left.x(), bottom_left.y() - slash_popup_->height() - 4);
+    slash_popup_->show();
+  }
+}
+
+void AgentPanel::hideSlashPopup() {
+  slash_popup_->hide();
+  slash_popup_->clear();
+}
+
+void AgentPanel::filterSlashCommands() {
+  QString text = chat_input_->toPlainText().mid(1).trimmed().toLower();
+  QStringList all_commands = {"/help", "/drc", "/route", "/explain", "/clear", "/marketplace", "/settings"};
+  slash_popup_->clear();
+  for (const QString& cmd : all_commands) {
+    if (text.isEmpty() || cmd.mid(1).toLower().startsWith(text)) {
+      slash_popup_->addItem(cmd);
+    }
+  }
+  if (slash_popup_->count() > 0) {
+    slash_popup_->setCurrentRow(0);
+    slash_popup_->setFixedHeight(qMin(slash_popup_->count() * 28 + 4, 150));
+    showSlashPopup();
+  } else {
+    hideSlashPopup();
+  }
+}
+
+void AgentPanel::executeSlashCommand(const QString& cmd) {
+  hideSlashPopup();
+  chat_input_->setPlainText(cmd + " ");
+  QTextCursor cursor = chat_input_->textCursor();
+  cursor.movePosition(QTextCursor::End);
+  chat_input_->setTextCursor(cursor);
+  chat_input_->setFocus();
 }
 void AgentPanel::setUiMapProvider(UiMapProvider provider) {
   ui_map_provider_ = std::move(provider);

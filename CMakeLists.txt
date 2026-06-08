@@ -517,7 +517,7 @@ if(CCAD_BUILD_GUI)
       src/ccad_gui/agent_panel.cpp
       src/ccad_gui/agent_marketplace_dialog.cpp
     )
-    target_link_libraries(ccad_gui_agent_panel_tests PRIVATE ccad_core Qt6::Widgets)
+    target_link_libraries(ccad_gui_agent_panel_tests PRIVATE ccad_core Qt6::Widgets Qt6::Network)
     target_include_directories(ccad_gui_agent_panel_tests PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src
       ${CMAKE_CURRENT_SOURCE_DIR}/tests
@@ -586,7 +586,7 @@ if(CCAD_BUILD_GUI)
       src/ccad_gui/selection_inspector_panel.cpp
       src/ccad_gui/board_canvas_renderer.cpp
     )
-    target_link_libraries(ccad_gui_review_window_cursor_status_tests PRIVATE ccad_core Qt6::Widgets Qt6::Svg)
+    target_link_libraries(ccad_gui_review_window_cursor_status_tests PRIVATE ccad_core Qt6::Widgets Qt6::Svg Qt6::Network)
     target_include_directories(ccad_gui_review_window_cursor_status_tests PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src
       ${CMAKE_CURRENT_SOURCE_DIR}/tests

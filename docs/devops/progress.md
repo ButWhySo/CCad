@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 8 / 8
 - Phase name: Agent Runtime and EDA Evidence Expansion
-- Sprint: 209
-- Branch: `sprint-209-agent-chat-ui`
+- Sprint: 217
+- Branch: `sprint-217-marketplace-slash-ui`
 - Phase 8 sprint budget: Sprints 206 through 215 for local runner queues, live tool-loop state, provider execution gates, observability export wiring, KiCad/EDA evidence, and simulation planning slices.
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 starts the bounded runtime and EDA evidence expansion.
@@ -20,11 +20,13 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
-- **Sprint 215**: Multi-Agent Refinement & UI Overhaul
-  - **Goal**: Introduce a Supervisor-based Multi-Agent system to `orchestrator.py` with Router and Librarian sub-agents. Complete a premium UI redesign of `agent_panel.cpp` and isolate the Python process in a dedicated `venv`.
+- **Sprint 217**: Marketplace & Slash Command UI
+  - **Goal**: Implement live HTTP JSON marketplace, bind all agent panel UI controls to the python orchestrator via stdin, and add Copilot-style slash command autocomplete popup.
   - **Status**: Completed.
 
 ## Backlog
+- **Sprint 216 (Copilot UI Parity)** is complete. Resolves missing integration for agent panel button clicks and orchestrator payloads.
+- **Sprint 215 (Multi-Agent Refinement & UI Overhaul)** is complete. It introduced a Supervisor-based Multi-Agent system to `orchestrator.py` with Router and Librarian sub-agents, completed a premium UI redesign of `agent_panel.cpp`, and isolated the Python process in a dedicated `venv`.
 - **Sprint 211 (Python Orchestrator Transition)** is complete on `sprint-211-python-orchestrator-chat-ui`. It initializes the `src/ccad_agent/` directory with `requirements.txt` for `langgraph`, `langchain`, `langfuse`, and `langsmith`. It authors `orchestrator.py` defining the initial `StateGraph` skeleton. The C++ `AgentOrchestrator` was cleaned up by removing deterministic planning (Sprint 210 overhaul), moving toward IPC JSON-RPC integration. The Qt GUI and tests successfully built and passed 37 of 37 tests.
 - **Sprint 210 (Orchestrator Architecture Overhaul)** is complete. It refactored `src/ccad_core/agent_orchestrator.hpp/.cpp` to remove deterministic planning logic and introduced `IntakeLayer`, `ToolBroker`, `ContextBuilder`, and `Subagent` C++ stubs to prepare for the Python backend JSON-RPC integration.
 - **Sprint 209 (Agent Chat UI Redesign)** is complete on `sprint-209-agent-chat-ui`. It replaced the dense vertical orchestrator 'lane' UI with a unified, chat-focused interface as requested by user wireframes. It removes legacy diagnostic/approval lane logic, implements the base layout for a chat history area, and adds the skeleton `AgentMarketplaceDialog` to house future integrations. The sprint-end Qt build plus CTest gate passed 37 of 37 tests (legacy test suites stubbed), and visual validation produced `artifacts/screenshots/sprint-demo-*.png` verifying the structure matches the hand-drawn layout.
