@@ -17,11 +17,11 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - [x] Phase 5: Python IPC Process Wrapper Implementation (Sprint 212)
 - [x] Phase 6: True Tool Bridging with ToolBroker and ContextBuilder
 - [x] Phase 7: Live LangGraph Integration with Context
-- [ ] Phase 8: Multi-Agent Refinement
+- [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
-- **Sprint 214**: Live LangGraph Integration with Context
-  - **Goal**: Integrate the Python `orchestrator.py` with an actual LangChain LLM model (`ChatOpenAI`), pass the board context directly in the System Message, and allow the model to select tools natively using LangChain's `bind_tools`.
+- **Sprint 215**: Multi-Agent Refinement & UI Overhaul
+  - **Goal**: Introduce a Supervisor-based Multi-Agent system to `orchestrator.py` with Router and Librarian sub-agents. Complete a premium UI redesign of `agent_panel.cpp` and isolate the Python process in a dedicated `venv`.
   - **Status**: Completed.
 
 ## Backlog

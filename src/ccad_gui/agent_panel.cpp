@@ -493,92 +493,103 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   setObjectName("agentPanel");
   setStyleSheet(R"(
     QWidget#agentPanel {
-      background: #14171c;
-      color: #e9edf3;
+      background-color: #0d1117;
+      color: #c9d1d9;
+      font-family: "Inter", "Segoe UI", sans-serif;
     }
     QScrollArea#agentScrollArea {
-      background: #14171c;
-      border: 0;
+      background-color: transparent;
+      border: none;
     }
     QWidget#agentScrollContainer {
-      background: #14171c;
+      background-color: transparent;
     }
     QFrame[agentRole="section"] {
-      background: #20242b;
-      border: 1px solid #363d48;
-      border-radius: 6px;
-      padding: 4px;
+      background-color: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 8px;
     }
     QFrame[agentRole="chatBubbleAgent"] {
-      background: transparent;
+      background-color: transparent;
       border: none;
-      padding: 4px 0px;
-      margin: 4px 8px;
+      padding: 8px;
+      margin: 4px 16px 4px 4px;
     }
     QFrame[agentRole="chatBubbleUser"] {
-      background: #2b2d31;
-      border: 1px solid #3f4147;
-      border-radius: 6px;
-      padding: 8px;
-      margin: 4px 8px;
-      margin-left: 32px;
+      background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #1f6feb, stop:1 #388bfd);
+      border-radius: 12px;
+      border-top-right-radius: 4px;
+      padding: 10px 14px;
+      margin: 4px 8px 4px 40px;
     }
     QTextBrowser {
-      background: transparent;
+      background-color: transparent;
       border: none;
-      color: #cccccc;
-      font-family: "Segoe UI", Inter, sans-serif;
-      font-size: 13px;
+      color: #e6edf3;
+      font-family: "Inter", "Segoe UI", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    QFrame[agentRole="chatBubbleUser"] QTextBrowser {
+      color: #ffffff;
+      font-weight: 500;
     }
     QFrame[agentRole="toolCard"] {
-      background: #252526;
-      border: 1px solid #3c3c3c;
-      border-radius: 6px;
-      padding: 6px;
-      margin-top: 4px;
-      margin-bottom: 4px;
-      margin-left: 12px;
-      margin-right: 12px;
+      background-color: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin: 6px 12px;
+    }
+    QFrame[agentRole="toolCard"]:hover {
+      background-color: #30363d;
+      border: 1px solid #8b949e;
     }
     QLabel[agentRole="toolTitle"] {
-      color: #dcdcaa;
-      font-family: monospace;
-      font-size: 12px;
-    }
-    QFrame[agentRole="modifiedCard"] {
-      background: #18221c;
-      border: 1px solid #284433;
-      border-radius: 6px;
-      padding: 6px;
-      margin-top: 4px;
-    }
-    QFrame[agentRole="approvalCard"] {
-      background: #2a2218;
-      border: 1px solid #4a3a22;
-      border-radius: 6px;
-      padding: 6px;
-      margin-top: 4px;
+      color: #79c0ff;
+      font-family: "Cascadia Code", "Consolas", monospace;
+      font-size: 13px;
+      font-weight: 600;
     }
     QTextEdit#chatInput {
-      background: #1a1e24;
-      border: 1px solid #363d48;
-      border-radius: 12px;
-      padding: 8px;
-      color: #e9edf3;
+      background-color: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 16px;
+      padding: 10px 14px;
+      color: #c9d1d9;
+      font-family: "Inter", "Segoe UI", sans-serif;
+      font-size: 14px;
+    }
+    QTextEdit#chatInput:focus {
+      border: 1px solid #58a6ff;
     }
     QPushButton[agentRole="iconButton"] {
-      background: transparent;
+      background-color: transparent;
       border: none;
-      border-radius: 4px;
+      border-radius: 6px;
+      color: #8b949e;
+      padding: 4px;
     }
     QPushButton[agentRole="iconButton"]:hover {
-      background: #2a3039;
+      background-color: #30363d;
+      color: #c9d1d9;
     }
-    QLabel { color: #e9edf3; }
+    QPushButton[agentRole="iconButtonPrimary"] {
+      background-color: #238636;
+      border: 1px solid rgba(240, 246, 252, 0.1);
+      border-radius: 6px;
+      color: #ffffff;
+      font-weight: 600;
+    }
+    QPushButton[agentRole="iconButtonPrimary"]:hover {
+      background-color: #2ea043;
+    }
+    QLabel { color: #c9d1d9; }
     QLabel[agentRole="panelTitle"] {
-      color: #f8fafc;
-      font-size: 15px;
-      font-weight: 700;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
     }
   )");
 
@@ -663,10 +674,10 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   stt_btn->setProperty("agentRole", "iconButton");
   stt_btn->setFixedSize(32, 24);
   
-  auto* send_btn = new QPushButton("->", composer_container); // Send arrow
-  send_btn->setProperty("agentRole", "iconButton");
+  auto* send_btn = new QPushButton("Send", composer_container); // Send text
+  send_btn->setProperty("agentRole", "iconButtonPrimary");
   send_btn->setProperty("target_id", "action:agent_submit_chat");
-  send_btn->setFixedSize(24, 24);
+  send_btn->setFixedSize(60, 32);
   connect(send_btn, &QPushButton::clicked, this, &AgentPanel::submitChat);
 
   actions_layout->addWidget(paperclip_btn);
@@ -793,7 +804,13 @@ void AgentPanel::renderChatChecklist() {
 
 void AgentPanel::startPythonBackend() {
   python_process_ = new QProcess(this);
-  python_process_->setProgram("python");
+  QString python_path = "python";
+  if (QFile::exists("src/ccad_agent/venv/Scripts/python.exe")) {
+    python_path = "src/ccad_agent/venv/Scripts/python.exe";
+  } else if (QFile::exists("src/ccad_agent/venv/bin/python")) {
+    python_path = "src/ccad_agent/venv/bin/python";
+  }
+  python_process_->setProgram(python_path);
   python_process_->setArguments({"src/ccad_agent/orchestrator.py"});
   connect(python_process_, &QProcess::readyReadStandardOutput, this, &AgentPanel::handlePythonOutput);
   connect(python_process_, &QProcess::readyReadStandardError, this, &AgentPanel::handlePythonError);
