@@ -46,14 +46,50 @@ llm = None
 router_llm = None
 librarian_llm = None
 
-if os.environ.get("OPENAI_API_KEY"):
+callbacks = []
+if os.environ.get("LANGFUSE_PUBLIC_KEY") and os.environ.get("LANGFUSE_SECRET_KEY"):
     try:
-        from langchain_openai import ChatOpenAI
-        llm = ChatOpenAI(model="gpt-4o", temperature=0)
-        router_llm = ChatOpenAI(model="gpt-4o", temperature=0).bind_tools(router_tools)
-        librarian_llm = ChatOpenAI(model="gpt-4o", temperature=0).bind_tools(librarian_tools)
+        from langfuse.callback import CallbackHandler
+        langfuse_handler = CallbackHandler()
+        callbacks.append(langfuse_handler)
     except ImportError:
         pass
+
+def init_provider():
+    global llm, router_llm, librarian_llm
+    if os.environ.get("CCAD_ANTHROPIC_MODEL") or os.environ.get("ANTHROPIC_API_KEY"):
+        try:
+            from langchain_anthropic import ChatAnthropic
+            model_name = os.environ.get("CCAD_ANTHROPIC_MODEL", "claude-3-opus-20240229")
+            llm = ChatAnthropic(model=model_name, temperature=0)
+            router_llm = llm.bind_tools(router_tools)
+            librarian_llm = llm.bind_tools(librarian_tools)
+            return True
+        except ImportError:
+            pass
+    if os.environ.get("CCAD_GEMINI_MODEL") or os.environ.get("GEMINI_API_KEY"):
+        try:
+            from langchain_google_genai import ChatGoogleGenerativeAI
+            model_name = os.environ.get("CCAD_GEMINI_MODEL", "gemini-1.5-pro-latest")
+            llm = ChatGoogleGenerativeAI(model=model_name, temperature=0)
+            router_llm = llm.bind_tools(router_tools)
+            librarian_llm = llm.bind_tools(librarian_tools)
+            return True
+        except ImportError:
+            pass
+    if os.environ.get("OPENAI_API_KEY") or os.environ.get("CCAD_OPENAI_MODEL"):
+        try:
+            from langchain_openai import ChatOpenAI
+            model_name = os.environ.get("CCAD_OPENAI_MODEL", "gpt-4o")
+            llm = ChatOpenAI(model=model_name, temperature=0)
+            router_llm = llm.bind_tools(router_tools)
+            librarian_llm = llm.bind_tools(librarian_tools)
+            return True
+        except ImportError:
+            pass
+    return False
+
+init_provider()
 
 def supervisor_node(state: AgentState):
     if not llm:
@@ -74,7 +110,7 @@ def supervisor_node(state: AgentState):
                                        f"Based on the user's request, decide who should act next. Respond ONLY with 'router', 'librarian', or 'FINISH'.")
     
     prompt = [system_msg] + state["messages"]
-    response = llm.invoke(prompt)
+    response = llm.invoke(prompt, config={"callbacks": callbacks} if callbacks else {})
     content = response.content.strip().lower()
     
     if "router" in content:
@@ -97,7 +133,7 @@ def router_node(state: AgentState):
     context_str = state.get("context", "")
     system_msg = SystemMessage(content=f"You are the CCad PCB Routing Expert.\nContext: {context_str}")
     prompt = [system_msg] + state["messages"]
-    response = router_llm.invoke(prompt)
+    response = router_llm.invoke(prompt, config={"callbacks": callbacks} if callbacks else {})
     return {"messages": [response]}
 
 def librarian_node(state: AgentState):
@@ -109,7 +145,7 @@ def librarian_node(state: AgentState):
     context_str = state.get("context", "")
     system_msg = SystemMessage(content=f"You are the CCad Component Librarian.\nContext: {context_str}")
     prompt = [system_msg] + state["messages"]
-    response = librarian_llm.invoke(prompt)
+    response = librarian_llm.invoke(prompt, config={"callbacks": callbacks} if callbacks else {})
     return {"messages": [response]}
 
 def execute_tool_node(state: AgentState):

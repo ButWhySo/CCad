@@ -27,8 +27,11 @@
 #include <QSize>
 #include <QSizePolicy>
 #include <QStyle>
-#include <QStringList>
 #include <QVBoxLayout>
+#include <QPixmap>
+
+#include "ccad_gui/agent_icons.hpp"
+#include "ccad_gui/agent_marketplace_dialog.hpp"
 
 #include <algorithm>
 #include <cstdlib>
@@ -493,9 +496,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   setObjectName("agentPanel");
   setStyleSheet(R"(
     QWidget#agentPanel {
-      background-color: #0d1117;
-      color: #c9d1d9;
-      font-family: "Inter", "Segoe UI", sans-serif;
+      background-color: #f3f3f3;
+      font-family: "Segoe UI", sans-serif;
     }
     QScrollArea#agentScrollArea {
       background-color: transparent;
@@ -505,91 +507,76 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
       background-color: transparent;
     }
     QFrame[agentRole="section"] {
-      background-color: #161b22;
-      border-bottom: 1px solid #30363d;
-      padding: 8px;
+      background-color: #181818;
     }
     QFrame[agentRole="chatBubbleAgent"] {
       background-color: transparent;
       border: none;
-      padding: 8px;
-      margin: 4px 16px 4px 4px;
+      padding: 0px;
+      margin: 0px;
     }
     QFrame[agentRole="chatBubbleUser"] {
-      background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #1f6feb, stop:1 #388bfd);
-      border-radius: 12px;
-      border-top-right-radius: 4px;
-      padding: 10px 14px;
-      margin: 4px 8px 4px 40px;
+      background-color: #333333;
+      border-radius: 8px;
+      border-bottom-right-radius: 0px;
+      padding: 6px 12px;
+      margin: 0px;
     }
     QTextBrowser {
       background-color: transparent;
       border: none;
-      color: #e6edf3;
-      font-family: "Inter", "Segoe UI", sans-serif;
-      font-size: 14px;
-      line-height: 1.5;
+      color: #555555;
+      font-family: "Segoe UI", sans-serif;
+      font-size: 13px;
     }
     QFrame[agentRole="chatBubbleUser"] QTextBrowser {
       color: #ffffff;
-      font-weight: 500;
     }
     QFrame[agentRole="toolCard"] {
-      background-color: #21262d;
-      border: 1px solid #30363d;
+      background-color: #2d2d2d;
       border-radius: 8px;
       padding: 8px 12px;
-      margin: 6px 12px;
-    }
-    QFrame[agentRole="toolCard"]:hover {
-      background-color: #30363d;
-      border: 1px solid #8b949e;
+      margin: 0px;
     }
     QLabel[agentRole="toolTitle"] {
-      color: #79c0ff;
-      font-family: "Cascadia Code", "Consolas", monospace;
-      font-size: 13px;
-      font-weight: 600;
+      color: #ffffff;
+      font-family: "Consolas", monospace;
+      font-size: 12px;
     }
     QTextEdit#chatInput {
-      background-color: #0d1117;
-      border: 1px solid #30363d;
-      border-radius: 16px;
-      padding: 10px 14px;
-      color: #c9d1d9;
-      font-family: "Inter", "Segoe UI", sans-serif;
-      font-size: 14px;
+      background-color: #111111;
+      border: 1px solid #333333;
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #e0e0e0;
+      font-size: 13px;
     }
     QTextEdit#chatInput:focus {
-      border: 1px solid #58a6ff;
+      border: 1px solid #555555;
     }
     QPushButton[agentRole="iconButton"] {
       background-color: transparent;
       border: none;
-      border-radius: 6px;
+      border-radius: 4px;
       color: #8b949e;
       padding: 4px;
     }
     QPushButton[agentRole="iconButton"]:hover {
-      background-color: #30363d;
-      color: #c9d1d9;
+      background-color: #333333;
+      color: #ffffff;
     }
     QPushButton[agentRole="iconButtonPrimary"] {
-      background-color: #238636;
-      border: 1px solid rgba(240, 246, 252, 0.1);
-      border-radius: 6px;
-      color: #ffffff;
-      font-weight: 600;
+      background-color: transparent;
+      border: none;
+      color: #8b949e;
     }
     QPushButton[agentRole="iconButtonPrimary"]:hover {
-      background-color: #2ea043;
+      color: #ffffff;
     }
-    QLabel { color: #c9d1d9; }
     QLabel[agentRole="panelTitle"] {
       color: #ffffff;
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 600;
-      letter-spacing: 0.5px;
     }
   )");
 
@@ -597,13 +584,21 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   main_layout->setContentsMargins(0, 0, 0, 0);
   main_layout->setSpacing(0);
 
+  // --- Helper to load SVG icon ---
+  auto load_svg_icon = [](const QString& svg) {
+    QPixmap pixmap;
+    pixmap.loadFromData(svg.toUtf8(), "SVG");
+    return QIcon(pixmap);
+  };
+
   // --- TOP BAR ---
   auto* top_bar = new QFrame(this);
   top_bar->setProperty("agentRole", "section");
   auto* top_layout = new QHBoxLayout(top_bar);
   top_layout->setContentsMargins(8, 8, 8, 8);
   
-  auto* back_btn = new QPushButton("<", top_bar);
+  auto* back_btn = new QPushButton(top_bar);
+  back_btn->setIcon(load_svg_icon(ccad_icons::icon_menu)); // Stand-in for back
   back_btn->setProperty("agentRole", "iconButton");
   back_btn->setFixedSize(24, 24);
   
@@ -611,15 +606,24 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   title->setProperty("agentRole", "panelTitle");
   title->setAlignment(Qt::AlignCenter);
 
-  auto* templates_btn = new QPushButton("*", top_bar); // Star icon stand-in
+  auto* templates_btn = new QPushButton(top_bar);
+  templates_btn->setIcon(load_svg_icon(ccad_icons::icon_templates));
   templates_btn->setProperty("agentRole", "iconButton");
   templates_btn->setFixedSize(24, 24);
+  connect(templates_btn, &QPushButton::clicked, this, [this]() {
+    if (chat_input_) {
+      chat_input_->insertPlainText("/");
+      chat_input_->setFocus();
+    }
+  });
 
-  auto* settings_btn = new QPushButton("O", top_bar); // Gear icon stand-in
+  auto* settings_btn = new QPushButton(top_bar);
+  settings_btn->setIcon(load_svg_icon(ccad_icons::icon_settings));
   settings_btn->setProperty("agentRole", "iconButton");
   settings_btn->setFixedSize(24, 24);
 
-  auto* close_btn = new QPushButton("X", top_bar);
+  auto* close_btn = new QPushButton(top_bar);
+  close_btn->setIcon(load_svg_icon(ccad_icons::icon_close));
   close_btn->setProperty("agentRole", "iconButton");
   close_btn->setFixedSize(24, 24);
 
@@ -658,26 +662,35 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   composer_layout->addWidget(chat_input_);
   
   auto* actions_layout = new QHBoxLayout();
-  auto* paperclip_btn = new QPushButton("@", composer_container); // Attachment
+  auto* paperclip_btn = new QPushButton(composer_container);
+  paperclip_btn->setIcon(load_svg_icon(ccad_icons::icon_attach));
   paperclip_btn->setProperty("agentRole", "iconButton");
   paperclip_btn->setFixedSize(24, 24);
   
-  auto* marketplace_btn = new QPushButton("=", composer_container); // Burger
+  auto* marketplace_btn = new QPushButton(composer_container);
+  marketplace_btn->setIcon(load_svg_icon(ccad_icons::icon_menu));
   marketplace_btn->setProperty("agentRole", "iconButton");
   marketplace_btn->setFixedSize(24, 24);
+  connect(marketplace_btn, &QPushButton::clicked, this, [this]() {
+    AgentMarketplaceDialog dialog(this);
+    dialog.exec();
+  });
   
-  auto* context_circle = new QLabel("O", composer_container); // Context pie
+  auto* context_circle = new QLabel(composer_container);
+  context_circle->setPixmap(load_svg_icon(ccad_icons::icon_settings).pixmap(24, 24)); // Reusing settings as context pie stand-in
   context_circle->setFixedSize(24, 24);
   context_circle->setAlignment(Qt::AlignCenter);
 
-  auto* stt_btn = new QPushButton("mic", composer_container); // Microphone
+  auto* stt_btn = new QPushButton(composer_container);
+  stt_btn->setIcon(load_svg_icon(ccad_icons::icon_mic));
   stt_btn->setProperty("agentRole", "iconButton");
   stt_btn->setFixedSize(32, 24);
   
-  auto* send_btn = new QPushButton("Send", composer_container); // Send text
+  auto* send_btn = new QPushButton(composer_container);
+  send_btn->setIcon(load_svg_icon(ccad_icons::icon_send));
   send_btn->setProperty("agentRole", "iconButtonPrimary");
   send_btn->setProperty("target_id", "action:agent_submit_chat");
-  send_btn->setFixedSize(60, 32);
+  send_btn->setFixedSize(32, 32);
   connect(send_btn, &QPushButton::clicked, this, &AgentPanel::submitChat);
 
   actions_layout->addWidget(paperclip_btn);
@@ -746,25 +759,26 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
 #include <QTextBrowser>
 
 void AgentPanel::appendChatMessage(const QString& role, const QString& text) {
-  auto* bubble = new QFrame();
+  auto* container = new QWidget();
+  auto* container_layout = new QHBoxLayout(container);
+  container_layout->setContentsMargins(0, 4, 0, 4);
+
+  auto* bubble = new QFrame(container);
   bubble->setProperty("agentRole", role == "agent" ? "chatBubbleAgent" : "chatBubbleUser");
   auto* layout = new QVBoxLayout(bubble);
-  layout->setContentsMargins(8, 8, 8, 8);
+  layout->setContentsMargins(4, 4, 4, 4);
   
   if (text.startsWith("<TOOL>")) {
-      // Create a mock Tool Card
       QString tool_text = text.mid(6);
       bubble->setProperty("agentRole", "toolCard");
-      
       auto* header_layout = new QHBoxLayout();
-      auto* icon = new QLabel("<>", bubble);
+      auto* icon = new QLabel("</>", bubble);
       icon->setProperty("agentRole", "toolTitle");
       auto* title = new QLabel(tool_text, bubble);
       title->setProperty("agentRole", "toolTitle");
       header_layout->addWidget(icon);
       header_layout->addWidget(title);
       header_layout->addStretch();
-      
       layout->addLayout(header_layout);
   } else {
       auto* browser = new QTextBrowser(bubble);
@@ -773,16 +787,25 @@ void AgentPanel::appendChatMessage(const QString& role, const QString& text) {
       browser->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
       browser->document()->setTextWidth(-1);
       
-      // Auto-resize QTextBrowser to fit content
+      // Keep background transparent so bubble color shows
+      browser->viewport()->setAutoFillBackground(false);
+
       browser->document()->adjustSize();
       int docHeight = browser->document()->size().height() + 10;
       browser->setMinimumHeight(docHeight);
       browser->setMaximumHeight(docHeight);
-      
       layout->addWidget(browser);
   }
   
-  chat_history_layout_->addWidget(bubble);
+  if (role == "user") {
+      container_layout->addStretch();
+      container_layout->addWidget(bubble, 3);
+  } else {
+      container_layout->addWidget(bubble, 3);
+      container_layout->addStretch();
+  }
+
+  chat_history_layout_->addWidget(container);
 }
 
 void AgentPanel::renderChatChecklist() {
