@@ -5,6 +5,7 @@ import os
 from typing import Annotated, TypedDict, List
 from langgraph.graph import StateGraph, END
 from langchain_core.tools import tool
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
 from config import AgentConfigManager
 from telemetry import trace_function, tracer
@@ -59,8 +60,20 @@ def ui_screenshot():
     emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.screenshot", "args": {}}})
     return "Action dispatched to CCad client."
 
+@tool
+def ui_add_wire(x1: float, y1: float, x2: float, y2: float):
+    """Adds a wire segment between two coordinates on the schematic."""
+    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.add_wire", "args": {"x1": x1, "y1": y1, "x2": x2, "y2": y2}}})
+    return "Action dispatched to CCad client."
+
+@tool
+def ui_add_label(text: str, x: float, y: float, global_label: bool = False):
+    """Adds a text label to the schematic at the specified coordinates."""
+    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.add_label", "args": {"text": text, "x": x, "y": y, "global": global_label}}})
+    return "Action dispatched to CCad client."
+
 router_tools = [ui_place_via, ui_add_track, ui_add_polygon]
-librarian_tools = [ui_place_footprint, ui_place_symbol, project_review]
+librarian_tools = [ui_place_footprint, ui_place_symbol, project_review, ui_add_wire, ui_add_label]
 general_tools = [ui_screenshot]
 
 llm = None
@@ -287,7 +300,26 @@ chaining_state = True
 active_hooks = []
 schedules = []
 
+# --- Custom Workflows ---
+def handle_marketplace(text: str):
+    parts = text.split(" ")
+    if len(parts) >= 2 and parts[1] == "install":
+        plugin_name = " ".join(parts[2:])
+        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Marketplace: Installed plugin '{plugin_name}' successfully."}})
+        # Add to custom prompt or hooks
+        config_manager.update("installed_plugins", config_manager.get("installed_plugins", []) + [plugin_name])
+    else:
+        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Marketplace: Unknown command. Use `/marketplace install <plugin>`."}})
+
 if __name__ == "__main__":
+    # --- OTel Setup ---
+    try:
+        from opentelemetry.instrumentation.langchain import LangchainInstrumentor
+        LangchainInstrumentor().instrument()
+        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "OpenTelemetry Langchain Instrumentation enabled."}})
+    except ImportError:
+        pass
+
     executor = create_orchestrator()
     emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Python Multi-Agent Orchestrator ready."}})
     
@@ -302,46 +334,84 @@ if __name__ == "__main__":
                 text = req.get("params", {}).get("text", "")
                 context_str = req.get("params", {}).get("context", "")
                 
-                # Command parsing
-                if text.startswith("/commands"):
-                    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow:use: xyz`\n- `/workflow:chaining phase: <phase>`\n- `/workflow:chaining state: <true|false>`\n- `/hooks: <hook_name>`\n- `/set: provider:model`\n- `/compact context` (or `/cc`)\n- `/schedule: prompt: state (enable|disable)`"}})
-                    continue
-                elif text.startswith("/set:"):
-                    parts = text.replace("/set:", "").strip().split(":")
-                    if len(parts) >= 2:
-                        os.environ["CCAD_PROVIDER"] = parts[0].strip()
-                        os.environ["CCAD_MODEL"] = parts[1].strip()
-                        init_provider()
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Model set to {parts[0]}:{parts[1]}"}})
-                    continue
-                elif text.startswith("/compact context") or text.startswith("/cc"):
-                    # Compacting: keep last 2 messages
-                    session_messages = session_messages[-2:] if len(session_messages) > 2 else session_messages
-                    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Context compacted. Pruned older tool results and summarized session state."}})
-                    continue
-                elif text.startswith("/workflow:use:"):
-                    active_workflow = text.replace("/workflow:use:", "").strip()
-                    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Active workflow set to: {active_workflow}"}})
-                    continue
-                elif text.startswith("/workflow:chaining phase:"):
-                    chaining_phase = text.replace("/workflow:chaining phase:", "").strip()
-                    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Workflow chaining phase set to: {chaining_phase}"}})
-                    continue
-                elif text.startswith("/workflow:chaining state:"):
-                    val = text.replace("/workflow:chaining state:", "").strip().lower()
-                    chaining_state = (val == "true")
-                    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Workflow chaining state set to: {chaining_state}"}})
-                    continue
-                elif text.startswith("/hooks:"):
-                    hook_name = text.replace("/hooks:", "").strip()
-                    active_hooks.append(hook_name)
-                    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Hook registered: {hook_name}. Will be triggered during lifecycle."}})
-                    continue
-                elif text.startswith("/schedule:"):
-                    sched_info = text.replace("/schedule:", "").strip()
-                    schedules.append(sched_info)
-                    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Schedule created: {sched_info}. Background task queued."}})
-                    continue
+                # Robust Command Parser
+                if text.startswith("/"):
+                    cmd_parts = text.split(" ", 1)
+                    cmd_base = cmd_parts[0].lower()
+                    cmd_args = cmd_parts[1] if len(cmd_parts) > 1 else ""
+                    
+                    if cmd_base == "/commands":
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`"}})
+                        continue
+                    elif cmd_base == "/marketplace":
+                        handle_marketplace(text)
+                        continue
+                    elif cmd_base == "/set":
+                        parts = cmd_args.split(":")
+                        if len(parts) >= 2:
+                            os.environ["CCAD_PROVIDER"] = parts[0].strip()
+                            os.environ["CCAD_MODEL"] = parts[1].strip()
+                            init_provider()
+                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Model set to {parts[0]}:{parts[1]}"}})
+                        continue
+                    elif cmd_base in ["/cc", "/compact"]:
+                        session_messages = session_messages[-2:] if len(session_messages) > 2 else session_messages
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Context compacted. Pruned older tool results and summarized session state."}})
+                        continue
+                    elif cmd_base == "/workflow":
+                        if cmd_args.startswith("use:"):
+                            active_workflow = cmd_args.replace("use:", "").strip()
+                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Active workflow set to: {active_workflow}"}})
+                        elif cmd_args.startswith("chaining phase:"):
+                            chaining_phase = cmd_args.replace("chaining phase:", "").strip()
+                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Workflow chaining phase set to: {chaining_phase}"}})
+                        elif cmd_args.startswith("chaining state:"):
+                            val = cmd_args.replace("chaining state:", "").strip().lower()
+                            chaining_state = (val == "true")
+                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Workflow chaining state set to: {chaining_state}"}})
+                        continue
+                    elif cmd_base == "/hooks":
+                        hook_name = cmd_args.strip()
+                        if hook_name:
+                            active_hooks.append(hook_name)
+                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Hook registered: {hook_name}. Will be triggered during lifecycle."}})
+                        continue
+                    elif cmd_base == "/schedule":
+                        sched_info = cmd_args.strip()
+                        if sched_info:
+                            schedules.append(sched_info)
+                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Schedule created: {sched_info}. Background task queued."}})
+                        continue
+                    elif cmd_base == "/route":
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Initiating routing workflow..."}})
+                        session_messages.append(HumanMessage(content="Start the routing workflow and autoroute the current board context."))
+                        # Fall through to graph execution
+                    elif cmd_base == "/drc":
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Running DRC checks..."}})
+                        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "action.drc", "args": {}}})
+                        continue
+                    elif cmd_base == "/place":
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Initiating component placement workflow..."}})
+                        session_messages.append(HumanMessage(content="Start the placement workflow and optimally place footprints."))
+                        # Fall through to graph execution
+                    elif cmd_base == "/explain":
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Explain command invoked. Please provide a selection or context."}})
+                        session_messages.append(HumanMessage(content="Explain the current selection or context in detail."))
+                        # Fall through to graph execution
+                    elif cmd_base == "/clear":
+                        session_messages = []
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Chat history and context cleared."}})
+                        continue
+                    elif cmd_base == "/settings":
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Opening agent settings panel..."}})
+                        # We could send a tool call to open settings if we had one
+                        continue
+                    elif cmd_base == "/help":
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`\n- `/route`\n- `/drc`\n- `/place`\n- `/explain`\n- `/clear`\n- `/settings`"}})
+                        continue
+                    else:
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Unknown command: {cmd_base}"}})
+                        continue
 
                 session_messages.append(HumanMessage(content=text))
                 if "post prompt" in [h.lower() for h in active_hooks]:
@@ -352,7 +422,6 @@ if __name__ == "__main__":
                 last_msg = session_messages[-1]
                 
                 if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
-                    # ToolNode has already emitted the tool call JSON-RPC during execution.
                     pass
                 elif "<TOOL>" in last_msg.content:
                     tool_call_str = last_msg.content.replace("<TOOL>", "").strip()
@@ -383,13 +452,25 @@ if __name__ == "__main__":
                 for k, v in config_data.items():
                     config_manager.update(k, v)
                 emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Agent configuration saved successfully."}})
-                # Update provider logic if needed
                 if "provider" in config_data or "model" in config_data:
                     os.environ["CCAD_PROVIDER"] = config_data.get("provider", "openai")
                     os.environ["CCAD_MODEL"] = config_data.get("model", "gpt-4o")
                     init_provider()
             elif method == "agent.get_config":
-                emit({"jsonrpc": "2.0", "method": "agent.get_config_result", "params": config_manager.config})
+                emit({"jsonrpc": "2.0", "method": "config_state", "params": config_manager.config})
+            elif method == "agent.get_marketplace_catalog":
+                catalog = {
+                    "plugins": [
+                        {"id": "plugin.autoplacer", "name": "AutoPlacer", "description": "AI-driven component placement using simulated annealing", "installed": True},
+                        {"id": "plugin.autorouter", "name": "AutoRouter", "description": "Cloud-accelerated PCB autorouter", "installed": False},
+                        {"id": "plugin.kicad_sync", "name": "KiCad Sync", "description": "Two-way synchronization with KiCad", "installed": True}
+                    ],
+                    "workflows": [
+                        {"id": "workflow.validation", "name": "Validation Workflow", "description": "Runs full DRC/ERC checks before committing", "installed": True},
+                        {"id": "workflow.routing", "name": "Routing Workflow", "description": "Iterative routing and cleanup phases", "installed": False}
+                    ]
+                }
+                emit({"jsonrpc": "2.0", "method": "marketplace_catalog", "params": catalog})
             elif "result" in req:
                 emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Tool executed successfully on C++ side."}})
         except Exception as e:

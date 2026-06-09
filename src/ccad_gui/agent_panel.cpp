@@ -501,7 +501,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   setObjectName("agentPanel");
   setStyleSheet(R"(
     QWidget#agentPanel {
-      background-color: #0d1117;
+      background-color: #161b22;
       font-family: "Segoe UI", sans-serif;
     }
     QScrollArea#agentScrollArea {
@@ -512,7 +512,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
       background-color: transparent;
     }
     QFrame[agentRole="section"] {
-      background-color: #0d1117;
+      background-color: #161b22;
     }
     QFrame[agentRole="chatBubbleAgent"] {
       background-color: #161b22;
@@ -541,7 +541,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
       color: #ffffff;
     }
     QFrame[agentRole="toolCard"] {
-      background-color: #0d1117;
+      background-color: #161b22;
       border: 1px solid #30363d;
       border-radius: 8px;
       padding: 8px 12px;
@@ -790,12 +790,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   policy_dry_run_checkbox_ = new QCheckBox(this); policy_dry_run_checkbox_->hide();
   output_ = new QPlainTextEdit(this); output_->hide();
 
-  // Mock chat messages for visual validation of new Copilot-style UI
-  appendChatMessage("user", "Can you route the DC positive and negative buses?");
-  appendChatMessage("agent", "I'll route the `DC_POS` and `DC_NEG` nets using a 0.25mm track width.\n\nHere is the plan:\n1. Review the board layout.\n2. Apply the tracks for both buses.\n3. Run DRC.");
-  appendChatMessage("agent", "<TOOL>pcb.add-track {\"net\":\"DC_POS\", \"layer\":\"F.Cu\"}");
-  appendChatMessage("agent", "<TOOL>pcb.add-track {\"net\":\"DC_NEG\", \"layer\":\"F.Cu\"}");
-  appendChatMessage("agent", "Tracks added successfully. DRC passed with no errors.");
+
 
   slash_popup_ = new QListWidget(this);
   slash_popup_->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint);
@@ -942,6 +937,10 @@ void AgentPanel::handlePythonOutput() {
         python_process_->write(QJsonDocument(result).toJson(QJsonDocument::Compact) + "\n");
       } else if (obj.contains("method") && obj["method"].toString() == "message") {
         appendChatMessage("agent", obj["params"].toObject()["text"].toString());
+      } else if (obj.contains("method") && obj["method"].toString() == "config_state") {
+        if (config_state_cb_) config_state_cb_(obj["params"].toObject());
+      } else if (obj.contains("method") && obj["method"].toString() == "marketplace_catalog") {
+        if (marketplace_catalog_cb_) marketplace_catalog_cb_(obj["params"].toObject());
       }
     }
   }
@@ -1089,8 +1088,14 @@ void AgentPanel::setLiveQueryProvider(LiveQueryProvider provider) {
       };
       
       register_ui_tool("ui.place_via", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.add_track", ccad::TaskRisk::LowMutation);
       register_ui_tool("ui.route_track", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.add_polygon", ccad::TaskRisk::LowMutation);
       register_ui_tool("ui.add_zone", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.place_footprint", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.place_symbol", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.add_wire", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.add_label", ccad::TaskRisk::LowMutation);
       register_ui_tool("ui.add_keepout", ccad::TaskRisk::LowMutation);
       register_ui_tool("ui.draw_graphic", ccad::TaskRisk::LowMutation);
       register_ui_tool("ui.place_text", ccad::TaskRisk::LowMutation);
@@ -1107,11 +1112,22 @@ void AgentPanel::setLiveQueryProvider(LiveQueryProvider provider) {
       register_ui_tool("ui.active_net", ccad::TaskRisk::ReadOnly);
       register_ui_tool("ui.set_active_net", ccad::TaskRisk::ReadOnly);
       register_ui_tool("project.review", ccad::TaskRisk::ReadOnly);
+      register_ui_tool("action.drc", ccad::TaskRisk::ReadOnly);
+      register_ui_tool("action.route", ccad::TaskRisk::LowMutation);
+      register_ui_tool("action.place", ccad::TaskRisk::LowMutation);
   }
 }
 
 void AgentPanel::setContextProvider(ContextProvider provider) {
     context_provider_ = std::move(provider);
+}
+
+void AgentPanel::setConfigStateCallback(ConfigStateCallback cb) {
+    config_state_cb_ = std::move(cb);
+}
+
+void AgentPanel::setMarketplaceCatalogCallback(MarketplaceCatalogCallback cb) {
+    marketplace_catalog_cb_ = std::move(cb);
 }
 
 void AgentPanel::setProjectContext(const QString& project_label, const int ui_map_epoch) {
