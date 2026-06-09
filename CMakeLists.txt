@@ -261,6 +261,7 @@ if(CCAD_BUILD_GUI)
     add_executable(ccad_gui
       src/ccad_gui/agent_panel.cpp
       src/ccad_gui/agent_marketplace_dialog.cpp
+      src/ccad_gui/agent_settings_dialog.cpp
       src/ccad_gui/board_canvas_renderer.cpp
       src/ccad_gui/component_wizard_dialog.cpp
       src/ccad_gui/footprint_placement_dialog.cpp
@@ -516,8 +517,9 @@ if(CCAD_BUILD_GUI)
       tests/test_gui_agent_panel.cpp
       src/ccad_gui/agent_panel.cpp
       src/ccad_gui/agent_marketplace_dialog.cpp
+      src/ccad_gui/agent_settings_dialog.cpp
     )
-    target_link_libraries(ccad_gui_agent_panel_tests PRIVATE ccad_core Qt6::Widgets Qt6::Network)
+    target_link_libraries(ccad_gui_agent_panel_tests PRIVATE ccad_core Qt6::Widgets Qt6::Network Qt6::Test)
     target_include_directories(ccad_gui_agent_panel_tests PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src
       ${CMAKE_CURRENT_SOURCE_DIR}/tests
@@ -539,6 +541,7 @@ if(CCAD_BUILD_GUI)
       tests/test_gui_ui_map.cpp
       src/ccad_gui/agent_panel.cpp
       src/ccad_gui/agent_marketplace_dialog.cpp
+      src/ccad_gui/agent_settings_dialog.cpp
       src/ccad_gui/review_window.cpp
       src/ccad_gui/component_wizard_dialog.cpp
       src/ccad_gui/footprint_placement_dialog.cpp
@@ -574,6 +577,7 @@ if(CCAD_BUILD_GUI)
       tests/test_gui_review_window_cursor_status.cpp
       src/ccad_gui/agent_panel.cpp
       src/ccad_gui/agent_marketplace_dialog.cpp
+      src/ccad_gui/agent_settings_dialog.cpp
       src/ccad_gui/review_window.cpp
       src/ccad_gui/component_wizard_dialog.cpp
       src/ccad_gui/footprint_placement_dialog.cpp

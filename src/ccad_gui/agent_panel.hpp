@@ -100,6 +100,8 @@ class AgentPanel final : public QWidget {
   QString outputText() const;
   QString workspaceStateJson() const;
 
+  void sendJsonRpc(const QString& method, const QJsonObject& params);
+
  private:
   struct EvidenceCard {
     QString id;

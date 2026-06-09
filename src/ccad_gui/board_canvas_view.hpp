@@ -19,7 +19,14 @@ enum class ToolMode { Select, Measure };
 
 class BoardCanvasView final : public QGraphicsView {
  public:
-  using QGraphicsView::QGraphicsView;
+  explicit BoardCanvasView(QWidget* parent = nullptr) : QGraphicsView(parent) {
+    setBackgroundBrush(QColor("#07111f"));
+    setContextMenuPolicy(Qt::CustomContextMenu);
+  }
+  explicit BoardCanvasView(QGraphicsScene* scene, QWidget* parent = nullptr) : QGraphicsView(scene, parent) {
+    setBackgroundBrush(QColor("#07111f"));
+    setContextMenuPolicy(Qt::CustomContextMenu);
+  }
   static constexpr double kMinZoomFactor = 0.05;
   static constexpr double kMaxZoomFactor = 40.0;
 
@@ -40,9 +47,18 @@ class BoardCanvasView final : public QGraphicsView {
   void setCoordinateCallback(std::function<void(QPointF, double)> callback) {
     coordinate_callback_ = std::move(callback);
   }
+  void setObjectsMovedCallback(std::function<void(QPointF)> callback) {
+    objects_moved_callback_ = std::move(callback);
+  }
   void setPanModeCallback(std::function<void(bool, bool)> callback) {
     pan_mode_callback_ = std::move(callback);
     notifyPanModeChanged();
+  }
+  void setDoubleClickCallback(std::function<void()> callback) {
+    double_click_callback_ = std::move(callback);
+  }
+  void setDeleteRequestedCallback(std::function<void()> callback) {
+    delete_requested_callback_ = std::move(callback);
   }
   void zoomIn() { zoomBy(1.18); }
   void zoomOut() { zoomBy(1.0 / 1.18); }
@@ -148,13 +164,21 @@ class BoardCanvasView final : public QGraphicsView {
       updateMeasurement(mapToScene(event->pos()));
     }
 
+    if (dragging_objects_ && drag_start_scene_pos_.has_value()) {
+      const QPointF delta = mapToScene(event->pos()) - drag_start_scene_pos_.value();
+      for (const auto& pair : dragged_items_initial_pos_) {
+        if (pair.first != nullptr) pair.first->setPos(pair.second + delta);
+      }
+      event->accept();
+      return;
+    }
+
     QGraphicsView::mouseMoveEvent(event);
     notifyViewportChanged(event->pos());
   }
 
   void mousePressEvent(QMouseEvent* event) override {
     const bool pan_gesture = event->button() == Qt::MiddleButton ||
-                             event->button() == Qt::RightButton ||
                              (event->button() == Qt::LeftButton && space_pan_mode_) ||
                              (event->button() == Qt::LeftButton &&
                               (event->modifiers() & Qt::KeyboardModifier::ShiftModifier));
@@ -179,6 +203,20 @@ class BoardCanvasView final : public QGraphicsView {
       return;
     }
 
+    if (active_tool_ == ToolMode::Select && event->button() == Qt::LeftButton && scene() != nullptr) {
+      QGraphicsItem* item = scene()->itemAt(mapToScene(event->pos()), transform());
+      if (item != nullptr && item->isSelected()) {
+        dragging_objects_ = true;
+        drag_start_scene_pos_ = mapToScene(event->pos());
+        dragged_items_initial_pos_.clear();
+        for (QGraphicsItem* selected : scene()->selectedItems()) {
+          dragged_items_initial_pos_.push_back({selected, selected->pos()});
+        }
+        event->accept();
+        return;
+      }
+    }
+
     QGraphicsView::mousePressEvent(event);
   }
 
@@ -195,12 +233,41 @@ class BoardCanvasView final : public QGraphicsView {
       event->accept();
       return;
     }
+
+    if (dragging_objects_ && event->button() == Qt::LeftButton) {
+      dragging_objects_ = false;
+      if (drag_start_scene_pos_.has_value()) {
+        const QPointF delta = mapToScene(event->pos()) - drag_start_scene_pos_.value();
+        for (const auto& pair : dragged_items_initial_pos_) {
+          if (pair.first != nullptr) pair.first->setPos(pair.second);
+        }
+        if (objects_moved_callback_ && (std::abs(delta.x()) > 0.01 || std::abs(delta.y()) > 0.01)) {
+          objects_moved_callback_(delta);
+        }
+      }
+      dragged_items_initial_pos_.clear();
+      event->accept();
+      return;
+    }
+
     QGraphicsView::mouseReleaseEvent(event);
+  }
+
+  void mouseDoubleClickEvent(QMouseEvent* event) override {
+    if (double_click_callback_) {
+      double_click_callback_();
+    }
+    QGraphicsView::mouseDoubleClickEvent(event);
   }
 
   void keyPressEvent(QKeyEvent* event) override {
     constexpr int pan_step_pixels = 48;
     switch (event->key()) {
+      case Qt::Key_Delete:
+      case Qt::Key_Backspace:
+        if (delete_requested_callback_) delete_requested_callback_();
+        event->accept();
+        return;
       case Qt::Key::Key_Plus:
       case Qt::Key::Key_Equal:
         zoomIn();
@@ -363,6 +430,9 @@ class BoardCanvasView final : public QGraphicsView {
 
   ToolMode active_tool_ = ToolMode::Select;
   std::optional<QPointF> measure_start_pos_;
+  bool dragging_objects_ = false;
+  std::optional<QPointF> drag_start_scene_pos_;
+  std::vector<std::pair<QGraphicsItem*, QPointF>> dragged_items_initial_pos_;
   QGraphicsLineItem* measure_line_ = nullptr;
   QGraphicsTextItem* measure_text_ = nullptr;
   QGraphicsRectItem* measure_text_bg_ = nullptr;
@@ -376,5 +446,8 @@ class BoardCanvasView final : public QGraphicsView {
   QPoint pan_last_pos_;
   std::optional<QPointF> last_cursor_scene_pos_;
   std::function<void(QPointF, double)> coordinate_callback_;
+  std::function<void(QPointF)> objects_moved_callback_;
   std::function<void(bool, bool)> pan_mode_callback_;
+  std::function<void()> double_click_callback_;
+  std::function<void()> delete_requested_callback_;
 };

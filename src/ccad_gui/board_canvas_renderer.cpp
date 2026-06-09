@@ -598,6 +598,42 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     line->setToolTip(QString::fromStdString(wire.net_id));
   }
 
+  // Render Schematic Labels
+  for (const ccad::CanvasLabel& clabel : scene.labels) {
+    const double x = sceneX(scene, clabel.x_units, margin, scale);
+    const double y = sceneY(scene, clabel.y_units, margin, scale);
+    auto* text = canvas_scene.addText(QString::fromStdString(clabel.text));
+    text->setDefaultTextColor(theme.board_label_color);
+    text->setPos(x, y);
+    text->setRotation(clabel.rotation_degrees);
+    text->setData(kCanvasObjectIdRole, QString::fromStdString(clabel.id));
+    text->setData(kCanvasObjectTypeRole, clabel.global ? "GlobalLabel" : "Label");
+    text->setData(kCanvasObjectNetIdRole, QString::fromStdString(clabel.net_id));
+    text->setToolTip(QString::fromStdString(clabel.id + " (" + clabel.net_id + ")"));
+  }
+
+  // Render Schematic Power Symbols
+  QPen power_pen(theme.track_color);
+  power_pen.setWidthF(1.5);
+  for (const ccad::CanvasPowerSymbol& ps : scene.power_symbols) {
+    const double x = sceneX(scene, ps.x_units, margin, scale);
+    const double y = sceneY(scene, ps.y_units, margin, scale);
+    auto* text = canvas_scene.addText(QString::fromStdString(ps.value));
+    text->setDefaultTextColor(theme.track_color);
+    text->setPos(x, y - 15.0);
+    text->setRotation(ps.rotation_degrees);
+    text->setData(kCanvasObjectIdRole, QString::fromStdString(ps.id));
+    text->setData(kCanvasObjectTypeRole, "PowerSymbol");
+    text->setData(kCanvasObjectNetIdRole, QString::fromStdString(ps.net_id));
+    text->setToolTip(QString::fromStdString(ps.id + " (" + ps.value + ")"));
+    
+    // Draw a small graphic for power
+    auto* line = canvas_scene.addLine(x, y, x, y - 10.0, power_pen);
+    auto* line2 = canvas_scene.addLine(x - 5.0, y - 10.0, x + 5.0, y - 10.0, power_pen);
+    line->setParentItem(text);
+    line2->setParentItem(text);
+  }
+
   auto* label = canvas_scene.addText(QString::number(scene.view_width_units, 'f', 2) + " mm x " +
                                      QString::number(scene.view_height_units, 'f', 2) + " mm");
   label->setDefaultTextColor(theme.board_label_color);
@@ -629,14 +665,12 @@ void addDiagnosticMarkers(QGraphicsScene& canvas_scene,
 
     const QRectF bounds = target->sceneBoundingRect();
     const QPointF center = bounds.center();
-    constexpr double radius = 5.0;
+    constexpr double radius = 1.5;
     const QColor color =
         diagnostic.severity == "error" ? theme.error_marker_color : theme.warning_marker_color;
     auto* marker =
         canvas_scene.addEllipse(center.x() - radius, center.y() - radius, radius * 2.0,
-                                radius * 2.0, QPen(color, 1.8), QBrush(QColor(color.red(),
-                                                                              color.green(),
-                                                                              color.blue(), 80)));
+                                radius * 2.0, QPen(Qt::NoPen), QBrush(color));
     marker->setZValue(1000.0);
     marker->setToolTip(qstr(diagnostic.code) + ": " + qstr(diagnostic.message));
     marker->setData(kCanvasDiagnosticMarkerObjectIdRole, object_id);

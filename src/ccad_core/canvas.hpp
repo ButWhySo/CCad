@@ -76,11 +76,31 @@ struct CanvasComponent {
 };
 
 struct CanvasWire {
+  std::string id;
   std::string net_id;
   double start_x_units = 0.0;
   double start_y_units = 0.0;
   double end_x_units = 0.0;
   double end_y_units = 0.0;
+};
+
+struct CanvasLabel {
+  std::string id;
+  std::string text;
+  std::string net_id;
+  double x_units = 0.0;
+  double y_units = 0.0;
+  double rotation_degrees = 0.0;
+  bool global = false;
+};
+
+struct CanvasPowerSymbol {
+  std::string id;
+  std::string value;
+  std::string net_id;
+  double x_units = 0.0;
+  double y_units = 0.0;
+  double rotation_degrees = 0.0;
 };
 
 struct CanvasKeepout {
@@ -192,6 +212,8 @@ struct CanvasScene {
 
   std::vector<CanvasComponent> components;
   std::vector<CanvasWire> wires;
+  std::vector<CanvasLabel> labels;
+  std::vector<CanvasPowerSymbol> power_symbols;
 };
 
 CanvasScene buildCanvasScene(const Project& project);

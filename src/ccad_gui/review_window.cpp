@@ -1937,17 +1937,12 @@ ReviewWindow::ReviewWindow() {
   applyStyle();
 
   project_summary_ = new ProjectSummaryPanel(this);
-
   auto* project_dock = new QDockWidget("Project", this);
-  project_dock->setObjectName("projectDock");
-  project_dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-  project_dock->setMinimumWidth(300);
-  auto* project_scroll = new QScrollArea(project_dock);
-  project_scroll->setWidgetResizable(true);
-  project_scroll->setFrameShape(QFrame::NoFrame);
-  project_scroll->setWidget(project_summary_);
-  project_dock->setWidget(project_scroll);
+  project_dock->setWidget(project_summary_);
+  project_dock->setObjectName("dock:project");
+  project_dock->hide();
   addDockWidget(Qt::LeftDockWidgetArea, project_dock);
+  project_dock->setMinimumWidth(300);
 
   diagnostics_ = new DiagnosticsPanel(this);
   transaction_timeline_ = new TransactionTimelinePanel(this);
@@ -1976,13 +1971,12 @@ ReviewWindow::ReviewWindow() {
   updateAgentPanelContext();
 
   auto* diagnostics_dock = new QDockWidget("Diagnostics", this);
-  diagnostics_dock->setObjectName("diagnosticsDock");
-  diagnostics_dock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
   bottom_tabs_ = new QTabWidget(diagnostics_dock);
   bottom_tabs_->setObjectName("bottomReviewTabs");
   bottom_tabs_->addTab(diagnostics_, "Diagnostics");
   bottom_tabs_->addTab(transaction_timeline_, "Transactions");
   diagnostics_dock->setWidget(bottom_tabs_);
+  diagnostics_dock->setObjectName("dock:diagnostics");
   addDockWidget(Qt::BottomDockWidgetArea, diagnostics_dock);
 
   auto* right_panel = new QWidget(this);
@@ -1993,27 +1987,26 @@ ReviewWindow::ReviewWindow() {
   selection_inspector_->setObjectName("selectionInspectorPanel");
   selection_inspector_->setMaximumHeight(280);
   selection_inspector_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
+  selection_inspector_->hide(); // Hide by default until explicitly invoked
   object_browser_ = new ObjectBrowserPanel(right_panel);
   object_browser_->setMinimumHeight(80);
   right_layout->addWidget(selection_inspector_);
   right_layout->addWidget(object_browser_, 1);
   auto* layers_dock = new QDockWidget("Layers / Objects", this);
-  layers_dock->setObjectName("layersDock");
-  layers_dock->setAllowedAreas(Qt::RightDockWidgetArea | Qt::LeftDockWidgetArea);
+  layers_dock->setObjectName("dock:layers");
   layers_dock->setMinimumWidth(280);
   layers_dock->setMinimumHeight(180);
   layers_dock->setWidget(right_panel);
   addDockWidget(Qt::RightDockWidgetArea, layers_dock);
 
-  agent_dock_ = new QDockWidget("Agent", this);
-  agent_dock_->setObjectName("agentDock");
-  agent_dock_->setAllowedAreas(Qt::RightDockWidgetArea | Qt::LeftDockWidgetArea);
-  agent_dock_->setMinimumWidth(360);
-  agent_dock_->setMinimumHeight(340);
-  agent_dock_->setWidget(agent_panel_);
-  addDockWidget(Qt::RightDockWidgetArea, agent_dock_);
-  splitDockWidget(layers_dock, agent_dock_, Qt::Horizontal);
-  connect(agent_dock_, &QDockWidget::visibilityChanged, this, [this](bool) {
+  auto* agent_dock = new QDockWidget("Agent", this);
+  agent_dock->setWidget(agent_panel_);
+  agent_dock->setObjectName("dock:agent");
+  agent_dock->setMinimumWidth(360);
+  agent_dock->setMinimumHeight(340);
+  addDockWidget(Qt::RightDockWidgetArea, agent_dock);
+  splitDockWidget(layers_dock, agent_dock, Qt::Horizontal);
+  connect(agent_dock, &QDockWidget::visibilityChanged, this, [this](bool) {
     markUiMapChanged({"tab:agent",
                       "panel:agent",
                       "panel:agent_session_strip",
@@ -2125,6 +2118,19 @@ ReviewWindow::ReviewWindow() {
   statusBar()->addPermanentWidget(net_status_);
   statusBar()->showMessage("Ready");
 
+  board_view->setObjectsMovedCallback([this](const QPointF& delta) {
+    handleObjectsMoved(delta);
+  });
+  connect(board_view, &QWidget::customContextMenuRequested, this, &ReviewWindow::showCanvasContextMenu);
+  board_view->setDoubleClickCallback([this]() {
+    if (selection_inspector_ && !selection_inspector_->isVisible()) {
+      selection_inspector_->setVisible(true);
+    }
+  });
+  board_view->setDeleteRequestedCallback([this]() {
+    deleteSelectedBoardObject();
+  });
+
   board_view->setPanModeCallback([this](const bool space_mode, const bool dragging) {
     if (tool_status_ == nullptr) {
       return;
@@ -2159,6 +2165,19 @@ ReviewWindow::ReviewWindow() {
     if (space_mode) { tool_status_->setText("Tool Pan Ready"); return; }
     tool_status_->setText("Tool Select");
   });
+  schematic_board_view->setObjectsMovedCallback([this](const QPointF& delta) {
+    handleObjectsMoved(delta);
+  });
+  connect(schematic_board_view, &QWidget::customContextMenuRequested, this, &ReviewWindow::showCanvasContextMenu);
+  schematic_board_view->setDoubleClickCallback([this]() {
+    if (selection_inspector_ && !selection_inspector_->isVisible()) {
+      selection_inspector_->setVisible(true);
+    }
+  });
+  schematic_board_view->setDeleteRequestedCallback([this]() {
+    deleteSelectedBoardObject();
+  });
+
   applyDisplayStateToViews();
 
   editor_tabs_ = new QTabWidget(this);
@@ -2170,94 +2189,68 @@ ReviewWindow::ReviewWindow() {
   setDockNestingEnabled(true);
   resizeDocks({project_dock, layers_dock}, {360, 320}, Qt::Horizontal);
   resizeDocks({project_dock, diagnostics_dock}, {620, 240}, Qt::Vertical);
-  resizeDocks({layers_dock, agent_dock_}, {300, 380}, Qt::Horizontal);
+  resizeDocks({layers_dock, agent_dock}, {300, 380}, Qt::Horizontal);
 
-  auto* open_action = new QAction(kicadIcon("directory_open"), "Open", this);
-  auto* reload_action = new QAction(kicadIcon("reload"), "Reload", this);
-  auto* save_action = new QAction(kicadIcon("save"), "Save", this);
-  auto* board_setup_action = new QAction(kicadIcon("options_board"), "Board Setup", this);
-  undo_action_ = new QAction(kicadIcon("undo"), "Undo", this);
-  redo_action_ = new QAction(kicadIcon("redo"), "Redo", this);
-  auto* run_drc_action = new QAction(kicadIcon("drc"), "Run DRC", this);
-  auto* export_drc_action = new QAction(kicadIcon("export"), "Export DRC Report...", this);
-  auto* fit_action = new QAction(kicadIcon("zoom_fit_in_page"), "Fit", this);
-  auto* zoom_in_action = new QAction(kicadIcon("zoom_in"), "Zoom In", this);
-  auto* zoom_out_action = new QAction(kicadIcon("zoom_out"), "Zoom Out", this);
-  auto* zoom_100_action = new QAction("100%", this);
   auto* navigation_help_action = new QAction("Navigation Controls", this);
-  auto* quit_action = new QAction("Quit", this);
-  open_action->setObjectName("action:open");
-  reload_action->setObjectName("action:reload");
-  save_action->setObjectName("action:save");
-  board_setup_action->setObjectName("action:board_setup");
-  undo_action_->setObjectName("action:undo");
-  redo_action_->setObjectName("action:redo");
-  run_drc_action->setObjectName("action:run_drc");
-  export_drc_action->setObjectName("action:export_drc");
-  fit_action->setObjectName("action:fit");
-  zoom_in_action->setObjectName("action:zoom_in");
-  zoom_out_action->setObjectName("action:zoom_out");
-  zoom_100_action->setObjectName("action:zoom_100");
   navigation_help_action->setObjectName("action:navigation_help");
-  quit_action->setObjectName("action:quit");
-  save_action->setShortcut(QKeySequence::Save);
-  undo_action_->setShortcut(QKeySequence::Undo);
-  redo_action_->setShortcut(QKeySequence::Redo);
-  fit_action->setShortcut(QKeySequence(Qt::Key_F));
-  zoom_in_action->setShortcuts(
-      {QKeySequence(Qt::Key_Plus), QKeySequence(Qt::CTRL | Qt::Key_Equal)});
-  zoom_out_action->setShortcut(QKeySequence(Qt::Key_Minus));
-  zoom_100_action->setShortcut(QKeySequence(Qt::Key_0));
   navigation_help_action->setShortcut(QKeySequence(Qt::Key_F1));
-
-  connect(open_action, &QAction::triggered, this, [this]() { openProject(); });
-  connect(reload_action, &QAction::triggered, this, [this]() { reloadProject(); });
-  connect(save_action, &QAction::triggered, this, [this]() { saveProject(); });
-  connect(board_setup_action, &QAction::triggered, this, [this]() { showBoardSetup(); });
-  connect(undo_action_, &QAction::triggered, this, [this]() {
-    if (undo_stack_.empty()) return;
-    redo_stack_.push_back(project_cache_);
-    const ccad::Project snapshot = undo_stack_.back();
-    undo_stack_.pop_back();
-    restoreProjectSnapshot(snapshot);
-  });
-  connect(redo_action_, &QAction::triggered, this, [this]() {
-    if (redo_stack_.empty()) return;
-    undo_stack_.push_back(project_cache_);
-    const ccad::Project snapshot = redo_stack_.back();
-    redo_stack_.pop_back();
-    restoreProjectSnapshot(snapshot);
-  });
-  connect(run_drc_action, &QAction::triggered, this, [this]() { runDrcFromToolbar(); });
-  connect(export_drc_action, &QAction::triggered, this, [this]() { exportDrcReport(); });
-  connect(fit_action, &QAction::triggered, this, [this]() {
-    if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) view->zoomToFit();
-  });
-  connect(zoom_in_action, &QAction::triggered, this, [this]() {
-    if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) view->zoomIn();
-  });
-  connect(zoom_out_action, &QAction::triggered, this, [this]() {
-    if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) view->zoomOut();
-  });
-  connect(zoom_100_action, &QAction::triggered, this, [this]() {
-    if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) view->resetZoom();
-  });
   connect(navigation_help_action, &QAction::triggered, this,
           [this]() { showNavigationHelp(); });
-  connect(quit_action, &QAction::triggered, this, [this]() { close(); });
 
-  auto* file_menu = menuBar()->addMenu("File");
-  file_menu->addAction(open_action);
-  file_menu->addAction(reload_action);
+  QMenu* file_menu = menuBar()->addMenu("&File");
+  auto* open_action = file_menu->addAction(kicadIcon("folder"), "Open Project...");
+  open_action->setObjectName("action:open");
+  open_action->setShortcut(QKeySequence::Open);
+  auto* reload_action = file_menu->addAction(kicadIcon("reload"), "Reload Project");
+  reload_action->setObjectName("action:reload");
+  reload_action->setShortcut(QKeySequence::Refresh);
+  auto* save_action = file_menu->addAction(kicadIcon("save"), "Save Project");
+  save_action->setObjectName("action:save");
+  save_action->setShortcut(QKeySequence::Save);
   file_menu->addSeparator();
-  file_menu->addAction(quit_action);
+  auto* exit_action = file_menu->addAction(kicadIcon("exit"), "E&xit");
+  connect(exit_action, &QAction::triggered, this, &QWidget::close);
 
-  auto* tools_menu = menuBar()->addMenu(tr("&Tools"));
-  tools_menu->addAction(tr("Component Wizard..."), this, &ReviewWindow::showComponentWizard);
-  tools_menu->addAction(run_drc_action);
-  tools_menu->addAction(export_drc_action);
+  QMenu* edit_menu = menuBar()->addMenu("&Edit");
+  auto* undo_action = edit_menu->addAction(kicadIcon("undo"), "Undo");
+  undo_action->setObjectName("action:undo");
+  undo_action->setShortcut(QKeySequence::Undo);
+  auto* redo_action = edit_menu->addAction(kicadIcon("redo"), "Redo");
+  redo_action->setObjectName("action:redo");
+  redo_action->setShortcut(QKeySequence::Redo);
+  undo_action_ = undo_action;
+  redo_action_ = redo_action;
 
-  auto* help_menu = menuBar()->addMenu("Help");
+  QMenu* view_menu = menuBar()->addMenu("&View");
+  view_menu->addAction("Zoom In", QKeySequence::ZoomIn, this, [this]() {
+    if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) view->zoomIn();
+  });
+  view_menu->addAction("Zoom Out", QKeySequence::ZoomOut, this, [this]() {
+    if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) view->zoomOut();
+  });
+  view_menu->addAction("Fit on Screen", Qt::Key_Home, this, [this]() {
+    if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) view->zoomToFit();
+  });
+
+  QMenu* place_menu = menuBar()->addMenu("&Place");
+  place_menu->addAction("Add Symbol...");
+  place_menu->addAction("Add Footprint...");
+
+  QMenu* inspect_menu = menuBar()->addMenu("&Inspect");
+  auto* run_drc_action = inspect_menu->addAction(kicadIcon("drc"), "Run DRC");
+  run_drc_action->setObjectName("action:run_drc");
+  inspect_menu->addAction("Measure");
+
+  menuBar()->addMenu("&Tools");
+  menuBar()->addMenu("P&references");
+
+  QMenu* window_menu = menuBar()->addMenu("&Window");
+  window_menu->addAction(project_dock->toggleViewAction());
+  window_menu->addAction(layers_dock->toggleViewAction());
+  window_menu->addAction(diagnostics_dock->toggleViewAction());
+  window_menu->addAction(agent_dock->toggleViewAction());
+
+  QMenu* help_menu = menuBar()->addMenu("&Help");
   help_menu->addAction(navigation_help_action);
 
   auto* top_toolbar = addToolBar("Top Toolbar");
@@ -2268,11 +2261,16 @@ ReviewWindow::ReviewWindow() {
   top_toolbar->addAction(reload_action);
   top_toolbar->addSeparator();
   top_toolbar->addAction(save_action);
+  auto* board_setup_action = new QAction(kicadIcon("options_board"), "Board Setup", this);
   top_toolbar->addAction(board_setup_action);
   top_toolbar->addSeparator();
   top_toolbar->addAction(undo_action_);
   top_toolbar->addAction(redo_action_);
   top_toolbar->addSeparator();
+  auto* fit_action = new QAction(kicadIcon("zoom_fit_in_page"), "Fit", this);
+  auto* zoom_in_action = new QAction(kicadIcon("zoom_in"), "Zoom In", this);
+  auto* zoom_out_action = new QAction(kicadIcon("zoom_out"), "Zoom Out", this);
+  auto* zoom_100_action = new QAction("100%", this);
   top_toolbar->addAction(fit_action);
   top_toolbar->addAction(zoom_in_action);
   top_toolbar->addAction(zoom_out_action);
@@ -2655,6 +2653,87 @@ void ReviewWindow::pushUndoSnapshot() {
   undo_stack_.push_back(project_cache_);
   redo_stack_.clear();
   updateUndoRedoActions();
+}
+
+void ReviewWindow::handleObjectsMoved(const QPointF& delta) {
+  if (!project_cache_.board) return;
+  const ccad::Point p_delta = boardPointFromScene(project_cache_.board.value(), delta);
+  if (p_delta.x.nanometers == 0 && p_delta.y.nanometers == 0) return;
+
+  bool moved = false;
+  for (QGraphicsItem* item : canvas_scene_->selectedItems()) {
+    QString id_str = item->data(Qt::UserRole).toString();
+    if (id_str.isEmpty()) continue;
+    std::string id = id_str.toStdString();
+
+    for (auto& pad : project_cache_.board->pads) {
+      if (pad.id == id) { pad.position.x.nanometers += p_delta.x.nanometers; pad.position.y.nanometers += p_delta.y.nanometers; moved = true; break; }
+    }
+    for (auto& via : project_cache_.board->vias) {
+      if (via.id == id) { via.position.x.nanometers += p_delta.x.nanometers; via.position.y.nanometers += p_delta.y.nanometers; moved = true; break; }
+    }
+    for (auto& text : project_cache_.board->texts) {
+      if (text.id == id) { text.position.x.nanometers += p_delta.x.nanometers; text.position.y.nanometers += p_delta.y.nanometers; moved = true; break; }
+    }
+    for (auto& track : project_cache_.board->tracks) {
+      if (track.id == id) {
+        track.start.x.nanometers += p_delta.x.nanometers; track.start.y.nanometers += p_delta.y.nanometers;
+        track.end.x.nanometers += p_delta.x.nanometers; track.end.y.nanometers += p_delta.y.nanometers;
+        moved = true; break;
+      }
+    }
+    for (auto& graphic : project_cache_.board->graphics) {
+      if (graphic.id == id) {
+        graphic.start.x.nanometers += p_delta.x.nanometers; graphic.start.y.nanometers += p_delta.y.nanometers;
+        graphic.end.x.nanometers += p_delta.x.nanometers; graphic.end.y.nanometers += p_delta.y.nanometers;
+        moved = true; break;
+      }
+    }
+    for (auto& zone : project_cache_.board->zones) {
+      if (zone.id == id) {
+        for (auto& pt : zone.outline) {
+          pt.x.nanometers += p_delta.x.nanometers; pt.y.nanometers += p_delta.y.nanometers;
+        }
+        moved = true; break;
+      }
+    }
+    for (auto& keepout : project_cache_.board->keepouts) {
+      if (keepout.id == id) {
+        keepout.area.origin.x.nanometers += p_delta.x.nanometers; keepout.area.origin.y.nanometers += p_delta.y.nanometers;
+        moved = true; break;
+      }
+    }
+    for (auto& region : project_cache_.board->placement_regions) {
+      if (region.id == id) {
+        region.area.origin.x.nanometers += p_delta.x.nanometers; region.area.origin.y.nanometers += p_delta.y.nanometers;
+        moved = true; break;
+      }
+    }
+  }
+  if (moved) {
+    saveProjectCacheAfterMutation("Moved selected objects");
+  }
+}
+
+void ReviewWindow::showCanvasContextMenu(const QPoint& pos) {
+  QGraphicsView* view = dynamic_cast<QGraphicsView*>(sender());
+  if (!view) return;
+  QMenu menu(this);
+  if (view->scene() && !view->scene()->selectedItems().isEmpty()) {
+    menu.addAction("Properties...", this, [this]() {
+        if (selection_inspector_ && !selection_inspector_->isVisible()) {
+            selection_inspector_->setVisible(true);
+        }
+    });
+    menu.addAction("Delete Selected", this, [this]() { deleteSelectedBoardObject(); });
+  } else {
+    menu.addAction("Zoom to Fit", this, [view]() {
+        if (auto* bcv = dynamic_cast<BoardCanvasView*>(view)) {
+            bcv->zoomToFit();
+        }
+    });
+  }
+  menu.exec(view->mapToGlobal(pos));
 }
 
 ReviewWindow::~ReviewWindow() {
@@ -3053,14 +3132,14 @@ void ReviewWindow::loadProjectPath(const std::filesystem::path& path) {
 void ReviewWindow::applyStyle() {
   setStyleSheet(R"(
     QMainWindow {
-      background: #0f172a;
-      color: #172033;
+      background: #0d1117;
+      color: #c9d1d9;
       font-size: 10.5pt;
     }
     QMenuBar, QToolBar, QDockWidget {
-      background: #f8fafc;
-      color: #111827;
-      border-bottom: 1px solid #cbd5e1;
+      background: #0d1117;
+      color: #c9d1d9;
+      border-bottom: 1px solid #30363d;
       spacing: 8px;
     }
     QToolBar {
@@ -3069,91 +3148,149 @@ void ReviewWindow::applyStyle() {
     QToolButton {
       padding: 6px 10px;
       border-radius: 6px;
+      color: #c9d1d9;
     }
     QToolButton:hover {
-      background: #e8eef7;
+      background: #1f6feb;
+    }
+    QMenuBar::item:selected {
+      background: #161b22;
+    }
+    QMenu {
+      background-color: #161b22;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+    }
+    QMenu::item:selected {
+      background-color: #1f6feb;
     }
     QLabel#title {
-      color: #f8fafc;
+      color: #c9d1d9;
       font-size: 16pt;
       font-weight: 700;
     }
     QLabel#subtitle {
-      color: #94a3b8;
+      color: #8b949e;
     }
     QLabel#statusChip {
       color: #ffffff;
-      background: #64748b;
+      background: #238636;
       border-radius: 13px;
       padding: 6px 12px;
       font-weight: 700;
     }
     QFrame#summaryCard {
-      background: #ffffff;
-      border: 1px solid #dfe6ef;
+      background: #161b22;
+      border: 1px solid #30363d;
       border-radius: 6px;
     }
     QLabel#cardTitle {
-      color: #64748b;
+      color: #8b949e;
       font-size: 9pt;
       font-weight: 700;
       text-transform: uppercase;
     }
     QLabel#cardValue {
-      color: #111827;
+      color: #c9d1d9;
       font-size: 19pt;
       font-weight: 700;
     }
     QTableWidget#diagnosticsTable {
-      background: #ffffff;
-      alternate-background-color: #f8fafc;
-      border: 1px solid #dfe6ef;
+      background: #0d1117;
+      alternate-background-color: #161b22;
+      border: 1px solid #30363d;
       border-radius: 8px;
-      selection-background-color: #dbeafe;
-      selection-color: #111827;
+      color: #c9d1d9;
+      selection-background-color: #1f6feb;
+      selection-color: #ffffff;
     }
-    QListWidget#objectBrowserPanel {
-      background: #ffffff;
-      border: 1px solid #dfe6ef;
+    QHeaderView::section {
+      background-color: #161b22;
+      color: #8b949e;
+      border: 1px solid #30363d;
+      padding: 4px;
+    }
+    QListWidget#objectBrowserPanel, QTreeWidget {
+      background: #0d1117;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
       padding: 6px;
     }
+    QScrollBar:vertical {
+      border: none;
+      background: #0d1117;
+      width: 10px;
+      margin: 0px 0px 0px 0px;
+    }
+    QScrollBar::handle:vertical {
+      background: #30363d;
+      min-height: 20px;
+      border-radius: 5px;
+    }
+    QScrollBar::handle:vertical:hover {
+      background: #8b949e;
+    }
+    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+      height: 0px;
+    }
+    QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+      background: none;
+    }
+    QScrollBar:horizontal {
+      border: none;
+      background: #0d1117;
+      height: 10px;
+      margin: 0px 0px 0px 0px;
+    }
+    QScrollBar::handle:horizontal {
+      background: #30363d;
+      min-width: 20px;
+      border-radius: 5px;
+    }
+    QScrollBar::handle:horizontal:hover {
+      background: #8b949e;
+    }
+    QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+      width: 0px;
+    }
+    QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+      background: none;
+    }
+    QListWidget::item:selected, QTreeWidget::item:selected {
+      background: #1f6feb;
+      color: #ffffff;
+    }
     QWidget#selectionInspectorPanel {
-      background: #e0f2fe;
-      border: 1px solid #38bdf8;
+      background: #161b22;
+      border: 1px solid #1f6feb;
       border-radius: 6px;
       padding: 8px;
     }
     QLabel#inspectorTitle {
-      color: #0f172a;
+      color: #c9d1d9;
       font-weight: 700;
     }
     QLabel#inspectorDetail {
-      color: #334155;
+      color: #8b949e;
     }
     QLabel#inspectorValue {
-      color: #0f172a;
+      color: #c9d1d9;
       font-weight: 700;
     }
     QTabWidget::pane {
-      border: 1px solid #1e293b;
+      border: 1px solid #30363d;
       background: #07111f;
     }
     QTabBar::tab {
-      background: #e2e8f0;
-      color: #1e293b;
+      background: #161b22;
+      color: #8b949e;
       padding: 8px 18px;
       border-top-left-radius: 6px;
       border-top-right-radius: 6px;
+      border: 1px solid #30363d;
+      border-bottom: none;
     }
     QTabBar::tab:selected {
-      background: #ffffff;
-      color: #0f172a;
-      font-weight: 700;
-    }
-    QHeaderView::section {
-      background: #eef2f7;
-      color: #334155;
-      border: none;
       border-bottom: 1px solid #d7dee8;
       padding: 8px;
       font-weight: 700;
@@ -3607,7 +3744,13 @@ QString ReviewWindow::buildUiMapJson() const {
                  .arg(global_rect.center().y());
   }
 
-  for (const QPushButton* button : findChildren<QPushButton*>()) {
+  auto all_buttons = findChildren<QPushButton*>();
+  for (QWidget* tlw : QApplication::topLevelWidgets()) {
+      if (tlw != this) {
+          all_buttons.append(tlw->findChildren<QPushButton*>());
+      }
+  }
+  for (const QPushButton* button : all_buttons) {
     const QString id = button->objectName();
     if (!id.startsWith("action:")) {
       continue;
@@ -3631,7 +3774,13 @@ QString ReviewWindow::buildUiMapJson() const {
                  .arg(global_rect.center().y());
   }
 
-  for (const QLineEdit* input : findChildren<QLineEdit*>()) {
+  auto all_inputs = findChildren<QLineEdit*>();
+  for (QWidget* tlw : QApplication::topLevelWidgets()) {
+      if (tlw != this) {
+          all_inputs.append(tlw->findChildren<QLineEdit*>());
+      }
+  }
+  for (const QLineEdit* input : all_inputs) {
     const QString id = input->objectName();
     if (!id.startsWith("control:")) {
       continue;
@@ -3682,7 +3831,13 @@ QString ReviewWindow::buildUiMapJson() const {
                  .arg(global_rect.center().y());
   }
 
-  for (const QCheckBox* checkbox : findChildren<QCheckBox*>()) {
+  auto all_checkboxes = findChildren<QCheckBox*>();
+  for (QWidget* tlw : QApplication::topLevelWidgets()) {
+      if (tlw != this) {
+          all_checkboxes.append(tlw->findChildren<QCheckBox*>());
+      }
+  }
+  for (const QCheckBox* checkbox : all_checkboxes) {
     const QString id = checkbox->objectName();
     if (!id.startsWith("control:")) {
       continue;
@@ -3707,11 +3862,17 @@ QString ReviewWindow::buildUiMapJson() const {
                  .arg(global_rect.center().y());
   }
 
-  for (const QWidget* widget : findChildren<QWidget*>()) {
+  auto all_widgets = findChildren<QWidget*>();
+  for (QWidget* tlw : QApplication::topLevelWidgets()) {
+      if (tlw != this) {
+          all_widgets.append(tlw->findChildren<QWidget*>());
+      }
+  }
+  for (const QWidget* widget : all_widgets) {
     const QString id = widget->objectName();
     const bool supported_prefix =
         id.startsWith("panel:") || id.startsWith("tab:") || id.startsWith("label:") ||
-        id.startsWith("card:");
+        id.startsWith("card:") || id.startsWith("control:");
     if (!supported_prefix) {
       continue;
     }

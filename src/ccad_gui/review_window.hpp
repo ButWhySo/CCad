@@ -144,6 +144,8 @@ class ReviewWindow final : public QMainWindow {
                     const std::vector<ccad::Diagnostic>& diagnostics = {});
   void updateCursorStatus(const QPointF& scene_position, double zoom_factor);
   void updateSelectionStatus();
+  void showCanvasContextMenu(const QPoint& pos);
+  void handleObjectsMoved(const QPointF& delta);
   void enterPlaceFootprintMode(const std::string& component_id, const ccad::Footprint& footprint, const std::string& layer_id);
   void enterPlaceSymbolMode(const std::string& component_id, const ccad::Symbol& symbol, double rotation_degrees);
   void enterMoveFootprintMode(const std::string& component_id);

@@ -42,6 +42,70 @@ int schCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "add-wire") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--start-x-mm", "--start-y-mm", "--end-x-mm", "--end-y-mm", "--net"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::WireSegment wire{
+          .id = requireOption(options, "--id"),
+          .start = {ccad::millimeters(requireDoubleOption(options, "--start-x-mm")),
+                    ccad::millimeters(requireDoubleOption(options, "--start-y-mm"))},
+          .end = {ccad::millimeters(requireDoubleOption(options, "--end-x-mm")),
+                  ccad::millimeters(requireDoubleOption(options, "--end-y-mm"))},
+          .net_id = options.contains("--net") ? options.at("--net") : ""
+      };
+      project.wires.push_back(wire);
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file\n";
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "add-label") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--text", "--net", "--at-x-mm", "--at-y-mm", "--rotation-deg", "--global"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Label label{
+          .id = requireOption(options, "--id"),
+          .text = requireOption(options, "--text"),
+          .net_id = options.contains("--net") ? options.at("--net") : "",
+          .position = {ccad::millimeters(requireDoubleOption(options, "--at-x-mm")),
+                       ccad::millimeters(requireDoubleOption(options, "--at-y-mm"))},
+          .rotation_degrees = optionDoubleOrDefault(options, "--rotation-deg", 0.0),
+          .global = options.count("--global") > 0
+      };
+      project.labels.push_back(label);
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file\n";
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "add-power") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--value", "--net", "--at-x-mm", "--at-y-mm", "--rotation-deg"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::PowerSymbol power{
+          .id = requireOption(options, "--id"),
+          .value = requireOption(options, "--value"),
+          .net_id = options.contains("--net") ? options.at("--net") : "",
+          .position = {ccad::millimeters(requireDoubleOption(options, "--at-x-mm")),
+                       ccad::millimeters(requireDoubleOption(options, "--at-y-mm"))},
+          .rotation_degrees = optionDoubleOrDefault(options, "--rotation-deg", 0.0)
+      };
+      project.power_symbols.push_back(power);
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file\n";
+        return 2;
+      }
+      return 0;
+    }
+
     std::cerr << "unknown sch subcommand: " << subcommand << '\n';
     return 2;
   } catch (const std::exception& error) {

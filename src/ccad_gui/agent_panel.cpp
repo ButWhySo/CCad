@@ -36,6 +36,7 @@
 
 #include "ccad_gui/agent_icons.hpp"
 #include "ccad_gui/agent_marketplace_dialog.hpp"
+#include "ccad_gui/agent_settings_dialog.hpp"
 
 #include <algorithm>
 #include <cstdlib>
@@ -500,7 +501,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   setObjectName("agentPanel");
   setStyleSheet(R"(
     QWidget#agentPanel {
-      background-color: #f3f3f3;
+      background-color: #0d1117;
       font-family: "Segoe UI", sans-serif;
     }
     QScrollArea#agentScrollArea {
@@ -511,25 +512,28 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
       background-color: transparent;
     }
     QFrame[agentRole="section"] {
-      background-color: #181818;
+      background-color: #0d1117;
     }
     QFrame[agentRole="chatBubbleAgent"] {
-      background-color: transparent;
-      border: none;
-      padding: 0px;
-      margin: 0px;
+      background-color: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      border-top-left-radius: 0px;
+      padding: 6px 12px;
+      margin: 2px;
     }
     QFrame[agentRole="chatBubbleUser"] {
-      background-color: #333333;
+      background-color: #2f81f7;
+      border: none;
       border-radius: 8px;
       border-bottom-right-radius: 0px;
       padding: 6px 12px;
-      margin: 0px;
+      margin: 2px;
     }
     QTextBrowser {
       background-color: transparent;
       border: none;
-      color: #555555;
+      color: #c9d1d9;
       font-family: "Segoe UI", sans-serif;
       font-size: 13px;
     }
@@ -537,26 +541,27 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
       color: #ffffff;
     }
     QFrame[agentRole="toolCard"] {
-      background-color: #2d2d2d;
+      background-color: #0d1117;
+      border: 1px solid #30363d;
       border-radius: 8px;
       padding: 8px 12px;
-      margin: 0px;
+      margin: 2px;
     }
     QLabel[agentRole="toolTitle"] {
-      color: #ffffff;
+      color: #c9d1d9;
       font-family: "Consolas", monospace;
       font-size: 12px;
     }
     QTextEdit#chatInput {
-      background-color: #111111;
-      border: 1px solid #333333;
+      background-color: #010409;
+      border: 1px solid #30363d;
       border-radius: 8px;
       padding: 8px 12px;
-      color: #e0e0e0;
+      color: #c9d1d9;
       font-size: 13px;
     }
     QTextEdit#chatInput:focus {
-      border: 1px solid #555555;
+      border: 1px solid #2f81f7;
     }
     QPushButton[agentRole="iconButton"] {
       background-color: transparent;
@@ -566,8 +571,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
       padding: 4px;
     }
     QPushButton[agentRole="iconButton"]:hover {
-      background-color: #333333;
-      color: #ffffff;
+      background-color: #30363d;
+      color: #c9d1d9;
     }
     QPushButton[agentRole="iconButtonPrimary"] {
       background-color: transparent;
@@ -575,10 +580,10 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
       color: #8b949e;
     }
     QPushButton[agentRole="iconButtonPrimary"]:hover {
-      color: #ffffff;
+      color: #2f81f7;
     }
     QLabel[agentRole="panelTitle"] {
-      color: #ffffff;
+      color: #c9d1d9;
       font-size: 14px;
       font-weight: 600;
     }
@@ -622,18 +627,13 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   });
 
   auto* settings_btn = new QPushButton(top_bar);
+  settings_btn->setObjectName("action:settingsBtn");
   settings_btn->setIcon(load_svg_icon(ccad_icons::icon_settings));
   settings_btn->setProperty("agentRole", "iconButton");
   settings_btn->setFixedSize(24, 24);
   connect(settings_btn, &QPushButton::clicked, this, [this]() {
-    appendChatMessage("agent", "*Opening Provider Configuration...*");
-    if (python_process_ && python_process_->state() == QProcess::Running) {
-      QJsonObject rpc;
-      rpc["jsonrpc"] = "2.0";
-      rpc["method"] = "agent.provider_config_schema";
-      rpc["id"] = 1;
-      python_process_->write(QJsonDocument(rpc).toJson(QJsonDocument::Compact) + "\n");
-    }
+    AgentSettingsDialog dialog(this);
+    dialog.exec();
   });
 
   auto* close_btn = new QPushButton(top_bar);
@@ -658,7 +658,11 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   chat_scroll_area_ = new QScrollArea(this);
   chat_scroll_area_->setObjectName("agentScrollArea");
   chat_scroll_area_->setWidgetResizable(true);
+  chat_scroll_area_->viewport()->setAutoFillBackground(false);
+  chat_scroll_area_->viewport()->setStyleSheet("background-color: transparent;");
   auto* chat_container = new QWidget();
+  chat_container->setObjectName("agentScrollContainer");
+  chat_container->setStyleSheet("background-color: transparent;");
   chat_history_layout_ = new QVBoxLayout(chat_container);
   chat_history_layout_->setAlignment(Qt::AlignTop);
   chat_scroll_area_->setWidget(chat_container);
@@ -672,10 +676,14 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   composer_layout->setContentsMargins(8, 8, 8, 8);
   
   chat_input_ = new QTextEdit(composer_container);
-  chat_input_->setObjectName("chatInput");
-  chat_input_->setProperty("target_id", "control:agent_chat_input");
+  chat_input_->setObjectName("control:agent_chat_input");
   chat_input_->setPlaceholderText("Message Agent...");
   chat_input_->setFixedHeight(60);
+  connect(chat_input_, &QTextEdit::textChanged, this, [this]() {
+    const int doc_height = chat_input_->document()->size().height();
+    const int new_height = std::clamp(static_cast<int>(doc_height + 16), 60, 200);
+    chat_input_->setFixedHeight(new_height);
+  });
   composer_layout->addWidget(chat_input_);
   
   auto* actions_layout = new QHBoxLayout();
@@ -696,14 +704,19 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   marketplace_btn->setProperty("agentRole", "iconButton");
   marketplace_btn->setFixedSize(24, 24);
   connect(marketplace_btn, &QPushButton::clicked, this, [this]() {
-    AgentMarketplaceDialog dialog(this);
-    dialog.exec();
+    auto* dialog = new AgentMarketplaceDialog(this, this);
+    dialog->show();
   });
   
   auto* context_circle = new QPushButton(composer_container);
   context_circle->setIcon(load_svg_icon(ccad_icons::icon_settings)); // Reusing settings as context pie stand-in
   context_circle->setProperty("agentRole", "iconButton");
   context_circle->setFixedSize(24, 24);
+  
+  auto* context_label = new QLabel("1.2k / 128k context", composer_container);
+  context_label->setObjectName("control:contextLabel");
+  context_label->setStyleSheet("color: #8b949e; font-size: 11px;");
+  
   connect(context_circle, &QPushButton::clicked, this, [this]() {
     appendChatMessage("agent", "*Refreshing AI context map...*");
   });
@@ -725,9 +738,10 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
 
   actions_layout->addWidget(paperclip_btn);
   actions_layout->addWidget(marketplace_btn);
-  actions_layout->addStretch();
   actions_layout->addWidget(context_circle);
+  actions_layout->addWidget(context_label);
   actions_layout->addWidget(stt_btn);
+  actions_layout->addStretch();
   actions_layout->addWidget(send_btn);
 
   composer_layout->addLayout(actions_layout);
@@ -785,7 +799,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
 
   slash_popup_ = new QListWidget(this);
   slash_popup_->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint);
-  slash_popup_->setStyleSheet("QListWidget { background-color: #2d2d2d; color: #ffffff; border: 1px solid #555555; border-radius: 4px; padding: 4px; font-family: 'Segoe UI'; font-size: 13px; } QListWidget::item:selected { background-color: #444444; }");
+  slash_popup_->setStyleSheet("QListWidget { background-color: #161b22; color: #c9d1d9; border: 1px solid #30363d; border-radius: 4px; padding: 4px; font-family: 'Segoe UI'; font-size: 13px; } QListWidget::item:selected { background-color: #30363d; }");
   slash_popup_->hide();
   connect(slash_popup_, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
     executeSlashCommand(item->text());
@@ -836,6 +850,7 @@ void AgentPanel::appendChatMessage(const QString& role, const QString& text) {
       auto* browser = new QTextBrowser(bubble);
       browser->setOpenExternalLinks(true);
       browser->setMarkdown(text);
+      browser->setStyleSheet("background-color: transparent; border: none;");
       browser->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
       browser->document()->setTextWidth(-1);
       
@@ -959,6 +974,16 @@ void AgentPanel::submitChat() {
   }
 }
 
+void AgentPanel::sendJsonRpc(const QString& method, const QJsonObject& params) {
+  if (python_process_ && python_process_->state() == QProcess::Running) {
+    QJsonObject payload;
+    payload["jsonrpc"] = "2.0";
+    payload["method"] = method;
+    payload["params"] = params;
+    python_process_->write(QJsonDocument(payload).toJson(QJsonDocument::Compact) + "\n");
+  }
+}
+
 bool AgentPanel::eventFilter(QObject* obj, QEvent* event) {
   if (obj == chat_input_) {
     if (event->type() == QEvent::KeyPress) {
@@ -1015,7 +1040,7 @@ void AgentPanel::hideSlashPopup() {
 
 void AgentPanel::filterSlashCommands() {
   QString text = chat_input_->toPlainText().mid(1).trimmed().toLower();
-  QStringList all_commands = {"/help", "/drc", "/route", "/explain", "/clear", "/marketplace", "/settings"};
+  QStringList all_commands = {"/commands", "/workflow:use:", "/workflow:chaining phase:", "/workflow:chaining state:", "/hooks:", "/set:", "/compact context", "/cc", "/schedule:", "/help", "/drc", "/route", "/explain", "/clear", "/marketplace", "/settings"};
   slash_popup_->clear();
   for (const QString& cmd : all_commands) {
     if (text.isEmpty() || cmd.mid(1).toLower().startsWith(text)) {

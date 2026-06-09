@@ -327,6 +327,33 @@ CanvasScene buildSchematicScene(const Project& project) {
     includeSchematicBounds(cw.end_x_units, cw.end_y_units);
   }
 
+  for (const Label& label : project.labels) {
+    CanvasLabel cl;
+    cl.id = label.id;
+    cl.text = label.text;
+    cl.net_id = label.net_id;
+    cl.x_units = toMillimeters(label.position.x);
+    cl.y_units = toMillimeters(label.position.y);
+    cl.rotation_degrees = label.rotation_degrees;
+    cl.global = label.global;
+    scene.labels.push_back(cl);
+
+    includeSchematicBounds(cl.x_units, cl.y_units);
+  }
+
+  for (const PowerSymbol& ps : project.power_symbols) {
+    CanvasPowerSymbol cps;
+    cps.id = ps.id;
+    cps.value = ps.value;
+    cps.net_id = ps.net_id;
+    cps.x_units = toMillimeters(ps.position.x);
+    cps.y_units = toMillimeters(ps.position.y);
+    cps.rotation_degrees = ps.rotation_degrees;
+    scene.power_symbols.push_back(cps);
+
+    includeSchematicBounds(cps.x_units, cps.y_units);
+  }
+
   if (has_bounds) {
     constexpr double padding_units = 10.0;
     scene.board_origin_x_units = min_x - (padding_units / 2.0);

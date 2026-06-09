@@ -214,6 +214,10 @@ class JsonReader {
         project.nets = readNets();
       } else if (key == "wires") {
         project.wires = readWireSegments();
+      } else if (key == "labels") {
+        project.labels = readLabels();
+      } else if (key == "power_symbols") {
+        project.power_symbols = readPowerSymbols();
       } else if (key == "constraints") {
         project.constraints = readConstraints();
       } else {
@@ -985,7 +989,9 @@ class JsonReader {
         while (true) {
           const std::string key = readString();
           expect(':');
-          if (key == "start") {
+          if (key == "id") {
+            wire.id = readString();
+          } else if (key == "start") {
             wire.start = readPoint();
           } else if (key == "end") {
             wire.end = readPoint();
@@ -1011,6 +1017,65 @@ class JsonReader {
       if (peek(']')) {
         throw std::runtime_error("trailing comma in wires array");
       }
+    }
+  }
+
+  std::vector<Label> readLabels() {
+    std::vector<Label> labels;
+    expect('[');
+    if (consume(']')) return labels;
+    while (true) {
+      Label label;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") label.id = readString();
+          else if (key == "text") label.text = readString();
+          else if (key == "net_id") label.net_id = readString();
+          else if (key == "position") label.position = readPoint();
+          else if (key == "rotation_degrees") label.rotation_degrees = readDouble();
+          else if (key == "global") label.global = readBool();
+          else throw std::runtime_error("unknown label key: " + key);
+          if (consume('}')) break;
+          expect(',');
+          if (peek('}')) throw std::runtime_error("trailing comma in label object");
+        }
+      }
+      labels.push_back(label);
+      if (consume(']')) return labels;
+      expect(',');
+      if (peek(']')) throw std::runtime_error("trailing comma in labels array");
+    }
+  }
+
+  std::vector<PowerSymbol> readPowerSymbols() {
+    std::vector<PowerSymbol> power_symbols;
+    expect('[');
+    if (consume(']')) return power_symbols;
+    while (true) {
+      PowerSymbol symbol;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") symbol.id = readString();
+          else if (key == "value") symbol.value = readString();
+          else if (key == "net_id") symbol.net_id = readString();
+          else if (key == "position") symbol.position = readPoint();
+          else if (key == "rotation_degrees") symbol.rotation_degrees = readDouble();
+          else throw std::runtime_error("unknown power symbol key: " + key);
+          if (consume('}')) break;
+          expect(',');
+          if (peek('}')) throw std::runtime_error("trailing comma in power symbol object");
+        }
+      }
+      power_symbols.push_back(symbol);
+      if (consume(']')) return power_symbols;
+      expect(',');
+      if (peek(']')) throw std::runtime_error("trailing comma in power symbols array");
     }
   }
 
@@ -1673,6 +1738,7 @@ std::string dumpProjectJson(const Project& project) {
   for (std::size_t i = 0; i < project.wires.size(); ++i) {
     const WireSegment& wire = project.wires.at(i);
     out << "    {\n";
+    writeField(out, 6, "id", wire.id);
     out << "      \"start\": ";
     writePoint(out, 0, wire.start);
     out << ",\n";
@@ -1681,6 +1747,37 @@ std::string dumpProjectJson(const Project& project) {
     out << ",\n";
     writeField(out, 6, "net_id", wire.net_id, false);
     out << "    }" << (i + 1 == project.wires.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n";
+
+  out << "  \"labels\": [\n";
+  for (std::size_t i = 0; i < project.labels.size(); ++i) {
+    const Label& label = project.labels.at(i);
+    out << "    {\n";
+    writeField(out, 6, "id", label.id);
+    writeField(out, 6, "text", label.text);
+    writeField(out, 6, "net_id", label.net_id);
+    out << "      \"position\": ";
+    writePoint(out, 0, label.position);
+    out << ",\n";
+    out << "      \"rotation_degrees\": " << label.rotation_degrees << ",\n";
+    out << "      \"global\": " << (label.global ? "true" : "false") << '\n';
+    out << "    }" << (i + 1 == project.labels.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n";
+
+  out << "  \"power_symbols\": [\n";
+  for (std::size_t i = 0; i < project.power_symbols.size(); ++i) {
+    const PowerSymbol& symbol = project.power_symbols.at(i);
+    out << "    {\n";
+    writeField(out, 6, "id", symbol.id);
+    writeField(out, 6, "value", symbol.value);
+    writeField(out, 6, "net_id", symbol.net_id);
+    out << "      \"position\": ";
+    writePoint(out, 0, symbol.position);
+    out << ",\n";
+    out << "      \"rotation_degrees\": " << symbol.rotation_degrees << '\n';
+    out << "    }" << (i + 1 == project.power_symbols.size() ? "" : ",") << '\n';
   }
   out << "  ]\n";
   out << "}\n";

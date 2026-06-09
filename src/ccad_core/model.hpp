@@ -34,9 +34,27 @@ struct Net {
 };
 
 struct WireSegment {
+  std::string id;
   Point start;
   Point end;
   std::string net_id;
+};
+
+struct Label {
+  std::string id;
+  std::string text;
+  std::string net_id;
+  Point position;
+  double rotation_degrees = 0.0;
+  bool global = false;
+};
+
+struct PowerSymbol {
+  std::string id;
+  std::string value; // e.g. "GND", "+5V"
+  std::string net_id;
+  Point position;
+  double rotation_degrees = 0.0;
 };
 
 struct Constraint {
@@ -169,6 +187,8 @@ struct Project {
   std::vector<Component> components;
   std::vector<Net> nets;
   std::vector<WireSegment> wires;
+  std::vector<Label> labels;
+  std::vector<PowerSymbol> power_symbols;
   std::vector<Constraint> constraints;
 };
 
