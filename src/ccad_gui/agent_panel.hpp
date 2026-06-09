@@ -40,6 +40,7 @@ class AgentPanel final : public QWidget {
   };
 
   explicit AgentPanel(QWidget* parent = nullptr);
+  ~AgentPanel() override;
 
   void setUiMapProvider(UiMapProvider provider);
   void setSafeActionTrigger(SafeActionTrigger trigger);

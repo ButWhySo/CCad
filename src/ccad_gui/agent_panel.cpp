@@ -796,6 +796,18 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   startPythonBackend();
 }
 
+AgentPanel::~AgentPanel() {
+  if (python_process_) {
+    if (python_process_->state() == QProcess::Running) {
+      python_process_->terminate();
+      if (!python_process_->waitForFinished(500)) {
+        python_process_->kill();
+        python_process_->waitForFinished(500);
+      }
+    }
+  }
+}
+
 #include <QTextBrowser>
 
 void AgentPanel::appendChatMessage(const QString& role, const QString& text) {
