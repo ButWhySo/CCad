@@ -198,10 +198,9 @@ int libCommand(const std::vector<std::string>& args) {
       return static_cast<bool>(output) ? 0 : 2;
     }
 
-    if (subcommand == "create-component") {
+    if (subcommand == "new-symbol") {
       const std::map<std::string, std::string> options =
-          parseOptions(args, 1, {"--type", "--name", "--pins", "--package", "--out"});
-      const std::string type = requireOption(options, "--type");
+          parseOptions(args, 1, {"--name", "--pins", "--out"});
       const std::string name = requireOption(options, "--name");
       const std::string out_path = requireOption(options, "--out");
       
@@ -216,27 +215,41 @@ int libCommand(const std::vector<std::string>& args) {
         return 2;
       }
 
-      if (type == "symbol") {
-        ccad::SymbolParams params;
-        params.name = name;
-        params.pin_count = pins;
-        ccad::Symbol sym = ccad::generateParametricSymbol(params);
-        output << ccad::dumpSymbolsJson({sym});
-      } else if (type == "footprint") {
-        ccad::FootprintParams params;
-        params.name = name;
-        params.pin_count = pins;
-        if (options.contains("--package")) {
-          params.package_type = options.at("--package");
-        } else {
-          params.package_type = "SOP"; // default
-        }
-        ccad::Footprint fp = ccad::generateParametricFootprint(params);
-        output << ccad::dumpFootprintJson(fp);
-      } else {
-        std::cerr << "type must be symbol or footprint\n";
+      ccad::SymbolParams params;
+      params.name = name;
+      params.pin_count = pins;
+      ccad::Symbol sym = ccad::generateParametricSymbol(params);
+      output << ccad::dumpSymbolsJson({sym});
+      return static_cast<bool>(output) ? 0 : 2;
+    }
+
+    if (subcommand == "new-footprint") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--name", "--pins", "--package", "--out"});
+      const std::string name = requireOption(options, "--name");
+      const std::string out_path = requireOption(options, "--out");
+      
+      int pins = 8;
+      if (options.contains("--pins")) {
+        pins = std::stoi(options.at("--pins"));
+      }
+
+      std::ofstream output(out_path);
+      if (!output) {
+        std::cerr << "failed to open output file: " << out_path << '\n';
         return 2;
       }
+
+      ccad::FootprintParams params;
+      params.name = name;
+      params.pin_count = pins;
+      if (options.contains("--package")) {
+        params.package_type = options.at("--package");
+      } else {
+        params.package_type = "SOP"; // default
+      }
+      ccad::Footprint fp = ccad::generateParametricFootprint(params);
+      output << ccad::dumpFootprintJson(fp);
       return static_cast<bool>(output) ? 0 : 2;
     }
 

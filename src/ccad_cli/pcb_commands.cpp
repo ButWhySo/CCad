@@ -840,6 +840,55 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "add-zone") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--name", "--net", "--layers",
+                                 "--x-mm", "--y-mm", "--width-mm", "--height-mm",
+                                 "--priority", "--clearance-mm",
+                                 "--min-thickness-mm", "--pad-connection"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      requireUniquePhysicalObjectId(board, id);
+      const std::vector<std::string> layers = splitLayers(requireOption(options, "--layers"));
+      for (const std::string& l : layers) {
+        if (!l.starts_with("*.")) requireLayer(board, l);
+      }
+      
+      const double x = requireDoubleOption(options, "--x-mm");
+      const double y = requireDoubleOption(options, "--y-mm");
+      const double w = requireDoubleOption(options, "--width-mm");
+      const double h = requireDoubleOption(options, "--height-mm");
+      
+      const std::vector<ccad::Point> points = {
+        {ccad::millimeters(x), ccad::millimeters(y)},
+        {ccad::millimeters(x + w), ccad::millimeters(y)},
+        {ccad::millimeters(x + w), ccad::millimeters(y + h)},
+        {ccad::millimeters(x), ccad::millimeters(y + h)}
+      };
+      for (const ccad::Point& point : points) {
+        requireInsideBoard(board, point, "zone outline");
+      }
+      board.zones.push_back(ccad::BoardZone{
+          .id = id,
+          .name = options.contains("--name") ? options.at("--name") : "",
+          .net_id = options.contains("--net") ? options.at("--net") : "",
+          .layer_ids = layers,
+          .outline = points,
+          .priority = options.contains("--priority") ? requireNonNegativeIntOption(options, "--priority") : 0,
+          .clearance = ccad::millimeters(optionDoubleOrDefault(options, "--clearance-mm", 0.508)),
+          .min_thickness = ccad::millimeters(optionDoubleOrDefault(options, "--min-thickness-mm", 0.254)),
+          .fill_enabled = true,
+          .pad_connection = options.contains("--pad-connection") ? requireZonePadConnection(options) : "thermal"
+      });
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "add-text") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--layer", "--text", "--x-mm", "--y-mm",

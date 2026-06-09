@@ -120,6 +120,35 @@ std::vector<Diagnostic> runErc(const Project& project) {
     }
   }
 
+  for (const WireSegment& wire : project.wires) {
+    if (!wire.net_id.empty() && net_ids.find(wire.net_id) == net_ids.end()) {
+      diagnostics.push_back(makeDiagnostic("error", "UNKNOWN_NET_ID",
+                                           "Wire references an unknown net ID", wire.id.empty() ? wire.net_id : wire.id));
+    }
+  }
+
+  for (const Label& label : project.labels) {
+    if (label.id.empty()) {
+      diagnostics.push_back(makeDiagnostic("error", "INVALID_LABEL_ID",
+                                           "Label ID must not be empty", label.id));
+    }
+    if (!label.net_id.empty() && net_ids.find(label.net_id) == net_ids.end()) {
+      diagnostics.push_back(makeDiagnostic("error", "UNKNOWN_NET_ID",
+                                           "Label references an unknown net ID", label.id));
+    }
+  }
+
+  for (const PowerSymbol& ps : project.power_symbols) {
+    if (ps.id.empty()) {
+      diagnostics.push_back(makeDiagnostic("error", "INVALID_POWER_SYMBOL_ID",
+                                           "Power Symbol ID must not be empty", ps.id));
+    }
+    if (!ps.net_id.empty() && net_ids.find(ps.net_id) == net_ids.end()) {
+      diagnostics.push_back(makeDiagnostic("error", "UNKNOWN_NET_ID",
+                                           "Power Symbol references an unknown net ID", ps.id));
+    }
+  }
+
   return diagnostics;
 }
 
