@@ -2656,12 +2656,14 @@ void ReviewWindow::pushUndoSnapshot() {
 }
 
 void ReviewWindow::handleObjectsMoved(const QPointF& delta) {
-  if (!project_cache_.board) return;
-  const ccad::Point p_delta = boardPointFromScene(project_cache_.board.value(), delta);
+  QGraphicsScene* active_scene = editor_tabs_->currentWidget() == schematic_view_ ? schematic_scene_ : canvas_scene_;
+  if (active_scene == canvas_scene_ && !project_cache_.board) return;
+
+  const ccad::Point p_delta = boardDeltaFromSceneDelta(delta);
   if (p_delta.x.nanometers == 0 && p_delta.y.nanometers == 0) return;
 
   bool moved = false;
-  for (QGraphicsItem* item : canvas_scene_->selectedItems()) {
+  for (QGraphicsItem* item : active_scene->selectedItems()) {
     QString id_str = item->data(Qt::UserRole).toString();
     if (id_str.isEmpty()) continue;
     std::string id = id_str.toStdString();
@@ -2706,6 +2708,12 @@ void ReviewWindow::handleObjectsMoved(const QPointF& delta) {
     for (auto& region : project_cache_.board->placement_regions) {
       if (region.id == id) {
         region.area.origin.x.nanometers += p_delta.x.nanometers; region.area.origin.y.nanometers += p_delta.y.nanometers;
+        moved = true; break;
+      }
+    }
+    for (auto& comp : project_cache_.components) {
+      if (comp.id == id) {
+        comp.position.x.nanometers += p_delta.x.nanometers; comp.position.y.nanometers += p_delta.y.nanometers;
         moved = true; break;
       }
     }
@@ -7306,9 +7314,6 @@ QString ReviewWindow::deleteBoardObjectForAutomation(const QString& object_id) {
         .arg(jsonString(id))
         .arg(extra);
   };
-  if (!project_cache_.board.has_value()) {
-    return result(false, "missing_board", object_id, {});
-  }
   if (object_id.isEmpty()) {
     return result(false, "missing_object_id", object_id, {});
   }
@@ -7316,8 +7321,21 @@ QString ReviewWindow::deleteBoardObjectForAutomation(const QString& object_id) {
     cancelInteractionMode();
   }
 
-  ccad::Board& board = *project_cache_.board;
   const std::string id = object_id.toStdString();
+  const auto erase_comp = std::find_if(
+      project_cache_.components.begin(), project_cache_.components.end(),
+      [&id](const ccad::Component& comp) { return comp.id == id; });
+  if (erase_comp != project_cache_.components.end()) {
+    pushUndoSnapshot();
+    project_cache_.components.erase(erase_comp);
+    saveProjectCacheAfterMutation("Deleted component " + object_id);
+    return result(true, "deleted", object_id, "component");
+  }
+
+  if (!project_cache_.board.has_value()) {
+    return result(false, "missing_board", object_id, {});
+  }
+  ccad::Board& board = *project_cache_.board;
   const auto erase_pad = std::find_if(board.pads.begin(), board.pads.end(),
                                       [&id](const ccad::Pad& pad) { return pad.id == id; });
   if (erase_pad != board.pads.end()) {
@@ -7393,11 +7411,12 @@ QString ReviewWindow::deleteBoardObjectForAutomation(const QString& object_id) {
 }
 
 QString ReviewWindow::deleteSelectedBoardObject() {
-  if (canvas_scene_ == nullptr) {
+  QGraphicsScene* active_scene = editor_tabs_->currentWidget() == schematic_view_ ? schematic_scene_ : canvas_scene_;
+  if (active_scene == nullptr) {
     return QString("{\"schema_version\":1,\"id\":\"action:delete_cursor\",\"performed\":false,"
                    "\"reason\":\"canvas_unavailable\"}\n");
   }
-  const QList<QGraphicsItem*> selected_items = canvas_scene_->selectedItems();
+  const QList<QGraphicsItem*> selected_items = active_scene->selectedItems();
   if (selected_items.isEmpty()) {
     if (interaction_mode_ != InteractionMode::Default) {
       cancelInteractionMode();
