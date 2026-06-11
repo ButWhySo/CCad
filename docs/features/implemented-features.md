@@ -222,6 +222,7 @@ What it does:
 - Exposes no-secret provider setup metadata with `ccad agent provider-config-schema`, `ccad agent provider-config-template`, and `ccad agent provider-status`.
 - Exposes disabled-by-default trace export metadata with `ccad agent trace-export-schema`, `ccad agent trace-export-template`, `ccad agent trace-redaction-policy`, and `ccad agent trace-export-dry-run`.
 - Exposes structured KiCad CLI evidence metadata, command planning, readiness checks, and guarded local execution with `ccad agent kicad-evidence-schema`, `ccad agent kicad-evidence-plan`, `ccad agent kicad-evidence-dry-run`, and `ccad agent kicad-evidence-run`.
+- Exposes the first KiCad PCB API parity schema with `ccad agent pcb-api-schema` and JSON-RPC `agent.pcb_api_schema`, mapping KiCad PCB API handlers to CCad's current headless commands and declaring first-slice parity limits.
 - Places imported CCad footprint pads onto a board with `ccad pcb place-footprint`.
 - Places converted CCad/KiCad schematic symbols into `Project::components` with `ccad sch place-symbol`.
 - Validates CCad project files.
@@ -282,8 +283,17 @@ On Windows PowerShell:
 .\build\ccad.exe agent kicad-evidence-plan --kind pcb-drc --input board.kicad_pcb --output artifacts\kicad\drc.json --format json --units mm --severity all --exit-code-violations
 .\build\ccad.exe agent kicad-evidence-dry-run --kind pcb-export-gerbers --input board.kicad_pcb --output artifacts\fab\gerbers --layers F.Cu,B.Cu
 .\build\ccad.exe agent kicad-evidence-run --kind sch-erc --input root.kicad_sch --output artifacts\kicad\erc.json --format json
+.\build\ccad.exe agent pcb-api-schema
 .\build\ccad.exe pcb place-footprint --file board.ccad.json --footprint R_0805_2012Metric.ccad-footprint.json --component R1 --at-x-mm 16 --at-y-mm 14 --layer F.Cu --rotation-deg 90
 .\build\ccad.exe sch place-symbol --file schematic.ccad.json --symbol library-cache\symbols\1N4007.json --component D1 --at-x-mm 20 --at-y-mm 15 --rotation-deg 0
+.\build\ccad.exe pcb list-enabled-layers --file board.ccad.json
+.\build\ccad.exe pcb list-visible-layers --file board.ccad.json
+.\build\ccad.exe pcb get-layer-name --file board.ccad.json --id F.Cu
+.\build\ccad.exe pcb get-board-stackup --file board.ccad.json
+.\build\ccad.exe pcb get-rules --file board.ccad.json
+.\build\ccad.exe pcb get-outline --file board.ccad.json
+.\build\ccad.exe pcb list-by-net --file board.ccad.json --net GND
+.\build\ccad.exe pcb list-connected --file board.ccad.json --id U1.1
 .\build\ccad.exe pcb add-pad --file board.ccad.json --id P1 --component U1 --pin 1 --net N1 --layer F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 .\build\ccad.exe pcb add-via --file board.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
 .\build\ccad.exe pcb add-track --file board.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
@@ -295,6 +305,9 @@ PCB authoring command behavior:
 - `pcb add-via` writes one via into `board.vias`.
 - `pcb add-track` writes one straight track segment into `board.tracks`.
 - `pcb add-keepout` writes one rectangular keepout into `board.keepouts`.
+- `pcb list-enabled-layers`, `pcb list-visible-layers`, `pcb get-layer-name`, and `pcb get-board-stackup` expose read-only KiCad-style layer/stackup query data for agents.
+- `pcb get-rules` and `pcb get-outline` expose the current board-level design-rule and bounding-box slices.
+- `pcb list-by-net` and `pcb list-connected` expose same-net pad, via, track, and zone queries with explicit first-slice connectivity scope.
 - Commands mutate the file passed through `--file`.
 - Commands reject missing boards, duplicate primitive IDs, invalid numeric dimensions, unknown layers, out-of-board positions/areas, and via drill larger than via diameter.
 
@@ -321,6 +334,7 @@ Agent command behavior:
 - `agent trace-export-schema`, `agent trace-export-template`, `agent trace-redaction-policy`, and `agent trace-export-dry-run` document OpenTelemetry/Langfuse trace export planning, keep export disabled by default, redact OTLP header values, and perform no network probes.
 - `agent kicad-evidence-schema`, `agent kicad-evidence-plan`, `agent kicad-evidence-dry-run`, and `agent kicad-evidence-run` document and plan KiCad CLI DRC/ERC/fabrication evidence commands as structured arrays rather than free-form shell strings.
 - `agent kicad-evidence-run` does not execute unless the caller passes `--execute` or JSON-RPC `execute:true`; read-only `agent serve` rejects JSON-RPC execution with `-32604` and `external_process_file_write`.
+- `agent pcb-api-schema` documents the current KiCad PCB API handler mapping for headless CCad automation. It declares complete, first-slice, and not-yet-supported surfaces so agents do not confuse `list-connected` same-net queries with KiCad's full connectivity graph.
 - `agent serve` exposes matching `agent.provider_config_schema`, `agent.provider_config_template`, `agent.provider_status`, `agent.trace_export_schema`, `agent.trace_export_template`, `agent.trace_redaction_policy`, `agent.trace_export_dry_run`, `agent.kicad_evidence_schema`, `agent.kicad_evidence_plan`, `agent.kicad_evidence_dry_run`, and `agent.kicad_evidence_run` routes.
 - Write-capable or unknown commands are reported with `approval_required:true`, a risk level, and an approval reason such as `project_mutation`, `file_write`, `agent_session_write`, or `unknown_command`.
 - The method catalog and `agent tool-guide --method <name>` include the new state methods so agents can discover them without scraping docs.
@@ -1766,3 +1780,13 @@ Full UI parity has been extended from the PCB Canvas to the Schematic Canvas. Th
 ## Sprint 219 Python Orchestrator De-stubbing Addendum
 
 The agent's Python orchestrator (`src/ccad_agent/orchestrator.py`) has been fully de-stubbed and integrated with the LangGraph state machine. Mock tool implementations (`_mock_call_kicad`, `_mock_policy_check`, etc.) were removed, and proper `ToolNode` instances wrapping the real tool implementations are now executed during the `call_tools` graph node. Provider and Execution contexts have been cleaned up.
+
+## Sprint 220 KiCad PCB API Parity Query Addendum
+
+The first KiCad PCB API parity audit slice starts from `F:\kicad_src\pcbnew\api\api_handler_pcb.h` and `api_handler_pcb.cpp`. CCad now exposes read-only headless analogues for the safe subset of KiCad handler behavior through `pcb list-enabled-layers`, `pcb list-visible-layers`, `pcb get-layer-name`, `pcb get-board-stackup`, `pcb get-rules`, `pcb get-outline`, `pcb list-by-net`, and `pcb list-connected`.
+
+The Agent surface now has `agent pcb-api-schema` and JSON-RPC `agent.pcb_api_schema`. The schema maps KiCad handlers to CCad commands, declares first-slice behavior, and marks not-yet-complete areas such as full KiCad connectivity graph parity, board origin, graphics defaults, custom rules, pad shape polygons, selection, net classes, and active-layer mutation.
+
+The same-net commands intentionally report `connectivity_scope:"net_equivalent_first_slice"`. They inspect current pad, via, track, and zone net IDs and do not yet infer copper contact, zone-fill islands, net ties, or KiCad connectivity solver state.
+
+The Agent orchestrator also restores the default provider safety contract: generated `agent.plan_with_provider` tasks enter the plan as `blocked` with `provider_execution_disabled` until a future approved provider runner explicitly enables provider execution. This keeps the current Agent layer honest while the KiCad parity work continues.

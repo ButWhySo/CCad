@@ -192,13 +192,10 @@ static void test_plan_add_via() {
     auto goal = orch.plan("Add a via at position 10,15 on net VCC", ctx);
 
     assert(goal.status == ccad::GoalStatus::Pending);
-    assert(goal.tasks.size() == 4);  // review, drc_before, add_via, drc_after
-    assert(goal.tasks[0].tool_name == "project.review");
-    assert(goal.tasks[1].tool_name == "pcb.drc");
-    assert(goal.tasks[2].tool_name == "pcb.add-via");
-    assert(goal.tasks[3].tool_name == "pcb.drc");
-    assert(goal.tasks[2].risk == ccad::TaskRisk::LowMutation);
-    assert(goal.total_count == 4);
+    assert(goal.tasks.size() == 2);
+    assert(goal.tasks[0].tool_name == "project.context");
+    assert(goal.tasks[1].tool_name == "agent.plan_with_provider");
+    assert(goal.total_count == 2);
 
     std::cout << "PASS\n";
 }
@@ -214,8 +211,8 @@ static void test_plan_drc() {
 
     assert(goal.status == ccad::GoalStatus::Pending);
     assert(goal.tasks.size() == 2);
-    assert(goal.tasks[0].tool_name == "pcb.drc");
-    assert(goal.tasks[1].tool_name == "project.diagnostics");
+    assert(goal.tasks[0].tool_name == "project.context");
+    assert(goal.tasks[1].tool_name == "agent.plan_with_provider");
 
     std::cout << "PASS\n";
 }
@@ -230,10 +227,9 @@ static void test_plan_review() {
     auto goal = orch.plan("Review the current board status", ctx);
 
     assert(goal.status == ccad::GoalStatus::Pending);
-    assert(goal.tasks.size() == 3);
-    assert(goal.tasks[0].tool_name == "project.review");
-    assert(goal.tasks[1].tool_name == "project.object_counts");
-    assert(goal.tasks[2].tool_name == "project.diagnostics");
+    assert(goal.tasks.size() == 2);
+    assert(goal.tasks[0].tool_name == "project.context");
+    assert(goal.tasks[1].tool_name == "agent.plan_with_provider");
 
     std::cout << "PASS\n";
 }
@@ -265,11 +261,6 @@ static void test_plan_kicad_parity() {
     auto ctx = make_test_context();
     auto goal = orch.plan("Place a symbol, route a track, and pour a polygon", ctx);
 
-    // This generic text triggers agent_plan_with_provider in dry run because
-    // the heuristic planner might not map it perfectly. But we can explicitly test 
-    // the tool dispatch by executing the generic goal which will have status blocked,
-    // OR we can manually craft a goal to test tool execution.
-
     assert(goal.status == ccad::GoalStatus::Pending);
     
     std::cout << "PASS\n";
@@ -292,7 +283,6 @@ static void test_execute_drc_goal() {
     assert(goal.completed_count == 2);
     assert(goal.failed_count == 0);
     assert(goal.tasks[0].status == ccad::TaskStatus::Completed);
-    assert(goal.tasks[0].result_json.find("\"passed\":true") != std::string::npos);
     assert(goal.tasks[1].status == ccad::TaskStatus::Completed);
 
     std::cout << "PASS\n";
@@ -312,7 +302,7 @@ static void test_execute_review_goal() {
     auto goal = orch.orchestrate("Review board status", ctx);
 
     assert(goal.status == ccad::GoalStatus::Completed);
-    assert(goal.completed_count == 3);
+    assert(goal.completed_count == 2);
 
     std::cout << "PASS\n";
 }
@@ -374,7 +364,10 @@ static void test_goal_json() {
     assert(json.find("\"total_tasks\":2") != std::string::npos);
 
     auto tasks = orch.task_list_json(goal);
-    assert(tasks.find("\"project.diagnostics\"") != std::string::npos);
+    assert(tasks.find("\"project.context\"") != std::string::npos);
+    assert(tasks.find("\"agent.plan_with_provider\"") != std::string::npos);
+    assert(tasks.find("\"status\":\"blocked\"") != std::string::npos);
+    assert(tasks.find("\"provider_execution_disabled\"") != std::string::npos);
 
     std::cout << "PASS\n";
 }

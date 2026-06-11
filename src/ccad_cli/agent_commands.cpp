@@ -169,6 +169,8 @@ std::string agentProtocolCatalogJson() {
                            false, false),
       agentMethodEntryJson("agent.kicad_evidence_run", "agent", "KiCad Evidence Run", false,
                            false, false),
+      agentMethodEntryJson("agent.pcb_api_schema", "agent", "PCB API Parity Schema", true, false,
+                           false),
       agentMethodEntryJson("agent.evidence_manifest_schema", "agent", "Evidence Manifest Schema",
                            true, false, false),
       agentMethodEntryJson("agent.tool_guide", "agent", "Tool Guide", true, false, false),
@@ -195,7 +197,8 @@ std::string agentQuickstartJson() {
          "\"agent.provider_config_template\",\"agent.provider_status\","
          "\"agent.trace_export_schema\",\"agent.trace_export_dry_run\",\"agent.tasks\","
          "\"agent.kicad_evidence_schema\",\"agent.kicad_evidence_plan\","
-         "\"agent.kicad_evidence_dry_run\",\"agent.evidence\",\"agent.approvals\",\"agent.harness_context\","
+         "\"agent.kicad_evidence_dry_run\",\"agent.pcb_api_schema\",\"agent.evidence\","
+         "\"agent.approvals\",\"agent.harness_context\","
          "\"agent.tool_guide\",\"tools/list\"],"
          "\"screenshot_rule\":\"GUI screenshots must use the project visual-validation harness with beep and current settle waits\","
          "\"unsafe_rule\":\"Write commands require explicit --allow-write in agent serve and direct human approval when policy requires it\"}";
@@ -213,12 +216,59 @@ std::string agentHarnessContextJson() {
          "\"agent.provider_config_template\",\"agent.provider_status\","
          "\"agent.trace_export_schema\",\"agent.trace_export_dry_run\","
          "\"agent.kicad_evidence_schema\",\"agent.kicad_evidence_plan\","
-         "\"agent.kicad_evidence_dry_run\",\"agent.tasks\",\"agent.evidence\","
+         "\"agent.kicad_evidence_dry_run\",\"agent.pcb_api_schema\",\"agent.tasks\",\"agent.evidence\","
          "\"agent.approvals\",\"agent.tool_guide\",\"ccad_execute\","
          "\"mcp_stdio\"],"
          "\"visual_validation_policy\":{\"single_preview_wait_seconds\":7,"
          "\"multi_action_initial_wait_seconds\":5,\"multi_action_step_wait_ms\":800,"
          "\"beep_before_gui_test\":true}}";
+}
+
+std::string agentPcbApiSchemaJson() {
+  return "{\"schema_version\":1,"
+         "\"schema_kind\":\"ccad_agent_pcb_api_schema\","
+         "\"surface\":\"headless_cli\","
+         "\"source_reference\":\"F:/kicad_src/pcbnew/api/api_handler_pcb.cpp\","
+         "\"source_header\":\"F:/kicad_src/pcbnew/api/api_handler_pcb.h\","
+         "\"external_behavior_reference\":\"KiCad PCB editor API_HANDLER_PCB handlers\","
+         "\"connectivity_scope\":\"net_equivalent_first_slice\","
+         "\"limitations\":[\"CCad currently groups connectable objects by explicit net_id\","
+         "\"Full KiCad connectivity graph traversal still needs a kernel connectivity engine\"],"
+         "\"mappings\":["
+         "{\"kicad_handler\":\"GetItems\",\"ccad_command\":\"pcb list-objects\","
+         "\"status\":\"available\"},"
+         "{\"kicad_handler\":\"GetItemsById\",\"ccad_command\":\"pcb get-object\","
+         "\"status\":\"available\"},"
+         "{\"kicad_handler\":\"GetBoardEnabledLayers\","
+         "\"ccad_command\":\"pcb list-enabled-layers\","
+         "\"status\":\"first_slice\",\"scope\":\"enabled_layers_from_project\"},"
+         "{\"kicad_handler\":\"GetVisibleLayers\","
+         "\"ccad_command\":\"pcb list-visible-layers\","
+         "\"status\":\"first_slice\",\"scope\":\"visible_layers_from_project\"},"
+         "{\"kicad_handler\":\"GetBoardLayerName\","
+         "\"ccad_command\":\"pcb get-layer-name\","
+         "\"status\":\"available\"},"
+         "{\"kicad_handler\":\"GetBoardStackup\","
+         "\"ccad_command\":\"pcb get-board-stackup\","
+         "\"status\":\"first_slice\",\"scope\":\"enabled_layer_order\"},"
+         "{\"kicad_handler\":\"GetBoardDesignRules\","
+         "\"ccad_command\":\"pcb get-rules\","
+         "\"status\":\"first_slice\",\"scope\":\"minimum_constraints\"},"
+         "{\"kicad_handler\":\"GetBoundingBox\","
+         "\"ccad_command\":\"pcb get-outline\","
+         "\"status\":\"first_slice\",\"scope\":\"rectangular_board_outline\"},"
+         "{\"kicad_handler\":\"GetNets\",\"ccad_command\":\"pcb list-nets\","
+         "\"status\":\"available\"},"
+         "{\"kicad_handler\":\"GetItemsByNet\",\"ccad_command\":\"pcb list-by-net\","
+         "\"status\":\"first_slice\",\"connectivity_scope\":\"net_equivalent_first_slice\","
+         "\"object_types\":[\"pad\",\"via\",\"track\",\"zone\"]},"
+         "{\"kicad_handler\":\"GetConnectedItems\",\"ccad_command\":\"pcb list-connected\","
+         "\"status\":\"first_slice\",\"connectivity_scope\":\"net_equivalent_first_slice\","
+         "\"object_types\":[\"pad\",\"via\",\"track\",\"zone\"]}"
+         "],"
+         "\"agent_usage\":[\"Call agent.pcb_api_schema before PCB API parity work\","
+         "\"Use pcb list-connected for selected-object neighborhood context\","
+         "\"Use pcb list-by-net for same-net board inspection\"]}";
 }
 
 std::string agentWorkspaceStateJson() {
@@ -340,6 +390,9 @@ std::string preferredSurfaceForMethod(const std::string& method) {
       method == "agent.kicad_evidence_dry_run" || method == "agent.kicad_evidence_run") {
     return "headless_cli_kicad_evidence";
   }
+  if (method == "agent.pcb_api_schema") {
+    return "headless_cli_pcb_api_parity";
+  }
   if (method.rfind("agent.", 0) == 0) {
     return "read_only_protocol_metadata";
   }
@@ -371,6 +424,7 @@ std::string agentToolGuideJson(const std::string& method) {
                      method == "agent.kicad_evidence_plan" ||
                      method == "agent.kicad_evidence_dry_run" ||
                      method == "agent.kicad_evidence_run" ||
+                     method == "agent.pcb_api_schema" ||
                      method == "agent.evidence_manifest_schema" || method == "agent.tool_guide" ||
                      method == "ccad_execute";
   std::ostringstream out;
@@ -433,6 +487,9 @@ std::string agentMetadataJson(const std::string& command, const std::string& met
   }
   if (command == "kicad-evidence-schema" || command == "kicad_evidence_schema") {
     return agentKiCadEvidenceSchemaJson();
+  }
+  if (command == "pcb-api-schema" || command == "pcb_api_schema") {
+    return agentPcbApiSchemaJson();
   }
   if (command == "evidence-manifest-schema" || command == "evidence_manifest_schema") {
     return agentEvidenceManifestSchemaJson();
@@ -715,6 +772,9 @@ int agentCommand(const std::vector<std::string>& args) {
       std::cout.flush();
     } else if (method == "agent.evidence_manifest_schema") {
       std::cout << formatSuccess(id, agentEvidenceManifestSchemaJson()) << "\n";
+      std::cout.flush();
+    } else if (method == "agent.pcb_api_schema") {
+      std::cout << formatSuccess(id, agentPcbApiSchemaJson()) << "\n";
       std::cout.flush();
     } else if (method == "agent.tool_guide") {
       std::string method_name = extractStringValue(line, "method_name");

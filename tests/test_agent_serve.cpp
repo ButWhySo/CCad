@@ -161,6 +161,8 @@ void testAgentMethodsCommand() {
                  "agent methods command includes KiCad evidence dry run");
   assertContains(out.str(), "\"method\":\"agent.kicad_evidence_run\"",
                  "agent methods command includes guarded KiCad evidence run");
+  assertContains(out.str(), "\"method\":\"agent.pcb_api_schema\"",
+                 "agent methods command includes PCB API parity schema");
   assertContains(out.str(), "\"method\":\"agent.evidence_manifest_schema\"",
                  "agent methods command includes evidence manifest schema");
 }
@@ -201,6 +203,39 @@ void testAgentMetadataCommands() {
                  "CLI evidence manifest schema documents artifact paths");
   assertContains(out.str(), "\"trace_id\"",
                  "CLI evidence manifest schema includes trace-ready fields");
+
+  out.str("");
+  out.clear();
+  oldCout = std::cout.rdbuf(out.rdbuf());
+  std::vector<std::string> pcb_api_args = {"pcb-api-schema"};
+  result = ccad_cli::agentCommand(pcb_api_args);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) {
+    std::cerr << "FAIL testAgentMetadataCommands PCB API schema exited with " << result << "\n";
+    std::exit(1);
+  }
+  assertContains(out.str(), "\"schema_kind\":\"ccad_agent_pcb_api_schema\"",
+                 "PCB API schema reports schema kind");
+  assertContains(out.str(), "F:/kicad_src/pcbnew/api/api_handler_pcb.cpp",
+                 "PCB API schema references the audited KiCad PCB handler");
+  assertContains(out.str(), "\"kicad_handler\":\"GetConnectedItems\"",
+                 "PCB API schema includes KiCad connected-items handler");
+  assertContains(out.str(), "\"ccad_command\":\"pcb list-connected\"",
+                 "PCB API schema maps connected items to the CCad CLI command");
+  assertContains(out.str(), "\"kicad_handler\":\"GetItemsByNet\"",
+                 "PCB API schema includes KiCad items-by-net handler");
+  assertContains(out.str(), "\"ccad_command\":\"pcb list-by-net\"",
+                 "PCB API schema maps items by net to the CCad CLI command");
+  assertContains(out.str(), "\"kicad_handler\":\"GetBoardStackup\"",
+                 "PCB API schema includes KiCad board stackup handler");
+  assertContains(out.str(), "\"ccad_command\":\"pcb get-board-stackup\"",
+                 "PCB API schema maps stackup to the CCad CLI command");
+  assertContains(out.str(), "\"kicad_handler\":\"GetBoardDesignRules\"",
+                 "PCB API schema includes KiCad board design rules handler");
+  assertContains(out.str(), "\"ccad_command\":\"pcb get-rules\"",
+                 "PCB API schema maps design rules to the CCad CLI command");
+  assertContains(out.str(), "\"connectivity_scope\":\"net_equivalent_first_slice\"",
+                 "PCB API schema documents first-slice connectivity scope");
 }
 
 void testAgentProviderConfigCommands() {
@@ -1043,7 +1078,9 @@ void testAgentKiCadEvidenceJsonRpc() {
       "{\"jsonrpc\": \"2.0\", \"method\": \"agent.kicad_evidence_plan\", \"params\": {\"kind\": \"pcb-drc\", \"input_path\": \"board.kicad_pcb\", \"output_path\": \"artifacts/kicad/drc.json\", \"format\": \"json\", \"units\": \"mm\", \"severity\": \"all\", \"exit_code_violations\": true}, \"id\": 30}\n"
       "{\"jsonrpc\": \"2.0\", \"method\": \"agent.kicad_evidence_dry_run\", \"params\": {\"kind\": \"pcb-export-drill\", \"input_path\": \"board.kicad_pcb\", \"output_path\": \"artifacts/fab/drill\", \"format\": \"excellon\"}, \"id\": 31}\n"
       "{\"jsonrpc\": \"2.0\", \"method\": \"agent.tool_guide\", \"params\": {\"method_name\": \"agent.kicad_evidence_plan\"}, \"id\": 32}\n"
-      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.kicad_evidence_run\", \"params\": {\"kind\": \"pcb-drc\", \"input_path\": \"board.kicad_pcb\", \"output_path\": \"artifacts/kicad/drc.json\", \"execute\": true}, \"id\": 33}\n");
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.kicad_evidence_run\", \"params\": {\"kind\": \"pcb-drc\", \"input_path\": \"board.kicad_pcb\", \"output_path\": \"artifacts/kicad/drc.json\", \"execute\": true}, \"id\": 33}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.pcb_api_schema\", \"id\": 34}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"agent.tool_guide\", \"params\": {\"method_name\": \"agent.pcb_api_schema\"}, \"id\": 35}\n");
   std::ostringstream out;
   auto oldCin = std::cin.rdbuf(in.rdbuf());
   auto oldCout = std::cout.rdbuf(out.rdbuf());
@@ -1076,6 +1113,16 @@ void testAgentKiCadEvidenceJsonRpc() {
                  "read-only JSON-RPC denies executing KiCad evidence run");
   assertContains(out.str(), "external_process_file_write",
                  "KiCad evidence run denial includes external process write reason");
+  assertContains(out.str(), "\"id\": 34", "has PCB API schema request id");
+  assertContains(out.str(), "\"schema_kind\":\"ccad_agent_pcb_api_schema\"",
+                 "JSON-RPC exposes PCB API schema");
+  assertContains(out.str(), "\"kicad_handler\":\"GetConnectedItems\"",
+                 "JSON-RPC PCB API schema includes connected-items mapping");
+  assertContains(out.str(), "\"id\": 35", "has PCB API schema tool-guide request id");
+  assertContains(out.str(), "\"method\":\"agent.pcb_api_schema\"",
+                 "JSON-RPC tool guide finds PCB API schema");
+  assertContains(out.str(), "\"preferred_surface\":\"headless_cli_pcb_api_parity\"",
+                 "JSON-RPC tool guide points PCB API schema to the headless parity surface");
 }
 
 void testAgentServePermissionGatesReportApproval() {

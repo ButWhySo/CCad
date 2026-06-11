@@ -69,6 +69,19 @@ const std::vector<CommandHelp>& commandHelp() {
                   .usage = "ccad sch place-symbol --file <path> --symbol <path.json> "
                            "--component <id> --at-x-mm <n> --at-y-mm <n> "
                            "[--rotation-deg <n>]"},
+      CommandHelp{.name = "sch add-wire",
+                  .summary = "Append one wire segment to the schematic project",
+                  .usage = "ccad sch add-wire --file <path> --id <id> --start-x-mm <n> "
+                           "--start-y-mm <n> --end-x-mm <n> --end-y-mm <n> [--net <id>]"},
+      CommandHelp{.name = "sch add-label",
+                  .summary = "Append one net label to the schematic project",
+                  .usage = "ccad sch add-label --file <path> --id <id> --text <value> "
+                           "--at-x-mm <n> --at-y-mm <n> [--net <id>] [--rotation-deg <n>] "
+                           "[--global]"},
+      CommandHelp{.name = "sch add-power",
+                  .summary = "Append one power symbol to the schematic project",
+                  .usage = "ccad sch add-power --file <path> --id <id> --value <value> "
+                           "--at-x-mm <n> --at-y-mm <n> [--net <id>] [--rotation-deg <n>]"},
       CommandHelp{.name = "pcb add-layer",
                   .summary = "Append one board layer to a board project",
                   .usage = "ccad pcb add-layer --file <path> --id <id> --name <name> "
@@ -89,6 +102,12 @@ const std::vector<CommandHelp>& commandHelp() {
       CommandHelp{.name = "pcb list-nets",
                   .summary = "List physical board net usage counts as compact JSON",
                   .usage = "ccad pcb list-nets --file <path>"},
+      CommandHelp{.name = "pcb list-by-net",
+                  .summary = "List pad, via, track, and zone rows on one PCB net",
+                  .usage = "ccad pcb list-by-net --file <path> --net <net> [--type pad|via|track|zone]"},
+      CommandHelp{.name = "pcb list-connected",
+                  .summary = "List same-net PCB objects for one connectable object ID",
+                  .usage = "ccad pcb list-connected --file <path> --id <id> [--type pad|via|track|zone]"},
       CommandHelp{.name = "pcb list-route-requests",
                   .summary = "List board route-request intent records as compact JSON",
                   .usage = "ccad pcb list-route-requests --file <path>"},
@@ -105,10 +124,28 @@ const std::vector<CommandHelp>& commandHelp() {
                   .summary = "Set one board layer visibility flag",
                   .usage = "ccad pcb set-layer-visibility --file <path> --id <id> "
                            "--visible true|false"},
+      CommandHelp{.name = "pcb list-enabled-layers",
+                  .summary = "List enabled board layers with KiCad layer numbers",
+                  .usage = "ccad pcb list-enabled-layers --file <path>"},
+      CommandHelp{.name = "pcb list-visible-layers",
+                  .summary = "List currently visible board layers",
+                  .usage = "ccad pcb list-visible-layers --file <path>"},
+      CommandHelp{.name = "pcb get-layer-name",
+                  .summary = "Return one board layer name and metadata by ID",
+                  .usage = "ccad pcb get-layer-name --file <path> --id <layer-id>"},
+      CommandHelp{.name = "pcb get-board-stackup",
+                  .summary = "Return the enabled layer order as a stackup summary",
+                  .usage = "ccad pcb get-board-stackup --file <path>"},
+      CommandHelp{.name = "pcb get-rules",
+                  .summary = "Return board-level physical DRC rule defaults",
+                  .usage = "ccad pcb get-rules --file <path>"},
       CommandHelp{.name = "pcb set-rules",
                   .summary = "Set board-level physical DRC rule defaults",
                   .usage = "ccad pcb set-rules --file <path> --copper-clearance-mm <n> "
                            "--min-track-width-mm <n> --min-via-annular-ring-mm <n>"},
+      CommandHelp{.name = "pcb get-outline",
+                  .summary = "Return the rectangular board outline bounds",
+                  .usage = "ccad pcb get-outline --file <path>"},
       CommandHelp{.name = "pcb set-outline",
                   .summary = "Set the rectangular board outline",
                   .usage = "ccad pcb set-outline --file <path> --x-mm <n> --y-mm <n> "
@@ -229,6 +266,9 @@ const std::vector<CommandHelp>& commandHelp() {
       CommandHelp{.name = "agent methods",
                   .summary = "Print the headless CCad agent method catalog",
                   .usage = "ccad agent methods"},
+      CommandHelp{.name = "agent pcb-api-schema",
+                  .summary = "Print KiCad PCB API parity mappings for agent command selection",
+                  .usage = "ccad agent pcb-api-schema"},
       CommandHelp{.name = "agent harness-context",
                   .summary = "Print the headless agent session-state contract",
                   .usage = "ccad agent harness-context"},

@@ -24,7 +24,7 @@ namespace {
 
 std::string netIdForPin(const ccad::Project& project, const std::string& component_id,
                         const std::string& pin_name) {
-  for (const ccad::Net& net : project.nets) {
+  for (const ccad::Net& net : project.schematics[0].nets) {
     for (const ccad::NetMember& member : net.members) {
       if (member.component_id == component_id && member.pin_name == pin_name) {
         return net.id;
@@ -155,28 +155,28 @@ std::optional<double> optionalRatio(const std::map<std::string, std::string>& op
 }
 
 bool projectHasNet(const ccad::Project& project, const std::string& net_id) {
-  for (const ccad::Net& net : project.nets) {
+  for (const ccad::Net& net : project.schematics[0].nets) {
     if (net.id == net_id) {
       return true;
     }
   }
-  if (project.board.has_value()) {
-    for (const ccad::Pad& pad : project.board->pads) {
+  if (!project.boards.empty()) {
+    for (const ccad::Pad& pad : project.boards[0].pads) {
       if (pad.net_id == net_id) {
         return true;
       }
     }
-    for (const ccad::Via& via : project.board->vias) {
+    for (const ccad::Via& via : project.boards[0].vias) {
       if (via.net_id == net_id) {
         return true;
       }
     }
-    for (const ccad::TrackSegment& track : project.board->tracks) {
+    for (const ccad::TrackSegment& track : project.boards[0].tracks) {
       if (track.net_id == net_id) {
         return true;
       }
     }
-    for (const ccad::BoardZone& zone : project.board->zones) {
+    for (const ccad::BoardZone& zone : project.boards[0].zones) {
       if (zone.net_id == net_id) {
         return true;
       }
@@ -368,10 +368,10 @@ int pcbCommand(const std::vector<std::string>& args) {
           parseOptions(args, 1, {"--file", "--id"});
       const std::string file = requireOption(options, "--file");
       const ccad::Project project = loadProjectFile(file);
-      if (!project.board.has_value()) {
+      if (!!project.boards.empty()) {
         throw std::runtime_error("project has no board");
       }
-      const ccad::Board& board = *project.board;
+      const ccad::Board& board = project.boards[0];
       const std::string id = requireOption(options, "--id");
       for (const ccad::Layer& layer : board.layers) {
         if (layer.id == id) {
@@ -436,13 +436,59 @@ int pcbCommand(const std::vector<std::string>& args) {
           parseOptions(args, 1, {"--file", "--type"});
       const std::string file = requireOption(options, "--file");
       const ccad::Project project = loadProjectFile(file);
-      if (!project.board.has_value()) {
+      if (!!project.boards.empty()) {
         throw std::runtime_error("project has no board");
       }
       const std::string type_filter =
           options.contains("--type") ? requireOption(options, "--type") : "";
       requireKnownPcbObjectType(type_filter);
-      std::cout << listPcbObjectsJson(*project.board, type_filter);
+      std::cout << listPcbObjectsJson(project.boards[0], type_filter);
+      return 0;
+    }
+
+    if (subcommand == "list-enabled-layers") {
+      const std::map<std::string, std::string> options = parseOptions(args, 1, {"--file"});
+      const std::string file = requireOption(options, "--file");
+      const ccad::Project project = loadProjectFile(file);
+      if (!!project.boards.empty()) {
+        throw std::runtime_error("project has no board");
+      }
+      std::cout << listPcbEnabledLayersJson(project.boards[0]);
+      return 0;
+    }
+
+    if (subcommand == "list-visible-layers") {
+      const std::map<std::string, std::string> options = parseOptions(args, 1, {"--file"});
+      const std::string file = requireOption(options, "--file");
+      const ccad::Project project = loadProjectFile(file);
+      if (!!project.boards.empty()) {
+        throw std::runtime_error("project has no board");
+      }
+      std::cout << listPcbVisibleLayersJson(project.boards[0]);
+      return 0;
+    }
+
+    if (subcommand == "get-layer-name") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id"});
+      const std::string file = requireOption(options, "--file");
+      const std::string layer_id = requireOption(options, "--id");
+      const ccad::Project project = loadProjectFile(file);
+      if (!!project.boards.empty()) {
+        throw std::runtime_error("project has no board");
+      }
+      std::cout << getPcbLayerNameJson(project.boards[0], layer_id);
+      return 0;
+    }
+
+    if (subcommand == "get-board-stackup") {
+      const std::map<std::string, std::string> options = parseOptions(args, 1, {"--file"});
+      const std::string file = requireOption(options, "--file");
+      const ccad::Project project = loadProjectFile(file);
+      if (!!project.boards.empty()) {
+        throw std::runtime_error("project has no board");
+      }
+      std::cout << getPcbBoardStackupJson(project.boards[0]);
       return 0;
     }
 
@@ -450,10 +496,40 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::map<std::string, std::string> options = parseOptions(args, 1, {"--file"});
       const std::string file = requireOption(options, "--file");
       const ccad::Project project = loadProjectFile(file);
-      if (!project.board.has_value()) {
+      if (!!project.boards.empty()) {
         throw std::runtime_error("project has no board");
       }
-      std::cout << listPcbNetsJson(*project.board);
+      std::cout << listPcbNetsJson(project.boards[0]);
+      return 0;
+    }
+
+    if (subcommand == "list-by-net") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--net", "--type"});
+      const std::string file = requireOption(options, "--file");
+      const std::string net_id = requireOption(options, "--net");
+      const std::string type_filter = options.contains("--type") ? requireOption(options, "--type") : "";
+      requireKnownPcbConnectableObjectType(type_filter);
+      const ccad::Project project = loadProjectFile(file);
+      if (!!project.boards.empty()) {
+        throw std::runtime_error("project has no board");
+      }
+      std::cout << listPcbObjectsByNetJson(project.boards[0], net_id, type_filter);
+      return 0;
+    }
+
+    if (subcommand == "list-connected") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--type"});
+      const std::string file = requireOption(options, "--file");
+      const std::string object_id = requireOption(options, "--id");
+      const std::string type_filter = options.contains("--type") ? requireOption(options, "--type") : "";
+      requireKnownPcbConnectableObjectType(type_filter);
+      const ccad::Project project = loadProjectFile(file);
+      if (!!project.boards.empty()) {
+        throw std::runtime_error("project has no board");
+      }
+      std::cout << listPcbConnectedObjectsJson(project.boards[0], object_id, type_filter);
       return 0;
     }
 
@@ -461,10 +537,10 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::map<std::string, std::string> options = parseOptions(args, 1, {"--file"});
       const std::string file = requireOption(options, "--file");
       const ccad::Project project = loadProjectFile(file);
-      if (!project.board.has_value()) {
+      if (!!project.boards.empty()) {
         throw std::runtime_error("project has no board");
       }
-      std::cout << listRouteRequestsJson(*project.board);
+      std::cout << listRouteRequestsJson(project.boards[0]);
       return 0;
     }
 
@@ -472,10 +548,32 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::map<std::string, std::string> options = parseOptions(args, 1, {"--file"});
       const std::string file = requireOption(options, "--file");
       const ccad::Project project = loadProjectFile(file);
-      if (!project.board.has_value()) {
+      if (!!project.boards.empty()) {
         throw std::runtime_error("project has no board");
       }
-      std::cout << routeStatusJson(*project.board);
+      std::cout << routeStatusJson(project.boards[0]);
+      return 0;
+    }
+
+    if (subcommand == "get-rules") {
+      const std::map<std::string, std::string> options = parseOptions(args, 1, {"--file"});
+      const std::string file = requireOption(options, "--file");
+      const ccad::Project project = loadProjectFile(file);
+      if (!!project.boards.empty()) {
+        throw std::runtime_error("project has no board");
+      }
+      std::cout << getPcbDesignRulesJson(project.boards[0]);
+      return 0;
+    }
+
+    if (subcommand == "get-outline") {
+      const std::map<std::string, std::string> options = parseOptions(args, 1, {"--file"});
+      const std::string file = requireOption(options, "--file");
+      const ccad::Project project = loadProjectFile(file);
+      if (!!project.boards.empty()) {
+        throw std::runtime_error("project has no board");
+      }
+      std::cout << getPcbOutlineJson(project.boards[0]);
       return 0;
     }
 
@@ -484,12 +582,12 @@ int pcbCommand(const std::vector<std::string>& args) {
           parseOptions(args, 1, {"--file", "--request-id"});
       const std::string file = requireOption(options, "--file");
       const ccad::Project project = loadProjectFile(file);
-      if (!project.board.has_value()) {
+      if (!!project.boards.empty()) {
         throw std::runtime_error("project has no board");
       }
       const std::string request_id_filter =
           options.contains("--request-id") ? requireOption(options, "--request-id") : "";
-      std::cout << exportRouteJobJson(*project.board, request_id_filter);
+      std::cout << exportRouteJobJson(project.boards[0], request_id_filter);
       return 0;
     }
 

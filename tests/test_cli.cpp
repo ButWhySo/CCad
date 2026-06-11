@@ -77,6 +77,10 @@ int main() {
           "help json describes pcb object listing");
   require(help_json.find("\"name\": \"pcb list-nets\"") != std::string::npos,
           "help json describes pcb net listing");
+  require(help_json.find("\"name\": \"pcb list-by-net\"") != std::string::npos,
+          "help json describes KiCad-style PCB items-by-net listing");
+  require(help_json.find("\"name\": \"pcb list-connected\"") != std::string::npos,
+          "help json describes KiCad-style connected item listing");
   require(help_json.find("\"name\": \"pcb list-route-requests\"") != std::string::npos,
           "help json describes route request listing");
   require(help_json.find("\"name\": \"pcb route-status\"") != std::string::npos,
@@ -87,8 +91,20 @@ int main() {
           "help json describes layer removal");
   require(help_json.find("\"name\": \"pcb set-layer-visibility\"") != std::string::npos,
           "help json describes layer visibility authoring");
+  require(help_json.find("\"name\": \"pcb list-enabled-layers\"") != std::string::npos,
+          "help json describes enabled layer listing");
+  require(help_json.find("\"name\": \"pcb list-visible-layers\"") != std::string::npos,
+          "help json describes visible layer listing");
+  require(help_json.find("\"name\": \"pcb get-layer-name\"") != std::string::npos,
+          "help json describes layer name lookup");
+  require(help_json.find("\"name\": \"pcb get-board-stackup\"") != std::string::npos,
+          "help json describes board stackup lookup");
+  require(help_json.find("\"name\": \"pcb get-rules\"") != std::string::npos,
+          "help json describes DRC rule lookup");
   require(help_json.find("\"name\": \"pcb set-rules\"") != std::string::npos,
           "help json describes drc rule authoring");
+  require(help_json.find("\"name\": \"pcb get-outline\"") != std::string::npos,
+          "help json describes outline lookup");
   require(help_json.find("\"name\": \"pcb set-outline\"") != std::string::npos,
           "help json describes outline authoring");
   require(help_json.find("\"name\": \"pcb set-track\"") != std::string::npos,
@@ -422,6 +438,75 @@ int main() {
           "pcb set-layer writes kind");
   require(edited_layer_json.find("\"visible\": false") != std::string::npos,
           "pcb set-layer writes visibility");
+
+  const std::filesystem::path enabled_layers_path = temp / "enabled-layers.json";
+  require(run(quote(CCAD_BINARY) + " pcb list-enabled-layers --file " +
+              quote(board_project_path) + " > " + quote(enabled_layers_path)) == 0,
+          "pcb list-enabled-layers exits zero");
+  const std::string enabled_layers_json = readFile(enabled_layers_path);
+  require(enabled_layers_json.find("\"query_kind\": \"enabled_layers\"") != std::string::npos,
+          "pcb list-enabled-layers reports query kind");
+  require(enabled_layers_json.find("\"total\": 3") != std::string::npos,
+          "pcb list-enabled-layers reports all board layers");
+  require(enabled_layers_json.find("\"copper_count\": 3") != std::string::npos,
+          "pcb list-enabled-layers counts copper layers");
+  require(enabled_layers_json.find("\"visible_count\": 2") != std::string::npos,
+          "pcb list-enabled-layers counts visible layers");
+  require(enabled_layers_json.find("\"hidden_count\": 1") != std::string::npos,
+          "pcb list-enabled-layers counts hidden layers");
+  require(enabled_layers_json.find("\"id\": \"In1.Cu\"") != std::string::npos,
+          "pcb list-enabled-layers includes hidden enabled layer");
+  require(enabled_layers_json.find("\"kicad_layer_number\": 1") != std::string::npos,
+          "pcb list-enabled-layers includes KiCad layer numbers");
+
+  const std::filesystem::path visible_layers_path = temp / "visible-layers.json";
+  require(run(quote(CCAD_BINARY) + " pcb list-visible-layers --file " +
+              quote(board_project_path) + " > " + quote(visible_layers_path)) == 0,
+          "pcb list-visible-layers exits zero");
+  const std::string visible_layers_json = readFile(visible_layers_path);
+  require(visible_layers_json.find("\"query_kind\": \"visible_layers\"") != std::string::npos,
+          "pcb list-visible-layers reports query kind");
+  require(visible_layers_json.find("\"total\": 2") != std::string::npos,
+          "pcb list-visible-layers reports visible layers only");
+  require(visible_layers_json.find("\"id\": \"F.Cu\"") != std::string::npos,
+          "pcb list-visible-layers includes front copper");
+  require(visible_layers_json.find("\"id\": \"B.Cu\"") != std::string::npos,
+          "pcb list-visible-layers includes back copper");
+  require(visible_layers_json.find("\"id\": \"In1.Cu\"") == std::string::npos,
+          "pcb list-visible-layers excludes hidden layer rows");
+
+  const std::filesystem::path layer_name_path = temp / "layer-name.json";
+  require(run(quote(CCAD_BINARY) + " pcb get-layer-name --file " + quote(board_project_path) +
+              " --id In1.Cu > " + quote(layer_name_path)) == 0,
+          "pcb get-layer-name exits zero");
+  const std::string layer_name_json = readFile(layer_name_path);
+  require(layer_name_json.find("\"query_kind\": \"layer_name\"") != std::string::npos,
+          "pcb get-layer-name reports query kind");
+  require(layer_name_json.find("\"id\": \"In1.Cu\"") != std::string::npos,
+          "pcb get-layer-name reports layer id");
+  require(layer_name_json.find("\"name\": \"InnerSignal\"") != std::string::npos,
+          "pcb get-layer-name reports edited layer name");
+  require(layer_name_json.find("\"visible\": false") != std::string::npos,
+          "pcb get-layer-name reports visibility");
+  require(run(quote(CCAD_BINARY) + " pcb get-layer-name --file " + quote(board_project_path) +
+              " --id Missing.Cu") != 0,
+          "pcb get-layer-name rejects missing layer");
+
+  const std::filesystem::path stackup_path = temp / "stackup.json";
+  require(run(quote(CCAD_BINARY) + " pcb get-board-stackup --file " +
+              quote(board_project_path) + " > " + quote(stackup_path)) == 0,
+          "pcb get-board-stackup exits zero");
+  const std::string stackup_json = readFile(stackup_path);
+  require(stackup_json.find("\"stackup_kind\": \"ccad_board_stackup\"") != std::string::npos,
+          "pcb get-board-stackup reports stackup kind");
+  require(stackup_json.find("\"kicad_parity_scope\": \"enabled_layer_order\"") !=
+              std::string::npos,
+          "pcb get-board-stackup declares its current parity scope");
+  require(stackup_json.find("\"copper_layer_count\": 3") != std::string::npos,
+          "pcb get-board-stackup counts copper layers");
+  require(stackup_json.find("\"id\": \"In1.Cu\"") != std::string::npos,
+          "pcb get-board-stackup includes inner layer");
+
   const std::string bad_set_layer_command =
       quote(CCAD_BINARY) + " pcb set-layer --file " + quote(board_project_path) +
       " --id Missing.Cu --name Missing --kind copper --visible true";
@@ -492,6 +577,23 @@ int main() {
           "pcb set-rules writes minimum track width");
   require(rules_json.find("\"min_via_annular_ring_nm\": 80000") != std::string::npos,
           "pcb set-rules writes minimum via annular ring");
+  const std::filesystem::path get_rules_path = temp / "get-rules.json";
+  require(run(quote(CCAD_BINARY) + " pcb get-rules --file " + quote(board_project_path) +
+              " > " + quote(get_rules_path)) == 0,
+          "pcb get-rules exits zero");
+  const std::string get_rules_json = readFile(get_rules_path);
+  require(get_rules_json.find("\"rules_kind\": \"ccad_board_design_rules\"") !=
+              std::string::npos,
+          "pcb get-rules reports rules kind");
+  require(get_rules_json.find("\"kicad_handler\": \"GetBoardDesignRules\"") !=
+              std::string::npos,
+          "pcb get-rules records KiCad handler reference");
+  require(get_rules_json.find("\"copper_clearance_nm\": 150000") != std::string::npos,
+          "pcb get-rules reports copper clearance");
+  require(get_rules_json.find("\"min_track_width_nm\": 120000") != std::string::npos,
+          "pcb get-rules reports minimum track width");
+  require(get_rules_json.find("\"min_via_annular_ring_nm\": 80000") != std::string::npos,
+          "pcb get-rules reports minimum via annular ring");
   const std::filesystem::path inspect_rules_path = temp / "inspect-rules.json";
   const std::string inspect_rules_command =
       quote(CCAD_BINARY) + " inspect " + quote(board_project_path) + " > " +
@@ -765,6 +867,103 @@ int main() {
           "pcb list-nets counts vias");
   require(list_nets_json.find("\"track_count\": 1") != std::string::npos,
           "pcb list-nets counts tracks");
+
+  const std::filesystem::path list_by_net_path = temp / "list-by-net.json";
+  const std::string list_by_net_command =
+      quote(CCAD_BINARY) + " pcb list-by-net --file " + quote(board_project_path) +
+      " --net N1 > " + quote(list_by_net_path);
+  require(run(list_by_net_command) == 0, "pcb list-by-net exits zero");
+  const std::string list_by_net_json = readFile(list_by_net_path);
+  require(list_by_net_json.find("\"query_kind\": \"items_by_net\"") != std::string::npos,
+          "pcb list-by-net reports its query kind");
+  require(list_by_net_json.find("\"connectivity_scope\": \"net_equivalent_first_slice\"") !=
+              std::string::npos,
+          "pcb list-by-net declares the first-slice connectivity scope");
+  require(list_by_net_json.find("\"net_id\": \"N1\"") != std::string::npos,
+          "pcb list-by-net reports queried net");
+  require(list_by_net_json.find("\"total\": 4") != std::string::npos,
+          "pcb list-by-net returns pad, via, track, and zone for the net");
+  require(list_by_net_json.find("\"pad_count\": 1") != std::string::npos,
+          "pcb list-by-net counts pads");
+  require(list_by_net_json.find("\"via_count\": 1") != std::string::npos,
+          "pcb list-by-net counts vias");
+  require(list_by_net_json.find("\"track_count\": 1") != std::string::npos,
+          "pcb list-by-net counts tracks");
+  require(list_by_net_json.find("\"zone_count\": 1") != std::string::npos,
+          "pcb list-by-net counts zones");
+  require(list_by_net_json.find("\"id\": \"P1\"") != std::string::npos,
+          "pcb list-by-net includes pad id");
+  require(list_by_net_json.find("\"id\": \"V1\"") != std::string::npos,
+          "pcb list-by-net includes via id");
+  require(list_by_net_json.find("\"id\": \"T1\"") != std::string::npos,
+          "pcb list-by-net includes track id");
+  require(list_by_net_json.find("\"id\": \"Z1\"") != std::string::npos,
+          "pcb list-by-net includes zone id");
+
+  const std::filesystem::path list_by_net_tracks_path = temp / "list-by-net-tracks.json";
+  const std::string list_by_net_tracks_command =
+      quote(CCAD_BINARY) + " pcb list-by-net --file " + quote(board_project_path) +
+      " --net N1 --type track > " + quote(list_by_net_tracks_path);
+  require(run(list_by_net_tracks_command) == 0, "pcb list-by-net filters by connectable type");
+  const std::string list_by_net_tracks_json = readFile(list_by_net_tracks_path);
+  require(list_by_net_tracks_json.find("\"total\": 1") != std::string::npos,
+          "pcb list-by-net type filter reports one track");
+  require(list_by_net_tracks_json.find("\"id\": \"T1\"") != std::string::npos,
+          "pcb list-by-net type filter keeps the track");
+  require(list_by_net_tracks_json.find("\"id\": \"P1\"") == std::string::npos,
+          "pcb list-by-net type filter excludes pads");
+
+  const std::filesystem::path list_connected_path = temp / "list-connected.json";
+  const std::string list_connected_command =
+      quote(CCAD_BINARY) + " pcb list-connected --file " + quote(board_project_path) +
+      " --id P1 > " + quote(list_connected_path);
+  require(run(list_connected_command) == 0, "pcb list-connected exits zero");
+  const std::string list_connected_json = readFile(list_connected_path);
+  require(list_connected_json.find("\"query_kind\": \"connected_items\"") != std::string::npos,
+          "pcb list-connected reports its query kind");
+  require(list_connected_json.find("\"source_id\": \"P1\"") != std::string::npos,
+          "pcb list-connected reports source id");
+  require(list_connected_json.find("\"source_type\": \"pad\"") != std::string::npos,
+          "pcb list-connected reports source type");
+  require(list_connected_json.find("\"source_found\": true") != std::string::npos,
+          "pcb list-connected reports source discovery");
+  require(list_connected_json.find("\"net_id\": \"N1\"") != std::string::npos,
+          "pcb list-connected reports source net");
+  require(list_connected_json.find("\"total\": 4") != std::string::npos,
+          "pcb list-connected returns same-net connectable objects");
+  require(list_connected_json.find("\"id\": \"P1\"") != std::string::npos,
+          "pcb list-connected includes source pad");
+  require(list_connected_json.find("\"id\": \"V1\"") != std::string::npos,
+          "pcb list-connected includes via");
+  require(list_connected_json.find("\"id\": \"T1\"") != std::string::npos,
+          "pcb list-connected includes track");
+  require(list_connected_json.find("\"id\": \"Z1\"") != std::string::npos,
+          "pcb list-connected includes zone");
+
+  const std::filesystem::path list_connected_vias_path = temp / "list-connected-vias.json";
+  const std::string list_connected_vias_command =
+      quote(CCAD_BINARY) + " pcb list-connected --file " + quote(board_project_path) +
+      " --id P1 --type via > " + quote(list_connected_vias_path);
+  require(run(list_connected_vias_command) == 0,
+          "pcb list-connected filters by connectable type");
+  const std::string list_connected_vias_json = readFile(list_connected_vias_path);
+  require(list_connected_vias_json.find("\"total\": 1") != std::string::npos,
+          "pcb list-connected type filter reports one via");
+  require(list_connected_vias_json.find("\"id\": \"V1\"") != std::string::npos,
+          "pcb list-connected type filter keeps via");
+  require(list_connected_vias_json.find("\"id\": \"P1\"") == std::string::npos,
+          "pcb list-connected type filter excludes pad rows");
+
+  const std::string bad_list_by_net_command =
+      quote(CCAD_BINARY) + " pcb list-by-net --file " + quote(board_project_path) +
+      " --net N1 --type graphic";
+  require(run(bad_list_by_net_command) != 0,
+          "pcb list-by-net rejects non-connectable object type");
+  const std::string bad_list_connected_command =
+      quote(CCAD_BINARY) + " pcb list-connected --file " + quote(board_project_path) +
+      " --id G1";
+  require(run(bad_list_connected_command) != 0,
+          "pcb list-connected rejects non-connectable source object");
 
   const std::filesystem::path list_route_requests_path = temp / "list-route-requests.json";
   const std::string list_route_requests_command =
@@ -1434,6 +1633,25 @@ int main() {
           "pcb set-outline writes width");
   require(outline_json.find("\"height_nm\": 30000000") != std::string::npos,
           "pcb set-outline writes height");
+
+  const std::filesystem::path get_outline_path = temp / "get-outline.json";
+  require(run(quote(CCAD_BINARY) + " pcb get-outline --file " + quote(board_project_path) +
+              " > " + quote(get_outline_path)) == 0,
+          "pcb get-outline exits zero");
+  const std::string get_outline_json = readFile(get_outline_path);
+  require(get_outline_json.find("\"outline_kind\": \"ccad_board_outline\"") !=
+              std::string::npos,
+          "pcb get-outline reports outline kind");
+  require(get_outline_json.find("\"kicad_handler\": \"GetBoundingBox\"") != std::string::npos,
+          "pcb get-outline records KiCad bounding-box reference");
+  require(get_outline_json.find("\"x_nm\": 2000000") != std::string::npos,
+          "pcb get-outline reports origin x");
+  require(get_outline_json.find("\"y_nm\": 2000000") != std::string::npos,
+          "pcb get-outline reports origin y");
+  require(get_outline_json.find("\"width_nm\": 50000000") != std::string::npos,
+          "pcb get-outline reports width");
+  require(get_outline_json.find("\"height_nm\": 30000000") != std::string::npos,
+          "pcb get-outline reports height");
 
   const std::string invalid_outline_command =
       quote(CCAD_BINARY) + " pcb set-outline --file " + quote(board_project_path) +

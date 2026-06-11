@@ -213,54 +213,15 @@ AgentTask make_task(const std::string& desc, const std::string& tool, const std:
 }
 
 std::vector<AgentTask> EDAAgent::decompose(const std::string& goal, const ProjectContext& /*ctx*/) {
-    std::string lower_goal = goal;
-    std::transform(lower_goal.begin(), lower_goal.end(), lower_goal.begin(), ::tolower);
     std::vector<AgentTask> tasks;
 
-    if (lower_goal.find("add") != std::string::npos && lower_goal.find("via") != std::string::npos) {
-        tasks.push_back(make_task("Review current board state before adding via", "project.review", "{}", TaskRisk::ReadOnly));
-        tasks.push_back(make_task("Run DRC to check current board health", "pcb.drc", "{}", TaskRisk::ReadOnly));
-        auto add = make_task("Add via as requested: " + goal, "pcb.add-via", "{\"goal_text\":\"" + escapeJson(goal) + "\"}", TaskRisk::LowMutation);
-        add.depends_on.push_back("");
-        tasks.push_back(add);
-        tasks.push_back(make_task("Run DRC to verify via placement doesn't violate rules", "pcb.drc", "{}", TaskRisk::ReadOnly));
-        return tasks;
-    }
-    if (lower_goal.find("route") != std::string::npos || (lower_goal.find("add") != std::string::npos && lower_goal.find("track") != std::string::npos)) {
-        tasks.push_back(make_task("Review board state and net connectivity", "project.review", "{}", TaskRisk::ReadOnly));
-        tasks.push_back(make_task("Add track/route: " + goal, "pcb.add-track", "{\"goal_text\":\"" + escapeJson(goal) + "\"}", TaskRisk::LowMutation));
-        tasks.push_back(make_task("Run DRC after routing", "pcb.drc", "{}", TaskRisk::ReadOnly));
-        return tasks;
-    }
-    if (lower_goal.find("place") != std::string::npos || (lower_goal.find("add") != std::string::npos && lower_goal.find("component") != std::string::npos) || (lower_goal.find("add") != std::string::npos && lower_goal.find("footprint") != std::string::npos)) {
-        tasks.push_back(make_task("Review current board/schematic state", "project.review", "{}", TaskRisk::ReadOnly));
-        tasks.push_back(make_task("Place component: " + goal, "pcb.place-footprint", "{\"goal_text\":\"" + escapeJson(goal) + "\"}", TaskRisk::LowMutation));
-        tasks.push_back(make_task("Run DRC after placement", "pcb.drc", "{}", TaskRisk::ReadOnly));
-        return tasks;
-    }
-    if (lower_goal.find("drc") != std::string::npos || lower_goal.find("design rule") != std::string::npos || lower_goal.find("check") != std::string::npos) {
-        tasks.push_back(make_task("Run Design Rule Check: " + goal, "pcb.drc", "{}", TaskRisk::ReadOnly));
-        tasks.push_back(make_task("Review DRC results", "project.diagnostics", "{}", TaskRisk::ReadOnly));
-        return tasks;
-    }
-    if (lower_goal.find("export") != std::string::npos || lower_goal.find("gerber") != std::string::npos || lower_goal.find("drill") != std::string::npos) {
-        tasks.push_back(make_task("Run DRC before export", "pcb.drc", "{}", TaskRisk::ReadOnly));
-        tasks.push_back(make_task("Export: " + goal, "pcb.export", "{\"goal_text\":\"" + escapeJson(goal) + "\"}", TaskRisk::External));
-        return tasks;
-    }
-    if (lower_goal.find("review") != std::string::npos || lower_goal.find("inspect") != std::string::npos || lower_goal.find("status") != std::string::npos) {
-        tasks.push_back(make_task("Review project: " + goal, "project.review", "{}", TaskRisk::ReadOnly));
-        tasks.push_back(make_task("Get object counts", "project.object_counts", "{}", TaskRisk::ReadOnly));
-        tasks.push_back(make_task("Run diagnostics", "project.diagnostics", "{}", TaskRisk::ReadOnly));
-        return tasks;
-    }
-    
-    // Generic
-    tasks.push_back(make_task("Gather project context for goal: " + goal, "project.context", "{}", TaskRisk::ReadOnly));
-    auto plan_task = make_task("Goal requires LLM planning (provider not enabled): " + goal, "agent.plan_with_provider", "{\"goal\":\"" + escapeJson(goal) + "\"}", TaskRisk::External);
+    tasks.push_back(make_task("Review project context", "project.context", "{}", TaskRisk::ReadOnly));
+
+    auto plan_task = make_task("Execute LLM provider workflow: " + goal, "agent.plan_with_provider", "{\"goal\":\"" + escapeJson(goal) + "\"}", TaskRisk::External);
     plan_task.status = TaskStatus::Blocked;
     plan_task.error_message = "provider_execution_disabled";
     tasks.push_back(plan_task);
+
     return tasks;
 }
 

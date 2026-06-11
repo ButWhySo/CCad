@@ -8,6 +8,7 @@
 #include <ostream>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <vector>
 
 namespace ccad_cli {
@@ -18,6 +19,26 @@ struct PhysicalNetSummary {
   int pad_count = 0;
   int via_count = 0;
   int track_count = 0;
+};
+
+struct ConnectableSummary {
+  int pad_count = 0;
+  int via_count = 0;
+  int track_count = 0;
+  int zone_count = 0;
+};
+
+struct LayerQuerySummary {
+  int copper_count = 0;
+  int non_copper_count = 0;
+  int visible_count = 0;
+  int hidden_count = 0;
+};
+
+struct ConnectableSource {
+  std::string type;
+  std::string id;
+  std::string net_id;
 };
 
 void writePointJson(std::ostream& out, const ccad::Point& point, const int indent) {
@@ -34,6 +55,219 @@ void writeSizeJson(std::ostream& out, const ccad::Size& size, const int indent) 
 
 bool includeObjectType(const std::string& filter, const std::string& type) {
   return filter.empty() || filter == type;
+}
+
+bool includeConnectableType(const std::string& filter, const std::string& type) {
+  return filter.empty() || filter == type;
+}
+
+std::string firstLayerId(const std::vector<std::string>& layers) {
+  return layers.empty() ? "" : layers.front();
+}
+
+void appendLayerIdsJson(std::ostream& out, const std::vector<std::string>& layer_ids) {
+  out << "[";
+  for (std::size_t i = 0; i < layer_ids.size(); ++i) {
+    if (i > 0) {
+      out << ", ";
+    }
+    out << "\"" << ccad::escapeJson(layer_ids.at(i)) << "\"";
+  }
+  out << "]";
+}
+
+std::string padNetRowJson(const ccad::Pad& pad) {
+  std::ostringstream row;
+  row << "    {\"type\": \"pad\", \"id\": \"" << ccad::escapeJson(pad.id)
+      << "\", \"component_id\": \"" << ccad::escapeJson(pad.component_id)
+      << "\", \"pin_name\": \"" << ccad::escapeJson(pad.pin_name)
+      << "\", \"net_id\": \"" << ccad::escapeJson(pad.net_id)
+      << "\", \"pad_type\": \"" << ccad::escapeJson(pad.type)
+      << "\", \"shape\": \"" << ccad::escapeJson(pad.shape)
+      << "\", \"layer_id\": \"" << ccad::escapeJson(firstLayerId(pad.layers)) << "\"";
+  if (pad.drill.has_value()) {
+    row << ", \"drill_nm\": " << pad.drill->nanometers;
+  }
+  row << "}";
+  return row.str();
+}
+
+std::string viaNetRowJson(const ccad::Via& via) {
+  std::ostringstream row;
+  row << "    {\"type\": \"via\", \"id\": \"" << ccad::escapeJson(via.id)
+      << "\", \"net_id\": \"" << ccad::escapeJson(via.net_id) << "\"}";
+  return row.str();
+}
+
+std::string trackNetRowJson(const ccad::TrackSegment& track) {
+  std::ostringstream row;
+  row << "    {\"type\": \"track\", \"id\": \"" << ccad::escapeJson(track.id)
+      << "\", \"net_id\": \"" << ccad::escapeJson(track.net_id)
+      << "\", \"layer_id\": \"" << ccad::escapeJson(track.layer_id)
+      << "\", \"source_route_request_id\": \""
+      << ccad::escapeJson(track.source_route_request_id) << "\"}";
+  return row.str();
+}
+
+std::string zoneNetRowJson(const ccad::BoardZone& zone) {
+  std::ostringstream row;
+  row << "    {\"type\": \"zone\", \"id\": \"" << ccad::escapeJson(zone.id)
+      << "\", \"name\": \"" << ccad::escapeJson(zone.name)
+      << "\", \"net_id\": \"" << ccad::escapeJson(zone.net_id)
+      << "\", \"layer_ids\": ";
+  appendLayerIdsJson(row, zone.layer_ids);
+  row << ", \"corner_count\": " << zone.outline.size() << ", \"priority\": " << zone.priority
+      << "}";
+  return row.str();
+}
+
+void countLayer(const ccad::Layer& layer, LayerQuerySummary& summary) {
+  if (layer.kind == "copper") {
+    ++summary.copper_count;
+  } else {
+    ++summary.non_copper_count;
+  }
+  if (layer.visible) {
+    ++summary.visible_count;
+  } else {
+    ++summary.hidden_count;
+  }
+}
+
+std::string layerRowJson(const ccad::Layer& layer, const std::optional<std::size_t> stack_order) {
+  const std::optional<std::size_t> kicad_number = ccad::standardKiCadPcbLayerNumber(layer.id);
+  std::ostringstream row;
+  row << "    {\"type\": \"layer\", \"id\": \"" << ccad::escapeJson(layer.id)
+      << "\", \"name\": \"" << ccad::escapeJson(layer.name)
+      << "\", \"kind\": \"" << ccad::escapeJson(layer.kind)
+      << "\", \"visible\": " << (layer.visible ? "true" : "false");
+  if (kicad_number.has_value()) {
+    row << ", \"kicad_layer_number\": " << *kicad_number;
+  }
+  if (stack_order.has_value()) {
+    row << ", \"stack_order\": " << *stack_order;
+  }
+  row << "}";
+  return row.str();
+}
+
+std::string layerListJson(const std::string& query_kind, const std::vector<std::string>& rows,
+                          const LayerQuerySummary& summary) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"query\": {\n"
+      << "    \"query_kind\": \"" << ccad::escapeJson(query_kind) << "\"\n"
+      << "  },\n"
+      << "  \"summary\": {\n"
+      << "    \"total\": " << rows.size() << ",\n"
+      << "    \"copper_count\": " << summary.copper_count << ",\n"
+      << "    \"non_copper_count\": " << summary.non_copper_count << ",\n"
+      << "    \"visible_count\": " << summary.visible_count << ",\n"
+      << "    \"hidden_count\": " << summary.hidden_count << "\n"
+      << "  },\n"
+      << "  \"layers\": [\n";
+  for (std::size_t i = 0; i < rows.size(); ++i) {
+    out << rows.at(i) << (i + 1 == rows.size() ? "" : ",") << '\n';
+  }
+  out << "  ]\n"
+      << "}\n";
+  return out.str();
+}
+
+void collectPcbNetRows(const ccad::Board& board, const std::string& net_id,
+                       const std::string& type_filter, std::vector<std::string>& rows,
+                       ConnectableSummary& summary) {
+  if (includeConnectableType(type_filter, "pad")) {
+    for (const ccad::Pad& pad : board.pads) {
+      if (pad.net_id == net_id) {
+        ++summary.pad_count;
+        rows.push_back(padNetRowJson(pad));
+      }
+    }
+  }
+  if (includeConnectableType(type_filter, "via")) {
+    for (const ccad::Via& via : board.vias) {
+      if (via.net_id == net_id) {
+        ++summary.via_count;
+        rows.push_back(viaNetRowJson(via));
+      }
+    }
+  }
+  if (includeConnectableType(type_filter, "track")) {
+    for (const ccad::TrackSegment& track : board.tracks) {
+      if (track.net_id == net_id) {
+        ++summary.track_count;
+        rows.push_back(trackNetRowJson(track));
+      }
+    }
+  }
+  if (includeConnectableType(type_filter, "zone")) {
+    for (const ccad::BoardZone& zone : board.zones) {
+      if (zone.net_id == net_id) {
+        ++summary.zone_count;
+        rows.push_back(zoneNetRowJson(zone));
+      }
+    }
+  }
+}
+
+ConnectableSource findConnectableSource(const ccad::Board& board, const std::string& source_id) {
+  for (const ccad::Pad& pad : board.pads) {
+    if (pad.id == source_id) {
+      return ConnectableSource{.type = "pad", .id = pad.id, .net_id = pad.net_id};
+    }
+  }
+  for (const ccad::Via& via : board.vias) {
+    if (via.id == source_id) {
+      return ConnectableSource{.type = "via", .id = via.id, .net_id = via.net_id};
+    }
+  }
+  for (const ccad::TrackSegment& track : board.tracks) {
+    if (track.id == source_id) {
+      return ConnectableSource{.type = "track", .id = track.id, .net_id = track.net_id};
+    }
+  }
+  for (const ccad::BoardZone& zone : board.zones) {
+    if (zone.id == source_id) {
+      return ConnectableSource{.type = "zone", .id = zone.id, .net_id = zone.net_id};
+    }
+  }
+  throw std::runtime_error("unknown connected board object: " + source_id);
+}
+
+std::string pcbNetQueryJson(const std::string& query_kind, const std::string& net_id,
+                            const std::string& type_filter, const ConnectableSource* source,
+                            const std::vector<std::string>& rows,
+                            const ConnectableSummary& summary) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"query\": {\n"
+      << "    \"query_kind\": \"" << ccad::escapeJson(query_kind) << "\",\n"
+      << "    \"net_id\": \"" << ccad::escapeJson(net_id) << "\",\n"
+      << "    \"type_filter\": \"" << ccad::escapeJson(type_filter) << "\",\n"
+      << "    \"connectivity_scope\": \"net_equivalent_first_slice\"";
+  if (source != nullptr) {
+    out << ",\n"
+        << "    \"source_id\": \"" << ccad::escapeJson(source->id) << "\",\n"
+        << "    \"source_type\": \"" << ccad::escapeJson(source->type) << "\",\n"
+        << "    \"source_found\": true";
+  }
+  out << "\n"
+      << "  },\n"
+      << "  \"summary\": {\n"
+      << "    \"total\": " << rows.size() << ",\n"
+      << "    \"pad_count\": " << summary.pad_count << ",\n"
+      << "    \"via_count\": " << summary.via_count << ",\n"
+      << "    \"track_count\": " << summary.track_count << ",\n"
+      << "    \"zone_count\": " << summary.zone_count << "\n"
+      << "  },\n"
+      << "  \"objects\": [\n";
+  for (std::size_t i = 0; i < rows.size(); ++i) {
+    out << rows.at(i) << (i + 1 == rows.size() ? "" : ",") << '\n';
+  }
+  out << "  ]\n"
+      << "}\n";
+  return out.str();
 }
 
 }  // namespace
@@ -232,6 +466,13 @@ void requireKnownPcbObjectType(const std::string& type) {
   throw std::runtime_error("unknown object type: " + type);
 }
 
+void requireKnownPcbConnectableObjectType(const std::string& type) {
+  if (type.empty() || type == "pad" || type == "via" || type == "track" || type == "zone") {
+    return;
+  }
+  throw std::runtime_error("unknown connectable PCB object type: " + type);
+}
+
 std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type_filter) {
   std::vector<std::string> rows;
   auto add_row = [&rows](const std::ostringstream& row) { rows.push_back(row.str()); };
@@ -400,6 +641,138 @@ std::string listPcbNetsJson(const ccad::Board& board) {
         << (++index == nets.size() ? "" : ",") << '\n';
   }
   out << "  ]\n"
+      << "}\n";
+  return out.str();
+}
+
+std::string listPcbObjectsByNetJson(const ccad::Board& board, const std::string& net_id,
+                                    const std::string& type_filter) {
+  requireKnownPcbConnectableObjectType(type_filter);
+  std::vector<std::string> rows;
+  ConnectableSummary summary;
+  collectPcbNetRows(board, net_id, type_filter, rows, summary);
+  return pcbNetQueryJson("items_by_net", net_id, type_filter, nullptr, rows, summary);
+}
+
+std::string listPcbConnectedObjectsJson(const ccad::Board& board, const std::string& source_id,
+                                        const std::string& type_filter) {
+  requireKnownPcbConnectableObjectType(type_filter);
+  const ConnectableSource source = findConnectableSource(board, source_id);
+  if (source.net_id.empty()) {
+    throw std::runtime_error("connected board object has no assigned net: " + source_id);
+  }
+  std::vector<std::string> rows;
+  ConnectableSummary summary;
+  collectPcbNetRows(board, source.net_id, type_filter, rows, summary);
+  return pcbNetQueryJson("connected_items", source.net_id, type_filter, &source, rows, summary);
+}
+
+std::string listPcbEnabledLayersJson(const ccad::Board& board) {
+  std::vector<std::string> rows;
+  LayerQuerySummary summary;
+  for (const ccad::Layer& layer : board.layers) {
+    countLayer(layer, summary);
+    rows.push_back(layerRowJson(layer, std::nullopt));
+  }
+  return layerListJson("enabled_layers", rows, summary);
+}
+
+std::string listPcbVisibleLayersJson(const ccad::Board& board) {
+  std::vector<std::string> rows;
+  LayerQuerySummary summary;
+  for (const ccad::Layer& layer : board.layers) {
+    if (layer.visible) {
+      countLayer(layer, summary);
+      rows.push_back(layerRowJson(layer, std::nullopt));
+    }
+  }
+  return layerListJson("visible_layers", rows, summary);
+}
+
+std::string getPcbLayerNameJson(const ccad::Board& board, const std::string& layer_id) {
+  for (const ccad::Layer& layer : board.layers) {
+    if (layer.id == layer_id) {
+      const std::optional<std::size_t> kicad_number = ccad::standardKiCadPcbLayerNumber(layer.id);
+      std::ostringstream out;
+      out << "{\n"
+          << "  \"query\": {\n"
+          << "    \"query_kind\": \"layer_name\",\n"
+          << "    \"kicad_handler\": \"GetBoardLayerName\"\n"
+          << "  },\n"
+          << "  \"layer\": {\n"
+          << "    \"id\": \"" << ccad::escapeJson(layer.id) << "\",\n"
+          << "    \"name\": \"" << ccad::escapeJson(layer.name) << "\",\n"
+          << "    \"kind\": \"" << ccad::escapeJson(layer.kind) << "\",\n"
+          << "    \"visible\": " << (layer.visible ? "true" : "false");
+      if (kicad_number.has_value()) {
+        out << ",\n"
+            << "    \"kicad_layer_number\": " << *kicad_number;
+      }
+      out << "\n"
+          << "  }\n"
+          << "}\n";
+      return out.str();
+    }
+  }
+  throw std::runtime_error("unknown layer: " + layer_id);
+}
+
+std::string getPcbBoardStackupJson(const ccad::Board& board) {
+  std::vector<std::string> rows;
+  LayerQuerySummary summary;
+  std::size_t stack_order = 0;
+  for (const ccad::Layer& layer : board.layers) {
+    countLayer(layer, summary);
+    rows.push_back(layerRowJson(layer, stack_order));
+    ++stack_order;
+  }
+
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"stackup_kind\": \"ccad_board_stackup\",\n"
+      << "  \"kicad_handler\": \"GetBoardStackup\",\n"
+      << "  \"kicad_parity_scope\": \"enabled_layer_order\",\n"
+      << "  \"summary\": {\n"
+      << "    \"layer_count\": " << rows.size() << ",\n"
+      << "    \"copper_layer_count\": " << summary.copper_count << ",\n"
+      << "    \"non_copper_layer_count\": " << summary.non_copper_count << "\n"
+      << "  },\n"
+      << "  \"layers\": [\n";
+  for (std::size_t i = 0; i < rows.size(); ++i) {
+    out << rows.at(i) << (i + 1 == rows.size() ? "" : ",") << '\n';
+  }
+  out << "  ]\n"
+      << "}\n";
+  return out.str();
+}
+
+std::string getPcbDesignRulesJson(const ccad::Board& board) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"rules_kind\": \"ccad_board_design_rules\",\n"
+      << "  \"kicad_handler\": \"GetBoardDesignRules\",\n"
+      << "  \"kicad_parity_scope\": \"minimum_constraints_first_slice\",\n"
+      << "  \"rules\": {\n"
+      << "    \"copper_clearance_nm\": " << board.design_rules.copper_clearance.nanometers << ",\n"
+      << "    \"min_track_width_nm\": " << board.design_rules.min_track_width.nanometers << ",\n"
+      << "    \"min_via_annular_ring_nm\": "
+      << board.design_rules.min_via_annular_ring.nanometers << "\n"
+      << "  }\n"
+      << "}\n";
+  return out.str();
+}
+
+std::string getPcbOutlineJson(const ccad::Board& board) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"outline_kind\": \"ccad_board_outline\",\n"
+      << "  \"kicad_handler\": \"GetBoundingBox\",\n"
+      << "  \"outline\": {\n"
+      << "    \"x_nm\": " << board.outline.origin.x.nanometers << ",\n"
+      << "    \"y_nm\": " << board.outline.origin.y.nanometers << ",\n"
+      << "    \"width_nm\": " << board.outline.size.width.nanometers << ",\n"
+      << "    \"height_nm\": " << board.outline.size.height.nanometers << "\n"
+      << "  }\n"
       << "}\n";
   return out.str();
 }
