@@ -1,6 +1,7 @@
 #include "review_window.hpp"
 
 #include "board_canvas_renderer.hpp"
+#include "schematic_canvas_renderer.hpp"
 #include "board_canvas_view.hpp"
 #include "ccad_core/canvas.hpp"
 #include "ccad_core/serialize.hpp"
@@ -3554,7 +3555,7 @@ void ReviewWindow::renderReview(const ccad::ProjectReview& review) {
   object_browser_->renderScene(pcb_scene);
   
   const ccad::CanvasScene schematic_scene = project_cache_.schematics.empty() ? ccad::CanvasScene{} : ccad::buildSchematicScene(project_cache_.schematics[0]);
-  renderBoardCanvas(*schematic_scene_, schematic_scene);
+  renderSchematicCanvas(*schematic_scene_, schematic_scene);
 
   if (!!project_cache_.boards.empty() &&
       (!project_cache_.schematics[0].components.empty() || !project_cache_.schematics[0].wires.empty())) {

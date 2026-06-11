@@ -2,6 +2,7 @@
 
 #include <iomanip>
 #include <map>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
@@ -24,10 +25,10 @@ std::string escapeKiCadString(const std::string& value) {
 }  // namespace
 
 std::string exportToKiCadPcb(const Project& project) {
-  if (!project.board.has_value()) {
+  if (!!project.boards.empty()) {
     throw std::runtime_error("project has no board layout");
   }
-  const Board& board = *project.board;
+  const Board& board = project.boards[0];
 
   std::ostringstream out;
   out << std::fixed << std::setprecision(6);
@@ -97,12 +98,40 @@ std::string exportToKiCadPcb(const Project& project) {
   out << "  )\n";
 
   // nets
+  std::set<std::string> net_ids;
+  if (const Schematic* schematic = primarySchematic(project)) {
+    for (const auto& net : schematic->nets) {
+      if (!net.id.empty()) {
+        net_ids.insert(net.id);
+      }
+    }
+  }
+  for (const Pad& pad : board.pads) {
+    if (!pad.net_id.empty()) {
+      net_ids.insert(pad.net_id);
+    }
+  }
+  for (const Via& via : board.vias) {
+    if (!via.net_id.empty()) {
+      net_ids.insert(via.net_id);
+    }
+  }
+  for (const TrackSegment& track : board.tracks) {
+    if (!track.net_id.empty()) {
+      net_ids.insert(track.net_id);
+    }
+  }
+  for (const BoardZone& zone : board.zones) {
+    if (!zone.net_id.empty()) {
+      net_ids.insert(zone.net_id);
+    }
+  }
   std::map<std::string, int> net_to_index;
   out << "  (net 0 \"\")\n";
   int net_idx = 1;
-  for (const auto& net : project.nets) {
-    net_to_index[net.id] = net_idx;
-    out << "  (net " << net_idx << " \"" << net.id << "\")\n";
+  for (const auto& net_id : net_ids) {
+    net_to_index[net_id] = net_idx;
+    out << "  (net " << net_idx << " \"" << escapeKiCadString(net_id) << "\")\n";
     net_idx++;
   }
 
@@ -127,10 +156,12 @@ std::string exportToKiCadPcb(const Project& project) {
       ref = "FreePads";
     }
     std::string part = "Component";
-    for (const auto& comp : project.components) {
-      if (comp.id == comp_id) {
-        part = comp.part;
-        break;
+    if (const Schematic* schematic = primarySchematic(project)) {
+      for (const auto& comp : schematic->components) {
+        if (comp.id == comp_id) {
+          part = comp.part;
+          break;
+        }
       }
     }
 

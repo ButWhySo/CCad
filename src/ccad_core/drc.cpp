@@ -78,7 +78,11 @@ std::string boardObjectNetId(const Board& board, const std::string& object_id) {
 }
 
 bool hasNet(const Project& project, const std::string& net_id) {
-  for (const Net& net : project.nets) {
+  const Schematic* schematic = primarySchematic(project);
+  if (schematic == nullptr) {
+    return false;
+  }
+  for (const Net& net : schematic->nets) {
     if (net.id == net_id) {
       return true;
     }
@@ -87,7 +91,11 @@ bool hasNet(const Project& project, const std::string& net_id) {
 }
 
 const Net* findNet(const Project& project, const std::string& net_id) {
-  for (const Net& net : project.nets) {
+  const Schematic* schematic = primarySchematic(project);
+  if (schematic == nullptr) {
+    return nullptr;
+  }
+  for (const Net& net : schematic->nets) {
     if (net.id == net_id) {
       return &net;
     }
@@ -103,7 +111,11 @@ bool containsPoint(const Board& board, const Point& point) {
 }
 
 const Component* findComponent(const Project& project, const std::string& component_id) {
-  for (const Component& component : project.components) {
+  const Schematic* schematic = primarySchematic(project);
+  if (schematic == nullptr) {
+    return nullptr;
+  }
+  for (const Component& component : schematic->components) {
     if (component.id == component_id) {
       return &component;
     }
@@ -518,6 +530,7 @@ bool endpointTouchesSameNetPrimitive(const Board& board, const TrackSegment& sou
 }
 
 void checkPads(const Project& project, const Board& board, std::vector<Diagnostic>& diagnostics) {
+  const bool has_schematic = primarySchematic(project) != nullptr;
   std::set<std::string> ids;
   for (const Pad& pad : board.pads) {
     if (pad.id.empty()) {
@@ -530,15 +543,16 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
     if (pad.component_id.empty()) {
       diagnostics.push_back(makeDiagnostic("INVALID_PAD_COMPONENT",
                                            "Pad component_id must not be empty", pad.id));
-    } else if (findComponent(project, pad.component_id) == nullptr) {
+    } else if (has_schematic && findComponent(project, pad.component_id) == nullptr) {
       diagnostics.push_back(makeDiagnostic("UNKNOWN_PAD_COMPONENT",
                                            "Pad references an unknown component", pad.id));
     }
     if (pad.pin_name.empty()) {
       diagnostics.push_back(
           makeDiagnostic("INVALID_PAD_PIN", "Pad pin_name must not be empty", pad.id));
-    } else if (const Component* component = findComponent(project, pad.component_id)) {
-      if (!componentHasPin(*component, pad.pin_name)) {
+    } else if (has_schematic) {
+      const Component* component = findComponent(project, pad.component_id);
+      if (component != nullptr && !componentHasPin(*component, pad.pin_name)) {
         diagnostics.push_back(
             makeDiagnostic("UNKNOWN_PAD_PIN", "Pad references an unknown component pin", pad.id));
       }
@@ -578,10 +592,10 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
     }
     if (pad.net_id.empty()) {
       diagnostics.push_back(makeWarning("UNCONNECTED_PAD", "Pad has no assigned net", pad.id));
-    } else if (!hasNet(project, pad.net_id)) {
+    } else if (has_schematic && !hasNet(project, pad.net_id)) {
       diagnostics.push_back(
           makeDiagnostic("UNKNOWN_PAD_NET", "Pad references an unknown net", pad.id));
-    } else if (!pad.component_id.empty() && !pad.pin_name.empty()) {
+    } else if (has_schematic && !pad.component_id.empty() && !pad.pin_name.empty()) {
       const Net* net = findNet(project, pad.net_id);
       if (net != nullptr && !netContainsMember(*net, pad.component_id, pad.pin_name)) {
         diagnostics.push_back(makeDiagnostic(
@@ -602,6 +616,7 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
 }
 
 void checkVias(const Project& project, const Board& board, std::vector<Diagnostic>& diagnostics) {
+  const bool has_schematic = primarySchematic(project) != nullptr;
   std::set<std::string> ids;
   for (const Via& via : board.vias) {
     if (via.id.empty()) {
@@ -617,7 +632,7 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
     }
     if (via.net_id.empty()) {
       diagnostics.push_back(makeWarning("UNCONNECTED_VIA", "Via has no assigned net", via.id));
-    } else if (!hasNet(project, via.net_id)) {
+    } else if (has_schematic && !hasNet(project, via.net_id)) {
       diagnostics.push_back(
           makeDiagnostic("UNKNOWN_VIA_NET", "Via references an unknown net", via.id));
     }
@@ -667,6 +682,7 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
 }
 
 void checkTracks(const Project& project, const Board& board, std::vector<Diagnostic>& diagnostics) {
+  const bool has_schematic = primarySchematic(project) != nullptr;
   std::set<std::string> ids;
   for (const TrackSegment& track : board.tracks) {
     if (track.id.empty()) {
@@ -687,7 +703,7 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
     if (track.net_id.empty()) {
       diagnostics.push_back(
           makeWarning("UNCONNECTED_TRACK", "Track has no assigned net", track.id));
-    } else if (!hasNet(project, track.net_id)) {
+    } else if (has_schematic && !hasNet(project, track.net_id)) {
       diagnostics.push_back(
           makeDiagnostic("UNKNOWN_TRACK_NET", "Track references an unknown net", track.id));
     }
@@ -827,6 +843,7 @@ bool isSupportedZonePadConnection(const std::string& pad_connection) {
 
 void checkBoardZones(const Project& project, const Board& board,
                      std::vector<Diagnostic>& diagnostics) {
+  const bool has_schematic = primarySchematic(project) != nullptr;
   std::set<std::string> ids;
   for (const BoardZone& zone : board.zones) {
     if (zone.id.empty()) {
@@ -856,7 +873,7 @@ void checkBoardZones(const Project& project, const Board& board,
                                              "Zone must be on copper layers", zone.id));
       }
     }
-    if (!zone.net_id.empty() && !hasNet(project, zone.net_id)) {
+    if (has_schematic && !zone.net_id.empty() && !hasNet(project, zone.net_id)) {
       diagnostics.push_back(makeDiagnostic("UNKNOWN_ZONE_NET",
                                            "Zone references an unknown net", zone.id));
     }
@@ -892,6 +909,7 @@ void checkBoardZones(const Project& project, const Board& board,
 
 void checkRouteRequests(const Project& project, const Board& board,
                         std::vector<Diagnostic>& diagnostics) {
+  const bool has_schematic = primarySchematic(project) != nullptr;
   std::set<std::string> ids;
   for (const RouteRequest& route_request : board.route_requests) {
     if (route_request.id.empty()) {
@@ -908,7 +926,7 @@ void checkRouteRequests(const Project& project, const Board& board,
       diagnostics.push_back(makeDiagnostic("INVALID_ROUTE_REQUEST_NET",
                                            "Route request net_id must not be empty",
                                            route_request.id));
-    } else if (!hasNet(project, route_request.net_id)) {
+    } else if (has_schematic && !hasNet(project, route_request.net_id)) {
       diagnostics.push_back(makeDiagnostic("UNKNOWN_ROUTE_REQUEST_NET",
                                            "Route request references an unknown net",
                                            route_request.id));
@@ -962,8 +980,12 @@ void checkRouteRequests(const Project& project, const Board& board,
 }
 
 void checkProjectNets(const Project& project, std::vector<Diagnostic>& diagnostics) {
+  const Schematic* schematic = primarySchematic(project);
+  if (schematic == nullptr) {
+    return;
+  }
   std::set<std::string> ids;
-  for (const Net& net : project.nets) {
+  for (const Net& net : schematic->nets) {
     if (net.id.empty()) {
       diagnostics.push_back(
           makeDiagnostic("INVALID_NET_ID", "Net ID must not be empty", net.id));
@@ -1286,12 +1308,12 @@ void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnosti
 
 std::vector<Diagnostic> runDrc(const Project& project) {
   std::vector<Diagnostic> diagnostics;
-  if (!project.board.has_value()) {
+  if (project.boards.empty()) {
     return diagnostics;
   }
 
   checkProjectNets(project, diagnostics);
-  const Board& board = *project.board;
+  const Board& board = project.boards[0];
   checkBoardOutline(board, diagnostics);
   checkDesignRules(board, diagnostics);
   checkLayers(board, diagnostics);

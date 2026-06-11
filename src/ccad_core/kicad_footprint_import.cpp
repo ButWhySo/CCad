@@ -198,6 +198,154 @@ FootprintPad importPad(const SExpr& expr) {
   return pad;
 }
 
+FootprintLine importLine(const SExpr& expr) {
+  FootprintLine line;
+  for (std::size_t i = 1; i < expr.children.size(); ++i) {
+    const SExpr& child = expr.children.at(i);
+    if (isList(child, "start") && child.children.size() >= 2) {
+      line.start.x = parseMillimeters(child.children.at(0).value, "line start x");
+      line.start.y = parseMillimeters(child.children.at(1).value, "line start y");
+    } else if (isList(child, "end") && child.children.size() >= 2) {
+      line.end.x = parseMillimeters(child.children.at(0).value, "line end x");
+      line.end.y = parseMillimeters(child.children.at(1).value, "line end y");
+    } else if (isList(child, "layer") && child.children.size() >= 1) {
+      line.layer = child.children.at(0).value;
+    } else if (isList(child, "stroke")) {
+      for (const SExpr& s : child.children) {
+        if (isList(s, "width") && s.children.size() >= 1) {
+          line.stroke_width = parseMillimeters(s.children.at(0).value, "line width");
+        }
+      }
+    } else if (isList(child, "width") && child.children.size() >= 1) {
+      line.stroke_width = parseMillimeters(child.children.at(0).value, "line width");
+    }
+  }
+  return line;
+}
+
+FootprintArc importArc(const SExpr& expr) {
+  FootprintArc arc;
+  for (std::size_t i = 1; i < expr.children.size(); ++i) {
+    const SExpr& child = expr.children.at(i);
+    if (isList(child, "start") && child.children.size() >= 2) {
+      arc.start.x = parseMillimeters(child.children.at(0).value, "arc start x");
+      arc.start.y = parseMillimeters(child.children.at(1).value, "arc start y");
+    } else if (isList(child, "end") && child.children.size() >= 2) {
+      arc.end.x = parseMillimeters(child.children.at(0).value, "arc end x");
+      arc.end.y = parseMillimeters(child.children.at(1).value, "arc end y");
+    } else if (isList(child, "mid") && child.children.size() >= 2) {
+      arc.center.x = parseMillimeters(child.children.at(0).value, "arc mid x");
+      arc.center.y = parseMillimeters(child.children.at(1).value, "arc mid y");
+    } else if (isList(child, "layer") && child.children.size() >= 1) {
+      arc.layer = child.children.at(0).value;
+    } else if (isList(child, "stroke")) {
+      for (const SExpr& s : child.children) {
+        if (isList(s, "width") && s.children.size() >= 1) {
+          arc.stroke_width = parseMillimeters(s.children.at(0).value, "arc width");
+        }
+      }
+    } else if (isList(child, "width") && child.children.size() >= 1) {
+      arc.stroke_width = parseMillimeters(child.children.at(0).value, "arc width");
+    }
+  }
+  return arc;
+}
+
+FootprintCircle importCircle(const SExpr& expr) {
+  FootprintCircle circle;
+  for (std::size_t i = 1; i < expr.children.size(); ++i) {
+    const SExpr& child = expr.children.at(i);
+    if (isList(child, "center") && child.children.size() >= 2) {
+      circle.center.x = parseMillimeters(child.children.at(0).value, "circle center x");
+      circle.center.y = parseMillimeters(child.children.at(1).value, "circle center y");
+    } else if (isList(child, "end") && child.children.size() >= 2) {
+      circle.end.x = parseMillimeters(child.children.at(0).value, "circle end x");
+      circle.end.y = parseMillimeters(child.children.at(1).value, "circle end y");
+    } else if (isList(child, "layer") && child.children.size() >= 1) {
+      circle.layer = child.children.at(0).value;
+    } else if (isList(child, "stroke")) {
+      for (const SExpr& s : child.children) {
+        if (isList(s, "width") && s.children.size() >= 1) {
+          circle.stroke_width = parseMillimeters(s.children.at(0).value, "circle width");
+        }
+      }
+    } else if (isList(child, "width") && child.children.size() >= 1) {
+      circle.stroke_width = parseMillimeters(child.children.at(0).value, "circle width");
+    }
+  }
+  return circle;
+}
+
+FootprintText importText(const SExpr& expr) {
+  FootprintText text;
+  if (expr.children.size() >= 2) {
+    text.type = expr.children.at(0).value;
+    text.text = expr.children.at(1).value;
+  }
+  for (std::size_t i = 2; i < expr.children.size(); ++i) {
+    const SExpr& child = expr.children.at(i);
+    if (isList(child, "at") && child.children.size() >= 2) {
+      text.position.x = parseMillimeters(child.children.at(0).value, "text at x");
+      text.position.y = parseMillimeters(child.children.at(1).value, "text at y");
+      if (child.children.size() >= 3) {
+        text.rotation_degrees = parseDouble(child.children.at(2).value, "text rotation");
+      }
+    } else if (isList(child, "layer") && child.children.size() >= 1) {
+      text.layer = child.children.at(0).value;
+    } else if (isList(child, "effects")) {
+      for (const SExpr& s : child.children) {
+        if (isList(s, "font")) {
+          for (const SExpr& f : s.children) {
+            if (isList(f, "size") && f.children.size() >= 2) {
+              text.size_width = parseMillimeters(f.children.at(0).value, "text size width");
+              text.size_height = parseMillimeters(f.children.at(1).value, "text size height");
+            } else if (isList(f, "thickness") && f.children.size() >= 1) {
+              text.stroke_width = parseMillimeters(f.children.at(0).value, "text thickness");
+            }
+          }
+        }
+      }
+    }
+  }
+  return text;
+}
+
+FootprintModel3D importModel(const SExpr& expr) {
+  FootprintModel3D model;
+  if (expr.children.size() >= 1) {
+    model.path = expr.children.at(0).value;
+  }
+  for (std::size_t i = 1; i < expr.children.size(); ++i) {
+    const SExpr& child = expr.children.at(i);
+    if (isList(child, "offset")) {
+      for (const SExpr& s : child.children) {
+        if (isList(s, "xyz") && s.children.size() >= 3) {
+          model.offset.x = parseMillimeters(s.children.at(0).value, "model offset x");
+          model.offset.y = parseMillimeters(s.children.at(1).value, "model offset y");
+          model.offset_z = parseDouble(s.children.at(2).value, "model offset z");
+        }
+      }
+    } else if (isList(child, "scale")) {
+      for (const SExpr& s : child.children) {
+        if (isList(s, "xyz") && s.children.size() >= 3) {
+          model.scale_x = parseDouble(s.children.at(0).value, "model scale x");
+          model.scale_y = parseDouble(s.children.at(1).value, "model scale y");
+          model.scale_z = parseDouble(s.children.at(2).value, "model scale z");
+        }
+      }
+    } else if (isList(child, "rotate")) {
+      for (const SExpr& s : child.children) {
+        if (isList(s, "xyz") && s.children.size() >= 3) {
+          model.rotate_x = parseDouble(s.children.at(0).value, "model rotate x");
+          model.rotate_y = parseDouble(s.children.at(1).value, "model rotate y");
+          model.rotate_z = parseDouble(s.children.at(2).value, "model rotate z");
+        }
+      }
+    }
+  }
+  return model;
+}
+
 void writeStringArray(std::ostringstream& out, const int indent,
                       const std::vector<std::string>& values) {
   out << "[";
@@ -587,6 +735,16 @@ Footprint importKiCadFootprint(const std::string_view source) {
     const SExpr& child = root.children.at(i);
     if (isList(child, "pad")) {
       footprint.pads.push_back(importPad(child));
+    } else if (isList(child, "fp_line")) {
+      footprint.lines.push_back(importLine(child));
+    } else if (isList(child, "fp_arc")) {
+      footprint.arcs.push_back(importArc(child));
+    } else if (isList(child, "fp_circle")) {
+      footprint.circles.push_back(importCircle(child));
+    } else if (isList(child, "fp_text")) {
+      footprint.texts.push_back(importText(child));
+    } else if (isList(child, "model")) {
+      footprint.models.push_back(importModel(child));
     }
   }
 

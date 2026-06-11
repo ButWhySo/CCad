@@ -27,7 +27,11 @@ namespace {
 
 std::string netIdForPin(const ccad::Project& project, const std::string& component_id,
                         const std::string& pin_name) {
-  for (const ccad::Net& net : project.schematics[0].nets) {
+  const ccad::Schematic* schematic = ccad::primarySchematic(project);
+  if (schematic == nullptr) {
+    return "";
+  }
+  for (const ccad::Net& net : schematic->nets) {
     for (const ccad::NetMember& member : net.members) {
       if (member.component_id == component_id && member.pin_name == pin_name) {
         return net.id;
@@ -171,9 +175,11 @@ std::optional<double> optionalRatio(const std::map<std::string, std::string>& op
 }
 
 bool projectHasNet(const ccad::Project& project, const std::string& net_id) {
-  for (const ccad::Net& net : project.schematics[0].nets) {
-    if (net.id == net_id) {
-      return true;
+  if (const ccad::Schematic* schematic = ccad::primarySchematic(project)) {
+    for (const ccad::Net& net : schematic->nets) {
+      if (net.id == net_id) {
+        return true;
+      }
     }
   }
   if (!project.boards.empty()) {

@@ -16,7 +16,7 @@ int main() {
   Project project;
   project.id = "proj-demo";
   project.name = "demo";
-  project.board = ccad::Board{
+  project.boards.push_back(ccad::Board{
       .outline = ccad::Rect{
           .origin = ccad::Point{.x = ccad::nanometers(0), .y = ccad::nanometers(0)},
           .size = ccad::Size{.width = ccad::millimeters(42), .height = ccad::millimeters(28)},
@@ -106,17 +106,18 @@ int main() {
           .policy = "shortest_safe",
           .width = ccad::millimeters(0.25),
       }},
-  };
-  project.components.push_back(Component{
+  });
+  project.schematics.push_back(ccad::Schematic{});
+  project.schematics[0].components.push_back(Component{
       .id = "U1",
       .part = "MCU",
       .pins = {Pin{.name = "VDD", .kind = "power"}, Pin{.name = "GND", .kind = "power"}},
   });
-  project.nets.push_back(Net{
+  project.schematics[0].nets.push_back(Net{
       .id = "N_3V3",
       .members = {NetMember{.component_id = "U1", .pin_name = "VDD"}},
   });
-  project.constraints.push_back(Constraint{
+  project.schematics[0].constraints.push_back(Constraint{
       .id = "C_supply",
       .kind = "voltage",
       .target = "N_3V3",
@@ -125,7 +126,7 @@ int main() {
 
   const std::string json = ccad::dumpProjectJson(project);
 
-  require(json.find("\"schema_version\": 1") != std::string::npos, "schema version emitted");
+  require(json.find("\"schema_version\": 2") != std::string::npos, "schema version emitted");
   require(json.find("\"id\": \"proj-demo\"") != std::string::npos, "project id emitted");
   require(json.find("\"board\"") != std::string::npos, "board emitted");
   require(json.find("\"width_nm\": 42000000") != std::string::npos, "board width emitted");
@@ -158,77 +159,77 @@ int main() {
   const Project loaded = ccad::loadProjectJson(json);
   require(loaded.id == "proj-demo", "project id round trips");
   require(loaded.name == "demo", "project name round trips");
-  require(loaded.board.has_value(), "board round trips");
-  require(loaded.board->outline.size.width.nanometers == 42000000, "board width round trips");
-  require(loaded.board->outline.size.height.nanometers == 28000000, "board height round trips");
-  require(loaded.board->design_rules.copper_clearance.nanometers == 150000,
+  require(!loaded.boards.empty(), "board round trips");
+  require(loaded.boards[0].outline.size.width.nanometers == 42000000, "board width round trips");
+  require(loaded.boards[0].outline.size.height.nanometers == 28000000, "board height round trips");
+  require(loaded.boards[0].design_rules.copper_clearance.nanometers == 150000,
           "copper clearance rule round trips");
-  require(loaded.board->design_rules.min_track_width.nanometers == 120000,
+  require(loaded.boards[0].design_rules.min_track_width.nanometers == 120000,
           "minimum track width rule round trips");
-  require(loaded.board->design_rules.min_via_annular_ring.nanometers == 80000,
+  require(loaded.boards[0].design_rules.min_via_annular_ring.nanometers == 80000,
           "minimum via annular ring rule round trips");
-  require(loaded.board->layers.size() == 4, "board layers round trip");
-  require(loaded.board->layers.at(2).id == "F.SilkS", "front silkscreen layer round trips");
-  require(loaded.board->layers.at(3).id == "Dwgs.User", "user drawing layer round trips");
-  require(loaded.board->placement_regions.size() == 1, "board placement regions round trip");
-  require(loaded.board->placement_regions.at(0).area.size.width.nanometers == 10000000,
+  require(loaded.boards[0].layers.size() == 4, "board layers round trip");
+  require(loaded.boards[0].layers.at(2).id == "F.SilkS", "front silkscreen layer round trips");
+  require(loaded.boards[0].layers.at(3).id == "Dwgs.User", "user drawing layer round trips");
+  require(loaded.boards[0].placement_regions.size() == 1, "board placement regions round trip");
+  require(loaded.boards[0].placement_regions.at(0).area.size.width.nanometers == 10000000,
           "placement region width round trips");
-  require(loaded.board->keepouts.size() == 1, "board keepouts round trip");
-  require(loaded.board->keepouts.at(0).area.size.width.nanometers == 4000000,
+  require(loaded.boards[0].keepouts.size() == 1, "board keepouts round trip");
+  require(loaded.boards[0].keepouts.at(0).area.size.width.nanometers == 4000000,
           "keepout width round trips");
-  require(loaded.board->pads.size() == 1, "board pads round trip");
-  require(loaded.board->pads.at(0).position.x.nanometers == 5000000, "pad x round trips");
-  require(loaded.board->pads.at(0).rotation_degrees == 90.0, "pad rotation round trips");
-  require(loaded.board->pads.at(0).roundrect_rratio.has_value(), "pad roundrect ratio round trips");
-  require(*loaded.board->pads.at(0).roundrect_rratio == 0.25, "pad roundrect ratio value round trips");
-  require(loaded.board->vias.size() == 1, "board vias round trip");
-  require(loaded.board->vias.at(0).drill.nanometers == 400000, "via drill round trips");
-  require(loaded.board->tracks.size() == 1, "board tracks round trip");
-  require(loaded.board->tracks.at(0).width.nanometers == 250000, "track width round trips");
-  require(loaded.board->tracks.at(0).source_route_request_id == "RR1",
+  require(loaded.boards[0].pads.size() == 1, "board pads round trip");
+  require(loaded.boards[0].pads.at(0).position.x.nanometers == 5000000, "pad x round trips");
+  require(loaded.boards[0].pads.at(0).rotation_degrees == 90.0, "pad rotation round trips");
+  require(loaded.boards[0].pads.at(0).roundrect_rratio.has_value(), "pad roundrect ratio round trips");
+  require(loaded.boards[0].pads.at(0).roundrect_rratio == 0.25, "pad roundrect ratio value round trips");
+  require(loaded.boards[0].vias.size() == 1, "board vias round trip");
+  require(loaded.boards[0].vias.at(0).drill.nanometers == 400000, "via drill round trips");
+  require(loaded.boards[0].tracks.size() == 1, "board tracks round trip");
+  require(loaded.boards[0].tracks.at(0).width.nanometers == 250000, "track width round trips");
+  require(loaded.boards[0].tracks.at(0).source_route_request_id == "RR1",
           "track route request provenance round trips");
-  require(loaded.board->graphics.size() == 1, "board graphics round trip");
-  require(loaded.board->graphics.at(0).kind == "line", "board graphic kind round trips");
-  require(loaded.board->graphics.at(0).layer_id == "Dwgs.User",
+  require(loaded.boards[0].graphics.size() == 1, "board graphics round trip");
+  require(loaded.boards[0].graphics.at(0).kind == "line", "board graphic kind round trips");
+  require(loaded.boards[0].graphics.at(0).layer_id == "Dwgs.User",
           "board graphic layer round trips");
-  require(loaded.board->graphics.at(0).width.nanometers == 150000,
+  require(loaded.boards[0].graphics.at(0).width.nanometers == 150000,
           "board graphic width round trips");
-  require(loaded.board->texts.size() == 1, "board texts round trip");
-  require(loaded.board->texts.at(0).layer_id == "F.SilkS", "board text layer round trips");
-  require(loaded.board->texts.at(0).text == "Bridge rectifier",
+  require(loaded.boards[0].texts.size() == 1, "board texts round trip");
+  require(loaded.boards[0].texts.at(0).layer_id == "F.SilkS", "board text layer round trips");
+  require(loaded.boards[0].texts.at(0).text == "Bridge rectifier",
           "board text value round trips");
-  require(loaded.board->texts.at(0).rotation_degrees == 90.0,
+  require(loaded.boards[0].texts.at(0).rotation_degrees == 90.0,
           "board text rotation round trips");
-  require(loaded.board->texts.at(0).size.width.nanometers == 1500000,
+  require(loaded.boards[0].texts.at(0).size.width.nanometers == 1500000,
           "board text size round trips");
-  require(loaded.board->zones.size() == 1, "board zones round trip");
-  require(loaded.board->zones.at(0).id == "Z_GND", "board zone id round trips");
-  require(loaded.board->zones.at(0).name == "GND pour", "board zone name round trips");
-  require(loaded.board->zones.at(0).net_id == "N_3V3", "board zone net round trips");
-  require(loaded.board->zones.at(0).layer_ids.size() == 2,
+  require(loaded.boards[0].zones.size() == 1, "board zones round trip");
+  require(loaded.boards[0].zones.at(0).id == "Z_GND", "board zone id round trips");
+  require(loaded.boards[0].zones.at(0).name == "GND pour", "board zone name round trips");
+  require(loaded.boards[0].zones.at(0).net_id == "N_3V3", "board zone net round trips");
+  require(loaded.boards[0].zones.at(0).layer_ids.size() == 2,
           "board zone layer set round trips");
-  require(loaded.board->zones.at(0).outline.size() == 4, "board zone outline round trips");
-  require(loaded.board->zones.at(0).priority == 1, "board zone priority round trips");
-  require(loaded.board->zones.at(0).clearance.nanometers == 200000,
+  require(loaded.boards[0].zones.at(0).outline.size() == 4, "board zone outline round trips");
+  require(loaded.boards[0].zones.at(0).priority == 1, "board zone priority round trips");
+  require(loaded.boards[0].zones.at(0).clearance.nanometers == 200000,
           "board zone clearance round trips");
-  require(loaded.board->zones.at(0).min_thickness.nanometers == 250000,
+  require(loaded.boards[0].zones.at(0).min_thickness.nanometers == 250000,
           "board zone min thickness round trips");
-  require(loaded.board->zones.at(0).fill_enabled, "board zone fill state round trips");
-  require(loaded.board->zones.at(0).pad_connection == "thermal",
+  require(loaded.boards[0].zones.at(0).fill_enabled, "board zone fill state round trips");
+  require(loaded.boards[0].zones.at(0).pad_connection == "thermal",
           "board zone pad connection round trips");
-  require(loaded.board->route_requests.size() == 1, "route requests round trip");
-  require(loaded.board->route_requests.at(0).from_object_id == "P1",
+  require(loaded.boards[0].route_requests.size() == 1, "route requests round trip");
+  require(loaded.boards[0].route_requests.at(0).from_object_id == "P1",
           "route request start object round trips");
-  require(loaded.board->route_requests.at(0).to_object_id == "V1",
+  require(loaded.boards[0].route_requests.at(0).to_object_id == "V1",
           "route request target object round trips");
-  require(loaded.board->route_requests.at(0).preferred_layer_id == "F.Cu",
+  require(loaded.boards[0].route_requests.at(0).preferred_layer_id == "F.Cu",
           "route request preferred layer round trips");
-  require(loaded.board->route_requests.at(0).width.nanometers == 250000,
+  require(loaded.boards[0].route_requests.at(0).width.nanometers == 250000,
           "route request width round trips");
-  require(loaded.components.size() == 1, "component count round trips");
-  require(loaded.components.at(0).pins.size() == 2, "pin count round trips");
-  require(loaded.nets.size() == 1, "net count round trips");
-  require(loaded.constraints.size() == 1, "constraint count round trips");
+  require(loaded.schematics[0].components.size() == 1, "component count round trips");
+  require(loaded.schematics[0].components.at(0).pins.size() == 2, "pin count round trips");
+  require(loaded.schematics[0].nets.size() == 1, "net count round trips");
+  require(loaded.schematics[0].constraints.size() == 1, "constraint count round trips");
   require(ccad::dumpProjectJson(loaded) == json, "json output is deterministic");
 
   Project escaped;

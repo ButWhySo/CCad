@@ -456,6 +456,24 @@ LibraryCatalog loadLibraryCatalogJson(const std::string& json) {
   return catalog;
 }
 
+void saveLibraryCatalog(const std::filesystem::path& path, const LibraryCatalog& catalog) {
+  std::ofstream out(path, std::ios::binary);
+  if (!out) {
+    throw std::runtime_error("failed to open library catalog for writing: " + path.string());
+  }
+  out << dumpLibraryCatalogJson(catalog);
+}
+
+LibraryCatalog loadLibraryCatalog(const std::filesystem::path& path) {
+  std::ifstream in(path, std::ios::binary);
+  if (!in) {
+    throw std::runtime_error("failed to open library catalog for reading: " + path.string());
+  }
+  std::ostringstream buffer;
+  buffer << in.rdbuf();
+  return loadLibraryCatalogJson(buffer.str());
+}
+
 const LibraryItem* findLibraryItem(const LibraryCatalog& catalog, const std::string& id) {
   for (const LibraryItem& item : catalog.items) {
     if (item.id == id) {

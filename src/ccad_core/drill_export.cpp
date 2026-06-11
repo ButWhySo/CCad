@@ -10,11 +10,11 @@ namespace ccad {
 std::string exportToDrillExcellon(const Project& project) {
   std::stringstream ss;
   
-  if (!project.board.has_value()) {
+  if (!!project.boards.empty()) {
       return ss.str();
   }
 
-  const Board& board = *project.board;
+  const Board& board = project.boards[0];
 
   // Excellon Format
   ss << "M48\n";

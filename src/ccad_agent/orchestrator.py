@@ -125,6 +125,8 @@ def init_provider():
             return True
         except ImportError:
             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Warning: langchain_openai not installed."}})
+        except Exception as e:
+            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Warning: Failed to initialize ChatOpenAI: {e}"}})
     emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Error: Failed to initialize provider '{provider}'. API key may be missing or dependencies not installed."}})
     return False
 

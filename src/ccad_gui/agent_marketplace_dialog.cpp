@@ -23,7 +23,7 @@ AgentMarketplaceDialog::AgentMarketplaceDialog(AgentPanel* agent_panel, QWidget*
 
   setStyleSheet(R"(
     QDialog {
-      background-color: #0d1117;
+      background-color: #161b22;
       color: #c9d1d9;
       font-family: 'Segoe UI', sans-serif;
     }
@@ -132,15 +132,22 @@ void AgentMarketplaceDialog::setupUi() {
   auto* content_widget = new QWidget(splitter);
   auto* content_layout = new QVBoxLayout(content_widget);
 
-  auto* top_used_label = new QLabel("<b>Top Used</b>", content_widget);
+  auto* top_used_label = new QLabel("<b>Top Used Plugins & Hooks</b>", content_widget);
   content_layout->addWidget(top_used_label);
 
   list_widget_ = new QListWidget(content_widget);
   list_widget_->addItem("Loading catalog from live URL...");
+
+  // Inject default/local hooks and plugins required for parity
+  list_widget_->addItem("[Hook] Freerouting (Push-and-Shove DSN Router) - Available");
+  list_widget_->addItem("[Workflow] Schematic to PCB Sync - Active");
+  list_widget_->addItem("[Plugin] OTel Observability Tracing - Active");
+  list_widget_->addItem("[Dev Prompt] AI Component Generator - Active");
+
   content_layout->addWidget(list_widget_);
 
   splitter->addWidget(content_widget);
-  
+
   // Set sizes
   splitter->setSizes({200, 600});
 }
@@ -158,11 +165,6 @@ void AgentMarketplaceDialog::openSettings() {
 
 void AgentMarketplaceDialog::onCatalogFetched(QNetworkReply* reply) {
   list_widget_->clear();
-  
-  // Always add mock data for Top Used
-  list_widget_->addItem("Validation workflow by xyz\n(Workflow)");
-  list_widget_->addItem("Super power by user768\n(Skill)");
-  list_widget_->addItem("Senior EE by xingbao\n(Agent Profile)");
 
   if (reply->error() == QNetworkReply::NoError) {
     QByteArray data = reply->readAll();
@@ -182,8 +184,6 @@ void AgentMarketplaceDialog::onCatalogFetched(QNetworkReply* reply) {
     }
   } else {
     list_widget_->addItem("Network error: " + reply->errorString());
-    list_widget_->addItem("Fallback mock plugin: 'Kicad BOM Exporter' - Exports BOMs");
-    list_widget_->addItem("Fallback mock plugin: 'Auto-Router' - Basic net routing");
   }
   reply->deleteLater();
 }

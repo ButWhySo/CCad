@@ -179,11 +179,16 @@ void diffObjectMap(ProjectDiff& diff, const std::string& object_type, const std:
 
 ProjectDiff diffProjects(const Project& before, const Project& after) {
   ProjectDiff diff;
-  diffObjectMap(diff, "component", before.components, after.components, componentSignature);
-  diffObjectMap(diff, "net", before.nets, after.nets, netSignature);
-  diffObjectMap(diff, "constraint", before.constraints, after.constraints, constraintSignature);
-  if (before.board.has_value() && after.board.has_value()) {
-    if (outlineSignature(before.board->outline) != outlineSignature(after.board->outline)) {
+  const Schematic empty_schematic;
+  const Schematic* before_schematic = primarySchematic(before);
+  const Schematic* after_schematic = primarySchematic(after);
+  const Schematic& before_sch = before_schematic == nullptr ? empty_schematic : *before_schematic;
+  const Schematic& after_sch = after_schematic == nullptr ? empty_schematic : *after_schematic;
+  diffObjectMap(diff, "component", before_sch.components, after_sch.components, componentSignature);
+  diffObjectMap(diff, "net", before_sch.nets, after_sch.nets, netSignature);
+  diffObjectMap(diff, "constraint", before_sch.constraints, after_sch.constraints, constraintSignature);
+  if (!before.boards.empty() && !after.boards.empty()) {
+    if (outlineSignature(before.boards[0].outline) != outlineSignature(after.boards[0].outline)) {
       ++diff.changed_count;
       diff.entries.push_back(DiffEntry{
           .change = "changed",
@@ -192,8 +197,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "board outline changed",
       });
     }
-    if (designRulesSignature(before.board->design_rules) !=
-        designRulesSignature(after.board->design_rules)) {
+    if (designRulesSignature(before.boards[0].design_rules) !=
+        designRulesSignature(after.boards[0].design_rules)) {
       ++diff.changed_count;
       diff.entries.push_back(DiffEntry{
           .change = "changed",
@@ -202,21 +207,21 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "design rules changed",
       });
     }
-    diffObjectMap(diff, "layer", before.board->layers, after.board->layers, layerSignature);
-    diffObjectMap(diff, "placement_region", before.board->placement_regions,
-                  after.board->placement_regions, placementRegionSignature);
-    diffObjectMap(diff, "keepout", before.board->keepouts, after.board->keepouts,
+    diffObjectMap(diff, "layer", before.boards[0].layers, after.boards[0].layers, layerSignature);
+    diffObjectMap(diff, "placement_region", before.boards[0].placement_regions,
+                  after.boards[0].placement_regions, placementRegionSignature);
+    diffObjectMap(diff, "keepout", before.boards[0].keepouts, after.boards[0].keepouts,
                   keepoutSignature);
-    diffObjectMap(diff, "pad", before.board->pads, after.board->pads, padSignature);
-    diffObjectMap(diff, "via", before.board->vias, after.board->vias, viaSignature);
-    diffObjectMap(diff, "track", before.board->tracks, after.board->tracks, trackSignature);
-    diffObjectMap(diff, "graphic", before.board->graphics, after.board->graphics,
+    diffObjectMap(diff, "pad", before.boards[0].pads, after.boards[0].pads, padSignature);
+    diffObjectMap(diff, "via", before.boards[0].vias, after.boards[0].vias, viaSignature);
+    diffObjectMap(diff, "track", before.boards[0].tracks, after.boards[0].tracks, trackSignature);
+    diffObjectMap(diff, "graphic", before.boards[0].graphics, after.boards[0].graphics,
                   graphicSignature);
-    diffObjectMap(diff, "text", before.board->texts, after.board->texts, textSignature);
-    diffObjectMap(diff, "zone", before.board->zones, after.board->zones, zoneSignature);
-    diffObjectMap(diff, "route_request", before.board->route_requests,
-                  after.board->route_requests, routeRequestSignature);
-  } else if (!before.board.has_value() && after.board.has_value()) {
+    diffObjectMap(diff, "text", before.boards[0].texts, after.boards[0].texts, textSignature);
+    diffObjectMap(diff, "zone", before.boards[0].zones, after.boards[0].zones, zoneSignature);
+    diffObjectMap(diff, "route_request", before.boards[0].route_requests,
+                  after.boards[0].route_requests, routeRequestSignature);
+  } else if (!!before.boards.empty() && !after.boards.empty()) {
     ++diff.added_count;
     diff.entries.push_back(DiffEntry{
         .change = "added",
@@ -224,8 +229,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
         .object_id = "board",
         .message = "board outline added",
     });
-    diff.added_count += after.board->layers.size();
-    for (const Layer& layer : after.board->layers) {
+    diff.added_count += after.boards[0].layers.size();
+    for (const Layer& layer : after.boards[0].layers) {
       diff.entries.push_back(DiffEntry{
           .change = "added",
           .object_type = "layer",
@@ -233,8 +238,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "layer added",
       });
     }
-    diff.added_count += after.board->placement_regions.size();
-    for (const PlacementRegion& region : after.board->placement_regions) {
+    diff.added_count += after.boards[0].placement_regions.size();
+    for (const PlacementRegion& region : after.boards[0].placement_regions) {
       diff.entries.push_back(DiffEntry{
           .change = "added",
           .object_type = "placement_region",
@@ -242,8 +247,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "placement_region added",
       });
     }
-    diff.added_count += after.board->keepouts.size();
-    for (const Keepout& keepout : after.board->keepouts) {
+    diff.added_count += after.boards[0].keepouts.size();
+    for (const Keepout& keepout : after.boards[0].keepouts) {
       diff.entries.push_back(DiffEntry{
           .change = "added",
           .object_type = "keepout",
@@ -251,8 +256,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "keepout added",
       });
     }
-    diff.added_count += after.board->pads.size();
-    for (const Pad& pad : after.board->pads) {
+    diff.added_count += after.boards[0].pads.size();
+    for (const Pad& pad : after.boards[0].pads) {
       diff.entries.push_back(DiffEntry{
           .change = "added",
           .object_type = "pad",
@@ -260,8 +265,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "pad added",
       });
     }
-    diff.added_count += after.board->vias.size();
-    for (const Via& via : after.board->vias) {
+    diff.added_count += after.boards[0].vias.size();
+    for (const Via& via : after.boards[0].vias) {
       diff.entries.push_back(DiffEntry{
           .change = "added",
           .object_type = "via",
@@ -269,8 +274,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "via added",
       });
     }
-    diff.added_count += after.board->tracks.size();
-    for (const TrackSegment& track : after.board->tracks) {
+    diff.added_count += after.boards[0].tracks.size();
+    for (const TrackSegment& track : after.boards[0].tracks) {
       diff.entries.push_back(DiffEntry{
           .change = "added",
           .object_type = "track",
@@ -278,8 +283,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "track added",
       });
     }
-    diff.added_count += after.board->graphics.size();
-    for (const BoardGraphic& graphic : after.board->graphics) {
+    diff.added_count += after.boards[0].graphics.size();
+    for (const BoardGraphic& graphic : after.boards[0].graphics) {
       diff.entries.push_back(DiffEntry{
           .change = "added",
           .object_type = "graphic",
@@ -287,8 +292,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "graphic added",
       });
     }
-    diff.added_count += after.board->texts.size();
-    for (const BoardText& text : after.board->texts) {
+    diff.added_count += after.boards[0].texts.size();
+    for (const BoardText& text : after.boards[0].texts) {
       diff.entries.push_back(DiffEntry{
           .change = "added",
           .object_type = "text",
@@ -296,8 +301,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "text added",
       });
     }
-    diff.added_count += after.board->zones.size();
-    for (const BoardZone& zone : after.board->zones) {
+    diff.added_count += after.boards[0].zones.size();
+    for (const BoardZone& zone : after.boards[0].zones) {
       diff.entries.push_back(DiffEntry{
           .change = "added",
           .object_type = "zone",
@@ -305,8 +310,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "zone added",
       });
     }
-    diff.added_count += after.board->route_requests.size();
-    for (const RouteRequest& route_request : after.board->route_requests) {
+    diff.added_count += after.boards[0].route_requests.size();
+    for (const RouteRequest& route_request : after.boards[0].route_requests) {
       diff.entries.push_back(DiffEntry{
           .change = "added",
           .object_type = "route_request",
@@ -314,7 +319,7 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "route_request added",
       });
     }
-  } else if (before.board.has_value() && !after.board.has_value()) {
+  } else if (!before.boards.empty() && !!after.boards.empty()) {
     ++diff.removed_count;
     diff.entries.push_back(DiffEntry{
         .change = "removed",
@@ -322,8 +327,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
         .object_id = "board",
         .message = "board outline removed",
     });
-    diff.removed_count += before.board->layers.size();
-    for (const Layer& layer : before.board->layers) {
+    diff.removed_count += before.boards[0].layers.size();
+    for (const Layer& layer : before.boards[0].layers) {
       diff.entries.push_back(DiffEntry{
           .change = "removed",
           .object_type = "layer",
@@ -331,8 +336,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "layer removed",
       });
     }
-    diff.removed_count += before.board->placement_regions.size();
-    for (const PlacementRegion& region : before.board->placement_regions) {
+    diff.removed_count += before.boards[0].placement_regions.size();
+    for (const PlacementRegion& region : before.boards[0].placement_regions) {
       diff.entries.push_back(DiffEntry{
           .change = "removed",
           .object_type = "placement_region",
@@ -340,8 +345,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "placement_region removed",
       });
     }
-    diff.removed_count += before.board->keepouts.size();
-    for (const Keepout& keepout : before.board->keepouts) {
+    diff.removed_count += before.boards[0].keepouts.size();
+    for (const Keepout& keepout : before.boards[0].keepouts) {
       diff.entries.push_back(DiffEntry{
           .change = "removed",
           .object_type = "keepout",
@@ -349,8 +354,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "keepout removed",
       });
     }
-    diff.removed_count += before.board->pads.size();
-    for (const Pad& pad : before.board->pads) {
+    diff.removed_count += before.boards[0].pads.size();
+    for (const Pad& pad : before.boards[0].pads) {
       diff.entries.push_back(DiffEntry{
           .change = "removed",
           .object_type = "pad",
@@ -358,8 +363,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "pad removed",
       });
     }
-    diff.removed_count += before.board->vias.size();
-    for (const Via& via : before.board->vias) {
+    diff.removed_count += before.boards[0].vias.size();
+    for (const Via& via : before.boards[0].vias) {
       diff.entries.push_back(DiffEntry{
           .change = "removed",
           .object_type = "via",
@@ -367,8 +372,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "via removed",
       });
     }
-    diff.removed_count += before.board->tracks.size();
-    for (const TrackSegment& track : before.board->tracks) {
+    diff.removed_count += before.boards[0].tracks.size();
+    for (const TrackSegment& track : before.boards[0].tracks) {
       diff.entries.push_back(DiffEntry{
           .change = "removed",
           .object_type = "track",
@@ -376,8 +381,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "track removed",
       });
     }
-    diff.removed_count += before.board->graphics.size();
-    for (const BoardGraphic& graphic : before.board->graphics) {
+    diff.removed_count += before.boards[0].graphics.size();
+    for (const BoardGraphic& graphic : before.boards[0].graphics) {
       diff.entries.push_back(DiffEntry{
           .change = "removed",
           .object_type = "graphic",
@@ -385,8 +390,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "graphic removed",
       });
     }
-    diff.removed_count += before.board->texts.size();
-    for (const BoardText& text : before.board->texts) {
+    diff.removed_count += before.boards[0].texts.size();
+    for (const BoardText& text : before.boards[0].texts) {
       diff.entries.push_back(DiffEntry{
           .change = "removed",
           .object_type = "text",
@@ -394,8 +399,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "text removed",
       });
     }
-    diff.removed_count += before.board->zones.size();
-    for (const BoardZone& zone : before.board->zones) {
+    diff.removed_count += before.boards[0].zones.size();
+    for (const BoardZone& zone : before.boards[0].zones) {
       diff.entries.push_back(DiffEntry{
           .change = "removed",
           .object_type = "zone",
@@ -403,8 +408,8 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
           .message = "zone removed",
       });
     }
-    diff.removed_count += before.board->route_requests.size();
-    for (const RouteRequest& route_request : before.board->route_requests) {
+    diff.removed_count += before.boards[0].route_requests.size();
+    for (const RouteRequest& route_request : before.boards[0].route_requests) {
       diff.entries.push_back(DiffEntry{
           .change = "removed",
           .object_type = "route_request",

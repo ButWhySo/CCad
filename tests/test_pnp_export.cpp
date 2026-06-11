@@ -9,7 +9,8 @@ int main() {
   project.id = "proj_123";
   project.name = "Test Project";
 
-  project.components = {
+  project.schematics.push_back(ccad::Schematic{});
+  project.schematics[0].components = {
       ccad::Component{.id = "U1", .part = "NE555"},
       ccad::Component{.id = "R1", .part = "10k"}
   };
@@ -47,7 +48,7 @@ int main() {
       .position = ccad::Point{.x = ccad::millimeters(50), .y = ccad::millimeters(50)}
   });
 
-  project.board = board;
+  project.boards.clear(); project.boards.push_back(board);
 
   std::string exported = ccad::exportToPnpCsv(project);
   std::cout << exported << "\n";
@@ -60,6 +61,24 @@ int main() {
   
   // U1 bounding box is (10,10) to (30,30), center is (20,20)
   require(exported.find("U1,NE555,20.0000,20.0000,Top") != std::string::npos, "Output must contain U1 with correct centroid and side");
+
+  ccad::Project board_only;
+  board_only.id = "proj_board_only";
+  board_only.name = "Board Only";
+  ccad::Board board_only_board;
+  board_only_board.pads.push_back(ccad::Pad{
+      .id = "pad_board_only",
+      .component_id = "J1",
+      .pin_name = "1",
+      .layers = {"F.Cu"},
+      .type = "smd",
+      .shape = "rect",
+      .position = ccad::Point{.x = ccad::millimeters(12), .y = ccad::millimeters(14)}
+  });
+  board_only.boards.push_back(board_only_board);
+  const std::string board_only_exported = ccad::exportToPnpCsv(board_only);
+  require(board_only_exported.find("J1,,12.0000,14.0000,Top") != std::string::npos,
+          "PnP export emits board-only component placements with blank schematic value");
 
   std::cout << "All PnP export tests passed!\n";
   return 0;

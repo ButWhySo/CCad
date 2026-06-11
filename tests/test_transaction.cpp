@@ -6,6 +6,7 @@ namespace {
 
 ccad::Project beforeProject() {
   ccad::Project project;
+  project.schematics.push_back(ccad::Schematic{});
   project.id = "proj-before";
   project.name = "before";
   return project;
@@ -13,7 +14,7 @@ ccad::Project beforeProject() {
 
 ccad::Project afterProject() {
   ccad::Project project = beforeProject();
-  project.components.push_back(ccad::Component{
+  project.schematics[0].components.push_back(ccad::Component{
       .id = "U1",
       .part = "MCU",
       .pins = {ccad::Pin{.name = "VDD", .kind = "power"}},

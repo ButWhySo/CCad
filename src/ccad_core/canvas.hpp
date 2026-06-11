@@ -216,8 +216,8 @@ struct CanvasScene {
   std::vector<CanvasPowerSymbol> power_symbols;
 };
 
-CanvasScene buildCanvasScene(const Project& project);
-CanvasScene buildSchematicScene(const Project& project);
+CanvasScene buildCanvasScene(const Board& board);
+CanvasScene buildSchematicScene(const Schematic& schematic);
 CanvasScene buildCanvasScene(const Footprint& footprint);
 CanvasScene buildCanvasScene(const Symbol& symbol);
 

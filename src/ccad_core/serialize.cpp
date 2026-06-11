@@ -191,6 +191,14 @@ class JsonReader {
  public:
   explicit JsonReader(std::string_view source) : source_(source) {}
 
+  // Helper: ensure at least one schematic exists (legacy compat)
+  static Schematic& ensureSchematic(Project& project) {
+    if (project.schematics.empty()) {
+      project.schematics.emplace_back();
+    }
+    return project.schematics[0];
+  }
+
   Project readProject() {
     Project project;
     expect('{');
@@ -207,19 +215,20 @@ class JsonReader {
       } else if (key == "name") {
         project.name = readString();
       } else if (key == "board") {
-        project.board = readBoard();
+        project.boards.clear();
+        project.boards.push_back(readBoard());
       } else if (key == "components") {
-        project.components = readComponents();
+        ensureSchematic(project).components = readComponents();
       } else if (key == "nets") {
-        project.nets = readNets();
+        ensureSchematic(project).nets = readNets();
       } else if (key == "wires") {
-        project.wires = readWireSegments();
+        ensureSchematic(project).wires = readWireSegments();
       } else if (key == "labels") {
-        project.labels = readLabels();
+        ensureSchematic(project).labels = readLabels();
       } else if (key == "power_symbols") {
-        project.power_symbols = readPowerSymbols();
+        ensureSchematic(project).power_symbols = readPowerSymbols();
       } else if (key == "constraints") {
-        project.constraints = readConstraints();
+        ensureSchematic(project).constraints = readConstraints();
       } else {
         throw std::runtime_error("unknown project key: " + key);
       }
@@ -1470,8 +1479,8 @@ std::string dumpProjectJson(const Project& project) {
   writeField(out, 2, "id", project.id);
   writeField(out, 2, "name", project.name);
 
-  if (project.board.has_value()) {
-    const Board& board = *project.board;
+  if (!project.boards.empty()) {
+    const Board& board = project.boards[0];
     out << "  \"board\": {\n";
     out << "    \"outline\": {\n";
     out << "      \"x_nm\": " << board.outline.origin.x.nanometers << ",\n";
@@ -1674,8 +1683,10 @@ std::string dumpProjectJson(const Project& project) {
   }
 
   out << "  \"components\": [\n";
-  for (std::size_t i = 0; i < project.components.size(); ++i) {
-    const Component& component = project.components.at(i);
+  static const Schematic kEmptySchematic;
+  const Schematic* sch = project.schematics.empty() ? &kEmptySchematic : &project.schematics[0];
+  for (std::size_t i = 0; i < sch->components.size(); ++i) {
+    const Component& component = sch->components.at(i);
     out << "    {\n";
     writeField(out, 6, "id", component.id);
     writeField(out, 6, "part", component.part);
@@ -1700,25 +1711,25 @@ std::string dumpProjectJson(const Project& project) {
     } else {
       out << '\n';
     }
-    out << "    }" << (i + 1 == project.components.size() ? "" : ",") << '\n';
+    out << "    }" << (i + 1 == sch->components.size() ? "" : ",") << '\n';
   }
   out << "  ],\n";
 
   out << "  \"constraints\": [\n";
-  for (std::size_t i = 0; i < project.constraints.size(); ++i) {
-    const Constraint& constraint = project.constraints.at(i);
+  for (std::size_t i = 0; i < sch->constraints.size(); ++i) {
+    const Constraint& constraint = sch->constraints.at(i);
     out << "    {\n";
     writeField(out, 6, "id", constraint.id);
     writeField(out, 6, "kind", constraint.kind);
     writeField(out, 6, "target", constraint.target);
     writeField(out, 6, "value", constraint.value, false);
-    out << "    }" << (i + 1 == project.constraints.size() ? "" : ",") << '\n';
+    out << "    }" << (i + 1 == sch->constraints.size() ? "" : ",") << '\n';
   }
   out << "  ],\n";
 
   out << "  \"nets\": [\n";
-  for (std::size_t i = 0; i < project.nets.size(); ++i) {
-    const Net& net = project.nets.at(i);
+  for (std::size_t i = 0; i < sch->nets.size(); ++i) {
+    const Net& net = sch->nets.at(i);
     out << "    {\n";
     writeField(out, 6, "id", net.id);
     out << "      \"members\": [\n";
@@ -1730,13 +1741,13 @@ std::string dumpProjectJson(const Project& project) {
       out << "        }" << (j + 1 == net.members.size() ? "" : ",") << '\n';
     }
     out << "      ]\n";
-    out << "    }" << (i + 1 == project.nets.size() ? "" : ",") << '\n';
+    out << "    }" << (i + 1 == sch->nets.size() ? "" : ",") << '\n';
   }
   out << "  ],\n";
 
   out << "  \"wires\": [\n";
-  for (std::size_t i = 0; i < project.wires.size(); ++i) {
-    const WireSegment& wire = project.wires.at(i);
+  for (std::size_t i = 0; i < sch->wires.size(); ++i) {
+    const WireSegment& wire = sch->wires.at(i);
     out << "    {\n";
     writeField(out, 6, "id", wire.id);
     out << "      \"start\": ";
@@ -1746,13 +1757,13 @@ std::string dumpProjectJson(const Project& project) {
     writePoint(out, 0, wire.end);
     out << ",\n";
     writeField(out, 6, "net_id", wire.net_id, false);
-    out << "    }" << (i + 1 == project.wires.size() ? "" : ",") << '\n';
+    out << "    }" << (i + 1 == sch->wires.size() ? "" : ",") << '\n';
   }
   out << "  ],\n";
 
   out << "  \"labels\": [\n";
-  for (std::size_t i = 0; i < project.labels.size(); ++i) {
-    const Label& label = project.labels.at(i);
+  for (std::size_t i = 0; i < sch->labels.size(); ++i) {
+    const Label& label = sch->labels.at(i);
     out << "    {\n";
     writeField(out, 6, "id", label.id);
     writeField(out, 6, "text", label.text);
@@ -1762,13 +1773,13 @@ std::string dumpProjectJson(const Project& project) {
     out << ",\n";
     out << "      \"rotation_degrees\": " << label.rotation_degrees << ",\n";
     out << "      \"global\": " << (label.global ? "true" : "false") << '\n';
-    out << "    }" << (i + 1 == project.labels.size() ? "" : ",") << '\n';
+    out << "    }" << (i + 1 == sch->labels.size() ? "" : ",") << '\n';
   }
   out << "  ],\n";
 
   out << "  \"power_symbols\": [\n";
-  for (std::size_t i = 0; i < project.power_symbols.size(); ++i) {
-    const PowerSymbol& symbol = project.power_symbols.at(i);
+  for (std::size_t i = 0; i < sch->power_symbols.size(); ++i) {
+    const PowerSymbol& symbol = sch->power_symbols.at(i);
     out << "    {\n";
     writeField(out, 6, "id", symbol.id);
     writeField(out, 6, "value", symbol.value);
@@ -1777,7 +1788,7 @@ std::string dumpProjectJson(const Project& project) {
     writePoint(out, 0, symbol.position);
     out << ",\n";
     out << "      \"rotation_degrees\": " << symbol.rotation_degrees << '\n';
-    out << "    }" << (i + 1 == project.power_symbols.size() ? "" : ",") << '\n';
+    out << "    }" << (i + 1 == sch->power_symbols.size() ? "" : ",") << '\n';
   }
   out << "  ]\n";
   out << "}\n";

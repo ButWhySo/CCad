@@ -6,6 +6,8 @@
 
 int main() {
   ccad::Project project;
+  project.schematics.push_back(ccad::Schematic{});
+  project.schematics.push_back(ccad::Schematic{});
   project.id = "proj_123";
 
   ccad::Board board;
@@ -35,7 +37,7 @@ int main() {
       .position = ccad::Point{.x = ccad::millimeters(0.0), .y = ccad::millimeters(0.0)}
   });
 
-  project.board = board;
+  project.boards.clear(); project.boards.push_back(board);
 
   std::string exported = ccad::exportToDrillExcellon(project);
   std::cout << exported << "\n";

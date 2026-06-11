@@ -10,22 +10,23 @@ ccad::Project validProject() {
   ccad::Project project;
   project.id = "proj-review";
   project.name = "review";
-  project.components.push_back(ccad::Component{
+  project.schematics.push_back(ccad::Schematic{});
+  project.schematics[0].components.push_back(ccad::Component{
       .id = "U1",
       .part = "MCU",
       .pins = {ccad::Pin{.name = "VDD", .kind = "power"}},
   });
-  project.nets.push_back(ccad::Net{
+  project.schematics[0].nets.push_back(ccad::Net{
       .id = "N_3V3",
       .members = {ccad::NetMember{.component_id = "U1", .pin_name = "VDD"}},
   });
-  project.constraints.push_back(ccad::Constraint{
+  project.schematics[0].constraints.push_back(ccad::Constraint{
       .id = "C_3V3",
       .kind = "voltage",
       .target = "N_3V3",
       .value = "3.3V",
   });
-  project.board = ccad::Board{
+  project.boards.push_back(ccad::Board{
       .outline = ccad::Rect{
           .origin = ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(3)},
           .size = ccad::Size{.width = ccad::millimeters(42), .height = ccad::millimeters(28)},
@@ -49,7 +50,24 @@ ccad::Project validProject() {
       .texts = {},
       .zones = {},
       .route_requests = {},
-  };
+  });
+  return project;
+}
+
+ccad::Project boardOnlyProject() {
+  ccad::Project project = validProject();
+  project.schematics.clear();
+  project.id = "proj-board-only";
+  project.name = "board only";
+  project.boards[0].pads.push_back(ccad::Pad{
+      .id = "P_BOARD",
+      .component_id = "J1",
+      .pin_name = "1",
+      .net_id = "N_BOARD",
+      .layers = {"F.Cu"},
+      .position = ccad::Point{.x = ccad::millimeters(10), .y = ccad::millimeters(10)},
+      .size = ccad::Size{.width = ccad::millimeters(1.5),
+                         .height = ccad::millimeters(1.0)}});
   return project;
 }
 
@@ -90,14 +108,25 @@ int main() {
   require(clean.warning_count == 0, "clean review has no warnings");
   require(clean.status == "Clean: 1 component, 1 net, 1 constraint", "clean status text");
 
+  const ccad::ProjectReview board_only = ccad::buildReview(boardOnlyProject());
+  require(board_only.project_id == "proj-board-only", "board-only review keeps project id");
+  require(board_only.has_board, "board-only review reports board present");
+  require(board_only.component_count == 0, "board-only review has no schematic components");
+  require(board_only.net_count == 0, "board-only review has no schematic nets");
+  require(board_only.pad_count == 1, "board-only review still counts pads");
+  require(board_only.error_count == 0, "board-only review has no errors");
+  require(board_only.warning_count == 0, "board-only review has no schematic-empty warning");
+  require(board_only.status == "Clean: 0 components, 0 nets, 0 constraints",
+          "board-only review status is clean");
+
   ccad::Project drc_invalid = validProject();
-  drc_invalid.board->keepouts.push_back(ccad::Keepout{
+  drc_invalid.boards[0].keepouts.push_back(ccad::Keepout{
       .id = "K1",
       .kind = "placement",
       .area = ccad::Rect{
           .origin = ccad::Point{.x = ccad::millimeters(4), .y = ccad::millimeters(5)},
           .size = ccad::Size{.width = ccad::millimeters(3), .height = ccad::millimeters(3)}}});
-  drc_invalid.board->pads.push_back(ccad::Pad{
+  drc_invalid.boards[0].pads.push_back(ccad::Pad{
       .id = "P1",
       .component_id = "U1",
       .pin_name = "VDD",
@@ -113,7 +142,7 @@ int main() {
   require(drc_review.diagnostics.at(0).code == "PAD_IN_KEEPOUT", "review includes drc code");
   require(drc_review.diagnostics.at(0).object_id == "P1", "review includes drc object id");
 
-  drc_invalid.board->placement_regions.push_back(ccad::PlacementRegion{
+  drc_invalid.boards[0].placement_regions.push_back(ccad::PlacementRegion{
       .id = "PR1",
       .kind = "component",
       .area = ccad::Rect{
@@ -123,7 +152,7 @@ int main() {
   require(placement_review.placement_region_count == 1, "review counts placement regions");
 
   ccad::Project invalid = validProject();
-  invalid.nets.at(0).members.push_back(
+  invalid.schematics[0].nets.at(0).members.push_back(
       ccad::NetMember{.component_id = "U404", .pin_name = "VDD"});
   const ccad::ProjectReview invalid_review = ccad::buildReview(invalid);
   require(invalid_review.error_count == 1, "invalid review has one error");
@@ -132,6 +161,8 @@ int main() {
   require(invalid_review.status == "Errors: 1, warnings: 0", "invalid status text");
 
   ccad::Project empty;
+  empty.schematics.push_back(ccad::Schematic{});
+  empty.schematics.push_back(ccad::Schematic{});
   empty.id = "proj-empty";
   empty.name = "empty";
   const ccad::ProjectReview warning_review = ccad::buildReview(empty);
@@ -140,7 +171,7 @@ int main() {
   require(warning_review.status == "Warnings: 1", "warning status text");
 
   ccad::Project route_review_project = validProject();
-  route_review_project.board->pads.push_back(ccad::Pad{
+  route_review_project.boards[0].pads.push_back(ccad::Pad{
       .id = "P1",
       .component_id = "U1",
       .pin_name = "VDD",
@@ -148,13 +179,13 @@ int main() {
       .layers = {"F.Cu"},
       .position = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
       .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(1.0)}});
-  route_review_project.board->vias.push_back(ccad::Via{
+  route_review_project.boards[0].vias.push_back(ccad::Via{
       .id = "V1",
       .net_id = "N_3V3",
       .position = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},
       .diameter = ccad::millimeters(0.8),
       .drill = ccad::millimeters(0.4)});
-  route_review_project.board->tracks.push_back(ccad::TrackSegment{
+  route_review_project.boards[0].tracks.push_back(ccad::TrackSegment{
       .id = "RT1",
       .net_id = "N_3V3",
       .layer_id = "F.Cu",
@@ -162,7 +193,7 @@ int main() {
       .end = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},
       .width = ccad::millimeters(0.25),
       .source_route_request_id = "RR1"});
-  route_review_project.board->tracks.push_back(ccad::TrackSegment{
+  route_review_project.boards[0].tracks.push_back(ccad::TrackSegment{
       .id = "RT2",
       .net_id = "N_3V3",
       .layer_id = "F.Cu",
@@ -170,7 +201,7 @@ int main() {
       .end = ccad::Point{.x = ccad::millimeters(9), .y = ccad::millimeters(10)},
       .width = ccad::millimeters(0.25),
       .source_route_request_id = "DONE1"});
-  route_review_project.board->route_requests.push_back(ccad::RouteRequest{
+  route_review_project.boards[0].route_requests.push_back(ccad::RouteRequest{
       .id = "RR1",
       .net_id = "N_3V3",
       .from_object_id = "P1",
@@ -178,7 +209,7 @@ int main() {
       .preferred_layer_id = "F.Cu",
       .policy = "shortest_safe",
       .width = ccad::millimeters(0.25)});
-  route_review_project.board->route_requests.push_back(ccad::RouteRequest{
+  route_review_project.boards[0].route_requests.push_back(ccad::RouteRequest{
       .id = "RR2",
       .net_id = "N_3V3",
       .from_object_id = "P1",

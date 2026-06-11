@@ -4,7 +4,11 @@
 #include <QComboBox>
 #include <QSpinBox>
 #include <QLineEdit>
-#include <QDoubleSpinBox>
+#include <QTextEdit>
+#include <QPushButton>
+#include <QTableWidget>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
 
 class ComponentWizardDialog : public QDialog {
     Q_OBJECT
@@ -16,10 +20,22 @@ public:
     QString getComponentName() const;
     int getPinCount() const;
     QString getPackageType() const;
+    QString getAIPrompt() const;
+
+signals:
+    void aiGenerationRequested(const QString& prompt, const QString& type, const QString& pkg);
+
+private slots:
+    void onGenerateClicked();
 
 private:
     QComboBox *typeCombo;
     QLineEdit *nameEdit;
     QSpinBox *pinCountSpin;
     QComboBox *packageCombo;
+    QTextEdit *aiPromptEdit;
+    QPushButton *generateButton;
+    QTableWidget *pinsTable;
+
+    void setupUI();
 };

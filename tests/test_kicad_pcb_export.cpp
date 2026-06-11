@@ -21,12 +21,13 @@ int main() {
       .min_via_annular_ring = ccad::millimeters(0.15)
   };
 
-  project.nets = {
+  project.schematics.push_back(ccad::Schematic{});
+  project.schematics[0].nets = {
       ccad::Net{.id = "GND"},
       ccad::Net{.id = "VCC"}
   };
 
-  project.components = {
+  project.schematics[0].components = {
       ccad::Component{.id = "U1", .part = "NE555"}
   };
 
@@ -145,7 +146,7 @@ int main() {
       }
   });
 
-  project.board = board;
+  project.boards.clear(); project.boards.push_back(board);
 
   std::string exported = ccad::exportToKiCadPcb(project);
   std::cout << exported << "\n";
@@ -167,6 +168,19 @@ int main() {
           "User.9 uses KiCad canonical layer number 58");
   require(exported.find("(net 1 \"GND\")") != std::string::npos, "Output must declare GND net");
   require(exported.find("(net 2 \"VCC\")") != std::string::npos, "Output must declare VCC net");
+
+  ccad::Project board_only = project;
+  board_only.schematics.clear();
+  const std::string board_only_exported = ccad::exportToKiCadPcb(board_only);
+  require(board_only_exported.find("(net 1 \"GND\")") != std::string::npos,
+          "Board-only KiCad export declares GND from board copper");
+  require(board_only_exported.find("(net 2 \"VCC\")") != std::string::npos,
+          "Board-only KiCad export declares VCC from board copper");
+  require(board_only_exported.find("footprint \"Component\"") != std::string::npos,
+          "Board-only KiCad export uses generic footprint value without schematic component");
+  require(board_only_exported.find("(net 1 \"GND\")") <
+              board_only_exported.find("(pad \"1\" smd rect"),
+          "Board-only KiCad export declares nets before pads");
 
   // Pad details
   require(exported.find("footprint \"NE555\"") != std::string::npos, "Output must contain footprint for NE555");

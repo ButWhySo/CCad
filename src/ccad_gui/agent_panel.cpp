@@ -501,7 +501,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   setObjectName("agentPanel");
   setStyleSheet(R"(
     QWidget#agentPanel {
-      background-color: #161b22;
+      background-color: #1e1e1e;
+      color: #cccccc;
       font-family: "Segoe UI", sans-serif;
     }
     QScrollArea#agentScrollArea {
@@ -512,78 +513,73 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
       background-color: transparent;
     }
     QFrame[agentRole="section"] {
-      background-color: #161b22;
+      background-color: transparent;
     }
     QFrame[agentRole="chatBubbleAgent"] {
-      background-color: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 8px;
-      border-top-left-radius: 0px;
-      padding: 6px 12px;
-      margin: 2px;
+      background-color: transparent;
+      border-left: 3px solid #10a37f;
+      border-radius: 4px;
+      margin: 4px;
+      padding: 8px 12px;
     }
     QFrame[agentRole="chatBubbleUser"] {
-      background-color: #2f81f7;
-      border: none;
-      border-radius: 8px;
-      border-bottom-right-radius: 0px;
-      padding: 6px 12px;
-      margin: 2px;
+      background-color: #2b2d31;
+      border-radius: 12px;
+      margin: 4px;
+      padding: 8px 12px;
     }
     QTextBrowser {
       background-color: transparent;
+      color: #ffffff;
       border: none;
-      color: #c9d1d9;
       font-family: "Segoe UI", sans-serif;
       font-size: 13px;
     }
-    QFrame[agentRole="chatBubbleUser"] QTextBrowser {
-      color: #ffffff;
-    }
     QFrame[agentRole="toolCard"] {
-      background-color: #161b22;
-      border: 1px solid #30363d;
+      background-color: #2d2d2d;
+      border: 1px solid #3c3c3c;
       border-radius: 8px;
       padding: 8px 12px;
       margin: 2px;
     }
     QLabel[agentRole="toolTitle"] {
-      color: #c9d1d9;
+      color: #9cdcfe;
       font-family: "Consolas", monospace;
       font-size: 12px;
     }
     QTextEdit#chatInput {
-      background-color: #010409;
-      border: 1px solid #30363d;
-      border-radius: 8px;
-      padding: 8px 12px;
-      color: #c9d1d9;
+      background-color: #2d2d2d;
+      border: 1px solid #444444;
+      border-radius: 12px;
+      padding: 10px 14px;
+      color: #ffffff;
       font-size: 13px;
     }
     QTextEdit#chatInput:focus {
-      border: 1px solid #2f81f7;
+      border: 1px solid #10a37f;
+      background-color: #333333;
     }
     QPushButton[agentRole="iconButton"] {
       background-color: transparent;
       border: none;
-      border-radius: 4px;
+      border-radius: 6px;
       color: #8b949e;
       padding: 4px;
     }
     QPushButton[agentRole="iconButton"]:hover {
-      background-color: #30363d;
-      color: #c9d1d9;
+      background-color: #444444;
+      color: #ffffff;
     }
     QPushButton[agentRole="iconButtonPrimary"] {
-      background-color: transparent;
-      border: none;
-      color: #8b949e;
+      background-color: #10a37f;
+      border-radius: 6px;
+      color: #ffffff;
     }
     QPushButton[agentRole="iconButtonPrimary"]:hover {
-      color: #2f81f7;
+      background-color: #0e906f;
     }
     QLabel[agentRole="panelTitle"] {
-      color: #c9d1d9;
+      color: #ffffff;
       font-size: 14px;
       font-weight: 600;
     }
@@ -676,7 +672,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   composer_layout->setContentsMargins(8, 8, 8, 8);
   
   chat_input_ = new QTextEdit(composer_container);
-  chat_input_->setObjectName("control:agent_chat_input");
+  chat_input_->setObjectName("chatInput");
   chat_input_->setPlaceholderText("Message Agent...");
   chat_input_->setFixedHeight(60);
   connect(chat_input_, &QTextEdit::textChanged, this, [this]() {

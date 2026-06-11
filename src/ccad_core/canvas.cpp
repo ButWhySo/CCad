@@ -119,21 +119,17 @@ void mergePlacedSymbolScene(CanvasScene& scene, const Component& component,
 
 }  // namespace
 
-CanvasScene buildCanvasScene(const Project& project) {
+CanvasScene buildCanvasScene(const Board& board) {
   CanvasScene scene;
-  if (!project.board.has_value()) {
-    return scene;
-  }
-
   scene.has_board = true;
-  scene.board_width_nm = project.board->outline.size.width.nanometers;
-  scene.board_height_nm = project.board->outline.size.height.nanometers;
-  scene.board_origin_x_units = toMillimeters(project.board->outline.origin.x);
-  scene.board_origin_y_units = toMillimeters(project.board->outline.origin.y);
-  scene.view_width_units = toMillimeters(project.board->outline.size.width);
-  scene.view_height_units = toMillimeters(project.board->outline.size.height);
+  scene.board_width_nm = board.outline.size.width.nanometers;
+  scene.board_height_nm = board.outline.size.height.nanometers;
+  scene.board_origin_x_units = toMillimeters(board.outline.origin.x);
+  scene.board_origin_y_units = toMillimeters(board.outline.origin.y);
+  scene.view_width_units = toMillimeters(board.outline.size.width);
+  scene.view_height_units = toMillimeters(board.outline.size.height);
 
-  for (const Layer& layer : project.board->layers) {
+  for (const Layer& layer : board.layers) {
     scene.layers.push_back(CanvasLayer{
         .id = layer.id,
         .name = layer.name,
@@ -142,7 +138,7 @@ CanvasScene buildCanvasScene(const Project& project) {
     });
   }
 
-  for (const PlacementRegion& region : project.board->placement_regions) {
+  for (const PlacementRegion& region : board.placement_regions) {
     scene.placement_regions.push_back(CanvasPlacementRegion{
         .id = region.id,
         .kind = region.kind,
@@ -153,7 +149,7 @@ CanvasScene buildCanvasScene(const Project& project) {
     });
   }
 
-  for (const Keepout& keepout : project.board->keepouts) {
+  for (const Keepout& keepout : board.keepouts) {
     scene.keepouts.push_back(CanvasKeepout{
         .id = keepout.id,
         .kind = keepout.kind,
@@ -164,7 +160,7 @@ CanvasScene buildCanvasScene(const Project& project) {
     });
   }
 
-  for (const Pad& pad : project.board->pads) {
+  for (const Pad& pad : board.pads) {
     scene.pads.push_back(CanvasPad{
         .id = pad.id,
         .net_id = pad.net_id,
@@ -182,7 +178,7 @@ CanvasScene buildCanvasScene(const Project& project) {
     });
   }
 
-  for (const Via& via : project.board->vias) {
+  for (const Via& via : board.vias) {
     scene.vias.push_back(CanvasVia{
         .id = via.id,
         .net_id = via.net_id,
@@ -193,7 +189,7 @@ CanvasScene buildCanvasScene(const Project& project) {
     });
   }
 
-  for (const TrackSegment& track : project.board->tracks) {
+  for (const TrackSegment& track : board.tracks) {
     scene.tracks.push_back(CanvasTrack{
         .id = track.id,
         .net_id = track.net_id,
@@ -207,7 +203,7 @@ CanvasScene buildCanvasScene(const Project& project) {
     });
   }
 
-  for (const BoardGraphic& graphic : project.board->graphics) {
+  for (const BoardGraphic& graphic : board.graphics) {
     if (graphic.kind == "line") {
       scene.lines.push_back(CanvasLine{
           .id = graphic.id,
@@ -221,7 +217,7 @@ CanvasScene buildCanvasScene(const Project& project) {
     }
   }
 
-  for (const BoardText& text : project.board->texts) {
+  for (const BoardText& text : board.texts) {
     scene.texts.push_back(CanvasText{
         .id = text.id,
         .layer_id = text.layer_id,
@@ -234,7 +230,7 @@ CanvasScene buildCanvasScene(const Project& project) {
     });
   }
 
-  for (const BoardZone& zone : project.board->zones) {
+  for (const BoardZone& zone : board.zones) {
     CanvasZone canvas_zone{
         .id = zone.id,
         .name = zone.name,
@@ -256,12 +252,12 @@ CanvasScene buildCanvasScene(const Project& project) {
   }
 
   std::map<std::string, std::size_t> routed_segment_counts;
-  for (const TrackSegment& track : project.board->tracks) {
+  for (const TrackSegment& track : board.tracks) {
     if (!track.source_route_request_id.empty()) {
       ++routed_segment_counts[track.source_route_request_id];
     }
   }
-  for (const RouteRequest& request : project.board->route_requests) {
+  for (const RouteRequest& request : board.route_requests) {
     scene.route_requests.push_back(CanvasRouteRequest{
         .id = request.id,
         .net_id = request.net_id,
@@ -276,7 +272,7 @@ CanvasScene buildCanvasScene(const Project& project) {
   return scene;
 }
 
-CanvasScene buildSchematicScene(const Project& project) {
+CanvasScene buildSchematicScene(const Schematic& schematic) {
   CanvasScene scene;
   scene.has_board = false;
   // Compute bounds based on components
@@ -297,7 +293,7 @@ CanvasScene buildSchematicScene(const Project& project) {
     includeBounds(min_x, min_y, max_x, max_y, x_units, y_units);
   };
 
-  for (const Component& comp : project.components) {
+  for (const Component& comp : schematic.components) {
     CanvasComponent cc;
     cc.id = comp.id;
     cc.part = comp.part;
@@ -314,7 +310,7 @@ CanvasScene buildSchematicScene(const Project& project) {
     }
   }
 
-  for (const WireSegment& wire : project.wires) {
+  for (const WireSegment& wire : schematic.wires) {
     CanvasWire cw;
     cw.net_id = wire.net_id;
     cw.start_x_units = toMillimeters(wire.start.x);
@@ -327,7 +323,7 @@ CanvasScene buildSchematicScene(const Project& project) {
     includeSchematicBounds(cw.end_x_units, cw.end_y_units);
   }
 
-  for (const Label& label : project.labels) {
+  for (const Label& label : schematic.labels) {
     CanvasLabel cl;
     cl.id = label.id;
     cl.text = label.text;
@@ -341,7 +337,7 @@ CanvasScene buildSchematicScene(const Project& project) {
     includeSchematicBounds(cl.x_units, cl.y_units);
   }
 
-  for (const PowerSymbol& ps : project.power_symbols) {
+  for (const PowerSymbol& ps : schematic.power_symbols) {
     CanvasPowerSymbol cps;
     cps.id = ps.id;
     cps.value = ps.value;

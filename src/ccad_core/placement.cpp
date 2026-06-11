@@ -98,7 +98,11 @@ void requireUniquePadId(const Board& board, const std::string& id) {
 
 std::string netIdForPin(const Project& project, const std::string& component_id,
                         const std::string& pin_name) {
-  for (const Net& net : project.nets) {
+  const Schematic* schematic = primarySchematic(project);
+  if (schematic == nullptr) {
+    return "";
+  }
+  for (const Net& net : schematic->nets) {
     for (const NetMember& member : net.members) {
       if (member.component_id == component_id && member.pin_name == pin_name) {
         return net.id;
@@ -112,10 +116,10 @@ std::string netIdForPin(const Project& project, const std::string& component_id,
 
 void placeFootprint(Project& project, const Footprint& footprint, const std::string& component_id,
                     const Point& origin, double rotation_deg, const std::string& layer_id) {
-  if (!project.board.has_value()) {
+  if (project.boards.empty()) {
     throw std::runtime_error("project has no board");
   }
-  Board& board = *project.board;
+  Board& board = project.boards[0];
   
   if (footprint.pads.empty()) {
     throw std::runtime_error("footprint has no pads");
@@ -176,7 +180,8 @@ void placeFootprint(Project& project, const Footprint& footprint, const std::str
 
 void placeComponent(Project& project, const Symbol& symbol, const std::string& component_id,
                     const Point& origin, double rotation_deg) {
-  for (const Component& comp : project.components) {
+  Schematic& schematic = ensurePrimarySchematic(project);
+  for (const Component& comp : schematic.components) {
     if (comp.id == component_id) {
       throw std::runtime_error("duplicate component id: " + component_id);
     }
@@ -194,14 +199,14 @@ void placeComponent(Project& project, const Symbol& symbol, const std::string& c
         .kind = pin.electrical_type,
     });
   }
-  project.components.push_back(comp);
+  schematic.components.push_back(comp);
 }
 
 void moveFootprint(Project& project, const std::string& component_id, const Point& delta) {
-  if (!project.board.has_value()) {
+  if (project.boards.empty()) {
     throw std::runtime_error("project has no board");
   }
-  for (auto& pad : project.board->pads) {
+  for (auto& pad : project.boards[0].pads) {
     if (pad.component_id == component_id) {
       pad.position.x.nanometers += delta.x.nanometers;
       pad.position.y.nanometers += delta.y.nanometers;

@@ -25,10 +25,10 @@ std::string quote(const std::string& str) {
 }  // namespace
 
 std::string exportSpecctraDsn(const Project& project) {
-  if (!project.board.has_value()) {
+  if (!!project.boards.empty()) {
     throw std::runtime_error("Cannot export DSN: project has no board.");
   }
-  const Board& board = *project.board;
+  const Board& board = project.boards[0];
 
   std::ostringstream out;
   out << "(pcb " << quote(project.name) << "\n"

@@ -6,9 +6,11 @@ namespace {
 
 ccad::Project boardProject() {
   ccad::Project project;
+  project.schematics.push_back(ccad::Schematic{});
+  project.schematics.push_back(ccad::Schematic{});
   project.id = "proj-canvas";
   project.name = "canvas";
-  project.board = ccad::Board{
+  project.boards.push_back(ccad::Board{
       .outline = ccad::Rect{
           .origin = ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(3)},
           .size = ccad::Size{.width = ccad::millimeters(42), .height = ccad::millimeters(28)},
@@ -105,7 +107,7 @@ ccad::Project boardProject() {
                                             .preferred_layer_id = "F.Cu",
                                             .policy = "shortest_safe",
                                             .width = ccad::millimeters(0.25)}},
-  };
+  });
   return project;
 }
 
@@ -113,13 +115,16 @@ ccad::Project boardProject() {
 
 int main() {
   ccad::Project empty;
+  empty.schematics.push_back(ccad::Schematic{});
+  empty.schematics.push_back(ccad::Schematic{});
   empty.id = "empty";
-  const ccad::CanvasScene empty_scene = ccad::buildCanvasScene(empty);
-  require(!empty_scene.has_board, "empty scene reports no board");
+  const ccad::CanvasScene empty_scene = ccad::buildCanvasScene(ccad::Board{});
+
   require(empty_scene.board_width_nm == 0, "empty scene width zero");
   require(empty_scene.board_height_nm == 0, "empty scene height zero");
 
-  const ccad::CanvasScene scene = ccad::buildCanvasScene(boardProject());
+  const ccad::Project bp = boardProject();
+  const ccad::CanvasScene scene = ccad::buildCanvasScene(bp.boards[0]);
   require(scene.has_board, "board scene reports board");
   require(scene.board_width_nm == 42000000, "board scene width set");
   require(scene.board_height_nm == 28000000, "board scene height set");

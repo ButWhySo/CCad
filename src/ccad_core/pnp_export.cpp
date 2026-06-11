@@ -13,15 +13,14 @@ std::string exportToPnpCsv(const Project& project) {
   ss << "Designator,Value,PosX,PosY,Side\n";
   ss << std::fixed << std::setprecision(4);
 
-  if (!project.board.has_value()) {
+  const Board* board = primaryBoard(project);
+  if (board == nullptr) {
       return ss.str();
   }
 
-  const Board& board = *project.board;
-
   // Group pads by component
   std::map<std::string, std::vector<const Pad*>> comp_pads;
-  for (const Pad& pad : board.pads) {
+  for (const Pad& pad : board->pads) {
       if (!pad.component_id.empty()) {
           comp_pads[pad.component_id].push_back(&pad);
       }
@@ -29,8 +28,10 @@ std::string exportToPnpCsv(const Project& project) {
 
   // Create a map of component ID to part string
   std::map<std::string, std::string> comp_values;
-  for (const auto& comp : project.components) {
+  if (const Schematic* schematic = primarySchematic(project)) {
+    for (const auto& comp : schematic->components) {
       comp_values[comp.id] = comp.part;
+    }
   }
 
   // Get sorted list of component IDs

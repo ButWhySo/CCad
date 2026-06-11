@@ -116,7 +116,9 @@ Files:
 What it does:
 - Represents project metadata.
 - Represents components, pins, nets, net members, and constraints.
-- Represents optional physical board data: outline and layers.
+- Represents separate optional schematic and board documents through `Project::schematics` and `Project::boards`.
+- Represents optional physical board data: outline, layers, pads, vias, tracks, graphics, texts, zones, keepouts, placement regions, and route requests.
+- Provides primary-document helpers so callers can safely work with board-only projects, schematic-only projects, or linked projects without unsafe index assumptions.
 - Provides the data model used by CLI, ERC, review model, and future GUI/RPC clients.
 
 Test:
@@ -226,6 +228,8 @@ What it does:
 - Resolves KiCad wildcard pad layer sets such as `*.Cu` and `*.Mask` in board-context PCB query/export surfaces, exposing both `resolved_layers` and canonical `kicad_layer_numbers` for agents and routers.
 - Places imported CCad footprint pads onto a board with `ccad pcb place-footprint`.
 - Places converted CCad/KiCad schematic symbols into `Project::components` with `ccad sch place-symbol`.
+- Allows board-only PCB projects to run physical DRC, export KiCad PCB data, export PnP CSV, diff revisions, and feed agent context without requiring a linked schematic document.
+- Creates a primary schematic document automatically when schematic mutation commands such as `sch place-symbol`, `sch add-wire`, `sch add-label`, or `sch add-power` run on a project that does not yet contain one.
 - Validates CCad project files.
 - Inspects projects and emits review JSON.
 - Diffs two project files and emits machine-readable diff JSON.
@@ -1814,3 +1818,17 @@ The next KiCad PCB editor parity slice records the remaining first-pass `F:\kica
 `src/ccad_core/spread_footprints.hpp/.cpp` is the first analogue for KiCad `autorouter/spread_footprints`. It groups board pads by component ID, naturally sorts references such as `R1`, `R2`, and `R10`, and moves the selected component groups into a non-overlapping placement lane while preserving each group's internal pad offsets. The CLI exposes this through `ccad pcb spread-footprints --file <project> [--components <a,b,...>] --target-x-mm <n> --target-y-mm <n> [--component-gap-mm <n>] [--group-gap-mm <n>]`.
 
 Current limitations remain explicit. The autoplacer is a deterministic first slice and does not yet implement KiCad's full placement scoring, rotation search, ratsnest-driven global optimization, locked-footprint policy, or interactive confirmation loop. The spread command lays selected component groups into one lane and does not yet implement KiCad's full sheet/grid spreading behavior. The matrix is ready for future agent-guided routing and classic-router integration, but there is still no complete KiCad-equivalent autorouter.
+
+## Sprint 223 KiCad Board Document Model Addendum
+
+The next KiCad PCB editor parity slice reads `F:\kicad_src\pcbnew\board.cpp` and `F:\kicad_src\pcbnew\board.h`. CCad now treats a board as a first-class project document instead of assuming every PCB operation has a linked schematic at `schematics[0]`.
+
+The model layer has `primaryBoard`, `primarySchematic`, and `ensurePrimarySchematic` helpers. Core, CLI, export, review, diff, placement, and agent-context code use those helpers for the touched paths, so missing schematics no longer crash board-owned behavior.
+
+Physical DRC now works on board-only projects. When no schematic document exists, DRC still checks outline, design rules, layers, pads, vias, tracks, graphics, texts, zones, route requests, placement regions, keepouts, physical object IDs, and copper clearance. It deliberately skips schematic-link diagnostics such as unknown logical component, unknown logical pin, unknown logical net, and pad-net member mismatch. When a schematic document exists, those logical cross-checks remain active.
+
+ERC now distinguishes an absent schematic document from an empty schematic document. An absent schematic is skipped because there is no schematic to electrically validate. An explicitly empty schematic still reports the existing `EMPTY_PROJECT` warning.
+
+Review, BOM export, PnP export, KiCad PCB export, project diff, and agent-orchestrator context now tolerate board-only projects. KiCad PCB export also preserves board-local net names collected from pads, vias, tracks, and zones, so a PCB-only board does not silently collapse all routed copper to net 0.
+
+Placement behavior is split by document ownership. Footprint placement remains a board operation and does not create a schematic. Symbol placement and schematic mutation commands create the primary schematic document when needed.

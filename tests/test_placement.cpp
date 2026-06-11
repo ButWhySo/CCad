@@ -10,11 +10,13 @@
 
 void test_basic_placement() {
   ccad::Project project;
-  project.board = ccad::Board{};
-  project.board->outline.origin = {ccad::millimeters(0)};
-  project.board->outline.origin.y = ccad::millimeters(0);
-  project.board->outline.size = {ccad::millimeters(100), ccad::millimeters(100)};
-  project.board->layers.push_back({.id = "F.Cu", .kind = "copper"});
+  project.schematics.push_back(ccad::Schematic{});
+  project.schematics.push_back(ccad::Schematic{});
+  project.boards.clear(); project.boards.push_back(ccad::Board{});
+  project.boards[0].outline.origin = {ccad::millimeters(0)};
+  project.boards[0].outline.origin.y = ccad::millimeters(0);
+  project.boards[0].outline.size = {ccad::millimeters(100), ccad::millimeters(100)};
+  project.boards[0].layers.push_back({.id = "F.Cu", .kind = "copper"});
 
   ccad::Footprint fp;
   fp.pads.push_back({
@@ -26,20 +28,52 @@ void test_basic_placement() {
 
   ccad::placeFootprint(project, fp, "U1", {ccad::millimeters(50), ccad::millimeters(50)}, 0, "F.Cu");
 
-  if (project.board->pads.size() != 1) {
+  if (project.boards[0].pads.size() != 1) {
     throw std::runtime_error("Pad count should be 1");
   }
-  if (project.board->pads[0].position.x.nanometers != ccad::millimeters(50).nanometers) {
+  if (project.boards[0].pads[0].position.x.nanometers != ccad::millimeters(50).nanometers) {
     throw std::runtime_error("Pad X should be 50mm");
+  }
+}
+
+void test_footprint_placement_does_not_require_schematic() {
+  ccad::Project project;
+  project.boards.push_back(ccad::Board{});
+  project.boards[0].outline.origin = {ccad::millimeters(0), ccad::millimeters(0)};
+  project.boards[0].outline.size = {ccad::millimeters(100), ccad::millimeters(100)};
+  project.boards[0].layers.push_back({.id = "F.Cu", .kind = "copper"});
+
+  ccad::Footprint fp;
+  fp.pads.push_back({
+      .number = "1",
+      .position = {ccad::millimeters(0), ccad::millimeters(0)},
+      .rotation_degrees = 0,
+      .size = {ccad::millimeters(1), ccad::millimeters(1)},
+      .layers = {"F.Cu"},
+  });
+
+  ccad::placeFootprint(project, fp, "J1",
+                       {ccad::millimeters(25), ccad::millimeters(25)}, 0, "F.Cu");
+
+  if (!project.schematics.empty()) {
+    throw std::runtime_error("Footprint placement should not create a schematic document");
+  }
+  if (project.boards[0].pads.size() != 1 || project.boards[0].pads[0].id != "J1.1") {
+    throw std::runtime_error("Board-only footprint placement should create the pad");
+  }
+  if (!project.boards[0].pads[0].net_id.empty()) {
+    throw std::runtime_error("Board-only footprint placement should leave pad net unassigned");
   }
 }
 
 void test_placement_expands_kicad_wildcard_pad_layers() {
   ccad::Project project;
-  project.board = ccad::Board{};
-  project.board->outline.origin = {ccad::millimeters(0), ccad::millimeters(0)};
-  project.board->outline.size = {ccad::millimeters(100), ccad::millimeters(100)};
-  project.board->layers = ccad::standardKiCadPcbLayers();
+  project.schematics.push_back(ccad::Schematic{});
+  project.boards.clear();
+  project.boards.push_back(ccad::Board{});
+  project.boards[0].outline.origin = {ccad::millimeters(0), ccad::millimeters(0)};
+  project.boards[0].outline.size = {ccad::millimeters(100), ccad::millimeters(100)};
+  project.boards[0].layers = ccad::standardKiCadPcbLayers();
 
   ccad::Footprint fp;
   fp.pads.push_back({
@@ -56,7 +90,7 @@ void test_placement_expands_kicad_wildcard_pad_layers() {
   ccad::placeFootprint(project, fp, "J1", {ccad::millimeters(20), ccad::millimeters(20)}, 0,
                        "F.Cu");
 
-  const std::vector<std::string>& placed_layers = project.board->pads.at(0).layers;
+  const std::vector<std::string>& placed_layers = project.boards[0].pads.at(0).layers;
   if (std::find(placed_layers.begin(), placed_layers.end(), "*.Cu") != placed_layers.end()) {
     throw std::runtime_error("Placed pad should not retain raw *.Cu wildcard");
   }
@@ -78,10 +112,12 @@ void test_placement_expands_kicad_wildcard_pad_layers() {
 
 void test_bottom_placement_flips_explicit_front_back_layers_before_expansion() {
   ccad::Project project;
-  project.board = ccad::Board{};
-  project.board->outline.origin = {ccad::millimeters(0), ccad::millimeters(0)};
-  project.board->outline.size = {ccad::millimeters(100), ccad::millimeters(100)};
-  project.board->layers = ccad::standardKiCadPcbLayers();
+  project.schematics.push_back(ccad::Schematic{});
+  project.boards.clear();
+  project.boards.push_back(ccad::Board{});
+  project.boards[0].outline.origin = {ccad::millimeters(0), ccad::millimeters(0)};
+  project.boards[0].outline.size = {ccad::millimeters(100), ccad::millimeters(100)};
+  project.boards[0].layers = ccad::standardKiCadPcbLayers();
 
   ccad::Footprint fp;
   fp.pads.push_back({
@@ -97,7 +133,7 @@ void test_bottom_placement_flips_explicit_front_back_layers_before_expansion() {
   ccad::placeFootprint(project, fp, "U2", {ccad::millimeters(30), ccad::millimeters(30)}, 0,
                        "B.Cu");
 
-  const std::vector<std::string>& placed_layers = project.board->pads.at(0).layers;
+  const std::vector<std::string>& placed_layers = project.boards[0].pads.at(0).layers;
   if (std::find(placed_layers.begin(), placed_layers.end(), "B.Cu") == placed_layers.end() ||
       std::find(placed_layers.begin(), placed_layers.end(), "B.Paste") == placed_layers.end() ||
       std::find(placed_layers.begin(), placed_layers.end(), "B.Mask") == placed_layers.end()) {
@@ -112,6 +148,8 @@ void test_bottom_placement_flips_explicit_front_back_layers_before_expansion() {
 
 void test_symbol_placement_retains_visible_primitives_after_reload() {
   ccad::Project project;
+  project.schematics.push_back(ccad::Schematic{});
+  project.schematics.push_back(ccad::Schematic{});
   project.id = "symbol-placement";
 
   ccad::Symbol symbol;
@@ -143,7 +181,7 @@ void test_symbol_placement_retains_visible_primitives_after_reload() {
   }
 
   const ccad::Project reloaded = ccad::loadProjectJson(json);
-  const ccad::CanvasScene scene = ccad::buildSchematicScene(reloaded);
+  const ccad::CanvasScene scene = (reloaded.schematics.empty() ? ccad::buildSchematicScene(ccad::Schematic{}) : ccad::buildSchematicScene(reloaded.schematics[0]));
 
   const auto line_has = [&scene](const std::string& needle) {
     return std::any_of(scene.lines.begin(), scene.lines.end(), [&](const ccad::CanvasLine& line) {
@@ -164,12 +202,41 @@ void test_symbol_placement_retains_visible_primitives_after_reload() {
   }
 }
 
+void test_symbol_placement_creates_schematic_document() {
+  ccad::Project project;
+  project.id = "symbol-placement-empty";
+
+  ccad::Symbol symbol;
+  symbol.name = "TP";
+  symbol.pins.push_back(ccad::SymbolPin{
+      .name = "1",
+      .number = "1",
+      .electrical_type = "passive",
+      .graphical_style = "line",
+      .position = {ccad::millimeters(0.0), ccad::millimeters(0.0)},
+      .rotation_degrees = 0.0,
+      .length = ccad::millimeters(2.54)});
+
+  ccad::placeComponent(project, symbol, "TP1",
+                       {ccad::millimeters(10.0), ccad::millimeters(10.0)}, 0.0);
+
+  if (project.schematics.size() != 1) {
+    throw std::runtime_error("Symbol placement should create one primary schematic document");
+  }
+  if (project.schematics[0].components.size() != 1 ||
+      project.schematics[0].components[0].id != "TP1") {
+    throw std::runtime_error("Symbol placement should write the component into the schematic");
+  }
+}
+
 int main() {
   try {
     test_basic_placement();
+    test_footprint_placement_does_not_require_schematic();
     test_placement_expands_kicad_wildcard_pad_layers();
     test_bottom_placement_flips_explicit_front_back_layers_before_expansion();
     test_symbol_placement_retains_visible_primitives_after_reload();
+    test_symbol_placement_creates_schematic_document();
     std::cout << "All tests passed!\n";
     return 0;
   } catch (const std::exception& e) {

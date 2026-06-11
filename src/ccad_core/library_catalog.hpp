@@ -47,6 +47,8 @@ struct CatalogDiagnostic {
 
 std::string dumpLibraryCatalogJson(const LibraryCatalog& catalog);
 LibraryCatalog loadLibraryCatalogJson(const std::string& json);
+void saveLibraryCatalog(const std::filesystem::path& path, const LibraryCatalog& catalog);
+LibraryCatalog loadLibraryCatalog(const std::filesystem::path& path);
 const LibraryItem* findLibraryItem(const LibraryCatalog& catalog, const std::string& id);
 std::vector<const LibraryItem*> searchLibraryItems(const LibraryCatalog& catalog,
                                                    const std::string& query);

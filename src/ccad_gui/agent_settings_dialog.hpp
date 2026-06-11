@@ -34,6 +34,9 @@ private:
   void loadCurrentSettings();
   void saveAllSettings();
 
+  void applyConfigState(const QJsonObject& config);
+  void applyMarketplaceCatalog(const QJsonObject& catalog);
+
   AgentPanel* agent_panel_;
   QListWidget* category_list_;
   QStackedWidget* stacked_widget_;
@@ -59,8 +62,12 @@ private:
   QTextEdit* custom_instructions_{nullptr};
 
   // Workflows tab
+  QListWidget* workflows_list_{nullptr};
   QTextEdit* system_prompt_{nullptr};
   QTextEdit* dev_prompt_{nullptr};
+
+  // Plugins tab
+  QListWidget* plugins_list_{nullptr};
 
   // Bottom buttons
   QPushButton* save_btn_{nullptr};

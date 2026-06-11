@@ -13,6 +13,7 @@ void assertContains(const std::string& content, const std::string& pattern, cons
 
 void testDsnExport() {
   Project project;
+  project.schematics.push_back(ccad::Schematic{});
   project.name = "test_dsn";
   Board board;
   board.outline = Rect{Point{nanometers(0), nanometers(0)}, Size{nanometers(42000000), nanometers(28000000)}};
@@ -46,7 +47,7 @@ void testDsnExport() {
   t1.width = nanometers(250000);
   board.tracks.push_back(t1);
 
-  project.board = board;
+  project.boards.clear(); project.boards.push_back(board);
 
   std::string exported = exportSpecctraDsn(project);
 
@@ -69,6 +70,7 @@ void testDsnExport() {
 
 void testDsnExportKeepsLargeNanometerCoordinates() {
   Project project;
+  project.schematics.push_back(ccad::Schematic{});
   project.name = "large_dsn";
   Board board;
   board.outline = Rect{Point{nanometers(3000000000LL), nanometers(4000000000LL)},
@@ -77,7 +79,7 @@ void testDsnExportKeepsLargeNanometerCoordinates() {
   board.design_rules = DesignRules{.copper_clearance = nanometers(200000),
                                    .min_track_width = nanometers(150000),
                                    .min_via_annular_ring = nanometers(100000)};
-  project.board = board;
+  project.boards.clear(); project.boards.push_back(board);
 
   const std::string exported = exportSpecctraDsn(project);
   assertContains(exported,

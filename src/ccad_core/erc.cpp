@@ -16,7 +16,11 @@ bool componentHasPin(const Component& component, const std::string& pin_name) {
 }
 
 const Component* findComponent(const Project& project, const std::string& component_id) {
-  for (const Component& component : project.components) {
+  const Schematic* schematic = primarySchematic(project);
+  if (schematic == nullptr) {
+    return nullptr;
+  }
+  for (const Component& component : schematic->components) {
     if (component.id == component_id) {
       return &component;
     }
@@ -38,14 +42,18 @@ Diagnostic makeDiagnostic(const std::string& severity, const std::string& code,
 
 std::vector<Diagnostic> runErc(const Project& project) {
   std::vector<Diagnostic> diagnostics;
+  const Schematic* schematic = primarySchematic(project);
+  if (schematic == nullptr) {
+    return diagnostics;
+  }
 
-  if (project.components.empty() && project.nets.empty()) {
+  if (schematic->components.empty() && schematic->nets.empty()) {
     diagnostics.push_back(makeDiagnostic("warning", "EMPTY_PROJECT",
                                          "Project has no components or nets", project.id));
   }
 
   std::set<std::string> component_ids;
-  for (const Component& component : project.components) {
+  for (const Component& component : schematic->components) {
     if (component.id.empty()) {
       diagnostics.push_back(makeDiagnostic("error", "INVALID_COMPONENT_ID",
                                            "Component ID must not be empty", component.id));
@@ -80,7 +88,7 @@ std::vector<Diagnostic> runErc(const Project& project) {
   }
 
   std::set<std::string> net_ids;
-  for (const Net& net : project.nets) {
+  for (const Net& net : schematic->nets) {
     if (net.id.empty()) {
       diagnostics.push_back(makeDiagnostic("error", "INVALID_NET_ID", "Net ID must not be empty",
                                            net.id));
@@ -120,14 +128,14 @@ std::vector<Diagnostic> runErc(const Project& project) {
     }
   }
 
-  for (const WireSegment& wire : project.wires) {
+  for (const WireSegment& wire : schematic->wires) {
     if (!wire.net_id.empty() && net_ids.find(wire.net_id) == net_ids.end()) {
       diagnostics.push_back(makeDiagnostic("error", "UNKNOWN_NET_ID",
                                            "Wire references an unknown net ID", wire.id.empty() ? wire.net_id : wire.id));
     }
   }
 
-  for (const Label& label : project.labels) {
+  for (const Label& label : schematic->labels) {
     if (label.id.empty()) {
       diagnostics.push_back(makeDiagnostic("error", "INVALID_LABEL_ID",
                                            "Label ID must not be empty", label.id));
@@ -138,7 +146,7 @@ std::vector<Diagnostic> runErc(const Project& project) {
     }
   }
 
-  for (const PowerSymbol& ps : project.power_symbols) {
+  for (const PowerSymbol& ps : schematic->power_symbols) {
     if (ps.id.empty()) {
       diagnostics.push_back(makeDiagnostic("error", "INVALID_POWER_SYMBOL_ID",
                                            "Power Symbol ID must not be empty", ps.id));

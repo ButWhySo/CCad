@@ -58,7 +58,7 @@ int initCommand(const std::vector<std::string>& args) {
     return 2;
   }
   if (width_mm.has_value() && height_mm.has_value()) {
-    project.board = ccad::Board{
+    project.boards.push_back(ccad::Board{
         .outline = ccad::Rect{
             .origin = ccad::Point{.x = ccad::nanometers(0), .y = ccad::nanometers(0)},
             .size = ccad::Size{.width = ccad::millimeters(*width_mm),
@@ -76,7 +76,7 @@ int initCommand(const std::vector<std::string>& args) {
         .texts = {},
         .zones = {},
         .route_requests = {},
-    };
+    });
   }
 
   std::ofstream output(out_path);

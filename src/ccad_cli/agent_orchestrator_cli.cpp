@@ -64,11 +64,13 @@ ccad::ProjectContext buildContext(const std::string& project_path) {
         try {
             ccad::Project proj = loadProjectFile(project_path);
             context.project_file = project_path;
-            context.has_board = proj.board.has_value();
-            context.has_schematic = !proj.components.empty();
-            context.component_count = proj.components.size();
+            context.has_board = !proj.boards.empty();
+            if (const ccad::Schematic* schematic = ccad::primarySchematic(proj)) {
+                context.has_schematic = !schematic->components.empty();
+                context.component_count = schematic->components.size();
+            }
             if (context.has_board) {
-                const auto& b = proj.board.value();
+                const auto& b = proj.boards[0];
                 context.pad_count = b.pads.size();
                 context.track_count = b.tracks.size();
                 context.via_count = b.vias.size();

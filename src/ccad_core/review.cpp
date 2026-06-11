@@ -21,20 +21,22 @@ ProjectReview buildReview(const Project& project) {
   ProjectReview review;
   review.project_id = project.id;
   review.project_name = project.name;
-  review.component_count = project.components.size();
-  review.net_count = project.nets.size();
-  review.constraint_count = project.constraints.size();
-  if (project.board.has_value()) {
+  if (const Schematic* schematic = primarySchematic(project)) {
+    review.component_count = schematic->components.size();
+    review.net_count = schematic->nets.size();
+    review.constraint_count = schematic->constraints.size();
+  }
+  if (const Board* board = primaryBoard(project)) {
     review.has_board = true;
-    review.board_origin_x_nm = project.board->outline.origin.x.nanometers;
-    review.board_origin_y_nm = project.board->outline.origin.y.nanometers;
-    review.board_width_nm = project.board->outline.size.width.nanometers;
-    review.board_height_nm = project.board->outline.size.height.nanometers;
-    review.copper_clearance_nm = project.board->design_rules.copper_clearance.nanometers;
-    review.min_track_width_nm = project.board->design_rules.min_track_width.nanometers;
-    review.min_via_annular_ring_nm = project.board->design_rules.min_via_annular_ring.nanometers;
-    review.layer_count = project.board->layers.size();
-    for (const Layer& layer : project.board->layers) {
+    review.board_origin_x_nm = board->outline.origin.x.nanometers;
+    review.board_origin_y_nm = board->outline.origin.y.nanometers;
+    review.board_width_nm = board->outline.size.width.nanometers;
+    review.board_height_nm = board->outline.size.height.nanometers;
+    review.copper_clearance_nm = board->design_rules.copper_clearance.nanometers;
+    review.min_track_width_nm = board->design_rules.min_track_width.nanometers;
+    review.min_via_annular_ring_nm = board->design_rules.min_via_annular_ring.nanometers;
+    review.layer_count = board->layers.size();
+    for (const Layer& layer : board->layers) {
       if (layer.kind == "copper") {
         ++review.copper_layer_count;
       } else {
@@ -46,20 +48,20 @@ ProjectReview buildReview(const Project& project) {
         ++review.hidden_layer_count;
       }
     }
-    review.pad_count = project.board->pads.size();
-    review.via_count = project.board->vias.size();
-    review.track_count = project.board->tracks.size();
-    review.placement_region_count = project.board->placement_regions.size();
-    review.keepout_count = project.board->keepouts.size();
-    review.route_request_count = project.board->route_requests.size();
+    review.pad_count = board->pads.size();
+    review.via_count = board->vias.size();
+    review.track_count = board->tracks.size();
+    review.placement_region_count = board->placement_regions.size();
+    review.keepout_count = board->keepouts.size();
+    review.route_request_count = board->route_requests.size();
     std::map<std::string, std::size_t> routed_segment_counts;
-    for (const TrackSegment& track : project.board->tracks) {
+    for (const TrackSegment& track : board->tracks) {
       if (!track.source_route_request_id.empty()) {
         ++review.routed_segment_count;
         ++routed_segment_counts[track.source_route_request_id];
       }
     }
-    for (const RouteRequest& request : project.board->route_requests) {
+    for (const RouteRequest& request : board->route_requests) {
       if (routed_segment_counts[request.id] > 0) {
         ++review.partial_route_count;
       } else {
@@ -68,7 +70,7 @@ ProjectReview buildReview(const Project& project) {
     }
     for (const auto& [request_id, segment_count] : routed_segment_counts) {
       bool still_open = false;
-      for (const RouteRequest& request : project.board->route_requests) {
+      for (const RouteRequest& request : board->route_requests) {
         if (request.id == request_id) {
           still_open = true;
           break;

@@ -55,7 +55,7 @@ int schCommand(const std::vector<std::string>& args) {
                   ccad::millimeters(requireDoubleOption(options, "--end-y-mm"))},
           .net_id = options.contains("--net") ? options.at("--net") : ""
       };
-      project.wires.push_back(wire);
+      ccad::ensurePrimarySchematic(project).wires.push_back(wire);
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file\n";
         return 2;
@@ -77,7 +77,7 @@ int schCommand(const std::vector<std::string>& args) {
           .rotation_degrees = optionDoubleOrDefault(options, "--rotation-deg", 0.0),
           .global = options.count("--global") > 0
       };
-      project.labels.push_back(label);
+      ccad::ensurePrimarySchematic(project).labels.push_back(label);
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file\n";
         return 2;
@@ -98,7 +98,7 @@ int schCommand(const std::vector<std::string>& args) {
                        ccad::millimeters(requireDoubleOption(options, "--at-y-mm"))},
           .rotation_degrees = optionDoubleOrDefault(options, "--rotation-deg", 0.0)
       };
-      project.power_symbols.push_back(power);
+      ccad::ensurePrimarySchematic(project).power_symbols.push_back(power);
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file\n";
         return 2;

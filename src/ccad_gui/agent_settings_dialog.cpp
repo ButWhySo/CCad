@@ -4,6 +4,7 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QListWidget>
+#include <QJsonArray>
 #include <QStackedWidget>
 #include <QLabel>
 #include <QPushButton>
@@ -21,7 +22,7 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
 
   setStyleSheet(R"(
     QDialog {
-      background-color: #0d1117;
+      background-color: #161b22;
       color: #c9d1d9;
       font-family: 'Segoe UI', sans-serif;
     }
@@ -79,6 +80,16 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
   )");
 
   setupUi();
+
+  if (agent_panel_) {
+      agent_panel_->setConfigStateCallback([this](const QJsonObject& config) {
+          this->applyConfigState(config);
+      });
+      agent_panel_->setMarketplaceCatalogCallback([this](const QJsonObject& catalog) {
+          this->applyMarketplaceCatalog(catalog);
+      });
+  }
+
   loadCurrentSettings();
 }
 
@@ -88,7 +99,7 @@ void AgentSettingsDialog::setupUi() {
   auto* base_layout = new QVBoxLayout(this);
 
   auto* content_layout = new QHBoxLayout();
-  
+
   category_list_ = new QListWidget(this);
   category_list_->setObjectName("control:categoryList");
   category_list_->setFixedWidth(180);
@@ -163,17 +174,17 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
   layout->addWidget(new QLabel("<b>Configuration</b>", parent_widget));
 
   auto* form = new QFormLayout();
-  
+
   provider_combo_ = new QComboBox(parent_widget);
   provider_combo_->setObjectName("control:providerCombo");
   provider_combo_->addItems({"openai", "anthropic", "google_gemini"});
   form->addRow("Provider:", provider_combo_);
-  
+
   model_input_ = new QLineEdit(parent_widget);
   model_input_->setObjectName("control:modelInput");
   model_input_->setPlaceholderText("Current model selected");
   form->addRow("Model:", model_input_);
-  
+
   sandbox_cb_ = new QCheckBox("Sandbox Mode", parent_widget);
   sandbox_cb_->setObjectName("control:sandboxCb");
   approval_cb_ = new QCheckBox("Approval Policy", parent_widget);
@@ -259,7 +270,7 @@ void AgentSettingsDialog::createPersonalisationTab(QWidget* parent_widget) {
 void AgentSettingsDialog::createMCPTab(QWidget* parent_widget) {
   auto* layout = new QVBoxLayout(parent_widget);
   layout->addWidget(new QLabel("<b>MCP Servers</b>", parent_widget));
-  
+
   auto* mcp_list = new QListWidget(parent_widget);
   mcp_list->addItem("Server: chrome-devtools\nPath: ...\nArgs: ...\nPorts: ...");
   mcp_list->addItem("Server: filesystem\nPath: ...\nArgs: ...\nPorts: ...");
@@ -282,26 +293,16 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
 void AgentSettingsDialog::createPluginsTab(QWidget* parent_widget) {
   auto* layout = new QVBoxLayout(parent_widget);
   layout->addWidget(new QLabel("<b>Plugins</b>", parent_widget));
-  auto* plugins_list = new QListWidget(parent_widget);
-  plugins_list->addItem("Plugin 1 - Related to them");
-  plugins_list->addItem("Plugin 2 - Related to them");
-  layout->addWidget(plugins_list);
+  plugins_list_ = new QListWidget(parent_widget);
+  layout->addWidget(plugins_list_);
 }
 
 void AgentSettingsDialog::createWorkflowsTab(QWidget* parent_widget) {
   auto* layout = new QVBoxLayout(parent_widget);
   layout->addWidget(new QLabel("<b>Workflows</b>", parent_widget));
 
-  auto* workflows_list = new QListWidget(parent_widget);
-  auto* item1 = new QListWidgetItem("Validation Workflow", workflows_list);
-  item1->setFlags(item1->flags() | Qt::ItemIsUserCheckable);
-  item1->setCheckState(Qt::Checked);
-  
-  auto* item2 = new QListWidgetItem("Routing Workflow", workflows_list);
-  item2->setFlags(item2->flags() | Qt::ItemIsUserCheckable);
-  item2->setCheckState(Qt::Unchecked);
-  
-  layout->addWidget(workflows_list);
+  workflows_list_ = new QListWidget(parent_widget);
+  layout->addWidget(workflows_list_);
 
   auto* form = new QFormLayout();
   auto* hooks = new QLabel("pre tool, post tool, post prompt, pre exit/end");
@@ -319,12 +320,63 @@ void AgentSettingsDialog::createWorkflowsTab(QWidget* parent_widget) {
 }
 
 void AgentSettingsDialog::loadCurrentSettings() {
-  // TODO: Implement async JSON-RPC call to fetch existing config.
+  if (agent_panel_) {
+      agent_panel_->sendJsonRpc("agent.get_config", QJsonObject());
+      agent_panel_->sendJsonRpc("agent.get_marketplace_catalog", QJsonObject());
+  }
+}
+
+void AgentSettingsDialog::applyConfigState(const QJsonObject& config) {
+    if (provider_combo_ && config.contains("provider")) {
+        provider_combo_->setCurrentText(config["provider"].toString());
+    }
+    if (model_input_ && config.contains("model")) {
+        model_input_->setText(config["model"].toString());
+    }
+    if (sandbox_cb_ && config.contains("sandbox_mode")) {
+        sandbox_cb_->setChecked(config["sandbox_mode"].toBool());
+    }
+    if (approval_cb_ && config.contains("approval_policy")) {
+        approval_cb_->setChecked(config["approval_policy"].toBool());
+    }
+    if (system_prompt_ && config.contains("system_prompt")) {
+        system_prompt_->setPlainText(config["system_prompt"].toString());
+    }
+    if (dev_prompt_ && config.contains("dev_prompt")) {
+        dev_prompt_->setPlainText(config["dev_prompt"].toString());
+    }
+}
+
+void AgentSettingsDialog::applyMarketplaceCatalog(const QJsonObject& catalog) {
+    if (plugins_list_ && catalog.contains("plugins")) {
+        plugins_list_->clear();
+        QJsonArray plugins = catalog["plugins"].toArray();
+        for (const auto& val : plugins) {
+            QJsonObject p = val.toObject();
+            QString text = p["name"].toString() + " - " + p["description"].toString();
+            auto* item = new QListWidgetItem(text, plugins_list_);
+            item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+            item->setCheckState(p["installed"].toBool() ? Qt::Checked : Qt::Unchecked);
+            item->setData(Qt::UserRole, p["id"].toString());
+        }
+    }
+    if (workflows_list_ && catalog.contains("workflows")) {
+        workflows_list_->clear();
+        QJsonArray workflows = catalog["workflows"].toArray();
+        for (const auto& val : workflows) {
+            QJsonObject w = val.toObject();
+            QString text = w["name"].toString() + " - " + w["description"].toString();
+            auto* item = new QListWidgetItem(text, workflows_list_);
+            item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+            item->setCheckState(w["installed"].toBool() ? Qt::Checked : Qt::Unchecked);
+            item->setData(Qt::UserRole, w["id"].toString());
+        }
+    }
 }
 
 void AgentSettingsDialog::saveAllSettings() {
   QJsonObject config;
-  
+
   if (provider_combo_) config["provider"] = provider_combo_->currentText();
   if (model_input_) config["model"] = model_input_->text();
   if (sandbox_cb_) config["sandbox_mode"] = sandbox_cb_->isChecked();
@@ -332,7 +384,7 @@ void AgentSettingsDialog::saveAllSettings() {
   if (project_name_) config["project_name"] = project_name_->text();
   if (project_path_) config["project_path"] = project_path_->text();
   if (trust_level_) config["trust_level"] = trust_level_->currentText();
-  
+
   QJsonObject memory;
   if (stm_cb_) memory["stm"] = stm_cb_->isChecked();
   if (ltm_cb_) memory["ltm"] = ltm_cb_->isChecked();

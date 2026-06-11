@@ -22,6 +22,8 @@ class TestGuiSymbolPlacement : public QObject {
 private slots:
   void testBasicPlacement() {
     ccad::Project project;
+  project.schematics.push_back(ccad::Schematic{});
+  project.schematics.push_back(ccad::Schematic{});
     project.id = "test-proj";
     
     // We mock a symbol file

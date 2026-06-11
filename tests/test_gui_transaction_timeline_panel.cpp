@@ -8,6 +8,8 @@ namespace {
 
 ccad::Project baseProject() {
   ccad::Project project;
+  project.schematics.push_back(ccad::Schematic{});
+  project.schematics.push_back(ccad::Schematic{});
   project.id = "proj";
   project.name = "timeline";
   return project;
@@ -16,7 +18,7 @@ ccad::Project baseProject() {
 ccad::Transaction addComponentTransaction() {
   ccad::Project before = baseProject();
   ccad::Project after = before;
-  after.components.push_back(ccad::Component{
+  after.schematics[0].components.push_back(ccad::Component{
       .id = "U1",
       .part = "MCU",
       .pins = {ccad::Pin{.name = "VDD", .kind = "power"}},

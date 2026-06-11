@@ -266,10 +266,10 @@ ccad::Footprint loadFootprintFile(const std::string& path) {
 }
 
 ccad::Board& requireBoard(ccad::Project& project) {
-  if (!project.board.has_value()) {
+  if (!!project.boards.empty()) {
     throw std::runtime_error("project has no board");
   }
-  return *project.board;
+  return project.boards[0];
 }
 
 void requireLayer(const ccad::Board& board, const std::string& layer_id) {

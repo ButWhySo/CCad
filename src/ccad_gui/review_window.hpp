@@ -43,7 +43,9 @@ enum class InteractionMode {
   AddZone,
   AddKeepout,
   DrawGraphic,
-  PlaceText
+  PlaceText,
+  AddWire,
+  AddLabel
 };
 
 class ReviewWindow final : public QMainWindow {
@@ -117,11 +119,16 @@ class ReviewWindow final : public QMainWindow {
                                             double end_x_mm, double end_y_mm);
   QString commitZonePlacementForAutomation(double start_x_mm, double start_y_mm,
                                            double end_x_mm, double end_y_mm);
-  QString commitKeepoutPlacementForAutomation(double start_x_mm, double start_y_mm,
-                                              double end_x_mm, double end_y_mm);
-  QString commitGraphicLinePlacementForAutomation(double start_x_mm, double start_y_mm,
-                                                  double end_x_mm, double end_y_mm);
-  QString commitBoardTextPlacementForAutomation(const QString& text, double x_mm, double y_mm);
+  QString commitKeepoutPlacementForAutomation(const double start_x_mm, const double start_y_mm,
+                                              const double end_x_mm, const double end_y_mm);
+  QString commitGraphicLinePlacementForAutomation(const double start_x_mm, const double start_y_mm,
+                                                  const double end_x_mm, const double end_y_mm);
+  QString commitBoardTextPlacementForAutomation(const QString& text, const double x_mm,
+                                                const double y_mm);
+  QString commitWirePlacementForAutomation(const double start_x_mm, const double start_y_mm,
+                                           const double end_x_mm, const double end_y_mm);
+  QString commitSchematicLabelPlacementForAutomation(const QString& text, const double x_mm,
+                                                     const double y_mm);
   QString deleteBoardObjectForAutomation(const QString& object_id);
 
  protected:
@@ -134,6 +141,7 @@ class ReviewWindow final : public QMainWindow {
   void showBoardSetup();
   void runDrcFromToolbar();
   void showComponentWizard();
+  void newProject();
   void openProject();
   void reloadProject();
   void previewFootprint();
@@ -154,7 +162,9 @@ class ReviewWindow final : public QMainWindow {
   void enterAddZoneMode();
   void enterAddKeepoutMode();
   void enterDrawGraphicMode();
-  void enterPlaceTextMode(const QString& text);
+  void enterPlaceTextMode(const QString& initial_text);
+  void enterAddWireMode();
+  void enterAddLabelMode(const QString& initial_text);
   void placeFromActiveEditor();
   void chooseAndPlaceFootprint();
   void chooseAndPlaceSymbol();

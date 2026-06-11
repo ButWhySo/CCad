@@ -179,11 +179,9 @@ struct Board {
   std::vector<RouteRequest> route_requests;
 };
 
-struct Project {
-  int schema_version = 1;
+struct Schematic {
   std::string id;
   std::string name;
-  std::optional<Board> board;
   std::vector<Component> components;
   std::vector<Net> nets;
   std::vector<WireSegment> wires;
@@ -192,5 +190,35 @@ struct Project {
   std::vector<Constraint> constraints;
 };
 
-}  // namespace ccad
+struct Project {
+  int schema_version = 2;
+  std::string id;
+  std::string name;
+  std::vector<Board> boards;
+  std::vector<Schematic> schematics;
+};
 
+inline const Board* primaryBoard(const Project& project) {
+  return project.boards.empty() ? nullptr : &project.boards.front();
+}
+
+inline Board* primaryBoard(Project& project) {
+  return project.boards.empty() ? nullptr : &project.boards.front();
+}
+
+inline const Schematic* primarySchematic(const Project& project) {
+  return project.schematics.empty() ? nullptr : &project.schematics.front();
+}
+
+inline Schematic* primarySchematic(Project& project) {
+  return project.schematics.empty() ? nullptr : &project.schematics.front();
+}
+
+inline Schematic& ensurePrimarySchematic(Project& project) {
+  if (project.schematics.empty()) {
+    project.schematics.push_back(Schematic{});
+  }
+  return project.schematics.front();
+}
+
+}  // namespace ccad
