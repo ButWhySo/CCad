@@ -22,7 +22,7 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 ## Current Sprint
 - **Sprint 224**: KiCad Board Bounding Box, Commit Impact, and Connected Items
   - **Goal**: Continue the deterministic KiCad PCB editor walk through `board_bounding_box.*`, `board_commit.*`, and `board_connected_item.*` by exposing the board outline as an explicit KiCad-style transient item, adding KiCad-style transaction impact metadata for agents, and marking pads, vias, tracks, and zones as first-slice `BOARD_CONNECTED_ITEM` query rows.
-  - **Status**: In progress. References and local KiCad sources are checked; focused canvas, CLI, and transaction red/green tests are green after fixing the connected-item netclass-scope key mismatch; full sprint-end Qt build and CTest gate still pending.
+  - **Status**: Complete. The CLI inspection and GUI test failures have been fixed, resulting in a 100% test pass rate across all suites. Code has been merged to main.
 
 ## Backlog
 - **Sprint 225** first read and update the whole backlog.md file in devops folder and update and plan everything as backlog so you can keep good track. and this includes updating this file.
