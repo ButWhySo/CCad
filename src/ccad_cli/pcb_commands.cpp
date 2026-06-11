@@ -162,6 +162,32 @@ ccad::Length requireMillimeters(const std::map<std::string, std::string>& option
   return ccad::millimeters(requireDoubleOption(options, key));
 }
 
+void setOptionalMillimeters(const std::map<std::string, std::string>& options,
+                            const std::string& key, ccad::Length& target) {
+  if (options.contains(key)) {
+    target = requireMillimeters(options, key);
+  }
+}
+
+bool requireBoolOption(const std::map<std::string, std::string>& options,
+                       const std::string& key) {
+  const std::string value = requireOption(options, key);
+  if (value == "true") {
+    return true;
+  }
+  if (value == "false") {
+    return false;
+  }
+  throw std::runtime_error(key + " must be true or false");
+}
+
+void setOptionalBool(const std::map<std::string, std::string>& options, const std::string& key,
+                     bool& target) {
+  if (options.contains(key)) {
+    target = requireBoolOption(options, key);
+  }
+}
+
 std::optional<double> optionalRatio(const std::map<std::string, std::string>& options,
                                     const std::string& key) {
   if (!options.contains(key)) {
@@ -719,16 +745,61 @@ int pcbCommand(const std::vector<std::string>& args) {
     if (subcommand == "set-rules") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--copper-clearance-mm", "--min-track-width-mm",
-                                 "--min-via-annular-ring-mm"});
+                                 "--min-via-annular-ring-mm", "--min-connection-mm",
+                                 "--min-via-diameter-mm", "--min-through-hole-drill-mm",
+                                 "--min-microvia-diameter-mm", "--min-microvia-drill-mm",
+                                 "--min-hole-to-hole-mm", "--hole-clearance-mm",
+                                 "--copper-edge-clearance-mm", "--silk-clearance-mm",
+                                 "--min-groove-width-mm", "--solder-mask-expansion-mm",
+                                 "--solder-mask-min-width-mm",
+                                 "--solder-mask-to-copper-clearance-mm",
+                                 "--solder-paste-margin-mm", "--solder-paste-margin-ratio",
+                                 "--board-thickness-mm", "--use-height-for-length-calcs",
+                                 "--tent-vias-front", "--tent-vias-back", "--cover-vias-front",
+                                 "--cover-vias-back", "--plug-vias-front", "--plug-vias-back",
+                                 "--cap-vias", "--fill-vias"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
       ccad::Board& board = requireBoard(project);
-      board.design_rules = ccad::DesignRules{
-          .copper_clearance = requirePositiveMillimeters(options, "--copper-clearance-mm"),
-          .min_track_width = requirePositiveMillimeters(options, "--min-track-width-mm"),
-          .min_via_annular_ring =
-              requirePositiveMillimeters(options, "--min-via-annular-ring-mm"),
-      };
+      ccad::DesignRules rules = board.design_rules;
+      rules.copper_clearance = requirePositiveMillimeters(options, "--copper-clearance-mm");
+      rules.min_track_width = requirePositiveMillimeters(options, "--min-track-width-mm");
+      rules.min_via_annular_ring =
+          requirePositiveMillimeters(options, "--min-via-annular-ring-mm");
+      setOptionalMillimeters(options, "--min-connection-mm", rules.min_connection);
+      setOptionalMillimeters(options, "--min-via-diameter-mm", rules.min_via_diameter);
+      setOptionalMillimeters(options, "--min-through-hole-drill-mm",
+                             rules.min_through_hole_drill);
+      setOptionalMillimeters(options, "--min-microvia-diameter-mm",
+                             rules.min_microvia_diameter);
+      setOptionalMillimeters(options, "--min-microvia-drill-mm", rules.min_microvia_drill);
+      setOptionalMillimeters(options, "--min-hole-to-hole-mm", rules.min_hole_to_hole);
+      setOptionalMillimeters(options, "--hole-clearance-mm", rules.hole_clearance);
+      setOptionalMillimeters(options, "--copper-edge-clearance-mm", rules.copper_edge_clearance);
+      setOptionalMillimeters(options, "--silk-clearance-mm", rules.silk_clearance);
+      setOptionalMillimeters(options, "--min-groove-width-mm", rules.min_groove_width);
+      setOptionalMillimeters(options, "--solder-mask-expansion-mm",
+                             rules.solder_mask_expansion);
+      setOptionalMillimeters(options, "--solder-mask-min-width-mm",
+                             rules.solder_mask_min_width);
+      setOptionalMillimeters(options, "--solder-mask-to-copper-clearance-mm",
+                             rules.solder_mask_to_copper_clearance);
+      setOptionalMillimeters(options, "--solder-paste-margin-mm", rules.solder_paste_margin);
+      if (options.contains("--solder-paste-margin-ratio")) {
+        rules.solder_paste_margin_ratio = requireDoubleOption(options, "--solder-paste-margin-ratio");
+      }
+      setOptionalMillimeters(options, "--board-thickness-mm", rules.board_thickness);
+      setOptionalBool(options, "--use-height-for-length-calcs",
+                      rules.use_height_for_length_calcs);
+      setOptionalBool(options, "--tent-vias-front", rules.tent_vias_front);
+      setOptionalBool(options, "--tent-vias-back", rules.tent_vias_back);
+      setOptionalBool(options, "--cover-vias-front", rules.cover_vias_front);
+      setOptionalBool(options, "--cover-vias-back", rules.cover_vias_back);
+      setOptionalBool(options, "--plug-vias-front", rules.plug_vias_front);
+      setOptionalBool(options, "--plug-vias-back", rules.plug_vias_back);
+      setOptionalBool(options, "--cap-vias", rules.cap_vias);
+      setOptionalBool(options, "--fill-vias", rules.fill_vias);
+      board.design_rules = rules;
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;

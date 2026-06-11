@@ -132,6 +132,24 @@ int main() {
   require(scene.board_origin_y_units == 3.0, "board origin y is mm");
   require(scene.view_width_units == 42.0, "view width is mm");
   require(scene.view_height_units == 28.0, "view height is mm");
+  require(scene.board_bounding_boxes.size() == 1,
+          "canvas exposes one KiCad board bounding-box view item");
+  require(scene.board_bounding_boxes.at(0).id == "board.bounding_box",
+          "canvas board bounding-box id");
+  require(scene.board_bounding_boxes.at(0).class_name == "BOARD_BOUNDING_BOX",
+          "canvas board bounding-box class");
+  require(scene.board_bounding_boxes.at(0).layer_id == "LAYER_BOARD_BOUNDING_BOX",
+          "canvas board bounding-box view layer");
+  require(scene.board_bounding_boxes.at(0).skip_struct,
+          "canvas board bounding-box matches KiCad skip struct behavior");
+  require(scene.board_bounding_boxes.at(0).x_units == 2.0,
+          "canvas board bounding-box x is mm");
+  require(scene.board_bounding_boxes.at(0).y_units == 3.0,
+          "canvas board bounding-box y is mm");
+  require(scene.board_bounding_boxes.at(0).width_units == 42.0,
+          "canvas board bounding-box width is mm");
+  require(scene.board_bounding_boxes.at(0).height_units == 28.0,
+          "canvas board bounding-box height is mm");
   require(scene.layers.size() == 4, "canvas has board layers");
   require(scene.layers.at(0).id == "F.Cu", "canvas layer id");
   require(scene.layers.at(0).name == "Front copper", "canvas layer name");

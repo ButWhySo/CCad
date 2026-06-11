@@ -1795,7 +1795,27 @@ The Agent surface now has `agent pcb-api-schema` and JSON-RPC `agent.pcb_api_sch
 
 The same-net commands intentionally report `connectivity_scope:"net_equivalent_first_slice"`. They inspect current pad, via, track, and zone net IDs and do not yet infer copper contact, zone-fill islands, net ties, or KiCad connectivity solver state.
 
+## Sprint 224 KiCad Board Bounding Box Addendum
+
+The KiCad PCB source walk now includes `F:\kicad_src\pcbnew\board_bounding_box.cpp` and `F:\kicad_src\pcbnew\board_bounding_box.h`. CCad maps KiCad's transient `BOARD_BOUNDING_BOX` wrapper to derived scene and CLI metadata rather than a persisted project primitive. `CanvasScene` now exposes `board_bounding_boxes` with `class_name:"BOARD_BOUNDING_BOX"`, `layer_id:"LAYER_BOARD_BOUNDING_BOX"`, `skip_struct:true`, and millimeter rectangle coordinates derived from `Board::outline`.
+
+The agent-facing `ccad pcb get-outline --file <project>` output still reports `outline_kind:"ccad_board_outline"` and `kicad_handler:"GetBoundingBox"`, and now also includes `kicad_class:"BOARD_BOUNDING_BOX"`, `kicad_view_layer:"LAYER_BOARD_BOUNDING_BOX"`, `kicad_skip_struct:true`, and a `bounding_box` payload. This lets automation reason about KiCad's view/runtime wrapper without treating it as a second durable board outline.
+
+## Sprint 224 KiCad Board Commit Addendum
+
+The KiCad PCB source walk now includes `F:\kicad_src\pcbnew\board_commit.cpp` and `F:\kicad_src\pcbnew\board_commit.h`. KiCad's `BOARD_COMMIT` stages board-item mutations, pushes them through undo, view, connectivity, ratsnest, zone, teardrop, component-class, board-outline, solder-mask, and dirty-state update paths, and can revert staged mutations.
+
+CCad's analogue is deterministic transaction impact metadata. `ccad::Transaction` now carries `CommitImpact`, which reports whether the transaction changed board data or schematic data, dirtied view rendering, DRC, ERC, connectivity, ratsnest, board-outline refresh, or solder-mask rendering, and lists dirty object IDs and object types derived from the transaction diff. `dumpTransactionJson()` emits this `impact` object, so CLI audit JSONL records and future LLM harnesses can decide which checks, views, and evidence to refresh after a mutation.
+
 The Agent orchestrator also restores the default provider safety contract: generated `agent.plan_with_provider` tasks enter the plan as `blocked` with `provider_execution_disabled` until a future approved provider runner explicitly enables provider execution. This keeps the current Agent layer honest while the KiCad parity work continues.
+
+## Sprint 224 KiCad Board Connected Item Addendum
+
+The KiCad PCB source walk now includes `F:\kicad_src\pcbnew\board_connected_item.cpp` and `F:\kicad_src\pcbnew\board_connected_item.h`. KiCad uses `BOARD_CONNECTED_ITEM` as the common net-owned base for connected board items such as pads, vias, tracks, and zones, with shared behavior for net naming, netclass lookup, clearance, local ratsnest visibility, and teardrop settings.
+
+CCad now exposes the first headless analogue across the current connectable object surfaces. `pcb list-objects`, `pcb list-by-net`, `pcb list-connected`, direct object lookup, and `pcb export-route-job` mark pads, vias, tracks, and zones with `connected_item:true` and `kicad_connected_class:"BOARD_CONNECTED_ITEM"`. The same rows include `net_name`, `net_name_message`, `short_net_name`, `display_net_name`, `net_class_name`, `net_class_scope`, a compatibility `netclass_scope` alias, `local_ratsnest_visible`, and `teardrops_supported`.
+
+This is intentionally not a fake full KiCad connectivity solver. The same-net query still uses CCad's first-slice `connectivity_scope:"net_equivalent_first_slice"`, and the netclass fields report `Default` with `default_netclass_until_model_exists` until the real netclass model is implemented.
 
 ## Sprint 221 KiCad PCB API Utility Layer-Set Addendum
 

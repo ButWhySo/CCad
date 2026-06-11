@@ -23,7 +23,33 @@ int main() {
       },
       .design_rules = ccad::DesignRules{.copper_clearance = ccad::millimeters(0.15),
                                         .min_track_width = ccad::millimeters(0.12),
-                                        .min_via_annular_ring = ccad::millimeters(0.08)},
+                                        .min_via_annular_ring = ccad::millimeters(0.08),
+                                        .min_connection = ccad::millimeters(0.01),
+                                        .min_via_diameter = ccad::millimeters(0.60),
+                                        .min_through_hole_drill = ccad::millimeters(0.35),
+                                        .min_microvia_diameter = ccad::millimeters(0.20),
+                                        .min_microvia_drill = ccad::millimeters(0.10),
+                                        .min_hole_to_hole = ccad::millimeters(0.25),
+                                        .hole_clearance = ccad::millimeters(0.25),
+                                        .copper_edge_clearance = ccad::millimeters(0.50),
+                                        .silk_clearance = ccad::millimeters(0.02),
+                                        .min_groove_width = ccad::millimeters(0.10),
+                                        .solder_mask_expansion = ccad::millimeters(0.03),
+                                        .solder_mask_min_width = ccad::millimeters(0.10),
+                                        .solder_mask_to_copper_clearance =
+                                            ccad::millimeters(0.02),
+                                        .solder_paste_margin = ccad::millimeters(-0.01),
+                                        .solder_paste_margin_ratio = -0.05,
+                                        .board_thickness = ccad::millimeters(1.60),
+                                        .use_height_for_length_calcs = false,
+                                        .tent_vias_front = true,
+                                        .tent_vias_back = false,
+                                        .cover_vias_front = true,
+                                        .cover_vias_back = false,
+                                        .plug_vias_front = true,
+                                        .plug_vias_back = false,
+                                        .cap_vias = true,
+                                        .fill_vias = false},
       .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true},
                  ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true},
                  ccad::Layer{.id = "F.SilkS", .name = "Front silkscreen", .kind = "silkscreen", .visible = true},
@@ -133,6 +159,16 @@ int main() {
   require(json.find("\"design_rules\"") != std::string::npos, "design rules emitted");
   require(json.find("\"copper_clearance_nm\": 150000") != std::string::npos,
           "copper clearance rule emitted");
+  require(json.find("\"min_via_diameter_nm\": 600000") != std::string::npos,
+          "minimum via diameter emitted");
+  require(json.find("\"min_through_hole_drill_nm\": 350000") != std::string::npos,
+          "minimum through hole drill emitted");
+  require(json.find("\"solder_mask_expansion_nm\": 30000") != std::string::npos,
+          "solder mask expansion emitted");
+  require(json.find("\"solder_paste_margin_ratio\": -0.05") != std::string::npos,
+          "solder paste margin ratio emitted");
+  require(json.find("\"board_thickness_nm\": 1600000") != std::string::npos,
+          "board thickness emitted");
   require(json.find("\"placement_regions\"") != std::string::npos,
           "placement regions emitted");
   require(json.find("\"route_requests\"") != std::string::npos, "route requests emitted");
@@ -168,6 +204,38 @@ int main() {
           "minimum track width rule round trips");
   require(loaded.boards[0].design_rules.min_via_annular_ring.nanometers == 80000,
           "minimum via annular ring rule round trips");
+  require(loaded.boards[0].design_rules.min_connection.nanometers == 10000,
+          "minimum connection rule round trips");
+  require(loaded.boards[0].design_rules.min_via_diameter.nanometers == 600000,
+          "minimum via diameter rule round trips");
+  require(loaded.boards[0].design_rules.min_through_hole_drill.nanometers == 350000,
+          "minimum through hole drill rule round trips");
+  require(loaded.boards[0].design_rules.min_hole_to_hole.nanometers == 250000,
+          "minimum hole to hole rule round trips");
+  require(loaded.boards[0].design_rules.copper_edge_clearance.nanometers == 500000,
+          "copper edge clearance rule round trips");
+  require(loaded.boards[0].design_rules.solder_mask_expansion.nanometers == 30000,
+          "solder mask expansion round trips");
+  require(loaded.boards[0].design_rules.solder_mask_min_width.nanometers == 100000,
+          "solder mask minimum width round trips");
+  require(loaded.boards[0].design_rules.solder_mask_to_copper_clearance.nanometers == 20000,
+          "solder mask to copper clearance round trips");
+  require(loaded.boards[0].design_rules.solder_paste_margin.nanometers == -10000,
+          "solder paste margin round trips");
+  require(loaded.boards[0].design_rules.solder_paste_margin_ratio == -0.05,
+          "solder paste margin ratio round trips");
+  require(loaded.boards[0].design_rules.board_thickness.nanometers == 1600000,
+          "board thickness round trips");
+  require(!loaded.boards[0].design_rules.use_height_for_length_calcs,
+          "height-for-length calculation flag round trips");
+  require(loaded.boards[0].design_rules.tent_vias_front, "front via tenting flag round trips");
+  require(!loaded.boards[0].design_rules.tent_vias_back, "back via tenting flag round trips");
+  require(loaded.boards[0].design_rules.cover_vias_front, "front via covering flag round trips");
+  require(!loaded.boards[0].design_rules.cover_vias_back, "back via covering flag round trips");
+  require(loaded.boards[0].design_rules.plug_vias_front, "front via plugging flag round trips");
+  require(!loaded.boards[0].design_rules.plug_vias_back, "back via plugging flag round trips");
+  require(loaded.boards[0].design_rules.cap_vias, "via capping flag round trips");
+  require(!loaded.boards[0].design_rules.fill_vias, "via filling flag round trips");
   require(loaded.boards[0].layers.size() == 4, "board layers round trip");
   require(loaded.boards[0].layers.at(2).id == "F.SilkS", "front silkscreen layer round trips");
   require(loaded.boards[0].layers.at(3).id == "Dwgs.User", "user drawing layer round trips");

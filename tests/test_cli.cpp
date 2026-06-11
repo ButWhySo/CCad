@@ -582,7 +582,18 @@ int main() {
   const std::string set_rules_command =
       quote(CCAD_BINARY) + " pcb set-rules --file " + quote(board_project_path) +
       " --copper-clearance-mm 0.15 --min-track-width-mm 0.12"
-      " --min-via-annular-ring-mm 0.08";
+      " --min-via-annular-ring-mm 0.08 --min-connection-mm 0.01"
+      " --min-via-diameter-mm 0.60 --min-through-hole-drill-mm 0.35"
+      " --min-microvia-diameter-mm 0.20 --min-microvia-drill-mm 0.10"
+      " --min-hole-to-hole-mm 0.25 --hole-clearance-mm 0.25"
+      " --copper-edge-clearance-mm 0.50 --silk-clearance-mm 0.02"
+      " --min-groove-width-mm 0.10 --solder-mask-expansion-mm 0.03"
+      " --solder-mask-min-width-mm 0.10 --solder-mask-to-copper-clearance-mm 0.02"
+      " --solder-paste-margin-mm -0.01 --solder-paste-margin-ratio -0.05"
+      " --board-thickness-mm 1.60 --use-height-for-length-calcs false"
+      " --tent-vias-front true --tent-vias-back false --cover-vias-front true"
+      " --cover-vias-back false --plug-vias-front true --plug-vias-back false"
+      " --cap-vias true --fill-vias false";
   require(run(set_rules_command) == 0, "pcb set-rules exits zero");
   const std::string rules_json = readFile(board_project_path);
   require(rules_json.find("\"design_rules\"") != std::string::npos,
@@ -593,6 +604,16 @@ int main() {
           "pcb set-rules writes minimum track width");
   require(rules_json.find("\"min_via_annular_ring_nm\": 80000") != std::string::npos,
           "pcb set-rules writes minimum via annular ring");
+  require(rules_json.find("\"min_via_diameter_nm\": 600000") != std::string::npos,
+          "pcb set-rules writes minimum via diameter");
+  require(rules_json.find("\"min_through_hole_drill_nm\": 350000") != std::string::npos,
+          "pcb set-rules writes minimum through hole drill");
+  require(rules_json.find("\"solder_mask_expansion_nm\": 30000") != std::string::npos,
+          "pcb set-rules writes solder mask expansion");
+  require(rules_json.find("\"solder_paste_margin_ratio\": -0.05") != std::string::npos,
+          "pcb set-rules writes solder paste margin ratio");
+  require(rules_json.find("\"board_thickness_nm\": 1600000") != std::string::npos,
+          "pcb set-rules writes board thickness");
   const std::filesystem::path get_rules_path = temp / "get-rules.json";
   require(run(quote(CCAD_BINARY) + " pcb get-rules --file " + quote(board_project_path) +
               " > " + quote(get_rules_path)) == 0,
@@ -604,12 +625,28 @@ int main() {
   require(get_rules_json.find("\"kicad_handler\": \"GetBoardDesignRules\"") !=
               std::string::npos,
           "pcb get-rules records KiCad handler reference");
+  require(get_rules_json.find("\"kicad_class\": \"BOARD_DESIGN_SETTINGS\"") !=
+              std::string::npos,
+          "pcb get-rules records KiCad board design settings class");
+  require(get_rules_json.find("\"kicad_schema_version\": 2") != std::string::npos,
+          "pcb get-rules reports KiCad board settings schema version");
   require(get_rules_json.find("\"copper_clearance_nm\": 150000") != std::string::npos,
           "pcb get-rules reports copper clearance");
   require(get_rules_json.find("\"min_track_width_nm\": 120000") != std::string::npos,
           "pcb get-rules reports minimum track width");
   require(get_rules_json.find("\"min_via_annular_ring_nm\": 80000") != std::string::npos,
           "pcb get-rules reports minimum via annular ring");
+  require(get_rules_json.find("\"min_via_diameter_nm\": 600000") != std::string::npos,
+          "pcb get-rules reports minimum via diameter");
+  require(get_rules_json.find("\"min_through_hole_drill_nm\": 350000") !=
+              std::string::npos,
+          "pcb get-rules reports minimum through hole drill");
+  require(get_rules_json.find("\"solder_mask\"") != std::string::npos,
+          "pcb get-rules reports solder mask rule group");
+  require(get_rules_json.find("\"solder_paste\"") != std::string::npos,
+          "pcb get-rules reports solder paste rule group");
+  require(get_rules_json.find("\"via_finishing\"") != std::string::npos,
+          "pcb get-rules reports via finishing flags");
   const std::filesystem::path inspect_rules_path = temp / "inspect-rules.json";
   const std::string inspect_rules_command =
       quote(CCAD_BINARY) + " inspect " + quote(board_project_path) + " > " +
@@ -634,6 +671,10 @@ int main() {
           "inspect writes minimum track width rule");
   require(inspect_rules_json.find("\"min_via_annular_ring_nm\": 80000") != std::string::npos,
           "inspect writes minimum via annular ring rule");
+  require(inspect_rules_json.find("\"min_via_diameter_nm\": 600000") != std::string::npos,
+          "inspect writes minimum via diameter rule");
+  require(inspect_rules_json.find("\"board_thickness_nm\": 1600000") != std::string::npos,
+          "inspect writes board thickness rule");
 
   const std::filesystem::path pcb_api_schema_path = temp / "pcb-api-schema.json";
   require(run(quote(CCAD_BINARY) + " agent pcb-api-schema > " + quote(pcb_api_schema_path)) == 0,
@@ -946,6 +987,19 @@ int main() {
           "pcb list-objects includes pad id");
   require(list_objects_json.find("\"net_id\": \"N1\"") != std::string::npos,
           "pcb list-objects includes net metadata");
+  require(list_objects_json.find("\"kicad_connected_class\": \"BOARD_CONNECTED_ITEM\"") !=
+              std::string::npos,
+          "pcb list-objects exposes KiCad connected item class");
+  require(list_objects_json.find("\"connected_item\": true") != std::string::npos,
+          "pcb list-objects marks connected items");
+  require(list_objects_json.find("\"net_name\": \"N1\"") != std::string::npos,
+          "pcb list-objects exposes connected item net name");
+  require(list_objects_json.find("\"net_name_message\": \"[N1]\"") != std::string::npos,
+          "pcb list-objects exposes KiCad-style net name message");
+  require(list_objects_json.find("\"net_class_name\": \"Default\"") != std::string::npos,
+          "pcb list-objects exposes default connected item net class");
+  require(list_objects_json.find("\"local_ratsnest_visible\": true") != std::string::npos,
+          "pcb list-objects exposes local ratsnest visibility");
 
   const std::filesystem::path list_tracks_path = temp / "list-tracks.json";
   const std::string list_tracks_command =
@@ -1032,6 +1086,14 @@ int main() {
           "pcb list-by-net includes track id");
   require(list_by_net_json.find("\"id\": \"Z1\"") != std::string::npos,
           "pcb list-by-net includes zone id");
+  require(list_by_net_json.find("\"kicad_connected_class\": \"BOARD_CONNECTED_ITEM\"") !=
+              std::string::npos,
+          "pcb list-by-net exposes KiCad connected item class");
+  require(list_by_net_json.find("\"net_name_message\": \"[N1]\"") != std::string::npos,
+          "pcb list-by-net exposes KiCad-style net name message");
+  require(list_by_net_json.find("\"net_class_scope\": \"default_netclass_until_model_exists\"") !=
+              std::string::npos,
+          "pcb list-by-net exposes explicit netclass scope");
 
   const std::filesystem::path list_by_net_tracks_path = temp / "list-by-net-tracks.json";
   const std::string list_by_net_tracks_command =
@@ -1781,6 +1843,16 @@ int main() {
           "pcb get-outline reports outline kind");
   require(get_outline_json.find("\"kicad_handler\": \"GetBoundingBox\"") != std::string::npos,
           "pcb get-outline records KiCad bounding-box reference");
+  require(get_outline_json.find("\"kicad_class\": \"BOARD_BOUNDING_BOX\"") !=
+              std::string::npos,
+          "pcb get-outline reports KiCad bounding-box class");
+  require(get_outline_json.find("\"kicad_view_layer\": \"LAYER_BOARD_BOUNDING_BOX\"") !=
+              std::string::npos,
+          "pcb get-outline reports KiCad bounding-box view layer");
+  require(get_outline_json.find("\"kicad_skip_struct\": true") != std::string::npos,
+          "pcb get-outline reports KiCad skip-struct behavior");
+  require(get_outline_json.find("\"bounding_box\"") != std::string::npos,
+          "pcb get-outline reports explicit bounding box payload");
   require(get_outline_json.find("\"x_nm\": 2000000") != std::string::npos,
           "pcb get-outline reports origin x");
   require(get_outline_json.find("\"y_nm\": 2000000") != std::string::npos,

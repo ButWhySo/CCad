@@ -35,6 +35,8 @@ ProjectReview buildReview(const Project& project) {
     review.copper_clearance_nm = board->design_rules.copper_clearance.nanometers;
     review.min_track_width_nm = board->design_rules.min_track_width.nanometers;
     review.min_via_annular_ring_nm = board->design_rules.min_via_annular_ring.nanometers;
+    review.min_via_diameter_nm = board->design_rules.min_via_diameter.nanometers;
+    review.board_thickness_nm = board->design_rules.board_thickness.nanometers;
     review.layer_count = board->layers.size();
     for (const Layer& layer : board->layers) {
       if (layer.kind == "copper") {

@@ -391,6 +391,56 @@ class JsonReader {
           rules.min_track_width = nanometers(readInt64());
         } else if (key == "min_via_annular_ring_nm") {
           rules.min_via_annular_ring = nanometers(readInt64());
+        } else if (key == "min_connection_nm") {
+          rules.min_connection = nanometers(readInt64());
+        } else if (key == "min_via_diameter_nm") {
+          rules.min_via_diameter = nanometers(readInt64());
+        } else if (key == "min_through_hole_drill_nm") {
+          rules.min_through_hole_drill = nanometers(readInt64());
+        } else if (key == "min_microvia_diameter_nm") {
+          rules.min_microvia_diameter = nanometers(readInt64());
+        } else if (key == "min_microvia_drill_nm") {
+          rules.min_microvia_drill = nanometers(readInt64());
+        } else if (key == "min_hole_to_hole_nm") {
+          rules.min_hole_to_hole = nanometers(readInt64());
+        } else if (key == "hole_clearance_nm") {
+          rules.hole_clearance = nanometers(readInt64());
+        } else if (key == "copper_edge_clearance_nm") {
+          rules.copper_edge_clearance = nanometers(readInt64());
+        } else if (key == "silk_clearance_nm") {
+          rules.silk_clearance = nanometers(readInt64());
+        } else if (key == "min_groove_width_nm") {
+          rules.min_groove_width = nanometers(readInt64());
+        } else if (key == "solder_mask_expansion_nm") {
+          rules.solder_mask_expansion = nanometers(readInt64());
+        } else if (key == "solder_mask_min_width_nm") {
+          rules.solder_mask_min_width = nanometers(readInt64());
+        } else if (key == "solder_mask_to_copper_clearance_nm") {
+          rules.solder_mask_to_copper_clearance = nanometers(readInt64());
+        } else if (key == "solder_paste_margin_nm") {
+          rules.solder_paste_margin = nanometers(readInt64());
+        } else if (key == "solder_paste_margin_ratio") {
+          rules.solder_paste_margin_ratio = readDouble();
+        } else if (key == "board_thickness_nm") {
+          rules.board_thickness = nanometers(readInt64());
+        } else if (key == "use_height_for_length_calcs") {
+          rules.use_height_for_length_calcs = readBool();
+        } else if (key == "tent_vias_front") {
+          rules.tent_vias_front = readBool();
+        } else if (key == "tent_vias_back") {
+          rules.tent_vias_back = readBool();
+        } else if (key == "cover_vias_front") {
+          rules.cover_vias_front = readBool();
+        } else if (key == "cover_vias_back") {
+          rules.cover_vias_back = readBool();
+        } else if (key == "plug_vias_front") {
+          rules.plug_vias_front = readBool();
+        } else if (key == "plug_vias_back") {
+          rules.plug_vias_back = readBool();
+        } else if (key == "cap_vias") {
+          rules.cap_vias = readBool();
+        } else if (key == "fill_vias") {
+          rules.fill_vias = readBool();
         } else {
           throw std::runtime_error("unknown design rules key: " + key);
         }
@@ -1224,6 +1274,11 @@ class JsonReader {
     skipWhitespace();
     std::int64_t value = 0;
     bool found = false;
+    bool negative = false;
+    if (pos_ < source_.size() && source_[pos_] == '-') {
+      negative = true;
+      ++pos_;
+    }
     while (pos_ < source_.size() && std::isdigit(static_cast<unsigned char>(source_[pos_]))) {
       found = true;
       value = (value * 10) + (source_[pos_] - '0');
@@ -1232,7 +1287,7 @@ class JsonReader {
     if (!found) {
       throw std::runtime_error("expected integer");
     }
-    return value;
+    return negative ? -value : value;
   }
 
   double readDouble() {
@@ -1494,7 +1549,57 @@ std::string dumpProjectJson(const Project& project) {
     out << "      \"min_track_width_nm\": "
         << board.design_rules.min_track_width.nanometers << ",\n";
     out << "      \"min_via_annular_ring_nm\": "
-        << board.design_rules.min_via_annular_ring.nanometers << "\n";
+        << board.design_rules.min_via_annular_ring.nanometers << ",\n";
+    out << "      \"min_connection_nm\": "
+        << board.design_rules.min_connection.nanometers << ",\n";
+    out << "      \"min_via_diameter_nm\": "
+        << board.design_rules.min_via_diameter.nanometers << ",\n";
+    out << "      \"min_through_hole_drill_nm\": "
+        << board.design_rules.min_through_hole_drill.nanometers << ",\n";
+    out << "      \"min_microvia_diameter_nm\": "
+        << board.design_rules.min_microvia_diameter.nanometers << ",\n";
+    out << "      \"min_microvia_drill_nm\": "
+        << board.design_rules.min_microvia_drill.nanometers << ",\n";
+    out << "      \"min_hole_to_hole_nm\": "
+        << board.design_rules.min_hole_to_hole.nanometers << ",\n";
+    out << "      \"hole_clearance_nm\": "
+        << board.design_rules.hole_clearance.nanometers << ",\n";
+    out << "      \"copper_edge_clearance_nm\": "
+        << board.design_rules.copper_edge_clearance.nanometers << ",\n";
+    out << "      \"silk_clearance_nm\": "
+        << board.design_rules.silk_clearance.nanometers << ",\n";
+    out << "      \"min_groove_width_nm\": "
+        << board.design_rules.min_groove_width.nanometers << ",\n";
+    out << "      \"solder_mask_expansion_nm\": "
+        << board.design_rules.solder_mask_expansion.nanometers << ",\n";
+    out << "      \"solder_mask_min_width_nm\": "
+        << board.design_rules.solder_mask_min_width.nanometers << ",\n";
+    out << "      \"solder_mask_to_copper_clearance_nm\": "
+        << board.design_rules.solder_mask_to_copper_clearance.nanometers << ",\n";
+    out << "      \"solder_paste_margin_nm\": "
+        << board.design_rules.solder_paste_margin.nanometers << ",\n";
+    out << "      \"solder_paste_margin_ratio\": "
+        << board.design_rules.solder_paste_margin_ratio << ",\n";
+    out << "      \"board_thickness_nm\": "
+        << board.design_rules.board_thickness.nanometers << ",\n";
+    out << "      \"use_height_for_length_calcs\": "
+        << (board.design_rules.use_height_for_length_calcs ? "true" : "false") << ",\n";
+    out << "      \"tent_vias_front\": "
+        << (board.design_rules.tent_vias_front ? "true" : "false") << ",\n";
+    out << "      \"tent_vias_back\": "
+        << (board.design_rules.tent_vias_back ? "true" : "false") << ",\n";
+    out << "      \"cover_vias_front\": "
+        << (board.design_rules.cover_vias_front ? "true" : "false") << ",\n";
+    out << "      \"cover_vias_back\": "
+        << (board.design_rules.cover_vias_back ? "true" : "false") << ",\n";
+    out << "      \"plug_vias_front\": "
+        << (board.design_rules.plug_vias_front ? "true" : "false") << ",\n";
+    out << "      \"plug_vias_back\": "
+        << (board.design_rules.plug_vias_back ? "true" : "false") << ",\n";
+    out << "      \"cap_vias\": "
+        << (board.design_rules.cap_vias ? "true" : "false") << ",\n";
+    out << "      \"fill_vias\": "
+        << (board.design_rules.fill_vias ? "true" : "false") << "\n";
     out << "    },\n";
     out << "    \"layers\": [\n";
     for (std::size_t i = 0; i < board.layers.size(); ++i) {

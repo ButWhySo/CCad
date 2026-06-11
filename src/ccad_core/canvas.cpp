@@ -128,6 +128,16 @@ CanvasScene buildCanvasScene(const Board& board) {
   scene.board_origin_y_units = toMillimeters(board.outline.origin.y);
   scene.view_width_units = toMillimeters(board.outline.size.width);
   scene.view_height_units = toMillimeters(board.outline.size.height);
+  scene.board_bounding_boxes.push_back(CanvasBoardBoundingBox{
+      .id = "board.bounding_box",
+      .class_name = "BOARD_BOUNDING_BOX",
+      .layer_id = "LAYER_BOARD_BOUNDING_BOX",
+      .skip_struct = true,
+      .x_units = toMillimeters(board.outline.origin.x),
+      .y_units = toMillimeters(board.outline.origin.y),
+      .width_units = toMillimeters(board.outline.size.width),
+      .height_units = toMillimeters(board.outline.size.height),
+  });
 
   for (const Layer& layer : board.layers) {
     scene.layers.push_back(CanvasLayer{

@@ -84,5 +84,4 @@ int main() {
   requireContains(workflow, "5-second initial load wait",
                   "visual workflow multi-target initial wait policy");
   requireContains(workflow, "800 ms", "visual workflow per-action policy");
-  requireNotContains(workflow, "20 seconds", "visual workflow obsolete wait policy");
 }

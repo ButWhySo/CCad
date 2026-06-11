@@ -121,6 +121,17 @@ struct CanvasPlacementRegion {
   double height_units = 0.0;
 };
 
+struct CanvasBoardBoundingBox {
+  std::string id;
+  std::string class_name;
+  std::string layer_id;
+  bool skip_struct = true;
+  double x_units = 0.0;
+  double y_units = 0.0;
+  double width_units = 0.0;
+  double height_units = 0.0;
+};
+
 struct CanvasLine {
   std::string id;
   std::string layer_id;
@@ -195,6 +206,7 @@ struct CanvasScene {
   double board_origin_y_units = 0.0;
   double view_width_units = 0.0;
   double view_height_units = 0.0;
+  std::vector<CanvasBoardBoundingBox> board_bounding_boxes;
   std::vector<CanvasLayer> layers;
   std::vector<CanvasPlacementRegion> placement_regions;
   std::vector<CanvasKeepout> keepouts;

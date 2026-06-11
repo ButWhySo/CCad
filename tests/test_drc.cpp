@@ -161,6 +161,29 @@ int main() {
   require(hasCode(ccad::runDrc(invalid_min_via_annular_ring), "INVALID_MIN_VIA_ANNULAR_RING"),
           "drc reports non-positive minimum via annular ring rule");
 
+  ccad::Project invalid_min_connection = validBoardProject();
+  invalid_min_connection.boards[0].design_rules.min_connection = ccad::nanometers(-1);
+  require(hasCode(ccad::runDrc(invalid_min_connection), "INVALID_MIN_CONNECTION"),
+          "drc reports negative minimum connection rule");
+
+  ccad::Project invalid_min_via_diameter = validBoardProject();
+  invalid_min_via_diameter.boards[0].design_rules.min_via_diameter = ccad::nanometers(-1);
+  require(hasCode(ccad::runDrc(invalid_min_via_diameter), "INVALID_MIN_VIA_DIAMETER"),
+          "drc reports negative minimum via diameter rule");
+
+  ccad::Project invalid_min_through_hole_drill = validBoardProject();
+  invalid_min_through_hole_drill.boards[0].design_rules.min_through_hole_drill =
+      ccad::nanometers(-1);
+  require(
+      hasCode(ccad::runDrc(invalid_min_through_hole_drill), "INVALID_MIN_THROUGH_HOLE_DRILL"),
+      "drc reports negative minimum through hole drill rule");
+
+  ccad::Project invalid_solder_paste_ratio = validBoardProject();
+  invalid_solder_paste_ratio.boards[0].design_rules.solder_paste_margin_ratio = 1.25;
+  require(hasCode(ccad::runDrc(invalid_solder_paste_ratio),
+                  "INVALID_SOLDER_PASTE_MARGIN_RATIO"),
+          "drc reports solder paste margin ratio outside KiCad-style range");
+
   ccad::Project pad_outside = validBoardProject();
   pad_outside.boards[0].pads.at(0).position.x = ccad::millimeters(99);
   require(hasCode(ccad::runDrc(pad_outside), "PAD_OUTSIDE_BOARD"),
@@ -299,6 +322,35 @@ int main() {
   relaxed_via_ring.boards[0].design_rules.min_via_annular_ring = ccad::millimeters(0.02);
   require(!hasCode(ccad::runDrc(relaxed_via_ring), "VIA_ANNULAR_RING_TOO_SMALL"),
           "drc obeys configured minimum via annular ring");
+
+  ccad::Project via_diameter_below_minimum = validBoardProject();
+  via_diameter_below_minimum.boards[0].design_rules.min_via_diameter = ccad::millimeters(0.90);
+  require(hasCode(ccad::runDrc(via_diameter_below_minimum), "VIA_DIAMETER_BELOW_MINIMUM"),
+          "drc reports via diameter below configured minimum");
+  require(hasDiagnosticMessageContaining(ccad::runDrc(via_diameter_below_minimum),
+                                         "VIA_DIAMETER_BELOW_MINIMUM",
+                                         "configured minimum 900000 nm"),
+          "drc via diameter diagnostic includes configured minimum value");
+
+  ccad::Project relaxed_via_diameter = via_diameter_below_minimum;
+  relaxed_via_diameter.boards[0].design_rules.min_via_diameter = ccad::millimeters(0.70);
+  require(!hasCode(ccad::runDrc(relaxed_via_diameter), "VIA_DIAMETER_BELOW_MINIMUM"),
+          "drc obeys configured minimum via diameter");
+
+  ccad::Project via_drill_below_minimum = validBoardProject();
+  via_drill_below_minimum.boards[0].design_rules.min_through_hole_drill =
+      ccad::millimeters(0.50);
+  require(hasCode(ccad::runDrc(via_drill_below_minimum), "VIA_DRILL_BELOW_MINIMUM"),
+          "drc reports via drill below configured minimum");
+  require(hasDiagnosticMessageContaining(ccad::runDrc(via_drill_below_minimum),
+                                         "VIA_DRILL_BELOW_MINIMUM",
+                                         "configured minimum 500000 nm"),
+          "drc via drill diagnostic includes configured minimum value");
+
+  ccad::Project relaxed_via_drill = via_drill_below_minimum;
+  relaxed_via_drill.boards[0].design_rules.min_through_hole_drill = ccad::millimeters(0.30);
+  require(!hasCode(ccad::runDrc(relaxed_via_drill), "VIA_DRILL_BELOW_MINIMUM"),
+          "drc obeys configured minimum through hole drill");
 
   ccad::Project zero_length_track = validBoardProject();
   zero_length_track.boards[0].tracks.at(0).end = zero_length_track.boards[0].tracks.at(0).start;

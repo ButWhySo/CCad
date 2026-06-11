@@ -86,7 +86,9 @@ std::string reviewJson(const ccad::ProjectReview& review) {
   out << "    \"design_rules\": {\n";
   out << "      \"copper_clearance_nm\": " << review.copper_clearance_nm << ",\n";
   out << "      \"min_track_width_nm\": " << review.min_track_width_nm << ",\n";
-  out << "      \"min_via_annular_ring_nm\": " << review.min_via_annular_ring_nm << "\n";
+  out << "      \"min_via_annular_ring_nm\": " << review.min_via_annular_ring_nm << ",\n";
+  out << "      \"min_via_diameter_nm\": " << review.min_via_diameter_nm << ",\n";
+  out << "      \"board_thickness_nm\": " << review.board_thickness_nm << "\n";
   out << "    },\n";
   out << "    \"layer_summary\": {\n";
   out << "      \"copper\": " << review.copper_layer_count << ",\n";

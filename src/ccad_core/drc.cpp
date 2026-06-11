@@ -228,6 +228,14 @@ bool isPositive(const Length& length) {
   return length.nanometers > 0;
 }
 
+bool isNonNegative(const Length& length) {
+  return length.nanometers >= 0;
+}
+
+bool ratioInInclusiveRange(const double value, const double min, const double max) {
+  return std::isfinite(value) && value >= min && value <= max;
+}
+
 bool samePoint(const Point& left, const Point& right) {
   return left.x.nanometers == right.x.nanometers && left.y.nanometers == right.y.nanometers;
 }
@@ -658,6 +666,22 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
                                            "Via drill must be less than or equal to diameter",
                                            via.id));
     }
+    if (via_size_positive && board.design_rules.min_via_diameter.nanometers > 0 &&
+        via.diameter.nanometers < board.design_rules.min_via_diameter.nanometers) {
+      diagnostics.push_back(makeDiagnostic(
+          "VIA_DIAMETER_BELOW_MINIMUM",
+          "Via diameter is below configured minimum " +
+              std::to_string(board.design_rules.min_via_diameter.nanometers) + " nm",
+          via.id));
+    }
+    if (via_size_positive && board.design_rules.min_through_hole_drill.nanometers > 0 &&
+        via.drill.nanometers < board.design_rules.min_through_hole_drill.nanometers) {
+      diagnostics.push_back(makeDiagnostic(
+          "VIA_DRILL_BELOW_MINIMUM",
+          "Via drill is below configured minimum " +
+              std::to_string(board.design_rules.min_through_hole_drill.nanometers) + " nm",
+          via.id));
+    }
     const std::int64_t annular_ring = (via.diameter.nanometers - via.drill.nanometers) / 2;
     if (via_size_positive && via_drill_fits &&
         annular_ring < board.design_rules.min_via_annular_ring.nanometers) {
@@ -1034,6 +1058,71 @@ void checkDesignRules(const Board& board, std::vector<Diagnostic>& diagnostics) 
   if (!isPositive(board.design_rules.min_via_annular_ring)) {
     diagnostics.push_back(makeDiagnostic("INVALID_MIN_VIA_ANNULAR_RING",
                                          "Minimum via annular ring rule must be positive",
+                                         "board.design_rules"));
+  }
+  if (!isNonNegative(board.design_rules.min_connection)) {
+    diagnostics.push_back(makeDiagnostic("INVALID_MIN_CONNECTION",
+                                         "Minimum connection rule must not be negative",
+                                         "board.design_rules"));
+  }
+  if (!isNonNegative(board.design_rules.min_via_diameter)) {
+    diagnostics.push_back(makeDiagnostic("INVALID_MIN_VIA_DIAMETER",
+                                         "Minimum via diameter rule must not be negative",
+                                         "board.design_rules"));
+  }
+  if (!isNonNegative(board.design_rules.min_through_hole_drill)) {
+    diagnostics.push_back(makeDiagnostic("INVALID_MIN_THROUGH_HOLE_DRILL",
+                                         "Minimum through hole drill rule must not be negative",
+                                         "board.design_rules"));
+  }
+  if (!isNonNegative(board.design_rules.min_microvia_diameter)) {
+    diagnostics.push_back(makeDiagnostic("INVALID_MIN_MICROVIA_DIAMETER",
+                                         "Minimum microvia diameter rule must not be negative",
+                                         "board.design_rules"));
+  }
+  if (!isNonNegative(board.design_rules.min_microvia_drill)) {
+    diagnostics.push_back(makeDiagnostic("INVALID_MIN_MICROVIA_DRILL",
+                                         "Minimum microvia drill rule must not be negative",
+                                         "board.design_rules"));
+  }
+  if (!isNonNegative(board.design_rules.min_hole_to_hole)) {
+    diagnostics.push_back(makeDiagnostic("INVALID_MIN_HOLE_TO_HOLE",
+                                         "Minimum hole-to-hole rule must not be negative",
+                                         "board.design_rules"));
+  }
+  if (!isNonNegative(board.design_rules.hole_clearance)) {
+    diagnostics.push_back(makeDiagnostic("INVALID_HOLE_CLEARANCE",
+                                         "Hole clearance rule must not be negative",
+                                         "board.design_rules"));
+  }
+  if (!isNonNegative(board.design_rules.silk_clearance)) {
+    diagnostics.push_back(makeDiagnostic("INVALID_SILK_CLEARANCE",
+                                         "Silkscreen clearance rule must not be negative",
+                                         "board.design_rules"));
+  }
+  if (!isNonNegative(board.design_rules.min_groove_width)) {
+    diagnostics.push_back(makeDiagnostic("INVALID_MIN_GROOVE_WIDTH",
+                                         "Minimum groove width rule must not be negative",
+                                         "board.design_rules"));
+  }
+  if (!isNonNegative(board.design_rules.solder_mask_min_width)) {
+    diagnostics.push_back(makeDiagnostic("INVALID_SOLDER_MASK_MIN_WIDTH",
+                                         "Solder mask minimum width must not be negative",
+                                         "board.design_rules"));
+  }
+  if (!isNonNegative(board.design_rules.solder_mask_to_copper_clearance)) {
+    diagnostics.push_back(makeDiagnostic("INVALID_SOLDER_MASK_TO_COPPER_CLEARANCE",
+                                         "Solder mask to copper clearance must not be negative",
+                                         "board.design_rules"));
+  }
+  if (!ratioInInclusiveRange(board.design_rules.solder_paste_margin_ratio, -1.0, 1.0)) {
+    diagnostics.push_back(makeDiagnostic("INVALID_SOLDER_PASTE_MARGIN_RATIO",
+                                         "Solder paste margin ratio must be between -1.0 and 1.0",
+                                         "board.design_rules"));
+  }
+  if (!isPositive(board.design_rules.board_thickness)) {
+    diagnostics.push_back(makeDiagnostic("INVALID_BOARD_THICKNESS",
+                                         "Board thickness must be positive",
                                          "board.design_rules"));
   }
 }

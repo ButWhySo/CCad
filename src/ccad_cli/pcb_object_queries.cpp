@@ -87,6 +87,26 @@ void appendLayerNumbersJson(std::ostream& out, const std::vector<std::size_t>& l
   out << "]";
 }
 
+std::string connectedItemNetMessage(const std::string& net_id) {
+  return net_id.empty() ? "[<no net>]" : "[" + net_id + "]";
+}
+
+void appendConnectedItemMetadata(std::ostream& out, const std::string& net_id,
+                                 const bool teardrops_supported) {
+  out << ", \"connected_item\": true"
+      << ", \"kicad_connected_class\": \"BOARD_CONNECTED_ITEM\""
+      << ", \"net_name\": \"" << ccad::escapeJson(net_id) << "\""
+      << ", \"net_name_message\": \"" << ccad::escapeJson(connectedItemNetMessage(net_id))
+      << "\""
+      << ", \"short_net_name\": \"" << ccad::escapeJson(net_id) << "\""
+      << ", \"display_net_name\": \"" << ccad::escapeJson(net_id) << "\""
+      << ", \"net_class_name\": \"Default\""
+      << ", \"net_class_scope\": \"default_netclass_until_model_exists\""
+      << ", \"netclass_scope\": \"default_netclass_until_model_exists\""
+      << ", \"local_ratsnest_visible\": true"
+      << ", \"teardrops_supported\": " << (teardrops_supported ? "true" : "false");
+}
+
 std::vector<std::string> resolvedPadLayers(const ccad::Board& board, const ccad::Pad& pad) {
   return ccad::expandKiCadLayerSet(pad.layers, board);
 }
@@ -110,6 +130,7 @@ std::string padNetRowJson(const ccad::Board& board, const ccad::Pad& pad) {
   if (pad.drill.has_value()) {
     row << ", \"drill_nm\": " << pad.drill->nanometers;
   }
+  appendConnectedItemMetadata(row, pad.net_id, true);
   row << "}";
   return row.str();
 }
@@ -117,7 +138,9 @@ std::string padNetRowJson(const ccad::Board& board, const ccad::Pad& pad) {
 std::string viaNetRowJson(const ccad::Via& via) {
   std::ostringstream row;
   row << "    {\"type\": \"via\", \"id\": \"" << ccad::escapeJson(via.id)
-      << "\", \"net_id\": \"" << ccad::escapeJson(via.net_id) << "\"}";
+      << "\", \"net_id\": \"" << ccad::escapeJson(via.net_id) << "\"";
+  appendConnectedItemMetadata(row, via.net_id, true);
+  row << "}";
   return row.str();
 }
 
@@ -127,7 +150,9 @@ std::string trackNetRowJson(const ccad::TrackSegment& track) {
       << "\", \"net_id\": \"" << ccad::escapeJson(track.net_id)
       << "\", \"layer_id\": \"" << ccad::escapeJson(track.layer_id)
       << "\", \"source_route_request_id\": \""
-      << ccad::escapeJson(track.source_route_request_id) << "\"}";
+      << ccad::escapeJson(track.source_route_request_id) << "\"";
+  appendConnectedItemMetadata(row, track.net_id, false);
+  row << "}";
   return row.str();
 }
 
@@ -138,8 +163,9 @@ std::string zoneNetRowJson(const ccad::BoardZone& zone) {
       << "\", \"net_id\": \"" << ccad::escapeJson(zone.net_id)
       << "\", \"layer_ids\": ";
   appendLayerIdsJson(row, zone.layer_ids);
-  row << ", \"corner_count\": " << zone.outline.size() << ", \"priority\": " << zone.priority
-      << "}";
+  row << ", \"corner_count\": " << zone.outline.size() << ", \"priority\": " << zone.priority;
+  appendConnectedItemMetadata(row, zone.net_id, false);
+  row << "}";
   return row.str();
 }
 
@@ -194,6 +220,54 @@ std::string layerListJson(const std::string& query_kind, const std::vector<std::
   out << "  ]\n"
       << "}\n";
   return out.str();
+}
+
+void appendDesignRulesFlatJson(std::ostream& out, const ccad::DesignRules& rules,
+                               const int indent) {
+  const std::string pad(static_cast<std::size_t>(indent), ' ');
+  out << pad << "\"copper_clearance_nm\": " << rules.copper_clearance.nanometers << ",\n"
+      << pad << "\"min_track_width_nm\": " << rules.min_track_width.nanometers << ",\n"
+      << pad << "\"min_via_annular_ring_nm\": " << rules.min_via_annular_ring.nanometers
+      << ",\n"
+      << pad << "\"min_connection_nm\": " << rules.min_connection.nanometers << ",\n"
+      << pad << "\"min_via_diameter_nm\": " << rules.min_via_diameter.nanometers << ",\n"
+      << pad << "\"min_through_hole_drill_nm\": " << rules.min_through_hole_drill.nanometers
+      << ",\n"
+      << pad << "\"min_microvia_diameter_nm\": " << rules.min_microvia_diameter.nanometers
+      << ",\n"
+      << pad << "\"min_microvia_drill_nm\": " << rules.min_microvia_drill.nanometers << ",\n"
+      << pad << "\"min_hole_to_hole_nm\": " << rules.min_hole_to_hole.nanometers << ",\n"
+      << pad << "\"hole_clearance_nm\": " << rules.hole_clearance.nanometers << ",\n"
+      << pad << "\"copper_edge_clearance_nm\": " << rules.copper_edge_clearance.nanometers
+      << ",\n"
+      << pad << "\"silk_clearance_nm\": " << rules.silk_clearance.nanometers << ",\n"
+      << pad << "\"min_groove_width_nm\": " << rules.min_groove_width.nanometers << ",\n"
+      << pad << "\"solder_mask_expansion_nm\": " << rules.solder_mask_expansion.nanometers
+      << ",\n"
+      << pad << "\"solder_mask_min_width_nm\": " << rules.solder_mask_min_width.nanometers
+      << ",\n"
+      << pad << "\"solder_mask_to_copper_clearance_nm\": "
+      << rules.solder_mask_to_copper_clearance.nanometers << ",\n"
+      << pad << "\"solder_paste_margin_nm\": " << rules.solder_paste_margin.nanometers
+      << ",\n"
+      << pad << "\"solder_paste_margin_ratio\": " << rules.solder_paste_margin_ratio << ",\n"
+      << pad << "\"board_thickness_nm\": " << rules.board_thickness.nanometers << ",\n"
+      << pad << "\"use_height_for_length_calcs\": "
+      << (rules.use_height_for_length_calcs ? "true" : "false") << ",\n"
+      << pad << "\"tent_vias_front\": " << (rules.tent_vias_front ? "true" : "false")
+      << ",\n"
+      << pad << "\"tent_vias_back\": " << (rules.tent_vias_back ? "true" : "false")
+      << ",\n"
+      << pad << "\"cover_vias_front\": " << (rules.cover_vias_front ? "true" : "false")
+      << ",\n"
+      << pad << "\"cover_vias_back\": " << (rules.cover_vias_back ? "true" : "false")
+      << ",\n"
+      << pad << "\"plug_vias_front\": " << (rules.plug_vias_front ? "true" : "false")
+      << ",\n"
+      << pad << "\"plug_vias_back\": " << (rules.plug_vias_back ? "true" : "false")
+      << ",\n"
+      << pad << "\"cap_vias\": " << (rules.cap_vias ? "true" : "false") << ",\n"
+      << pad << "\"fill_vias\": " << (rules.fill_vias ? "true" : "false") << '\n';
 }
 
 void collectPcbNetRows(const ccad::Board& board, const std::string& net_id,
@@ -350,6 +424,7 @@ std::string pcbPadObjectJson(const ccad::Pad& pad) {
     out << ",\n"
         << "    \"chamfer_ratio\": " << *pad.chamfer_ratio;
   }
+  appendConnectedItemMetadata(out, pad.net_id, true);
   out << "\n"
       << "  }\n"
       << "}\n";
@@ -367,7 +442,9 @@ std::string pcbViaObjectJson(const ccad::Via& via) {
   writePointJson(out, via.position, 6);
   out << "\n    },\n"
       << "    \"diameter_nm\": " << via.diameter.nanometers << ",\n"
-      << "    \"drill_nm\": " << via.drill.nanometers << "\n"
+      << "    \"drill_nm\": " << via.drill.nanometers;
+  appendConnectedItemMetadata(out, via.net_id, true);
+  out << "\n"
       << "  }\n"
       << "}\n";
   return out.str();
@@ -389,7 +466,9 @@ std::string pcbTrackObjectJson(const ccad::TrackSegment& track) {
   out << "\n    },\n"
       << "    \"width_nm\": " << track.width.nanometers << ",\n"
       << "    \"source_route_request_id\": \""
-      << ccad::escapeJson(track.source_route_request_id) << "\"\n"
+      << ccad::escapeJson(track.source_route_request_id) << "\"";
+  appendConnectedItemMetadata(out, track.net_id, false);
+  out << "\n"
       << "  }\n"
       << "}\n";
   return out.str();
@@ -473,7 +552,9 @@ std::string pcbBoardZoneObjectJson(const ccad::BoardZone& zone) {
       << "    \"clearance_nm\": " << zone.clearance.nanometers << ",\n"
       << "    \"min_thickness_nm\": " << zone.min_thickness.nanometers << ",\n"
       << "    \"fill_enabled\": " << (zone.fill_enabled ? "true" : "false") << ",\n"
-      << "    \"pad_connection\": \"" << ccad::escapeJson(zone.pad_connection) << "\"\n"
+      << "    \"pad_connection\": \"" << ccad::escapeJson(zone.pad_connection) << "\"";
+  appendConnectedItemMetadata(out, zone.net_id, false);
+  out << "\n"
       << "  }\n"
       << "}\n";
   return out.str();
@@ -541,6 +622,7 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
       if (pad.chamfer_ratio.has_value()) {
         row << ", \"chamfer_ratio\": " << *pad.chamfer_ratio;
       }
+      appendConnectedItemMetadata(row, pad.net_id, true);
       row << "}";
       add_row(row);
     }
@@ -549,7 +631,9 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
     for (const ccad::Via& via : board.vias) {
       std::ostringstream row;
       row << "    {\"type\": \"via\", \"id\": \"" << ccad::escapeJson(via.id)
-          << "\", \"net_id\": \"" << ccad::escapeJson(via.net_id) << "\"}";
+          << "\", \"net_id\": \"" << ccad::escapeJson(via.net_id) << "\"";
+      appendConnectedItemMetadata(row, via.net_id, true);
+      row << "}";
       add_row(row);
     }
   }
@@ -560,7 +644,9 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
           << "\", \"net_id\": \"" << ccad::escapeJson(track.net_id)
           << "\", \"layer_id\": \"" << ccad::escapeJson(track.layer_id)
           << "\", \"source_route_request_id\": \""
-          << ccad::escapeJson(track.source_route_request_id) << "\"}";
+          << ccad::escapeJson(track.source_route_request_id) << "\"";
+      appendConnectedItemMetadata(row, track.net_id, false);
+      row << "}";
       add_row(row);
     }
   }
@@ -596,7 +682,9 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
         row << "\"" << ccad::escapeJson(zone.layer_ids.at(i)) << "\"";
       }
       row << "], \"corner_count\": " << zone.outline.size()
-          << ", \"priority\": " << zone.priority << "}";
+          << ", \"priority\": " << zone.priority;
+      appendConnectedItemMetadata(row, zone.net_id, false);
+      row << "}";
       add_row(row);
     }
   }
@@ -776,16 +864,49 @@ std::string getPcbBoardStackupJson(const ccad::Board& board) {
 }
 
 std::string getPcbDesignRulesJson(const ccad::Board& board) {
+  const ccad::DesignRules& rules = board.design_rules;
   std::ostringstream out;
   out << "{\n"
       << "  \"rules_kind\": \"ccad_board_design_rules\",\n"
       << "  \"kicad_handler\": \"GetBoardDesignRules\",\n"
-      << "  \"kicad_parity_scope\": \"minimum_constraints_first_slice\",\n"
-      << "  \"rules\": {\n"
-      << "    \"copper_clearance_nm\": " << board.design_rules.copper_clearance.nanometers << ",\n"
-      << "    \"min_track_width_nm\": " << board.design_rules.min_track_width.nanometers << ",\n"
-      << "    \"min_via_annular_ring_nm\": "
-      << board.design_rules.min_via_annular_ring.nanometers << "\n"
+      << "  \"kicad_class\": \"BOARD_DESIGN_SETTINGS\",\n"
+      << "  \"kicad_schema_version\": 2,\n"
+      << "  \"kicad_parity_scope\": \"board_design_settings_first_slice\",\n"
+      << "  \"rules\": {\n";
+  appendDesignRulesFlatJson(out, rules, 4);
+  out << "  },\n"
+      << "  \"minimum_constraints\": {\n";
+  appendDesignRulesFlatJson(out, rules, 4);
+  out << "  },\n"
+      << "  \"solder_mask\": {\n"
+      << "    \"solder_mask_expansion_nm\": " << rules.solder_mask_expansion.nanometers << ",\n"
+      << "    \"solder_mask_min_width_nm\": " << rules.solder_mask_min_width.nanometers
+      << ",\n"
+      << "    \"solder_mask_to_copper_clearance_nm\": "
+      << rules.solder_mask_to_copper_clearance.nanometers << "\n"
+      << "  },\n"
+      << "  \"solder_paste\": {\n"
+      << "    \"solder_paste_margin_nm\": " << rules.solder_paste_margin.nanometers << ",\n"
+      << "    \"solder_paste_margin_ratio\": " << rules.solder_paste_margin_ratio << "\n"
+      << "  },\n"
+      << "  \"fabrication\": {\n"
+      << "    \"board_thickness_nm\": " << rules.board_thickness.nanometers << ",\n"
+      << "    \"use_height_for_length_calcs\": "
+      << (rules.use_height_for_length_calcs ? "true" : "false") << "\n"
+      << "  },\n"
+      << "  \"via_finishing\": {\n"
+      << "    \"tent_vias_front\": " << (rules.tent_vias_front ? "true" : "false") << ",\n"
+      << "    \"tent_vias_back\": " << (rules.tent_vias_back ? "true" : "false") << ",\n"
+      << "    \"cover_vias_front\": " << (rules.cover_vias_front ? "true" : "false")
+      << ",\n"
+      << "    \"cover_vias_back\": " << (rules.cover_vias_back ? "true" : "false")
+      << ",\n"
+      << "    \"plug_vias_front\": " << (rules.plug_vias_front ? "true" : "false")
+      << ",\n"
+      << "    \"plug_vias_back\": " << (rules.plug_vias_back ? "true" : "false")
+      << ",\n"
+      << "    \"cap_vias\": " << (rules.cap_vias ? "true" : "false") << ",\n"
+      << "    \"fill_vias\": " << (rules.fill_vias ? "true" : "false") << "\n"
       << "  }\n"
       << "}\n";
   return out.str();
@@ -796,6 +917,15 @@ std::string getPcbOutlineJson(const ccad::Board& board) {
   out << "{\n"
       << "  \"outline_kind\": \"ccad_board_outline\",\n"
       << "  \"kicad_handler\": \"GetBoundingBox\",\n"
+      << "  \"kicad_class\": \"BOARD_BOUNDING_BOX\",\n"
+      << "  \"kicad_view_layer\": \"LAYER_BOARD_BOUNDING_BOX\",\n"
+      << "  \"kicad_skip_struct\": true,\n"
+      << "  \"bounding_box\": {\n"
+      << "    \"x_nm\": " << board.outline.origin.x.nanometers << ",\n"
+      << "    \"y_nm\": " << board.outline.origin.y.nanometers << ",\n"
+      << "    \"width_nm\": " << board.outline.size.width.nanometers << ",\n"
+      << "    \"height_nm\": " << board.outline.size.height.nanometers << "\n"
+      << "  },\n"
       << "  \"outline\": {\n"
       << "    \"x_nm\": " << board.outline.origin.x.nanometers << ",\n"
       << "    \"y_nm\": " << board.outline.origin.y.nanometers << ",\n"
@@ -934,14 +1064,9 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
       << "      \"width_nm\": " << board.outline.size.width.nanometers << ",\n"
       << "      \"height_nm\": " << board.outline.size.height.nanometers << "\n"
       << "    },\n"
-      << "    \"design_rules\": {\n"
-      << "      \"copper_clearance_nm\": " << board.design_rules.copper_clearance.nanometers
-      << ",\n"
-      << "      \"min_track_width_nm\": " << board.design_rules.min_track_width.nanometers
-      << ",\n"
-      << "      \"min_via_annular_ring_nm\": "
-      << board.design_rules.min_via_annular_ring.nanometers << "\n"
-      << "    },\n"
+      << "    \"design_rules\": {\n";
+  appendDesignRulesFlatJson(out, board.design_rules, 6);
+  out << "    },\n"
       << "    \"layers\": [\n";
   for (std::size_t i = 0; i < board.layers.size(); ++i) {
     const ccad::Layer& layer = board.layers.at(i);
@@ -984,6 +1109,7 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
     if (pad.chamfer_ratio.has_value()) {
       out << ", \"chamfer_ratio\": " << *pad.chamfer_ratio;
     }
+    appendConnectedItemMetadata(out, pad.net_id, true);
     out << "}" << (i + 1 == board.pads.size() ? "" : ",") << '\n';
   }
   out << "      ],\n"
@@ -993,8 +1119,9 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
     out << "        {\"id\": \"" << ccad::escapeJson(via.id) << "\", \"net_id\": \""
         << ccad::escapeJson(via.net_id) << "\", \"x_nm\": " << via.position.x.nanometers
         << ", \"y_nm\": " << via.position.y.nanometers << ", \"diameter_nm\": "
-        << via.diameter.nanometers << ", \"drill_nm\": " << via.drill.nanometers << "}"
-        << (i + 1 == board.vias.size() ? "" : ",") << '\n';
+        << via.diameter.nanometers << ", \"drill_nm\": " << via.drill.nanometers;
+    appendConnectedItemMetadata(out, via.net_id, true);
+    out << "}" << (i + 1 == board.vias.size() ? "" : ",") << '\n';
   }
   out << "      ],\n"
       << "      \"tracks\": [\n";
@@ -1007,8 +1134,9 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
         << ", \"end_x_nm\": " << track.end.x.nanometers << ", \"end_y_nm\": "
         << track.end.y.nanometers << ", \"width_nm\": " << track.width.nanometers
         << ", \"source_route_request_id\": \""
-        << ccad::escapeJson(track.source_route_request_id) << "\"}"
-        << (i + 1 == board.tracks.size() ? "" : ",") << '\n';
+        << ccad::escapeJson(track.source_route_request_id) << "\"";
+    appendConnectedItemMetadata(out, track.net_id, false);
+    out << "}" << (i + 1 == board.tracks.size() ? "" : ",") << '\n';
   }
   out << "      ]\n"
       << "    },\n"
@@ -1039,8 +1167,9 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
         << zone.clearance.nanometers << ", \"min_thickness_nm\": "
         << zone.min_thickness.nanometers << ", \"fill_enabled\": "
         << (zone.fill_enabled ? "true" : "false") << ", \"pad_connection\": \""
-        << ccad::escapeJson(zone.pad_connection) << "\"}"
-        << (i + 1 == board.zones.size() ? "" : ",") << '\n';
+        << ccad::escapeJson(zone.pad_connection) << "\"";
+    appendConnectedItemMetadata(out, zone.net_id, false);
+    out << "}" << (i + 1 == board.zones.size() ? "" : ",") << '\n';
   }
   out << "    ],\n"
       << "    \"placement_regions\": [\n";

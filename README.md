@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 8 / 8: Agent Runtime and EDA Evidence Expansion.
 
-Progress counter: Phase 8 / 8, Sprint 222 verified on `sprint-222-kicad-pcb-api-items`.
+Progress counter: Phase 8 / 8, Sprint 223 verified on `sprint-223-kicad-board-model`; Sprint 224 is active on `sprint-224-kicad-board-bounding-box` for KiCad board bounding-box, commit-impact, and connected-item parity.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 focuses on bounded Agent runtime state, EDA evidence expansion, runner queues, observability export wiring, and simulation planning slices.
 

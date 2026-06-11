@@ -75,6 +75,31 @@ struct DesignRules {
   Length copper_clearance = millimeters(0.20);
   Length min_track_width = millimeters(0.15);
   Length min_via_annular_ring = millimeters(0.10);
+  Length min_connection = millimeters(0.0);
+  Length min_via_diameter = millimeters(0.50);
+  Length min_through_hole_drill = millimeters(0.30);
+  Length min_microvia_diameter = millimeters(0.20);
+  Length min_microvia_drill = millimeters(0.10);
+  Length min_hole_to_hole = millimeters(0.25);
+  Length hole_clearance = millimeters(0.25);
+  Length copper_edge_clearance = millimeters(0.50);
+  Length silk_clearance = millimeters(0.0);
+  Length min_groove_width = millimeters(0.0);
+  Length solder_mask_expansion = millimeters(0.0);
+  Length solder_mask_min_width = millimeters(0.0);
+  Length solder_mask_to_copper_clearance = millimeters(0.0);
+  Length solder_paste_margin = millimeters(0.0);
+  double solder_paste_margin_ratio = 0.0;
+  Length board_thickness = millimeters(1.60);
+  bool use_height_for_length_calcs = true;
+  bool tent_vias_front = true;
+  bool tent_vias_back = true;
+  bool cover_vias_front = false;
+  bool cover_vias_back = false;
+  bool plug_vias_front = false;
+  bool plug_vias_back = false;
+  bool cap_vias = false;
+  bool fill_vias = false;
 };
 
 struct Pad {

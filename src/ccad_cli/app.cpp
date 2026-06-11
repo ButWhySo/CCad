@@ -152,7 +152,9 @@ const std::vector<CommandHelp>& commandHelp() {
       CommandHelp{.name = "pcb set-rules",
                   .summary = "Set board-level physical DRC rule defaults",
                   .usage = "ccad pcb set-rules --file <path> --copper-clearance-mm <n> "
-                           "--min-track-width-mm <n> --min-via-annular-ring-mm <n>"},
+                           "--min-track-width-mm <n> --min-via-annular-ring-mm <n> "
+                           "[--min-via-diameter-mm <n>] [--min-through-hole-drill-mm <n>] "
+                           "[--board-thickness-mm <n>] [--solder-mask-expansion-mm <n>]"},
       CommandHelp{.name = "pcb get-outline",
                   .summary = "Return the rectangular board outline bounds",
                   .usage = "ccad pcb get-outline --file <path>"},
