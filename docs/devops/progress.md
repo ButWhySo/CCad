@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 8 / 8
 - Phase name: Agent Runtime and EDA Evidence Expansion
-- Sprint: 221
-- Branch: `sprint-221-kicad-pcb-api-utils`
+- Sprint: 222
+- Branch: `sprint-222-kicad-pcb-api-items`
 - Phase 8 sprint budget: Sprints 206 through 221 for local runner queues, live tool-loop state, provider execution gates, observability export wiring, KiCad/EDA evidence, simulation planning slices, and the first KiCad PCB API parity utility slices.
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 starts the bounded runtime and EDA evidence expansion.
@@ -20,11 +20,12 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
-- **Sprint 221**: KiCad PCB API Utility Layer Sets
-  - **Goal**: Continue the file-by-file KiCad PCB editor audit at `F:\kicad_src\pcbnew\api` by comparing `api_pcb_utils.h/.cpp` against CCad's layer, placement, and headless PCB query surfaces.
-  - **Status**: In progress. Focused layer, placement, and CLI tests are green; full sprint gate and commit are still pending.
+- **Sprint 222**: KiCad PCB API Items, Matrix, Autoplace, and Spread
+  - **Goal**: Continue the deterministic KiCad PCB editor walk after the API utility slice by recording the remaining `pcbnew/api` context files and adapting the first top-level PCB item and autorouter placement primitives into CCad's kernel and CLI.
+  - **Status**: Verified. Focused pad-number, autorouter-matrix, autoplacer, spread-footprint, and CLI tests are green; the full Qt build passed and CTest passed 41 of 41. Commit is pending.
 
 ## Backlog
+- **Sprint 222 (KiCad PCB API Items, Matrix, Autoplace, and Spread)** is verified on `sprint-222-kicad-pcb-api-items`. The slice records the full KiCad PCB API handler, enum, `BOARD_CONTEXT`, and `HEADLESS_BOARD_CONTEXT` ledgers in `agent pcb-api-schema`; adds a KiCad `array_pad_number_provider` analogue for deterministic pad numbering; adds a first `ar_matrix` analogue for grid occupancy, side masks, distance maps, and keepout costs; improves footprint autoplacement with the matrix cost field; exposes `pcb autoplace-footprint`; adds a first `SpreadFootprints` analogue for deterministic non-overlapping component pad-group spreading; and exposes `pcb spread-footprints`. Focused tests are green, the full Qt build passed, CTest passed 41 of 41, and commit remains pending.
 - **Sprint 221 (KiCad PCB API Utility Layer Sets)** is complete on `sprint-221-kicad-pcb-api-utils`. The slice maps KiCad `PackLayerSet` / `UnpackLayerSet` behavior into CCad's current model by resolving KiCad wildcard selectors such as `*.Cu` and `*.Mask` against the active board layer list, preserving unmatched concrete selectors for validation, emitting canonical KiCad layer numbers for resolved layer sets, expanding placed footprint pad layers, and exposing resolved pad layer metadata through `pcb list-objects`, `pcb export-route-job`, `pcb list-by-net`, and `pcb list-connected`. Focused layer, placement, and CLI checks are green. The sprint-end full build and CTest gate passed 37 of 37, and the official visual harness produced `artifacts/screenshots/sprint221-kicad-layer-set-utils-20260611-182341.png`.
 - **Sprint 220 (KiCad PCB API Parity Audit, Slice A)** is complete on `sprint-220-kicad-pcb-parity-audit`. It maps KiCad PCB handlers such as `GetBoardEnabledLayers`, `GetVisibleLayers`, `GetBoardLayerName`, `GetBoardStackup`, `GetBoardDesignRules`, `GetBoundingBox`, `GetItemsByNet`, and `GetConnectedItems` to deterministic CCad CLI and Agent metadata surfaces. The slice adds ten agent-usable PCB query capabilities, fixes the Agent orchestrator's default provider-plan status so disabled provider execution is blocked by contract, and records the remaining gap as full KiCad connectivity, board-origin, graphics-defaults, pad-shape-as-polygon, net-class, selection, active-layer mutation, and custom-rule parity. Sprint-end verification passed the full Qt build plus 37 of 37 CTest tests.
 - **Sprint 218 (Parity)** is complete. Implemented full end-to-end tool parity between the PCB Editor and Schematic Canvas. Schematics can now be dragged, hotkey deleted, context menu accessed identical to PCB tools. Backend mock tools in orchestrator have been completely replaced with functional `ToolNode` calls.

@@ -64,6 +64,16 @@ const std::vector<CommandHelp>& commandHelp() {
                   .usage = "ccad pcb place-footprint --file <path> --footprint <path.json> "
                            "--component <id> --at-x-mm <n> --at-y-mm <n> --layer <id> "
                            "[--rotation-deg <n>]"},
+      CommandHelp{.name = "pcb autoplace-footprint",
+                  .summary = "Place an imported footprint at a kernel-selected low-cost board location",
+                  .usage = "ccad pcb autoplace-footprint --file <path> --footprint <path.json> "
+                           "--component <id> --layer <id> [--grid-mm <n>] "
+                           "[--rotation-deg <n>]"},
+      CommandHelp{.name = "pcb spread-footprints",
+                  .summary = "Spread component pad groups into a non-overlapping placement lane",
+                  .usage = "ccad pcb spread-footprints --file <path> [--components <a,b,...>] "
+                           "--target-x-mm <n> --target-y-mm <n> [--component-gap-mm <n>] "
+                           "[--group-gap-mm <n>]"},
       CommandHelp{.name = "sch place-symbol",
                   .summary = "Place one converted KiCad symbol snapshot onto the schematic",
                   .usage = "ccad sch place-symbol --file <path> --symbol <path.json> "

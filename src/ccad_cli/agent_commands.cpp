@@ -14,6 +14,7 @@
 #include <map>
 #include <sstream>
 #include <stdexcept>
+#include <vector>
 
 namespace ccad_cli {
 
@@ -225,50 +226,270 @@ std::string agentHarnessContextJson() {
 }
 
 std::string agentPcbApiSchemaJson() {
-  return "{\"schema_version\":1,"
-         "\"schema_kind\":\"ccad_agent_pcb_api_schema\","
-         "\"surface\":\"headless_cli\","
-         "\"source_reference\":\"F:/kicad_src/pcbnew/api/api_handler_pcb.cpp\","
-         "\"source_header\":\"F:/kicad_src/pcbnew/api/api_handler_pcb.h\","
-         "\"external_behavior_reference\":\"KiCad PCB editor API_HANDLER_PCB handlers\","
-         "\"connectivity_scope\":\"net_equivalent_first_slice\","
-         "\"limitations\":[\"CCad currently groups connectable objects by explicit net_id\","
-         "\"Full KiCad connectivity graph traversal still needs a kernel connectivity engine\"],"
-         "\"mappings\":["
-         "{\"kicad_handler\":\"GetItems\",\"ccad_command\":\"pcb list-objects\","
-         "\"status\":\"available\"},"
-         "{\"kicad_handler\":\"GetItemsById\",\"ccad_command\":\"pcb get-object\","
-         "\"status\":\"available\"},"
-         "{\"kicad_handler\":\"GetBoardEnabledLayers\","
-         "\"ccad_command\":\"pcb list-enabled-layers\","
-         "\"status\":\"first_slice\",\"scope\":\"enabled_layers_from_project\"},"
-         "{\"kicad_handler\":\"GetVisibleLayers\","
-         "\"ccad_command\":\"pcb list-visible-layers\","
-         "\"status\":\"first_slice\",\"scope\":\"visible_layers_from_project\"},"
-         "{\"kicad_handler\":\"GetBoardLayerName\","
-         "\"ccad_command\":\"pcb get-layer-name\","
-         "\"status\":\"available\"},"
-         "{\"kicad_handler\":\"GetBoardStackup\","
-         "\"ccad_command\":\"pcb get-board-stackup\","
-         "\"status\":\"first_slice\",\"scope\":\"enabled_layer_order\"},"
-         "{\"kicad_handler\":\"GetBoardDesignRules\","
-         "\"ccad_command\":\"pcb get-rules\","
-         "\"status\":\"first_slice\",\"scope\":\"minimum_constraints\"},"
-         "{\"kicad_handler\":\"GetBoundingBox\","
-         "\"ccad_command\":\"pcb get-outline\","
-         "\"status\":\"first_slice\",\"scope\":\"rectangular_board_outline\"},"
-         "{\"kicad_handler\":\"GetNets\",\"ccad_command\":\"pcb list-nets\","
-         "\"status\":\"available\"},"
-         "{\"kicad_handler\":\"GetItemsByNet\",\"ccad_command\":\"pcb list-by-net\","
-         "\"status\":\"first_slice\",\"connectivity_scope\":\"net_equivalent_first_slice\","
-         "\"object_types\":[\"pad\",\"via\",\"track\",\"zone\"]},"
-         "{\"kicad_handler\":\"GetConnectedItems\",\"ccad_command\":\"pcb list-connected\","
-         "\"status\":\"first_slice\",\"connectivity_scope\":\"net_equivalent_first_slice\","
-         "\"object_types\":[\"pad\",\"via\",\"track\",\"zone\"]}"
-         "],"
-         "\"agent_usage\":[\"Call agent.pcb_api_schema before PCB API parity work\","
-         "\"Use pcb list-connected for selected-object neighborhood context\","
-         "\"Use pcb list-by-net for same-net board inspection\"]}";
+  struct Mapping {
+    const char* handler;
+    const char* command;
+    const char* status;
+    const char* scope;
+  };
+
+  struct EnumGroup {
+    const char* api_enum;
+    const char* kicad_native;
+    std::vector<const char*> values;
+    const char* ccad_status;
+    const char* compatibility_note;
+  };
+
+  const std::vector<Mapping> mappings = {
+      {"RunAction", "ui.trigger_safe", "gui_only_first_slice", "non_headless_tool_action"},
+      {"GetOpenDocuments", "inspect", "first_slice", "loaded_project_summary"},
+      {"SaveDocument", "project_mutation_commands", "available", "commands_write_project_file"},
+      {"SaveCopyOfDocument", "", "gap", "copy_document_api_missing"},
+      {"RevertDocument", "", "gap", "revert_document_api_missing"},
+      {"GetItems", "pcb list-objects", "available", "board_object_query"},
+      {"GetItemsById", "pcb get-object", "available", "single_board_object_query"},
+      {"GetSelection", "ui.map / ui.get_node", "gui_only_first_slice", "selection_state_not_persisted_headless"},
+      {"ClearSelection", "ui.cancel_tool", "gui_only_first_slice", "selection_mutation_gui_only"},
+      {"AddToSelection", "", "gap", "multi_selection_mutation_missing"},
+      {"RemoveFromSelection", "", "gap", "multi_selection_mutation_missing"},
+      {"GetBoardStackup", "pcb get-board-stackup", "first_slice", "enabled_layer_order"},
+      {"GetBoardEnabledLayers", "pcb list-enabled-layers", "first_slice", "enabled_layers_from_project"},
+      {"SetBoardEnabledLayers", "pcb add-layer / pcb remove-layer", "first_slice", "layer_registry_mutation"},
+      {"GetGraphicsDefaults", "", "gap", "graphics_defaults_model_missing"},
+      {"GetBoardDesignRules", "pcb get-rules", "first_slice", "minimum_constraints"},
+      {"SetBoardDesignRules", "pcb set-rules", "first_slice", "minimum_constraints"},
+      {"GetCustomDesignRules", "", "gap", "custom_rule_language_missing"},
+      {"SetCustomDesignRules", "", "gap", "custom_rule_language_missing"},
+      {"GetBoundingBox", "pcb get-outline", "first_slice", "rectangular_board_outline"},
+      {"GetPadShapeAsPolygon", "", "gap", "pad_polygon_geometry_missing"},
+      {"CheckPadstackPresenceOnLayers", "pcb list-objects", "first_slice", "resolved_pad_layer_sets"},
+      {"ExpandTextVariables", "", "gap", "project_text_variable_expansion_missing"},
+      {"GetBoardOrigin", "pcb get-outline", "first_slice", "outline_origin"},
+      {"SetBoardOrigin", "pcb set-outline", "first_slice", "outline_origin"},
+      {"GetBoardLayerName", "pcb get-layer-name", "available", "layer_name_lookup"},
+      {"InteractiveMoveItems", "ui.route_track / ui.place_via", "gui_only_first_slice", "tool_specific_move_paths"},
+      {"GetNets", "pcb list-nets", "available", "physical_net_summary"},
+      {"GetConnectedItems", "pcb list-connected", "first_slice", "net_equivalent_first_slice"},
+      {"GetItemsByNet", "pcb list-by-net", "first_slice", "net_equivalent_first_slice"},
+      {"GetItemsByNetClass", "", "gap", "netclass_model_missing"},
+      {"GetNetClassForNets", "", "gap", "netclass_model_missing"},
+      {"RefillZones", "", "gap", "zone_refill_engine_missing"},
+      {"SaveDocumentToString", "", "gap", "document_string_export_api_missing"},
+      {"SaveSelectionToString", "", "gap", "selection_serialization_missing"},
+      {"ParseAndCreateItemsFromString", "", "gap", "clipboard_parse_create_api_missing"},
+      {"GetVisibleLayers", "pcb list-visible-layers", "first_slice", "visible_layers_from_project"},
+      {"SetVisibleLayers", "pcb set-layer-visibility", "first_slice", "visible_layers_from_project"},
+      {"GetActiveLayer", "ui.current_tool / control:active_pcb_layer", "gui_only_first_slice", "active_layer_gui_state"},
+      {"SetActiveLayer", "ui.set_active_layer", "gui_only_first_slice", "active_layer_gui_state"},
+      {"GetBoardEditorAppearanceSettings", "ui.map", "first_slice", "appearance_state_sparse"},
+      {"SetBoardEditorAppearanceSettings", "", "gap", "appearance_settings_mutation_missing"},
+      {"InjectDrcError", "", "gap", "diagnostic_injection_missing"},
+      {"RunBoardJobExport3D", "", "gap", "3d_export_missing"},
+      {"RunBoardJobExportRender", "", "gap", "render_export_missing"},
+      {"RunBoardJobExportSvg", "", "gap", "svg_plot_export_missing"},
+      {"RunBoardJobExportDxf", "", "gap", "dxf_plot_export_missing"},
+      {"RunBoardJobExportPdf", "", "gap", "pdf_plot_export_missing"},
+      {"RunBoardJobExportPs", "", "gap", "postscript_plot_export_missing"},
+      {"RunBoardJobExportGerbers", "agent kicad-evidence-plan --kind pcb-export-gerbers", "evidence_plan_only", "external_kicad_cli_plan"},
+      {"RunBoardJobExportDrill", "pcb export-drill", "first_slice", "excellon_drill_export"},
+      {"RunBoardJobExportPosition", "pcb export-pnp", "first_slice", "position_export"},
+      {"RunBoardJobExportGencad", "", "gap", "gencad_export_missing"},
+      {"RunBoardJobExportIpc2581", "agent kicad-evidence-plan --kind pcb-export-ipc2581", "evidence_plan_only", "external_kicad_cli_plan"},
+      {"RunBoardJobExportIpcD356", "", "gap", "ipcd356_export_missing"},
+      {"RunBoardJobExportODB", "agent kicad-evidence-plan --kind pcb-export-odb", "evidence_plan_only", "external_kicad_cli_plan"},
+      {"RunBoardJobExportStats", "", "gap", "pcb_stats_export_missing"},
+      {"GetPageSettings", "", "gap", "page_settings_model_missing"},
+      {"SetPageSettings", "", "gap", "page_settings_model_missing"}};
+
+  const std::vector<EnumGroup> enum_groups = {
+      {"types::PadType",
+       "PAD_ATTRIB",
+       {"PT_PTH", "PT_SMD", "PT_EDGE_CONNECTOR", "PT_NPTH"},
+       "first_slice",
+       "CCad stores pad type strings and round-trips imported KiCad pad attributes through pad metadata."},
+      {"types::DrillShape",
+       "PAD_DRILL_SHAPE",
+       {"DS_CIRCLE", "DS_OBLONG", "DS_UNDEFINED"},
+       "first_slice",
+       "CCad currently models circular drill diameter directly and keeps richer drill shape parity as metadata/backlog."},
+      {"types::PadStackShape",
+       "PAD_SHAPE",
+       {"PSS_CIRCLE",
+        "PSS_RECTANGLE",
+        "PSS_OVAL",
+        "PSS_TRAPEZOID",
+        "PSS_ROUNDRECT",
+        "PSS_CHAMFEREDRECT",
+        "PSS_CUSTOM"},
+       "first_slice",
+       "CCad renders common pad shapes and records custom pad-shape parity as a remaining polygon-geometry gap."},
+      {"types::PadStackType",
+       "PADSTACK::MODE",
+       {"PST_NORMAL", "PST_FRONT_INNER_BACK", "PST_CUSTOM"},
+       "gap",
+       "KiCad padstack mode needs a richer per-layer padstack model than CCad currently has."},
+      {"types::ViaType",
+       "VIATYPE",
+       {"VT_THROUGH", "VT_BLIND", "VT_BURIED", "VT_MICRO"},
+       "first_slice",
+       "CCad stores through vias today; blind, buried, and microvia behavior remain model and DRC backlog."},
+      {"types::ZoneConnectionStyle",
+       "ZONE_CONNECTION",
+       {"ZCS_INHERITED", "ZCS_NONE", "ZCS_THERMAL", "ZCS_FULL", "ZCS_PTH_THERMAL"},
+       "first_slice",
+       "CCad stores zone pad-connection intent but does not yet run KiCad-equivalent zone-fill thermal geometry."},
+      {"CustomRuleConstraintType",
+       "DRC_CONSTRAINT_T",
+       {"CRCT_CLEARANCE",
+        "CRCT_CREEPAGE",
+        "CRCT_HOLE_CLEARANCE",
+        "CRCT_EDGE_CLEARANCE",
+        "CRCT_TRACK_WIDTH",
+        "CRCT_ANNULAR_WIDTH",
+        "CRCT_DIFF_PAIR_GAP",
+        "CRCT_MAX_UNCOUPLED",
+        "CRCT_VIA_COUNT",
+        "CRCT_TRACK_ANGLE",
+        "CRCT_VIA_DANGLING",
+        "CRCT_NET_CHAIN_RETURN_PATH"},
+       "gap",
+       "CCad has minimum board rules only; KiCad custom-rule language and full constraint taxonomy are backlog."},
+      {"DrillFormat",
+       "JOB_EXPORT_PCB_DRILL::DRILL_FORMAT",
+       {"DF_EXCELLON", "DF_GERBER"},
+       "first_slice",
+       "CCad exposes Excellon drill export and tracks KiCad Gerber-drill parity for export expansion."},
+      {"DrillMapFormat",
+       "JOB_EXPORT_PCB_DRILL::MAP_FORMAT",
+       {"DMF_POSTSCRIPT", "DMF_GERBER_X2", "DMF_DXF", "DMF_SVG", "DMF_PDF"},
+       "gap",
+       "Drill map plotting formats are not yet implemented in CCad exports."},
+      {"PositionFormat",
+       "JOB_EXPORT_PCB_POS::FORMAT",
+       {"PF_ASCII", "PF_CSV", "PF_GERBER"},
+       "first_slice",
+       "CCad exposes a first position export and needs KiCad option parity in later exporter work."},
+      {"Ipc2581Version",
+       "JOB_EXPORT_PCB_IPC2581::IPC2581_VERSION",
+       {"IPC2581V_B", "IPC2581V_C"},
+       "evidence_plan_only",
+       "CCad currently routes IPC-2581 through guarded KiCad evidence planning, not a native exporter."},
+      {"OdbCompression",
+       "JOB_EXPORT_PCB_ODB::ODB_COMPRESSION",
+       {"ODBC_NONE", "ODBC_ZIP", "ODBC_TGZ"},
+       "evidence_plan_only",
+       "CCad currently routes ODB++ through guarded KiCad evidence planning, not a native exporter."},
+      {"DrcErrorType",
+       "PCB_DRC_CODE",
+       {"DRCET_UNCONNECTED_ITEMS",
+        "DRCET_CLEARANCE",
+        "DRCET_TRACKS_CROSSING",
+        "DRCET_DANGLING_VIA",
+        "DRCET_DANGLING_TRACK",
+        "DRCET_TRACK_WIDTH",
+        "DRCET_ANNULAR_WIDTH",
+        "DRCET_VIA_DIAMETER",
+        "DRCET_PADSTACK",
+        "DRCET_INVALID_OUTLINE",
+        "DRCET_NET_CONFLICT",
+        "DRCET_DIFF_PAIR_GAP_OUT_OF_RANGE",
+        "DRCET_TRACK_ON_POST_MACHINED_LAYER"},
+       "first_slice",
+       "CCad reports its own diagnostic codes today and needs a translation layer for KiCad-equivalent DRC evidence."}};
+
+  std::ostringstream out;
+  out << "{\"schema_version\":1,"
+      << "\"schema_kind\":\"ccad_agent_pcb_api_schema\","
+      << "\"surface\":\"headless_cli\","
+      << "\"source_reference\":\"F:/kicad_src/pcbnew/api/api_handler_pcb.cpp\","
+      << "\"source_header\":\"F:/kicad_src/pcbnew/api/api_handler_pcb.h\","
+      << "\"source_files_read\":[\"F:/kicad_src/pcbnew/api/api_handler_pcb.cpp\","
+      << "\"F:/kicad_src/pcbnew/api/api_handler_pcb.h\"],"
+      << "\"next_file\":\"F:/kicad_src/pcbnew/api/api_pcb_enums.cpp\","
+      << "\"external_behavior_reference\":\"KiCad PCB editor API_HANDLER_PCB handlers\","
+      << "\"ledger_status\":\"api_handler_pcb_cpp_registered_handlers_read\","
+      << "\"enum_ledger_status\":\"api_pcb_enums_cpp_read\","
+      << "\"source_enum_reference\":\"F:/kicad_src/pcbnew/api/api_pcb_enums.cpp\","
+      << "\"context_ledger_status\":\"board_context_h_cpp_read\","
+      << "\"source_context_reference\":\"F:/kicad_src/pcbnew/api/board_context.h\","
+      << "\"headless_context_ledger_status\":\"headless_board_context_h_cpp_read\","
+      << "\"source_headless_context_reference\":\"F:/kicad_src/pcbnew/api/headless_board_context.h\","
+      << "\"api_folder_status\":\"complete_first_audit\","
+      << "\"handler_count\":" << mappings.size() << ','
+      << "\"connectivity_scope\":\"net_equivalent_first_slice\","
+      << "\"limitations\":[\"CCad currently groups connectable objects by explicit net_id\","
+      << "\"Full KiCad connectivity graph traversal still needs a kernel connectivity engine\","
+      << "\"GUI-only handlers require the Qt UI-map surface until a kernel transaction analogue exists\"],"
+      << "\"status_legend\":{\"available\":\"headless command covers the current handler shape\","
+      << "\"first_slice\":\"partial compatible surface with documented limits\","
+      << "\"gui_only_first_slice\":\"currently available only through native GUI agent methods\","
+      << "\"evidence_plan_only\":\"planned through guarded KiCad CLI evidence tooling\","
+      << "\"gap\":\"no complete CCad analogue yet\"},"
+      << "\"enum_reference\":{\"source\":\"F:/kicad_src/pcbnew/api/api_pcb_enums.cpp\","
+      << "\"next_file\":\"F:/kicad_src/pcbnew/api/board_context.cpp\","
+      << "\"groups\":[";
+  for (std::size_t i = 0; i < enum_groups.size(); ++i) {
+    const EnumGroup& group = enum_groups.at(i);
+    if (i > 0) {
+      out << ',';
+    }
+    out << "{\"api_enum\":\"" << ccad::escapeJson(group.api_enum) << "\","
+        << "\"kicad_native\":\"" << ccad::escapeJson(group.kicad_native) << "\","
+        << "\"ccad_status\":\"" << ccad::escapeJson(group.ccad_status) << "\","
+        << "\"compatibility_note\":\"" << ccad::escapeJson(group.compatibility_note)
+        << "\",\"values\":[";
+    for (std::size_t j = 0; j < group.values.size(); ++j) {
+      if (j > 0) {
+        out << ',';
+      }
+      out << '"' << ccad::escapeJson(group.values.at(j)) << '"';
+    }
+    out << "]}";
+  }
+  out << "]},"
+      << "\"context_reference\":{\"source_header\":\"F:/kicad_src/pcbnew/api/board_context.h\","
+      << "\"source_impl\":\"F:/kicad_src/pcbnew/api/board_context.cpp\","
+      << "\"next_file\":\"F:/kicad_src/pcbnew/api/headless_board_context.cpp\","
+      << "\"context_status\":\"split_context_gap\","
+      << "\"ccad_analogue\":\"headless_cli_project_file_context_and_qt_review_window_context\","
+      << "\"methods\":[\"GetBoard\",\"Prj\",\"GetToolManager\",\"GetKiway\","
+      << "\"GetCurrentFileName\",\"CanAcceptApiCommands\",\"SaveBoard\",\"SavePcbCopy\"],"
+      << "\"compatibility_note\":\"KiCad isolates PCB API handlers behind BOARD_CONTEXT so GUI and headless callers share one handler surface; CCad currently splits this between CLI file commands, JSON-RPC agent commands, and ReviewWindow UI-map methods, so a shared board-session context remains backlog.\"},"
+      << "\"headless_context_reference\":{\"source_header\":\"F:/kicad_src/pcbnew/api/headless_board_context.h\","
+      << "\"source_impl\":\"F:/kicad_src/pcbnew/api/headless_board_context.cpp\","
+      << "\"kicad_class\":\"HEADLESS_BOARD_CONTEXT\","
+      << "\"command_acceptance\":\"always_true_headless\","
+      << "\"ownership\":[\"owned_board\",\"borrowed_project\",\"owned_tool_manager\","
+      << "\"borrowed_settings\",\"optional_kiway\"],"
+      << "\"lifecycle\":[\"board_set_project\",\"tool_environment_setup\","
+      << "\"project_linkage_teardown\",\"save_board\",\"save_pcb_copy_optional_project\"],"
+      << "\"ccad_status\":\"gap\","
+      << "\"compatibility_note\":\"KiCad headless PCB API calls hold a live board/project/tool context and can save the active board or a copy. CCad commands currently reload and rewrite project files per command, so a reusable headless board-session context is the next architectural gap before full API-handler parity.\"},"
+      << "\"mappings\":[";
+  for (std::size_t i = 0; i < mappings.size(); ++i) {
+    const Mapping& mapping = mappings.at(i);
+    if (i > 0) {
+      out << ',';
+    }
+    out << "{\"kicad_handler\":\"" << ccad::escapeJson(mapping.handler) << "\",";
+    if (mapping.command[0] != '\0') {
+      out << "\"ccad_command\":\"" << ccad::escapeJson(mapping.command) << "\",";
+    }
+    out << "\"status\":\"" << ccad::escapeJson(mapping.status) << "\","
+        << "\"scope\":\"" << ccad::escapeJson(mapping.scope) << "\"";
+    if (std::string(mapping.scope) == "net_equivalent_first_slice") {
+      out << ",\"connectivity_scope\":\"net_equivalent_first_slice\","
+          << "\"object_types\":[\"pad\",\"via\",\"track\",\"zone\"]";
+    }
+    out << '}';
+  }
+  out << "],"
+      << "\"agent_usage\":[\"Call agent.pcb_api_schema before PCB API parity work\","
+      << "\"Use status gap entries as the next implementation backlog\","
+      << "\"Use pcb list-connected for selected-object neighborhood context\","
+      << "\"Use pcb list-by-net for same-net board inspection\"]}";
+  return out.str();
 }
 
 std::string agentWorkspaceStateJson() {

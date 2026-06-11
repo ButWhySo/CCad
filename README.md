@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 8 / 8: Agent Runtime and EDA Evidence Expansion.
 
-Progress counter: Phase 8 / 8, Sprint 221 complete on `sprint-221-kicad-pcb-api-utils`.
+Progress counter: Phase 8 / 8, Sprint 222 verified on `sprint-222-kicad-pcb-api-items`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 focuses on bounded Agent runtime state, EDA evidence expansion, runner queues, observability export wiring, and simulation planning slices.
 
@@ -28,10 +28,10 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native Agent pane provider controls: the right-side Agent pane exposes targetable provider family, model-hint, environment-readiness, and execution-disabled controls through `agent.workspace_state` and semantic UI-map IDs, without provider execution, network probes, browser-account automation, secret display, or project mutation.
 - Native Agent pane run queue foundation: the right-side Agent pane exposes a first-viewport local run queue, cancel and clear actions, queue counts, current-step text, queue status, and `agent.workspace_state` fields such as `run_queue_available`, `run_queue_id`, `run_queue_status`, `run_queue_depth`, `run_steps_total`, `run_step_current`, `run_queue_provider_execution_enabled:false`, `run_queue_worker_thread_enabled:false`, and `run_queue_trace_export_enabled:false`. Sprint-end verification passed the full Qt build plus 36 of 36 CTest tests.
 - Native Agent pane reference polish v5: the right-side Agent pane reports `visual_style:"agent_reference_panel_v5"` and `workspace_layout_version:5`, adds a compact targetable header action bar, reference-style evidence thumbnail strip, approval preview artifact and delta labels, one-row footer quick actions, and first-viewport evidence visibility while preserving every existing Agent control ID and keeping provider execution, worker threads, telemetry export, external processes, and project mutation disabled. Sprint-end verification passed the full Qt build plus 36 of 36 CTest tests.
-- CLI PCB authoring: `ccad pcb list-nets`, `ccad pcb list-objects`, `ccad pcb get-object`, `ccad pcb route-status`, `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-graphic-line`, `ccad pcb add-text`, `ccad pcb add-zone`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
+- CLI PCB authoring: `ccad pcb list-nets`, `ccad pcb list-objects`, `ccad pcb get-object`, `ccad pcb route-status`, `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-graphic-line`, `ccad pcb add-text`, `ccad pcb add-zone`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, `ccad pcb resize-object`, `ccad pcb autoplace-footprint`, and `ccad pcb spread-footprints`.
 - CLI PCB KiCad API parity queries: `ccad pcb list-enabled-layers`, `ccad pcb list-visible-layers`, `ccad pcb get-layer-name`, `ccad pcb get-board-stackup`, `ccad pcb get-rules`, `ccad pcb get-outline`, `ccad pcb list-by-net`, and `ccad pcb list-connected` expose the first headless analogues for KiCad PCB API handler behavior.
 - KiCad PCB layer-set utility parity: footprint placement resolves KiCad wildcard pad selectors such as `*.Cu` and `*.Mask` against the active board layers, board-context PCB queries expose `resolved_layers` and `kicad_layer_numbers`, and unresolved concrete selectors remain visible to validation instead of being silently discarded.
-- Agent PCB API metadata: `ccad agent pcb-api-schema` and JSON-RPC `agent.pcb_api_schema` document the KiCad handler to CCad command mapping, parity scope, and remaining unsupported handler gaps for automation.
+- Agent PCB API metadata: `ccad agent pcb-api-schema` and JSON-RPC `agent.pcb_api_schema` document the KiCad handler, enum, board-context, and headless-context ledgers, plus CCad command mapping, parity scope, and remaining unsupported handler gaps for automation.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - CLI schematic authoring can place a converted KiCad/CCad symbol snapshot through `ccad sch place-symbol`.
 - Placed schematic components persist symbol geometry in project JSON so pins and primitives survive reload.
@@ -549,6 +549,8 @@ Add PCB primitives through the CLI:
 .\build-qt\ccad.exe pcb apply-route-segment --file .\build-qt\canvas-demo.ccad.json --request-id RR1 --track-id RT1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9
 .\build-qt\ccad.exe pcb apply-route-polyline --file .\build-qt\canvas-demo.ccad.json --request-id RR1 --track-prefix RTP --points-mm "5,6;6.5,7.5;8,9"
 .\build-qt\ccad.exe pcb route-status --file .\build-qt\canvas-demo.ccad.json
+.\build-qt\ccad.exe pcb autoplace-footprint --file .\build-qt\canvas-demo.ccad.json --footprint .\build-qt\R_0805_2012Metric.ccad-footprint.json --component R_AUTO --layer F.Cu --grid-mm 1
+.\build-qt\ccad.exe pcb spread-footprints --file .\build-qt\canvas-demo.ccad.json --components R1,R_AUTO --target-x-mm 12 --target-y-mm 4 --component-gap-mm 1
 .\build-qt\ccad.exe pcb set-track --file .\build-qt\canvas-demo.ccad.json --id T1 --start-x-mm 6 --start-y-mm 7 --end-x-mm 9 --end-y-mm 10 --width-mm 0.30 --net N2 --layer B.Cu
 .\build-qt\ccad.exe pcb set-region-kind --file .\build-qt\canvas-demo.ccad.json --id K1 --kind routing
 .\build-qt\ccad.exe pcb move-object --file .\build-qt\canvas-demo.ccad.json --id V1 --x-mm 9 --y-mm 10
@@ -567,6 +569,8 @@ What these do:
 - `pcb list-enabled-layers`, `pcb list-visible-layers`, `pcb get-layer-name`, and `pcb get-board-stackup` expose KiCad-like layer and stackup query surfaces without mutating the board.
 - `pcb get-rules` and `pcb get-outline` expose the current board design-rule and bounding-box slices used by KiCad API analogues such as `GetBoardDesignRules` and `GetBoundingBox`.
 - `pcb list-by-net` and `pcb list-connected` expose the first same-net connectivity query slice for pads, vias, tracks, and zones. The current scope is declared as net-equivalent inspection, not KiCad's full connectivity graph solver.
+- `pcb autoplace-footprint` loads CCad footprint JSON, scans legal board origins on the requested copper layer, uses a first KiCad-inspired matrix occupancy and distance-cost field, places the footprint through the same core placement API as manual placement, and returns the selected origin and score.
+- `pcb spread-footprints` groups existing board pads by component ID, naturally sorts references such as `R1`, `R2`, and `R10`, and moves selected component groups into a deterministic non-overlapping placement lane while preserving each group's internal pad offsets.
 - `pcb set-outline` replaces the rectangular board outline while rejecting outlines that would leave existing pads, vias, tracks, keepouts, or placement regions outside the board.
 - `pcb set-rules` updates board-level DRC defaults for copper clearance, minimum track width, and minimum via annular ring.
 - `pcb add-layer` appends a board layer with stable ID, display name, kind, and optional visibility.

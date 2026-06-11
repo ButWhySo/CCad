@@ -11,6 +11,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(ccad_core
   src/ccad_core/agent_policy.cpp
+  src/ccad_core/autorouter_matrix.cpp
+  src/ccad_core/autoplacer.cpp
   src/ccad_core/canvas.cpp
   src/ccad_core/model.cpp
   src/ccad_core/component_generator.cpp
@@ -25,8 +27,10 @@ add_library(ccad_core
   src/ccad_core/kicad_pcb_export.cpp
   src/ccad_core/layers.cpp
   src/ccad_core/library_catalog.cpp
+  src/ccad_core/pad_number_provider.cpp
   src/ccad_core/review.cpp
   src/ccad_core/serialize.cpp
+  src/ccad_core/spread_footprints.cpp
   src/ccad_core/transaction.cpp
   src/ccad_core/placement.cpp
   src/ccad_core/dsn_export.cpp
@@ -102,6 +106,42 @@ if(MINGW)
   target_link_options(ccad_layer_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME layers COMMAND ccad_layer_tests)
+
+add_executable(ccad_pad_number_provider_tests
+  tests/test_pad_number_provider.cpp
+)
+target_link_libraries(ccad_pad_number_provider_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_pad_number_provider_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME pad_number_provider COMMAND ccad_pad_number_provider_tests)
+
+add_executable(ccad_autoplacer_tests
+  tests/test_autoplacer.cpp
+)
+target_link_libraries(ccad_autoplacer_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_autoplacer_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME autoplacer COMMAND ccad_autoplacer_tests)
+
+add_executable(ccad_autorouter_matrix_tests
+  tests/test_autorouter_matrix.cpp
+)
+target_link_libraries(ccad_autorouter_matrix_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_autorouter_matrix_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME autorouter_matrix COMMAND ccad_autorouter_matrix_tests)
+
+add_executable(ccad_spread_footprints_tests
+  tests/test_spread_footprints.cpp
+)
+target_link_libraries(ccad_spread_footprints_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_spread_footprints_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME spread_footprints COMMAND ccad_spread_footprints_tests)
 
 add_executable(ccad_erc_tests
   tests/test_erc.cpp

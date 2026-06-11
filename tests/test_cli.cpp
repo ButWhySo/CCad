@@ -63,6 +63,10 @@ int main() {
   require(help_json.find("\"commands\"") != std::string::npos, "help json has commands");
   require(help_json.find("\"name\": \"pcb place-footprint\"") != std::string::npos,
           "help json describes footprint placement");
+  require(help_json.find("\"name\": \"pcb autoplace-footprint\"") != std::string::npos,
+          "help json describes footprint autoplacement");
+  require(help_json.find("\"name\": \"pcb spread-footprints\"") != std::string::npos,
+          "help json describes footprint spreading");
   require(help_json.find("\"name\": \"sch place-symbol\"") != std::string::npos,
           "help json describes schematic symbol placement");
   require(help_json.find("\"name\": \"pcb add-layer\"") != std::string::npos,
@@ -630,6 +634,119 @@ int main() {
           "inspect writes minimum track width rule");
   require(inspect_rules_json.find("\"min_via_annular_ring_nm\": 80000") != std::string::npos,
           "inspect writes minimum via annular ring rule");
+
+  const std::filesystem::path pcb_api_schema_path = temp / "pcb-api-schema.json";
+  require(run(quote(CCAD_BINARY) + " agent pcb-api-schema > " + quote(pcb_api_schema_path)) == 0,
+          "agent pcb-api-schema exits zero");
+  const std::string pcb_api_schema = readFile(pcb_api_schema_path);
+  require(pcb_api_schema.find("\"ledger_status\":\"api_handler_pcb_cpp_registered_handlers_read\"") !=
+              std::string::npos,
+          "pcb api schema records full KiCad handler ledger status");
+  require(pcb_api_schema.find("\"kicad_handler\":\"RunAction\"") != std::string::npos,
+          "pcb api schema includes RunAction handler");
+  require(pcb_api_schema.find("\"kicad_handler\":\"GetSelection\"") != std::string::npos,
+          "pcb api schema includes selection handlers");
+  require(pcb_api_schema.find("\"kicad_handler\":\"SetBoardDesignRules\"") !=
+              std::string::npos,
+          "pcb api schema includes board rules mutation handler");
+  require(pcb_api_schema.find("\"kicad_handler\":\"GetPadShapeAsPolygon\"") !=
+              std::string::npos,
+          "pcb api schema includes pad polygon handler gap");
+  require(pcb_api_schema.find("\"kicad_handler\":\"RunBoardJobExportGerbers\"") !=
+              std::string::npos,
+          "pcb api schema includes Gerber export job handler");
+  require(pcb_api_schema.find(
+              "\"ccad_command\":\"agent kicad-evidence-plan --kind pcb-export-gerbers\"") !=
+              std::string::npos,
+          "pcb api schema maps Gerber job to current evidence planner");
+  require(pcb_api_schema.find("\"kicad_handler\":\"GetPageSettings\"") !=
+              std::string::npos,
+          "pcb api schema includes page settings gap");
+  require(pcb_api_schema.find("\"next_file\":\"F:/kicad_src/pcbnew/api/api_pcb_enums.cpp\"") !=
+              std::string::npos,
+          "pcb api schema records next KiCad source file in parity walk");
+  require(pcb_api_schema.find("\"enum_ledger_status\":\"api_pcb_enums_cpp_read\"") !=
+              std::string::npos,
+          "pcb api schema records KiCad enum ledger status");
+  require(pcb_api_schema.find("\"source_enum_reference\":\"F:/kicad_src/pcbnew/api/api_pcb_enums.cpp\"") !=
+              std::string::npos,
+          "pcb api schema records KiCad enum source reference");
+  require(pcb_api_schema.find("\"api_enum\":\"types::PadType\"") != std::string::npos,
+          "pcb api schema includes pad type enum group");
+  require(pcb_api_schema.find("\"PT_EDGE_CONNECTOR\"") != std::string::npos,
+          "pcb api schema includes edge connector pad type");
+  require(pcb_api_schema.find("\"api_enum\":\"types::PadStackShape\"") != std::string::npos,
+          "pcb api schema includes pad stack shape enum group");
+  require(pcb_api_schema.find("\"PSS_CHAMFEREDRECT\"") != std::string::npos,
+          "pcb api schema includes chamfered pad shape");
+  require(pcb_api_schema.find("\"api_enum\":\"types::ViaType\"") != std::string::npos,
+          "pcb api schema includes via type enum group");
+  require(pcb_api_schema.find("\"VT_MICRO\"") != std::string::npos,
+          "pcb api schema includes microvia type");
+  require(pcb_api_schema.find("\"api_enum\":\"types::ZoneConnectionStyle\"") !=
+              std::string::npos,
+          "pcb api schema includes zone connection style enum group");
+  require(pcb_api_schema.find("\"ZCS_PTH_THERMAL\"") != std::string::npos,
+          "pcb api schema includes through-hole thermal zone connection");
+  require(pcb_api_schema.find("\"api_enum\":\"CustomRuleConstraintType\"") !=
+              std::string::npos,
+          "pcb api schema includes DRC constraint enum group");
+  require(pcb_api_schema.find("\"CRCT_DIFF_PAIR_GAP\"") != std::string::npos,
+          "pcb api schema includes differential-pair gap constraint");
+  require(pcb_api_schema.find("\"api_enum\":\"DrcErrorType\"") != std::string::npos,
+          "pcb api schema includes DRC error enum group");
+  require(pcb_api_schema.find("\"DRCET_TRACK_WIDTH\"") != std::string::npos,
+          "pcb api schema includes track-width DRC error");
+  require(pcb_api_schema.find("\"api_enum\":\"DrillFormat\"") != std::string::npos,
+          "pcb api schema includes drill export enum group");
+  require(pcb_api_schema.find("\"DF_EXCELLON\"") != std::string::npos,
+          "pcb api schema includes Excellon drill format");
+  require(pcb_api_schema.find("\"next_file\":\"F:/kicad_src/pcbnew/api/board_context.cpp\"") !=
+              std::string::npos,
+          "pcb api schema advances next KiCad source file after enum ledger");
+  require(pcb_api_schema.find("\"context_ledger_status\":\"board_context_h_cpp_read\"") !=
+              std::string::npos,
+          "pcb api schema records KiCad board context ledger status");
+  require(pcb_api_schema.find("\"source_context_reference\":\"F:/kicad_src/pcbnew/api/board_context.h\"") !=
+              std::string::npos,
+          "pcb api schema records KiCad board context source header");
+  require(pcb_api_schema.find("\"GetBoard\"") != std::string::npos,
+          "pcb api schema records KiCad GetBoard context method");
+  require(pcb_api_schema.find("\"CanAcceptApiCommands\"") != std::string::npos,
+          "pcb api schema records KiCad command acceptance context method");
+  require(pcb_api_schema.find("\"SavePcbCopy\"") != std::string::npos,
+          "pcb api schema records KiCad save-copy context method");
+  require(pcb_api_schema.find("\"ccad_analogue\":\"headless_cli_project_file_context_and_qt_review_window_context\"") !=
+              std::string::npos,
+          "pcb api schema records current CCad board context analogue");
+  require(pcb_api_schema.find("\"context_status\":\"split_context_gap\"") !=
+              std::string::npos,
+          "pcb api schema marks split context gap");
+  require(
+      pcb_api_schema.find("\"next_file\":\"F:/kicad_src/pcbnew/api/headless_board_context.cpp\"") !=
+          std::string::npos,
+      "pcb api schema advances next KiCad source file after board context");
+  require(pcb_api_schema.find(
+              "\"headless_context_ledger_status\":\"headless_board_context_h_cpp_read\"") !=
+              std::string::npos,
+          "pcb api schema records KiCad headless context ledger status");
+  require(pcb_api_schema.find(
+              "\"source_headless_context_reference\":\"F:/kicad_src/pcbnew/api/headless_board_context.h\"") !=
+              std::string::npos,
+          "pcb api schema records KiCad headless context source header");
+  require(pcb_api_schema.find("\"kicad_class\":\"HEADLESS_BOARD_CONTEXT\"") !=
+              std::string::npos,
+          "pcb api schema records KiCad headless context class");
+  require(pcb_api_schema.find("\"owned_board\"") != std::string::npos,
+          "pcb api schema records headless context board ownership");
+  require(pcb_api_schema.find("\"project_linkage_teardown\"") != std::string::npos,
+          "pcb api schema records headless context project teardown behavior");
+  require(pcb_api_schema.find("\"command_acceptance\":\"always_true_headless\"") !=
+              std::string::npos,
+          "pcb api schema records headless command acceptance behavior");
+  require(pcb_api_schema.find("\"api_folder_status\":\"complete_first_audit\"") !=
+              std::string::npos,
+          "pcb api schema marks pcbnew api folder audit complete");
 
   const std::string add_pad_command =
       quote(CCAD_BINARY) + " pcb add-pad --file " + quote(board_project_path) +
@@ -2208,6 +2325,76 @@ int main() {
           "mapped placement writes first pad id");
   require(mapped_project.find("\"net_id\": \"N_SIGNAL\"") != std::string::npos,
           "mapped placement assigns logical net id");
+
+  const std::filesystem::path autoplace_board_path = temp / "autoplace-board.ccad.json";
+  const std::filesystem::path autoplace_footprint_path = temp / "autoplace-footprint.json";
+  const std::filesystem::path autoplace_result_path = temp / "autoplace-result.json";
+  require(run(quote(CCAD_BINARY) + " init --name autoplace-board --width-mm 7 --height-mm 4 --out " +
+              quote(autoplace_board_path)) == 0,
+          "autoplace board init exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb add-pad --file " + quote(autoplace_board_path) +
+              " --id J1.1 --component J1 --pin 1 --net N_EXIST --layers F.Cu --x-mm 2 --y-mm 2 "
+              "--width-mm 1 --height-mm 1") == 0,
+          "autoplace fixture existing pad exits zero");
+  writeFile(autoplace_footprint_path,
+            "{\n"
+            "  \"name\": \"AutoOnePad\",\n"
+            "  \"pads\": [\n"
+            "    {\"number\": \"1\", \"type\": \"smd\", \"shape\": \"rect\", "
+            "\"x_nm\": 0, \"y_nm\": 0, \"width_nm\": 1000000, \"height_nm\": 1000000, "
+            "\"layers\": [\"F.Cu\"]}\n"
+            "  ]\n"
+            "}\n");
+  require(run(quote(CCAD_BINARY) + " pcb autoplace-footprint --file " +
+              quote(autoplace_board_path) + " --footprint " +
+              quote(autoplace_footprint_path) +
+              " --component U_AUTO --layer F.Cu --grid-mm 1 > " +
+              quote(autoplace_result_path)) == 0,
+          "pcb autoplace-footprint exits zero");
+  const std::string autoplace_result = readFile(autoplace_result_path);
+  require(autoplace_result.find("\"component_id\": \"U_AUTO\"") != std::string::npos,
+          "pcb autoplace-footprint reports component id");
+  require(autoplace_result.find("\"origin_x_nm\": 4000000") != std::string::npos,
+          "pcb autoplace-footprint reports low-cost origin away from existing pad");
+  const std::string autoplace_board = readFile(autoplace_board_path);
+  require(autoplace_board.find("\"id\": \"U_AUTO.1\"") != std::string::npos,
+          "pcb autoplace-footprint writes placed pad");
+  require(run(quote(CCAD_BINARY) + " pcb autoplace-footprint --file " +
+              quote(autoplace_board_path) + " --footprint " +
+              quote(autoplace_footprint_path) + " --component U_BAD --layer F.SilkS") != 0,
+          "pcb autoplace-footprint rejects non-copper layer");
+
+  const std::filesystem::path spread_board_path = temp / "spread-board.ccad.json";
+  const std::filesystem::path spread_result_path = temp / "spread-result.json";
+  require(run(quote(CCAD_BINARY) + " init --name spread-board --width-mm 20 --height-mm 10 --out " +
+              quote(spread_board_path)) == 0,
+          "spread board init exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb add-pad --file " + quote(spread_board_path) +
+              " --id R2.1 --component R2 --pin 1 --net N2 --layers F.Cu --x-mm 1 --y-mm 1 "
+              "--width-mm 1 --height-mm 1") == 0,
+          "spread fixture first pad exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb add-pad --file " + quote(spread_board_path) +
+              " --id R1.1 --component R1 --pin 1 --net N1 --layers F.Cu --x-mm 1 --y-mm 1 "
+              "--width-mm 1 --height-mm 1") == 0,
+          "spread fixture second pad exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb spread-footprints --file " + quote(spread_board_path) +
+              " --components R2,R1 --target-x-mm 12 --target-y-mm 2 --component-gap-mm 1 "
+              "--group-gap-mm 1.5 > " +
+              quote(spread_result_path)) == 0,
+          "pcb spread-footprints exits zero");
+  const std::string spread_result = readFile(spread_result_path);
+  require(spread_result.find("\"moved\": 2") != std::string::npos,
+          "pcb spread-footprints reports moved count");
+  require(spread_result.find("\"component_id\": \"R1\"") <
+              spread_result.find("\"component_id\": \"R2\""),
+          "pcb spread-footprints reports naturally sorted references");
+  const std::string spread_board = readFile(spread_board_path);
+  require(spread_board.find("\"id\": \"R1.1\"") != std::string::npos,
+          "pcb spread-footprints keeps first selected pad");
+  require(spread_board.find("\"x_nm\": 12500000") != std::string::npos,
+          "pcb spread-footprints moves naturally first component to target lane");
+  require(spread_board.find("\"x_nm\": 14500000") != std::string::npos,
+          "pcb spread-footprints moves second component after component gap");
 
   const std::filesystem::path diff_after_path = temp / "diff-after.ccad.json";
   std::ofstream diff_after(diff_after_path);

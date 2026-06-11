@@ -2,13 +2,16 @@
 
 #include "ccad_cli/common.hpp"
 #include "ccad_cli/pcb_object_queries.hpp"
+#include "ccad_core/autoplacer.hpp"
 #include "ccad_core/diff.hpp"
 #include "ccad_core/drill_export.hpp"
 #include "ccad_core/dsn_export.hpp"
 #include "ccad_core/kicad_pcb_export.hpp"
+#include "ccad_core/json.hpp"
 #include "ccad_core/layers.hpp"
 #include "ccad_core/placement.hpp"
 #include "ccad_core/pnp_export.hpp"
+#include "ccad_core/spread_footprints.hpp"
 #include <fstream>
 
 #include <algorithm>
@@ -137,6 +140,19 @@ std::vector<std::string> splitLayers(const std::string& value) {
   return layers;
 }
 
+std::vector<std::string> splitCommaList(const std::string& value, const std::string& option_name) {
+  std::vector<std::string> items;
+  std::stringstream ss(value);
+  std::string item;
+  while (std::getline(ss, item, ',')) {
+    if (item.empty()) {
+      throw std::runtime_error(option_name + " must not contain empty items");
+    }
+    items.push_back(item);
+  }
+  return items;
+}
+
 ccad::Length requireMillimeters(const std::map<std::string, std::string>& options,
                                 const std::string& key) {
   return ccad::millimeters(requireDoubleOption(options, key));
@@ -183,6 +199,58 @@ bool projectHasNet(const ccad::Project& project, const std::string& net_id) {
     }
   }
   return false;
+}
+
+std::map<std::string, std::string> footprintPadNetMap(const ccad::Project& project,
+                                                      const ccad::Footprint& footprint,
+                                                      const std::string& component_id) {
+  std::map<std::string, std::string> pad_nets;
+  for (const ccad::FootprintPad& pad : footprint.pads) {
+    pad_nets[pad.number] = netIdForPin(project, component_id, pad.number);
+  }
+  return pad_nets;
+}
+
+std::string autoplaceResultJson(const std::string& component_id, const std::string& layer_id,
+                                const ccad::AutoPlacementPlan& plan) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"autoplace\": {\n"
+      << "    \"component_id\": \"" << ccad::escapeJson(component_id) << "\",\n"
+      << "    \"layer_id\": \"" << ccad::escapeJson(layer_id) << "\",\n"
+      << "    \"origin_x_nm\": " << plan.origin.x.nanometers << ",\n"
+      << "    \"origin_y_nm\": " << plan.origin.y.nanometers << ",\n"
+      << "    \"score\": " << plan.score << ",\n"
+      << "    \"reason\": \"" << ccad::escapeJson(plan.reason) << "\"\n"
+      << "  }\n"
+      << "}\n";
+  return out.str();
+}
+
+std::string spreadFootprintsResultJson(
+    const std::vector<ccad::SpreadFootprintPlacement>& placements) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"spread_footprints\": {\n"
+      << "    \"moved\": " << placements.size() << ",\n"
+      << "    \"placements\": [\n";
+  for (std::size_t index = 0; index < placements.size(); ++index) {
+    const ccad::SpreadFootprintPlacement& placement = placements.at(index);
+    out << "      {\n"
+        << "        \"component_id\": \"" << ccad::escapeJson(placement.component_id)
+        << "\",\n"
+        << "        \"previous_x_nm\": " << placement.previous_bounds.origin.x.nanometers
+        << ",\n"
+        << "        \"previous_y_nm\": " << placement.previous_bounds.origin.y.nanometers
+        << ",\n"
+        << "        \"new_x_nm\": " << placement.new_bounds.origin.x.nanometers << ",\n"
+        << "        \"new_y_nm\": " << placement.new_bounds.origin.y.nanometers << "\n"
+        << "      }" << (index + 1 == placements.size() ? "" : ",") << '\n';
+  }
+  out << "    ]\n"
+      << "  }\n"
+      << "}\n";
+  return out.str();
 }
 
 int requireNonNegativeIntOption(const std::map<std::string, std::string>& options,
@@ -1619,6 +1687,73 @@ int pcbCommand(const std::vector<std::string>& args) {
         throw std::runtime_error("failed to open output file: " + out);
       }
       out_file << drill;
+      return 0;
+    }
+
+    if (subcommand == "autoplace-footprint") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--footprint", "--component", "--layer", "--grid-mm",
+                                 "--rotation-deg"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const ccad::Footprint footprint = loadFootprintFile(requireOption(options, "--footprint"));
+      const std::string component_id = requireOption(options, "--component");
+      const std::string layer_id = requireOption(options, "--layer");
+      requireCopperLayer(board, layer_id);
+      const ccad::Length grid_step = options.contains("--grid-mm")
+                                         ? requirePositiveMillimeters(options, "--grid-mm")
+                                         : ccad::millimeters(1.0);
+      const double placement_rotation = optionDoubleOrDefault(options, "--rotation-deg", 0.0);
+
+      const ccad::AutoPlacementPlan plan = ccad::planFootprintAutoPlacement(
+          board, footprint, footprintPadNetMap(project, footprint, component_id), layer_id,
+          grid_step);
+      if (!plan.placeable) {
+        throw std::runtime_error("autoplace failed: " + plan.reason);
+      }
+
+      ccad::placeFootprint(project, footprint, component_id, plan.origin, placement_rotation,
+                           layer_id);
+
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      std::cout << autoplaceResultJson(component_id, layer_id, plan);
+      return 0;
+    }
+
+    if (subcommand == "spread-footprints") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--components", "--target-x-mm", "--target-y-mm",
+                                 "--component-gap-mm", "--group-gap-mm"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::vector<std::string> component_ids =
+          options.contains("--components")
+              ? splitCommaList(requireOption(options, "--components"), "--components")
+              : std::vector<std::string>{};
+      const ccad::SpreadFootprintRequest request{
+          .component_ids = component_ids,
+          .target = {.x = requirePositiveMillimeters(options, "--target-x-mm"),
+                     .y = requirePositiveMillimeters(options, "--target-y-mm")},
+          .component_gap = options.contains("--component-gap-mm")
+                               ? requirePositiveMillimeters(options, "--component-gap-mm")
+                               : ccad::millimeters(1.0),
+          .group_gap = options.contains("--group-gap-mm")
+                           ? requirePositiveMillimeters(options, "--group-gap-mm")
+                           : ccad::millimeters(1.5),
+      };
+
+      const std::vector<ccad::SpreadFootprintPlacement> placements =
+          ccad::spreadFootprintComponents(board, request);
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      std::cout << spreadFootprintsResultJson(placements);
       return 0;
     }
 
