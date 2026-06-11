@@ -23,46 +23,50 @@ AgentMarketplaceDialog::AgentMarketplaceDialog(AgentPanel* agent_panel, QWidget*
 
   setStyleSheet(R"(
     QDialog {
-      background-color: #161b22;
-      color: #c9d1d9;
-      font-family: 'Segoe UI', sans-serif;
+      background-color: #0d1117;
+      color: #e6edf3;
+      font-family: 'Inter', sans-serif;
     }
     QListWidget {
-      background-color: #161b22;
+      background-color: #0d1117;
       border: 1px solid #30363d;
-      border-radius: 4px;
-      color: #c9d1d9;
+      border-radius: 6px;
+      color: #e6edf3;
       padding: 4px;
+      font-size: 13px;
     }
     QListWidget::item {
-      padding: 8px;
-      border-bottom: 1px solid #30363d;
+      padding: 10px;
+      border-bottom: 1px solid #21262d;
     }
     QListWidget::item:selected {
-      background-color: #21262d;
+      background-color: rgba(138, 43, 226, 0.15);
+      border-left: 3px solid #8a2be2;
     }
     QLabel {
-      color: #c9d1d9;
+      color: #e6edf3;
+      font-size: 13px;
     }
     QLineEdit {
       background-color: #010409;
       border: 1px solid #30363d;
-      border-radius: 4px;
-      padding: 6px;
-      color: #c9d1d9;
+      border-radius: 6px;
+      padding: 8px;
+      color: #e6edf3;
     }
     QToolButton {
       background-color: #21262d;
       border: 1px solid #30363d;
-      border-radius: 4px;
-      color: #c9d1d9;
-      padding: 6px;
+      border-radius: 6px;
+      color: #e6edf3;
+      padding: 8px;
     }
     QToolButton:hover {
       background-color: #30363d;
+      border-color: #8a2be2;
     }
     QWidget#sidebarWidget {
-      background-color: #161b22;
+      background-color: #0d1117;
       border-right: 1px solid #30363d;
     }
   )");
@@ -138,11 +142,7 @@ void AgentMarketplaceDialog::setupUi() {
   list_widget_ = new QListWidget(content_widget);
   list_widget_->addItem("Loading catalog from live URL...");
 
-  // Inject default/local hooks and plugins required for parity
-  list_widget_->addItem("[Hook] Freerouting (Push-and-Shove DSN Router) - Available");
-  list_widget_->addItem("[Workflow] Schematic to PCB Sync - Active");
-  list_widget_->addItem("[Plugin] OTel Observability Tracing - Active");
-  list_widget_->addItem("[Dev Prompt] AI Component Generator - Active");
+  // Removed hardcoded parity stubs, fetching dynamically.
 
   content_layout->addWidget(list_widget_);
 

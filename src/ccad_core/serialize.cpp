@@ -537,6 +537,22 @@ class JsonReader {
             pad.size = readSize();
           } else if (key == "drill_nm") {
             pad.drill = nanometers(readInt64());
+          } else if (key == "secondary_drill_nm") {
+            pad.secondary_drill = nanometers(readInt64());
+          } else if (key == "tertiary_drill_nm") {
+            pad.tertiary_drill = nanometers(readInt64());
+          } else if (key == "backdrilled") {
+            pad.backdrilled = readBool();
+          } else if (key == "front_post_machining_nm") {
+            pad.front_post_machining = nanometers(readInt64());
+          } else if (key == "back_post_machining_nm") {
+            pad.back_post_machining = nanometers(readInt64());
+          } else if (key == "pin_type") {
+            pad.pin_type = readString();
+          } else if (key == "pad_to_die_length_nm") {
+            pad.pad_to_die_length = nanometers(readInt64());
+          } else if (key == "pad_to_die_delay") {
+            pad.pad_to_die_delay = readDouble();
           } else if (key == "roundrect_rratio") {
             pad.roundrect_rratio = readDouble();
           } else if (key == "chamfer_ratio") {
@@ -1666,6 +1682,30 @@ std::string dumpProjectJson(const Project& project) {
       writeSize(out, 0, pad.size);
       if (pad.drill.has_value()) {
         out << ",\n        \"drill_nm\": " << pad.drill->nanometers;
+      }
+      if (pad.secondary_drill.has_value()) {
+        out << ",\n        \"secondary_drill_nm\": " << pad.secondary_drill->nanometers;
+      }
+      if (pad.tertiary_drill.has_value()) {
+        out << ",\n        \"tertiary_drill_nm\": " << pad.tertiary_drill->nanometers;
+      }
+      if (pad.backdrilled) {
+        out << ",\n        \"backdrilled\": true";
+      }
+      if (pad.front_post_machining.has_value()) {
+        out << ",\n        \"front_post_machining_nm\": " << pad.front_post_machining->nanometers;
+      }
+      if (pad.back_post_machining.has_value()) {
+        out << ",\n        \"back_post_machining_nm\": " << pad.back_post_machining->nanometers;
+      }
+      if (!pad.pin_type.empty()) {
+        out << ",\n        \"pin_type\": \"" << escapeJson(pad.pin_type) << "\"";
+      }
+      if (pad.pad_to_die_length.has_value()) {
+        out << ",\n        \"pad_to_die_length_nm\": " << pad.pad_to_die_length->nanometers;
+      }
+      if (pad.pad_to_die_delay.has_value()) {
+        out << ",\n        \"pad_to_die_delay\": " << *pad.pad_to_die_delay;
       }
       if (pad.roundrect_rratio.has_value()) {
         out << ",\n        \"roundrect_rratio\": " << *pad.roundrect_rratio;

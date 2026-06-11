@@ -22,60 +22,65 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
 
   setStyleSheet(R"(
     QDialog {
-      background-color: #161b22;
-      color: #c9d1d9;
-      font-family: 'Segoe UI', sans-serif;
+      background-color: #0d1117;
+      color: #e6edf3;
+      font-family: 'Inter', sans-serif;
     }
     QListWidget {
-      background-color: #161b22;
+      background-color: #0d1117;
       border: 1px solid #30363d;
-      border-radius: 4px;
-      color: #c9d1d9;
+      border-radius: 6px;
+      color: #e6edf3;
+      font-size: 13px;
     }
     QListWidget::item {
-      padding: 8px;
+      padding: 10px;
     }
     QListWidget::item:selected {
-      background-color: #21262d;
+      background-color: rgba(138, 43, 226, 0.15);
+      border-left: 3px solid #8a2be2;
     }
     QLabel {
-      color: #c9d1d9;
+      color: #e6edf3;
+      font-size: 13px;
     }
     QLineEdit, QTextEdit, QComboBox {
       background-color: #010409;
       border: 1px solid #30363d;
-      border-radius: 4px;
-      padding: 6px;
-      color: #c9d1d9;
+      border-radius: 6px;
+      padding: 8px;
+      color: #e6edf3;
     }
     QPushButton {
       background-color: #21262d;
       border: 1px solid #30363d;
-      border-radius: 4px;
-      color: #c9d1d9;
-      padding: 6px 12px;
+      border-radius: 6px;
+      color: #e6edf3;
+      padding: 8px 16px;
     }
     QPushButton:hover {
       background-color: #30363d;
+      border-color: #8a2be2;
     }
     QPushButton#primaryButton {
-      background-color: #2f81f7;
+      background-color: #8a2be2;
       border: none;
       color: #ffffff;
     }
     QPushButton#primaryButton:hover {
-      background-color: #58a6ff;
+      background-color: #9b4dff;
     }
     QGroupBox {
       border: 1px solid #30363d;
-      border-radius: 4px;
+      border-radius: 6px;
       margin-top: 1ex;
-      padding: 10px;
+      padding: 12px;
     }
     QGroupBox::title {
       subcontrol-origin: margin;
       subcontrol-position: top center;
-      padding: 0 3px;
+      padding: 0 5px;
+      color: #8a2be2;
     }
   )");
 

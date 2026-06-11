@@ -16,6 +16,14 @@ struct FootprintPad {
   double rotation_degrees = 0.0;
   Size size;
   std::optional<Length> drill;
+  std::optional<Length> secondary_drill = std::nullopt;
+  std::optional<Length> tertiary_drill = std::nullopt;
+  bool backdrilled = false;
+  std::optional<Length> front_post_machining = std::nullopt;
+  std::optional<Length> back_post_machining = std::nullopt;
+  std::string pin_type;
+  std::optional<Length> pad_to_die_length = std::nullopt;
+  std::optional<double> pad_to_die_delay = std::nullopt;
   std::vector<std::string> layers;
   std::optional<double> roundrect_rratio = std::nullopt;
   std::optional<double> chamfer_ratio = std::nullopt;

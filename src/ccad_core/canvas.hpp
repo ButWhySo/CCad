@@ -29,6 +29,14 @@ struct CanvasPad {
   double height_units = 0.0;
   double rotation_degrees = 0.0;
   double drill_units = 0.0;
+  double secondary_drill_units = 0.0;
+  double tertiary_drill_units = 0.0;
+  bool backdrilled = false;
+  double front_post_machining_units = 0.0;
+  double back_post_machining_units = 0.0;
+  std::string pin_type = "";
+  double pad_to_die_length_units = 0.0;
+  double pad_to_die_delay = 0.0;
   std::optional<double> roundrect_rratio = std::nullopt;
   std::optional<double> chamfer_ratio = std::nullopt;
 };

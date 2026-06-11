@@ -410,7 +410,9 @@ void SelectionInspectorPanel::renderBoardRules(const std::optional<ccad::Board>&
         ccad::DesignRules rules{
             .copper_clearance = ccad::millimeters(clearance),
             .min_track_width = ccad::millimeters(track_width),
-            .min_via_annular_ring = ccad::millimeters(annular_ring)};
+            .min_via_annular_ring = ccad::millimeters(annular_ring),
+            .drc_exclusions = {},
+            .ratsnest_exclusions = {}};
         design_rules_changed_callback_(rules);
       }
     } else {

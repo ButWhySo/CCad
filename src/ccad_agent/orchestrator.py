@@ -185,6 +185,8 @@ def get_system_prompt(role_desc: str) -> str:
 
 @trace_function("supervisor_node")
 def supervisor_node(state: AgentState):
+    if "pre node" in [h.lower() for h in active_hooks]:
+        trigger_hook("pre node", "supervisor")
     # Enforce workflow routing
     if active_workflow == "routing_pass":
         return {"next_node": "router"}
@@ -212,11 +214,15 @@ def supervisor_node(state: AgentState):
         next_node = "librarian"
     else:
         next_node = "FINISH"
+    if "post node" in [h.lower() for h in active_hooks]:
+        trigger_hook("post node", f"supervisor -> {next_node}")
         
     return {"next_node": next_node}
 
 @trace_function("router_node")
 def router_node(state: AgentState):
+    if "pre node" in [h.lower() for h in active_hooks]:
+        trigger_hook("pre node", "router")
     if not router_llm:
         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Error: Router LLM not initialized."}})
         return {"messages": []}
@@ -229,10 +235,14 @@ def router_node(state: AgentState):
     system_msg = SystemMessage(content=system_text)
     prompt = [system_msg] + state["messages"]
     response = router_llm.invoke(prompt, config={"callbacks": callbacks} if callbacks else {})
+    if "post node" in [h.lower() for h in active_hooks]:
+        trigger_hook("post node", "router")
     return {"messages": [response]}
 
 @trace_function("librarian_node")
 def librarian_node(state: AgentState):
+    if "pre node" in [h.lower() for h in active_hooks]:
+        trigger_hook("pre node", "librarian")
     if not librarian_llm:
         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Error: Librarian LLM not initialized."}})
         return {"messages": []}
@@ -245,6 +255,8 @@ def librarian_node(state: AgentState):
     system_msg = SystemMessage(content=system_text)
     prompt = [system_msg] + state["messages"]
     response = librarian_llm.invoke(prompt, config={"callbacks": callbacks} if callbacks else {})
+    if "post node" in [h.lower() for h in active_hooks]:
+        trigger_hook("post node", "librarian")
     return {"messages": [response]}
 
 from langgraph.prebuilt import ToolNode
@@ -307,8 +319,8 @@ def handle_marketplace(text: str):
     parts = text.split(" ")
     if len(parts) >= 2 and parts[1] == "install":
         plugin_name = " ".join(parts[2:])
-        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Marketplace: Installed plugin '{plugin_name}' successfully."}})
-        # Add to custom prompt or hooks
+        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "marketplace.install", "args": {"plugin": plugin_name}}})
+        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Marketplace: Requesting installation of plugin '{plugin_name}'..."}})
         config_manager.update("installed_plugins", config_manager.get("installed_plugins", []) + [plugin_name])
     else:
         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Marketplace: Unknown command. Use `/marketplace install <plugin>`."}})
@@ -397,16 +409,16 @@ if __name__ == "__main__":
                         session_messages.append(HumanMessage(content="Start the placement workflow and optimally place footprints."))
                         # Fall through to graph execution
                     elif cmd_base == "/explain":
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Explain command invoked. Please provide a selection or context."}})
-                        session_messages.append(HumanMessage(content="Explain the current selection or context in detail."))
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Explaining the current context..."}})
+                        session_messages.append(HumanMessage(content="Explain the current board selection or context in detail."))
                         # Fall through to graph execution
                     elif cmd_base == "/clear":
                         session_messages = []
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Chat history and context cleared."}})
                         continue
                     elif cmd_base == "/settings":
+                        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.open_settings", "args": {}}})
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Opening agent settings panel..."}})
-                        # We could send a tool call to open settings if we had one
                         continue
                     elif cmd_base == "/help":
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`\n- `/route`\n- `/drc`\n- `/place`\n- `/explain`\n- `/clear`\n- `/settings`"}})
@@ -465,11 +477,15 @@ if __name__ == "__main__":
                     "plugins": [
                         {"id": "plugin.autoplacer", "name": "AutoPlacer", "description": "AI-driven component placement using simulated annealing", "installed": True},
                         {"id": "plugin.autorouter", "name": "AutoRouter", "description": "Cloud-accelerated PCB autorouter", "installed": False},
-                        {"id": "plugin.kicad_sync", "name": "KiCad Sync", "description": "Two-way synchronization with KiCad", "installed": True}
+                        {"id": "plugin.kicad_sync", "name": "KiCad Sync", "description": "Two-way synchronization with KiCad", "installed": True},
+                        {"id": "plugin.otel_tracing", "name": "OTel Tracing", "description": "OpenTelemetry observability integration", "installed": True},
+                        {"id": "plugin.freerouting", "name": "Freerouting Hook", "description": "Push-and-shove DSN router integration", "installed": True},
+                        {"id": "plugin.ai_generator", "name": "AI Component Generator", "description": "Generate schematic symbols and footprints via LLM", "installed": True}
                     ],
                     "workflows": [
                         {"id": "workflow.validation", "name": "Validation Workflow", "description": "Runs full DRC/ERC checks before committing", "installed": True},
-                        {"id": "workflow.routing", "name": "Routing Workflow", "description": "Iterative routing and cleanup phases", "installed": False}
+                        {"id": "workflow.routing", "name": "Routing Workflow", "description": "Iterative routing and cleanup phases", "installed": False},
+                        {"id": "workflow.sch_to_pcb", "name": "Schematic to PCB Sync", "description": "Forward annotation of netlist and components", "installed": True}
                     ]
                 }
                 emit({"jsonrpc": "2.0", "method": "marketplace_catalog", "params": catalog})

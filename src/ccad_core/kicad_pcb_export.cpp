@@ -191,6 +191,30 @@ std::string exportToKiCadPcb(const Project& project) {
       if (pad->chamfer_ratio.has_value()) {
         out << " (chamfer_ratio " << *pad->chamfer_ratio << ")";
       }
+      if (pad->secondary_drill.has_value()) {
+        out << " (property \"secondary_drill\" \"" << (pad->secondary_drill->nanometers / 1000000.0) << "\")";
+      }
+      if (pad->tertiary_drill.has_value()) {
+        out << " (property \"tertiary_drill\" \"" << (pad->tertiary_drill->nanometers / 1000000.0) << "\")";
+      }
+      if (pad->backdrilled) {
+        out << " (property \"backdrilled\" \"true\")";
+      }
+      if (pad->front_post_machining.has_value()) {
+        out << " (property \"front_post_machining\" \"" << (pad->front_post_machining->nanometers / 1000000.0) << "\")";
+      }
+      if (pad->back_post_machining.has_value()) {
+        out << " (property \"back_post_machining\" \"" << (pad->back_post_machining->nanometers / 1000000.0) << "\")";
+      }
+      if (!pad->pin_type.empty()) {
+        out << " (property \"pin_type\" \"" << escapeKiCadString(pad->pin_type) << "\")";
+      }
+      if (pad->pad_to_die_length.has_value()) {
+        out << " (property \"pad_to_die_length\" \"" << (pad->pad_to_die_length->nanometers / 1000000.0) << "\")";
+      }
+      if (pad->pad_to_die_delay.has_value()) {
+        out << " (property \"pad_to_die_delay\" \"" << *pad->pad_to_die_delay << "\")";
+      }
 
       out << " (layers";
       for (const std::string& layer : pad->layers) {

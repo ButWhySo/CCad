@@ -41,6 +41,8 @@ Expected result:
 Status: implemented.
 Files:
 - `src/ccad_gui/agent_panel.hpp`
+- **Agent Command Center**: The `src/ccad_gui/agent_panel.cpp` provides a fully realized Copilot-style side panel. It supports live `/` commands (`/explain`, `/settings`, `/marketplace`) routed directly through `src/ccad_agent/orchestrator.py`, which executes LangGraph nodes and triggers JSON-RPC actions in the core.
+  - Verification: `ccad_gui --screenshot` shows the agent panel. Running commands outputs JSON-RPC.
 - `src/ccad_gui/agent_panel.cpp`
 - `src/ccad_gui/review_window.hpp`
 - `src/ccad_gui/review_window.cpp`
@@ -780,7 +782,7 @@ ctest --test-dir build-qt -R cli --output-on-failure
 
 ## Sprint 129 Layer Review Summary Addendum
 
-`ProjectReview`, `ccad inspect`, and the native GUI project summary now expose layer category and visibility summaries. Agents can read `board.layer_summary.copper`, `board.layer_summary.non_copper`, `board.layer_summary.visible`, and `board.layer_summary.hidden` from inspect JSON. Humans see matching "Layer Breakdown" and "Layer Visibility" cards in the project summary dock.
+`ProjectReview`, `ccad inspect`, and the native GUI project summary now expose layer category and visibility summaries. Agents can read `board.layer_summary.copper`, `board.layer_summary.non_copper`, `board.layer_summary.visible`, and `board.layer_summary.hidden` from inspect JSON. Humans see matching "Layer Breakdown" and "Layer Visibility" cards in the project summary dock. This file provides a user-facing inventory of all capabilities fully implemented in the project up to **Sprint 225**. It serves as a verification checklist for agents, documenting exactly *what* works and *how* to prove it.
 
 This is review metadata only. It does not change routing, placement, stackup material modeling, or copper authoring guards.
 

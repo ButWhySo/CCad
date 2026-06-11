@@ -100,6 +100,8 @@ struct DesignRules {
   bool plug_vias_back = false;
   bool cap_vias = false;
   bool fill_vias = false;
+  std::vector<std::string> drc_exclusions;
+  std::vector<std::string> ratsnest_exclusions;
 };
 
 struct Pad {
@@ -114,8 +116,17 @@ struct Pad {
   double rotation_degrees = 0.0;
   Size size;
   std::optional<Length> drill;
+  std::optional<Length> secondary_drill = std::nullopt;
+  std::optional<Length> tertiary_drill = std::nullopt;
+  bool backdrilled = false;
+  std::optional<Length> front_post_machining = std::nullopt;
+  std::optional<Length> back_post_machining = std::nullopt;
+  std::string pin_type = "";
+  std::optional<Length> pad_to_die_length = std::nullopt;
+  std::optional<double> pad_to_die_delay = std::nullopt;
   std::optional<double> roundrect_rratio = std::nullopt;
   std::optional<double> chamfer_ratio = std::nullopt;
+  bool teardrops_enabled = false;
 };
 
 struct Via {
@@ -124,6 +135,7 @@ struct Via {
   Point position;
   Length diameter;
   Length drill;
+  bool teardrops_enabled = false;
 };
 
 struct TrackSegment {

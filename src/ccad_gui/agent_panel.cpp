@@ -502,8 +502,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   setStyleSheet(R"(
     QWidget#agentPanel {
       background-color: #1e1e1e;
-      color: #cccccc;
-      font-family: "Segoe UI", sans-serif;
+      color: #e3e3e3;
+      font-family: "Inter", "Segoe UI", sans-serif;
     }
     QScrollArea#agentScrollArea {
       background-color: transparent;
@@ -517,71 +517,80 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
     }
     QFrame[agentRole="chatBubbleAgent"] {
       background-color: transparent;
-      border-left: 3px solid #10a37f;
-      border-radius: 4px;
-      margin: 4px;
-      padding: 8px 12px;
+      border-left: 3px solid #8a2be2;
+      border-radius: 6px;
+      margin: 6px 4px;
+      padding: 10px 14px;
     }
     QFrame[agentRole="chatBubbleUser"] {
-      background-color: #2b2d31;
-      border-radius: 12px;
-      margin: 4px;
-      padding: 8px 12px;
+      background-color: #2d2f36;
+      border-radius: 14px;
+      margin: 6px 4px;
+      padding: 10px 14px;
     }
     QTextBrowser {
       background-color: transparent;
-      color: #ffffff;
+      color: #e3e3e3;
       border: none;
-      font-family: "Segoe UI", sans-serif;
-      font-size: 13px;
+      font-family: "Inter", "Segoe UI", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
     }
     QFrame[agentRole="toolCard"] {
-      background-color: #2d2d2d;
-      border: 1px solid #3c3c3c;
-      border-radius: 8px;
-      padding: 8px 12px;
-      margin: 2px;
+      background-color: #25262b;
+      border: 1px solid #3d3f4b;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin: 4px 2px;
     }
     QLabel[agentRole="toolTitle"] {
-      color: #9cdcfe;
-      font-family: "Consolas", monospace;
+      color: #a5b4fc;
+      font-family: "JetBrains Mono", "Consolas", monospace;
       font-size: 12px;
     }
     QTextEdit#chatInput {
-      background-color: #2d2d2d;
-      border: 1px solid #444444;
-      border-radius: 12px;
-      padding: 10px 14px;
+      background-color: #25262b;
+      border: 1px solid #3d3f4b;
+      border-radius: 14px;
+      padding: 12px 16px;
       color: #ffffff;
-      font-size: 13px;
+      font-size: 14px;
     }
     QTextEdit#chatInput:focus {
-      border: 1px solid #10a37f;
-      background-color: #333333;
+      border: 1px solid #8a2be2;
+      background-color: #2a2b32;
     }
     QPushButton[agentRole="iconButton"] {
       background-color: transparent;
       border: none;
-      border-radius: 6px;
-      color: #8b949e;
-      padding: 4px;
+      border-radius: 8px;
+      color: #9ca3af;
+      padding: 6px;
     }
     QPushButton[agentRole="iconButton"]:hover {
-      background-color: #444444;
+      background-color: #374151;
       color: #ffffff;
     }
     QPushButton[agentRole="iconButtonPrimary"] {
-      background-color: #10a37f;
-      border-radius: 6px;
+      background-color: #8a2be2;
+      border-radius: 8px;
       color: #ffffff;
     }
     QPushButton[agentRole="iconButtonPrimary"]:hover {
-      background-color: #0e906f;
+      background-color: #7b1fa2;
     }
     QLabel[agentRole="panelTitle"] {
       color: #ffffff;
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 600;
+    }
+    QLabel[agentRole="chip"] {
+      background-color: #374151;
+      color: #d1d5db;
+      border-radius: 10px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 500;
     }
   )");
 
@@ -743,21 +752,69 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   composer_layout->addLayout(actions_layout);
   main_layout->addWidget(composer_container);
 
-  // Dummy init for legacy pointers so they don't crash
-  session_title_label_ = new QLabel(this); session_title_label_->hide();
-  model_chip_label_ = new QLabel(this); model_chip_label_->hide();
-  mode_chip_label_ = new QLabel(this); mode_chip_label_->hide();
-  permission_chip_label_ = new QLabel(this); permission_chip_label_->hide();
-  trace_chip_label_ = new QLabel(this); trace_chip_label_->hide();
-  session_chip_label_ = new QLabel(this); session_chip_label_->hide();
-  trace_id_label_ = new QLabel(this); trace_id_label_->hide();
-  span_id_label_ = new QLabel(this); span_id_label_->hide();
+  // --- STATUS HEADER ---
+  auto* status_container = new QFrame(this);
+  status_container->setProperty("agentRole", "section");
+  auto* status_layout = new QVBoxLayout(status_container);
+  status_layout->setContentsMargins(8, 0, 8, 4);
+  status_layout->setSpacing(4);
+
+  auto* info_row = new QHBoxLayout();
+  session_title_label_ = new QLabel("New Session", status_container);
+  session_title_label_->setProperty("agentRole", "panelTitle");
+  session_title_label_->setStyleSheet("font-size: 12px; font-weight: normal; color: #9ca3af;");
+  
+  model_chip_label_ = new QLabel("Model: Auto", status_container);
+  model_chip_label_->setProperty("agentRole", "chip");
+  mode_chip_label_ = new QLabel("Mode: Copilot", status_container);
+  mode_chip_label_->setProperty("agentRole", "chip");
+  permission_chip_label_ = new QLabel("Permissions: Standard", status_container);
+  permission_chip_label_->setProperty("agentRole", "chip");
+  
+  info_row->addWidget(session_title_label_);
+  info_row->addStretch();
+  info_row->addWidget(model_chip_label_);
+  info_row->addWidget(mode_chip_label_);
+  info_row->addWidget(permission_chip_label_);
+  status_layout->addLayout(info_row);
+
+  auto* trace_row = new QHBoxLayout();
+  trace_chip_label_ = new QLabel("Trace: Off", status_container);
+  trace_chip_label_->setProperty("agentRole", "chip");
+  session_chip_label_ = new QLabel("Session: None", status_container);
+  session_chip_label_->setProperty("agentRole", "chip");
+  trace_id_label_ = new QLabel("TraceID: -", status_container);
+  trace_id_label_->setProperty("agentRole", "chip");
+  span_id_label_ = new QLabel("SpanID: -", status_container);
+  span_id_label_->setProperty("agentRole", "chip");
+  
+  trace_row->addWidget(trace_chip_label_);
+  trace_row->addWidget(session_chip_label_);
+  trace_row->addWidget(trace_id_label_);
+  trace_row->addWidget(span_id_label_);
+  trace_row->addStretch();
+  status_layout->addLayout(trace_row);
+
+  auto* exec_row = new QHBoxLayout();
+  run_state_chip_label_ = new QLabel("Run: Idle", status_container);
+  run_state_chip_label_->setProperty("agentRole", "chip");
+  run_queue_status_label_ = new QLabel("Queue: Empty", status_container);
+  run_queue_status_label_->setProperty("agentRole", "chip");
+  run_queue_counts_label_ = new QLabel("Counts: 0/0", status_container);
+  run_queue_counts_label_->setProperty("agentRole", "chip");
+  run_queue_current_step_label_ = new QLabel("Step: None", status_container);
+  run_queue_current_step_label_->setProperty("agentRole", "chip");
+  
+  exec_row->addWidget(run_state_chip_label_);
+  exec_row->addWidget(run_queue_status_label_);
+  exec_row->addWidget(run_queue_counts_label_);
+  exec_row->addWidget(run_queue_current_step_label_);
+  exec_row->addStretch();
+  status_layout->addLayout(exec_row);
+
+  // Hidden labels that might still be accessed programmatically
   trace_status_label_ = new QLabel(this); trace_status_label_->hide();
   trace_export_status_label_ = new QLabel(this); trace_export_status_label_->hide();
-  run_state_chip_label_ = new QLabel(this); run_state_chip_label_->hide();
-  run_queue_status_label_ = new QLabel(this); run_queue_status_label_->hide();
-  run_queue_counts_label_ = new QLabel(this); run_queue_counts_label_->hide();
-  run_queue_current_step_label_ = new QLabel(this); run_queue_current_step_label_->hide();
   session_status_label_ = new QLabel(this); session_status_label_->hide();
   policy_decision_label_ = new QLabel(this); policy_decision_label_->hide();
   policy_risk_label_ = new QLabel(this); policy_risk_label_->hide();
@@ -785,6 +842,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   approval_request_input_ = new QLineEdit(this); approval_request_input_->hide();
   policy_dry_run_checkbox_ = new QCheckBox(this); policy_dry_run_checkbox_->hide();
   output_ = new QPlainTextEdit(this); output_->hide();
+
+  main_layout->insertWidget(1, status_container);
 
 
 
