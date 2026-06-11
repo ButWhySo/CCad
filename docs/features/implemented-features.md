@@ -223,6 +223,7 @@ What it does:
 - Exposes disabled-by-default trace export metadata with `ccad agent trace-export-schema`, `ccad agent trace-export-template`, `ccad agent trace-redaction-policy`, and `ccad agent trace-export-dry-run`.
 - Exposes structured KiCad CLI evidence metadata, command planning, readiness checks, and guarded local execution with `ccad agent kicad-evidence-schema`, `ccad agent kicad-evidence-plan`, `ccad agent kicad-evidence-dry-run`, and `ccad agent kicad-evidence-run`.
 - Exposes the first KiCad PCB API parity schema with `ccad agent pcb-api-schema` and JSON-RPC `agent.pcb_api_schema`, mapping KiCad PCB API handlers to CCad's current headless commands and declaring first-slice parity limits.
+- Resolves KiCad wildcard pad layer sets such as `*.Cu` and `*.Mask` in board-context PCB query/export surfaces, exposing both `resolved_layers` and canonical `kicad_layer_numbers` for agents and routers.
 - Places imported CCad footprint pads onto a board with `ccad pcb place-footprint`.
 - Places converted CCad/KiCad schematic symbols into `Project::components` with `ccad sch place-symbol`.
 - Validates CCad project files.
@@ -308,6 +309,7 @@ PCB authoring command behavior:
 - `pcb list-enabled-layers`, `pcb list-visible-layers`, `pcb get-layer-name`, and `pcb get-board-stackup` expose read-only KiCad-style layer/stackup query data for agents.
 - `pcb get-rules` and `pcb get-outline` expose the current board-level design-rule and bounding-box slices.
 - `pcb list-by-net` and `pcb list-connected` expose same-net pad, via, track, and zone queries with explicit first-slice connectivity scope.
+- Board-context pad rows in `pcb list-objects`, `pcb list-by-net`, `pcb list-connected`, and `pcb export-route-job` include resolved KiCad layer-set metadata so agents do not need to re-expand wildcard layer selectors from raw storage.
 - Commands mutate the file passed through `--file`.
 - Commands reject missing boards, duplicate primitive IDs, invalid numeric dimensions, unknown layers, out-of-board positions/areas, and via drill larger than via diameter.
 
@@ -1790,3 +1792,11 @@ The Agent surface now has `agent pcb-api-schema` and JSON-RPC `agent.pcb_api_sch
 The same-net commands intentionally report `connectivity_scope:"net_equivalent_first_slice"`. They inspect current pad, via, track, and zone net IDs and do not yet infer copper contact, zone-fill islands, net ties, or KiCad connectivity solver state.
 
 The Agent orchestrator also restores the default provider safety contract: generated `agent.plan_with_provider` tasks enter the plan as `blocked` with `provider_execution_disabled` until a future approved provider runner explicitly enables provider execution. This keeps the current Agent layer honest while the KiCad parity work continues.
+
+## Sprint 221 KiCad PCB API Utility Layer-Set Addendum
+
+The next KiCad PCB API parity slice reads `F:\kicad_src\pcbnew\api\api_pcb_utils.h` and `api_pcb_utils.cpp`. CCad now has a first analogue for KiCad's ordered layer-set utility behavior. `ccad::expandKiCadLayerSet` expands KiCad wildcard selectors such as `*.Cu`, `*.Mask`, `*.Paste`, `*.SilkS`, `*.Fab`, `*.CrtYd`, and `*.Adhes` against the current board layer list, de-duplicates layer IDs in board order, and preserves unmatched selectors so DRC or validation can still report them.
+
+`ccad::standardKiCadPcbLayerNumbersForSet` converts resolved CCad layer IDs into canonical KiCad PCB layer numbers while omitting unknown custom entries. Footprint placement uses the expansion helper after front/back placement flips, so placed through-hole pads imported from KiCad footprints no longer keep raw `*.Cu` or `*.Mask` selectors when the board has matching layers.
+
+Board-context PCB query and export surfaces now expose resolved pad layer metadata. `pcb list-objects --type pad`, `pcb list-by-net`, `pcb list-connected`, and `pcb export-route-job` include `resolved_layers` and `kicad_layer_numbers` for pads while direct `pcb get-object` still reports the raw stored `layers` array for compatibility and debugging.

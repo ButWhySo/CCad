@@ -62,4 +62,36 @@ int main() {
   require(board.layers.at(1).id == "Custom.Mechanical", "append preserves custom layer order");
   require(board.layers.at(2).id == "In1.Cu", "append starts missing canonical layers after custom");
   require(ccad::appendMissingStandardKiCadPcbLayers(board) == 0, "append is idempotent");
+
+  ccad::Board subset_board;
+  subset_board.layers = {
+      ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true},
+      ccad::Layer{.id = "Custom.Mechanical",
+                  .name = "Custom mechanical",
+                  .kind = "user",
+                  .visible = true},
+      ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true},
+      ccad::Layer{.id = "B.Mask", .name = "Back mask", .kind = "mask", .visible = true},
+      ccad::Layer{.id = "F.Mask", .name = "Front mask", .kind = "mask", .visible = true},
+      ccad::Layer{.id = "F.Paste", .name = "Front paste", .kind = "paste", .visible = true},
+  };
+  const std::vector<std::string> expanded =
+      ccad::expandKiCadLayerSet({"*.Cu", "*.Mask", "F.Paste", "F.Paste", "No.Match"},
+                                subset_board);
+  require(expanded.size() == 6, "wildcard layer set expands and de-duplicates entries");
+  require(expanded.at(0) == "F.Cu", "*.Cu keeps board-order front copper");
+  require(expanded.at(1) == "B.Cu", "*.Cu includes back copper");
+  require(expanded.at(2) == "B.Mask", "*.Mask includes back mask");
+  require(expanded.at(3) == "F.Mask", "*.Mask includes front mask");
+  require(expanded.at(4) == "F.Paste", "explicit concrete layer is preserved once");
+  require(expanded.at(5) == "No.Match", "unmatched concrete layer remains visible to validation");
+
+  const std::vector<std::size_t> layer_numbers =
+      ccad::standardKiCadPcbLayerNumbersForSet(expanded);
+  require(layer_numbers.size() == 5, "canonical layer numbers omit non-KiCad custom entries");
+  require(layer_numbers.at(0) == 0, "packed F.Cu layer number is 0");
+  require(layer_numbers.at(1) == 31, "packed B.Cu layer number is 31");
+  require(layer_numbers.at(2) == 38, "packed B.Mask layer number is 38");
+  require(layer_numbers.at(3) == 39, "packed F.Mask layer number is 39");
+  require(layer_numbers.at(4) == 35, "packed F.Paste layer number is 35");
 }

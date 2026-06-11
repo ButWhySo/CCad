@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 8 / 8: Agent Runtime and EDA Evidence Expansion.
 
-Progress counter: Phase 8 / 8, Sprint 220 complete on `sprint-220-kicad-pcb-parity-audit`.
+Progress counter: Phase 8 / 8, Sprint 221 complete on `sprint-221-kicad-pcb-api-utils`.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 focuses on bounded Agent runtime state, EDA evidence expansion, runner queues, observability export wiring, and simulation planning slices.
 
@@ -30,6 +30,7 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native Agent pane reference polish v5: the right-side Agent pane reports `visual_style:"agent_reference_panel_v5"` and `workspace_layout_version:5`, adds a compact targetable header action bar, reference-style evidence thumbnail strip, approval preview artifact and delta labels, one-row footer quick actions, and first-viewport evidence visibility while preserving every existing Agent control ID and keeping provider execution, worker threads, telemetry export, external processes, and project mutation disabled. Sprint-end verification passed the full Qt build plus 36 of 36 CTest tests.
 - CLI PCB authoring: `ccad pcb list-nets`, `ccad pcb list-objects`, `ccad pcb get-object`, `ccad pcb route-status`, `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-graphic-line`, `ccad pcb add-text`, `ccad pcb add-zone`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, and `ccad pcb resize-object`.
 - CLI PCB KiCad API parity queries: `ccad pcb list-enabled-layers`, `ccad pcb list-visible-layers`, `ccad pcb get-layer-name`, `ccad pcb get-board-stackup`, `ccad pcb get-rules`, `ccad pcb get-outline`, `ccad pcb list-by-net`, and `ccad pcb list-connected` expose the first headless analogues for KiCad PCB API handler behavior.
+- KiCad PCB layer-set utility parity: footprint placement resolves KiCad wildcard pad selectors such as `*.Cu` and `*.Mask` against the active board layers, board-context PCB queries expose `resolved_layers` and `kicad_layer_numbers`, and unresolved concrete selectors remain visible to validation instead of being silently discarded.
 - Agent PCB API metadata: `ccad agent pcb-api-schema` and JSON-RPC `agent.pcb_api_schema` document the KiCad handler to CCad command mapping, parity scope, and remaining unsupported handler gaps for automation.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
 - CLI schematic authoring can place a converted KiCad/CCad symbol snapshot through `ccad sch place-symbol`.

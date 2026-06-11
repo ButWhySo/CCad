@@ -72,6 +72,37 @@ bool hasLayerId(const Board& board, const std::string& id) {
                      [&id](const Layer& layer) { return layer.id == id; });
 }
 
+bool hasSuffix(const std::string& value, const std::string& suffix) {
+  return value.size() >= suffix.size() &&
+         value.compare(value.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+bool layerMatchesKiCadSelector(const Layer& layer, const std::string& selector) {
+  if (!selector.starts_with("*.")) {
+    return layer.id == selector;
+  }
+
+  const std::string suffix = selector.substr(1);
+  if (hasSuffix(layer.id, suffix)) {
+    return true;
+  }
+
+  if (selector == "*.Cu") return layer.kind == "copper";
+  if (selector == "*.Adhes") return layer.kind == "adhesive";
+  if (selector == "*.Paste") return layer.kind == "paste";
+  if (selector == "*.SilkS") return layer.kind == "silkscreen";
+  if (selector == "*.Mask") return layer.kind == "mask";
+  if (selector == "*.CrtYd") return layer.kind == "courtyard";
+  if (selector == "*.Fab") return layer.kind == "fabrication";
+  return false;
+}
+
+void appendUniqueLayerId(std::vector<std::string>& output, const std::string& layer_id) {
+  if (std::find(output.begin(), output.end(), layer_id) == output.end()) {
+    output.push_back(layer_id);
+  }
+}
+
 }  // namespace
 
 std::vector<Layer> standardKiCadPcbLayers() {
@@ -93,6 +124,38 @@ std::optional<std::size_t> standardKiCadPcbLayerNumber(const std::string& id) {
     return std::nullopt;
   }
   return static_cast<std::size_t>(std::distance(layers.begin(), it));
+}
+
+std::vector<std::string> expandKiCadLayerSet(const std::vector<std::string>& layer_selectors,
+                                             const Board& board) {
+  std::vector<std::string> expanded;
+  for (const std::string& selector : layer_selectors) {
+    bool matched = false;
+    for (const Layer& layer : board.layers) {
+      if (layerMatchesKiCadSelector(layer, selector)) {
+        appendUniqueLayerId(expanded, layer.id);
+        matched = true;
+      }
+    }
+    if (!matched) {
+      appendUniqueLayerId(expanded, selector);
+    }
+  }
+  return expanded;
+}
+
+std::vector<std::size_t> standardKiCadPcbLayerNumbersForSet(
+    const std::vector<std::string>& layer_ids) {
+  std::vector<std::size_t> layer_numbers;
+  for (const std::string& layer_id : layer_ids) {
+    const std::optional<std::size_t> layer_number = standardKiCadPcbLayerNumber(layer_id);
+    if (layer_number.has_value() &&
+        std::find(layer_numbers.begin(), layer_numbers.end(), *layer_number) ==
+            layer_numbers.end()) {
+      layer_numbers.push_back(*layer_number);
+    }
+  }
+  return layer_numbers;
 }
 
 std::size_t appendMissingStandardKiCadPcbLayers(Board& board) {

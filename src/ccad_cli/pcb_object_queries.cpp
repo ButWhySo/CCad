@@ -76,7 +76,25 @@ void appendLayerIdsJson(std::ostream& out, const std::vector<std::string>& layer
   out << "]";
 }
 
-std::string padNetRowJson(const ccad::Pad& pad) {
+void appendLayerNumbersJson(std::ostream& out, const std::vector<std::size_t>& layer_numbers) {
+  out << "[";
+  for (std::size_t i = 0; i < layer_numbers.size(); ++i) {
+    if (i > 0) {
+      out << ", ";
+    }
+    out << layer_numbers.at(i);
+  }
+  out << "]";
+}
+
+std::vector<std::string> resolvedPadLayers(const ccad::Board& board, const ccad::Pad& pad) {
+  return ccad::expandKiCadLayerSet(pad.layers, board);
+}
+
+std::string padNetRowJson(const ccad::Board& board, const ccad::Pad& pad) {
+  const std::vector<std::string> resolved_layers = resolvedPadLayers(board, pad);
+  const std::vector<std::size_t> kicad_layer_numbers =
+      ccad::standardKiCadPcbLayerNumbersForSet(resolved_layers);
   std::ostringstream row;
   row << "    {\"type\": \"pad\", \"id\": \"" << ccad::escapeJson(pad.id)
       << "\", \"component_id\": \"" << ccad::escapeJson(pad.component_id)
@@ -84,7 +102,11 @@ std::string padNetRowJson(const ccad::Pad& pad) {
       << "\", \"net_id\": \"" << ccad::escapeJson(pad.net_id)
       << "\", \"pad_type\": \"" << ccad::escapeJson(pad.type)
       << "\", \"shape\": \"" << ccad::escapeJson(pad.shape)
-      << "\", \"layer_id\": \"" << ccad::escapeJson(firstLayerId(pad.layers)) << "\"";
+      << "\", \"layer_id\": \"" << ccad::escapeJson(firstLayerId(pad.layers))
+      << "\", \"resolved_layers\": ";
+  appendLayerIdsJson(row, resolved_layers);
+  row << ", \"kicad_layer_numbers\": ";
+  appendLayerNumbersJson(row, kicad_layer_numbers);
   if (pad.drill.has_value()) {
     row << ", \"drill_nm\": " << pad.drill->nanometers;
   }
@@ -181,7 +203,7 @@ void collectPcbNetRows(const ccad::Board& board, const std::string& net_id,
     for (const ccad::Pad& pad : board.pads) {
       if (pad.net_id == net_id) {
         ++summary.pad_count;
-        rows.push_back(padNetRowJson(pad));
+        rows.push_back(padNetRowJson(board, pad));
       }
     }
   }
@@ -494,6 +516,9 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
   }
   if (includeObjectType(type_filter, "pad")) {
     for (const ccad::Pad& pad : board.pads) {
+      const std::vector<std::string> resolved_layers = resolvedPadLayers(board, pad);
+      const std::vector<std::size_t> kicad_layer_numbers =
+          ccad::standardKiCadPcbLayerNumbersForSet(resolved_layers);
       std::ostringstream row;
       row << "    {\"type\": \"pad\", \"id\": \"" << ccad::escapeJson(pad.id)
           << "\", \"component_id\": \"" << ccad::escapeJson(pad.component_id)
@@ -502,7 +527,11 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
           << "\", \"pad_type\": \"" << ccad::escapeJson(pad.type)
           << "\", \"shape\": \"" << ccad::escapeJson(pad.shape)
           << "\", \"layer_id\": \""
-          << ccad::escapeJson(pad.layers.empty() ? "" : pad.layers.front()) << "\"";
+          << ccad::escapeJson(pad.layers.empty() ? "" : pad.layers.front())
+          << "\", \"resolved_layers\": ";
+      appendLayerIdsJson(row, resolved_layers);
+      row << ", \"kicad_layer_numbers\": ";
+      appendLayerNumbersJson(row, kicad_layer_numbers);
       if (pad.drill.has_value()) {
         row << ", \"drill_nm\": " << pad.drill->nanometers;
       }
@@ -926,6 +955,9 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
       << "      \"pads\": [\n";
   for (std::size_t i = 0; i < board.pads.size(); ++i) {
     const ccad::Pad& pad = board.pads.at(i);
+    const std::vector<std::string> resolved_layers = resolvedPadLayers(board, pad);
+    const std::vector<std::size_t> kicad_layer_numbers =
+        ccad::standardKiCadPcbLayerNumbersForSet(resolved_layers);
     out << "        {\"id\": \"" << ccad::escapeJson(pad.id) << "\", \"net_id\": \""
         << ccad::escapeJson(pad.net_id) << "\", \"layer_id\": \""
         << ccad::escapeJson(pad.layers.empty() ? "" : pad.layers.front())
@@ -935,7 +967,11 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
       if (layer_index > 0) out << ", ";
       out << "\"" << ccad::escapeJson(pad.layers.at(layer_index)) << "\"";
     }
-    out << "], \"x_nm\": " << pad.position.x.nanometers
+    out << "], \"resolved_layers\": ";
+    appendLayerIdsJson(out, resolved_layers);
+    out << ", \"kicad_layer_numbers\": ";
+    appendLayerNumbersJson(out, kicad_layer_numbers);
+    out << ", \"x_nm\": " << pad.position.x.nanometers
         << ", \"y_nm\": " << pad.position.y.nanometers << ", \"width_nm\": "
         << pad.size.width.nanometers << ", \"height_nm\": " << pad.size.height.nanometers
         << ", \"rotation_degrees\": " << pad.rotation_degrees;

@@ -391,6 +391,12 @@ int main() {
           "pcb list-objects writes compact chamfer ratio");
   require(advanced_pad_list_json.find("\"drill_nm\": 700000") != std::string::npos,
           "pcb list-objects writes compact drill size");
+  require(advanced_pad_list_json.find("\"resolved_layers\": [\"F.Cu\", \"B.Cu\", \"*.Mask\"]") !=
+              std::string::npos,
+          "pcb list-objects resolves KiCad wildcard pad layer set in board context");
+  require(advanced_pad_list_json.find("\"kicad_layer_numbers\": [0, 31]") !=
+              std::string::npos,
+          "pcb list-objects writes KiCad layer numbers for resolved pad layer set");
 
   const std::filesystem::path advanced_pad_route_job_path =
       temp / "advanced-pad-route-job.json";
@@ -415,6 +421,12 @@ int main() {
           "pcb export-route-job writes through-hole pad type");
   require(advanced_pad_route_job_json.find("\"drill_nm\": 700000") != std::string::npos,
           "pcb export-route-job writes through-hole pad drill");
+  require(advanced_pad_route_job_json.find(
+              "\"resolved_layers\": [\"F.Cu\", \"B.Cu\", \"*.Mask\"]") != std::string::npos,
+          "pcb export-route-job resolves KiCad wildcard pad layer set in board context");
+  require(advanced_pad_route_job_json.find("\"kicad_layer_numbers\": [0, 31]") !=
+              std::string::npos,
+          "pcb export-route-job writes KiCad layer numbers for resolved pad layer set");
 
   const std::string set_layer_visibility_command =
       quote(CCAD_BINARY) + " pcb set-layer-visibility --file " + quote(board_project_path) +
@@ -893,6 +905,10 @@ int main() {
           "pcb list-by-net counts zones");
   require(list_by_net_json.find("\"id\": \"P1\"") != std::string::npos,
           "pcb list-by-net includes pad id");
+  require(list_by_net_json.find("\"resolved_layers\": [\"F.Cu\"]") != std::string::npos,
+          "pcb list-by-net writes resolved pad layer set");
+  require(list_by_net_json.find("\"kicad_layer_numbers\": [0]") != std::string::npos,
+          "pcb list-by-net writes KiCad layer numbers for pads");
   require(list_by_net_json.find("\"id\": \"V1\"") != std::string::npos,
           "pcb list-by-net includes via id");
   require(list_by_net_json.find("\"id\": \"T1\"") != std::string::npos,
@@ -933,6 +949,10 @@ int main() {
           "pcb list-connected returns same-net connectable objects");
   require(list_connected_json.find("\"id\": \"P1\"") != std::string::npos,
           "pcb list-connected includes source pad");
+  require(list_connected_json.find("\"resolved_layers\": [\"F.Cu\"]") != std::string::npos,
+          "pcb list-connected writes resolved source-pad layer set");
+  require(list_connected_json.find("\"kicad_layer_numbers\": [0]") != std::string::npos,
+          "pcb list-connected writes KiCad layer numbers for pads");
   require(list_connected_json.find("\"id\": \"V1\"") != std::string::npos,
           "pcb list-connected includes via");
   require(list_connected_json.find("\"id\": \"T1\"") != std::string::npos,

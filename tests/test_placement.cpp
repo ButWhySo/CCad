@@ -1,5 +1,6 @@
 #include "ccad_core/placement.hpp"
 #include "ccad_core/canvas.hpp"
+#include "ccad_core/layers.hpp"
 #include "ccad_core/model.hpp"
 #include "ccad_core/serialize.hpp"
 
@@ -30,6 +31,82 @@ void test_basic_placement() {
   }
   if (project.board->pads[0].position.x.nanometers != ccad::millimeters(50).nanometers) {
     throw std::runtime_error("Pad X should be 50mm");
+  }
+}
+
+void test_placement_expands_kicad_wildcard_pad_layers() {
+  ccad::Project project;
+  project.board = ccad::Board{};
+  project.board->outline.origin = {ccad::millimeters(0), ccad::millimeters(0)};
+  project.board->outline.size = {ccad::millimeters(100), ccad::millimeters(100)};
+  project.board->layers = ccad::standardKiCadPcbLayers();
+
+  ccad::Footprint fp;
+  fp.pads.push_back({
+      .number = "1",
+      .type = "thru_hole",
+      .shape = "circle",
+      .position = {ccad::millimeters(0), ccad::millimeters(0)},
+      .rotation_degrees = 0,
+      .size = {ccad::millimeters(1.5), ccad::millimeters(1.5)},
+      .drill = ccad::millimeters(0.8),
+      .layers = {"*.Cu", "*.Mask", "F.SilkS"},
+  });
+
+  ccad::placeFootprint(project, fp, "J1", {ccad::millimeters(20), ccad::millimeters(20)}, 0,
+                       "F.Cu");
+
+  const std::vector<std::string>& placed_layers = project.board->pads.at(0).layers;
+  if (std::find(placed_layers.begin(), placed_layers.end(), "*.Cu") != placed_layers.end()) {
+    throw std::runtime_error("Placed pad should not retain raw *.Cu wildcard");
+  }
+  if (std::find(placed_layers.begin(), placed_layers.end(), "*.Mask") != placed_layers.end()) {
+    throw std::runtime_error("Placed pad should not retain raw *.Mask wildcard");
+  }
+  if (std::find(placed_layers.begin(), placed_layers.end(), "F.Cu") == placed_layers.end() ||
+      std::find(placed_layers.begin(), placed_layers.end(), "B.Cu") == placed_layers.end()) {
+    throw std::runtime_error("Placed through-hole pad should include front and back copper");
+  }
+  if (std::find(placed_layers.begin(), placed_layers.end(), "F.Mask") == placed_layers.end() ||
+      std::find(placed_layers.begin(), placed_layers.end(), "B.Mask") == placed_layers.end()) {
+    throw std::runtime_error("Placed pad should include front and back solder mask openings");
+  }
+  if (std::find(placed_layers.begin(), placed_layers.end(), "F.SilkS") == placed_layers.end()) {
+    throw std::runtime_error("Explicit footprint layer should remain on front placement");
+  }
+}
+
+void test_bottom_placement_flips_explicit_front_back_layers_before_expansion() {
+  ccad::Project project;
+  project.board = ccad::Board{};
+  project.board->outline.origin = {ccad::millimeters(0), ccad::millimeters(0)};
+  project.board->outline.size = {ccad::millimeters(100), ccad::millimeters(100)};
+  project.board->layers = ccad::standardKiCadPcbLayers();
+
+  ccad::Footprint fp;
+  fp.pads.push_back({
+      .number = "1",
+      .type = "smd",
+      .shape = "rect",
+      .position = {ccad::millimeters(0), ccad::millimeters(0)},
+      .rotation_degrees = 0,
+      .size = {ccad::millimeters(1), ccad::millimeters(1)},
+      .layers = {"F.Cu", "F.Paste", "F.Mask"},
+  });
+
+  ccad::placeFootprint(project, fp, "U2", {ccad::millimeters(30), ccad::millimeters(30)}, 0,
+                       "B.Cu");
+
+  const std::vector<std::string>& placed_layers = project.board->pads.at(0).layers;
+  if (std::find(placed_layers.begin(), placed_layers.end(), "B.Cu") == placed_layers.end() ||
+      std::find(placed_layers.begin(), placed_layers.end(), "B.Paste") == placed_layers.end() ||
+      std::find(placed_layers.begin(), placed_layers.end(), "B.Mask") == placed_layers.end()) {
+    throw std::runtime_error("Bottom placement should flip explicit front layers to back layers");
+  }
+  if (std::find(placed_layers.begin(), placed_layers.end(), "F.Cu") != placed_layers.end() ||
+      std::find(placed_layers.begin(), placed_layers.end(), "F.Paste") != placed_layers.end() ||
+      std::find(placed_layers.begin(), placed_layers.end(), "F.Mask") != placed_layers.end()) {
+    throw std::runtime_error("Bottom placement should not retain original front-only layers");
   }
 }
 
@@ -90,6 +167,8 @@ void test_symbol_placement_retains_visible_primitives_after_reload() {
 int main() {
   try {
     test_basic_placement();
+    test_placement_expands_kicad_wildcard_pad_layers();
+    test_bottom_placement_flips_explicit_front_back_layers_before_expansion();
     test_symbol_placement_retains_visible_primitives_after_reload();
     std::cout << "All tests passed!\n";
     return 0;

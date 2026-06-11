@@ -1,4 +1,5 @@
 #include "ccad_core/placement.hpp"
+#include "ccad_core/layers.hpp"
 
 #include <cmath>
 #include <stdexcept>
@@ -152,6 +153,7 @@ void placeFootprint(Project& project, const Footprint& footprint, const std::str
           }
         }
       }
+      pad_layers = expandKiCadLayerSet(pad_layers, board);
     }
 
     board.pads.push_back(Pad{
