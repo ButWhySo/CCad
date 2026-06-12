@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <limits>
 #include <map>
 #include <set>
@@ -129,9 +130,24 @@ std::vector<SpreadFootprintPlacement> spreadFootprintComponents(
   placements.reserve(groups.size());
 
   std::int64_t cursor_x = request.target.x.nanometers;
-  const std::int64_t cursor_y = request.target.y.nanometers;
+  std::int64_t cursor_y = request.target.y.nanometers;
+  const std::int64_t start_x = cursor_x;
+
+  double total_area = 0;
+  for (const auto& group : groups) {
+    total_area += static_cast<double>(group.bounds.size.width.nanometers + request.component_gap.nanometers) * 
+                  static_cast<double>(group.bounds.size.height.nanometers + request.component_gap.nanometers);
+  }
+  const std::int64_t grid_side_limit = static_cast<std::int64_t>(std::sqrt(total_area));
+  std::int64_t current_row_height = 0;
 
   for (const ComponentGroup& group : groups) {
+    if (cursor_x - start_x > grid_side_limit && cursor_x > start_x) {
+      cursor_x = start_x;
+      cursor_y += current_row_height + request.component_gap.nanometers;
+      current_row_height = 0;
+    }
+
     const std::int64_t delta_x = cursor_x - group.bounds.origin.x.nanometers;
     const std::int64_t delta_y = cursor_y - group.bounds.origin.y.nanometers;
 
@@ -146,6 +162,9 @@ std::vector<SpreadFootprintPlacement> spreadFootprintComponents(
                                                   .previous_bounds = group.bounds,
                                                   .new_bounds = new_bounds});
     cursor_x += group.bounds.size.width.nanometers + request.component_gap.nanometers;
+    if (group.bounds.size.height.nanometers > current_row_height) {
+      current_row_height = group.bounds.size.height.nanometers;
+    }
   }
 
   return placements;
