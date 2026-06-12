@@ -998,6 +998,18 @@ void AgentPanel::handlePythonOutput() {
         if (marketplace_catalog_cb_) marketplace_catalog_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "generated_component") {
         if (component_wizard_cb_) component_wizard_cb_(obj["params"].toObject());
+      } else if (obj.contains("method") && obj["method"].toString() == "telemetry") {
+        QJsonObject params = obj["params"].toObject();
+        if (params.contains("run_state") && run_state_chip_label_) {
+          run_state_chip_label_->setText("Run: " + params["run_state"].toString());
+        }
+        if (params.contains("trace_id") && trace_id_label_) {
+          trace_id_label_->setText("TraceID: " + params["trace_id"].toString());
+          trace_chip_label_->setText("Trace: Active");
+        }
+        if (params.contains("span_id") && span_id_label_) {
+          span_id_label_->setText("SpanID: " + params["span_id"].toString());
+        }
       }
     }
   }
@@ -1096,7 +1108,7 @@ void AgentPanel::hideSlashPopup() {
 
 void AgentPanel::filterSlashCommands() {
   QString text = chat_input_->toPlainText().mid(1).trimmed().toLower();
-  QStringList all_commands = {"/commands", "/workflow:use:", "/workflow:chaining phase:", "/workflow:chaining state:", "/hooks:", "/set:", "/compact context", "/cc", "/schedule:", "/help", "/drc", "/route", "/explain", "/clear", "/marketplace", "/settings"};
+  QStringList all_commands = {"/commands", "/workflow:use:", "/workflow:chaining phase:", "/workflow:chaining state:", "/hooks:", "/set:", "/compact context", "/cc", "/schedule:", "/help", "/drc", "/route", "/place", "/design", "/explain", "/clear", "/marketplace", "/settings"};
   slash_popup_->clear();
   for (const QString& cmd : all_commands) {
     if (text.isEmpty() || cmd.mid(1).toLower().startsWith(text)) {

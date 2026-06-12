@@ -152,18 +152,20 @@ def trigger_hook(name, *args, **kwargs):
         except Exception as e:
             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"[Hook Error: {name}] {e}"}})
             
+import uuid
+
 # Define some default hook actions
 def on_post_prompt(text):
-    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"[Hook: Post prompt] Validating input length: {len(text)} chars"}})
+    emit({"jsonrpc": "2.0", "method": "telemetry", "params": {"run_state": "Processing", "span_id": str(uuid.uuid4())[:8], "trace_id": str(uuid.uuid4())[:8]}})
 
 def on_pre_tool_call(tool_name):
-    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"[Hook: Pre tool call] Analyzing safety for: {tool_name}"}})
+    emit({"jsonrpc": "2.0", "method": "telemetry", "params": {"run_state": f"Tool: {tool_name}", "span_id": str(uuid.uuid4())[:8]}})
 
 def on_post_tool_call(tool_name):
-    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"[Hook: Post tool call] Completed execution of: {tool_name}"}})
+    emit({"jsonrpc": "2.0", "method": "telemetry", "params": {"run_state": "Processing"}})
 
 def on_pre_exit():
-    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "[Hook: Pre exit/end] Wrapping up agent task."}})
+    emit({"jsonrpc": "2.0", "method": "telemetry", "params": {"run_state": "Idle"}})
 
 register_hook("post prompt", on_post_prompt)
 register_hook("pre tool call", on_pre_tool_call)

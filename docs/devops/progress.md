@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 8 / 8
 - Phase name: Agent Runtime and EDA Evidence Expansion
-- Sprint: 224
-- Branch: `sprint-224-kicad-board-bounding-box`
+- Sprint: 225
+- Branch: `main` working copy, ahead of `origin/main`, no new commit for this backlog update yet
 - Phase 8 sprint budget: Sprints 206 through 225 for local runner queues, live tool-loop state, provider execution gates, observability export wiring, KiCad/EDA evidence, simulation planning slices, and the first KiCad PCB editor source-walk parity slices.
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 starts the bounded runtime and EDA evidence expansion.
@@ -20,12 +20,12 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
-- **Sprint 224**: KiCad Board Bounding Box, Commit Impact, and Connected Items
-  - **Goal**: Continue the deterministic KiCad PCB editor walk through `board_bounding_box.*`, `board_commit.*`, and `board_connected_item.*` by exposing the board outline as an explicit KiCad-style transient item, adding KiCad-style transaction impact metadata for agents, and marking pads, vias, tracks, and zones as first-slice `BOARD_CONNECTED_ITEM` query rows.
-  - **Status**: Complete. The CLI inspection and GUI test failures have been fixed, resulting in a 100% test pass rate across all suites. Code has been merged to main.
+- **Sprint 225**: Parity Backlog Normalization and Orchestrator Continuity
+  - **Goal**: Convert the user's raw KiCad file-by-file parity directive into a bounded sprint roadmap that covers PCB editor, schematic editor, external formats, Gerber viewer, 3D viewer, multi-document projects, linked/unlinked DRC, library losslessness, live GUI-map performance, agent prompts/tools, observability, and agent-guided autorouting.
+  - **Status**: In progress on the `main` working copy. This is documentation/process work first, so it avoids reverting unrelated untracked helper scripts and does not require GUI visual validation unless GUI-visible files are changed in this sprint.
 
 ## Backlog
-- **Sprint 225** first read and update the whole backlog.md file in devops folder and update and plan everything as backlog so you can keep good track. and this includes updating this file.
+- **Sprint 225 (Parity Backlog Normalization and Orchestrator Continuity)** is active. The immediate work is to normalize `docs/devops/backlog.md` and this progress file so the user's KiCad file-by-file parity directive becomes a sprint-bounded roadmap with explicit PCB editor, schematic editor, external format, Gerber, 3D, multi-document project, library verification, GUI-map, agent harness, autorouter, and branch-cleanup tracks.
 - **Sprint 224 (KiCad Board Bounding Box, Commit Impact, and Connected Items)** is in progress on `sprint-224-kicad-board-bounding-box`. The slice adds a first explicit CCad analogue for KiCad's `BOARD_BOUNDING_BOX` wrapper: it is a transient, skip-struct, GUI-independent `CanvasScene` view item on `LAYER_BOARD_BOUNDING_BOX`, and `pcb get-outline` reports the same class, view-layer, skip-struct, and bounding-box payload for agents. It also maps the useful headless part of KiCad's `BOARD_COMMIT` into `Transaction::impact`, reporting board/schematic changes, view, DRC, ERC, connectivity, ratsnest, board-outline, solder-mask, dirty object ID, and dirty object type metadata in audit JSON. The current connected-item slice maps KiCad `BOARD_CONNECTED_ITEM` into pads, vias, tracks, and zones returned by `pcb list-objects`, `pcb list-by-net`, `pcb list-connected`, object lookup, and route-job export, including net-name fields, local ratsnest visibility, teardrop capability hints, and an explicit default-netclass fallback until CCad has a full netclass model.
 - **Sprint 223 (KiCad Board Document Model Parity)** is verified on `sprint-223-kicad-board-model`. The slice removes unsafe schematic assumptions from core and CLI behavior, adds primary document helpers, lets board-only projects run physical DRC without irrelevant schematic diagnostics, preserves board-local nets in KiCad PCB export, keeps footprint placement board-owned, creates schematic documents for symbol/schematic commands, and makes review, BOM, PnP, diff, and agent context tolerate unlinked boards. The whole-tree diff check passed, the final incremental Qt build passed, and the final sprint-end CTest gate passed 41 of 41 tests.
 - **Sprint 222 (KiCad PCB API Items, Matrix, Autoplace, and Spread)** is verified on `sprint-222-kicad-pcb-api-items`. The slice records the full KiCad PCB API handler, enum, `BOARD_CONTEXT`, and `HEADLESS_BOARD_CONTEXT` ledgers in `agent pcb-api-schema`; adds a KiCad `array_pad_number_provider` analogue for deterministic pad numbering; adds a first `ar_matrix` analogue for grid occupancy, side masks, distance maps, and keepout costs; improves footprint autoplacement with the matrix cost field; exposes `pcb autoplace-footprint`; adds a first `SpreadFootprints` analogue for deterministic non-overlapping component pad-group spreading; and exposes `pcb spread-footprints`. Focused tests are green, the full Qt build passed, CTest passed 41 of 41, and commit remains pending.
