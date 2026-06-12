@@ -21,6 +21,8 @@ public:
     int getPinCount() const;
     QString getPackageType() const;
     QString getAIPrompt() const;
+    void updatePins(const QJsonObject& data);
+    void setAgentPanel(class AgentPanel* panel);
 
 signals:
     void aiGenerationRequested(const QString& prompt, const QString& type, const QString& pkg);
@@ -36,6 +38,7 @@ private:
     QTextEdit *aiPromptEdit;
     QPushButton *generateButton;
     QTableWidget *pinsTable;
+    class AgentPanel *agent_panel_ = nullptr;
 
     void setupUI();
 };

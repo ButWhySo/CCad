@@ -1,4 +1,5 @@
 #include "ccad_gui/component_wizard_dialog.hpp"
+#include "ccad_gui/agent_panel.hpp"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -13,16 +14,16 @@ ComponentWizardDialog::ComponentWizardDialog(QWidget *parent)
     setWindowTitle("CCad - AI Component Designer");
     resize(600, 650);
     setStyleSheet(
-        "QDialog { background-color: #0f1115; color: #cbd5e1; font-family: 'Inter', 'Segoe UI', sans-serif; }"
-        "QLabel { color: #cbd5e1; }"
-        "QLineEdit, QSpinBox, QComboBox, QTextEdit { background-color: #161b22; color: #cbd5e1; border: 1px solid #30363d; border-radius: 6px; padding: 6px; }"
-        "QLineEdit:focus, QTextEdit:focus { border: 1px solid #58a6ff; }"
-        "QTableWidget { background-color: #0d1117; color: #c9d1d9; border: 1px solid #30363d; gridline-color: #21262d; border-radius: 6px; }"
+        "QDialog { background-color: #0d1117; color: #e6edf3; font-family: 'Inter', sans-serif; }"
+        "QLabel { color: #e6edf3; font-size: 13px; }"
+        "QLineEdit, QSpinBox, QComboBox, QTextEdit { background-color: #010409; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 6px; font-size: 13px; }"
+        "QLineEdit:focus, QTextEdit:focus { border: 1px solid #8a2be2; }"
+        "QTableWidget { background-color: #0d1117; color: #e6edf3; border: 1px solid #30363d; gridline-color: #21262d; border-radius: 6px; font-size: 13px; }"
         "QHeaderView::section { background-color: #161b22; color: #8b949e; border: 1px solid #21262d; padding: 4px; }"
-        "QPushButton { background-color: #21262d; color: #c9d1d9; border: 1px solid #363b42; border-radius: 6px; padding: 6px 12px; }"
-        "QPushButton:hover { background-color: #30363d; border-color: #8b949e; }"
-        "QPushButton#generateBtn { background-color: #1f6feb; color: #ffffff; border: 1px solid #388bfd; font-weight: bold; }"
-        "QPushButton#generateBtn:hover { background-color: #388bfd; }"
+        "QPushButton { background-color: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 6px 12px; font-size: 13px; }"
+        "QPushButton:hover { background-color: #30363d; border-color: #8a2be2; }"
+        "QPushButton#generateBtn { background-color: rgba(138, 43, 226, 0.15); color: #8a2be2; border: 1px solid #8a2be2; font-weight: bold; }"
+        "QPushButton#generateBtn:hover { background-color: rgba(138, 43, 226, 0.3); }"
     );
 
     setupUI();
@@ -34,7 +35,7 @@ void ComponentWizardDialog::setupUI() {
     mainLayout->setSpacing(16);
 
     QLabel *header = new QLabel("<h2>✨ Generate Component</h2>");
-    header->setStyleSheet("color: #58a6ff; font-weight: 600;");
+    header->setStyleSheet("color: #8a2be2; font-weight: 600;");
     mainLayout->addWidget(header);
 
     // AI Prompt Box
@@ -102,14 +103,44 @@ void ComponentWizardDialog::setupUI() {
 }
 
 void ComponentWizardDialog::onGenerateClicked() {
-    emit aiGenerationRequested(aiPromptEdit->toPlainText(), typeCombo->currentText(), packageCombo->currentText());
+    generateButton->setText("Generating...");
+    generateButton->setEnabled(false);
+    
+    if (agent_panel_) {
+        QJsonObject payload;
+        payload["prompt"] = aiPromptEdit->toPlainText();
+        payload["type"] = typeCombo->currentText();
+        payload["package"] = packageCombo->currentText();
+        agent_panel_->sendJsonRpc("agent.generate_component", payload);
+    } else {
+        emit aiGenerationRequested(aiPromptEdit->toPlainText(), typeCombo->currentText(), packageCombo->currentText());
+    }
+}
 
-    // Simulate generation feedback
-    pinsTable->setRowCount(pinCountSpin->value());
-    for(int i = 0; i < pinCountSpin->value(); ++i) {
-        pinsTable->setItem(i, 0, new QTableWidgetItem(QString::number(i + 1)));
-        pinsTable->setItem(i, 1, new QTableWidgetItem(QString("PIN_%1").arg(i + 1)));
-        pinsTable->setItem(i, 2, new QTableWidgetItem("Passive"));
+void ComponentWizardDialog::setAgentPanel(AgentPanel* panel) {
+    agent_panel_ = panel;
+}
+
+#include <QJsonArray>
+#include <QJsonObject>
+
+void ComponentWizardDialog::updatePins(const QJsonObject& data) {
+    generateButton->setText("Generate with Copilot");
+    generateButton->setEnabled(true);
+    
+    if (data.contains("name")) {
+        nameEdit->setText(data["name"].toString());
+    }
+    if (data.contains("pins") && data["pins"].isArray()) {
+        QJsonArray arr = data["pins"].toArray();
+        pinCountSpin->setValue(arr.size());
+        pinsTable->setRowCount(arr.size());
+        for (int i = 0; i < arr.size(); ++i) {
+            QJsonObject obj = arr[i].toObject();
+            pinsTable->setItem(i, 0, new QTableWidgetItem(obj["pin"].toString()));
+            pinsTable->setItem(i, 1, new QTableWidgetItem(obj["name"].toString()));
+            pinsTable->setItem(i, 2, new QTableWidgetItem(obj["type"].toString()));
+        }
     }
 }
 

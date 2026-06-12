@@ -30,6 +30,7 @@ class AgentPanel final : public QWidget {
   using ContextProvider = std::function<std::string()>;
   using ConfigStateCallback = std::function<void(const QJsonObject&)>;
   using MarketplaceCatalogCallback = std::function<void(const QJsonObject&)>;
+  using ComponentWizardCallback = std::function<void(const QJsonObject&)>;
 
   struct AgentSessionMetadata {
     QString session_id;
@@ -50,6 +51,7 @@ class AgentPanel final : public QWidget {
   void setContextProvider(ContextProvider provider);
   void setConfigStateCallback(ConfigStateCallback cb);
   void setMarketplaceCatalogCallback(MarketplaceCatalogCallback cb);
+  void setComponentWizardCallback(ComponentWizardCallback cb);
   void setProjectContext(const QString& project_label, int ui_map_epoch);
   void setWorkspaceContext(const QString& active_view,
                            const QString& active_layer,
@@ -278,4 +280,5 @@ class AgentPanel final : public QWidget {
   ContextProvider context_provider_;
   ConfigStateCallback config_state_cb_;
   MarketplaceCatalogCallback marketplace_catalog_cb_;
+  ComponentWizardCallback component_wizard_cb_;
 };

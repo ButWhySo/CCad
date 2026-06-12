@@ -61,6 +61,12 @@ def ui_screenshot():
     return "Action dispatched to CCad client."
 
 @tool
+def ui_open_component_wizard():
+    """Opens the AI Component Designer Wizard in the GUI."""
+    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.open_component_wizard", "args": {}}})
+    return "Component Wizard requested from CCad client."
+
+@tool
 def ui_add_wire(x1: float, y1: float, x2: float, y2: float):
     """Adds a wire segment between two coordinates on the schematic."""
     emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.add_wire", "args": {"x1": x1, "y1": y1, "x2": x2, "y2": y2}}})
@@ -74,7 +80,7 @@ def ui_add_label(text: str, x: float, y: float, global_label: bool = False):
 
 router_tools = [ui_place_via, ui_add_track, ui_add_polygon]
 librarian_tools = [ui_place_footprint, ui_place_symbol, project_review, ui_add_wire, ui_add_label]
-general_tools = [ui_screenshot]
+general_tools = [ui_screenshot, ui_open_component_wizard]
 
 llm = None
 router_llm = None
@@ -408,6 +414,10 @@ if __name__ == "__main__":
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Initiating component placement workflow..."}})
                         session_messages.append(HumanMessage(content="Start the placement workflow and optimally place footprints."))
                         # Fall through to graph execution
+                    elif cmd_base == "/design":
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Opening the Component Designer Wizard..."}})
+                        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.open_component_wizard", "args": {}}})
+                        continue
                     elif cmd_base == "/explain":
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Explaining the current context..."}})
                         session_messages.append(HumanMessage(content="Explain the current board selection or context in detail."))
@@ -421,7 +431,7 @@ if __name__ == "__main__":
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Opening agent settings panel..."}})
                         continue
                     elif cmd_base == "/help":
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`\n- `/route`\n- `/drc`\n- `/place`\n- `/explain`\n- `/clear`\n- `/settings`"}})
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`\n- `/route`\n- `/drc`\n- `/place`\n- `/design`\n- `/explain`\n- `/clear`\n- `/settings`"}})
                         continue
                     else:
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Unknown command: {cmd_base}"}})
@@ -436,7 +446,14 @@ if __name__ == "__main__":
                 last_msg = session_messages[-1]
                 
                 if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
-                    pass
+                    for tcall in last_msg.tool_calls:
+                        tool_name = tcall.get("name", "")
+                        args = tcall.get("args", {})
+                        if "pre tool call" in [h.lower() for h in active_hooks]:
+                            trigger_hook("pre tool call", tool_name)
+                        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": tool_name, "args": args}})
+                        if "post tool call" in [h.lower() for h in active_hooks]:
+                            trigger_hook("post tool call", tool_name)
                 elif "<TOOL>" in last_msg.content:
                     tool_call_str = last_msg.content.replace("<TOOL>", "").strip()
                     tool_name = tool_call_str.split(" ")[0]
@@ -446,8 +463,8 @@ if __name__ == "__main__":
                     args = {}
                     try:
                         args = json.loads(args_str)
-                    except:
-                        pass
+                    except Exception as e:
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Error parsing tool args: {e}"}})
                     emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": tool_name, "args": args}})
                     if "post tool call" in [h.lower() for h in active_hooks]:
                         trigger_hook("post tool call", tool_name)
@@ -472,6 +489,20 @@ if __name__ == "__main__":
                     init_provider()
             elif method == "agent.get_config":
                 emit({"jsonrpc": "2.0", "method": "config_state", "params": config_manager.config})
+            elif method == "agent.generate_component":
+                prompt = req.get("params", {}).get("prompt", "")
+                ctype = req.get("params", {}).get("type", "footprint")
+                pkg = req.get("params", {}).get("package", "DIP")
+                emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"AI Generator: Crafting {ctype} for '{prompt}'..."}})
+                
+                # Mock AI response for now to provide the GUI with pins
+                pins = [
+                    {"pin": "1", "name": "VCC", "type": "Power"},
+                    {"pin": "2", "name": "GND", "type": "Power"},
+                    {"pin": "3", "name": "IN", "type": "Input"},
+                    {"pin": "4", "name": "OUT", "type": "Output"},
+                ]
+                emit({"jsonrpc": "2.0", "method": "generated_component", "params": {"pins": pins, "name": "AI_" + pkg}})
             elif method == "agent.get_marketplace_catalog":
                 catalog = {
                     "plugins": [

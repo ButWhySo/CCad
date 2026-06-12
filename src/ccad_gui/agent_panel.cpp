@@ -996,6 +996,8 @@ void AgentPanel::handlePythonOutput() {
         if (config_state_cb_) config_state_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "marketplace_catalog") {
         if (marketplace_catalog_cb_) marketplace_catalog_cb_(obj["params"].toObject());
+      } else if (obj.contains("method") && obj["method"].toString() == "generated_component") {
+        if (component_wizard_cb_) component_wizard_cb_(obj["params"].toObject());
       }
     }
   }
@@ -1170,6 +1172,7 @@ void AgentPanel::setLiveQueryProvider(LiveQueryProvider provider) {
       register_ui_tool("action.drc", ccad::TaskRisk::ReadOnly);
       register_ui_tool("action.route", ccad::TaskRisk::LowMutation);
       register_ui_tool("action.place", ccad::TaskRisk::LowMutation);
+      register_ui_tool("ui.open_component_wizard", ccad::TaskRisk::ReadOnly);
   }
 }
 
@@ -1182,7 +1185,11 @@ void AgentPanel::setConfigStateCallback(ConfigStateCallback cb) {
 }
 
 void AgentPanel::setMarketplaceCatalogCallback(MarketplaceCatalogCallback cb) {
-    marketplace_catalog_cb_ = std::move(cb);
+  marketplace_catalog_cb_ = std::move(cb);
+}
+
+void AgentPanel::setComponentWizardCallback(ComponentWizardCallback cb) {
+  component_wizard_cb_ = std::move(cb);
 }
 
 void AgentPanel::setProjectContext(const QString& project_label, const int ui_map_epoch) {

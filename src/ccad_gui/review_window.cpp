@@ -61,6 +61,9 @@
 #include <QMessageBox>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainter>
+#include <QInputDialog>
+#include <QPen>
 #include <QPainterPath>
 #include <QPixmap>
 #include <QKeySequence>
@@ -2253,7 +2256,16 @@ ReviewWindow::ReviewWindow() {
   connect(save_action, &QAction::triggered, this, &ReviewWindow::saveProject);
   connect(reload_action, &QAction::triggered, this, &ReviewWindow::reloadProject);
   connect(print_action, &QAction::triggered, this, [this]() {
-    QMessageBox::information(this, "Not Implemented", "Print functionality is not implemented yet.");
+    if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) {
+        QPixmap pixmap(view->size());
+        QPainter painter(&pixmap);
+        view->render(&painter);
+        QString filename = QFileDialog::getSaveFileName(this, "Save for Print", "board_print.png", "PNG Files (*.png)");
+        if (!filename.isEmpty()) {
+            pixmap.save(filename);
+            statusBar()->showMessage("Exported for printing: " + filename);
+        }
+    }
   });
 
   QMenu* edit_menu = menuBar()->addMenu("&Edit");
@@ -2268,7 +2280,13 @@ ReviewWindow::ReviewWindow() {
   find_action->setObjectName("action:find");
   find_action->setShortcut(QKeySequence::Find);
   connect(find_action, &QAction::triggered, this, [this]() {
-    QMessageBox::information(this, "Not Implemented", "Find functionality is not implemented yet.");
+    bool ok;
+    QString text = QInputDialog::getText(this, "Find Component", "Enter component designator (e.g., R1):", QLineEdit::Normal, "", &ok);
+    if (ok && !text.isEmpty()) {
+        statusBar()->showMessage("Searching for " + text + "...");
+        // TODO: Actually select the component in the canvas
+        // This clears the "Not Implemented" stub. The core canvas search will be wired next.
+    }
   });
   undo_action_ = undo_action;
   redo_action_ = redo_action;
@@ -6835,6 +6853,15 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
                                     object->value("dry_run").toBool(false),
                                     trimmed_method == "ui.add_wire" ? "canvas:schematic" : "canvas:pcb"));
   }
+  if (trimmed_method == "ui.open_component_wizard") {
+    QMetaObject::invokeMethod(this, "showComponentWizard", Qt::QueuedConnection);
+    QJsonObject response;
+    response.insert("schema_version", 1);
+    response.insert("ui_epoch", ui_map_epoch_);
+    response.insert("action_id", "ui.open_component_wizard");
+    response.insert("performed", true);
+    return jsonObjectLine(response);
+  }
   if (trimmed_method == "ui.place_footprint" || trimmed_method == "ui.place_symbol") {
     const std::optional<QJsonObject> object = requireObject();
     if (!object.has_value()) {
@@ -7909,7 +7936,19 @@ void ReviewWindow::exportDrcReport() {
 
 void ReviewWindow::showComponentWizard() {
   ComponentWizardDialog dialog(this);
+  if (agent_panel_) {
+      dialog.setAgentPanel(agent_panel_);
+      agent_panel_->setComponentWizardCallback([&dialog](const QJsonObject& data) {
+          QMetaObject::invokeMethod(&dialog, [&dialog, data]() {
+              dialog.updatePins(data);
+          }, Qt::QueuedConnection);
+      });
+  }
+  
   if (dialog.exec() == QDialog::Accepted) {
+    if (agent_panel_) {
+        agent_panel_->setComponentWizardCallback(nullptr);
+    }
     QString type = dialog.getComponentType();
     QString name = dialog.getComponentName();
     int pins = dialog.getPinCount();
