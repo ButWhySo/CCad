@@ -455,3 +455,6 @@ Sprint 239 is verified on branch `sprint-239-router-source-walk`. The batch conc
 
 Sprint 240 is verified on branch `sprint-240-importer-source-walk`. The batch concluded the KiCad External EDA Formats source walk in `pcbnew/pcb_io`, omitting native KiCad format IO, and stubbing third-party format importers (Allegro, Altium, Eagle, etc.) to the backlog.
 
+
+Sprint 241 is verified on branch `sprint-241-auxiliary-source-walk`. The batch concluded the KiCad auxiliary tools source walk in `pagelayout_editor`, `pcb_calculator`, and `bitmap2component`, omitting redundant wxWidgets GUI forms, and stubbing page layouts, RF calculators, and bitmap conversions to the backlog.
+
