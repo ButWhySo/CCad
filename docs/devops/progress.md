@@ -437,3 +437,9 @@ Sprint 233 is verified on branch `sprint-233-eeschema-source-walk`. The batch pr
 
 Sprint 234 is verified on branch `sprint-234-eeschema-source-walk`. The batch concluded the KiCad schematic source walk in `eeschema`, omitting redundant wxWidgets GUI forms, rendering engines, and stubbing core schematic primitives and hierarchical nets to the backlog.
 
+
+Sprint 235 is verified on branch `sprint-235-gerbview-source-walk`. The batch began the KiCad Gerber Viewer source walk from `am_param.cpp` through `gbr_layout.cpp`, omitting redundant wxWidgets GUI forms and stubbing Gerber aperture and Excellon drill parsing to the backlog.
+
+
+Sprint 236 is verified on branch `sprint-236-gerbview-source-walk`. The batch concluded the KiCad Gerber Viewer source walk in `gerbview`, omitting redundant wxWidgets GUI forms, and stubbing Gerber core graphic primitives, document models, and syntax parsers to the backlog.
+
