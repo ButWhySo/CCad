@@ -446,3 +446,6 @@ Sprint 236 is verified on branch `sprint-236-gerbview-source-walk`. The batch co
 
 Sprint 237 is verified on branch `sprint-237-3d-viewer-source-walk`. The batch concluded the KiCad 3D Viewer source walk in `3d-viewer`, omitting redundant wxWidgets GUI forms, and stubbing 3D geometry caching, rendering graphs, and transformations to the backlog.
 
+
+Sprint 238 is verified on branch `sprint-238-cvpcb-source-walk`. The batch concluded the KiCad Footprint Assignment source walk in `cvpcb`, omitting redundant wxWidgets GUI forms, and stubbing schematic-to-PCB bridging and auto-association heuristics to the backlog.
+
