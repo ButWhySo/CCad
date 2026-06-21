@@ -443,3 +443,6 @@ Sprint 235 is verified on branch `sprint-235-gerbview-source-walk`. The batch be
 
 Sprint 236 is verified on branch `sprint-236-gerbview-source-walk`. The batch concluded the KiCad Gerber Viewer source walk in `gerbview`, omitting redundant wxWidgets GUI forms, and stubbing Gerber core graphic primitives, document models, and syntax parsers to the backlog.
 
+
+Sprint 237 is verified on branch `sprint-237-3d-viewer-source-walk`. The batch concluded the KiCad 3D Viewer source walk in `3d-viewer`, omitting redundant wxWidgets GUI forms, and stubbing 3D geometry caching, rendering graphs, and transformations to the backlog.
+
