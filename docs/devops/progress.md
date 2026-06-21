@@ -425,3 +425,6 @@ Sprint 229 is verified on branch `sprint-229-source-walk`. The batch progressed 
 
 Sprint 230 is verified on branch `sprint-230-source-walk`. The batch concluded the KiCad source walk from Iteration 467, covering `sel_layer.cpp` through the end of the alphabet. Copper pours (zones) and track cleaning heuristics were stubbed to the backlog. Phase 8 is formally complete!
 
+
+Sprint 231 is complete on branch `sprint-231-fix-ci`. Fixed the GitHub Actions CI/CD pipeline failure for `visual_harness_policy` by un-ignoring `.agents/workflows/*.md` in `.gitignore` so the required workflow file is tracked and available in the remote repository.
+
