@@ -449,3 +449,6 @@ Sprint 237 is verified on branch `sprint-237-3d-viewer-source-walk`. The batch c
 
 Sprint 238 is verified on branch `sprint-238-cvpcb-source-walk`. The batch concluded the KiCad Footprint Assignment source walk in `cvpcb`, omitting redundant wxWidgets GUI forms, and stubbing schematic-to-PCB bridging and auto-association heuristics to the backlog.
 
+
+Sprint 239 is verified on branch `sprint-239-router-source-walk`. The batch concluded the KiCad Autorouter and Interactive Router source walk in `pcbnew/autorouter` and `pcbnew/router`, omitting redundant wxWidgets GUI forms, and stubbing Push-and-Shove (PNS) algorithms and auto-placers to the backlog.
+
