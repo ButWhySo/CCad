@@ -419,3 +419,6 @@ Sprint 227 is complete on branch `sprint-227-fix-board-shape`. The batch address
 
 Sprint 228 is verified on branch `sprint-228-source-walk`. The batch progressed the KiCad source walk through `initpcb.cpp` to `padstack.cpp`, mapping GUI and data-model boundaries and stubbing advanced bridging/padstack functionality to the backlog.
 
+
+Sprint 229 is verified on branch `sprint-229-source-walk`. The batch progressed the KiCad source walk through `pcb_barcode.cpp` to `project_pcb.cpp`, mapping GUI and rendering boundaries and stubbing advanced primitives (barcodes, dimensions, fields, groups, plotting, tables, text) to the backlog.
+
