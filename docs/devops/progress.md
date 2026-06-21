@@ -452,3 +452,6 @@ Sprint 238 is verified on branch `sprint-238-cvpcb-source-walk`. The batch concl
 
 Sprint 239 is verified on branch `sprint-239-router-source-walk`. The batch concluded the KiCad Autorouter and Interactive Router source walk in `pcbnew/autorouter` and `pcbnew/router`, omitting redundant wxWidgets GUI forms, and stubbing Push-and-Shove (PNS) algorithms and auto-placers to the backlog.
 
+
+Sprint 240 is verified on branch `sprint-240-importer-source-walk`. The batch concluded the KiCad External EDA Formats source walk in `pcbnew/pcb_io`, omitting native KiCad format IO, and stubbing third-party format importers (Allegro, Altium, Eagle, etc.) to the backlog.
+
