@@ -3,6 +3,7 @@
 #include "ccad_core/geometry.hpp"
 #include "ccad_core/symbol.hpp"
 
+#include <map>
 #include <optional>
 #include <string>
 #include <vector>
@@ -38,6 +39,14 @@ struct WireSegment {
   Point start;
   Point end;
   std::string net_id;
+};
+
+struct BusSegment {
+  std::string id;
+  Point start;
+  Point end;
+  std::string bus_id;
+  std::vector<std::string> net_ids;
 };
 
 struct Label {
@@ -127,6 +136,7 @@ struct Pad {
   std::optional<double> roundrect_rratio = std::nullopt;
   std::optional<double> chamfer_ratio = std::nullopt;
   bool teardrops_enabled = false;
+  bool locked = false;
 };
 
 struct Via {
@@ -136,6 +146,7 @@ struct Via {
   Length diameter;
   Length drill;
   bool teardrops_enabled = false;
+  bool locked = false;
 };
 
 struct TrackSegment {
@@ -146,6 +157,7 @@ struct TrackSegment {
   Point end;
   Length width;
   std::string source_route_request_id;
+  bool locked = false;
 };
 
 struct BoardGraphic {
@@ -155,6 +167,7 @@ struct BoardGraphic {
   Point start;
   Point end;
   Length width;
+  bool locked = false;
 };
 
 struct BoardText {
@@ -164,6 +177,7 @@ struct BoardText {
   Point position;
   double rotation_degrees = 0.0;
   Size size;
+  bool locked = false;
 };
 
 struct BoardZone {
@@ -177,6 +191,7 @@ struct BoardZone {
   Length min_thickness;
   bool fill_enabled = true;
   std::string pad_connection;
+  bool locked = false;
 };
 
 struct RouteRequest {
@@ -201,10 +216,22 @@ struct PlacementRegion {
   Rect area;
 };
 
+struct BoardFootprint {
+  std::string reference;
+  std::string value;
+  std::string footprint_name;
+  std::string layer_id;
+  Point position;
+  double rotation_degrees = 0.0;
+  bool exclude_from_bom = false;
+  bool locked = false;
+};
+
 struct Board {
   Rect outline;
   DesignRules design_rules;
   std::vector<Layer> layers;
+  std::vector<BoardFootprint> footprints;
   std::vector<PlacementRegion> placement_regions;
   std::vector<Keepout> keepouts;
   std::vector<Pad> pads;
@@ -222,6 +249,7 @@ struct Schematic {
   std::vector<Component> components;
   std::vector<Net> nets;
   std::vector<WireSegment> wires;
+  std::vector<BusSegment> buses;
   std::vector<Label> labels;
   std::vector<PowerSymbol> power_symbols;
   std::vector<Constraint> constraints;
@@ -231,6 +259,7 @@ struct Project {
   int schema_version = 2;
   std::string id;
   std::string name;
+  std::map<std::string, std::string> text_variables;
   std::vector<Board> boards;
   std::vector<Schematic> schematics;
 };

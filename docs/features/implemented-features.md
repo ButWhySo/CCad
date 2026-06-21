@@ -666,6 +666,7 @@ What it does:
 - GUI toolbar exposes Fit, Zoom Out, Zoom In, and 100% canvas review controls.
 - GUI status readout distinguishes board coordinates from off-board canvas coordinates.
 - GUI screenshot mode captures the app through `ccad_gui --screenshot <project.ccad.json> <out.png>` after the current 7-second single-preview event-processing wait.
+- GUI cursor, selection, status, and inspector callbacks tolerate empty projects and board-only projects instead of assuming `boards[0]` exists.
 - Shows ERC diagnostics table.
 - Supports reload.
 - **Measurement Tool**: Click the Measure button on the Right Toolbar, click a start point on the canvas, and drag to see a real-time overlay line and text displaying Euclidean distance (mm), `dx`, and `dy`.
@@ -734,6 +735,7 @@ Expected result:
 - Invalid files show diagnostics.
 - Board files show the outline on the dark canvas.
 - Board files with primitives show red tracks, pink pads, yellow vias, and orange dashed keepout regions.
+- Empty projects, board-only projects, no-argument startup, and the current sprint demo project keep `ccad_gui.exe` alive for at least 7 seconds after launch.
 
 Current limitation:
 - The GUI is now an early CAD editor shell, but DRC overlay markers, layer visibility toggles, net highlight, richer object properties, editing, schematic rendering, and transaction timeline are still future work.
@@ -1854,3 +1856,159 @@ ERC now distinguishes an absent schematic document from an empty schematic docum
 Review, BOM export, PnP export, KiCad PCB export, project diff, and agent-orchestrator context now tolerate board-only projects. KiCad PCB export also preserves board-local net names collected from pads, vias, tracks, and zones, so a PCB-only board does not silently collapse all routed copper to net 0.
 
 Placement behavior is split by document ownership. Footprint placement remains a board operation and does not create a schematic. Symbol placement and schematic mutation commands create the primary schematic document when needed.
+
+## Sprint 226 KiCad Board Design Settings Validation Addendum
+
+The KiCad PCB editor source walk now includes `F:\kicad_src\pcbnew\board_design_settings.cpp`. CCad maps the first useful headless part of KiCad's `BOARD_DESIGN_SETTINGS::ValidateDesignRules()` behavior into `src/ccad_core/board_design_settings.hpp/.cpp`.
+
+`validateDesignRules(const DesignRules&)` now checks KiCad-shaped field ranges for minimum clearance, connection, track width, via annular width, via diameter, through-hole drill, microvia diameter, microvia drill, hole-to-hole spacing, hole clearance, silk clearance, groove width, copper-edge clearance, solder mask expansion, solder mask minimum width, solder-mask-to-copper clearance, solder paste margin, solder paste margin ratio, and board thickness. DRC calls this helper instead of maintaining a separate partial range checker.
+
+The compatibility decision is deliberate: KiCad allows zero minima for several rule fields, so CCad no longer reports `INVALID_COPPER_CLEARANCE`, `INVALID_MIN_TRACK_WIDTH`, or `INVALID_MIN_VIA_ANNULAR_RING` merely because those values are zero. Negative ranges are also preserved where KiCad allows them, such as small negative solder mask expansion and negative paste-margin-style values. Stricter manufacturer-specific policies should be modeled later as explicit constraints rather than hidden hard-coded DRC assumptions.
+
+Focused coverage lives in `tests/test_board_design_settings.cpp` and the updated `tests/test_drc.cpp`. The focused green checks are `cmd /c ctest --test-dir build-qt -R board_design_settings --output-on-failure` and `cmd /c ctest --test-dir build-qt -R drc --output-on-failure`.
+
+## Sprint 226 KiCad BOARD_ITEM Metadata Addendum
+
+The KiCad PCB editor source walk now includes `F:\kicad_src\pcbnew\board_item.cpp` and `F:\kicad_src\include\board_item.h`. CCad maps the first useful headless part of KiCad's `BOARD_ITEM` base behavior into `src/ccad_core/board_item.hpp/.cpp` without changing the project JSON schema.
+
+`BoardItemMetadata` derives KiCad-shaped metadata for current board objects. The emitted fields include `kicad_base_class`, `kicad_groupable`, `primary_layer_id`, `layer_ids`, `layer_mask_description`, `side_specific`, `is_on_copper_layer`, `has_hole`, `has_drilled_hole`, `locked`, `knockout`, `view_layer_ids`, and `parity_scope`. Pads resolve KiCad wildcard layer selectors through the active board layer list, vias use board copper layers, tracks and single-layer graphics/texts report their concrete layer, and zones report their stored layer set.
+
+The metadata is available to agents through `pcb get-object`, `pcb list-objects`, `pcb list-by-net`, and `pcb list-connected` for pads, vias, tracks, graphics, texts, and zones. This gives downstream tools a KiCad-compatible board-object envelope before CCad has a full KiCad inheritance tree, property editor, object-group system, or per-item lock mutation commands.
+
+Focused coverage lives in `tests/test_cli.cpp`. The red check failed with `test failure: pcb get-object exposes KiCad board item base class`, and the focused green checks are `cmd /c build-qt\ccad_cli_tests.exe` and `cmd /c ctest --test-dir build-qt -R cli --output-on-failure`.
+
+## Sprint 226 KiCad BOARD_LOADER State Addendum
+
+The KiCad PCB editor source walk now includes `F:\kicad_src\pcbnew\board_loader.cpp`, `F:\kicad_src\pcbnew\board_loader.h`, and `F:\kicad_src\qa\tests\pcbnew\test_board_loader.cpp`. CCad maps the first useful headless part of KiCad's `BOARD_LOADER` behavior into `src/ccad_core/board_loader.hpp/.cpp` as a derived state summary.
+
+`summarizeLoadedBoard(const Project&, const BoardLoadOptions&)` reports a KiCad-shaped load envelope without pretending that CCad already has KiCad's PCB IO plugin manager or persistent DRC engine. The state reports `kicad_class:"BOARD_LOADER"`, source format, initialization mode, board attachment, design-rule readiness, DRC readiness, connectivity readiness, netlist readiness, user-unit readiness, board and schematic counts, layer visibility counts, physical object counts, board net counts, and explicit `pending_kicad_loader_steps`.
+
+Agents can query the same state through `ccad pcb load-state --file <project.ccad.json>`. Passing `--initialize false` mirrors KiCad's raw load path before project attachment and post-load initialization by reporting `board_attached:false`, `drc_ready:false`, and `connectivity_ready:false` while still parsing the source file as data.
+
+Focused coverage lives in `tests/test_board_loader.cpp` and `tests/test_cli.cpp`. The red check failed because `ccad_core/board_loader.hpp` did not exist, and the focused green checks are `cmd /c ctest --test-dir build-qt -R board_loader --output-on-failure` and `cmd /c ctest --test-dir build-qt -R cli --output-on-failure`.
+
+## Sprint 226 KiCad BOARD_STACKUP Default Stackup Addendum
+
+The KiCad PCB editor source walk now includes `F:\kicad_src\pcbnew\board_stackup_manager\board_stackup.cpp`, `board_stackup.h`, `dielectric_material.cpp`, `dielectric_material.h`, `board_stackup_reporter.cpp`, and `board_stackup_reporter.h`. CCad maps the first useful headless part of KiCad's `BOARD_STACKUP` behavior into `src/ccad_core/board_stackup.hpp/.cpp`.
+
+`buildDefaultBoardStackup(const Board&)` derives a KiCad-style physical stack from current board layers and board thickness rules. It orders top silkscreen, top paste, top mask, copper layers, dielectric layers, bottom mask, bottom paste, and bottom silkscreen; assigns KiCad's default 0.035 mm copper thickness, 0.01 mm solder-mask thickness, FR4 dielectric material, epsilon-r 4.5, loss tangent 0.02, and 1 GHz specification frequency; distributes dielectric thickness from the remaining board thickness; and computes copper-to-copper layer distances with KiCad's half-internal-copper rule.
+
+`ccad pcb get-board-stackup --file <project.ccad.json>` now emits `kicad_class:"BOARD_STACKUP"`, `kicad_parity_scope:"default_stackup_first_slice"`, stackup item rows, computed stackup thickness, copper layer distance rows, finish metadata, and the older enabled-layer rows for compatibility. The Agent PCB API schema now maps `GetBoardStackup` to the same first-slice physical stackup scope rather than the old `enabled_layer_order` label.
+
+This remains a derived first slice. CCad does not yet persist editable stackup items, material libraries, dielectric sublayers, locked impedance-control thicknesses, copper finish, edge connector constraints, edge plating, or stackup-backed impedance/3D/Gerber-job behavior in project JSON.
+
+Focused coverage lives in `tests/test_board_stackup.cpp` and `tests/test_cli.cpp`. The core red check failed because `ccad_core/board_stackup.hpp` did not exist, the CLI red checks failed on the missing KiCad stackup class and stale agent schema scope, and the focused green checks are `cmd /c ctest --test-dir build-qt -R board_stackup --output-on-failure` and `cmd /c ctest --test-dir build-qt -R cli --output-on-failure`.
+
+## Sprint 226 KiCad Board Statistics Drill Table And Report Addendum
+
+The KiCad PCB editor source walk now includes `F:\kicad_src\pcbnew\board_statistics.cpp`, `F:\kicad_src\pcbnew\board_statistics.h`, `F:\kicad_src\pcbnew\board_statistics_report.cpp`, `F:\kicad_src\pcbnew\board_statistics_report.h`, and `F:\kicad_src\qa\tests\pcbnew\test_board_statistics.cpp`. CCad maps the first useful headless part of KiCad's `CollectDrillLineItems()` behavior into `src/ccad_core/board_statistics.hpp/.cpp`.
+
+`collectDrillLineItems(const Board&)` scans current board pads and vias, derives KiCad-style drill rows, and aggregates identical rows by shape, x/y drill size, plated state, source kind, start layer, and stop layer. Pads use their stored drill diameter and KiCad layer selectors resolved against the board layer list; vias report plated circular holes across the board copper span. `buildBoardStatisticsReport(const Board&, std::string, std::string)` builds the first KiCad `BOARD_STATISTICS_REPORT` analogue by combining outline dimensions, rectangular board area, current object counts, minimum track width, minimum drill diameter, board thickness, and drill rows.
+
+Agents can query the same state through `ccad pcb drill-statistics --file <project.ccad.json>`. The command emits `kicad_reference:"board_statistics"`, `parity_scope:"drill_line_items_first_slice"`, a summary with unique row and total drill counts, and a `drill_holes` array with count, shape, x/y size, plated state, source, and nullable copper start/stop layers.
+
+Agents can query the report through `ccad pcb board-statistics --file <project.ccad.json>`. The command emits `kicad_reference:"board_statistics_report"`, `parity_scope:"summary_report_first_slice"`, `board_outline`, `board_width_nm`, `board_height_nm`, `board_area_square_mm`, `counts`, nullable minimum width/drill fields, `board_thickness_nm`, and `drill_holes`.
+
+This remains a truthful first slice. CCad does not yet compute KiCad's exact polygonal board area, copper areas, courtyard area, footprint density, minimum clearance across geometry, localized text report formatting, or the report options that subtract holes from board/copper areas.
+
+Focused coverage lives in `tests/test_board_statistics.cpp` and `tests/test_cli.cpp`. The core red check failed because `ccad_core/board_statistics.hpp` did not exist, the CLI red checks failed with missing drill-statistics and board-statistics help entries, and the focused green checks are `cmd /c ctest --test-dir build-qt -R board_statistics --output-on-failure` and `cmd /c ctest --test-dir build-qt -R cli --output-on-failure`.
+
+## Sprint 226 KiCad BOARD_ITEM_CONTAINER Remove/Delete Addendum
+
+The KiCad PCB editor source walk now includes `F:\kicad_src\pcbnew\board_item_container.h`. CCad maps the first useful headless part of KiCad's `BOARD_ITEM_CONTAINER` behavior into `src/ccad_core/board_item_container.hpp/.cpp`.
+
+`summarizeBoardItemContainer(const Board&)` reports the KiCad class name, board container kind, supported add modes, supported remove modes, current board-item count, current constraint-item count, and the fact that KiCad `Delete()` delegates through `Remove()`. `findBoardContainerItem()`, `hasBoardContainerItemId()`, `requireUniqueBoardContainerItemId()`, and `removeBoardContainerItem()` provide a shared board-level lookup and removal path over pads, vias, tracks, graphics, texts, zones, keepouts, and placement regions.
+
+Agents can see the same compatibility contract through `ccad pcb remove-object --file <project.ccad.json> --id <object-id> [--mode normal|bulk]`. The command mutates the project as before, but it now emits a compact JSON result with `kicad_container_class:"BOARD_ITEM_CONTAINER"`, `kicad_method:"Delete"`, `remove_mode`, `removed`, `id`, `kind`, `index`, and `kicad_delete_semantics`. This lets agent tooling distinguish ordinary object deletion from bulk container removal while preserving CCad's current typed-vector storage model.
+
+Focused coverage lives in `tests/test_board_item_container.cpp` and `tests/test_cli.cpp`. The core red check failed because `ccad_core/board_item_container.hpp` did not exist, the CLI red check failed on the missing `--mode` option, and the focused green checks are `cmd /c "ctest --test-dir build-qt -R cli --output-on-failure && ctest --test-dir build-qt -R board_item_container --output-on-failure"`.
+
+## Sprint 226 KiCad BOARD_TEXT_VAR_ADAPTER Addendum
+
+The KiCad PCB editor source walk now includes `F:\kicad_src\pcbnew\board_text_var_adapter.cpp`, `F:\kicad_src\pcbnew\board_text_var_adapter.h`, `F:\kicad_src\pcbnew\api\api_handler_pcb.cpp`, and `F:\kicad_src\common\api\api_handler_common.cpp`. CCad maps the first useful headless part of KiCad's board text-variable behavior into `src/ccad_core/board_text_var_adapter.hpp/.cpp`.
+
+`Project::text_variables` stores the first KiCad-style project text variable map in project JSON. `expandTextVariables()` expands `${NAME}` tokens from that map, keeps unresolved tokens visible, and reports whether each reference resolved. `expandBoardTexts()` applies the same logic to every current `BoardText`.
+
+Agents and scripts can mutate and inspect the map with `ccad project set-text-variable --file <project.ccad.json> --key <name> --value <text>` and `ccad project list-text-variables --file <project.ccad.json>`. They can resolve explicit text or all board texts with `ccad pcb expand-text-variables --file <project.ccad.json> [--text <value>]`. The agent PCB API schema now maps KiCad `ExpandTextVariables` to `pcb expand-text-variables` with `project_text_variable_expansion_first_slice`.
+
+This remains a headless first slice. CCad does not yet implement KiCad's live `TEXT_VAR_TRACKER`, listener invalidation on board edits, footprint cross-reference sources such as `${U1:FIELD}`, title-block variables, barcode text dependencies, or GUI repaint invalidation.
+
+Focused coverage lives in `tests/test_board_text_var_adapter.cpp` and `tests/test_cli.cpp`. The core red check failed because `ccad_core/board_text_var_adapter.hpp` did not exist, the CLI red check failed with `test failure: help json describes board text variable expansion`, and the focused green checks are `cmd /c ctest --test-dir build-qt -R board_text_var_adapter --output-on-failure` and `cmd /c ctest --test-dir build-qt -R cli --output-on-failure`.
+
+## Sprint 226 KiCad Legacy Board BOM Export Addendum
+
+The KiCad PCB editor source walk now includes `F:\kicad_src\pcbnew\build_BOM_from_board.cpp`. CCad maps KiCad's legacy PCB-editor BOM export into `src/ccad_core/bom_export.hpp/.cpp` and exposes it through `ccad pcb export-board-bom --file <project.ccad.json> --output <board-bom.csv>`.
+
+Placed footprint metadata now exists on `Board::footprints`. Core placement records the placed reference, value, footprint name, layer, position, rotation, and BOM exclusion flag beside the concrete pads it already places. The KiCad footprint importer also preserves root `(attr exclude_from_bom)` as footprint metadata so excluded parts can be skipped by board-side BOM export.
+
+`exportBoardToBomCsv(const Project&)` follows the legacy KiCad board-BOM shape: it rejects boards with no placed footprints, skips excluded footprints, groups rows by value plus footprint name, naturally sorts references such as `C2` before `C10`, sorts groups by first designator, and emits the KiCad header columns `Id`, `Designator`, `Footprint`, `Quantity`, `Designation`, and `Supplier and ref`.
+
+This is intentionally not the full schematic-driven BOM generator. KiCad's own PCB editor documentation treats the board-side BOM as a simple fabrication output with no configurable options and recommends the schematic editor's BOM generator for richer output. CCad still needs future schematic BOM, supplier/procurement, manufacturer part, assembly, and configurable report work.
+
+Focused coverage lives in `tests/test_bom_export.cpp` and `tests/test_cli.cpp`. The core red check failed because `BoardFootprint`, `Board::footprints`, and `exportBoardToBomCsv()` did not exist, the CLI red check failed with `test failure: help json describes KiCad-style board BOM export`, and the focused green checks are `cmd /c ctest --test-dir build-qt -R bom_export --output-on-failure` and `cmd /c ctest --test-dir build-qt -R cli --output-on-failure`.
+
+## Sprint 226 KiCad CLEANUP_ITEM Catalog Addendum
+
+The KiCad PCB editor source walk now includes `F:\kicad_src\pcbnew\cleanup_item.cpp` and `F:\kicad_src\pcbnew\cleanup_item.h`. CCad maps the cleanup action row catalog into `src/ccad_core/cleanup_item.hpp/.cpp` and exposes it through `ccad pcb cleanup-actions`.
+
+The core catalog records the KiCad action IDs, titles, and domains for tracks/vias cleanup and graphics cleanup. The action set covers shorting tracks, shorting vias, redundant vias, duplicate tracks, co-linear track merging, dangling tracks, dangling vias, zero-length tracks, tracks inside pads, zero-size graphics, duplicate graphics, line-to-rectangle conversion, and overlapping-shape-to-pad merging.
+
+`CleanupActionProvider` mirrors the first useful behavior of KiCad's `VECTOR_CLEANUP_ITEMS_PROVIDER`: indexed row access is bounds checked, non-deep deletion leaves the backing row in place, and deep deletion erases the row from the backing vector. This gives agents a truthful planning surface for future cleanup automation without claiming the full cleaner algorithms are implemented.
+
+`pcb cleanup-actions` emits a JSON envelope with `kicad_class:"CLEANUP_ITEM"`, `provider_class:"VECTOR_CLEANUP_ITEMS_PROVIDER"`, `provider_semantics:"vector_indexed_rows"`, `parity_scope:"cleanup_action_catalog_first_slice"`, and one row per cleanup action. The current implementation is discovery-only; actual cleanup execution, dialogs, preview lists, redundant-track detection, dangling-via detection, duplicate-graphic detection, and merge algorithms remain future work.
+
+Focused coverage lives in `tests/test_cleanup_item.cpp` and `tests/test_cli.cpp`. The red check failed because `src/ccad_core/cleanup_item.cpp` did not exist, and the focused green checks are `cmd /c ctest --test-dir build-qt -R cleanup_item --output-on-failure` and `cmd /c ctest --test-dir build-qt -R cli --output-on-failure`.
+
+## Sprint 226 GUI Empty Project Survival Addendum
+
+The native Qt GUI now handles empty and board-only project loads without crashing during viewport/status updates. The regression was in `ReviewWindow::updateCursorStatus()` and `ReviewWindow::updateSelectionStatus()`, where the old code assumed `project_cache_.boards[0]` existed while `BoardCanvasView::zoomToFit()` was still allowed to emit viewport callbacks for a project with no board.
+
+The fixed behavior treats the active board as optional at the UI callback boundary. Cursor status uses the board-aware formatter only when a board is present, selection status falls back to a generic canvas item when no board exists, and the DRC/rules inspector is only rendered when a real board is loaded.
+
+Focused coverage lives in `tests/test_gui_ui_map.cpp`. The test now loads an empty project and a board-only project through `ReviewWindow`, verifies the UI-map contract after each load, shows the window, and keeps the Qt event loop alive for 7 seconds. The red check failed with `SEGFAULT`; the green check is `cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && ctest --test-dir build-qt -R gui_ui_map --output-on-failure"`.
+
+Visual and executable survival proof used the official harness and direct launches. The harness command was `cmd /c powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_sprint_demo.ps1 -BuildDir build-qt -Name sprint226-gui-crash-smoke -GuiWaitSeconds 7`, producing `artifacts\screenshots\sprint226-gui-crash-smoke-20260621-180502.png`. Direct 7-second launch checks covered `build-qt\ccad_gui.exe` with no arguments, `artifacts\demos\gui-min.ccad.json`, `artifacts\demos\gui-board.ccad.json`, and `artifacts\demos\sprint226-gui-crash-smoke.ccad.json`.
+
+## Sprint 226 KiCad GENERAL_COLLECTOR Locked-Item Addendum
+
+The KiCad PCB editor source walk now includes `F:\kicad_src\pcbnew\collectors.cpp` and `F:\kicad_src\pcbnew\collectors.h`. CCad maps the first useful headless part of KiCad's `GENERAL_COLLECTOR::IgnoreLockedItems()` behavior into the existing board collector and PCB collection CLI.
+
+Pads, vias, tracks, board graphics, board texts, zones, and placed board footprints now carry an optional `locked` flag in project JSON. The serializer accepts the field on input and only emits it when true, so older projects and ordinary unlocked objects stay compact. `BoardItemMetadata` and board-collector candidates derive the same lock state, and `pcb collect-items` includes a `locked` boolean on each returned row.
+
+Agents and scripts can now call `ccad pcb collect-items --file <project.ccad.json> --ignore-locked true` to exclude locked candidates from the returned collection. Without that flag, locked items are still visible and explicitly marked, which matches KiCad's pattern of treating lock suppression as a collector option rather than hiding object state globally.
+
+This is not the full KiCad collector stack yet. Preferred-layer secondary ordering, footprint-child filters, text and footprint side filters, pad/via type filters, zone-fill suppression, ignored-track lists, interactive hit-testing, and selection-policy integration remain future slices.
+
+Focused coverage lives in `tests/test_board_collector.cpp` and `tests/test_cli.cpp`. The focused green checks are `cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && ctest --test-dir build-qt -R board_collector --output-on-failure"` and `cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && ctest --test-dir build-qt -R cli --output-on-failure"`.
+
+## Sprint 226 Safe CLI Project Writes Addendum
+
+CLI project writes now serialize the `Project` to memory before opening the destination path. This prevents a serialization-time failure from first truncating the existing project file, which was observed during the Sprint 226 model-layout change while debugging a zero-byte project output.
+
+The behavior lives in `src/ccad_cli/common.cpp::writeProjectFile()`. It still writes the final JSON through the same deterministic serializer and returns the same success or failure result to callers, but the destination file is not opened until `dumpProjectJson(project)` has completed.
+
+This is a safety hardening step, not a complete crash-proof write transaction. Atomic temporary-file replacement and fsync-style durability remain backlog for a later persistence sprint.
+
+## Sprint 226 KiCad ConvertShapeListToPolygon Addendum
+
+The KiCad PCB editor source walk now includes `F:\kicad_src\pcbnew\convert_shape_list_to_polygon.cpp` and `F:\kicad_src\pcbnew\convert_shape_list_to_polygon.h`. CCad maps the first useful headless part of KiCad's `ConvertOutlineToPolygon` behavior into `src/ccad_core/board_outline_polygon.hpp/.cpp`.
+
+`buildBoardOutlinePolygonReport(const Board&, const BoardOutlinePolygonOptions&)` scans current board graphics for `Edge.Cuts` line segments, chains exact nanometer endpoints, reports the ordered outline points, identifies whether the chain is closed and valid, derives a bounding box for a closed contour, and preserves source graphic IDs. If `infer_outline_if_necessary` is true, an open or missing Edge.Cuts outline can fall back to the durable rectangular `Board::outline` while marking `used_inferred_outline:true`.
+
+Agents and scripts can inspect the same state with `ccad pcb outline-polygon --file <project.ccad.json> [--infer true|false]`. The JSON response includes `kicad_source:"convert_shape_list_to_polygon"`, `kicad_function:"ConvertOutlineToPolygon"`, `parity_scope:"edge_cuts_segment_chain_first_slice"`, segment counts, closed and valid flags, fallback state, point rows, bounding box fields, diagnostics, and pending KiCad feature names.
+
+This is deliberately not the full KiCad polygon engine. CCad does not yet support arc-preserving conversion, circle/rectangle/poly/ellipse conversion, hole contour nesting, disjoint-outline policy, endpoint epsilon matching, self-intersection diagnostics, or footprint Edge.Cuts hole detection.
+
+Focused coverage lives in `tests/test_board_outline_polygon.cpp` and `tests/test_cli.cpp`. The core red check failed because `ccad_core/board_outline_polygon.hpp` did not exist, and the focused green checks are `cmd /c ctest --test-dir build-qt -R board_outline_polygon --output-on-failure` and `cmd /c ctest --test-dir build-qt -R cli --output-on-failure`.
+
+## Sprint 226 KiCad Cross-Probing Packet Addendum
+
+The KiCad PCB editor source walk now includes `F:\kicad_src\pcbnew\cross-probing.cpp`, and the official KiCad schematic documentation was checked for cross-probing behavior. CCad maps the first useful headless part of KiCad's PCB/schematic cross-probing packet flow into `src/ccad_core/cross_probing.hpp/.cpp`.
+
+`resolveCrossProbePacket(const Project&, std::string_view)` accepts KiCad-style `$NET`, `$NETS`, `$PART`, `$PAD`, `$SELECT`, and `$CLEAR` packets. It resolves net packets to schematic net rows and same-net board pads, vias, tracks, and zones; resolves part and pad packets to footprint, component, and pad targets; preserves selection focus metadata for `$SELECT`; and records `clear_highlight` for `$CLEAR`.
+
+Agents and scripts can inspect the same state with `ccad pcb cross-probe --file <project.ccad.json> --packet <packet>`. The JSON response includes `kicad_source:"pcbnew/cross-probing.cpp"`, `kicad_class:"PCB_EDIT_FRAME"`, `kicad_function:"ExecuteRemoteCommand"`, packet kind, requested nets, target rows, diagnostics, and `pending_kicad_features` for the live GUI and IPC behavior that still needs to be ported.
+
+This is deliberately not full KiCad cross-probing yet. CCad does not yet open a live Kiway/socket channel, flash or zoom GUI targets, synchronize live PCB/schematic selection state, honor full sheet-path prefixes, update connected net highlighting, or dispatch KiCad's DRC/config/custom-rule remote commands.
+
+Focused coverage lives in `tests/test_cross_probing.cpp` and `tests/test_cli.cpp`. The red check failed because `ccad_cross_probing_tests` did not exist, and the focused green checks are `cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && ctest --test-dir build-qt -R cross_probing --output-on-failure"` and `cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && ctest --test-dir build-qt -R cli --output-on-failure"`.

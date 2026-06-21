@@ -58,3 +58,4 @@ jobs:
         run: cmake --build build --config Release
       - name: Test
         run: ctest --test-dir build --output-on-failure -C Release
+# Touched by agent to trigger CI

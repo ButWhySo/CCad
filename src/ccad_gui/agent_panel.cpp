@@ -1162,6 +1162,8 @@ void AgentPanel::setLiveQueryProvider(LiveQueryProvider provider) {
       register_ui_tool("ui.add_polygon", ccad::TaskRisk::LowMutation);
       register_ui_tool("ui.add_zone", ccad::TaskRisk::LowMutation);
       register_ui_tool("ui.place_footprint", ccad::TaskRisk::LowMutation);
+      register_ui_tool("lib.catalog_info", ccad::TaskRisk::ReadOnly);
+      register_ui_tool("lib.catalog_search", ccad::TaskRisk::ReadOnly);
       register_ui_tool("ui.place_symbol", ccad::TaskRisk::LowMutation);
       register_ui_tool("ui.add_wire", ccad::TaskRisk::LowMutation);
       register_ui_tool("ui.add_label", ccad::TaskRisk::LowMutation);

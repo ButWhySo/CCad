@@ -4,13 +4,58 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 ## Current Position
 
-- Phase: 8 / 8
-- Phase name: Agent Runtime and EDA Evidence Expansion
-- Sprint: 225
-- Branch: `main` working copy, ahead of `origin/main`, no new commit for this backlog update yet
-- Phase 8 sprint budget: Sprints 206 through 225 for local runner queues, live tool-loop state, provider execution gates, observability export wiring, KiCad/EDA evidence, simulation planning slices, and the first KiCad PCB editor source-walk parity slices.
+- Phase: 9 / 9
+- Phase name: Deterministic KiCad Parity Execution
+- Sprint: 226
+- Branch: `sprint-226-pcb-root-model`, no sprint commit yet
+- Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration.Need to fix failing ci/cd in github workflows.
+windows : 26/27 Test #26: geometry .........................   Passed    0.01 sec
+      Start 27: canvas
+27/27 Test #27: canvas ...........................   Passed    0.01 sec
 
-Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 starts the bounded runtime and EDA evidence expansion.
+96% tests passed, 1 tests failed out of 27
+
+Total Test time (real) =   6.14 sec
+
+The following tests FAILED:
+	 20 - visual_harness_policy (Failed)
+Errors while running CTest
+Error: Process completed with exit code 1.
+
+core Linux : 23/27 Test #23: review ...........................   Passed    0.00 sec
+      Start 24: diff
+24/27 Test #24: diff .............................   Passed    0.01 sec
+      Start 25: transaction
+25/27 Test #25: transaction ......................   Passed    0.00 sec
+      Start 26: geometry
+26/27 Test #26: geometry .........................   Passed    0.00 sec
+      Start 27: canvas
+27/27 Test #27: canvas ...........................   Passed    0.00 sec
+
+96% tests passed, 1 tests failed out of 27
+
+Total Test time (real) =   0.73 sec
+
+The following tests FAILED:
+Errors while running CTest
+	 20 - visual_harness_policy (Failed)
+
+gui linux : 39/41 Test #39: transaction .......................   Passed    0.00 sec
+      Start 40: geometry
+40/41 Test #40: geometry ..........................   Passed    0.00 sec
+      Start 41: canvas
+41/41 Test #41: canvas ............................   Passed    0.00 sec
+
+98% tests passed, 1 tests failed out of 41
+
+Total Test time (real) =   1.82 sec
+
+The following tests FAILED:
+Errors while running CTest
+	 20 - visual_harness_policy (Failed)
+Error: Process completed with exit code 8.
+
+Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 covered the bounded runtime and EDA evidence expansion through Sprint 225. Phase 9 is the bounded KiCad parity execution phase.
 
 **Current State**: 
 - [x] Phase 4: LangGraph Python Bridge Architecture Refactoring (Sprint 211)
@@ -20,12 +65,13 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
-- **Sprint 225**: Parity Backlog Normalization and Orchestrator Continuity
-  - **Goal**: Convert the user's raw KiCad file-by-file parity directive into a bounded sprint roadmap that covers PCB editor, schematic editor, external formats, Gerber viewer, 3D viewer, multi-document projects, linked/unlinked DRC, library losslessness, live GUI-map performance, agent prompts/tools, observability, and agent-guided autorouting.
-  - **Status**: In progress on the `main` working copy. This is documentation/process work first, so it avoids reverting unrelated untracked helper scripts and does not require GUI visual validation unless GUI-visible files are changed in this sprint.
+- **Sprint 226**: PCB Root Model Parity
+  - **Goal**: Continue the file-by-file KiCad `pcbnew` root walk with board settings, base board-item behavior, board-loader state, stackup, statistics, board-statistics reporting, board-item container ownership, board text-variable expansion, legacy board-side BOM export, and cleanup action discovery, move CCad's design-rule validation, object metadata, loader summaries, report summaries, container mutation, text-variable APIs, placed-footprint BOM metadata, and cleanup planning metadata closer to KiCad's model, and keep those surfaces shared between core, DRC, CLI, and agent-facing queries.
+  - **Status**: In progress on `sprint-226-pcb-root-model`. The first tested slice adds a `ccad_core` board design settings validator and focused DRC integration. The second tested slice maps KiCad `BOARD_ITEM` layer, groupability, hole, lock, knockout, and view-layer metadata into `ccad_core/board_item.hpp/.cpp` and exposes it through PCB object query commands. The third tested slice adds `ccad_core/board_loader.hpp/.cpp` and `pcb load-state` so agents can inspect CCad board load readiness without pretending KiCad PCB IO plugin parity is complete. The fourth tested slice adds `ccad_core/board_stackup.hpp/.cpp` and enriches `pcb get-board-stackup` with KiCad-style default stackup items and copper layer distance rows. The fifth tested slice adds `ccad_core/board_statistics.hpp/.cpp` and `pcb drill-statistics` for KiCad-style drill row aggregation across pads and vias. The sixth tested slice adds `ccad_core/board_item_container.hpp/.cpp` and KiCad-shaped `pcb remove-object` delete/remove metadata with `--mode normal|bulk`. The seventh tested slice extends `ccad_core/board_statistics.hpp/.cpp` with KiCad-style board report summaries and exposes `pcb board-statistics`. The eighth tested slice adds `ccad_core/board_text_var_adapter.hpp/.cpp`, project `text_variables`, `project set-text-variable`, `project list-text-variables`, and `pcb expand-text-variables` for KiCad-style first-slice text-variable expansion. The ninth tested slice adds placed board-footprint metadata, KiCad footprint `exclude_from_bom` import preservation, and `pcb export-board-bom` for KiCad legacy board-side CSV BOM export. The tenth tested slice adds `ccad_core/cleanup_item.hpp/.cpp` and `pcb cleanup-actions` for KiCad `CLEANUP_ITEM` action-catalog and vector-provider discovery. The eleventh tested slice fixes the reported silent GUI crash by making `ReviewWindow` cursor and selection callbacks tolerate empty and board-only projects, adds a 7-second `gui_ui_map` survival regression, rebuilds `ccad_gui`, runs the official beep-and-screenshot harness, ingests the screenshot, and directly proves four GUI launch modes survive for 7 seconds. The twelfth tested slice maps KiCad `GENERAL_COLLECTOR` locked-item suppression into persisted board-object lock flags, `pcb collect-items --ignore-locked true`, collector row `locked` metadata, and a safer CLI project-write path that serializes before opening the destination file. The thirteenth tested slice maps KiCad `convert_shape_list_to_polygon.cpp/.h` into `ccad_core/board_outline_polygon.hpp/.cpp` and `pcb outline-polygon`, giving agents a KiCad-provenance Edge.Cuts line-chain report with closed/valid state, points, bounding box, rectangular fallback, diagnostics, and pending shape-feature metadata. The fourteenth tested slice maps KiCad `cross-probing.cpp` packet behavior into `ccad_core/cross_probing.hpp/.cpp` and `pcb cross-probe`, resolving `$NET`, `$NETS`, `$PART`, `$PAD`, `$SELECT`, and `$CLEAR` packets to board and schematic targets while explicitly listing the remaining live GUI/Kiway parity gaps.
 
 ## Backlog
-- **Sprint 225 (Parity Backlog Normalization and Orchestrator Continuity)** is active. The immediate work is to normalize `docs/devops/backlog.md` and this progress file so the user's KiCad file-by-file parity directive becomes a sprint-bounded roadmap with explicit PCB editor, schematic editor, external format, Gerber, 3D, multi-document project, library verification, GUI-map, agent harness, autorouter, and branch-cleanup tracks.
+- **Sprint 226 (PCB Root Model Parity)** is active. The immediate work is to continue the deterministic `F:\kicad_src\pcbnew` source walk. The verified sub-slices now cover KiCad board design setting validation, KiCad `BOARD_ITEM` metadata for CCad object queries, KiCad `BOARD_LOADER`-style load-state reporting, KiCad `BOARD_STACKUP` default physical stackup reporting, KiCad board-statistics drill-line aggregation, KiCad board-statistics report summaries, KiCad `BOARD_ITEM_CONTAINER` delete/remove mode metadata, KiCad `BOARD_TEXT_VAR_ADAPTER` first-slice text-variable expansion, KiCad legacy `build_BOM_from_board.cpp` board-side BOM export, KiCad `cleanup_item.cpp/.h` cleanup-action catalog discovery, GUI empty/board-only load crash regression, KiCad `collectors.cpp/.h` locked-item filtering, CLI project-write truncation hardening, KiCad `convert_shape_list_to_polygon.cpp/.h` Edge.Cuts outline-polygon reporting, and KiCad `cross-probing.cpp` packet resolution before moving to the next root PCB editor file.
+- **Sprint 225 (Parity Backlog Normalization and Orchestrator Continuity)** normalized `docs/devops/backlog.md` and this progress file so the user's KiCad file-by-file parity directive became a sprint-bounded roadmap with explicit PCB editor, schematic editor, external format, Gerber, 3D, multi-document project, library verification, GUI-map, agent harness, autorouter, and branch-cleanup tracks.
 - **Sprint 224 (KiCad Board Bounding Box, Commit Impact, and Connected Items)** is in progress on `sprint-224-kicad-board-bounding-box`. The slice adds a first explicit CCad analogue for KiCad's `BOARD_BOUNDING_BOX` wrapper: it is a transient, skip-struct, GUI-independent `CanvasScene` view item on `LAYER_BOARD_BOUNDING_BOX`, and `pcb get-outline` reports the same class, view-layer, skip-struct, and bounding-box payload for agents. It also maps the useful headless part of KiCad's `BOARD_COMMIT` into `Transaction::impact`, reporting board/schematic changes, view, DRC, ERC, connectivity, ratsnest, board-outline, solder-mask, dirty object ID, and dirty object type metadata in audit JSON. The current connected-item slice maps KiCad `BOARD_CONNECTED_ITEM` into pads, vias, tracks, and zones returned by `pcb list-objects`, `pcb list-by-net`, `pcb list-connected`, object lookup, and route-job export, including net-name fields, local ratsnest visibility, teardrop capability hints, and an explicit default-netclass fallback until CCad has a full netclass model.
 - **Sprint 223 (KiCad Board Document Model Parity)** is verified on `sprint-223-kicad-board-model`. The slice removes unsafe schematic assumptions from core and CLI behavior, adds primary document helpers, lets board-only projects run physical DRC without irrelevant schematic diagnostics, preserves board-local nets in KiCad PCB export, keeps footprint placement board-owned, creates schematic documents for symbol/schematic commands, and makes review, BOM, PnP, diff, and agent context tolerate unlinked boards. The whole-tree diff check passed, the final incremental Qt build passed, and the final sprint-end CTest gate passed 41 of 41 tests.
 - **Sprint 222 (KiCad PCB API Items, Matrix, Autoplace, and Spread)** is verified on `sprint-222-kicad-pcb-api-items`. The slice records the full KiCad PCB API handler, enum, `BOARD_CONTEXT`, and `HEADLESS_BOARD_CONTEXT` ledgers in `agent pcb-api-schema`; adds a KiCad `array_pad_number_provider` analogue for deterministic pad numbering; adds a first `ar_matrix` analogue for grid occupancy, side masks, distance maps, and keepout costs; improves footprint autoplacement with the matrix cost field; exposes `pcb autoplace-footprint`; adds a first `SpreadFootprints` analogue for deterministic non-overlapping component pad-group spreading; and exposes `pcb spread-footprints`. Focused tests are green, the full Qt build passed, CTest passed 41 of 41, and commit remains pending.

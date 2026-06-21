@@ -7,7 +7,9 @@
 namespace ccad {
 
 void placeFootprint(Project& project, const Footprint& footprint, const std::string& component_id,
-                    const Point& origin, double rotation_deg, const std::string& layer_id);
+                    const Point& origin, double rotation_deg, const std::string& layer_id,
+                    std::optional<std::string> value = std::nullopt,
+                    bool exclude_from_bom = false);
 
 void placeComponent(Project& project, const Symbol& symbol, const std::string& component_id,
                     const Point& origin, double rotation_deg);

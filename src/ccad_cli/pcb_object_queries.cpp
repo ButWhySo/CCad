@@ -1,5 +1,7 @@
 #include "ccad_cli/pcb_object_queries.hpp"
 
+#include "ccad_core/board_item.hpp"
+#include "ccad_core/board_stackup.hpp"
 #include "ccad_core/json.hpp"
 #include "ccad_core/layers.hpp"
 
@@ -87,6 +89,26 @@ void appendLayerNumbersJson(std::ostream& out, const std::vector<std::size_t>& l
   out << "]";
 }
 
+void appendBoardItemMetadata(std::ostream& out, const ccad::BoardItemMetadata& metadata) {
+  out << ", \"kicad_base_class\": \"" << ccad::escapeJson(metadata.kicad_base_class) << "\""
+      << ", \"kicad_groupable\": " << (metadata.kicad_groupable ? "true" : "false")
+      << ", \"primary_layer_id\": \"" << ccad::escapeJson(metadata.primary_layer_id) << "\""
+      << ", \"layer_ids\": ";
+  appendLayerIdsJson(out, metadata.layer_ids);
+  out << ", \"layer_mask_description\": \"" << ccad::escapeJson(metadata.layer_mask_description)
+      << "\""
+      << ", \"side_specific\": " << (metadata.side_specific ? "true" : "false")
+      << ", \"is_on_copper_layer\": "
+      << (metadata.is_on_copper_layer ? "true" : "false")
+      << ", \"has_hole\": " << (metadata.has_hole ? "true" : "false")
+      << ", \"has_drilled_hole\": " << (metadata.has_drilled_hole ? "true" : "false")
+      << ", \"locked\": " << (metadata.locked ? "true" : "false")
+      << ", \"knockout\": " << (metadata.knockout ? "true" : "false")
+      << ", \"view_layer_ids\": ";
+  appendLayerIdsJson(out, metadata.view_layer_ids);
+  out << ", \"kicad_parity_scope\": \"" << ccad::escapeJson(metadata.parity_scope) << "\"";
+}
+
 std::string connectedItemNetMessage(const std::string& net_id) {
   return net_id.empty() ? "[<no net>]" : "[" + net_id + "]";
 }
@@ -130,33 +152,36 @@ std::string padNetRowJson(const ccad::Board& board, const ccad::Pad& pad) {
   if (pad.drill.has_value()) {
     row << ", \"drill_nm\": " << pad.drill->nanometers;
   }
+  appendBoardItemMetadata(row, ccad::boardItemMetadata(board, pad));
   appendConnectedItemMetadata(row, pad.net_id, true);
   row << "}";
   return row.str();
 }
 
-std::string viaNetRowJson(const ccad::Via& via) {
+std::string viaNetRowJson(const ccad::Board& board, const ccad::Via& via) {
   std::ostringstream row;
   row << "    {\"type\": \"via\", \"id\": \"" << ccad::escapeJson(via.id)
       << "\", \"net_id\": \"" << ccad::escapeJson(via.net_id) << "\"";
+  appendBoardItemMetadata(row, ccad::boardItemMetadata(board, via));
   appendConnectedItemMetadata(row, via.net_id, true);
   row << "}";
   return row.str();
 }
 
-std::string trackNetRowJson(const ccad::TrackSegment& track) {
+std::string trackNetRowJson(const ccad::Board& board, const ccad::TrackSegment& track) {
   std::ostringstream row;
   row << "    {\"type\": \"track\", \"id\": \"" << ccad::escapeJson(track.id)
       << "\", \"net_id\": \"" << ccad::escapeJson(track.net_id)
       << "\", \"layer_id\": \"" << ccad::escapeJson(track.layer_id)
       << "\", \"source_route_request_id\": \""
       << ccad::escapeJson(track.source_route_request_id) << "\"";
+  appendBoardItemMetadata(row, ccad::boardItemMetadata(board, track));
   appendConnectedItemMetadata(row, track.net_id, false);
   row << "}";
   return row.str();
 }
 
-std::string zoneNetRowJson(const ccad::BoardZone& zone) {
+std::string zoneNetRowJson(const ccad::Board& board, const ccad::BoardZone& zone) {
   std::ostringstream row;
   row << "    {\"type\": \"zone\", \"id\": \"" << ccad::escapeJson(zone.id)
       << "\", \"name\": \"" << ccad::escapeJson(zone.name)
@@ -164,6 +189,7 @@ std::string zoneNetRowJson(const ccad::BoardZone& zone) {
       << "\", \"layer_ids\": ";
   appendLayerIdsJson(row, zone.layer_ids);
   row << ", \"corner_count\": " << zone.outline.size() << ", \"priority\": " << zone.priority;
+  appendBoardItemMetadata(row, ccad::boardItemMetadata(board, zone));
   appendConnectedItemMetadata(row, zone.net_id, false);
   row << "}";
   return row.str();
@@ -197,6 +223,36 @@ std::string layerRowJson(const ccad::Layer& layer, const std::optional<std::size
   }
   row << "}";
   return row.str();
+}
+
+std::string stackupItemRowJson(const ccad::BoardStackupItem& item, std::size_t stack_order) {
+  std::ostringstream row;
+  row << "    {\"stack_order\": " << stack_order << ", \"type\": \""
+      << ccad::escapeJson(ccad::boardStackupItemTypeName(item.type)) << "\""
+      << ", \"layer_id\": \"" << ccad::escapeJson(item.layer_id) << "\""
+      << ", \"layer_name\": \"" << ccad::escapeJson(item.layer_name) << "\""
+      << ", \"type_name\": \"" << ccad::escapeJson(item.type_name) << "\""
+      << ", \"dielectric_layer_id\": " << item.dielectric_layer_id
+      << ", \"thickness_nm\": " << item.thickness.nanometers
+      << ", \"thickness_locked\": " << (item.thickness_locked ? "true" : "false")
+      << ", \"material\": \"" << ccad::escapeJson(item.material) << "\""
+      << ", \"epsilon_r\": " << item.epsilon_r
+      << ", \"loss_tangent\": " << item.loss_tangent
+      << ", \"spec_frequency_hz\": " << item.spec_frequency_hz
+      << ", \"dielectric_model\": \"" << ccad::escapeJson(item.dielectric_model) << "\""
+      << ", \"color\": \"" << ccad::escapeJson(item.color) << "\""
+      << ", \"enabled\": " << (item.enabled ? "true" : "false") << "}";
+  return row.str();
+}
+
+std::vector<std::string> stackupCopperLayerIds(const ccad::BoardStackup& stackup) {
+  std::vector<std::string> layer_ids;
+  for (const ccad::BoardStackupItem& item : stackup.items) {
+    if (item.type == ccad::BoardStackupItemType::copper) {
+      layer_ids.push_back(item.layer_id);
+    }
+  }
+  return layer_ids;
 }
 
 std::string layerListJson(const std::string& query_kind, const std::vector<std::string>& rows,
@@ -285,7 +341,7 @@ void collectPcbNetRows(const ccad::Board& board, const std::string& net_id,
     for (const ccad::Via& via : board.vias) {
       if (via.net_id == net_id) {
         ++summary.via_count;
-        rows.push_back(viaNetRowJson(via));
+        rows.push_back(viaNetRowJson(board, via));
       }
     }
   }
@@ -293,7 +349,7 @@ void collectPcbNetRows(const ccad::Board& board, const std::string& net_id,
     for (const ccad::TrackSegment& track : board.tracks) {
       if (track.net_id == net_id) {
         ++summary.track_count;
-        rows.push_back(trackNetRowJson(track));
+        rows.push_back(trackNetRowJson(board, track));
       }
     }
   }
@@ -301,7 +357,7 @@ void collectPcbNetRows(const ccad::Board& board, const std::string& net_id,
     for (const ccad::BoardZone& zone : board.zones) {
       if (zone.net_id == net_id) {
         ++summary.zone_count;
-        rows.push_back(zoneNetRowJson(zone));
+        rows.push_back(zoneNetRowJson(board, zone));
       }
     }
   }
@@ -388,7 +444,7 @@ std::string pcbLayerObjectJson(const ccad::Layer& layer) {
   return out.str();
 }
 
-std::string pcbPadObjectJson(const ccad::Pad& pad) {
+std::string pcbPadObjectJson(const ccad::Board& board, const ccad::Pad& pad) {
   std::ostringstream out;
   out << "{\n"
       << "  \"object\": {\n"
@@ -424,6 +480,7 @@ std::string pcbPadObjectJson(const ccad::Pad& pad) {
     out << ",\n"
         << "    \"chamfer_ratio\": " << *pad.chamfer_ratio;
   }
+  appendBoardItemMetadata(out, ccad::boardItemMetadata(board, pad));
   appendConnectedItemMetadata(out, pad.net_id, true);
   out << "\n"
       << "  }\n"
@@ -431,7 +488,7 @@ std::string pcbPadObjectJson(const ccad::Pad& pad) {
   return out.str();
 }
 
-std::string pcbViaObjectJson(const ccad::Via& via) {
+std::string pcbViaObjectJson(const ccad::Board& board, const ccad::Via& via) {
   std::ostringstream out;
   out << "{\n"
       << "  \"object\": {\n"
@@ -443,6 +500,7 @@ std::string pcbViaObjectJson(const ccad::Via& via) {
   out << "\n    },\n"
       << "    \"diameter_nm\": " << via.diameter.nanometers << ",\n"
       << "    \"drill_nm\": " << via.drill.nanometers;
+  appendBoardItemMetadata(out, ccad::boardItemMetadata(board, via));
   appendConnectedItemMetadata(out, via.net_id, true);
   out << "\n"
       << "  }\n"
@@ -450,7 +508,7 @@ std::string pcbViaObjectJson(const ccad::Via& via) {
   return out.str();
 }
 
-std::string pcbTrackObjectJson(const ccad::TrackSegment& track) {
+std::string pcbTrackObjectJson(const ccad::Board& board, const ccad::TrackSegment& track) {
   std::ostringstream out;
   out << "{\n"
       << "  \"object\": {\n"
@@ -467,6 +525,7 @@ std::string pcbTrackObjectJson(const ccad::TrackSegment& track) {
       << "    \"width_nm\": " << track.width.nanometers << ",\n"
       << "    \"source_route_request_id\": \""
       << ccad::escapeJson(track.source_route_request_id) << "\"";
+  appendBoardItemMetadata(out, ccad::boardItemMetadata(board, track));
   appendConnectedItemMetadata(out, track.net_id, false);
   out << "\n"
       << "  }\n"
@@ -474,7 +533,8 @@ std::string pcbTrackObjectJson(const ccad::TrackSegment& track) {
   return out.str();
 }
 
-std::string pcbBoardGraphicObjectJson(const ccad::BoardGraphic& graphic) {
+std::string pcbBoardGraphicObjectJson(const ccad::Board& board,
+                                      const ccad::BoardGraphic& graphic) {
   std::ostringstream out;
   out << "{\n"
       << "  \"object\": {\n"
@@ -488,13 +548,15 @@ std::string pcbBoardGraphicObjectJson(const ccad::BoardGraphic& graphic) {
       << "    \"end\": {\n";
   writePointJson(out, graphic.end, 6);
   out << "\n    },\n"
-      << "    \"width_nm\": " << graphic.width.nanometers << "\n"
+      << "    \"width_nm\": " << graphic.width.nanometers;
+  appendBoardItemMetadata(out, ccad::boardItemMetadata(board, graphic));
+  out << "\n"
       << "  }\n"
       << "}\n";
   return out.str();
 }
 
-std::string pcbBoardTextObjectJson(const ccad::BoardText& text) {
+std::string pcbBoardTextObjectJson(const ccad::Board& board, const ccad::BoardText& text) {
   std::ostringstream out;
   out << "{\n"
       << "  \"object\": {\n"
@@ -508,7 +570,9 @@ std::string pcbBoardTextObjectJson(const ccad::BoardText& text) {
       << "    \"rotation_degrees\": " << text.rotation_degrees << ",\n"
       << "    \"size\": {\n";
   writeSizeJson(out, text.size, 6);
-  out << "\n    }\n"
+  out << "\n    }";
+  appendBoardItemMetadata(out, ccad::boardItemMetadata(board, text));
+  out << "\n"
       << "  }\n"
       << "}\n";
   return out.str();
@@ -527,13 +591,14 @@ std::string pcbRegionObjectJson(const std::string& type, const std::string& id,
       << "      \"y_nm\": " << area.origin.y.nanometers << ",\n"
       << "      \"width_nm\": " << area.size.width.nanometers << ",\n"
       << "      \"height_nm\": " << area.size.height.nanometers << "\n"
-      << "    }\n"
+      << "    }";
+  out << "\n"
       << "  }\n"
       << "}\n";
   return out.str();
 }
 
-std::string pcbBoardZoneObjectJson(const ccad::BoardZone& zone) {
+std::string pcbBoardZoneObjectJson(const ccad::Board& board, const ccad::BoardZone& zone) {
   std::ostringstream out;
   out << "{\n"
       << "  \"object\": {\n"
@@ -553,6 +618,7 @@ std::string pcbBoardZoneObjectJson(const ccad::BoardZone& zone) {
       << "    \"min_thickness_nm\": " << zone.min_thickness.nanometers << ",\n"
       << "    \"fill_enabled\": " << (zone.fill_enabled ? "true" : "false") << ",\n"
       << "    \"pad_connection\": \"" << ccad::escapeJson(zone.pad_connection) << "\"";
+  appendBoardItemMetadata(out, ccad::boardItemMetadata(board, zone));
   appendConnectedItemMetadata(out, zone.net_id, false);
   out << "\n"
       << "  }\n"
@@ -622,6 +688,7 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
       if (pad.chamfer_ratio.has_value()) {
         row << ", \"chamfer_ratio\": " << *pad.chamfer_ratio;
       }
+      appendBoardItemMetadata(row, ccad::boardItemMetadata(board, pad));
       appendConnectedItemMetadata(row, pad.net_id, true);
       row << "}";
       add_row(row);
@@ -632,6 +699,7 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
       std::ostringstream row;
       row << "    {\"type\": \"via\", \"id\": \"" << ccad::escapeJson(via.id)
           << "\", \"net_id\": \"" << ccad::escapeJson(via.net_id) << "\"";
+      appendBoardItemMetadata(row, ccad::boardItemMetadata(board, via));
       appendConnectedItemMetadata(row, via.net_id, true);
       row << "}";
       add_row(row);
@@ -645,6 +713,7 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
           << "\", \"layer_id\": \"" << ccad::escapeJson(track.layer_id)
           << "\", \"source_route_request_id\": \""
           << ccad::escapeJson(track.source_route_request_id) << "\"";
+      appendBoardItemMetadata(row, ccad::boardItemMetadata(board, track));
       appendConnectedItemMetadata(row, track.net_id, false);
       row << "}";
       add_row(row);
@@ -656,7 +725,9 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
       row << "    {\"type\": \"graphic\", \"id\": \"" << ccad::escapeJson(graphic.id)
           << "\", \"kind\": \"" << ccad::escapeJson(graphic.kind)
           << "\", \"layer_id\": \"" << ccad::escapeJson(graphic.layer_id)
-          << "\", \"width_nm\": " << graphic.width.nanometers << "}";
+          << "\", \"width_nm\": " << graphic.width.nanometers;
+      appendBoardItemMetadata(row, ccad::boardItemMetadata(board, graphic));
+      row << "}";
       add_row(row);
     }
   }
@@ -666,7 +737,9 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
       row << "    {\"type\": \"text\", \"id\": \"" << ccad::escapeJson(text.id)
           << "\", \"layer_id\": \"" << ccad::escapeJson(text.layer_id)
           << "\", \"text\": \"" << ccad::escapeJson(text.text)
-          << "\", \"rotation_degrees\": " << text.rotation_degrees << "}";
+          << "\", \"rotation_degrees\": " << text.rotation_degrees;
+      appendBoardItemMetadata(row, ccad::boardItemMetadata(board, text));
+      row << "}";
       add_row(row);
     }
   }
@@ -683,6 +756,7 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
       }
       row << "], \"corner_count\": " << zone.outline.size()
           << ", \"priority\": " << zone.priority;
+      appendBoardItemMetadata(row, ccad::boardItemMetadata(board, zone));
       appendConnectedItemMetadata(row, zone.net_id, false);
       row << "}";
       add_row(row);
@@ -844,16 +918,61 @@ std::string getPcbBoardStackupJson(const ccad::Board& board) {
     ++stack_order;
   }
 
+  const ccad::BoardStackup stackup = ccad::buildDefaultBoardStackup(board);
+  std::vector<std::string> stackup_rows;
+  for (std::size_t i = 0; i < stackup.items.size(); ++i) {
+    stackup_rows.push_back(stackupItemRowJson(stackup.items.at(i), i));
+  }
+  const std::vector<std::string> copper_layer_ids = stackupCopperLayerIds(stackup);
+  const ccad::Length computed_thickness = ccad::buildBoardThicknessFromStackup(stackup);
+
   std::ostringstream out;
   out << "{\n"
       << "  \"stackup_kind\": \"ccad_board_stackup\",\n"
       << "  \"kicad_handler\": \"GetBoardStackup\",\n"
-      << "  \"kicad_parity_scope\": \"enabled_layer_order\",\n"
+      << "  \"kicad_class\": \"" << ccad::escapeJson(stackup.kicad_class) << "\",\n"
+      << "  \"kicad_parity_scope\": \"" << ccad::escapeJson(stackup.parity_scope) << "\",\n"
       << "  \"summary\": {\n"
       << "    \"layer_count\": " << rows.size() << ",\n"
+      << "    \"stackup_item_count\": " << stackup_rows.size() << ",\n"
       << "    \"copper_layer_count\": " << summary.copper_count << ",\n"
-      << "    \"non_copper_layer_count\": " << summary.non_copper_count << "\n"
+      << "    \"non_copper_layer_count\": " << summary.non_copper_count << ",\n"
+      << "    \"board_thickness_nm\": " << board.design_rules.board_thickness.nanometers
+      << ",\n"
+      << "    \"computed_stackup_thickness_nm\": " << computed_thickness.nanometers << "\n"
       << "  },\n"
+      << "  \"finish\": {\n"
+      << "    \"copper_finish\": \"" << ccad::escapeJson(stackup.finish_type) << "\",\n"
+      << "    \"dielectric_constraints\": "
+      << (stackup.has_dielectric_constraints ? "true" : "false") << ",\n"
+      << "    \"thickness_constraints\": "
+      << (stackup.has_thickness_constraints ? "true" : "false") << ",\n"
+      << "    \"edge_connector\": \"" << ccad::escapeJson(stackup.edge_connector)
+      << "\",\n"
+      << "    \"edge_plating\": " << (stackup.edge_plating ? "true" : "false") << "\n"
+      << "  },\n"
+      << "  \"stackup_items\": [\n";
+  for (std::size_t i = 0; i < stackup_rows.size(); ++i) {
+    out << stackup_rows.at(i) << (i + 1 == stackup_rows.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n"
+      << "  \"copper_layer_distances\": [\n";
+  bool first_distance = true;
+  for (std::size_t i = 0; i < copper_layer_ids.size(); ++i) {
+    for (std::size_t j = i + 1; j < copper_layer_ids.size(); ++j) {
+      if (!first_distance) {
+        out << ",\n";
+      }
+      first_distance = false;
+      const ccad::Length distance =
+          ccad::boardStackupLayerDistance(stackup, copper_layer_ids.at(i), copper_layer_ids.at(j));
+      out << "    {\"from_layer\": \"" << ccad::escapeJson(copper_layer_ids.at(i))
+          << "\", \"to_layer\": \"" << ccad::escapeJson(copper_layer_ids.at(j))
+          << "\", \"distance_nm\": " << distance.nanometers << "}";
+    }
+  }
+  out << "\n"
+      << "  ],\n"
       << "  \"layers\": [\n";
   for (std::size_t i = 0; i < rows.size(); ++i) {
     out << rows.at(i) << (i + 1 == rows.size() ? "" : ",") << '\n';

@@ -82,6 +82,7 @@ struct FootprintModel3D {
 
 struct Footprint {
   std::string name;
+  bool exclude_from_bom = false;
   std::vector<FootprintPad> pads;
   std::vector<FootprintLine> lines;
   std::vector<FootprintArc> arcs;

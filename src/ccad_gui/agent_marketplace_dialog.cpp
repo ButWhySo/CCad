@@ -6,12 +6,9 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidget>
-#include <QNetworkReply>
-#include <QNetworkRequest>
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
-#include <QUrl>
 #include <QLineEdit>
 #include <QToolButton>
 #include <QSplitter>
@@ -73,11 +70,33 @@ AgentMarketplaceDialog::AgentMarketplaceDialog(AgentPanel* agent_panel, QWidget*
 
   setupUi();
 
-  network_manager_ = new QNetworkAccessManager(this);
-  connect(network_manager_, &QNetworkAccessManager::finished, this, &AgentMarketplaceDialog::onCatalogFetched);
+  agent_panel_->setMarketplaceCatalogCallback([this](const QJsonObject& data) {
+    list_widget_->clear();
+    QJsonArray plugins = data.value("plugins").toArray();
+    for (const QJsonValue& val : plugins) {
+      if (val.isObject()) {
+        QJsonObject obj = val.toObject();
+        QString name = obj.value("name").toString();
+        QString desc = obj.value("description").toString();
+        bool installed = obj.value("installed").toBool(false);
+        QString status = installed ? "[Installed]" : "[Available]";
+        list_widget_->addItem(status + " " + name + " - " + desc);
+      }
+    }
+    QJsonArray workflows = data.value("workflows").toArray();
+    for (const QJsonValue& val : workflows) {
+      if (val.isObject()) {
+        QJsonObject obj = val.toObject();
+        QString name = obj.value("name").toString();
+        QString desc = obj.value("description").toString();
+        bool installed = obj.value("installed").toBool(false);
+        QString status = installed ? "[Active]" : "[Workflow]";
+        list_widget_->addItem(status + " " + name + " - " + desc);
+      }
+    }
+  });
 
-  QNetworkRequest request(QUrl("https://raw.githubusercontent.com/antigravity-ide/ccad-marketplace/main/catalog.json"));
-  network_manager_->get(request);
+  agent_panel_->sendJsonRpc("agent.get_marketplace_catalog", QJsonObject());
 }
 
 void AgentMarketplaceDialog::setupUi() {
@@ -161,29 +180,4 @@ void AgentMarketplaceDialog::toggleSidebar() {
 void AgentMarketplaceDialog::openSettings() {
   AgentSettingsDialog settings_dialog(agent_panel_, this);
   settings_dialog.exec();
-}
-
-void AgentMarketplaceDialog::onCatalogFetched(QNetworkReply* reply) {
-  list_widget_->clear();
-
-  if (reply->error() == QNetworkReply::NoError) {
-    QByteArray data = reply->readAll();
-    QJsonDocument doc = QJsonDocument::fromJson(data);
-    if (doc.isArray()) {
-      QJsonArray array = doc.array();
-      for (const QJsonValue& val : array) {
-        if (val.isObject()) {
-          QJsonObject obj = val.toObject();
-          QString name = obj.value("name").toString();
-          QString desc = obj.value("description").toString();
-          list_widget_->addItem(name + " - " + desc);
-        }
-      }
-    } else {
-      list_widget_->addItem("Failed to parse catalog JSON.");
-    }
-  } else {
-    list_widget_->addItem("Network error: " + reply->errorString());
-  }
-  reply->deleteLater();
 }

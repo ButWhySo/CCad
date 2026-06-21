@@ -5,6 +5,7 @@
 #include "ccad_core/diff.hpp"
 #include "ccad_core/drc.hpp"
 #include "ccad_core/erc.hpp"
+#include "ccad_core/json.hpp"
 #include "ccad_core/review.hpp"
 #include "ccad_core/serialize.hpp"
 #include "ccad_core/transaction.hpp"
@@ -13,6 +14,7 @@
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include <sstream>
 
 namespace ccad_cli {
 
@@ -172,6 +174,50 @@ int exportBomCommand(const std::vector<std::string>& args) {
   return 0;
 }
 
+std::string textVariablesJson(const ccad::Project& project) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"kicad_handler\": \"GetTextVariables\",\n"
+      << "  \"kicad_project_class\": \"PROJECT\",\n"
+      << "  \"parity_scope\": \"project_text_variables_first_slice\",\n"
+      << "  \"variables\": {\n";
+  std::size_t index = 0;
+  for (const auto& [key, value] : project.text_variables) {
+    out << "    \"" << ccad::escapeJson(key) << "\": \""
+        << ccad::escapeJson(value) << "\""
+        << (++index == project.text_variables.size() ? "" : ",") << '\n';
+  }
+  out << "  }\n"
+      << "}\n";
+  return out.str();
+}
+
+int setTextVariableCommand(const std::vector<std::string>& args) {
+  const auto options = parseOptions(args, 1, {"--file", "--key", "--value"});
+  const std::string file = requireOption(options, "--file");
+  const std::string key = requireOption(options, "--key");
+  const std::string value = requireOption(options, "--value");
+
+  if (key.empty()) {
+    throw std::runtime_error("--key must not be empty");
+  }
+
+  ccad::Project project = loadProjectFile(file);
+  project.text_variables[key] = value;
+  if (!writeProjectFile(file, project)) {
+    throw std::runtime_error("failed to write project file: " + file);
+  }
+  return 0;
+}
+
+int listTextVariablesCommand(const std::vector<std::string>& args) {
+  const auto options = parseOptions(args, 1, {"--file"});
+  const std::string file = requireOption(options, "--file");
+  const ccad::Project project = loadProjectFile(file);
+  std::cout << textVariablesJson(project);
+  return 0;
+}
+
 int projectCommand(const std::vector<std::string>& args) {
   if (args.empty()) {
     std::cerr << "missing project subcommand\n";
@@ -180,6 +226,12 @@ int projectCommand(const std::vector<std::string>& args) {
   const std::string subcommand = args.at(0);
   if (subcommand == "export-bom") {
     return exportBomCommand(args);
+  }
+  if (subcommand == "set-text-variable") {
+    return setTextVariableCommand(args);
+  }
+  if (subcommand == "list-text-variables") {
+    return listTextVariablesCommand(args);
   }
   std::cerr << "unknown project subcommand: " << subcommand << '\n';
   return 2;

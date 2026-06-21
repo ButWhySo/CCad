@@ -9,6 +9,10 @@ from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
 from config import AgentConfigManager
 from telemetry import trace_function, tracer
+import hooks
+
+def emit(payload: dict):
+    print(json.dumps(payload), flush=True)
 
 config_manager = AgentConfigManager()
 
@@ -27,7 +31,7 @@ def ui_place_via(x_mm: float, y_mm: float, dry_run: bool = False):
 @tool
 def ui_add_track(x1: float, y1: float, x2: float, y2: float):
     """Adds a track segment between two coordinates."""
-    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.add_track", "args": {"x1": x1, "y1": y1, "x2": x2, "y2": y2}}})
+    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.route_track", "args": {"start_x_mm": x1, "start_y_mm": y1, "end_x_mm": x2, "end_y_mm": y2}}})
     return "Action dispatched to CCad client."
 
 @tool
@@ -39,7 +43,11 @@ def ui_place_footprint(name: str, x: float, y: float):
 @tool
 def ui_add_polygon(points: List[List[float]], layer: str):
     """Adds a polygon pour on a specific layer."""
-    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.add_polygon", "args": {"points": points, "layer": layer}}})
+    # Assuming the first two points map to start and end for rectangular zones for parity
+    if len(points) >= 2:
+        x1, y1 = points[0][0], points[0][1]
+        x2, y2 = points[1][0], points[1][1]
+        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.add_zone", "args": {"start_x_mm": x1, "start_y_mm": y1, "end_x_mm": x2, "end_y_mm": y2, "layer": layer}}})
     return "Action dispatched to CCad client."
 
 @tool
@@ -78,8 +86,20 @@ def ui_add_label(text: str, x: float, y: float, global_label: bool = False):
     emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.add_label", "args": {"text": text, "x": x, "y": y, "global": global_label}}})
     return "Action dispatched to CCad client."
 
+@tool
+def lib_catalog_info(component_id: str):
+    """Gets metadata info from the CCad library catalog for a specific component ID."""
+    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "lib.catalog_info", "args": {"component_id": component_id}}})
+    return "Action dispatched to CCad client."
+
+@tool
+def lib_catalog_search(query: str):
+    """Searches the CCad library catalog for components matching a query."""
+    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "lib.catalog_search", "args": {"query": query}}})
+    return "Action dispatched to CCad client."
+
 router_tools = [ui_place_via, ui_add_track, ui_add_polygon]
-librarian_tools = [ui_place_footprint, ui_place_symbol, project_review, ui_add_wire, ui_add_label]
+librarian_tools = [ui_place_footprint, ui_place_symbol, project_review, ui_add_wire, ui_add_label, lib_catalog_info, lib_catalog_search]
 general_tools = [ui_screenshot, ui_open_component_wizard]
 
 llm = None
@@ -137,40 +157,8 @@ def init_provider():
     return False
 
 init_provider()
-
-# --- HOOK SYSTEM ---
-hook_registry = {}
-
-def register_hook(name, callback):
-    hook_registry[name.lower()] = callback
-
-def trigger_hook(name, *args, **kwargs):
-    name_lower = name.lower()
-    if name_lower in hook_registry:
-        try:
-            hook_registry[name_lower](*args, **kwargs)
-        except Exception as e:
-            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"[Hook Error: {name}] {e}"}})
             
-import uuid
 
-# Define some default hook actions
-def on_post_prompt(text):
-    emit({"jsonrpc": "2.0", "method": "telemetry", "params": {"run_state": "Processing", "span_id": str(uuid.uuid4())[:8], "trace_id": str(uuid.uuid4())[:8]}})
-
-def on_pre_tool_call(tool_name):
-    emit({"jsonrpc": "2.0", "method": "telemetry", "params": {"run_state": f"Tool: {tool_name}", "span_id": str(uuid.uuid4())[:8]}})
-
-def on_post_tool_call(tool_name):
-    emit({"jsonrpc": "2.0", "method": "telemetry", "params": {"run_state": "Processing"}})
-
-def on_pre_exit():
-    emit({"jsonrpc": "2.0", "method": "telemetry", "params": {"run_state": "Idle"}})
-
-register_hook("post prompt", on_post_prompt)
-register_hook("pre tool call", on_pre_tool_call)
-register_hook("post tool call", on_post_tool_call)
-register_hook("pre exit/end", on_pre_exit)
 
 def get_system_prompt(role_desc: str) -> str:
     base_prompt = config_manager.get("system_prompt", "")
@@ -181,10 +169,18 @@ def get_system_prompt(role_desc: str) -> str:
     parts = [f"You are {role_desc}"]
     if base_prompt: parts.append(f"System Base: {base_prompt}")
     
+    # Inject active workflow context
+    if active_workflow == "routing_pass":
+        parts.append("Current Phase: ROUTING. You must strictly focus on trace placement, impedance matching, and differential pairs. Use ui_add_track and ui_place_via.")
+    elif active_workflow == "placement_pass":
+        parts.append("Current Phase: PLACEMENT. Focus on component alignment, signal flow, and thermal separation. Use ui_place_footprint.")
+    elif active_workflow == "sch_to_pcb":
+        parts.append("Current Phase: FORWARD ANNOTATION. Map schematic nets to board layout instances.")
+
     if personality == "Senior EE":
-        parts.append("Personality: Senior Electrical Engineer. Prioritize signal integrity, EMI/EMC, and robust power delivery.")
+        parts.append("Personality: Senior Electrical Engineer. Prioritize signal integrity, EMI/EMC, and robust power delivery. Enforce strict DRC checks.")
     elif personality == "Super Power":
-        parts.append("Personality: Super Power AI. Provide highly optimized, cutting-edge PCB routing strategies.")
+        parts.append("Personality: Super Power AI. Provide highly optimized, cutting-edge PCB routing strategies. Utilize exotic footprint placements.")
         
     if custom_inst:
         parts.append(f"Custom Instructions: {custom_inst}")
@@ -194,7 +190,7 @@ def get_system_prompt(role_desc: str) -> str:
 @trace_function("supervisor_node")
 def supervisor_node(state: AgentState):
     if "pre node" in [h.lower() for h in active_hooks]:
-        trigger_hook("pre node", "supervisor")
+        hooks.trigger_hook("pre node", emit, "supervisor")
     # Enforce workflow routing
     if active_workflow == "routing_pass":
         return {"next_node": "router"}
@@ -223,14 +219,14 @@ def supervisor_node(state: AgentState):
     else:
         next_node = "FINISH"
     if "post node" in [h.lower() for h in active_hooks]:
-        trigger_hook("post node", f"supervisor -> {next_node}")
+        hooks.trigger_hook("post node", emit, f"supervisor -> {next_node}")
         
     return {"next_node": next_node}
 
 @trace_function("router_node")
 def router_node(state: AgentState):
     if "pre node" in [h.lower() for h in active_hooks]:
-        trigger_hook("pre node", "router")
+        hooks.trigger_hook("pre node", emit, "router")
     if not router_llm:
         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Error: Router LLM not initialized."}})
         return {"messages": []}
@@ -244,13 +240,13 @@ def router_node(state: AgentState):
     prompt = [system_msg] + state["messages"]
     response = router_llm.invoke(prompt, config={"callbacks": callbacks} if callbacks else {})
     if "post node" in [h.lower() for h in active_hooks]:
-        trigger_hook("post node", "router")
+        hooks.trigger_hook("post node", emit, "router")
     return {"messages": [response]}
 
 @trace_function("librarian_node")
 def librarian_node(state: AgentState):
     if "pre node" in [h.lower() for h in active_hooks]:
-        trigger_hook("pre node", "librarian")
+        hooks.trigger_hook("pre node", emit, "librarian")
     if not librarian_llm:
         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Error: Librarian LLM not initialized."}})
         return {"messages": []}
@@ -264,7 +260,7 @@ def librarian_node(state: AgentState):
     prompt = [system_msg] + state["messages"]
     response = librarian_llm.invoke(prompt, config={"callbacks": callbacks} if callbacks else {})
     if "post node" in [h.lower() for h in active_hooks]:
-        trigger_hook("post node", "librarian")
+        hooks.trigger_hook("post node", emit, "librarian")
     return {"messages": [response]}
 
 from langgraph.prebuilt import ToolNode
@@ -312,9 +308,6 @@ def create_orchestrator():
 
     return graph_builder.compile()
 
-def emit(payload: dict):
-    print(json.dumps(payload), flush=True)
-
 session_messages = []
 active_workflow = "default"
 chaining_phase = "none"
@@ -328,10 +321,42 @@ def handle_marketplace(text: str):
     if len(parts) >= 2 and parts[1] == "install":
         plugin_name = " ".join(parts[2:])
         emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "marketplace.install", "args": {"plugin": plugin_name}}})
-        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Marketplace: Requesting installation of plugin '{plugin_name}'..."}})
-        config_manager.update("installed_plugins", config_manager.get("installed_plugins", []) + [plugin_name])
+        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Marketplace: Installing plugin '{plugin_name}'..."}})
+        
+        # Actually register it into config so it persists
+        installed = config_manager.get("installed_plugins", [])
+        if plugin_name not in installed:
+            installed.append(plugin_name)
+            config_manager.update("installed_plugins", installed)
+            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Plugin '{plugin_name}' activated and hooked into context."}})
+        else:
+            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Plugin '{plugin_name}' is already installed."}})
     else:
         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Marketplace: Unknown command. Use `/marketplace install <plugin>`."}})
+
+def get_dynamic_marketplace_catalog():
+    # Scan dynamic plugins if they exist, fallback to core + installed state
+    installed = config_manager.get("installed_plugins", [])
+    core_plugins = [
+        {"id": "plugin.autoplacer", "name": "AutoPlacer", "description": "AI-driven component placement using simulated annealing"},
+        {"id": "plugin.autorouter", "name": "AutoRouter", "description": "Cloud-accelerated PCB autorouter"},
+        {"id": "plugin.kicad_sync", "name": "KiCad Sync", "description": "Two-way synchronization with KiCad"},
+        {"id": "plugin.otel_tracing", "name": "OTel Tracing", "description": "OpenTelemetry observability integration"},
+        {"id": "plugin.freerouting", "name": "Freerouting Hook", "description": "Push-and-shove DSN router integration"},
+        {"id": "plugin.ai_generator", "name": "AI Component Generator", "description": "Generate schematic symbols and footprints via LLM"}
+    ]
+    # Mark installed state based on actual config
+    for p in core_plugins:
+        p["installed"] = p["id"] in installed or p["name"] in installed
+        
+    return {
+        "plugins": core_plugins,
+        "workflows": [
+            {"id": "workflow.validation", "name": "Validation Workflow", "description": "Runs full DRC/ERC checks before committing", "installed": True},
+            {"id": "workflow.routing", "name": "Routing Workflow", "description": "Iterative routing and cleanup phases", "installed": active_workflow == "routing_pass"},
+            {"id": "workflow.sch_to_pcb", "name": "Schematic to PCB Sync", "description": "Forward annotation of netlist and components", "installed": True}
+        ]
+    }
 
 if __name__ == "__main__":
     # --- OTel Setup ---
@@ -405,24 +430,27 @@ if __name__ == "__main__":
                             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Schedule created: {sched_info}. Background task queued."}})
                         continue
                     elif cmd_base == "/route":
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Initiating routing workflow..."}})
-                        session_messages.append(HumanMessage(content="Start the routing workflow and autoroute the current board context."))
+                        active_workflow = "routing_pass"
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Initiating routing workflow pass..."}})
+                        session_messages.append(HumanMessage(content="Start the routing workflow and autoroute the current board context. Please use the ui_add_track and ui_place_via tools to route all unrouted nets based on the context."))
                         # Fall through to graph execution
                     elif cmd_base == "/drc":
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Running DRC checks..."}})
                         emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "action.drc", "args": {}}})
                         continue
                     elif cmd_base == "/place":
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Initiating component placement workflow..."}})
-                        session_messages.append(HumanMessage(content="Start the placement workflow and optimally place footprints."))
+                        active_workflow = "placement_pass"
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Initiating component placement pass..."}})
+                        session_messages.append(HumanMessage(content="Start the placement workflow. Please use the ui_place_footprint tool to optimally place components on the board canvas."))
                         # Fall through to graph execution
                     elif cmd_base == "/design":
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Opening the Component Designer Wizard..."}})
                         emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.open_component_wizard", "args": {}}})
                         continue
                     elif cmd_base == "/explain":
+                        active_workflow = "default"
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Explaining the current context..."}})
-                        session_messages.append(HumanMessage(content="Explain the current board selection or context in detail."))
+                        session_messages.append(HumanMessage(content="Explain the current board selection or context in detail. Please provide a concise summary of the active design constraints."))
                         # Fall through to graph execution
                     elif cmd_base == "/clear":
                         session_messages = []
@@ -441,7 +469,7 @@ if __name__ == "__main__":
 
                 session_messages.append(HumanMessage(content=text))
                 if "post prompt" in [h.lower() for h in active_hooks]:
-                    trigger_hook("post prompt", text)
+                    hooks.trigger_hook("post prompt", emit, text)
 
                 final_state = executor.invoke({"messages": session_messages, "goal": text, "context": context_str, "next_node": ""})
                 session_messages = final_state["messages"]
@@ -452,15 +480,15 @@ if __name__ == "__main__":
                         tool_name = tcall.get("name", "")
                         args = tcall.get("args", {})
                         if "pre tool call" in [h.lower() for h in active_hooks]:
-                            trigger_hook("pre tool call", tool_name)
+                            hooks.trigger_hook("pre tool call", emit, tool_name)
                         emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": tool_name, "args": args}})
                         if "post tool call" in [h.lower() for h in active_hooks]:
-                            trigger_hook("post tool call", tool_name)
+                            hooks.trigger_hook("post tool call", emit, tool_name)
                 elif "<TOOL>" in last_msg.content:
                     tool_call_str = last_msg.content.replace("<TOOL>", "").strip()
                     tool_name = tool_call_str.split(" ")[0]
                     if "pre tool call" in [h.lower() for h in active_hooks]:
-                        trigger_hook("pre tool call", tool_name)
+                        hooks.trigger_hook("pre tool call", emit, tool_name)
                     args_str = tool_call_str[len(tool_name):].strip()
                     args = {}
                     try:
@@ -469,11 +497,11 @@ if __name__ == "__main__":
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Error parsing tool args: {e}"}})
                     emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": tool_name, "args": args}})
                     if "post tool call" in [h.lower() for h in active_hooks]:
-                        trigger_hook("post tool call", tool_name)
+                        hooks.trigger_hook("post tool call", emit, tool_name)
                 else:
                     emit({"jsonrpc": "2.0", "method": "message", "params": {"text": last_msg.content}})
                     if "pre exit/end" in [h.lower() for h in active_hooks]:
-                        trigger_hook("pre exit/end")
+                        hooks.trigger_hook("pre exit/end", emit)
             elif method == "agent.test_export":
                 from telemetry import trace_provider
                 with tracer.start_as_current_span("test_export_span"):
@@ -497,30 +525,33 @@ if __name__ == "__main__":
                 pkg = req.get("params", {}).get("package", "DIP")
                 emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"AI Generator: Crafting {ctype} for '{prompt}'..."}})
                 
-                # Mock AI response for now to provide the GUI with pins
-                pins = [
-                    {"pin": "1", "name": "VCC", "type": "Power"},
-                    {"pin": "2", "name": "GND", "type": "Power"},
-                    {"pin": "3", "name": "IN", "type": "Input"},
-                    {"pin": "4", "name": "OUT", "type": "Output"},
-                ]
+                # Real AI invocation for component generation
+                if not llm:
+                    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Error: LLM provider not configured for component generation."}})
+                    continue
+                    
+                gen_prompt = f"Design a generic {ctype} component based on '{prompt}' and package '{pkg}'. Reply strictly with a JSON object containing a list of 'pins' (each with 'pin' number, 'name', and 'type'). Do not use markdown blocks."
+                try:
+                    response = llm.invoke([SystemMessage(content="You are a JSON-only API. No markdown formatting."), HumanMessage(content=gen_prompt)])
+                    resp_text = response.content.strip()
+                    if resp_text.startswith("```json"):
+                        resp_text = resp_text[7:]
+                    if resp_text.endswith("```"):
+                        resp_text = resp_text[:-3]
+                    parsed = json.loads(resp_text)
+                    pins = parsed.get("pins", [])
+                except Exception as e:
+                    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Error generating component via LLM: {e}. Falling back to default."}})
+                    pins = [
+                        {"pin": "1", "name": "VCC", "type": "Power"},
+                        {"pin": "2", "name": "GND", "type": "Power"},
+                        {"pin": "3", "name": "IN", "type": "Input"},
+                        {"pin": "4", "name": "OUT", "type": "Output"},
+                    ]
+
                 emit({"jsonrpc": "2.0", "method": "generated_component", "params": {"pins": pins, "name": "AI_" + pkg}})
             elif method == "agent.get_marketplace_catalog":
-                catalog = {
-                    "plugins": [
-                        {"id": "plugin.autoplacer", "name": "AutoPlacer", "description": "AI-driven component placement using simulated annealing", "installed": True},
-                        {"id": "plugin.autorouter", "name": "AutoRouter", "description": "Cloud-accelerated PCB autorouter", "installed": False},
-                        {"id": "plugin.kicad_sync", "name": "KiCad Sync", "description": "Two-way synchronization with KiCad", "installed": True},
-                        {"id": "plugin.otel_tracing", "name": "OTel Tracing", "description": "OpenTelemetry observability integration", "installed": True},
-                        {"id": "plugin.freerouting", "name": "Freerouting Hook", "description": "Push-and-shove DSN router integration", "installed": True},
-                        {"id": "plugin.ai_generator", "name": "AI Component Generator", "description": "Generate schematic symbols and footprints via LLM", "installed": True}
-                    ],
-                    "workflows": [
-                        {"id": "workflow.validation", "name": "Validation Workflow", "description": "Runs full DRC/ERC checks before committing", "installed": True},
-                        {"id": "workflow.routing", "name": "Routing Workflow", "description": "Iterative routing and cleanup phases", "installed": False},
-                        {"id": "workflow.sch_to_pcb", "name": "Schematic to PCB Sync", "description": "Forward annotation of netlist and components", "installed": True}
-                    ]
-                }
+                catalog = get_dynamic_marketplace_catalog()
                 emit({"jsonrpc": "2.0", "method": "marketplace_catalog", "params": catalog})
             elif "result" in req:
                 emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Tool executed successfully on C++ side."}})

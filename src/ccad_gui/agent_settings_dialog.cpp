@@ -407,6 +407,28 @@ void AgentSettingsDialog::saveAllSettings() {
   if (system_prompt_) config["system_prompt"] = system_prompt_->toPlainText();
   if (dev_prompt_) config["dev_prompt"] = dev_prompt_->toPlainText();
 
+  if (plugins_list_) {
+    QJsonArray installed_plugins;
+    for (int i = 0; i < plugins_list_->count(); ++i) {
+      QListWidgetItem* item = plugins_list_->item(i);
+      if (item->checkState() == Qt::Checked) {
+        installed_plugins.append(item->data(Qt::UserRole).toString());
+      }
+    }
+    config["installed_plugins"] = installed_plugins;
+  }
+
+  if (workflows_list_) {
+    QJsonArray active_workflows;
+    for (int i = 0; i < workflows_list_->count(); ++i) {
+      QListWidgetItem* item = workflows_list_->item(i);
+      if (item->checkState() == Qt::Checked) {
+        active_workflows.append(item->data(Qt::UserRole).toString());
+      }
+    }
+    config["active_workflows"] = active_workflows;
+  }
+
   agent_panel_->sendJsonRpc("agent.set_config", config);
   accept();
 }

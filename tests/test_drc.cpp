@@ -146,20 +146,32 @@ int main() {
   require(hasCode(ccad::runDrc(invalid_board_outline), "INVALID_BOARD_OUTLINE"),
           "drc reports invalid board outline size");
 
+  ccad::Project zero_rule_minima = validBoardProject();
+  zero_rule_minima.boards[0].design_rules.copper_clearance = ccad::nanometers(0);
+  zero_rule_minima.boards[0].design_rules.min_track_width = ccad::nanometers(0);
+  zero_rule_minima.boards[0].design_rules.min_via_annular_ring = ccad::nanometers(0);
+  require(!hasCode(ccad::runDrc(zero_rule_minima), "INVALID_COPPER_CLEARANCE"),
+          "drc accepts KiCad-compatible zero copper clearance rule");
+  require(!hasCode(ccad::runDrc(zero_rule_minima), "INVALID_MIN_TRACK_WIDTH"),
+          "drc accepts KiCad-compatible zero minimum track width rule");
+  require(!hasCode(ccad::runDrc(zero_rule_minima), "INVALID_MIN_VIA_ANNULAR_RING"),
+          "drc accepts KiCad-compatible zero minimum via annular ring rule");
+
   ccad::Project invalid_copper_clearance = validBoardProject();
-  invalid_copper_clearance.boards[0].design_rules.copper_clearance = ccad::nanometers(0);
+  invalid_copper_clearance.boards[0].design_rules.copper_clearance = ccad::millimeters(25.01);
   require(hasCode(ccad::runDrc(invalid_copper_clearance), "INVALID_COPPER_CLEARANCE"),
-          "drc reports non-positive copper clearance rule");
+          "drc reports copper clearance outside KiCad range");
 
   ccad::Project invalid_min_track_width = validBoardProject();
-  invalid_min_track_width.boards[0].design_rules.min_track_width = ccad::nanometers(0);
+  invalid_min_track_width.boards[0].design_rules.min_track_width = ccad::millimeters(25.01);
   require(hasCode(ccad::runDrc(invalid_min_track_width), "INVALID_MIN_TRACK_WIDTH"),
-          "drc reports non-positive minimum track width rule");
+          "drc reports minimum track width outside KiCad range");
 
   ccad::Project invalid_min_via_annular_ring = validBoardProject();
-  invalid_min_via_annular_ring.boards[0].design_rules.min_via_annular_ring = ccad::nanometers(0);
+  invalid_min_via_annular_ring.boards[0].design_rules.min_via_annular_ring =
+      ccad::millimeters(25.01);
   require(hasCode(ccad::runDrc(invalid_min_via_annular_ring), "INVALID_MIN_VIA_ANNULAR_RING"),
-          "drc reports non-positive minimum via annular ring rule");
+          "drc reports minimum via annular ring outside KiCad range");
 
   ccad::Project invalid_min_connection = validBoardProject();
   invalid_min_connection.boards[0].design_rules.min_connection = ccad::nanometers(-1);

@@ -1,5 +1,7 @@
 #include "ccad_core/drc.hpp"
 
+#include "ccad_core/board_design_settings.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <set>
@@ -226,14 +228,6 @@ bool segmentIntersectsRect(const Point& start, const Point& end, const Rect& rec
 
 bool isPositive(const Length& length) {
   return length.nanometers > 0;
-}
-
-bool isNonNegative(const Length& length) {
-  return length.nanometers >= 0;
-}
-
-bool ratioInInclusiveRange(const double value, const double min, const double max) {
-  return std::isfinite(value) && value >= min && value <= max;
 }
 
 bool samePoint(const Point& left, const Point& right) {
@@ -1045,85 +1039,8 @@ void checkBoardOutline(const Board& board, std::vector<Diagnostic>& diagnostics)
 }
 
 void checkDesignRules(const Board& board, std::vector<Diagnostic>& diagnostics) {
-  if (!isPositive(board.design_rules.copper_clearance)) {
-    diagnostics.push_back(makeDiagnostic("INVALID_COPPER_CLEARANCE",
-                                         "Copper clearance rule must be positive",
-                                         "board.design_rules"));
-  }
-  if (!isPositive(board.design_rules.min_track_width)) {
-    diagnostics.push_back(makeDiagnostic("INVALID_MIN_TRACK_WIDTH",
-                                         "Minimum track width rule must be positive",
-                                         "board.design_rules"));
-  }
-  if (!isPositive(board.design_rules.min_via_annular_ring)) {
-    diagnostics.push_back(makeDiagnostic("INVALID_MIN_VIA_ANNULAR_RING",
-                                         "Minimum via annular ring rule must be positive",
-                                         "board.design_rules"));
-  }
-  if (!isNonNegative(board.design_rules.min_connection)) {
-    diagnostics.push_back(makeDiagnostic("INVALID_MIN_CONNECTION",
-                                         "Minimum connection rule must not be negative",
-                                         "board.design_rules"));
-  }
-  if (!isNonNegative(board.design_rules.min_via_diameter)) {
-    diagnostics.push_back(makeDiagnostic("INVALID_MIN_VIA_DIAMETER",
-                                         "Minimum via diameter rule must not be negative",
-                                         "board.design_rules"));
-  }
-  if (!isNonNegative(board.design_rules.min_through_hole_drill)) {
-    diagnostics.push_back(makeDiagnostic("INVALID_MIN_THROUGH_HOLE_DRILL",
-                                         "Minimum through hole drill rule must not be negative",
-                                         "board.design_rules"));
-  }
-  if (!isNonNegative(board.design_rules.min_microvia_diameter)) {
-    diagnostics.push_back(makeDiagnostic("INVALID_MIN_MICROVIA_DIAMETER",
-                                         "Minimum microvia diameter rule must not be negative",
-                                         "board.design_rules"));
-  }
-  if (!isNonNegative(board.design_rules.min_microvia_drill)) {
-    diagnostics.push_back(makeDiagnostic("INVALID_MIN_MICROVIA_DRILL",
-                                         "Minimum microvia drill rule must not be negative",
-                                         "board.design_rules"));
-  }
-  if (!isNonNegative(board.design_rules.min_hole_to_hole)) {
-    diagnostics.push_back(makeDiagnostic("INVALID_MIN_HOLE_TO_HOLE",
-                                         "Minimum hole-to-hole rule must not be negative",
-                                         "board.design_rules"));
-  }
-  if (!isNonNegative(board.design_rules.hole_clearance)) {
-    diagnostics.push_back(makeDiagnostic("INVALID_HOLE_CLEARANCE",
-                                         "Hole clearance rule must not be negative",
-                                         "board.design_rules"));
-  }
-  if (!isNonNegative(board.design_rules.silk_clearance)) {
-    diagnostics.push_back(makeDiagnostic("INVALID_SILK_CLEARANCE",
-                                         "Silkscreen clearance rule must not be negative",
-                                         "board.design_rules"));
-  }
-  if (!isNonNegative(board.design_rules.min_groove_width)) {
-    diagnostics.push_back(makeDiagnostic("INVALID_MIN_GROOVE_WIDTH",
-                                         "Minimum groove width rule must not be negative",
-                                         "board.design_rules"));
-  }
-  if (!isNonNegative(board.design_rules.solder_mask_min_width)) {
-    diagnostics.push_back(makeDiagnostic("INVALID_SOLDER_MASK_MIN_WIDTH",
-                                         "Solder mask minimum width must not be negative",
-                                         "board.design_rules"));
-  }
-  if (!isNonNegative(board.design_rules.solder_mask_to_copper_clearance)) {
-    diagnostics.push_back(makeDiagnostic("INVALID_SOLDER_MASK_TO_COPPER_CLEARANCE",
-                                         "Solder mask to copper clearance must not be negative",
-                                         "board.design_rules"));
-  }
-  if (!ratioInInclusiveRange(board.design_rules.solder_paste_margin_ratio, -1.0, 1.0)) {
-    diagnostics.push_back(makeDiagnostic("INVALID_SOLDER_PASTE_MARGIN_RATIO",
-                                         "Solder paste margin ratio must be between -1.0 and 1.0",
-                                         "board.design_rules"));
-  }
-  if (!isPositive(board.design_rules.board_thickness)) {
-    diagnostics.push_back(makeDiagnostic("INVALID_BOARD_THICKNESS",
-                                         "Board thickness must be positive",
-                                         "board.design_rules"));
+  for (const DesignRuleValidationError& error : validateDesignRules(board.design_rules)) {
+    diagnostics.push_back(makeDiagnostic(error.code, error.message, "board.design_rules"));
   }
 }
 

@@ -1,0 +1,13 @@
+1660:std::vector<std::string> availablePcbNetIds(const ccad::Project& project) {
+1680:  const std::vector<std::string> net_ids = availablePcbNetIds(project);
+2947:  diagnostics_->renderDiagnostics(diagnostics);
+3578:    syncActivePcbNetFromProject();
+3583:    project_summary_->renderLoadFailure(qstr(current_path_.string()));
+3591:  syncActivePcbNetFromProject();
+3601:  project_summary_->renderReview(review);
+3602:  diagnostics_->renderDiagnostics(review.diagnostics);
+3807:  const std::vector<std::string> net_ids = availablePcbNetIds(project_cache_);
+3829:  const std::vector<std::string> net_ids = availablePcbNetIds(project_cache_);
+3846:void ReviewWindow::syncActivePcbNetFromProject() {
+3854:    const std::vector<std::string> net_ids = availablePcbNetIds(project_cache_);
+3866:  const std::vector<std::string> net_ids = availablePcbNetIds(project_cache_);

@@ -833,7 +833,9 @@ int main(int argc, char** argv) {
     return QApplication::exec();
   } else {
     ReviewWindow window;
-    window.show();
+    window.showMaximized();
+    window.raise();
+    window.activateWindow();
     if (argc > 1) {
       const std::filesystem::path project_path(argv[1]);
       QTimer::singleShot(0, &window, [&window, project_path]() { window.loadProjectPath(project_path); });

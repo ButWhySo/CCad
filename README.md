@@ -6,7 +6,7 @@ CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD s
 
 Phase 8 / 8: Agent Runtime and EDA Evidence Expansion.
 
-Progress counter: Phase 8 / 8, Sprint 223 verified on `sprint-223-kicad-board-model`; Sprint 224 is active on `sprint-224-kicad-board-bounding-box` for KiCad board bounding-box, commit-impact, and connected-item parity.
+Progress counter: Phase 9 / 9, Sprint 226 is active on `sprint-226-pcb-root-model` for the file-by-file KiCad PCB root model walk covering board design settings, `BOARD_ITEM` metadata, board-loader state parity, `BOARD_STACKUP` default physical stackup parity, board-statistics drill table and report parity, `BOARD_ITEM_CONTAINER` remove/delete parity, `BOARD_TEXT_VAR_ADAPTER` text-variable expansion parity, KiCad legacy board-BOM export parity, KiCad `CLEANUP_ITEM` action-catalog parity, KiCad `GENERAL_COLLECTOR` locked-item filtering, safe CLI project writes, and KiCad `ConvertOutlineToPolygon` first-slice outline reporting.
 
 Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, and benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 focuses on bounded Agent runtime state, EDA evidence expansion, runner queues, observability export wiring, and simulation planning slices.
 
@@ -28,8 +28,9 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Native Agent pane provider controls: the right-side Agent pane exposes targetable provider family, model-hint, environment-readiness, and execution-disabled controls through `agent.workspace_state` and semantic UI-map IDs, without provider execution, network probes, browser-account automation, secret display, or project mutation.
 - Native Agent pane run queue foundation: the right-side Agent pane exposes a first-viewport local run queue, cancel and clear actions, queue counts, current-step text, queue status, and `agent.workspace_state` fields such as `run_queue_available`, `run_queue_id`, `run_queue_status`, `run_queue_depth`, `run_steps_total`, `run_step_current`, `run_queue_provider_execution_enabled:false`, `run_queue_worker_thread_enabled:false`, and `run_queue_trace_export_enabled:false`. Sprint-end verification passed the full Qt build plus 36 of 36 CTest tests.
 - Native Agent pane reference polish v5: the right-side Agent pane reports `visual_style:"agent_reference_panel_v5"` and `workspace_layout_version:5`, adds a compact targetable header action bar, reference-style evidence thumbnail strip, approval preview artifact and delta labels, one-row footer quick actions, and first-viewport evidence visibility while preserving every existing Agent control ID and keeping provider execution, worker threads, telemetry export, external processes, and project mutation disabled. Sprint-end verification passed the full Qt build plus 36 of 36 CTest tests.
-- CLI PCB authoring: `ccad pcb list-nets`, `ccad pcb list-objects`, `ccad pcb get-object`, `ccad pcb route-status`, `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-graphic-line`, `ccad pcb add-text`, `ccad pcb add-zone`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, `ccad pcb resize-object`, `ccad pcb autoplace-footprint`, and `ccad pcb spread-footprints`.
-- CLI PCB KiCad API parity queries: `ccad pcb list-enabled-layers`, `ccad pcb list-visible-layers`, `ccad pcb get-layer-name`, `ccad pcb get-board-stackup`, `ccad pcb get-rules`, `ccad pcb get-outline`, `ccad pcb list-by-net`, and `ccad pcb list-connected` expose the first headless analogues for KiCad PCB API handler behavior.
+- CLI PCB authoring: `ccad pcb load-state`, `ccad pcb outline-polygon`, `ccad pcb drill-statistics`, `ccad pcb board-statistics`, `ccad pcb export-board-bom`, `ccad pcb expand-text-variables`, `ccad pcb list-nets`, `ccad pcb list-objects`, `ccad pcb get-object`, `ccad pcb route-status`, `ccad pcb set-outline`, `ccad pcb set-rules`, `ccad pcb add-layer`, `ccad pcb set-layer`, `ccad pcb remove-layer`, `ccad pcb set-layer-visibility`, `ccad pcb add-pad`, `ccad pcb set-pad`, `ccad pcb add-via`, `ccad pcb set-via`, `ccad pcb add-track`, `ccad pcb set-track`, `ccad pcb add-graphic-line`, `ccad pcb add-text`, `ccad pcb add-zone`, `ccad pcb add-keepout`, `ccad pcb add-placement-region`, `ccad pcb set-region-kind`, `ccad pcb remove-object`, `ccad pcb move-object`, `ccad pcb resize-object`, `ccad pcb autoplace-footprint`, and `ccad pcb spread-footprints`.
+- CLI PCB KiCad API parity queries: `ccad pcb load-state`, `ccad pcb outline-polygon`, `ccad pcb drill-statistics`, `ccad pcb board-statistics`, `ccad pcb export-board-bom`, `ccad pcb expand-text-variables`, `ccad pcb remove-object`, `ccad pcb list-enabled-layers`, `ccad pcb list-visible-layers`, `ccad pcb get-layer-name`, `ccad pcb get-board-stackup`, `ccad pcb get-rules`, `ccad pcb get-outline`, `ccad pcb list-by-net`, and `ccad pcb list-connected` expose the first headless analogues for KiCad PCB API handler, loader, physical stackup, statistics, report summaries, legacy board BOM export, text-variable expansion, board-item container behavior, and Edge.Cuts outline polygon reporting.
+- CLI project text variables: `ccad project set-text-variable` and `ccad project list-text-variables` persist and inspect the first KiCad-style project text variable map used by PCB text expansion.
 - KiCad PCB layer-set utility parity: footprint placement resolves KiCad wildcard pad selectors such as `*.Cu` and `*.Mask` against the active board layers, board-context PCB queries expose `resolved_layers` and `kicad_layer_numbers`, and unresolved concrete selectors remain visible to validation instead of being silently discarded.
 - Agent PCB API metadata: `ccad agent pcb-api-schema` and JSON-RPC `agent.pcb_api_schema` document the KiCad handler, enum, board-context, and headless-context ledgers, plus CCad command mapping, parity scope, and remaining unsupported handler gaps for automation.
 - CLI footprint placement preserves logical net IDs when component pins already appear in project nets.
@@ -134,6 +135,8 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - Project diffs include board design-rule changes.
 - CLI diff tests cover board-level physical object entries in executable JSON output.
 - CLI PCB authoring can list physical board net usage counts as compact JSON.
+- CLI PCB authoring can report a KiCad-style first-slice physical board stackup with stackup items, derived thickness, and copper layer distances.
+- CLI PCB authoring can emit KiCad-style first-slice drill statistics for pads and vias as compact JSON.
 - CLI PCB authoring can list route-request intent records and route completion status as compact JSON.
 - CLI PCB authoring can export compact route-job JSON for external router handoff, including KiCad-style pad type, shape, drill, ratio, layer, and rotation metadata.
 - CLI PCB authoring can list board layer and physical object IDs as compact JSON, with optional type filtering.
@@ -551,6 +554,9 @@ Add PCB primitives through the CLI:
 .\build-qt\ccad.exe pcb route-status --file .\build-qt\canvas-demo.ccad.json
 .\build-qt\ccad.exe pcb autoplace-footprint --file .\build-qt\canvas-demo.ccad.json --footprint .\build-qt\R_0805_2012Metric.ccad-footprint.json --component R_AUTO --layer F.Cu --grid-mm 1
 .\build-qt\ccad.exe pcb spread-footprints --file .\build-qt\canvas-demo.ccad.json --components R1,R_AUTO --target-x-mm 12 --target-y-mm 4 --component-gap-mm 1
+.\build-qt\ccad.exe pcb export-board-bom --file .\build-qt\canvas-demo.ccad.json --output .\build-qt\canvas-demo-board-bom.csv
+.\build-qt\ccad.exe pcb cleanup-actions
+.\build-qt\ccad.exe pcb outline-polygon --file .\build-qt\canvas-demo.ccad.json --infer true
 .\build-qt\ccad.exe pcb set-track --file .\build-qt\canvas-demo.ccad.json --id T1 --start-x-mm 6 --start-y-mm 7 --end-x-mm 9 --end-y-mm 10 --width-mm 0.30 --net N2 --layer B.Cu
 .\build-qt\ccad.exe pcb set-region-kind --file .\build-qt\canvas-demo.ccad.json --id K1 --kind routing
 .\build-qt\ccad.exe pcb move-object --file .\build-qt\canvas-demo.ccad.json --id V1 --x-mm 9 --y-mm 10
@@ -564,9 +570,19 @@ What these do:
 - `pcb route-status` emits compact route progress counts for open, partial, and completed route requests, derived from current route requests and track provenance.
 - `inspect` also reports board route progress in review JSON so GUI and agents share the same route-review contract.
 - `pcb export-route-job` emits a compact deterministic route-job JSON envelope with schema/version metadata, units, board outline, design rules, layers, pads, vias, tracks, keepouts, placement regions, and route requests; pass `--request-id <id>` to export one request. Pad entries include KiCad-style `pad_type`, `shape`, `layers`, optional `drill_nm`, optional `roundrect_rratio`, optional `chamfer_ratio`, position, rotation, and size so external routers and AI tools can reason about actual pad geometry.
+- `pcb load-state` emits a KiCad `BOARD_LOADER`-shaped load summary for a CCad project, including source format, initialization mode, board attachment, DRC readiness, connectivity readiness, layer/object/net counts, and remaining KiCad loader parity gaps. Pass `--initialize false` to mirror KiCad's raw load path before project attachment and derived initialization.
+- `pcb drill-statistics` emits a KiCad `board_statistics`-referenced first-slice drill table for a CCad project, including unique row count, total drill count, and per-row count, shape, x/y size, plated state, source, and nullable copper start/stop layers for pads and vias.
+- `pcb board-statistics` emits a KiCad `board_statistics_report`-referenced first-slice report for a CCad project, including board dimensions, rectangular board area, current object counts, minimum track width, minimum drill diameter, board thickness, and the same drill rows used by `pcb drill-statistics`.
+- `pcb export-board-bom` emits a KiCad legacy board-side BOM CSV from placed footprint metadata. It rejects boards with no placed footprints, skips footprints marked excluded from BOM, groups rows by value plus footprint name, naturally sorts references such as `C2` before `C10`, and uses KiCad's legacy board-BOM columns: `Id`, `Designator`, `Footprint`, `Quantity`, `Designation`, and `Supplier and ref`.
+- `pcb cleanup-actions` emits the KiCad `CLEANUP_ITEM` action catalog and `VECTOR_CLEANUP_ITEMS_PROVIDER` row semantics for cleanup planning. The current scope is discovery and agent/tool guidance for tracks/vias and graphics cleanup actions; actual redundant-track, dangling-via, duplicate-graphic, and merge algorithms remain future cleanup-engine work.
+- `pcb outline-polygon` emits a KiCad `convert_shape_list_to_polygon`-referenced first-slice report for `Edge.Cuts` line chains, including source graphic IDs, ordered points, closed and valid state, bounding box, optional rectangular inference from the durable board outline, diagnostics, and pending shape-conversion features.
+- `pcb cross-probe` resolves KiCad-style PCB/schematic cross-probing packets such as `$NET`, `$NETS`, `$PART`, `$PAD`, `$SELECT`, and `$CLEAR` into board and schematic target rows. The current scope is headless packet resolution for agents and tests; live GUI highlight, flash, zoom, Kiway/socket mail, and full sheet-path synchronization remain future editor integration work.
+- `project set-text-variable` and `project list-text-variables` store and report the KiCad-style project text variable map used by board text expansion.
+- `pcb expand-text-variables` emits a KiCad `ExpandTextVariables`-referenced first-slice expansion report for explicit text passed with `--text` or for every current board text when `--text` is omitted. Known `${NAME}` tokens are replaced from project `text_variables`, and unknown tokens remain visible with `resolved:false` metadata.
 - `pcb list-objects` emits compact board layer and physical object rows as JSON, with optional type filtering for `layer`, `pad`, `via`, `track`, `keepout`, or `placement_region`. Pad rows include KiCad-style `pad_type`, `shape`, optional `drill_nm`, optional `roundrect_rratio`, and optional `chamfer_ratio`.
 - `pcb get-object` emits one board layer, pad, via, track, keepout, or placement region by stable ID as compact JSON. Pad objects include their KiCad-style type, shape, drill, ratio, layer, position, rotation, and size metadata.
-- `pcb list-enabled-layers`, `pcb list-visible-layers`, `pcb get-layer-name`, and `pcb get-board-stackup` expose KiCad-like layer and stackup query surfaces without mutating the board.
+- `pcb list-enabled-layers`, `pcb list-visible-layers`, and `pcb get-layer-name` expose KiCad-like layer query surfaces without mutating the board.
+- `pcb get-board-stackup` emits a KiCad `BOARD_STACKUP`-shaped first-slice physical stackup report derived from current board layers and board thickness, including stackup items, default copper/mask/dielectric thicknesses, FR4 material defaults, computed stackup thickness, copper layer distances, and compatible enabled-layer rows.
 - `pcb get-rules` and `pcb get-outline` expose the current board design-rule and bounding-box slices used by KiCad API analogues such as `GetBoardDesignRules` and `GetBoundingBox`.
 - `pcb list-by-net` and `pcb list-connected` expose the first same-net connectivity query slice for pads, vias, tracks, and zones. The current scope is declared as net-equivalent inspection, not KiCad's full connectivity graph solver.
 - `pcb autoplace-footprint` loads CCad footprint JSON, scans legal board origins on the requested copper layer, uses a first KiCad-inspired matrix occupancy and distance-cost field, places the footprint through the same core placement API as manual placement, and returns the selected origin and score.
@@ -591,7 +607,7 @@ What these do:
 - `pcb set-region-kind` updates an existing keepout or placement region kind.
 - `pcb move-object` moves a pad or via center, or a keepout or placement-region origin, by stable ID.
 - `pcb resize-object` resizes a pad, keepout, or placement region by stable ID.
-- `pcb remove-object` removes one physical board object by stable ID.
+- `pcb remove-object` removes one physical board object by stable ID and emits a KiCad `BOARD_ITEM_CONTAINER`-shaped delete result with object kind, removal mode, item index, and `Delete()`-through-`Remove()` metadata. Pass `--mode bulk` when an agent is performing a batch-style container mutation rather than an ordinary user delete.
 - These commands rewrite the same `.ccad.json` file using deterministic JSON.
 
 When to run:
@@ -884,6 +900,7 @@ cmake -S . -B build-qt `
 cmake --build build-qt --clean-first
 ctest --test-dir build-qt --output-on-failure
 .\build-qt\ccad.exe init --name canvas-demo --width-mm 42 --height-mm 28 --out .\build-qt\canvas-demo.ccad.json
+.\build-qt\ccad.exe pcb load-state --file .\build-qt\canvas-demo.ccad.json
 .\build-qt\ccad.exe pcb set-outline --file .\build-qt\canvas-demo.ccad.json --x-mm 0 --y-mm 0 --width-mm 44 --height-mm 30
 .\build-qt\ccad.exe pcb set-rules --file .\build-qt\canvas-demo.ccad.json --copper-clearance-mm 0.20 --min-track-width-mm 0.15 --min-via-annular-ring-mm 0.10
 .\build-qt\ccad.exe pcb add-layer --file .\build-qt\canvas-demo.ccad.json --id In1.Cu --name "Inner 1 copper" --kind copper --visible false
@@ -892,6 +909,13 @@ ctest --test-dir build-qt --output-on-failure
 .\build-qt\ccad.exe pcb add-pad --file .\build-qt\canvas-demo.ccad.json --id P1 --component U1 --pin 1 --net N1 --layers F.Cu --x-mm 5 --y-mm 6 --width-mm 1.5 --height-mm 1.0
 .\build-qt\ccad.exe pcb add-via --file .\build-qt\canvas-demo.ccad.json --id V1 --net N1 --x-mm 8 --y-mm 9 --diameter-mm 0.8 --drill-mm 0.4
 .\build-qt\ccad.exe pcb set-via --file .\build-qt\canvas-demo.ccad.json --id V1 --diameter-mm 1.0 --drill-mm 0.5 --net N2
+.\build-qt\ccad.exe pcb drill-statistics --file .\build-qt\canvas-demo.ccad.json
+.\build-qt\ccad.exe pcb board-statistics --file .\build-qt\canvas-demo.ccad.json
+.\build-qt\ccad.exe pcb outline-polygon --file .\build-qt\canvas-demo.ccad.json --infer true
+.\build-qt\ccad.exe pcb cross-probe --file .\build-qt\canvas-demo.ccad.json --packet "$NET: N1"
+.\build-qt\ccad.exe project set-text-variable --file .\build-qt\canvas-demo.ccad.json --key REV --value A1
+.\build-qt\ccad.exe project list-text-variables --file .\build-qt\canvas-demo.ccad.json
+.\build-qt\ccad.exe pcb expand-text-variables --file .\build-qt\canvas-demo.ccad.json --text "Revision ${REV}"
 .\build-qt\ccad.exe pcb add-track --file .\build-qt\canvas-demo.ccad.json --id T1 --net N1 --layer F.Cu --start-x-mm 5 --start-y-mm 6 --end-x-mm 8 --end-y-mm 9 --width-mm 0.25
 .\build-qt\ccad.exe pcb add-route-request --file .\build-qt\canvas-demo.ccad.json --id RR1 --net N1 --from P1 --to V1 --preferred-layer F.Cu --policy shortest_safe --width-mm 0.25
 .\build-qt\ccad.exe pcb set-route-request --file .\build-qt\canvas-demo.ccad.json --id RR1 --net N1 --from V1 --to T1 --preferred-layer B.Cu --policy prefer_back --width-mm 0.30

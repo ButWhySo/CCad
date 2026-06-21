@@ -2,10 +2,15 @@ import os
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.sdk.resources import Resource
 
 def setup_telemetry():
-    # Set up basic TracerProvider
-    provider = TracerProvider()
+    # Set up basic TracerProvider with Resource
+    resource = Resource.create({
+        "service.name": os.environ.get("OTEL_SERVICE_NAME", "ccad_agent"),
+        "telemetry.sdk.name": "opentelemetry",
+    })
+    provider = TracerProvider(resource=resource)
     
     # If Langfuse export is configured, we could add OTLP exporter
     # But for now, we'll setup a Console exporter to verify traces

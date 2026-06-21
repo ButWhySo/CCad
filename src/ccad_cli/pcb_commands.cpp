@@ -3,6 +3,15 @@
 #include "ccad_cli/common.hpp"
 #include "ccad_cli/pcb_object_queries.hpp"
 #include "ccad_core/autoplacer.hpp"
+#include "ccad_core/board_collector.hpp"
+#include "ccad_core/board_item_container.hpp"
+#include "ccad_core/board_loader.hpp"
+#include "ccad_core/board_outline_polygon.hpp"
+#include "ccad_core/board_statistics.hpp"
+#include "ccad_core/board_text_var_adapter.hpp"
+#include "ccad_core/bom_export.hpp"
+#include "ccad_core/cleanup_item.hpp"
+#include "ccad_core/cross_probing.hpp"
 #include "ccad_core/diff.hpp"
 #include "ccad_core/drill_export.hpp"
 #include "ccad_core/dsn_export.hpp"
@@ -72,6 +81,21 @@ bool parseCompleteOption(const std::map<std::string, std::string>& options) {
     return false;
   }
   throw std::runtime_error("--complete must be true or false");
+}
+
+ccad::BoardContainerRemoveMode parseRemoveModeOption(
+    const std::map<std::string, std::string>& options) {
+  if (!options.contains("--mode")) {
+    return ccad::BoardContainerRemoveMode::normal;
+  }
+  const std::string value = requireOption(options, "--mode");
+  if (value == "normal") {
+    return ccad::BoardContainerRemoveMode::normal;
+  }
+  if (value == "bulk") {
+    return ccad::BoardContainerRemoveMode::bulk;
+  }
+  throw std::runtime_error("--mode must be normal or bulk");
 }
 
 std::vector<ccad::Point> parsePolylinePointsMm(const std::string& value) {
@@ -285,6 +309,498 @@ std::string spreadFootprintsResultJson(
   return out.str();
 }
 
+void appendStringArray(std::ostringstream& out, const std::vector<std::string>& values,
+                       const std::string& indent) {
+  out << "[\n";
+  for (std::size_t index = 0; index < values.size(); ++index) {
+    out << indent << "  \"" << ccad::escapeJson(values.at(index)) << "\""
+        << (index + 1 == values.size() ? "" : ",") << '\n';
+  }
+  out << indent << "]";
+}
+
+std::string cleanupActionsJson() {
+  const std::vector<ccad::CleanupActionInfo>& actions = ccad::cleanupActionCatalog();
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"kicad_class\": \"CLEANUP_ITEM\",\n"
+      << "  \"provider_class\": \"VECTOR_CLEANUP_ITEMS_PROVIDER\",\n"
+      << "  \"provider_semantics\": \"vector_indexed_rows\",\n"
+      << "  \"parity_scope\": \"cleanup_action_catalog_first_slice\",\n"
+      << "  \"actions\": [\n";
+  for (std::size_t index = 0; index < actions.size(); ++index) {
+    const ccad::CleanupActionInfo& action = actions.at(index);
+    out << "    {\n"
+        << "      \"index\": " << index << ",\n"
+        << "      \"kicad_offset\": " << action.kicad_offset << ",\n"
+        << "      \"id\": \"" << ccad::escapeJson(action.id) << "\",\n"
+        << "      \"domain\": \"" << ccad::escapeJson(action.domain) << "\",\n"
+        << "      \"title\": \"" << ccad::escapeJson(action.title) << "\"\n"
+        << "    }" << (index + 1 == actions.size() ? "" : ",") << '\n';
+  }
+  out << "  ]\n"
+      << "}\n";
+  return out.str();
+}
+
+std::string collectBoardItemsJson(const ccad::BoardCollectorReport& report,
+                                  const ccad::BoardCollectorGuide& guide) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"kicad_collector\": \"" << ccad::escapeJson(report.kicad_collector) << "\",\n"
+      << "  \"parity_scope\": \"" << ccad::escapeJson(report.parity_scope) << "\",\n"
+      << "  \"scan_set\": \"" << ccad::escapeJson(report.scan_set) << "\",\n"
+      << "  \"collector_guide\": {\n"
+      << "    \"preferred_layer_id\": \"" << ccad::escapeJson(guide.preferred_layer_id)
+      << "\",\n"
+      << "    \"visible_layer_ids\": ";
+  appendStringArray(out, guide.visible_layer_ids, "    ");
+  out << ",\n"
+      << "    \"include_secondary\": " << (guide.include_secondary ? "true" : "false")
+      << ",\n"
+      << "    \"ignore_locked_items\": "
+      << (guide.ignore_locked_items ? "true" : "false") << ",\n"
+      << "    \"ignore_tracks\": " << (guide.ignore_tracks ? "true" : "false") << ",\n"
+      << "    \"ignore_zone_fills\": " << (guide.ignore_zone_fills ? "true" : "false")
+      << ",\n"
+      << "    \"ignore_no_nets\": " << (guide.ignore_no_nets ? "true" : "false") << "\n"
+      << "  },\n"
+      << "  \"kicad_scan_types\": ";
+  appendStringArray(out, report.kicad_scan_types, "  ");
+  out << ",\n"
+      << "  \"unsupported_kicad_types\": ";
+  appendStringArray(out, report.unsupported_kicad_types, "  ");
+  out << ",\n"
+      << "  \"summary\": {\n"
+      << "    \"total\": " << report.candidates.size() << ",\n"
+      << "    \"primary_count\": " << report.primary_count << ",\n"
+      << "    \"secondary_count\": " << report.secondary_count << "\n"
+      << "  },\n"
+      << "  \"items\": [\n";
+  for (std::size_t index = 0; index < report.candidates.size(); ++index) {
+    const ccad::BoardCollectorCandidate& candidate = report.candidates.at(index);
+    out << "    {\n"
+        << "      \"type\": \"" << ccad::escapeJson(candidate.type) << "\",\n"
+        << "      \"id\": \"" << ccad::escapeJson(candidate.id) << "\",\n"
+        << "      \"kicad_type\": \"" << ccad::escapeJson(candidate.kicad_type) << "\",\n"
+        << "      \"collection_bucket\": \"" << ccad::escapeJson(candidate.collection_bucket)
+        << "\",\n"
+        << "      \"net_id\": \"" << ccad::escapeJson(candidate.net_id) << "\",\n"
+        << "      \"primary_layer_id\": \"" << ccad::escapeJson(candidate.primary_layer_id)
+        << "\",\n"
+        << "      \"layer_ids\": ";
+    appendStringArray(out, candidate.layer_ids, "      ");
+    out << ",\n"
+        << "      \"current_layer_match\": "
+        << (candidate.current_layer_match ? "true" : "false") << ",\n"
+        << "      \"visible_layer_match\": "
+        << (candidate.visible_layer_match ? "true" : "false") << ",\n"
+        << "      \"locked\": " << (candidate.locked ? "true" : "false") << "\n"
+        << "    }" << (index + 1 == report.candidates.size() ? "" : ",") << '\n';
+  }
+  out << "  ]\n"
+      << "}\n";
+  return out.str();
+}
+
+std::string boardLoadStateJson(const std::string& source_file,
+                               const ccad::BoardLoadState& state) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"kicad_class\": \"" << ccad::escapeJson(state.kicad_class) << "\",\n"
+      << "  \"source_format\": \"" << ccad::escapeJson(state.source_format) << "\",\n"
+      << "  \"source_file\": \"" << ccad::escapeJson(source_file) << "\",\n"
+      << "  \"loaded\": " << (state.loaded ? "true" : "false") << ",\n"
+      << "  \"initialize_after_load\": "
+      << (state.initialize_after_load ? "true" : "false") << ",\n"
+      << "  \"board_attached\": " << (state.board_attached ? "true" : "false") << ",\n"
+      << "  \"design_rules_ready\": " << (state.design_rules_ready ? "true" : "false")
+      << ",\n"
+      << "  \"drc_ready\": " << (state.drc_ready ? "true" : "false") << ",\n"
+      << "  \"persistent_drc_engine\": "
+      << (state.persistent_drc_engine ? "true" : "false") << ",\n"
+      << "  \"drc_engine_model\": \"" << ccad::escapeJson(state.drc_engine_model)
+      << "\",\n"
+      << "  \"connectivity_ready\": "
+      << (state.connectivity_ready ? "true" : "false") << ",\n"
+      << "  \"netlist_ready\": " << (state.netlist_ready ? "true" : "false") << ",\n"
+      << "  \"netclass_sync_ready\": "
+      << (state.netclass_sync_ready ? "true" : "false") << ",\n"
+      << "  \"component_class_sync_ready\": "
+      << (state.component_class_sync_ready ? "true" : "false") << ",\n"
+      << "  \"drawing_sheet_loaded\": "
+      << (state.drawing_sheet_loaded ? "true" : "false") << ",\n"
+      << "  \"user_units_ready\": " << (state.user_units_ready ? "true" : "false")
+      << ",\n"
+      << "  \"board_count\": " << state.board_count << ",\n"
+      << "  \"schematic_count\": " << state.schematic_count << ",\n"
+      << "  \"active_board_index\": " << state.active_board_index << ",\n"
+      << "  \"layer_count\": " << state.layer_count << ",\n"
+      << "  \"copper_layer_count\": " << state.copper_layer_count << ",\n"
+      << "  \"visible_layer_count\": " << state.visible_layer_count << ",\n"
+      << "  \"hidden_layer_count\": " << state.hidden_layer_count << ",\n"
+      << "  \"pad_count\": " << state.pad_count << ",\n"
+      << "  \"via_count\": " << state.via_count << ",\n"
+      << "  \"track_count\": " << state.track_count << ",\n"
+      << "  \"graphic_count\": " << state.graphic_count << ",\n"
+      << "  \"text_count\": " << state.text_count << ",\n"
+      << "  \"zone_count\": " << state.zone_count << ",\n"
+      << "  \"keepout_count\": " << state.keepout_count << ",\n"
+      << "  \"placement_region_count\": " << state.placement_region_count << ",\n"
+      << "  \"route_request_count\": " << state.route_request_count << ",\n"
+      << "  \"physical_object_count\": " << state.physical_object_count << ",\n"
+      << "  \"board_net_count\": " << state.board_net_count << ",\n"
+      << "  \"pads_with_nets\": " << state.pads_with_nets << ",\n"
+      << "  \"vias_with_nets\": " << state.vias_with_nets << ",\n"
+      << "  \"tracks_with_nets\": " << state.tracks_with_nets << ",\n"
+      << "  \"zones_with_nets\": " << state.zones_with_nets << ",\n"
+      << "  \"pending_kicad_loader_steps\": ";
+  appendStringArray(out, state.pending_kicad_loader_steps, "  ");
+  out << "\n}\n";
+  return out.str();
+}
+
+std::string drillShapeLabel(const ccad::DrillShape shape) {
+  switch (shape) {
+    case ccad::DrillShape::round:
+      return "Round";
+    case ccad::DrillShape::slot:
+      return "Slot";
+  }
+  return "Unknown";
+}
+
+std::string drillSourceLabel(const ccad::DrillLineSource source) {
+  switch (source) {
+    case ccad::DrillLineSource::pad:
+      return "Pad";
+    case ccad::DrillLineSource::via:
+      return "Via";
+  }
+  return "Unknown";
+}
+
+void appendNullableLayer(std::ostringstream& out, const std::string& layer_id) {
+  if (layer_id.empty()) {
+    out << "null";
+  } else {
+    out << "\"" << ccad::escapeJson(layer_id) << "\"";
+  }
+}
+
+std::string drillStatisticsJson(const ccad::Board& board) {
+  std::vector<ccad::DrillLineItem> drills = ccad::collectDrillLineItems(board);
+  std::sort(drills.begin(), drills.end(),
+            ccad::DrillLineItemCompare(ccad::DrillLineColumn::count, false));
+
+  int total_drill_count = 0;
+  for (const ccad::DrillLineItem& drill : drills) {
+    total_drill_count += drill.quantity;
+  }
+
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"kicad_reference\": \"board_statistics\",\n"
+      << "  \"parity_scope\": \"drill_line_items_first_slice\",\n"
+      << "  \"summary\": {\n"
+      << "    \"unique_drill_rows\": " << drills.size() << ",\n"
+      << "    \"total_drill_count\": " << total_drill_count << "\n"
+      << "  },\n"
+      << "  \"drill_holes\": [\n";
+  for (std::size_t index = 0; index < drills.size(); ++index) {
+    const ccad::DrillLineItem& drill = drills.at(index);
+    out << "    {\n"
+        << "      \"count\": " << drill.quantity << ",\n"
+        << "      \"shape\": \"" << drillShapeLabel(drill.shape) << "\",\n"
+        << "      \"x_size_nm\": " << drill.x_size.nanometers << ",\n"
+        << "      \"y_size_nm\": " << drill.y_size.nanometers << ",\n"
+        << "      \"plated\": " << (drill.plated ? "true" : "false") << ",\n"
+        << "      \"source\": \"" << drillSourceLabel(drill.source) << "\",\n"
+        << "      \"start_layer\": ";
+    appendNullableLayer(out, drill.start_layer_id);
+    out << ",\n"
+        << "      \"stop_layer\": ";
+    appendNullableLayer(out, drill.stop_layer_id);
+    out << "\n"
+        << "    }" << (index + 1 == drills.size() ? "" : ",") << '\n';
+  }
+  out << "  ]\n"
+      << "}\n";
+  return out.str();
+}
+
+void appendOptionalLengthNm(std::ostringstream& out, const std::optional<ccad::Length>& length) {
+  if (length.has_value()) {
+    out << length->nanometers;
+  } else {
+    out << "null";
+  }
+}
+
+void appendDrillRows(std::ostringstream& out,
+                     const std::vector<ccad::DrillLineItem>& drills,
+                     const std::string& indent) {
+  out << "[\n";
+  for (std::size_t index = 0; index < drills.size(); ++index) {
+    const ccad::DrillLineItem& drill = drills.at(index);
+    out << indent << "  {\n"
+        << indent << "    \"count\": " << drill.quantity << ",\n"
+        << indent << "    \"shape\": \"" << drillShapeLabel(drill.shape) << "\",\n"
+        << indent << "    \"x_size_nm\": " << drill.x_size.nanometers << ",\n"
+        << indent << "    \"y_size_nm\": " << drill.y_size.nanometers << ",\n"
+        << indent << "    \"plated\": " << (drill.plated ? "true" : "false") << ",\n"
+        << indent << "    \"source\": \"" << drillSourceLabel(drill.source) << "\",\n"
+        << indent << "    \"start_layer\": ";
+    appendNullableLayer(out, drill.start_layer_id);
+    out << ",\n" << indent << "    \"stop_layer\": ";
+    appendNullableLayer(out, drill.stop_layer_id);
+    out << "\n" << indent << "  }" << (index + 1 == drills.size() ? "" : ",") << '\n';
+  }
+  out << indent << "]";
+}
+
+std::string boardStatisticsReportJson(const ccad::Project& project, const ccad::Board& board) {
+  const ccad::BoardStatisticsReport report =
+      ccad::buildBoardStatisticsReport(board, project.name, project.name);
+  int total_drill_count = 0;
+  for (const ccad::DrillLineItem& drill : report.drill_holes) {
+    total_drill_count += drill.quantity;
+  }
+
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"kicad_reference\": \"" << ccad::escapeJson(report.kicad_reference) << "\",\n"
+      << "  \"parity_scope\": \"" << ccad::escapeJson(report.parity_scope) << "\",\n"
+      << "  \"metadata\": {\n"
+      << "    \"project\": \"" << ccad::escapeJson(report.project_name) << "\",\n"
+      << "    \"board_name\": \"" << ccad::escapeJson(report.board_name) << "\"\n"
+      << "  },\n"
+      << "  \"board\": {\n"
+      << "    \"has_outline\": " << (report.has_outline ? "true" : "false") << ",\n"
+      << "    \"width_nm\": " << report.board_width.nanometers << ",\n"
+      << "    \"height_nm\": " << report.board_height.nanometers << ",\n"
+      << "    \"board_area_square_mm\": " << report.board_area_square_mm << ",\n"
+      << "    \"front_copper_area_square_mm\": " << report.front_copper_area_square_mm << ",\n"
+      << "    \"back_copper_area_square_mm\": " << report.back_copper_area_square_mm << ",\n"
+      << "    \"front_footprint_area_square_mm\": "
+      << report.front_footprint_area_square_mm << ",\n"
+      << "    \"back_footprint_area_square_mm\": " << report.back_footprint_area_square_mm
+      << ",\n"
+      << "    \"front_footprint_density_percent\": "
+      << report.front_footprint_density_percent << ",\n"
+      << "    \"back_footprint_density_percent\": "
+      << report.back_footprint_density_percent << ",\n"
+      << "    \"min_track_width_nm\": ";
+  appendOptionalLengthNm(out, report.min_track_width);
+  out << ",\n"
+      << "    \"min_drill_diameter_nm\": ";
+  appendOptionalLengthNm(out, report.min_drill_diameter);
+  out << ",\n"
+      << "    \"board_thickness_nm\": " << report.board_thickness.nanometers << "\n"
+      << "  },\n"
+      << "  \"object_counts\": {\n"
+      << "    \"pad_count\": " << report.object_counts.pad_count << ",\n"
+      << "    \"through_hole_pad_count\": " << report.object_counts.through_hole_pad_count
+      << ",\n"
+      << "    \"smd_pad_count\": " << report.object_counts.smd_pad_count << ",\n"
+      << "    \"connector_pad_count\": " << report.object_counts.connector_pad_count
+      << ",\n"
+      << "    \"npth_pad_count\": " << report.object_counts.npth_pad_count << ",\n"
+      << "    \"via_count\": " << report.object_counts.via_count << ",\n"
+      << "    \"track_count\": " << report.object_counts.track_count << ",\n"
+      << "    \"zone_count\": " << report.object_counts.zone_count << ",\n"
+      << "    \"graphic_count\": " << report.object_counts.graphic_count << ",\n"
+      << "    \"text_count\": " << report.object_counts.text_count << ",\n"
+      << "    \"keepout_count\": " << report.object_counts.keepout_count << ",\n"
+      << "    \"placement_region_count\": " << report.object_counts.placement_region_count
+      << "\n"
+      << "  },\n"
+      << "  \"drill_summary\": {\n"
+      << "    \"unique_drill_rows\": " << report.drill_holes.size() << ",\n"
+      << "    \"total_drill_count\": " << total_drill_count << "\n"
+      << "  },\n"
+      << "  \"drill_holes\": ";
+  appendDrillRows(out, report.drill_holes, "  ");
+  out << "\n}\n";
+  return out.str();
+}
+
+void appendPointRows(std::ostringstream& out, const std::vector<ccad::Point>& points,
+                     const std::string& indent) {
+  out << "[\n";
+  for (std::size_t index = 0; index < points.size(); ++index) {
+    const ccad::Point& point = points.at(index);
+    out << indent << "  {\"x_nm\": " << point.x.nanometers << ", \"y_nm\": "
+        << point.y.nanometers << "}" << (index + 1 == points.size() ? "" : ",") << '\n';
+  }
+  out << indent << "]";
+}
+
+std::string boardOutlinePolygonJson(const ccad::BoardOutlinePolygonReport& report) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"kicad_source\": \"" << ccad::escapeJson(report.kicad_source) << "\",\n"
+      << "  \"kicad_function\": \"" << ccad::escapeJson(report.kicad_function) << "\",\n"
+      << "  \"parity_scope\": \"" << ccad::escapeJson(report.parity_scope) << "\",\n"
+      << "  \"edge_cut_segment_count\": " << report.edge_cut_segment_count << ",\n"
+      << "  \"outline_count\": " << report.outline_count << ",\n"
+      << "  \"hole_count\": " << report.hole_count << ",\n"
+      << "  \"closed\": " << (report.closed ? "true" : "false") << ",\n"
+      << "  \"valid\": " << (report.valid ? "true" : "false") << ",\n"
+      << "  \"used_inferred_outline\": "
+      << (report.used_inferred_outline ? "true" : "false") << ",\n"
+      << "  \"allow_disjoint\": " << (report.allow_disjoint ? "true" : "false") << ",\n"
+      << "  \"allow_use_arcs_in_polygons\": "
+      << (report.allow_use_arcs_in_polygons ? "true" : "false") << ",\n"
+      << "  \"bounding_box\": {\n"
+      << "    \"x_nm\": " << report.bounding_box.origin.x.nanometers << ",\n"
+      << "    \"y_nm\": " << report.bounding_box.origin.y.nanometers << ",\n"
+      << "    \"width_nm\": " << report.bounding_box.size.width.nanometers << ",\n"
+      << "    \"height_nm\": " << report.bounding_box.size.height.nanometers << "\n"
+      << "  },\n"
+      << "  \"points\": ";
+  appendPointRows(out, report.points, "  ");
+  out << ",\n"
+      << "  \"source_graphic_ids\": ";
+  appendStringArray(out, report.source_graphic_ids, "  ");
+  out << ",\n"
+      << "  \"diagnostics\": ";
+  appendStringArray(out, report.diagnostics, "  ");
+  out << ",\n"
+      << "  \"pending_kicad_features\": ";
+  appendStringArray(out, report.pending_kicad_features, "  ");
+  out << "\n}\n";
+  return out.str();
+}
+
+void appendCrossProbeTargets(std::ostringstream& out,
+                             const std::vector<ccad::CrossProbeTarget>& targets,
+                             const std::string& indent) {
+  out << "[\n";
+  for (std::size_t index = 0; index < targets.size(); ++index) {
+    const ccad::CrossProbeTarget& target = targets.at(index);
+    out << indent << "  {\n"
+        << indent << "    \"type\": \"" << ccad::escapeJson(target.type) << "\",\n"
+        << indent << "    \"id\": \"" << ccad::escapeJson(target.id) << "\",\n"
+        << indent << "    \"component_id\": \"" << ccad::escapeJson(target.component_id)
+        << "\",\n"
+        << indent << "    \"pin_name\": \"" << ccad::escapeJson(target.pin_name) << "\",\n"
+        << indent << "    \"net_id\": \"" << ccad::escapeJson(target.net_id) << "\",\n"
+        << indent << "    \"source\": \"" << ccad::escapeJson(target.source) << "\",\n"
+        << indent << "    \"selection_index\": " << target.selection_index << ",\n"
+        << indent << "    \"focus\": " << (target.focus ? "true" : "false") << "\n"
+        << indent << "  }" << (index + 1 == targets.size() ? "" : ",") << '\n';
+  }
+  out << indent << "]";
+}
+
+std::string crossProbeReportJson(const ccad::CrossProbeReport& report) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"kicad_source\": \"" << ccad::escapeJson(report.kicad_source) << "\",\n"
+      << "  \"kicad_class\": \"" << ccad::escapeJson(report.kicad_class) << "\",\n"
+      << "  \"kicad_function\": \"" << ccad::escapeJson(report.kicad_function) << "\",\n"
+      << "  \"parity_scope\": \"" << ccad::escapeJson(report.parity_scope) << "\",\n"
+      << "  \"packet\": \"" << ccad::escapeJson(report.packet) << "\",\n"
+      << "  \"packet_kind\": \"" << ccad::escapeJson(report.packet_kind) << "\",\n"
+      << "  \"clear_highlight\": " << (report.clear_highlight ? "true" : "false") << ",\n"
+      << "  \"select_connections\": " << (report.select_connections ? "true" : "false")
+      << ",\n"
+      << "  \"part_reference\": \"" << ccad::escapeJson(report.part_reference) << "\",\n"
+      << "  \"pad_number\": \"" << ccad::escapeJson(report.pad_number) << "\",\n"
+      << "  \"requested_nets\": ";
+  appendStringArray(out, report.requested_nets, "  ");
+  out << ",\n"
+      << "  \"targets\": ";
+  appendCrossProbeTargets(out, report.targets, "  ");
+  out << ",\n"
+      << "  \"diagnostics\": ";
+  appendStringArray(out, report.diagnostics, "  ");
+  out << ",\n"
+      << "  \"pending_kicad_features\": ";
+  appendStringArray(out, report.pending_kicad_features, "  ");
+  out << "\n}\n";
+  return out.str();
+}
+
+void appendTextVariableReferences(std::ostringstream& out,
+                                  const std::vector<ccad::TextVariableReference>& refs,
+                                  const std::string& indent) {
+  out << indent << "\"references\": [\n";
+  for (std::size_t i = 0; i < refs.size(); ++i) {
+    const ccad::TextVariableReference& ref = refs.at(i);
+    out << indent << "  {\"name\": \"" << ccad::escapeJson(ref.name)
+        << "\", \"resolved\": " << (ref.resolved ? "true" : "false") << "}"
+        << (i + 1 == refs.size() ? "" : ",") << '\n';
+  }
+  out << indent << "]";
+}
+
+std::string textVariableExpansionJson(const ccad::Project& project,
+                                      const ccad::Board& board,
+                                      const std::optional<std::string>& explicit_text) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"kicad_handler\": \"ExpandTextVariables\",\n"
+      << "  \"kicad_source\": \"BOARD::ResolveTextVar\",\n"
+      << "  \"parity_scope\": \"project_text_variable_expansion_first_slice\",\n";
+
+  out << "  \"variables\": {\n";
+  std::size_t variable_index = 0;
+  for (const auto& [key, value] : project.text_variables) {
+    out << "    \"" << ccad::escapeJson(key) << "\": \""
+        << ccad::escapeJson(value) << "\""
+        << (++variable_index == project.text_variables.size() ? "" : ",") << '\n';
+  }
+  out << "  },\n";
+
+  out << "  \"texts\": [\n";
+  if (explicit_text.has_value()) {
+    std::vector<ccad::TextVariableReference> refs;
+    const std::string expanded =
+        ccad::expandTextVariables(*explicit_text, project.text_variables, &refs);
+    out << "    {\n"
+        << "      \"source_text\": \"" << ccad::escapeJson(*explicit_text) << "\",\n"
+        << "      \"expanded_text\": \"" << ccad::escapeJson(expanded) << "\",\n";
+    appendTextVariableReferences(out, refs, "      ");
+    out << "\n"
+        << "    }\n";
+  } else {
+    const std::vector<ccad::ExpandedBoardText> texts = ccad::expandBoardTexts(project, board);
+    for (std::size_t i = 0; i < texts.size(); ++i) {
+      const ccad::ExpandedBoardText& text = texts.at(i);
+      out << "    {\n"
+          << "      \"id\": \"" << ccad::escapeJson(text.id) << "\",\n"
+          << "      \"layer_id\": \"" << ccad::escapeJson(text.layer_id) << "\",\n"
+          << "      \"source_text\": \"" << ccad::escapeJson(text.source_text) << "\",\n"
+          << "      \"expanded_text\": \"" << ccad::escapeJson(text.expanded_text) << "\",\n";
+      appendTextVariableReferences(out, text.references, "      ");
+      out << "\n"
+          << "    }" << (i + 1 == texts.size() ? "" : ",") << '\n';
+    }
+  }
+  out << "  ]\n"
+      << "}\n";
+  return out.str();
+}
+
+std::string removeObjectResultJson(const ccad::BoardContainerRemoveResult& result) {
+  std::ostringstream out;
+  out << "{\"command\":\"pcb remove-object\""
+      << ",\"kicad_container_class\":\"BOARD_ITEM_CONTAINER\""
+      << ",\"kicad_method\":\"Delete\""
+      << ",\"remove_mode\":\""
+      << ccad::escapeJson(ccad::boardContainerRemoveModeName(result.mode)) << "\""
+      << ",\"removed\":" << (result.removed ? "true" : "false")
+      << ",\"id\":\"" << ccad::escapeJson(result.id) << "\""
+      << ",\"kind\":\"" << ccad::escapeJson(ccad::boardContainerItemKindName(result.kind))
+      << "\""
+      << ",\"index\":" << result.index
+      << ",\"kicad_delete_semantics\":"
+      << (result.kicad_delete_semantics ? "true" : "false") << "}\n";
+  return out.str();
+}
+
 int requireNonNegativeIntOption(const std::map<std::string, std::string>& options,
                                 const std::string& key) {
   const std::string value = requireOption(options, key);
@@ -373,17 +889,6 @@ void requireBoardObjectId(const ccad::Board& board, const std::string& id) {
   throw std::runtime_error("unknown board object id: " + id);
 }
 
-template <typename T>
-bool eraseById(std::vector<T>& items, const std::string& id) {
-  for (auto it = items.begin(); it != items.end(); ++it) {
-    if (it->id == id) {
-      items.erase(it);
-      return true;
-    }
-  }
-  return false;
-}
-
 }  // namespace
 
 int pcbCommand(const std::vector<std::string>& args) {
@@ -394,6 +899,49 @@ int pcbCommand(const std::vector<std::string>& args) {
 
   try {
     const std::string& subcommand = args.at(0);
+    if (subcommand == "cleanup-actions") {
+      std::cout << cleanupActionsJson();
+      return 0;
+    }
+
+    if (subcommand == "collect-items") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1,
+                       {"--file", "--scan-set", "--preferred-layer", "--visible-layers",
+                        "--include-secondary", "--ignore-locked", "--ignore-tracks",
+                        "--ignore-zone-fills", "--ignore-no-nets"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      const ccad::Board& board = requireBoard(project);
+      const ccad::BoardCollectorScanSet scan_set =
+          ccad::parseBoardCollectorScanSet(requireOption(options, "--scan-set"));
+      ccad::BoardCollectorGuide guide;
+      if (options.contains("--preferred-layer")) {
+        guide.preferred_layer_id = requireOption(options, "--preferred-layer");
+      }
+      if (options.contains("--visible-layers")) {
+        guide.visible_layer_ids =
+            splitCommaList(requireOption(options, "--visible-layers"), "--visible-layers");
+      }
+      if (options.contains("--include-secondary")) {
+        guide.include_secondary = requireBoolOption(options, "--include-secondary");
+      }
+      if (options.contains("--ignore-locked")) {
+        guide.ignore_locked_items = requireBoolOption(options, "--ignore-locked");
+      }
+      if (options.contains("--ignore-tracks")) {
+        guide.ignore_tracks = requireBoolOption(options, "--ignore-tracks");
+      }
+      if (options.contains("--ignore-zone-fills")) {
+        guide.ignore_zone_fills = requireBoolOption(options, "--ignore-zone-fills");
+      }
+      if (options.contains("--ignore-no-nets")) {
+        guide.ignore_no_nets = requireBoolOption(options, "--ignore-no-nets");
+      }
+      std::cout << collectBoardItemsJson(ccad::collectBoardItems(board, scan_set, guide), guide);
+      return 0;
+    }
+
     if (subcommand == "add-layer") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--name", "--kind", "--visible"});
@@ -463,6 +1011,52 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "load-state") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--initialize"});
+      const std::string file = requireOption(options, "--file");
+      const ccad::Project project = loadProjectFile(file);
+      ccad::BoardLoadOptions load_options;
+      if (options.contains("--initialize")) {
+        load_options.initialize_after_load = requireBoolOption(options, "--initialize");
+      }
+      const ccad::BoardLoadState state = ccad::summarizeLoadedBoard(project, load_options);
+      std::cout << boardLoadStateJson(file, state);
+      return 0;
+    }
+
+    if (subcommand == "drill-statistics") {
+      const std::map<std::string, std::string> options = parseOptions(args, 1, {"--file"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      const ccad::Board& board = requireBoard(project);
+      std::cout << drillStatisticsJson(board);
+      return 0;
+    }
+
+    if (subcommand == "board-statistics") {
+      const std::map<std::string, std::string> options = parseOptions(args, 1, {"--file"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      const ccad::Board& board = requireBoard(project);
+      std::cout << boardStatisticsReportJson(project, board);
+      return 0;
+    }
+
+    if (subcommand == "expand-text-variables") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--text"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      const ccad::Board& board = requireBoard(project);
+      std::optional<std::string> text;
+      if (options.contains("--text")) {
+        text = requireOption(options, "--text");
+      }
+      std::cout << textVariableExpansionJson(project, board, text);
+      return 0;
+    }
+
     if (subcommand == "get-object") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id"});
@@ -481,37 +1075,37 @@ int pcbCommand(const std::vector<std::string>& args) {
       }
       for (const ccad::Pad& pad : board.pads) {
         if (pad.id == id) {
-          std::cout << pcbPadObjectJson(pad);
+          std::cout << pcbPadObjectJson(board, pad);
           return 0;
         }
       }
       for (const ccad::Via& via : board.vias) {
         if (via.id == id) {
-          std::cout << pcbViaObjectJson(via);
+          std::cout << pcbViaObjectJson(board, via);
           return 0;
         }
       }
       for (const ccad::TrackSegment& track : board.tracks) {
         if (track.id == id) {
-          std::cout << pcbTrackObjectJson(track);
+          std::cout << pcbTrackObjectJson(board, track);
           return 0;
         }
       }
       for (const ccad::BoardGraphic& graphic : board.graphics) {
         if (graphic.id == id) {
-          std::cout << pcbBoardGraphicObjectJson(graphic);
+          std::cout << pcbBoardGraphicObjectJson(board, graphic);
           return 0;
         }
       }
       for (const ccad::BoardText& text : board.texts) {
         if (text.id == id) {
-          std::cout << pcbBoardTextObjectJson(text);
+          std::cout << pcbBoardTextObjectJson(board, text);
           return 0;
         }
       }
       for (const ccad::BoardZone& zone : board.zones) {
         if (zone.id == id) {
-          std::cout << pcbBoardZoneObjectJson(zone);
+          std::cout << pcbBoardZoneObjectJson(board, zone);
           return 0;
         }
       }
@@ -674,6 +1268,33 @@ int pcbCommand(const std::vector<std::string>& args) {
         throw std::runtime_error("project has no board");
       }
       std::cout << getPcbOutlineJson(project.boards[0]);
+      return 0;
+    }
+
+    if (subcommand == "outline-polygon") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--infer"});
+      const std::string file = requireOption(options, "--file");
+      const ccad::Project project = loadProjectFile(file);
+      if (!!project.boards.empty()) {
+        throw std::runtime_error("project has no board");
+      }
+      ccad::BoardOutlinePolygonOptions outline_options;
+      if (options.contains("--infer")) {
+        outline_options.infer_outline_if_necessary = requireBoolOption(options, "--infer");
+      }
+      std::cout << boardOutlinePolygonJson(
+          ccad::buildBoardOutlinePolygonReport(project.boards[0], outline_options));
+      return 0;
+    }
+
+    if (subcommand == "cross-probe") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--packet"});
+      const std::string file = requireOption(options, "--file");
+      const ccad::Project project = loadProjectFile(file);
+      std::cout << crossProbeReportJson(
+          ccad::resolveCrossProbePacket(project, requireOption(options, "--packet")));
       return 0;
     }
 
@@ -1583,23 +2204,21 @@ int pcbCommand(const std::vector<std::string>& args) {
 
     if (subcommand == "remove-object") {
       const std::map<std::string, std::string> options =
-          parseOptions(args, 1, {"--file", "--id"});
+          parseOptions(args, 1, {"--file", "--id", "--mode"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
       ccad::Board& board = requireBoard(project);
       const std::string id = requireOption(options, "--id");
-      const bool removed = eraseById(board.pads, id) || eraseById(board.vias, id) ||
-                           eraseById(board.tracks, id) || eraseById(board.graphics, id) ||
-                           eraseById(board.texts, id) || eraseById(board.zones, id) ||
-                           eraseById(board.keepouts, id) ||
-                           eraseById(board.placement_regions, id);
-      if (!removed) {
+      const ccad::BoardContainerRemoveResult result =
+          ccad::removeBoardContainerItem(board, id, parseRemoveModeOption(options));
+      if (!result.removed) {
         throw std::runtime_error("unknown physical object: " + id);
       }
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
       }
+      std::cout << removeObjectResultJson(result);
       return 0;
     }
 
@@ -1739,6 +2358,21 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "export-board-bom") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--output"});
+      const std::string file = requireOption(options, "--file");
+      const std::string output = requireOption(options, "--output");
+      const ccad::Project project = loadProjectFile(file);
+      const std::string exported = ccad::exportBoardToBomCsv(project);
+      std::ofstream out(output);
+      if (!out) {
+        throw std::runtime_error("failed to open output file: " + output);
+      }
+      out << exported;
+      return 0;
+    }
+
     if (subcommand == "export-pnp") {
       auto opts = parseOptions(args, 1, {"--file", "--output"});
       auto file = requireOption(opts, "--file");
@@ -1837,7 +2471,7 @@ int pcbCommand(const std::vector<std::string>& args) {
     if (subcommand == "place-footprint") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--footprint", "--component", "--at-x-mm", "--at-y-mm",
-                                 "--layer", "--rotation-deg"});
+                                 "--layer", "--rotation-deg", "--value", "--exclude-from-bom"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
       const ccad::Footprint footprint = loadFootprintFile(requireOption(options, "--footprint"));
@@ -1848,8 +2482,15 @@ int pcbCommand(const std::vector<std::string>& args) {
           .y = requirePositiveMillimeters(options, "--at-y-mm"),
       };
       const double placement_rotation = optionDoubleOrDefault(options, "--rotation-deg", 0.0);
+      const std::optional<std::string> value =
+          options.contains("--value") ? std::optional<std::string>(requireOption(options, "--value"))
+                                      : std::nullopt;
+      const bool exclude_from_bom = options.contains("--exclude-from-bom")
+                                        ? requireBoolOption(options, "--exclude-from-bom")
+                                        : false;
 
-      ccad::placeFootprint(project, footprint, component_id, origin, placement_rotation, layer_id);
+      ccad::placeFootprint(project, footprint, component_id, origin, placement_rotation, layer_id,
+                           value, exclude_from_bom);
 
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';

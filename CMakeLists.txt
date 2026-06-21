@@ -13,7 +13,17 @@ add_library(ccad_core
   src/ccad_core/agent_policy.cpp
   src/ccad_core/autorouter_matrix.cpp
   src/ccad_core/autoplacer.cpp
+  src/ccad_core/board_collector.cpp
+  src/ccad_core/board_outline_polygon.cpp
+  src/ccad_core/board_item_container.cpp
+  src/ccad_core/board_item.cpp
+  src/ccad_core/board_loader.cpp
+  src/ccad_core/board_stackup.cpp
+  src/ccad_core/board_statistics.cpp
+  src/ccad_core/board_text_var_adapter.cpp
+  src/ccad_core/board_design_settings.cpp
   src/ccad_core/canvas.cpp
+  src/ccad_core/cleanup_item.cpp
   src/ccad_core/model.cpp
   src/ccad_core/component_generator.cpp
   src/ccad_core/diff.cpp
@@ -38,6 +48,7 @@ add_library(ccad_core
   src/ccad_core/pnp_export.cpp
   src/ccad_core/drill_export.cpp
   src/ccad_core/agent_orchestrator.cpp
+  src/ccad_core/cross_probing.cpp
 )
 
 target_include_directories(ccad_core PUBLIC
@@ -161,6 +172,87 @@ if(MINGW)
 endif()
 add_test(NAME drc COMMAND ccad_drc_tests)
 
+add_executable(ccad_board_design_settings_tests
+  tests/test_board_design_settings.cpp
+)
+target_link_libraries(ccad_board_design_settings_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_board_design_settings_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME board_design_settings COMMAND ccad_board_design_settings_tests)
+
+add_executable(ccad_board_loader_tests
+  tests/test_board_loader.cpp
+)
+target_link_libraries(ccad_board_loader_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_board_loader_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME board_loader COMMAND ccad_board_loader_tests)
+
+add_executable(ccad_board_item_container_tests
+  tests/test_board_item_container.cpp
+)
+target_link_libraries(ccad_board_item_container_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_board_item_container_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME board_item_container COMMAND ccad_board_item_container_tests)
+
+add_executable(ccad_board_collector_tests
+  tests/test_board_collector.cpp
+)
+target_link_libraries(ccad_board_collector_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_board_collector_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME board_collector COMMAND ccad_board_collector_tests)
+
+add_executable(ccad_board_outline_polygon_tests
+  tests/test_board_outline_polygon.cpp
+)
+target_link_libraries(ccad_board_outline_polygon_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_board_outline_polygon_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME board_outline_polygon COMMAND ccad_board_outline_polygon_tests)
+
+add_executable(ccad_board_statistics_tests
+  tests/test_board_statistics.cpp
+)
+target_link_libraries(ccad_board_statistics_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_board_statistics_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME board_statistics COMMAND ccad_board_statistics_tests)
+
+add_executable(ccad_board_text_var_adapter_tests
+  tests/test_board_text_var_adapter.cpp
+)
+target_link_libraries(ccad_board_text_var_adapter_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_board_text_var_adapter_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME board_text_var_adapter COMMAND ccad_board_text_var_adapter_tests)
+
+add_executable(ccad_board_stackup_tests
+  tests/test_board_stackup.cpp
+)
+target_link_libraries(ccad_board_stackup_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_board_stackup_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME board_stackup COMMAND ccad_board_stackup_tests)
+
+add_executable(ccad_cleanup_item_tests
+  tests/test_cleanup_item.cpp
+)
+target_link_libraries(ccad_cleanup_item_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_cleanup_item_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME cleanup_item COMMAND ccad_cleanup_item_tests)
+
 add_executable(ccad_kicad_footprint_import_tests
   tests/test_kicad_footprint_import.cpp
 )
@@ -274,6 +366,15 @@ if(MINGW)
   target_link_options(ccad_visual_harness_policy_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME visual_harness_policy COMMAND ccad_visual_harness_policy_tests)
+
+add_executable(ccad_cross_probing_tests
+  tests/test_cross_probing.cpp
+)
+target_link_libraries(ccad_cross_probing_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_cross_probing_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME cross_probing COMMAND ccad_cross_probing_tests)
 
 add_executable(ccad_agent_orchestrator_tests
   tests/test_agent_orchestrator.cpp

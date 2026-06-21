@@ -63,6 +63,27 @@ int schCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "add-bus") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--start-x-mm", "--start-y-mm", "--end-x-mm", "--end-y-mm", "--bus"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::BusSegment bus{
+          .id = requireOption(options, "--id"),
+          .start = {ccad::millimeters(requireDoubleOption(options, "--start-x-mm")),
+                    ccad::millimeters(requireDoubleOption(options, "--start-y-mm"))},
+          .end = {ccad::millimeters(requireDoubleOption(options, "--end-x-mm")),
+                  ccad::millimeters(requireDoubleOption(options, "--end-y-mm"))},
+          .bus_id = options.contains("--bus") ? options.at("--bus") : ""
+      };
+      ccad::ensurePrimarySchematic(project).buses.push_back(bus);
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file\n";
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "add-label") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--text", "--net", "--at-x-mm", "--at-y-mm", "--rotation-deg", "--global"});

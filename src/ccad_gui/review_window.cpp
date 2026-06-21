@@ -16,6 +16,7 @@
 #include "ccad_core/kicad_footprint_import.hpp"
 #include "ccad_core/placement.hpp"
 #include "ccad_core/json.hpp"
+#include "ccad_core/library_catalog.hpp"
 #include "ccad_gui/agent_panel.hpp"
 #include "symbol_placement_dialog.hpp"
 #include "footprint_placement_dialog.hpp"
@@ -2461,9 +2462,9 @@ ReviewWindow::ReviewWindow() {
   auto* add_symbol_action = addIconAction(*right_toolbar, "add_symbol_to_schematic", "Add Symbol");
   add_symbol_action->setObjectName("action:add_symbol");
   add_symbol_action->setShortcut(QKeySequence(Qt::Key_A));
-  auto* add_wire_action = addIconAction(*right_toolbar, "add_wire_to_schematic", "Add Wire");
+  auto* add_wire_action = addIconAction(*right_toolbar, "add_line", "Add Wire");
   add_wire_action->setObjectName("action:add_wire");
-  auto* add_label_action = addIconAction(*right_toolbar, "add_label_to_schematic", "Add Label");
+  auto* add_label_action = addIconAction(*right_toolbar, "add_label", "Add Label");
   add_label_action->setObjectName("action:add_label");
   auto* route_track_action = addIconAction(*right_toolbar, "add_tracks", "Route Track");
   auto* add_via_action = addIconAction(*right_toolbar, "add_via", "Add Via");
@@ -2505,12 +2506,20 @@ ReviewWindow::ReviewWindow() {
   connect(add_footprint_action, &QAction::triggered, this, [this]() { placeFromActiveEditor(); });
   connect(add_symbol_action, &QAction::triggered, this, [this]() { placeFromActiveEditor(); });
   connect(editor_tabs_, &QTabWidget::currentChanged, this,
-          [this, add_footprint_action, add_symbol_action](const int index) {
+          [=, this](const int index) {
             const bool pcb_tab = index == 0;
             add_footprint_action->setVisible(pcb_tab);
             add_symbol_action->setVisible(!pcb_tab);
+            add_wire_action->setVisible(!pcb_tab);
+            add_label_action->setVisible(!pcb_tab);
+            route_track_action->setVisible(pcb_tab);
+            add_via_action->setVisible(pcb_tab);
+            add_zone_action->setVisible(pcb_tab);
+            add_keepout_action->setVisible(pcb_tab);
             markUiMapChanged({"tab:pcb", "tab:schematic", "action:add_footprint",
-                              "action:add_symbol", "canvas:pcb", "canvas:schematic"},
+                              "action:add_symbol", "action:add_wire", "action:add_label",
+                              "action:add_tracks", "action:add_via", "action:add_zone", "action:add_keepout_area",
+                              "canvas:pcb", "canvas:schematic"},
                              {"tab", "action", "canvas"});
           });
   connect(bottom_tabs_, &QTabWidget::currentChanged, this,
@@ -2532,6 +2541,12 @@ ReviewWindow::ReviewWindow() {
           });
   add_footprint_action->setVisible(true);
   add_symbol_action->setVisible(false);
+  add_wire_action->setVisible(false);
+  add_label_action->setVisible(false);
+  route_track_action->setVisible(true);
+  add_via_action->setVisible(true);
+  add_zone_action->setVisible(true);
+  add_keepout_action->setVisible(true);
 
   connect(select_action, &QAction::triggered, this, [this]() {
     if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) {
@@ -3454,6 +3469,38 @@ void ReviewWindow::applyStyle() {
       background: #1f6feb;
       color: #ffffff;
     }
+    QFrame[agentRole="chatBubbleUser"] {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      margin-left: 32px;
+      margin-right: 8px;
+    }
+    QFrame[agentRole="chatBubbleAgent"] {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      margin-right: 32px;
+      margin-left: 8px;
+    }
+    QFrame[agentRole="toolCard"] {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      margin: 4px 32px 4px 8px;
+    }
+    QLabel[agentRole="toolTitle"] {
+      color: #8b949e;
+      font-family: monospace;
+      font-size: 11px;
+    }
+    QFrame[agentRole="chip"] {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 2px 8px;
+      color: #8b949e;
+    }
     QWidget#selectionInspectorPanel {
       background: #161b22;
       border: 1px solid #1f6feb;
@@ -3575,7 +3622,7 @@ void ReviewWindow::renderReview(const ccad::ProjectReview& review) {
   const ccad::CanvasScene schematic_scene = project_cache_.schematics.empty() ? ccad::CanvasScene{} : ccad::buildSchematicScene(project_cache_.schematics[0]);
   renderSchematicCanvas(*schematic_scene_, schematic_scene);
 
-  if (!!project_cache_.boards.empty() &&
+  if (project_cache_.boards.empty() && !project_cache_.schematics.empty() &&
       (!project_cache_.schematics[0].components.empty() || !project_cache_.schematics[0].wires.empty())) {
     editor_tabs_->setCurrentWidget(schematic_view_);
   }
@@ -6893,7 +6940,7 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
         response.insert("reason", "activation_failed");
         return jsonObjectLine(response);
     }
-    
+
     const QJsonObject gesture = parsedJsonObjectOrRaw(uiCanvasClickJson(x_value.toDouble(), y_value.toDouble(), dry_run, canvas, name));
     response.insert("gesture", gesture);
     response.insert("performed", gesture.value("performed").toBool(false));
@@ -6934,6 +6981,79 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
     const QJsonObject gesture = parsedJsonObjectOrRaw(uiCanvasClickJson(x_value.toDouble(), y_value.toDouble(), dry_run, "canvas:schematic", text));
     response.insert("gesture", gesture);
     response.insert("performed", gesture.value("performed").toBool(false));
+    return agentQueryResponse(trimmed_method, true, {}, jsonObjectLine(response));
+  }
+  if (trimmed_method == "lib.catalog_info") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QString component_id = object->value("component_id").toString();
+    if (component_id.isEmpty()) {
+      return agentQueryResponse(trimmed_method, false, "lib.catalog_info requires string component_id");
+    }
+
+    QJsonObject response;
+    try {
+        ccad::LibraryCatalog catalog = ccad::loadLibraryCatalog("library-cache/catalog.json");
+        const ccad::LibraryItem* item = ccad::findLibraryItem(catalog, component_id.toStdString());
+        if (item) {
+            response.insert("found", true);
+            QJsonObject item_obj;
+            item_obj.insert("id", QString::fromStdString(item->id));
+            item_obj.insert("kind", QString::fromStdString(item->kind));
+            item_obj.insert("name", QString::fromStdString(item->name));
+            item_obj.insert("license", QString::fromStdString(item->license));
+            item_obj.insert("native_path", QString::fromStdString(item->native_path));
+            item_obj.insert("provenance", QString::fromStdString(item->provenance));
+            item_obj.insert("usage_summary", QString::fromStdString(item->usage_summary));
+            item_obj.insert("review_status", QString::fromStdString(item->review_status));
+            response.insert("item", item_obj);
+        } else {
+            response.insert("found", false);
+            response.insert("component_id", component_id);
+        }
+    } catch (const std::exception& e) {
+        return agentQueryResponse(trimmed_method, false, QString("catalog_error: ") + e.what());
+    }
+    return agentQueryResponse(trimmed_method, true, {}, jsonObjectLine(response));
+  }
+  if (trimmed_method == "lib.catalog_search") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QString query = object->value("query").toString();
+    if (query.isEmpty()) {
+      return agentQueryResponse(trimmed_method, false, "lib.catalog_search requires string query");
+    }
+
+    QJsonObject response;
+    try {
+        ccad::LibraryCatalog catalog = ccad::loadLibraryCatalog("library-cache/catalog.json");
+        std::vector<const ccad::LibraryItem*> matches;
+        if (object->contains("kind")) {
+            matches = ccad::searchLibraryItems(catalog, query.toStdString(), object->value("kind").toString().toStdString());
+        } else {
+            matches = ccad::searchLibraryItems(catalog, query.toStdString());
+        }
+
+        QJsonArray results;
+        for (const ccad::LibraryItem* item : matches) {
+            QJsonObject item_obj;
+            item_obj.insert("id", QString::fromStdString(item->id));
+            item_obj.insert("kind", QString::fromStdString(item->kind));
+            item_obj.insert("name", QString::fromStdString(item->name));
+            item_obj.insert("usage_summary", QString::fromStdString(item->usage_summary));
+            results.append(item_obj);
+        }
+
+        response.insert("query", query);
+        response.insert("count", results.size());
+        response.insert("results", results);
+    } catch (const std::exception& e) {
+        return agentQueryResponse(trimmed_method, false, QString("catalog_error: ") + e.what());
+    }
     return agentQueryResponse(trimmed_method, true, {}, jsonObjectLine(response));
   }
   if (trimmed_method == "ui.place_text") {
@@ -7819,29 +7939,56 @@ QString ReviewWindow::deleteSelectedBoardObject() {
 }
 
 void ReviewWindow::updateCursorStatus(const QPointF& scene_position, const double zoom_factor) {
-  cursor_status_->setText(
-      formatCursorStatus(project_cache_.boards[0], scene_position, use_inches_, polar_coordinates_));
-  zoom_status_->setText("Zoom " + QString::number(zoom_factor * 100.0, 'f', 0) + "%");
+  const std::optional<ccad::Board> active_board =
+      project_cache_.boards.empty() ? std::nullopt
+                                    : std::optional<ccad::Board>(project_cache_.boards[0]);
+  if (cursor_status_ != nullptr) {
+    cursor_status_->setText(
+        formatCursorStatus(active_board, scene_position, use_inches_, polar_coordinates_));
+  }
+  if (zoom_status_ != nullptr) {
+    zoom_status_->setText("Zoom " + QString::number(zoom_factor * 100.0, 'f', 0) + "%");
+  }
 }
 
 void ReviewWindow::updateSelectionStatus() {
   const QList<QGraphicsItem*> selected_items = canvas_scene_->selectedItems();
   if (selected_items.isEmpty()) {
-    selection_status_->setText("Selected --");
-    selection_inspector_->renderBoardRules(project_cache_.boards[0]);
+    if (selection_status_ != nullptr) {
+      selection_status_->setText("Selected --");
+    }
+    if (selection_inspector_ != nullptr) {
+      if (project_cache_.boards.empty()) {
+        selection_inspector_->renderCanvasItem();
+      } else {
+        selection_inspector_->renderBoardRules(project_cache_.boards[0]);
+      }
+    }
     return;
   }
   const QGraphicsItem* item = selected_items.first();
   const QString type = canvasObjectType(*item);
   const QString id = canvasObjectId(*item);
   if (type.isEmpty() || id.isEmpty()) {
-    selection_status_->setText("Selected canvas item");
-    selection_inspector_->renderCanvasItem();
+    if (selection_status_ != nullptr) {
+      selection_status_->setText("Selected canvas item");
+    }
+    if (selection_inspector_ != nullptr) {
+      selection_inspector_->renderCanvasItem();
+    }
     return;
   }
   const QString text = "Selected " + type + " " + id;
-  selection_status_->setText(text);
-  selection_inspector_->renderSelection(project_cache_.boards[0], type, id);
+  if (selection_status_ != nullptr) {
+    selection_status_->setText(text);
+  }
+  if (selection_inspector_ != nullptr) {
+    if (project_cache_.boards.empty()) {
+      selection_inspector_->renderCanvasItem();
+    } else {
+      selection_inspector_->renderSelection(project_cache_.boards[0], type, id);
+    }
+  }
 }
 
 void ReviewWindow::previewFootprint() {

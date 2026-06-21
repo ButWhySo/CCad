@@ -214,6 +214,8 @@ class JsonReader {
         project.id = readString();
       } else if (key == "name") {
         project.name = readString();
+      } else if (key == "text_variables") {
+        project.text_variables = readStringMap();
       } else if (key == "board") {
         project.boards.clear();
         project.boards.push_back(readBoard());
@@ -223,6 +225,8 @@ class JsonReader {
         ensureSchematic(project).nets = readNets();
       } else if (key == "wires") {
         ensureSchematic(project).wires = readWireSegments();
+      } else if (key == "buses") {
+        ensureSchematic(project).buses = readBusSegments();
       } else if (key == "labels") {
         ensureSchematic(project).labels = readLabels();
       } else if (key == "power_symbols") {
@@ -250,6 +254,26 @@ class JsonReader {
   }
 
  private:
+  std::map<std::string, std::string> readStringMap() {
+    std::map<std::string, std::string> values;
+    expect('{');
+    if (consume('}')) {
+      return values;
+    }
+    while (true) {
+      const std::string key = readString();
+      expect(':');
+      values[key] = readString();
+      if (consume('}')) {
+        return values;
+      }
+      expect(',');
+      if (peek('}')) {
+        throw std::runtime_error("trailing comma in string map");
+      }
+    }
+  }
+
   Board readBoard() {
     Board board;
     expect('{');
@@ -263,6 +287,8 @@ class JsonReader {
           board.design_rules = readDesignRules();
         } else if (key == "layers") {
           board.layers = readLayers();
+        } else if (key == "footprints") {
+          board.footprints = readBoardFootprints();
         } else if (key == "placement_regions") {
           board.placement_regions = readPlacementRegions();
         } else if (key == "keepouts") {
@@ -500,6 +526,58 @@ class JsonReader {
     }
   }
 
+  std::vector<BoardFootprint> readBoardFootprints() {
+    std::vector<BoardFootprint> footprints;
+    expect('[');
+    if (consume(']')) {
+      return footprints;
+    }
+    while (true) {
+      BoardFootprint footprint;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "reference") {
+            footprint.reference = readString();
+          } else if (key == "value") {
+            footprint.value = readString();
+          } else if (key == "footprint_name") {
+            footprint.footprint_name = readString();
+          } else if (key == "layer_id") {
+            footprint.layer_id = readString();
+          } else if (key == "position") {
+            footprint.position = readPoint();
+          } else if (key == "rotation_degrees") {
+            footprint.rotation_degrees = readDouble();
+          } else if (key == "exclude_from_bom") {
+            footprint.exclude_from_bom = readBool();
+          } else if (key == "locked") {
+            footprint.locked = readBool();
+          } else {
+            throw std::runtime_error("unknown board footprint key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+          if (peek('}')) {
+            throw std::runtime_error("trailing comma in board footprint object");
+          }
+        }
+      }
+      footprints.push_back(footprint);
+      if (consume(']')) {
+        return footprints;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in board footprints array");
+      }
+    }
+  }
+
   std::vector<Pad> readPads() {
     std::vector<Pad> pads;
     expect('[');
@@ -557,6 +635,8 @@ class JsonReader {
             pad.roundrect_rratio = readDouble();
           } else if (key == "chamfer_ratio") {
             pad.chamfer_ratio = readDouble();
+          } else if (key == "locked") {
+            pad.locked = readBool();
           } else {
             throw std::runtime_error("unknown pad key: " + key);
           }
@@ -687,6 +767,8 @@ class JsonReader {
             via.diameter = nanometers(readInt64());
           } else if (key == "drill_nm") {
             via.drill = nanometers(readInt64());
+          } else if (key == "locked") {
+            via.locked = readBool();
           } else {
             throw std::runtime_error("unknown via key: " + key);
           }
@@ -737,6 +819,8 @@ class JsonReader {
             track.width = nanometers(readInt64());
           } else if (key == "source_route_request_id") {
             track.source_route_request_id = readString();
+          } else if (key == "locked") {
+            track.locked = readBool();
           } else {
             throw std::runtime_error("unknown track key: " + key);
           }
@@ -785,6 +869,8 @@ class JsonReader {
             graphic.end = readPoint();
           } else if (key == "width_nm") {
             graphic.width = nanometers(readInt64());
+          } else if (key == "locked") {
+            graphic.locked = readBool();
           } else {
             throw std::runtime_error("unknown board graphic key: " + key);
           }
@@ -833,6 +919,8 @@ class JsonReader {
             text.rotation_degrees = readDouble();
           } else if (key == "size") {
             text.size = readSize();
+          } else if (key == "locked") {
+            text.locked = readBool();
           } else {
             throw std::runtime_error("unknown board text key: " + key);
           }
@@ -889,6 +977,8 @@ class JsonReader {
             zone.fill_enabled = readBool();
           } else if (key == "pad_connection") {
             zone.pad_connection = readString();
+          } else if (key == "locked") {
+            zone.locked = readBool();
           } else {
             throw std::runtime_error("unknown board zone key: " + key);
           }
@@ -1091,6 +1181,52 @@ class JsonReader {
       expect(',');
       if (peek(']')) {
         throw std::runtime_error("trailing comma in wires array");
+      }
+    }
+  }
+
+  std::vector<BusSegment> readBusSegments() {
+    std::vector<BusSegment> buses;
+    expect('[');
+    if (consume(']')) {
+      return buses;
+    }
+    while (true) {
+      BusSegment bus;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            bus.id = readString();
+          } else if (key == "start") {
+            bus.start = readPoint();
+          } else if (key == "end") {
+            bus.end = readPoint();
+          } else if (key == "bus_id") {
+            bus.bus_id = readString();
+          } else if (key == "net_ids") {
+            bus.net_ids = readStringArray();
+          } else {
+            throw std::runtime_error("unknown bus segment key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+          if (peek('}')) {
+            throw std::runtime_error("trailing comma in bus segment object");
+          }
+        }
+      }
+      buses.push_back(bus);
+      if (consume(']')) {
+        return buses;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in buses array");
       }
     }
   }
@@ -1549,6 +1685,13 @@ std::string dumpProjectJson(const Project& project) {
   out << "  \"schema_version\": " << project.schema_version << ",\n";
   writeField(out, 2, "id", project.id);
   writeField(out, 2, "name", project.name);
+  out << "  \"text_variables\": {\n";
+  std::size_t text_variable_index = 0;
+  for (const auto& [key, value] : project.text_variables) {
+    out << "    \"" << escapeJson(key) << "\": \"" << escapeJson(value) << "\""
+        << (++text_variable_index == project.text_variables.size() ? "" : ",") << '\n';
+  }
+  out << "  },\n";
 
   if (!project.boards.empty()) {
     const Board& board = project.boards[0];
@@ -1626,6 +1769,27 @@ std::string dumpProjectJson(const Project& project) {
       writeField(out, 8, "name", layer.name);
       out << "        \"visible\": " << (layer.visible ? "true" : "false") << '\n';
       out << "      }" << (i + 1 == board.layers.size() ? "" : ",") << '\n';
+    }
+    out << "    ],\n";
+    out << "    \"footprints\": [\n";
+    for (std::size_t i = 0; i < board.footprints.size(); ++i) {
+      const BoardFootprint& footprint = board.footprints.at(i);
+      out << "      {\n";
+      writeField(out, 8, "reference", footprint.reference);
+      writeField(out, 8, "value", footprint.value);
+      writeField(out, 8, "footprint_name", footprint.footprint_name);
+      writeField(out, 8, "layer_id", footprint.layer_id);
+      out << "        \"position\": ";
+      writePoint(out, 0, footprint.position);
+      out << ",\n";
+      out << "        \"rotation_degrees\": " << footprint.rotation_degrees << ",\n";
+      out << "        \"exclude_from_bom\": "
+          << (footprint.exclude_from_bom ? "true" : "false");
+      if (footprint.locked) {
+        out << ",\n        \"locked\": true";
+      }
+      out << '\n';
+      out << "      }" << (i + 1 == board.footprints.size() ? "" : ",") << '\n';
     }
     out << "    ],\n";
     out << "    \"placement_regions\": [\n";
@@ -1713,6 +1877,9 @@ std::string dumpProjectJson(const Project& project) {
       if (pad.chamfer_ratio.has_value()) {
         out << ",\n        \"chamfer_ratio\": " << *pad.chamfer_ratio;
       }
+      if (pad.locked) {
+        out << ",\n        \"locked\": true";
+      }
       out << "\n";
       out << "      }" << (i + 1 == board.pads.size() ? "" : ",") << '\n';
     }
@@ -1731,7 +1898,11 @@ std::string dumpProjectJson(const Project& project) {
       writePoint(out, 0, track.end);
       out << ",\n";
       out << "        \"width_nm\": " << track.width.nanometers << ",\n";
-      writeField(out, 8, "source_route_request_id", track.source_route_request_id, false);
+      writeField(out, 8, "source_route_request_id", track.source_route_request_id,
+                 track.locked);
+      if (track.locked) {
+        out << "        \"locked\": true\n";
+      }
       out << "      }" << (i + 1 == board.tracks.size() ? "" : ",") << '\n';
     }
     out << "    ],\n";
@@ -1748,7 +1919,11 @@ std::string dumpProjectJson(const Project& project) {
       out << "        \"end\": ";
       writePoint(out, 0, graphic.end);
       out << ",\n";
-      out << "        \"width_nm\": " << graphic.width.nanometers << "\n";
+      out << "        \"width_nm\": " << graphic.width.nanometers;
+      if (graphic.locked) {
+        out << ",\n        \"locked\": true";
+      }
+      out << "\n";
       out << "      }" << (i + 1 == board.graphics.size() ? "" : ",") << '\n';
     }
     out << "    ],\n";
@@ -1765,6 +1940,9 @@ std::string dumpProjectJson(const Project& project) {
       out << "        \"rotation_degrees\": " << text.rotation_degrees << ",\n";
       out << "        \"size\": ";
       writeSize(out, 0, text.size);
+      if (text.locked) {
+        out << ",\n        \"locked\": true";
+      }
       out << "\n";
       out << "      }" << (i + 1 == board.texts.size() ? "" : ",") << '\n';
     }
@@ -1792,7 +1970,10 @@ std::string dumpProjectJson(const Project& project) {
       out << "        \"clearance_nm\": " << zone.clearance.nanometers << ",\n";
       out << "        \"min_thickness_nm\": " << zone.min_thickness.nanometers << ",\n";
       out << "        \"fill_enabled\": " << (zone.fill_enabled ? "true" : "false") << ",\n";
-      writeField(out, 8, "pad_connection", zone.pad_connection, false);
+      writeField(out, 8, "pad_connection", zone.pad_connection, zone.locked);
+      if (zone.locked) {
+        out << "        \"locked\": true\n";
+      }
       out << "      }" << (i + 1 == board.zones.size() ? "" : ",") << '\n';
     }
     out << "    ],\n";
@@ -1806,7 +1987,11 @@ std::string dumpProjectJson(const Project& project) {
       writePoint(out, 0, via.position);
       out << ",\n";
       out << "        \"diameter_nm\": " << via.diameter.nanometers << ",\n";
-      out << "        \"drill_nm\": " << via.drill.nanometers << "\n";
+      out << "        \"drill_nm\": " << via.drill.nanometers;
+      if (via.locked) {
+        out << ",\n        \"locked\": true";
+      }
+      out << "\n";
       out << "      }" << (i + 1 == board.vias.size() ? "" : ",") << '\n';
     }
     out << "    ],\n";
@@ -1903,6 +2088,28 @@ std::string dumpProjectJson(const Project& project) {
     out << ",\n";
     writeField(out, 6, "net_id", wire.net_id, false);
     out << "    }" << (i + 1 == sch->wires.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n";
+
+  out << "  \"buses\": [\n";
+  for (std::size_t i = 0; i < sch->buses.size(); ++i) {
+    const BusSegment& bus = sch->buses.at(i);
+    out << "    {\n";
+    writeField(out, 6, "id", bus.id);
+    out << "      \"start\": ";
+    writePoint(out, 0, bus.start);
+    out << ",\n";
+    out << "      \"end\": ";
+    writePoint(out, 0, bus.end);
+    out << ",\n";
+    writeField(out, 6, "bus_id", bus.bus_id);
+    out << "      \"net_ids\": [\n";
+    for (std::size_t j = 0; j < bus.net_ids.size(); ++j) {
+      out << "        \"" << escapeJson(bus.net_ids.at(j)) << "\""
+          << (j + 1 == bus.net_ids.size() ? "" : ",") << '\n';
+    }
+    out << "      ]\n";
+    out << "    }" << (i + 1 == sch->buses.size() ? "" : ",") << '\n';
   }
   out << "  ],\n";
 

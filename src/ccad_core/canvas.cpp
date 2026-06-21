@@ -341,6 +341,19 @@ CanvasScene buildSchematicScene(const Schematic& schematic) {
     includeSchematicBounds(cw.end_x_units, cw.end_y_units);
   }
 
+  for (const BusSegment& bus : schematic.buses) {
+    CanvasBusSegment cbs;
+    cbs.bus_id = bus.bus_id;
+    cbs.start_x_units = toMillimeters(bus.start.x);
+    cbs.start_y_units = toMillimeters(bus.start.y);
+    cbs.end_x_units = toMillimeters(bus.end.x);
+    cbs.end_y_units = toMillimeters(bus.end.y);
+    scene.bus_segments.push_back(cbs);
+
+    includeSchematicBounds(cbs.start_x_units, cbs.start_y_units);
+    includeSchematicBounds(cbs.end_x_units, cbs.end_y_units);
+  }
+
   for (const Label& label : schematic.labels) {
     CanvasLabel cl;
     cl.id = label.id;

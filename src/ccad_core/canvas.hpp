@@ -92,6 +92,16 @@ struct CanvasWire {
   double end_y_units = 0.0;
 };
 
+struct CanvasBusSegment {
+  std::string id;
+  std::string bus_id;
+  double start_x_units = 0.0;
+  double start_y_units = 0.0;
+  double end_x_units = 0.0;
+  double end_y_units = 0.0;
+};
+
+
 struct CanvasLabel {
   std::string id;
   std::string text;
@@ -232,6 +242,7 @@ struct CanvasScene {
 
   std::vector<CanvasComponent> components;
   std::vector<CanvasWire> wires;
+  std::vector<CanvasBusSegment> bus_segments;
   std::vector<CanvasLabel> labels;
   std::vector<CanvasPowerSymbol> power_symbols;
 };

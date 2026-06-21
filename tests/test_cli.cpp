@@ -77,6 +77,18 @@ int main() {
           "help json describes layer metadata editing");
   require(help_json.find("\"name\": \"pcb get-object\"") != std::string::npos,
           "help json describes pcb object lookup");
+  require(help_json.find("\"name\": \"pcb load-state\"") != std::string::npos,
+          "help json describes KiCad-style board loader state");
+  require(help_json.find("\"name\": \"pcb drill-statistics\"") != std::string::npos,
+          "help json describes KiCad-style board drill statistics");
+  require(help_json.find("\"name\": \"pcb board-statistics\"") != std::string::npos,
+          "help json describes KiCad-style board statistics report");
+  require(help_json.find("\"name\": \"pcb export-board-bom\"") != std::string::npos,
+          "help json describes KiCad-style board BOM export");
+  require(help_json.find("\"name\": \"pcb cleanup-actions\"") != std::string::npos,
+          "help json describes KiCad-style cleanup action catalog");
+  require(help_json.find("\"name\": \"pcb collect-items\"") != std::string::npos,
+          "help json describes KiCad-style board item collector");
   require(help_json.find("\"name\": \"pcb list-objects\"") != std::string::npos,
           "help json describes pcb object listing");
   require(help_json.find("\"name\": \"pcb list-nets\"") != std::string::npos,
@@ -109,6 +121,10 @@ int main() {
           "help json describes drc rule authoring");
   require(help_json.find("\"name\": \"pcb get-outline\"") != std::string::npos,
           "help json describes outline lookup");
+  require(help_json.find("\"name\": \"pcb outline-polygon\"") != std::string::npos,
+          "help json describes Edge.Cuts outline polygon reporting");
+  require(help_json.find("\"name\": \"pcb cross-probe\"") != std::string::npos,
+          "help json describes KiCad-style cross-probe packet reporting");
   require(help_json.find("\"name\": \"pcb set-outline\"") != std::string::npos,
           "help json describes outline authoring");
   require(help_json.find("\"name\": \"pcb set-track\"") != std::string::npos,
@@ -117,6 +133,12 @@ int main() {
           "help json describes board graphic line authoring");
   require(help_json.find("\"name\": \"pcb add-text\"") != std::string::npos,
           "help json describes board text authoring");
+  require(help_json.find("\"name\": \"pcb expand-text-variables\"") != std::string::npos,
+          "help json describes board text variable expansion");
+  require(help_json.find("\"name\": \"project set-text-variable\"") != std::string::npos,
+          "help json describes project text variable mutation");
+  require(help_json.find("\"name\": \"project list-text-variables\"") != std::string::npos,
+          "help json describes project text variable listing");
   require(help_json.find("\"name\": \"pcb add-route-request\"") != std::string::npos,
           "help json describes route request authoring");
   require(help_json.find("\"name\": \"pcb set-route-request\"") != std::string::npos,
@@ -210,6 +232,34 @@ int main() {
   require(board_json.find("\"board\"") != std::string::npos, "board init writes board");
   require(board_json.find("\"width_nm\": 42000000") != std::string::npos,
           "board init writes width");
+  const std::filesystem::path board_load_state_path = temp / "board-load-state.json";
+  require(run(quote(CCAD_BINARY) + " pcb load-state --file " + quote(board_project_path) +
+              " > " + quote(board_load_state_path)) == 0,
+          "pcb load-state exits zero");
+  const std::string board_load_state_json = readFile(board_load_state_path);
+  require(board_load_state_json.find("\"kicad_class\": \"BOARD_LOADER\"") !=
+              std::string::npos,
+          "pcb load-state reports KiCad board loader class");
+  require(board_load_state_json.find("\"source_format\": \"CCAD_JSON\"") != std::string::npos,
+          "pcb load-state reports CCad JSON source format");
+  require(board_load_state_json.find("\"board_attached\": true") != std::string::npos,
+          "pcb load-state reports initialized board attachment");
+  require(board_load_state_json.find("\"drc_ready\": true") != std::string::npos,
+          "pcb load-state reports DRC readiness");
+  require(board_load_state_json.find("\"connectivity_ready\": true") != std::string::npos,
+          "pcb load-state reports connectivity readiness");
+  require(board_load_state_json.find("\"pending_kicad_loader_steps\"") != std::string::npos,
+          "pcb load-state reports remaining KiCad loader parity steps");
+  const std::filesystem::path raw_board_load_state_path = temp / "board-load-state-raw.json";
+  require(run(quote(CCAD_BINARY) + " pcb load-state --file " + quote(board_project_path) +
+              " --initialize false > " + quote(raw_board_load_state_path)) == 0,
+          "pcb load-state raw mode exits zero");
+  const std::string raw_board_load_state_json = readFile(raw_board_load_state_path);
+  require(raw_board_load_state_json.find("\"initialize_after_load\": false") !=
+              std::string::npos,
+          "pcb load-state raw mode reports disabled initialization");
+  require(raw_board_load_state_json.find("\"board_attached\": false") != std::string::npos,
+          "pcb load-state raw mode reports board not attached");
 
   const std::string add_layer_command =
       quote(CCAD_BINARY) + " pcb add-layer --file " + quote(board_project_path) +
@@ -325,6 +375,64 @@ int main() {
   require(run(add_graphic_line_command) != 0, "pcb add-graphic-line rejects duplicate id");
   require(run(add_board_text_command) != 0, "pcb add-text rejects duplicate id");
 
+  require(run(quote(CCAD_BINARY) + " project set-text-variable --file " +
+              quote(standard_layers_path) + " --key REV --value A1") == 0,
+          "project set-text-variable exits zero");
+  require(run(quote(CCAD_BINARY) + " project set-text-variable --file " +
+              quote(standard_layers_path) + " --key COMPANY --value CCad") == 0,
+          "project set-text-variable stores second variable");
+  require(run(quote(CCAD_BINARY) + " pcb add-text --file " + quote(standard_layers_path) +
+              " --id BT2 --layer F.SilkS --text \"Rev ${REV} ${UNKNOWN}\""
+              " --x-mm 10 --y-mm 22 --size-x-mm 1.5 --size-y-mm 1.5 --rotation-deg 0") == 0,
+          "pcb add-text accepts variable-bearing board text");
+
+  const std::string variable_project_json = readFile(standard_layers_path);
+  require(variable_project_json.find("\"text_variables\"") != std::string::npos,
+          "project set-text-variable writes text_variables object");
+  require(variable_project_json.find("\"REV\": \"A1\"") != std::string::npos,
+          "project set-text-variable writes REV value");
+
+  const std::filesystem::path text_variables_path = temp / "text-variables.json";
+  require(run(quote(CCAD_BINARY) + " project list-text-variables --file " +
+              quote(standard_layers_path) + " > " + quote(text_variables_path)) == 0,
+          "project list-text-variables exits zero");
+  const std::string text_variables_json = readFile(text_variables_path);
+  require(text_variables_json.find("\"kicad_handler\": \"GetTextVariables\"") !=
+              std::string::npos,
+          "project list-text-variables reports KiCad handler");
+  require(text_variables_json.find("\"REV\": \"A1\"") != std::string::npos,
+          "project list-text-variables lists REV");
+  require(text_variables_json.find("\"COMPANY\": \"CCad\"") != std::string::npos,
+          "project list-text-variables lists COMPANY");
+
+  const std::filesystem::path expand_text_path = temp / "expand-text.json";
+  require(run(quote(CCAD_BINARY) + " pcb expand-text-variables --file " +
+              quote(standard_layers_path) + " --text \"Release ${REV} ${UNKNOWN}\" > " +
+              quote(expand_text_path)) == 0,
+          "pcb expand-text-variables exits zero for explicit text");
+  const std::string expand_text_json = readFile(expand_text_path);
+  require(expand_text_json.find("\"kicad_handler\": \"ExpandTextVariables\"") !=
+              std::string::npos,
+          "pcb expand-text-variables reports KiCad handler");
+  require(expand_text_json.find("\"expanded_text\": \"Release A1 ${UNKNOWN}\"") !=
+              std::string::npos,
+          "pcb expand-text-variables expands known explicit variables");
+  require(expand_text_json.find("\"name\": \"UNKNOWN\"") != std::string::npos,
+          "pcb expand-text-variables reports unknown token name");
+  require(expand_text_json.find("\"resolved\": false") != std::string::npos,
+          "pcb expand-text-variables marks unknown token unresolved");
+
+  const std::filesystem::path expand_board_text_path = temp / "expand-board-text.json";
+  require(run(quote(CCAD_BINARY) + " pcb expand-text-variables --file " +
+              quote(standard_layers_path) + " > " + quote(expand_board_text_path)) == 0,
+          "pcb expand-text-variables exits zero for board texts");
+  const std::string expand_board_text_json = readFile(expand_board_text_path);
+  require(expand_board_text_json.find("\"id\": \"BT2\"") != std::string::npos,
+          "pcb expand-text-variables includes board text id");
+  require(expand_board_text_json.find("\"expanded_text\": \"Rev A1 ${UNKNOWN}\"") !=
+              std::string::npos,
+          "pcb expand-text-variables expands board text variables");
+
   const std::filesystem::path advanced_pad_path = temp / "advanced-pad-authoring.ccad.json";
   require(run(quote(CCAD_BINARY) +
               " init --name advanced-pad-authoring --width-mm 42 --height-mm 28 --out " +
@@ -345,6 +453,20 @@ int main() {
               " --type thru_hole --shape circle --drill-mm 0.7"
               " --x-mm 16 --y-mm 6 --width-mm 1.5 --height-mm 1.5") == 0,
           "pcb add-pad accepts KiCad through-hole pad metadata");
+  require(run(quote(CCAD_BINARY) + " pcb add-pad --file " + quote(advanced_pad_path) +
+              " --id P5 --component U1 --pin 5 --net N1 --layers *.Cu,*.Mask"
+              " --type thru_hole --shape circle --drill-mm 0.7"
+              " --x-mm 18 --y-mm 6 --width-mm 1.5 --height-mm 1.5") == 0,
+          "pcb add-pad accepts second identical KiCad through-hole pad for statistics");
+  require(run(quote(CCAD_BINARY) + " pcb add-pad --file " + quote(advanced_pad_path) +
+              " --id MH1 --component MH1 --pin MH --net N_MH --layers *.Mask"
+              " --type np_thru_hole --shape circle --drill-mm 1.1"
+              " --x-mm 22 --y-mm 6 --width-mm 2.0 --height-mm 2.0") == 0,
+          "pcb add-pad accepts non-plated mounting hole metadata for statistics");
+  require(run(quote(CCAD_BINARY) + " pcb add-via --file " + quote(advanced_pad_path) +
+              " --id V_STAT --net N1 --x-mm 24 --y-mm 6 --diameter-mm 0.8 --drill-mm 0.4") ==
+              0,
+          "pcb add-via accepts KiCad drill statistics fixture via");
   const std::string advanced_pad_json = readFile(advanced_pad_path);
   require(advanced_pad_json.find("\"shape\": \"roundrect\"") != std::string::npos,
           "pcb add-pad writes roundrect shape");
@@ -401,6 +523,76 @@ int main() {
   require(advanced_pad_list_json.find("\"kicad_layer_numbers\": [0, 31]") !=
               std::string::npos,
           "pcb list-objects writes KiCad layer numbers for resolved pad layer set");
+
+  const std::filesystem::path drill_statistics_path = temp / "drill-statistics.json";
+  require(run(quote(CCAD_BINARY) + " pcb drill-statistics --file " +
+              quote(advanced_pad_path) + " > " + quote(drill_statistics_path)) == 0,
+          "pcb drill-statistics exits zero");
+  const std::string drill_statistics_json = readFile(drill_statistics_path);
+  require(drill_statistics_json.find("\"kicad_reference\": \"board_statistics\"") !=
+              std::string::npos,
+          "pcb drill-statistics reports KiCad board statistics reference");
+  require(drill_statistics_json.find("\"unique_drill_rows\": 3") != std::string::npos,
+          "pcb drill-statistics reports unique drill row count");
+  require(drill_statistics_json.find("\"total_drill_count\": 4") != std::string::npos,
+          "pcb drill-statistics reports total drill count");
+  require(drill_statistics_json.find("\"count\": 2") != std::string::npos,
+          "pcb drill-statistics aggregates identical through-hole pads");
+  require(drill_statistics_json.find("\"x_size_nm\": 700000") != std::string::npos,
+          "pcb drill-statistics writes through-hole drill X size");
+  require(drill_statistics_json.find("\"shape\": \"Round\"") != std::string::npos,
+          "pcb drill-statistics writes KiCad drill shape label");
+  require(drill_statistics_json.find("\"plated\": true") != std::string::npos,
+          "pcb drill-statistics writes plated status");
+  require(drill_statistics_json.find("\"source\": \"Pad\"") != std::string::npos,
+          "pcb drill-statistics writes pad source");
+  require(drill_statistics_json.find("\"start_layer\": \"F.Cu\"") != std::string::npos,
+          "pcb drill-statistics writes top copper start layer");
+  require(drill_statistics_json.find("\"stop_layer\": \"B.Cu\"") != std::string::npos,
+          "pcb drill-statistics writes bottom copper stop layer");
+  require(drill_statistics_json.find("\"plated\": false") != std::string::npos,
+          "pcb drill-statistics writes non-plated hole status");
+  require(drill_statistics_json.find("\"start_layer\": null") != std::string::npos,
+          "pcb drill-statistics writes null layer span for non-copper NPTH hole");
+  require(drill_statistics_json.find("\"source\": \"Via\"") != std::string::npos,
+          "pcb drill-statistics writes via source");
+
+  require(run(quote(CCAD_BINARY) + " pcb add-track --file " + quote(advanced_pad_path) +
+              " --id STAT_T1 --net N1 --layer F.Cu --start-x-mm 12 --start-y-mm 8 "
+              "--end-x-mm 24 --end-y-mm 8 --width-mm 0.18") == 0,
+          "board statistics fixture add track exits zero");
+  const std::filesystem::path board_statistics_path = temp / "board-statistics.json";
+  require(run(quote(CCAD_BINARY) + " pcb board-statistics --file " +
+              quote(advanced_pad_path) + " > " + quote(board_statistics_path)) == 0,
+          "pcb board-statistics exits zero");
+  const std::string board_statistics_json = readFile(board_statistics_path);
+  require(board_statistics_json.find("\"kicad_reference\": \"board_statistics_report\"") !=
+              std::string::npos,
+          "pcb board-statistics reports KiCad report reference");
+  require(board_statistics_json.find("\"parity_scope\": \"summary_report_first_slice\"") !=
+              std::string::npos,
+          "pcb board-statistics declares first-slice report scope");
+  require(board_statistics_json.find("\"board_area_square_mm\": 1176") != std::string::npos,
+          "pcb board-statistics reports rectangular board area");
+  require(board_statistics_json.find("\"pad_count\": 5") != std::string::npos,
+          "pcb board-statistics reports pad count");
+  require(board_statistics_json.find("\"smd_pad_count\": 2") != std::string::npos,
+          "pcb board-statistics reports SMD pad count");
+  require(board_statistics_json.find("\"through_hole_pad_count\": 2") != std::string::npos,
+          "pcb board-statistics reports through-hole pad count");
+  require(board_statistics_json.find("\"npth_pad_count\": 1") != std::string::npos,
+          "pcb board-statistics reports non-plated pad count");
+  require(board_statistics_json.find("\"via_count\": 1") != std::string::npos,
+          "pcb board-statistics reports via count");
+  require(board_statistics_json.find("\"track_count\": 1") != std::string::npos,
+          "pcb board-statistics reports track count");
+  require(board_statistics_json.find("\"min_track_width_nm\": 180000") != std::string::npos,
+          "pcb board-statistics reports minimum track width");
+  require(board_statistics_json.find("\"min_drill_diameter_nm\": 400000") !=
+              std::string::npos,
+          "pcb board-statistics reports minimum drill diameter");
+  require(board_statistics_json.find("\"drill_holes\"") != std::string::npos,
+          "pcb board-statistics includes drill table rows");
 
   const std::filesystem::path advanced_pad_route_job_path =
       temp / "advanced-pad-route-job.json";
@@ -515,11 +707,30 @@ int main() {
   const std::string stackup_json = readFile(stackup_path);
   require(stackup_json.find("\"stackup_kind\": \"ccad_board_stackup\"") != std::string::npos,
           "pcb get-board-stackup reports stackup kind");
-  require(stackup_json.find("\"kicad_parity_scope\": \"enabled_layer_order\"") !=
+  require(stackup_json.find("\"kicad_class\": \"BOARD_STACKUP\"") != std::string::npos,
+          "pcb get-board-stackup reports KiCad stackup class");
+  require(stackup_json.find("\"kicad_parity_scope\": \"default_stackup_first_slice\"") !=
               std::string::npos,
           "pcb get-board-stackup declares its current parity scope");
   require(stackup_json.find("\"copper_layer_count\": 3") != std::string::npos,
           "pcb get-board-stackup counts copper layers");
+  require(stackup_json.find("\"stackup_item_count\": 5") != std::string::npos,
+          "pcb get-board-stackup reports physical stackup item count");
+  require(stackup_json.find("\"computed_stackup_thickness_nm\": 1600000") !=
+              std::string::npos,
+          "pcb get-board-stackup derives stackup thickness");
+  require(stackup_json.find("\"type\": \"dielectric\"") != std::string::npos,
+          "pcb get-board-stackup includes dielectric stackup rows");
+  require(stackup_json.find("\"thickness_nm\": 747500") != std::string::npos,
+          "pcb get-board-stackup distributes dielectric thickness");
+  require(stackup_json.find("\"material\": \"FR4\"") != std::string::npos,
+          "pcb get-board-stackup reports default dielectric material");
+  require(stackup_json.find("\"from_layer\": \"F.Cu\"") != std::string::npos,
+          "pcb get-board-stackup reports copper layer distances");
+  require(stackup_json.find("\"to_layer\": \"B.Cu\"") != std::string::npos,
+          "pcb get-board-stackup reports full copper layer span");
+  require(stackup_json.find("\"distance_nm\": 1600000") != std::string::npos,
+          "pcb get-board-stackup reports KiCad-style layer distance");
   require(stackup_json.find("\"id\": \"In1.Cu\"") != std::string::npos,
           "pcb get-board-stackup includes inner layer");
 
@@ -685,6 +896,10 @@ int main() {
           "pcb api schema records full KiCad handler ledger status");
   require(pcb_api_schema.find("\"kicad_handler\":\"RunAction\"") != std::string::npos,
           "pcb api schema includes RunAction handler");
+  require(pcb_api_schema.find(
+              "\"kicad_handler\":\"GetBoardStackup\",\"ccad_command\":\"pcb get-board-stackup\",\"status\":\"first_slice\",\"scope\":\"default_stackup_first_slice\"") !=
+              std::string::npos,
+          "pcb api schema maps GetBoardStackup to physical stackup first slice");
   require(pcb_api_schema.find("\"kicad_handler\":\"GetSelection\"") != std::string::npos,
           "pcb api schema includes selection handlers");
   require(pcb_api_schema.find("\"kicad_handler\":\"SetBoardDesignRules\"") !=
@@ -693,6 +908,10 @@ int main() {
   require(pcb_api_schema.find("\"kicad_handler\":\"GetPadShapeAsPolygon\"") !=
               std::string::npos,
           "pcb api schema includes pad polygon handler gap");
+  require(pcb_api_schema.find(
+              "\"kicad_handler\":\"ExpandTextVariables\",\"ccad_command\":\"pcb expand-text-variables\",\"status\":\"first_slice\",\"scope\":\"project_text_variable_expansion_first_slice\"") !=
+              std::string::npos,
+          "pcb api schema maps ExpandTextVariables to text variable expansion first slice");
   require(pcb_api_schema.find("\"kicad_handler\":\"RunBoardJobExportGerbers\"") !=
               std::string::npos,
           "pcb api schema includes Gerber export job handler");
@@ -948,6 +1167,22 @@ int main() {
           "pcb get-object writes pad component");
   require(pad_lookup_json.find("\"width_nm\": 1500000") != std::string::npos,
           "pcb get-object writes pad width");
+  require(pad_lookup_json.find("\"kicad_base_class\": \"BOARD_ITEM\"") != std::string::npos,
+          "pcb get-object exposes KiCad board item base class");
+  require(pad_lookup_json.find("\"kicad_groupable\": true") != std::string::npos,
+          "pcb get-object exposes KiCad board item groupable status");
+  require(pad_lookup_json.find("\"primary_layer_id\": \"F.Cu\"") != std::string::npos,
+          "pcb get-object exposes board item primary layer");
+  require(pad_lookup_json.find("\"layer_mask_description\": \"F.Cu\"") != std::string::npos,
+          "pcb get-object exposes KiCad-style layer mask description");
+  require(pad_lookup_json.find("\"is_on_copper_layer\": true") != std::string::npos,
+          "pcb get-object exposes board item copper-layer status");
+  require(pad_lookup_json.find("\"has_hole\": false") != std::string::npos,
+          "pcb get-object exposes board item hole status");
+  require(pad_lookup_json.find("\"locked\": false") != std::string::npos,
+          "pcb get-object exposes board item locked status");
+  require(pad_lookup_json.find("\"view_layer_ids\": [\"F.Cu\"]") != std::string::npos,
+          "pcb get-object exposes board item view layers");
 
   const std::filesystem::path zone_lookup_path = temp / "zone-lookup.json";
   const std::string zone_lookup_command =
@@ -1000,6 +1235,22 @@ int main() {
           "pcb list-objects exposes default connected item net class");
   require(list_objects_json.find("\"local_ratsnest_visible\": true") != std::string::npos,
           "pcb list-objects exposes local ratsnest visibility");
+  require(list_objects_json.find("\"kicad_base_class\": \"BOARD_ITEM\"") != std::string::npos,
+          "pcb list-objects exposes KiCad board item base class");
+  require(list_objects_json.find("\"kicad_groupable\": true") != std::string::npos,
+          "pcb list-objects exposes KiCad board item groupable status");
+  require(list_objects_json.find("\"primary_layer_id\": \"F.Cu\"") != std::string::npos,
+          "pcb list-objects exposes board item primary layer");
+  require(list_objects_json.find("\"layer_mask_description\": \"F.Cu\"") != std::string::npos,
+          "pcb list-objects exposes KiCad-style layer mask description");
+  require(list_objects_json.find("\"is_on_copper_layer\": true") != std::string::npos,
+          "pcb list-objects exposes board item copper-layer status");
+  require(list_objects_json.find("\"has_hole\": false") != std::string::npos,
+          "pcb list-objects exposes board item hole status");
+  require(list_objects_json.find("\"locked\": false") != std::string::npos,
+          "pcb list-objects exposes board item locked status");
+  require(list_objects_json.find("\"view_layer_ids\": [\"F.Cu\"]") != std::string::npos,
+          "pcb list-objects exposes board item view layers");
 
   const std::filesystem::path list_tracks_path = temp / "list-tracks.json";
   const std::string list_tracks_command =
@@ -1026,6 +1277,98 @@ int main() {
           "pcb list-objects zone output includes zone");
   require(list_zones_json.find("\"id\": \"Z1\"") != std::string::npos,
           "pcb list-objects zone output includes zone id");
+
+  const std::filesystem::path collect_items_path = temp / "collect-items.json";
+  const std::string collect_items_command =
+      quote(CCAD_BINARY) + " pcb collect-items --file " + quote(board_project_path) +
+      " --scan-set pads_or_tracks --preferred-layer F.Cu --visible-layers F.Cu,B.Cu > " +
+      quote(collect_items_path);
+  require(run(collect_items_command) == 0, "pcb collect-items exits zero");
+  const std::string collect_items_json = readFile(collect_items_path);
+  require(collect_items_json.find("\"kicad_collector\": \"GENERAL_COLLECTOR\"") !=
+              std::string::npos,
+          "pcb collect-items reports KiCad collector class");
+  require(collect_items_json.find("\"scan_set\": \"pads_or_tracks\"") != std::string::npos,
+          "pcb collect-items reports scan set");
+  require(collect_items_json.find("\"PCB_ARC_T\"") != std::string::npos,
+          "pcb collect-items reports unsupported arc parity gap");
+  require(collect_items_json.find("\"id\": \"P1\"") != std::string::npos,
+          "pcb collect-items includes pad row");
+  require(collect_items_json.find("\"kicad_type\": \"PCB_PAD_T\"") != std::string::npos,
+          "pcb collect-items maps pad to KiCad type");
+  require(collect_items_json.find("\"collection_bucket\": \"primary\"") != std::string::npos,
+          "pcb collect-items reports primary bucket");
+  require(collect_items_json.find("\"id\": \"V1\"") != std::string::npos,
+          "pcb collect-items includes via row");
+  require(collect_items_json.find("\"id\": \"T1\"") != std::string::npos,
+          "pcb collect-items includes track row");
+  require(collect_items_json.find("\"primary_count\": 3") != std::string::npos,
+          "pcb collect-items counts preferred-layer collector rows");
+  require(collect_items_json.find("\"locked\": false") != std::string::npos,
+          "pcb collect-items exposes item lock state");
+
+  const std::filesystem::path collect_no_tracks_path = temp / "collect-items-no-tracks.json";
+  const std::string collect_no_tracks_command =
+      quote(CCAD_BINARY) + " pcb collect-items --file " + quote(board_project_path) +
+      " --scan-set pads_or_tracks --preferred-layer F.Cu --visible-layers F.Cu,B.Cu "
+      "--ignore-tracks true > " +
+      quote(collect_no_tracks_path);
+  require(run(collect_no_tracks_command) == 0,
+          "pcb collect-items supports KiCad ignore-tracks guide flag");
+  const std::string collect_no_tracks_json = readFile(collect_no_tracks_path);
+  require(collect_no_tracks_json.find("\"id\": \"P1\"") != std::string::npos,
+          "pcb collect-items ignore-tracks keeps pads");
+  require(collect_no_tracks_json.find("\"id\": \"T1\"") == std::string::npos,
+          "pcb collect-items ignore-tracks removes tracks");
+
+  const std::filesystem::path collect_locked_board_path =
+      temp / "collect-items-locked-board.ccad.json";
+  std::string collect_locked_board = readFile(board_project_path);
+  const std::string pad_id_line = "        \"id\": \"P1\",\n";
+  const std::size_t pad_id_position = collect_locked_board.find(pad_id_line);
+  require(pad_id_position != std::string::npos, "collector locked fixture finds pad id line");
+  collect_locked_board.insert(pad_id_position + pad_id_line.size(), "        \"locked\": true,\n");
+  const std::string track_id_line = "        \"id\": \"T1\",\n";
+  const std::size_t track_id_position = collect_locked_board.find(track_id_line);
+  require(track_id_position != std::string::npos, "collector locked fixture finds track id line");
+  collect_locked_board.insert(track_id_position + track_id_line.size(),
+                              "        \"locked\": true,\n");
+  writeFile(collect_locked_board_path, collect_locked_board);
+
+  const std::filesystem::path collect_locked_visible_path =
+      temp / "collect-items-locked-visible.json";
+  const std::string collect_locked_visible_command =
+      quote(CCAD_BINARY) + " pcb collect-items --file " + quote(collect_locked_board_path) +
+      " --scan-set pads_or_tracks --preferred-layer F.Cu --visible-layers F.Cu,B.Cu > " +
+      quote(collect_locked_visible_path);
+  require(run(collect_locked_visible_command) == 0,
+          "pcb collect-items reads locked board items");
+  const std::string collect_locked_visible_json = readFile(collect_locked_visible_path);
+  require(collect_locked_visible_json.find("\"id\": \"P1\"") != std::string::npos,
+          "pcb collect-items keeps locked pads unless guide ignores locks");
+  require(collect_locked_visible_json.find("\"id\": \"T1\"") != std::string::npos,
+          "pcb collect-items keeps locked tracks unless guide ignores locks");
+  require(collect_locked_visible_json.find("\"locked\": true") != std::string::npos,
+          "pcb collect-items reports locked candidate state");
+
+  const std::filesystem::path collect_ignore_locked_path =
+      temp / "collect-items-ignore-locked.json";
+  const std::string collect_ignore_locked_command =
+      quote(CCAD_BINARY) + " pcb collect-items --file " + quote(collect_locked_board_path) +
+      " --scan-set pads_or_tracks --preferred-layer F.Cu --visible-layers F.Cu,B.Cu "
+      "--ignore-locked true > " +
+      quote(collect_ignore_locked_path);
+  require(run(collect_ignore_locked_command) == 0,
+          "pcb collect-items supports KiCad ignore-locked guide flag");
+  const std::string collect_ignore_locked_json = readFile(collect_ignore_locked_path);
+  require(collect_ignore_locked_json.find("\"id\": \"P1\"") == std::string::npos,
+          "pcb collect-items ignore-locked removes locked pads");
+  require(collect_ignore_locked_json.find("\"id\": \"T1\"") == std::string::npos,
+          "pcb collect-items ignore-locked removes locked tracks");
+  require(collect_ignore_locked_json.find("\"id\": \"V1\"") != std::string::npos,
+          "pcb collect-items ignore-locked keeps unlocked vias");
+  require(collect_ignore_locked_json.find("\"primary_count\": 1") != std::string::npos,
+          "pcb collect-items ignore-locked recounts remaining primary rows");
 
   const std::string bad_list_objects_command =
       quote(CCAD_BINARY) + " pcb list-objects --file " + quote(board_project_path) +
@@ -1469,30 +1812,53 @@ int main() {
   require(run(remove_add_zone_command) == 0, "remove fixture add zone exits zero");
   require(run(remove_add_region_command) == 0, "remove fixture add placement region exits zero");
 
+  const std::filesystem::path remove_pad_result_path = temp / "remove-pad-result.json";
+  const std::filesystem::path remove_via_result_path = temp / "remove-via-result.json";
+  const std::filesystem::path remove_track_result_path = temp / "remove-track-result.json";
+  const std::filesystem::path remove_keepout_result_path = temp / "remove-keepout-result.json";
+  const std::filesystem::path remove_zone_result_path = temp / "remove-zone-result.json";
+  const std::filesystem::path remove_region_result_path = temp / "remove-region-result.json";
   const std::string remove_pad_command =
       quote(CCAD_BINARY) + " pcb remove-object --file " + quote(remove_board_path) +
-      " --id RP1";
+      " --id RP1 > " + quote(remove_pad_result_path);
   const std::string remove_via_command =
       quote(CCAD_BINARY) + " pcb remove-object --file " + quote(remove_board_path) +
-      " --id RV1";
+      " --id RV1 > " + quote(remove_via_result_path);
   const std::string remove_track_command =
       quote(CCAD_BINARY) + " pcb remove-object --file " + quote(remove_board_path) +
-      " --id RT1";
+      " --id RT1 --mode bulk > " + quote(remove_track_result_path);
   const std::string remove_keepout_command =
       quote(CCAD_BINARY) + " pcb remove-object --file " + quote(remove_board_path) +
-      " --id RK1";
+      " --id RK1 > " + quote(remove_keepout_result_path);
   const std::string remove_zone_command =
       quote(CCAD_BINARY) + " pcb remove-object --file " + quote(remove_board_path) +
-      " --id RZ1";
+      " --id RZ1 > " + quote(remove_zone_result_path);
   const std::string remove_region_command =
       quote(CCAD_BINARY) + " pcb remove-object --file " + quote(remove_board_path) +
-      " --id RPR1";
+      " --id RPR1 > " + quote(remove_region_result_path);
   require(run(remove_pad_command) == 0, "pcb remove-object removes pad");
   require(run(remove_via_command) == 0, "pcb remove-object removes via");
   require(run(remove_track_command) == 0, "pcb remove-object removes track");
   require(run(remove_keepout_command) == 0, "pcb remove-object removes keepout");
   require(run(remove_zone_command) == 0, "pcb remove-object removes zone");
   require(run(remove_region_command) == 0, "pcb remove-object removes placement region");
+  const std::string remove_pad_result = readFile(remove_pad_result_path);
+  require(remove_pad_result.find("\"kicad_container_class\":\"BOARD_ITEM_CONTAINER\"") !=
+              std::string::npos,
+          "pcb remove-object reports KiCad board item container class");
+  require(remove_pad_result.find("\"kicad_method\":\"Delete\"") != std::string::npos,
+          "pcb remove-object reports KiCad delete semantics");
+  require(remove_pad_result.find("\"remove_mode\":\"normal\"") != std::string::npos,
+          "pcb remove-object reports default remove mode");
+  require(remove_pad_result.find("\"kind\":\"pad\"") != std::string::npos,
+          "pcb remove-object reports removed pad kind");
+  require(remove_pad_result.find("\"kicad_delete_semantics\":true") != std::string::npos,
+          "pcb remove-object reports board-item delete semantics");
+  const std::string remove_track_result = readFile(remove_track_result_path);
+  require(remove_track_result.find("\"remove_mode\":\"bulk\"") != std::string::npos,
+          "pcb remove-object accepts KiCad bulk remove mode");
+  require(remove_track_result.find("\"kind\":\"track\"") != std::string::npos,
+          "pcb remove-object reports removed track kind");
   const std::string removed_objects_json = readFile(remove_board_path);
   require(removed_objects_json.find("\"id\": \"RP1\"") == std::string::npos,
           "pcb remove-object deletes pad id");
@@ -1861,6 +2227,74 @@ int main() {
           "pcb get-outline reports width");
   require(get_outline_json.find("\"height_nm\": 30000000") != std::string::npos,
           "pcb get-outline reports height");
+
+  const std::filesystem::path outline_polygon_board_path = temp / "outline-polygon-board.ccad.json";
+  require(run(quote(CCAD_BINARY) +
+              " init --name outline-polygon-board --width-mm 42 --height-mm 28 --out " +
+              quote(outline_polygon_board_path)) == 0,
+          "outline polygon board init exits zero");
+  require(run(quote(CCAD_BINARY) + " pcb add-standard-layers --file " +
+              quote(outline_polygon_board_path)) == 0,
+          "pcb add-standard-layers prepares Edge.Cuts for outline polygon reporting");
+  const std::string edge_cut_a =
+      quote(CCAD_BINARY) + " pcb add-graphic-line --file " + quote(outline_polygon_board_path) +
+      " --id E1 --layer Edge.Cuts --start-x-mm 5 --start-y-mm 5"
+      " --end-x-mm 25 --end-y-mm 5 --width-mm 0.05";
+  require(run(edge_cut_a) == 0, "pcb add-graphic-line writes first Edge.Cuts segment");
+  const std::string edge_cut_b =
+      quote(CCAD_BINARY) + " pcb add-graphic-line --file " + quote(outline_polygon_board_path) +
+      " --id E2 --layer Edge.Cuts --start-x-mm 25 --start-y-mm 5"
+      " --end-x-mm 25 --end-y-mm 20 --width-mm 0.05";
+  require(run(edge_cut_b) == 0, "pcb add-graphic-line writes second Edge.Cuts segment");
+  const std::string edge_cut_c =
+      quote(CCAD_BINARY) + " pcb add-graphic-line --file " + quote(outline_polygon_board_path) +
+      " --id E3 --layer Edge.Cuts --start-x-mm 25 --start-y-mm 20"
+      " --end-x-mm 5 --end-y-mm 20 --width-mm 0.05";
+  require(run(edge_cut_c) == 0, "pcb add-graphic-line writes third Edge.Cuts segment");
+  const std::string edge_cut_d =
+      quote(CCAD_BINARY) + " pcb add-graphic-line --file " + quote(outline_polygon_board_path) +
+      " --id E4 --layer Edge.Cuts --start-x-mm 5 --start-y-mm 20"
+      " --end-x-mm 5 --end-y-mm 5 --width-mm 0.05";
+  require(run(edge_cut_d) == 0, "pcb add-graphic-line writes fourth Edge.Cuts segment");
+  const std::filesystem::path outline_polygon_path = temp / "outline-polygon.json";
+  require(run(quote(CCAD_BINARY) + " pcb outline-polygon --file " +
+              quote(outline_polygon_board_path) + " > " + quote(outline_polygon_path)) == 0,
+          "pcb outline-polygon exits zero");
+  const std::string outline_polygon_json = readFile(outline_polygon_path);
+  require(outline_polygon_json.find("\"kicad_function\": \"ConvertOutlineToPolygon\"") !=
+              std::string::npos,
+          "pcb outline-polygon reports KiCad function");
+  require(outline_polygon_json.find("\"edge_cut_segment_count\": 4") != std::string::npos,
+          "pcb outline-polygon counts Edge.Cuts segments");
+  require(outline_polygon_json.find("\"closed\": true") != std::string::npos,
+          "pcb outline-polygon reports closed outline");
+  require(outline_polygon_json.find("\"valid\": true") != std::string::npos,
+          "pcb outline-polygon reports valid outline");
+  require(outline_polygon_json.find("\"used_inferred_outline\": false") != std::string::npos,
+          "pcb outline-polygon does not infer when Edge.Cuts are closed");
+  require(outline_polygon_json.find("\"width_nm\": 20000000") != std::string::npos,
+          "pcb outline-polygon reports chained bounding box width");
+  require(outline_polygon_json.find("\"height_nm\": 15000000") != std::string::npos,
+          "pcb outline-polygon reports chained bounding box height");
+
+  const std::filesystem::path cross_probe_path = temp / "cross-probe.json";
+  require(run(quote(CCAD_BINARY) + " pcb cross-probe --file " + quote(board_project_path) +
+              " --packet \"$NET: N1\" > " + quote(cross_probe_path)) == 0,
+          "pcb cross-probe exits zero");
+  const std::string cross_probe_json = readFile(cross_probe_path);
+  require(cross_probe_json.find("\"kicad_source\": \"pcbnew/cross-probing.cpp\"") !=
+              std::string::npos,
+          "pcb cross-probe reports KiCad source file");
+  require(cross_probe_json.find("\"packet_kind\": \"net\"") != std::string::npos,
+          "pcb cross-probe reports net packet kind");
+  require(cross_probe_json.find("\"id\": \"P1\"") != std::string::npos,
+          "pcb cross-probe resolves same-net pad target");
+  require(cross_probe_json.find("\"id\": \"V1\"") != std::string::npos,
+          "pcb cross-probe resolves same-net via target");
+  require(cross_probe_json.find("\"id\": \"T1\"") != std::string::npos,
+          "pcb cross-probe resolves same-net track target");
+  require(cross_probe_json.find("\"pending_kicad_features\"") != std::string::npos,
+          "pcb cross-probe reports remaining KiCad IPC parity features");
 
   const std::string invalid_outline_command =
       quote(CCAD_BINARY) + " pcb set-outline --file " + quote(board_project_path) +
@@ -2299,9 +2733,18 @@ int main() {
   const std::string place_footprint_command =
       quote(CCAD_BINARY) + " pcb place-footprint --file " + quote(board_project_path) +
       " --footprint " + quote(footprint_out_path) +
-      " --component R1 --at-x-mm 10 --at-y-mm 12 --layer F.Cu";
+      " --component R1 --at-x-mm 10 --at-y-mm 12 --layer F.Cu --value 10k";
   require(run(place_footprint_command) == 0, "pcb place-footprint exits zero");
   const std::string placed_footprint_project = readFile(board_project_path);
+  require(placed_footprint_project.find("\"footprints\": [") != std::string::npos,
+          "pcb place-footprint writes board footprint metadata");
+  require(placed_footprint_project.find("\"reference\": \"R1\"") != std::string::npos,
+          "pcb place-footprint writes board footprint reference");
+  require(placed_footprint_project.find("\"footprint_name\": \"R_0805_2012Metric\"") !=
+              std::string::npos,
+          "pcb place-footprint writes board footprint name");
+  require(placed_footprint_project.find("\"value\": \"10k\"") != std::string::npos,
+          "pcb place-footprint writes board footprint value");
   require(placed_footprint_project.find("\"id\": \"R1.1\"") != std::string::npos,
           "pcb place-footprint writes first pad id");
   require(placed_footprint_project.find("\"component_id\": \"R1\"") != std::string::npos,
@@ -2311,6 +2754,37 @@ int main() {
   require(placed_footprint_project.find("\"x_nm\": 9050000") != std::string::npos,
           "pcb place-footprint translates pad x");
   require(run(place_footprint_command) != 0, "pcb place-footprint rejects duplicate pad ids");
+
+  const std::filesystem::path board_bom_path = temp / "board-bom.csv";
+  const std::string export_board_bom_command =
+      quote(CCAD_BINARY) + " pcb export-board-bom --file " + quote(board_project_path) +
+      " --output " + quote(board_bom_path);
+  require(run(export_board_bom_command) == 0, "pcb export-board-bom exits zero");
+  const std::string board_bom_output = readFile(board_bom_path);
+  require(board_bom_output.find("\"Id\";\"Designator\";\"Footprint\";\"Quantity\";\"Designation\";\"Supplier and ref\";") !=
+              std::string::npos,
+          "pcb export-board-bom writes KiCad legacy header");
+  require(board_bom_output.find("1;\"R1\";\"R_0805_2012Metric\";1;\"10k\";;;") !=
+              std::string::npos,
+          "pcb export-board-bom writes placed footprint row");
+
+  const std::filesystem::path cleanup_actions_path = temp / "cleanup-actions.json";
+  require(run(quote(CCAD_BINARY) + " pcb cleanup-actions > " +
+              quote(cleanup_actions_path)) == 0,
+          "pcb cleanup-actions exits zero");
+  const std::string cleanup_actions_json = readFile(cleanup_actions_path);
+  require(cleanup_actions_json.find("\"kicad_class\": \"CLEANUP_ITEM\"") != std::string::npos,
+          "pcb cleanup-actions reports KiCad cleanup item class");
+  require(cleanup_actions_json.find("\"id\": \"shorting_track\"") != std::string::npos,
+          "pcb cleanup-actions reports shorting track action");
+  require(cleanup_actions_json.find("\"title\": \"Remove track shorting two nets\"") !=
+              std::string::npos,
+          "pcb cleanup-actions reports shorting track title");
+  require(cleanup_actions_json.find("\"id\": \"lines_to_rect\"") != std::string::npos,
+          "pcb cleanup-actions reports graphics cleanup action");
+  require(cleanup_actions_json.find("\"provider_semantics\": \"vector_indexed_rows\"") !=
+              std::string::npos,
+          "pcb cleanup-actions reports vector provider semantics");
 
   const std::string bad_place_layer_command =
       quote(CCAD_BINARY) + " pcb place-footprint --file " + quote(board_project_path) +

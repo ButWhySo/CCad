@@ -72,6 +72,26 @@ void renderSchematicCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene
     line->setFlag(QGraphicsItem::ItemIsSelectable, true);
   }
 
+  // Buses
+  QPen bus_pen(QColor(0, 0, 130)); // Dark blue for buses
+  bus_pen.setWidthF(4.0); // Thicker than wires
+  bus_pen.setCapStyle(Qt::RoundCap);
+  bus_pen.setJoinStyle(Qt::RoundJoin);
+  for (std::size_t i = 0; i < scene.bus_segments.size(); ++i) {
+    const ccad::CanvasBusSegment& bus = scene.bus_segments[i];
+    const double sx = sceneX(scene, bus.start_x_units, margin, scale);
+    const double sy = sceneY(scene, bus.start_y_units, margin, scale);
+    const double ex = sceneX(scene, bus.end_x_units, margin, scale);
+    const double ey = sceneY(scene, bus.end_y_units, margin, scale);
+    
+    auto* line = canvas_scene.addLine(sx, sy, ex, ey, bus_pen);
+    line->setData(kCanvasObjectIdRole, QString("bus_%1").arg(i));
+    line->setData(kCanvasObjectTypeRole, "Bus");
+    line->setData(kCanvasObjectNetIdRole, qstr(bus.bus_id));
+    line->setToolTip(QString("Bus: ") + qstr(bus.bus_id));
+    line->setFlag(QGraphicsItem::ItemIsSelectable, true);
+  }
+
   // Components
   QPen component_pen(theme.symbol_body_color);
   component_pen.setWidthF(1.5);

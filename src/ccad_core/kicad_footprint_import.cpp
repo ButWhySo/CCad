@@ -374,6 +374,8 @@ class FootprintJsonReader {
       expect(':');
       if (key == "name") {
         footprint.name = readString();
+      } else if (key == "exclude_from_bom") {
+        footprint.exclude_from_bom = readBool();
       } else if (key == "pads") {
         footprint.pads = readPads();
       } else if (key == "lines") {
@@ -657,6 +659,19 @@ class FootprintJsonReader {
     return static_cast<std::int64_t>(readNumber());
   }
 
+  bool readBool() {
+    skipWhitespace();
+    if (source_.substr(pos_, 4) == "true") {
+      pos_ += 4;
+      return true;
+    }
+    if (source_.substr(pos_, 5) == "false") {
+      pos_ += 5;
+      return false;
+    }
+    throw std::runtime_error("expected json bool");
+  }
+
   double readNumber() {
     skipWhitespace();
     const std::size_t start = pos_;
@@ -745,6 +760,12 @@ Footprint importKiCadFootprint(const std::string_view source) {
       footprint.texts.push_back(importText(child));
     } else if (isList(child, "model")) {
       footprint.models.push_back(importModel(child));
+    } else if (isList(child, "attr")) {
+      for (const SExpr& attribute : child.children) {
+        if (attribute.value == "exclude_from_bom") {
+          footprint.exclude_from_bom = true;
+        }
+      }
     }
   }
 
@@ -755,6 +776,8 @@ std::string dumpFootprintJson(const Footprint& footprint) {
   std::ostringstream out;
   out << "{\n";
   out << "  \"name\": \"" << escapeJson(footprint.name) << "\",\n";
+  out << "  \"exclude_from_bom\": " << (footprint.exclude_from_bom ? "true" : "false")
+      << ",\n";
   out << "  \"pads\": [\n";
   for (std::size_t i = 0; i < footprint.pads.size(); ++i) {
     const FootprintPad& pad = footprint.pads.at(i);

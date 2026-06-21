@@ -16,6 +16,7 @@ ccad::Board shiftedBoard() {
       },
       .design_rules = ccad::DesignRules{},
       .layers = {ccad::Layer{.id = "F.Cu", .name = "Front copper", .kind = "copper", .visible = true}},
+      .footprints = {},
       .placement_regions = {},
       .keepouts = {},
       .pads = {},

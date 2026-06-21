@@ -221,11 +221,12 @@ ccad::Project loadProjectFile(const std::string& path) {
 }
 
 bool writeProjectFile(const std::string& path, const ccad::Project& project) {
+  const std::string project_json = ccad::dumpProjectJson(project);
   std::ofstream output(path);
   if (!output) {
     return false;
   }
-  output << ccad::dumpProjectJson(project);
+  output << project_json;
   
   if (g_last_loaded_project.has_value()) {
     std::string audit_path = path + ".audit.jsonl";

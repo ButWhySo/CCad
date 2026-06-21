@@ -112,10 +112,28 @@ std::string netIdForPin(const Project& project, const std::string& component_id,
   return "";
 }
 
+std::string valueForPlacedFootprint(const Project& project, const std::string& component_id,
+                                    const std::optional<std::string>& explicit_value) {
+  if (explicit_value.has_value()) {
+    return *explicit_value;
+  }
+  const Schematic* schematic = primarySchematic(project);
+  if (schematic == nullptr) {
+    return "";
+  }
+  for (const Component& component : schematic->components) {
+    if (component.id == component_id) {
+      return component.part;
+    }
+  }
+  return "";
+}
+
 }  // namespace
 
 void placeFootprint(Project& project, const Footprint& footprint, const std::string& component_id,
-                    const Point& origin, double rotation_deg, const std::string& layer_id) {
+                    const Point& origin, double rotation_deg, const std::string& layer_id,
+                    std::optional<std::string> value, bool exclude_from_bom) {
   if (project.boards.empty()) {
     throw std::runtime_error("project has no board");
   }
@@ -184,6 +202,16 @@ void placeFootprint(Project& project, const Footprint& footprint, const std::str
         .chamfer_ratio = footprint_pad.chamfer_ratio,
     });
   }
+
+  board.footprints.push_back(BoardFootprint{
+      .reference = component_id,
+      .value = valueForPlacedFootprint(project, component_id, value),
+      .footprint_name = footprint.name,
+      .layer_id = layer_id,
+      .position = origin,
+      .rotation_degrees = rotation_deg,
+      .exclude_from_bom = footprint.exclude_from_bom || exclude_from_bom,
+  });
 }
 
 void placeComponent(Project& project, const Symbol& symbol, const std::string& component_id,
