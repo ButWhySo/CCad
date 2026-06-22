@@ -37,36 +37,37 @@ int main() {
       .component_id = "U1",
       .pin_name = "1",
       .net_id = "GND",
-      .layers = {"F.Cu"},
       .type = "smd",
-      .shape = "rect",
       .position = ccad::Point{.x = ccad::millimeters(10), .y = ccad::millimeters(20)},
       .rotation_degrees = 45.0,
-      .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(2.0)}
+      .padstack = ccad::Padstack{
+         .layer_set = {"F.Cu"},
+         .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(2.0)}}}}}
+      }
   });
   board.pads.push_back(ccad::Pad{
       .id = "pad2",
       .component_id = "U1",
       .pin_name = "2",
       .net_id = "VCC",
-      .layers = {"F.Cu", "F.Paste", "F.Mask"},
       .type = "smd",
-      .shape = "roundrect",
       .position = ccad::Point{.x = ccad::millimeters(12), .y = ccad::millimeters(20)},
-      .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(1.5)},
-      .roundrect_rratio = 0.25
+      .padstack = ccad::Padstack{
+         .layer_set = {"F.Cu", "F.Paste", "F.Mask"},
+         .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::RoundRect, .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(1.5)}, .roundrect_rratio = 0.25}}}}
+      }
   });
   board.pads.push_back(ccad::Pad{
       .id = "pad3",
       .component_id = "U1",
       .pin_name = "3",
       .net_id = "VCC",
-      .layers = {"F.Cu", "F.Paste", "F.Mask"},
       .type = "smd",
-      .shape = "chamfered_rect",
       .position = ccad::Point{.x = ccad::millimeters(14), .y = ccad::millimeters(20)},
-      .size = ccad::Size{.width = ccad::millimeters(1.2), .height = ccad::millimeters(1.5)},
-      .chamfer_ratio = 0.2
+      .padstack = ccad::Padstack{
+         .layer_set = {"F.Cu", "F.Paste", "F.Mask"},
+         .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::ChamferedRect, .size = ccad::Size{.width = ccad::millimeters(1.2), .height = ccad::millimeters(1.5)}, .chamfer_ratio = 0.2}}}}
+      }
   });
 
   // Add a via

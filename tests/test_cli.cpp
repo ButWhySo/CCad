@@ -478,7 +478,7 @@ int main() {
           "pcb add-pad writes chamfer ratio");
   require(advanced_pad_json.find("\"type\": \"thru_hole\"") != std::string::npos,
           "pcb add-pad writes through-hole type");
-  require(advanced_pad_json.find("\"drill_nm\": 700000") != std::string::npos,
+  require(advanced_pad_json.find("\"width_nm\": 700000") != std::string::npos,
           "pcb add-pad writes through-hole drill");
   require(run(quote(CCAD_BINARY) + " pcb add-pad --file " + quote(advanced_pad_path) +
               " --id P_BAD --component U1 --pin 9 --net N1 --layers F.Cu"
@@ -2984,7 +2984,7 @@ int main() {
                     << "      {\"id\": \"K1\", \"kind\": \"placement\", \"area\": {\"x_nm\": 20000000, \"y_nm\": 10000000, \"width_nm\": 4000000, \"height_nm\": 3000000}}\n"
                     << "    ],\n"
                     << "    \"pads\": [\n"
-                    << "      {\"id\": \"P1\", \"component_id\": \"U1\", \"pin_name\": \"1\", \"net_id\": \"N1\", \"layer_id\": \"F.Cu\", \"position\": {\"x_nm\": 5000000, \"y_nm\": 6000000}, \"rotation_degrees\": 0, \"size\": {\"width_nm\": 1500000, \"height_nm\": 1000000}}\n"
+                    << "      {\"id\": \"P1\", \"component_id\": \"U1\", \"pin_name\": \"1\", \"net_id\": \"N1\", \"position\": {\"x_nm\": 5000000, \"y_nm\": 6000000}, \"rotation_degrees\": 0, \"padstack\": {\"layer_set\": [\"F.Cu\"], \"copper_props\": {\"top\": {\"shape\": {\"size\": {\"width_nm\": 1500000, \"height_nm\": 1000000}}}}}}\n"
                     << "    ],\n"
                     << "    \"vias\": [\n"
                     << "      {\"id\": \"V1\", \"net_id\": \"N1\", \"position\": {\"x_nm\": 8000000, \"y_nm\": 9000000}, \"diameter_nm\": 800000, \"drill_nm\": 400000}\n"
@@ -3018,7 +3018,7 @@ int main() {
                    << "      {\"id\": \"K1\", \"kind\": \"placement\", \"area\": {\"x_nm\": 20000000, \"y_nm\": 10000000, \"width_nm\": 5000000, \"height_nm\": 3000000}}\n"
                    << "    ],\n"
                    << "    \"pads\": [\n"
-                   << "      {\"id\": \"P1\", \"component_id\": \"U1\", \"pin_name\": \"1\", \"net_id\": \"N1\", \"layer_id\": \"F.Cu\", \"position\": {\"x_nm\": 6000000, \"y_nm\": 6000000}, \"rotation_degrees\": 0, \"size\": {\"width_nm\": 1500000, \"height_nm\": 1000000}}\n"
+                   << "      {\"id\": \"P1\", \"component_id\": \"U1\", \"pin_name\": \"1\", \"net_id\": \"N1\", \"position\": {\"x_nm\": 6000000, \"y_nm\": 6000000}, \"rotation_degrees\": 0, \"padstack\": {\"layer_set\": [\"F.Cu\"], \"copper_props\": {\"top\": {\"shape\": {\"size\": {\"width_nm\": 1500000, \"height_nm\": 1000000}}}}}}\n"
                    << "    ],\n"
                    << "    \"vias\": [\n"
                    << "      {\"id\": \"V1\", \"net_id\": \"N1\", \"position\": {\"x_nm\": 8000000, \"y_nm\": 9000000}, \"diameter_nm\": 900000, \"drill_nm\": 400000}\n"

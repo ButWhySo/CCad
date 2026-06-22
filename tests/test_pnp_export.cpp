@@ -22,19 +22,23 @@ int main() {
       .id = "pad1",
       .component_id = "U1",
       .pin_name = "1",
-      .layers = {"F.Cu"},
       .type = "smd",
-      .shape = "rect",
-      .position = ccad::Point{.x = ccad::millimeters(10), .y = ccad::millimeters(10)}
+      .position = ccad::Point{.x = ccad::millimeters(10), .y = ccad::millimeters(10)},
+      .padstack = ccad::Padstack{
+        .layer_set = {"F.Cu"},
+        .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(1.0)}}}}}
+      }
   });
   board.pads.push_back(ccad::Pad{
       .id = "pad2",
       .component_id = "U1",
       .pin_name = "2",
-      .layers = {"F.Cu"},
       .type = "smd",
-      .shape = "rect",
-      .position = ccad::Point{.x = ccad::millimeters(30), .y = ccad::millimeters(30)}
+      .position = ccad::Point{.x = ccad::millimeters(30), .y = ccad::millimeters(30)},
+      .padstack = ccad::Padstack{
+        .layer_set = {"F.Cu"},
+        .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(1.0)}}}}}
+      }
   });
 
   // R1 has one pad on Bottom (B.Cu)
@@ -42,10 +46,12 @@ int main() {
       .id = "pad3",
       .component_id = "R1",
       .pin_name = "1",
-      .layers = {"B.Cu"},
       .type = "smd",
-      .shape = "rect",
-      .position = ccad::Point{.x = ccad::millimeters(50), .y = ccad::millimeters(50)}
+      .position = ccad::Point{.x = ccad::millimeters(50), .y = ccad::millimeters(50)},
+      .padstack = ccad::Padstack{
+        .layer_set = {"B.Cu"},
+        .copper_props = {{"bottom", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(1.0)}}}}}
+      }
   });
 
   project.boards.clear(); project.boards.push_back(board);
@@ -70,10 +76,12 @@ int main() {
       .id = "pad_board_only",
       .component_id = "J1",
       .pin_name = "1",
-      .layers = {"F.Cu"},
       .type = "smd",
-      .shape = "rect",
-      .position = ccad::Point{.x = ccad::millimeters(12), .y = ccad::millimeters(14)}
+      .position = ccad::Point{.x = ccad::millimeters(12), .y = ccad::millimeters(14)},
+      .padstack = ccad::Padstack{
+        .layer_set = {"F.Cu"},
+        .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(1.0)}}}}}
+      }
   });
   board_only.boards.push_back(board_only_board);
   const std::string board_only_exported = ccad::exportToPnpCsv(board_only);

@@ -48,10 +48,11 @@ void test_autoplacer_avoids_existing_pad_occupancy() {
                                  .component_id = "U1",
                                  .pin_name = "1",
                                  .net_id = "N1",
-                                 .layers = {"F.Cu"},
-                                 .shape = "rect",
                                  .position = {ccad::millimeters(0), ccad::millimeters(0)},
-                                 .size = {ccad::millimeters(1), ccad::millimeters(1)}});
+                                 .padstack = ccad::Padstack{
+                                    .layer_set = {"F.Cu"},
+                                    .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = {ccad::millimeters(1), ccad::millimeters(1)}}}}}
+                                 }});
 
   const ccad::AutoPlacementPlan plan = ccad::planFootprintAutoPlacement(
       board, onePadFootprint(), {{"1", "N1"}}, "F.Cu", ccad::millimeters(1));
@@ -67,10 +68,11 @@ void test_autoplacer_prefers_low_same_net_ratsnest_cost() {
                                  .component_id = "J1",
                                  .pin_name = "1",
                                  .net_id = "N1",
-                                 .layers = {"F.Cu"},
-                                 .shape = "rect",
                                  .position = {ccad::millimeters(10), ccad::millimeters(2)},
-                                 .size = {ccad::millimeters(1), ccad::millimeters(1)}});
+                                 .padstack = ccad::Padstack{
+                                    .layer_set = {"F.Cu"},
+                                    .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = {ccad::millimeters(1), ccad::millimeters(1)}}}}}
+                                 }});
 
   const ccad::AutoPlacementPlan plan = ccad::planFootprintAutoPlacement(
       board, onePadFootprint(), {{"1", "N1"}}, "F.Cu", ccad::millimeters(1));
@@ -101,10 +103,11 @@ void test_autoplacer_prefers_lower_existing_pad_keepout_cost() {
                                  .component_id = "J1",
                                  .pin_name = "1",
                                  .net_id = "",
-                                 .layers = {"F.Cu"},
-                                 .shape = "rect",
                                  .position = {ccad::millimeters(2), ccad::millimeters(2)},
-                                 .size = {ccad::millimeters(1), ccad::millimeters(1)}});
+                                 .padstack = ccad::Padstack{
+                                    .layer_set = {"F.Cu"},
+                                    .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = {ccad::millimeters(1), ccad::millimeters(1)}}}}}
+                                 }});
 
   const ccad::AutoPlacementPlan plan = ccad::planFootprintAutoPlacement(
       board, onePadFootprint(), {}, "F.Cu", ccad::millimeters(1));

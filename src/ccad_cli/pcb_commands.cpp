@@ -34,6 +34,17 @@
 namespace ccad_cli {
 namespace {
 
+ccad::PadShape parsePadShapeStr(const std::string& shape) {
+  if (shape == "circle") return ccad::PadShape::Circle;
+  if (shape == "rect" || shape == "rectangle") return ccad::PadShape::Rectangle;
+  if (shape == "oval") return ccad::PadShape::Oval;
+  if (shape == "trapezoid") return ccad::PadShape::Trapezoid;
+  if (shape == "roundrect") return ccad::PadShape::RoundRect;
+  if (shape == "chamfered_rect") return ccad::PadShape::ChamferedRect;
+  if (shape == "custom") return ccad::PadShape::Custom;
+  return ccad::PadShape::Circle;
+}
+
 std::string netIdForPin(const ccad::Project& project, const std::string& component_id,
                         const std::string& pin_name) {
   const ccad::Schematic* schematic = ccad::primarySchematic(project);
@@ -128,7 +139,7 @@ std::vector<ccad::Point> parsePolylinePointsMm(const std::string& value) {
 
 void requireLayerUnused(const ccad::Board& board, const std::string& id) {
   for (const ccad::Pad& pad : board.pads) {
-    for (const std::string& l : pad.layers) {
+    for (const std::string& l : pad.padstack.layer_set) {
       if (l == id) {
         throw std::runtime_error("layer is referenced by pad: " + pad.id);
       }
@@ -462,10 +473,12 @@ std::string boardLoadStateJson(const std::string& source_file,
 
 std::string drillShapeLabel(const ccad::DrillShape shape) {
   switch (shape) {
-    case ccad::DrillShape::round:
+    case ccad::DrillShape::Circle:
       return "Round";
-    case ccad::DrillShape::slot:
+    case ccad::DrillShape::Oval:
       return "Slot";
+    case ccad::DrillShape::Undefined:
+      return "Unknown";
   }
   return "Unknown";
 }
@@ -826,7 +839,8 @@ std::string requireZonePadConnection(const std::map<std::string, std::string>& o
 
 void requireBoardObjectsInsideOutline(const ccad::Board& board) {
   for (const ccad::Pad& pad : board.pads) {
-    requireRotatedRectInsideBoard(board, pad.position, pad.size, pad.rotation_degrees,
+    ccad::Size pad_size = pad.padstack.copper_props.empty() ? ccad::Size{} : pad.padstack.copper_props.begin()->second.shape.size;
+    requireRotatedRectInsideBoard(board, pad.position, pad_size, pad.rotation_degrees,
                                   "pad " + pad.id);
   }
   for (const ccad::Via& via : board.vias) {
@@ -1454,6 +1468,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+
     if (subcommand == "add-pad") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--component", "--pin", "--net", "--layers",
@@ -1489,14 +1504,44 @@ int pcbCommand(const std::vector<std::string>& args) {
           .component_id = requireOption(options, "--component"),
           .pin_name = requireOption(options, "--pin"),
           .net_id = requireOption(options, "--net"),
-          .layers = layers,
           .type = options.contains("--type") ? requireOption(options, "--type") : "smd",
-          .shape = options.contains("--shape") ? requireOption(options, "--shape") : "rect",
           .position = position,
-          .size = size,
-          .drill = drill,
-          .roundrect_rratio = roundrect_rratio,
-          .chamfer_ratio = chamfer_ratio,
+          .padstack = ccad::Padstack{
+              .mode = ccad::PadstackMode::Normal,
+              .layer_set = layers,
+              .copper_props = {{"top", ccad::PadstackCopperLayerProps{
+                  .shape = ccad::PadstackShapeProps{
+                      .shape = options.contains("--shape") ? parsePadShapeStr(options.at("--shape")) : ccad::PadShape::Rectangle,
+                      .anchor_shape = ccad::PadShape::Rectangle,
+                      .size = size,
+                      .offset = ccad::Point{ccad::nanometers(0), ccad::nanometers(0)},
+                      .roundrect_rratio = roundrect_rratio.value_or(0.0),
+                      .chamfer_ratio = chamfer_ratio.value_or(0.0),
+                      .chamfer_positions = 0,
+                      .trapezoid_delta_size = ccad::Size{ccad::nanometers(0), ccad::nanometers(0)}
+                  },
+                  .clearance = std::nullopt,
+                  .zone_connection = std::nullopt,
+                  .thermal_gap = std::nullopt,
+                  .thermal_spoke_width = std::nullopt,
+                  .thermal_spoke_angle_degrees = std::nullopt
+              }}},
+              .drill = ccad::PadstackDrillProps{
+                  .size = ccad::Size{.width = drill.value_or(ccad::Length{}), .height = drill.value_or(ccad::Length{})},
+                  .shape = ccad::DrillShape::Circle,
+                  .start_layer = "",
+                  .end_layer = "",
+                  .is_capped = std::nullopt,
+                  .is_filled = std::nullopt
+              },
+              .secondary_drill = std::nullopt,
+              .tertiary_drill = std::nullopt,
+              .front_post_machining = ccad::PadstackPostMachiningProps{std::nullopt, ccad::nanometers(0), ccad::nanometers(0), 0.0},
+              .back_post_machining = ccad::PadstackPostMachiningProps{std::nullopt, ccad::nanometers(0), ccad::nanometers(0), 0.0},
+              .front_outer_layers = ccad::PadstackOuterLayerProps{std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt},
+              .back_outer_layers = ccad::PadstackOuterLayerProps{std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt},
+              .unconnected_layer_mode = "keep_all"
+          }
       });
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
@@ -1522,18 +1567,19 @@ int pcbCommand(const std::vector<std::string>& args) {
       bool updated = false;
       for (ccad::Pad& pad : board.pads) {
         if (pad.id == id) {
-          requireRotatedRectInsideBoard(board, pad.position, pad.size, rotation_degrees, "pad");
+          ccad::Size pad_size = pad.padstack.copper_props.empty() ? ccad::Size{} : pad.padstack.copper_props.begin()->second.shape.size;
+          requireRotatedRectInsideBoard(board, pad.position, pad_size, rotation_degrees, "pad");
           pad.component_id = requireOption(options, "--component");
           pad.pin_name = requireOption(options, "--pin");
           pad.net_id = requireOption(options, "--net");
-          pad.layers = layers;
+          pad.padstack.layer_set = layers;
           if (options.contains("--type")) pad.type = requireOption(options, "--type");
-          if (options.contains("--shape")) pad.shape = requireOption(options, "--shape");
+          if (options.contains("--shape")) pad.padstack.copper_props["top"].shape.shape = parsePadShapeStr(options.at("--shape"));
           if (options.contains("--roundrect-rratio")) {
-            pad.roundrect_rratio = optionalRatio(options, "--roundrect-rratio");
+            pad.padstack.copper_props["top"].shape.roundrect_rratio = *optionalRatio(options, "--roundrect-rratio");
           }
           if (options.contains("--chamfer-ratio")) {
-            pad.chamfer_ratio = optionalRatio(options, "--chamfer-ratio");
+            pad.padstack.copper_props["top"].shape.chamfer_ratio = *optionalRatio(options, "--chamfer-ratio");
           }
           pad.rotation_degrees = rotation_degrees;
           updated = true;
@@ -2237,7 +2283,8 @@ int pcbCommand(const std::vector<std::string>& args) {
       bool moved = false;
       for (ccad::Pad& pad : board.pads) {
         if (pad.id == id) {
-          requireRotatedRectInsideBoard(board, position, pad.size, pad.rotation_degrees, "pad");
+          ccad::Size pad_size = pad.padstack.copper_props.empty() ? ccad::Size{} : pad.padstack.copper_props.begin()->second.shape.size;
+          requireRotatedRectInsideBoard(board, position, pad_size, pad.rotation_degrees, "pad");
           pad.position = position;
           moved = true;
           break;
@@ -2295,7 +2342,11 @@ int pcbCommand(const std::vector<std::string>& args) {
       for (ccad::Pad& pad : board.pads) {
         if (pad.id == id) {
           requireRotatedRectInsideBoard(board, pad.position, size, pad.rotation_degrees, "pad");
-          pad.size = size;
+          if (!pad.padstack.copper_props.empty()) {
+            pad.padstack.copper_props.begin()->second.shape.size = size;
+          } else {
+            pad.padstack.copper_props["top"].shape.size = size;
+          }
           resized = true;
           break;
         }

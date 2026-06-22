@@ -29,8 +29,8 @@ std::string exportToDrillExcellon(const Project& project) {
   }
 
   for (const Pad& pad : board.pads) {
-      if (pad.drill.has_value()) {
-          double drill_in = (pad.drill->nanometers / 1000000.0) / 25.4;
+      if (pad.padstack.drill.size.width.nanometers > 0) {
+          double drill_in = (pad.padstack.drill.size.width.nanometers / 1000000.0) / 25.4;
           drill_groups[drill_in].push_back(pad.position);
       }
   }

@@ -41,24 +41,24 @@ ccad::Board makeCollectorFixture() {
                                  .component_id = "U1",
                                  .pin_name = "1",
                                  .net_id = "N1",
-                                 .layers = {"F.Cu"},
                                  .type = "smd",
-                                 .shape = "rect",
                                  .position = {.x = ccad::millimeters(3),
                                               .y = ccad::millimeters(4)},
-                                 .size = {.width = ccad::millimeters(1),
-                                          .height = ccad::millimeters(1)}});
+                                 .padstack = ccad::Padstack{
+                                    .layer_set = {"F.Cu"},
+                                    .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = {.width = ccad::millimeters(1), .height = ccad::millimeters(1)}}}}}
+                                 }});
   board.pads.push_back(ccad::Pad{.id = "P2",
                                  .component_id = "U1",
                                  .pin_name = "2",
                                  .net_id = "",
-                                 .layers = {"B.Cu"},
                                  .type = "smd",
-                                 .shape = "rect",
                                  .position = {.x = ccad::millimeters(4),
                                               .y = ccad::millimeters(4)},
-                                 .size = {.width = ccad::millimeters(1),
-                                          .height = ccad::millimeters(1)}});
+                                 .padstack = ccad::Padstack{
+                                    .layer_set = {"B.Cu"},
+                                    .copper_props = {{"bottom", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = {.width = ccad::millimeters(1), .height = ccad::millimeters(1)}}}}}
+                                 }});
   board.vias.push_back(ccad::Via{.id = "V1",
                                  .net_id = "N1",
                                  .position = {.x = ccad::millimeters(5),

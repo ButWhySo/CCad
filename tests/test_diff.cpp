@@ -53,11 +53,12 @@ ccad::Project baseProject() {
                          .component_id = "U1",
                          .pin_name = "VDD",
                          .net_id = "N_3V3",
-                         .layers = {"F.Cu"},
                          .position = ccad::Point{.x = ccad::millimeters(5),
                                                  .y = ccad::millimeters(6)},
-                         .size = ccad::Size{.width = ccad::millimeters(1.0),
-                                            .height = ccad::millimeters(1.0)}}},
+                         .padstack = ccad::Padstack{
+                            .layer_set = {"F.Cu"},
+                            .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(1.0)}}}}}
+                         }}},
       .vias = {ccad::Via{.id = "V1",
                          .net_id = "N_3V3",
                          .position = ccad::Point{.x = ccad::millimeters(8),
@@ -109,10 +110,11 @@ int main() {
       .component_id = "J1",
       .pin_name = "1",
       .net_id = "N_BOARD",
-      .layers = {"F.Cu"},
       .position = ccad::Point{.x = ccad::millimeters(11), .y = ccad::millimeters(6)},
-      .size = ccad::Size{.width = ccad::millimeters(1.0),
-                         .height = ccad::millimeters(1.0)}});
+      .padstack = ccad::Padstack{
+         .layer_set = {"F.Cu"},
+         .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(1.0)}}}}}
+      }});
   const ccad::ProjectDiff board_only_diff =
       ccad::diffProjects(board_only_before, board_only_after);
   require(hasEntry(board_only_diff, "added", "pad", "P_BOARD_ONLY"),
@@ -187,9 +189,11 @@ int main() {
       .component_id = "U1",
       .pin_name = "VDD",
       .net_id = "N_3V3",
-      .layers = {"F.Cu"},
       .position = ccad::Point{.x = ccad::millimeters(7), .y = ccad::millimeters(6)},
-      .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(1.0)}});
+      .padstack = ccad::Padstack{
+         .layer_set = {"F.Cu"},
+         .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(1.0)}}}}}
+      }});
   const ccad::ProjectDiff added_pad_diff = ccad::diffProjects(baseProject(), added_pad);
   require(hasEntry(added_pad_diff, "added", "pad", "P2"), "added pad entry");
 

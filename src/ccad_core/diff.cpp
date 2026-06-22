@@ -62,15 +62,18 @@ std::string sizeSignature(const Size& size) {
 
 std::string padSignature(const Pad& pad) {
   std::string sig = pad.component_id + "\x1f" + pad.pin_name + "\x1f" + pad.net_id + "\x1f";
-  for (const std::string& layer : pad.layers) {
+  for (const std::string& layer : pad.padstack.layer_set) {
     sig += layer + "\x1e";
   }
-  sig += "\x1f" + pad.type + "\x1f" + pad.shape + "\x1f" + pointSignature(pad.position) + "\x1f" +
-         sizeSignature(pad.size) + "\x1f" + std::to_string(pad.rotation_degrees);
-  sig += "\x1f" + (pad.drill.has_value() ? std::to_string(pad.drill->nanometers) : "");
+  const Size psize = pad.padstack.copper_props.empty() ? ccad::Size{} : pad.padstack.copper_props.begin()->second.shape.size;
+  const std::string pshape = pad.padstack.copper_props.empty() ? "circle" : (pad.padstack.copper_props.begin()->second.shape.shape == PadShape::Oval ? "oval" : "circle");
+
+  sig += "\x1f" + pad.type + "\x1f" + pshape + "\x1f" + pointSignature(pad.position) + "\x1f" +
+         sizeSignature(psize) + "\x1f" + std::to_string(pad.rotation_degrees);
+  sig += "\x1f" + (pad.padstack.drill.size.width.nanometers > 0 ? std::to_string(pad.padstack.drill.size.width.nanometers) : "");
   sig += "\x1f" +
-         (pad.roundrect_rratio.has_value() ? std::to_string(*pad.roundrect_rratio) : "");
-  sig += "\x1f" + (pad.chamfer_ratio.has_value() ? std::to_string(*pad.chamfer_ratio) : "");
+         (!pad.padstack.copper_props.empty() && pad.padstack.copper_props.begin()->second.shape.roundrect_rratio > 0.0 ? std::to_string(pad.padstack.copper_props.begin()->second.shape.roundrect_rratio) : "");
+  sig += "\x1f" + (!pad.padstack.copper_props.empty() && pad.padstack.copper_props.begin()->second.shape.chamfer_ratio > 0.0 ? std::to_string(pad.padstack.copper_props.begin()->second.shape.chamfer_ratio) : "");
   return sig;
 }
 

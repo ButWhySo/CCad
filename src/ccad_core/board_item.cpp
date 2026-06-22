@@ -102,8 +102,8 @@ BoardItemMetadata boardItemMetadata(const Board& board, const std::vector<std::s
 }
 
 BoardItemMetadata boardItemMetadata(const Board& board, const Pad& pad) {
-  const std::vector<std::string> resolved_layers = expandKiCadLayerSet(pad.layers, board);
-  const bool drilled = pad.drill.has_value() && pad.drill->nanometers > 0;
+  const std::vector<std::string> resolved_layers = expandKiCadLayerSet(pad.padstack.layer_set, board);
+  const bool drilled = pad.padstack.drill.size.width.nanometers > 0;
   return boardItemMetadata(board, resolved_layers, true, drilled, drilled, pad.locked);
 }
 

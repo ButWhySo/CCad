@@ -52,11 +52,12 @@ bool naturalReferenceLess(const std::string& a, const std::string& b) {
 }
 
 Rect padBounds(const Pad& pad) {
-  const std::int64_t half_width = pad.size.width.nanometers / 2;
-  const std::int64_t half_height = pad.size.height.nanometers / 2;
+  const Size psize = pad.padstack.copper_props.empty() ? ccad::Size{} : pad.padstack.copper_props.begin()->second.shape.size;
+  const std::int64_t half_width = psize.width.nanometers / 2;
+  const std::int64_t half_height = psize.height.nanometers / 2;
   return Rect{.origin = {.x = nanometers(pad.position.x.nanometers - half_width),
                          .y = nanometers(pad.position.y.nanometers - half_height)},
-              .size = {.width = pad.size.width, .height = pad.size.height}};
+              .size = {.width = psize.width, .height = psize.height}};
 }
 
 Rect mergeBounds(const Rect& a, const Rect& b) {

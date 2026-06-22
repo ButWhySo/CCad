@@ -4,6 +4,7 @@
 #include "ccad_core/symbol.hpp"
 
 #include <map>
+#include <unordered_map>
 #include <optional>
 #include <string>
 #include <vector>
@@ -113,30 +114,90 @@ struct DesignRules {
   std::vector<std::string> ratsnest_exclusions;
 };
 
+enum class PadstackMode { Normal, FrontInnerBack, Custom };
+
+enum class PadShape { Circle, Rectangle, Oval, Trapezoid, RoundRect, ChamferedRect, Custom };
+
+enum class DrillShape { Undefined, Circle, Oval };
+
+struct PadstackDrillProps {
+  Size size;
+  DrillShape shape = DrillShape::Undefined;
+  std::string start_layer;
+  std::string end_layer;
+  std::optional<bool> is_capped = std::nullopt;
+  std::optional<bool> is_filled = std::nullopt;
+};
+
+struct PadstackPostMachiningProps {
+  std::optional<std::string> mode = std::nullopt;
+  Length size;
+  Length depth;
+  double angle_degrees = 0.0;
+};
+
+struct PadstackShapeProps {
+  PadShape shape = PadShape::Circle;
+  PadShape anchor_shape = PadShape::Rectangle;
+  Size size;
+  Point offset;
+  double roundrect_rratio = 0.0;
+  double chamfer_ratio = 0.0;
+  int chamfer_positions = 0;
+  Size trapezoid_delta_size;
+};
+
+struct PadstackCopperLayerProps {
+  PadstackShapeProps shape;
+  std::optional<Length> clearance = std::nullopt;
+  std::optional<std::string> zone_connection = std::nullopt;
+  std::optional<Length> thermal_gap = std::nullopt;
+  std::optional<Length> thermal_spoke_width = std::nullopt;
+  std::optional<double> thermal_spoke_angle_degrees = std::nullopt;
+};
+
+struct PadstackOuterLayerProps {
+  std::optional<bool> has_solder_mask = std::nullopt;
+  std::optional<bool> has_covering = std::nullopt;
+  std::optional<bool> has_plugging = std::nullopt;
+  std::optional<bool> has_solder_paste = std::nullopt;
+  std::optional<Length> solder_mask_margin = std::nullopt;
+  std::optional<Length> solder_paste_margin = std::nullopt;
+  std::optional<double> solder_paste_margin_ratio = std::nullopt;
+};
+
+struct Padstack {
+  PadstackMode mode = PadstackMode::Normal;
+  std::vector<std::string> layer_set;
+  std::unordered_map<std::string, PadstackCopperLayerProps> copper_props;
+  
+  PadstackDrillProps drill;
+  std::optional<PadstackDrillProps> secondary_drill = std::nullopt;
+  std::optional<PadstackDrillProps> tertiary_drill = std::nullopt;
+  
+  PadstackPostMachiningProps front_post_machining;
+  PadstackPostMachiningProps back_post_machining;
+  
+  PadstackOuterLayerProps front_outer_layers;
+  PadstackOuterLayerProps back_outer_layers;
+  
+  std::string unconnected_layer_mode = "keep_all";
+};
+
 struct Pad {
   std::string id;
   std::string component_id;
   std::string pin_name;
   std::string net_id;
-  std::vector<std::string> layers;
   std::string type;
-  std::string shape;
   Point position;
   double rotation_degrees = 0.0;
-  Size size;
-  std::optional<Length> drill;
-  std::optional<Length> secondary_drill = std::nullopt;
-  std::optional<Length> tertiary_drill = std::nullopt;
-  bool backdrilled = false;
-  std::optional<Length> front_post_machining = std::nullopt;
-  std::optional<Length> back_post_machining = std::nullopt;
   std::string pin_type = "";
   std::optional<Length> pad_to_die_length = std::nullopt;
   std::optional<double> pad_to_die_delay = std::nullopt;
-  std::optional<double> roundrect_rratio = std::nullopt;
-  std::optional<double> chamfer_ratio = std::nullopt;
   bool teardrops_enabled = false;
   bool locked = false;
+  Padstack padstack;
 };
 
 struct Via {

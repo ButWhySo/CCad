@@ -96,10 +96,15 @@ std::string exportSpecctraDsn(const Project& project) {
     out << "    )\n";
   }
   for (const auto& pad : board.pads) {
+    std::string first_layer = pad.padstack.layer_set.empty() ? "" : pad.padstack.layer_set.front();
+    Size psize = {ccad::nanometers(0), ccad::nanometers(0)};
+    if (!pad.padstack.copper_props.empty()) {
+      psize = pad.padstack.copper_props.begin()->second.shape.size;
+    }
     out << "    (padstack " << quote("padstack_" + pad.id) << "\n"
-        << "      (shape (rect " << quote(pad.layers.empty() ? "" : pad.layers.front()) << " "
-        << formatMm(-pad.size.width.nanometers / 2) << " " << formatMm(-pad.size.height.nanometers / 2) << " "
-        << formatMm(pad.size.width.nanometers / 2) << " " << formatMm(pad.size.height.nanometers / 2) << "))\n"
+        << "      (shape (rect " << quote(first_layer) << " "
+        << formatMm(-psize.width.nanometers / 2) << " " << formatMm(-psize.height.nanometers / 2) << " "
+        << formatMm(psize.width.nanometers / 2) << " " << formatMm(psize.height.nanometers / 2) << "))\n"
         << "    )\n";
   }
   for (const auto& via : board.vias) {

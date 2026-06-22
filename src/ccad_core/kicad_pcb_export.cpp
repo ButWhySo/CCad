@@ -173,38 +173,41 @@ std::string exportToKiCadPcb(const Project& project) {
     for (const Pad* pad : pads) {
       double px = pad->position.x.nanometers / 1000000.0;
       double py = pad->position.y.nanometers / 1000000.0;
-      double pw = pad->size.width.nanometers / 1000000.0;
-      double ph = pad->size.height.nanometers / 1000000.0;
+      const Size psize = pad->padstack.copper_props.empty() ? ccad::Size{} : pad->padstack.copper_props.begin()->second.shape.size;
+      double pw = psize.width.nanometers / 1000000.0;
+      double ph = psize.height.nanometers / 1000000.0;
 
-      out << "    (pad \"" << pad->pin_name << "\" " << pad->type << " " << pad->shape << " (at "
+      const std::string pshape = pad->padstack.copper_props.empty() ? "circle" : (pad->padstack.copper_props.begin()->second.shape.shape == PadShape::Oval ? "oval" : "circle");
+
+      out << "    (pad \"" << pad->pin_name << "\" " << pad->type << " " << pshape << " (at "
           << px << " " << py;
       if (pad->rotation_degrees != 0.0) {
         out << " " << pad->rotation_degrees;
       }
       out << ") (size " << pw << " " << ph << ")";
-      if (pad->drill.has_value()) {
-        out << " (drill " << (pad->drill->nanometers / 1000000.0) << ")";
+      if (pad->padstack.drill.size.width.nanometers > 0) {
+        out << " (drill " << (pad->padstack.drill.size.width.nanometers / 1000000.0) << ")";
       }
-      if (pad->roundrect_rratio.has_value()) {
-        out << " (roundrect_rratio " << *pad->roundrect_rratio << ")";
+      if (!pad->padstack.copper_props.empty() && pad->padstack.copper_props.begin()->second.shape.roundrect_rratio > 0.0) {
+        out << " (roundrect_rratio " << pad->padstack.copper_props.begin()->second.shape.roundrect_rratio << ")";
       }
-      if (pad->chamfer_ratio.has_value()) {
-        out << " (chamfer_ratio " << *pad->chamfer_ratio << ")";
+      if (!pad->padstack.copper_props.empty() && pad->padstack.copper_props.begin()->second.shape.chamfer_ratio > 0.0) {
+        out << " (chamfer_ratio " << pad->padstack.copper_props.begin()->second.shape.chamfer_ratio << ")";
       }
-      if (pad->secondary_drill.has_value()) {
-        out << " (property \"secondary_drill\" \"" << (pad->secondary_drill->nanometers / 1000000.0) << "\")";
+      if (pad->padstack.secondary_drill.has_value()) {
+        out << " (property \"secondary_drill\" \"" << (pad->padstack.secondary_drill->size.width.nanometers / 1000000.0) << "\")";
       }
-      if (pad->tertiary_drill.has_value()) {
-        out << " (property \"tertiary_drill\" \"" << (pad->tertiary_drill->nanometers / 1000000.0) << "\")";
+      if (pad->padstack.tertiary_drill.has_value()) {
+        out << " (property \"tertiary_drill\" \"" << (pad->padstack.tertiary_drill->size.width.nanometers / 1000000.0) << "\")";
       }
-      if (pad->backdrilled) {
+      if (pad->padstack.front_post_machining.mode == "backdrill" || pad->padstack.back_post_machining.mode == "backdrill") {
         out << " (property \"backdrilled\" \"true\")";
       }
-      if (pad->front_post_machining.has_value()) {
-        out << " (property \"front_post_machining\" \"" << (pad->front_post_machining->nanometers / 1000000.0) << "\")";
+      if (pad->padstack.front_post_machining.mode.has_value()) {
+        out << " (property \"front_post_machining\" \"" << (pad->padstack.front_post_machining.size.nanometers / 1000000.0) << "\")";
       }
-      if (pad->back_post_machining.has_value()) {
-        out << " (property \"back_post_machining\" \"" << (pad->back_post_machining->nanometers / 1000000.0) << "\")";
+      if (pad->padstack.back_post_machining.mode.has_value()) {
+        out << " (property \"back_post_machining\" \"" << (pad->padstack.back_post_machining.size.nanometers / 1000000.0) << "\")";
       }
       if (!pad->pin_type.empty()) {
         out << " (property \"pin_type\" \"" << escapeKiCadString(pad->pin_type) << "\")";
@@ -217,7 +220,7 @@ std::string exportToKiCadPcb(const Project& project) {
       }
 
       out << " (layers";
-      for (const std::string& layer : pad->layers) {
+      for (const std::string& layer : pad->padstack.layer_set) {
         out << " \"" << layer << "\"";
       }
       out << ")";

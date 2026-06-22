@@ -59,6 +59,19 @@ bool includeObjectType(const std::string& filter, const std::string& type) {
   return filter.empty() || filter == type;
 }
 
+std::string padShapeStr(ccad::PadShape shape) {
+  switch (shape) {
+    case ccad::PadShape::Circle: return "circle";
+    case ccad::PadShape::Rectangle: return "rect";
+    case ccad::PadShape::Oval: return "oval";
+    case ccad::PadShape::Trapezoid: return "trapezoid";
+    case ccad::PadShape::RoundRect: return "roundrect";
+    case ccad::PadShape::ChamferedRect: return "chamfered_rect";
+    case ccad::PadShape::Custom: return "custom";
+  }
+  return "circle";
+}
+
 bool includeConnectableType(const std::string& filter, const std::string& type) {
   return filter.empty() || filter == type;
 }
@@ -130,7 +143,7 @@ void appendConnectedItemMetadata(std::ostream& out, const std::string& net_id,
 }
 
 std::vector<std::string> resolvedPadLayers(const ccad::Board& board, const ccad::Pad& pad) {
-  return ccad::expandKiCadLayerSet(pad.layers, board);
+  return ccad::expandKiCadLayerSet(pad.padstack.layer_set, board);
 }
 
 std::string padNetRowJson(const ccad::Board& board, const ccad::Pad& pad) {
@@ -143,14 +156,14 @@ std::string padNetRowJson(const ccad::Board& board, const ccad::Pad& pad) {
       << "\", \"pin_name\": \"" << ccad::escapeJson(pad.pin_name)
       << "\", \"net_id\": \"" << ccad::escapeJson(pad.net_id)
       << "\", \"pad_type\": \"" << ccad::escapeJson(pad.type)
-      << "\", \"shape\": \"" << ccad::escapeJson(pad.shape)
-      << "\", \"layer_id\": \"" << ccad::escapeJson(firstLayerId(pad.layers))
+      << "\", \"shape\": \"" << ccad::escapeJson(pad.padstack.copper_props.empty() ? "circle" : padShapeStr(pad.padstack.copper_props.begin()->second.shape.shape))
+      << "\", \"layer_id\": \"" << ccad::escapeJson(firstLayerId(pad.padstack.layer_set))
       << "\", \"resolved_layers\": ";
   appendLayerIdsJson(row, resolved_layers);
   row << ", \"kicad_layer_numbers\": ";
   appendLayerNumbersJson(row, kicad_layer_numbers);
-  if (pad.drill.has_value()) {
-    row << ", \"drill_nm\": " << pad.drill->nanometers;
+  if (pad.padstack.drill.size.width.nanometers > 0) {
+    row << ", \"drill_nm\": " << pad.padstack.drill.size.width.nanometers;
   }
   appendBoardItemMetadata(row, ccad::boardItemMetadata(board, pad));
   appendConnectedItemMetadata(row, pad.net_id, true);
@@ -454,11 +467,11 @@ std::string pcbPadObjectJson(const ccad::Board& board, const ccad::Pad& pad) {
       << "    \"pin_name\": \"" << ccad::escapeJson(pad.pin_name) << "\",\n"
       << "    \"net_id\": \"" << ccad::escapeJson(pad.net_id) << "\",\n"
       << "    \"pad_type\": \"" << ccad::escapeJson(pad.type) << "\",\n"
-      << "    \"shape\": \"" << ccad::escapeJson(pad.shape) << "\",\n"
+      << "    \"shape\": \"" << ccad::escapeJson(pad.padstack.copper_props.empty() ? "circle" : padShapeStr(pad.padstack.copper_props.begin()->second.shape.shape)) << "\",\n"
       << "    \"layers\": [";
-  for (size_t i = 0; i < pad.layers.size(); ++i) {
+  for (size_t i = 0; i < pad.padstack.layer_set.size(); ++i) {
     if (i > 0) out << ", ";
-    out << "\"" << ccad::escapeJson(pad.layers[i]) << "\"";
+    out << "\"" << ccad::escapeJson(pad.padstack.layer_set[i]) << "\"";
   }
   out << "],\n"
       << "    \"position\": {\n";
@@ -466,19 +479,19 @@ std::string pcbPadObjectJson(const ccad::Board& board, const ccad::Pad& pad) {
   out << "\n    },\n"
       << "    \"rotation_degrees\": " << pad.rotation_degrees << ",\n"
       << "    \"size\": {\n";
-  writeSizeJson(out, pad.size, 6);
+  writeSizeJson(out, pad.padstack.copper_props.empty() ? ccad::Size{} : pad.padstack.copper_props.begin()->second.shape.size, 6);
   out << "\n    }";
-  if (pad.drill.has_value()) {
+  if (pad.padstack.drill.size.width.nanometers > 0) {
     out << ",\n"
-        << "    \"drill_nm\": " << pad.drill->nanometers;
+        << "    \"drill_nm\": " << pad.padstack.drill.size.width.nanometers;
   }
-  if (pad.roundrect_rratio.has_value()) {
+  if (!pad.padstack.copper_props.empty() && pad.padstack.copper_props.begin()->second.shape.roundrect_rratio > 0.0) {
     out << ",\n"
-        << "    \"roundrect_rratio\": " << *pad.roundrect_rratio;
+        << "    \"roundrect_rratio\": " << pad.padstack.copper_props.begin()->second.shape.roundrect_rratio;
   }
-  if (pad.chamfer_ratio.has_value()) {
+  if (!pad.padstack.copper_props.empty() && pad.padstack.copper_props.begin()->second.shape.chamfer_ratio > 0.0) {
     out << ",\n"
-        << "    \"chamfer_ratio\": " << *pad.chamfer_ratio;
+        << "    \"chamfer_ratio\": " << pad.padstack.copper_props.begin()->second.shape.chamfer_ratio;
   }
   appendBoardItemMetadata(out, ccad::boardItemMetadata(board, pad));
   appendConnectedItemMetadata(out, pad.net_id, true);
@@ -672,21 +685,21 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
           << "\", \"pin_name\": \"" << ccad::escapeJson(pad.pin_name)
           << "\", \"net_id\": \"" << ccad::escapeJson(pad.net_id)
           << "\", \"pad_type\": \"" << ccad::escapeJson(pad.type)
-          << "\", \"shape\": \"" << ccad::escapeJson(pad.shape)
+          << "\", \"shape\": \"" << ccad::escapeJson(pad.padstack.copper_props.empty() ? "circle" : padShapeStr(pad.padstack.copper_props.begin()->second.shape.shape))
           << "\", \"layer_id\": \""
-          << ccad::escapeJson(pad.layers.empty() ? "" : pad.layers.front())
+          << ccad::escapeJson(pad.padstack.layer_set.empty() ? "" : pad.padstack.layer_set.front())
           << "\", \"resolved_layers\": ";
       appendLayerIdsJson(row, resolved_layers);
       row << ", \"kicad_layer_numbers\": ";
       appendLayerNumbersJson(row, kicad_layer_numbers);
-      if (pad.drill.has_value()) {
-        row << ", \"drill_nm\": " << pad.drill->nanometers;
+      if (pad.padstack.drill.size.width.nanometers > 0) {
+        row << ", \"drill_nm\": " << pad.padstack.drill.size.width.nanometers;
       }
-      if (pad.roundrect_rratio.has_value()) {
-        row << ", \"roundrect_rratio\": " << *pad.roundrect_rratio;
+      if (!pad.padstack.copper_props.empty() && pad.padstack.copper_props.begin()->second.shape.roundrect_rratio > 0.0) {
+        row << ", \"roundrect_rratio\": " << pad.padstack.copper_props.begin()->second.shape.roundrect_rratio;
       }
-      if (pad.chamfer_ratio.has_value()) {
-        row << ", \"chamfer_ratio\": " << *pad.chamfer_ratio;
+      if (!pad.padstack.copper_props.empty() && pad.padstack.copper_props.begin()->second.shape.chamfer_ratio > 0.0) {
+        row << ", \"chamfer_ratio\": " << pad.padstack.copper_props.begin()->second.shape.chamfer_ratio;
       }
       appendBoardItemMetadata(row, ccad::boardItemMetadata(board, pad));
       appendConnectedItemMetadata(row, pad.net_id, true);
@@ -1204,12 +1217,12 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
         ccad::standardKiCadPcbLayerNumbersForSet(resolved_layers);
     out << "        {\"id\": \"" << ccad::escapeJson(pad.id) << "\", \"net_id\": \""
         << ccad::escapeJson(pad.net_id) << "\", \"layer_id\": \""
-        << ccad::escapeJson(pad.layers.empty() ? "" : pad.layers.front())
+        << ccad::escapeJson(pad.padstack.layer_set.empty() ? "" : pad.padstack.layer_set.front())
         << "\", \"pad_type\": \"" << ccad::escapeJson(pad.type)
-        << "\", \"shape\": \"" << ccad::escapeJson(pad.shape) << "\", \"layers\": [";
-    for (std::size_t layer_index = 0; layer_index < pad.layers.size(); ++layer_index) {
+        << "\", \"shape\": \"" << ccad::escapeJson(pad.padstack.copper_props.empty() ? "circle" : padShapeStr(pad.padstack.copper_props.begin()->second.shape.shape)) << "\", \"layers\": [";
+    for (std::size_t layer_index = 0; layer_index < pad.padstack.layer_set.size(); ++layer_index) {
       if (layer_index > 0) out << ", ";
-      out << "\"" << ccad::escapeJson(pad.layers.at(layer_index)) << "\"";
+      out << "\"" << ccad::escapeJson(pad.padstack.layer_set.at(layer_index)) << "\"";
     }
     out << "], \"resolved_layers\": ";
     appendLayerIdsJson(out, resolved_layers);
@@ -1217,16 +1230,16 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
     appendLayerNumbersJson(out, kicad_layer_numbers);
     out << ", \"x_nm\": " << pad.position.x.nanometers
         << ", \"y_nm\": " << pad.position.y.nanometers << ", \"width_nm\": "
-        << pad.size.width.nanometers << ", \"height_nm\": " << pad.size.height.nanometers
+        << (pad.padstack.copper_props.empty() ? 0 : pad.padstack.copper_props.begin()->second.shape.size.width.nanometers) << ", \"height_nm\": " << (pad.padstack.copper_props.empty() ? 0 : pad.padstack.copper_props.begin()->second.shape.size.height.nanometers)
         << ", \"rotation_degrees\": " << pad.rotation_degrees;
-    if (pad.drill.has_value()) {
-      out << ", \"drill_nm\": " << pad.drill->nanometers;
+    if (pad.padstack.drill.size.width.nanometers > 0) {
+      out << ", \"drill_nm\": " << pad.padstack.drill.size.width.nanometers;
     }
-    if (pad.roundrect_rratio.has_value()) {
-      out << ", \"roundrect_rratio\": " << *pad.roundrect_rratio;
+    if (!pad.padstack.copper_props.empty() && pad.padstack.copper_props.begin()->second.shape.roundrect_rratio > 0.0) {
+      out << ", \"roundrect_rratio\": " << pad.padstack.copper_props.begin()->second.shape.roundrect_rratio;
     }
-    if (pad.chamfer_ratio.has_value()) {
-      out << ", \"chamfer_ratio\": " << *pad.chamfer_ratio;
+    if (!pad.padstack.copper_props.empty() && pad.padstack.copper_props.begin()->second.shape.chamfer_ratio > 0.0) {
+      out << ", \"chamfer_ratio\": " << pad.padstack.copper_props.begin()->second.shape.chamfer_ratio;
     }
     appendConnectedItemMetadata(out, pad.net_id, true);
     out << "}" << (i + 1 == board.pads.size() ? "" : ",") << '\n';

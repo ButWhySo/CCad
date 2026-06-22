@@ -90,7 +90,7 @@ void test_placement_expands_kicad_wildcard_pad_layers() {
   ccad::placeFootprint(project, fp, "J1", {ccad::millimeters(20), ccad::millimeters(20)}, 0,
                        "F.Cu");
 
-  const std::vector<std::string>& placed_layers = project.boards[0].pads.at(0).layers;
+  const std::vector<std::string>& placed_layers = project.boards[0].pads.at(0).padstack.layer_set;
   if (std::find(placed_layers.begin(), placed_layers.end(), "*.Cu") != placed_layers.end()) {
     throw std::runtime_error("Placed pad should not retain raw *.Cu wildcard");
   }
@@ -133,7 +133,7 @@ void test_bottom_placement_flips_explicit_front_back_layers_before_expansion() {
   ccad::placeFootprint(project, fp, "U2", {ccad::millimeters(30), ccad::millimeters(30)}, 0,
                        "B.Cu");
 
-  const std::vector<std::string>& placed_layers = project.boards[0].pads.at(0).layers;
+  const std::vector<std::string>& placed_layers = project.boards[0].pads.at(0).padstack.layer_set;
   if (std::find(placed_layers.begin(), placed_layers.end(), "B.Cu") == placed_layers.end() ||
       std::find(placed_layers.begin(), placed_layers.end(), "B.Paste") == placed_layers.end() ||
       std::find(placed_layers.begin(), placed_layers.end(), "B.Mask") == placed_layers.end()) {

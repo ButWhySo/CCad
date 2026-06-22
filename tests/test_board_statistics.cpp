@@ -29,49 +29,49 @@ ccad::Board drillFixtureBoard() {
                                  .component_id = "J1",
                                  .pin_name = "1",
                                  .net_id = "N1",
-                                 .layers = {"*.Cu", "*.Mask"},
                                  .type = "thru_hole",
-                                 .shape = "circle",
                                  .position = {.x = ccad::millimeters(4),
                                               .y = ccad::millimeters(4)},
-                                 .size = {.width = ccad::millimeters(1.6),
-                                          .height = ccad::millimeters(1.6)},
-                                 .drill = ccad::millimeters(0.8)});
+                                 .padstack = ccad::Padstack{
+                                    .layer_set = {"*.Cu", "*.Mask"},
+                                    .copper_props = {{"*", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Circle, .size = {.width = ccad::millimeters(1.6), .height = ccad::millimeters(1.6)}}}}},
+                                    .drill = ccad::PadstackDrillProps{.size = ccad::millimeters(0.8)}
+                                 }});
   board.pads.push_back(ccad::Pad{.id = "J1.2",
                                  .component_id = "J1",
                                  .pin_name = "2",
                                  .net_id = "N2",
-                                 .layers = {"*.Cu", "*.Mask"},
                                  .type = "thru_hole",
-                                 .shape = "circle",
                                  .position = {.x = ccad::millimeters(6),
                                               .y = ccad::millimeters(4)},
-                                 .size = {.width = ccad::millimeters(1.6),
-                                          .height = ccad::millimeters(1.6)},
-                                 .drill = ccad::millimeters(0.8)});
+                                 .padstack = ccad::Padstack{
+                                    .layer_set = {"*.Cu", "*.Mask"},
+                                    .copper_props = {{"*", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Circle, .size = {.width = ccad::millimeters(1.6), .height = ccad::millimeters(1.6)}}}}},
+                                    .drill = ccad::PadstackDrillProps{.size = ccad::millimeters(0.8)}
+                                 }});
   board.pads.push_back(ccad::Pad{.id = "MH1",
                                  .component_id = "MH1",
                                  .pin_name = "",
                                  .net_id = "",
-                                 .layers = {"F.Mask", "B.Mask"},
                                  .type = "np_thru_hole",
-                                 .shape = "circle",
                                  .position = {.x = ccad::millimeters(10),
                                               .y = ccad::millimeters(10)},
-                                 .size = {.width = ccad::millimeters(2.0),
-                                          .height = ccad::millimeters(2.0)},
-                                 .drill = ccad::millimeters(1.1)});
+                                 .padstack = ccad::Padstack{
+                                    .layer_set = {"F.Mask", "B.Mask"},
+                                    .copper_props = {{"*", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Circle, .size = {.width = ccad::millimeters(2.0), .height = ccad::millimeters(2.0)}}}}},
+                                    .drill = ccad::PadstackDrillProps{.size = ccad::millimeters(1.1)}
+                                 }});
   board.pads.push_back(ccad::Pad{.id = "SMD1",
                                  .component_id = "U1",
                                  .pin_name = "1",
                                  .net_id = "N3",
-                                 .layers = {"F.Cu", "F.Paste", "F.Mask"},
                                  .type = "smd",
-                                 .shape = "rect",
                                  .position = {.x = ccad::millimeters(12),
                                               .y = ccad::millimeters(4)},
-                                 .size = {.width = ccad::millimeters(1.2),
-                                          .height = ccad::millimeters(0.8)}});
+                                 .padstack = ccad::Padstack{
+                                    .layer_set = {"F.Cu", "F.Paste", "F.Mask"},
+                                    .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = {.width = ccad::millimeters(1.2), .height = ccad::millimeters(0.8)}}}}}
+                                 }});
   board.vias.push_back(ccad::Via{.id = "V1",
                                  .net_id = "N1",
                                  .position = {.x = ccad::millimeters(8),
@@ -119,7 +119,7 @@ void test_collect_drill_line_items_groups_like_kicad() {
       findDrill(drills, 800000, ccad::DrillLineSource::pad, true);
   require(pth != nullptr, "collects plated through-hole pad drill row");
   require(pth->quantity == 2, "aggregates identical plated through-hole pad drills");
-  require(pth->shape == ccad::DrillShape::round, "through-hole pad drill is round");
+  require(pth->shape == ccad::DrillShape::Circle, "through-hole pad drill is round");
   require(pth->start_layer_id == "F.Cu", "through-hole pad starts on top copper");
   require(pth->stop_layer_id == "B.Cu", "through-hole pad stops on bottom copper");
 
@@ -141,7 +141,7 @@ void test_collect_drill_line_items_groups_like_kicad() {
 void test_drill_line_compare_is_strict_for_boolean_columns() {
   ccad::DrillLineItem plated{.x_size = ccad::millimeters(0.8),
                              .y_size = ccad::millimeters(0.8),
-                             .shape = ccad::DrillShape::round,
+                             .shape = ccad::DrillShape::Circle,
                              .plated = true,
                              .source = ccad::DrillLineSource::pad,
                              .start_layer_id = "F.Cu",

@@ -72,12 +72,12 @@ int main() {
                          .component_id = "U1",
                          .pin_name = "VDD",
                          .net_id = "N_3V3",
-                         .layers = {"F.Cu"},
                          .position = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
                          .rotation_degrees = 90.0,
-                         .size = ccad::Size{.width = ccad::millimeters(1.5),
-                                            .height = ccad::millimeters(1.0)},
-                         .roundrect_rratio = 0.25}},
+                         .padstack = ccad::Padstack{
+                            .layer_set = {"F.Cu"},
+                            .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(1.0)}, .roundrect_rratio = 0.25}}}}
+                         }}},
       .vias = {ccad::Via{.id = "V1",
                          .net_id = "N_3V3",
                          .position = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},
@@ -189,6 +189,9 @@ int main() {
   require(json.find("\"pad_connection\": \"thermal\"") != std::string::npos,
           "board zone pad connection emitted");
   require(json.find("\"component_id\": \"U1\"") != std::string::npos, "net member emitted");
+  if (json.find("\"roundrect_rratio\": 0.25") == std::string::npos) {
+    std::cout << "TEST FAILED! JSON IS:\n" << json << "\n";
+  }
   require(json.find("\"roundrect_rratio\": 0.25") != std::string::npos,
           "pad roundrect ratio emitted");
 
@@ -248,8 +251,8 @@ int main() {
   require(loaded.boards[0].pads.size() == 1, "board pads round trip");
   require(loaded.boards[0].pads.at(0).position.x.nanometers == 5000000, "pad x round trips");
   require(loaded.boards[0].pads.at(0).rotation_degrees == 90.0, "pad rotation round trips");
-  require(loaded.boards[0].pads.at(0).roundrect_rratio.has_value(), "pad roundrect ratio round trips");
-  require(loaded.boards[0].pads.at(0).roundrect_rratio == 0.25, "pad roundrect ratio value round trips");
+  require(!loaded.boards[0].pads.at(0).padstack.copper_props.empty() && loaded.boards[0].pads.at(0).padstack.copper_props.begin()->second.shape.roundrect_rratio > 0, "pad roundrect ratio round trips");
+  require(loaded.boards[0].pads.at(0).padstack.copper_props.begin()->second.shape.roundrect_rratio == 0.25, "pad roundrect ratio value round trips");
   require(loaded.boards[0].vias.size() == 1, "board vias round trip");
   require(loaded.boards[0].vias.at(0).drill.nanometers == 400000, "via drill round trips");
   require(loaded.boards[0].tracks.size() == 1, "board tracks round trip");

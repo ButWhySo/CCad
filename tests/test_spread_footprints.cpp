@@ -20,10 +20,11 @@ ccad::Pad pad(const std::string& id, const std::string& component_id, double x_m
                    .component_id = component_id,
                    .pin_name = "1",
                    .net_id = "",
-                   .layers = {"F.Cu"},
-                   .shape = "rect",
                    .position = {ccad::millimeters(x_mm), ccad::millimeters(y_mm)},
-                   .size = {ccad::millimeters(1), ccad::millimeters(1)}};
+                   .padstack = ccad::Padstack{
+                      .layer_set = {"F.Cu"},
+                      .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = {ccad::millimeters(1), ccad::millimeters(1)}}}}}
+                   }};
 }
 
 void test_spread_moves_components_to_non_overlapping_target_area() {

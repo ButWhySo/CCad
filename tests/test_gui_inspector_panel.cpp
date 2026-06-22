@@ -41,10 +41,21 @@ int main(int argc, char** argv) {
   ccad::Pad pad;
   pad.id = "pad_1";
   pad.position = ccad::Point{.x = ccad::millimeters(10.0), .y = ccad::millimeters(20.0)};
-  pad.size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(2.0)};
   pad.rotation_degrees = 90.0;
   pad.net_id = "GND";
-  pad.layers = {"F.Cu"};
+  pad.padstack.layer_set = {"F.Cu"};
+  pad.padstack.copper_props["top"] = ccad::PadstackCopperLayerProps{
+      .shape = ccad::PadstackShapeProps{
+          .shape = ccad::PadShape::Rectangle,
+          .anchor_shape = ccad::PadShape::Rectangle,
+          .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(2.0)},
+          .offset = ccad::Point{.x = ccad::millimeters(0), .y = ccad::millimeters(0)},
+          .roundrect_rratio = 0.0,
+          .chamfer_ratio = 0.0,
+          .chamfer_positions = 0,
+          .trapezoid_delta_size = ccad::Size{.width = ccad::millimeters(0), .height = ccad::millimeters(0)}
+      }
+  };
   pad.component_id = "U1";
   pad.pin_name = "1";
   board.pads.push_back(pad);

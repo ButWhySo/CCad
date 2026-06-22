@@ -32,7 +32,7 @@ std::vector<std::string> copperLayerIds(const Board& board) {
 }
 
 std::vector<std::string> copperLayersFromPad(const Board& board, const Pad& pad) {
-  const std::vector<std::string> resolved_layers = expandKiCadLayerSet(pad.layers, board);
+  const std::vector<std::string> resolved_layers = expandKiCadLayerSet(pad.padstack.layer_set, board);
   std::vector<std::string> copper_layers;
   for (const std::string& layer_id : resolved_layers) {
     if (isCopperLayer(board, layer_id) &&
@@ -71,16 +71,16 @@ bool isThroughHolePad(const Pad& pad) {
 }
 
 DrillShape drillShapeForPad(const Pad& pad) {
-  const std::string shape = lowerAscii(pad.shape);
-  if (shape.find("slot") != std::string::npos || shape.find("oblong") != std::string::npos) {
-    return DrillShape::slot;
+  if (!pad.padstack.copper_props.empty() && 
+      pad.padstack.copper_props.begin()->second.shape.shape == PadShape::Oval) {
+    return DrillShape::Oval;
   }
-  return DrillShape::round;
+  return DrillShape::Circle;
 }
 
 DrillLineItem padDrillLineItem(const Board& board, const Pad& pad) {
   const std::vector<std::string> copper_layers = copperLayersFromPad(board, pad);
-  const Length drill = pad.drill.value_or(Length{});
+  const Length drill = Length{pad.padstack.drill.size.width.nanometers};
   return DrillLineItem{
       .x_size = drill,
       .y_size = drill,
@@ -98,7 +98,7 @@ DrillLineItem viaDrillLineItem(const Board& board, const Via& via) {
   return DrillLineItem{
       .x_size = via.drill,
       .y_size = via.drill,
-      .shape = DrillShape::round,
+      .shape = DrillShape::Circle,
       .plated = true,
       .source = DrillLineSource::via,
       .start_layer_id = copper_layers.empty() ? "" : copper_layers.front(),
@@ -221,7 +221,7 @@ std::vector<DrillLineItem> collectDrillLineItems(const Board& board) {
   std::vector<DrillLineItem> items;
 
   for (const Pad& pad : board.pads) {
-    if (!pad.drill.has_value() || pad.drill->nanometers <= 0) {
+    if (pad.padstack.drill.size.width.nanometers <= 0) {
       continue;
     }
     appendOrIncrement(items, padDrillLineItem(board, pad));

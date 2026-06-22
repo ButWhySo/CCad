@@ -50,14 +50,13 @@ ccad::Project boardProject() {
                          .component_id = "U1",
                          .pin_name = "1",
                          .net_id = "N1",
-                         .layers = {"F.Cu"},
                          .type = "smd",
-                         .shape = "roundrect",
                          .position = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
                          .rotation_degrees = 90.0,
-                         .size = ccad::Size{.width = ccad::millimeters(1.5),
-                                            .height = ccad::millimeters(1.0)},
-                         .roundrect_rratio = 0.25}},
+                         .padstack = ccad::Padstack{
+                             .layer_set = {"F.Cu"},
+                             .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::RoundRect, .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(1.0)}, .offset = ccad::Point{.x = ccad::millimeters(0), .y = ccad::millimeters(0)}, .roundrect_rratio = 0.25, .chamfer_ratio = 0.0, .chamfer_positions = 0, .trapezoid_delta_size = ccad::Size{.width = ccad::millimeters(0), .height = ccad::millimeters(0)}}}}}
+                         }}},
       .vias = {ccad::Via{.id = "V1",
                          .net_id = "N1",
                          .position = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},

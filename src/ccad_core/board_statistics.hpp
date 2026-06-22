@@ -9,10 +9,6 @@
 
 namespace ccad {
 
-enum class DrillShape {
-  round,
-  slot,
-};
 
 enum class DrillLineSource {
   via,
@@ -33,7 +29,7 @@ enum class DrillLineColumn {
 struct DrillLineItem {
   Length x_size;
   Length y_size;
-  DrillShape shape = DrillShape::round;
+  DrillShape shape = DrillShape::Circle;
   bool plated = false;
   DrillLineSource source = DrillLineSource::pad;
   std::string start_layer_id;

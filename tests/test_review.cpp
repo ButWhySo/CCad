@@ -64,10 +64,11 @@ ccad::Project boardOnlyProject() {
       .component_id = "J1",
       .pin_name = "1",
       .net_id = "N_BOARD",
-      .layers = {"F.Cu"},
       .position = ccad::Point{.x = ccad::millimeters(10), .y = ccad::millimeters(10)},
-      .size = ccad::Size{.width = ccad::millimeters(1.5),
-                         .height = ccad::millimeters(1.0)}});
+      .padstack = ccad::Padstack{
+         .layer_set = {"F.Cu"},
+         .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(1.0)}}}}}
+      }});
   return project;
 }
 
@@ -131,9 +132,11 @@ int main() {
       .component_id = "U1",
       .pin_name = "VDD",
       .net_id = "N_3V3",
-      .layers = {"F.Cu"},
       .position = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
-      .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(1.0)}});
+      .padstack = ccad::Padstack{
+         .layer_set = {"F.Cu"},
+         .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(1.0)}}}}}
+      }});
   const ccad::ProjectReview drc_review = ccad::buildReview(drc_invalid);
   require(drc_review.pad_count == 1, "review counts pads");
   require(drc_review.keepout_count == 1, "review counts keepouts");
@@ -176,9 +179,11 @@ int main() {
       .component_id = "U1",
       .pin_name = "VDD",
       .net_id = "N_3V3",
-      .layers = {"F.Cu"},
       .position = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
-      .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(1.0)}});
+      .padstack = ccad::Padstack{
+         .layer_set = {"F.Cu"},
+         .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(1.0)}}}}}
+      }});
   route_review_project.boards[0].vias.push_back(ccad::Via{
       .id = "V1",
       .net_id = "N_3V3",

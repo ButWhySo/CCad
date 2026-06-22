@@ -27,11 +27,12 @@ ccad::Board makeContainerFixture() {
                                  .component_id = "U1",
                                  .pin_name = "1",
                                  .net_id = "N1",
-                                 .layers = {"F.Cu"},
                                  .position = {.x = ccad::millimeters(3),
                                               .y = ccad::millimeters(4)},
-                                 .size = {.width = ccad::millimeters(1),
-                                          .height = ccad::millimeters(1)}});
+                                 .padstack = ccad::Padstack{
+                                    .layer_set = {"F.Cu"},
+                                    .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.size = {.width = ccad::millimeters(1), .height = ccad::millimeters(1)}}}}}
+                                 }});
   board.vias.push_back(ccad::Via{.id = "V1",
                                  .net_id = "N1",
                                  .position = {.x = ccad::millimeters(5),

@@ -92,18 +92,23 @@ void SelectionInspectorPanel::renderSelection(const std::optional<ccad::Board>& 
         setRow("Component ID", QString::fromStdString(pad.component_id));
         setRow("Pin Name", QString::fromStdString(pad.pin_name));
         setRow("Net", pad.net_id.empty() ? "--" : QString::fromStdString(pad.net_id));
-        setRow("Layer", pad.layers.empty() ? "--" : QString::fromStdString(pad.layers.front()));
+        setRow("Layer", pad.padstack.layer_set.empty() ? "--" : QString::fromStdString(pad.padstack.layer_set.front()));
         setRow("Position X", formatLength(pad.position.x));
         setRow("Position Y", formatLength(pad.position.y));
 
+        ccad::Size pad_size = ccad::Size{.width = ccad::millimeters(0), .height = ccad::millimeters(0)};
+        if (!pad.padstack.copper_props.empty()) {
+            pad_size = pad.padstack.copper_props.begin()->second.shape.size;
+        }
+
         auto* width_input = new QLineEdit(this);
         width_input->setObjectName("padWidthInput");
-        width_input->setText(QString::number(toMm(pad.size.width), 'f', 4));
+        width_input->setText(QString::number(toMm(pad_size.width), 'f', 4));
         form_->addRow("Width (mm):", width_input);
 
         auto* height_input = new QLineEdit(this);
         height_input->setObjectName("padHeightInput");
-        height_input->setText(QString::number(toMm(pad.size.height), 'f', 4));
+        height_input->setText(QString::number(toMm(pad_size.height), 'f', 4));
         form_->addRow("Height (mm):", height_input);
 
         auto* rotation_input = new QLineEdit(this);

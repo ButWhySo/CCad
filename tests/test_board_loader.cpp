@@ -37,13 +37,13 @@ ccad::Project fixtureProject() {
                                  .component_id = "U1",
                                  .pin_name = "1",
                                  .net_id = "N1",
-                                 .layers = {"F.Cu"},
                                  .type = "smd",
-                                 .shape = "rect",
                                  .position = {.x = ccad::millimeters(5),
                                               .y = ccad::millimeters(6)},
-                                 .size = {.width = ccad::millimeters(1.5),
-                                          .height = ccad::millimeters(1.0)}});
+                                 .padstack = ccad::Padstack{
+                                    .layer_set = {"F.Cu"},
+                                    .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = {.width = ccad::millimeters(1.5), .height = ccad::millimeters(1.0)}}}}}
+                                 }});
   board.vias.push_back(ccad::Via{.id = "V1",
                                  .net_id = "N1",
                                  .position = {.x = ccad::millimeters(8),

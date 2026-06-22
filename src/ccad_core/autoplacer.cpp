@@ -98,10 +98,11 @@ AutoPlacementPlan planFootprintAutoPlacement(
   placement_matrix.configure(board.outline, grid_step, 2);
 
   for (const Pad& existing_pad : board.pads) {
-    if (!layerMatches(existing_pad.layers, layer_id)) {
+    if (!layerMatches(existing_pad.padstack.layer_set, layer_id)) {
       continue;
     }
-    const Rect existing_area = nmToRect(padRect(existing_pad.position, existing_pad.size));
+    const ccad::Size existing_size = existing_pad.padstack.copper_props.empty() ? ccad::Size{} : existing_pad.padstack.copper_props.begin()->second.shape.size;
+    const Rect existing_area = nmToRect(padRect(existing_pad.position, existing_size));
     placement_matrix.traceFilledRectangle(existing_area, selected_sides, 0x02,
                                           AutorouterCellOperation::Or);
     placement_matrix.createKeepoutCostRectangle(existing_area, grid_step, 120, selected_sides);
@@ -147,10 +148,11 @@ AutoPlacementPlan planFootprintAutoPlacement(
             placement_matrix.distanceCostInRectangle(candidate_area, selected_sides));
 
         for (const Pad& existing_pad : board.pads) {
-          if (!layerMatches(existing_pad.layers, layer_id)) {
+          if (!layerMatches(existing_pad.padstack.layer_set, layer_id)) {
             continue;
           }
-          if (overlaps(candidate_rect, padRect(existing_pad.position, existing_pad.size))) {
+          const ccad::Size existing_size = existing_pad.padstack.copper_props.empty() ? ccad::Size{} : existing_pad.padstack.copper_props.begin()->second.shape.size;
+          if (overlaps(candidate_rect, padRect(existing_pad.position, existing_size))) {
             rejected = true;
             break;
           }
@@ -179,7 +181,7 @@ AutoPlacementPlan planFootprintAutoPlacement(
 
         double nearest = std::numeric_limits<double>::infinity();
         for (const Pad& existing_pad : board.pads) {
-          if (existing_pad.net_id != net_it->second || !layerMatches(existing_pad.layers, layer_id)) {
+          if (existing_pad.net_id != net_it->second || !layerMatches(existing_pad.padstack.layer_set, layer_id)) {
             continue;
           }
           nearest = std::min(nearest, distanceNm(candidate_center, existing_pad.position));

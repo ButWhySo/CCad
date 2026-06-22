@@ -178,29 +178,67 @@ void placeFootprint(Project& project, const Footprint& footprint, const std::str
       pad_layers = expandKiCadLayerSet(pad_layers, board);
     }
 
-    board.pads.push_back(Pad{
+    Pad pad{
         .id = component_id + "." + footprint_pad.number,
         .component_id = component_id,
         .pin_name = footprint_pad.number,
         .net_id = netIdForPin(project, component_id, footprint_pad.number),
-        .layers = pad_layers,
         .type = footprint_pad.type,
-        .shape = footprint_pad.shape,
         .position = placed_position,
         .rotation_degrees = footprint_pad.rotation_degrees + rotation_deg,
-        .size = footprint_pad.size,
-        .drill = footprint_pad.drill,
-        .secondary_drill = footprint_pad.secondary_drill,
-        .tertiary_drill = footprint_pad.tertiary_drill,
-        .backdrilled = footprint_pad.backdrilled,
-        .front_post_machining = footprint_pad.front_post_machining,
-        .back_post_machining = footprint_pad.back_post_machining,
         .pin_type = footprint_pad.pin_type,
         .pad_to_die_length = footprint_pad.pad_to_die_length,
         .pad_to_die_delay = footprint_pad.pad_to_die_delay,
-        .roundrect_rratio = footprint_pad.roundrect_rratio,
-        .chamfer_ratio = footprint_pad.chamfer_ratio,
-    });
+        .teardrops_enabled = false,
+        .locked = false,
+        .padstack = Padstack{},
+    };
+    pad.padstack.layer_set = pad_layers;
+    pad.padstack.drill.size.width = footprint_pad.drill.value_or(Length{});
+    pad.padstack.drill.size.height = footprint_pad.drill.value_or(Length{});
+    if (footprint_pad.secondary_drill.has_value()) {
+        PadstackDrillProps drill_props{};
+        drill_props.size.width = *footprint_pad.secondary_drill;
+        drill_props.size.height = *footprint_pad.secondary_drill;
+        pad.padstack.secondary_drill = drill_props;
+    }
+    if (footprint_pad.tertiary_drill.has_value()) {
+        PadstackDrillProps drill_props{};
+        drill_props.size.width = *footprint_pad.tertiary_drill;
+        drill_props.size.height = *footprint_pad.tertiary_drill;
+        pad.padstack.tertiary_drill = drill_props;
+    }
+    if (footprint_pad.backdrilled) {
+        pad.padstack.back_post_machining.mode = "backdrill";
+    }
+    if (footprint_pad.front_post_machining.has_value()) {
+        pad.padstack.front_post_machining.mode = "mill";
+        pad.padstack.front_post_machining.size = *footprint_pad.front_post_machining;
+    }
+    if (footprint_pad.back_post_machining.has_value()) {
+        pad.padstack.back_post_machining.mode = "mill";
+        pad.padstack.back_post_machining.size = *footprint_pad.back_post_machining;
+    }
+    
+    PadShape pad_shape = PadShape::Circle;
+    if (footprint_pad.shape == "rect") pad_shape = PadShape::Rectangle;
+    else if (footprint_pad.shape == "oval") pad_shape = PadShape::Oval;
+    else if (footprint_pad.shape == "trapezoid") pad_shape = PadShape::Trapezoid;
+    else if (footprint_pad.shape == "roundrect") pad_shape = PadShape::RoundRect;
+    else if (footprint_pad.shape == "chamfered_rect") pad_shape = PadShape::ChamferedRect;
+    else if (footprint_pad.shape == "custom") pad_shape = PadShape::Custom;
+    
+    PadstackShapeProps shape_props{};
+    shape_props.shape = pad_shape;
+    shape_props.size = footprint_pad.size;
+    shape_props.roundrect_rratio = footprint_pad.roundrect_rratio.value_or(0.0);
+    shape_props.chamfer_ratio = footprint_pad.chamfer_ratio.value_or(0.0);
+    
+    PadstackCopperLayerProps layer_props{};
+    layer_props.shape = shape_props;
+    pad.padstack.copper_props["top"] = layer_props;
+    
+    board.pads.push_back(pad);
   }
 
   board.footprints.push_back(BoardFootprint{

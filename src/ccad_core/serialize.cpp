@@ -4,6 +4,7 @@
 #include "ccad_core/symbol_json_reader.hpp"
 
 #include <cctype>
+#include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
@@ -578,6 +579,100 @@ class JsonReader {
     }
   }
 
+
+  Padstack readPadstack() {
+    Padstack ps;
+    expect('{');
+    if (!consume('}')) {
+      while (true) {
+        std::string key = readString();
+        expect(':');
+        if (key == "layer_set") {
+          expect('[');
+          if (!consume(']')) {
+            while (true) {
+              ps.layer_set.push_back(readString());
+              if (consume(']')) break;
+              expect(',');
+            }
+          }
+        } else if (key == "copper_props") {
+          expect('{');
+          if (!consume('}')) {
+            while (true) {
+              std::string layer_name = readString();
+              expect(':');
+              expect('{');
+              PadstackCopperLayerProps cp;
+              if (!consume('}')) {
+                while (true) {
+                  std::string cp_key = readString();
+                  expect(':');
+                  if (cp_key == "shape") {
+                    expect('{');
+                    if (!consume('}')) {
+                      while (true) {
+                        std::string sp_key = readString();
+                        expect(':');
+                        if (sp_key == "shape") {
+                          std::string s = readString();
+                          if (s == "rect") cp.shape.shape = PadShape::Rectangle;
+                          else if (s == "oval") cp.shape.shape = PadShape::Oval;
+                          else if (s == "trapezoid") cp.shape.shape = PadShape::Trapezoid;
+                          else if (s == "roundrect") cp.shape.shape = PadShape::RoundRect;
+                          else if (s == "chamfered_rect") cp.shape.shape = PadShape::ChamferedRect;
+                          else if (s == "custom") cp.shape.shape = PadShape::Custom;
+                          else cp.shape.shape = PadShape::Circle;
+                        } else if (sp_key == "size") {
+                          cp.shape.size = readSize();
+                        } else if (sp_key == "roundrect_rratio") {
+                          cp.shape.roundrect_rratio = readDouble();
+                        } else if (sp_key == "chamfer_ratio") {
+                          cp.shape.chamfer_ratio = readDouble();
+                        } else {
+                          readRawJsonObject();
+                        }
+                        if (consume('}')) break;
+                        expect(',');
+                      }
+                    }
+                  } else {
+                    readRawJsonObject();
+                  }
+                  if (consume('}')) break;
+                  expect(',');
+                }
+              }
+              ps.copper_props[layer_name] = cp;
+              if (consume('}')) break;
+              expect(',');
+            }
+          }
+        } else if (key == "drill") {
+          expect('{');
+          if (!consume('}')) {
+            while (true) {
+              std::string dr_key = readString();
+              expect(':');
+              if (dr_key == "size") {
+                ps.drill.size = readSize();
+              } else {
+                readRawJsonObject();
+              }
+              if (consume('}')) break;
+              expect(',');
+            }
+          }
+        } else {
+          readRawJsonObject();
+        }
+        if (consume('}')) break;
+        expect(',');
+      }
+    }
+    return ps;
+  }
+
   std::vector<Pad> readPads() {
     std::vector<Pad> pads;
     expect('[');
@@ -599,44 +694,24 @@ class JsonReader {
             pad.pin_name = readString();
           } else if (key == "net_id") {
             pad.net_id = readString();
-          } else if (key == "layer_id") {
-            pad.layers = {readString()};
-          } else if (key == "layers") {
-            pad.layers = readStringArray();
           } else if (key == "type") {
             pad.type = readString();
-          } else if (key == "shape") {
-            pad.shape = readString();
           } else if (key == "position") {
             pad.position = readPoint();
           } else if (key == "rotation_degrees") {
             pad.rotation_degrees = readDouble();
-          } else if (key == "size") {
-            pad.size = readSize();
-          } else if (key == "drill_nm") {
-            pad.drill = nanometers(readInt64());
-          } else if (key == "secondary_drill_nm") {
-            pad.secondary_drill = nanometers(readInt64());
-          } else if (key == "tertiary_drill_nm") {
-            pad.tertiary_drill = nanometers(readInt64());
-          } else if (key == "backdrilled") {
-            pad.backdrilled = readBool();
-          } else if (key == "front_post_machining_nm") {
-            pad.front_post_machining = nanometers(readInt64());
-          } else if (key == "back_post_machining_nm") {
-            pad.back_post_machining = nanometers(readInt64());
           } else if (key == "pin_type") {
             pad.pin_type = readString();
           } else if (key == "pad_to_die_length_nm") {
             pad.pad_to_die_length = nanometers(readInt64());
           } else if (key == "pad_to_die_delay") {
             pad.pad_to_die_delay = readDouble();
-          } else if (key == "roundrect_rratio") {
-            pad.roundrect_rratio = readDouble();
-          } else if (key == "chamfer_ratio") {
-            pad.chamfer_ratio = readDouble();
+          } else if (key == "teardrops_enabled") {
+            pad.teardrops_enabled = readBool();
           } else if (key == "locked") {
             pad.locked = readBool();
+          } else if (key == "padstack") {
+             pad.padstack = readPadstack();
           } else {
             throw std::runtime_error("unknown pad key: " + key);
           }
@@ -1679,6 +1754,49 @@ class JsonReader {
 
 }  // namespace
 
+
+
+static void writePadstack(std::ostringstream& out, const int indent, const Padstack& padstack) {
+  const std::string pad(indent, ' ');
+  out << "{\n";
+  
+  out << pad << "  \"layer_set\": [";
+  for (std::size_t i = 0; i < padstack.layer_set.size(); ++i) {
+    out << "\"" << escapeJson(padstack.layer_set[i]) << "\"" << (i + 1 == padstack.layer_set.size() ? "" : ", ");
+  }
+  out << "],\n";
+
+  out << pad << "  \"copper_props\": {\n";
+  std::size_t c = 0;
+  for (auto it = padstack.copper_props.begin(); it != padstack.copper_props.end(); ++it, ++c) {
+    out << pad << "    \"" << escapeJson(it->first) << "\": {\n";
+    out << pad << "      \"shape\": {\n";
+    const auto& sp = it->second.shape;
+    std::string shape_str = "circle";
+    if (sp.shape == PadShape::Rectangle) shape_str = "rect";
+    else if (sp.shape == PadShape::Oval) shape_str = "oval";
+    else if (sp.shape == PadShape::Trapezoid) shape_str = "trapezoid";
+    else if (sp.shape == PadShape::RoundRect) shape_str = "roundrect";
+    else if (sp.shape == PadShape::ChamferedRect) shape_str = "chamfered_rect";
+    else if (sp.shape == PadShape::Custom) shape_str = "custom";
+    out << pad << "        \"shape\": \"" << shape_str << "\",\n";
+    out << pad << "        \"size\": ";
+    writeSize(out, indent + 8, sp.size);
+    out << ",\n";
+    out << pad << "        \"roundrect_rratio\": " << sp.roundrect_rratio << ",\n";
+    out << pad << "        \"chamfer_ratio\": " << sp.chamfer_ratio << "\n";
+    out << pad << "      }\n";
+    out << pad << "    }" << (c + 1 == padstack.copper_props.size() ? "" : ",") << "\n";
+  }
+  out << pad << "  },\n";
+
+  out << pad << "  \"drill\": {\n";
+  out << pad << "    \"size\": ";
+  writeSize(out, indent + 4, padstack.drill.size);
+  out << "\n";
+  out << pad << "  }\n";
+  out << pad << "}";
+}
 std::string dumpProjectJson(const Project& project) {
   std::ostringstream out;
   out << "{\n";
@@ -1830,38 +1948,11 @@ std::string dumpProjectJson(const Project& project) {
       writeField(out, 8, "component_id", pad.component_id);
       writeField(out, 8, "pin_name", pad.pin_name);
       writeField(out, 8, "net_id", pad.net_id);
-      out << "        \"layers\": [\n";
-      for (std::size_t j = 0; j < pad.layers.size(); ++j) {
-        out << "          \"" << escapeJson(pad.layers.at(j)) << "\""
-            << (j + 1 == pad.layers.size() ? "" : ",") << '\n';
-      }
-      out << "        ],\n";
       writeField(out, 8, "type", pad.type);
-      writeField(out, 8, "shape", pad.shape);
       out << "        \"position\": ";
       writePoint(out, 0, pad.position);
       out << ",\n";
-      out << "        \"rotation_degrees\": " << pad.rotation_degrees << ",\n";
-      out << "        \"size\": ";
-      writeSize(out, 0, pad.size);
-      if (pad.drill.has_value()) {
-        out << ",\n        \"drill_nm\": " << pad.drill->nanometers;
-      }
-      if (pad.secondary_drill.has_value()) {
-        out << ",\n        \"secondary_drill_nm\": " << pad.secondary_drill->nanometers;
-      }
-      if (pad.tertiary_drill.has_value()) {
-        out << ",\n        \"tertiary_drill_nm\": " << pad.tertiary_drill->nanometers;
-      }
-      if (pad.backdrilled) {
-        out << ",\n        \"backdrilled\": true";
-      }
-      if (pad.front_post_machining.has_value()) {
-        out << ",\n        \"front_post_machining_nm\": " << pad.front_post_machining->nanometers;
-      }
-      if (pad.back_post_machining.has_value()) {
-        out << ",\n        \"back_post_machining_nm\": " << pad.back_post_machining->nanometers;
-      }
+      out << "        \"rotation_degrees\": " << pad.rotation_degrees;
       if (!pad.pin_type.empty()) {
         out << ",\n        \"pin_type\": \"" << escapeJson(pad.pin_type) << "\"";
       }
@@ -1871,15 +1962,14 @@ std::string dumpProjectJson(const Project& project) {
       if (pad.pad_to_die_delay.has_value()) {
         out << ",\n        \"pad_to_die_delay\": " << *pad.pad_to_die_delay;
       }
-      if (pad.roundrect_rratio.has_value()) {
-        out << ",\n        \"roundrect_rratio\": " << *pad.roundrect_rratio;
-      }
-      if (pad.chamfer_ratio.has_value()) {
-        out << ",\n        \"chamfer_ratio\": " << *pad.chamfer_ratio;
+      if (pad.teardrops_enabled) {
+        out << ",\n        \"teardrops_enabled\": true";
       }
       if (pad.locked) {
         out << ",\n        \"locked\": true";
       }
+      out << ",\n        \"padstack\": ";
+      writePadstack(out, 8, pad.padstack);
       out << "\n";
       out << "      }" << (i + 1 == board.pads.size() ? "" : ",") << '\n';
     }

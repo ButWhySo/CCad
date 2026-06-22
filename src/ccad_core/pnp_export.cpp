@@ -61,7 +61,7 @@ std::string exportToPnpCsv(const Project& project) {
           if (py > max_y) max_y = py;
 
           bool on_bottom = false;
-          for (const auto& l : pad->layers) {
+          for (const auto& l : pad->padstack.layer_set) {
             if (l.starts_with("B.")) on_bottom = true;
           }
           if (on_bottom) {

@@ -2675,8 +2675,10 @@ ReviewWindow::ReviewWindow() {
     pushUndoSnapshot();
     for (auto& pad : project_cache_.boards[0].pads) {
       if (QString::fromStdString(pad.id) == id) {
-        pad.size.width = ccad::millimeters(width_mm);
-        pad.size.height = ccad::millimeters(height_mm);
+        if (!pad.padstack.copper_props.empty()) {
+            pad.padstack.copper_props.begin()->second.shape.size.width = ccad::millimeters(width_mm);
+            pad.padstack.copper_props.begin()->second.shape.size.height = ccad::millimeters(height_mm);
+        }
         pad.rotation_degrees = rotation_deg;
         break;
       }
@@ -8205,22 +8207,38 @@ void ReviewWindow::enterMoveFootprintMode(const std::string& component_id) {
     if (pad.component_id != component_id) {
       continue;
     }
-    const double w = pad.size.width.nanometers / 1e6;
-    const double h = pad.size.height.nanometers / 1e6;
+    ccad::Size pad_size = ccad::Size{.width = ccad::millimeters(0), .height = ccad::millimeters(0)};
+    std::string pad_shape = "rect";
+    double roundrect_rratio = 0.0;
+    double chamfer_ratio = 0.0;
+    if (!pad.padstack.copper_props.empty()) {
+        pad_size = pad.padstack.copper_props.begin()->second.shape.size;
+        auto shape_enum = pad.padstack.copper_props.begin()->second.shape.shape;
+        if (shape_enum == ccad::PadShape::Circle) pad_shape = "circle";
+        else if (shape_enum == ccad::PadShape::Rectangle) pad_shape = "rect";
+        else if (shape_enum == ccad::PadShape::RoundRect) pad_shape = "roundrect";
+        else if (shape_enum == ccad::PadShape::Oval) pad_shape = "oval";
+        else if (shape_enum == ccad::PadShape::ChamferedRect) pad_shape = "chamfered_rect";
+        else if (shape_enum == ccad::PadShape::Trapezoid) pad_shape = "trapezoid";
+        roundrect_rratio = pad.padstack.copper_props.begin()->second.shape.roundrect_rratio;
+        chamfer_ratio = pad.padstack.copper_props.begin()->second.shape.chamfer_ratio;
+    }
+    const double w = pad_size.width.nanometers / 1e6;
+    const double h = pad_size.height.nanometers / 1e6;
     const double x = pad.position.x.nanometers / 1e6;
     const double y = pad.position.y.nanometers / 1e6;
     const QPointF scene_center = boardPositionToScene(project_cache_.boards[0], x, y);
     auto* item = canvas_scene_->addPath(padPreviewPath(scene_center.x() / 10.0,
                                                        scene_center.y() / 10.0, w, h,
-                                                       pad.shape, pad.rotation_degrees,
-                                                       pad.roundrect_rratio, pad.chamfer_ratio),
+                                                       pad_shape, pad.rotation_degrees,
+                                                       roundrect_rratio, chamfer_ratio),
                                         QPen(QColor(100, 180, 80), 1.0),
                                         QBrush(QColor(100, 255, 100, 150)));
     item->setZValue(1000);
     interaction_ghost_items_.push_back(item);
-    if (pad.drill.has_value()) {
+    if (pad.padstack.drill.size.width.nanometers > 0) {
       constexpr double scale = 10.0;
-      const double drill = pad.drill->nanometers / 1e6 * scale;
+      const double drill = pad.padstack.drill.size.width.nanometers / 1e6 * scale;
       auto* drill_item = canvas_scene_->addEllipse(scene_center.x() - (drill / 2.0),
                                                    scene_center.y() - (drill / 2.0), drill, drill,
                                                    QPen(Qt::NoPen), QBrush(QColor("#07111f")));

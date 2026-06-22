@@ -278,8 +278,9 @@ std::vector<Point> padCorners(const Pad& pad) {
   const long double sine = std::sin(radians);
   const long double center_x = static_cast<long double>(pad.position.x.nanometers);
   const long double center_y = static_cast<long double>(pad.position.y.nanometers);
-  const long double half_width = static_cast<long double>(pad.size.width.nanometers) / 2.0L;
-  const long double half_height = static_cast<long double>(pad.size.height.nanometers) / 2.0L;
+  const Size psize = pad.padstack.copper_props.empty() ? ccad::Size{} : pad.padstack.copper_props.begin()->second.shape.size;
+  const long double half_width = static_cast<long double>(psize.width.nanometers) / 2.0L;
+  const long double half_height = static_cast<long double>(psize.height.nanometers) / 2.0L;
 
   std::vector<Point> corners;
   corners.reserve(4);
@@ -455,15 +456,15 @@ bool shareCopperLayer(const Board& board, const std::string& left_layer,
 }
 
 bool padSharesCopperLayer(const Board& board, const Pad& pad, const std::string& layer) {
-  for (const std::string& l : pad.layers) {
+  for (const std::string& l : pad.padstack.layer_set) {
     if (shareCopperLayer(board, l, layer)) return true;
   }
   return false;
 }
 
 bool padsShareCopperLayer(const Board& board, const Pad& p1, const Pad& p2) {
-  for (const std::string& l1 : p1.layers) {
-    for (const std::string& l2 : p2.layers) {
+  for (const std::string& l1 : p1.padstack.layer_set) {
+    for (const std::string& l2 : p2.padstack.layer_set) {
       if (shareCopperLayer(board, l1, l2)) return true;
     }
   }
@@ -471,7 +472,7 @@ bool padsShareCopperLayer(const Board& board, const Pad& p1, const Pad& p2) {
 }
 
 bool padOnCopperLayer(const Board& board, const Pad& pad) {
-  for (const std::string& l : pad.layers) {
+  for (const std::string& l : pad.padstack.layer_set) {
     if (l.starts_with("*.") || isCopperLayer(board, l)) return true;
   }
   return false;
@@ -479,7 +480,8 @@ bool padOnCopperLayer(const Board& board, const Pad& pad) {
 
 
 bool hasValidPadGeometry(const Pad& pad) {
-  return isPositive(pad.size.width) && isPositive(pad.size.height);
+  const Size psize = pad.padstack.copper_props.empty() ? ccad::Size{} : pad.padstack.copper_props.begin()->second.shape.size;
+  return isPositive(psize.width) && isPositive(psize.height);
 }
 
 bool hasValidTrackGeometry(const TrackSegment& track) { return isPositive(track.width); }
@@ -560,7 +562,7 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
       }
     }
     bool has_unknown = false;
-    for (const std::string& l : pad.layers) {
+    for (const std::string& l : pad.padstack.layer_set) {
       if (!l.starts_with("*.") && !hasLayer(board, l)) has_unknown = true;
     }
     if (has_unknown) {
@@ -574,7 +576,8 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
       diagnostics.push_back(
           makeDiagnostic("PAD_OUTSIDE_BOARD", "Pad position is outside board outline", pad.id));
     }
-    const bool pad_size_positive = isPositive(pad.size.width) && isPositive(pad.size.height);
+    const Size psize = pad.padstack.copper_props.empty() ? ccad::Size{} : pad.padstack.copper_props.begin()->second.shape.size;
+    const bool pad_size_positive = isPositive(psize.width) && isPositive(psize.height);
     if (!pad_size_positive) {
       diagnostics.push_back(
           makeDiagnostic("INVALID_PAD_SIZE", "Pad width and height must be positive", pad.id));

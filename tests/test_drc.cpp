@@ -35,12 +35,12 @@ ccad::Project validBoardProject() {
                          .component_id = "U1",
                          .pin_name = "1",
                          .net_id = "N1",
-                         .layers = {"F.Cu"},
                          .type = "smd",
-                         .shape = "rect",
                          .position = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(6)},
-                         .size = ccad::Size{.width = ccad::millimeters(1.5),
-                                            .height = ccad::millimeters(1.0)}}},
+                         .padstack = ccad::Padstack{
+                            .layer_set = {"F.Cu"},
+                            .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(1.0)}}}}}
+                         }}},
       .vias = {ccad::Via{.id = "V1",
                          .net_id = "N1",
                          .position = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},
@@ -209,7 +209,7 @@ int main() {
   ccad::Project non_copper_pad_layer = validBoardProject();
   non_copper_pad_layer.boards[0].layers.push_back(
       ccad::Layer{.id = "F.SilkS", .name = "Front silkscreen", .kind = "silkscreen"});
-  non_copper_pad_layer.boards[0].pads.at(0).layers = {"F.SilkS"};
+  non_copper_pad_layer.boards[0].pads.at(0).padstack.layer_set = {"F.SilkS"};
   require(hasCode(ccad::runDrc(non_copper_pad_layer), "PAD_NON_COPPER_LAYER"),
           "drc reports pad on non-copper layer");
 
@@ -720,7 +720,7 @@ int main() {
           "drc reports pad in keepout");
 
   ccad::Project invalid_pad_size_in_keepout = keepout_pad;
-  invalid_pad_size_in_keepout.boards[0].pads.at(0).size.width = ccad::nanometers(0);
+  invalid_pad_size_in_keepout.boards[0].pads.at(0).padstack.copper_props["top"].shape.size.width = ccad::nanometers(0);
   require(hasCode(ccad::runDrc(invalid_pad_size_in_keepout), "INVALID_PAD_SIZE"),
           "drc reports invalid pad size before keepout geometry");
   require(!hasCode(ccad::runDrc(invalid_pad_size_in_keepout), "PAD_IN_KEEPOUT"),
@@ -729,7 +729,7 @@ int main() {
   ccad::Project keepout_pad_geometry = validBoardProject();
   keepout_pad_geometry.boards[0].pads.at(0).position =
       ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(5)};
-  keepout_pad_geometry.boards[0].pads.at(0).size =
+  keepout_pad_geometry.boards[0].pads.at(0).padstack.copper_props["top"].shape.size =
       ccad::Size{.width = ccad::millimeters(2.0), .height = ccad::millimeters(2.0)};
   keepout_pad_geometry.boards[0].keepouts.push_back(ccad::Keepout{
       .id = "K_PAD_GEOM",
@@ -956,11 +956,12 @@ int main() {
       .component_id = "U2",
       .pin_name = "1",
       .net_id = "N2",
-      .layers = {"F.Cu"},
       .type = "smd",
-      .shape = "rect",
       .position = ccad::Point{.x = ccad::millimeters(6.35), .y = ccad::millimeters(6)},
-      .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(1.0)}});
+      .padstack = ccad::Padstack{
+         .layer_set = {"F.Cu"},
+         .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.shape = ccad::PadShape::Rectangle, .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(1.0)}}}}}
+      }});
   require(hasDiagnosticForObject(ccad::runDrc(pad_clearance), "COPPER_CLEARANCE", "P2"),
           "drc reports different-net pads closer than configured clearance");
   require(hasDiagnosticMessageContaining(ccad::runDrc(pad_clearance), "COPPER_CLEARANCE",
@@ -969,7 +970,7 @@ int main() {
 
   ccad::Project invalid_pad_size_clearance = pad_clearance;
   invalid_pad_size_clearance.boards[0].pads.back().position.x = ccad::millimeters(5.85);
-  invalid_pad_size_clearance.boards[0].pads.back().size.width = ccad::nanometers(0);
+  invalid_pad_size_clearance.boards[0].pads.back().padstack.copper_props["top"].shape.size.width = ccad::nanometers(0);
   require(hasCode(ccad::runDrc(invalid_pad_size_clearance), "INVALID_PAD_SIZE"),
           "drc reports invalid pad size before clearance geometry");
   require(!hasDiagnosticForObject(ccad::runDrc(invalid_pad_size_clearance), "COPPER_CLEARANCE",
@@ -977,7 +978,7 @@ int main() {
           "drc does not report copper clearance for invalid pad geometry");
 
   ccad::Project cross_layer_pad_clearance = pad_clearance;
-  cross_layer_pad_clearance.boards[0].pads.back().layers = {"B.Cu"};
+  cross_layer_pad_clearance.boards[0].pads.back().padstack.layer_set = {"B.Cu"};
   require(!hasDiagnosticForObject(ccad::runDrc(cross_layer_pad_clearance), "COPPER_CLEARANCE",
                                   "P2"),
           "drc allows different-net pads to overlap on different copper layers");

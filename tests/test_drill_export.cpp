@@ -18,7 +18,9 @@ int main() {
       .component_id = "U1",
       .pin_name = "1",
       .position = ccad::Point{.x = ccad::millimeters(25.4), .y = ccad::millimeters(50.8)},
-      .drill = ccad::millimeters(1.0)
+      .padstack = ccad::Padstack{
+         .drill = ccad::PadstackDrillProps{.size = ccad::millimeters(1.0)}
+      }
   });
 
   // Via with drill 0.4mm
