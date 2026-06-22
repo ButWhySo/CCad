@@ -304,12 +304,16 @@ class JsonReader {
           board.graphics = readBoardGraphics();
         } else if (key == "texts") {
           board.texts = readBoardTexts();
+        } else if (key == "dimensions") {
+          board.dimensions = readBoardDimensions();
         } else if (key == "barcodes") {
           board.barcodes = readBoardBarcodes();
         } else if (key == "targets") {
           board.targets = readBoardTargets();
         } else if (key == "zones") {
           board.zones = readBoardZones();
+        } else if (key == "groups") {
+          board.groups = readBoardGroups();
         } else if (key == "route_requests") {
           board.route_requests = readRouteRequests();
         } else {
@@ -1023,6 +1027,111 @@ class JsonReader {
     }
   }
 
+  std::vector<BoardDimension> readBoardDimensions() {
+    std::vector<BoardDimension> dimensions;
+    expect('[');
+    if (consume(']')) {
+      return dimensions;
+    }
+    while (true) {
+      BoardDimension dim;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            dim.id = readString();
+          } else if (key == "layer_id") {
+            dim.layer_id = readString();
+          } else if (key == "kind") {
+            dim.kind = readString();
+          } else if (key == "text") {
+            dim.text = readString();
+          } else if (key == "start") {
+            dim.start = readPoint();
+          } else if (key == "end") {
+            dim.end = readPoint();
+          } else if (key == "text_position") {
+            dim.text_position = readPoint();
+          } else if (key == "locked") {
+            dim.locked = readBool();
+          } else {
+            throw std::runtime_error("unknown board dimension key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+          if (peek('}')) {
+            throw std::runtime_error("trailing comma in board dimension object");
+          }
+        }
+      }
+      dimensions.push_back(dim);
+      if (consume(']')) {
+        return dimensions;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in board dimensions array");
+      }
+    }
+  }
+
+  std::vector<BoardGroup> readBoardGroups() {
+    std::vector<BoardGroup> groups;
+    expect('[');
+    if (consume(']')) {
+      return groups;
+    }
+    while (true) {
+      BoardGroup group;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            group.id = readString();
+          } else if (key == "name") {
+            group.name = readString();
+          } else if (key == "members") {
+            expect('[');
+            if (!consume(']')) {
+              while (true) {
+                group.members.push_back(readString());
+                if (consume(']')) {
+                  break;
+                }
+                expect(',');
+                if (peek(']')) {
+                  throw std::runtime_error("trailing comma in board group members array");
+                }
+              }
+            }
+          } else {
+            throw std::runtime_error("unknown board group key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+          if (peek('}')) {
+            throw std::runtime_error("trailing comma in board group object");
+          }
+        }
+      }
+      groups.push_back(group);
+      if (consume(']')) {
+        return groups;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in board groups array");
+      }
+    }
+  }
 
   std::vector<BoardTarget> readBoardTargets() {
     std::vector<BoardTarget> targets;
@@ -2181,6 +2290,29 @@ std::string dumpProjectJson(const Project& project) {
       out << "      }" << (i + 1 == board.texts.size() ? "" : ",") << '\n';
     }
     out << "    ],\n";
+    out << "    \"dimensions\": [\n";
+    for (std::size_t i = 0; i < board.dimensions.size(); ++i) {
+      const BoardDimension& dim = board.dimensions.at(i);
+      out << "      {\n";
+      writeField(out, 8, "id", dim.id);
+      writeField(out, 8, "layer_id", dim.layer_id);
+      writeField(out, 8, "kind", dim.kind);
+      writeField(out, 8, "text", dim.text);
+      out << "        \"start\": ";
+      writePoint(out, 0, dim.start);
+      out << ",\n";
+      out << "        \"end\": ";
+      writePoint(out, 0, dim.end);
+      out << ",\n";
+      out << "        \"text_position\": ";
+      writePoint(out, 0, dim.text_position);
+      if (dim.locked) {
+        out << ",\n        \"locked\": true";
+      }
+      out << "\n";
+      out << "      }" << (i + 1 == board.dimensions.size() ? "" : ",") << '\n';
+    }
+    out << "    ],\n";
     out << "    \"targets\": [\n";
     for (std::size_t i = 0; i < board.targets.size(); ++i) {
       const BoardTarget& target = board.targets.at(i);
@@ -2266,6 +2398,21 @@ std::string dumpProjectJson(const Project& project) {
       }
       out << "\n";
       out << "      }" << (i + 1 == board.vias.size() ? "" : ",") << '\n';
+    }
+    out << "    ],\n";
+    out << "    \"groups\": [\n";
+    for (std::size_t i = 0; i < board.groups.size(); ++i) {
+      const BoardGroup& group = board.groups.at(i);
+      out << "      {\n";
+      writeField(out, 8, "id", group.id);
+      writeField(out, 8, "name", group.name);
+      out << "        \"members\": [\n";
+      for (std::size_t j = 0; j < group.members.size(); ++j) {
+        out << "          \"" << escapeJson(group.members.at(j)) << "\""
+            << (j + 1 == group.members.size() ? "" : ",") << '\n';
+      }
+      out << "        ]\n";
+      out << "      }" << (i + 1 == board.groups.size() ? "" : ",") << '\n';
     }
     out << "    ],\n";
     out << "    \"route_requests\": [\n";

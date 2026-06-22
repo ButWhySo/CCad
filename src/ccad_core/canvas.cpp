@@ -309,6 +309,20 @@ CanvasScene buildCanvasScene(const Board& board) {
     });
   }
 
+  for (const BoardDimension& dim : board.dimensions) {
+    scene.dimensions.push_back(CanvasDimension{
+        .id = dim.id,
+        .layer_id = dim.layer_id,
+        .text = dim.text,
+        .start_x_units = toMillimeters(dim.start.x),
+        .start_y_units = toMillimeters(dim.start.y),
+        .end_x_units = toMillimeters(dim.end.x),
+        .end_y_units = toMillimeters(dim.end.y),
+        .text_x_units = toMillimeters(dim.text_position.x),
+        .text_y_units = toMillimeters(dim.text_position.y),
+    });
+  }
+
   std::map<std::string, std::size_t> routed_segment_counts;
   for (const TrackSegment& track : board.tracks) {
     if (!track.source_route_request_id.empty()) {

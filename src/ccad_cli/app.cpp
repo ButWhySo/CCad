@@ -238,6 +238,12 @@ const std::vector<CommandHelp>& commandHelp() {
                            "--width-mm <n> --height-mm <n> --priority <n> "
                            "--clearance-mm <n> --min-thickness-mm <n> "
                            "--pad-connection thermal|solid|none"},
+      CommandHelp{.name = "pcb add-dimension",
+                  .summary = "Adds a dimension to the board.",
+                  .usage = "ccad pcb add-dimension --file <path> --id <id> --layer <id> --kind linear|radial|leader|center --text <value> --start-x-mm <n> --start-y-mm <n> --end-x-mm <n> --end-y-mm <n> [--text-x-mm <n>] [--text-y-mm <n>]"},
+      CommandHelp{.name = "pcb add-group",
+                  .summary = "Adds a group to the board.",
+                  .usage = "ccad pcb add-group --file <path> --id <id> --name <name> [--members <id1,id2,...>]"},
       CommandHelp{.name = "pcb add-route-request",
                   .summary = "Append one route-assistance request to a board project",
                   .usage = "ccad pcb add-route-request --file <path> --id <id> --net <id> "

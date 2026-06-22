@@ -605,6 +605,34 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     tagObject(*item, "target", qstr(target.id), layer_color, "", qstr(target.layer_id));
   }
 
+  for (const ccad::CanvasDimension& dim : scene.dimensions) {
+    if (hidden_layers.count(dim.layer_id)) continue;
+    const QColor layer_color = colorForKiCadLayer(theme, dim.layer_id);
+    QPen pen(layer_color, 1.2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    
+    double sx = sceneX(scene, dim.start_x_units, margin, scale);
+    double sy = sceneY(scene, dim.start_y_units, margin, scale);
+    double ex = sceneX(scene, dim.end_x_units, margin, scale);
+    double ey = sceneY(scene, dim.end_y_units, margin, scale);
+    
+    QPainterPath path;
+    path.moveTo(sx, sy);
+    path.lineTo(ex, ey);
+    
+    auto* item = addHighlightPath(canvas_scene, path, pen, Qt::NoBrush);
+    item->setToolTip("Dimension " + qstr(dim.id) + " (" + qstr(dim.text) + ")");
+    tagObject(*item, "dimension", qstr(dim.id), layer_color, "", qstr(dim.layer_id));
+
+    if (!dim.text.empty()) {
+      QGraphicsTextItem* text = canvas_scene.addText(qstr(dim.text));
+      text->setDefaultTextColor(layer_color);
+      text->setPos(sceneX(scene, dim.text_x_units, margin, scale), 
+                   sceneY(scene, dim.text_y_units, margin, scale));
+      text->setToolTip("Dimension Text " + qstr(dim.id));
+      tagObject(*text, "dimension_text", qstr(dim.id), layer_color, "", qstr(dim.layer_id));
+    }
+  }
+
   // Draw zones
   // Render Schematic Components
   QPen component_pen(theme.board_outline_color);

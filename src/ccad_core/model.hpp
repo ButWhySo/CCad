@@ -241,6 +241,23 @@ struct BoardText {
   bool locked = false;
 };
 
+struct BoardDimension {
+  std::string id;
+  std::string layer_id;
+  std::string kind;
+  std::string text;
+  Point start;
+  Point end;
+  Point text_position;
+  bool locked = false;
+};
+
+struct BoardGroup {
+  std::string id;
+  std::string name;
+  std::vector<std::string> members;
+};
+
 enum class BarcodeType { Code39, Code128, DataMatrix, QRCode, MicroQRCode };
 enum class BarcodeEcc { Low, Medium, Quartile, High };
 
@@ -328,9 +345,11 @@ struct Board {
   std::vector<TrackSegment> tracks;
   std::vector<BoardGraphic> graphics;
   std::vector<BoardText> texts;
+  std::vector<BoardDimension> dimensions;
   std::vector<BoardBarcode> barcodes;
   std::vector<BoardTarget> targets;
   std::vector<BoardZone> zones;
+  std::vector<BoardGroup> groups;
   std::vector<RouteRequest> route_requests;
 };
 

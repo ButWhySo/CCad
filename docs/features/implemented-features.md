@@ -2034,3 +2034,13 @@ The KiCad PCB editor source walk now includes `F:\kicad_src\pcbnew\pad.cpp`. CCa
 Agents and scripts can inspect the same state with `ccad pcb get-pad-machining --file <project.ccad.json> --pad <pad_id> --layer <layer_id>`. The JSON response includes the post machining knockout size, boolean flag for backdrilled/post machined, and `pending_kicad_features` for unmapped capabilities (e.g. pad-to-die internal delay math, free pad checking).
 
 Focused coverage lives in `tests/test_pad_utils.cpp` and `tests/test_cli.cpp`. The focused green checks are `cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && ctest --test-dir build-qt -R pad_utils --output-on-failure"` and `cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && ctest --test-dir build-qt -R cli --output-on-failure"`.
+
+## Sprint 82 Dimensions and Groups
+
+The CCad model now supports `BoardDimension` and `BoardGroup` natively in the `Board` object model. These correspond to KiCad's dimension primitives and group primitives.
+
+Agents and scripts can author these objects through the CLI commands:
+- `ccad pcb add-dimension --file <project.ccad.json> --id <id> --layer <layer> --kind <kind> --text <text> --start-x-mm <n> --start-y-mm <n> --end-x-mm <n> --end-y-mm <n>`
+- `ccad pcb add-group --file <project.ccad.json> --id <id> --name <name> --members <id1,id2,...>`
+
+The JSON board representation includes these elements, and they are queryable using `ccad pcb list-objects` and `ccad pcb get-object`. Dimensions are also visualized via the Qt GUI canvas using a light path connecting the start and end coordinates with the centered value text.

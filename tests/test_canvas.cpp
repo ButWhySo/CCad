@@ -84,6 +84,15 @@ ccad::Project boardProject() {
                                                         .y = ccad::millimeters(20)},
                                 .size = ccad::Size{.width = ccad::millimeters(1.5),
                                                    .height = ccad::millimeters(1.5)}}},
+      .dimensions = {ccad::BoardDimension{
+          .id = "D1",
+          .layer_id = "F.Fab",
+          .kind = "linear",
+          .text = "10 mm",
+          .start = ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(5)},
+          .end = ccad::Point{.x = ccad::millimeters(15), .y = ccad::millimeters(5)},
+          .text_position = ccad::Point{.x = ccad::millimeters(10), .y = ccad::millimeters(3)},
+      }},
       .barcodes = {ccad::BoardBarcode{.id = "BC1",
                                       .layer_id = "F.SilkS",
                                       .text = "Hello World",
@@ -103,11 +112,19 @@ ccad::Project boardProject() {
           .name = "GND",
           .net_id = "GND",
           .layer_ids = {"F.Cu"},
-          .outline = {ccad::Point{ccad::millimeters(1), ccad::millimeters(2)},
-                      ccad::Point{ccad::millimeters(10), ccad::millimeters(10)}},
+          .outline = {ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(2)},
+                      ccad::Point{.x = ccad::millimeters(18), .y = ccad::millimeters(2)},
+                      ccad::Point{.x = ccad::millimeters(18), .y = ccad::millimeters(12)},
+                      ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(12)}},
           .clearance = ccad::millimeters(0.25),
           .min_thickness = ccad::millimeters(0.1),
+          .fill_enabled = true,
           .pad_connection = "solid",
+      }},
+      .groups = {ccad::BoardGroup{
+          .id = "GRP1",
+          .name = "MyGroup",
+          .members = {"P1", "V1"}
       }},
       .route_requests = {ccad::RouteRequest{.id = "RR1",
                                             .net_id = "N1",
@@ -202,6 +219,11 @@ int main() {
   require(scene.texts.at(0).text == "RECTIFIER", "canvas board text value");
   require(scene.texts.at(0).x_units == 12.0, "canvas board text x is mm");
   require(scene.texts.at(0).size_x_units == 1.5, "canvas board text width is mm");
+  require(scene.dimensions.size() == 1, "canvas has dimension");
+  require(scene.dimensions.at(0).id == "D1", "canvas dimension id");
+  require(scene.dimensions.at(0).text == "10 mm", "canvas dimension text");
+  require(scene.dimensions.at(0).start_x_units == 5.0, "canvas dimension start x");
+  require(scene.dimensions.at(0).start_y_units == 5.0, "canvas dimension start y");
   require(scene.zones.size() == 1, "canvas has board zone");
   require(scene.zones.at(0).id == "Z1", "canvas board zone id");
   require(scene.zones.at(0).layer_ids.size() == 1, "canvas board zone layer set");

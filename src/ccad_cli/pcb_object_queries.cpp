@@ -646,7 +646,7 @@ std::string pcbBoardZoneObjectJson(const ccad::Board& board, const ccad::BoardZo
 void requireKnownPcbObjectType(const std::string& type) {
   if (type.empty() || type == "layer" || type == "pad" || type == "via" || type == "track" ||
       type == "graphic" || type == "text" || type == "zone" || type == "keepout" ||
-      type == "placement_region") {
+      type == "placement_region" || type == "barcode" || type == "target" || type == "dimension" || type == "group") {
     return;
   }
   throw std::runtime_error("unknown object type: " + type);
@@ -765,6 +765,23 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
       std::ostringstream row;
       row << "{\"id\": \"" << barcode.id << "\", \"type\": \"barcode\", \"layer_id\": \"" << barcode.layer_id
           << "\", \"kind\": \"" << formatBarcodeType(barcode.kind) << "\"}";
+      add_row(row);
+    }
+  }
+
+  if (includeObjectType(type_filter, "dimension")) {
+    for (const ccad::BoardDimension& dim : board.dimensions) {
+      std::ostringstream row;
+      row << "{\"id\": \"" << dim.id << "\", \"type\": \"dimension\", \"layer_id\": \"" << dim.layer_id
+          << "\", \"kind\": \"" << dim.kind << "\"}";
+      add_row(row);
+    }
+  }
+
+  if (includeObjectType(type_filter, "group")) {
+    for (const ccad::BoardGroup& group : board.groups) {
+      std::ostringstream row;
+      row << "{\"id\": \"" << group.id << "\", \"type\": \"group\", \"name\": \"" << group.name << "\"}";
       add_row(row);
     }
   }
@@ -1493,6 +1510,45 @@ std::string boardBarcodeReportJson(const ccad::BoardBarcode& barcode) {
       << "    \"height_nm\": " << barcode.margin.height.nanometers << "\n"
       << "  },\n"
       << "  \"locked\": " << (barcode.locked ? "true" : "false") << "\n"
+      << "}";
+  return out.str();
+}
+
+std::string boardDimensionReportJson(const ccad::BoardDimension& dim) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"id\": \"" << dim.id << "\",\n"
+      << "  \"layer_id\": \"" << dim.layer_id << "\",\n"
+      << "  \"text\": \"" << ccad::escapeJson(dim.text) << "\",\n"
+      << "  \"kind\": \"" << ccad::escapeJson(dim.kind) << "\",\n"
+      << "  \"start\": {\n"
+      << "    \"x_nm\": " << dim.start.x.nanometers << ",\n"
+      << "    \"y_nm\": " << dim.start.y.nanometers << "\n"
+      << "  },\n"
+      << "  \"end\": {\n"
+      << "    \"x_nm\": " << dim.end.x.nanometers << ",\n"
+      << "    \"y_nm\": " << dim.end.y.nanometers << "\n"
+      << "  },\n"
+      << "  \"text_position\": {\n"
+      << "    \"x_nm\": " << dim.text_position.x.nanometers << ",\n"
+      << "    \"y_nm\": " << dim.text_position.y.nanometers << "\n"
+      << "  },\n"
+      << "  \"locked\": " << (dim.locked ? "true" : "false") << "\n"
+      << "}";
+  return out.str();
+}
+
+std::string boardGroupReportJson(const ccad::BoardGroup& group) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"id\": \"" << group.id << "\",\n"
+      << "  \"name\": \"" << ccad::escapeJson(group.name) << "\",\n"
+      << "  \"members\": [\n";
+  for (std::size_t i = 0; i < group.members.size(); ++i) {
+    out << "    \"" << ccad::escapeJson(group.members.at(i)) << "\""
+        << (i + 1 == group.members.size() ? "" : ",") << '\n';
+  }
+  out << "  ]\n"
       << "}";
   return out.str();
 }

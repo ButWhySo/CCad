@@ -1126,6 +1126,18 @@ int pcbCommand(const std::vector<std::string>& args) {
           return 0;
         }
       }
+      for (const ccad::BoardDimension& dim : board.dimensions) {
+        if (dim.id == id) {
+          std::cout << boardDimensionReportJson(dim);
+          return 0;
+        }
+      }
+      for (const ccad::BoardGroup& group : board.groups) {
+        if (group.id == id) {
+          std::cout << boardGroupReportJson(group);
+          return 0;
+        }
+      }
       for (const ccad::BoardTarget& target : board.targets) {
         if (target.id == id) {
           std::cout << boardTargetReportJson(target);
@@ -1962,6 +1974,88 @@ int pcbCommand(const std::vector<std::string>& args) {
           .rotation_degrees = optionDoubleOrDefault(options, "--rotation-deg", 0.0),
           .size = size,
           .margin = margin,
+      });
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "add-dimension") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--layer", "--kind", "--text", "--start-x-mm", "--start-y-mm",
+                                 "--end-x-mm", "--end-y-mm", "--text-x-mm", "--text-y-mm"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const std::string layer_id = requireOption(options, "--layer");
+      const std::string kind = requireOption(options, "--kind");
+      const std::string text = requireOption(options, "--text");
+      requireUniquePhysicalObjectId(board, id);
+      requireLayer(board, layer_id);
+      const ccad::Point start{
+          .x = requirePositiveMillimeters(options, "--start-x-mm"),
+          .y = requirePositiveMillimeters(options, "--start-y-mm"),
+      };
+      const ccad::Point end{
+          .x = requirePositiveMillimeters(options, "--end-x-mm"),
+          .y = requirePositiveMillimeters(options, "--end-y-mm"),
+      };
+      const ccad::Point text_position{
+          .x = requirePositiveMillimeters(options, "--text-x-mm"),
+          .y = requirePositiveMillimeters(options, "--text-y-mm"),
+      };
+      requireInsideBoard(board, start, "dimension start");
+      requireInsideBoard(board, end, "dimension end");
+      requireInsideBoard(board, text_position, "dimension text position");
+
+      board.dimensions.push_back(ccad::BoardDimension{
+          .id = id,
+          .layer_id = layer_id,
+          .kind = kind,
+          .text = text,
+          .start = start,
+          .end = end,
+          .text_position = text_position,
+      });
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "add-group") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--name", "--members"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      requireUniquePhysicalObjectId(board, id);
+      
+      const std::string members_str = requireOption(options, "--members");
+      std::vector<std::string> members;
+      if (!members_str.empty()) {
+        size_t pos = 0;
+        size_t next;
+        while ((next = members_str.find(',', pos)) != std::string::npos) {
+          members.push_back(members_str.substr(pos, next - pos));
+          pos = next + 1;
+        }
+        members.push_back(members_str.substr(pos));
+      }
+
+      for (const std::string& member_id : members) {
+        requireBoardObjectId(board, member_id);
+      }
+
+      board.groups.push_back(ccad::BoardGroup{
+          .id = id,
+          .name = options.contains("--name") ? options.at("--name") : "",
+          .members = members,
       });
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
