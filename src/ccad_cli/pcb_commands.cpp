@@ -1126,6 +1126,12 @@ int pcbCommand(const std::vector<std::string>& args) {
           return 0;
         }
       }
+      for (const ccad::BoardTarget& target : board.targets) {
+        if (target.id == id) {
+          std::cout << boardTargetReportJson(target);
+          return 0;
+        }
+      }
       for (const ccad::BoardZone& zone : board.zones) {
         if (zone.id == id) {
           std::cout << pcbBoardZoneObjectJson(board, zone);
@@ -1781,6 +1787,49 @@ int pcbCommand(const std::vector<std::string>& args) {
           .start = start,
           .end = end,
           .width = width,
+      });
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "add-target") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--layer", "--shape", "--x-mm", "--y-mm", "--size-mm", "--width-mm"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const std::string layer_id = requireOption(options, "--layer");
+      requireUniquePhysicalObjectId(board, id);
+      requireLayer(board, layer_id);
+      
+      const std::string shape_str = requireOption(options, "--shape");
+      ccad::TargetShape shape = ccad::TargetShape::Plus;
+      if (shape_str == "Plus") {
+        shape = ccad::TargetShape::Plus;
+      } else if (shape_str == "X") {
+        shape = ccad::TargetShape::X;
+      } else {
+        throw std::runtime_error("invalid shape: " + shape_str);
+      }
+
+      const ccad::Point position{
+          .x = requirePositiveMillimeters(options, "--x-mm"),
+          .y = requirePositiveMillimeters(options, "--y-mm"),
+      };
+      requireInsideBoard(board, position, "target position");
+
+      board.targets.push_back(ccad::BoardTarget{
+          .id = id,
+          .layer_id = layer_id,
+          .shape = shape,
+          .position_x = position.x,
+          .position_y = position.y,
+          .size = requirePositiveMillimeters(options, "--size-mm"),
+          .line_width = requirePositiveMillimeters(options, "--width-mm"),
       });
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';

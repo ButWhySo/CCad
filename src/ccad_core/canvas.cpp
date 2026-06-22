@@ -297,6 +297,18 @@ CanvasScene buildCanvasScene(const Board& board) {
     });
   }
 
+  for (const BoardTarget& target : board.targets) {
+    scene.targets.push_back(CanvasTarget{
+        .id = target.id,
+        .layer_id = target.layer_id,
+        .shape = target.shape == TargetShape::Plus ? "Plus" : "X",
+        .x_units = toMillimeters(target.position_x),
+        .y_units = toMillimeters(target.position_y),
+        .size_units = toMillimeters(target.size),
+        .line_width_units = toMillimeters(target.line_width),
+    });
+  }
+
   std::map<std::string, std::size_t> routed_segment_counts;
   for (const TrackSegment& track : board.tracks) {
     if (!track.source_route_request_id.empty()) {

@@ -559,6 +559,53 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     tagObject(*text, "text", qstr(text_item.id), layer_color, "", qstr(text_item.layer_id));
   }
 
+  for (const ccad::CanvasBarcode& barcode : scene.barcodes) {
+    if (hidden_layers.count(barcode.layer_id)) continue;
+    const QColor layer_color = colorForKiCadLayer(theme, barcode.layer_id);
+    QPen pen(layer_color, 1);
+    QBrush brush(layer_color, Qt::Dense6Pattern);
+    
+    double cx = sceneX(scene, barcode.x_units, margin, scale);
+    double cy = sceneY(scene, barcode.y_units, margin, scale);
+    double w = barcode.width_units * scale;
+    double h = barcode.height_units * scale;
+    
+    QGraphicsRectItem* rect = canvas_scene.addRect(cx - w/2.0, cy - h/2.0, w, h, pen, brush);
+    rect->setTransformOriginPoint(cx, cy);
+    rect->setRotation(barcode.rotation_degrees);
+    rect->setToolTip("Barcode " + qstr(barcode.id) + ": " + qstr(barcode.text));
+    tagObject(*rect, "barcode", qstr(barcode.id), layer_color, "", qstr(barcode.layer_id));
+  }
+
+  for (const ccad::CanvasTarget& target : scene.targets) {
+    if (hidden_layers.count(target.layer_id)) continue;
+    const QColor layer_color = colorForKiCadLayer(theme, target.layer_id);
+    double width_px = std::max(1.0, target.line_width_units * scale);
+    QPen pen(layer_color, width_px, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    
+    double cx = sceneX(scene, target.x_units, margin, scale);
+    double cy = sceneY(scene, target.y_units, margin, scale);
+    double s = (target.size_units * scale) / 2.0;
+    
+    QPainterPath path;
+    if (target.shape == "X") {
+      path.moveTo(cx - s, cy - s);
+      path.lineTo(cx + s, cy + s);
+      path.moveTo(cx - s, cy + s);
+      path.lineTo(cx + s, cy - s);
+    } else {
+      path.moveTo(cx - s, cy);
+      path.lineTo(cx + s, cy);
+      path.moveTo(cx, cy - s);
+      path.lineTo(cx, cy + s);
+    }
+    
+    auto* item = addHighlightPath(canvas_scene, path, pen, Qt::NoBrush);
+    item->setToolTip("Target " + qstr(target.id));
+    tagObject(*item, "target", qstr(target.id), layer_color, "", qstr(target.layer_id));
+  }
+
+  // Draw zones
   // Render Schematic Components
   QPen component_pen(theme.board_outline_color);
   component_pen.setWidthF(1.5);

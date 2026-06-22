@@ -1,0 +1,22 @@
+Implement CCad Barcode Support (KiCad Parity)
+
+Why:
+The `F:\kicad_src\pcbnew\pcb_barcode.cpp` functionality needs to be replicated in the CCad agent's PCB root walk slice to ensure complete deterministic parity for the Board object model. Support for Barcodes needs to be propagated fully to CLI, IO Serialization, and GUI.
+
+Changed:
+1. `src/ccad_core/model.hpp`: Added `BoardBarcode` struct and `BarcodeType` enum to reflect the barcode items.
+2. `src/ccad_core/serialize.cpp`: Created read/write JSON serialization logic for `BoardBarcode`.
+3. `src/ccad_cli/pcb_commands.cpp`: Introduced `pcb add-barcode` command to author barcodes headlessly.
+4. `src/ccad_cli/pcb_object_queries.cpp`: Added serialization of barcode primitives for the `pcb list-objects` command output.
+5. `src/ccad_core/canvas.hpp`/`canvas.cpp`: Provided `CanvasBarcode` mapping struct and integrated the extraction into the `CanvasScene`.
+6. `src/ccad_gui/board_canvas_renderer.cpp`: Rendered placeholder bounding box geometries for `CanvasBarcode` objects into the view based on their bounding size and layer colors.
+7. `tests/test_canvas.cpp` and `tests/test_barcode.cpp`: Authored unit tests to explicitly verify behavior for creating and parsing Barcode entities.
+
+Behavior:
+Barcodes can now be correctly ingested, authored via `add-barcode`, and serialized to standard JSON project structures. Visually, they are represented in the application via shaded dashed-boxes on their respective view layers. The feature covers base struct parity matching KiCad's barcode primitives footprint.
+
+Verification:
+The codebase compiled completely via `cmake --build build-qt`. Tests were proven to be fully green through `ctest --test-dir build-qt`. Visual validation was asserted and observed through the `scripts/run_sprint_demo.ps1` verification workflow.
+
+Demo:
+Screenshot output is generated displaying a successfully rendered `.SilkS` barcode alongside the sprint demo output.

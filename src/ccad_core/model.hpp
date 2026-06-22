@@ -257,6 +257,18 @@ struct BoardBarcode {
   bool locked = false;
 };
 
+enum class TargetShape { Plus, X };
+
+struct BoardTarget {
+  std::string id;
+  std::string layer_id;
+  TargetShape shape = TargetShape::Plus;
+  Length position_x = millimeters(0);
+  Length position_y = millimeters(0);
+  Length size = millimeters(5);
+  Length line_width = millimeters(0.25);
+};
+
 struct BoardZone {
   std::string id;
   std::string name;
@@ -317,6 +329,7 @@ struct Board {
   std::vector<BoardGraphic> graphics;
   std::vector<BoardText> texts;
   std::vector<BoardBarcode> barcodes;
+  std::vector<BoardTarget> targets;
   std::vector<BoardZone> zones;
   std::vector<RouteRequest> route_requests;
 };

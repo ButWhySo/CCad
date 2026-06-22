@@ -306,6 +306,8 @@ class JsonReader {
           board.texts = readBoardTexts();
         } else if (key == "barcodes") {
           board.barcodes = readBoardBarcodes();
+        } else if (key == "targets") {
+          board.targets = readBoardTargets();
         } else if (key == "zones") {
           board.zones = readBoardZones();
         } else if (key == "route_requests") {
@@ -1021,6 +1023,56 @@ class JsonReader {
     }
   }
 
+
+  std::vector<BoardTarget> readBoardTargets() {
+    std::vector<BoardTarget> targets;
+    expect('[');
+    if (consume(']')) {
+      return targets;
+    }
+    while (true) {
+      BoardTarget target;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            target.id = readString();
+          } else if (key == "layer_id") {
+            target.layer_id = readString();
+          } else if (key == "shape") {
+            const std::string kind_str = readString();
+            if (kind_str == "Plus") {
+              target.shape = TargetShape::Plus;
+            } else if (kind_str == "X") {
+              target.shape = TargetShape::X;
+            }
+          } else if (key == "x_nm") {
+            target.position_x = nanometers(readInt64());
+          } else if (key == "y_nm") {
+            target.position_y = nanometers(readInt64());
+          } else if (key == "size_nm") {
+            target.size = nanometers(readInt64());
+          } else if (key == "line_width_nm") {
+            target.line_width = nanometers(readInt64());
+          } else {
+            throw std::runtime_error("unknown target key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+        }
+      }
+      targets.push_back(std::move(target));
+      if (consume(']')) {
+        break;
+      }
+      expect(',');
+    }
+    return targets;
+  }
 
   std::vector<BoardBarcode> readBoardBarcodes() {
     std::vector<BoardBarcode> barcodes;
@@ -2127,6 +2179,20 @@ std::string dumpProjectJson(const Project& project) {
       }
       out << "\n";
       out << "      }" << (i + 1 == board.texts.size() ? "" : ",") << '\n';
+    }
+    out << "    ],\n";
+    out << "    \"targets\": [\n";
+    for (std::size_t i = 0; i < board.targets.size(); ++i) {
+      const BoardTarget& target = board.targets.at(i);
+      out << "      {\n";
+      writeField(out, 8, "id", target.id);
+      writeField(out, 8, "layer_id", target.layer_id);
+      writeField(out, 8, "shape", target.shape == TargetShape::Plus ? "Plus" : "X");
+      out << "        \"x_nm\": " << target.position_x.nanometers << ",\n";
+      out << "        \"y_nm\": " << target.position_y.nanometers << ",\n";
+      out << "        \"size_nm\": " << target.size.nanometers << ",\n";
+      out << "        \"line_width_nm\": " << target.line_width.nanometers << "\n";
+      out << "      }" << (i + 1 == board.targets.size() ? "" : ",") << '\n';
     }
     out << "    ],\n";
     out << "    \"barcodes\": [\n";

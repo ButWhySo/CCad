@@ -228,6 +228,16 @@ struct CanvasBarcode {
   double height_units = 0.0;
 };
 
+struct CanvasTarget {
+  std::string id;
+  std::string layer_id;
+  std::string shape;
+  double x_units = 0.0;
+  double y_units = 0.0;
+  double size_units = 0.0;
+  double line_width_units = 0.0;
+};
+
 struct CanvasScene {
   bool has_board = false;
   std::int64_t board_width_nm = 0;
@@ -252,6 +262,7 @@ struct CanvasScene {
   std::vector<CanvasText> texts;
   std::vector<CanvasZone> zones;
   std::vector<CanvasBarcode> barcodes;
+  std::vector<CanvasTarget> targets;
 
   std::vector<CanvasComponent> components;
   std::vector<CanvasWire> wires;

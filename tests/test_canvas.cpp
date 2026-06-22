@@ -84,19 +84,29 @@ ccad::Project boardProject() {
                                                         .y = ccad::millimeters(20)},
                                 .size = ccad::Size{.width = ccad::millimeters(1.5),
                                                    .height = ccad::millimeters(1.5)}}},
+      .barcodes = {ccad::BoardBarcode{.id = "BC1",
+                                      .layer_id = "F.SilkS",
+                                      .text = "Hello World",
+                                      .kind = ccad::BarcodeType::QRCode,
+                                      .position = {ccad::millimeters(10), ccad::millimeters(20)},
+                                      .rotation_degrees = 90.0,
+                                      .size = {ccad::millimeters(5), ccad::millimeters(5)}}},
+      .targets = {ccad::BoardTarget{.id = "T1",
+                                    .layer_id = "F.Cu",
+                                    .shape = ccad::TargetShape::X,
+                                    .position_x = ccad::millimeters(15),
+                                    .position_y = ccad::millimeters(25),
+                                    .size = ccad::millimeters(3),
+                                    .line_width = ccad::millimeters(0.5)}},
       .zones = {ccad::BoardZone{
           .id = "Z1",
-          .name = "GND copper",
-          .net_id = "N1",
+          .name = "GND",
+          .net_id = "GND",
           .layer_ids = {"F.Cu"},
-          .outline = {ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(2)},
-                      ccad::Point{.x = ccad::millimeters(18), .y = ccad::millimeters(2)},
-                      ccad::Point{.x = ccad::millimeters(18), .y = ccad::millimeters(12)},
-                      ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(12)}},
-          .priority = 2,
-          .clearance = ccad::millimeters(0.2),
-          .min_thickness = ccad::millimeters(0.25),
-          .fill_enabled = true,
+          .outline = {ccad::Point{ccad::millimeters(1), ccad::millimeters(2)},
+                      ccad::Point{ccad::millimeters(10), ccad::millimeters(10)}},
+          .clearance = ccad::millimeters(0.25),
+          .min_thickness = ccad::millimeters(0.1),
           .pad_connection = "solid",
       }},
       .route_requests = {ccad::RouteRequest{.id = "RR1",
@@ -106,13 +116,6 @@ ccad::Project boardProject() {
                                             .preferred_layer_id = "F.Cu",
                                             .policy = "shortest_safe",
                                             .width = ccad::millimeters(0.25)}},
-      .barcodes = {ccad::BoardBarcode{.id = "BC1",
-                                      .layer_id = "F.SilkS",
-                                      .text = "Hello World",
-                                      .kind = ccad::BarcodeType::QRCode,
-                                      .position = ccad::millimeters(10, 20),
-                                      .size = ccad::millimeters(5, 5),
-                                      .rotation_degrees = 90.0}},
   });
   return project;
 }
@@ -225,5 +228,14 @@ int main() {
   require(std::abs(scene.barcodes.at(0).width_units - 5.0) < 1e-6, "canvas barcode width");
   require(std::abs(scene.barcodes.at(0).height_units - 5.0) < 1e-6, "canvas barcode height");
   require(scene.barcodes.at(0).rotation_degrees == 90.0, "canvas barcode rotation");
+
+  require(scene.targets.size() == 1, "canvas contains targets");
+  require(scene.targets.at(0).id == "T1", "canvas target id");
+  require(scene.targets.at(0).layer_id == "F.Cu", "canvas target layer_id");
+  require(scene.targets.at(0).shape == "X", "canvas target shape");
+  require(std::abs(scene.targets.at(0).x_units - 15.0) < 1e-6, "canvas target x");
+  require(std::abs(scene.targets.at(0).y_units - 25.0) < 1e-6, "canvas target y");
+  require(std::abs(scene.targets.at(0).size_units - 3.0) < 1e-6, "canvas target size");
+  require(std::abs(scene.targets.at(0).line_width_units - 0.5) < 1e-6, "canvas target line width");
 }
 

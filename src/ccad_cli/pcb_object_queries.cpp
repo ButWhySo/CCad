@@ -760,6 +760,24 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
       add_row(row);
     }
   }
+  if (includeObjectType(type_filter, "barcode")) {
+    for (const ccad::BoardBarcode& barcode : board.barcodes) {
+      std::ostringstream row;
+      row << "{\"id\": \"" << barcode.id << "\", \"type\": \"barcode\", \"layer_id\": \"" << barcode.layer_id
+          << "\", \"kind\": \"" << formatBarcodeType(barcode.kind) << "\"}";
+      add_row(row);
+    }
+  }
+
+  if (includeObjectType(type_filter, "target")) {
+    for (const ccad::BoardTarget& target : board.targets) {
+      std::ostringstream row;
+      row << "{\"id\": \"" << target.id << "\", \"type\": \"target\", \"layer_id\": \"" << target.layer_id
+          << "\", \"shape\": \"" << (target.shape == ccad::TargetShape::Plus ? "Plus" : "X") << "\"}";
+      add_row(row);
+    }
+  }
+
   if (includeObjectType(type_filter, "zone")) {
     for (const ccad::BoardZone& zone : board.zones) {
       std::ostringstream row;
@@ -1429,6 +1447,25 @@ std::string padMachiningReportJson(const ccad::Project& project, const std::stri
       << "    \"pad_share_net_tie_group\",\n"
       << "    \"pad_free_pad_check\"\n"
       << "  ]\n"
+      << "}\n";
+  return out.str();
+}
+
+std::string boardTargetReportJson(const ccad::BoardTarget& target) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"id\": \"" << target.id << "\",\n"
+      << "  \"type\": \"target\",\n"
+      << "  \"layer_id\": \"" << target.layer_id << "\",\n"
+      << "  \"shape\": \"" << (target.shape == ccad::TargetShape::Plus ? "Plus" : "X") << "\",\n"
+      << "  \"position\": {\n"
+      << "    \"x_nm\": " << target.position_x.nanometers << ",\n"
+      << "    \"y_nm\": " << target.position_y.nanometers << "\n"
+      << "  },\n"
+      << "  \"size\": {\n"
+      << "    \"size_nm\": " << target.size.nanometers << ",\n"
+      << "    \"line_width_nm\": " << target.line_width.nanometers << "\n"
+      << "  }\n"
       << "}\n";
   return out.str();
 }
