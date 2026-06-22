@@ -25,10 +25,12 @@ ccad::Board shiftedBoard() {
       .graphics = {},
       .texts = {},
       .dimensions = {},
+      .groups = {},
       .barcodes = {},
+      .reference_images = {},
+      .tables = {},
       .targets = {},
       .zones = {},
-      .groups = {},
       .route_requests = {},
   };
 }

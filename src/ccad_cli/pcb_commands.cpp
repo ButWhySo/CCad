@@ -2747,6 +2747,55 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "add-reference-image") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--layer", "--data", "--x-mm", "--y-mm", "--scale", "--opacity"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      
+      ccad::BoardReferenceImage obj;
+      obj.id = requireOption(options, "--id");
+      obj.layer = requireOption(options, "--layer");
+      obj.data = requireOption(options, "--data");
+      obj.x_mm = requireDoubleOption(options, "--x-mm");
+      obj.y_mm = requireDoubleOption(options, "--y-mm");
+      obj.scale = requireDoubleOption(options, "--scale");
+      obj.opacity = requireDoubleOption(options, "--opacity");
+      board.reference_images.push_back(obj);
+      
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "add-table") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--layer", "--x-mm", "--y-mm", "--rows", "--cols", "--width-mm", "--height-mm"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+
+      ccad::BoardTable obj;
+      obj.id = requireOption(options, "--id");
+      obj.layer = requireOption(options, "--layer");
+      obj.x_mm = requireDoubleOption(options, "--x-mm");
+      obj.y_mm = requireDoubleOption(options, "--y-mm");
+      obj.rows = (int)requireDoubleOption(options, "--rows");
+      obj.cols = (int)requireDoubleOption(options, "--cols");
+      obj.width_mm = requireDoubleOption(options, "--width-mm");
+      obj.height_mm = requireDoubleOption(options, "--height-mm");
+      board.tables.push_back(obj);
+
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "place-footprint") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--footprint", "--component", "--at-x-mm", "--at-y-mm",

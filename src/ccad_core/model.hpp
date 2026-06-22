@@ -274,6 +274,34 @@ struct BoardBarcode {
   bool locked = false;
 };
 
+struct BoardReferenceImage {
+  std::string id;
+  std::string layer;
+  std::string data; // Base64 encoded image
+  double x_mm = 0.0;
+  double y_mm = 0.0;
+  double scale = 1.0;
+  double opacity = 1.0;
+};
+
+struct BoardTableCell {
+  int row = 0;
+  int col = 0;
+  std::string text;
+};
+
+struct BoardTable {
+  std::string id;
+  std::string layer;
+  double x_mm = 0.0;
+  double y_mm = 0.0;
+  int rows = 1;
+  int cols = 1;
+  double width_mm = 0.0;
+  double height_mm = 0.0;
+  std::vector<BoardTableCell> cells;
+};
+
 enum class TargetShape { Plus, X };
 
 struct BoardTarget {
@@ -346,10 +374,12 @@ struct Board {
   std::vector<BoardGraphic> graphics;
   std::vector<BoardText> texts;
   std::vector<BoardDimension> dimensions;
+  std::vector<BoardGroup> groups;
   std::vector<BoardBarcode> barcodes;
+  std::vector<BoardReferenceImage> reference_images;
+  std::vector<BoardTable> tables;
   std::vector<BoardTarget> targets;
   std::vector<BoardZone> zones;
-  std::vector<BoardGroup> groups;
   std::vector<RouteRequest> route_requests;
 };
 

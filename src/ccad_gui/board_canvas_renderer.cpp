@@ -633,6 +633,61 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     }
   }
 
+  for (const ccad::CanvasReferenceImage& ref : scene.reference_images) {
+    if (hidden_layers.count(ref.layer_id)) continue;
+    const QColor layer_color = colorForKiCadLayer(theme, ref.layer_id);
+    QPen pen(layer_color, 1.0, Qt::DashLine);
+    
+    double cx = sceneX(scene, ref.x_units, margin, scale);
+    double cy = sceneY(scene, ref.y_units, margin, scale);
+    // Fixed placeholder size since we don't parse the base64 to image yet
+    double w = 40.0 * ref.scale * scale; 
+    double h = 40.0 * ref.scale * scale;
+    
+    QPainterPath path;
+    path.addRect(cx - w/2.0, cy - h/2.0, w, h);
+    path.moveTo(cx - w/2.0, cy - h/2.0);
+    path.lineTo(cx + w/2.0, cy + h/2.0);
+    path.moveTo(cx + w/2.0, cy - h/2.0);
+    path.lineTo(cx - w/2.0, cy + h/2.0);
+    
+    QColor brush_color = layer_color;
+    brush_color.setAlphaF(ref.opacity * 0.3);
+    auto* item = addHighlightPath(canvas_scene, path, pen, QBrush(brush_color));
+    item->setToolTip("Reference Image " + qstr(ref.id));
+    tagObject(*item, "reference_image", qstr(ref.id), layer_color, "", qstr(ref.layer_id));
+  }
+
+  for (const ccad::CanvasTable& table : scene.tables) {
+    if (hidden_layers.count(table.layer_id)) continue;
+    const QColor layer_color = colorForKiCadLayer(theme, table.layer_id);
+    QPen pen(layer_color, 1.2, Qt::SolidLine);
+    
+    double cx = sceneX(scene, table.x_units, margin, scale);
+    double cy = sceneY(scene, table.y_units, margin, scale);
+    double w = table.width_units * scale;
+    double h = table.height_units * scale;
+    
+    QPainterPath path;
+    path.addRect(cx - w/2.0, cy - h/2.0, w, h);
+    
+    for (int r = 1; r < table.rows; ++r) {
+      double ry = cy - h/2.0 + (h * r) / table.rows;
+      path.moveTo(cx - w/2.0, ry);
+      path.lineTo(cx + w/2.0, ry);
+    }
+    for (int c = 1; c < table.cols; ++c) {
+      double cx_line = cx - w/2.0 + (w * c) / table.cols;
+      path.moveTo(cx_line, cy - h/2.0);
+      path.lineTo(cx_line, cy + h/2.0);
+    }
+    
+    auto* item = addHighlightPath(canvas_scene, path, pen, Qt::NoBrush);
+    qDebug() << "Table" << QString::fromStdString(table.id) << "bounds:" << item->boundingRect();
+    item->setToolTip("Table " + qstr(table.id));
+    tagObject(*item, "table", qstr(table.id), layer_color, "", qstr(table.layer_id));
+  }
+
   // Draw zones
   // Render Schematic Components
   QPen component_pen(theme.board_outline_color);

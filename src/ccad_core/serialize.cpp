@@ -314,6 +314,10 @@ class JsonReader {
           board.zones = readBoardZones();
         } else if (key == "groups") {
           board.groups = readBoardGroups();
+        } else if (key == "reference_images") {
+          board.reference_images = readBoardReferenceImages();
+        } else if (key == "tables") {
+          board.tables = readBoardTables();
         } else if (key == "route_requests") {
           board.route_requests = readRouteRequests();
         } else {
@@ -1181,6 +1185,130 @@ class JsonReader {
       expect(',');
     }
     return targets;
+  }
+
+  std::vector<BoardReferenceImage> readBoardReferenceImages() {
+    std::vector<BoardReferenceImage> results;
+    expect('[');
+    if (consume(']')) {
+      return results;
+    }
+    while (true) {
+      BoardReferenceImage obj;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            obj.id = readString();
+          } else if (key == "layer") {
+            obj.layer = readString();
+          } else if (key == "data") {
+            obj.data = readString();
+          } else if (key == "x_mm") {
+            obj.x_mm = readDouble();
+          } else if (key == "y_mm") {
+            obj.y_mm = readDouble();
+          } else if (key == "scale") {
+            obj.scale = readDouble();
+          } else if (key == "opacity") {
+            obj.opacity = readDouble();
+          } else {
+            throw std::runtime_error("unknown reference_image key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+        }
+      }
+      results.push_back(obj);
+      if (consume(']')) {
+        break;
+      }
+      expect(',');
+    }
+    return results;
+  }
+
+  std::vector<BoardTable> readBoardTables() {
+    std::vector<BoardTable> results;
+    expect('[');
+    if (consume(']')) {
+      return results;
+    }
+    while (true) {
+      BoardTable obj;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            obj.id = readString();
+          } else if (key == "layer") {
+            obj.layer = readString();
+          } else if (key == "x_mm") {
+            obj.x_mm = readDouble();
+          } else if (key == "y_mm") {
+            obj.y_mm = readDouble();
+          } else if (key == "rows") {
+            obj.rows = (int)readDouble();
+          } else if (key == "cols") {
+            obj.cols = (int)readDouble();
+          } else if (key == "width_mm") {
+            obj.width_mm = readDouble();
+          } else if (key == "height_mm") {
+            obj.height_mm = readDouble();
+          } else if (key == "cells") {
+            expect('[');
+            if (!consume(']')) {
+              while (true) {
+                BoardTableCell cell;
+                expect('{');
+                if (!consume('}')) {
+                  while (true) {
+                    const std::string ckey = readString();
+                    expect(':');
+                    if (ckey == "row") {
+                      cell.row = (int)readDouble();
+                    } else if (ckey == "col") {
+                      cell.col = (int)readDouble();
+                    } else if (ckey == "text") {
+                      cell.text = readString();
+                    } else {
+                      throw std::runtime_error("unknown cell key: " + ckey);
+                    }
+                    if (consume('}')) {
+                      break;
+                    }
+                    expect(',');
+                  }
+                }
+                obj.cells.push_back(cell);
+                if (consume(']')) {
+                  break;
+                }
+                expect(',');
+              }
+            }
+          } else {
+            throw std::runtime_error("unknown table key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+        }
+      }
+      results.push_back(obj);
+      if (consume(']')) {
+        break;
+      }
+      expect(',');
+    }
+    return results;
   }
 
   std::vector<BoardBarcode> readBoardBarcodes() {
@@ -2350,6 +2478,45 @@ std::string dumpProjectJson(const Project& project) {
       }
       out << "\n";
       out << "      }" << (i + 1 == board.barcodes.size() ? "" : ",") << '\n';
+    }
+    out << "    ],\n";
+    out << "    \"reference_images\": [\n";
+    for (std::size_t i = 0; i < board.reference_images.size(); ++i) {
+      const BoardReferenceImage& ref = board.reference_images.at(i);
+      out << "      {\n";
+      writeField(out, 8, "id", ref.id);
+      writeField(out, 8, "layer", ref.layer);
+      writeField(out, 8, "data", ref.data);
+      out << "        \"x_mm\": " << ref.x_mm << ",\n";
+      out << "        \"y_mm\": " << ref.y_mm << ",\n";
+      out << "        \"scale\": " << ref.scale << ",\n";
+      out << "        \"opacity\": " << ref.opacity << "\n";
+      out << "      }" << (i + 1 == board.reference_images.size() ? "" : ",") << '\n';
+    }
+    out << "    ],\n";
+    out << "    \"tables\": [\n";
+    for (std::size_t i = 0; i < board.tables.size(); ++i) {
+      const BoardTable& table = board.tables.at(i);
+      out << "      {\n";
+      writeField(out, 8, "id", table.id);
+      writeField(out, 8, "layer", table.layer);
+      out << "        \"x_mm\": " << table.x_mm << ",\n";
+      out << "        \"y_mm\": " << table.y_mm << ",\n";
+      out << "        \"rows\": " << table.rows << ",\n";
+      out << "        \"cols\": " << table.cols << ",\n";
+      out << "        \"width_mm\": " << table.width_mm << ",\n";
+      out << "        \"height_mm\": " << table.height_mm << ",\n";
+      out << "        \"cells\": [\n";
+      for (std::size_t j = 0; j < table.cells.size(); ++j) {
+        const BoardTableCell& cell = table.cells.at(j);
+        out << "          {\n";
+        out << "            \"row\": " << cell.row << ",\n";
+        out << "            \"col\": " << cell.col << ",\n";
+        writeField(out, 12, "text", cell.text, true);
+        out << "          }" << (j + 1 == table.cells.size() ? "" : ",") << '\n';
+      }
+      out << "        ]\n";
+      out << "      }" << (i + 1 == board.tables.size() ? "" : ",") << '\n';
     }
     out << "    ],\n";
     out << "    \"zones\": [\n";

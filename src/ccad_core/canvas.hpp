@@ -250,6 +250,27 @@ struct CanvasDimension {
   double text_y_units = 0.0;
 };
 
+struct CanvasReferenceImage {
+  std::string id;
+  std::string layer_id;
+  std::string data;
+  double x_units = 0.0;
+  double y_units = 0.0;
+  double scale = 1.0;
+  double opacity = 1.0;
+};
+
+struct CanvasTable {
+  std::string id;
+  std::string layer_id;
+  double x_units = 0.0;
+  double y_units = 0.0;
+  int rows = 1;
+  int cols = 1;
+  double width_units = 0.0;
+  double height_units = 0.0;
+};
+
 struct CanvasScene {
   bool has_board = false;
   std::int64_t board_width_nm = 0;
@@ -276,6 +297,8 @@ struct CanvasScene {
   std::vector<CanvasBarcode> barcodes;
   std::vector<CanvasTarget> targets;
   std::vector<CanvasDimension> dimensions;
+  std::vector<CanvasReferenceImage> reference_images;
+  std::vector<CanvasTable> tables;
 
   std::vector<CanvasComponent> components;
   std::vector<CanvasWire> wires;

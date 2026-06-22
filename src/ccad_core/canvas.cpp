@@ -323,6 +323,31 @@ CanvasScene buildCanvasScene(const Board& board) {
     });
   }
 
+  for (const BoardReferenceImage& ref : board.reference_images) {
+    scene.reference_images.push_back(CanvasReferenceImage{
+        .id = ref.id,
+        .layer_id = ref.layer,
+        .data = ref.data,
+        .x_units = ref.x_mm * 1e6, // Using internal units
+        .y_units = ref.y_mm * 1e6,
+        .scale = ref.scale,
+        .opacity = ref.opacity,
+    });
+  }
+
+  for (const BoardTable& table : board.tables) {
+    scene.tables.push_back(CanvasTable{
+        .id = table.id,
+        .layer_id = table.layer,
+        .x_units = table.x_mm * 1e6,
+        .y_units = table.y_mm * 1e6,
+        .rows = table.rows,
+        .cols = table.cols,
+        .width_units = table.width_mm * 1e6,
+        .height_units = table.height_mm * 1e6,
+    });
+  }
+
   std::map<std::string, std::size_t> routed_segment_counts;
   for (const TrackSegment& track : board.tracks) {
     if (!track.source_route_request_id.empty()) {

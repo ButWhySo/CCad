@@ -786,6 +786,22 @@ std::string listPcbObjectsJson(const ccad::Board& board, const std::string& type
     }
   }
 
+  if (includeObjectType(type_filter, "reference_image")) {
+    for (const ccad::BoardReferenceImage& ref : board.reference_images) {
+      std::ostringstream row;
+      row << "{\"id\": \"" << ref.id << "\", \"type\": \"reference_image\", \"layer_id\": \"" << ref.layer << "\"}";
+      add_row(row);
+    }
+  }
+
+  if (includeObjectType(type_filter, "table")) {
+    for (const ccad::BoardTable& table : board.tables) {
+      std::ostringstream row;
+      row << "{\"id\": \"" << table.id << "\", \"type\": \"table\", \"layer_id\": \"" << table.layer << "\"}";
+      add_row(row);
+    }
+  }
+
   if (includeObjectType(type_filter, "target")) {
     for (const ccad::BoardTarget& target : board.targets) {
       std::ostringstream row;

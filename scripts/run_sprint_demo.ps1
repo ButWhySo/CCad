@@ -232,7 +232,9 @@ Invoke-Ccad pcb add-graphic-line --file $Project --id G_BOARD_REFERENCE --layer 
 Invoke-Ccad pcb add-text --file $Project --id BT_TITLE --layer F.SilkS --text "FULL BRIDGE RECTIFIER" --x-mm 5 --y-mm 5 --size-x-mm 1.4 --size-y-mm 1.4 --rotation-deg 0
 Invoke-Ccad pcb add-barcode --file $Project --id BC1 --layer F.SilkS --text "CCad Prototype" --kind QRCode --x-mm 10 --y-mm 28 --size-x-mm 5 --size-y-mm 5
 Invoke-Ccad pcb add-dimension --file $Project --id DIM1 --layer F.Fab --kind linear --text "10.0 mm" --start-x-mm 5 --start-y-mm 3 --end-x-mm 15 --end-y-mm 3 --text-x-mm 10 --text-y-mm 2
-Invoke-Ccad pcb add-group --file $Project --id GRP_DIODES --name "RectifierDiodes" --members "D1.A,D1.K,D2.A,D2.K,D3.A,D3.K,D4.A,D4.K"
+Invoke-Ccad pcb add-group --file $Project --id GRP1 --name "Bridge Components" --members "TAC1.1,TAC1.2,TAC2.1,TAC2.2"
+Invoke-Ccad pcb add-reference-image --file $Project --id IMG1 --layer F.SilkS --data "dummy_base64" --x-mm -10 --y-mm -10 --scale 1.5 --opacity 0.8
+Invoke-Ccad pcb add-table --file $Project --id TBL1 --layer F.Fab --x-mm 30 --y-mm 30 --rows 3 --cols 2 --width-mm 20 --height-mm 15
 
 $ProjectObject = Get-Content -Raw $Project | ConvertFrom-Json
 $ProjectObject.components = @(

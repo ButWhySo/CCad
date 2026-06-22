@@ -93,6 +93,11 @@ ccad::Project boardProject() {
           .end = ccad::Point{.x = ccad::millimeters(15), .y = ccad::millimeters(5)},
           .text_position = ccad::Point{.x = ccad::millimeters(10), .y = ccad::millimeters(3)},
       }},
+      .groups = {ccad::BoardGroup{
+          .id = "GRP1",
+          .name = "MyGroup",
+          .members = {"P1", "V1"}
+      }},
       .barcodes = {ccad::BoardBarcode{.id = "BC1",
                                       .layer_id = "F.SilkS",
                                       .text = "Hello World",
@@ -120,11 +125,6 @@ ccad::Project boardProject() {
           .min_thickness = ccad::millimeters(0.1),
           .fill_enabled = true,
           .pad_connection = "solid",
-      }},
-      .groups = {ccad::BoardGroup{
-          .id = "GRP1",
-          .name = "MyGroup",
-          .members = {"P1", "V1"}
       }},
       .route_requests = {ccad::RouteRequest{.id = "RR1",
                                             .net_id = "N1",

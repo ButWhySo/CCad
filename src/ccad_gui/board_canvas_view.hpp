@@ -102,6 +102,9 @@ class BoardCanvasView final : public QGraphicsView {
     QPen grid_pen(QColor("#20304a"));
     grid_pen.setCosmetic(true);
     painter->setPen(grid_pen);
+    if (rect.width() > 1e6 || rect.height() > 1e6) {
+      return;
+    }
     const double left = std::floor(rect.left() / grid_step) * grid_step;
     const double top = std::floor(rect.top() / grid_step) * grid_step;
     for (double x = left; x <= rect.right(); x += grid_step) {
