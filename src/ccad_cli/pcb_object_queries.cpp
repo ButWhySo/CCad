@@ -4,6 +4,7 @@
 #include "ccad_core/board_stackup.hpp"
 #include "ccad_core/json.hpp"
 #include "ccad_core/layers.hpp"
+#include "ccad_core/pad_utils.hpp"
 
 #include <map>
 #include <optional>
@@ -1391,6 +1392,41 @@ std::string netInfoReportJson(const ccad::NetInfoReport& report) {
         << (i + 1 == report.pending_kicad_features.size() ? "" : ",") << '\n';
   }
   out << "  ]\n}\n";
+  return out.str();
+}
+
+std::string padMachiningReportJson(const ccad::Project& project, const std::string& pad_id, const std::string& layer_id) {
+  if (project.boards.empty()) {
+    throw std::runtime_error("project has no board");
+  }
+  const ccad::Board& board = project.boards.at(0);
+  const ccad::Pad* found_pad = nullptr;
+  for (const auto& pad : board.pads) {
+    if (pad.id == pad_id) {
+      found_pad = &pad;
+      break;
+    }
+  }
+  if (!found_pad) {
+    throw std::runtime_error("pad not found: " + pad_id);
+  }
+
+  int64_t knockout = ccad::getPostMachiningKnockout(board, *found_pad, layer_id);
+  bool backdrilled_or_machined = ccad::isBackdrilledOrPostMachined(board, *found_pad, layer_id);
+
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"pad_id\": \"" << ccad::escapeJson(pad_id) << "\",\n"
+      << "  \"layer_id\": \"" << ccad::escapeJson(layer_id) << "\",\n"
+      << "  \"post_machining_knockout_nm\": " << knockout << ",\n"
+      << "  \"is_backdrilled_or_post_machined\": " << (backdrilled_or_machined ? "true" : "false") << ",\n"
+      << "  \"kicad_source\": \"pcbnew/pad.cpp\",\n"
+      << "  \"pending_kicad_features\": [\n"
+      << "    \"pad_to_die_delay_math\",\n"
+      << "    \"pad_share_net_tie_group\",\n"
+      << "    \"pad_free_pad_check\"\n"
+      << "  ]\n"
+      << "}\n";
   return out.str();
 }
 

@@ -2022,3 +2022,15 @@ The KiCad PCB editor source walk now includes `F:\kicad_src\pcbnew\netinfo_item.
 Agents and scripts can inspect the same state with `ccad pcb get-net-info --file <project.ccad.json> --net <net_id>`. The JSON response includes the net ID, geometric counts, `track_length_nm`, bounding box fields, diagnostics, and `pending_kicad_features` for unmapped capabilities (e.g. pad-to-die internal IC delays, dynamic netname disambiguation).
 
 Focused coverage lives in `tests/test_net_info.cpp` and `tests/test_cli.cpp`. The focused green checks are `cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && ctest --test-dir build-qt -R net_info --output-on-failure"` and `cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && ctest --test-dir build-qt -R cli --output-on-failure"`.
+
+## Sprint 243 KiCad Pad Machining Addendum
+
+The KiCad PCB editor source walk now includes `F:\kicad_src\pcbnew\pad.cpp`. CCad maps the headless post-machining knockout calculations (`GetPostMachiningKnockout` and `IsBackdrilledOrPostMachined`) into `src/ccad_core/pad_utils.hpp/.cpp`.
+
+`getPostMachiningKnockout(const Board&, const Pad&, const std::string& layer_id)` computes the removed copper diameter from countersink and counterbore on specific layers, estimating layer depth from the ordinal layer fraction against `board_thickness`.
+
+`isBackdrilledOrPostMachined(const Board&, const Pad&, const std::string& layer_id)` checks if a layer falls within the secondary/tertiary drill start and end layer boundaries, or if it is affected by post-machining knockout.
+
+Agents and scripts can inspect the same state with `ccad pcb get-pad-machining --file <project.ccad.json> --pad <pad_id> --layer <layer_id>`. The JSON response includes the post machining knockout size, boolean flag for backdrilled/post machined, and `pending_kicad_features` for unmapped capabilities (e.g. pad-to-die internal delay math, free pad checking).
+
+Focused coverage lives in `tests/test_pad_utils.cpp` and `tests/test_cli.cpp`. The focused green checks are `cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && ctest --test-dir build-qt -R pad_utils --output-on-failure"` and `cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && ctest --test-dir build-qt -R cli --output-on-failure"`.
