@@ -12,6 +12,7 @@
 #include "ccad_core/bom_export.hpp"
 #include "ccad_core/cleanup_item.hpp"
 #include "ccad_core/cross_probing.hpp"
+#include "ccad_core/net_chain_bridging.hpp"
 #include "ccad_core/diff.hpp"
 #include "ccad_core/drill_export.hpp"
 #include "ccad_core/dsn_export.hpp"
@@ -1309,6 +1310,16 @@ int pcbCommand(const std::vector<std::string>& args) {
       const ccad::Project project = loadProjectFile(file);
       std::cout << crossProbeReportJson(
           ccad::resolveCrossProbePacket(project, requireOption(options, "--packet")));
+      return 0;
+    }
+
+    if (subcommand == "calculate-net-bridges") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--net"});
+      const std::string file = requireOption(options, "--file");
+      const ccad::Project project = loadProjectFile(file);
+      std::cout << netChainBridgingReportJson(
+          ccad::calculateNetChainBridges(project, requireOption(options, "--net")));
       return 0;
     }
 

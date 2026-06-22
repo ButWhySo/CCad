@@ -1334,4 +1334,37 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
   return out.str();
 }
 
+std::string netChainBridgingReportJson(const ccad::NetChainBridgingReport& report) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"kicad_source\": \"" << ccad::escapeJson(report.kicad_source) << "\",\n"
+      << "  \"parity_scope\": \"" << ccad::escapeJson(report.parity_scope) << "\",\n"
+      << "  \"net_id\": \"" << ccad::escapeJson(report.net_id) << "\",\n"
+      << "  \"bridges\": [\n";
+  for (std::size_t i = 0; i < report.bridges.size(); ++i) {
+    const ccad::NetChainBridge& bridge = report.bridges.at(i);
+    out << "    {\n"
+        << "      \"component_id\": \"" << ccad::escapeJson(bridge.component_id) << "\",\n"
+        << "      \"pad1_id\": \"" << ccad::escapeJson(bridge.pad1_id) << "\",\n"
+        << "      \"pad2_id\": \"" << ccad::escapeJson(bridge.pad2_id) << "\",\n"
+        << "      \"bridge_length_nm\": " << bridge.bridge_length_nm << ",\n"
+        << "      \"is_valid\": " << (bridge.is_valid ? "true" : "false") << "\n"
+        << "    }" << (i + 1 == report.bridges.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n"
+      << "  \"diagnostics\": [\n";
+  for (std::size_t i = 0; i < report.diagnostics.size(); ++i) {
+    out << "    \"" << ccad::escapeJson(report.diagnostics.at(i)) << "\""
+        << (i + 1 == report.diagnostics.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n"
+      << "  \"pending_kicad_features\": [\n";
+  for (std::size_t i = 0; i < report.pending_kicad_features.size(); ++i) {
+    out << "    \"" << ccad::escapeJson(report.pending_kicad_features.at(i)) << "\""
+        << (i + 1 == report.pending_kicad_features.size() ? "" : ",") << '\n';
+  }
+  out << "  ]\n}\n";
+  return out.str();
+}
+
 }  // namespace ccad_cli
