@@ -1367,4 +1367,31 @@ std::string netChainBridgingReportJson(const ccad::NetChainBridgingReport& repor
   return out.str();
 }
 
+std::string netInfoReportJson(const ccad::NetInfoReport& report) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"net_id\": \"" << ccad::escapeJson(report.net_id) << "\",\n"
+      << "  \"pad_count\": " << report.pad_count << ",\n"
+      << "  \"via_count\": " << report.via_count << ",\n"
+      << "  \"track_length_nm\": " << report.track_length_nm << ",\n"
+      << "  \"has_bounding_box\": " << (report.has_bounding_box ? "true" : "false") << ",\n"
+      << "  \"bbox_min_x_nm\": " << report.bbox_min_x_nm << ",\n"
+      << "  \"bbox_min_y_nm\": " << report.bbox_min_y_nm << ",\n"
+      << "  \"bbox_max_x_nm\": " << report.bbox_max_x_nm << ",\n"
+      << "  \"bbox_max_y_nm\": " << report.bbox_max_y_nm << ",\n"
+      << "  \"diagnostics\": [\n";
+  for (std::size_t i = 0; i < report.diagnostics.size(); ++i) {
+    out << "    \"" << ccad::escapeJson(report.diagnostics.at(i)) << "\""
+        << (i + 1 == report.diagnostics.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n"
+      << "  \"pending_kicad_features\": [\n";
+  for (std::size_t i = 0; i < report.pending_kicad_features.size(); ++i) {
+    out << "    \"" << ccad::escapeJson(report.pending_kicad_features.at(i)) << "\""
+        << (i + 1 == report.pending_kicad_features.size() ? "" : ",") << '\n';
+  }
+  out << "  ]\n}\n";
+  return out.str();
+}
+
 }  // namespace ccad_cli

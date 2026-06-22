@@ -2,6 +2,7 @@
 
 #include "ccad_core/model.hpp"
 #include "ccad_core/net_chain_bridging.hpp"
+#include "ccad_core/net_info.hpp"
 
 #include <string>
 
@@ -32,6 +33,7 @@ std::string listRouteRequestsJson(const ccad::Board& board);
 std::string routeStatusJson(const ccad::Board& board);
 std::string exportRouteJobJson(const ccad::Board& board, const std::string& request_id_filter);
 std::string netChainBridgingReportJson(const ccad::NetChainBridgingReport& report);
+std::string netInfoReportJson(const ccad::NetInfoReport& report);
 void requireKnownPcbObjectType(const std::string& type);
 void requireKnownPcbConnectableObjectType(const std::string& type);
 

@@ -51,6 +51,7 @@ add_library(ccad_core
   src/ccad_core/cross_probing.cpp
   src/ccad_core/fix_board_shape.cpp
   src/ccad_core/net_chain_bridging.cpp
+  src/ccad_core/net_info.cpp
 )
 
 target_include_directories(ccad_core PUBLIC
@@ -395,6 +396,15 @@ if(MINGW)
   target_link_options(ccad_net_chain_bridging_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME net_chain_bridging COMMAND ccad_net_chain_bridging_tests)
+
+add_executable(ccad_net_info_tests
+  tests/test_net_info.cpp
+)
+target_link_libraries(ccad_net_info_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_net_info_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME net_info COMMAND ccad_net_info_tests)
 
 add_executable(ccad_agent_orchestrator_tests
   tests/test_agent_orchestrator.cpp
