@@ -216,6 +216,18 @@ struct CanvasText {
   double size_y_units = 0.0;
 };
 
+struct CanvasBarcode {
+  std::string id;
+  std::string layer_id;
+  std::string text;
+  std::string kind;
+  double x_units = 0.0;
+  double y_units = 0.0;
+  double rotation_degrees = 0.0;
+  double width_units = 0.0;
+  double height_units = 0.0;
+};
+
 struct CanvasScene {
   bool has_board = false;
   std::int64_t board_width_nm = 0;
@@ -239,6 +251,7 @@ struct CanvasScene {
   std::vector<CanvasPolygon> polygons;
   std::vector<CanvasText> texts;
   std::vector<CanvasZone> zones;
+  std::vector<CanvasBarcode> barcodes;
 
   std::vector<CanvasComponent> components;
   std::vector<CanvasWire> wires;

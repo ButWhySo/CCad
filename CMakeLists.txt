@@ -113,6 +113,15 @@ if(MINGW)
 endif()
 add_test(NAME placement COMMAND ccad_placement_tests)
 
+add_executable(ccad_barcode_tests
+  tests/test_barcode.cpp
+)
+target_link_libraries(ccad_barcode_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_barcode_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME barcode COMMAND ccad_barcode_tests)
+
 add_executable(ccad_layer_tests
   tests/test_layers.cpp
 )

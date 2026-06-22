@@ -35,6 +35,7 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
 std::string netChainBridgingReportJson(const ccad::NetChainBridgingReport& report);
 std::string netInfoReportJson(const ccad::NetInfoReport& report);
 std::string padMachiningReportJson(const ccad::Project& project, const std::string& pad_id, const std::string& layer_id);
+std::string boardBarcodeReportJson(const ccad::BoardBarcode& barcode);
 void requireKnownPcbObjectType(const std::string& type);
 void requireKnownPcbConnectableObjectType(const std::string& type);
 

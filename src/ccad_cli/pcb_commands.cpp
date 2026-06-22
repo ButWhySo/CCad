@@ -22,6 +22,7 @@
 #include "ccad_core/layers.hpp"
 #include "ccad_core/placement.hpp"
 #include "ccad_core/pnp_export.hpp"
+#include "ccad_core/serialize.hpp"
 #include "ccad_core/spread_footprints.hpp"
 #include <fstream>
 
@@ -1119,6 +1120,12 @@ int pcbCommand(const std::vector<std::string>& args) {
           return 0;
         }
       }
+      for (const ccad::BoardBarcode& barcode : board.barcodes) {
+        if (barcode.id == id) {
+          std::cout << boardBarcodeReportJson(barcode);
+          return 0;
+        }
+      }
       for (const ccad::BoardZone& zone : board.zones) {
         if (zone.id == id) {
           std::cout << pcbBoardZoneObjectJson(board, zone);
@@ -1860,6 +1867,52 @@ int pcbCommand(const std::vector<std::string>& args) {
           .position = position,
           .rotation_degrees = requireDoubleOption(options, "--rotation-deg"),
           .size = size,
+      });
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "add-barcode") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--layer", "--text", "--kind", "--error-correction", "--x-mm", "--y-mm",
+                                 "--size-x-mm", "--size-y-mm", "--margin-x-mm", "--margin-y-mm", "--rotation-deg"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const std::string layer_id = requireOption(options, "--layer");
+      const std::string text = requireOption(options, "--text");
+      if (text.empty()) {
+        throw std::runtime_error("--text must not be empty");
+      }
+      requireUniquePhysicalObjectId(board, id);
+      requireLayer(board, layer_id);
+      const ccad::Point position{
+          .x = requirePositiveMillimeters(options, "--x-mm"),
+          .y = requirePositiveMillimeters(options, "--y-mm"),
+      };
+      requireInsideBoard(board, position, "barcode position");
+      const ccad::Size size{.width = requirePositiveMillimeters(options, "--size-x-mm"),
+                            .height = requirePositiveMillimeters(options, "--size-y-mm")};
+      const ccad::Size margin{.width = options.contains("--margin-x-mm") ? requirePositiveMillimeters(options, "--margin-x-mm") : ccad::Length{0},
+                              .height = options.contains("--margin-y-mm") ? requirePositiveMillimeters(options, "--margin-y-mm") : ccad::Length{0}};
+      
+      ccad::BarcodeType kind = ccad::parseBarcodeType(requireOption(options, "--kind"));
+      ccad::BarcodeEcc error_correction = ccad::parseBarcodeEcc(options.contains("--error-correction") ? requireOption(options, "--error-correction") : "Low");
+
+      board.barcodes.push_back(ccad::BoardBarcode{
+          .id = id,
+          .layer_id = layer_id,
+          .text = text,
+          .kind = kind,
+          .error_correction = error_correction,
+          .position = position,
+          .rotation_degrees = optionDoubleOrDefault(options, "--rotation-deg", 0.0),
+          .size = size,
+          .margin = margin,
       });
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';

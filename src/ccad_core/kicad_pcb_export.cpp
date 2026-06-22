@@ -177,7 +177,16 @@ std::string exportToKiCadPcb(const Project& project) {
       double pw = psize.width.nanometers / 1000000.0;
       double ph = psize.height.nanometers / 1000000.0;
 
-      const std::string pshape = pad->padstack.copper_props.empty() ? "circle" : (pad->padstack.copper_props.begin()->second.shape.shape == PadShape::Oval ? "oval" : "circle");
+      std::string pshape = "circle";
+      if (!pad->padstack.copper_props.empty()) {
+        const auto shape_enum = pad->padstack.copper_props.begin()->second.shape.shape;
+        if (shape_enum == ccad::PadShape::Rectangle) pshape = "rect";
+        else if (shape_enum == ccad::PadShape::Oval) pshape = "oval";
+        else if (shape_enum == ccad::PadShape::Trapezoid) pshape = "trapezoid";
+        else if (shape_enum == ccad::PadShape::RoundRect) pshape = "roundrect";
+        else if (shape_enum == ccad::PadShape::ChamferedRect) pshape = "chamfered_rect";
+        else if (shape_enum == ccad::PadShape::Custom) pshape = "custom";
+      }
 
       out << "    (pad \"" << pad->pin_name << "\" " << pad->type << " " << pshape << " (at "
           << px << " " << py;

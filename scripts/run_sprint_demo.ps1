@@ -230,6 +230,7 @@ Invoke-Ccad pcb add-track --file $Project --id TLOAD.2 --net DC_NEG --layer F.Cu
 Invoke-Ccad pcb add-graphic-line --file $Project --id G_TITLE_UNDERLINE --layer Dwgs.User --start-x-mm 5 --start-y-mm 6.2 --end-x-mm 28 --end-y-mm 6.2 --width-mm 0.15
 Invoke-Ccad pcb add-graphic-line --file $Project --id G_BOARD_REFERENCE --layer Dwgs.User --start-x-mm 5 --start-y-mm 27 --end-x-mm 40 --end-y-mm 27 --width-mm 0.20
 Invoke-Ccad pcb add-text --file $Project --id BT_TITLE --layer F.SilkS --text "FULL BRIDGE RECTIFIER" --x-mm 5 --y-mm 5 --size-x-mm 1.4 --size-y-mm 1.4 --rotation-deg 0
+Invoke-Ccad pcb add-barcode --file $Project --id BC1 --layer F.SilkS --text "CCad Prototype" --kind QRCode --x-mm 10 --y-mm 28 --size-x-mm 5 --size-y-mm 5
 
 $ProjectObject = Get-Content -Raw $Project | ConvertFrom-Json
 $ProjectObject.components = @(

@@ -1,5 +1,8 @@
 #include "ccad_core/canvas.hpp"
 
+#include "ccad_core/board_outline_polygon.hpp"
+#include "ccad_core/serialize.hpp"
+
 #include <cmath>
 #include <map>
 #include <optional>
@@ -171,12 +174,23 @@ CanvasScene buildCanvasScene(const Board& board) {
   }
 
   for (const Pad& pad : board.pads) {
+      std::string cshape = "circle";
+      if (!pad.padstack.copper_props.empty()) {
+        const auto shape_enum = pad.padstack.copper_props.begin()->second.shape.shape;
+        if (shape_enum == ccad::PadShape::Rectangle) cshape = "rect";
+        else if (shape_enum == ccad::PadShape::Oval) cshape = "oval";
+        else if (shape_enum == ccad::PadShape::Trapezoid) cshape = "trapezoid";
+        else if (shape_enum == ccad::PadShape::RoundRect) cshape = "roundrect";
+        else if (shape_enum == ccad::PadShape::ChamferedRect) cshape = "chamfered_rect";
+        else if (shape_enum == ccad::PadShape::Custom) cshape = "custom";
+      }
+
     scene.pads.push_back(CanvasPad{
         .id = pad.id,
         .net_id = pad.net_id,
         .layers = pad.padstack.layer_set,
         .type = pad.type,
-        .shape = pad.padstack.copper_props.empty() ? "circle" : (pad.padstack.copper_props.begin()->second.shape.shape == PadShape::Oval ? "oval" : "circle"),
+        .shape = cshape,
         .x_units = toMillimeters(pad.position.x),
         .y_units = toMillimeters(pad.position.y),
         .width_units = pad.padstack.copper_props.empty() ? 0.0 : toMillimeters(pad.padstack.copper_props.begin()->second.shape.size.width),
@@ -267,6 +281,20 @@ CanvasScene buildCanvasScene(const Board& board) {
       canvas_zone.pts_y_units.push_back(toMillimeters(point.y));
     }
     scene.zones.push_back(canvas_zone);
+  }
+
+  for (const BoardBarcode& barcode : board.barcodes) {
+    scene.barcodes.push_back(CanvasBarcode{
+        .id = barcode.id,
+        .layer_id = barcode.layer_id,
+        .text = barcode.text,
+        .kind = formatBarcodeType(barcode.kind),
+        .x_units = toMillimeters(barcode.position.x),
+        .y_units = toMillimeters(barcode.position.y),
+        .rotation_degrees = barcode.rotation_degrees,
+        .width_units = toMillimeters(barcode.size.width),
+        .height_units = toMillimeters(barcode.size.height),
+    });
   }
 
   std::map<std::string, std::size_t> routed_segment_counts;

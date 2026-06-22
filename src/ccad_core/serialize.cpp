@@ -304,6 +304,8 @@ class JsonReader {
           board.graphics = readBoardGraphics();
         } else if (key == "texts") {
           board.texts = readBoardTexts();
+        } else if (key == "barcodes") {
+          board.barcodes = readBoardBarcodes();
         } else if (key == "zones") {
           board.zones = readBoardZones();
         } else if (key == "route_requests") {
@@ -1017,6 +1019,58 @@ class JsonReader {
         throw std::runtime_error("trailing comma in board texts array");
       }
     }
+  }
+
+
+  std::vector<BoardBarcode> readBoardBarcodes() {
+    std::vector<BoardBarcode> barcodes;
+    expect('[');
+    if (consume(']')) {
+      return barcodes;
+    }
+    while (true) {
+      BoardBarcode barcode;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            barcode.id = readString();
+          } else if (key == "layer_id") {
+            barcode.layer_id = readString();
+          } else if (key == "text") {
+            barcode.text = readString();
+          } else if (key == "kind") {
+            barcode.kind = parseBarcodeType(readString());
+          } else if (key == "error_correction") {
+            barcode.error_correction = parseBarcodeEcc(readString());
+          } else if (key == "position") {
+            barcode.position = readPoint();
+          } else if (key == "rotation_degrees") {
+            barcode.rotation_degrees = readDouble();
+          } else if (key == "size") {
+            barcode.size = readSize();
+          } else if (key == "margin") {
+            barcode.margin = readSize();
+          } else if (key == "locked") {
+            barcode.locked = readBool();
+          } else {
+            throw std::runtime_error("unknown barcode key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+        }
+      }
+      barcodes.push_back(barcode);
+      if (consume(']')) {
+        break;
+      }
+      expect(',');
+    }
+    return barcodes;
   }
 
   std::vector<BoardZone> readBoardZones() {
@@ -1796,6 +1850,44 @@ static void writePadstack(std::ostringstream& out, const int indent, const Padst
   out << "\n";
   out << pad << "  }\n";
   out << pad << "}";
+} // namespace
+
+std::string formatBarcodeType(BarcodeType type) {
+  switch (type) {
+    case BarcodeType::Code39: return "Code39";
+    case BarcodeType::Code128: return "Code128";
+    case BarcodeType::DataMatrix: return "DataMatrix";
+    case BarcodeType::QRCode: return "QRCode";
+    case BarcodeType::MicroQRCode: return "MicroQRCode";
+  }
+  return "QRCode";
+}
+
+std::string formatBarcodeEcc(BarcodeEcc ecc) {
+  switch (ecc) {
+    case BarcodeEcc::Low: return "Low";
+    case BarcodeEcc::Medium: return "Medium";
+    case BarcodeEcc::Quartile: return "Quartile";
+    case BarcodeEcc::High: return "High";
+  }
+  return "Low";
+}
+
+BarcodeType parseBarcodeType(const std::string& str) {
+  if (str == "Code39") return BarcodeType::Code39;
+  if (str == "Code128") return BarcodeType::Code128;
+  if (str == "DataMatrix") return BarcodeType::DataMatrix;
+  if (str == "QRCode") return BarcodeType::QRCode;
+  if (str == "MicroQRCode") return BarcodeType::MicroQRCode;
+  throw std::runtime_error("Unknown BarcodeType: " + str);
+}
+
+BarcodeEcc parseBarcodeEcc(const std::string& str) {
+  if (str == "Low") return BarcodeEcc::Low;
+  if (str == "Medium") return BarcodeEcc::Medium;
+  if (str == "Quartile") return BarcodeEcc::Quartile;
+  if (str == "High") return BarcodeEcc::High;
+  throw std::runtime_error("Unknown BarcodeEcc: " + str);
 }
 std::string dumpProjectJson(const Project& project) {
   std::ostringstream out;
@@ -2035,6 +2127,31 @@ std::string dumpProjectJson(const Project& project) {
       }
       out << "\n";
       out << "      }" << (i + 1 == board.texts.size() ? "" : ",") << '\n';
+    }
+    out << "    ],\n";
+    out << "    \"barcodes\": [\n";
+    for (std::size_t i = 0; i < board.barcodes.size(); ++i) {
+      const BoardBarcode& barcode = board.barcodes.at(i);
+      out << "      {\n";
+      writeField(out, 8, "id", barcode.id);
+      writeField(out, 8, "layer_id", barcode.layer_id);
+      writeField(out, 8, "text", barcode.text);
+      writeField(out, 8, "kind", formatBarcodeType(barcode.kind));
+      writeField(out, 8, "error_correction", formatBarcodeEcc(barcode.error_correction));
+      out << "        \"position\": ";
+      writePoint(out, 0, barcode.position);
+      out << ",\n";
+      out << "        \"rotation_degrees\": " << barcode.rotation_degrees << ",\n";
+      out << "        \"size\": ";
+      writeSize(out, 0, barcode.size);
+      out << ",\n";
+      out << "        \"margin\": ";
+      writeSize(out, 0, barcode.margin);
+      if (barcode.locked) {
+        out << ",\n        \"locked\": true";
+      }
+      out << "\n";
+      out << "      }" << (i + 1 == board.barcodes.size() ? "" : ",") << '\n';
     }
     out << "    ],\n";
     out << "    \"zones\": [\n";

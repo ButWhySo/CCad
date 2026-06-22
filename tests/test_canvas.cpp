@@ -106,6 +106,13 @@ ccad::Project boardProject() {
                                             .preferred_layer_id = "F.Cu",
                                             .policy = "shortest_safe",
                                             .width = ccad::millimeters(0.25)}},
+      .barcodes = {ccad::BoardBarcode{.id = "BC1",
+                                      .layer_id = "F.SilkS",
+                                      .text = "Hello World",
+                                      .kind = ccad::BarcodeType::QRCode,
+                                      .position = ccad::millimeters(10, 20),
+                                      .size = ccad::millimeters(5, 5),
+                                      .rotation_degrees = 90.0}},
   });
   return project;
 }
@@ -207,5 +214,16 @@ int main() {
   require(scene.route_requests.at(0).width_nm == 250000, "canvas route width is nm");
   require(scene.route_requests.at(0).routed_segment_count == 1,
           "canvas route counts partial routed segments");
+
+  require(scene.barcodes.size() == 1, "canvas contains barcodes");
+  require(scene.barcodes.at(0).id == "BC1", "canvas barcode id");
+  require(scene.barcodes.at(0).layer_id == "F.SilkS", "canvas barcode layer_id");
+  require(scene.barcodes.at(0).text == "Hello World", "canvas barcode text");
+  require(scene.barcodes.at(0).kind == "QRCode", "canvas barcode kind");
+  require(std::abs(scene.barcodes.at(0).x_units - 10.0) < 1e-6, "canvas barcode x");
+  require(std::abs(scene.barcodes.at(0).y_units - 20.0) < 1e-6, "canvas barcode y");
+  require(std::abs(scene.barcodes.at(0).width_units - 5.0) < 1e-6, "canvas barcode width");
+  require(std::abs(scene.barcodes.at(0).height_units - 5.0) < 1e-6, "canvas barcode height");
+  require(scene.barcodes.at(0).rotation_degrees == 90.0, "canvas barcode rotation");
 }
 

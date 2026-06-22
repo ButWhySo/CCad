@@ -5,7 +5,10 @@
 #include "ccad_core/json.hpp"
 #include "ccad_core/layers.hpp"
 #include "ccad_core/pad_utils.hpp"
+#include "ccad_core/placement.hpp"
+#include "ccad_core/serialize.hpp"
 
+#include <iostream>
 #include <map>
 #include <optional>
 #include <ostream>
@@ -1427,6 +1430,33 @@ std::string padMachiningReportJson(const ccad::Project& project, const std::stri
       << "    \"pad_free_pad_check\"\n"
       << "  ]\n"
       << "}\n";
+  return out.str();
+}
+
+std::string boardBarcodeReportJson(const ccad::BoardBarcode& barcode) {
+  std::ostringstream out;
+  out << "{\n"
+      << "  \"id\": \"" << barcode.id << "\",\n"
+      << "  \"type\": \"Barcode\",\n"
+      << "  \"layer_id\": \"" << barcode.layer_id << "\",\n"
+      << "  \"text\": \"" << ccad::escapeJson(barcode.text) << "\",\n"
+      << "  \"kind\": \"" << ccad::formatBarcodeType(barcode.kind) << "\",\n"
+      << "  \"error_correction\": \"" << ccad::formatBarcodeEcc(barcode.error_correction) << "\",\n"
+      << "  \"position\": {\n"
+      << "    \"x_nm\": " << barcode.position.x.nanometers << ",\n"
+      << "    \"y_nm\": " << barcode.position.y.nanometers << "\n"
+      << "  },\n"
+      << "  \"rotation_degrees\": " << barcode.rotation_degrees << ",\n"
+      << "  \"size\": {\n"
+      << "    \"width_nm\": " << barcode.size.width.nanometers << ",\n"
+      << "    \"height_nm\": " << barcode.size.height.nanometers << "\n"
+      << "  },\n"
+      << "  \"margin\": {\n"
+      << "    \"width_nm\": " << barcode.margin.width.nanometers << ",\n"
+      << "    \"height_nm\": " << barcode.margin.height.nanometers << "\n"
+      << "  },\n"
+      << "  \"locked\": " << (barcode.locked ? "true" : "false") << "\n"
+      << "}";
   return out.str();
 }
 
