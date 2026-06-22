@@ -1948,6 +1948,33 @@ void addSymbolPreviewItems(QGraphicsScene& scene, std::vector<QGraphicsItem*>& i
 
 }  // namespace
 
+// ---------------------------------------------------------------------------
+// Non-blocking diagnostic helpers
+// When automation_mode_ is active these write to stderr + status bar instead
+// of popping a modal QMessageBox that would freeze the Qt event loop.
+// ---------------------------------------------------------------------------
+void ReviewWindow::warnUser(const QString& title, const QString& msg) {
+  if (automation_mode_) {
+    std::cerr << "[WARN][" << title.toStdString() << "] "
+              << msg.toStdString() << '\n';
+    std::cerr.flush();
+    if (statusBar()) statusBar()->showMessage(title + ": " + msg, 8000);
+  } else {
+    QMessageBox::warning(this, title, msg);
+  }
+}
+
+void ReviewWindow::criticalUser(const QString& title, const QString& msg) {
+  if (automation_mode_) {
+    std::cerr << "[ERROR][" << title.toStdString() << "] "
+              << msg.toStdString() << '\n';
+    std::cerr.flush();
+    if (statusBar()) statusBar()->showMessage(title + ": " + msg, 8000);
+  } else {
+    QMessageBox::critical(this, title, msg);
+  }
+}
+
 ReviewWindow::ReviewWindow() {
 #ifdef Q_OS_WIN
   HWND hwnd = reinterpret_cast<HWND>(this->winId());
@@ -2625,7 +2652,7 @@ ReviewWindow::ReviewWindow() {
       writeFile(current_path_, ccad::dumpProjectJson(project_cache_));
       statusBar()->showMessage("Saved updated design rules to project file");
     } catch (const std::exception& e) {
-      QMessageBox::warning(this, "Save failed", QString::fromStdString(e.what()));
+      warnUser("Save failed", QString::fromStdString(e.what()));
     }
     renderReview(ccad::buildReview(project_cache_));
     selection_inspector_->renderBoardRules(project_cache_.boards[0]);
@@ -2644,7 +2671,7 @@ ReviewWindow::ReviewWindow() {
       writeFile(current_path_, ccad::dumpProjectJson(project_cache_));
       statusBar()->showMessage("Saved updated track segment to project file");
     } catch (const std::exception& e) {
-      QMessageBox::warning(this, "Save failed", QString::fromStdString(e.what()));
+      warnUser("Save failed", QString::fromStdString(e.what()));
     }
     renderReview(ccad::buildReview(project_cache_));
     selectCanvasObjectById(*canvas_scene_, id);
@@ -2664,7 +2691,7 @@ ReviewWindow::ReviewWindow() {
       writeFile(current_path_, ccad::dumpProjectJson(project_cache_));
       statusBar()->showMessage("Saved updated via to project file");
     } catch (const std::exception& e) {
-      QMessageBox::warning(this, "Save failed", QString::fromStdString(e.what()));
+      warnUser("Save failed", QString::fromStdString(e.what()));
     }
     renderReview(ccad::buildReview(project_cache_));
     selectCanvasObjectById(*canvas_scene_, id);
@@ -2687,7 +2714,7 @@ ReviewWindow::ReviewWindow() {
       writeFile(current_path_, ccad::dumpProjectJson(project_cache_));
       statusBar()->showMessage("Saved updated pad to project file");
     } catch (const std::exception& e) {
-      QMessageBox::warning(this, "Save failed", QString::fromStdString(e.what()));
+      warnUser("Save failed", QString::fromStdString(e.what()));
     }
     renderReview(ccad::buildReview(project_cache_));
     selectCanvasObjectById(*canvas_scene_, id);
@@ -2707,7 +2734,7 @@ ReviewWindow::ReviewWindow() {
       writeFile(current_path_, ccad::dumpProjectJson(project_cache_));
       statusBar()->showMessage("Saved updated keepout to project file");
     } catch (const std::exception& e) {
-      QMessageBox::warning(this, "Save failed", QString::fromStdString(e.what()));
+      warnUser("Save failed", QString::fromStdString(e.what()));
     }
     renderReview(ccad::buildReview(project_cache_));
     selectCanvasObjectById(*canvas_scene_, id);
@@ -2727,7 +2754,7 @@ ReviewWindow::ReviewWindow() {
       writeFile(current_path_, ccad::dumpProjectJson(project_cache_));
       statusBar()->showMessage("Saved updated placement region to project file");
     } catch (const std::exception& e) {
-      QMessageBox::warning(this, "Save failed", QString::fromStdString(e.what()));
+      warnUser("Save failed", QString::fromStdString(e.what()));
     }
     renderReview(ccad::buildReview(project_cache_));
     selectCanvasObjectById(*canvas_scene_, id);
@@ -2874,7 +2901,7 @@ void ReviewWindow::restoreProjectSnapshot(const ccad::Project& snapshot) {
     renderReview(ccad::buildReview(project_cache_));
     statusBar()->showMessage("Restored project snapshot");
   } catch (const std::exception& e) {
-    QMessageBox::warning(this, "Restore failed", QString::fromStdString(e.what()));
+    warnUser("Restore failed", QString::fromStdString(e.what()));
   }
   updateUndoRedoActions();
 }
@@ -2890,20 +2917,20 @@ void ReviewWindow::updateUndoRedoActions() {
 
 void ReviewWindow::saveProject() {
   if (current_path_.empty()) {
-    QMessageBox::warning(this, "Save Project", "No project file is loaded.");
+    warnUser("Save Project", "No project file is loaded.");
     return;
   }
   try {
     writeFile(current_path_, ccad::dumpProjectJson(project_cache_));
     statusBar()->showMessage("Saved project file");
   } catch (const std::exception& e) {
-    QMessageBox::critical(this, "Save failed", QString::fromStdString(e.what()));
+    criticalUser("Save failed", QString::fromStdString(e.what()));
   }
 }
 
 bool ReviewWindow::saveProjectCacheAfterMutation(const QString& status_message) {
   if (current_path_.empty()) {
-    QMessageBox::warning(this, "Save Project", "No project file is loaded.");
+    warnUser("Save Project", "No project file is loaded.");
     return false;
   }
   try {
@@ -2912,14 +2939,14 @@ bool ReviewWindow::saveProjectCacheAfterMutation(const QString& status_message) 
     renderReview(ccad::buildReview(project_cache_));
     return true;
   } catch (const std::exception& e) {
-    QMessageBox::critical(this, "Save failed", QString::fromStdString(e.what()));
+    criticalUser("Save failed", QString::fromStdString(e.what()));
     return false;
   }
 }
 
 void ReviewWindow::showBoardSetup() {
   if (!!project_cache_.boards.empty()) {
-    QMessageBox::warning(this, "Board Setup", "Load a project with a board first.");
+    warnUser("Board Setup", "Load a project with a board first.");
     return;
   }
 
@@ -3175,12 +3202,12 @@ QString ReviewWindow::triggerDisplayStateActionJson(const QString& action_id) {
 
 void ReviewWindow::chooseAndPlaceFootprint() {
   if (!!project_cache_.boards.empty()) {
-    QMessageBox::warning(this, "No Board", "Load a project with a board before placing footprints.");
+    warnUser("No Board", "Load a project with a board before placing footprints.");
     return;
   }
   const std::string layer_id = activePcbLayerOrDefault();
   if (layer_id.empty()) {
-    QMessageBox::warning(this, "No Copper Layer", "No copper layer is available for footprint placement.");
+    warnUser("No Copper Layer", "No copper layer is available for footprint placement.");
     return;
   }
   LibraryBrowserDialog dialog(LibraryType::Footprint, this);
@@ -3195,7 +3222,7 @@ void ReviewWindow::chooseAndPlaceFootprint() {
     const std::filesystem::path path(*selected);
     ccad::Footprint footprint = loadFootprintSelection(path);
     if (footprint.pads.empty()) {
-      QMessageBox::warning(this, "Invalid Footprint", "The selected footprint has no pads.");
+      warnUser("Invalid Footprint", "The selected footprint has no pads.");
       return;
     }
     editor_tabs_->setCurrentWidget(canvas_view_);
@@ -3203,7 +3230,7 @@ void ReviewWindow::chooseAndPlaceFootprint() {
         nextComponentId(project_cache_, placementPrefixFromName(path.stem().string()));
     enterPlaceFootprintMode(component_id, footprint, layer_id);
   } catch (const std::exception& e) {
-    QMessageBox::critical(this, "Footprint Load Failed", QString::fromUtf8(e.what()));
+    criticalUser("Footprint Load Failed", QString::fromUtf8(e.what()));
   }
 }
 
@@ -3220,7 +3247,7 @@ void ReviewWindow::chooseAndPlaceSymbol() {
     const std::filesystem::path path(*selected);
     ccad::Symbol symbol = loadSymbolSelection(path);
     if (symbol.pins.empty()) {
-      QMessageBox::warning(this, "Invalid Symbol", "The selected symbol has no pins.");
+      warnUser("Invalid Symbol", "The selected symbol has no pins.");
       return;
     }
     editor_tabs_->setCurrentWidget(schematic_view_);
@@ -3228,7 +3255,7 @@ void ReviewWindow::chooseAndPlaceSymbol() {
         nextComponentId(project_cache_, placementPrefixFromName(path.stem().string()));
     enterPlaceSymbolMode(component_id, symbol, 0.0);
   } catch (const std::exception& e) {
-    QMessageBox::critical(this, "Symbol Load Failed", QString::fromUtf8(e.what()));
+    criticalUser("Symbol Load Failed", QString::fromUtf8(e.what()));
   }
 }
 
@@ -3598,7 +3625,7 @@ void ReviewWindow::reloadProject() {
     renderCanvas(ccad::CanvasScene{});
     project_summary_->renderLoadFailure(qstr(current_path_.string()));
     statusBar()->showMessage(qstr(error.what()));
-    QMessageBox::warning(this, "Load failed", qstr(error.what()));
+    warnUser("Load failed", qstr(error.what()));
   }
 }
 
@@ -8003,7 +8030,7 @@ void ReviewWindow::previewFootprint() {
     renderCanvas(scene);
     statusBar()->showMessage("Previewing footprint: " + qstr(footprint.name));
   } catch (const std::exception& e) {
-    QMessageBox::warning(this, "Import Failed", qstr(e.what()));
+    warnUser("Import Failed", qstr(e.what()));
   }
 }
 
@@ -8014,14 +8041,14 @@ void ReviewWindow::previewSymbol() {
     const std::string content = readFile(path.toStdString());
     const std::vector<ccad::Symbol> symbols = ccad::importKiCadSymbolLibrary(content);
     if (symbols.empty()) {
-      QMessageBox::warning(this, "Import Failed", "No symbols found in file.");
+      warnUser("Import Failed", "No symbols found in file.");
       return;
     }
     const ccad::CanvasScene scene = ccad::buildCanvasScene(symbols.front());
     renderCanvas(scene);
     statusBar()->showMessage("Previewing symbol: " + qstr(symbols.front().name));
   } catch (const std::exception& e) {
-    QMessageBox::warning(this, "Import Failed", qstr(e.what()));
+    warnUser("Import Failed", qstr(e.what()));
   }
 }
 
@@ -8053,7 +8080,7 @@ void ReviewWindow::loadSymbolPreview(const std::filesystem::path& path) {
 
 void ReviewWindow::exportDrcReport() {
   if (current_path_.empty()) {
-    QMessageBox::warning(this, "Export DRC Report", "Load a project before exporting DRC.");
+    warnUser("Export DRC Report", "Load a project before exporting DRC.");
     return;
   }
   const QString selected = QFileDialog::getSaveFileName(
@@ -8079,7 +8106,7 @@ void ReviewWindow::exportDrcReport() {
     writeFile(selected.toStdString(), out.str());
     statusBar()->showMessage("Exported DRC report");
   } catch (const std::exception& e) {
-    QMessageBox::critical(this, "Export failed", QString::fromStdString(e.what()));
+    criticalUser("Export failed", QString::fromStdString(e.what()));
   }
 }
 
@@ -8103,7 +8130,7 @@ void ReviewWindow::showComponentWizard() {
     int pins = dialog.getPinCount();
     
     if (name.isEmpty()) {
-      QMessageBox::warning(this, "Validation Error", "Component name cannot be empty.");
+      warnUser("Validation Error", "Component name cannot be empty.");
       return;
     }
 
@@ -8135,7 +8162,7 @@ void ReviewWindow::showComponentWizard() {
       out << QString::fromStdString(json_data);
       QMessageBox::information(this, "Success", "Component saved successfully.");
     } else {
-      QMessageBox::critical(this, "Error", "Failed to save file.");
+      criticalUser("Error", "Failed to save file.");
     }
   }
 }
@@ -8171,7 +8198,7 @@ void ReviewWindow::enterPlaceFootprintMode(const std::string& component_id, cons
     moveGhostTo(*canvas_view_, interaction_ghost_items_, interaction_last_mouse_pos_);
     tool_status_->setText("Tool Place Footprint");
   } catch (const std::exception& e) {
-    QMessageBox::warning(this, "Error", "Failed to load footprint for placement preview: " + QString(e.what()));
+    warnUser("Error", "Failed to load footprint for placement preview: " + QString(e.what()));
     cancelInteractionMode();
   }
 }
@@ -8190,7 +8217,7 @@ void ReviewWindow::enterPlaceSymbolMode(const std::string& component_id, const c
     moveGhostTo(*schematic_view_, interaction_ghost_items_, interaction_last_mouse_pos_);
     tool_status_->setText("Tool Place Symbol");
   } catch (const std::exception& e) {
-    QMessageBox::warning(this, "Error", "Failed to load symbol for placement preview: " + QString(e.what()));
+    warnUser("Error", "Failed to load symbol for placement preview: " + QString(e.what()));
     cancelInteractionMode();
   }
 }
@@ -8251,12 +8278,12 @@ void ReviewWindow::enterMoveFootprintMode(const std::string& component_id) {
 void ReviewWindow::enterAddViaMode() {
   cancelInteractionMode();
   if (!!project_cache_.boards.empty()) {
-    QMessageBox::warning(this, "No Board", "Load a project with a board before placing vias.");
+    warnUser("No Board", "Load a project with a board before placing vias.");
     return;
   }
   const std::string layer_id = activePcbLayerOrDefault();
   if (layer_id.empty()) {
-    QMessageBox::warning(this, "No Copper Layer", "No copper layer is available for via placement.");
+    warnUser("No Copper Layer", "No copper layer is available for via placement.");
     return;
   }
   editor_tabs_->setCurrentWidget(canvas_view_);
@@ -8286,12 +8313,12 @@ void ReviewWindow::enterAddViaMode() {
 void ReviewWindow::enterRouteTrackMode() {
   cancelInteractionMode();
   if (!!project_cache_.boards.empty()) {
-    QMessageBox::warning(this, "No Board", "Load a project with a board before routing tracks.");
+    warnUser("No Board", "Load a project with a board before routing tracks.");
     return;
   }
   const std::string layer_id = activePcbLayerOrDefault();
   if (layer_id.empty() && editor_tabs_->currentWidget() == canvas_view_) {
-    QMessageBox::warning(this, "No Copper Layer", "No copper layer is available for track routing.");
+    warnUser("No Copper Layer", "No copper layer is available for track routing.");
     return;
   }
   
@@ -8311,12 +8338,12 @@ void ReviewWindow::enterRouteTrackMode() {
 void ReviewWindow::enterAddZoneMode() {
   cancelInteractionMode();
   if (!!project_cache_.boards.empty()) {
-    QMessageBox::warning(this, "No Board", "Load a project with a board before drawing zones.");
+    warnUser("No Board", "Load a project with a board before drawing zones.");
     return;
   }
   const std::string layer_id = activePcbLayerOrDefault();
   if (layer_id.empty()) {
-    QMessageBox::warning(this, "No Copper Layer", "No copper layer is available for zone drawing.");
+    warnUser("No Copper Layer", "No copper layer is available for zone drawing.");
     return;
   }
   editor_tabs_->setCurrentWidget(canvas_view_);
@@ -8334,7 +8361,7 @@ void ReviewWindow::enterAddZoneMode() {
 void ReviewWindow::enterAddKeepoutMode() {
   cancelInteractionMode();
   if (!!project_cache_.boards.empty()) {
-    QMessageBox::warning(this, "No Board", "Load a project with a board before drawing keepouts.");
+    warnUser("No Board", "Load a project with a board before drawing keepouts.");
     return;
   }
   editor_tabs_->setCurrentWidget(canvas_view_);
@@ -8348,13 +8375,13 @@ void ReviewWindow::enterAddKeepoutMode() {
 void ReviewWindow::enterDrawGraphicMode() {
   cancelInteractionMode();
   if (!!project_cache_.boards.empty()) {
-    QMessageBox::warning(this, "No Board", "Load a project with a board before drawing graphics.");
+    warnUser("No Board", "Load a project with a board before drawing graphics.");
     return;
   }
   const std::string layer_id =
       defaultGraphicLayerId(project_cache_.boards[0], activePcbLayerOrDefault());
   if (layer_id.empty()) {
-    QMessageBox::warning(this, "No Layer", "No board layer is available for graphic placement.");
+    warnUser("No Layer", "No board layer is available for graphic placement.");
     return;
   }
   editor_tabs_->setCurrentWidget(canvas_view_);
@@ -8369,13 +8396,13 @@ void ReviewWindow::enterDrawGraphicMode() {
 void ReviewWindow::enterPlaceTextMode(const QString& text) {
   cancelInteractionMode();
   if (!!project_cache_.boards.empty()) {
-    QMessageBox::warning(this, "No Board", "Load a project with a board before placing text.");
+    warnUser("No Board", "Load a project with a board before placing text.");
     return;
   }
   const std::string layer_id =
       defaultBoardTextLayerId(project_cache_.boards[0], activePcbLayerOrDefault());
   if (layer_id.empty()) {
-    QMessageBox::warning(this, "No Layer", "No board layer is available for text placement.");
+    warnUser("No Layer", "No board layer is available for text placement.");
     return;
   }
   editor_tabs_->setCurrentWidget(canvas_view_);
@@ -8401,7 +8428,7 @@ void ReviewWindow::enterPlaceTextMode(const QString& text) {
 void ReviewWindow::enterAddWireMode() {
   cancelInteractionMode();
   if (!!project_cache_.schematics.empty()) {
-    QMessageBox::warning(this, "No Schematic", "Load a project with a schematic before adding wires.");
+    warnUser("No Schematic", "Load a project with a schematic before adding wires.");
     return;
   }
   
@@ -8418,7 +8445,7 @@ void ReviewWindow::enterAddWireMode() {
 void ReviewWindow::enterAddLabelMode(const QString& text) {
   cancelInteractionMode();
   if (!!project_cache_.schematics.empty()) {
-    QMessageBox::warning(this, "No Schematic", "Load a project with a schematic before adding labels.");
+    warnUser("No Schematic", "Load a project with a schematic before adding labels.");
     return;
   }
   
@@ -8550,13 +8577,13 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
                   cancelInteractionMode();
                   reloadProject();
                 } else {
-                  QMessageBox::critical(this, "Save Error", "Failed to write project file.");
+                  criticalUser("Save Error", "Failed to write project file.");
                 }
               } else {
-                QMessageBox::critical(this, "Save Error", "Failed to write project file.");
+                criticalUser("Save Error", "Failed to write project file.");
               }
             } catch (const std::exception& e) {
-              QMessageBox::critical(this, "Placement Error", QString::fromUtf8(e.what()));
+              criticalUser("Placement Error", QString::fromUtf8(e.what()));
             }
           } else if (interaction_mode_ == InteractionMode::PlaceSymbol) {
             try {
@@ -8572,13 +8599,13 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
                   cancelInteractionMode();
                   reloadProject();
                 } else {
-                  QMessageBox::critical(this, "Save Error", "Failed to write project file.");
+                  criticalUser("Save Error", "Failed to write project file.");
                 }
               } else {
-                QMessageBox::critical(this, "Save Error", "Failed to write project file.");
+                criticalUser("Save Error", "Failed to write project file.");
               }
             } catch (const std::exception& e) {
-              QMessageBox::critical(this, "Placement Error", QString::fromUtf8(e.what()));
+              criticalUser("Placement Error", QString::fromUtf8(e.what()));
             }
           } else if (interaction_mode_ == InteractionMode::AddLabel) {
             try {
@@ -8596,7 +8623,7 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               cancelInteractionMode();
               saveProjectCacheAfterMutation(QString::fromStdString("Placed label " + sch.labels.back().id));
             } catch (const std::exception& e) {
-              QMessageBox::critical(this, "Label Error", QString::fromUtf8(e.what()));
+              criticalUser("Label Error", QString::fromUtf8(e.what()));
             }
           } else if (interaction_mode_ == InteractionMode::PlaceText) {
             try {
@@ -8616,7 +8643,7 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               saveProjectCacheAfterMutation("Placed text " + text_id);
               selectCanvasObjectById(*canvas_scene_, text_id);
             } catch (const std::exception& e) {
-              QMessageBox::critical(this, "Text Error", QString::fromUtf8(e.what()));
+              criticalUser("Text Error", QString::fromUtf8(e.what()));
             }
           } else if (interaction_mode_ == InteractionMode::MoveFootprint) {
             try {
@@ -8632,11 +8659,11 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
                   cancelInteractionMode();
                   reloadProject();
                 } else {
-                  QMessageBox::critical(this, "Save Error", "Failed to write project file.");
+                  criticalUser("Save Error", "Failed to write project file.");
                 }
               }
             } catch (const std::exception& e) {
-              QMessageBox::critical(this, "Move Error", QString::fromUtf8(e.what()));
+              criticalUser("Move Error", QString::fromUtf8(e.what()));
             }
           } else if (interaction_mode_ == InteractionMode::AddVia) {
             try {
@@ -8655,7 +8682,7 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               saveProjectCacheAfterMutation("Placed via " + via_id);
               selectCanvasObjectById(*canvas_scene_, via_id);
             } catch (const std::exception& e) {
-              QMessageBox::critical(this, "Via Error", QString::fromUtf8(e.what()));
+              criticalUser("Via Error", QString::fromUtf8(e.what()));
             }
           } else if (interaction_mode_ == InteractionMode::RouteTrack) {
             try {
@@ -8685,7 +8712,7 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               saveProjectCacheAfterMutation("Routed track " + track_id);
               selectCanvasObjectById(*canvas_scene_, track_id);
             } catch (const std::exception& e) {
-              QMessageBox::critical(this, "Track Error", QString::fromUtf8(e.what()));
+              criticalUser("Track Error", QString::fromUtf8(e.what()));
             }
           } else if (interaction_mode_ == InteractionMode::AddWire) {
             try {
@@ -8710,7 +8737,7 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               cancelInteractionMode();
               saveProjectCacheAfterMutation(QString::fromStdString("Added wire " + sch.wires.back().id));
             } catch (const std::exception& e) {
-              QMessageBox::critical(this, "Wire Error", QString::fromUtf8(e.what()));
+              criticalUser("Wire Error", QString::fromUtf8(e.what()));
             }
           } else if (interaction_mode_ == InteractionMode::DrawGraphic) {
             try {
@@ -8745,7 +8772,7 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               saveProjectCacheAfterMutation("Drew graphic " + graphic_id);
               selectCanvasObjectById(*canvas_scene_, graphic_id);
             } catch (const std::exception& e) {
-              QMessageBox::critical(this, "Graphic Error", QString::fromUtf8(e.what()));
+              criticalUser("Graphic Error", QString::fromUtf8(e.what()));
             }
           } else if (interaction_mode_ == InteractionMode::AddZone) {
             try {
@@ -8796,7 +8823,7 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               saveProjectCacheAfterMutation("Added zone " + zone_qid);
               selectCanvasObjectById(*canvas_scene_, zone_qid);
             } catch (const std::exception& e) {
-              QMessageBox::critical(this, "Zone Error", QString::fromUtf8(e.what()));
+              criticalUser("Zone Error", QString::fromUtf8(e.what()));
             }
           } else if (interaction_mode_ == InteractionMode::AddKeepout) {
             try {
@@ -8835,7 +8862,7 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               saveProjectCacheAfterMutation("Added keepout " + keepout_id);
               selectCanvasObjectById(*canvas_scene_, keepout_id);
             } catch (const std::exception& e) {
-              QMessageBox::critical(this, "Keepout Error", QString::fromUtf8(e.what()));
+              criticalUser("Keepout Error", QString::fromUtf8(e.what()));
             }
           }
           if (interaction_mode_ != InteractionMode::Default) {

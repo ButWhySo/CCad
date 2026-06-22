@@ -103,11 +103,13 @@ int main(int argc, char** argv) {
     const bool validate_targets = std::string(argv[1]) == "--validate-ui-map-targets";
     const std::filesystem::path project_path(argv[2]);
     const std::filesystem::path output_path(argv[3]);
-    ReviewWindow window;
-    window.loadProjectPath(project_path);
-    window.show();
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
 
-    QTimer::singleShot(500, &window, [&window, output_path, validate_targets]() {
+    window->loadProjectPath(project_path);
+    window->show();
+
+    QTimer::singleShot(500, window, [window, output_path, validate_targets]() {
       std::ofstream output(output_path, std::ios::binary);
       if (!output) {
         std::cerr << "failed to open UI map output: " << output_path.string() << '\n';
@@ -115,8 +117,8 @@ int main(int argc, char** argv) {
         QCoreApplication::exit(2);
         return;
       }
-      const QString map = validate_targets ? window.validateUiMapTargetsJson(true)
-                                           : window.uiMapJson();
+      const QString map = validate_targets ? window->validateUiMapTargetsJson(true)
+                                           : window->uiMapJson();
       const QByteArray bytes = map.toUtf8();
       output.write(bytes.constData(), bytes.size());
       if (!output) {
@@ -136,11 +138,13 @@ int main(int argc, char** argv) {
     const std::filesystem::path project_path(argv[2]);
     const QString target_id = QString::fromLocal8Bit(argv[3]);
     const std::filesystem::path output_path(argv[4]);
-    ReviewWindow window;
-    window.loadProjectPath(project_path);
-    window.show();
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
 
-    QTimer::singleShot(500, &window, [&window, target_id, output_path]() {
+    window->loadProjectPath(project_path);
+    window->show();
+
+    QTimer::singleShot(500, window, [window, target_id, output_path]() {
       std::ofstream output(output_path, std::ios::binary);
       if (!output) {
         std::cerr << "failed to open UI target output: " << output_path.string() << '\n';
@@ -148,7 +152,7 @@ int main(int argc, char** argv) {
         QCoreApplication::exit(2);
         return;
       }
-      const QByteArray bytes = window.uiTargetJsonById(target_id).toUtf8();
+      const QByteArray bytes = window->uiTargetJsonById(target_id).toUtf8();
       output.write(bytes.constData(), bytes.size());
       if (!output) {
         std::cerr << "failed to write UI target output: " << output_path.string() << '\n';
@@ -166,11 +170,13 @@ int main(int argc, char** argv) {
     const std::filesystem::path project_path(argv[2]);
     const QString action_id = QString::fromLocal8Bit(argv[3]);
     const std::filesystem::path output_path(argv[4]);
-    ReviewWindow window;
-    window.loadProjectPath(project_path);
-    window.show();
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
 
-    QTimer::singleShot(500, &window, [&window, action_id, output_path]() {
+    window->loadProjectPath(project_path);
+    window->show();
+
+    QTimer::singleShot(500, window, [window, action_id, output_path]() {
       std::ofstream output(output_path, std::ios::binary);
       if (!output) {
         std::cerr << "failed to open UI action output: " << output_path.string() << '\n';
@@ -178,7 +184,7 @@ int main(int argc, char** argv) {
         QCoreApplication::exit(2);
         return;
       }
-      const QByteArray bytes = window.triggerSafeUiActionJson(action_id).toUtf8();
+      const QByteArray bytes = window->triggerSafeUiActionJson(action_id).toUtf8();
       output.write(bytes.constData(), bytes.size());
       if (!output) {
         std::cerr << "failed to write UI action output: " << output_path.string() << '\n';
@@ -195,11 +201,13 @@ int main(int argc, char** argv) {
   } else if (argc == 4 && std::string(argv[1]) == "--ui-active-layer") {
     const std::filesystem::path project_path(argv[2]);
     const std::filesystem::path output_path(argv[3]);
-    ReviewWindow window;
-    window.loadProjectPath(project_path);
-    window.show();
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
 
-    QTimer::singleShot(500, &window, [&window, output_path]() {
+    window->loadProjectPath(project_path);
+    window->show();
+
+    QTimer::singleShot(500, window, [window, output_path]() {
       std::ofstream output(output_path, std::ios::binary);
       if (!output) {
         std::cerr << "failed to open active layer output: " << output_path.string() << '\n';
@@ -207,7 +215,7 @@ int main(int argc, char** argv) {
         QCoreApplication::exit(2);
         return;
       }
-      const QByteArray bytes = window.activePcbLayerJson().toUtf8();
+      const QByteArray bytes = window->activePcbLayerJson().toUtf8();
       output.write(bytes.constData(), bytes.size());
       if (!output) {
         std::cerr << "failed to write active layer output: " << output_path.string() << '\n';
@@ -225,11 +233,13 @@ int main(int argc, char** argv) {
     const std::filesystem::path project_path(argv[2]);
     const QString layer_id = QString::fromLocal8Bit(argv[3]);
     const std::filesystem::path output_path(argv[4]);
-    ReviewWindow window;
-    window.loadProjectPath(project_path);
-    window.show();
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
 
-    QTimer::singleShot(500, &window, [&window, layer_id, output_path]() {
+    window->loadProjectPath(project_path);
+    window->show();
+
+    QTimer::singleShot(500, window, [window, layer_id, output_path]() {
       std::ofstream output(output_path, std::ios::binary);
       if (!output) {
         std::cerr << "failed to open active layer output: " << output_path.string() << '\n';
@@ -237,7 +247,7 @@ int main(int argc, char** argv) {
         QCoreApplication::exit(2);
         return;
       }
-      const QByteArray bytes = window.setActivePcbLayerForAutomation(layer_id).toUtf8();
+      const QByteArray bytes = window->setActivePcbLayerForAutomation(layer_id).toUtf8();
       output.write(bytes.constData(), bytes.size());
       if (!output) {
         std::cerr << "failed to write active layer output: " << output_path.string() << '\n';
@@ -254,11 +264,13 @@ int main(int argc, char** argv) {
   } else if (argc == 4 && std::string(argv[1]) == "--ui-active-net") {
     const std::filesystem::path project_path(argv[2]);
     const std::filesystem::path output_path(argv[3]);
-    ReviewWindow window;
-    window.loadProjectPath(project_path);
-    window.show();
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
 
-    QTimer::singleShot(500, &window, [&window, output_path]() {
+    window->loadProjectPath(project_path);
+    window->show();
+
+    QTimer::singleShot(500, window, [window, output_path]() {
       std::ofstream output(output_path, std::ios::binary);
       if (!output) {
         std::cerr << "failed to open active net output: " << output_path.string() << '\n';
@@ -266,7 +278,7 @@ int main(int argc, char** argv) {
         QCoreApplication::exit(2);
         return;
       }
-      const QByteArray bytes = window.activePcbNetJson().toUtf8();
+      const QByteArray bytes = window->activePcbNetJson().toUtf8();
       output.write(bytes.constData(), bytes.size());
       if (!output) {
         std::cerr << "failed to write active net output: " << output_path.string() << '\n';
@@ -284,11 +296,13 @@ int main(int argc, char** argv) {
     const std::filesystem::path project_path(argv[2]);
     const QString net_id = QString::fromLocal8Bit(argv[3]);
     const std::filesystem::path output_path(argv[4]);
-    ReviewWindow window;
-    window.loadProjectPath(project_path);
-    window.show();
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
 
-    QTimer::singleShot(500, &window, [&window, net_id, output_path]() {
+    window->loadProjectPath(project_path);
+    window->show();
+
+    QTimer::singleShot(500, window, [window, net_id, output_path]() {
       std::ofstream output(output_path, std::ios::binary);
       if (!output) {
         std::cerr << "failed to open active net output: " << output_path.string() << '\n';
@@ -296,7 +310,7 @@ int main(int argc, char** argv) {
         QCoreApplication::exit(2);
         return;
       }
-      const QByteArray bytes = window.setActivePcbNetForAutomation(net_id).toUtf8();
+      const QByteArray bytes = window->setActivePcbNetForAutomation(net_id).toUtf8();
       output.write(bytes.constData(), bytes.size());
       if (!output) {
         std::cerr << "failed to write active net output: " << output_path.string() << '\n';
@@ -348,11 +362,13 @@ int main(int argc, char** argv) {
     const double x_mm = std::stod(argv[3]);
     const double y_mm = std::stod(argv[4]);
     const std::filesystem::path output_path(argv[5]);
-    ReviewWindow window;
-    window.loadProjectPath(project_path);
-    window.show();
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
 
-    QTimer::singleShot(500, &window, [&window, x_mm, y_mm, output_path]() {
+    window->loadProjectPath(project_path);
+    window->show();
+
+    QTimer::singleShot(500, window, [window, x_mm, y_mm, output_path]() {
       std::ofstream output(output_path, std::ios::binary);
       if (!output) {
         std::cerr << "failed to open UI target output: " << output_path.string() << '\n';
@@ -360,7 +376,7 @@ int main(int argc, char** argv) {
         QCoreApplication::exit(2);
         return;
       }
-      const QByteArray bytes = window.uiTargetJsonForBoardPoint(x_mm, y_mm).toUtf8();
+      const QByteArray bytes = window->uiTargetJsonForBoardPoint(x_mm, y_mm).toUtf8();
       output.write(bytes.constData(), bytes.size());
       if (!output) {
         std::cerr << "failed to write UI target output: " << output_path.string() << '\n';
@@ -386,12 +402,20 @@ int main(int argc, char** argv) {
         argc == 7 ? parsePositiveIntArg(argv, 6, kMultiTargetPerTargetWaitMs)
                   : kMultiTargetPerTargetWaitMs;
     std::filesystem::create_directories(output_dir);
-    ReviewWindow window;
-    window.loadProjectPath(project_path);
-    window.show();
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
 
-    QTimer::singleShot(initial_wait_ms, &window,
-                       [&window, output_dir, name, initial_wait_ms, per_target_wait_ms]() {
+    // Suppress blocking QMessageBox dialogs during automated test runs so
+    // the event loop cannot hang waiting for user interaction.
+    window->setAutomationMode(true);
+    window->loadProjectPath(project_path);
+    // NOTE: showFullScreen() after showMaximized() causes STATUS_HEAP_CORRUPTION
+    // (0xC0000374) on Windows inside the Qt6 MinGW runtime.  showMaximized()
+    // alone gives a full-resolution window sufficient for screenshot validation.
+    window->showMaximized();
+
+    QTimer::singleShot(initial_wait_ms, window,
+                       [window, output_dir, name, initial_wait_ms, per_target_wait_ms]() {
       QStringList entries;
       const QStringList target_ids = {"action:cursor", "action:measurement", "action:save",
                                       "menu:file", "panel:properties", "action:grid",
@@ -406,22 +430,22 @@ int main(int argc, char** argv) {
           "action:contrast_mode", "tab:agent"};
       const QStringList click_before_capture_ids = {"action:agent_footer_trigger_drc",
                                                     "action:agent_pin_evidence"};
-      const auto runPass = [&window, &entries, &output_dir, &name, &target_ids,
+      const auto runPass = [window, &entries, &output_dir, &name, &target_ids,
                             &trigger_before_capture_ids,
                             &click_before_capture_ids,
                             per_target_wait_ms](
                                const QString& pass_name) {
         for (const QString& id : target_ids) {
           if (trigger_before_capture_ids.contains(id)) {
-            window.triggerSafeUiActionJson(id);
+            window->triggerSafeUiActionJson(id);
             QApplication::processEvents();
           }
           if (click_before_capture_ids.contains(id)) {
             const QString payload = QString("{\"id\":%1}").arg(jsonStringLocal(id));
-            window.runAgentUiQueryJson("ui.click", payload);
+            window->runAgentUiQueryJson("ui.click", payload);
             QApplication::processEvents();
           }
-          const QString target_json = window.uiTargetJsonById(id);
+          const QString target_json = window->uiTargetJsonById(id);
           const bool found = target_json.contains("\"found\":true");
           const std::optional<int> x = extractJsonInt(target_json, "\"logical_x\":");
           const std::optional<int> y = extractJsonInt(target_json, "\"logical_y\":");
@@ -437,11 +461,11 @@ int main(int argc, char** argv) {
             const std::filesystem::path path =
                 output_dir / (name + "-" + pass_name + "-" + slug + ".png").toStdString();
             screenshot_path = QString::fromStdString(path.string());
-            QPixmap screenshot = window.grab();
+            QPixmap screenshot = window->grab();
             QPainter painter(&screenshot);
             painter.setRenderHint(QPainter::Antialiasing, true);
             painter.setPen(QPen(QColor("#ff00cc"), 3));
-            const QPoint local_target = window.mapFromGlobal(QPoint(*x, *y));
+            const QPoint local_target = window->mapFromGlobal(QPoint(*x, *y));
             painter.drawEllipse(local_target, 10, 10);
             painter.drawLine(local_target.x() - 16, local_target.y(), local_target.x() + 16,
                              local_target.y());
@@ -463,7 +487,7 @@ int main(int argc, char** argv) {
       };
 
       runPass("initial");
-      window.resize(1120, 720);
+      // window->resize(1120, 720); // Removed because fullscreen resize crashes Qt on Windows
       QApplication::processEvents();
       QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
       runPass("resized");
@@ -498,11 +522,13 @@ int main(int argc, char** argv) {
     const double x_mm = std::stod(argv[4]);
     const double y_mm = std::stod(argv[5]);
     const std::filesystem::path output_path(argv[6]);
-    ReviewWindow window;
-    window.loadProjectPath(project_path);
-    window.show();
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
 
-    QTimer::singleShot(500, &window, [&window, footprint_path, x_mm, y_mm, output_path]() {
+    window->loadProjectPath(project_path);
+    window->show();
+
+    QTimer::singleShot(500, window, [window, footprint_path, x_mm, y_mm, output_path]() {
       std::ofstream output(output_path, std::ios::binary);
       if (!output) {
         std::cerr << "failed to open placement output: " << output_path.string() << '\n';
@@ -511,7 +537,7 @@ int main(int argc, char** argv) {
         return;
       }
       const QByteArray bytes =
-          window.commitFootprintPlacementForAutomation(footprint_path, x_mm, y_mm).toUtf8();
+          window->commitFootprintPlacementForAutomation(footprint_path, x_mm, y_mm).toUtf8();
       output.write(bytes.constData(), bytes.size());
       if (!output) {
         std::cerr << "failed to write placement output: " << output_path.string() << '\n';
@@ -530,11 +556,13 @@ int main(int argc, char** argv) {
     const double x_mm = std::stod(argv[3]);
     const double y_mm = std::stod(argv[4]);
     const std::filesystem::path output_path(argv[5]);
-    ReviewWindow window;
-    window.loadProjectPath(project_path);
-    window.show();
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
 
-    QTimer::singleShot(500, &window, [&window, x_mm, y_mm, output_path]() {
+    window->loadProjectPath(project_path);
+    window->show();
+
+    QTimer::singleShot(500, window, [window, x_mm, y_mm, output_path]() {
       std::ofstream output(output_path, std::ios::binary);
       if (!output) {
         std::cerr << "failed to open via placement output: " << output_path.string() << '\n';
@@ -542,7 +570,7 @@ int main(int argc, char** argv) {
         QCoreApplication::exit(2);
         return;
       }
-      const QByteArray bytes = window.commitViaPlacementForAutomation(x_mm, y_mm).toUtf8();
+      const QByteArray bytes = window->commitViaPlacementForAutomation(x_mm, y_mm).toUtf8();
       output.write(bytes.constData(), bytes.size());
       if (!output) {
         std::cerr << "failed to write via placement output: " << output_path.string() << '\n';
@@ -563,11 +591,13 @@ int main(int argc, char** argv) {
     const double end_x_mm = std::stod(argv[5]);
     const double end_y_mm = std::stod(argv[6]);
     const std::filesystem::path output_path(argv[7]);
-    ReviewWindow window;
-    window.loadProjectPath(project_path);
-    window.show();
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
 
-    QTimer::singleShot(500, &window, [&window, start_x_mm, start_y_mm, end_x_mm, end_y_mm,
+    window->loadProjectPath(project_path);
+    window->show();
+
+    QTimer::singleShot(500, window, [window, start_x_mm, start_y_mm, end_x_mm, end_y_mm,
                                       output_path]() {
       std::ofstream output(output_path, std::ios::binary);
       if (!output) {
@@ -576,8 +606,7 @@ int main(int argc, char** argv) {
         QCoreApplication::exit(2);
         return;
       }
-      const QByteArray bytes = window
-                                   .commitTrackPlacementForAutomation(start_x_mm, start_y_mm,
+      const QByteArray bytes = window->commitTrackPlacementForAutomation(start_x_mm, start_y_mm,
                                                                       end_x_mm, end_y_mm)
                                    .toUtf8();
       output.write(bytes.constData(), bytes.size());
@@ -600,11 +629,13 @@ int main(int argc, char** argv) {
     const double end_x_mm = std::stod(argv[5]);
     const double end_y_mm = std::stod(argv[6]);
     const std::filesystem::path output_path(argv[7]);
-    ReviewWindow window;
-    window.loadProjectPath(project_path);
-    window.show();
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
 
-    QTimer::singleShot(500, &window, [&window, start_x_mm, start_y_mm, end_x_mm, end_y_mm,
+    window->loadProjectPath(project_path);
+    window->show();
+
+    QTimer::singleShot(500, window, [window, start_x_mm, start_y_mm, end_x_mm, end_y_mm,
                                       output_path]() {
       std::ofstream output(output_path, std::ios::binary);
       if (!output) {
@@ -613,8 +644,7 @@ int main(int argc, char** argv) {
         QCoreApplication::exit(2);
         return;
       }
-      const QByteArray bytes = window
-                                   .commitZonePlacementForAutomation(start_x_mm, start_y_mm,
+      const QByteArray bytes = window->commitZonePlacementForAutomation(start_x_mm, start_y_mm,
                                                                      end_x_mm, end_y_mm)
                                    .toUtf8();
       output.write(bytes.constData(), bytes.size());
@@ -637,11 +667,13 @@ int main(int argc, char** argv) {
     const double end_x_mm = std::stod(argv[5]);
     const double end_y_mm = std::stod(argv[6]);
     const std::filesystem::path output_path(argv[7]);
-    ReviewWindow window;
-    window.loadProjectPath(project_path);
-    window.show();
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
 
-    QTimer::singleShot(500, &window, [&window, start_x_mm, start_y_mm, end_x_mm, end_y_mm,
+    window->loadProjectPath(project_path);
+    window->show();
+
+    QTimer::singleShot(500, window, [window, start_x_mm, start_y_mm, end_x_mm, end_y_mm,
                                       output_path]() {
       std::ofstream output(output_path, std::ios::binary);
       if (!output) {
@@ -650,8 +682,7 @@ int main(int argc, char** argv) {
         QCoreApplication::exit(2);
         return;
       }
-      const QByteArray bytes = window
-                                   .commitKeepoutPlacementForAutomation(start_x_mm, start_y_mm,
+      const QByteArray bytes = window->commitKeepoutPlacementForAutomation(start_x_mm, start_y_mm,
                                                                         end_x_mm, end_y_mm)
                                    .toUtf8();
       output.write(bytes.constData(), bytes.size());
@@ -671,11 +702,13 @@ int main(int argc, char** argv) {
     const std::filesystem::path project_path(argv[2]);
     const QString object_id = QString::fromLocal8Bit(argv[3]);
     const std::filesystem::path output_path(argv[4]);
-    ReviewWindow window;
-    window.loadProjectPath(project_path);
-    window.show();
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
 
-    QTimer::singleShot(500, &window, [&window, object_id, output_path]() {
+    window->loadProjectPath(project_path);
+    window->show();
+
+    QTimer::singleShot(500, window, [window, object_id, output_path]() {
       std::ofstream output(output_path, std::ios::binary);
       if (!output) {
         std::cerr << "failed to open delete output: " << output_path.string() << '\n';
@@ -683,7 +716,7 @@ int main(int argc, char** argv) {
         QCoreApplication::exit(2);
         return;
       }
-      const QByteArray bytes = window.deleteBoardObjectForAutomation(object_id).toUtf8();
+      const QByteArray bytes = window->deleteBoardObjectForAutomation(object_id).toUtf8();
       output.write(bytes.constData(), bytes.size());
       if (!output) {
         std::cerr << "failed to write delete output: " << output_path.string() << '\n';
@@ -701,13 +734,15 @@ int main(int argc, char** argv) {
     const std::filesystem::path project_path(argv[2]);
     const char* screenshot_arg = argv[3];
     const QString screenshot_path = QString::fromLocal8Bit(screenshot_arg);
-    ReviewWindow window;
-    window.loadProjectPath(project_path);
-    window.show();
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
 
-    QTimer::singleShot(kSingleScreenshotWaitMs, &window,
-                       [&window, screenshot_path, screenshot_arg]() {
-      const QPixmap screenshot = window.grab();
+    window->loadProjectPath(project_path);
+    window->show();
+
+    QTimer::singleShot(kSingleScreenshotWaitMs, window,
+                       [window, screenshot_path, screenshot_arg]() {
+      const QPixmap screenshot = window->grab();
       if (!screenshot.save(screenshot_path)) {
         std::cerr << "failed to save GUI screenshot: " << screenshot_arg << '\n';
         std::cerr.flush();
@@ -726,17 +761,19 @@ int main(int argc, char** argv) {
     const char* screenshot_arg = argv[3];
     const QString screenshot_path = QString::fromLocal8Bit(screenshot_arg);
     
-    ReviewWindow window;
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
+
     if (mode == "--screenshot-footprint") {
-      window.loadFootprintPreview(target_path);
+      window->loadFootprintPreview(target_path);
     } else {
-      window.loadSymbolPreview(target_path);
+      window->loadSymbolPreview(target_path);
     }
-    window.show();
+    window->show();
     
-    QTimer::singleShot(kSingleScreenshotWaitMs, &window,
-                       [&window, screenshot_path, screenshot_arg]() {
-      const QPixmap screenshot = window.grab();
+    QTimer::singleShot(kSingleScreenshotWaitMs, window,
+                       [window, screenshot_path, screenshot_arg]() {
+      const QPixmap screenshot = window->grab();
       if (!screenshot.save(screenshot_path)) {
         std::cerr << "failed to save GUI screenshot: " << screenshot_arg << '\n';
         std::cerr.flush();
@@ -775,13 +812,15 @@ int main(int argc, char** argv) {
     const std::filesystem::path project_path(argv[2]);
     const char* screenshot_arg = argv[3];
     const QString screenshot_path = QString::fromLocal8Bit(screenshot_arg);
-    ReviewWindow window;
-    window.loadProjectPath(project_path);
-    window.show();
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
 
-    QTimer::singleShot(kSingleScreenshotWaitMs, &window,
-                       [&window, screenshot_path, screenshot_arg]() {
-      const QPixmap screenshot = window.grab();
+    window->loadProjectPath(project_path);
+    window->show();
+
+    QTimer::singleShot(kSingleScreenshotWaitMs, window,
+                       [window, screenshot_path, screenshot_arg]() {
+      const QPixmap screenshot = window->grab();
       if (!screenshot.save(screenshot_path)) {
         std::cerr << "failed to save GUI screenshot: " << screenshot_arg << '\n';
         std::cerr.flush();
@@ -798,13 +837,15 @@ int main(int argc, char** argv) {
     const std::filesystem::path project_path(argv[2]);
     const char* screenshot_arg = argv[3];
     const QString screenshot_path = QString::fromLocal8Bit(screenshot_arg);
-    ReviewWindow window;
-    window.loadProjectPath(project_path);
-    window.show();
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
 
-    QTimer::singleShot(500, &window, [&window]() {
+    window->loadProjectPath(project_path);
+    window->show();
+
+    QTimer::singleShot(500, window, [window]() {
       // Simulate switching to measure tool
-      if (auto* tabs = window.findChild<QTabWidget*>("editorTabs")) {
+      if (auto* tabs = window->findChild<QTabWidget*>("editorTabs")) {
         if (auto* view = dynamic_cast<BoardCanvasView*>(tabs->currentWidget())) {
           view->setToolMode(ToolMode::Measure);
           // Simulate drag from (10,10) to (50,50) in viewport
@@ -816,9 +857,9 @@ int main(int argc, char** argv) {
       }
     });
 
-    QTimer::singleShot(kSingleScreenshotWaitMs, &window,
-                       [&window, screenshot_path, screenshot_arg]() {
-      const QPixmap screenshot = window.grab();
+    QTimer::singleShot(kSingleScreenshotWaitMs, window,
+                       [window, screenshot_path, screenshot_arg]() {
+      const QPixmap screenshot = window->grab();
       if (!screenshot.save(screenshot_path)) {
         std::cerr << "failed to save GUI screenshot: " << screenshot_arg << '\n';
         std::cerr.flush();
@@ -832,13 +873,13 @@ int main(int argc, char** argv) {
 
     return QApplication::exec();
   } else {
-    ReviewWindow window;
-    window.showMaximized();
-    window.raise();
-    window.activateWindow();
+    auto* window = new ReviewWindow();
+    window->showMaximized();
+    window->raise();
+    window->activateWindow();
     if (argc > 1) {
       const std::filesystem::path project_path(argv[1]);
-      QTimer::singleShot(0, &window, [&window, project_path]() { window.loadProjectPath(project_path); });
+      QTimer::singleShot(0, window, [window, project_path]() { window->loadProjectPath(project_path); });
     }
     const int exit_code = QApplication::exec();
     if (std::cout.good()) {

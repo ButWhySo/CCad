@@ -56,6 +56,10 @@ class ReviewWindow final : public QMainWindow {
   void loadProjectPath(const std::filesystem::path& path);
   void loadFootprintPreview(const std::filesystem::path& path);
   void loadSymbolPreview(const std::filesystem::path& path);
+  // When true, QMessageBox dialogs are suppressed and warnings are sent to
+  // stderr + status bar only.  Set this in automated test harnesses so that
+  // blocking dialogs cannot freeze the event loop.
+  void setAutomationMode(bool enabled) { automation_mode_ = enabled; }
   QString uiMapJson() const;
   QString uiMapCompactJson(const QString& role, int limit) const;
   QString uiRoleSummaryJson() const;
@@ -137,6 +141,8 @@ class ReviewWindow final : public QMainWindow {
  private:
   void applyStyle();
   void exportDrcReport();
+  void warnUser(const QString& title, const QString& msg);     // Non-blocking in automation mode
+  void criticalUser(const QString& title, const QString& msg); // Non-blocking in automation mode
   void saveProject();
   void showBoardSetup();
   void runDrcFromToolbar();
@@ -247,6 +253,7 @@ class ReviewWindow final : public QMainWindow {
   bool ratsnest_visible_ = true;
   bool net_highlight_enabled_ = false;
   bool high_contrast_mode_ = false;
+  bool automation_mode_ = false; // When true, suppress QMessageBox and log to stderr
   QString highlighted_net_id_;
   std::string active_pcb_layer_id_;
   std::string active_pcb_net_id_;
