@@ -2065,3 +2065,10 @@ CCad's human GUI and agent APIs now support a robust set of KiCad-like interacti
 - **Context Menu**: Right-clicking exposes quick actions like Properties, Delete, and Zoom to Fit.
 - **Tooltip**: Hovering over objects displays semantic information via Qt's native tooltip system.
 - **Escape-Cancel**: Pressing `<Esc>` terminates the active placement or interaction mode.
+
+## Sprint 229 PCB Appearance panel
+CCad's object browser was overhauled to mirror the KiCad appearance panel:
+- **Tabs**: Separates layers, objects, and nets into distinct QListWidget tabs.
+- **Color Swatches**: Shows accurate layer and net colors using custom generated QIcons to match the CanvasRenderTheme.
+- **Active Layer Tracking**: Selecting a layer in the Appearance dock automatically pushes it to the active board layer state and synchronizes with the top toolbar.
+- **Toggle Visibility**: Unchecking a layer properly hides its associated geometries from the board canvas.

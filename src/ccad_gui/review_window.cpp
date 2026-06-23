@@ -2644,6 +2644,16 @@ ReviewWindow::ReviewWindow() {
     renderReview(ccad::buildReview(project_cache_));
   });
 
+  object_browser_->setLayerActivatedCallback([this](const QString& layer_id) {
+    if (project_cache_.boards.empty()) return;
+    std::string layer_id_string = layer_id.toStdString();
+    if (!isCopperLayerId(project_cache_.boards[0], layer_id_string)) return;
+    active_pcb_layer_id_ = layer_id_string;
+    rebuildActiveLayerSelector();
+    updateActiveLayerStatus();
+    markUiMapChanged({"control:active_pcb_layer"}, {"control"});
+  });
+
   selection_inspector_->setDesignRulesChangedCallback([this](const ccad::DesignRules& rules) {
     if (project_cache_.boards.empty()) return;
     pushUndoSnapshot();
