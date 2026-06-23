@@ -26,6 +26,7 @@ struct BoardItemMetadata {
 BoardItemMetadata boardItemMetadata(const Board& board, const Pad& pad);
 BoardItemMetadata boardItemMetadata(const Board& board, const Via& via);
 BoardItemMetadata boardItemMetadata(const Board& board, const TrackSegment& track);
+BoardItemMetadata boardItemMetadata(const Board& board, const TrackArc& arc);
 BoardItemMetadata boardItemMetadata(const Board& board, const BoardGraphic& graphic);
 BoardItemMetadata boardItemMetadata(const Board& board, const BoardText& text);
 BoardItemMetadata boardItemMetadata(const Board& board, const BoardZone& zone);

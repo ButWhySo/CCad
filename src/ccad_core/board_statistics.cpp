@@ -127,7 +127,7 @@ BoardStatisticsObjectCounts countBoardStatisticsObjects(const Board& board) {
   BoardStatisticsObjectCounts counts;
   counts.pad_count = static_cast<int>(board.pads.size());
   counts.via_count = static_cast<int>(board.vias.size());
-  counts.track_count = static_cast<int>(board.tracks.size());
+  counts.track_count = static_cast<int>(board.tracks.size() + board.track_arcs.size());
   counts.zone_count = static_cast<int>(board.zones.size());
   counts.graphic_count = static_cast<int>(board.graphics.size());
   counts.text_count = static_cast<int>(board.texts.size());
@@ -149,16 +149,25 @@ BoardStatisticsObjectCounts countBoardStatisticsObjects(const Board& board) {
 }
 
 std::optional<Length> minimumTrackWidth(const Board& board) {
-  std::int64_t minimum = std::numeric_limits<std::int64_t>::max();
+  Length min_track_width{0};
   for (const TrackSegment& track : board.tracks) {
-    if (track.width.nanometers > 0 && track.width.nanometers < minimum) {
-      minimum = track.width.nanometers;
+    if (track.width.nanometers > 0) {
+      if (min_track_width.nanometers == 0 || track.width.nanometers < min_track_width.nanometers) {
+        min_track_width = track.width;
+      }
     }
   }
-  if (minimum == std::numeric_limits<std::int64_t>::max()) {
+  for (const TrackArc& arc : board.track_arcs) {
+    if (arc.width.nanometers > 0) {
+      if (min_track_width.nanometers == 0 || arc.width.nanometers < min_track_width.nanometers) {
+        min_track_width = arc.width;
+      }
+    }
+  }
+  if (min_track_width.nanometers == 0) {
     return std::nullopt;
   }
-  return nanometers(minimum);
+  return min_track_width;
 }
 
 std::optional<Length> minimumDrillDiameter(const std::vector<DrillLineItem>& drill_holes) {

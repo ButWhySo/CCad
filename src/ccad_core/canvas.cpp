@@ -235,8 +235,45 @@ CanvasScene buildCanvasScene(const Board& board) {
     });
   }
 
+  for (const TrackArc& arc : board.track_arcs) {
+    scene.track_arcs.push_back(CanvasTrackArc{
+        .id = arc.id,
+        .net_id = arc.net_id,
+        .layer_id = arc.layer_id,
+        .start_x_units = toMillimeters(arc.start.x),
+        .start_y_units = toMillimeters(arc.start.y),
+        .mid_x_units = toMillimeters(arc.mid.x),
+        .mid_y_units = toMillimeters(arc.mid.y),
+        .end_x_units = toMillimeters(arc.end.x),
+        .end_y_units = toMillimeters(arc.end.y),
+        .width_units = toMillimeters(arc.width)
+    });
+  }
+
   for (const BoardGraphic& graphic : board.graphics) {
-    if (graphic.kind == "line") {
+    if (graphic.kind == "arc") {
+      scene.arcs.push_back(CanvasArc{
+          .id = graphic.id,
+          .layer_id = graphic.layer_id,
+          .start_x_units = toMillimeters(graphic.start.x),
+          .start_y_units = toMillimeters(graphic.start.y),
+          .mid_x_units = graphic.mid.has_value() ? toMillimeters(graphic.mid->x) : 0.0,
+          .mid_y_units = graphic.mid.has_value() ? toMillimeters(graphic.mid->y) : 0.0,
+          .end_x_units = toMillimeters(graphic.end.x),
+          .end_y_units = toMillimeters(graphic.end.y),
+          .width_units = toMillimeters(graphic.width)
+      });
+    } else if (graphic.kind == "circle") {
+      scene.circles.push_back(CanvasCircle{
+          .id = graphic.id,
+          .layer_id = graphic.layer_id,
+          .center_x_units = toMillimeters(graphic.start.x),
+          .center_y_units = toMillimeters(graphic.start.y),
+          .radius_units = std::abs(toMillimeters(graphic.end.x) - toMillimeters(graphic.start.x)),
+          .width_units = toMillimeters(graphic.width),
+          .fill_type = "none",
+      });
+    } else if (graphic.kind == "line") {
       scene.lines.push_back(CanvasLine{
           .id = graphic.id,
           .layer_id = graphic.layer_id,

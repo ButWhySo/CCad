@@ -62,6 +62,19 @@ struct CanvasTrack {
   double width_units = 0.0;
 };
 
+struct CanvasTrackArc {
+  std::string id;
+  std::string net_id;
+  std::string layer_id;
+  double start_x_units = 0.0;
+  double start_y_units = 0.0;
+  double mid_x_units = 0.0;
+  double mid_y_units = 0.0;
+  double end_x_units = 0.0;
+  double end_y_units = 0.0;
+  double width_units = 0.0;
+};
+
 struct CanvasRouteRequest {
   std::string id;
   std::string net_id;
@@ -286,6 +299,7 @@ struct CanvasScene {
   std::vector<CanvasPad> pads;
   std::vector<CanvasVia> vias;
   std::vector<CanvasTrack> tracks;
+  std::vector<CanvasTrackArc> track_arcs;
   std::vector<CanvasRouteRequest> route_requests;
   
   std::vector<CanvasLine> lines;

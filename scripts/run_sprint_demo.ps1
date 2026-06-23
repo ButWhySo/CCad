@@ -221,6 +221,7 @@ Invoke-Ccad pcb add-track --file $Project --id TAC1.1 --net AC1 --layer F.Cu --s
 Invoke-Ccad pcb add-track --file $Project --id TAC1.2 --net AC1 --layer F.Cu --start-x-mm 8 --start-y-mm 17 --end-x-mm 10 --end-y-mm 19 --width-mm 0.25
 Invoke-Ccad pcb add-track --file $Project --id TAC2.1 --net AC2 --layer F.Cu --start-x-mm 32 --start-y-mm 17 --end-x-mm 30 --end-y-mm 15 --width-mm 0.25
 Invoke-Ccad pcb add-track --file $Project --id TAC2.2 --net AC2 --layer F.Cu --start-x-mm 32 --start-y-mm 17 --end-x-mm 30 --end-y-mm 19 --width-mm 0.25
+Invoke-Ccad pcb add-track-arc --file $Project --id TARC1 --net DC_POS --layer F.Cu --start-x-mm 22 --start-y-mm 10 --mid-x-mm 24 --mid-y-mm 12 --end-x-mm 25 --end-y-mm 10 --width-mm 0.25
 Invoke-Ccad pcb add-track --file $Project --id TPOS.1 --net DC_POS --layer F.Cu --start-x-mm 18 --start-y-mm 10 --end-x-mm 20 --end-y-mm 8 --width-mm 0.25
 Invoke-Ccad pcb add-track --file $Project --id TPOS.2 --net DC_POS --layer F.Cu --start-x-mm 22 --start-y-mm 10 --end-x-mm 20 --end-y-mm 8 --width-mm 0.25
 Invoke-Ccad pcb add-track --file $Project --id TNEG.1 --net DC_NEG --layer F.Cu --start-x-mm 18 --start-y-mm 24 --end-x-mm 20 --end-y-mm 26 --width-mm 0.25
@@ -229,6 +230,8 @@ Invoke-Ccad pcb add-track --file $Project --id TLOAD.1 --net DC_POS --layer F.Cu
 Invoke-Ccad pcb add-track --file $Project --id TLOAD.2 --net DC_NEG --layer F.Cu --start-x-mm 28 --start-y-mm 24 --end-x-mm 36 --end-y-mm 22 --width-mm 0.25
 Invoke-Ccad pcb add-graphic-line --file $Project --id G_TITLE_UNDERLINE --layer Dwgs.User --start-x-mm 5 --start-y-mm 6.2 --end-x-mm 28 --end-y-mm 6.2 --width-mm 0.15
 Invoke-Ccad pcb add-graphic-line --file $Project --id G_BOARD_REFERENCE --layer Dwgs.User --start-x-mm 5 --start-y-mm 27 --end-x-mm 40 --end-y-mm 27 --width-mm 0.20
+Invoke-Ccad pcb add-graphic-line --file $Project --id G_COURTYARD_TEST --layer F.CrtYd --start-x-mm 10 --start-y-mm 5 --end-x-mm 25 --end-y-mm 5 --width-mm 0.05
+Invoke-Ccad pcb add-graphic-arc --file $Project --id G_ARC_LOGO --layer F.SilkS --start-x-mm 35 --start-y-mm 5 --mid-x-mm 37 --mid-y-mm 3 --end-x-mm 39 --end-y-mm 5 --width-mm 0.20
 Invoke-Ccad pcb add-text --file $Project --id BT_TITLE --layer F.SilkS --text "FULL BRIDGE RECTIFIER" --x-mm 5 --y-mm 5 --size-x-mm 1.4 --size-y-mm 1.4 --rotation-deg 0
 Invoke-Ccad pcb add-barcode --file $Project --id BC1 --layer F.SilkS --text "CCad Prototype" --kind QRCode --x-mm 10 --y-mm 28 --size-x-mm 5 --size-y-mm 5
 Invoke-Ccad pcb add-dimension --file $Project --id DIM1 --layer F.Fab --kind linear --text "10.0 mm" --start-x-mm 5 --start-y-mm 3 --end-x-mm 15 --end-y-mm 3 --text-x-mm 10 --text-y-mm 2

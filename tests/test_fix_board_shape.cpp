@@ -17,8 +17,8 @@ void require(bool condition, const std::string& message) {
 }
 
 void test_connect_adjacent_graphics() {
-  BoardGraphic g1{"g1", "line", "F.Cu", {millimeters(0.0), millimeters(0.0)}, {millimeters(10.0), millimeters(0.0)}, millimeters(0.1), false};
-  BoardGraphic g2{"g2", "line", "F.Cu", {millimeters(10.05), millimeters(0.0)}, {millimeters(20.0), millimeters(0.0)}, millimeters(0.1), false};
+  BoardGraphic g1{"g1", "line", "F.Cu", {millimeters(0.0), millimeters(0.0)}, {millimeters(10.0), millimeters(0.0)}, std::nullopt, std::nullopt, millimeters(0.1), false};
+  BoardGraphic g2{"g2", "line", "F.Cu", {millimeters(10.05), millimeters(0.0)}, {millimeters(20.0), millimeters(0.0)}, std::nullopt, std::nullopt, millimeters(0.1), false};
 
   std::vector<BoardGraphic*> graphics = {&g1, &g2};
 
@@ -34,8 +34,8 @@ void test_connect_adjacent_graphics() {
 }
 
 void test_connect_locked_shapes_skipped() {
-  BoardGraphic g1{"g1", "line", "F.Cu", {millimeters(0.0), millimeters(0.0)}, {millimeters(10.0), millimeters(0.0)}, millimeters(0.1), true};
-  BoardGraphic g2{"g2", "line", "F.Cu", {millimeters(10.05), millimeters(0.0)}, {millimeters(20.0), millimeters(0.0)}, millimeters(0.1), false};
+  BoardGraphic g1{"g1", "line", "F.Cu", {millimeters(0.0), millimeters(0.0)}, {millimeters(10.0), millimeters(0.0)}, std::nullopt, std::nullopt, millimeters(0.1), true};
+  BoardGraphic g2{"g2", "line", "F.Cu", {millimeters(10.05), millimeters(0.0)}, {millimeters(20.0), millimeters(0.0)}, std::nullopt, std::nullopt, millimeters(0.1), false};
 
   std::vector<BoardGraphic*> graphics = {&g1, &g2};
 
@@ -45,10 +45,10 @@ void test_connect_locked_shapes_skipped() {
 }
 
 void test_connect_closed_loop() {
-  BoardGraphic g1{"g1", "line", "F.Cu", {millimeters(0.0), millimeters(0.0)}, {millimeters(10.0), millimeters(0.0)}, millimeters(0.1), false};
-  BoardGraphic g2{"g2", "line", "F.Cu", {millimeters(10.0), millimeters(0.0)}, {millimeters(10.0), millimeters(10.0)}, millimeters(0.1), false};
-  BoardGraphic g3{"g3", "line", "F.Cu", {millimeters(10.0), millimeters(10.0)}, {millimeters(0.0), millimeters(10.0)}, millimeters(0.1), false};
-  BoardGraphic g4{"g4", "line", "F.Cu", {millimeters(0.0), millimeters(10.0)}, {millimeters(0.0), millimeters(0.05)}, millimeters(0.1), false};
+  BoardGraphic g1{"g1", "line", "F.Cu", {millimeters(0.0), millimeters(0.0)}, {millimeters(10.0), millimeters(0.0)}, std::nullopt, std::nullopt, millimeters(0.1), false};
+  BoardGraphic g2{"g2", "line", "F.Cu", {millimeters(10.0), millimeters(0.0)}, {millimeters(10.0), millimeters(10.0)}, std::nullopt, std::nullopt, millimeters(0.1), false};
+  BoardGraphic g3{"g3", "line", "F.Cu", {millimeters(10.0), millimeters(10.0)}, {millimeters(0.0), millimeters(10.0)}, std::nullopt, std::nullopt, millimeters(0.1), false};
+  BoardGraphic g4{"g4", "line", "F.Cu", {millimeters(0.0), millimeters(10.0)}, {millimeters(0.0), millimeters(0.05)}, std::nullopt, std::nullopt, millimeters(0.1), false};
 
   std::vector<BoardGraphic*> graphics = {&g1, &g2, &g3, &g4};
 

@@ -221,12 +221,25 @@ struct TrackSegment {
   bool locked = false;
 };
 
+struct TrackArc {
+  std::string id;
+  std::string net_id;
+  std::string layer_id;
+  Point start;
+  Point mid;
+  Point end;
+  Length width;
+  bool locked = false;
+};
+
 struct BoardGraphic {
   std::string id;
   std::string kind;
   std::string layer_id;
   Point start;
   Point end;
+  std::optional<Point> mid = std::nullopt;
+  std::optional<double> angle_degrees = std::nullopt;
   Length width;
   bool locked = false;
 };
@@ -371,6 +384,7 @@ struct Board {
   std::vector<Pad> pads;
   std::vector<Via> vias;
   std::vector<TrackSegment> tracks;
+  std::vector<TrackArc> track_arcs;
   std::vector<BoardGraphic> graphics;
   std::vector<BoardText> texts;
   std::vector<BoardDimension> dimensions;

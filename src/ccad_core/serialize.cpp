@@ -300,6 +300,8 @@ class JsonReader {
           board.vias = readVias();
         } else if (key == "tracks") {
           board.tracks = readTracks();
+        } else if (key == "track_arcs") {
+          board.track_arcs = readTrackArcs();
         } else if (key == "graphics") {
           board.graphics = readBoardGraphics();
         } else if (key == "texts") {
@@ -925,10 +927,53 @@ class JsonReader {
         return tracks;
       }
       expect(',');
-      if (peek(']')) {
+      if (track.locked) {
         throw std::runtime_error("trailing comma in tracks array");
       }
     }
+  }
+
+  std::vector<TrackArc> readTrackArcs() {
+    std::vector<TrackArc> arcs;
+    expect('[');
+    if (consume(']')) {
+      return arcs;
+    }
+    while (true) {
+      TrackArc arc;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            arc.id = readString();
+          } else if (key == "net_id") {
+            arc.net_id = readString();
+          } else if (key == "layer_id") {
+            arc.layer_id = readString();
+          } else if (key == "start") {
+            arc.start = readPoint();
+          } else if (key == "mid") {
+            arc.mid = readPoint();
+          } else if (key == "end") {
+            arc.end = readPoint();
+          } else if (key == "width_nm") {
+            arc.width = nanometers(readInt64());
+          } else if (key == "locked") {
+            arc.locked = readBool();
+          } else {
+            throw std::runtime_error("unknown track arc key: " + key);
+          }
+          if (consume('}')) break;
+          expect(',');
+        }
+      }
+      arcs.push_back(std::move(arc));
+      if (consume(']')) break;
+      expect(',');
+    }
+    return arcs;
   }
 
   std::vector<BoardGraphic> readBoardGraphics() {
@@ -952,8 +997,12 @@ class JsonReader {
             graphic.layer_id = readString();
           } else if (key == "start") {
             graphic.start = readPoint();
+          } else if (key == "mid") {
+            graphic.mid = readPoint();
           } else if (key == "end") {
             graphic.end = readPoint();
+          } else if (key == "angle_degrees") {
+            graphic.angle_degrees = readDouble();
           } else if (key == "width_nm") {
             graphic.width = nanometers(readInt64());
           } else if (key == "locked") {
@@ -2377,6 +2426,29 @@ std::string dumpProjectJson(const Project& project) {
       out << "      }" << (i + 1 == board.tracks.size() ? "" : ",") << '\n';
     }
     out << "    ],\n";
+    out << "    \"track_arcs\": [\n";
+    for (std::size_t i = 0; i < board.track_arcs.size(); ++i) {
+      const TrackArc& arc = board.track_arcs.at(i);
+      out << "      {\n";
+      writeField(out, 8, "id", arc.id);
+      writeField(out, 8, "net_id", arc.net_id);
+      writeField(out, 8, "layer_id", arc.layer_id);
+      out << "        \"start\": ";
+      writePoint(out, 0, arc.start);
+      out << ",\n";
+      out << "        \"mid\": ";
+      writePoint(out, 0, arc.mid);
+      out << ",\n";
+      out << "        \"end\": ";
+      writePoint(out, 0, arc.end);
+      out << ",\n";
+      out << "        \"width_nm\": " << arc.width.nanometers;
+      if (arc.locked) {
+        out << ",\n        \"locked\": true";
+      }
+      out << "\n      }" << (i + 1 == board.track_arcs.size() ? "" : ",") << '\n';
+    }
+    out << "    ],\n";
     out << "    \"graphics\": [\n";
     for (std::size_t i = 0; i < board.graphics.size(); ++i) {
       const BoardGraphic& graphic = board.graphics.at(i);
@@ -2387,9 +2459,17 @@ std::string dumpProjectJson(const Project& project) {
       out << "        \"start\": ";
       writePoint(out, 0, graphic.start);
       out << ",\n";
+      if (graphic.mid.has_value()) {
+        out << "        \"mid\": ";
+        writePoint(out, 0, *graphic.mid);
+        out << ",\n";
+      }
       out << "        \"end\": ";
       writePoint(out, 0, graphic.end);
       out << ",\n";
+      if (graphic.angle_degrees.has_value()) {
+        out << "        \"angle_degrees\": " << *graphic.angle_degrees << ",\n";
+      }
       out << "        \"width_nm\": " << graphic.width.nanometers;
       if (graphic.locked) {
         out << ",\n        \"locked\": true";

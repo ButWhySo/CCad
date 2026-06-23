@@ -121,6 +121,15 @@ BoardItemMetadata boardItemMetadata(const Board& board, const TrackSegment& trac
                            track.locked);
 }
 
+BoardItemMetadata boardItemMetadata(const Board& board, const TrackArc& arc) {
+  return boardItemMetadata(board,
+                           std::vector<std::string>{arc.layer_id},
+                           true,
+                           false,
+                           false,
+                           arc.locked);
+}
+
 BoardItemMetadata boardItemMetadata(const Board& board, const BoardGraphic& graphic) {
   return boardItemMetadata(board,
                            std::vector<std::string>{graphic.layer_id},

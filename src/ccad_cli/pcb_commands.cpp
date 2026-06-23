@@ -1766,6 +1766,54 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "add-track-arc") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--net", "--layer", "--start-x-mm",
+                                 "--start-y-mm", "--mid-x-mm", "--mid-y-mm", "--end-x-mm", "--end-y-mm", "--width-mm"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const std::string layer_id = requireOption(options, "--layer");
+      requireUniqueTrackId(board, id);
+      requireUniquePhysicalObjectId(board, id);
+      requireCopperLayer(board, layer_id);
+      const ccad::Point start{
+          .x = requirePositiveMillimeters(options, "--start-x-mm"),
+          .y = requirePositiveMillimeters(options, "--start-y-mm"),
+      };
+      const ccad::Point mid{
+          .x = requirePositiveMillimeters(options, "--mid-x-mm"),
+          .y = requirePositiveMillimeters(options, "--mid-y-mm"),
+      };
+      const ccad::Point end{
+          .x = requirePositiveMillimeters(options, "--end-x-mm"),
+          .y = requirePositiveMillimeters(options, "--end-y-mm"),
+      };
+      requireInsideBoard(board, start, "arc start");
+      requireInsideBoard(board, mid, "arc mid");
+      requireInsideBoard(board, end, "arc end");
+      const ccad::Length width = requirePositiveMillimeters(options, "--width-mm");
+      const ccad::Length half_width = ccad::nanometers(width.nanometers / 2);
+      requirePointWithMarginInsideBoard(board, start, half_width, "arc start");
+      requirePointWithMarginInsideBoard(board, mid, half_width, "arc mid");
+      requirePointWithMarginInsideBoard(board, end, half_width, "arc end");
+      board.track_arcs.push_back(ccad::TrackArc{
+          .id = id,
+          .net_id = requireOption(options, "--net"),
+          .layer_id = layer_id,
+          .start = start,
+          .mid = mid,
+          .end = end,
+          .width = width,
+      });
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "add-graphic-line") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--layer", "--start-x-mm", "--start-y-mm",
@@ -1798,6 +1846,53 @@ int pcbCommand(const std::vector<std::string>& args) {
           .layer_id = layer_id,
           .start = start,
           .end = end,
+          .width = width,
+      });
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "add-graphic-arc") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--id", "--layer", "--start-x-mm", "--start-y-mm",
+                                 "--mid-x-mm", "--mid-y-mm", "--end-x-mm", "--end-y-mm", "--width-mm"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      const std::string id = requireOption(options, "--id");
+      const std::string layer_id = requireOption(options, "--layer");
+      requireUniquePhysicalObjectId(board, id);
+      requireLayer(board, layer_id);
+      const ccad::Point start{
+          .x = requirePositiveMillimeters(options, "--start-x-mm"),
+          .y = requirePositiveMillimeters(options, "--start-y-mm"),
+      };
+      const ccad::Point mid{
+          .x = requirePositiveMillimeters(options, "--mid-x-mm"),
+          .y = requirePositiveMillimeters(options, "--mid-y-mm"),
+      };
+      const ccad::Point end{
+          .x = requirePositiveMillimeters(options, "--end-x-mm"),
+          .y = requirePositiveMillimeters(options, "--end-y-mm"),
+      };
+      requireInsideBoard(board, start, "arc start");
+      requireInsideBoard(board, mid, "arc mid");
+      requireInsideBoard(board, end, "arc end");
+      const ccad::Length width = requirePositiveMillimeters(options, "--width-mm");
+      const ccad::Length half_width = ccad::nanometers(width.nanometers / 2);
+      requirePointWithMarginInsideBoard(board, start, half_width, "arc start");
+      requirePointWithMarginInsideBoard(board, mid, half_width, "arc mid");
+      requirePointWithMarginInsideBoard(board, end, half_width, "arc end");
+      board.graphics.push_back(ccad::BoardGraphic{
+          .id = id,
+          .kind = "arc",
+          .layer_id = layer_id,
+          .start = start,
+          .end = end,
+          .mid = mid,
           .width = width,
       });
       if (!writeProjectFile(file, project)) {

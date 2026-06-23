@@ -104,6 +104,7 @@ BoardItemContainerSummary summarizeBoardItemContainer(const Board& board) {
   summary.remove_modes = {boardContainerRemoveModeName(BoardContainerRemoveMode::normal),
                           boardContainerRemoveModeName(BoardContainerRemoveMode::bulk)};
   summary.board_item_count = board.pads.size() + board.vias.size() + board.tracks.size() +
+                             board.track_arcs.size() +
                              board.graphics.size() + board.texts.size() + board.zones.size();
   summary.constraint_item_count = board.keepouts.size() + board.placement_regions.size();
   summary.total_item_count = summary.board_item_count + summary.constraint_item_count;
@@ -119,6 +120,9 @@ std::optional<BoardContainerItemRef> findBoardContainerItem(const Board& board,
     return ref;
   }
   if (auto ref = findInItems(board.tracks, id, BoardContainerItemKind::track, true)) {
+    return ref;
+  }
+  if (auto ref = findInItems(board.track_arcs, id, BoardContainerItemKind::track, true)) {
     return ref;
   }
   if (auto ref = findInItems(board.graphics, id, BoardContainerItemKind::graphic, true)) {
@@ -162,6 +166,11 @@ BoardContainerRemoveResult removeBoardContainerItem(Board& board, const std::str
   }
   if (auto result =
           removeFromItems(board.tracks, id, BoardContainerItemKind::track, true, mode);
+      result.removed) {
+    return result;
+  }
+  if (auto result =
+          removeFromItems(board.track_arcs, id, BoardContainerItemKind::track, true, mode);
       result.removed) {
     return result;
   }

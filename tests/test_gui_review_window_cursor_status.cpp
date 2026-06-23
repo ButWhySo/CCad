@@ -22,6 +22,7 @@ ccad::Board shiftedBoard() {
       .pads = {},
       .vias = {},
       .tracks = {},
+      .track_arcs = {},
       .graphics = {},
       .texts = {},
       .dimensions = {},

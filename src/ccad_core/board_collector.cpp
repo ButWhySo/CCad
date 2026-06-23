@@ -160,6 +160,23 @@ void collectType(const Board& board,
     }
     return;
   }
+  if (kicad_type == "PCB_ARC_T") {
+    if (guide.ignore_tracks) {
+      return;
+    }
+    for (const TrackArc& arc : board.track_arcs) {
+      if (noNetFiltered("track", arc.net_id, guide)) {
+        continue;
+      }
+      maybeAppendCandidate(primary,
+                           secondary,
+                           makeCandidate("track", arc.id, kicad_type, arc.net_id,
+                                         boardItemMetadata(board, arc)),
+                           guide,
+                           visible_layers);
+    }
+    return;
+  }
   if (kicad_type == "PCB_FOOTPRINT_T") {
     for (const BoardFootprint& footprint : board.footprints) {
       maybeAppendCandidate(primary,
