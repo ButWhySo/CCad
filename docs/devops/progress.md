@@ -464,3 +464,6 @@ Sprint 240 is verified on branch `sprint-240-importer-source-walk`. The batch co
 
 Sprint 241 is verified on branch `sprint-241-auxiliary-source-walk`. The batch concluded the KiCad auxiliary tools source walk in `pagelayout_editor`, `pcb_calculator`, and `bitmap2component`, omitting redundant wxWidgets GUI forms, and stubbing page layouts, RF calculators, and bitmap conversions to the backlog.
 
+
+
+- **Sprint 227 (KiCad Additonal PCB Object Docs)** is complete. Updated the docs to reflect the completed source walk for pcb_barcode.cpp, pcb_dimension.cpp, pcb_group.cpp, pcb_reference_image.cpp, pcb_table.cpp, pcb_target.cpp, pcb_text.cpp. Fixed coordinate multiplier bug in CanvasReferenceImage and CanvasTable.
