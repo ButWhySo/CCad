@@ -2044,3 +2044,11 @@ Agents and scripts can author these objects through the CLI commands:
 - `ccad pcb add-group --file <project.ccad.json> --id <id> --name <name> --members <id1,id2,...>`
 
 The JSON board representation includes these elements, and they are queryable using `ccad pcb list-objects` and `ccad pcb get-object`. Dimensions are also visualized via the Qt GUI canvas using a light path connecting the start and end coordinates with the centered value text.
+
+## Sprint 226 KiCad Additional PCB Objects
+
+The CCad model now supports BoardBarcode, BoardReferenceImage, BoardTable, BoardTarget, and BoardTextbox natively in the Board object model, corresponding to KiCad's equivalent primitives.
+
+These objects are fully supported in CCad's JSON IO and are exposed via the CLI commands pcb add-barcode, pcb add-reference-image, pcb add-table, and pcb add-target. They are also queryable via pcb list-objects and pcb get-object.
+
+In the GUI, these objects are mapped to Qt QGraphicsItem derivatives inside the CanvasScene, rendering basic placeholders, reference bounding boxes, table borders, and standard alignment target crosshairs, matching their KiCad behaviors.

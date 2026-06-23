@@ -328,8 +328,8 @@ CanvasScene buildCanvasScene(const Board& board) {
         .id = ref.id,
         .layer_id = ref.layer,
         .data = ref.data,
-        .x_units = ref.x_mm * 1e6, // Using internal units
-        .y_units = ref.y_mm * 1e6,
+        .x_units = ref.x_mm,
+        .y_units = ref.y_mm,
         .scale = ref.scale,
         .opacity = ref.opacity,
     });
@@ -339,12 +339,12 @@ CanvasScene buildCanvasScene(const Board& board) {
     scene.tables.push_back(CanvasTable{
         .id = table.id,
         .layer_id = table.layer,
-        .x_units = table.x_mm * 1e6,
-        .y_units = table.y_mm * 1e6,
+        .x_units = table.x_mm,
+        .y_units = table.y_mm,
         .rows = table.rows,
         .cols = table.cols,
-        .width_units = table.width_mm * 1e6,
-        .height_units = table.height_mm * 1e6,
+        .width_units = table.width_mm,
+        .height_units = table.height_mm,
     });
   }
 
