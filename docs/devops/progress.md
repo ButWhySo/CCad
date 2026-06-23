@@ -6,54 +6,9 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 226
-- Branch: `sprint-226-pcb-root-model`, sprint work complete and visually proven
-- Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration.GitHub Actions CI/CD fix was applied (visual_harness_policy test now tracks .agents/workflows/*.md). Local ctest passes 100%.
-windows : 26/27 Test #26: geometry .........................   Passed    0.01 sec
-      Start 27: canvas
-27/27 Test #27: canvas ...........................   Passed    0.01 sec
-
-96% tests passed, 1 tests failed out of 27
-
-Total Test time (real) =   6.14 sec
-
-The following tests FAILED:
-	 20 - visual_harness_policy (Failed)
-Errors while running CTest
-Error: Process completed with exit code 1.
-
-core Linux : 23/27 Test #23: review ...........................   Passed    0.00 sec
-      Start 24: diff
-24/27 Test #24: diff .............................   Passed    0.01 sec
-      Start 25: transaction
-25/27 Test #25: transaction ......................   Passed    0.00 sec
-      Start 26: geometry
-26/27 Test #26: geometry .........................   Passed    0.00 sec
-      Start 27: canvas
-27/27 Test #27: canvas ...........................   Passed    0.00 sec
-
-96% tests passed, 1 tests failed out of 27
-
-Total Test time (real) =   0.73 sec
-
-The following tests FAILED:
-Errors while running CTest
-	 20 - visual_harness_policy (Failed)
-
-gui linux : 39/41 Test #39: transaction .......................   Passed    0.00 sec
-      Start 40: geometry
-40/41 Test #40: geometry ..........................   Passed    0.00 sec
-      Start 41: canvas
-41/41 Test #41: canvas ............................   Passed    0.00 sec
-
-98% tests passed, 1 tests failed out of 41
-
-Total Test time (real) =   1.82 sec
-
-The following tests FAILED:
-Errors while running CTest
-	 20 - visual_harness_policy (Failed)
-Error: Process completed with exit code 8.
+- Sprint: 227
+- Branch: `sprint-227-pcb-geometry` (pending creation)
+- Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 covered the bounded runtime and EDA evidence expansion through Sprint 225. Phase 9 is the bounded KiCad parity execution phase.
 
