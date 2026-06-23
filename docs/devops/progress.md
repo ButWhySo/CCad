@@ -7,8 +7,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
 - Sprint: 226
-- Branch: `sprint-226-pcb-root-model`, no sprint commit yet
-- Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration.Need to fix failing ci/cd in github workflows.
+- Branch: `sprint-226-pcb-root-model`, sprint work complete and visually proven
+- Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration.GitHub Actions CI/CD fix was applied (visual_harness_policy test now tracks .agents/workflows/*.md). Local ctest passes 100%.
 windows : 26/27 Test #26: geometry .........................   Passed    0.01 sec
       Start 27: canvas
 27/27 Test #27: canvas ...........................   Passed    0.01 sec
