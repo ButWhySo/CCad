@@ -848,11 +848,25 @@ int main(int argc, char** argv) {
       if (auto* tabs = window->findChild<QTabWidget*>("editorTabs")) {
         if (auto* view = dynamic_cast<BoardCanvasView*>(tabs->currentWidget())) {
           view->setToolMode(ToolMode::Measure);
-          // Simulate drag from (10,10) to (50,50) in viewport
-          QMouseEvent press(QEvent::MouseButtonPress, QPointF(100, 100), QPointF(100, 100), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+          // Simulate drag from (100,100) to (400,300) in viewport
+          QMouseEvent press(QEvent::MouseButtonPress, QPointF(100, 100), QPointF(100, 100), Qt::LeftButton, 
+Qt::LeftButton, Qt::NoModifier);
           QApplication::sendEvent(view->viewport(), &press);
-          QMouseEvent move(QEvent::MouseMove, QPointF(400, 300), QPointF(400, 300), Qt::NoButton, Qt::LeftButton, Qt::NoModifier);
+          QMouseEvent move(QEvent::MouseMove, QPointF(400, 300), QPointF(400, 300), Qt::NoButton, Qt::LeftButton, 
+Qt::NoModifier);
           QApplication::sendEvent(view->viewport(), &move);
+
+          // Also simulate a double click to open the SelectionInspector properties on the track arc at (24, 12) mm
+          QTimer::singleShot(200, window, [view]() {
+              view->setToolMode(ToolMode::Select);
+              QPoint viewport_pt = view->mapFromScene(QPointF(24.0 * 1e6, 12.0 * 1e6));
+              QMouseEvent click(QEvent::MouseButtonPress, QPointF(viewport_pt), QPointF(viewport_pt), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+              QApplication::sendEvent(view->viewport(), &click);
+              QMouseEvent release(QEvent::MouseButtonRelease, QPointF(viewport_pt), QPointF(viewport_pt), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+              QApplication::sendEvent(view->viewport(), &release);
+              QMouseEvent dclick(QEvent::MouseButtonDblClick, QPointF(viewport_pt), QPointF(viewport_pt), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+              QApplication::sendEvent(view->viewport(), &dclick);
+          });
         }
       }
     });

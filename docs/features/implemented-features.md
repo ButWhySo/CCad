@@ -2052,3 +2052,16 @@ The CCad model now supports BoardBarcode, BoardReferenceImage, BoardTable, Board
 These objects are fully supported in CCad's JSON IO and are exposed via the CLI commands pcb add-barcode, pcb add-reference-image, pcb add-table, and pcb add-target. They are also queryable via pcb list-objects and pcb get-object.
 
 In the GUI, these objects are mapped to Qt QGraphicsItem derivatives inside the CanvasScene, rendering basic placeholders, reference bounding boxes, table borders, and standard alignment target crosshairs, matching their KiCad behaviors.
+
+## Sprint 228 KiCad PCB Editor Interaction Slice
+
+CCad's human GUI and agent APIs now support a robust set of KiCad-like interaction mechanics:
+- **Select**: Single-clicking an object highlights it and enables `Move` operations.
+- **Measure**: A dedicated measure tool overlays cyan `dx`, `dy`, and `dist` metrics during viewport drags.
+- **Route/Add Via/Add Zone/Draw Graphic/Place Text**: Native `InteractionMode` handlers display a live placement ghost tracking the cursor. Agents use `pcb add-track`, `pcb add-via`, `pcb add-zone`, etc.
+- **Move**: Pressing `<M>` or dragging selection starts a move interaction, snapping the ghost to the cursor.
+- **Delete**: The `<Delete>` key removes selected items.
+- **Properties**: Double-clicking an object or using the context menu's 'Properties...' action opens the `SelectionInspectorPanel` which allows coordinate/size edits (achieving resize parity without complex GUI corner handles).
+- **Context Menu**: Right-clicking exposes quick actions like Properties, Delete, and Zoom to Fit.
+- **Tooltip**: Hovering over objects displays semantic information via Qt's native tooltip system.
+- **Escape-Cancel**: Pressing `<Esc>` terminates the active placement or interaction mode.
