@@ -621,14 +621,29 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     const QColor layer_color = colorForKiCadLayer(theme, dim.layer_id);
     QPen pen(layer_color, 1.2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
     
-    double sx = sceneX(scene, dim.start_x_units, margin, scale);
-    double sy = sceneY(scene, dim.start_y_units, margin, scale);
-    double ex = sceneX(scene, dim.end_x_units, margin, scale);
-    double ey = sceneY(scene, dim.end_y_units, margin, scale);
-    
     QPainterPath path;
-    path.moveTo(sx, sy);
-    path.lineTo(ex, ey);
+    
+    for (const auto& line : dim.lines) {
+      double sx = sceneX(scene, line.sx, margin, scale);
+      double sy = sceneY(scene, line.sy, margin, scale);
+      double ex = sceneX(scene, line.ex, margin, scale);
+      double ey = sceneY(scene, line.ey, margin, scale);
+      path.moveTo(sx, sy);
+      path.lineTo(ex, ey);
+    }
+    
+    for (const auto& arrow : dim.arrows) {
+      if (arrow.pts_x_units.empty()) continue;
+      double sx = sceneX(scene, arrow.pts_x_units[0], margin, scale);
+      double sy = sceneY(scene, arrow.pts_y_units[0], margin, scale);
+      path.moveTo(sx, sy);
+      for (size_t i = 1; i < arrow.pts_x_units.size(); ++i) {
+        double px = sceneX(scene, arrow.pts_x_units[i], margin, scale);
+        double py = sceneY(scene, arrow.pts_y_units[i], margin, scale);
+        path.lineTo(px, py);
+      }
+      path.lineTo(sx, sy); // close arrow polygon
+    }
     
     auto* item = addHighlightPath(canvas_scene, path, pen, Qt::NoBrush);
     item->setToolTip("Dimension " + qstr(dim.id) + " (" + qstr(dim.text) + ")");
@@ -798,6 +813,12 @@ void addDiagnosticMarkers(QGraphicsScene& canvas_scene,
   }
 
   for (const ccad::Diagnostic& diagnostic : diagnostics) {
+    // Only paint error-severity diagnostics as visible canvas markers.
+    // Warning-level diagnostics (e.g. empty net) are informational and
+    // should appear in the DRC panel, but not as dots on every object.
+    if (diagnostic.severity != "error") {
+      continue;
+    }
     const QString object_id = qstr(diagnostic.object_id);
     QGraphicsItem* target = findCanvasObjectById(canvas_scene, object_id);
     if (target == nullptr) {

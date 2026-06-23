@@ -263,12 +263,22 @@ struct CanvasDimension {
   std::string id;
   std::string layer_id;
   std::string text;
-  double start_x_units = 0.0;
-  double start_y_units = 0.0;
-  double end_x_units = 0.0;
-  double end_y_units = 0.0;
   double text_x_units = 0.0;
   double text_y_units = 0.0;
+
+  struct Line {
+    double sx;
+    double sy;
+    double ex;
+    double ey;
+  };
+  std::vector<Line> lines;
+
+  struct ArrowPolygon {
+    std::vector<double> pts_x_units;
+    std::vector<double> pts_y_units;
+  };
+  std::vector<ArrowPolygon> arrows;
 };
 
 struct CanvasReferenceImage {

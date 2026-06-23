@@ -106,4 +106,4 @@ Progress: Phase X/Y, Sprint N, <branch>, <status>
 
 Merge back to `main` only after the branch is green, visually proven, documented, and backed by the required verification artifacts.
 
-After a successful merge, clean up the feature branch once its purpose is served. Also clean up stray branches whose purpose is complete and which are no longer needed.
+After a successful merge, clean up the feature branch once its purpose is served, i.e delete them after merging. Also clean up stray branches whose purpose is complete and which are no longer needed.

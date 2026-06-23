@@ -383,17 +383,77 @@ CanvasScene buildCanvasScene(const Board& board) {
   }
 
   for (const BoardDimension& dim : board.dimensions) {
-    scene.dimensions.push_back(CanvasDimension{
+    CanvasDimension cdim{
         .id = dim.id,
         .layer_id = dim.layer_id,
         .text = dim.text,
-        .start_x_units = toMillimeters(dim.start.x),
-        .start_y_units = toMillimeters(dim.start.y),
-        .end_x_units = toMillimeters(dim.end.x),
-        .end_y_units = toMillimeters(dim.end.y),
         .text_x_units = toMillimeters(dim.text_position.x),
         .text_y_units = toMillimeters(dim.text_position.y),
-    });
+        .lines = {},
+        .arrows = {}
+    };
+
+    double sx = toMillimeters(dim.start.x);
+    double sy = toMillimeters(dim.start.y);
+    double ex = toMillimeters(dim.end.x);
+    double ey = toMillimeters(dim.end.y);
+    double tx = cdim.text_x_units;
+    double ty = cdim.text_y_units;
+
+    double dx = ex - sx;
+    double dy = ey - sy;
+    double dist = std::sqrt(dx * dx + dy * dy);
+
+    if (dist > 0.001) {
+       double ux = dx / dist;
+       double uy = dy / dist;
+
+       double v1x = sx - tx;
+       double v1y = sy - ty;
+       double proj1 = v1x * ux + v1y * uy;
+       double cross_sx = tx + proj1 * ux;
+       double cross_sy = ty + proj1 * uy;
+       
+       double v2x = ex - tx;
+       double v2y = ey - ty;
+       double proj2 = v2x * ux + v2y * uy;
+       double cross_ex = tx + proj2 * ux;
+       double cross_ey = ty + proj2 * uy;
+       
+       cdim.lines.push_back({cross_sx, cross_sy, cross_ex, cross_ey});
+       
+       double overhang = 1.0;
+       double ext_dx = -uy * overhang;
+       double ext_dy = ux * overhang;
+       double cross_dist1 = v1x * (-uy) + v1y * (ux);
+       if (cross_dist1 < 0) { ext_dx = -ext_dx; ext_dy = -ext_dy; }
+       
+       cdim.lines.push_back({sx, sy, cross_sx + ext_dx, cross_sy + ext_dy});
+       cdim.lines.push_back({ex, ey, cross_ex + ext_dx, cross_ey + ext_dy});
+       
+       double arrow_len = 1.5;
+       double arrow_width = 0.5;
+
+       {
+         CanvasDimension::ArrowPolygon arrow1;
+         arrow1.pts_x_units = {cross_sx, cross_sx + arrow_len * ux + arrow_width * uy,
+                                cross_sx + arrow_len * ux - arrow_width * uy};
+         arrow1.pts_y_units = {cross_sy, cross_sy + arrow_len * uy - arrow_width * ux,
+                                cross_sy + arrow_len * uy + arrow_width * ux};
+         cdim.arrows.push_back(arrow1);
+       }
+
+       {
+         CanvasDimension::ArrowPolygon arrow2;
+         arrow2.pts_x_units = {cross_ex, cross_ex - arrow_len * ux + arrow_width * uy,
+                                cross_ex - arrow_len * ux - arrow_width * uy};
+         arrow2.pts_y_units = {cross_ey, cross_ey - arrow_len * uy - arrow_width * ux,
+                                cross_ey - arrow_len * uy + arrow_width * ux};
+         cdim.arrows.push_back(arrow2);
+       }
+    }
+
+    scene.dimensions.push_back(cdim);
   }
 
   for (const BoardReferenceImage& ref : board.reference_images) {
