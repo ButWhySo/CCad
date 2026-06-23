@@ -474,7 +474,7 @@ What it does:
 - Stores physical lengths as integer nanometers.
 - Converts millimeters and mils deterministically.
 - Represents points, sizes, rectangles, board outline, layers, and rectangular keepouts.
-- Represents first drawable PCB primitives: pads, vias, and track segments.
+- Represents drawable PCB primitives: pads, vias, track segments, dimensions, groups, barcodes, reference images, and tables.
 - Preserves primitive IDs, net IDs, layer IDs, component/pin ownership, and geometry through JSON round-trip.
 - Serializes board data in project JSON.
 
