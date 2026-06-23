@@ -239,6 +239,14 @@ struct CanvasBarcode {
   double rotation_degrees = 0.0;
   double width_units = 0.0;
   double height_units = 0.0;
+  
+  struct Module {
+    double x_units;
+    double y_units;
+    double w_units;
+    double h_units;
+  };
+  std::vector<Module> modules;
 };
 
 struct CanvasTarget {

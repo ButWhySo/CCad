@@ -2,6 +2,7 @@
 
 #include "ccad_core/board_outline_polygon.hpp"
 #include "ccad_core/serialize.hpp"
+#include "ccad_core/third_party/qrcodegen/qrcodegen.hpp"
 
 #include <cmath>
 #include <map>
@@ -321,7 +322,7 @@ CanvasScene buildCanvasScene(const Board& board) {
   }
 
   for (const BoardBarcode& barcode : board.barcodes) {
-    scene.barcodes.push_back(CanvasBarcode{
+    CanvasBarcode cb{
         .id = barcode.id,
         .layer_id = barcode.layer_id,
         .text = barcode.text,
@@ -331,7 +332,42 @@ CanvasScene buildCanvasScene(const Board& board) {
         .rotation_degrees = barcode.rotation_degrees,
         .width_units = toMillimeters(barcode.size.width),
         .height_units = toMillimeters(barcode.size.height),
-    });
+        .modules = {}
+    };
+    
+    if (barcode.kind == BarcodeType::QRCode || barcode.kind == BarcodeType::MicroQRCode) {
+      qrcodegen::QrCode::Ecc ecc = qrcodegen::QrCode::Ecc::LOW;
+      if (barcode.error_correction == BarcodeEcc::Medium) ecc = qrcodegen::QrCode::Ecc::MEDIUM;
+      else if (barcode.error_correction == BarcodeEcc::Quartile) ecc = qrcodegen::QrCode::Ecc::QUARTILE;
+      else if (barcode.error_correction == BarcodeEcc::High) ecc = qrcodegen::QrCode::Ecc::HIGH;
+      
+      try {
+        qrcodegen::QrCode qr = qrcodegen::QrCode::encodeText(barcode.text.c_str(), ecc);
+        int size = qr.getSize();
+        double w_unit = cb.width_units / size;
+        double h_unit = cb.height_units / size;
+        
+        for (int y = 0; y < size; ++y) {
+          for (int x = 0; x < size; ++x) {
+            if (qr.getModule(x, y)) {
+               cb.modules.push_back(CanvasBarcode::Module{
+                 .x_units = -cb.width_units / 2.0 + (x + 0.5) * w_unit,
+                 .y_units = -cb.height_units / 2.0 + (y + 0.5) * h_unit,
+                 .w_units = w_unit,
+                 .h_units = h_unit
+               });
+            }
+          }
+        }
+      } catch (const std::exception& e) {
+         // ignore parsing errors for now
+      }
+    } else {
+       // Dummy block for non-QR codes to at least render something
+       cb.modules.push_back(CanvasBarcode::Module{0.0, 0.0, cb.width_units, cb.height_units});
+    }
+    
+    scene.barcodes.push_back(cb);
   }
 
   for (const BoardTarget& target : board.targets) {

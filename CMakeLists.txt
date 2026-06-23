@@ -24,6 +24,7 @@ add_library(ccad_core
   src/ccad_core/board_design_settings.cpp
   src/ccad_core/canvas.cpp
   src/ccad_core/cleanup_item.cpp
+  src/ccad_core/third_party/qrcodegen/qrcodegen.cpp
   src/ccad_core/model.cpp
   src/ccad_core/component_generator.cpp
   src/ccad_core/diff.cpp

@@ -562,19 +562,30 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
   for (const ccad::CanvasBarcode& barcode : scene.barcodes) {
     if (hidden_layers.count(barcode.layer_id)) continue;
     const QColor layer_color = colorForKiCadLayer(theme, barcode.layer_id);
-    QPen pen(layer_color, 1);
-    QBrush brush(layer_color, Qt::Dense6Pattern);
+    QPen pen(Qt::NoPen);
+    QBrush brush(layer_color);
     
     double cx = sceneX(scene, barcode.x_units, margin, scale);
     double cy = sceneY(scene, barcode.y_units, margin, scale);
-    double w = barcode.width_units * scale;
-    double h = barcode.height_units * scale;
     
-    QGraphicsRectItem* rect = canvas_scene.addRect(cx - w/2.0, cy - h/2.0, w, h, pen, brush);
-    rect->setTransformOriginPoint(cx, cy);
-    rect->setRotation(barcode.rotation_degrees);
-    rect->setToolTip("Barcode " + qstr(barcode.id) + ": " + qstr(barcode.text));
-    tagObject(*rect, "barcode", qstr(barcode.id), layer_color, "", qstr(barcode.layer_id));
+    QPainterPath path;
+    if (barcode.modules.empty()) {
+        double w = barcode.width_units * scale;
+        double h = barcode.height_units * scale;
+        path.addRect(cx - w/2.0, cy - h/2.0, w, h);
+    } else {
+        for (const auto& mod : barcode.modules) {
+            double mw = mod.w_units * scale;
+            double mh = mod.h_units * scale;
+            path.addRect(cx + mod.x_units * scale, cy - mod.y_units * scale, mw, mh);
+        }
+    }
+    
+    QGraphicsPathItem* pathItem = canvas_scene.addPath(path, pen, brush);
+    pathItem->setTransformOriginPoint(cx, cy);
+    pathItem->setRotation(barcode.rotation_degrees);
+    pathItem->setToolTip("Barcode " + qstr(barcode.id) + ": " + qstr(barcode.text));
+    tagObject(*pathItem, "barcode", qstr(barcode.id), layer_color, "", qstr(barcode.layer_id));
   }
 
   for (const ccad::CanvasTarget& target : scene.targets) {

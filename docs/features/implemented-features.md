@@ -2072,3 +2072,7 @@ CCad's object browser was overhauled to mirror the KiCad appearance panel:
 - **Color Swatches**: Shows accurate layer and net colors using custom generated QIcons to match the CanvasRenderTheme.
 - **Active Layer Tracking**: Selecting a layer in the Appearance dock automatically pushes it to the active board layer state and synchronizes with the top toolbar.
 - **Toggle Visibility**: Unchecking a layer properly hides its associated geometries from the board canvas.
+
+## Sprint 230 PCB Barcode generation
+- **C++ QR Code Generation**: CCad natively generates QR Codes utilizing Project Nayuki's lightweight C++ `qrcodegen` library to mirror KiCad's `pcb_barcode.cpp`.
+- **Canvas Rendering**: Barcodes compute their matrix data internally into standard coordinate systems, and are fully rendered natively using `QGraphicsPathItem` for optimal performance in the canvas scene.
