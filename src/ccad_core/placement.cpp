@@ -195,7 +195,12 @@ void placeFootprint(Project& project, const Footprint& footprint, const std::str
     };
     pad.padstack.layer_set = pad_layers;
     pad.padstack.drill.size.width = footprint_pad.drill.value_or(Length{});
-    pad.padstack.drill.size.height = footprint_pad.drill.value_or(Length{});
+    pad.padstack.drill.size.height = footprint_pad.drill_height.value_or(footprint_pad.drill.value_or(Length{}));
+    if (footprint_pad.drill_shape.value_or("") == "oval") {
+      pad.padstack.drill.shape = DrillShape::Oval;
+    } else if (footprint_pad.drill.has_value()) {
+      pad.padstack.drill.shape = DrillShape::Circle;
+    }
     if (footprint_pad.secondary_drill.has_value()) {
         PadstackDrillProps drill_props{};
         drill_props.size.width = *footprint_pad.secondary_drill;

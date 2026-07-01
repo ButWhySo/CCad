@@ -49,5 +49,24 @@ int main() {
   require(diags4.size() == 1, "pad shape mismatch produces diagnostic");
   require(diags4.at(0).field == "pad.shape", "field is pad.shape");
 
+  // Reset pad shape
+  f2.pads.at(0).shape = f1.pads.at(0).shape;
+
+  // 5. Oval drill checks
+  f1.pads.at(0).drill = ccad::millimeters(0.8);
+  f1.pads.at(0).drill_height = ccad::millimeters(1.2);
+  f1.pads.at(0).drill_shape = "oval";
+
+  f2.pads = f1.pads;
+
+  auto diags5 = ccad::verifyFootprintLosslessness(f1, f2);
+  require(diags5.empty(), "identical oval drill footprints produce no diagnostics");
+
+  // drill height mismatch
+  f2.pads.at(0).drill_height = ccad::millimeters(1.4);
+  auto diags6 = ccad::verifyFootprintLosslessness(f1, f2);
+  require(diags6.size() == 1, "drill height mismatch produces diagnostic");
+  require(diags6.at(0).field == "pad.drill_height", "field is pad.drill_height");
+
   return 0;
 }

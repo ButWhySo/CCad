@@ -218,7 +218,7 @@ What it does:
 - Adds rectangular keepouts to existing board projects.
 - Runs physical DRC diagnostics with `ccad drc`.
 - Reports fixed default copper clearance errors with `COPPER_CLEARANCE`.
-- Imports basic KiCad `.kicad_mod` footprint files with `ccad lib import-footprint`.
+- Imports basic KiCad `.kicad_mod` footprint files, including oval drills, with `ccad lib import-footprint`.
 - Inspects, looks up, and searches local CCad library catalog records with `ccad lib catalog-info`, `ccad lib catalog-find`, and `ccad lib catalog-search`.
 - Exposes provider-free Agent harness metadata and headless workspace-state JSON with `ccad agent methods`, `ccad agent harness-context`, `ccad agent tool-guide`, `ccad agent state`, `ccad agent tasks`, `ccad agent evidence`, and `ccad agent approvals`.
 - Creates, reads, checkpoints, and replays provider-free local Agent session files with `ccad agent session-schema`, `ccad agent session-new`, `ccad agent session-state`, `ccad agent checkpoint-add`, and `ccad agent replay`.

@@ -898,3 +898,14 @@ Sprint 244 implemented the footprint losslessness harness in `ccad_core` and the
 - **CLI**: Added the `lib verify-footprint-losslessness` subcommand to compare imported vs candidate footprints and emit structured JSON diagnostics.
 - **Tests**: Created unit tests in `tests/test_footprint_losslessness.cpp` verifying name, pad count, and shape mismatch detection.
 
+
+## Sprint 245 Addendum
+
+Sprint 245 implemented KiCad footprint oval drill support in `ccad_core`, placement logic, and the losslessness verification harness:
+- **Data Structures**: Added `drill_height` and `drill_shape` optional fields to `FootprintPad` in `src/ccad_core/footprint.hpp`.
+- **Importer/JSON**: Updated `src/ccad_core/kicad_footprint_import.cpp` parser to read `(drill oval width height ...)` syntax and serialize/deserialize `drill_height_nm` and `drill_shape` JSON properties.
+- **Placement**: Updated `ccad_core::placeFootprint` in `src/ccad_core/placement.cpp` to correctly assign height and shape to placed padstacks when using oval drills.
+- **Losslessness Verification**: Extended `src/ccad_core/footprint_losslessness.cpp` to check for drill height and shape mismatches.
+- **Tests**: Added dedicated oval drill import and losslessness check test cases in `tests/test_kicad_footprint_import.cpp` and `tests/test_footprint_losslessness.cpp`. Verified all 57 CTest suites pass successfully.
+
+

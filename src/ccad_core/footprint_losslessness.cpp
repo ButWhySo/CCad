@@ -69,6 +69,14 @@ std::vector<LosslessnessDiagnostic> verifyFootprintLosslessness(
       } else if (p1.drill.has_value() && !approxEqual(*p1.drill, *p2.drill)) {
         diagnostics.push_back({"error", "pad.drill", pad_ref + " drill size mismatch"});
       }
+      if (p1.drill_height.has_value() != p2.drill_height.has_value()) {
+        diagnostics.push_back({"error", "pad.drill_height", pad_ref + " drill_height presence mismatch"});
+      } else if (p1.drill_height.has_value() && !approxEqual(*p1.drill_height, *p2.drill_height)) {
+        diagnostics.push_back({"error", "pad.drill_height", pad_ref + " drill_height mismatch"});
+      }
+      if (p1.drill_shape != p2.drill_shape) {
+        diagnostics.push_back({"error", "pad.drill_shape", pad_ref + " drill_shape mismatch"});
+      }
       if (p1.layers != p2.layers) {
         diagnostics.push_back({"error", "pad.layers", pad_ref + " layers mismatch"});
       }

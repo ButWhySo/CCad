@@ -77,4 +77,30 @@ int main() {
     rejected_malformed = true;
   }
   require(rejected_malformed, "importer rejects malformed sexpr");
+
+  // Oval drill verification
+  const std::string oval_source =
+      "(footprint \"Oval_Drill_Footprint\"\n"
+      "  (version 20240101)\n"
+      "  (generator \"ccad-test\")\n"
+      "  (pad \"1\" thru_hole oval (at 0 0) (size 1.6 3.5) "
+      "(drill oval 0.7 2.5) (layers \"*.Cu\" \"*.Mask\"))\n"
+      ")\n";
+
+  const ccad::Footprint footprint_oval = ccad::importKiCadFootprint(oval_source);
+  require(footprint_oval.pads.size() == 1, "oval drill footprint imports 1 pad");
+  const auto& oval_pad = footprint_oval.pads.at(0);
+  require(oval_pad.drill.has_value(), "oval drill has value");
+  require(oval_pad.drill->nanometers == 700000, "oval drill width imports");
+  require(oval_pad.drill_height.has_value(), "oval drill height has value");
+  require(oval_pad.drill_height->nanometers == 2500000, "oval drill height imports");
+  require(oval_pad.drill_shape.has_value() && *oval_pad.drill_shape == "oval", "oval drill shape imports");
+
+  const std::string json_oval = ccad::dumpFootprintJson(footprint_oval);
+  require(json_oval.find("\"drill_height_nm\": 2500000") != std::string::npos, "json outputs drill_height_nm");
+  require(json_oval.find("\"drill_shape\": \"oval\"") != std::string::npos, "json outputs drill_shape");
+
+  const ccad::Footprint loaded_oval = ccad::loadFootprintJson(json_oval);
+  require(loaded_oval.pads.at(0).drill_height.has_value() && loaded_oval.pads.at(0).drill_height->nanometers == 2500000, "json load loads oval drill height");
+  require(loaded_oval.pads.at(0).drill_shape.has_value() && *loaded_oval.pads.at(0).drill_shape == "oval", "json load loads oval drill shape");
 }

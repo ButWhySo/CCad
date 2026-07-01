@@ -176,7 +176,17 @@ FootprintPad importPad(const SExpr& expr) {
       pad.size.height = parseMillimeters(child.children.at(1).value, "pad height");
     } else if (isList(child, "drill")) {
       if (!child.children.empty()) {
-        pad.drill = parseMillimeters(child.children.at(0).value, "pad drill");
+        if (child.children.at(0).value == "oval") {
+          pad.drill_shape = "oval";
+          if (child.children.size() >= 3) {
+            pad.drill = parseMillimeters(child.children.at(1).value, "pad drill width");
+            pad.drill_height = parseMillimeters(child.children.at(2).value, "pad drill height");
+          } else {
+            throw std::runtime_error("pad drill oval requires width and height");
+          }
+        } else {
+          pad.drill = parseMillimeters(child.children.at(0).value, "pad drill");
+        }
       }
     } else if (isList(child, "layers")) {
       for (const SExpr& layer : child.children) {
@@ -442,6 +452,10 @@ class FootprintJsonReader {
         pad.size.height = nanometers(readInt64());
       } else if (key == "drill_nm") {
         pad.drill = nanometers(readInt64());
+      } else if (key == "drill_height_nm") {
+        pad.drill_height = nanometers(readInt64());
+      } else if (key == "drill_shape") {
+        pad.drill_shape = readString();
       } else if (key == "layers") {
         pad.layers = readStringArray();
       } else if (key == "roundrect_rratio") {
@@ -792,6 +806,12 @@ std::string dumpFootprintJson(const Footprint& footprint) {
     out << "      \"height_nm\": " << pad.size.height.nanometers << ",\n";
     if (pad.drill.has_value()) {
       out << "      \"drill_nm\": " << pad.drill->nanometers << ",\n";
+    }
+    if (pad.drill_height.has_value()) {
+      out << "      \"drill_height_nm\": " << pad.drill_height->nanometers << ",\n";
+    }
+    if (pad.drill_shape.has_value()) {
+      out << "      \"drill_shape\": \"" << escapeJson(*pad.drill_shape) << "\",\n";
     }
     if (pad.roundrect_rratio.has_value()) {
       out << "      \"roundrect_rratio\": " << *pad.roundrect_rratio << ",\n";

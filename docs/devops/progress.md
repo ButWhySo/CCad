@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 244
-- Branch: `sprint-244-footprint-losslessness`
+- Sprint: 245
+- Branch: `sprint-245-footprint-oval-drill`
 - Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 covered the bounded runtime and EDA evidence expansion through Sprint 225. Phase 9 is the bounded KiCad parity execution phase.
@@ -20,6 +20,11 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 245**: KiCad Footprint Oval Drill Support
+  - **Goal**: Support KiCad oval drills in the footprint importer, JSON serialization/deserialization, and footprint losslessness verification.
+  - **Status**: Completed. Updated footprint structures, KiCad footprint importer parser, placement logic, footprint losslessness verification, added test cases, and confirmed all 57 tests pass. Visual validation screenshot verified successfully.
+
+## Prior Sprints
 - **Sprint 244**: Footprint Losslessness Harness
   - **Goal**: Implement a footprint losslessness harness to structurally compare imported vs candidate footprints (pads, drills, shape parameters, layers, model references).
   - **Status**: Completed. Implemented verifyFootprintLosslessness, registered verify-footprint-losslessness command, added and verified tests. All tests pass. Visual validation screenshot generated.

@@ -16,6 +16,8 @@ struct FootprintPad {
   double rotation_degrees = 0.0;
   Size size;
   std::optional<Length> drill;
+  std::optional<Length> drill_height = std::nullopt;
+  std::optional<std::string> drill_shape = std::nullopt;
   std::optional<Length> secondary_drill = std::nullopt;
   std::optional<Length> tertiary_drill = std::nullopt;
   bool backdrilled = false;
