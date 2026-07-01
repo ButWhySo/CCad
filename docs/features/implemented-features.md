@@ -2084,3 +2084,20 @@ Placed schematic symbols now preserve the imported symbol body in the project mo
 The serializer writes embedded symbol snapshots with properties, pins, rectangles, lines, arcs, circles, polylines, and texts. The schematic canvas builder expands those snapshots into transformed canvas primitives at the placed symbol position and rotation, so saved and reloaded schematic symbols render with body, labels, and pin-lead geometry instead of becoming generic placeholders.
 
 Focused verification covered placement, CLI compatibility, and the tabbed object browser. The sprint-end gate passed `cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && ctest --test-dir build-qt --output-on-failure"` with 56 of 56 tests. Visual proof used the official GUI harness at `artifacts\screenshots\sprint232-symbol-snapshot-proof-internal-20260629-181543.png` and a targeted schematic screenshot at `artifacts\screenshots\sprint232-schematic-symbol-snapshot.png`, with empty targeted stderr.
+
+## Sprint 244 Footprint Losslessness Harness
+
+Status: implemented.
+Files:
+- `src/ccad_core/footprint_losslessness.hpp`
+- `src/ccad_core/footprint_losslessness.cpp`
+- `tests/test_footprint_losslessness.cpp`
+- `src/ccad_cli/lib_commands.cpp`
+
+What it does:
+- Provides a verification harness to compare two footprint structures (original vs candidate).
+- Detects discrepancies in properties (footprint name, BOM exclusion), pad numbers, pad shapes, dimensions, locations, rotations, and layer sets.
+- Adds the CLI subcommand `lib verify-footprint-losslessness --in-kicad <file.kicad_mod> --in-ccad <file.json>` which outputs a JSON report with details of any mismatched footprint features.
+- Emits exit code `0` on successful losslessness match, and exit code `1` with diagnostic information on mismatches.
+- Fully verified via unit testing and visual validation checks.
+

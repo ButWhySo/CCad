@@ -6,6 +6,7 @@
 #include "ccad_core/kicad_footprint_export.hpp"
 #include "ccad_core/json.hpp"
 #include "ccad_core/library_catalog.hpp"
+#include "ccad_core/footprint_losslessness.hpp"
 
 #include "ccad_core/component_generator.hpp"
 
@@ -268,6 +269,42 @@ int libCommand(const std::vector<std::string>& args) {
       }
       output << ccad::exportKiCadFootprint(footprint);
       return static_cast<bool>(output) ? 0 : 2;
+    }
+
+    if (subcommand == "verify-footprint-losslessness") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--in-kicad", "--in-ccad"});
+      const std::string in_kicad = requireOption(options, "--in-kicad");
+      const std::string in_ccad = requireOption(options, "--in-ccad");
+
+      std::ifstream input_kicad(in_kicad);
+      if (!input_kicad) {
+        std::cerr << "failed to open KiCad footprint file: " << in_kicad << '\n';
+        return 2;
+      }
+      std::ostringstream buffer_kicad;
+      buffer_kicad << input_kicad.rdbuf();
+      const ccad::Footprint original = ccad::importKiCadFootprint(buffer_kicad.str());
+
+      const ccad::Footprint candidate = loadFootprintFile(in_ccad);
+
+      const auto diagnostics = ccad::verifyFootprintLosslessness(original, candidate);
+
+      std::cout << "{\n"
+                << "  \"lossless\": " << (diagnostics.empty() ? "true" : "false") << ",\n"
+                << "  \"diagnostics\": [\n";
+      for (std::size_t i = 0; i < diagnostics.size(); ++i) {
+        const auto& diag = diagnostics.at(i);
+        std::cout << "    {\n"
+                  << "      \"severity\": \"" << ccad::escapeJson(diag.severity) << "\",\n"
+                  << "      \"field\": \"" << ccad::escapeJson(diag.field) << "\",\n"
+                  << "      \"message\": \"" << ccad::escapeJson(diag.message) << "\"\n"
+                  << "    }" << (i + 1 == diagnostics.size() ? "" : ",") << '\n';
+      }
+      std::cout << "  ]\n"
+                << "}\n";
+
+      return diagnostics.empty() ? 0 : 1;
     }
 
     if (subcommand == "catalog-info") {

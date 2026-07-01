@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 227
-- Branch: `sprint-227-pcb-geometry` (pending creation)
+- Sprint: 244
+- Branch: `sprint-244-footprint-losslessness`
 - Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 covered the bounded runtime and EDA evidence expansion through Sprint 225. Phase 9 is the bounded KiCad parity execution phase.
@@ -20,9 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
-- **Sprint 226**: PCB Root Model Parity
-  - **Goal**: Continue the file-by-file KiCad `pcbnew` root walk with board settings, base board-item behavior, board-loader state, stackup, statistics, board-statistics reporting, board-item container ownership, board text-variable expansion, legacy board-side BOM export, and cleanup action discovery, move CCad's design-rule validation, object metadata, loader summaries, report summaries, container mutation, text-variable APIs, placed-footprint BOM metadata, and cleanup planning metadata closer to KiCad's model, and keep those surfaces shared between core, DRC, CLI, and agent-facing queries.
-  - **Status**: In progress on `sprint-226-pcb-root-model` (actually `sprint-82-net-chain-bridging`). The sixteenth tested slice maps KiCad `pcb_dimension.cpp` and `pcb_group.cpp` into `ccad_core/model.hpp`, `serialize.cpp`, and `src/ccad_cli/pcb_commands.cpp` to provide dimension and group primitives, JSON IO, and the `pcb add-dimension` and `pcb add-group` commands. Dimensions are exposed in `pcb list-objects` and visual tests via Qt canvas mapping to represent physical dimension labels.
+- **Sprint 244**: Footprint Losslessness Harness
+  - **Goal**: Implement a footprint losslessness harness to structurally compare imported vs candidate footprints (pads, drills, shape parameters, layers, model references).
+  - **Status**: Completed. Implemented verifyFootprintLosslessness, registered verify-footprint-losslessness command, added and verified tests. All tests pass. Visual validation screenshot generated.
 
 ## Backlog
 - **Sprint 226 (PCB Root Model Parity)** is active. The verified sub-slices now cover KiCad board design setting validation, KiCad `BOARD_ITEM` metadata for CCad object queries, KiCad `BOARD_LOADER`-style load-state reporting, KiCad `BOARD_STACKUP` default physical stackup reporting, KiCad board-statistics drill-line aggregation, KiCad board-statistics report summaries, KiCad `BOARD_ITEM_CONTAINER` delete/remove mode metadata, KiCad `BOARD_TEXT_VAR_ADAPTER` first-slice text-variable expansion, KiCad legacy `build_BOM_from_board.cpp` board-side BOM export, KiCad `cleanup_item.cpp/.h` cleanup-action catalog discovery, GUI empty/board-only load crash regression, KiCad `collectors.cpp/.h` locked-item filtering, CLI project-write truncation hardening, KiCad `convert_shape_list_to_polygon.cpp/.h` Edge.Cuts outline-polygon reporting, KiCad `cross-probing.cpp` packet resolution, KiCad `pcb_barcode.cpp` board-barcode IO/CLI/GUI parity, KiCad `pcb_dimension.cpp` and `pcb_group.cpp` IO/CLI/GUI parity, and KiCad reference-image and table rendering with GUI infinite-loop hardening before moving to the next root PCB editor file.

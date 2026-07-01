@@ -54,6 +54,7 @@ add_library(ccad_core
   src/ccad_core/net_chain_bridging.cpp
   src/ccad_core/net_info.cpp
   src/ccad_core/pad_utils.cpp
+  src/ccad_core/footprint_losslessness.cpp
 )
 
 target_include_directories(ccad_core PUBLIC
@@ -434,6 +435,15 @@ if(MINGW)
   target_link_options(ccad_agent_orchestrator_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME agent_orchestrator COMMAND ccad_agent_orchestrator_tests)
+
+add_executable(ccad_footprint_losslessness_tests
+  tests/test_footprint_losslessness.cpp
+)
+target_link_libraries(ccad_footprint_losslessness_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_footprint_losslessness_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME footprint_losslessness COMMAND ccad_footprint_losslessness_tests)
 
 add_executable(ccad_cli_tests
   tests/test_cli.cpp
