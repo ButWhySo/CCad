@@ -36,155 +36,123 @@ void writeSize(std::ostringstream& out, const int indent, const Size& size) {
   out << std::string(indent, ' ') << "}";
 }
 
-void writeSymbolJson(std::ostringstream& out, const int indent, const Symbol& symbol) {
+void writeSymbol(std::ostringstream& out, const int indent, const Symbol& symbol) {
   const std::string pad(indent, ' ');
-  out << pad << "{\n";
+  out << "{\n";
   writeField(out, indent + 2, "name", symbol.name);
   writeField(out, indent + 2, "extends", symbol.extends);
 
-  out << std::string(indent + 2, ' ') << "\"pins\": [\n";
+  out << pad << "  \"properties\": [\n";
+  for (std::size_t i = 0; i < symbol.properties.size(); ++i) {
+    const SymbolProperty& property = symbol.properties.at(i);
+    out << pad << "    {\n";
+    writeField(out, indent + 6, "name", property.name);
+    writeField(out, indent + 6, "value", property.value, false);
+    out << pad << "    }" << (i + 1 == symbol.properties.size() ? "" : ",") << '\n';
+  }
+  out << pad << "  ],\n";
+
+  out << pad << "  \"pins\": [\n";
   for (std::size_t i = 0; i < symbol.pins.size(); ++i) {
     const SymbolPin& pin = symbol.pins.at(i);
-    out << std::string(indent + 4, ' ') << "{\n";
+    out << pad << "    {\n";
     writeField(out, indent + 6, "name", pin.name);
     writeField(out, indent + 6, "number", pin.number);
     writeField(out, indent + 6, "electrical_type", pin.electrical_type);
     writeField(out, indent + 6, "graphical_style", pin.graphical_style);
-    out << std::string(indent + 6, ' ') << "\"x_nm\": " << pin.position.x.nanometers << ",\n";
-    out << std::string(indent + 6, ' ') << "\"y_nm\": " << pin.position.y.nanometers << ",\n";
-    out << std::string(indent + 6, ' ') << "\"rotation_degrees\": " << pin.rotation_degrees
-        << ",\n";
-    out << std::string(indent + 6, ' ') << "\"length_nm\": " << pin.length.nanometers << "\n";
-    out << std::string(indent + 4, ' ') << "}" << (i + 1 == symbol.pins.size() ? "" : ",")
-        << '\n';
+    out << pad << "      \"x_nm\": " << pin.position.x.nanometers << ",\n";
+    out << pad << "      \"y_nm\": " << pin.position.y.nanometers << ",\n";
+    out << pad << "      \"rotation_degrees\": " << pin.rotation_degrees << ",\n";
+    out << pad << "      \"length_nm\": " << pin.length.nanometers << '\n';
+    out << pad << "    }" << (i + 1 == symbol.pins.size() ? "" : ",") << '\n';
   }
-  out << std::string(indent + 2, ' ') << "],\n";
+  out << pad << "  ],\n";
 
-  out << std::string(indent + 2, ' ') << "\"properties\": [\n";
-  for (std::size_t i = 0; i < symbol.properties.size(); ++i) {
-    const SymbolProperty& property = symbol.properties.at(i);
-    out << std::string(indent + 4, ' ') << "{\n";
-    writeField(out, indent + 6, "name", property.name);
-    writeField(out, indent + 6, "value", property.value, false);
-    out << std::string(indent + 4, ' ') << "}"
-        << (i + 1 == symbol.properties.size() ? "" : ",") << '\n';
-  }
-  out << std::string(indent + 2, ' ') << "],\n";
-
-  out << std::string(indent + 2, ' ') << "\"rectangles\": [\n";
+  out << pad << "  \"rectangles\": [\n";
   for (std::size_t i = 0; i < symbol.rectangles.size(); ++i) {
     const SymbolRectangle& rectangle = symbol.rectangles.at(i);
-    out << std::string(indent + 4, ' ') << "{\n";
-    out << std::string(indent + 6, ' ') << "\"start_x\": " << rectangle.start.x.nanometers
-        << ",\n";
-    out << std::string(indent + 6, ' ') << "\"start_y\": " << rectangle.start.y.nanometers
-        << ",\n";
-    out << std::string(indent + 6, ' ') << "\"end_x\": " << rectangle.end.x.nanometers
-        << ",\n";
-    out << std::string(indent + 6, ' ') << "\"end_y\": " << rectangle.end.y.nanometers
-        << ",\n";
-    out << std::string(indent + 6, ' ') << "\"stroke_width\": "
-        << rectangle.stroke_width.nanometers << ",\n";
+    out << pad << "    {\n";
+    out << pad << "      \"start_x\": " << rectangle.start.x.nanometers << ",\n";
+    out << pad << "      \"start_y\": " << rectangle.start.y.nanometers << ",\n";
+    out << pad << "      \"end_x\": " << rectangle.end.x.nanometers << ",\n";
+    out << pad << "      \"end_y\": " << rectangle.end.y.nanometers << ",\n";
+    out << pad << "      \"stroke_width\": " << rectangle.stroke_width.nanometers << ",\n";
     writeField(out, indent + 6, "fill_type", rectangle.fill_type, false);
-    out << std::string(indent + 4, ' ') << "}"
-        << (i + 1 == symbol.rectangles.size() ? "" : ",") << '\n';
+    out << pad << "    }" << (i + 1 == symbol.rectangles.size() ? "" : ",") << '\n';
   }
-  out << std::string(indent + 2, ' ') << "],\n";
+  out << pad << "  ],\n";
 
-  out << std::string(indent + 2, ' ') << "\"lines\": [\n";
+  out << pad << "  \"lines\": [\n";
   for (std::size_t i = 0; i < symbol.lines.size(); ++i) {
     const SymbolLine& line = symbol.lines.at(i);
-    out << std::string(indent + 4, ' ') << "{\n";
-    out << std::string(indent + 6, ' ') << "\"start_x\": " << line.start.x.nanometers
-        << ",\n";
-    out << std::string(indent + 6, ' ') << "\"start_y\": " << line.start.y.nanometers
-        << ",\n";
-    out << std::string(indent + 6, ' ') << "\"end_x\": " << line.end.x.nanometers << ",\n";
-    out << std::string(indent + 6, ' ') << "\"end_y\": " << line.end.y.nanometers << ",\n";
-    out << std::string(indent + 6, ' ') << "\"stroke_width\": " << line.stroke_width.nanometers
-        << "\n";
-    out << std::string(indent + 4, ' ') << "}" << (i + 1 == symbol.lines.size() ? "" : ",")
-        << '\n';
+    out << pad << "    {\n";
+    out << pad << "      \"start_x\": " << line.start.x.nanometers << ",\n";
+    out << pad << "      \"start_y\": " << line.start.y.nanometers << ",\n";
+    out << pad << "      \"end_x\": " << line.end.x.nanometers << ",\n";
+    out << pad << "      \"end_y\": " << line.end.y.nanometers << ",\n";
+    out << pad << "      \"stroke_width\": " << line.stroke_width.nanometers << '\n';
+    out << pad << "    }" << (i + 1 == symbol.lines.size() ? "" : ",") << '\n';
   }
-  out << std::string(indent + 2, ' ') << "],\n";
+  out << pad << "  ],\n";
 
-  out << std::string(indent + 2, ' ') << "\"arcs\": [\n";
+  out << pad << "  \"arcs\": [\n";
   for (std::size_t i = 0; i < symbol.arcs.size(); ++i) {
     const SymbolArc& arc = symbol.arcs.at(i);
-    out << std::string(indent + 4, ' ') << "{\n";
-    out << std::string(indent + 6, ' ') << "\"start_x\": " << arc.start.x.nanometers
-        << ",\n";
-    out << std::string(indent + 6, ' ') << "\"start_y\": " << arc.start.y.nanometers
-        << ",\n";
-    out << std::string(indent + 6, ' ') << "\"end_x\": " << arc.end.x.nanometers << ",\n";
-    out << std::string(indent + 6, ' ') << "\"end_y\": " << arc.end.y.nanometers << ",\n";
-    out << std::string(indent + 6, ' ') << "\"center_x\": " << arc.center.x.nanometers
-        << ",\n";
-    out << std::string(indent + 6, ' ') << "\"center_y\": " << arc.center.y.nanometers
-        << ",\n";
-    out << std::string(indent + 6, ' ') << "\"stroke_width\": " << arc.stroke_width.nanometers
-        << "\n";
-    out << std::string(indent + 4, ' ') << "}" << (i + 1 == symbol.arcs.size() ? "" : ",")
-        << '\n';
+    out << pad << "    {\n";
+    out << pad << "      \"start_x\": " << arc.start.x.nanometers << ",\n";
+    out << pad << "      \"start_y\": " << arc.start.y.nanometers << ",\n";
+    out << pad << "      \"end_x\": " << arc.end.x.nanometers << ",\n";
+    out << pad << "      \"end_y\": " << arc.end.y.nanometers << ",\n";
+    out << pad << "      \"center_x\": " << arc.center.x.nanometers << ",\n";
+    out << pad << "      \"center_y\": " << arc.center.y.nanometers << ",\n";
+    out << pad << "      \"stroke_width\": " << arc.stroke_width.nanometers << '\n';
+    out << pad << "    }" << (i + 1 == symbol.arcs.size() ? "" : ",") << '\n';
   }
-  out << std::string(indent + 2, ' ') << "],\n";
+  out << pad << "  ],\n";
 
-  out << std::string(indent + 2, ' ') << "\"circles\": [\n";
+  out << pad << "  \"circles\": [\n";
   for (std::size_t i = 0; i < symbol.circles.size(); ++i) {
     const SymbolCircle& circle = symbol.circles.at(i);
-    out << std::string(indent + 4, ' ') << "{\n";
-    out << std::string(indent + 6, ' ') << "\"center_x\": " << circle.center.x.nanometers
-        << ",\n";
-    out << std::string(indent + 6, ' ') << "\"center_y\": " << circle.center.y.nanometers
-        << ",\n";
-    out << std::string(indent + 6, ' ') << "\"radius\": " << circle.radius.nanometers
-        << ",\n";
-    out << std::string(indent + 6, ' ') << "\"stroke_width\": "
-        << circle.stroke_width.nanometers << ",\n";
+    out << pad << "    {\n";
+    out << pad << "      \"center_x\": " << circle.center.x.nanometers << ",\n";
+    out << pad << "      \"center_y\": " << circle.center.y.nanometers << ",\n";
+    out << pad << "      \"radius\": " << circle.radius.nanometers << ",\n";
+    out << pad << "      \"stroke_width\": " << circle.stroke_width.nanometers << ",\n";
     writeField(out, indent + 6, "fill_type", circle.fill_type, false);
-    out << std::string(indent + 4, ' ') << "}"
-        << (i + 1 == symbol.circles.size() ? "" : ",") << '\n';
+    out << pad << "    }" << (i + 1 == symbol.circles.size() ? "" : ",") << '\n';
   }
-  out << std::string(indent + 2, ' ') << "],\n";
+  out << pad << "  ],\n";
 
-  out << std::string(indent + 2, ' ') << "\"polylines\": [\n";
+  out << pad << "  \"polylines\": [\n";
   for (std::size_t i = 0; i < symbol.polylines.size(); ++i) {
     const SymbolPolyline& polyline = symbol.polylines.at(i);
-    out << std::string(indent + 4, ' ') << "{\n";
-    out << std::string(indent + 6, ' ') << "\"points\": [\n";
+    out << pad << "    {\n";
+    out << pad << "      \"points\": [\n";
     for (std::size_t j = 0; j < polyline.points.size(); ++j) {
       const Point& point = polyline.points.at(j);
-      out << std::string(indent + 8, ' ') << "{\n";
-      out << std::string(indent + 10, ' ') << "\"x\": " << point.x.nanometers << ",\n";
-      out << std::string(indent + 10, ' ') << "\"y\": " << point.y.nanometers << "\n";
-      out << std::string(indent + 8, ' ') << "}"
-          << (j + 1 == polyline.points.size() ? "" : ",") << '\n';
+      out << pad << "        {\"x\": " << point.x.nanometers << ", \"y\": "
+          << point.y.nanometers << "}" << (j + 1 == polyline.points.size() ? "" : ",")
+          << '\n';
     }
-    out << std::string(indent + 6, ' ') << "],\n";
-    out << std::string(indent + 6, ' ') << "\"stroke_width\": "
-        << polyline.stroke_width.nanometers << ",\n";
+    out << pad << "      ],\n";
+    out << pad << "      \"stroke_width\": " << polyline.stroke_width.nanometers << ",\n";
     writeField(out, indent + 6, "fill_type", polyline.fill_type, false);
-    out << std::string(indent + 4, ' ') << "}"
-        << (i + 1 == symbol.polylines.size() ? "" : ",") << '\n';
+    out << pad << "    }" << (i + 1 == symbol.polylines.size() ? "" : ",") << '\n';
   }
-  out << std::string(indent + 2, ' ') << "],\n";
+  out << pad << "  ],\n";
 
-  out << std::string(indent + 2, ' ') << "\"texts\": [\n";
+  out << pad << "  \"texts\": [\n";
   for (std::size_t i = 0; i < symbol.texts.size(); ++i) {
     const SymbolText& text = symbol.texts.at(i);
-    out << std::string(indent + 4, ' ') << "{\n";
+    out << pad << "    {\n";
     writeField(out, indent + 6, "text", text.text);
-    out << std::string(indent + 6, ' ') << "\"x_nm\": " << text.position.x.nanometers
-        << ",\n";
-    out << std::string(indent + 6, ' ') << "\"y_nm\": " << text.position.y.nanometers
-        << ",\n";
-    out << std::string(indent + 6, ' ') << "\"rotation_degrees\": " << text.rotation_degrees
-        << ",\n";
-    out << std::string(indent + 6, ' ') << "\"size\": " << text.size.nanometers << "\n";
-    out << std::string(indent + 4, ' ') << "}" << (i + 1 == symbol.texts.size() ? "" : ",")
-        << '\n';
+    out << pad << "      \"x_nm\": " << text.position.x.nanometers << ",\n";
+    out << pad << "      \"y_nm\": " << text.position.y.nanometers << ",\n";
+    out << pad << "      \"rotation_degrees\": " << text.rotation_degrees << ",\n";
+    out << pad << "      \"size\": " << text.size.nanometers << '\n';
+    out << pad << "    }" << (i + 1 == symbol.texts.size() ? "" : ",") << '\n';
   }
-  out << std::string(indent + 2, ' ') << "]\n";
+  out << pad << "  ]\n";
   out << pad << "}";
 }
 
@@ -220,8 +188,8 @@ class JsonReader {
       } else if (key == "board") {
         project.boards.clear();
         project.boards.push_back(readBoard());
-      } else if (key == "components") {
-        ensureSchematic(project).components = readComponents();
+      } else if (key == "components" || key == "symbols") {
+        ensureSchematic(project).symbols = readComponents();
       } else if (key == "nets") {
         ensureSchematic(project).nets = readNets();
       } else if (key == "wires") {
@@ -514,7 +482,7 @@ class JsonReader {
             layer.id = readString();
           } else if (key == "name") {
             layer.name = readString();
-          } else if (key == "kind") {
+          } else if (key == "type" || key == "kind") {
             layer.kind = readString();
           } else if (key == "visible") {
             layer.visible = readBool();
@@ -764,7 +732,7 @@ class JsonReader {
           expect(':');
           if (key == "id") {
             keepout.id = readString();
-          } else if (key == "kind") {
+          } else if (key == "type" || key == "kind") {
             keepout.kind = readString();
           } else if (key == "area") {
             keepout.area = readRect();
@@ -806,7 +774,7 @@ class JsonReader {
           expect(':');
           if (key == "id") {
             region.id = readString();
-          } else if (key == "kind") {
+          } else if (key == "type" || key == "kind") {
             region.kind = readString();
           } else if (key == "area") {
             region.area = readRect();
@@ -991,7 +959,7 @@ class JsonReader {
           expect(':');
           if (key == "id") {
             graphic.id = readString();
-          } else if (key == "kind") {
+          } else if (key == "type" || key == "kind") {
             graphic.kind = readString();
           } else if (key == "layer_id") {
             graphic.layer_id = readString();
@@ -1097,7 +1065,7 @@ class JsonReader {
             dim.id = readString();
           } else if (key == "layer_id") {
             dim.layer_id = readString();
-          } else if (key == "kind") {
+          } else if (key == "type" || key == "kind") {
             dim.kind = readString();
           } else if (key == "text") {
             dim.text = readString();
@@ -1379,7 +1347,7 @@ class JsonReader {
             barcode.layer_id = readString();
           } else if (key == "text") {
             barcode.text = readString();
-          } else if (key == "kind") {
+          } else if (key == "type" || key == "kind") {
             barcode.kind = parseBarcodeType(readString());
           } else if (key == "error_correction") {
             barcode.error_correction = parseBarcodeEcc(readString());
@@ -1519,14 +1487,14 @@ class JsonReader {
     }
   }
 
-  std::vector<Component> readComponents() {
-    std::vector<Component> components;
+  std::vector<SchSymbol> readComponents() {
+    std::vector<SchSymbol> symbols;
     expect('[');
     if (consume(']')) {
-      return components;
+      return symbols;
     }
     while (true) {
-      Component component;
+      SchSymbol component;
       expect('{');
       if (!consume('}')) {
         while (true) {
@@ -1534,8 +1502,8 @@ class JsonReader {
         expect(':');
         if (key == "id") {
           component.id = readString();
-        } else if (key == "part") {
-          component.part = readString();
+        } else if (key == "lib_id" || key == "part") {
+          component.lib_id = readString();
         } else if (key == "position") {
           component.position = readPoint();
         } else if (key == "rotation_degrees") {
@@ -1543,8 +1511,7 @@ class JsonReader {
         } else if (key == "pins") {
           component.pins = readPins();
         } else if (key == "symbol") {
-          const std::string raw_symbol = readRawJsonObject();
-          component.symbol = SymbolJsonReader(raw_symbol).readSymbol();
+          component.symbol = loadSymbolJson(readRawJsonObject());
         } else {
           throw std::runtime_error("unknown component key: " + key);
         }
@@ -1557,9 +1524,9 @@ class JsonReader {
         }
         }
       }
-      components.push_back(component);
+      symbols.push_back(component);
       if (consume(']')) {
-        return components;
+        return symbols;
       }
       expect(',');
       if (peek(']')) {
@@ -1568,14 +1535,14 @@ class JsonReader {
     }
   }
 
-  std::vector<Pin> readPins() {
-    std::vector<Pin> pins;
+  std::vector<SchPin> readPins() {
+    std::vector<SchPin> pins;
     expect('[');
     if (consume(']')) {
       return pins;
     }
     while (true) {
-      Pin pin;
+      SchPin pin;
       expect('{');
       if (!consume('}')) {
         while (true) {
@@ -1583,8 +1550,8 @@ class JsonReader {
         expect(':');
         if (key == "name") {
           pin.name = readString();
-        } else if (key == "kind") {
-          pin.kind = readString();
+        } else if (key == "type" || key == "kind") {
+          pin.type = readString();
         } else {
           throw std::runtime_error("unknown pin key: " + key);
         }
@@ -1608,14 +1575,14 @@ class JsonReader {
     }
   }
 
-  std::vector<WireSegment> readWireSegments() {
-    std::vector<WireSegment> wires;
+  std::vector<SchWire> readWireSegments() {
+    std::vector<SchWire> wires;
     expect('[');
     if (consume(']')) {
       return wires;
     }
     while (true) {
-      WireSegment wire;
+      SchWire wire;
       expect('{');
       if (!consume('}')) {
         while (true) {
@@ -1652,14 +1619,14 @@ class JsonReader {
     }
   }
 
-  std::vector<BusSegment> readBusSegments() {
-    std::vector<BusSegment> buses;
+  std::vector<SchBus> readBusSegments() {
+    std::vector<SchBus> buses;
     expect('[');
     if (consume(']')) {
       return buses;
     }
     while (true) {
-      BusSegment bus;
+      SchBus bus;
       expect('{');
       if (!consume('}')) {
         while (true) {
@@ -1698,12 +1665,12 @@ class JsonReader {
     }
   }
 
-  std::vector<Label> readLabels() {
-    std::vector<Label> labels;
+  std::vector<SchLabel> readLabels() {
+    std::vector<SchLabel> labels;
     expect('[');
     if (consume(']')) return labels;
     while (true) {
-      Label label;
+      SchLabel label;
       expect('{');
       if (!consume('}')) {
         while (true) {
@@ -1714,7 +1681,7 @@ class JsonReader {
           else if (key == "net_id") label.net_id = readString();
           else if (key == "position") label.position = readPoint();
           else if (key == "rotation_degrees") label.rotation_degrees = readDouble();
-          else if (key == "global") label.global = readBool();
+          else if (key == "global") label.type = readBool() ? LabelType::Global : LabelType::Local;
           else throw std::runtime_error("unknown label key: " + key);
           if (consume('}')) break;
           expect(',');
@@ -1728,12 +1695,12 @@ class JsonReader {
     }
   }
 
-  std::vector<PowerSymbol> readPowerSymbols() {
-    std::vector<PowerSymbol> power_symbols;
+  std::vector<SchPowerSymbol> readPowerSymbols() {
+    std::vector<SchPowerSymbol> power_symbols;
     expect('[');
     if (consume(']')) return power_symbols;
     while (true) {
-      PowerSymbol symbol;
+      SchPowerSymbol symbol;
       expect('{');
       if (!consume('}')) {
         while (true) {
@@ -1852,7 +1819,7 @@ class JsonReader {
         expect(':');
         if (key == "id") {
           constraint.id = readString();
-        } else if (key == "kind") {
+        } else if (key == "type" || key == "kind") {
           constraint.kind = readString();
         } else if (key == "target") {
           constraint.target = readString();
@@ -2682,20 +2649,20 @@ std::string dumpProjectJson(const Project& project) {
   out << "  \"components\": [\n";
   static const Schematic kEmptySchematic;
   const Schematic* sch = project.schematics.empty() ? &kEmptySchematic : &project.schematics[0];
-  for (std::size_t i = 0; i < sch->components.size(); ++i) {
-    const Component& component = sch->components.at(i);
+  for (std::size_t i = 0; i < sch->symbols.size(); ++i) {
+    const SchSymbol& component = sch->symbols.at(i);
     out << "    {\n";
     writeField(out, 6, "id", component.id);
-    writeField(out, 6, "part", component.part);
+    writeField(out, 6, "part", component.lib_id);
     out << "      \"position\": ";
     writePoint(out, 0, component.position);
     out << ",\n";
     out << "      \"rotation_degrees\": " << component.rotation_degrees << ",\n";
     out << "      \"pins\": [\n";
     for (std::size_t j = 0; j < component.pins.size(); ++j) {
-      const Pin& pin = component.pins.at(j);
+      const SchPin& pin = component.pins.at(j);
       out << "        {\n";
-      writeField(out, 10, "kind", pin.kind);
+      writeField(out, 10, "type", pin.type);
       writeField(out, 10, "name", pin.name, false);
       out << "        }" << (j + 1 == component.pins.size() ? "" : ",") << '\n';
     }
@@ -2703,12 +2670,10 @@ std::string dumpProjectJson(const Project& project) {
     if (component.symbol.has_value()) {
       out << ",\n";
       out << "      \"symbol\": ";
-      writeSymbolJson(out, 0, *component.symbol);
-      out << '\n';
-    } else {
-      out << '\n';
+      writeSymbol(out, 6, *component.symbol);
     }
-    out << "    }" << (i + 1 == sch->components.size() ? "" : ",") << '\n';
+    out << '\n';
+    out << "    }" << (i + 1 == sch->symbols.size() ? "" : ",") << '\n';
   }
   out << "  ],\n";
 
@@ -2744,7 +2709,7 @@ std::string dumpProjectJson(const Project& project) {
 
   out << "  \"wires\": [\n";
   for (std::size_t i = 0; i < sch->wires.size(); ++i) {
-    const WireSegment& wire = sch->wires.at(i);
+    const SchWire& wire = sch->wires.at(i);
     out << "    {\n";
     writeField(out, 6, "id", wire.id);
     out << "      \"start\": ";
@@ -2760,7 +2725,7 @@ std::string dumpProjectJson(const Project& project) {
 
   out << "  \"buses\": [\n";
   for (std::size_t i = 0; i < sch->buses.size(); ++i) {
-    const BusSegment& bus = sch->buses.at(i);
+    const SchBus& bus = sch->buses.at(i);
     out << "    {\n";
     writeField(out, 6, "id", bus.id);
     out << "      \"start\": ";
@@ -2782,7 +2747,7 @@ std::string dumpProjectJson(const Project& project) {
 
   out << "  \"labels\": [\n";
   for (std::size_t i = 0; i < sch->labels.size(); ++i) {
-    const Label& label = sch->labels.at(i);
+    const SchLabel& label = sch->labels.at(i);
     out << "    {\n";
     writeField(out, 6, "id", label.id);
     writeField(out, 6, "text", label.text);
@@ -2791,14 +2756,14 @@ std::string dumpProjectJson(const Project& project) {
     writePoint(out, 0, label.position);
     out << ",\n";
     out << "      \"rotation_degrees\": " << label.rotation_degrees << ",\n";
-    out << "      \"global\": " << (label.global ? "true" : "false") << '\n';
+    out << "      \"global\": " << (label.type == LabelType::Global ? "true" : "false") << '\n';
     out << "    }" << (i + 1 == sch->labels.size() ? "" : ",") << '\n';
   }
   out << "  ],\n";
 
   out << "  \"power_symbols\": [\n";
   for (std::size_t i = 0; i < sch->power_symbols.size(); ++i) {
-    const PowerSymbol& symbol = sch->power_symbols.at(i);
+    const SchPowerSymbol& symbol = sch->power_symbols.at(i);
     out << "    {\n";
     writeField(out, 6, "id", symbol.id);
     writeField(out, 6, "value", symbol.value);

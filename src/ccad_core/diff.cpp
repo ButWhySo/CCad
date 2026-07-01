@@ -6,13 +6,13 @@
 namespace ccad {
 namespace {
 
-std::string pinSignature(const Pin& pin) {
-  return pin.name + "\x1f" + pin.kind;
+std::string pinSignature(const SchPin& pin) {
+  return pin.name + "\x1f" + pin.type;
 }
 
-std::string componentSignature(const Component& component) {
-  std::string signature = component.part;
-  for (const Pin& pin : component.pins) {
+std::string componentSignature(const SchSymbol& component) {
+  std::string signature = component.lib_id;
+  for (const SchPin& pin : component.pins) {
     signature += "\x1e" + pinSignature(pin);
   }
   return signature;
@@ -187,7 +187,7 @@ ProjectDiff diffProjects(const Project& before, const Project& after) {
   const Schematic* after_schematic = primarySchematic(after);
   const Schematic& before_sch = before_schematic == nullptr ? empty_schematic : *before_schematic;
   const Schematic& after_sch = after_schematic == nullptr ? empty_schematic : *after_schematic;
-  diffObjectMap(diff, "component", before_sch.components, after_sch.components, componentSignature);
+  diffObjectMap(diff, "component", before_sch.symbols, after_sch.symbols, componentSignature);
   diffObjectMap(diff, "net", before_sch.nets, after_sch.nets, netSignature);
   diffObjectMap(diff, "constraint", before_sch.constraints, after_sch.constraints, constraintSignature);
   if (!before.boards.empty() && !after.boards.empty()) {

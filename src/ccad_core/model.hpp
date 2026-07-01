@@ -11,17 +11,34 @@
 
 namespace ccad {
 
-struct Pin {
+struct SchPin {
   std::string name;
-  std::string kind;
+  std::string type;
 };
 
-struct Component {
+struct SchField {
   std::string id;
-  std::string part;
-  std::vector<Pin> pins;
+  std::string name;
+  std::string text;
   Point position;
   double rotation_degrees = 0.0;
+  Size size;
+  bool visible = true;
+};
+
+struct SchSymbol {
+  std::string id;
+  std::string lib_id;
+  std::string reference;
+  int unit = 1;
+  Point position;
+  double rotation_degrees = 0.0;
+  bool mirror_x = false;
+  bool mirror_y = false;
+  bool in_bom = true;
+  bool on_board = true;
+  std::vector<SchField> fields;
+  std::vector<SchPin> pins;
   std::optional<Symbol> symbol = std::nullopt;
 };
 
@@ -35,14 +52,14 @@ struct Net {
   std::vector<NetMember> members;
 };
 
-struct WireSegment {
+struct SchWire {
   std::string id;
   Point start;
   Point end;
   std::string net_id;
 };
 
-struct BusSegment {
+struct SchBus {
   std::string id;
   Point start;
   Point end;
@@ -50,21 +67,78 @@ struct BusSegment {
   std::vector<std::string> net_ids;
 };
 
-struct Label {
+enum class LabelType { Local, Global, Hierarchical };
+
+struct SchLabel {
   std::string id;
   std::string text;
   std::string net_id;
   Point position;
   double rotation_degrees = 0.0;
-  bool global = false;
+  LabelType type = LabelType::Local;
 };
 
-struct PowerSymbol {
+struct SchPowerSymbol {
   std::string id;
-  std::string value; // e.g. "GND", "+5V"
+  std::string value;
   std::string net_id;
   Point position;
   double rotation_degrees = 0.0;
+};
+
+struct SchJunction {
+  Point position;
+  Length diameter = millimeters(0); // 0 means default
+  std::string color = "";
+};
+
+struct SchNoConnect {
+  Point position;
+};
+
+struct SchSheetPin {
+  std::string name;
+  std::string type;
+  Point position;
+};
+
+struct SchSheet {
+  std::string id;
+  std::string name;
+  std::string file_path;
+  Point position;
+  Size size;
+  std::vector<SchSheetPin> pins;
+};
+
+struct SchText {
+  std::string id;
+  std::string text;
+  Point position;
+  double rotation_degrees = 0.0;
+  Size size;
+};
+
+struct SchTextBox {
+  std::string id;
+  std::string text;
+  Rect area;
+  Size size;
+};
+
+struct SchGraphic {
+  std::string id;
+  std::string kind; // "line", "rectangle", "polygon"
+  Point start;
+  Point end;
+  Length width;
+};
+
+struct SchMarker {
+  std::string id;
+  std::string kind;
+  std::string severity;
+  Point position;
 };
 
 struct Constraint {
@@ -400,12 +474,19 @@ struct Board {
 struct Schematic {
   std::string id;
   std::string name;
-  std::vector<Component> components;
+  std::vector<SchSymbol> symbols;
+  std::vector<SchWire> wires;
+  std::vector<SchBus> buses;
+  std::vector<SchLabel> labels;
+  std::vector<SchPowerSymbol> power_symbols;
+  std::vector<SchJunction> junctions;
+  std::vector<SchNoConnect> no_connects;
+  std::vector<SchSheet> sheets;
+  std::vector<SchText> texts;
+  std::vector<SchTextBox> textboxes;
+  std::vector<SchGraphic> graphics;
+  std::vector<SchMarker> markers;
   std::vector<Net> nets;
-  std::vector<WireSegment> wires;
-  std::vector<BusSegment> buses;
-  std::vector<Label> labels;
-  std::vector<PowerSymbol> power_symbols;
   std::vector<Constraint> constraints;
 };
 

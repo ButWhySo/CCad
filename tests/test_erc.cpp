@@ -12,11 +12,11 @@ ccad::Project validProject() {
   project.id = "proj-demo";
   project.name = "demo";
   project.schematics.push_back(ccad::Schematic{});
-  project.schematics[0].components.push_back(ccad::Component{
+  project.schematics[0].symbols.push_back(ccad::SchSymbol{
       .id = "U1",
-      .part = "MCU",
-      .pins = {ccad::Pin{.name = "VDD", .kind = "power"},
-               ccad::Pin{.name = "GND", .kind = "power"}},
+      .lib_id = "MCU",
+      .pins = {ccad::SchPin{.name = "VDD", .type = "power"},
+               ccad::SchPin{.name = "GND", .type = "power"}},
   });
   project.schematics[0].nets.push_back(ccad::Net{
       .id = "N_3V3",
@@ -46,24 +46,24 @@ int main() {
           "erc skips projects that do not contain a schematic document");
 
   ccad::Project empty_component_id = validProject();
-  empty_component_id.schematics[0].components.at(0).id.clear();
+  empty_component_id.schematics[0].symbols.at(0).id.clear();
   require(hasCode(ccad::runErc(empty_component_id), "INVALID_COMPONENT_ID"),
           "empty component id reported");
 
   ccad::Project empty_component_part = validProject();
-  empty_component_part.schematics[0].components.at(0).part.clear();
+  empty_component_part.schematics[0].symbols.at(0).lib_id.clear();
   require(hasCode(ccad::runErc(empty_component_part), "INVALID_COMPONENT_PART"),
           "empty component part reported");
 
   ccad::Project empty_pin_name = validProject();
-  empty_pin_name.schematics[0].components.at(0).pins.at(0).name.clear();
+  empty_pin_name.schematics[0].symbols.at(0).pins.at(0).name.clear();
   require(hasCode(ccad::runErc(empty_pin_name), "INVALID_PIN_NAME"),
           "empty pin name reported");
 
-  ccad::Project empty_pin_kind = validProject();
-  empty_pin_kind.schematics[0].components.at(0).pins.at(0).kind.clear();
-  require(hasCode(ccad::runErc(empty_pin_kind), "INVALID_PIN_KIND"),
-          "empty pin kind reported");
+  ccad::Project empty_pin_type = validProject();
+  empty_pin_type.schematics[0].symbols.at(0).pins.at(0).type.clear();
+  require(hasCode(ccad::runErc(empty_pin_type), "INVALID_PIN_TYPE"),
+          "empty pin type reported");
 
   ccad::Project empty_net_id = validProject();
   empty_net_id.schematics[0].nets.at(0).id.clear();

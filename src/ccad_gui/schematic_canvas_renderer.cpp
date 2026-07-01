@@ -78,7 +78,7 @@ void renderSchematicCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene
   bus_pen.setCapStyle(Qt::RoundCap);
   bus_pen.setJoinStyle(Qt::RoundJoin);
   for (std::size_t i = 0; i < scene.bus_segments.size(); ++i) {
-    const ccad::CanvasBusSegment& bus = scene.bus_segments[i];
+    const ccad::CanvasSchBus& bus = scene.bus_segments[i];
     const double sx = sceneX(scene, bus.start_x_units, margin, scale);
     const double sy = sceneY(scene, bus.start_y_units, margin, scale);
     const double ex = sceneX(scene, bus.end_x_units, margin, scale);
@@ -97,7 +97,7 @@ void renderSchematicCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene
   component_pen.setWidthF(1.5);
   QBrush component_brush(theme.background_color);
   
-  for (const ccad::CanvasComponent& comp : scene.components) {
+  for (const ccad::CanvasComponent& comp : scene.symbols) {
     const double cx = sceneX(scene, comp.x_units, margin, scale);
     const double cy = sceneY(scene, comp.y_units, margin, scale);
 

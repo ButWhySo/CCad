@@ -10,9 +10,9 @@ int main() {
   project.name = "Test Project";
 
   project.schematics.push_back(ccad::Schematic{});
-  project.schematics[0].components = {
-      ccad::Component{.id = "U1", .part = "NE555"},
-      ccad::Component{.id = "R1", .part = "10k"}
+  project.schematics[0].symbols = {
+      ccad::SchSymbol{.id = "U1", .lib_id = "NE555"},
+      ccad::SchSymbol{.id = "R1", .lib_id = "10k"}
   };
 
   ccad::Board board;

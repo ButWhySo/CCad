@@ -2076,3 +2076,11 @@ CCad's object browser was overhauled to mirror the KiCad appearance panel:
 ## Sprint 230 PCB Barcode generation
 - **C++ QR Code Generation**: CCad natively generates QR Codes utilizing Project Nayuki's lightweight C++ `qrcodegen` library to mirror KiCad's `pcb_barcode.cpp`.
 - **Canvas Rendering**: Barcodes compute their matrix data internally into standard coordinate systems, and are fully rendered natively using `QGraphicsPathItem` for optimal performance in the canvas scene.
+
+## Sprint 232 Schematic Symbol Snapshot Persistence
+
+Placed schematic symbols now preserve the imported symbol body in the project model. A `SchSymbol` can carry an embedded `Symbol` snapshot, and the placement path stores the selected symbol snapshot when a symbol is placed. The project reader accepts both the newer `symbols` array and the legacy `components` array, accepts both `lib_id` and `part`, and accepts both pin `type` and legacy `kind` fields.
+
+The serializer writes embedded symbol snapshots with properties, pins, rectangles, lines, arcs, circles, polylines, and texts. The schematic canvas builder expands those snapshots into transformed canvas primitives at the placed symbol position and rotation, so saved and reloaded schematic symbols render with body, labels, and pin-lead geometry instead of becoming generic placeholders.
+
+Focused verification covered placement, CLI compatibility, and the tabbed object browser. The sprint-end gate passed `cmd /c "set PATH=C:\Qt\6.11.1\mingw_64\bin;%PATH% && ctest --test-dir build-qt --output-on-failure"` with 56 of 56 tests. Visual proof used the official GUI harness at `artifacts\screenshots\sprint232-symbol-snapshot-proof-internal-20260629-181543.png` and a targeted schematic screenshot at `artifacts\screenshots\sprint232-schematic-symbol-snapshot.png`, with empty targeted stderr.

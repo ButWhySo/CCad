@@ -72,7 +72,7 @@ std::string reviewJson(const ccad::ProjectReview& review) {
   out << "    \"name\": \"" << ccad::escapeJson(review.project_name) << "\"\n";
   out << "  },\n";
   out << "  \"counts\": {\n";
-  out << "    \"components\": " << review.component_count << ",\n";
+  out << "    \"symbols\": " << review.component_count << ",\n";
   out << "    \"constraints\": " << review.constraint_count << ",\n";
   out << "    \"layers\": " << review.layer_count << ",\n";
   out << "    \"nets\": " << review.net_count << "\n";

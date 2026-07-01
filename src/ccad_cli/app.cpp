@@ -71,7 +71,7 @@ const std::vector<CommandHelp>& commandHelp() {
                            "[--rotation-deg <n>]"},
       CommandHelp{.name = "pcb spread-footprints",
                   .summary = "Spread component pad groups into a non-overlapping placement lane",
-                  .usage = "ccad pcb spread-footprints --file <path> [--components <a,b,...>] "
+                  .usage = "ccad pcb spread-footprints --file <path> [--symbols <a,b,...>] "
                            "--target-x-mm <n> --target-y-mm <n> [--component-gap-mm <n>] "
                            "[--group-gap-mm <n>]"},
       CommandHelp{.name = "sch place-symbol",

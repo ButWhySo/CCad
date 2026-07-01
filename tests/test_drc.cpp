@@ -12,10 +12,10 @@ ccad::Project validBoardProject() {
   project.id = "proj-drc";
   project.name = "drc";
   project.schematics.push_back(ccad::Schematic{});
-  project.schematics[0].components = {ccad::Component{
+  project.schematics[0].symbols = {ccad::SchSymbol{
       .id = "U1",
-      .part = "MCU",
-      .pins = {ccad::Pin{.name = "1", .kind = "passive"}},
+      .lib_id = "MCU",
+      .pins = {ccad::SchPin{.name = "1", .type = "passive"}},
   }};
   project.schematics[0].nets = {ccad::Net{.id = "N1",
                             .members = {ccad::NetMember{.component_id = "U1", .pin_name = "1"}}},

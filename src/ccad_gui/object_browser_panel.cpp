@@ -63,7 +63,7 @@ ObjectBrowserPanel::ObjectBrowserPanel(QWidget* parent) : QWidget(parent) {
   tabs_->addTab(layers_list_, "Layers");
 
   objects_list_ = new QListWidget(this);
-  objects_list_->setObjectName("objectsList");
+  objects_list_->setObjectName("objectBrowserPanel");
   tabs_->addTab(objects_list_, "Objects");
 
   nets_list_ = new QListWidget(this);
@@ -133,7 +133,10 @@ void ObjectBrowserPanel::renderScene(const ccad::CanvasScene& scene) {
 
   addSection(layers_list_, "Layers (" + QString::number(static_cast<int>(scene.layers.size())) + ")");
   for (const ccad::CanvasLayer& layer : scene.layers) {
-    auto* item = addRow(layers_list_, qstr(layer.name) + " [" + qstr(layer.kind) + "]");
+    const QString visible = layer.visible ? "visible" : "hidden";
+    auto* item = addRow(layers_list_,
+                        qstr(layer.id) + " - " + qstr(layer.name) + " [" +
+                            qstr(layer.kind) + ", " + visible + "]");
     item->setData(kLayerIdRole, qstr(layer.id));
     item->setFlags(item->flags() | Qt::ItemIsUserCheckable | Qt::ItemIsSelectable | Qt::ItemIsEnabled);
     item->setCheckState(layer.visible ? Qt::Checked : Qt::Unchecked);
@@ -156,7 +159,12 @@ void ObjectBrowserPanel::renderScene(const ccad::CanvasScene& scene) {
   addSection(nets_list_, "Route Requests (" + QString::number(static_cast<int>(scene.route_requests.size())) + ")");
   for (const ccad::CanvasRouteRequest& request : scene.route_requests) {
     const QString progress = request.routed_segment_count > 0 ? "partial" : "open";
-    addRow(nets_list_, "route " + qstr(request.id) + "  net " + qstr(request.net_id) + "  " + progress, {}, {}, qstr(request.id));
+    addRow(nets_list_,
+           "route " + qstr(request.id) + "  net " + qstr(request.net_id) + "  " +
+               qstr(request.from_object_id) + " -> " + qstr(request.to_object_id) +
+               "  layer " + qstr(request.preferred_layer_id) + "  " + progress + " " +
+               QString::number(request.routed_segment_count) + " segment(s)",
+           {}, {}, qstr(request.id));
   }
 
   const int object_count = static_cast<int>(scene.pads.size() + scene.vias.size() +
@@ -165,7 +173,10 @@ void ObjectBrowserPanel::renderScene(const ccad::CanvasScene& scene) {
                                             scene.texts.size() + scene.zones.size());
   addSection(objects_list_, "Objects (" + QString::number(object_count) + ")");
   for (const ccad::CanvasPad& pad : scene.pads) {
-    addRow(objects_list_, "pad " + qstr(pad.id) + "  " + netText(pad.net_id), qstr(pad.id));
+    const QString first_layer = pad.layers.empty() ? QString("--") : qstr(pad.layers.front());
+    addRow(objects_list_, "pad " + qstr(pad.id) + "  " + netText(pad.net_id) +
+                              "  layer " + first_layer,
+           qstr(pad.id));
   }
   for (const ccad::CanvasVia& via : scene.vias) {
     addRow(objects_list_, "via " + qstr(via.id) + "  " + netText(via.net_id), qstr(via.id));
@@ -180,7 +191,14 @@ void ObjectBrowserPanel::renderScene(const ccad::CanvasScene& scene) {
     addRow(objects_list_, "text " + qstr(text.id) + "  " + layerText(text.layer_id) + "  " + qstr(text.text), qstr(text.id));
   }
   for (const ccad::CanvasZone& zone : scene.zones) {
-    addRow(objects_list_, "zone " + qstr(zone.id) + "  " + netText(zone.net_id), qstr(zone.id));
+    QString layers;
+    for (std::size_t i = 0; i < zone.layer_ids.size(); ++i) {
+      if (i > 0) layers += ",";
+      layers += qstr(zone.layer_ids.at(i));
+    }
+    addRow(objects_list_, "zone " + qstr(zone.id) + "  " + netText(zone.net_id) +
+                              "  layers " + layers,
+           qstr(zone.id));
   }
   for (const ccad::CanvasKeepout& keepout : scene.keepouts) {
     addRow(objects_list_, "keepout " + qstr(keepout.id) + "  kind " + qstr(keepout.kind), qstr(keepout.id));
@@ -219,7 +237,7 @@ int ObjectBrowserPanel::itemCount() const {
 }
 
 QString ObjectBrowserPanel::itemText(const int /*row*/) const {
-  return {}; // Not robust across multiple lists, left empty or implement list finding
+  return {}; // Tabbed UI tests inspect each list directly.
 }
 
 QString ObjectBrowserPanel::objectIdForRow(const int /*row*/) const {

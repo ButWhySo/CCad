@@ -22,7 +22,7 @@ NetChainBridgingReport calculateNetChainBridges(const Project& project, const st
 
   const Board& board = project.boards.front();
 
-  // Find all components that have at least one pad on the target net.
+  // Find all symbols that have at least one pad on the target net.
   // Then check if they have pads on other nets that might be considered "bridged".
   // We'll iterate over unique component_ids from pads.
   

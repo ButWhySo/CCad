@@ -112,12 +112,12 @@ bool containsPoint(const Board& board, const Point& point) {
          point.y.nanometers >= min.y.nanometers && point.y.nanometers <= max.y.nanometers;
 }
 
-const Component* findComponent(const Project& project, const std::string& component_id) {
+const SchSymbol* findComponent(const Project& project, const std::string& component_id) {
   const Schematic* schematic = primarySchematic(project);
   if (schematic == nullptr) {
     return nullptr;
   }
-  for (const Component& component : schematic->components) {
+  for (const SchSymbol& component : schematic->symbols) {
     if (component.id == component_id) {
       return &component;
     }
@@ -125,8 +125,8 @@ const Component* findComponent(const Project& project, const std::string& compon
   return nullptr;
 }
 
-bool componentHasPin(const Component& component, const std::string& pin_name) {
-  for (const Pin& pin : component.pins) {
+bool componentHasPin(const SchSymbol& component, const std::string& pin_name) {
+  for (const SchPin& pin : component.pins) {
     if (pin.name == pin_name) {
       return true;
     }
@@ -555,7 +555,7 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
       diagnostics.push_back(
           makeDiagnostic("INVALID_PAD_PIN", "Pad pin_name must not be empty", pad.id));
     } else if (has_schematic) {
-      const Component* component = findComponent(project, pad.component_id);
+      const SchSymbol* component = findComponent(project, pad.component_id);
       if (component != nullptr && !componentHasPin(*component, pad.pin_name)) {
         diagnostics.push_back(
             makeDiagnostic("UNKNOWN_PAD_PIN", "Pad references an unknown component pin", pad.id));

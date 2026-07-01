@@ -151,7 +151,7 @@ Sprint 155 keeps the GUI thin while correcting the placement workflow. `src/ccad
 
 `src/ccad_gui/board_canvas_renderer.*` now gives `F.Cu` and `B.Cu` different default colors and stores a selection-highlight width for selectable items. Tracks use a highlight wider than their rendered copper stroke so selection is visually tied to the whole track shape.
 
-Known limitation: schematic symbol ghosts can render imported symbol primitives during placement, but saved schematic components still reload through the current component placeholder path. Do not claim full schematic primitive persistence until the project model can preserve symbol graphics or stable symbol-library references.
+Resolved follow-up: Sprint 232 continuation on `sprint-232-schematic-model` stores an optional embedded `ccad::Symbol` snapshot on each placed `SchSymbol`. Saved schematic symbols now reload with their imported primitive graphics and pin-lead geometry for the supported CCad symbol JSON subset. The remaining limitation is full KiCad schematic primitive parity, not basic placed-symbol persistence.
 
 ## Sprint 156 Lazy Library Chooser Addendum
 
@@ -838,6 +838,10 @@ Sprint 231 fixed the CI/CD pipeline by un-ignoring the agent visual workflow fil
 ## Sprint 232 Addendum
 
 Sprint 232 began the KiCad schematic source walk in `eeschema`. Files evaluating BOM plugins and cross-probing were omitted because CCad handles these natively. Advanced schematic hierarchy features like connection graphs and junctions were deferred to the backlog.
+
+Sprint 232 continuation restored schematic symbol snapshot persistence after the schematic model rename. `src/ccad_core/model.hpp` now lets `SchSymbol` carry an optional embedded `Symbol` snapshot, `src/ccad_core/placement.cpp` stores the selected imported symbol during `placeComponent()`, `src/ccad_core/serialize.cpp` accepts both legacy `components` and current `symbols` arrays while writing the embedded snapshot, and `src/ccad_core/canvas.cpp` expands the snapshot through `buildCanvasScene(const Symbol&)` into transformed schematic canvas primitives. Compatibility readers still accept legacy component `part` and pin `kind` fields so older local fixtures do not break.
+
+The visual proof for that continuation is `artifacts\screenshots\sprint232-schematic-symbol-snapshot.png`, captured from `artifacts\demos\sprint232-schematic-symbol-snapshot.ccad.json` with empty stderr. The broader GUI survival proof is `artifacts\screenshots\sprint232-symbol-snapshot-proof-internal-20260629-181543.png`.
 
 
 ## Sprint 233 Addendum

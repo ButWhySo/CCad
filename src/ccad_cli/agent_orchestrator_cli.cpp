@@ -66,8 +66,8 @@ ccad::ProjectContext buildContext(const std::string& project_path) {
             context.project_file = project_path;
             context.has_board = !proj.boards.empty();
             if (const ccad::Schematic* schematic = ccad::primarySchematic(proj)) {
-                context.has_schematic = !schematic->components.empty();
-                context.component_count = schematic->components.size();
+                context.has_schematic = !schematic->symbols.empty();
+                context.component_count = schematic->symbols.size();
             }
             if (context.has_board) {
                 const auto& b = proj.boards[0];
@@ -110,7 +110,7 @@ ccad::AgentOrchestrator& getOrchestrator() {
             [](const std::string&) -> std::string { return "{\"status\":\"added\"}"; }
         });
         g_orchestrator->register_tool({
-            "pcb.place-footprint", "Place Component", ccad::TaskRisk::LowMutation, "{}",
+            "pcb.place-footprint", "Place SchSymbol", ccad::TaskRisk::LowMutation, "{}",
             [](const std::string&) -> std::string { return "{\"status\":\"placed\"}"; }
         });
         g_orchestrator->register_tool({

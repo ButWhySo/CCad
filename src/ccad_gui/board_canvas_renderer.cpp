@@ -244,7 +244,7 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
                        const CanvasRenderTheme& theme) {
   canvas_scene.clear();
   canvas_scene.setBackgroundBrush(QBrush(theme.background_color));
-  if (!scene.has_board && scene.lines.empty() && scene.components.empty() && scene.wires.empty()) {
+  if (!scene.has_board && scene.lines.empty() && scene.symbols.empty() && scene.wires.empty()) {
     auto* text = canvas_scene.addText("No board or schematic to display");
     text->setDefaultTextColor(theme.empty_text_color);
     text->setPos(18, 18);
@@ -718,7 +718,7 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
   // Render Schematic Components
   QPen component_pen(theme.board_outline_color);
   component_pen.setWidthF(1.5);
-  for (const ccad::CanvasComponent& comp : scene.components) {
+  for (const ccad::CanvasComponent& comp : scene.symbols) {
     const double cx = sceneX(scene, comp.x_units, margin, scale);
     const double cy = sceneY(scene, comp.y_units, margin, scale);
 

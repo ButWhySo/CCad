@@ -12,10 +12,10 @@ ccad::Project baseProject() {
   project.id = "proj-diff";
   project.name = "diff";
   project.schematics.push_back(ccad::Schematic{});
-  project.schematics[0].components.push_back(ccad::Component{
+  project.schematics[0].symbols.push_back(ccad::SchSymbol{
       .id = "U1",
-      .part = "MCU",
-      .pins = {ccad::Pin{.name = "VDD", .kind = "power"}},
+      .lib_id = "MCU",
+      .pins = {ccad::SchPin{.name = "VDD", .type = "power"}},
   });
   project.schematics[0].nets.push_back(ccad::Net{
       .id = "N_3V3",
@@ -121,10 +121,10 @@ int main() {
           "board-only diff reports added pad without schematic");
 
   ccad::Project added = baseProject();
-  added.schematics[0].components.push_back(ccad::Component{
+  added.schematics[0].symbols.push_back(ccad::SchSymbol{
       .id = "U2",
-      .part = "SENSOR",
-      .pins = {ccad::Pin{.name = "OUT", .kind = "signal"}},
+      .lib_id = "SENSOR",
+      .pins = {ccad::SchPin{.name = "OUT", .type = "signal"}},
   });
   const ccad::ProjectDiff added_diff = ccad::diffProjects(baseProject(), added);
   require(added_diff.added_count == 1, "added count set");

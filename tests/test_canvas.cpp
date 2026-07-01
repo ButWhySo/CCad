@@ -222,8 +222,11 @@ int main() {
   require(scene.dimensions.size() == 1, "canvas has dimension");
   require(scene.dimensions.at(0).id == "D1", "canvas dimension id");
   require(scene.dimensions.at(0).text == "10 mm", "canvas dimension text");
-  require(scene.dimensions.at(0).start_x_units == 5.0, "canvas dimension start x");
-  require(scene.dimensions.at(0).start_y_units == 5.0, "canvas dimension start y");
+  require(scene.dimensions.at(0).lines.size() == 3, "canvas dimension has measurement and extension lines");
+  require(scene.dimensions.at(0).lines.at(0).sx == 5.0, "canvas dimension start x");
+  require(scene.dimensions.at(0).lines.at(0).sy == 3.0, "canvas dimension text-line y");
+  require(scene.dimensions.at(0).lines.at(1).sx == 5.0, "canvas dimension first extension starts at board point");
+  require(scene.dimensions.at(0).lines.at(1).sy == 5.0, "canvas dimension first extension y");
   require(scene.zones.size() == 1, "canvas has board zone");
   require(scene.zones.at(0).id == "Z1", "canvas board zone id");
   require(scene.zones.at(0).layer_ids.size() == 1, "canvas board zone layer set");

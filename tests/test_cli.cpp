@@ -2329,7 +2329,7 @@ int main() {
           << "  \"schema_version\": 1,\n"
           << "  \"id\": \"bad\",\n"
           << "  \"name\": \"bad\",\n"
-          << "  \"components\": [],\n"
+          << "  \"symbols\": [],\n"
           << "  \"constraints\": [],\n"
           << "  \"nets\": [\n"
           << "    {\"id\": \"N_BAD\", \"members\": ["
@@ -2351,7 +2351,7 @@ int main() {
   require(run(inspect_command) == 0, "inspect exits zero");
   const std::string inspect_output = readFile(inspect_path);
   require(inspect_output.find("\"project\"") != std::string::npos, "inspect has project object");
-  require(inspect_output.find("\"components\": 0") != std::string::npos,
+  require(inspect_output.find("\"symbols\": 0") != std::string::npos,
           "inspect has component count");
   require(inspect_output.find("\"status\": \"Warnings: 1\"") != std::string::npos,
           "inspect has review status");
@@ -2390,8 +2390,19 @@ int main() {
           "inspect reports keepout count");
 
   std::string board_with_net = readFile(board_project_path);
+  const std::string empty_symbols = "  \"symbols\": [\n  ]";
   const std::string empty_components = "  \"components\": [\n  ]";
-  const std::string logical_u1 =
+  const std::string logical_u1_symbols =
+      "  \"symbols\": [\n"
+      "    {\n"
+      "      \"id\": \"U1\",\n"
+      "      \"part\": \"test-component\",\n"
+      "      \"pins\": [\n"
+      "        {\"name\": \"1\", \"kind\": \"passive\"}\n"
+      "      ]\n"
+      "    }\n"
+      "  ]";
+  const std::string logical_u1_components =
       "  \"components\": [\n"
       "    {\n"
       "      \"id\": \"U1\",\n"
@@ -2411,10 +2422,15 @@ int main() {
       "      ]\n"
       "    }\n"
       "  ]";
+  const std::size_t symbols_position = board_with_net.find(empty_symbols);
   const std::size_t components_position = board_with_net.find(empty_components);
-  require(components_position != std::string::npos,
-          "board fixture has empty components before clean drc");
-  board_with_net.replace(components_position, empty_components.size(), logical_u1);
+  require(symbols_position != std::string::npos || components_position != std::string::npos,
+          "board fixture has empty schematic symbol list before clean drc");
+  if (symbols_position != std::string::npos) {
+    board_with_net.replace(symbols_position, empty_symbols.size(), logical_u1_symbols);
+  } else {
+    board_with_net.replace(components_position, empty_components.size(), logical_u1_components);
+  }
   const std::size_t nets_position = board_with_net.find(empty_nets);
   require(nets_position != std::string::npos, "board fixture has empty nets before clean drc");
   board_with_net.replace(nets_position, empty_nets.size(), logical_n1);
@@ -2455,7 +2471,7 @@ int main() {
               << "\"end\": {\"x_nm\": 8000000, \"y_nm\": 9000000}, \"width_nm\": 250000}\n"
               << "    ]\n"
               << "  },\n"
-              << "  \"components\": [],\n"
+              << "  \"symbols\": [],\n"
               << "  \"constraints\": [],\n"
               << "  \"nets\": []\n"
               << "}\n";
@@ -2848,7 +2864,7 @@ int main() {
                << "    \"vias\": [],\n"
                << "    \"tracks\": []\n"
                << "  },\n"
-               << "  \"components\": [\n"
+               << "  \"symbols\": [\n"
                << "    {\"id\": \"RMAP\", \"part\": \"R\", \"pins\": [\n"
                << "      {\"name\": \"1\", \"kind\": \"passive\"}\n"
                << "    ]}\n"
@@ -2924,7 +2940,7 @@ int main() {
               "--width-mm 1 --height-mm 1") == 0,
           "spread fixture second pad exits zero");
   require(run(quote(CCAD_BINARY) + " pcb spread-footprints --file " + quote(spread_board_path) +
-              " --components R2,R1 --target-x-mm 12 --target-y-mm 2 --component-gap-mm 1 "
+              " --symbols R2,R1 --target-x-mm 12 --target-y-mm 2 --component-gap-mm 1 "
               "--group-gap-mm 1.5 > " +
               quote(spread_result_path)) == 0,
           "pcb spread-footprints exits zero");
@@ -2948,7 +2964,7 @@ int main() {
              << "  \"schema_version\": 1,\n"
              << "  \"id\": \"proj-diff\",\n"
              << "  \"name\": \"diff\",\n"
-             << "  \"components\": [\n"
+             << "  \"symbols\": [\n"
              << "    {\"id\": \"U1\", \"part\": \"MCU\", \"pins\": []}\n"
              << "  ],\n"
              << "  \"constraints\": [],\n"
@@ -2993,7 +3009,7 @@ int main() {
                     << "      {\"id\": \"T1\", \"net_id\": \"N1\", \"layer_id\": \"F.Cu\", \"start\": {\"x_nm\": 5000000, \"y_nm\": 6000000}, \"end\": {\"x_nm\": 8000000, \"y_nm\": 9000000}, \"width_nm\": 250000}\n"
                     << "    ]\n"
                     << "  },\n"
-                    << "  \"components\": [],\n"
+                    << "  \"symbols\": [],\n"
                     << "  \"constraints\": [],\n"
                     << "  \"nets\": []\n"
                     << "}\n";
@@ -3027,7 +3043,7 @@ int main() {
                    << "      {\"id\": \"T1\", \"net_id\": \"N1\", \"layer_id\": \"F.Cu\", \"start\": {\"x_nm\": 5000000, \"y_nm\": 6000000}, \"end\": {\"x_nm\": 8000000, \"y_nm\": 9000000}, \"width_nm\": 300000}\n"
                    << "    ]\n"
                    << "  },\n"
-                   << "  \"components\": [],\n"
+                   << "  \"symbols\": [],\n"
                    << "  \"constraints\": [],\n"
                    << "  \"nets\": []\n"
                    << "}\n";

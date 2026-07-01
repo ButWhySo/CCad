@@ -223,8 +223,8 @@ void test_symbol_placement_creates_schematic_document() {
   if (project.schematics.size() != 1) {
     throw std::runtime_error("Symbol placement should create one primary schematic document");
   }
-  if (project.schematics[0].components.size() != 1 ||
-      project.schematics[0].components[0].id != "TP1") {
+  if (project.schematics[0].symbols.size() != 1 ||
+      project.schematics[0].symbols[0].id != "TP1") {
     throw std::runtime_error("Symbol placement should write the component into the schematic");
   }
 }

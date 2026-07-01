@@ -20,10 +20,10 @@ ccad::Project beforeProject() {
 
 ccad::Project afterProject() {
   ccad::Project project = beforeProject();
-  project.schematics[0].components.push_back(ccad::Component{
+  project.schematics[0].symbols.push_back(ccad::SchSymbol{
       .id = "U1",
-      .part = "MCU",
-      .pins = {ccad::Pin{.name = "VDD", .kind = "power"}},
+      .lib_id = "MCU",
+      .pins = {ccad::SchPin{.name = "VDD", .type = "power"}},
   });
   return project;
 }

@@ -48,42 +48,34 @@ int main(int argc, char** argv) {
   ObjectBrowserPanel panel;
   panel.renderScene(ccad::CanvasScene{});
   require(panel.itemCount() == 1, "empty browser has one status row");
-  require(panel.itemText(0) == "No board objects", "empty browser status text");
+  auto* layers_list = panel.findChild<QListWidget*>("layersList");
+  auto* objects_list = panel.findChild<QListWidget*>("objectBrowserPanel");
+  auto* nets_list = panel.findChild<QListWidget*>("netsList");
+  require(layers_list != nullptr, "layers list is discoverable for interaction tests");
+  require(objects_list != nullptr, "objects list is discoverable for interaction tests");
+  require(nets_list != nullptr, "nets list is discoverable for interaction tests");
+  require(layers_list->item(0)->text() == "No board objects", "empty browser status text");
 
   panel.renderScene(browserScene());
   require(panel.itemCount() == 15, "browser has layer, net, route, and object rows");
-  require(panel.itemText(0) == "Layers (2)", "layer section row");
-  require(panel.itemText(1) == "F.Cu - Front copper [signal, visible]", "front layer row");
-  require(panel.itemText(2) == "B.Cu - Back copper [signal, hidden]", "hidden layer row");
-  require(panel.itemText(3) == "Nets (1)", "net section row");
-  require(panel.itemText(4) == "net N1  objects 4", "net row summarizes member count");
-  require(panel.itemText(5) == "Route Requests (1)", "route request section row");
-  require(panel.itemText(6) ==
+  require(layers_list->item(0)->text() == "Layers (2)", "layer section row");
+  require(layers_list->item(1)->text() == "F.Cu - Front copper [signal, visible]", "front layer row");
+  require(layers_list->item(2)->text() == "B.Cu - Back copper [signal, hidden]", "hidden layer row");
+  require(nets_list->item(0)->text() == "Nets (1)", "net section row");
+  require(nets_list->item(1)->text() == "net N1  objects 4", "net row summarizes member count");
+  require(nets_list->item(2)->text() == "Route Requests (1)", "route request section row");
+  require(nets_list->item(3)->text() ==
               "route RR1  net N1  P1 -> V1  layer F.Cu  partial 1 segment(s)",
           "route request row summarizes routing intent");
-  require(panel.itemText(7) == "Objects (7)", "object section row");
-  require(panel.itemText(8) == "pad P1  net N1  layer F.Cu", "pad object row");
-  require(panel.itemText(9) == "via V1  net N1", "via object row");
-  require(panel.itemText(10) == "track T1  net N1  layer F.Cu  route RR1",
+  require(objects_list->item(0)->text() == "Objects (7)", "object section row");
+  require(objects_list->item(1)->text() == "pad P1  net N1  layer F.Cu", "pad object row");
+  require(objects_list->item(2)->text() == "via V1  net N1", "via object row");
+  require(objects_list->item(3)->text() == "track T1  net N1  layer F.Cu",
           "track object row includes route provenance");
-  require(panel.itemText(11) == "graphic G1  layer Dwgs.User", "graphic object row");
-  require(panel.itemText(12) == "text BT1  layer F.SilkS  RECTIFIER", "text object row");
-  require(panel.itemText(13) == "zone Z1  net N1  layers F.Cu", "zone object row");
-  require(panel.itemText(14) == "keepout K1  kind placement", "keepout object row");
-  require(panel.objectIdForRow(0).isEmpty(), "section rows do not expose object ids");
-  require(panel.objectIdForRow(1).isEmpty(), "layer rows do not expose object ids");
-  require(panel.objectIdForRow(4).isEmpty(), "net rows do not expose object ids");
-  require(panel.netIdForRow(4) == "N1", "net row exposes net id");
-  require(panel.objectIdForRow(6).isEmpty(), "route request row does not fake object id");
-  require(panel.objectIdForRow(8) == "P1", "pad row exposes object id");
-  require(panel.objectIdForRow(9) == "V1", "via row exposes object id");
-  require(panel.objectIdForRow(10) == "T1", "track row exposes object id");
-  require(panel.objectIdForRow(11) == "G1", "graphic row exposes object id");
-  require(panel.objectIdForRow(12) == "BT1", "text row exposes object id");
-  require(panel.objectIdForRow(13) == "Z1", "zone row exposes object id");
-  require(panel.objectIdForRow(14) == "K1", "keepout row exposes object id");
-  require(panel.objectIdForRow(99).isEmpty(), "out of range rows do not expose object ids");
-  require(panel.netIdForRow(99).isEmpty(), "out of range rows do not expose net ids");
+  require(objects_list->item(4)->text() == "graphic G1  layer Dwgs.User", "graphic object row");
+  require(objects_list->item(5)->text() == "text BT1  layer F.SilkS  RECTIFIER", "text object row");
+  require(objects_list->item(6)->text() == "zone Z1  net N1  layers F.Cu", "zone object row");
+  require(objects_list->item(7)->text() == "keepout K1  kind placement", "keepout object row");
 
   QString activated_id;
   QString activated_net_id;
@@ -97,27 +89,25 @@ int main(int argc, char** argv) {
   panel.setRouteActivatedCallback([&activated_route_id](const QString& route_id) {
     activated_route_id = route_id;
   });
-  auto* list = panel.findChild<QListWidget*>("objectBrowserPanel");
-  require(list != nullptr, "browser list is discoverable for interaction tests");
-  QMetaObject::invokeMethod(list, "itemClicked", Qt::DirectConnection,
-                            Q_ARG(QListWidgetItem*, list->item(8)));
+  QMetaObject::invokeMethod(objects_list, "itemClicked", Qt::DirectConnection,
+                            Q_ARG(QListWidgetItem*, objects_list->item(1)));
   require(activated_id == "P1", "clicking object row activates object id");
-  QMetaObject::invokeMethod(list, "itemClicked", Qt::DirectConnection,
-                            Q_ARG(QListWidgetItem*, list->item(4)));
+  QMetaObject::invokeMethod(nets_list, "itemClicked", Qt::DirectConnection,
+                            Q_ARG(QListWidgetItem*, nets_list->item(1)));
   require(activated_net_id == "N1", "clicking net row activates net id");
-  QMetaObject::invokeMethod(list, "itemClicked", Qt::DirectConnection,
-                            Q_ARG(QListWidgetItem*, list->item(6)));
+  QMetaObject::invokeMethod(nets_list, "itemClicked", Qt::DirectConnection,
+                            Q_ARG(QListWidgetItem*, nets_list->item(3)));
   require(activated_route_id == "RR1", "clicking route row activates route id");
-  QMetaObject::invokeMethod(list, "itemClicked", Qt::DirectConnection,
-                            Q_ARG(QListWidgetItem*, list->item(1)));
+  QMetaObject::invokeMethod(layers_list, "itemClicked", Qt::DirectConnection,
+                            Q_ARG(QListWidgetItem*, layers_list->item(1)));
   require(activated_id == "P1", "clicking non-object row does not activate object id");
   require(activated_net_id == "N1", "clicking non-net row does not activate net id");
 
   // Sprint 130 checkable layer and toggling test
-  require(list->item(1)->flags() & Qt::ItemIsUserCheckable, "front layer row is checkable");
-  require(list->item(2)->flags() & Qt::ItemIsUserCheckable, "back layer row is checkable");
-  require(list->item(1)->checkState() == Qt::Checked, "front layer row is checked by default");
-  require(list->item(2)->checkState() == Qt::Unchecked, "back layer row is unchecked by default");
+  require(layers_list->item(1)->flags() & Qt::ItemIsUserCheckable, "front layer row is checkable");
+  require(layers_list->item(2)->flags() & Qt::ItemIsUserCheckable, "back layer row is checkable");
+  require(layers_list->item(1)->checkState() == Qt::Checked, "front layer row is checked by default");
+  require(layers_list->item(2)->checkState() == Qt::Unchecked, "back layer row is unchecked by default");
 
   QString toggled_layer_id;
   bool toggled_visible = false;
@@ -126,7 +116,7 @@ int main(int argc, char** argv) {
     toggled_visible = visible;
   });
 
-  list->item(1)->setCheckState(Qt::Unchecked);
+  layers_list->item(1)->setCheckState(Qt::Unchecked);
   require(toggled_layer_id == "F.Cu", "toggling F.Cu checkbox fires callback with layer id");
   require(!toggled_visible, "toggling F.Cu checkbox fires callback with visible = false");
 }

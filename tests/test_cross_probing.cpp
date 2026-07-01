@@ -70,7 +70,7 @@ ccad::Project fixtureProject() {
   ccad::Schematic schematic;
   schematic.id = "root";
   schematic.name = "Root";
-  schematic.components.push_back(ccad::Component{.id = "U1", .part = "MCU"});
+  schematic.symbols.push_back(ccad::SchSymbol{.id = "U1", .lib_id = "MCU"});
   schematic.nets.push_back(
       ccad::Net{.id = "N1", .members = {ccad::NetMember{.component_id = "U1",
                                                         .pin_name = "1"}}});

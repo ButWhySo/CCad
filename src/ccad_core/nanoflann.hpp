@@ -529,7 +529,7 @@ struct L1_Adaptor
             a += 4;
             if ((worst_dist > 0) && (result > worst_dist)) { return result; }
         }
-        /* Process last 0-3 components.  Not needed for standard vector lengths.
+        /* Process last 0-3 symbols.  Not needed for standard vector lengths.
          */
         while (a < last)
         {
@@ -592,7 +592,7 @@ struct L2_Adaptor
             a += 4;
             if ((worst_dist > 0) && (result > worst_dist)) { return result; }
         }
-        /* Process last 0-3 components.  Not needed for standard vector lengths.
+        /* Process last 0-3 symbols.  Not needed for standard vector lengths.
          */
         while (a < last)
         {

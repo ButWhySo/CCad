@@ -1294,7 +1294,7 @@ QJsonObject projectObjectCountsObject(const ccad::Project& project) {
   response.insert("project_name", qstr(project.name));
   response.insert("project_schema_version", project.schema_version);
   const ccad::Schematic* sch0 = project.schematics.empty() ? nullptr : &project.schematics[0];
-  response.insert("component_count", sch0 ? static_cast<int>(sch0->components.size()) : 0);
+  response.insert("component_count", sch0 ? static_cast<int>(sch0->symbols.size()) : 0);
   response.insert("net_count", sch0 ? static_cast<int>(sch0->nets.size()) : 0);
   response.insert("wire_count", sch0 ? static_cast<int>(sch0->wires.size()) : 0);
   response.insert("constraint_count", sch0 ? static_cast<int>(sch0->constraints.size()) : 0);
@@ -1587,7 +1587,7 @@ std::string placementPrefixFromName(const std::string& name) {
 
 std::string nextComponentId(const ccad::Project& project, const std::string& prefix) {
   int max_num = 0;
-  if (!project.schematics.empty()) for (const ccad::Component& component : project.schematics[0].components) {
+  if (!project.schematics.empty()) for (const ccad::SchSymbol& component : project.schematics[0].symbols) {
     if (!component.id.starts_with(prefix)) {
       continue;
     }
@@ -2014,7 +2014,7 @@ ReviewWindow::ReviewWindow() {
       ccad::ProjectContext ctx;
       ctx.project_id = "Current Workspace";
       if (!project_cache_.schematics.empty()) {
-          ctx.component_count = project_cache_.schematics[0].components.size();
+          ctx.component_count = project_cache_.schematics[0].symbols.size();
           ctx.net_count = project_cache_.schematics[0].nets.size();
       }
       if (!project_cache_.boards.empty()) {
@@ -2855,7 +2855,7 @@ void ReviewWindow::handleObjectsMoved(const QPointF& delta) {
         moved = true; break;
       }
     }
-    for (auto& comp : project_cache_.schematics[0].components) {
+    for (auto& comp : project_cache_.schematics[0].symbols) {
       if (comp.id == id) {
         comp.position.x.nanometers += p_delta.x.nanometers; comp.position.y.nanometers += p_delta.y.nanometers;
         moved = true; break;
@@ -3662,7 +3662,7 @@ void ReviewWindow::renderReview(const ccad::ProjectReview& review) {
   renderSchematicCanvas(*schematic_scene_, schematic_scene);
 
   if (project_cache_.boards.empty() && !project_cache_.schematics.empty() &&
-      (!project_cache_.schematics[0].components.empty() || !project_cache_.schematics[0].wires.empty())) {
+      (!project_cache_.schematics[0].symbols.empty() || !project_cache_.schematics[0].wires.empty())) {
     editor_tabs_->setCurrentWidget(schematic_view_);
   }
 
@@ -7868,11 +7868,11 @@ QString ReviewWindow::deleteBoardObjectForAutomation(const QString& object_id) {
 
   const std::string id = object_id.toStdString();
   const auto erase_comp = std::find_if(
-      project_cache_.schematics[0].components.begin(), project_cache_.schematics[0].components.end(),
-      [&id](const ccad::Component& comp) { return comp.id == id; });
-  if (erase_comp != project_cache_.schematics[0].components.end()) {
+      project_cache_.schematics[0].symbols.begin(), project_cache_.schematics[0].symbols.end(),
+      [&id](const ccad::SchSymbol& comp) { return comp.id == id; });
+  if (erase_comp != project_cache_.schematics[0].symbols.end()) {
     pushUndoSnapshot();
-    project_cache_.schematics[0].components.erase(erase_comp);
+    project_cache_.schematics[0].symbols.erase(erase_comp);
     saveProjectCacheAfterMutation("Deleted component " + object_id);
     return result(true, "deleted", object_id, "component");
   }
@@ -8624,12 +8624,12 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               }
               pushUndoSnapshot();
               ccad::Schematic& sch = project_cache_.schematics[0];
-              sch.labels.push_back(ccad::Label{.id = "label_" + std::to_string(sch.labels.size()),
-                                               .text = interaction_board_text_.toStdString(),
-                                               .net_id = interaction_board_text_.toStdString(),
-                                               .position = schematicPointFromScene(scene_pos),
-                                               .rotation_degrees = 0.0,
-                                               .global = false});
+              sch.labels.push_back(ccad::SchLabel{.id = "label_" + std::to_string(sch.labels.size()),
+                                                  .text = interaction_board_text_.toStdString(),
+                                                  .net_id = interaction_board_text_.toStdString(),
+                                                  .position = schematicPointFromScene(scene_pos),
+                                                  .rotation_degrees = 0.0,
+                                                  .type = ccad::LabelType::Local});
               cancelInteractionMode();
               saveProjectCacheAfterMutation(QString::fromStdString("Placed label " + sch.labels.back().id));
             } catch (const std::exception& e) {
@@ -8740,10 +8740,10 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               pushUndoSnapshot();
               ccad::Schematic& sch = project_cache_.schematics[0];
               sch.wires.push_back(
-                  ccad::WireSegment{.id = "wire_" + std::to_string(sch.wires.size()),
-                                    .start = schematicPointFromScene(interaction_start_mouse_pos_),
-                                    .end = schematicPointFromScene(scene_pos),
-                                    .net_id = ""});
+                  ccad::SchWire{.id = "wire_" + std::to_string(sch.wires.size()),
+                                .start = schematicPointFromScene(interaction_start_mouse_pos_),
+                                .end = schematicPointFromScene(scene_pos),
+                                .net_id = ""});
               cancelInteractionMode();
               saveProjectCacheAfterMutation(QString::fromStdString("Added wire " + sch.wires.back().id));
             } catch (const std::exception& e) {

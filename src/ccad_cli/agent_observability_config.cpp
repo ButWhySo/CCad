@@ -110,7 +110,7 @@ std::string agentTraceExportSchemaJson() {
       << "\"network_probe_supported\":false,"
       << "\"semantic_convention\":\"opentelemetry_gen_ai\","
       << "\"semantic_convention_status\":\"development\","
-      << "\"semantic_components\":[\"gen_ai\"],"
+      << "\"semantic_symbols\":[\"gen_ai\"],"
       << "\"backends\":[\"langfuse\",\"otlp_http\",\"otlp_grpc\",\"local_collector\"],"
       << "\"span_plan\":";
   appendStringArray(out, traceSpanPlan());

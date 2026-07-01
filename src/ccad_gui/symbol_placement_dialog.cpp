@@ -109,7 +109,7 @@ void SymbolPlacementDialog::onAccept() {
   else if (baseName.startsWith("L_") || baseName.startsWith("L", Qt::CaseInsensitive)) prefix = "L";
 
   int max_num = 0;
-  for (const auto& comp : project_.schematics[0].components) {
+  for (const auto& comp : project_.schematics[0].symbols) {
     if (comp.id.starts_with(prefix)) {
       std::string num_str = comp.id.substr(prefix.length());
       try {

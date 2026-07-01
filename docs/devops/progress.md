@@ -392,6 +392,8 @@ Sprint 231 is complete on branch `sprint-231-fix-ci`. Fixed the GitHub Actions C
 
 Sprint 232 is verified on branch `sprint-232-eeschema-source-walk`. The batch began the KiCad schematic source walk from `annotate.cpp` through `connection_graph.cpp`, mapping cross-probing and BOM logic to CCad native constructs, and stubbing hierarchical graph features to the backlog.
 
+Sprint 232 continuation is verified on branch `sprint-232-schematic-model`. The batch repaired schematic symbol snapshot persistence after the model rename by storing embedded symbol snapshots on placed `SchSymbol` records, preserving legacy `components`/`symbols`, `part`/`lib_id`, and pin `kind`/`type` compatibility, expanding symbol snapshots into schematic canvas primitives, and updating the tabbed object-browser test. The incremental Qt build passed, focused placement, CLI, and object-browser tests passed, the full CTest gate passed 56 of 56 tests, the official visual harness produced `artifacts\screenshots\sprint232-symbol-snapshot-proof-internal-20260629-181543.png`, and the targeted schematic screenshot `artifacts\screenshots\sprint232-schematic-symbol-snapshot.png` visually proved reloaded symbol body and pin-lead geometry with empty stderr.
+
 
 Sprint 233 is verified on branch `sprint-233-eeschema-source-walk`. The batch progressed the KiCad schematic source walk through `eeschema.cpp` to `junction_helpers.cpp`, omitting redundant wxWidgets GUI forms, serialization handlers, and stubbing schematic DXF/SVG imports to the backlog.
 

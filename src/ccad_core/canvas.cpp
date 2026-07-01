@@ -32,14 +32,8 @@ CanvasPoint rotatePoint(const double x_units, const double y_units, const double
   };
 }
 
-CanvasPoint transformSymbolPoint(const Component& component, const double x_units,
-                                 const double y_units) {
-  const CanvasPoint rotated = rotatePoint(x_units, y_units, component.rotation_degrees);
-  return CanvasPoint{
-      .x_units = toMillimeters(component.position.x) + rotated.x_units,
-      .y_units = toMillimeters(component.position.y) + rotated.y_units,
-  };
-}
+
+
 
 void includeBounds(double& min_x, double& min_y, double& max_x, double& max_y,
                    const double x_units, const double y_units) {
@@ -47,78 +41,6 @@ void includeBounds(double& min_x, double& min_y, double& max_x, double& max_y,
   if (y_units < min_y) min_y = y_units;
   if (x_units > max_x) max_x = x_units;
   if (y_units > max_y) max_y = y_units;
-}
-
-void mergePlacedSymbolScene(CanvasScene& scene, const Component& component,
-                            const CanvasScene& symbol_scene, double& min_x, double& min_y,
-                            double& max_x, double& max_y) {
-  const std::string prefix = component.id + ".";
-
-  for (CanvasLine line : symbol_scene.lines) {
-    const CanvasPoint start =
-        transformSymbolPoint(component, line.start_x_units, line.start_y_units);
-    const CanvasPoint end = transformSymbolPoint(component, line.end_x_units, line.end_y_units);
-    line.id = prefix + line.id;
-    line.start_x_units = start.x_units;
-    line.start_y_units = start.y_units;
-    line.end_x_units = end.x_units;
-    line.end_y_units = end.y_units;
-    scene.lines.push_back(line);
-    includeBounds(min_x, min_y, max_x, max_y, line.start_x_units, line.start_y_units);
-    includeBounds(min_x, min_y, max_x, max_y, line.end_x_units, line.end_y_units);
-  }
-
-  for (CanvasArc arc : symbol_scene.arcs) {
-    const CanvasPoint start = transformSymbolPoint(component, arc.start_x_units, arc.start_y_units);
-    const CanvasPoint mid = transformSymbolPoint(component, arc.mid_x_units, arc.mid_y_units);
-    const CanvasPoint end = transformSymbolPoint(component, arc.end_x_units, arc.end_y_units);
-    arc.id = prefix + arc.id;
-    arc.start_x_units = start.x_units;
-    arc.start_y_units = start.y_units;
-    arc.mid_x_units = mid.x_units;
-    arc.mid_y_units = mid.y_units;
-    arc.end_x_units = end.x_units;
-    arc.end_y_units = end.y_units;
-    scene.arcs.push_back(arc);
-    includeBounds(min_x, min_y, max_x, max_y, arc.start_x_units, arc.start_y_units);
-    includeBounds(min_x, min_y, max_x, max_y, arc.mid_x_units, arc.mid_y_units);
-    includeBounds(min_x, min_y, max_x, max_y, arc.end_x_units, arc.end_y_units);
-  }
-
-  for (CanvasCircle circle : symbol_scene.circles) {
-    const CanvasPoint center =
-        transformSymbolPoint(component, circle.center_x_units, circle.center_y_units);
-    circle.id = prefix + circle.id;
-    circle.center_x_units = center.x_units;
-    circle.center_y_units = center.y_units;
-    scene.circles.push_back(circle);
-    includeBounds(min_x, min_y, max_x, max_y, circle.center_x_units - circle.radius_units,
-                  circle.center_y_units - circle.radius_units);
-    includeBounds(min_x, min_y, max_x, max_y, circle.center_x_units + circle.radius_units,
-                  circle.center_y_units + circle.radius_units);
-  }
-
-  for (CanvasPolygon polygon : symbol_scene.polygons) {
-    polygon.id = prefix + polygon.id;
-    for (std::size_t i = 0; i < polygon.pts_x_units.size(); ++i) {
-      const CanvasPoint point =
-          transformSymbolPoint(component, polygon.pts_x_units.at(i), polygon.pts_y_units.at(i));
-      polygon.pts_x_units.at(i) = point.x_units;
-      polygon.pts_y_units.at(i) = point.y_units;
-      includeBounds(min_x, min_y, max_x, max_y, point.x_units, point.y_units);
-    }
-    scene.polygons.push_back(polygon);
-  }
-
-  for (CanvasText text : symbol_scene.texts) {
-    const CanvasPoint position = transformSymbolPoint(component, text.x_units, text.y_units);
-    text.id = prefix + text.id;
-    text.x_units = position.x_units;
-    text.y_units = position.y_units;
-    text.rotation_degrees += component.rotation_degrees;
-    scene.texts.push_back(text);
-    includeBounds(min_x, min_y, max_x, max_y, text.x_units, text.y_units);
-  }
 }
 
 }  // namespace
@@ -522,25 +444,96 @@ CanvasScene buildSchematicScene(const Schematic& schematic) {
     }
     includeBounds(min_x, min_y, max_x, max_y, x_units, y_units);
   };
+  const auto transformPlacedPoint = [](const SchSymbol& comp, const double x_units,
+                                       const double y_units) {
+    const CanvasPoint rotated = rotatePoint(x_units, y_units, comp.rotation_degrees);
+    return CanvasPoint{
+        .x_units = toMillimeters(comp.position.x) + rotated.x_units,
+        .y_units = toMillimeters(comp.position.y) + rotated.y_units,
+    };
+  };
 
-  for (const Component& comp : schematic.components) {
+  for (const SchSymbol& comp : schematic.symbols) {
     CanvasComponent cc;
     cc.id = comp.id;
-    cc.part = comp.part;
+    cc.part = comp.lib_id;
     cc.x_units = toMillimeters(comp.position.x);
     cc.y_units = toMillimeters(comp.position.y);
     cc.rotation_degrees = comp.rotation_degrees;
     cc.has_symbol_graphics = comp.symbol.has_value();
-    scene.components.push_back(cc);
+    scene.symbols.push_back(cc);
 
     includeSchematicBounds(cc.x_units, cc.y_units);
+
     if (comp.symbol.has_value()) {
-      mergePlacedSymbolScene(scene, comp, buildCanvasScene(*comp.symbol), min_x, min_y, max_x,
-                             max_y);
+      CanvasScene local_scene = buildCanvasScene(*comp.symbol);
+      for (CanvasLine line : local_scene.lines) {
+        const CanvasPoint start =
+            transformPlacedPoint(comp, line.start_x_units, line.start_y_units);
+        const CanvasPoint end = transformPlacedPoint(comp, line.end_x_units, line.end_y_units);
+        line.id = comp.id + "." + line.id;
+        line.start_x_units = start.x_units;
+        line.start_y_units = start.y_units;
+        line.end_x_units = end.x_units;
+        line.end_y_units = end.y_units;
+        scene.lines.push_back(line);
+        includeSchematicBounds(start.x_units, start.y_units);
+        includeSchematicBounds(end.x_units, end.y_units);
+      }
+      for (CanvasArc arc : local_scene.arcs) {
+        const CanvasPoint start =
+            transformPlacedPoint(comp, arc.start_x_units, arc.start_y_units);
+        const CanvasPoint mid = transformPlacedPoint(comp, arc.mid_x_units, arc.mid_y_units);
+        const CanvasPoint end = transformPlacedPoint(comp, arc.end_x_units, arc.end_y_units);
+        arc.id = comp.id + "." + arc.id;
+        arc.start_x_units = start.x_units;
+        arc.start_y_units = start.y_units;
+        arc.mid_x_units = mid.x_units;
+        arc.mid_y_units = mid.y_units;
+        arc.end_x_units = end.x_units;
+        arc.end_y_units = end.y_units;
+        scene.arcs.push_back(arc);
+        includeSchematicBounds(start.x_units, start.y_units);
+        includeSchematicBounds(mid.x_units, mid.y_units);
+        includeSchematicBounds(end.x_units, end.y_units);
+      }
+      for (CanvasCircle circle : local_scene.circles) {
+        const CanvasPoint center =
+            transformPlacedPoint(comp, circle.center_x_units, circle.center_y_units);
+        circle.id = comp.id + "." + circle.id;
+        circle.center_x_units = center.x_units;
+        circle.center_y_units = center.y_units;
+        scene.circles.push_back(circle);
+        includeSchematicBounds(center.x_units - circle.radius_units,
+                               center.y_units - circle.radius_units);
+        includeSchematicBounds(center.x_units + circle.radius_units,
+                               center.y_units + circle.radius_units);
+      }
+      for (CanvasPolygon polygon : local_scene.polygons) {
+        polygon.id = comp.id + "." + polygon.id;
+        for (std::size_t i = 0; i < polygon.pts_x_units.size() &&
+                                i < polygon.pts_y_units.size(); ++i) {
+          const CanvasPoint transformed =
+              transformPlacedPoint(comp, polygon.pts_x_units.at(i), polygon.pts_y_units.at(i));
+          polygon.pts_x_units.at(i) = transformed.x_units;
+          polygon.pts_y_units.at(i) = transformed.y_units;
+          includeSchematicBounds(transformed.x_units, transformed.y_units);
+        }
+        scene.polygons.push_back(polygon);
+      }
+      for (CanvasText text : local_scene.texts) {
+        const CanvasPoint position = transformPlacedPoint(comp, text.x_units, text.y_units);
+        text.id = comp.id + "." + text.id;
+        text.x_units = position.x_units;
+        text.y_units = position.y_units;
+        text.rotation_degrees += comp.rotation_degrees;
+        scene.texts.push_back(text);
+        includeSchematicBounds(position.x_units, position.y_units);
+      }
     }
   }
 
-  for (const WireSegment& wire : schematic.wires) {
+  for (const SchWire& wire : schematic.wires) {
     CanvasWire cw;
     cw.net_id = wire.net_id;
     cw.start_x_units = toMillimeters(wire.start.x);
@@ -553,8 +546,9 @@ CanvasScene buildSchematicScene(const Schematic& schematic) {
     includeSchematicBounds(cw.end_x_units, cw.end_y_units);
   }
 
-  for (const BusSegment& bus : schematic.buses) {
-    CanvasBusSegment cbs;
+  for (const SchBus& bus : schematic.buses) {
+    CanvasSchBus cbs;
+    cbs.id = bus.id;
     cbs.bus_id = bus.bus_id;
     cbs.start_x_units = toMillimeters(bus.start.x);
     cbs.start_y_units = toMillimeters(bus.start.y);
@@ -566,7 +560,7 @@ CanvasScene buildSchematicScene(const Schematic& schematic) {
     includeSchematicBounds(cbs.end_x_units, cbs.end_y_units);
   }
 
-  for (const Label& label : schematic.labels) {
+  for (const SchLabel& label : schematic.labels) {
     CanvasLabel cl;
     cl.id = label.id;
     cl.text = label.text;
@@ -574,13 +568,13 @@ CanvasScene buildSchematicScene(const Schematic& schematic) {
     cl.x_units = toMillimeters(label.position.x);
     cl.y_units = toMillimeters(label.position.y);
     cl.rotation_degrees = label.rotation_degrees;
-    cl.global = label.global;
+    cl.global = (label.type == LabelType::Global);
     scene.labels.push_back(cl);
 
     includeSchematicBounds(cl.x_units, cl.y_units);
   }
 
-  for (const PowerSymbol& ps : schematic.power_symbols) {
+  for (const SchPowerSymbol& ps : schematic.power_symbols) {
     CanvasPowerSymbol cps;
     cps.id = ps.id;
     cps.value = ps.value;
@@ -811,6 +805,15 @@ CanvasScene buildCanvasScene(const Symbol& symbol) {
   }
 
   return scene;
+}
+
+
+void includeBounds(double& min_x, double& min_y, double& max_x, double& max_y,
+                   const double x_units, const double y_units) {
+  if (x_units < min_x) min_x = x_units;
+  if (y_units < min_y) min_y = y_units;
+  if (x_units > max_x) max_x = x_units;
+  if (y_units > max_y) max_y = y_units;
 }
 
 }  // namespace ccad

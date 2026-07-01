@@ -5,11 +5,11 @@
 #include <stdexcept>
 #include <string>
 
-using ccad::Component;
+using ccad::SchSymbol;
 using ccad::Constraint;
 using ccad::Net;
 using ccad::NetMember;
-using ccad::Pin;
+using ccad::SchPin;
 using ccad::Project;
 
 int main() {
@@ -134,10 +134,10 @@ int main() {
       }},
   });
   project.schematics.push_back(ccad::Schematic{});
-  project.schematics[0].components.push_back(Component{
+  project.schematics[0].symbols.push_back(SchSymbol{
       .id = "U1",
-      .part = "MCU",
-      .pins = {Pin{.name = "VDD", .kind = "power"}, Pin{.name = "GND", .kind = "power"}},
+      .lib_id = "MCU",
+      .pins = {SchPin{.name = "VDD", .type = "power"}, SchPin{.name = "GND", .type = "power"}},
   });
   project.schematics[0].nets.push_back(Net{
       .id = "N_3V3",
@@ -297,8 +297,8 @@ int main() {
           "route request preferred layer round trips");
   require(loaded.boards[0].route_requests.at(0).width.nanometers == 250000,
           "route request width round trips");
-  require(loaded.schematics[0].components.size() == 1, "component count round trips");
-  require(loaded.schematics[0].components.at(0).pins.size() == 2, "pin count round trips");
+  require(loaded.schematics[0].symbols.size() == 1, "component count round trips");
+  require(loaded.schematics[0].symbols.at(0).pins.size() == 2, "pin count round trips");
   require(loaded.schematics[0].nets.size() == 1, "net count round trips");
   require(loaded.schematics[0].constraints.size() == 1, "constraint count round trips");
   require(ccad::dumpProjectJson(loaded) == json, "json output is deterministic");

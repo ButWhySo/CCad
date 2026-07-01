@@ -47,7 +47,7 @@ int schCommand(const std::vector<std::string>& args) {
           parseOptions(args, 1, {"--file", "--id", "--start-x-mm", "--start-y-mm", "--end-x-mm", "--end-y-mm", "--net"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
-      ccad::WireSegment wire{
+      ccad::SchWire wire{
           .id = requireOption(options, "--id"),
           .start = {ccad::millimeters(requireDoubleOption(options, "--start-x-mm")),
                     ccad::millimeters(requireDoubleOption(options, "--start-y-mm"))},
@@ -68,7 +68,7 @@ int schCommand(const std::vector<std::string>& args) {
           parseOptions(args, 1, {"--file", "--id", "--start-x-mm", "--start-y-mm", "--end-x-mm", "--end-y-mm", "--bus"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
-      ccad::BusSegment bus{
+      ccad::SchBus bus{
           .id = requireOption(options, "--id"),
           .start = {ccad::millimeters(requireDoubleOption(options, "--start-x-mm")),
                     ccad::millimeters(requireDoubleOption(options, "--start-y-mm"))},
@@ -89,14 +89,14 @@ int schCommand(const std::vector<std::string>& args) {
           parseOptions(args, 1, {"--file", "--id", "--text", "--net", "--at-x-mm", "--at-y-mm", "--rotation-deg", "--global"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
-      ccad::Label label{
+      ccad::SchLabel label{
           .id = requireOption(options, "--id"),
           .text = requireOption(options, "--text"),
           .net_id = options.contains("--net") ? options.at("--net") : "",
           .position = {ccad::millimeters(requireDoubleOption(options, "--at-x-mm")),
                        ccad::millimeters(requireDoubleOption(options, "--at-y-mm"))},
           .rotation_degrees = optionDoubleOrDefault(options, "--rotation-deg", 0.0),
-          .global = options.count("--global") > 0
+          .type = options.count("--global") > 0 ? ccad::LabelType::Global : ccad::LabelType::Local
       };
       ccad::ensurePrimarySchematic(project).labels.push_back(label);
       if (!writeProjectFile(file, project)) {
@@ -111,7 +111,7 @@ int schCommand(const std::vector<std::string>& args) {
           parseOptions(args, 1, {"--file", "--id", "--value", "--net", "--at-x-mm", "--at-y-mm", "--rotation-deg"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
-      ccad::PowerSymbol power{
+      ccad::SchPowerSymbol power{
           .id = requireOption(options, "--id"),
           .value = requireOption(options, "--value"),
           .net_id = options.contains("--net") ? options.at("--net") : "",

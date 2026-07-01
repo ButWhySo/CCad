@@ -6,7 +6,7 @@
 namespace ccad {
 
 /**
- * @brief Exports the project's components as a CSV Bill of Materials.
+ * @brief Exports the project's symbols as a CSV Bill of Materials.
  * @param project The CCad project to export.
  * @return A string containing the CSV formatted BOM.
  */

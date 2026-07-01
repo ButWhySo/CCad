@@ -155,11 +155,11 @@ std::string exportToKiCadPcb(const Project& project) {
     if (ref.empty()) {
       ref = "FreePads";
     }
-    std::string part = "Component";
+    std::string part = "SchSymbol";
     if (const Schematic* schematic = primarySchematic(project)) {
-      for (const auto& comp : schematic->components) {
+      for (const auto& comp : schematic->symbols) {
         if (comp.id == comp_id) {
-          part = comp.part;
+          part = comp.lib_id;
           break;
         }
       }

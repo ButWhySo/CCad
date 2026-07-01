@@ -6,8 +6,8 @@
 namespace ccad {
 namespace {
 
-bool componentHasPin(const Component& component, const std::string& pin_name) {
-  for (const Pin& pin : component.pins) {
+bool componentHasPin(const SchSymbol& component, const std::string& pin_name) {
+  for (const SchPin& pin : component.pins) {
     if (pin.name == pin_name) {
       return true;
     }
@@ -15,12 +15,12 @@ bool componentHasPin(const Component& component, const std::string& pin_name) {
   return false;
 }
 
-const Component* findComponent(const Project& project, const std::string& component_id) {
+const SchSymbol* findComponent(const Project& project, const std::string& component_id) {
   const Schematic* schematic = primarySchematic(project);
   if (schematic == nullptr) {
     return nullptr;
   }
-  for (const Component& component : schematic->components) {
+  for (const SchSymbol& component : schematic->symbols) {
     if (component.id == component_id) {
       return &component;
     }
@@ -47,41 +47,41 @@ std::vector<Diagnostic> runErc(const Project& project) {
     return diagnostics;
   }
 
-  if (schematic->components.empty() && schematic->nets.empty()) {
+  if (schematic->symbols.empty() && schematic->nets.empty()) {
     diagnostics.push_back(makeDiagnostic("warning", "EMPTY_PROJECT",
-                                         "Project has no components or nets", project.id));
+                                         "Project has no symbols or nets", project.id));
   }
 
   std::set<std::string> component_ids;
-  for (const Component& component : schematic->components) {
+  for (const SchSymbol& component : schematic->symbols) {
     if (component.id.empty()) {
       diagnostics.push_back(makeDiagnostic("error", "INVALID_COMPONENT_ID",
-                                           "Component ID must not be empty", component.id));
+                                           "SchSymbol ID must not be empty", component.id));
     }
-    if (component.part.empty()) {
+    if (component.lib_id.empty()) {
       diagnostics.push_back(makeDiagnostic("error", "INVALID_COMPONENT_PART",
-                                           "Component part must not be empty", component.id));
+                                           "SchSymbol part must not be empty", component.id));
     }
     if (!component_ids.insert(component.id).second) {
       diagnostics.push_back(makeDiagnostic("error", "DUPLICATE_COMPONENT_ID",
-                                           "Component ID appears more than once", component.id));
+                                           "SchSymbol ID appears more than once", component.id));
     }
 
     std::set<std::string> pin_names;
-    for (const Pin& pin : component.pins) {
+    for (const SchPin& pin : component.pins) {
       if (pin.name.empty()) {
         diagnostics.push_back(makeDiagnostic("error", "INVALID_PIN_NAME",
-                                             "Component pin name must not be empty",
+                                             "SchSymbol pin name must not be empty",
                                              component.id));
       }
-      if (pin.kind.empty()) {
-        diagnostics.push_back(makeDiagnostic("error", "INVALID_PIN_KIND",
-                                             "Component pin kind must not be empty",
+      if (pin.type.empty()) {
+        diagnostics.push_back(makeDiagnostic("error", "INVALID_PIN_TYPE",
+                                             "SchSymbol pin type must not be empty",
                                              component.id + "." + pin.name));
       }
       if (!pin_names.insert(pin.name).second) {
         diagnostics.push_back(makeDiagnostic("error", "DUPLICATE_PIN",
-                                             "Component pin appears more than once",
+                                             "SchSymbol pin appears more than once",
                                              component.id + "." + pin.name));
       }
     }
@@ -112,7 +112,7 @@ std::vector<Diagnostic> runErc(const Project& project) {
                                              net.id));
       }
 
-      const Component* component = findComponent(project, member.component_id);
+      const SchSymbol* component = findComponent(project, member.component_id);
       if (component == nullptr) {
         diagnostics.push_back(makeDiagnostic("error", "UNKNOWN_COMPONENT",
                                              "Net references an unknown component",
@@ -128,25 +128,25 @@ std::vector<Diagnostic> runErc(const Project& project) {
     }
   }
 
-  for (const WireSegment& wire : schematic->wires) {
+  for (const SchWire& wire : schematic->wires) {
     if (!wire.net_id.empty() && net_ids.find(wire.net_id) == net_ids.end()) {
       diagnostics.push_back(makeDiagnostic("error", "UNKNOWN_NET_ID",
                                            "Wire references an unknown net ID", wire.id.empty() ? wire.net_id : wire.id));
     }
   }
 
-  for (const Label& label : schematic->labels) {
+  for (const SchLabel& label : schematic->labels) {
     if (label.id.empty()) {
       diagnostics.push_back(makeDiagnostic("error", "INVALID_LABEL_ID",
-                                           "Label ID must not be empty", label.id));
+                                           "SchLabel ID must not be empty", label.id));
     }
     if (!label.net_id.empty() && net_ids.find(label.net_id) == net_ids.end()) {
       diagnostics.push_back(makeDiagnostic("error", "UNKNOWN_NET_ID",
-                                           "Label references an unknown net ID", label.id));
+                                           "SchLabel references an unknown net ID", label.id));
     }
   }
 
-  for (const PowerSymbol& ps : schematic->power_symbols) {
+  for (const SchPowerSymbol& ps : schematic->power_symbols) {
     if (ps.id.empty()) {
       diagnostics.push_back(makeDiagnostic("error", "INVALID_POWER_SYMBOL_ID",
                                            "Power Symbol ID must not be empty", ps.id));

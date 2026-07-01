@@ -18,12 +18,19 @@ ccad::Project baseProject() {
 ccad::Transaction addComponentTransaction() {
   ccad::Project before = baseProject();
   ccad::Project after = before;
-  after.schematics[0].components.push_back(ccad::Component{
+  after.schematics[0].symbols.push_back(ccad::SchSymbol{
       .id = "U1",
-      .part = "MCU",
-      .pins = {ccad::Pin{.name = "VDD", .kind = "power"}},
+      .lib_id = "MCU",
+      .reference = "U1",
+      .unit = 1,
       .position = {},
       .rotation_degrees = 0.0,
+      .mirror_x = false,
+      .mirror_y = false,
+      .in_bom = true,
+      .on_board = true,
+      .fields = {},
+      .pins = {ccad::SchPin{.name = "VDD", .type = "power"}},
   });
   return ccad::buildTransaction("txn-001", "sch add-component U1", "Add MCU", before, after);
 }

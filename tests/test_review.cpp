@@ -11,10 +11,10 @@ ccad::Project validProject() {
   project.id = "proj-review";
   project.name = "review";
   project.schematics.push_back(ccad::Schematic{});
-  project.schematics[0].components.push_back(ccad::Component{
+  project.schematics[0].symbols.push_back(ccad::SchSymbol{
       .id = "U1",
-      .part = "MCU",
-      .pins = {ccad::Pin{.name = "VDD", .kind = "power"}},
+      .lib_id = "MCU",
+      .pins = {ccad::SchPin{.name = "VDD", .type = "power"}},
   });
   project.schematics[0].nets.push_back(ccad::Net{
       .id = "N_3V3",
@@ -112,7 +112,7 @@ int main() {
   const ccad::ProjectReview board_only = ccad::buildReview(boardOnlyProject());
   require(board_only.project_id == "proj-board-only", "board-only review keeps project id");
   require(board_only.has_board, "board-only review reports board present");
-  require(board_only.component_count == 0, "board-only review has no schematic components");
+  require(board_only.component_count == 0, "board-only review has no schematic symbols");
   require(board_only.net_count == 0, "board-only review has no schematic nets");
   require(board_only.pad_count == 1, "board-only review still counts pads");
   require(board_only.error_count == 0, "board-only review has no errors");

@@ -2811,14 +2811,14 @@ int pcbCommand(const std::vector<std::string>& args) {
 
     if (subcommand == "spread-footprints") {
       const std::map<std::string, std::string> options =
-          parseOptions(args, 1, {"--file", "--components", "--target-x-mm", "--target-y-mm",
+          parseOptions(args, 1, {"--file", "--symbols", "--target-x-mm", "--target-y-mm",
                                  "--component-gap-mm", "--group-gap-mm"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
       ccad::Board& board = requireBoard(project);
       const std::vector<std::string> component_ids =
-          options.contains("--components")
-              ? splitCommaList(requireOption(options, "--components"), "--components")
+          options.contains("--symbols")
+              ? splitCommaList(requireOption(options, "--symbols"), "--symbols")
               : std::vector<std::string>{};
       const ccad::SpreadFootprintRequest request{
           .component_ids = component_ids,

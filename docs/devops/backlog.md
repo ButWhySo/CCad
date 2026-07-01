@@ -57,6 +57,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [x] Sprint 220: add first KiCad PCB API parity query slice from `F:\kicad_src\pcbnew\api`, including headless layer, stackup, rules, outline, same-net, connected-item, and Agent schema surfaces; completed after full sprint gate passed 37 of 37 tests.
 - [ ] Upgrade the Sprint 182 UI-map surface into true push-style live coordinate streaming and larger-board spatial indexes such as an R-tree.
 - [x] Sprint 184: fix schematic symbol placement persistence so saved symbols reload with real KiCad primitive graphics and visible pins/leads, not placeholders.
+- [x] Sprint 232 continuation: restore schematic symbol snapshot persistence after the `SchSymbol` model rename, preserve legacy project JSON compatibility, expand embedded symbol graphics into schematic canvas primitives, pass the full 56-test CTest gate, and visually prove the Schematic tab with `artifacts\screenshots\sprint232-schematic-symbol-snapshot.png`.
 - [x] Add footprint placement layer selection in PCB mode so the user and agent can choose F.Cu, B.Cu, or another valid copper layer before committing. Sprint 171 covers footprint placement and Route Track layer context; Sprint 172 covers active-net context for new vias and tracks.
 - [ ] Fix pad, paste, mask, and courtyard rendering glitches on hover and ensure zoom does not mask stale render state. Sprint 162 separates copper, mask, and paste layer rendering; courtyard and hover-specific stale render checks remain open.
 - [ ] Expand footprint rendering beyond the current supported subset until KiCad library-cache footprints no longer collapse into fixed rectangles.
@@ -303,6 +304,7 @@ Each sprint must ship a meaningful batch of at least eight to ten visible/user-m
 
 
 - [ ] Stub: `sch_symbol.cpp`, `sch_pin.cpp`, `sch_line.cpp`, `sch_junction.cpp`, `sch_label.cpp`, `sch_text.cpp`, `sch_bus_entry.cpp`, `sch_sheet.cpp` (Core schematic primitives)
+- [ ] Stub follow-up: extend Sprint 232's embedded symbol snapshot fix into full KiCad `SCH_SYMBOL`/`SCH_PIN` parity, including multi-unit symbols, alternate pin functions, field placement/autoplace, body conversion edge cases, sheet paths, and library-reference refresh without losing local snapshots.
 - [ ] Stub: `sch_connection.cpp`, `sch_netchain.cpp`, `net_navigator.cpp` (Hierarchical schematic net connectivity algorithms)
 
 

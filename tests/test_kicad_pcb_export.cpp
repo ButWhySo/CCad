@@ -27,8 +27,8 @@ int main() {
       ccad::Net{.id = "VCC"}
   };
 
-  project.schematics[0].components = {
-      ccad::Component{.id = "U1", .part = "NE555"}
+  project.schematics[0].symbols = {
+      ccad::SchSymbol{.id = "U1", .lib_id = "NE555"}
   };
 
   // Add a pad
@@ -177,7 +177,7 @@ int main() {
           "Board-only KiCad export declares GND from board copper");
   require(board_only_exported.find("(net 2 \"VCC\")") != std::string::npos,
           "Board-only KiCad export declares VCC from board copper");
-  require(board_only_exported.find("footprint \"Component\"") != std::string::npos,
+  require(board_only_exported.find("footprint \"SchSymbol\"") != std::string::npos,
           "Board-only KiCad export uses generic footprint value without schematic component");
   require(board_only_exported.find("(net 1 \"GND\")") <
               board_only_exported.find("(pad \"1\" smd rect"),

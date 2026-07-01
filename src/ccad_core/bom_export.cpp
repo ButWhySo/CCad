@@ -108,17 +108,17 @@ std::string exportToBomCsv(const Project& project) {
     return ss.str();
   }
 
-  // Create a copy of components to sort them by designator
-  std::vector<Component> sorted_components = schematic->components;
-  std::sort(sorted_components.begin(), sorted_components.end(),
-            [](const Component& a, const Component& b) {
+  // Create a copy of symbols to sort them by designator
+  std::vector<SchSymbol> sorted_symbols = schematic->symbols;
+  std::sort(sorted_symbols.begin(), sorted_symbols.end(),
+            [](const SchSymbol& a, const SchSymbol& b) {
               return a.id < b.id;
             });
 
-  for (const auto& comp : sorted_components) {
+  for (const auto& comp : sorted_symbols) {
     // Basic CSV escaping logic if needed in the future, for now just print
     std::string id = comp.id;
-    std::string part = comp.part;
+    std::string part = comp.lib_id;
     
     // Simple quotes for part if it contains comma
     if (part.find(',') != std::string::npos) {

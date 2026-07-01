@@ -29,8 +29,8 @@ std::string exportToPnpCsv(const Project& project) {
   // Create a map of component ID to part string
   std::map<std::string, std::string> comp_values;
   if (const Schematic* schematic = primarySchematic(project)) {
-    for (const auto& comp : schematic->components) {
-      comp_values[comp.id] = comp.part;
+    for (const auto& comp : schematic->symbols) {
+      comp_values[comp.id] = comp.lib_id;
     }
   }
 

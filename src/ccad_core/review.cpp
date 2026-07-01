@@ -22,7 +22,7 @@ ProjectReview buildReview(const Project& project) {
   review.project_id = project.id;
   review.project_name = project.name;
   if (const Schematic* schematic = primarySchematic(project)) {
-    review.component_count = schematic->components.size();
+    review.component_count = schematic->symbols.size();
     review.net_count = schematic->nets.size();
     review.constraint_count = schematic->constraints.size();
   }

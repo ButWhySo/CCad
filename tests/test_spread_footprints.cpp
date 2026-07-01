@@ -27,7 +27,7 @@ ccad::Pad pad(const std::string& id, const std::string& component_id, double x_m
                    }};
 }
 
-void test_spread_moves_components_to_non_overlapping_target_area() {
+void test_spread_moves_symbols_to_non_overlapping_target_area() {
   ccad::Board board;
   board.outline = {.origin = {ccad::millimeters(0), ccad::millimeters(0)},
                    .size = {ccad::millimeters(10), ccad::millimeters(8)}};
@@ -92,7 +92,7 @@ void test_spread_can_filter_component_ids() {
 
 int main() {
   try {
-    test_spread_moves_components_to_non_overlapping_target_area();
+    test_spread_moves_symbols_to_non_overlapping_target_area();
     test_spread_sorts_reference_designators_naturally();
     test_spread_can_filter_component_ids();
     std::cout << "All tests passed!\n";

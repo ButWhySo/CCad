@@ -121,9 +121,9 @@ std::string valueForPlacedFootprint(const Project& project, const std::string& c
   if (schematic == nullptr) {
     return "";
   }
-  for (const Component& component : schematic->components) {
+  for (const SchSymbol& component : schematic->symbols) {
     if (component.id == component_id) {
-      return component.part;
+      return component.lib_id;
     }
   }
   return "";
@@ -255,25 +255,26 @@ void placeFootprint(Project& project, const Footprint& footprint, const std::str
 void placeComponent(Project& project, const Symbol& symbol, const std::string& component_id,
                     const Point& origin, double rotation_deg) {
   Schematic& schematic = ensurePrimarySchematic(project);
-  for (const Component& comp : schematic.components) {
+  for (const SchSymbol& comp : schematic.symbols) {
     if (comp.id == component_id) {
       throw std::runtime_error("duplicate component id: " + component_id);
     }
   }
 
-  Component comp;
+  SchSymbol comp;
   comp.id = component_id;
-  comp.part = symbol.name;
+  comp.lib_id = symbol.name;
   comp.position = origin;
   comp.rotation_degrees = rotation_deg;
   comp.symbol = symbol;
+  
   for (const SymbolPin& pin : symbol.pins) {
-    comp.pins.push_back(Pin{
+    comp.pins.push_back(SchPin{
         .name = pin.number,
-        .kind = pin.electrical_type,
+        .type = pin.electrical_type,
     });
   }
-  schematic.components.push_back(comp);
+  schematic.symbols.push_back(comp);
 }
 
 void moveFootprint(Project& project, const std::string& component_id, const Point& delta) {

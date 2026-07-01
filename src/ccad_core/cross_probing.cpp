@@ -195,7 +195,7 @@ void addPartTargets(const Project& project, const std::string& reference,
   }
   const Schematic* schematic = primarySchematic(project);
   if (schematic != nullptr) {
-    for (const Component& component : schematic->components) {
+    for (const SchSymbol& component : schematic->symbols) {
       if (component.id == reference) {
         addUniqueTarget(targets,
                         CrossProbeTarget{.type = "component",
