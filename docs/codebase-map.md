@@ -909,3 +909,14 @@ Sprint 245 implemented KiCad footprint oval drill support in `ccad_core`, placem
 - **Tests**: Added dedicated oval drill import and losslessness check test cases in `tests/test_kicad_footprint_import.cpp` and `tests/test_footprint_losslessness.cpp`. Verified all 57 CTest suites pass successfully.
 
 
+## Sprint 246 Addendum
+
+Sprint 246 implemented Unicode/UTF-8 path support on Windows for the command-line interface and internal filesystem calls:
+- **Helpers**: Added `src/ccad_core/filesystem_u8.hpp` containing `ccad::u8ToPath` and `ccad::pathToU8` conversion helpers.
+- **CLI Entry**: Updated `src/ccad_cli/main.cpp` on Windows to intercept the command line using `GetCommandLineW` and `CommandLineToArgvW` to preserve Unicode characters, converting them to UTF-8 before dispatch.
+- **File Streams**: Migrated all stream constructors (`std::ifstream` and `std::ofstream`) in `src/ccad_cli/common.cpp`, `src/ccad_cli/lib_commands.cpp`, `src/ccad_cli/project_commands.cpp`, `src/ccad_cli/pcb_commands.cpp`, and `src/ccad_cli/agent_session.cpp` to use `ccad::u8ToPath`.
+- **Library Catalog**: Updated `src/ccad_core/library_catalog.cpp` to map native paths through `ccad::u8ToPath`.
+- **Verification**: Verified importing symbols with Unicode names successfully on Windows (e.g. `π120U30.kicad_sym`), ran full CTest suite (100% pass), and confirmed the GUI renders correctly via the visual validation harness.
+
+
+

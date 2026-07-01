@@ -1,6 +1,7 @@
 #include "agent_session.hpp"
 
 #include "ccad_core/json.hpp"
+#include "ccad_core/filesystem_u8.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -44,7 +45,7 @@ std::string jsonNullableString(const std::string& value) {
 }
 
 std::string readTextFile(const std::string& path) {
-  std::ifstream input(path);
+  std::ifstream input(ccad::u8ToPath(path));
   if (!input) {
     throw std::runtime_error("failed to open agent session file: " + path);
   }
@@ -54,7 +55,7 @@ std::string readTextFile(const std::string& path) {
 }
 
 void writeTextFile(const std::string& path, const std::string& content) {
-  std::ofstream output(path);
+  std::ofstream output(ccad::u8ToPath(path));
   if (!output) {
     throw std::runtime_error("failed to write agent session file: " + path);
   }

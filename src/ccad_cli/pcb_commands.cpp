@@ -23,6 +23,7 @@
 #include "ccad_core/placement.hpp"
 #include "ccad_core/pnp_export.hpp"
 #include "ccad_core/serialize.hpp"
+#include "ccad_core/filesystem_u8.hpp"
 #include "ccad_core/spread_footprints.hpp"
 #include <fstream>
 
@@ -2709,7 +2710,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::string output = requireOption(options, "--output");
       ccad::Project project = loadProjectFile(file);
       const std::string exported = ccad::exportToKiCadPcb(project);
-      std::ofstream out(output);
+      std::ofstream out(ccad::u8ToPath(output));
       if (!out) {
         throw std::runtime_error("failed to open output file: " + output);
       }
@@ -2724,7 +2725,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::string output = requireOption(options, "--output");
       ccad::Project project = loadProjectFile(file);
       const std::string exported = ccad::exportSpecctraDsn(project);
-      std::ofstream out(output);
+      std::ofstream out(ccad::u8ToPath(output));
       if (!out) {
         throw std::runtime_error("failed to open output file: " + output);
       }
@@ -2739,7 +2740,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::string output = requireOption(options, "--output");
       const ccad::Project project = loadProjectFile(file);
       const std::string exported = ccad::exportBoardToBomCsv(project);
-      std::ofstream out(output);
+      std::ofstream out(ccad::u8ToPath(output));
       if (!out) {
         throw std::runtime_error("failed to open output file: " + output);
       }
@@ -2753,7 +2754,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       auto out = requireOption(opts, "--output");
       ccad::Project project = loadProjectFile(file);
       std::string pnp = ccad::exportToPnpCsv(project);
-      std::ofstream out_file(out);
+      std::ofstream out_file(ccad::u8ToPath(out));
       if (!out_file) {
         throw std::runtime_error("failed to open output file: " + out);
       }
@@ -2767,7 +2768,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       auto out = requireOption(opts, "--output");
       ccad::Project project = loadProjectFile(file);
       std::string drill = ccad::exportToDrillExcellon(project);
-      std::ofstream out_file(out);
+      std::ofstream out_file(ccad::u8ToPath(out));
       if (!out_file) {
         throw std::runtime_error("failed to open output file: " + out);
       }

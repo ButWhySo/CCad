@@ -7,6 +7,7 @@
 #include "ccad_core/json.hpp"
 #include "ccad_core/library_catalog.hpp"
 #include "ccad_core/footprint_losslessness.hpp"
+#include "ccad_core/filesystem_u8.hpp"
 
 #include "ccad_core/component_generator.hpp"
 
@@ -18,7 +19,7 @@ namespace ccad_cli {
 namespace {
 
 ccad::LibraryCatalog loadCatalogFile(const std::string& path) {
-  std::ifstream input(path);
+  std::ifstream input(ccad::u8ToPath(path));
   if (!input) {
     throw std::runtime_error("failed to open catalog file: " + path);
   }
@@ -157,7 +158,7 @@ int libCommand(const std::vector<std::string>& args) {
       const std::string in_path = requireOption(options, "--in");
       const std::string out_path = requireOption(options, "--out");
 
-      std::ifstream input(in_path);
+      std::ifstream input(ccad::u8ToPath(in_path));
       if (!input) {
         std::cerr << "failed to open footprint input file: " << in_path << '\n';
         return 2;
@@ -166,7 +167,7 @@ int libCommand(const std::vector<std::string>& args) {
       buffer << input.rdbuf();
       const ccad::Footprint footprint = ccad::importKiCadFootprint(buffer.str());
 
-      std::ofstream output(out_path);
+      std::ofstream output(ccad::u8ToPath(out_path));
       if (!output) {
         std::cerr << "failed to open footprint output file: " << out_path << '\n';
         return 2;
@@ -181,7 +182,7 @@ int libCommand(const std::vector<std::string>& args) {
       const std::string in_path = requireOption(options, "--in");
       const std::string out_path = requireOption(options, "--out");
 
-      std::ifstream input(in_path);
+      std::ifstream input(ccad::u8ToPath(in_path));
       if (!input) {
         std::cerr << "failed to open symbol input file: " << in_path << '\n';
         return 2;
@@ -190,7 +191,7 @@ int libCommand(const std::vector<std::string>& args) {
       buffer << input.rdbuf();
       auto symbols = ccad::importKiCadSymbolLibrary(buffer.str());
 
-      std::ofstream output(out_path);
+      std::ofstream output(ccad::u8ToPath(out_path));
       if (!output) {
         std::cerr << "failed to open symbol output file: " << out_path << '\n';
         return 2;
@@ -210,7 +211,7 @@ int libCommand(const std::vector<std::string>& args) {
         pins = std::stoi(options.at("--pins"));
       }
 
-      std::ofstream output(out_path);
+      std::ofstream output(ccad::u8ToPath(out_path));
       if (!output) {
         std::cerr << "failed to open output file: " << out_path << '\n';
         return 2;
@@ -262,7 +263,7 @@ int libCommand(const std::vector<std::string>& args) {
 
       const ccad::Footprint footprint = loadFootprintFile(in_path);
 
-      std::ofstream output(out_path);
+      std::ofstream output(ccad::u8ToPath(out_path));
       if (!output) {
         std::cerr << "failed to open footprint output file: " << out_path << '\n';
         return 2;
@@ -277,7 +278,7 @@ int libCommand(const std::vector<std::string>& args) {
       const std::string in_kicad = requireOption(options, "--in-kicad");
       const std::string in_ccad = requireOption(options, "--in-ccad");
 
-      std::ifstream input_kicad(in_kicad);
+      std::ifstream input_kicad(ccad::u8ToPath(in_kicad));
       if (!input_kicad) {
         std::cerr << "failed to open KiCad footprint file: " << in_kicad << '\n';
         return 2;

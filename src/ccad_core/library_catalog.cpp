@@ -1,6 +1,7 @@
 #include "ccad_core/library_catalog.hpp"
 
 #include "ccad_core/json.hpp"
+#include "ccad_core/filesystem_u8.hpp"
 
 #include <algorithm>
 #include <array>
@@ -578,7 +579,7 @@ std::vector<CatalogDiagnostic> validateLibraryCatalog(const LibraryCatalog& cata
     if (item.native_path.empty() || item.sha256.empty()) {
       continue;
     }
-    const std::filesystem::path native_path = root / std::filesystem::path(item.native_path);
+    const std::filesystem::path native_path = root / ccad::u8ToPath(item.native_path);
     if (!std::filesystem::exists(native_path)) {
       addDiagnostic(diagnostics, "MISSING_NATIVE_FILE",
                     "Library item native artifact is missing under catalog root", item.id);

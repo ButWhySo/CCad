@@ -2101,3 +2101,13 @@ What it does:
 - Emits exit code `0` on successful losslessness match, and exit code `1` with diagnostic information on mismatches.
 - Fully verified via unit testing and visual validation checks.
 
+
+## Windows Unicode Path Support
+
+Sprint 246 adds robust Unicode/UTF-8 path support on Windows for the command-line interface (CLI) and all internal filesystem calls, enabling symbol imports and design files containing non-ASCII characters (e.g. `π120U30.kicad_sym`):
+- **Unicode CLI Interception**: Custom wide-character command-line parser intercepting native OS arguments using `GetCommandLineW` and `CommandLineToArgvW` on Windows, ensuring argument lists remain lossless before translation into UTF-8 formats.
+- **FS Streams UTF-8 Translation**: Updated internal file operations (`std::ifstream` and `std::ofstream`) using `ccad::u8ToPath` helper methods to correctly translate UTF-8 string parameters into Windows wide-character paths (`std::wstring`).
+- **Catalog Integration**: Integrated UTF-8 path helpers with `ccad_core` library catalog validation logic to seamlessly verify native items containing Unicode filenames.
+- **Verification**: Verified end-to-end command compatibility by importing S-expression library files containing Greek letters and symbols.
+
+

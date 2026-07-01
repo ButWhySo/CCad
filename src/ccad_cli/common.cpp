@@ -3,6 +3,7 @@
 #include "ccad_core/json.hpp"
 #include "ccad_core/kicad_footprint_import.hpp"
 #include "ccad_core/serialize.hpp"
+#include "ccad_core/filesystem_u8.hpp"
 
 #include <chrono>
 #include <cmath>
@@ -208,7 +209,7 @@ double optionDoubleOrDefault(const std::map<std::string, std::string>& options,
 }
 
 ccad::Project loadProjectFile(const std::string& path) {
-  std::ifstream input(path);
+  std::ifstream input(ccad::u8ToPath(path));
   if (!input) {
     throw std::runtime_error("failed to open project file: " + path);
   }
@@ -222,7 +223,7 @@ ccad::Project loadProjectFile(const std::string& path) {
 
 bool writeProjectFile(const std::string& path, const ccad::Project& project) {
   const std::string project_json = ccad::dumpProjectJson(project);
-  std::ofstream output(path);
+  std::ofstream output(ccad::u8ToPath(path));
   if (!output) {
     return false;
   }
@@ -230,7 +231,7 @@ bool writeProjectFile(const std::string& path, const ccad::Project& project) {
   
   if (g_last_loaded_project.has_value()) {
     std::string audit_path = path + ".audit.jsonl";
-    std::ofstream audit(audit_path, std::ios::app);
+    std::ofstream audit(ccad::u8ToPath(audit_path), std::ios::app);
     if (audit) {
       auto now = std::chrono::system_clock::now().time_since_epoch();
       long long ms = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
@@ -259,7 +260,7 @@ bool writeProjectFile(const std::string& path, const ccad::Project& project) {
 }
 
 ccad::Footprint loadFootprintFile(const std::string& path) {
-  std::ifstream input(path);
+  std::ifstream input(ccad::u8ToPath(path));
   if (!input) {
     throw std::runtime_error("failed to open footprint file: " + path);
   }

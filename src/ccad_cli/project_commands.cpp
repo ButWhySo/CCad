@@ -9,6 +9,7 @@
 #include "ccad_core/review.hpp"
 #include "ccad_core/serialize.hpp"
 #include "ccad_core/transaction.hpp"
+#include "ccad_core/filesystem_u8.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -20,7 +21,7 @@ namespace ccad_cli {
 
 int initCommand(const std::vector<std::string>& args) {
   std::string name;
-  std::filesystem::path out_path;
+  std::string out_path;
   std::optional<double> width_mm;
   std::optional<double> height_mm;
 
@@ -81,9 +82,9 @@ int initCommand(const std::vector<std::string>& args) {
     });
   }
 
-  std::ofstream output(out_path);
+  std::ofstream output(ccad::u8ToPath(out_path));
   if (!output) {
-    std::cerr << "failed to open output file: " << out_path.string() << '\n';
+    std::cerr << "failed to open output file: " << out_path << '\n';
     return 2;
   }
   output << ccad::dumpProjectJson(project);
@@ -165,7 +166,7 @@ int exportBomCommand(const std::vector<std::string>& args) {
   ccad::Project project = loadProjectFile(file);
   std::string bom = ccad::exportToBomCsv(project);
 
-  std::ofstream out_file(out);
+  std::ofstream out_file(ccad::u8ToPath(out));
   if (!out_file) {
     std::cerr << "Failed to open output file for writing: " << out << "\n";
     return 2;
