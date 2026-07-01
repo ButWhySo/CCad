@@ -696,6 +696,46 @@ if(CCAD_BUILD_GUI)
     endif()
     add_test(NAME gui_canvas_spatial_index COMMAND ccad_gui_canvas_spatial_index_tests)
 
+    add_executable(ccad_gui_action_tools_tests
+      tests/test_gui_action_tools.cpp
+      src/ccad_gui/agent_panel.cpp
+      src/ccad_gui/agent_marketplace_dialog.cpp
+      src/ccad_gui/agent_settings_dialog.cpp
+      src/ccad_gui/review_window.cpp
+      src/ccad_gui/component_wizard_dialog.cpp
+      src/ccad_gui/footprint_placement_dialog.cpp
+      src/ccad_gui/symbol_placement_dialog.cpp
+      src/ccad_gui/library_browser_dialog.cpp
+      src/ccad_gui/project_summary_panel.cpp
+      src/ccad_gui/diagnostics_panel.cpp
+      src/ccad_gui/transaction_timeline_panel.cpp
+      src/ccad_gui/object_browser_panel.cpp
+      src/ccad_gui/selection_inspector_panel.cpp
+      src/ccad_gui/board_canvas_renderer.cpp
+      src/ccad_gui/schematic_canvas_renderer.cpp
+      src/ccad_gui/ui_map_server.cpp
+    )
+    target_link_libraries(ccad_gui_action_tools_tests PRIVATE ccad_core Qt6::Widgets Qt6::Svg Qt6::Network)
+    if(WIN32)
+      target_link_libraries(ccad_gui_action_tools_tests PRIVATE dwmapi)
+    endif()
+    target_include_directories(ccad_gui_action_tools_tests PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests
+    )
+    if(MSVC)
+      target_compile_options(ccad_gui_action_tools_tests PRIVATE /W4)
+      if(CCAD_WARNINGS_AS_ERRORS)
+        target_compile_options(ccad_gui_action_tools_tests PRIVATE /WX)
+      endif()
+    else()
+      target_compile_options(ccad_gui_action_tools_tests PRIVATE -Wall -Wextra -Wpedantic)
+      if(CCAD_WARNINGS_AS_ERRORS)
+        target_compile_options(ccad_gui_action_tools_tests PRIVATE -Werror)
+      endif()
+    endif()
+    add_test(NAME gui_action_tools COMMAND ccad_gui_action_tools_tests)
+
     add_executable(ccad_gui_transaction_timeline_tests
       tests/test_gui_transaction_timeline_panel.cpp
       src/ccad_gui/transaction_timeline_panel.cpp

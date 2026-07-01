@@ -928,5 +928,16 @@ Sprint 247 implemented a fast spatial grid index for canvas objects in the nativ
 - **Tests**: Created a unit test suite in `tests/test_canvas_spatial_index.cpp` verifying spatial grid insertion, range queries, and coordinate logic. Verified all 58 CTest targets pass.
 
 
+## Sprint 248 Addendum
+
+Sprint 248 extended the deterministic GUI action capabilities inside the review window automation layer:
+- **Scroll Operations**: Added `uiScrollJson` to find and programmatically adjust `QScrollBar` values in vertical or horizontal directions on the canvas viewport and target panels.
+- **Key Sequences**: Updated `uiKeyJson` using `QKeySequence` to synthesize key press and release events containing modifier keys (e.g. `Ctrl`, `Shift`, `Alt`) to support richer short-cuts.
+- **Selection double-clicks**: Extended `uiClickJson` to support double clicks on QAbstractItemView components (e.g. QListView/QTreeView) and canvas objects by sending matching events.
+- **Dialog/Menu Automation**: Automated finding active QDialog and QMenu actions inside the target window, allowing the automation harness to trigger button clicks and actions.
+- **Property inspector**: Added `uiEditPropertiesJson` allowing properties modification.
+
+
+
 
 

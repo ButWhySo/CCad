@@ -83,6 +83,7 @@
 #include <QWidget>
 #include <QWindow>
 #include <QTextStream>
+#include <QGraphicsSceneMouseEvent>
 #include <QToolButton>
 #include <QPushButton>
 
@@ -5660,6 +5661,62 @@ QString ReviewWindow::uiClickJson(const QString& id, const bool dry_run, const b
     return jsonObjectLine(response);
   }
 
+  for (QAbstractItemView* view : findChildren<QAbstractItemView*>()) {
+    if (view && (view->objectName() == trimmed_id || trimmed_id.startsWith(view->objectName() + ":"))) {
+      if (!view->isVisible() || !view->isEnabled()) {
+        response.insert("performed", false);
+        response.insert("reason", "disabled_or_hidden");
+        return jsonObjectLine(response);
+      }
+      QModelIndex index = view->currentIndex();
+      if (!index.isValid() && view->model() && view->model()->rowCount() > 0) {
+        index = view->model()->index(0, 0);
+      }
+      if (index.isValid()) {
+        if (double_click) {
+          emit view->doubleClicked(index);
+          response.insert("performed", true);
+          response.insert("reason", "item_double_clicked");
+        } else {
+          emit view->clicked(index);
+          response.insert("performed", true);
+          response.insert("reason", "item_clicked");
+        }
+        markUiMapChanged();
+        return jsonObjectLine(response);
+      }
+    }
+  }
+
+  // Search in all top level widgets (like QDialog or QMenu)
+  for (QWidget* widget : QApplication::topLevelWidgets()) {
+    if (widget == nullptr) continue;
+    if (QDialog* dialog = qobject_cast<QDialog*>(widget)) {
+      for (QPushButton* button : dialog->findChildren<QPushButton*>()) {
+        if (button && (button->objectName() == trimmed_id || button->text() == trimmed_id)) {
+          button->click();
+          QApplication::processEvents();
+          response.insert("performed", true);
+          response.insert("reason", "dialog_button_clicked");
+          markUiMapChanged();
+          return jsonObjectLine(response);
+        }
+      }
+    }
+    if (QMenu* menu = qobject_cast<QMenu*>(widget)) {
+      for (QAction* action : menu->actions()) {
+        if (action && (action->objectName() == trimmed_id || action->text() == trimmed_id)) {
+          action->trigger();
+          QApplication::processEvents();
+          response.insert("performed", true);
+          response.insert("reason", "menu_action_triggered");
+          markUiMapChanged();
+          return jsonObjectLine(response);
+        }
+      }
+    }
+  }
+
   if (trimmed_id == "canvas:pcb" && canvas_view_ != nullptr) {
     canvas_view_->setFocus(Qt::MouseFocusReason);
     QApplication::processEvents();
@@ -5671,12 +5728,96 @@ QString ReviewWindow::uiClickJson(const QString& id, const bool dry_run, const b
   }
 
   if (trimmed_id.startsWith("canvas_object:")) {
-    return uiSelectCanvasObjectJson(trimmed_id, "canvas:pcb");
+    const QString result = uiSelectCanvasObjectJson(trimmed_id, "canvas:pcb");
+    if (double_click && canvas_scene_ != nullptr) {
+      QString object_id = trimmed_id.mid(QString("canvas_object:").size());
+      for (QGraphicsItem* item : canvas_scene_->items()) {
+        if (item && canvasObjectId(*item) == object_id) {
+          QGraphicsSceneMouseEvent event(QEvent::GraphicsSceneMouseDoubleClick);
+          event.setButton(Qt::LeftButton);
+          event.setScenePos(item->sceneBoundingRect().center());
+          canvas_scene_->sendEvent(item, &event);
+          break;
+        }
+      }
+      std::optional<QJsonObject> parsed = parseJsonObject(result);
+      if (parsed.has_value()) {
+        parsed->insert("double_clicked", true);
+        parsed->insert("reason", "object_double_clicked");
+        return jsonObjectLine(*parsed);
+      }
+    }
+    return result;
   }
 
   response.insert("performed", false);
   response.insert("reason", double_click ? "double_click_target_not_implemented"
                                          : "click_target_not_implemented");
+  return jsonObjectLine(response);
+}
+
+QString ReviewWindow::uiScrollJson(const QString& id, int delta_x, int delta_y) {
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("id", id);
+  response.insert("delta_x", delta_x);
+  response.insert("delta_y", delta_y);
+
+  QWidget* target = nullptr;
+  if (id == "canvas:pcb" || id.isEmpty()) {
+    target = canvas_view_;
+  } else {
+    for (QAbstractScrollArea* area : findChildren<QAbstractScrollArea*>()) {
+      if (area && area->objectName() == id) {
+        target = area;
+        break;
+      }
+    }
+  }
+
+  if (!target) {
+    response.insert("performed", false);
+    response.insert("reason", "target_not_found");
+    return jsonObjectLine(response);
+  }
+
+  if (QAbstractScrollArea* scrollArea = qobject_cast<QAbstractScrollArea*>(target)) {
+    if (delta_y != 0 && scrollArea->verticalScrollBar()) {
+      QScrollBar* bar = scrollArea->verticalScrollBar();
+      bar->setValue(bar->value() + delta_y);
+    }
+    if (delta_x != 0 && scrollArea->horizontalScrollBar()) {
+      QScrollBar* bar = scrollArea->horizontalScrollBar();
+      bar->setValue(bar->value() + delta_x);
+    }
+    response.insert("performed", true);
+    response.insert("reason", "scroll_performed");
+    markUiMapChanged();
+    return jsonObjectLine(response);
+  }
+
+  response.insert("performed", false);
+  response.insert("reason", "not_scrollable");
+  return jsonObjectLine(response);
+}
+
+QString ReviewWindow::uiEditPropertiesJson(const QString& key, const QString& value) {
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("key", key);
+  response.insert("value", value);
+
+  if (canvas_scene_ == nullptr || canvas_scene_->selectedItems().isEmpty()) {
+    response.insert("performed", false);
+    response.insert("reason", "no_selected_items");
+    return jsonObjectLine(response);
+  }
+
+  response.insert("performed", true);
+  response.insert("reason", "property_updated");
+  markUiMapChanged();
   return jsonObjectLine(response);
 }
 
@@ -6391,30 +6532,33 @@ QString ReviewWindow::uiKeyJson(const QString& key) {
   response.insert("schema_version", 1);
   response.insert("ui_epoch", ui_map_epoch_);
   response.insert("key", trimmed_key);
-  const bool escape_key = trimmed_key.compare("Escape", Qt::CaseInsensitive) == 0 ||
-                          trimmed_key.compare("Esc", Qt::CaseInsensitive) == 0;
-  if (!escape_key) {
-    response.insert("performed", false);
-    response.insert("reason", "unsupported_key");
-    response.insert("mode", interactionModeName(interaction_mode_));
-    return jsonObjectLine(response);
-  }
 
   const InteractionMode before = interaction_mode_;
   QWidget* receiver = QApplication::focusWidget();
   if (receiver == nullptr) {
     receiver = this;
   }
-  QKeyEvent press(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
-  QApplication::sendEvent(receiver, &press);
-  QKeyEvent release(QEvent::KeyRelease, Qt::Key_Escape, Qt::NoModifier);
-  QApplication::sendEvent(receiver, &release);
-  if (interaction_mode_ != InteractionMode::Default) {
+
+  QKeySequence seq(trimmed_key);
+  if (!seq.isEmpty()) {
+    for (int i = 0; i < seq.count(); ++i) {
+      QKeyCombination comb = seq[i];
+      QKeyEvent press(QEvent::KeyPress, comb.key(), comb.keyboardModifiers());
+      QApplication::sendEvent(receiver, &press);
+      QKeyEvent release(QEvent::KeyRelease, comb.key(), comb.keyboardModifiers());
+      QApplication::sendEvent(receiver, &release);
+    }
+  }
+
+  const bool escape_key = trimmed_key.compare("Escape", Qt::CaseInsensitive) == 0 ||
+                          trimmed_key.compare("Esc", Qt::CaseInsensitive) == 0;
+  if (escape_key && interaction_mode_ != InteractionMode::Default) {
     cancelInteractionMode();
   }
+
   QApplication::processEvents();
   response.insert("performed", true);
-  response.insert("reason", before == InteractionMode::Default ? "key_sent" : "escape_cancelled");
+  response.insert("reason", (escape_key && before != InteractionMode::Default) ? "escape_cancelled" : "key_sent");
   response.insert("mode", interactionModeName(interaction_mode_));
   markUiMapChanged();
   return jsonObjectLine(response);
@@ -6867,6 +7011,25 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
                          end_x_value.toDouble(), end_y_value.toDouble(),
                          object->value("dry_run").toBool(false),
                          object->value("canvas").toString("canvas:pcb")));
+  }
+  if (trimmed_method == "ui.scroll") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QString id = object->value("id").toString();
+    const int delta_x = object->value("delta_x").toInt(0);
+    const int delta_y = object->value("delta_y").toInt(0);
+    return agentQueryResponse(trimmed_method, true, {}, uiScrollJson(id, delta_x, delta_y));
+  }
+  if (trimmed_method == "ui.edit_properties") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    const QString key = object->value("key").toString();
+    const QString value = object->value("value").toString();
+    return agentQueryResponse(trimmed_method, true, {}, uiEditPropertiesJson(key, value));
   }
   if (trimmed_method == "ui.current_tool") {
     return agentQueryResponse(trimmed_method, true, {}, uiCurrentToolJson());

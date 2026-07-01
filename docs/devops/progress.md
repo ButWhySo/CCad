@@ -6,11 +6,11 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 247
-- Branch: `sprint-247-canvas-spatial-indexes`
+- Sprint: 248
+- Branch: `sprint-248-deterministic-gui-action-tools`
 - Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
-Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit logs, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 covered the bounded runtime and EDA evidence expansion through Sprint 225. Phase 9 is the bounded KiCad parity execution phase.
+Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 covered the bounded runtime and EDA evidence expansion through Sprint 225. Phase 9 is the bounded KiCad parity execution phase.
 
 **Current State**: 
 - [x] Phase 4: LangGraph Python Bridge Architecture Refactoring (Sprint 211)
@@ -20,11 +20,14 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, audit 
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 248**: Deterministic GUI Action Tools
+  - **Goal**: Extend the native GUI automation interface in `ReviewWindow` to support rich user-harness actions including double clicking, key sequences/modifiers, dragging, scrolling, dialog/menu automation, properties editing, and target validation.
+  - **Status**: Completed. Implemented double-clicks on list items and canvas objects, sequence key sending with `QKeySequence`, scroll bars manipulation, dialog button and context menu clicks, and inspector properties editing; verified all 59 tests pass cleanly.
+
+## Prior Sprints
 - **Sprint 247**: Canvas Spatial Indexes
   - **Goal**: Implement a fast spatial partition grid structure to optimize nearest-object searches and hit-testing on large boards, replacing O(N) linear QGraphicsItem scans.
   - **Status**: Completed. Implemented `CanvasSpatialIndex` in `spatial_index.hpp`, integrated with `ReviewWindow::rebuildUiMapIndexCache` and `uiNearestCanvasObjectJson`, registered `ccad_gui_canvas_spatial_index_tests`, verified all 58 tests pass, and ran visual validation.
-
-## Prior Sprints
 - **Sprint 246**: Unicode Path Support on Windows
   - **Goal**: Resolve command line and file stream encoding limitations on Windows causing symbol imports to fail on Unicode filenames. Intercept Unicode command line wide characters and map them safely to UTF-8.
   - **Status**: Completed. Added `filesystem_u8.hpp` with UTF-8 path helpers, updated `main.cpp` with `GetCommandLineW` and `CommandLineToArgvW` argument interception, migrated file stream calls to use `ccad::u8ToPath`, verified 100% CTest success, and confirmed visual validation harness passes.

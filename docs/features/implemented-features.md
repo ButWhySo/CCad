@@ -2117,3 +2117,14 @@ Sprint 247 introduces a fast uniform-grid spatial index for QGraphicsItems in th
 - **Fast Nearest Queries**: Added a `CanvasSpatialIndex` to bucket graphics items by grid cell coordinates, optimizing queries from O(N) linear scans to localized queries.
 - **Auto Rebuilding**: Integrated spatial indexing into the UI map epoch lifecycle, ensuring index accuracy whenever the canvas scene layout updates.
 - **Test Coverage**: Added dedicated unit tests verifying the grid bounds indexing and nearest lookup correctness.
+
+
+## Deterministic GUI Action Tools
+
+Sprint 248 expands the native review window's automated GUI control interface to simulate key interactive capabilities:
+- **Scroll Controls**: Allows automated vertical and horizontal scroll adjustment on targeted widgets (`ui.scroll`).
+- **Key Sequence Sending**: Supports sending complex modifier key combinations and sequence inputs based on `QKeySequence` (`ui.key`).
+- **List and Canvas Double clicks**: Implemented double-click event simulation for canvas objects and list items (`ui.double_click`).
+- **Dialog and Menu Dispatch**: Resolves active child modal dialogs and active dropdown menus to automate option selection and dismiss button triggers.
+- **Properties Editing**: Supports updating properties of selected items (`ui.edit_properties`).
+
