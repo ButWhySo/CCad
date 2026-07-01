@@ -2111,3 +2111,9 @@ Sprint 246 adds robust Unicode/UTF-8 path support on Windows for the command-lin
 - **Verification**: Verified end-to-end command compatibility by importing S-expression library files containing Greek letters and symbols.
 
 
+## Canvas Spatial Indexes
+
+Sprint 247 introduces a fast uniform-grid spatial index for QGraphicsItems in the board canvas viewport:
+- **Fast Nearest Queries**: Added a `CanvasSpatialIndex` to bucket graphics items by grid cell coordinates, optimizing queries from O(N) linear scans to localized queries.
+- **Auto Rebuilding**: Integrated spatial indexing into the UI map epoch lifecycle, ensuring index accuracy whenever the canvas scene layout updates.
+- **Test Coverage**: Added dedicated unit tests verifying the grid bounds indexing and nearest lookup correctness.

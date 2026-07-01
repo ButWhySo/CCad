@@ -4460,6 +4460,9 @@ QString ReviewWindow::uiRoleSummaryJson() const {
 }
 
 void ReviewWindow::rebuildUiMapIndexCache() const {
+  if (canvas_scene_) {
+    spatial_index_.rebuild(canvas_scene_->items());
+  }
   if (ui_map_index_cache_.valid && ui_map_index_cache_.ui_epoch == ui_map_epoch_) {
     return;
   }
@@ -5398,6 +5401,7 @@ QString ReviewWindow::uiNearestCanvasObjectJson(const double x_mm, const double 
     return jsonObjectLine(response);
   }
 
+  rebuildUiMapIndexCache();
   const QPointF scene_point = boardPositionToScene(project_cache_.boards[0], x_mm, y_mm);
   struct Candidate {
     double distance = 0.0;
@@ -5413,7 +5417,7 @@ QString ReviewWindow::uiNearestCanvasObjectJson(const double x_mm, const double 
   };
   const int query_cell_x = cellFor(scene_point.x());
   const int query_cell_y = cellFor(scene_point.y());
-  for (const QGraphicsItem* item : canvas_scene_->items()) {
+  for (QGraphicsItem* item : spatial_index_.queryNearest(scene_point)) {
     if (item == nullptr) {
       continue;
     }

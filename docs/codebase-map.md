@@ -919,4 +919,14 @@ Sprint 246 implemented Unicode/UTF-8 path support on Windows for the command-lin
 - **Verification**: Verified importing symbols with Unicode names successfully on Windows (e.g. `π120U30.kicad_sym`), ran full CTest suite (100% pass), and confirmed the GUI renders correctly via the visual validation harness.
 
 
+## Sprint 247 Addendum
+
+Sprint 247 implemented a fast spatial grid index for canvas objects in the native review GUI to optimize nearest-neighbor searches:
+- **Spatial Grid**: Created `src/ccad_gui/spatial_index.hpp` implementing `CanvasSpatialIndex` with a custom grid cell partition, populating graphics items by overlapping grid cells.
+- **Cache Integration**: Linked `CanvasSpatialIndex::rebuild` into `ReviewWindow::rebuildUiMapIndexCache` to automatically re-index the canvas items whenever a UI map epoch update occurs.
+- **JSON Queries**: Updated the `ui.nearest_canvas_object` JSON query in `ReviewWindow::uiNearestCanvasObjectJson` to fetch candidates using `spatial_index_.queryNearest(scene_point)` instead of traversing all scene graphics items.
+- **Tests**: Created a unit test suite in `tests/test_canvas_spatial_index.cpp` verifying spatial grid insertion, range queries, and coordinate logic. Verified all 58 CTest targets pass.
+
+
+
 

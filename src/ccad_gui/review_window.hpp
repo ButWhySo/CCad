@@ -8,6 +8,7 @@
 #include "ccad_core/model.hpp"
 #include "ccad_core/review.hpp"
 #include "ccad_core/canvas.hpp"
+#include "spatial_index.hpp"
 
 #include <QGraphicsScene>
 #include <QGraphicsView>
@@ -278,4 +279,5 @@ class ReviewWindow final : public QMainWindow {
   mutable bool dirty_ui_map_full_snapshot_ = true;
   mutable UiMapIndexCache ui_map_index_cache_;
   mutable std::vector<UiMapDirtyRecord> ui_map_dirty_history_;
+  mutable ccad_gui::CanvasSpatialIndex spatial_index_;
 };
