@@ -1,8 +1,8 @@
+#define _USE_MATH_DEFINES
 #include "ccad_core/item_geometry.hpp"
 #include "ccad_core/geometry.hpp"
 #include "ccad_core/model.hpp"
 
-#define _USE_MATH_DEFINES
 #include <cassert>
 #include <cmath>
 #include <iostream>

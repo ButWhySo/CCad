@@ -8,6 +8,21 @@
 #include <cassert>
 #include <iostream>
 #include <string>
+#include <future>
+
+// Helper to synchronously wait for the background AgentRunner to complete a goal
+static ccad::AgentGoal wait_for_orchestrate(ccad::AgentOrchestrator& orch, const std::string& desc, const ccad::ProjectContext& ctx) {
+    std::promise<ccad::AgentGoal> p;
+    auto f = p.get_future();
+    orch.set_progress_callback([&p](const ccad::AgentGoal& g) {
+        if (g.status == ccad::GoalStatus::Completed || g.status == ccad::GoalStatus::Failed) {
+            try { p.set_value(g); } catch(...) {}
+        }
+    });
+    orch.orchestrate(desc, ctx);
+    return f.get();
+}
+
 
 // Helper: register a mock tool that returns a success result
 static void register_mock_tools(ccad::AgentOrchestrator& orch) {
@@ -277,7 +292,7 @@ static void test_execute_drc_goal() {
     orch.set_config(cfg);
 
     auto ctx = make_test_context();
-    auto goal = orch.orchestrate("Run DRC check", ctx);
+    auto goal = wait_for_orchestrate(orch, "Run DRC check", ctx);
 
     assert(goal.status == ccad::GoalStatus::Completed);
     assert(goal.completed_count == 2);
@@ -299,7 +314,7 @@ static void test_execute_review_goal() {
     orch.set_config(cfg);
 
     auto ctx = make_test_context();
-    auto goal = orch.orchestrate("Review board status", ctx);
+    auto goal = wait_for_orchestrate(orch, "Review board status", ctx);
 
     assert(goal.status == ccad::GoalStatus::Completed);
     assert(goal.completed_count == 2);
@@ -384,7 +399,7 @@ static void test_unregistered_tool_dispatch() {
     cfg.require_approval = false;
     orch.set_config(cfg);
 
-    auto goal = orch.orchestrate("Run DRC", ctx);
+    auto goal = wait_for_orchestrate(orch, "Run DRC", ctx);
 
     // Tasks should still complete but with tool_not_registered results
     for (auto& t : goal.tasks) {

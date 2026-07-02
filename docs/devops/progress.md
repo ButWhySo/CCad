@@ -20,6 +20,11 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 249**: Library Symbol Inheritance
+  - **Goal**: Replicate KiCad's `lib_symbol.cpp` logic to properly manage parent/child nested symbol units, aliases, and inheritance trees. Update `importKiCadSymbolLibrary` to dynamically flatten parent geometry/pins over derived symbols without breaking the standard `ccad::Symbol` data structures passed to the GUI and CLI.
+  - **Status**: Completed. Implemented `ccad::LibSymbol` tree structure. Rewrote the parser loop in `kicad_symbol_import.cpp` to correctly link `.extends` parents and extract fully resolved flat symbols. Verified footprint losslessness and core symbol parsing logic passes all `ctest` harness gates.
+
+## Prior Sprints
 - **Sprint 248**: Deterministic GUI Action Tools
   - **Goal**: Extend the native GUI automation interface in `ReviewWindow` to support rich user-harness actions including double clicking, key sequences/modifiers, dragging, scrolling, dialog/menu automation, properties editing, and target validation.
   - **Status**: Completed. Implemented double-clicks on list items and canvas objects, sequence key sending with `QKeySequence`, scroll bars manipulation, dialog button and context menu clicks, and inspector properties editing; verified all 59 tests pass cleanly.

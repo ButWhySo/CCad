@@ -694,6 +694,26 @@ class JsonReader {
             pad.locked = readBool();
           } else if (key == "padstack") {
              pad.padstack = readPadstack();
+          } else if (key == "layers") {
+            pad.padstack.layer_set.clear();
+            expect('[');
+            if (!consume(']')) {
+              while (true) {
+                pad.padstack.layer_set.push_back(readString());
+                if (consume(']')) break;
+                expect(',');
+              }
+            }
+          } else if (key == "shape") {
+            readString();
+          } else if (key == "size") {
+            readSize();
+          } else if (key == "drill") {
+            readDouble();
+          } else if (key == "drill_shape") {
+            readString();
+          } else if (key == "drill_size") {
+            readSize();
           } else {
             throw std::runtime_error("unknown pad key: " + key);
           }

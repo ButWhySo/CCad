@@ -2,12 +2,15 @@
 #include "ccad_core/json.hpp"
 #include "ccad_core/sexpr_parser.hpp"
 #include "ccad_core/symbol_json_reader.hpp"
+#include "ccad_core/lib_symbol.hpp"
 
 #include <stdexcept>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <map>
+#include <memory>
 
 namespace ccad {
 
@@ -230,13 +233,48 @@ std::vector<Symbol> importKiCadSymbolLibrary(const std::string& kicad_sym_conten
     throw std::runtime_error("Invalid KiCad symbol library file.");
   }
   
+  std::map<std::string, std::shared_ptr<LibSymbol>> lib_symbols;
+  std::vector<std::shared_ptr<LibSymbol>> ordered_symbols;
+
+  // First pass: Parse all symbols into LibSymbol wrappers
   for (const auto& child : root->children) {
     if (child->is_list && !child->children.empty() && child->children[0]->value == "symbol" && child->children.size() >= 2) {
       Symbol sym;
       sym.name = child->children[1]->value;
       parseSymbolRecursive(child.get(), sym, sym.name);
-      result.push_back(sym);
+      
+      auto lib_sym = std::make_shared<LibSymbol>(sym.name);
+      lib_sym->set_symbol_data(sym);
+      lib_symbols[sym.name] = lib_sym;
+      ordered_symbols.push_back(lib_sym);
     }
+  }
+
+  // Second pass: Link parent-child inheritance
+  for (auto& lib_sym : ordered_symbols) {
+    const std::string& extends = lib_sym->get_symbol_data().extends;
+    if (!extends.empty()) {
+      auto it = lib_symbols.find(extends);
+      if (it != lib_symbols.end()) {
+        lib_sym->set_parent(it->second);
+      }
+    }
+  }
+
+  // Third pass: Flatten and extract the resolved symbols
+  for (auto& lib_sym : ordered_symbols) {
+    Symbol flat_sym = lib_sym->get_symbol_data();
+    // Replace raw data with flattened inherited data
+    flat_sym.pins = lib_sym->get_all_pins();
+    flat_sym.properties = lib_sym->get_all_properties();
+    flat_sym.rectangles = lib_sym->get_all_rectangles();
+    flat_sym.lines = lib_sym->get_all_lines();
+    flat_sym.arcs = lib_sym->get_all_arcs();
+    flat_sym.circles = lib_sym->get_all_circles();
+    flat_sym.polylines = lib_sym->get_all_polylines();
+    flat_sym.texts = lib_sym->get_all_texts();
+    
+    result.push_back(flat_sym);
   }
   
   return result;

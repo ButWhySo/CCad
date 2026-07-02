@@ -61,6 +61,7 @@ add_library(ccad_core
   src/ccad_core/footprint_losslessness.cpp
   src/ccad_core/item_geometry.cpp
   src/ccad_core/graphics_cleaner.cpp
+  src/ccad_core/lib_symbol.cpp
 )
 
 target_include_directories(ccad_core PUBLIC
@@ -112,6 +113,16 @@ if(MINGW)
   target_link_options(ccad_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME serialize COMMAND ccad_tests)
+
+add_executable(ccad_lib_symbol_tests
+  tests/test_lib_symbol.cpp
+)
+target_link_libraries(ccad_lib_symbol_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_lib_symbol_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME lib_symbol COMMAND ccad_lib_symbol_tests)
+
 add_executable(ccad_placement_tests
   tests/test_placement.cpp
 )
