@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 252**: RefdesTracker Annotation Integration
+  - **Goal**: Integrate the previously implemented `RefdesTracker` into `ccad_core/annotate.cpp`, replacing primitive local map assignments with the KiCad-compliant tracker logic for reference designator assignments.
+  - **Status**: Completed. Replaced local `std::map<std::string, std::set<int>>` with `ccad::RefdesTracker` in `annotateSchematic` and `annotateProject`.
 - **Sprint 251**: Pin Type Integration
   - **Goal**: Integrate the newly created `ElectricalPinType`, `GraphicPinShape`, and `PinOrientation` enumerations into the core CCad data models (`SchPin`, `SymbolPin`) and parsers. Replace raw string and degree fields, update JSON serialization/deserialization to match KiCad formats, and ensure tests and GUI rendering continue to work.
   - **Status**: Completed. Replaced `type`, `rotation_degrees`, and `graphical_style` strings/doubles with strongly typed enums in `symbol.hpp` and `model.hpp`. Updated `kicad_symbol_import.cpp`, `serialize.cpp`, and `symbol_json_reader.hpp` to parse and emit canonical enum strings. Fixed GUI validation test suite initialization errors with missing field warnings. All tests pass and visual validation verified at `artifacts/screenshots/sprint-demo-20260703-022143.png`.

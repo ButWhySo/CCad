@@ -1,9 +1,8 @@
 #include "annotate.hpp"
+#include "refdes_tracker.hpp"
 #include <algorithm>
 #include <cctype>
-#include <map>
-#include <set>
-#include <regex>
+#include <vector>
 
 namespace ccad {
 
@@ -43,15 +42,15 @@ static int getReferenceNumber(const std::string& ref) {
 }
 
 void annotateSchematic(Schematic& schematic, const AnnotateOptions& options) {
-  // 1. Gather all existing used numbers per prefix (if keeping existing)
-  std::map<std::string, std::set<int>> used_numbers;
+  // 1. Gather all existing used numbers using RefdesTracker
+  RefdesTracker tracker;
   
   if (options.algo == AnnotateAlgo::KeepExisting) {
     for (const auto& symbol : schematic.symbols) {
       if (symbol.reference.find('?') == std::string::npos) {
         int num = getReferenceNumber(symbol.reference);
         if (num > 0) {
-          used_numbers[getReferencePrefix(symbol.reference)].insert(num);
+          tracker.insert(symbol.reference);
         }
       }
     }
@@ -93,25 +92,14 @@ void annotateSchematic(Schematic& schematic, const AnnotateOptions& options) {
   // 4. Assign numbers
   for (auto* symbol : to_annotate) {
     std::string prefix = getReferencePrefix(symbol->reference);
-    auto& used = used_numbers[prefix];
-    
-    int next_num = options.start_number;
-    while (used.count(next_num) > 0) {
-      next_num++;
-    }
-    
-    // Assign and mark used
+    int next_num = tracker.get_next_refdes(prefix, options.start_number);
     symbol->reference = prefix + std::to_string(next_num);
-    used.insert(next_num);
   }
 }
 
 void annotateProject(Project& project, const AnnotateOptions& options) {
-  // Iterate all schematics (a full project-level annotation would collect used numbers across all sheets,
-  // but for CCad basic parity we annotate per schematic if the project is separated, or pass state down.
-  // We will keep a global used_numbers map for the project.)
-  
-  std::map<std::string, std::set<int>> used_numbers;
+  // Iterate all schematics. We keep a global RefdesTracker for the project.
+  RefdesTracker tracker;
   
   // First pass: collect or reset
   for (auto& sch : project.schematics) {
@@ -120,7 +108,7 @@ void annotateProject(Project& project, const AnnotateOptions& options) {
         if (symbol.reference.find('?') == std::string::npos) {
           int num = getReferenceNumber(symbol.reference);
           if (num > 0) {
-            used_numbers[getReferencePrefix(symbol.reference)].insert(num);
+            tracker.insert(symbol.reference);
           }
         }
       }
@@ -160,17 +148,11 @@ void annotateProject(Project& project, const AnnotateOptions& options) {
 
     for (auto* symbol : to_annotate) {
       std::string prefix = getReferencePrefix(symbol->reference);
-      auto& used = used_numbers[prefix];
-      
-      int next_num = options.start_number;
-      while (used.count(next_num) > 0) {
-        next_num++;
-      }
-      
+      int next_num = tracker.get_next_refdes(prefix, options.start_number);
       symbol->reference = prefix + std::to_string(next_num);
-      used.insert(next_num);
     }
   }
 }
 
 } // namespace ccad
+
