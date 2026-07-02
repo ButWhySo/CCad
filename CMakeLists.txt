@@ -66,6 +66,8 @@ add_library(ccad_core
   src/ccad_core/item_geometry.cpp
   src/ccad_core/graphics_cleaner.cpp
   src/ccad_core/lib_symbol.cpp
+  src/ccad_core/pin_type.cpp
+  src/ccad_core/refdes_tracker.cpp
 )
 
 target_include_directories(ccad_core PUBLIC
@@ -465,6 +467,15 @@ if(MINGW)
   target_link_options(ccad_agent_orchestrator_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME agent_orchestrator COMMAND ccad_agent_orchestrator_tests)
+
+add_executable(ccad_refdes_tracker_tests
+  tests/test_refdes_tracker.cpp
+)
+target_link_libraries(ccad_refdes_tracker_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_refdes_tracker_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME refdes_tracker COMMAND ccad_refdes_tracker_tests)
 
 add_executable(ccad_footprint_losslessness_tests
   tests/test_footprint_losslessness.cpp

@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 248
-- Branch: `sprint-248-deterministic-gui-action-tools`
+- Sprint: 250
+- Branch: `sprint-250-refdes-tracker`
 - Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 covered the bounded runtime and EDA evidence expansion through Sprint 225. Phase 9 is the bounded KiCad parity execution phase.
@@ -20,6 +20,11 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 250**: Refdes Tracker and Pin Type Parity
+  - **Goal**: Port KiCad's `REFDES_TRACKER` and `pin_type.h/.cpp` logic into `ccad_core`. Provide efficient reference designator tracking with O(1) lookup, gap-filling next-available allocation, serialization/deserialization, and thread-safe operation. Provide electrical pin type, graphic pin shape, and pin orientation enums with canonical string serialization matching KiCad's format. Fix CI/CD failures (MSVC `M_PI`, Linux CLI test quoting, orchestrator test hang, dangling submodule).
+  - **Status**: Completed. Implemented `ccad::RefdesTracker` in `refdes_tracker.hpp/cpp`, `ccad::ElectricalPinType`/`GraphicPinShape`/`PinOrientation` in `pin_type.hpp/cpp`. Added `test_refdes_tracker.cpp` with 3 test cases. Fixed CI blockers. All core CTest tests pass. Visual validation screenshot verified at `artifacts/screenshots/sprint-250-refdes-tracker-20260703-000801.png`.
+
+## Prior Sprints
 - **Sprint 249**: Library Symbol Inheritance
   - **Goal**: Replicate KiCad's `lib_symbol.cpp` logic to properly manage parent/child nested symbol units, aliases, and inheritance trees. Update `importKiCadSymbolLibrary` to dynamically flatten parent geometry/pins over derived symbols without breaking the standard `ccad::Symbol` data structures passed to the GUI and CLI.
   - **Status**: Completed. Implemented `ccad::LibSymbol` tree structure. Rewrote the parser loop in `kicad_symbol_import.cpp` to correctly link `.extends` parents and extract fully resolved flat symbols. Verified footprint losslessness and core symbol parsing logic passes all `ctest` harness gates.

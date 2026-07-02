@@ -2137,3 +2137,19 @@ Sprint 248 expands the native review window's automated GUI control interface to
  
  A g e n t s   a n d   s c r i p t s   c a n   i n s p e c t   t h e   g e o m e t r y   m a t h   t h r o u g h   \ c c a d   p c b   i t e m - g e o m e t r y   - - f i l e   < p r o j e c t >   - - i d   < i d >   [ - - h i t - t e s t - x - m m   < x >   - - h i t - t e s t - y - m m   < y >   - - h i t - t e s t - a c c u r a c y - n m   < a c c u r a c y > ] \ .  
  
+## Refdes Tracker and Pin Type Support
+
+Status: implemented.
+Files:
+- `src/ccad_core/refdes_tracker.hpp`
+- `src/ccad_core/refdes_tracker.cpp`
+- `src/ccad_core/pin_type.hpp`
+- `src/ccad_core/pin_type.cpp`
+
+What it does:
+- Provides `ccad::RefdesTracker` for efficient reference designator tracking and O(1) existence checks.
+- Provides gap-filling auto-allocation for next available reference designators (e.g. creating R3 when R1 and R2 exist).
+- Provides serialization and canonical string conversion for KiCad parity pin types (ElectricalPinType, GraphicPinShape, PinOrientation).
+
+Use:
+- Core integration: Call `tracker.allocate("R")` to get "R1".
