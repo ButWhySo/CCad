@@ -29,6 +29,9 @@ $env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
 .\build-qt\ccad_gui.exe
 ```
 
+> [!WARNING]
+> **COMPILER CAVEAT**: You MUST build and run the CCad GUI and CLI using the explicit Qt MinGW compiler toolchain (e.g., `C:\Qt\Tools\mingw1310_64\bin`) when running visual validation tests. The `run_sprint_demo.ps1` script executes both the CLI and GUI from the same build directory. Using generic compilers from standard PATH (like CodeBlocks MinGW) will cause toolchain mismatch crashes during GUI load and process errors. Always configure your build appropriately by referring to the README and ensure `scripts/preflight_qt_env.ps1` passes before running visual UI tests.
+
 Wait a few seconds and interact with at least two or three basic GUI elements before assuming the previous state is stable.
 
 ### Phase 2: Research and Implementation
@@ -92,6 +95,9 @@ Purge intermediate `.tmp` logs, obsolete WIP screenshots, stale generated files,
 
 Stage changes carefully and write a detailed multi-line commit message containing:
 
+Merge back to `main` only after the branch is green, visually proven, documented, and backed by the required verification artifacts.
+
+After a successful merge, clean up the feature branch once its purpose is served, i.e delete them after merging. Also clean up stray branches whose purpose is complete and which are no longer needed.
 ```text
 Why:
 Changed:
@@ -103,9 +109,5 @@ Demo:
 Provide the user with the required status format:
 
 ```text
-Progress: Phase X/Y, Sprint N, <branch>, <status>
+Progress: Phase X/Y, Sprint N, <branch>, <status> <worked_on> <importance_from_user_pov>
 ```
-
-Merge back to `main` only after the branch is green, visually proven, documented, and backed by the required verification artifacts.
-
-After a successful merge, clean up the feature branch once its purpose is served, i.e delete them after merging. Also clean up stray branches whose purpose is complete and which are no longer needed.

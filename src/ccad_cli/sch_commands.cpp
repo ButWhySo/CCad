@@ -3,6 +3,9 @@
 #include "ccad_cli/common.hpp"
 #include "ccad_core/kicad_symbol_import.hpp"
 #include "ccad_core/placement.hpp"
+#include "ccad_core/annotate.hpp"
+#include "ccad_core/autoplace_fields.hpp"
+#include "ccad_core/junction_helpers.hpp"
 
 #include <iostream>
 #include <map>
@@ -120,6 +123,73 @@ int schCommand(const std::vector<std::string>& args) {
           .rotation_degrees = optionDoubleOrDefault(options, "--rotation-deg", 0.0)
       };
       ccad::ensurePrimarySchematic(project).power_symbols.push_back(power);
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file\n";
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "annotate") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--algo", "--order", "--start"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      
+      ccad::AnnotateOptions annotate_opts;
+      if (options.count("--algo") && options.at("--algo") == "reset") {
+        annotate_opts.algo = ccad::AnnotateAlgo::ResetAll;
+      }
+      if (options.count("--order") && options.at("--order") == "y") {
+        annotate_opts.order = ccad::AnnotateOrder::SortY;
+      }
+      if (options.count("--start")) {
+        annotate_opts.start_number = std::stoi(options.at("--start"));
+      }
+
+      ccad::annotateProject(project, annotate_opts);
+
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file\n";
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "autoplace") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--no-collisions"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      
+      ccad::AutoplaceOptions autoplace_opts;
+      if (options.count("--no-collisions")) {
+        autoplace_opts.avoid_collisions = false;
+      }
+
+      // Autoplace all schematics
+      for (auto& sch : project.schematics) {
+        ccad::autoplaceSchematicFields(sch, autoplace_opts);
+      }
+
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file\n";
+        return 2;
+      }
+      return 0;
+    }
+
+    if (subcommand == "fix-junctions") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+
+      // Fix junctions in all schematics
+      for (auto& sch : project.schematics) {
+        ccad::fixSchematicJunctions(sch);
+      }
+
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file\n";
         return 2;

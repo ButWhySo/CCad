@@ -10,6 +10,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(ccad_core
+  src/ccad_core/annotate.cpp
+  src/ccad_core/autoplace_fields.cpp
+  src/ccad_core/junction_helpers.cpp
   src/ccad_core/agent_policy.cpp
   src/ccad_core/autorouter_matrix.cpp
   src/ccad_core/autoplacer.cpp
@@ -909,6 +912,33 @@ if(MINGW)
   target_link_options(ccad_review_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME review COMMAND ccad_review_tests)
+
+add_executable(ccad_annotate_tests
+  tests/test_annotate.cpp
+)
+target_link_libraries(ccad_annotate_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_annotate_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME annotate COMMAND ccad_annotate_tests)
+
+add_executable(ccad_autoplace_fields_tests
+  tests/test_autoplace_fields.cpp
+)
+target_link_libraries(ccad_autoplace_fields_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_autoplace_fields_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME autoplace_fields COMMAND ccad_autoplace_fields_tests)
+
+add_executable(ccad_junction_helpers_tests
+  tests/test_junction_helpers.cpp
+)
+target_link_libraries(ccad_junction_helpers_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_junction_helpers_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME junction_helpers COMMAND ccad_junction_helpers_tests)
 
 add_executable(ccad_diff_tests
   tests/test_diff.cpp

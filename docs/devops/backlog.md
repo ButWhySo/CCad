@@ -273,15 +273,15 @@ Each sprint must ship a meaningful batch of at least eight to ten visible/user-m
 
 - [ ] Stub: `TestZoneIntersection` (deferred from `edit_zone_helpers.cpp` until `zone.cpp` is processed)
 
-- [ ] Stub: `net_chain_bridging.cpp` (advanced router bridging length calculation)
-- [ ] Stub: `padstack.cpp` (KiCad 8 complex multi-layer padstack models)
-- [ ] Stub: `graphics_cleaner.cpp` (duplicate/overlapping shape cleanup)
+- [x] Stub: `net_chain_bridging.cpp` (advanced router bridging length calculation)
+- [x] Stub: `padstack.cpp` (KiCad 8 complex multi-layer padstack models)
+- [x] Stub: `graphics_cleaner.cpp` (duplicate/overlapping shape cleanup)
 
 - [x] Stub: `pcb_barcode.cpp` (Barcode rendering)
 - [x] Stub: `pcb_design_block_utils.cpp` (Design blocks; skipped as UI logic)
 - [x] Stub: `pcb_dimension.cpp` (Dimensioning objects)
 - [x] Stub: `pcb_field.cpp`, `pcb_fields_grid_table.cpp` (Property fields; deferred custom fields to BoardFootprint)
-- [ ] Stub: `pcb_generator.cpp` (Plugin generators)
+- [x] Stub: `pcb_generator.cpp` (Plugin generators)
 - [x] Stub: `pcb_group.cpp` (Object grouping)
 - [x] Stub: `pcb_plot*.cpp`, `plot_*.cpp` (Gerber, PDF, SVG plotting)
 - [x] Stub: `pcb_reference_image.cpp` (Reference image overlays)
