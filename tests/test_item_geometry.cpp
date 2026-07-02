@@ -384,6 +384,61 @@ static void testItemTypeString() {
   std::cout << "  PASS: testItemTypeString\n";
 }
 
+// --- Schematic Geometry tests ---
+
+static void testSchWireBoundingBoxAndLength() {
+  SchWire wire;
+  wire.start = {millimeters(0), millimeters(0)};
+  wire.end = {millimeters(3), millimeters(4)};
+  
+  auto bb = itemBoundingBox(wire);
+  assertTrue(bb.valid, "sch wire bb valid");
+  assertClose(toMillimeters(bb.min.x), 0.0, 0.01, "sch wire bb min.x");
+  assertClose(toMillimeters(bb.min.y), 0.0, 0.01, "sch wire bb min.y");
+  assertClose(toMillimeters(bb.max.x), 3.0, 0.01, "sch wire bb max.x");
+  assertClose(toMillimeters(bb.max.y), 4.0, 0.01, "sch wire bb max.y");
+  
+  double len = itemLength(wire);
+  assertClose(len, 5.0, 0.01, "sch wire length");
+  
+  assertTrue(itemHitTest(wire, {millimeters(1.5), millimeters(2.0)}, 0), "sch wire center hit");
+  assertFalse(itemHitTest(wire, {millimeters(0.0), millimeters(4.0)}, 0), "sch wire miss");
+  
+  std::cout << "  PASS: testSchWireBoundingBoxAndLength\n";
+}
+
+static void testSchJunctionGeometry() {
+  SchJunction junction;
+  junction.position = {millimeters(10), millimeters(10)};
+  junction.diameter = millimeters(1.0);
+  
+  auto bb = itemBoundingBox(junction);
+  assertTrue(bb.valid, "sch junction bb valid");
+  assertClose(toMillimeters(bb.min.x), 9.5, 0.01, "sch junction bb min.x");
+  assertClose(toMillimeters(bb.max.x), 10.5, 0.01, "sch junction bb max.x");
+  
+  assertTrue(itemHitTest(junction, {millimeters(10), millimeters(10)}), "sch junction center hit");
+  assertFalse(itemHitTest(junction, {millimeters(12), millimeters(10)}), "sch junction miss");
+  
+  std::cout << "  PASS: testSchJunctionGeometry\n";
+}
+
+static void testSchGraphicGeometry() {
+  SchGraphic graphic;
+  graphic.start = {millimeters(0), millimeters(0)};
+  graphic.end = {millimeters(10), millimeters(0)};
+  graphic.width = millimeters(2.0); // 1mm half-width
+  
+  auto bb = itemBoundingBox(graphic);
+  assertTrue(bb.valid, "sch graphic bb valid");
+  assertClose(toMillimeters(bb.min.x), -1.0, 0.01, "sch graphic bb min.x");
+  assertClose(toMillimeters(bb.max.x), 11.0, 0.01, "sch graphic bb max.x");
+  assertClose(toMillimeters(bb.min.y), -1.0, 0.01, "sch graphic bb min.y");
+  assertClose(toMillimeters(bb.max.y), 1.0, 0.01, "sch graphic bb max.y");
+  
+  std::cout << "  PASS: testSchGraphicGeometry\n";
+}
+
 int main() {
   std::cout << "item_geometry tests:\n";
 
@@ -420,6 +475,11 @@ int main() {
 
   // Item type lookup
   testItemTypeString();
+
+  // Schematic
+  testSchWireBoundingBoxAndLength();
+  testSchJunctionGeometry();
+  testSchGraphicGeometry();
 
   std::cout << "\nAll item_geometry tests passed.\n";
   return 0;

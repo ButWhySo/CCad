@@ -25,6 +25,10 @@ BoundingBox itemBoundingBox(const Keepout& keepout);
 BoundingBox itemBoundingBox(const BoardDimension& dim);
 BoundingBox itemBoundingBox(const BoardBarcode& barcode);
 BoundingBox itemBoundingBox(const BoardTarget& target);
+BoundingBox itemBoundingBox(const SchWire& wire);
+BoundingBox itemBoundingBox(const SchBus& bus);
+BoundingBox itemBoundingBox(const SchGraphic& graphic);
+BoundingBox itemBoundingBox(const SchJunction& junction);
 
 // ---------------------------------------------------------------------------
 // Hit-Test computations
@@ -38,6 +42,8 @@ bool itemHitTest(const TrackSegment& track, Point testPoint, int64_t accuracy_nm
 bool itemHitTest(const TrackArc& arc, Point testPoint, int64_t accuracy_nm = 0);
 bool itemHitTest(const BoardZone& zone, Point testPoint);
 bool itemHitTest(const Keepout& keepout, Point testPoint);
+bool itemHitTest(const SchWire& wire, Point testPoint, int64_t accuracy_nm = 0);
+bool itemHitTest(const SchJunction& junction, Point testPoint);
 
 // ---------------------------------------------------------------------------
 // Length computations
@@ -47,6 +53,9 @@ bool itemHitTest(const Keepout& keepout, Point testPoint);
 
 double itemLength(const TrackSegment& track);
 double itemLength(const TrackArc& arc);
+double itemLength(const SchWire& wire);
+double itemLength(const SchBus& bus);
+double itemLength(const SchGraphic& graphic);
 
 // ---------------------------------------------------------------------------
 // Annular Ring computations

@@ -590,6 +590,79 @@ int64_t viaAnnularRing(const Via& via) {
 }
 
 // ---------------------------------------------------------------------------
+// Schematic Item Geometry
+// ---------------------------------------------------------------------------
+
+BoundingBox itemBoundingBox(const SchWire& wire) {
+  BoundingBox bb;
+  bb.min.x = nanometers(std::min(wire.start.x.nanometers, wire.end.x.nanometers));
+  bb.min.y = nanometers(std::min(wire.start.y.nanometers, wire.end.y.nanometers));
+  bb.max.x = nanometers(std::max(wire.start.x.nanometers, wire.end.x.nanometers));
+  bb.max.y = nanometers(std::max(wire.start.y.nanometers, wire.end.y.nanometers));
+  bb.valid = true;
+  return bb;
+}
+
+BoundingBox itemBoundingBox(const SchBus& bus) {
+  BoundingBox bb;
+  bb.min.x = nanometers(std::min(bus.start.x.nanometers, bus.end.x.nanometers));
+  bb.min.y = nanometers(std::min(bus.start.y.nanometers, bus.end.y.nanometers));
+  bb.max.x = nanometers(std::max(bus.start.x.nanometers, bus.end.x.nanometers));
+  bb.max.y = nanometers(std::max(bus.start.y.nanometers, bus.end.y.nanometers));
+  bb.valid = true;
+  return bb;
+}
+
+BoundingBox itemBoundingBox(const SchGraphic& graphic) {
+  int64_t halfW = graphic.width.nanometers / 2;
+  BoundingBox bb;
+  bb.min.x = nanometers(std::min(graphic.start.x.nanometers, graphic.end.x.nanometers) - halfW);
+  bb.min.y = nanometers(std::min(graphic.start.y.nanometers, graphic.end.y.nanometers) - halfW);
+  bb.max.x = nanometers(std::max(graphic.start.x.nanometers, graphic.end.x.nanometers) + halfW);
+  bb.max.y = nanometers(std::max(graphic.start.y.nanometers, graphic.end.y.nanometers) + halfW);
+  bb.valid = true;
+  return bb;
+}
+
+BoundingBox itemBoundingBox(const SchJunction& junction) {
+  int64_t radius = junction.diameter.nanometers / 2;
+  BoundingBox bb;
+  bb.min.x = nanometers(junction.position.x.nanometers - radius);
+  bb.min.y = nanometers(junction.position.y.nanometers - radius);
+  bb.max.x = nanometers(junction.position.x.nanometers + radius);
+  bb.max.y = nanometers(junction.position.y.nanometers + radius);
+  bb.valid = true;
+  return bb;
+}
+
+bool itemHitTest(const SchWire& wire, Point testPoint, int64_t accuracy_nm) {
+  double threshold = static_cast<double>(accuracy_nm);
+  if (threshold < 1e-9) threshold = 250000.0; // 0.25mm default schematic wire width
+  double dist = distancePointToSegment(testPoint, wire.start, wire.end);
+  return dist <= threshold;
+}
+
+bool itemHitTest(const SchJunction& junction, Point testPoint) {
+  double dx = static_cast<double>(testPoint.x.nanometers - junction.position.x.nanometers);
+  double dy = static_cast<double>(testPoint.y.nanometers - junction.position.y.nanometers);
+  double r = junction.diameter.nanometers / 2.0;
+  if (r < 1e-9) r = 500000.0; // 0.5mm default junction diameter
+  return (dx * dx + dy * dy) <= (r * r);
+}
+
+double itemLength(const SchWire& wire) {
+  return distancePoints(wire.start, wire.end) / 1000000.0;
+}
+
+double itemLength(const SchBus& bus) {
+  return distancePoints(bus.start, bus.end) / 1000000.0;
+}
+
+double itemLength(const SchGraphic& graphic) {
+  return distancePoints(graphic.start, graphic.end) / 1000000.0;
+}
+
+// ---------------------------------------------------------------------------
 // Shape description for agent queries
 // ---------------------------------------------------------------------------
 
