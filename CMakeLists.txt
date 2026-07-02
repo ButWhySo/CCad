@@ -52,6 +52,7 @@ add_library(ccad_core
   src/ccad_core/pnp_export.cpp
   src/ccad_core/drill_export.cpp
   src/ccad_core/agent_orchestrator.cpp
+  src/ccad_core/agent_runner.cpp
   src/ccad_core/cross_probing.cpp
   src/ccad_core/fix_board_shape.cpp
   src/ccad_core/net_chain_bridging.cpp
@@ -458,6 +459,15 @@ if(MINGW)
   target_link_options(ccad_footprint_losslessness_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME footprint_losslessness COMMAND ccad_footprint_losslessness_tests)
+
+add_executable(ccad_agent_runner_tests
+  tests/test_agent_runner.cpp
+)
+target_link_libraries(ccad_agent_runner_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_agent_runner_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME agent_runner COMMAND ccad_agent_runner_tests)
 
 add_executable(ccad_cli_tests
   tests/test_cli.cpp

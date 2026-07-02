@@ -2,6 +2,7 @@
 // Sprint 210: Orchestrator Architecture Overhaul
 
 #include "agent_orchestrator.hpp"
+#include "agent_runner.hpp"
 #include "ccad_core/json.hpp"
 #include <algorithm>
 #include <chrono>
@@ -228,6 +229,14 @@ std::vector<AgentTask> EDAAgent::decompose(const std::string& goal, const Projec
 // ─── AgentOrchestrator ──────────────────────────────────────────
 AgentOrchestrator::AgentOrchestrator() {
     available_subagents_.push_back(std::make_unique<EDAAgent>());
+    runner_ = std::make_unique<AgentRunner>();
+    runner_->start();
+}
+
+AgentOrchestrator::~AgentOrchestrator() {
+    if (runner_) {
+        runner_->stop();
+    }
 }
 
 void AgentOrchestrator::set_config(const OrchestratorConfig& cfg) {
@@ -252,6 +261,12 @@ std::optional<OrchestratorTool> AgentOrchestrator::get_tool(const std::string& n
 
 std::string AgentOrchestrator::execute_tool(const std::string& name, const std::string& args_json, const OrchestratorConfig& cfg) {
     return tool_broker_.execute_tool(name, args_json, cfg);
+}
+
+void AgentOrchestrator::set_progress_callback(ProgressCallback cb) {
+    if (runner_) {
+        runner_->set_progress_callback(cb);
+    }
 }
 
 AgentGoal AgentOrchestrator::plan(const std::string& goal_description, const ProjectContext& context) {
@@ -301,48 +316,13 @@ AgentGoal AgentOrchestrator::execute(AgentGoal& goal) {
     goal.status = GoalStatus::Active;
     goal.started_at = now_iso();
 
-    for (auto& task : goal.tasks) {
-        if (task.status != TaskStatus::Pending && task.status != TaskStatus::Blocked) {
-            continue;
-        }
-        if (!check_dependencies(task, goal)) {
-            task.status = TaskStatus::Blocked;
-            continue;
-        }
-        if (config_.dry_run) {
-            task.status = TaskStatus::Skipped;
-            task.error_message = "dry_run_only";
-            continue;
-        }
-        if (config_.require_approval && task.risk != TaskRisk::ReadOnly && !config_.auto_execute_reads) {
-            task.status = TaskStatus::Blocked;
-            task.error_message = "approval_required";
-            continue;
-        }
-        if (task.risk == TaskRisk::ReadOnly || !config_.require_approval) {
-            task = execute_task(goal, task.id);
-        } else if (config_.auto_execute_reads && task.risk == TaskRisk::ReadOnly) {
-            task = execute_task(goal, task.id);
-        } else {
-            task.status = TaskStatus::Blocked;
-            task.error_message = "approval_required";
-        }
-    }
+    // Delegate the actual execution to the background runner
+    runner_->enqueue_goal(goal);
 
-    goal.completed_count = 0;
-    goal.failed_count = 0;
-    for (auto& t : goal.tasks) {
-        if (t.status == TaskStatus::Completed) goal.completed_count++;
-        if (t.status == TaskStatus::Failed) goal.failed_count++;
-    }
+    // Return the goal immediately (it will update in the background)
+    return goal;
 
-    if (goal.completed_count == goal.total_count) {
-        goal.status = GoalStatus::Completed;
-        goal.completed_at = now_iso();
-    } else if (goal.failed_count > 0 && goal.completed_count + goal.failed_count == goal.total_count) {
-        goal.status = GoalStatus::Failed;
-        goal.completed_at = now_iso();
-    }
+    // The rest of the synchronous execution is moved to the AgentRunner.
     return goal;
 }
 

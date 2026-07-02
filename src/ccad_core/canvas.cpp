@@ -279,7 +279,7 @@ CanvasScene buildCanvasScene(const Board& board) {
             }
           }
         }
-      } catch (const std::exception& e) {
+      } catch (const std::exception&) {
          // ignore parsing errors for now
       }
     } else {

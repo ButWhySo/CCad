@@ -857,6 +857,17 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
 
   chat_input_->installEventFilter(this);
 
+  if (orchestrator_) {
+    orchestrator_->set_progress_callback([this](const ccad::AgentGoal& goal) {
+        QMetaObject::invokeMethod(this, [this, goal]() {
+            // Marshall background thread update to UI thread
+            QString status_str = QString::fromStdString(ccad::goal_status_string(goal.status));
+            QString detail_str = QString("Completed %1/%2").arg(goal.completed_count).arg(goal.total_count);
+            this->updateRunState(status_str, "Agent Thread", detail_str);
+        });
+    });
+  }
+
   startPythonBackend();
 }
 

@@ -1,5 +1,6 @@
 #include "ccad_core/geometry.hpp"
 
+#include <algorithm>
 #include <cmath>
 
 namespace ccad {

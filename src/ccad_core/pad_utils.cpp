@@ -1,6 +1,6 @@
+#define _USE_MATH_DEFINES
 #include "ccad_core/pad_utils.hpp"
 #include "ccad_core/model.hpp"
-#define _USE_MATH_DEFINES
 #include <cmath>
 #include <algorithm>
 

@@ -1,6 +1,6 @@
+#define _USE_MATH_DEFINES
 #include "ccad_core/item_geometry.hpp"
 
-#define _USE_MATH_DEFINES
 #include <cmath>
 #include <algorithm>
 #include <limits>

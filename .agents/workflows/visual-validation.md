@@ -109,5 +109,5 @@ Demo:
 Provide the user with the required status format:
 
 ```text
-Progress: Phase X/Y, Sprint N, <branch>, <status> <worked_on> <importance_from_user_pov>
+Progress: Phase X/Y, Sprint N, <branch>, <status> <worked_on> <importance_from_user_pov_no_dev_lang_layman_lang_only>
 ```

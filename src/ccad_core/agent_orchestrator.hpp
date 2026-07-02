@@ -180,6 +180,7 @@ public:
 class AgentOrchestrator {
 public:
     AgentOrchestrator();
+    ~AgentOrchestrator();
 
     void set_config(const OrchestratorConfig& cfg);
     OrchestratorConfig get_config() const;
@@ -188,6 +189,9 @@ public:
     std::vector<std::string> list_tools() const;
     std::optional<OrchestratorTool> get_tool(const std::string& name) const;
     std::string execute_tool(const std::string& name, const std::string& args_json, const OrchestratorConfig& cfg);
+
+    using ProgressCallback = std::function<void(const AgentGoal&)>;
+    void set_progress_callback(ProgressCallback cb);
 
     AgentGoal plan(const std::string& goal_description,
                    const ProjectContext& context);
@@ -208,6 +212,9 @@ private:
     IntakeLayer intake_;
     ContextBuilder context_builder_;
     std::vector<std::unique_ptr<Subagent>> available_subagents_;
+
+    // NEW: The background execution engine
+    std::unique_ptr<class AgentRunner> runner_;
 
     int goal_counter_ = 0;
 

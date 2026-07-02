@@ -94,8 +94,8 @@ void autoplaceSymbolFields(Schematic& schematic, SchSymbol& symbol, const Autopl
     // Align to grid (50 mils = 1270000 nm)
     if (options.align_to_grid) {
       const long long grid = 1270000;
-      field.position.x.nanometers = std::round((double)field.position.x.nanometers / grid) * grid;
-      field.position.y.nanometers = std::round((double)field.position.y.nanometers / grid) * grid;
+      field.position.x.nanometers = static_cast<long long>(std::round((double)field.position.x.nanometers / grid)) * grid;
+      field.position.y.nanometers = static_cast<long long>(std::round((double)field.position.y.nanometers / grid)) * grid;
     }
     
     idx++;
