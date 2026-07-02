@@ -74,11 +74,7 @@ std::vector<Diagnostic> runErc(const Project& project) {
                                              "SchSymbol pin name must not be empty",
                                              component.id));
       }
-      if (pin.type.empty()) {
-        diagnostics.push_back(makeDiagnostic("error", "INVALID_PIN_TYPE",
-                                             "SchSymbol pin type must not be empty",
-                                             component.id + "." + pin.name));
-      }
+
       if (!pin_names.insert(pin.name).second) {
         diagnostics.push_back(makeDiagnostic("error", "DUPLICATE_PIN",
                                              "SchSymbol pin appears more than once",

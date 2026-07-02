@@ -72,5 +72,6 @@ enum class PinOrientation {
 PinOrientation parse_pin_orientation(const std::string& name);
 std::string to_string(PinOrientation orientation);
 std::string get_pin_orientation_text(PinOrientation orientation);
+PinOrientation pin_orientation_from_degrees(double degrees);
 
 } // namespace ccad

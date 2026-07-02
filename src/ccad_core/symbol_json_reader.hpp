@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ccad_core/kicad_symbol_import.hpp"
+#include "ccad_core/pin_type.hpp"
 
 #include <cctype>
 #include <cstdint>
@@ -69,13 +70,17 @@ class SymbolJsonReader {
           expect(':');
           if (key == "name") pin.name = readString();
           else if (key == "number") pin.number = readString();
-          else if (key == "electrical_type") pin.electrical_type = readString();
-          else if (key == "graphical_style") pin.graphical_style = readString();
+          else if (key == "electrical_type") pin.electrical_type = parse_electrical_pin_type(readString());
+          else if (key == "graphical_style") pin.shape = parse_graphic_pin_shape(readString());
           else if (key == "x_nm") pin.position.x = nanometers(readInt64());
           else if (key == "y_nm") pin.position.y = nanometers(readInt64());
-          else if (key == "rotation_degrees") pin.rotation_degrees = readNumber();
+          else if (key == "orientation") pin.orientation = parse_pin_orientation(readString());
+          else if (key == "rotation_degrees") {
+            // Backwards compatibility
+            pin.orientation = pin_orientation_from_degrees(readNumber());
+          }
           else if (key == "length_nm") pin.length = nanometers(readInt64());
-          else throw std::runtime_error("unknown pin key: " + key);
+          else throw std::runtime_error("unknown pin key (83): '" + key + "'");
           if (consume('}')) break;
           expect(',');
         }

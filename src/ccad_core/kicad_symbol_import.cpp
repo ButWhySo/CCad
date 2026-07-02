@@ -1,6 +1,7 @@
 #include "kicad_symbol_import.hpp"
 #include "ccad_core/json.hpp"
 #include "ccad_core/sexpr_parser.hpp"
+#include "ccad_core/pin_type.hpp"
 #include "ccad_core/symbol_json_reader.hpp"
 #include "ccad_core/lib_symbol.hpp"
 
@@ -64,11 +65,12 @@ void parseSymbolRecursive(const SExpr* expr, Symbol& out_sym, const std::string&
         out_sym.properties.push_back(prop);
       } else if (type == "pin" && child->children.size() >= 3) {
         SymbolPin pin;
-        pin.electrical_type = child->children[1]->value;
-        pin.graphical_style = child->children[2]->value;
+        pin.electrical_type = parse_electrical_pin_type(child->children[1]->value);
+        pin.shape = parse_graphic_pin_shape(child->children[2]->value);
         if (const SExpr* at = findSExprChild(child.get(), "at")) {
           pin.position = parseAt(at);
-          pin.rotation_degrees = parseRotation(at);
+          double rot = parseRotation(at);
+          pin.orientation = pin_orientation_from_degrees(rot);
         }
         if (const SExpr* length = findSExprChild(child.get(), "length")) {
           if (length->children.size() > 1) {
@@ -335,10 +337,11 @@ std::string dumpSymbolsJson(const std::vector<Symbol>& symbols) {
       out << "      {\n";
       out << "        \"name\": \"" << pin.name << "\",\n";
       out << "        \"number\": \"" << pin.number << "\",\n";
-      out << "        \"electrical_type\": \"" << pin.electrical_type << "\",\n";
-      out << "        \"x_nm\": " << pin.position.x.nanometers << ",\n";
-      out << "        \"y_nm\": " << pin.position.y.nanometers << ",\n";
-      out << "        \"rotation_degrees\": " << pin.rotation_degrees << "\n";
+      out << "        \"electrical_type\": \"" << to_string(pin.electrical_type) << "\",\n";
+      out << "        \"graphical_style\": \"" << to_string(pin.shape) << "\",\n";
+      out << "        \"position\": {\"x_nm\": " << pin.position.x.nanometers << ", \"y_nm\": " << pin.position.y.nanometers << "},\n";
+      out << "        \"orientation\": \"" << to_string(pin.orientation) << "\",\n";
+      out << "        \"length_nm\": " << pin.length.nanometers << "\n";
       out << "      }" << (p + 1 == sym.pins.size() ? "" : ",") << "\n";
     }
     out << "    ],\n";

@@ -275,8 +275,11 @@ void placeComponent(Project& project, const Symbol& symbol, const std::string& c
   
   for (const SymbolPin& pin : symbol.pins) {
     comp.pins.push_back(SchPin{
-        .name = pin.number,
-        .type = pin.electrical_type,
+        .name = pin.name,
+        .number = pin.number,
+        .electrical_type = pin.electrical_type,
+        .shape = pin.shape,
+        .orientation = pin.orientation,
     });
   }
   schematic.symbols.push_back(comp);

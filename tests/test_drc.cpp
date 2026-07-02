@@ -15,7 +15,7 @@ ccad::Project validBoardProject() {
   project.schematics[0].symbols = {ccad::SchSymbol{
       .id = "U1",
       .lib_id = "MCU",
-      .pins = {ccad::SchPin{.name = "1", .type = "passive"}},
+      .pins = {ccad::SchPin{.name = "1", .number = "", .electrical_type = ccad::ElectricalPinType::Passive}},
   }};
   project.schematics[0].nets = {ccad::Net{.id = "N1",
                             .members = {ccad::NetMember{.component_id = "U1", .pin_name = "1"}}},

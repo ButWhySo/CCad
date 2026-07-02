@@ -166,10 +166,9 @@ void test_symbol_placement_retains_visible_primitives_after_reload() {
   symbol.pins.push_back(ccad::SymbolPin{
       .name = "A",
       .number = "1",
-      .electrical_type = "passive",
-      .graphical_style = "line",
+      .electrical_type = ccad::ElectricalPinType::Passive,
       .position = {ccad::millimeters(-3.54), ccad::millimeters(0.0)},
-      .rotation_degrees = 0.0,
+      .orientation = ccad::PinOrientation::Right,
       .length = ccad::millimeters(2.54)});
 
   ccad::placeComponent(project, symbol, "D1",
@@ -211,10 +210,9 @@ void test_symbol_placement_creates_schematic_document() {
   symbol.pins.push_back(ccad::SymbolPin{
       .name = "1",
       .number = "1",
-      .electrical_type = "passive",
-      .graphical_style = "line",
+      .electrical_type = ccad::ElectricalPinType::Passive,
       .position = {ccad::millimeters(0.0), ccad::millimeters(0.0)},
-      .rotation_degrees = 0.0,
+      .orientation = ccad::PinOrientation::Right,
       .length = ccad::millimeters(2.54)});
 
   ccad::placeComponent(project, symbol, "TP1",

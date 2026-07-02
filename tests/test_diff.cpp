@@ -15,7 +15,7 @@ ccad::Project baseProject() {
   project.schematics[0].symbols.push_back(ccad::SchSymbol{
       .id = "U1",
       .lib_id = "MCU",
-      .pins = {ccad::SchPin{.name = "VDD", .type = "power"}},
+      .pins = {ccad::SchPin{.name = "VDD", .number = "", .electrical_type = ccad::ElectricalPinType::PowerIn}},
   });
   project.schematics[0].nets.push_back(ccad::Net{
       .id = "N_3V3",
@@ -124,7 +124,7 @@ int main() {
   added.schematics[0].symbols.push_back(ccad::SchSymbol{
       .id = "U2",
       .lib_id = "SENSOR",
-      .pins = {ccad::SchPin{.name = "OUT", .type = "signal"}},
+      .pins = {ccad::SchPin{.name = "OUT", .number = "", .electrical_type = ccad::ElectricalPinType::Output}},
   });
   const ccad::ProjectDiff added_diff = ccad::diffProjects(baseProject(), added);
   require(added_diff.added_count == 1, "added count set");

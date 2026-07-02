@@ -1,4 +1,5 @@
 #include "ccad_core/diff.hpp"
+#include "ccad_core/pin_type.hpp"
 
 #include <map>
 #include <string>
@@ -7,7 +8,7 @@ namespace ccad {
 namespace {
 
 std::string pinSignature(const SchPin& pin) {
-  return pin.name + "\x1f" + pin.type;
+  return pin.name + "\x1f" + to_string(pin.electrical_type);
 }
 
 std::string componentSignature(const SchSymbol& component) {

@@ -15,8 +15,8 @@ ccad::Project validProject() {
   project.schematics[0].symbols.push_back(ccad::SchSymbol{
       .id = "U1",
       .lib_id = "MCU",
-      .pins = {ccad::SchPin{.name = "VDD", .type = "power"},
-               ccad::SchPin{.name = "GND", .type = "power"}},
+      .pins = {ccad::SchPin{.name = "VDD", .number = "", .electrical_type = ccad::ElectricalPinType::PowerIn},
+               ccad::SchPin{.name = "GND", .number = "", .electrical_type = ccad::ElectricalPinType::PowerIn}},
   });
   project.schematics[0].nets.push_back(ccad::Net{
       .id = "N_3V3",
@@ -60,10 +60,7 @@ int main() {
   require(hasCode(ccad::runErc(empty_pin_name), "INVALID_PIN_NAME"),
           "empty pin name reported");
 
-  ccad::Project empty_pin_type = validProject();
-  empty_pin_type.schematics[0].symbols.at(0).pins.at(0).type.clear();
-  require(hasCode(ccad::runErc(empty_pin_type), "INVALID_PIN_TYPE"),
-          "empty pin type reported");
+
 
   ccad::Project empty_net_id = validProject();
   empty_net_id.schematics[0].nets.at(0).id.clear();

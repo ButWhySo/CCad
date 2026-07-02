@@ -137,7 +137,7 @@ int main() {
   project.schematics[0].symbols.push_back(SchSymbol{
       .id = "U1",
       .lib_id = "MCU",
-      .pins = {SchPin{.name = "VDD", .type = "power"}, SchPin{.name = "GND", .type = "power"}},
+      .pins = {SchPin{.name = "VDD", .number = "", .electrical_type = ccad::ElectricalPinType::PowerIn}, SchPin{.name = "GND", .number = "", .electrical_type = ccad::ElectricalPinType::PowerIn}},
   });
   project.schematics[0].nets.push_back(Net{
       .id = "N_3V3",

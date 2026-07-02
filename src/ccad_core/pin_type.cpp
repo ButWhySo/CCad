@@ -133,4 +133,16 @@ std::string get_pin_orientation_text(PinOrientation orientation) {
     return "Right";
 }
 
+PinOrientation pin_orientation_from_degrees(double degrees) {
+    int deg = static_cast<int>(degrees) % 360;
+    if (deg < 0) deg += 360;
+    
+    if (deg == 0) return PinOrientation::Right;
+    if (deg == 90) return PinOrientation::Up;
+    if (deg == 180) return PinOrientation::Left;
+    if (deg == 270) return PinOrientation::Down;
+    
+    return PinOrientation::Right;
+}
+
 } // namespace ccad

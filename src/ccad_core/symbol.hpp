@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ccad_core/geometry.hpp"
+#include "ccad_core/pin_type.hpp"
 
 #include <optional>
 #include <string>
@@ -11,10 +12,10 @@ namespace ccad {
 struct SymbolPin {
   std::string name;
   std::string number;
-  std::string electrical_type;
-  std::string graphical_style;
+  ElectricalPinType electrical_type = ElectricalPinType::Unspecified;
+  GraphicPinShape shape = GraphicPinShape::Line;
   Point position;
-  double rotation_degrees = 0.0;
+  PinOrientation orientation = PinOrientation::Right;
   Length length;
 };
 

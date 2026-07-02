@@ -23,7 +23,7 @@ ccad::Project afterProject() {
   project.schematics[0].symbols.push_back(ccad::SchSymbol{
       .id = "U1",
       .lib_id = "MCU",
-      .pins = {ccad::SchPin{.name = "VDD", .type = "power"}},
+      .pins = {ccad::SchPin{.name = "VDD", .number = "", .electrical_type = ccad::ElectricalPinType::PowerIn}},
   });
   return project;
 }

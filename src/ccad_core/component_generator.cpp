@@ -68,8 +68,8 @@ Symbol generateParametricSymbol(const SymbolParams& params) {
     SymbolPin pin;
     pin.number = std::to_string(i + 1);
     pin.name = "P" + pin.number;
-    pin.electrical_type = "unspecified";
-    pin.graphical_style = "line";
+    pin.electrical_type = ElectricalPinType::Unspecified;
+    pin.shape = GraphicPinShape::Line;
     pin.length = millimeters(2.54);
     
     bool left_side = (i < pins_per_side);
@@ -79,7 +79,7 @@ Symbol generateParametricSymbol(const SymbolParams& params) {
     double y = start_y - (row_idx * 2.54);
     
     pin.position = {millimeters(x), millimeters(y)};
-    pin.rotation_degrees = left_side ? 0.0 : 180.0;
+    pin.orientation = left_side ? PinOrientation::Right : PinOrientation::Left;
     
     sym.pins.push_back(pin);
   }

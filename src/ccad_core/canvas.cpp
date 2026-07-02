@@ -790,7 +790,12 @@ CanvasScene buildCanvasScene(const Symbol& symbol) {
     const double start_y_units = toMillimeters(pin.position.y);
     const double pin_length_units =
         pin.length.nanometers == 0 ? 2.54 : toMillimeters(pin.length);
-    const CanvasPoint pin_vector = rotatePoint(pin_length_units, 0.0, pin.rotation_degrees);
+    double pin_rotation_degrees = 0.0;
+    if (pin.orientation == PinOrientation::Up) pin_rotation_degrees = 90.0;
+    else if (pin.orientation == PinOrientation::Left) pin_rotation_degrees = 180.0;
+    else if (pin.orientation == PinOrientation::Down) pin_rotation_degrees = 270.0;
+    
+    const CanvasPoint pin_vector = rotatePoint(pin_length_units, 0.0, pin_rotation_degrees);
     scene.lines.push_back(CanvasLine{
         .id = "pin_" + pin.number,
         .layer_id = "symbol_pin",

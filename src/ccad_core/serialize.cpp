@@ -1,3 +1,5 @@
+#include "ccad_core/placement.hpp"
+#include "ccad_core/pin_type.hpp"
 #include "ccad_core/serialize.hpp"
 
 #include "ccad_core/json.hpp"
@@ -58,11 +60,11 @@ void writeSymbol(std::ostringstream& out, const int indent, const Symbol& symbol
     out << pad << "    {\n";
     writeField(out, indent + 6, "name", pin.name);
     writeField(out, indent + 6, "number", pin.number);
-    writeField(out, indent + 6, "electrical_type", pin.electrical_type);
-    writeField(out, indent + 6, "graphical_style", pin.graphical_style);
+    writeField(out, indent + 6, "electrical_type", to_string(pin.electrical_type));
+    writeField(out, indent + 6, "graphical_style", to_string(pin.shape));
     out << pad << "      \"x_nm\": " << pin.position.x.nanometers << ",\n";
     out << pad << "      \"y_nm\": " << pin.position.y.nanometers << ",\n";
-    out << pad << "      \"rotation_degrees\": " << pin.rotation_degrees << ",\n";
+    writeField(out, indent + 6, "orientation", to_string(pin.orientation));
     out << pad << "      \"length_nm\": " << pin.length.nanometers << '\n';
     out << pad << "    }" << (i + 1 == symbol.pins.size() ? "" : ",") << '\n';
   }
@@ -1570,10 +1572,16 @@ class JsonReader {
         expect(':');
         if (key == "name") {
           pin.name = readString();
-        } else if (key == "type" || key == "kind") {
-          pin.type = readString();
+        } else if (key == "number") {
+          pin.number = readString();
+        } else if (key == "type" || key == "kind" || key == "electrical_type") {
+          pin.electrical_type = parse_electrical_pin_type(readString());
+        } else if (key == "graphical_style" || key == "shape") {
+          pin.shape = parse_graphic_pin_shape(readString());
+        } else if (key == "orientation") {
+          pin.orientation = parse_pin_orientation(readString());
         } else {
-          throw std::runtime_error("unknown pin key: " + key);
+          throw std::runtime_error("unknown pin key (1584): '" + key + "'");
         }
         if (consume('}')) {
           break;
@@ -2682,9 +2690,12 @@ std::string dumpProjectJson(const Project& project) {
     for (std::size_t j = 0; j < component.pins.size(); ++j) {
       const SchPin& pin = component.pins.at(j);
       out << "        {\n";
-      writeField(out, 10, "type", pin.type);
-      writeField(out, 10, "name", pin.name, false);
-      out << "        }" << (j + 1 == component.pins.size() ? "" : ",") << '\n';
+      writeField(out, 10, "name", pin.name);
+      writeField(out, 10, "number", pin.number);
+      writeField(out, 10, "electrical_type", to_string(pin.electrical_type));
+      writeField(out, 10, "graphical_style", to_string(pin.shape));
+      writeField(out, 10, "orientation", to_string(pin.orientation), false);
+      out << "\n        }" << (j + 1 == component.pins.size() ? "" : ",") << '\n';
     }
     out << "      ]";
     if (component.symbol.has_value()) {

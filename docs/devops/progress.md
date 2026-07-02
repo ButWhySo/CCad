@@ -20,6 +20,11 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 251**: Pin Type Integration
+  - **Goal**: Integrate the newly created `ElectricalPinType`, `GraphicPinShape`, and `PinOrientation` enumerations into the core CCad data models (`SchPin`, `SymbolPin`) and parsers. Replace raw string and degree fields, update JSON serialization/deserialization to match KiCad formats, and ensure tests and GUI rendering continue to work.
+  - **Status**: Completed. Replaced `type`, `rotation_degrees`, and `graphical_style` strings/doubles with strongly typed enums in `symbol.hpp` and `model.hpp`. Updated `kicad_symbol_import.cpp`, `serialize.cpp`, and `symbol_json_reader.hpp` to parse and emit canonical enum strings. Fixed GUI validation test suite initialization errors with missing field warnings. All tests pass and visual validation verified at `artifacts/screenshots/sprint-demo-20260703-022143.png`.
+
+## Prior Sprints
 - **Sprint 250**: Refdes Tracker and Pin Type Parity
   - **Goal**: Port KiCad's `REFDES_TRACKER` and `pin_type.h/.cpp` logic into `ccad_core`. Provide efficient reference designator tracking with O(1) lookup, gap-filling next-available allocation, serialization/deserialization, and thread-safe operation. Provide electrical pin type, graphic pin shape, and pin orientation enums with canonical string serialization matching KiCad's format. Fix CI/CD failures (MSVC `M_PI`, Linux CLI test quoting, orchestrator test hang, dangling submodule).
   - **Status**: Completed. Implemented `ccad::RefdesTracker` in `refdes_tracker.hpp/cpp`, `ccad::ElectricalPinType`/`GraphicPinShape`/`PinOrientation` in `pin_type.hpp/cpp`. Added `test_refdes_tracker.cpp` with 3 test cases. Fixed CI blockers. All core CTest tests pass. Visual validation screenshot verified at `artifacts/screenshots/sprint-250-refdes-tracker-20260703-000801.png`.
