@@ -18,6 +18,7 @@
 #include "ccad_core/drill_export.hpp"
 #include "ccad_core/dsn_export.hpp"
 #include "ccad_core/kicad_pcb_export.hpp"
+#include "ccad_core/item_geometry.hpp"
 #include "ccad_core/json.hpp"
 #include "ccad_core/layers.hpp"
 #include "ccad_core/placement.hpp"
@@ -2889,6 +2890,106 @@ int pcbCommand(const std::vector<std::string>& args) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
       }
+      return 0;
+    }
+
+    if (subcommand == "item-geometry") {
+      const std::map<std::string, std::string> options = parseOptions(
+          args, 1, {"--file", "--id", "--hit-test-x-mm", "--hit-test-y-mm", "--hit-test-accuracy-nm"});
+      const std::string file = requireOption(options, "--file");
+      const std::string id = requireOption(options, "--id");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+
+      const ccad::Pad* pad = nullptr;
+      const ccad::Via* via = nullptr;
+      const ccad::TrackSegment* track = nullptr;
+      const ccad::TrackArc* arc = nullptr;
+      const ccad::BoardZone* zone = nullptr;
+
+      for (const auto& p : board.pads) if (p.id == id) pad = &p;
+      for (const auto& v : board.vias) if (v.id == id) via = &v;
+      for (const auto& t : board.tracks) if (t.id == id) track = &t;
+      for (const auto& a : board.track_arcs) if (a.id == id) arc = &a;
+      for (const auto& z : board.zones) if (z.id == id) zone = &z;
+
+      ccad::BoundingBox bb;
+      double length = 0.0;
+      int64_t annular_ring = 0;
+      bool has_hit_test = false;
+      bool hit_test_result = false;
+
+      std::optional<ccad::Point> hit_test_point;
+      if (options.contains("--hit-test-x-mm") && options.contains("--hit-test-y-mm")) {
+        hit_test_point = ccad::Point{
+            .x = ccad::millimeters(std::stod(options.at("--hit-test-x-mm"))),
+            .y = ccad::millimeters(std::stod(options.at("--hit-test-y-mm")))};
+      }
+      int64_t accuracy = options.contains("--hit-test-accuracy-nm") ? std::stoll(options.at("--hit-test-accuracy-nm")) : 0;
+
+      std::string item_type = "unknown";
+
+      if (pad) {
+        item_type = "pad";
+        bb = ccad::itemBoundingBox(*pad);
+        annular_ring = ccad::padAnnularRing(*pad);
+        if (hit_test_point) {
+          has_hit_test = true;
+          hit_test_result = ccad::itemHitTest(*pad, *hit_test_point);
+        }
+      } else if (via) {
+        item_type = "via";
+        bb = ccad::itemBoundingBox(*via);
+        annular_ring = ccad::viaAnnularRing(*via);
+        if (hit_test_point) {
+          has_hit_test = true;
+          hit_test_result = ccad::itemHitTest(*via, *hit_test_point);
+        }
+      } else if (track) {
+        item_type = "track";
+        bb = ccad::itemBoundingBox(*track);
+        length = ccad::itemLength(*track);
+        if (hit_test_point) {
+          has_hit_test = true;
+          hit_test_result = ccad::itemHitTest(*track, *hit_test_point, accuracy);
+        }
+      } else if (arc) {
+        item_type = "track_arc";
+        bb = ccad::itemBoundingBox(*arc);
+        length = ccad::itemLength(*arc);
+        if (hit_test_point) {
+          has_hit_test = true;
+          hit_test_result = ccad::itemHitTest(*arc, *hit_test_point, accuracy);
+        }
+      } else if (zone) {
+        item_type = "zone";
+        bb = ccad::itemBoundingBox(*zone);
+        if (hit_test_point) {
+          has_hit_test = true;
+          hit_test_result = ccad::itemHitTest(*zone, *hit_test_point);
+        }
+      } else {
+        std::cerr << "item not found or unsupported for geometry: " << id << '\n';
+        return 2;
+      }
+
+      std::cout << "{\n"
+                << "  \"id\": \"" << ccad::escapeJson(id) << "\",\n"
+                << "  \"type\": \"" << ccad::escapeJson(item_type) << "\",\n"
+                << "  \"bounding_box\": {\n"
+                << "    \"valid\": " << (bb.valid ? "true" : "false") << ",\n"
+                << "    \"min_x_nm\": " << bb.min.x.nanometers << ",\n"
+                << "    \"min_y_nm\": " << bb.min.y.nanometers << ",\n"
+                << "    \"max_x_nm\": " << bb.max.x.nanometers << ",\n"
+                << "    \"max_y_nm\": " << bb.max.y.nanometers << "\n"
+                << "  },\n"
+                << "  \"length_mm\": " << length << ",\n"
+                << "  \"annular_ring_nm\": " << annular_ring << ",\n"
+                << "  \"hit_test\": {\n"
+                << "    \"executed\": " << (has_hit_test ? "true" : "false") << ",\n"
+                << "    \"hit\": " << (hit_test_result ? "true" : "false") << "\n"
+                << "  }\n"
+                << "}\n";
       return 0;
     }
 

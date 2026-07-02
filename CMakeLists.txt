@@ -55,6 +55,7 @@ add_library(ccad_core
   src/ccad_core/net_info.cpp
   src/ccad_core/pad_utils.cpp
   src/ccad_core/footprint_losslessness.cpp
+  src/ccad_core/item_geometry.cpp
 )
 
 target_include_directories(ccad_core PUBLIC
@@ -426,6 +427,15 @@ if(MINGW)
   target_link_options(ccad_pad_utils_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME pad_utils COMMAND ccad_pad_utils_tests)
+
+add_executable(ccad_item_geometry_tests
+  tests/test_item_geometry.cpp
+)
+target_link_libraries(ccad_item_geometry_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_item_geometry_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME item_geometry COMMAND ccad_item_geometry_tests)
 
 add_executable(ccad_agent_orchestrator_tests
   tests/test_agent_orchestrator.cpp

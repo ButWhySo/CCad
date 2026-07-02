@@ -240,24 +240,8 @@ long double distanceBetweenPoints(const Point& left, const Point& right) {
   return std::hypotl(dx, dy);
 }
 
-long double distancePointToSegment(const Point& point, const Point& start, const Point& end) {
-  const long double px = static_cast<long double>(point.x.nanometers);
-  const long double py = static_cast<long double>(point.y.nanometers);
-  const long double sx = static_cast<long double>(start.x.nanometers);
-  const long double sy = static_cast<long double>(start.y.nanometers);
-  const long double ex = static_cast<long double>(end.x.nanometers);
-  const long double ey = static_cast<long double>(end.y.nanometers);
-  const long double dx = ex - sx;
-  const long double dy = ey - sy;
-  const long double length_squared = (dx * dx) + (dy * dy);
-  if (length_squared == 0.0L) {
-    return distanceBetweenPoints(point, start);
-  }
-  const long double raw_t = (((px - sx) * dx) + ((py - sy) * dy)) / length_squared;
-  const long double t = std::clamp(raw_t, 0.0L, 1.0L);
-  const long double closest_x = sx + (t * dx);
-  const long double closest_y = sy + (t * dy);
-  return std::hypotl(px - closest_x, py - closest_y);
+long double drcDistancePointToSegment(const Point& point, const Point& start, const Point& end) {
+  return static_cast<long double>(ccad::distancePointToSegment(point, start, end));
 }
 
 long double distanceBetweenSegments(const Point& first_start, const Point& first_end,
@@ -265,10 +249,10 @@ long double distanceBetweenSegments(const Point& first_start, const Point& first
   if (segmentsIntersect(first_start, first_end, second_start, second_end)) {
     return 0.0L;
   }
-  return std::min({distancePointToSegment(first_start, second_start, second_end),
-                   distancePointToSegment(first_end, second_start, second_end),
-                   distancePointToSegment(second_start, first_start, first_end),
-                   distancePointToSegment(second_end, first_start, first_end)});
+  return std::min({drcDistancePointToSegment(first_start, second_start, second_end),
+                   drcDistancePointToSegment(first_end, second_start, second_end),
+                   drcDistancePointToSegment(second_start, first_start, first_end),
+                   drcDistancePointToSegment(second_end, first_start, first_end)});
 }
 
 std::vector<Point> padCorners(const Pad& pad) {
@@ -379,10 +363,10 @@ long double distancePointToPolygon(const Point& point, const std::vector<Point>&
   if (pointInPolygon(point, polygon)) {
     return 0.0L;
   }
-  long double distance = distancePointToSegment(point, polygon.at(0), polygon.at(1));
+  long double distance = drcDistancePointToSegment(point, polygon.at(0), polygon.at(1));
   for (std::size_t i = 1; i < polygon.size(); ++i) {
-    distance = std::min(distance, distancePointToSegment(point, polygon.at(i),
-                                                        polygon.at((i + 1) % polygon.size())));
+    distance = std::min(distance, drcDistancePointToSegment(point, polygon.at(i),
+                                                           polygon.at((i + 1) % polygon.size())));
   }
   return distance;
 }
@@ -1302,7 +1286,7 @@ void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnosti
         continue;
       }
       const long double edge_distance =
-          distancePointToSegment(via.position, track.start, track.end) -
+          drcDistancePointToSegment(via.position, track.start, track.end) -
           (static_cast<long double>(via.diameter.nanometers) / 2.0L) -
           (static_cast<long double>(track.width.nanometers) / 2.0L);
       if (edge_distance < copper_clearance) {

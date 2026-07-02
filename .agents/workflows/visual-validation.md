@@ -78,6 +78,8 @@ Ingest every generated screenshot from the current validation run into image-ana
 
 The visual validation is only accepted when the screenshots, GUI-map interactions, stdout logs, stderr logs, and feature-specific behavior all agree that the GUI works as expected.
 
+Agents must use the official PowerShell interaction scripts to test features and must interact with the GUI by actively injecting mouse clicks and keyboard values. Every feature worked on must be tested by utilizing mouse and keyboard inputs, adopting agent-first methodologies, executing command prompt direct controls, and utilizing the GUI map to the fullest extent. Every generated screenshot from the validation run must be explicitly ingested and visually inspected by the agent to verify layout correctness and feature behavior.
+
 ### Phase 4: Documentation and Cleanup
 
 Update amnesia and handover documentation immediately in the same sprint. At minimum, update `docs/codebase-map.md`, `docs/features/implemented-features.md`, `docs/devops/progress.md`, and any sprint handover notes affected by the work.

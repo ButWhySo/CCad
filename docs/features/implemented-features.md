@@ -2128,3 +2128,12 @@ Sprint 248 expands the native review window's automated GUI control interface to
 - **Dialog and Menu Dispatch**: Resolves active child modal dialogs and active dropdown menus to automate option selection and dismiss button triggers.
 - **Properties Editing**: Supports updating properties of selected items (`ui.edit_properties`).
 
+
+ 
+ # #   S p r i n t   2 2 7   K i C a d   P C B   I t e m   G e o m e t r y 
+ T h e   K i C a d   P C B   e d i t o r   s o u r c e   w a l k   n o w   i n c l u d e s   g e o m e t r y   c a l c u l a t i o n s .   C C a d   m a p s   t h e   h e a d l e s s   g e o m e t r y   m a t h   i n t o   \ s r c / c c a d _ c o r e / i t e m _ g e o m e t r y . h p p / . c p p \ . 
+ 
+ \ i t e m B o u n d i n g B o x \ ,   \ i t e m H i t T e s t \ ,   \ i t e m L e n g t h \ ,   a n d   \ p a d A n n u l a r R i n g \   c o m p u t e   e x a c t   d i m e n s i o n s   a n d   b o u n d i n g   b o x e s   f o r   B o a r d   i t e m s   s u c h   a s   p a d s ,   v i a s ,   t r a c k s ,   a r c s ,   a n d   z o n e s . 
+ 
+ A g e n t s   a n d   s c r i p t s   c a n   i n s p e c t   t h e   g e o m e t r y   m a t h   t h r o u g h   \ c c a d   p c b   i t e m - g e o m e t r y   - - f i l e   < p r o j e c t >   - - i d   < i d >   [ - - h i t - t e s t - x - m m   < x >   - - h i t - t e s t - y - m m   < y >   - - h i t - t e s t - a c c u r a c y - n m   < a c c u r a c y > ] \ .  
+ 

@@ -12,9 +12,7 @@
 namespace ccad {
 namespace {
 
-double toMillimeters(const Length& length) {
-  return static_cast<double>(length.nanometers) / 1000000.0;
-}
+// toMillimeters is now provided by geometry.hpp
 
 struct CanvasPoint {
   double x_units = 0.0;
