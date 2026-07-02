@@ -29,6 +29,14 @@ BoundingBox itemBoundingBox(const SchWire& wire);
 BoundingBox itemBoundingBox(const SchBus& bus);
 BoundingBox itemBoundingBox(const SchGraphic& graphic);
 BoundingBox itemBoundingBox(const SchJunction& junction);
+BoundingBox itemBoundingBox(const SchText& text);
+BoundingBox itemBoundingBox(const SchTextBox& textbox);
+BoundingBox itemBoundingBox(const SchLabel& label);
+BoundingBox itemBoundingBox(const SchPowerSymbol& psym);
+BoundingBox itemBoundingBox(const SchSymbol& symbol);
+BoundingBox itemBoundingBox(const SchSheet& sheet);
+BoundingBox itemBoundingBox(const SchMarker& marker);
+BoundingBox itemBoundingBox(const SchNoConnect& nc);
 
 // ---------------------------------------------------------------------------
 // Hit-Test computations
@@ -44,6 +52,14 @@ bool itemHitTest(const BoardZone& zone, Point testPoint);
 bool itemHitTest(const Keepout& keepout, Point testPoint);
 bool itemHitTest(const SchWire& wire, Point testPoint, int64_t accuracy_nm = 0);
 bool itemHitTest(const SchJunction& junction, Point testPoint);
+bool itemHitTest(const SchText& text, Point testPoint);
+bool itemHitTest(const SchTextBox& textbox, Point testPoint);
+bool itemHitTest(const SchLabel& label, Point testPoint);
+bool itemHitTest(const SchPowerSymbol& psym, Point testPoint);
+bool itemHitTest(const SchSymbol& symbol, Point testPoint);
+bool itemHitTest(const SchSheet& sheet, Point testPoint);
+bool itemHitTest(const SchMarker& marker, Point testPoint);
+bool itemHitTest(const SchNoConnect& nc, Point testPoint);
 
 // ---------------------------------------------------------------------------
 // Length computations

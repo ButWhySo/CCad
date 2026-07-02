@@ -20,11 +20,14 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 254**: Schematic Text, Symbol, and Sheet Geometry
+  - **Goal**: Port schematic geometry functions (bounding boxes, hit tests) from KiCad for `SchText`, `SchSymbol`, `SchSheet`, and remaining elements into CCad's `item_geometry` layer.
+  - **Status**: Completed. Declarations added, tests updated, core functions ported and visually verified.
+
+## Prior Sprints
 - **Sprint 253**: Schematic Line and Junction Geometry
   - **Goal**: Port schematic geometry functions (bounding boxes, hit tests, lengths) from KiCad `eeschema/sch_line.cpp` and `sch_junction.cpp` into CCad's `ccad_core/item_geometry.cpp` to unify PCB and schematic geometry capabilities.
   - **Status**: Completed. Implemented logic for `SchWire`, `SchBus`, `SchGraphic`, and `SchJunction`. Updated `item_geometry.hpp/.cpp` and `test_item_geometry.cpp`. All tests pass. Verified GUI rendering via sprint demo harness.
-
-## Prior Sprints
 - **Sprint 252**: RefdesTracker Annotation Integration
   - **Goal**: Integrate the previously implemented `RefdesTracker` into `ccad_core/annotate.cpp`, replacing primitive local map assignments with the KiCad-compliant tracker logic for reference designator assignments.
   - **Status**: Completed. Replaced local `std::map<std::string, std::set<int>>` with `ccad::RefdesTracker` in `annotateSchematic` and `annotateProject`.

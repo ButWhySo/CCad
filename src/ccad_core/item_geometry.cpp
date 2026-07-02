@@ -650,6 +650,144 @@ bool itemHitTest(const SchJunction& junction, Point testPoint) {
   return (dx * dx + dy * dy) <= (r * r);
 }
 
+BoundingBox itemBoundingBox(const SchText& text) {
+  BoundingBox bb;
+  bb.min.x = text.position.x;
+  bb.min.y = text.position.y;
+  bb.max.x = nanometers(text.position.x.nanometers + text.size.width.nanometers);
+  bb.max.y = nanometers(text.position.y.nanometers + text.size.height.nanometers);
+  bb.valid = true;
+  return bb;
+}
+
+BoundingBox itemBoundingBox(const SchTextBox& textbox) {
+  BoundingBox bb;
+  bb.min.x = textbox.area.origin.x;
+  bb.min.y = textbox.area.origin.y;
+  bb.max.x = nanometers(textbox.area.origin.x.nanometers + textbox.area.size.width.nanometers);
+  bb.max.y = nanometers(textbox.area.origin.y.nanometers + textbox.area.size.height.nanometers);
+  bb.valid = true;
+  return bb;
+}
+
+BoundingBox itemBoundingBox(const SchLabel& label) {
+  BoundingBox bb;
+  int64_t default_size = 1250000; // 1.25mm
+  bb.min.x = nanometers(label.position.x.nanometers - default_size);
+  bb.min.y = nanometers(label.position.y.nanometers - default_size);
+  bb.max.x = nanometers(label.position.x.nanometers + default_size);
+  bb.max.y = nanometers(label.position.y.nanometers + default_size);
+  bb.valid = true;
+  return bb;
+}
+
+BoundingBox itemBoundingBox(const SchPowerSymbol& psym) {
+  BoundingBox bb;
+  int64_t default_size = 2500000; // 2.5mm
+  bb.min.x = nanometers(psym.position.x.nanometers - default_size);
+  bb.min.y = nanometers(psym.position.y.nanometers - default_size);
+  bb.max.x = nanometers(psym.position.x.nanometers + default_size);
+  bb.max.y = nanometers(psym.position.y.nanometers + default_size);
+  bb.valid = true;
+  return bb;
+}
+
+BoundingBox itemBoundingBox(const SchSymbol& symbol) {
+  BoundingBox bb;
+  int64_t env = 2500000;
+  bb.min.x = nanometers(symbol.position.x.nanometers - env);
+  bb.min.y = nanometers(symbol.position.y.nanometers - env);
+  bb.max.x = nanometers(symbol.position.x.nanometers + env);
+  bb.max.y = nanometers(symbol.position.y.nanometers + env);
+  bb.valid = true;
+  for (const auto& f : symbol.fields) {
+    if (f.visible) {
+      bb.min.x = nanometers(std::min(bb.min.x.nanometers, f.position.x.nanometers));
+      bb.min.y = nanometers(std::min(bb.min.y.nanometers, f.position.y.nanometers));
+      bb.max.x = nanometers(std::max(bb.max.x.nanometers, f.position.x.nanometers + f.size.width.nanometers));
+      bb.max.y = nanometers(std::max(bb.max.y.nanometers, f.position.y.nanometers + f.size.height.nanometers));
+    }
+  }
+  return bb;
+}
+
+BoundingBox itemBoundingBox(const SchSheet& sheet) {
+  BoundingBox bb;
+  bb.min.x = sheet.position.x;
+  bb.min.y = sheet.position.y;
+  bb.max.x = nanometers(sheet.position.x.nanometers + sheet.size.width.nanometers);
+  bb.max.y = nanometers(sheet.position.y.nanometers + sheet.size.height.nanometers);
+  bb.valid = true;
+  return bb;
+}
+
+BoundingBox itemBoundingBox(const SchMarker& marker) {
+  BoundingBox bb;
+  int64_t r = 1000000; // 1mm
+  bb.min.x = nanometers(marker.position.x.nanometers - r);
+  bb.min.y = nanometers(marker.position.y.nanometers - r);
+  bb.max.x = nanometers(marker.position.x.nanometers + r);
+  bb.max.y = nanometers(marker.position.y.nanometers + r);
+  bb.valid = true;
+  return bb;
+}
+
+BoundingBox itemBoundingBox(const SchNoConnect& nc) {
+  BoundingBox bb;
+  int64_t r = 1000000; // 1mm
+  bb.min.x = nanometers(nc.position.x.nanometers - r);
+  bb.min.y = nanometers(nc.position.y.nanometers - r);
+  bb.max.x = nanometers(nc.position.x.nanometers + r);
+  bb.max.y = nanometers(nc.position.y.nanometers + r);
+  bb.valid = true;
+  return bb;
+}
+
+bool itemHitTest(const SchText& text, Point testPoint) {
+  return pointInsideRect(testPoint, text.position, 
+                         Point{nanometers(text.position.x.nanometers + text.size.width.nanometers), 
+                               nanometers(text.position.y.nanometers + text.size.height.nanometers)});
+}
+
+bool itemHitTest(const SchTextBox& textbox, Point testPoint) {
+  return pointInsideRect(testPoint, textbox.area.origin, maxPoint(textbox.area));
+}
+
+bool itemHitTest(const SchLabel& label, Point testPoint) {
+  int64_t r = 1250000; // 1.25mm
+  return (std::abs(testPoint.x.nanometers - label.position.x.nanometers) <= r &&
+          std::abs(testPoint.y.nanometers - label.position.y.nanometers) <= r);
+}
+
+bool itemHitTest(const SchPowerSymbol& psym, Point testPoint) {
+  int64_t r = 2500000; // 2.5mm
+  return (std::abs(testPoint.x.nanometers - psym.position.x.nanometers) <= r &&
+          std::abs(testPoint.y.nanometers - psym.position.y.nanometers) <= r);
+}
+
+bool itemHitTest(const SchSymbol& symbol, Point testPoint) {
+  auto bb = itemBoundingBox(symbol);
+  return pointInsideRect(testPoint, bb.min, bb.max);
+}
+
+bool itemHitTest(const SchSheet& sheet, Point testPoint) {
+  return pointInsideRect(testPoint, sheet.position, 
+                         Point{nanometers(sheet.position.x.nanometers + sheet.size.width.nanometers), 
+                               nanometers(sheet.position.y.nanometers + sheet.size.height.nanometers)});
+}
+
+bool itemHitTest(const SchMarker& marker, Point testPoint) {
+  int64_t r = 1000000; // 1.0mm
+  return (std::abs(testPoint.x.nanometers - marker.position.x.nanometers) <= r &&
+          std::abs(testPoint.y.nanometers - marker.position.y.nanometers) <= r);
+}
+
+bool itemHitTest(const SchNoConnect& nc, Point testPoint) {
+  int64_t r = 1000000; // 1.0mm
+  return (std::abs(testPoint.x.nanometers - nc.position.x.nanometers) <= r &&
+          std::abs(testPoint.y.nanometers - nc.position.y.nanometers) <= r);
+}
+
 double itemLength(const SchWire& wire) {
   return distancePoints(wire.start, wire.end) / 1000000.0;
 }

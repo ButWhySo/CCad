@@ -220,6 +220,65 @@ static void testViaHitTest() {
   std::cout << "  PASS: testViaHitTest\n";
 }
 
+static void testSchTextGeometry() {
+  SchText text;
+  text.position = Point{nanometers(1000000), nanometers(2000000)};
+  text.size = Size{nanometers(5000000), nanometers(2000000)};
+
+  BoundingBox bb = itemBoundingBox(text);
+  assertTrue(bb.valid, "sch text bb valid");
+  assertClose(toMillimeters(bb.min.x), 1.0, 0.01, "sch text bb min.x");
+  assertClose(toMillimeters(bb.min.y), 2.0, 0.01, "sch text bb min.y");
+  assertClose(toMillimeters(bb.max.x), 6.0, 0.01, "sch text bb max.x");
+  assertClose(toMillimeters(bb.max.y), 4.0, 0.01, "sch text bb max.y");
+
+  assertTrue(itemHitTest(text, Point{nanometers(3000000), nanometers(3000000)}), "sch text hit");
+  assertFalse(itemHitTest(text, Point{nanometers(0), nanometers(0)}), "sch text miss");
+  
+  std::cout << "  PASS: testSchTextGeometry\n";
+}
+
+static void testSchSymbolGeometry() {
+  SchSymbol symbol;
+  symbol.position = Point{nanometers(10000000), nanometers(10000000)};
+  
+  SchField f1;
+  f1.visible = true;
+  f1.position = Point{nanometers(5000000), nanometers(5000000)};
+  f1.size = Size{nanometers(2000000), nanometers(1000000)};
+  symbol.fields.push_back(f1);
+
+  BoundingBox bb = itemBoundingBox(symbol);
+  assertTrue(bb.valid, "sch symbol bb valid");
+  assertClose(toMillimeters(bb.min.x), 5.0, 0.01, "sch symbol bb min.x");
+  assertClose(toMillimeters(bb.min.y), 5.0, 0.01, "sch symbol bb min.y");
+  assertClose(toMillimeters(bb.max.x), 12.5, 0.01, "sch symbol bb max.x");
+  assertClose(toMillimeters(bb.max.y), 12.5, 0.01, "sch symbol bb max.y");
+
+  assertTrue(itemHitTest(symbol, Point{nanometers(10000000), nanometers(10000000)}), "sch symbol hit");
+  assertFalse(itemHitTest(symbol, Point{nanometers(0), nanometers(0)}), "sch symbol miss");
+  
+  std::cout << "  PASS: testSchSymbolGeometry\n";
+}
+
+static void testSchSheetGeometry() {
+  SchSheet sheet;
+  sheet.position = Point{nanometers(1000000), nanometers(1000000)};
+  sheet.size = Size{nanometers(4000000), nanometers(3000000)};
+
+  BoundingBox bb = itemBoundingBox(sheet);
+  assertTrue(bb.valid, "sch sheet bb valid");
+  assertClose(toMillimeters(bb.min.x), 1.0, 0.01, "sch sheet bb min.x");
+  assertClose(toMillimeters(bb.min.y), 1.0, 0.01, "sch sheet bb min.y");
+  assertClose(toMillimeters(bb.max.x), 5.0, 0.01, "sch sheet bb max.x");
+  assertClose(toMillimeters(bb.max.y), 4.0, 0.01, "sch sheet bb max.y");
+
+  assertTrue(itemHitTest(sheet, Point{nanometers(3000000), nanometers(2000000)}), "sch sheet hit");
+  assertFalse(itemHitTest(sheet, Point{nanometers(0), nanometers(0)}), "sch sheet miss");
+  
+  std::cout << "  PASS: testSchSheetGeometry\n";
+}
+
 static void testTrackHitTest() {
   TrackSegment track;
   track.start = {millimeters(0), millimeters(0)};
@@ -480,6 +539,9 @@ int main() {
   testSchWireBoundingBoxAndLength();
   testSchJunctionGeometry();
   testSchGraphicGeometry();
+  testSchTextGeometry();
+  testSchSymbolGeometry();
+  testSchSheetGeometry();
 
   std::cout << "\nAll item_geometry tests passed.\n";
   return 0;
