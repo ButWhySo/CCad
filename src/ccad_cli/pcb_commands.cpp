@@ -11,6 +11,7 @@
 #include "ccad_core/board_text_var_adapter.hpp"
 #include "ccad_core/bom_export.hpp"
 #include "ccad_core/cleanup_item.hpp"
+#include "ccad_core/graphics_cleaner.hpp"
 #include "ccad_core/cross_probing.hpp"
 #include "ccad_core/net_chain_bridging.hpp"
 #include "ccad_core/net_info.hpp"
@@ -920,6 +921,45 @@ int pcbCommand(const std::vector<std::string>& args) {
     const std::string& subcommand = args.at(0);
     if (subcommand == "cleanup-actions") {
       std::cout << cleanupActionsJson();
+      return 0;
+    }
+
+    if (subcommand == "clean-graphics") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--dry-run", "--merge-rects", "--delete-redundant", "--merge-pads"});
+      const std::string file = requireOption(options, "--file");
+      bool dry_run = options.contains("--dry-run") && options.at("--dry-run") == "true";
+      bool merge_rects = !options.contains("--merge-rects") || options.at("--merge-rects") != "false";
+      bool delete_redundant = !options.contains("--delete-redundant") || options.at("--delete-redundant") != "false";
+      bool merge_pads = !options.contains("--merge-pads") || options.at("--merge-pads") != "false";
+
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = const_cast<ccad::Board&>(requireBoard(project));
+      
+      ccad::GraphicsCleaner cleaner(board);
+      auto actions = cleaner.cleanupBoard(dry_run, merge_rects, delete_redundant, merge_pads);
+      
+      if (!dry_run) {
+        if (!writeProjectFile(file, project)) {
+          std::cerr << "failed to write project file: " << file << '\n';
+          return 2;
+        }
+      }
+      
+      std::cout << "[\n";
+      for (std::size_t i = 0; i < actions.size(); ++i) {
+        const auto& a = actions[i];
+        std::cout << "  {\n";
+        std::cout << "    \"code\": \"" << ccad::cleanupActionTitle(a.code) << "\",\n";
+        std::cout << "    \"item_ids\": [";
+        for (std::size_t j = 0; j < a.item_ids.size(); ++j) {
+          std::cout << "\"" << a.item_ids[j] << "\"";
+          if (j + 1 < a.item_ids.size()) std::cout << ", ";
+        }
+        std::cout << "]\n";
+        std::cout << "  }" << (i + 1 < actions.size() ? "," : "") << "\n";
+      }
+      std::cout << "]\n";
       return 0;
     }
 

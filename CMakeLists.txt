@@ -56,6 +56,7 @@ add_library(ccad_core
   src/ccad_core/pad_utils.cpp
   src/ccad_core/footprint_losslessness.cpp
   src/ccad_core/item_geometry.cpp
+  src/ccad_core/graphics_cleaner.cpp
 )
 
 target_include_directories(ccad_core PUBLIC
@@ -944,3 +945,12 @@ if(MINGW)
   target_link_options(ccad_canvas_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME canvas COMMAND ccad_canvas_tests)
+
+add_executable(ccad_graphics_cleaner_tests
+  tests/test_graphics_cleaner.cpp
+)
+target_link_libraries(ccad_graphics_cleaner_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_graphics_cleaner_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME graphics_cleaner COMMAND ccad_graphics_cleaner_tests)

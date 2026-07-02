@@ -438,3 +438,5 @@ Sprint 241 is verified on branch `sprint-241-auxiliary-source-walk`. The batch c
 
 
 - **Sprint 227 (KiCad Additonal PCB Object Docs)** is complete. Updated the docs to reflect the completed source walk for pcb_barcode.cpp, pcb_dimension.cpp, pcb_group.cpp, pcb_reference_image.cpp, pcb_table.cpp, pcb_target.cpp, pcb_text.cpp. Fixed coordinate multiplier bug in CanvasReferenceImage and CanvasTable.
+
+Sprint 242 is verified on branch `sprint-242-graphics-cleaner`. The batch completed the port of `graphics_cleaner.cpp` from KiCad, implementing the core algorithms for detecting and removing null shapes and duplicate geometries, as well as merging collinear redundant rectangles/lines into larger rectangles. The CLI was extended with `ccad pcb clean-graphics` and manual JSON serialization to respect CCad architecture. The build succeeded and the full CTest gate passed all 61 tests. The official GUI visual validation script confirmed no regressions, generating `artifacts/screenshots/sprint-demo-20260702-080715.png`.
