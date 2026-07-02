@@ -333,8 +333,7 @@ static void test_dry_run() {
     orch.set_config(cfg);
 
     auto ctx = make_test_context();
-    auto goal = orch.plan("Add via at 10,15", ctx);
-    goal = orch.execute(goal);
+    auto goal = wait_for_orchestrate(orch, "Add via at 10,15", ctx);
 
     // All tasks should be skipped in dry run
     for (auto& t : goal.tasks) {

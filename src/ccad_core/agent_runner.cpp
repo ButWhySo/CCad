@@ -40,6 +40,10 @@ void AgentRunner::set_progress_callback(ProgressCallback cb) {
     on_progress_ = cb;
 }
 
+void AgentRunner::set_task_executor(TaskExecutor ex) {
+    task_executor_ = ex;
+}
+
 void AgentRunner::save_queue(const std::string& filepath) const {
     std::ofstream out(filepath);
     if (!out) return;
@@ -86,50 +90,67 @@ void AgentRunner::execution_loop() {
         for (auto& task : current_goal.tasks) {
             if (!running_) break;
             
-            // Check for approvals (Sprint 250 feature)
-            if (task.risk != TaskRisk::ReadOnly) {
-                // If an approval is required, the task should block. 
-                // For now, we simulate an approval gate.
-                task.status = TaskStatus::Blocked;
-                task.error_message = "approval_required";
-                if (on_progress_) on_progress_(current_goal);
-                
-                // Break or pause depending on whether we want to wait for user interaction
-                // For this MVP execution thread, we will skip it if it's blocked.
-                continue; 
-            }
-
-            int retries = 0;
-            int max_retries = 2;
-            bool success = false;
-            
-            while (retries <= max_retries && !success && running_) {
-                // Mock execution delay
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
-                
-                // In a real execution, we'd invoke the ToolBroker here.
-                success = true; // Assume success for mock
-                
-                if (success) {
-                    task.status = TaskStatus::Completed;
-                } else {
-                    task.status = TaskStatus::Failed;
-                    task.error_message = "Execution failed, retry " + std::to_string(retries);
-                    retries++;
+            if (task_executor_) {
+                task = task_executor_(current_goal, task.id);
+                if (task.status == TaskStatus::Failed) {
+                    current_goal.failed_count++;
+                } else if (task.status == TaskStatus::Completed) {
+                    current_goal.completed_count++;
                 }
-            }
-
-            if (!success) {
-                // Write rollback record here
-                task.error_message += " | Rollback required.";
-                current_goal.failed_count++;
             } else {
-                current_goal.completed_count++;
+                // Check for approvals (Sprint 250 feature)
+                if (task.risk != TaskRisk::ReadOnly) {
+                    // If an approval is required, the task should block. 
+                    // For now, we simulate an approval gate.
+                    task.status = TaskStatus::Blocked;
+                    task.error_message = "approval_required";
+                    if (on_progress_) on_progress_(current_goal);
+                    
+                    // Break or pause depending on whether we want to wait for user interaction
+                    // For this MVP execution thread, we will skip it if it's blocked.
+                    continue; 
+                }
+
+                int retries = 0;
+                int max_retries = 2;
+                bool success = false;
+                
+                while (retries <= max_retries && !success && running_) {
+                    // Mock execution delay
+                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                    
+                    // In a real execution, we'd invoke the ToolBroker here.
+                    success = true; // Assume success for mock
+                    
+                    if (success) {
+                        task.status = TaskStatus::Completed;
+                    } else {
+                        task.status = TaskStatus::Failed;
+                        task.error_message = "Execution failed, retry " + std::to_string(retries);
+                        retries++;
+                    }
+                }
+
+                if (!success) {
+                    // Write rollback record here
+                    task.error_message += " | Rollback required.";
+                    current_goal.failed_count++;
+                } else {
+                    current_goal.completed_count++;
+                }
             }
             
             if (on_progress_) {
                 on_progress_(current_goal);
             }
+        }
+        if (current_goal.failed_count > 0 || current_goal.tasks.empty()) {
+            current_goal.status = GoalStatus::Failed;
+        } else {
+            current_goal.status = GoalStatus::Completed;
+        }
+        if (on_progress_) {
+            on_progress_(current_goal);
         }
     }
 }

@@ -230,6 +230,9 @@ std::vector<AgentTask> EDAAgent::decompose(const std::string& goal, const Projec
 AgentOrchestrator::AgentOrchestrator() {
     available_subagents_.push_back(std::make_unique<EDAAgent>());
     runner_ = std::make_unique<AgentRunner>();
+    runner_->set_task_executor([this](AgentGoal& g, const std::string& tid) {
+        return this->execute_task(g, tid);
+    });
     runner_->start();
 }
 
@@ -340,6 +343,14 @@ AgentTask AgentOrchestrator::execute_task(AgentGoal& goal, const std::string& ta
     }
 
     auto& task = *task_ptr;
+    
+    if (config_.dry_run) {
+        task.status = TaskStatus::Skipped;
+        task.error_message = "dry_run_only";
+        task.completed_at = now_iso();
+        return task;
+    }
+
     task.status = TaskStatus::Running;
     task.started_at = now_iso();
 

@@ -27,9 +27,12 @@ public:
     // Add a goal to the background execution queue
     void enqueue_goal(const AgentGoal& goal);
 
-    // Callbacks for UI updates
+    // Callbacks for UI updates and execution
     using ProgressCallback = std::function<void(const AgentGoal&)>;
     void set_progress_callback(ProgressCallback cb);
+
+    using TaskExecutor = std::function<AgentTask(AgentGoal&, const std::string&)>;
+    void set_task_executor(TaskExecutor ex);
 
     // Save and Load Queue to/from disk (.ccad-agent-queue.json)
     void save_queue(const std::string& filepath) const;
@@ -45,6 +48,7 @@ private:
     
     std::queue<AgentGoal> pending_goals_;
     ProgressCallback on_progress_;
+    TaskExecutor task_executor_;
 };
 
 } // namespace ccad
