@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 255
-- Branch: `sprint-255-sch-geometry-remaining`
+- Sprint: 256
+- Branch: `sprint-256-sch-sheetpin-missed-tests`
 - Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 covered the bounded runtime and EDA evidence expansion through Sprint 225. Phase 9 is the bounded KiCad parity execution phase.
@@ -20,6 +20,11 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 256**: Schematic Item Geometry Phase 4 (Sheet Pins and Missed Tests)
+  - **Goal**: Implement `SchSheetPin` item geometries (bounding box and hit test) and add missing unit tests for `SchLabel`, `SchPowerSymbol`, `SchTextBox`, `SchMarker`, `SchNoConnect`, and `SchSheetPin`.
+  - **Status**: Completed. Ported bounding box and hit testing logic for `SchSheetPin`. Added comprehensive test cases for all previously missed elements to `test_item_geometry.cpp`. All tests pass cleanly, and visual validation via the harness proves no regressions.
+
+## Prior Sprints
 - **Sprint 255**: Schematic Item Geometry Phase 3 (Remaining items)
   - **Goal**: Port schematic geometry functions (bounding boxes, hit tests) from KiCad for `SchPin`, `SchField`, `SchSheetPin`, `SchBitmap`, `SchBusEntry`, `SchRuleArea`, and `SchTable` into CCad's `item_geometry` layer.
   - **Status**: Completed. Ported bounding box and hit testing logic for all remaining items. Added comprehensive test cases to `test_item_geometry.cpp`. All tests pass cleanly, and visual validation via the harness proves no regressions.

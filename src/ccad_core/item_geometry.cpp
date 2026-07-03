@@ -743,6 +743,17 @@ BoundingBox itemBoundingBox(const SchNoConnect& nc) {
   return bb;
 }
 
+BoundingBox itemBoundingBox(const SchSheetPin& sheet_pin) {
+  BoundingBox bb;
+  int64_t r = 1000000; // 1mm radius placeholder for sheet pin point/text
+  bb.min.x = nanometers(sheet_pin.position.x.nanometers - r);
+  bb.min.y = nanometers(sheet_pin.position.y.nanometers - r);
+  bb.max.x = nanometers(sheet_pin.position.x.nanometers + r);
+  bb.max.y = nanometers(sheet_pin.position.y.nanometers + r);
+  bb.valid = true;
+  return bb;
+}
+
 BoundingBox itemBoundingBox(const SchPin& pin) {
   int64_t halfW = pin.length.nanometers / 2;
   int64_t cx = pin.position.x.nanometers;
@@ -851,6 +862,13 @@ bool itemHitTest(const SchPowerSymbol& psym, Point testPoint) {
   int64_t r = 2500000; // 2.5mm
   return (std::abs(testPoint.x.nanometers - psym.position.x.nanometers) <= r &&
           std::abs(testPoint.y.nanometers - psym.position.y.nanometers) <= r);
+}
+
+
+
+bool itemHitTest(const SchSheetPin& sheet_pin, Point testPoint) {
+  auto bb = itemBoundingBox(sheet_pin);
+  return pointInsideRect(testPoint, bb.min, bb.max);
 }
 
 bool itemHitTest(const SchSymbol& symbol, Point testPoint) {

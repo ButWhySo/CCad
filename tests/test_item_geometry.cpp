@@ -604,6 +604,66 @@ static void testSchTableBoundingBox() {
   assertFalse(itemHitTest(table, {millimeters(0), millimeters(0)}), "sch table miss");
   std::cout << "  PASS: testSchTableBoundingBox\n";
 }
+static void testSchLabelGeometry() {
+  SchLabel label;
+  label.position = {millimeters(2), millimeters(2)};
+  label.text = "TEST";
+  auto bb = itemBoundingBox(label);
+  assertTrue(bb.valid, "sch label bb valid");
+  // Simple check for some width
+  assertTrue(bb.max.x.nanometers > bb.min.x.nanometers, "sch label bb width > 0");
+  assertTrue(itemHitTest(label, {millimeters(2), millimeters(2)}), "sch label hit");
+  std::cout << "  PASS: testSchLabelGeometry\n";
+}
+
+static void testSchPowerSymbolGeometry() {
+  SchPowerSymbol psym;
+  psym.position = {millimeters(5), millimeters(5)};
+  auto bb = itemBoundingBox(psym);
+  assertTrue(bb.valid, "sch power symbol bb valid");
+  assertTrue(itemHitTest(psym, {millimeters(5), millimeters(5)}), "sch power symbol hit mid");
+  std::cout << "  PASS: testSchPowerSymbolGeometry\n";
+}
+
+static void testSchTextBoxGeometry() {
+  SchTextBox textbox;
+  textbox.area.origin = {millimeters(1), millimeters(1)};
+  textbox.area.size = {millimeters(5), millimeters(5)};
+  auto bb = itemBoundingBox(textbox);
+  assertTrue(bb.valid, "sch textbox bb valid");
+  assertClose(toMillimeters(bb.max.x), 6.0, 0.01, "sch textbox bb max.x");
+  assertTrue(itemHitTest(textbox, {millimeters(3), millimeters(3)}), "sch textbox hit mid");
+  std::cout << "  PASS: testSchTextBoxGeometry\n";
+}
+
+static void testSchMarkerGeometry() {
+  SchMarker marker;
+  marker.position = {millimeters(0), millimeters(0)};
+  auto bb = itemBoundingBox(marker);
+  assertTrue(bb.valid, "sch marker bb valid");
+  assertClose(toMillimeters(bb.max.x), 1.0, 0.01, "sch marker max x");
+  assertTrue(itemHitTest(marker, {millimeters(0), millimeters(0)}), "sch marker hit mid");
+  std::cout << "  PASS: testSchMarkerGeometry\n";
+}
+
+static void testSchNoConnectGeometry() {
+  SchNoConnect nc;
+  nc.position = {millimeters(10), millimeters(10)};
+  auto bb = itemBoundingBox(nc);
+  assertTrue(bb.valid, "sch noconnect bb valid");
+  assertTrue(itemHitTest(nc, {millimeters(10), millimeters(10)}), "sch noconnect hit mid");
+  std::cout << "  PASS: testSchNoConnectGeometry\n";
+}
+
+static void testSchSheetPinGeometry() {
+  SchSheetPin spin;
+  spin.position = {millimeters(12), millimeters(12)};
+  auto bb = itemBoundingBox(spin);
+  assertTrue(bb.valid, "sch sheetpin bb valid");
+  assertClose(toMillimeters(bb.max.x), 13.0, 0.01, "sch sheetpin bb max.x");
+  assertTrue(itemHitTest(spin, {millimeters(12), millimeters(12)}), "sch sheetpin hit mid");
+  std::cout << "  PASS: testSchSheetPinGeometry\n";
+}
 
 int main() {
   std::cout << "item_geometry tests:\n";
@@ -656,6 +716,12 @@ int main() {
   testSchBitmapBoundingBox();
   testSchRuleAreaBoundingBox();
   testSchTableBoundingBox();
+  testSchLabelGeometry();
+  testSchPowerSymbolGeometry();
+  testSchTextBoxGeometry();
+  testSchMarkerGeometry();
+  testSchNoConnectGeometry();
+  testSchSheetPinGeometry();
 
   std::cout << "\nAll item_geometry tests passed.\n";
   return 0;
