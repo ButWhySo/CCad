@@ -116,6 +116,7 @@ struct SchNoConnect {
 };
 
 struct SchSheetPin {
+  std::string id;
   std::string name;
   std::string type;
   Point position;

@@ -164,6 +164,19 @@ int main() {
       .id = "NC1",
       .position = ccad::Point{ccad::nanometers(300), ccad::nanometers(400)},
   });
+  ccad::SchSheet test_sheet;
+  test_sheet.id = "SH1";
+  test_sheet.name = "Root";
+  test_sheet.file_path = "root.sch";
+  test_sheet.position = ccad::Point{ccad::nanometers(100), ccad::nanometers(100)};
+  test_sheet.size = ccad::Size{ccad::nanometers(500), ccad::nanometers(600)};
+  ccad::SchSheetPin test_pin;
+  test_pin.id = "SP1";
+  test_pin.name = "Input";
+  test_pin.type = "input";
+  test_pin.position = ccad::Point{ccad::nanometers(100), ccad::nanometers(200)};
+  test_sheet.pins.push_back(test_pin);
+  project.schematics[0].sheets.push_back(test_sheet);
 
   const std::string json = ccad::dumpProjectJson(project);
 
@@ -323,6 +336,15 @@ int main() {
   require(loaded.schematics[0].junctions[0].id == "J1", "junction id round trips");
   require(loaded.schematics[0].no_connects.size() == 1, "no connect count round trips");
   require(loaded.schematics[0].no_connects[0].id == "NC1", "no connect id round trips");
+  require(loaded.schematics[0].sheets.size() == 1, "sheet count round trips");
+  require(loaded.schematics[0].sheets[0].id == "SH1", "sheet id round trips");
+  require(loaded.schematics[0].sheets[0].name == "Root", "sheet name round trips");
+  require(loaded.schematics[0].sheets[0].file_path == "root.sch", "sheet file_path round trips");
+  require(loaded.schematics[0].sheets[0].position.x.nanometers == 100, "sheet position round trips");
+  require(loaded.schematics[0].sheets[0].size.height.nanometers == 600, "sheet size round trips");
+  require(loaded.schematics[0].sheets[0].pins.size() == 1, "sheet pin count round trips");
+  require(loaded.schematics[0].sheets[0].pins[0].id == "SP1", "sheet pin id round trips");
+  require(loaded.schematics[0].sheets[0].pins[0].type == "input", "sheet pin type round trips");
   require(ccad::dumpProjectJson(loaded) == json, "json output is deterministic");
 
   Project escaped;

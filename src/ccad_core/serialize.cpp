@@ -210,6 +210,8 @@ class JsonReader {
         ensureSchematic(project).junctions = readSchJunctions();
       } else if (key == "no_connects") {
         ensureSchematic(project).no_connects = readSchNoConnects();
+      } else if (key == "sheets") {
+        ensureSchematic(project).sheets = readSchSheets();
       } else {
         throw std::runtime_error("unknown project key: " + key);
       }
@@ -1180,6 +1182,88 @@ class JsonReader {
         throw std::runtime_error("trailing comma in board groups array");
       }
     }
+  }
+
+  std::vector<SchSheetPin> readSchSheetPins() {
+    std::vector<SchSheetPin> pins;
+    expect('[');
+    if (consume(']')) {
+      return pins;
+    }
+    while (true) {
+      SchSheetPin pin;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            pin.id = readString();
+          } else if (key == "name") {
+            pin.name = readString();
+          } else if (key == "type") {
+            pin.type = readString();
+          } else if (key == "position") {
+            pin.position = readPoint();
+          } else {
+            throw std::runtime_error("unknown sch sheet pin key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+        }
+      }
+      pins.push_back(pin);
+      if (consume(']')) {
+        break;
+      }
+      expect(',');
+    }
+    return pins;
+  }
+
+  std::vector<SchSheet> readSchSheets() {
+    std::vector<SchSheet> sheets;
+    expect('[');
+    if (consume(']')) {
+      return sheets;
+    }
+    while (true) {
+      SchSheet sheet;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            sheet.id = readString();
+          } else if (key == "name") {
+            sheet.name = readString();
+          } else if (key == "file_path") {
+            sheet.file_path = readString();
+          } else if (key == "position") {
+            sheet.position = readPoint();
+          } else if (key == "size") {
+            sheet.size = readSize();
+          } else if (key == "pins") {
+            sheet.pins = readSchSheetPins();
+          } else {
+            throw std::runtime_error("unknown sch sheet key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+        }
+      }
+      sheets.push_back(sheet);
+      if (consume(']')) {
+        break;
+      }
+      expect(',');
+    }
+    return sheets;
   }
 
   std::vector<SchJunction> readSchJunctions() {
@@ -2995,6 +3079,36 @@ std::string dumpProjectJson(const Project& project) {
     writePoint(out, 0, nc.position);
     out << "\n";
     out << "    }" << (i + 1 == sch->no_connects.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n";
+
+  out << "  \"sheets\": [\n";
+  for (std::size_t i = 0; i < sch->sheets.size(); ++i) {
+    const SchSheet& sheet = sch->sheets.at(i);
+    out << "    {\n";
+    writeField(out, 6, "id", sheet.id);
+    writeField(out, 6, "name", sheet.name);
+    writeField(out, 6, "file_path", sheet.file_path);
+    out << "      \"position\": ";
+    writePoint(out, 0, sheet.position);
+    out << ",\n";
+    out << "      \"size\": ";
+    writeSize(out, 0, sheet.size);
+    out << ",\n";
+    out << "      \"pins\": [\n";
+    for (std::size_t j = 0; j < sheet.pins.size(); ++j) {
+      const SchSheetPin& pin = sheet.pins.at(j);
+      out << "        {\n";
+      writeField(out, 10, "id", pin.id);
+      writeField(out, 10, "name", pin.name);
+      writeField(out, 10, "type", pin.type);
+      out << "          \"position\": ";
+      writePoint(out, 0, pin.position);
+      out << "\n";
+      out << "        }" << (j + 1 == sheet.pins.size() ? "" : ",") << '\n';
+    }
+    out << "      ]\n";
+    out << "    }" << (i + 1 == sch->sheets.size() ? "" : ",") << '\n';
   }
   out << "  ]\n";
   out << "}\n";
