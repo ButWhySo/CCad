@@ -204,6 +204,8 @@ class JsonReader {
         ensureSchematic(project).power_symbols = readPowerSymbols();
       } else if (key == "constraints") {
         ensureSchematic(project).constraints = readConstraints();
+      } else if (key == "groups") {
+        ensureSchematic(project).groups = readSchGroups();
       } else {
         throw std::runtime_error("unknown project key: " + key);
       }
@@ -1172,6 +1174,56 @@ class JsonReader {
       expect(',');
       if (peek(']')) {
         throw std::runtime_error("trailing comma in board groups array");
+      }
+    }
+  }
+
+  std::vector<SchGroup> readSchGroups() {
+    std::vector<SchGroup> groups;
+    expect('[');
+    if (consume(']')) {
+      return groups;
+    }
+    while (true) {
+      SchGroup group;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            group.id = readString();
+          } else if (key == "name") {
+            group.name = readString();
+          } else if (key == "members") {
+            expect('[');
+            if (!consume(']')) {
+              while (true) {
+                group.members.push_back(readString());
+                if (consume(']')) {
+                  break;
+                }
+                expect(',');
+              }
+            }
+          } else {
+            throw std::runtime_error("unknown sch group key: " + key);
+          }
+          if (consume('}')) {
+            groups.push_back(group);
+            break;
+          }
+          expect(',');
+        }
+      } else {
+        groups.push_back(group);
+      }
+      if (consume(']')) {
+        return groups;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in sch groups array");
       }
     }
   }
@@ -2804,6 +2856,22 @@ std::string dumpProjectJson(const Project& project) {
     out << ",\n";
     out << "      \"rotation_degrees\": " << symbol.rotation_degrees << '\n';
     out << "    }" << (i + 1 == sch->power_symbols.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n";
+
+  out << "  \"groups\": [\n";
+  for (std::size_t i = 0; i < sch->groups.size(); ++i) {
+    const SchGroup& group = sch->groups.at(i);
+    out << "    {\n";
+    writeField(out, 6, "id", group.id);
+    writeField(out, 6, "name", group.name);
+    out << "      \"members\": [\n";
+    for (std::size_t j = 0; j < group.members.size(); ++j) {
+      out << "        \"" << escapeJson(group.members.at(j)) << "\""
+          << (j + 1 == group.members.size() ? "" : ",") << '\n';
+    }
+    out << "      ]\n";
+    out << "    }" << (i + 1 == sch->groups.size() ? "" : ",") << '\n';
   }
   out << "  ]\n";
   out << "}\n";

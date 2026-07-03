@@ -842,6 +842,50 @@ BoundingBox itemBoundingBox(const SchTable& table) {
   return bb;
 }
 
+BoundingBox itemBoundingBox(const SchGroup& group, const Schematic& sch) {
+  BoundingBox bbox;
+  
+  for (const std::string& member_id : group.members) {
+    BoundingBox child_bbox;
+    for (const auto& item : sch.symbols) { if (item.id == member_id) { child_bbox = itemBoundingBox(item); break; } }
+    for (const auto& item : sch.wires) { if (item.id == member_id) { child_bbox = itemBoundingBox(item); break; } }
+    for (const auto& item : sch.buses) { if (item.id == member_id) { child_bbox = itemBoundingBox(item); break; } }
+    for (const auto& item : sch.labels) { if (item.id == member_id) { child_bbox = itemBoundingBox(item); break; } }
+    for (const auto& item : sch.power_symbols) { if (item.id == member_id) { child_bbox = itemBoundingBox(item); break; } }
+    for (const auto& item : sch.sheets) { if (item.id == member_id) { child_bbox = itemBoundingBox(item); break; } }
+    for (const auto& item : sch.texts) { if (item.id == member_id) { child_bbox = itemBoundingBox(item); break; } }
+    for (const auto& item : sch.textboxes) { if (item.id == member_id) { child_bbox = itemBoundingBox(item); break; } }
+    for (const auto& item : sch.graphics) { if (item.id == member_id) { child_bbox = itemBoundingBox(item); break; } }
+    for (const auto& item : sch.markers) { if (item.id == member_id) { child_bbox = itemBoundingBox(item); break; } }
+    for (const auto& item : sch.bus_entries) { if (item.id == member_id) { child_bbox = itemBoundingBox(item); break; } }
+    for (const auto& item : sch.bitmaps) { if (item.id == member_id) { child_bbox = itemBoundingBox(item); break; } }
+    for (const auto& item : sch.rule_areas) { if (item.id == member_id) { child_bbox = itemBoundingBox(item); break; } }
+    for (const auto& item : sch.tables) { if (item.id == member_id) { child_bbox = itemBoundingBox(item); break; } }
+    for (const auto& item : sch.groups) { if (item.id == member_id && item.id != group.id) { child_bbox = itemBoundingBox(item, sch); break; } }
+    
+    if (child_bbox.valid) {
+      if (!bbox.valid) {
+        bbox = child_bbox;
+      } else {
+        bbox.min.x = nanometers(std::min(bbox.min.x.nanometers, child_bbox.min.x.nanometers));
+        bbox.min.y = nanometers(std::min(bbox.min.y.nanometers, child_bbox.min.y.nanometers));
+        bbox.max.x = nanometers(std::max(bbox.max.x.nanometers, child_bbox.max.x.nanometers));
+        bbox.max.y = nanometers(std::max(bbox.max.y.nanometers, child_bbox.max.y.nanometers));
+      }
+    }
+  }
+  
+  if (bbox.valid) {
+    // inflate by 10 mils (254,000 nm) to match KiCad schIUScale.MilsToIU( 10 )
+    bbox.min.x = nanometers(bbox.min.x.nanometers - 254000);
+    bbox.min.y = nanometers(bbox.min.y.nanometers - 254000);
+    bbox.max.x = nanometers(bbox.max.x.nanometers + 254000);
+    bbox.max.y = nanometers(bbox.max.y.nanometers + 254000);
+  }
+  
+  return bbox;
+}
+
 bool itemHitTest(const SchText& text, Point testPoint) {
   return pointInsideRect(testPoint, text.position, 
                          Point{nanometers(text.position.x.nanometers + text.size.width.nanometers), 
@@ -946,6 +990,14 @@ bool itemHitTest(const SchRuleArea& rule_area, Point testPoint) {
 bool itemHitTest(const SchTable& table, Point testPoint) {
   auto bb = itemBoundingBox(table);
   return bb.valid && pointInsideRect(testPoint, bb.min, bb.max);
+}
+
+bool itemHitTest(const SchGroup& group, const Schematic& sch, Point testPoint) {
+  (void)group;
+  (void)sch;
+  (void)testPoint;
+  // Groups are selected by promoting a selection of one of their children
+  return false;
 }
 
 double itemLength(const SchWire& wire) {

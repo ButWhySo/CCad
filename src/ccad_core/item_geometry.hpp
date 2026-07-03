@@ -44,6 +44,7 @@ BoundingBox itemBoundingBox(const SchBusEntry& bus_entry);
 BoundingBox itemBoundingBox(const SchBitmap& bitmap);
 BoundingBox itemBoundingBox(const SchRuleArea& rule_area);
 BoundingBox itemBoundingBox(const SchTable& table);
+BoundingBox itemBoundingBox(const SchGroup& group, const Schematic& sch);
 
 // ---------------------------------------------------------------------------
 // Hit-Test computations
@@ -74,6 +75,7 @@ bool itemHitTest(const SchBusEntry& bus_entry, Point testPoint, int64_t accuracy
 bool itemHitTest(const SchBitmap& bitmap, Point testPoint);
 bool itemHitTest(const SchRuleArea& rule_area, Point testPoint);
 bool itemHitTest(const SchTable& table, Point testPoint);
+bool itemHitTest(const SchGroup& group, const Schematic& sch, Point testPoint);
 
 // ---------------------------------------------------------------------------
 // Length computations

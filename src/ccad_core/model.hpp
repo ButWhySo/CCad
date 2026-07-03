@@ -88,12 +88,19 @@ struct SchLabel {
   LabelType type = LabelType::Local;
 };
 
+
 struct SchPowerSymbol {
   std::string id;
   std::string value;
   std::string net_id;
   Point position;
   double rotation_degrees = 0.0;
+};
+
+struct SchGroup {
+  std::string id;
+  std::string name;
+  std::vector<std::string> members;
 };
 
 struct SchJunction {
@@ -143,6 +150,7 @@ struct SchGraphic {
   Point end;
   Length width;
 };
+
 
 struct SchMarker {
   std::string id;
@@ -536,6 +544,7 @@ struct Schematic {
   std::vector<SchBitmap> bitmaps;
   std::vector<SchRuleArea> rule_areas;
   std::vector<SchTable> tables;
+  std::vector<SchGroup> groups;
   std::vector<Net> nets;
   std::vector<Constraint> constraints;
 };

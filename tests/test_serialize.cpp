@@ -143,6 +143,11 @@ int main() {
       .id = "N_3V3",
       .members = {NetMember{.component_id = "U1", .pin_name = "VDD"}},
   });
+  project.schematics[0].groups.push_back(ccad::SchGroup{
+      .id = "G1",
+      .name = "My Group",
+      .members = {"U1", "N_3V3"},
+  });
   project.schematics[0].constraints.push_back(Constraint{
       .id = "C_supply",
       .kind = "voltage",
@@ -300,6 +305,9 @@ int main() {
   require(loaded.schematics[0].symbols.size() == 1, "component count round trips");
   require(loaded.schematics[0].symbols.at(0).pins.size() == 2, "pin count round trips");
   require(loaded.schematics[0].nets.size() == 1, "net count round trips");
+  require(loaded.schematics[0].groups.size() == 1, "sch group count round trips");
+  require(loaded.schematics[0].groups.at(0).id == "G1", "sch group id round trips");
+  require(loaded.schematics[0].groups.at(0).members.size() == 2, "sch group members round trip");
   require(loaded.schematics[0].constraints.size() == 1, "constraint count round trips");
   require(ccad::dumpProjectJson(loaded) == json, "json output is deterministic");
 

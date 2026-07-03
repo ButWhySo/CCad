@@ -279,6 +279,38 @@ static void testSchSheetGeometry() {
   std::cout << "  PASS: testSchSheetGeometry\n";
 }
 
+static void testSchGroupGeometry() {
+  Schematic sch;
+  SchText t1;
+  t1.id = "txt1";
+  t1.position = Point{nanometers(1000000), nanometers(1000000)};
+  t1.size = Size{nanometers(4000000), nanometers(2000000)};
+  sch.texts.push_back(t1);
+
+  SchText t2;
+  t2.id = "txt2";
+  t2.position = Point{nanometers(4000000), nanometers(4000000)};
+  t2.size = Size{nanometers(4000000), nanometers(2000000)};
+  sch.texts.push_back(t2);
+
+  SchGroup group;
+  group.id = "grp1";
+  group.members = {"txt1", "txt2"};
+
+  BoundingBox bb = itemBoundingBox(group, sch);
+  assertTrue(bb.valid, "sch group bb valid");
+  // The texts bound from x=1mm..8mm, y=1mm..6mm.
+  // Group inflation is 10mils = 0.254mm
+  assertClose(toMillimeters(bb.min.x), 1.0 - 0.254, 0.001, "sch group bb min.x");
+  assertClose(toMillimeters(bb.min.y), 1.0 - 0.254, 0.001, "sch group bb min.y");
+  assertClose(toMillimeters(bb.max.x), 8.0 + 0.254, 0.001, "sch group bb max.x");
+  assertClose(toMillimeters(bb.max.y), 6.0 + 0.254, 0.001, "sch group bb max.y");
+
+  assertFalse(itemHitTest(group, sch, Point{nanometers(2000000), nanometers(2000000)}), "sch group hit always false");
+  
+  std::cout << "  PASS: testSchGroupGeometry\n";
+}
+
 static void testTrackHitTest() {
   TrackSegment track;
   track.start = {millimeters(0), millimeters(0)};
@@ -713,6 +745,7 @@ int main() {
   testSchTextGeometry();
   testSchSymbolGeometry();
   testSchSheetGeometry();
+  testSchGroupGeometry();
   testSchBitmapBoundingBox();
   testSchRuleAreaBoundingBox();
   testSchTableBoundingBox();
