@@ -20,6 +20,10 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 263**: Schematic Symbol (SchSymbol) missing attributes serialization parity (`reference`, `unit`, `mirror_x`, `mirror_y`, `in_bom`, `on_board`, `fields`).
+- **Sprint 262**: Schematic Text, Graphic, and remaining object serialization parity.
+- **Sprint 261**: Schematic Sheet and Sheet Pin ID and serialization parity.
+- **Sprint 260**: Schematic Junction and No Connect ID and serialization parity.
 - **Sprint 258**: Schematic Group (SchGroup) Support
   - **Goal**: Replicate KiCad's `SCH_GROUP` logic into `ccad_core` to support logical groups of schematic items.
   - **Status**: Completed. Implemented `SchGroup` parsing, bounding box calculation, hit testing, and serialization. Successfully generated visual demo and merged into `main`.

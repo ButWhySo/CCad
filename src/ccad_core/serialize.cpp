@@ -2093,6 +2093,46 @@ class JsonReader {
     }
   }
 
+  std::vector<SchField> readSchFields() {
+    std::vector<SchField> fields;
+    expect('[');
+    if (consume(']')) return fields;
+    while (true) {
+      SchField field;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            field.id = readString();
+          } else if (key == "name") {
+            field.name = readString();
+          } else if (key == "text") {
+            field.text = readString();
+          } else if (key == "position") {
+            field.position = readPoint();
+          } else if (key == "rotation_degrees") {
+            field.rotation_degrees = readDouble();
+          } else if (key == "size") {
+            field.size = readSize();
+          } else if (key == "visible") {
+            field.visible = readBool();
+          } else {
+            throw std::runtime_error("unknown field key: " + key);
+          }
+          if (consume('}')) break;
+          expect(',');
+          if (peek('}')) throw std::runtime_error("trailing comma in field object");
+        }
+      }
+      fields.push_back(field);
+      if (consume(']')) return fields;
+      expect(',');
+      if (peek(']')) throw std::runtime_error("trailing comma in fields array");
+    }
+  }
+
   std::vector<SchSymbol> readComponents() {
     std::vector<SchSymbol> symbols;
     expect('[');
@@ -2110,10 +2150,24 @@ class JsonReader {
           component.id = readString();
         } else if (key == "lib_id" || key == "part") {
           component.lib_id = readString();
+        } else if (key == "reference") {
+          component.reference = readString();
+        } else if (key == "unit") {
+          component.unit = readInt();
         } else if (key == "position") {
           component.position = readPoint();
         } else if (key == "rotation_degrees") {
           component.rotation_degrees = readDouble();
+        } else if (key == "mirror_x") {
+          component.mirror_x = readBool();
+        } else if (key == "mirror_y") {
+          component.mirror_y = readBool();
+        } else if (key == "in_bom") {
+          component.in_bom = readBool();
+        } else if (key == "on_board") {
+          component.on_board = readBool();
+        } else if (key == "fields") {
+          component.fields = readSchFields();
         } else if (key == "pins") {
           component.pins = readPins();
         } else if (key == "symbol") {
@@ -3263,10 +3317,34 @@ std::string dumpProjectJson(const Project& project) {
     out << "    {\n";
     writeField(out, 6, "id", component.id);
     writeField(out, 6, "part", component.lib_id);
+    writeField(out, 6, "reference", component.reference);
+    out << "      \"unit\": " << component.unit << ",\n";
     out << "      \"position\": ";
     writePoint(out, 0, component.position);
     out << ",\n";
     out << "      \"rotation_degrees\": " << component.rotation_degrees << ",\n";
+    out << "      \"mirror_x\": " << (component.mirror_x ? "true" : "false") << ",\n";
+    out << "      \"mirror_y\": " << (component.mirror_y ? "true" : "false") << ",\n";
+    out << "      \"in_bom\": " << (component.in_bom ? "true" : "false") << ",\n";
+    out << "      \"on_board\": " << (component.on_board ? "true" : "false") << ",\n";
+    out << "      \"fields\": [\n";
+    for (std::size_t j = 0; j < component.fields.size(); ++j) {
+      const SchField& field = component.fields.at(j);
+      out << "        {\n";
+      writeField(out, 10, "id", field.id);
+      writeField(out, 10, "name", field.name);
+      writeField(out, 10, "text", field.text);
+      out << "          \"position\": ";
+      writePoint(out, 0, field.position);
+      out << ",\n";
+      out << "          \"rotation_degrees\": " << field.rotation_degrees << ",\n";
+      out << "          \"size\": ";
+      writeSize(out, 0, field.size);
+      out << ",\n";
+      out << "          \"visible\": " << (field.visible ? "true" : "false");
+      out << "\n        }" << (j + 1 == component.fields.size() ? "" : ",") << '\n';
+    }
+    out << "      ],\n";
     out << "      \"pins\": [\n";
     for (std::size_t j = 0; j < component.pins.size(); ++j) {
       const SchPin& pin = component.pins.at(j);

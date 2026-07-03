@@ -137,6 +137,21 @@ int main() {
   project.schematics[0].symbols.push_back(SchSymbol{
       .id = "U1",
       .lib_id = "MCU",
+      .reference = "U?",
+      .unit = 1,
+      .mirror_x = true,
+      .mirror_y = false,
+      .in_bom = true,
+      .on_board = false,
+      .fields = {ccad::SchField{
+          .id = "F1",
+          .name = "Value",
+          .text = "10k",
+          .position = ccad::Point{ccad::nanometers(10), ccad::nanometers(20)},
+          .rotation_degrees = 90.0,
+          .size = ccad::Size{ccad::nanometers(100), ccad::nanometers(200)},
+          .visible = true,
+      }},
       .pins = {SchPin{.name = "VDD", .number = "", .electrical_type = ccad::ElectricalPinType::PowerIn}, SchPin{.name = "GND", .number = "", .electrical_type = ccad::ElectricalPinType::PowerIn}},
   });
   project.schematics[0].nets.push_back(Net{
@@ -392,6 +407,17 @@ int main() {
   require(loaded.boards[0].route_requests.at(0).width.nanometers == 250000,
           "route request width round trips");
   require(loaded.schematics[0].symbols.size() == 1, "component count round trips");
+  require(loaded.schematics[0].symbols.at(0).reference == "U?", "component reference round trips");
+  require(loaded.schematics[0].symbols.at(0).unit == 1, "component unit round trips");
+  require(loaded.schematics[0].symbols.at(0).mirror_x, "component mirror_x round trips");
+  require(!loaded.schematics[0].symbols.at(0).mirror_y, "component mirror_y round trips");
+  require(loaded.schematics[0].symbols.at(0).in_bom, "component in_bom round trips");
+  require(!loaded.schematics[0].symbols.at(0).on_board, "component on_board round trips");
+  require(loaded.schematics[0].symbols.at(0).fields.size() == 1, "component field count round trips");
+  require(loaded.schematics[0].symbols.at(0).fields.at(0).id == "F1", "component field id round trips");
+  require(loaded.schematics[0].symbols.at(0).fields.at(0).name == "Value", "component field name round trips");
+  require(loaded.schematics[0].symbols.at(0).fields.at(0).text == "10k", "component field text round trips");
+  require(loaded.schematics[0].symbols.at(0).fields.at(0).rotation_degrees == 90.0, "component field rotation round trips");
   require(loaded.schematics[0].symbols.at(0).pins.size() == 2, "pin count round trips");
   require(loaded.schematics[0].nets.size() == 1, "net count round trips");
   require(loaded.schematics[0].groups.size() == 1, "sch group count round trips");
