@@ -92,6 +92,10 @@ const std::vector<CommandHelp>& commandHelp() {
                   .summary = "Append one power symbol to the schematic project",
                   .usage = "ccad sch add-power --file <path> --id <id> --value <value> "
                            "--at-x-mm <n> --at-y-mm <n> [--net <id>] [--rotation-deg <n>]"},
+      CommandHelp{.name = "sch collect-items",
+                  .summary = "Collect schematic items for selection and agent tools",
+                  .usage = "ccad sch collect-items --file <path> [--scan-set <name>] "
+                           "[--include-secondary true|false]"},
       CommandHelp{.name = "pcb add-layer",
                   .summary = "Append one board layer to a board project",
                   .usage = "ccad pcb add-layer --file <path> --id <id> --name <name> "

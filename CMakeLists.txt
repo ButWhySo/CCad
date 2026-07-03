@@ -47,6 +47,7 @@ add_library(ccad_core
   src/ccad_core/library_catalog.cpp
   src/ccad_core/pad_number_provider.cpp
   src/ccad_core/review.cpp
+  src/ccad_core/schematic_collector.cpp
   src/ccad_core/serialize.cpp
   src/ccad_core/spread_footprints.cpp
   src/ccad_core/transaction.cpp
@@ -119,6 +120,15 @@ if(MINGW)
   target_link_options(ccad_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME serialize COMMAND ccad_tests)
+
+add_executable(ccad_schematic_collector_tests
+  tests/test_schematic_collector.cpp
+)
+target_link_libraries(ccad_schematic_collector_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_schematic_collector_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME schematic_collector COMMAND ccad_schematic_collector_tests)
 
 add_executable(ccad_lib_symbol_tests
   tests/test_lib_symbol.cpp

@@ -20,11 +20,14 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 257**: Schematic Collector Parity
+  - **Goal**: Implement `SchematicCollector` logic with KiCad compatibility and map `SCH_COLLECTOR` capabilities in `ccad_core` and `ccad_cli`.
+  - **Status**: Completed. Implemented `SchematicCollector` logic with KiCad compatibility and mapped `SCH_COLLECTOR` capabilities in `ccad_core` and `ccad_cli`. Completed tests and visual validation. Ready to merge into `main`.
+
+## Prior Sprints
 - **Sprint 256**: Schematic Item Geometry Phase 4 (Sheet Pins and Missed Tests)
   - **Goal**: Implement `SchSheetPin` item geometries (bounding box and hit test) and add missing unit tests for `SchLabel`, `SchPowerSymbol`, `SchTextBox`, `SchMarker`, `SchNoConnect`, and `SchSheetPin`.
   - **Status**: Completed. Ported bounding box and hit testing logic for `SchSheetPin`. Added comprehensive test cases for all previously missed elements to `test_item_geometry.cpp`. All tests pass cleanly, and visual validation via the harness proves no regressions.
-
-## Prior Sprints
 - **Sprint 255**: Schematic Item Geometry Phase 3 (Remaining items)
   - **Goal**: Port schematic geometry functions (bounding boxes, hit tests) from KiCad for `SchPin`, `SchField`, `SchSheetPin`, `SchBitmap`, `SchBusEntry`, `SchRuleArea`, and `SchTable` into CCad's `item_geometry` layer.
   - **Status**: Completed. Ported bounding box and hit testing logic for all remaining items. Added comprehensive test cases to `test_item_geometry.cpp`. All tests pass cleanly, and visual validation via the harness proves no regressions.

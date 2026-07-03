@@ -6,6 +6,8 @@
 #include "ccad_core/annotate.hpp"
 #include "ccad_core/autoplace_fields.hpp"
 #include "ccad_core/junction_helpers.hpp"
+#include "ccad_core/json.hpp"
+#include "ccad_core/schematic_collector.hpp"
 
 #include <iostream>
 #include <map>
@@ -194,6 +196,70 @@ int schCommand(const std::vector<std::string>& args) {
         std::cerr << "failed to write project file\n";
         return 2;
       }
+      return 0;
+    }
+
+    if (subcommand == "collect-items") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--scan-set", "--include-secondary"});
+      const std::string file = requireOption(options, "--file");
+      const std::string scan_set_name = options.contains("--scan-set") ? options.at("--scan-set") : "all_items";
+      
+      ccad::SchematicCollectorGuide guide;
+      if (options.contains("--include-secondary")) {
+        guide.include_secondary = requireOption(options, "--include-secondary") == "true";
+      }
+
+      ccad::Project project = loadProjectFile(file);
+      const ccad::Schematic* sch = ccad::primarySchematic(project);
+      if (!sch) {
+        std::cerr << "project has no primary schematic\n";
+        return 2;
+      }
+
+      const ccad::SchematicCollectorScanSet scan_set = ccad::parseSchematicCollectorScanSet(scan_set_name);
+      const ccad::SchematicCollectorReport report = ccad::collectSchematicItems(*sch, scan_set, guide);
+
+      std::ostringstream out;
+      out << "{\n"
+          << "  \"kicad_collector\": \"" << ccad::escapeJson(report.kicad_collector) << "\",\n"
+          << "  \"parity_scope\": \"" << ccad::escapeJson(report.parity_scope) << "\",\n"
+          << "  \"scan_set\": \"" << ccad::escapeJson(report.scan_set) << "\",\n"
+          << "  \"collector_guide\": {\n"
+          << "    \"include_secondary\": " << (guide.include_secondary ? "true" : "false") << "\n"
+          << "  },\n"
+          << "  \"kicad_scan_types\": [\n";
+      for (std::size_t i = 0; i < report.kicad_scan_types.size(); ++i) {
+        out << "    \"" << ccad::escapeJson(report.kicad_scan_types[i]) << "\""
+            << (i + 1 == report.kicad_scan_types.size() ? "" : ",") << "\n";
+      }
+      out << "  ],\n"
+          << "  \"unsupported_kicad_types\": [\n";
+      for (std::size_t i = 0; i < report.unsupported_kicad_types.size(); ++i) {
+        out << "    \"" << ccad::escapeJson(report.unsupported_kicad_types[i]) << "\""
+            << (i + 1 == report.unsupported_kicad_types.size() ? "" : ",") << "\n";
+      }
+      out << "  ],\n"
+          << "  \"summary\": {\n"
+          << "    \"total\": " << report.candidates.size() << ",\n"
+          << "    \"primary_count\": " << report.primary_count << ",\n"
+          << "    \"secondary_count\": " << report.secondary_count << "\n"
+          << "  },\n"
+          << "  \"items\": [\n";
+      for (std::size_t i = 0; i < report.candidates.size(); ++i) {
+        const ccad::SchematicCollectorCandidate& c = report.candidates[i];
+        out << "    {\n"
+            << "      \"type\": \"" << ccad::escapeJson(c.type) << "\",\n"
+            << "      \"id\": \"" << ccad::escapeJson(c.id) << "\",\n"
+            << "      \"kicad_type\": \"" << ccad::escapeJson(c.kicad_type) << "\",\n"
+            << "      \"collection_bucket\": \"" << ccad::escapeJson(c.collection_bucket) << "\",\n"
+            << "      \"net_id\": \"" << ccad::escapeJson(c.net_id) << "\"\n"
+            << "    }" << (i + 1 == report.candidates.size() ? "" : ",") << "\n";
+      }
+      out << "  ]\n"
+          << "}\n";
+
+      std::cout << out.str();
       return 0;
     }
 
