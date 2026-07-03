@@ -585,6 +585,277 @@ CanvasScene buildSchematicScene(const Schematic& schematic) {
     includeSchematicBounds(cps.x_units, cps.y_units);
   }
 
+  for (const SchJunction& junction : schematic.junctions) {
+    CanvasCircle cc;
+    cc.id = junction.id;
+    cc.layer_id = "schematic_junction";
+    cc.center_x_units = toMillimeters(junction.position.x);
+    cc.center_y_units = toMillimeters(junction.position.y);
+    cc.radius_units = junction.diameter.nanometers == 0 ? 0.4 : toMillimeters(junction.diameter) / 2.0;
+    cc.width_units = 0.0;
+    cc.fill_type = "solid";
+    scene.circles.push_back(cc);
+    includeSchematicBounds(cc.center_x_units - cc.radius_units, cc.center_y_units - cc.radius_units);
+    includeSchematicBounds(cc.center_x_units + cc.radius_units, cc.center_y_units + cc.radius_units);
+  }
+
+  for (const SchNoConnect& nc : schematic.no_connects) {
+    const double x = toMillimeters(nc.position.x);
+    const double y = toMillimeters(nc.position.y);
+    const double d = 0.75;
+    scene.lines.push_back(CanvasLine{nc.id + "_1", "schematic_noconnect", x - d, y - d, x + d, y + d, 0.2});
+    scene.lines.push_back(CanvasLine{nc.id + "_2", "schematic_noconnect", x - d, y + d, x + d, y - d, 0.2});
+    includeSchematicBounds(x - d, y - d);
+    includeSchematicBounds(x + d, y + d);
+  }
+
+  for (const SchText& text : schematic.texts) {
+    CanvasText ct;
+    ct.id = text.id;
+    ct.layer_id = "schematic_text";
+    ct.text = text.text;
+    ct.x_units = toMillimeters(text.position.x);
+    ct.y_units = toMillimeters(text.position.y);
+    ct.rotation_degrees = text.rotation_degrees;
+    ct.size_x_units = toMillimeters(text.size.width);
+    ct.size_y_units = toMillimeters(text.size.height);
+    scene.texts.push_back(ct);
+    includeSchematicBounds(ct.x_units, ct.y_units);
+  }
+
+  for (const SchTextBox& textbox : schematic.textboxes) {
+    CanvasText ct;
+    ct.id = textbox.id;
+    ct.layer_id = "schematic_text";
+    ct.text = textbox.text;
+    ct.x_units = toMillimeters(textbox.area.origin.x) + toMillimeters(textbox.area.size.width) / 2.0;
+    ct.y_units = toMillimeters(textbox.area.origin.y) + toMillimeters(textbox.area.size.height) / 2.0;
+    ct.rotation_degrees = 0.0;
+    ct.size_x_units = toMillimeters(textbox.size.width);
+    ct.size_y_units = toMillimeters(textbox.size.height);
+    scene.texts.push_back(ct);
+
+    CanvasPolygon cp;
+    cp.id = textbox.id + "_box";
+    cp.layer_id = "schematic_graphic";
+    cp.width_units = 0.2;
+    cp.fill_type = "none";
+    const double left = toMillimeters(textbox.area.origin.x);
+    const double right = left + toMillimeters(textbox.area.size.width);
+    const double top = toMillimeters(textbox.area.origin.y);
+    const double bottom = top + toMillimeters(textbox.area.size.height);
+    cp.pts_x_units = {left, right, right, left};
+    cp.pts_y_units = {top, top, bottom, bottom};
+    scene.polygons.push_back(cp);
+
+    includeSchematicBounds(left, top);
+    includeSchematicBounds(right, bottom);
+  }
+
+  for (const SchGraphic& graphic : schematic.graphics) {
+    if (graphic.kind == "line") {
+      CanvasLine cl;
+      cl.id = graphic.id;
+      cl.layer_id = "schematic_graphic";
+      cl.start_x_units = toMillimeters(graphic.start.x);
+      cl.start_y_units = toMillimeters(graphic.start.y);
+      cl.end_x_units = toMillimeters(graphic.end.x);
+      cl.end_y_units = toMillimeters(graphic.end.y);
+      cl.width_units = toMillimeters(graphic.width);
+      scene.lines.push_back(cl);
+      includeSchematicBounds(cl.start_x_units, cl.start_y_units);
+      includeSchematicBounds(cl.end_x_units, cl.end_y_units);
+    } else if (graphic.kind == "rectangle") {
+      CanvasPolygon cp;
+      cp.id = graphic.id;
+      cp.layer_id = "schematic_graphic";
+      cp.width_units = toMillimeters(graphic.width);
+      cp.fill_type = "none";
+      const double sx = toMillimeters(graphic.start.x);
+      const double sy = toMillimeters(graphic.start.y);
+      const double ex = toMillimeters(graphic.end.x);
+      const double ey = toMillimeters(graphic.end.y);
+      cp.pts_x_units = {sx, ex, ex, sx};
+      cp.pts_y_units = {sy, sy, ey, ey};
+      scene.polygons.push_back(cp);
+      includeSchematicBounds(sx, sy);
+      includeSchematicBounds(ex, ey);
+    } else if (graphic.kind == "polygon") {
+      CanvasPolygon cp;
+      cp.id = graphic.id;
+      cp.layer_id = "schematic_graphic";
+      cp.width_units = toMillimeters(graphic.width);
+      cp.fill_type = "none";
+      for (const Point& pt : graphic.points) {
+        const double x = toMillimeters(pt.x);
+        const double y = toMillimeters(pt.y);
+        cp.pts_x_units.push_back(x);
+        cp.pts_y_units.push_back(y);
+        includeSchematicBounds(x, y);
+      }
+      scene.polygons.push_back(cp);
+    } else if (graphic.kind == "circle") {
+      CanvasCircle cc;
+      cc.id = graphic.id;
+      cc.layer_id = "schematic_graphic";
+      cc.center_x_units = toMillimeters(graphic.start.x);
+      cc.center_y_units = toMillimeters(graphic.start.y);
+      const double ex = toMillimeters(graphic.end.x);
+      const double ey = toMillimeters(graphic.end.y);
+      cc.radius_units = std::hypot(ex - cc.center_x_units, ey - cc.center_y_units);
+      cc.width_units = toMillimeters(graphic.width);
+      cc.fill_type = "none";
+      scene.circles.push_back(cc);
+      includeSchematicBounds(cc.center_x_units - cc.radius_units, cc.center_y_units - cc.radius_units);
+      includeSchematicBounds(cc.center_x_units + cc.radius_units, cc.center_y_units + cc.radius_units);
+    } else if (graphic.kind == "arc") {
+      CanvasArc ca;
+      ca.id = graphic.id;
+      ca.layer_id = "schematic_graphic";
+      ca.start_x_units = toMillimeters(graphic.start.x);
+      ca.start_y_units = toMillimeters(graphic.start.y);
+      ca.end_x_units = toMillimeters(graphic.end.x);
+      ca.end_y_units = toMillimeters(graphic.end.y);
+      if (!graphic.points.empty()) {
+        ca.mid_x_units = toMillimeters(graphic.points.front().x);
+        ca.mid_y_units = toMillimeters(graphic.points.front().y);
+      }
+      ca.width_units = toMillimeters(graphic.width);
+      scene.arcs.push_back(ca);
+      includeSchematicBounds(ca.start_x_units, ca.start_y_units);
+      includeSchematicBounds(ca.end_x_units, ca.end_y_units);
+    }
+  }
+
+  for (const SchSheet& sheet : schematic.sheets) {
+    CanvasPolygon cp;
+    cp.id = sheet.id + "_box";
+    cp.layer_id = "schematic_graphic";
+    cp.width_units = 0.4;
+    cp.fill_type = "none";
+    const double sx = toMillimeters(sheet.position.x);
+    const double sy = toMillimeters(sheet.position.y);
+    const double ex = sx + toMillimeters(sheet.size.width);
+    const double ey = sy + toMillimeters(sheet.size.height);
+    cp.pts_x_units = {sx, ex, ex, sx};
+    cp.pts_y_units = {sy, sy, ey, ey};
+    scene.polygons.push_back(cp);
+    includeSchematicBounds(sx, sy);
+    includeSchematicBounds(ex, ey);
+    
+    CanvasText ct;
+    ct.id = sheet.id + "_name";
+    ct.layer_id = "schematic_text";
+    ct.text = sheet.name;
+    ct.x_units = sx;
+    ct.y_units = sy - 1.5;
+    ct.size_x_units = 1.5;
+    ct.size_y_units = 1.5;
+    scene.texts.push_back(ct);
+
+    for (const SchSheetPin& pin : sheet.pins) {
+      CanvasLine cl;
+      cl.id = pin.id + "_line";
+      cl.layer_id = "schematic_pin";
+      cl.start_x_units = toMillimeters(pin.position.x);
+      cl.start_y_units = toMillimeters(pin.position.y);
+      const double px = toMillimeters(pin.position.x);
+      const double py = toMillimeters(pin.position.y);
+      // Rough orientation logic (towards center of sheet)
+      double ox = px;
+      double oy = py;
+      if (std::abs(px - sx) < 0.1) ox += 2.0;
+      else if (std::abs(px - ex) < 0.1) ox -= 2.0;
+      else if (std::abs(py - sy) < 0.1) oy += 2.0;
+      else if (std::abs(py - ey) < 0.1) oy -= 2.0;
+      cl.end_x_units = ox;
+      cl.end_y_units = oy;
+      cl.width_units = 0.2;
+      scene.lines.push_back(cl);
+
+      CanvasText pct;
+      pct.id = pin.id + "_text";
+      pct.layer_id = "schematic_text";
+      pct.text = pin.name;
+      pct.x_units = ox;
+      pct.y_units = oy;
+      pct.size_x_units = 1.0;
+      pct.size_y_units = 1.0;
+      scene.texts.push_back(pct);
+    }
+  }
+
+  for (const SchMarker& marker : schematic.markers) {
+    CanvasText ct;
+    ct.id = marker.id;
+    ct.layer_id = "schematic_graphic";
+    ct.text = "?";
+    ct.x_units = toMillimeters(marker.position.x);
+    ct.y_units = toMillimeters(marker.position.y);
+    ct.size_x_units = 2.0;
+    ct.size_y_units = 2.0;
+    scene.texts.push_back(ct);
+    includeSchematicBounds(ct.x_units, ct.y_units);
+  }
+
+  for (const SchBusEntry& entry : schematic.bus_entries) {
+    CanvasLine cl;
+    cl.id = entry.id;
+    cl.layer_id = "schematic_wire";
+    cl.start_x_units = toMillimeters(entry.position.x);
+    cl.start_y_units = toMillimeters(entry.position.y);
+    cl.end_x_units = cl.start_x_units + toMillimeters(entry.size.width);
+    cl.end_y_units = cl.start_y_units + toMillimeters(entry.size.height);
+    cl.width_units = entry.kind == "bus" ? 0.4 : 0.2;
+    scene.lines.push_back(cl);
+    includeSchematicBounds(cl.start_x_units, cl.start_y_units);
+    includeSchematicBounds(cl.end_x_units, cl.end_y_units);
+  }
+
+  for (const SchRuleArea& area : schematic.rule_areas) {
+    CanvasPolygon cp;
+    cp.id = area.id;
+    cp.layer_id = "schematic_graphic";
+    cp.width_units = 0.2;
+    cp.fill_type = "none";
+    for (const Point& pt : area.outline) {
+      const double x = toMillimeters(pt.x);
+      const double y = toMillimeters(pt.y);
+      cp.pts_x_units.push_back(x);
+      cp.pts_y_units.push_back(y);
+      includeSchematicBounds(x, y);
+    }
+    scene.polygons.push_back(cp);
+  }
+
+  for (const SchTable& table : schematic.tables) {
+    CanvasTable ct;
+    ct.id = table.id;
+    ct.layer_id = "schematic_graphic";
+    ct.x_units = toMillimeters(table.position.x);
+    ct.y_units = toMillimeters(table.position.y);
+    ct.width_units = toMillimeters(table.size.width);
+    ct.height_units = toMillimeters(table.size.height);
+    ct.rows = table.rows;
+    ct.cols = table.cols;
+    scene.tables.push_back(ct);
+    includeSchematicBounds(ct.x_units, ct.y_units);
+    includeSchematicBounds(ct.x_units + ct.width_units, ct.y_units + ct.height_units);
+  }
+
+  for (const SchBitmap& bitmap : schematic.bitmaps) {
+    CanvasReferenceImage cri;
+    cri.id = bitmap.id;
+    cri.layer_id = "schematic_graphic";
+    cri.x_units = toMillimeters(bitmap.position.x);
+    cri.y_units = toMillimeters(bitmap.position.y);
+    cri.scale = bitmap.scale;
+    cri.data = bitmap.data;
+    cri.opacity = 1.0;
+    scene.reference_images.push_back(cri);
+    includeSchematicBounds(cri.x_units, cri.y_units);
+  }
+
   if (has_bounds) {
     constexpr double padding_units = 10.0;
     scene.board_origin_x_units = min_x - (padding_units / 2.0);
