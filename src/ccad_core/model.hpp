@@ -151,7 +151,9 @@ struct SchGraphic {
   std::string kind; // "line", "rectangle", "polygon"
   Point start;
   Point end;
+  std::vector<Point> points;
   Length width;
+  std::string color;
 };
 
 

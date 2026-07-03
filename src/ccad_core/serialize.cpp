@@ -38,6 +38,15 @@ void writeSize(std::ostringstream& out, const int indent, const Size& size) {
   out << std::string(indent, ' ') << "}";
 }
 
+void writeRect(std::ostringstream& out, const int indent, const Rect& rect) {
+  out << std::string(indent, ' ') << "{\n";
+  out << std::string(indent + 2, ' ') << "\"x_nm\": " << rect.origin.x.nanometers << ",\n";
+  out << std::string(indent + 2, ' ') << "\"y_nm\": " << rect.origin.y.nanometers << ",\n";
+  out << std::string(indent + 2, ' ') << "\"width_nm\": " << rect.size.width.nanometers << ",\n";
+  out << std::string(indent + 2, ' ') << "\"height_nm\": " << rect.size.height.nanometers << "\n";
+  out << std::string(indent, ' ') << "}";
+}
+
 void writeSymbol(std::ostringstream& out, const int indent, const Symbol& symbol) {
   const std::string pad(indent, ' ');
   out << "{\n";
@@ -212,6 +221,12 @@ class JsonReader {
         ensureSchematic(project).no_connects = readSchNoConnects();
       } else if (key == "sheets") {
         ensureSchematic(project).sheets = readSchSheets();
+      } else if (key == "texts") {
+        ensureSchematic(project).texts = readSchTexts();
+      } else if (key == "textboxes") {
+        ensureSchematic(project).textboxes = readSchTextBoxes();
+      } else if (key == "graphics") {
+        ensureSchematic(project).graphics = readSchGraphics();
       } else {
         throw std::runtime_error("unknown project key: " + key);
       }
@@ -1182,6 +1197,138 @@ class JsonReader {
         throw std::runtime_error("trailing comma in board groups array");
       }
     }
+  }
+
+  std::vector<SchText> readSchTexts() {
+    std::vector<SchText> texts;
+    expect('[');
+    if (consume(']')) {
+      return texts;
+    }
+    while (true) {
+      SchText text;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            text.id = readString();
+          } else if (key == "text") {
+            text.text = readString();
+          } else if (key == "position") {
+            text.position = readPoint();
+          } else if (key == "rotation_degrees") {
+            text.rotation_degrees = readDouble();
+          } else if (key == "size") {
+            text.size = readSize();
+          } else {
+            throw std::runtime_error("unknown sch text key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+        }
+      }
+      texts.push_back(text);
+      if (consume(']')) {
+        break;
+      }
+      expect(',');
+    }
+    return texts;
+  }
+
+  std::vector<SchTextBox> readSchTextBoxes() {
+    std::vector<SchTextBox> boxes;
+    expect('[');
+    if (consume(']')) {
+      return boxes;
+    }
+    while (true) {
+      SchTextBox box;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            box.id = readString();
+          } else if (key == "text") {
+            box.text = readString();
+          } else if (key == "area") {
+            box.area = readRect();
+          } else if (key == "size") {
+            box.size = readSize();
+          } else {
+            throw std::runtime_error("unknown sch textbox key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+        }
+      }
+      boxes.push_back(box);
+      if (consume(']')) {
+        break;
+      }
+      expect(',');
+    }
+    return boxes;
+  }
+
+  std::vector<SchGraphic> readSchGraphics() {
+    std::vector<SchGraphic> graphics;
+    expect('[');
+    if (consume(']')) {
+      return graphics;
+    }
+    while (true) {
+      SchGraphic graphic;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            graphic.id = readString();
+          } else if (key == "kind") {
+            graphic.kind = readString();
+          } else if (key == "start") {
+            graphic.start = readPoint();
+          } else if (key == "end") {
+            graphic.end = readPoint();
+          } else if (key == "points") {
+            expect('[');
+            if (!consume(']')) {
+              while (true) {
+                graphic.points.push_back(readPoint());
+                if (consume(']')) break;
+                expect(',');
+              }
+            }
+          } else if (key == "width_nm") {
+            graphic.width = nanometers(readInt64());
+          } else if (key == "color") {
+            graphic.color = readString();
+          } else {
+            throw std::runtime_error("unknown sch graphic key: " + key);
+          }
+          if (consume('}')) {
+            break;
+          }
+          expect(',');
+        }
+      }
+      graphics.push_back(graphic);
+      if (consume(']')) {
+        break;
+      }
+      expect(',');
+    }
+    return graphics;
   }
 
   std::vector<SchSheetPin> readSchSheetPins() {
@@ -2459,12 +2606,9 @@ std::string dumpProjectJson(const Project& project) {
   if (!project.boards.empty()) {
     const Board& board = project.boards[0];
     out << "  \"board\": {\n";
-    out << "    \"outline\": {\n";
-    out << "      \"x_nm\": " << board.outline.origin.x.nanometers << ",\n";
-    out << "      \"y_nm\": " << board.outline.origin.y.nanometers << ",\n";
-    out << "      \"width_nm\": " << board.outline.size.width.nanometers << ",\n";
-    out << "      \"height_nm\": " << board.outline.size.height.nanometers << "\n";
-    out << "    },\n";
+    out << "    \"outline\": ";
+    writeRect(out, 4, board.outline);
+    out << ",\n";
     out << "    \"design_rules\": {\n";
     out << "      \"copper_clearance_nm\": "
         << board.design_rules.copper_clearance.nanometers << ",\n";
@@ -3109,6 +3253,75 @@ std::string dumpProjectJson(const Project& project) {
     }
     out << "      ]\n";
     out << "    }" << (i + 1 == sch->sheets.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n";
+
+  out << "  \"texts\": [\n";
+  for (std::size_t i = 0; i < sch->texts.size(); ++i) {
+    const SchText& text = sch->texts.at(i);
+    out << "    {\n";
+    writeField(out, 6, "id", text.id);
+    writeField(out, 6, "text", text.text);
+    out << "      \"position\": ";
+    writePoint(out, 0, text.position);
+    out << ",\n";
+    out << "      \"rotation_degrees\": " << text.rotation_degrees << ",\n";
+    out << "      \"size\": ";
+    writeSize(out, 0, text.size);
+    out << "\n";
+    out << "    }" << (i + 1 == sch->texts.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n";
+
+  out << "  \"textboxes\": [\n";
+  for (std::size_t i = 0; i < sch->textboxes.size(); ++i) {
+    const SchTextBox& box = sch->textboxes.at(i);
+    out << "    {\n";
+    writeField(out, 6, "id", box.id);
+    writeField(out, 6, "text", box.text);
+    out << "      \"area\": ";
+    writeRect(out, 0, box.area);
+    out << ",\n";
+    out << "      \"size\": ";
+    writeSize(out, 0, box.size);
+    out << "\n";
+    out << "    }" << (i + 1 == sch->textboxes.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n";
+
+  out << "  \"graphics\": [\n";
+  for (std::size_t i = 0; i < sch->graphics.size(); ++i) {
+    const SchGraphic& graphic = sch->graphics.at(i);
+    out << "    {\n";
+    writeField(out, 6, "id", graphic.id);
+    writeField(out, 6, "kind", graphic.kind);
+    if (!graphic.points.empty()) {
+      out << "      \"points\": [\n";
+      for (std::size_t j = 0; j < graphic.points.size(); ++j) {
+        out << "        ";
+        writePoint(out, 0, graphic.points.at(j));
+        out << (j + 1 == graphic.points.size() ? "\n" : ",\n");
+      }
+      out << "      ],\n";
+    }
+    if (graphic.start.x.nanometers != 0 || graphic.start.y.nanometers != 0) {
+      out << "      \"start\": ";
+      writePoint(out, 0, graphic.start);
+      out << ",\n";
+    }
+    if (graphic.end.x.nanometers != 0 || graphic.end.y.nanometers != 0) {
+      out << "      \"end\": ";
+      writePoint(out, 0, graphic.end);
+      out << ",\n";
+    }
+    out << "      \"width_nm\": " << graphic.width.nanometers;
+    if (!graphic.color.empty()) {
+      out << ",\n";
+      writeField(out, 6, "color", graphic.color, false);
+    } else {
+      out << "\n";
+    }
+    out << "    }" << (i + 1 == sch->graphics.size() ? "" : ",") << '\n';
   }
   out << "  ]\n";
   out << "}\n";

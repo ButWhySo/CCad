@@ -178,6 +178,30 @@ int main() {
   test_sheet.pins.push_back(test_pin);
   project.schematics[0].sheets.push_back(test_sheet);
 
+  ccad::SchText test_text;
+  test_text.id = "TXT1";
+  test_text.text = "Hello World";
+  test_text.position = ccad::Point{ccad::nanometers(100), ccad::nanometers(200)};
+  test_text.rotation_degrees = 90.0;
+  test_text.size = ccad::Size{ccad::nanometers(50), ccad::nanometers(50)};
+  project.schematics[0].texts.push_back(test_text);
+
+  ccad::SchTextBox test_box;
+  test_box.id = "TBX1";
+  test_box.text = "Box Text";
+  test_box.area = ccad::Rect{ccad::nanometers(100), ccad::nanometers(100), ccad::nanometers(200), ccad::nanometers(200)};
+  test_box.size = ccad::Size{ccad::nanometers(300), ccad::nanometers(300)};
+  project.schematics[0].textboxes.push_back(test_box);
+
+  ccad::SchGraphic test_graphic;
+  test_graphic.id = "GR1";
+  test_graphic.kind = "line";
+  test_graphic.start = ccad::Point{ccad::nanometers(10), ccad::nanometers(20)};
+  test_graphic.end = ccad::Point{ccad::nanometers(30), ccad::nanometers(40)};
+  test_graphic.width = ccad::nanometers(5);
+  test_graphic.color = "#FF0000";
+  project.schematics[0].graphics.push_back(test_graphic);
+
   const std::string json = ccad::dumpProjectJson(project);
 
   require(json.find("\"schema_version\": 2") != std::string::npos, "schema version emitted");
@@ -345,6 +369,22 @@ int main() {
   require(loaded.schematics[0].sheets[0].pins.size() == 1, "sheet pin count round trips");
   require(loaded.schematics[0].sheets[0].pins[0].id == "SP1", "sheet pin id round trips");
   require(loaded.schematics[0].sheets[0].pins[0].type == "input", "sheet pin type round trips");
+
+  require(loaded.schematics[0].texts.size() == 1, "text count round trips");
+  require(loaded.schematics[0].texts[0].id == "TXT1", "text id round trips");
+  require(loaded.schematics[0].texts[0].text == "Hello World", "text string round trips");
+  require(loaded.schematics[0].texts[0].rotation_degrees == 90.0, "text rotation round trips");
+
+  require(loaded.schematics[0].textboxes.size() == 1, "textbox count round trips");
+  require(loaded.schematics[0].textboxes[0].id == "TBX1", "textbox id round trips");
+  require(loaded.schematics[0].textboxes[0].area.size.width.nanometers == 200, "textbox area round trips");
+
+  require(loaded.schematics[0].graphics.size() == 1, "graphic count round trips");
+  require(loaded.schematics[0].graphics[0].id == "GR1", "graphic id round trips");
+  require(loaded.schematics[0].graphics[0].kind == "line", "graphic kind round trips");
+  require(loaded.schematics[0].graphics[0].width.nanometers == 5, "graphic width round trips");
+  require(loaded.schematics[0].graphics[0].color == "#FF0000", "graphic color round trips");
+
   require(ccad::dumpProjectJson(loaded) == json, "json output is deterministic");
 
   Project escaped;
