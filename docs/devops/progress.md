@@ -6,8 +6,8 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 256
-- Branch: `sprint-256-sch-sheetpin-missed-tests`
+- Sprint: 259
+- Branch: `main`
 - Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 covered the bounded runtime and EDA evidence expansion through Sprint 225. Phase 9 is the bounded KiCad parity execution phase.
@@ -20,9 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
-- **Sprint 257**: Schematic Collector Parity
-  - **Goal**: Implement `SchematicCollector` logic with KiCad compatibility and map `SCH_COLLECTOR` capabilities in `ccad_core` and `ccad_cli`.
-  - **Status**: Completed. Implemented `SchematicCollector` logic with KiCad compatibility and mapped `SCH_COLLECTOR` capabilities in `ccad_core` and `ccad_cli`. Completed tests and visual validation. Ready to merge into `main`.
+- **Sprint 258**: Schematic Group (SchGroup) Support
+  - **Goal**: Replicate KiCad's `SCH_GROUP` logic into `ccad_core` to support logical groups of schematic items.
+  - **Status**: Completed. Implemented `SchGroup` parsing, bounding box calculation, hit testing, and serialization. Successfully generated visual demo and merged into `main`.
 
 ## Prior Sprints
 - **Sprint 256**: Schematic Item Geometry Phase 4 (Sheet Pins and Missed Tests)

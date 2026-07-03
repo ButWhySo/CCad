@@ -154,6 +154,16 @@ int main() {
       .target = "N_3V3",
       .value = "3.3V",
   });
+  project.schematics[0].junctions.push_back(ccad::SchJunction{
+      .id = "J1",
+      .position = ccad::Point{ccad::nanometers(100), ccad::nanometers(200)},
+      .diameter = ccad::millimeters(0.5),
+      .color = "#FF0000",
+  });
+  project.schematics[0].no_connects.push_back(ccad::SchNoConnect{
+      .id = "NC1",
+      .position = ccad::Point{ccad::nanometers(300), ccad::nanometers(400)},
+  });
 
   const std::string json = ccad::dumpProjectJson(project);
 
@@ -309,6 +319,10 @@ int main() {
   require(loaded.schematics[0].groups.at(0).id == "G1", "sch group id round trips");
   require(loaded.schematics[0].groups.at(0).members.size() == 2, "sch group members round trip");
   require(loaded.schematics[0].constraints.size() == 1, "constraint count round trips");
+  require(loaded.schematics[0].junctions.size() == 1, "junction count round trips");
+  require(loaded.schematics[0].junctions[0].id == "J1", "junction id round trips");
+  require(loaded.schematics[0].no_connects.size() == 1, "no connect count round trips");
+  require(loaded.schematics[0].no_connects[0].id == "NC1", "no connect id round trips");
   require(ccad::dumpProjectJson(loaded) == json, "json output is deterministic");
 
   Project escaped;

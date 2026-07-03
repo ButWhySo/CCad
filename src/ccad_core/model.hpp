@@ -104,12 +104,14 @@ struct SchGroup {
 };
 
 struct SchJunction {
+  std::string id;
   Point position;
   Length diameter = millimeters(0); // 0 means default
   std::string color = "";
 };
 
 struct SchNoConnect {
+  std::string id;
   Point position;
 };
 

@@ -206,6 +206,10 @@ class JsonReader {
         ensureSchematic(project).constraints = readConstraints();
       } else if (key == "groups") {
         ensureSchematic(project).groups = readSchGroups();
+      } else if (key == "junctions") {
+        ensureSchematic(project).junctions = readSchJunctions();
+      } else if (key == "no_connects") {
+        ensureSchematic(project).no_connects = readSchNoConnects();
       } else {
         throw std::runtime_error("unknown project key: " + key);
       }
@@ -1174,6 +1178,86 @@ class JsonReader {
       expect(',');
       if (peek(']')) {
         throw std::runtime_error("trailing comma in board groups array");
+      }
+    }
+  }
+
+  std::vector<SchJunction> readSchJunctions() {
+    std::vector<SchJunction> junctions;
+    expect('[');
+    if (consume(']')) {
+      return junctions;
+    }
+    while (true) {
+      SchJunction junc;
+      expect('{');
+      while (true) {
+        std::string key = readString();
+        expect(':');
+        if (key == "id") {
+          junc.id = readString();
+        } else if (key == "position") {
+          junc.position = readPoint();
+        } else if (key == "diameter_nm") {
+          junc.diameter = nanometers(readInt64());
+        } else if (key == "color") {
+          junc.color = readString();
+        } else {
+          throw std::runtime_error("unknown sch junction key: " + key);
+        }
+        if (consume('}')) {
+          break;
+        }
+        expect(',');
+        if (peek('}')) {
+          throw std::runtime_error("trailing comma in sch junction object");
+        }
+      }
+      junctions.push_back(junc);
+      if (consume(']')) {
+        return junctions;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in sch junctions array");
+      }
+    }
+  }
+
+  std::vector<SchNoConnect> readSchNoConnects() {
+    std::vector<SchNoConnect> ncs;
+    expect('[');
+    if (consume(']')) {
+      return ncs;
+    }
+    while (true) {
+      SchNoConnect nc;
+      expect('{');
+      while (true) {
+        std::string key = readString();
+        expect(':');
+        if (key == "id") {
+          nc.id = readString();
+        } else if (key == "position") {
+          nc.position = readPoint();
+        } else {
+          throw std::runtime_error("unknown sch no_connect key: " + key);
+        }
+        if (consume('}')) {
+          break;
+        }
+        expect(',');
+        if (peek('}')) {
+          throw std::runtime_error("trailing comma in sch no_connect object");
+        }
+      }
+      ncs.push_back(nc);
+      if (consume(']')) {
+        return ncs;
+      }
+      expect(',');
+      if (peek(']')) {
+        throw std::runtime_error("trailing comma in sch no_connects array");
       }
     }
   }
@@ -2872,6 +2956,45 @@ std::string dumpProjectJson(const Project& project) {
     }
     out << "      ]\n";
     out << "    }" << (i + 1 == sch->groups.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n";
+
+  out << "  \"junctions\": [\n";
+  for (std::size_t i = 0; i < sch->junctions.size(); ++i) {
+    const SchJunction& junc = sch->junctions.at(i);
+    out << "    {\n";
+    writeField(out, 6, "id", junc.id);
+    out << "      \"position\": ";
+    writePoint(out, 0, junc.position);
+    if (junc.diameter.nanometers > 0 || !junc.color.empty()) {
+      out << ",\n";
+      if (junc.diameter.nanometers > 0) {
+        out << "      \"diameter_nm\": " << junc.diameter.nanometers;
+        if (!junc.color.empty()) {
+          out << ",\n";
+        } else {
+          out << "\n";
+        }
+      }
+      if (!junc.color.empty()) {
+        writeField(out, 6, "color", junc.color, false);
+      }
+    } else {
+      out << "\n";
+    }
+    out << "    }" << (i + 1 == sch->junctions.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n";
+
+  out << "  \"no_connects\": [\n";
+  for (std::size_t i = 0; i < sch->no_connects.size(); ++i) {
+    const SchNoConnect& nc = sch->no_connects.at(i);
+    out << "    {\n";
+    writeField(out, 6, "id", nc.id);
+    out << "      \"position\": ";
+    writePoint(out, 0, nc.position);
+    out << "\n";
+    out << "    }" << (i + 1 == sch->no_connects.size() ? "" : ",") << '\n';
   }
   out << "  ]\n";
   out << "}\n";
