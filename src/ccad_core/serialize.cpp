@@ -227,6 +227,16 @@ class JsonReader {
         ensureSchematic(project).textboxes = readSchTextBoxes();
       } else if (key == "graphics") {
         ensureSchematic(project).graphics = readSchGraphics();
+      } else if (key == "markers") {
+        ensureSchematic(project).markers = readSchMarkers();
+      } else if (key == "bus_entries") {
+        ensureSchematic(project).bus_entries = readSchBusEntries();
+      } else if (key == "bitmaps") {
+        ensureSchematic(project).bitmaps = readSchBitmaps();
+      } else if (key == "rule_areas") {
+        ensureSchematic(project).rule_areas = readSchRuleAreas();
+      } else if (key == "tables") {
+        ensureSchematic(project).tables = readSchTables();
       } else {
         throw std::runtime_error("unknown project key: " + key);
       }
@@ -1329,6 +1339,213 @@ class JsonReader {
       expect(',');
     }
     return graphics;
+  }
+
+  std::vector<SchMarker> readSchMarkers() {
+    std::vector<SchMarker> items;
+    expect('[');
+    if (consume(']')) return items;
+    while (true) {
+      SchMarker item;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            item.id = readString();
+          } else if (key == "kind") {
+            item.kind = readString();
+          } else if (key == "severity") {
+            item.severity = readString();
+          } else if (key == "position") {
+            item.position = readPoint();
+          } else {
+            throw std::runtime_error("unknown sch marker key: " + key);
+          }
+          if (consume('}')) break;
+          expect(',');
+        }
+      }
+      items.push_back(item);
+      if (consume(']')) break;
+      expect(',');
+    }
+    return items;
+  }
+
+  std::vector<SchBusEntry> readSchBusEntries() {
+    std::vector<SchBusEntry> items;
+    expect('[');
+    if (consume(']')) return items;
+    while (true) {
+      SchBusEntry item;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            item.id = readString();
+          } else if (key == "kind") {
+            item.kind = readString();
+          } else if (key == "position") {
+            item.position = readPoint();
+          } else if (key == "size") {
+            item.size = readSize();
+          } else {
+            throw std::runtime_error("unknown sch bus entry key: " + key);
+          }
+          if (consume('}')) break;
+          expect(',');
+        }
+      }
+      items.push_back(item);
+      if (consume(']')) break;
+      expect(',');
+    }
+    return items;
+  }
+
+  std::vector<SchBitmap> readSchBitmaps() {
+    std::vector<SchBitmap> items;
+    expect('[');
+    if (consume(']')) return items;
+    while (true) {
+      SchBitmap item;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            item.id = readString();
+          } else if (key == "data") {
+            item.data = readString();
+          } else if (key == "position") {
+            item.position = readPoint();
+          } else if (key == "scale") {
+            item.scale = readDouble();
+          } else {
+            throw std::runtime_error("unknown sch bitmap key: " + key);
+          }
+          if (consume('}')) break;
+          expect(',');
+        }
+      }
+      items.push_back(item);
+      if (consume(']')) break;
+      expect(',');
+    }
+    return items;
+  }
+
+  std::vector<SchRuleArea> readSchRuleAreas() {
+    std::vector<SchRuleArea> items;
+    expect('[');
+    if (consume(']')) return items;
+    while (true) {
+      SchRuleArea item;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            item.id = readString();
+          } else if (key == "name") {
+            item.name = readString();
+          } else if (key == "locked") {
+            item.locked = readBool();
+          } else if (key == "outline") {
+            expect('[');
+            if (!consume(']')) {
+              while (true) {
+                item.outline.push_back(readPoint());
+                if (consume(']')) break;
+                expect(',');
+              }
+            }
+          } else {
+            throw std::runtime_error("unknown sch rule area key: " + key);
+          }
+          if (consume('}')) break;
+          expect(',');
+        }
+      }
+      items.push_back(item);
+      if (consume(']')) break;
+      expect(',');
+    }
+    return items;
+  }
+
+  std::vector<SchTableCell> readSchTableCells() {
+    std::vector<SchTableCell> items;
+    expect('[');
+    if (consume(']')) return items;
+    while (true) {
+      SchTableCell item;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "row") {
+            item.row = readInt();
+          } else if (key == "col") {
+            item.col = readInt();
+          } else if (key == "text") {
+            item.text = readString();
+          } else {
+            throw std::runtime_error("unknown sch table cell key: " + key);
+          }
+          if (consume('}')) break;
+          expect(',');
+        }
+      }
+      items.push_back(item);
+      if (consume(']')) break;
+      expect(',');
+    }
+    return items;
+  }
+
+  std::vector<SchTable> readSchTables() {
+    std::vector<SchTable> items;
+    expect('[');
+    if (consume(']')) return items;
+    while (true) {
+      SchTable item;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") {
+            item.id = readString();
+          } else if (key == "position") {
+            item.position = readPoint();
+          } else if (key == "rows") {
+            item.rows = readInt();
+          } else if (key == "cols") {
+            item.cols = readInt();
+          } else if (key == "size") {
+            item.size = readSize();
+          } else if (key == "cells") {
+            item.cells = readSchTableCells();
+          } else {
+            throw std::runtime_error("unknown sch table key: " + key);
+          }
+          if (consume('}')) break;
+          expect(',');
+        }
+      }
+      items.push_back(item);
+      if (consume(']')) break;
+      expect(',');
+    }
+    return items;
   }
 
   std::vector<SchSheetPin> readSchSheetPins() {
@@ -3322,6 +3539,93 @@ std::string dumpProjectJson(const Project& project) {
       out << "\n";
     }
     out << "    }" << (i + 1 == sch->graphics.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n";
+
+  out << "  \"markers\": [\n";
+  for (std::size_t i = 0; i < sch->markers.size(); ++i) {
+    const SchMarker& marker = sch->markers.at(i);
+    out << "    {\n";
+    writeField(out, 6, "id", marker.id);
+    writeField(out, 6, "kind", marker.kind);
+    writeField(out, 6, "severity", marker.severity);
+    out << "      \"position\": ";
+    writePoint(out, 0, marker.position);
+    out << "\n    }" << (i + 1 == sch->markers.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n";
+
+  out << "  \"bus_entries\": [\n";
+  for (std::size_t i = 0; i < sch->bus_entries.size(); ++i) {
+    const SchBusEntry& entry = sch->bus_entries.at(i);
+    out << "    {\n";
+    writeField(out, 6, "id", entry.id);
+    writeField(out, 6, "kind", entry.kind);
+    out << "      \"position\": ";
+    writePoint(out, 0, entry.position);
+    out << ",\n";
+    out << "      \"size\": ";
+    writeSize(out, 0, entry.size);
+    out << "\n    }" << (i + 1 == sch->bus_entries.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n";
+
+  out << "  \"bitmaps\": [\n";
+  for (std::size_t i = 0; i < sch->bitmaps.size(); ++i) {
+    const SchBitmap& bitmap = sch->bitmaps.at(i);
+    out << "    {\n";
+    writeField(out, 6, "id", bitmap.id);
+    writeField(out, 6, "data", bitmap.data);
+    out << "      \"position\": ";
+    writePoint(out, 0, bitmap.position);
+    out << ",\n";
+    out << "      \"scale\": " << bitmap.scale << "\n";
+    out << "    }" << (i + 1 == sch->bitmaps.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n";
+
+  out << "  \"rule_areas\": [\n";
+  for (std::size_t i = 0; i < sch->rule_areas.size(); ++i) {
+    const SchRuleArea& area = sch->rule_areas.at(i);
+    out << "    {\n";
+    writeField(out, 6, "id", area.id);
+    writeField(out, 6, "name", area.name);
+    out << "      \"locked\": " << (area.locked ? "true" : "false") << ",\n";
+    out << "      \"outline\": [\n";
+    for (std::size_t j = 0; j < area.outline.size(); ++j) {
+      out << "        ";
+      writePoint(out, 0, area.outline.at(j));
+      out << (j + 1 == area.outline.size() ? "\n" : ",\n");
+    }
+    out << "      ]\n";
+    out << "    }" << (i + 1 == sch->rule_areas.size() ? "" : ",") << '\n';
+  }
+  out << "  ],\n";
+
+  out << "  \"tables\": [\n";
+  for (std::size_t i = 0; i < sch->tables.size(); ++i) {
+    const SchTable& table = sch->tables.at(i);
+    out << "    {\n";
+    writeField(out, 6, "id", table.id);
+    out << "      \"position\": ";
+    writePoint(out, 0, table.position);
+    out << ",\n";
+    out << "      \"rows\": " << table.rows << ",\n";
+    out << "      \"cols\": " << table.cols << ",\n";
+    out << "      \"size\": ";
+    writeSize(out, 0, table.size);
+    out << ",\n";
+    out << "      \"cells\": [\n";
+    for (std::size_t j = 0; j < table.cells.size(); ++j) {
+      const SchTableCell& cell = table.cells.at(j);
+      out << "        {\n";
+      out << "          \"row\": " << cell.row << ",\n";
+      out << "          \"col\": " << cell.col << ",\n";
+      writeField(out, 10, "text", cell.text, false);
+      out << "        }" << (j + 1 == table.cells.size() ? "" : ",") << '\n';
+    }
+    out << "      ]\n";
+    out << "    }" << (i + 1 == sch->tables.size() ? "" : ",") << '\n';
   }
   out << "  ]\n";
   out << "}\n";

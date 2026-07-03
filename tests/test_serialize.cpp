@@ -202,6 +202,48 @@ int main() {
   test_graphic.color = "#FF0000";
   project.schematics[0].graphics.push_back(test_graphic);
 
+  ccad::SchMarker test_marker;
+  test_marker.id = "MK1";
+  test_marker.kind = "erc";
+  test_marker.severity = "warning";
+  test_marker.position = ccad::Point{ccad::nanometers(10), ccad::nanometers(10)};
+  project.schematics[0].markers.push_back(test_marker);
+
+  ccad::SchBusEntry test_entry;
+  test_entry.id = "BE1";
+  test_entry.kind = "wire";
+  test_entry.position = ccad::Point{ccad::nanometers(20), ccad::nanometers(20)};
+  test_entry.size = ccad::Size{ccad::nanometers(100), ccad::nanometers(100)};
+  project.schematics[0].bus_entries.push_back(test_entry);
+
+  ccad::SchBitmap test_bitmap;
+  test_bitmap.id = "BMP1";
+  test_bitmap.data = "base64data";
+  test_bitmap.position = ccad::Point{ccad::nanometers(30), ccad::nanometers(30)};
+  test_bitmap.scale = 2.5;
+  project.schematics[0].bitmaps.push_back(test_bitmap);
+
+  ccad::SchRuleArea test_area;
+  test_area.id = "RA1";
+  test_area.name = "Keepout";
+  test_area.locked = true;
+  test_area.outline.push_back(ccad::Point{ccad::nanometers(0), ccad::nanometers(0)});
+  test_area.outline.push_back(ccad::Point{ccad::nanometers(100), ccad::nanometers(100)});
+  project.schematics[0].rule_areas.push_back(test_area);
+
+  ccad::SchTable test_table;
+  test_table.id = "TBL1";
+  test_table.position = ccad::Point{ccad::nanometers(40), ccad::nanometers(40)};
+  test_table.rows = 2;
+  test_table.cols = 2;
+  test_table.size = ccad::Size{ccad::nanometers(200), ccad::nanometers(200)};
+  ccad::SchTableCell cell1;
+  cell1.row = 0;
+  cell1.col = 0;
+  cell1.text = "Header";
+  test_table.cells.push_back(cell1);
+  project.schematics[0].tables.push_back(test_table);
+
   const std::string json = ccad::dumpProjectJson(project);
 
   require(json.find("\"schema_version\": 2") != std::string::npos, "schema version emitted");
@@ -384,6 +426,29 @@ int main() {
   require(loaded.schematics[0].graphics[0].kind == "line", "graphic kind round trips");
   require(loaded.schematics[0].graphics[0].width.nanometers == 5, "graphic width round trips");
   require(loaded.schematics[0].graphics[0].color == "#FF0000", "graphic color round trips");
+
+  require(loaded.schematics[0].markers.size() == 1, "marker count round trips");
+  require(loaded.schematics[0].markers[0].id == "MK1", "marker id round trips");
+  require(loaded.schematics[0].markers[0].severity == "warning", "marker severity round trips");
+
+  require(loaded.schematics[0].bus_entries.size() == 1, "bus entry count round trips");
+  require(loaded.schematics[0].bus_entries[0].id == "BE1", "bus entry id round trips");
+  require(loaded.schematics[0].bus_entries[0].size.width.nanometers == 100, "bus entry size round trips");
+
+  require(loaded.schematics[0].bitmaps.size() == 1, "bitmap count round trips");
+  require(loaded.schematics[0].bitmaps[0].id == "BMP1", "bitmap id round trips");
+  require(loaded.schematics[0].bitmaps[0].scale == 2.5, "bitmap scale round trips");
+
+  require(loaded.schematics[0].rule_areas.size() == 1, "rule area count round trips");
+  require(loaded.schematics[0].rule_areas[0].id == "RA1", "rule area id round trips");
+  require(loaded.schematics[0].rule_areas[0].locked == true, "rule area lock round trips");
+  require(loaded.schematics[0].rule_areas[0].outline.size() == 2, "rule area outline round trips");
+
+  require(loaded.schematics[0].tables.size() == 1, "table count round trips");
+  require(loaded.schematics[0].tables[0].id == "TBL1", "table id round trips");
+  require(loaded.schematics[0].tables[0].rows == 2, "table rows round trips");
+  require(loaded.schematics[0].tables[0].cells.size() == 1, "table cells round trips");
+  require(loaded.schematics[0].tables[0].cells[0].text == "Header", "table cell text round trips");
 
   require(ccad::dumpProjectJson(loaded) == json, "json output is deterministic");
 
