@@ -743,6 +743,94 @@ BoundingBox itemBoundingBox(const SchNoConnect& nc) {
   return bb;
 }
 
+BoundingBox itemBoundingBox(const SchPin& pin) {
+  int64_t halfW = pin.length.nanometers / 2;
+  int64_t cx = pin.position.x.nanometers;
+  int64_t cy = pin.position.y.nanometers;
+  switch (pin.orientation) {
+    case PinOrientation::Right: cx += halfW; break;
+    case PinOrientation::Left:  cx -= halfW; break;
+    case PinOrientation::Up:    cy -= halfW; break;
+    case PinOrientation::Down:  cy += halfW; break;
+    default: break;
+  }
+  int64_t thick = pin.name_text_size.nanometers;
+  if (thick <= 0) thick = 1250000;
+  BoundingBox bb;
+  bb.min.x = nanometers(cx - halfW - thick);
+  bb.min.y = nanometers(cy - halfW - thick);
+  bb.max.x = nanometers(cx + halfW + thick);
+  bb.max.y = nanometers(cy + halfW + thick);
+  bb.valid = true;
+  return bb;
+}
+
+BoundingBox itemBoundingBox(const SchField& field) {
+  BoundingBox bb;
+  if (!field.visible) return bb;
+  bb.min.x = field.position.x;
+  bb.min.y = field.position.y;
+  bb.max.x = nanometers(field.position.x.nanometers + field.size.width.nanometers);
+  bb.max.y = nanometers(field.position.y.nanometers + field.size.height.nanometers);
+  bb.valid = true;
+  return bb;
+}
+
+BoundingBox itemBoundingBox(const SchBusEntry& bus_entry) {
+  BoundingBox bb;
+  bb.min.x = nanometers(std::min(bus_entry.position.x.nanometers, bus_entry.position.x.nanometers + bus_entry.size.width.nanometers));
+  bb.min.y = nanometers(std::min(bus_entry.position.y.nanometers, bus_entry.position.y.nanometers + bus_entry.size.height.nanometers));
+  bb.max.x = nanometers(std::max(bus_entry.position.x.nanometers, bus_entry.position.x.nanometers + bus_entry.size.width.nanometers));
+  bb.max.y = nanometers(std::max(bus_entry.position.y.nanometers, bus_entry.position.y.nanometers + bus_entry.size.height.nanometers));
+  bb.valid = true;
+  return bb;
+}
+
+BoundingBox itemBoundingBox(const SchBitmap& bitmap) {
+  BoundingBox bb;
+  int64_t hw = static_cast<int64_t>(5000000 * bitmap.scale);
+  bb.min.x = nanometers(bitmap.position.x.nanometers - hw);
+  bb.min.y = nanometers(bitmap.position.y.nanometers - hw);
+  bb.max.x = nanometers(bitmap.position.x.nanometers + hw);
+  bb.max.y = nanometers(bitmap.position.y.nanometers + hw);
+  bb.valid = true;
+  return bb;
+}
+
+BoundingBox itemBoundingBox(const SchRuleArea& rule_area) {
+  if (rule_area.outline.empty()) return BoundingBox{};
+
+  int64_t minX = std::numeric_limits<int64_t>::max();
+  int64_t minY = std::numeric_limits<int64_t>::max();
+  int64_t maxX = std::numeric_limits<int64_t>::min();
+  int64_t maxY = std::numeric_limits<int64_t>::min();
+
+  for (const Point& pt : rule_area.outline) {
+    minX = std::min(minX, pt.x.nanometers);
+    minY = std::min(minY, pt.y.nanometers);
+    maxX = std::max(maxX, pt.x.nanometers);
+    maxY = std::max(maxY, pt.y.nanometers);
+  }
+
+  BoundingBox bb;
+  bb.min.x = nanometers(minX);
+  bb.min.y = nanometers(minY);
+  bb.max.x = nanometers(maxX);
+  bb.max.y = nanometers(maxY);
+  bb.valid = true;
+  return bb;
+}
+
+BoundingBox itemBoundingBox(const SchTable& table) {
+  BoundingBox bb;
+  bb.min.x = table.position.x;
+  bb.min.y = table.position.y;
+  bb.max.x = nanometers(table.position.x.nanometers + table.size.width.nanometers);
+  bb.max.y = nanometers(table.position.y.nanometers + table.size.height.nanometers);
+  bb.valid = true;
+  return bb;
+}
+
 bool itemHitTest(const SchText& text, Point testPoint) {
   return pointInsideRect(testPoint, text.position, 
                          Point{nanometers(text.position.x.nanometers + text.size.width.nanometers), 
@@ -786,6 +874,60 @@ bool itemHitTest(const SchNoConnect& nc, Point testPoint) {
   int64_t r = 1000000; // 1.0mm
   return (std::abs(testPoint.x.nanometers - nc.position.x.nanometers) <= r &&
           std::abs(testPoint.y.nanometers - nc.position.y.nanometers) <= r);
+}
+
+bool itemHitTest(const SchPin& pin, Point testPoint, int64_t accuracy_nm) {
+  auto bb = itemBoundingBox(pin);
+  if (!bb.valid) return false;
+  int64_t acc = std::max(accuracy_nm, static_cast<int64_t>(1250000));
+  return pointInsideRect(testPoint, 
+                         Point{nanometers(bb.min.x.nanometers - acc), nanometers(bb.min.y.nanometers - acc)}, 
+                         Point{nanometers(bb.max.x.nanometers + acc), nanometers(bb.max.y.nanometers + acc)});
+}
+
+bool itemHitTest(const SchField& field, Point testPoint) {
+  auto bb = itemBoundingBox(field);
+  return bb.valid && pointInsideRect(testPoint, bb.min, bb.max);
+}
+
+bool itemHitTest(const SchBusEntry& bus_entry, Point testPoint, int64_t accuracy_nm) {
+  double threshold = static_cast<double>(accuracy_nm);
+  if (threshold < 1e-9) threshold = 250000.0;
+  Point end = {nanometers(bus_entry.position.x.nanometers + bus_entry.size.width.nanometers),
+               nanometers(bus_entry.position.y.nanometers + bus_entry.size.height.nanometers)};
+  double dist = distancePointToSegment(testPoint, bus_entry.position, end);
+  return dist <= threshold;
+}
+
+bool itemHitTest(const SchBitmap& bitmap, Point testPoint) {
+  auto bb = itemBoundingBox(bitmap);
+  return bb.valid && pointInsideRect(testPoint, bb.min, bb.max);
+}
+
+bool itemHitTest(const SchRuleArea& rule_area, Point testPoint) {
+  if (rule_area.outline.size() < 3) return false;
+
+  double px = static_cast<double>(testPoint.x.nanometers);
+  double py = static_cast<double>(testPoint.y.nanometers);
+  bool inside = false;
+  size_t n = rule_area.outline.size();
+  for (size_t i = 0, j = n - 1; i < n; j = i++) {
+    double yi = static_cast<double>(rule_area.outline[i].y.nanometers);
+    double yj = static_cast<double>(rule_area.outline[j].y.nanometers);
+    double xi = static_cast<double>(rule_area.outline[i].x.nanometers);
+    double xj = static_cast<double>(rule_area.outline[j].x.nanometers);
+
+    if (((yi > py) != (yj > py)) &&
+        (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+bool itemHitTest(const SchTable& table, Point testPoint) {
+  auto bb = itemBoundingBox(table);
+  return bb.valid && pointInsideRect(testPoint, bb.min, bb.max);
 }
 
 double itemLength(const SchWire& wire) {

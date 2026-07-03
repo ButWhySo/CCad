@@ -498,6 +498,113 @@ static void testSchGraphicGeometry() {
   std::cout << "  PASS: testSchGraphicGeometry\n";
 }
 
+// --- Schematic geometry tests ---
+
+static void testSchPinBoundingBox() {
+  SchPin pin;
+  pin.position = {millimeters(10), millimeters(10)};
+  pin.length = millimeters(5);
+  pin.orientation = PinOrientation::Right;
+  pin.name_text_size = millimeters(1);
+
+  auto bb = itemBoundingBox(pin);
+  assertTrue(bb.valid, "sch pin bb valid");
+  // cx = 10 + 2.5 = 12.5. cy = 10.
+  // halfW = 2.5, thick = 1.0.
+  // min.x = 12.5 - 2.5 - 1.0 = 9.0
+  // max.x = 12.5 + 2.5 + 1.0 = 16.0
+  // min.y = 10 - 2.5 - 1.0 = 6.5
+  // max.y = 10 + 2.5 + 1.0 = 13.5
+  assertClose(toMillimeters(bb.min.x), 9.0, 0.01, "sch pin bb min.x");
+  assertClose(toMillimeters(bb.max.x), 16.0, 0.01, "sch pin bb max.x");
+  assertClose(toMillimeters(bb.min.y), 6.5, 0.01, "sch pin bb min.y");
+  assertClose(toMillimeters(bb.max.y), 13.5, 0.01, "sch pin bb max.y");
+  std::cout << "  PASS: testSchPinBoundingBox\n";
+}
+
+static void testSchFieldBoundingBox() {
+  SchField field;
+  field.visible = true;
+  field.position = {millimeters(2), millimeters(3)};
+  field.size = {millimeters(4), millimeters(5)};
+
+  auto bb = itemBoundingBox(field);
+  assertTrue(bb.valid, "sch field bb valid");
+  assertClose(toMillimeters(bb.min.x), 2.0, 0.01, "sch field bb min.x");
+  assertClose(toMillimeters(bb.max.x), 6.0, 0.01, "sch field bb max.x");
+  assertClose(toMillimeters(bb.min.y), 3.0, 0.01, "sch field bb min.y");
+  assertClose(toMillimeters(bb.max.y), 8.0, 0.01, "sch field bb max.y");
+  std::cout << "  PASS: testSchFieldBoundingBox\n";
+}
+
+static void testSchBusEntryHitTest() {
+  SchBusEntry entry;
+  entry.position = {millimeters(1), millimeters(1)};
+  entry.size = {millimeters(2), millimeters(2)};
+
+  // entry goes from (1,1) to (3,3)
+  assertTrue(itemHitTest(entry, {millimeters(2), millimeters(2)}), "entry hit mid");
+  assertFalse(itemHitTest(entry, {millimeters(0), millimeters(0)}), "entry miss outside");
+  std::cout << "  PASS: testSchBusEntryHitTest\n";
+}
+
+static void testSchBitmapBoundingBox() {
+  SchBitmap bitmap;
+  bitmap.position = {millimeters(5), millimeters(5)};
+  bitmap.scale = 2.0;
+
+  auto bb = itemBoundingBox(bitmap);
+  assertTrue(bb.valid, "sch bitmap bb valid");
+  // hw = 5000000 * 2.0 = 10000000 nm (10mm).
+  // center is at 5mm. min = 5 - 10 = -5mm. max = 5 + 10 = 15mm.
+  assertClose(toMillimeters(bb.min.x), -5.0, 0.01, "sch bitmap bb min.x");
+  assertClose(toMillimeters(bb.max.x), 15.0, 0.01, "sch bitmap bb max.x");
+  assertClose(toMillimeters(bb.min.y), -5.0, 0.01, "sch bitmap bb min.y");
+  assertClose(toMillimeters(bb.max.y), 15.0, 0.01, "sch bitmap bb max.y");
+  
+  assertTrue(itemHitTest(bitmap, {millimeters(0), millimeters(0)}), "sch bitmap hit mid");
+  assertFalse(itemHitTest(bitmap, {millimeters(20), millimeters(0)}), "sch bitmap miss");
+  std::cout << "  PASS: testSchBitmapBoundingBox\n";
+}
+
+static void testSchRuleAreaBoundingBox() {
+  SchRuleArea area;
+  area.outline = {
+    {millimeters(0), millimeters(0)},
+    {millimeters(10), millimeters(0)},
+    {millimeters(10), millimeters(10)},
+    {millimeters(0), millimeters(10)}
+  };
+  
+  auto bb = itemBoundingBox(area);
+  assertTrue(bb.valid, "sch rule area bb valid");
+  assertClose(toMillimeters(bb.min.x), 0.0, 0.01, "sch rule area bb min.x");
+  assertClose(toMillimeters(bb.max.x), 10.0, 0.01, "sch rule area bb max.x");
+  assertClose(toMillimeters(bb.min.y), 0.0, 0.01, "sch rule area bb min.y");
+  assertClose(toMillimeters(bb.max.y), 10.0, 0.01, "sch rule area bb max.y");
+  
+  assertTrue(itemHitTest(area, {millimeters(5), millimeters(5)}), "sch rule area hit mid");
+  assertFalse(itemHitTest(area, {millimeters(15), millimeters(5)}), "sch rule area miss");
+  std::cout << "  PASS: testSchRuleAreaBoundingBox\n";
+}
+
+static void testSchTableBoundingBox() {
+  SchTable table;
+  table.position = {millimeters(2), millimeters(2)};
+  table.size = {millimeters(8), millimeters(4)};
+  
+  auto bb = itemBoundingBox(table);
+  assertTrue(bb.valid, "sch table bb valid");
+  assertClose(toMillimeters(bb.min.x), 2.0, 0.01, "sch table bb min.x");
+  assertClose(toMillimeters(bb.max.x), 10.0, 0.01, "sch table bb max.x");
+  assertClose(toMillimeters(bb.min.y), 2.0, 0.01, "sch table bb min.y");
+  assertClose(toMillimeters(bb.max.y), 6.0, 0.01, "sch table bb max.y");
+  
+  assertTrue(itemHitTest(table, {millimeters(5), millimeters(5)}), "sch table hit mid");
+  assertFalse(itemHitTest(table, {millimeters(0), millimeters(0)}), "sch table miss");
+  std::cout << "  PASS: testSchTableBoundingBox\n";
+}
+
 int main() {
   std::cout << "item_geometry tests:\n";
 
@@ -517,6 +624,7 @@ int main() {
   testKeepoutBoundingBox();
 
   // Hit-test tests
+
   testPadHitTestCircle();
   testViaHitTest();
   testTrackHitTest();
@@ -539,9 +647,15 @@ int main() {
   testSchWireBoundingBoxAndLength();
   testSchJunctionGeometry();
   testSchGraphicGeometry();
+  testSchPinBoundingBox();
+  testSchFieldBoundingBox();
+  testSchBusEntryHitTest();
   testSchTextGeometry();
   testSchSymbolGeometry();
   testSchSheetGeometry();
+  testSchBitmapBoundingBox();
+  testSchRuleAreaBoundingBox();
+  testSchTableBoundingBox();
 
   std::cout << "\nAll item_geometry tests passed.\n";
   return 0;

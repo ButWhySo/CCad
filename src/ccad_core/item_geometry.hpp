@@ -37,6 +37,12 @@ BoundingBox itemBoundingBox(const SchSymbol& symbol);
 BoundingBox itemBoundingBox(const SchSheet& sheet);
 BoundingBox itemBoundingBox(const SchMarker& marker);
 BoundingBox itemBoundingBox(const SchNoConnect& nc);
+BoundingBox itemBoundingBox(const SchPin& pin);
+BoundingBox itemBoundingBox(const SchField& field);
+BoundingBox itemBoundingBox(const SchBusEntry& bus_entry);
+BoundingBox itemBoundingBox(const SchBitmap& bitmap);
+BoundingBox itemBoundingBox(const SchRuleArea& rule_area);
+BoundingBox itemBoundingBox(const SchTable& table);
 
 // ---------------------------------------------------------------------------
 // Hit-Test computations
@@ -60,6 +66,12 @@ bool itemHitTest(const SchSymbol& symbol, Point testPoint);
 bool itemHitTest(const SchSheet& sheet, Point testPoint);
 bool itemHitTest(const SchMarker& marker, Point testPoint);
 bool itemHitTest(const SchNoConnect& nc, Point testPoint);
+bool itemHitTest(const SchPin& pin, Point testPoint, int64_t accuracy_nm = 0);
+bool itemHitTest(const SchField& field, Point testPoint);
+bool itemHitTest(const SchBusEntry& bus_entry, Point testPoint, int64_t accuracy_nm = 0);
+bool itemHitTest(const SchBitmap& bitmap, Point testPoint);
+bool itemHitTest(const SchRuleArea& rule_area, Point testPoint);
+bool itemHitTest(const SchTable& table, Point testPoint);
 
 // ---------------------------------------------------------------------------
 // Length computations

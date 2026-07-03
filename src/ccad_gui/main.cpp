@@ -755,6 +755,35 @@ int main(int argc, char** argv) {
     });
 
     return QApplication::exec();
+  } else if (argc == 4 && std::string(argv[1]) == "--screenshot-schematic") {
+    const std::filesystem::path project_path(argv[2]);
+    const char* screenshot_arg = argv[3];
+    const QString screenshot_path = QString::fromLocal8Bit(screenshot_arg);
+    auto* window = new ReviewWindow();
+    window->setAutomationMode(true);
+
+    window->loadProjectPath(project_path);
+    window->show();
+
+    QTimer::singleShot(500, window, [window, screenshot_path, screenshot_arg]() {
+      if (auto* tabs = window->findChild<QTabWidget*>("editorTabs")) {
+        tabs->setCurrentIndex(1); // switch to schematic tab
+      }
+      QTimer::singleShot(kSingleScreenshotWaitMs - 500, window, [window, screenshot_path, screenshot_arg]() {
+        const QPixmap screenshot = window->grab();
+        if (!screenshot.save(screenshot_path)) {
+          std::cerr << "failed to save GUI screenshot: " << screenshot_arg << '\n';
+          std::cerr.flush();
+          QCoreApplication::exit(2);
+        } else {
+          std::cout << "screenshot saved: " << screenshot_arg << '\n';
+          std::cout.flush();
+          QCoreApplication::exit(0);
+        }
+      });
+    });
+
+    return QApplication::exec();
   } else if (argc == 4 && (std::string(argv[1]) == "--screenshot-footprint" || std::string(argv[1]) == "--screenshot-symbol")) {
     const std::string mode = argv[1];
     const std::filesystem::path target_path(argv[2]);

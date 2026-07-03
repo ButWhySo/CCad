@@ -13,11 +13,17 @@
 namespace ccad {
 
 struct SchPin {
+  std::string id;
   std::string name;
   std::string number;
   ElectricalPinType electrical_type = ElectricalPinType::Unspecified;
   GraphicPinShape shape = GraphicPinShape::Line;
   PinOrientation orientation = PinOrientation::Right;
+  Point position;
+  Length length;
+  Length name_text_size;
+  Length num_text_size;
+  bool visible = true;
 };
 
 struct SchField {
@@ -143,6 +149,42 @@ struct SchMarker {
   std::string kind;
   std::string severity;
   Point position;
+};
+
+struct SchBusEntry {
+  std::string id;
+  std::string kind; // "wire" or "bus"
+  Point position;
+  Size size;
+};
+
+struct SchBitmap {
+  std::string id;
+  std::string data; // Base64 encoded image
+  Point position;
+  double scale = 1.0;
+};
+
+struct SchRuleArea {
+  std::string id;
+  std::string name;
+  std::vector<Point> outline;
+  bool locked = false;
+};
+
+struct SchTableCell {
+  int row = 0;
+  int col = 0;
+  std::string text;
+};
+
+struct SchTable {
+  std::string id;
+  Point position;
+  int rows = 1;
+  int cols = 1;
+  Size size;
+  std::vector<SchTableCell> cells;
 };
 
 struct Constraint {
@@ -490,6 +532,10 @@ struct Schematic {
   std::vector<SchTextBox> textboxes;
   std::vector<SchGraphic> graphics;
   std::vector<SchMarker> markers;
+  std::vector<SchBusEntry> bus_entries;
+  std::vector<SchBitmap> bitmaps;
+  std::vector<SchRuleArea> rule_areas;
+  std::vector<SchTable> tables;
   std::vector<Net> nets;
   std::vector<Constraint> constraints;
 };

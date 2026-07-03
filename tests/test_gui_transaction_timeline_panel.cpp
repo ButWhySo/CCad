@@ -30,7 +30,7 @@ ccad::Transaction addComponentTransaction() {
       .in_bom = true,
       .on_board = true,
       .fields = {},
-      .pins = {ccad::SchPin{.name = "VDD", .number = "", .electrical_type = ccad::ElectricalPinType::PowerIn}},
+      .pins = {ccad::SchPin{.id = "", .name = "VDD", .number = "", .electrical_type = ccad::ElectricalPinType::PowerIn, .shape = ccad::GraphicPinShape::Line, .orientation = ccad::PinOrientation::Right, .position = {}, .length = {}, .name_text_size = {}, .num_text_size = {}, .visible = true}},
   });
   return ccad::buildTransaction("txn-001", "sch add-component U1", "Add MCU", before, after);
 }
