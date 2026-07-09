@@ -308,7 +308,7 @@ Each sprint must ship a meaningful batch of at least eight to ten visible/user-m
 - [x] Stub: `sch_connection.cpp`, `sch_netchain.cpp`, `net_navigator.cpp` (Hierarchical schematic net connectivity algorithms) (Sprint 266)
 
 
-- [ ] Stub: `am_param.cpp`, `am_primitive.cpp`, `aperture_macro.cpp` (Gerber aperture macros and parameters)
+- [x] Stub: `am_param.cpp`, `am_primitive.cpp`, `aperture_macro.cpp` (Gerber aperture macros and parameters) (Sprint 267)
 - [ ] Stub: `dcode.cpp` (Gerber D-Code tool definitions)
 - [ ] Stub: `evaluate.cpp` (Expression evaluation for aperture variables)
 - [ ] Stub: `excellon_read_drill_file.cpp` (Excellon drill file parsing)

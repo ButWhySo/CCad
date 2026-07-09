@@ -20,6 +20,12 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 267**: Gerber Aperture macro and primitive stubs (`am_param`, `am_primitive`, `aperture_macro`).
+  - **Goal**: Add C++ headless primitives for modeling Gerber RS-274X aperture macros.
+  - **Status**: Completed. Merged into `ccad_core`.
+- **Sprint 266**: Hierarchical schematic net connectivity stubs (`sch_connection`, `sch_netchain`, `net_navigator`).
+  - **Goal**: Add headless C++ primitives for processing net mapping and connectivity tracing, mimicking KiCad's approach.
+  - **Status**: Completed. Merged `sch_connection`, `sch_netchain`, and `net_navigator` into `ccad_core`.
 - **Sprint 265**: Schematic DXF/SVG import utilities stub (`gfx_import_utils.cpp`).
   - **Goal**: Add headless C++ primitives for processing DXF and SVG imports into Schematic Graphics, without KiCad wxWidgets dependencies.
   - **Status**: Completed. Merged `gfx_import_utils.hpp` and `.cpp` into `ccad_core`.
