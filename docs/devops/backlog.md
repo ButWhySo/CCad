@@ -305,7 +305,7 @@ Each sprint must ship a meaningful batch of at least eight to ten visible/user-m
 
 - [x] Stub: `sch_symbol.cpp`, `sch_pin.cpp`, `sch_line.cpp`, `sch_junction.cpp`, `sch_label.cpp`, `sch_text.cpp`, `sch_bus_entry.cpp`, `sch_sheet.cpp` (Core schematic primitives) (Sprints 255-264)
 - [ ] Stub follow-up: extend Sprint 232's embedded symbol snapshot fix into full KiCad `SCH_SYMBOL`/`SCH_PIN` parity, including multi-unit symbols, alternate pin functions, field placement/autoplace, body conversion edge cases, sheet paths, and library-reference refresh without losing local snapshots.
-- [ ] Stub: `sch_connection.cpp`, `sch_netchain.cpp`, `net_navigator.cpp` (Hierarchical schematic net connectivity algorithms)
+- [x] Stub: `sch_connection.cpp`, `sch_netchain.cpp`, `net_navigator.cpp` (Hierarchical schematic net connectivity algorithms) (Sprint 266)
 
 
 - [ ] Stub: `am_param.cpp`, `am_primitive.cpp`, `aperture_macro.cpp` (Gerber aperture macros and parameters)
