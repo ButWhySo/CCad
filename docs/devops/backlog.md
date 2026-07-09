@@ -330,9 +330,9 @@ Each sprint must ship a meaningful batch of at least eight to ten visible/user-m
 - [x] Stub: `cvpcb/auto_associate.cpp` (Heuristics for automatically assigning footprints based on symbol properties) (Sprint 275)
 
 
-- [ ] Stub: `pcbnew/autorouter/ar_autoplacer.cpp`, `pcbnew/autorouter/spread_footprints.cpp` (Heuristics for packing and spreading footprints)
-- [ ] Stub: `pcbnew/router/pns_algo_base.cpp`, `pcbnew/router/pns_index.cpp`, `pcbnew/router/pns_node.cpp` (Push and Shove graph theory and spatial indexes)
-- [ ] Stub: `pcbnew/router/pns_dragger.cpp`, `pcbnew/router/pns_diff_pair_placer.cpp`, `pcbnew/router/pns_meander_placer.cpp` (Algorithms for shoving tracks, routing differential pairs, and length matching)
+- [x] Stub: `pcbnew/autorouter/ar_autoplacer.cpp`, `pcbnew/autorouter/spread_footprints.cpp` (Heuristics for packing and spreading footprints) (Sprint 276)
+- [x] Stub: `pcbnew/router/pns_algo_base.cpp`, `pcbnew/router/pns_index.cpp`, `pcbnew/router/pns_node.cpp` (Push and Shove graph theory and spatial indexes) (Sprint 277)
+- [x] Stub: `pcbnew/router/pns_dragger.cpp`, `pcbnew/router/pns_diff_pair_placer.cpp`, `pcbnew/router/pns_meander_placer.cpp` (Algorithms for shoving tracks, routing differential pairs, and length matching) (Sprint 277)
 
 
 - [ ] Stub: `pcbnew/pcb_io/allegro`, `altium`, `cadstar`, `eagle`, `easyeda`, `easyedapro`, `fabmaster`, `geda`, `pads`, `pcad`, `sprint_layout` (Importers for external 3rd-party EDA formats)

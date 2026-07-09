@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 277**: Pcbnew Push and Shove router heuristics and algorithmic stubs (`pns_algo_base`, `pns_index`, `pns_node`, `pns_dragger`, `pns_diff_pair_placer`, `pns_meander_placer`).
+  - **Goal**: Add C++ headless utility classes for the Push and Shove (PNS) interactive routing system.
+  - **Status**: Completed. Merged into `ccad_core`.
 - **Sprint 275**: Cvpcb auto associate footprint heuristic stubs (`auto_associate`).
   - **Goal**: Add C++ headless utility classes for footprint auto assignment heuristics.
   - **Status**: Completed. Merged into `ccad_core`.
