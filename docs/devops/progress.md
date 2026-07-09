@@ -6,7 +6,7 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 280
+- Sprint: 281
 - Branch: `main`
 - Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 281**: Graphics Abstraction Layer (GAL) base stub (`gal_base`).
+  - **Goal**: Add structural framework for hardware-accelerated drawing mirroring KiCad's GAL.
+  - **Status**: Completed. Merged into `ccad_core`.
 - **Sprint 280**: SchSymbol / SchPin implementation for schematic instantiation (`sch_symbol`).
   - **Goal**: Full KiCad SCH_SYMBOL/SCH_PIN parity, including multi-unit symbols, alternate pin functions, and local library-reference snapshots.
   - **Status**: Completed. Merged into `ccad_core`.
