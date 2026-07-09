@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 265**: Schematic DXF/SVG import utilities stub (`gfx_import_utils.cpp`).
+  - **Goal**: Add headless C++ primitives for processing DXF and SVG imports into Schematic Graphics, without KiCad wxWidgets dependencies.
+  - **Status**: Completed. Merged `gfx_import_utils.hpp` and `.cpp` into `ccad_core`.
 - **Sprint 264**: Schematic Primitive Rendering Parity (`SchText`, `SchGraphic`, `SchJunction`, `SchNoConnect`, `SchSheet`, `SchRuleArea`, etc.) into UI canvas representation.
   - **Goal**: Render schematic primitives on the Qt Canvas to achieve parity with the backend data representation.
   - **Status**: Completed. Ported primitive rendering logic to `schematic_canvas_renderer.cpp`. Resolved footprint pad parsing errors (`roundrect_rratio` and `chamfer_ratio`) during JSON load due to model updates. Verified visual output in the validation harness.

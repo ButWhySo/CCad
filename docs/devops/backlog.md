@@ -299,7 +299,7 @@ Each sprint must ship a meaningful batch of at least eight to ten visible/user-m
 - [ ] Stub: `connection_graph.cpp` (Core connectivity graph algorithm for schematic nets)
 
 
-- [ ] Stub: `gfx_import_utils.cpp` (Schematic DXF/SVG import utilities)
+- [x] Stub: `gfx_import_utils.cpp` (Schematic DXF/SVG import utilities) (Sprint 265)
 - [ ] Stub: `junction_helpers.cpp` (Visual junction creation heuristics for schematic intersections)
 
 
