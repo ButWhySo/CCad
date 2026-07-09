@@ -21,6 +21,8 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 
 ## Current Sprint
 - **Sprint 264**: Schematic Primitive Rendering Parity (`SchText`, `SchGraphic`, `SchJunction`, `SchNoConnect`, `SchSheet`, `SchRuleArea`, etc.) into UI canvas representation.
+  - **Goal**: Render schematic primitives on the Qt Canvas to achieve parity with the backend data representation.
+  - **Status**: Completed. Ported primitive rendering logic to `schematic_canvas_renderer.cpp`. Resolved footprint pad parsing errors (`roundrect_rratio` and `chamfer_ratio`) during JSON load due to model updates. Verified visual output in the validation harness.
 - **Sprint 263**: Schematic Symbol (SchSymbol) missing attributes serialization parity (`reference`, `unit`, `mirror_x`, `mirror_y`, `in_bom`, `on_board`, `fields`).
 - **Sprint 262**: Schematic Text, Graphic, and remaining object serialization parity.
 - **Sprint 261**: Schematic Sheet and Sheet Pin ID and serialization parity.

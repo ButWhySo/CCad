@@ -152,4 +152,94 @@ void renderSchematicCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene
     canvas_scene.addLine(x, y, x, y - 10.0, power_pen);
     canvas_scene.addLine(x - 5.0, y - 10.0, x + 5.0, y - 10.0, power_pen);
   }
+
+  // Graphic Lines
+  QPen graphic_pen(theme.drawing_color);
+  graphic_pen.setCapStyle(Qt::RoundCap);
+  graphic_pen.setJoinStyle(Qt::RoundJoin);
+  for (const ccad::CanvasLine& line : scene.lines) {
+    graphic_pen.setWidthF(std::max(0.2, line.width_units * scale));
+    const double sx = sceneX(scene, line.start_x_units, margin, scale);
+    const double sy = sceneY(scene, line.start_y_units, margin, scale);
+    const double ex = sceneX(scene, line.end_x_units, margin, scale);
+    const double ey = sceneY(scene, line.end_y_units, margin, scale);
+    
+    auto* item = canvas_scene.addLine(sx, sy, ex, ey, graphic_pen);
+    item->setData(kCanvasObjectIdRole, qstr(line.id));
+    item->setData(kCanvasObjectTypeRole, "GraphicLine");
+    item->setToolTip(qstr(line.id));
+    item->setFlag(QGraphicsItem::ItemIsSelectable, true);
+  }
+
+  // Graphic Arcs
+  for (const ccad::CanvasArc& arc : scene.arcs) {
+    graphic_pen.setWidthF(std::max(0.2, arc.width_units * scale));
+    const double sx = sceneX(scene, arc.start_x_units, margin, scale);
+    const double sy = sceneY(scene, arc.start_y_units, margin, scale);
+    const double ex = sceneX(scene, arc.end_x_units, margin, scale);
+    const double ey = sceneY(scene, arc.end_y_units, margin, scale);
+    QPainterPath path;
+    path.moveTo(sx, sy);
+    if (arc.mid_x_units != 0.0 || arc.mid_y_units != 0.0) {
+      path.quadTo(sceneX(scene, arc.mid_x_units, margin, scale), sceneY(scene, arc.mid_y_units, margin, scale), ex, ey);
+    } else {
+      path.lineTo(ex, ey);
+    }
+    auto* item = canvas_scene.addPath(path, graphic_pen);
+    item->setData(kCanvasObjectIdRole, qstr(arc.id));
+    item->setData(kCanvasObjectTypeRole, "GraphicArc");
+    item->setToolTip(qstr(arc.id));
+    item->setFlag(QGraphicsItem::ItemIsSelectable, true);
+  }
+
+  // Graphic Circles (Junctions, etc)
+  for (const ccad::CanvasCircle& circle : scene.circles) {
+    graphic_pen.setWidthF(std::max(0.2, circle.width_units * scale));
+    const double radius = circle.radius_units * scale;
+    const double cx = sceneX(scene, circle.center_x_units, margin, scale);
+    const double cy = sceneY(scene, circle.center_y_units, margin, scale);
+    
+    QBrush brush = Qt::NoBrush;
+    if (circle.fill_type == "background") brush = QBrush(theme.background_color);
+    else if (circle.fill_type == "solid") brush = QBrush(theme.symbol_pin_color);
+
+    auto* item = canvas_scene.addEllipse(cx - radius, cy - radius, radius * 2.0, radius * 2.0, graphic_pen, brush);
+    item->setData(kCanvasObjectIdRole, qstr(circle.id));
+    item->setData(kCanvasObjectTypeRole, "GraphicCircle");
+    item->setToolTip(qstr(circle.id));
+    item->setFlag(QGraphicsItem::ItemIsSelectable, true);
+  }
+
+  // Graphic Polygons
+  for (const ccad::CanvasPolygon& poly : scene.polygons) {
+    graphic_pen.setWidthF(std::max(0.2, poly.width_units * scale));
+    QPolygonF qpoly;
+    for (std::size_t j = 0; j < poly.pts_x_units.size() && j < poly.pts_y_units.size(); ++j) {
+      qpoly.append(QPointF(sceneX(scene, poly.pts_x_units[j], margin, scale),
+                           sceneY(scene, poly.pts_y_units[j], margin, scale)));
+    }
+    QBrush brush = Qt::NoBrush;
+    if (poly.fill_type == "background") brush = QBrush(theme.background_color);
+    else if (poly.fill_type == "solid") brush = QBrush(theme.drawing_color);
+    
+    auto* item = canvas_scene.addPolygon(qpoly, graphic_pen, brush);
+    item->setData(kCanvasObjectIdRole, qstr(poly.id));
+    item->setData(kCanvasObjectTypeRole, "GraphicPolygon");
+    item->setToolTip(qstr(poly.id));
+    item->setFlag(QGraphicsItem::ItemIsSelectable, true);
+  }
+
+  // Graphic Texts
+  for (const ccad::CanvasText& text : scene.texts) {
+    const double x = sceneX(scene, text.x_units, margin, scale);
+    const double y = sceneY(scene, text.y_units, margin, scale);
+    auto* item = canvas_scene.addText(qstr(text.text));
+    item->setDefaultTextColor(theme.drawing_color);
+    item->setPos(x, y);
+    item->setRotation(text.rotation_degrees);
+    item->setData(kCanvasObjectIdRole, qstr(text.id));
+    item->setData(kCanvasObjectTypeRole, "GraphicText");
+    item->setToolTip(qstr(text.id));
+    item->setFlag(QGraphicsItem::ItemIsSelectable, true);
+  }
 }

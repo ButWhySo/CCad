@@ -749,6 +749,10 @@ class JsonReader {
             readString();
           } else if (key == "drill_size") {
             readSize();
+          } else if (key == "roundrect_rratio") {
+            readDouble();
+          } else if (key == "chamfer_ratio") {
+            readDouble();
           } else {
             throw std::runtime_error("unknown pad key: " + key);
           }
