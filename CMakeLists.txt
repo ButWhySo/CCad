@@ -48,6 +48,11 @@ add_library(ccad_core
   src/ccad_core/gfx_import_utils.cpp
   src/ccad_core/json.cpp
   src/ccad_core/kicad_footprint_import.cpp
+  src/ccad_core/aperture_macro.cpp
+  src/ccad_core/dcode.cpp
+  src/ccad_core/am_evaluate.cpp
+  src/ccad_core/excellon_read_drill.cpp
+  src/ccad_core/gbr_layout.cpp
   src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
