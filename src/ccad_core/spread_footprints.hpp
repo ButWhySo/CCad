@@ -1,26 +1,19 @@
-#pragma once
+#ifndef CCAD_CORE_SPREAD_FOOTPRINTS_HPP
+#define CCAD_CORE_SPREAD_FOOTPRINTS_HPP
 
-#include "ccad_core/model.hpp"
-
-#include <string>
+#include "model.hpp"
 #include <vector>
 
 namespace ccad {
 
-struct SpreadFootprintRequest {
-  std::vector<std::string> component_ids;
-  Point target;
-  Length component_gap;
-  Length group_gap;
+// Heuristics for spreading and packing footprints (bin packing algorithms).
+class SpreadFootprints {
+public:
+    SpreadFootprints() = default;
+
+    void spread(std::vector<Footprint>& footprints);
 };
 
-struct SpreadFootprintPlacement {
-  std::string component_id;
-  Rect previous_bounds;
-  Rect new_bounds;
-};
+} // namespace ccad
 
-std::vector<SpreadFootprintPlacement> spreadFootprintComponents(
-    Board& board, const SpreadFootprintRequest& request);
-
-}  // namespace ccad
+#endif // CCAD_CORE_SPREAD_FOOTPRINTS_HPP
