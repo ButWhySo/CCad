@@ -17,6 +17,10 @@ add_library(ccad_core
   src/ccad_core/annotate.cpp
   src/ccad_core/autoplace_fields.cpp
   src/ccad_core/junction_helpers.cpp
+  src/ccad_core/gfx_import_utils.cpp
+  src/ccad_core/sch_connection.cpp
+  src/ccad_core/sch_netchain.cpp
+  src/ccad_core/net_navigator.cpp
   src/ccad_core/agent_policy.cpp
   src/ccad_core/autorouter_matrix.cpp
   src/ccad_core/autoplacer.cpp
