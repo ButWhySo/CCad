@@ -6,7 +6,7 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 292
+- Sprint: 293
 - Branch: `main`
 - Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 293**: PNS Routing logic implementation (`pns_dragger`, `pns_node`).
+  - **Goal**: Implement structural mapping for interactive Push and Shove topology dragging heuristics.
+  - **Status**: Completed. Merged into `ccad_core`.
 - **Sprint 292**: PCB Parser Implementation (`pcb_parser`).
   - **Goal**: Implement structural mapping from S-Expression AST to native CCad Board memory models.
   - **Status**: Completed. Merged into `ccad_core`.
