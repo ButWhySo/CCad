@@ -6,7 +6,7 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 289
+- Sprint: 290
 - Branch: `main`
 - Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 290**: Backlog Catchup (`connection_graph`, `test_zone_intersection`, `bus_wire_junction`).
+  - **Goal**: Clear the final missed stubs from the official sprint backlog.
+  - **Status**: Completed. Merged into `ccad_core`. All base KiCad parity stubs from backlog and root file walk are fully accounted for.
 - **Sprint 289**: API Bridge stub (`api_bridge`).
   - **Goal**: Add structural framework for JSON-RPC/IPC communication to mirror the `F:\kicad_src\api` capabilities.
   - **Status**: Completed. Merged into `ccad_core`.

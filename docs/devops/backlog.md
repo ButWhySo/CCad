@@ -271,7 +271,7 @@ GUI test boards should be useful engineering examples such as bridge rectifiers,
 
 Each sprint must ship a meaningful batch of at least eight to ten visible/user-meaningful features, fixes, documented capabilities, or verification improvements unless the user explicitly approves a smaller safety sprint.
 
-- [ ] Stub: `TestZoneIntersection` (deferred from `edit_zone_helpers.cpp` until `zone.cpp` is processed)
+- [x] Stub: `TestZoneIntersection` (deferred from `edit_zone_helpers.cpp` until `zone.cpp` is processed)
 
 - [x] Stub: `net_chain_bridging.cpp` (advanced router bridging length calculation)
 - [x] Stub: `padstack.cpp` (KiCad 8 complex multi-layer padstack models)
@@ -293,10 +293,10 @@ Each sprint must ship a meaningful batch of at least eight to ten visible/user-m
 - [x] Stub: zone.cpp, zone_filler.cpp, zone_settings.cpp, zone_utils.cpp (Copper pours and zone algorithms; basic BoardZone is complete)
 
 
-- [ ] Stub: `annotate.cpp` (Schematic automatic reference designator annotation)
-- [ ] Stub: `autoplace_fields.cpp` (Heuristics to auto-arrange property text fields)
-- [ ] Stub: `bus-wire-junction.cpp` (Visual junctions for intersecting wires)
-- [ ] Stub: `connection_graph.cpp` (Core connectivity graph algorithm for schematic nets)
+- [x] Stub: `annotate.cpp` (Schematic automatic reference designator annotation)
+- [x] Stub: `autoplace_fields.cpp` (Heuristics to auto-arrange property text fields)
+- [x] Stub: `bus-wire-junction.cpp` (Visual junctions for intersecting wires)
+- [x] Stub: `connection_graph.cpp` (Core connectivity graph algorithm for schematic nets)
 
 
 - [x] Stub: `gfx_import_utils.cpp` (Schematic DXF/SVG import utilities) (Sprint 265)
