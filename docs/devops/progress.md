@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 271**: Gerber tools for polyset translation, hit-testing and diffing stubs (`gerber_to_polyset`, `gerber_collectors`, `gerber_diff`).
+  - **Goal**: Add C++ headless utility classes for interacting with Gerber datasets.
+  - **Status**: Completed. Merged into `ccad_core`.
 - **Sprint 270**: Gerber RS-274X syntax and attributes parsers stubs (`readgerb`, `rs274x`, `rs274d`, `x2_gerber_attributes`, `job_file_reader`).
   - **Goal**: Add C++ headless primitives for modeling Standard/Extended Gerber parsers and gbrjob metadata read logic.
   - **Status**: Completed. Merged into `ccad_core`.
