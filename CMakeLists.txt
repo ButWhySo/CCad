@@ -56,6 +56,11 @@ add_library(ccad_core
   src/ccad_core/gerber_draw_item.cpp
   src/ccad_core/gerber_file_image.cpp
   src/ccad_core/gerber_file_image_list.cpp
+  src/ccad_core/readgerb.cpp
+  src/ccad_core/rs274x.cpp
+  src/ccad_core/rs274d.cpp
+  src/ccad_core/x2_gerber_attributes.cpp
+  src/ccad_core/job_file_reader.cpp
   src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
