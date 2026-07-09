@@ -83,6 +83,7 @@ add_library(ccad_core
   src/ccad_core/pns_dragger.cpp
   src/ccad_core/pns_diff_pair_placer.cpp
   src/ccad_core/pns_meander_placer.cpp
+  src/ccad_core/eda_importers.cpp
   src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
