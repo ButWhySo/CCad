@@ -76,6 +76,13 @@ add_library(ccad_core
   src/ccad_core/cvpcb_listboxes.cpp
   src/ccad_core/auto_associate.cpp
   src/ccad_core/ar_autoplacer.cpp
+  src/ccad_core/spread_footprints.cpp
+  src/ccad_core/pns_algo_base.cpp
+  src/ccad_core/pns_index.cpp
+  src/ccad_core/pns_node.cpp
+  src/ccad_core/pns_dragger.cpp
+  src/ccad_core/pns_diff_pair_placer.cpp
+  src/ccad_core/pns_meander_placer.cpp
   src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
