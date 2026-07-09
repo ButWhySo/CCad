@@ -9,6 +9,16 @@ namespace ccad {
 class PnsDiffPairPlacer : public PnsAlgoBase {
 public:
     PnsDiffPairPlacer() = default;
+    ~PnsDiffPairPlacer() override = default;
+
+    bool start(std::shared_ptr<PnsItem> itemP, std::shared_ptr<PnsItem> itemN, int x, int y);
+    bool route(int x, int y);
+    void finish();
+
+private:
+    std::shared_ptr<PnsItem> start_p_;
+    std::shared_ptr<PnsItem> start_n_;
+    int gap_ = 0;
 };
 
 } // namespace ccad

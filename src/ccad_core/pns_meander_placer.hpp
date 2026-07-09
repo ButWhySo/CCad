@@ -9,6 +9,15 @@ namespace ccad {
 class PnsMeanderPlacer : public PnsAlgoBase {
 public:
     PnsMeanderPlacer() = default;
+    ~PnsMeanderPlacer() override = default;
+
+    bool start(std::shared_ptr<PnsItem> item, int x, int y);
+    bool meander(int x, int y);
+    void finish();
+
+private:
+    std::shared_ptr<PnsItem> start_item_;
+    int target_length_ = 0;
 };
 
 } // namespace ccad
