@@ -6,7 +6,7 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 294
+- Sprint: 295
 - Branch: `main`
 - Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 295**: PNS Spatial Index (`pns_index`).
+  - **Goal**: Implement structural mapping for interactive Push and Shove topology indexing.
+  - **Status**: Completed. Merged into `ccad_core`.
 - **Sprint 294**: Advanced PNS Routing Placers (`pns_diff_pair_placer`, `pns_meander_placer`).
   - **Goal**: Implement algorithms for differential pair tuning and length-matched serpentines.
   - **Status**: Completed. Merged into `ccad_core`.
