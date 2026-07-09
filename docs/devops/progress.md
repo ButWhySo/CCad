@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 280**: SchSymbol / SchPin implementation for schematic instantiation (`sch_symbol`).
+  - **Goal**: Full KiCad SCH_SYMBOL/SCH_PIN parity, including multi-unit symbols, alternate pin functions, and local library-reference snapshots.
+  - **Status**: Completed. Merged into `ccad_core`.
 - **Sprint 279**: Final ecosystem and agent settings stubs (`pagelayout_editor`, `pcb_calculator`, `bitmap2component`, `agent_settings`).
   - **Goal**: Add C++ headless utility classes for the remaining auxiliary tools.
   - **Status**: Completed. Merged into `ccad_core`.
