@@ -6,7 +6,7 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 300
+- Sprint: 301
 - Branch: `main`
 - Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 301**: DRC Test Provider Courtyard (`drc_test_provider_courtyard`).
+  - **Goal**: Implement structural mapping for plugin-style DRC footprint courtyard overlap test.
+  - **Status**: Completed. Merged into `ccad_core`.
 - **Sprint 300**: DRC Test Provider Unrouted (`drc_test_provider_unrouted`).
   - **Goal**: Implement structural mapping for plugin-style DRC unrouted net test.
   - **Status**: Completed. Merged into `ccad_core`.
