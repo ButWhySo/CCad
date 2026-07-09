@@ -1,5 +1,28 @@
 #include "pns_index.hpp"
+#include <algorithm>
 
 namespace ccad {
-    // Stub implementation for PNS spatial index
+
+void PnsIndex::add(PnsItem* item) {
+    if (item && std::find(items_.begin(), items_.end(), item) == items_.end()) {
+        items_.push_back(item);
+    }
 }
+
+void PnsIndex::remove(PnsItem* item) {
+    auto it = std::find(items_.begin(), items_.end(), item);
+    if (it != items_.end()) {
+        items_.erase(it);
+    }
+}
+
+void PnsIndex::clear() {
+    items_.clear();
+}
+
+std::vector<PnsItem*> PnsIndex::query(int x, int y, int radius) const {
+    // Stub for spatial query
+    return items_;
+}
+
+} // namespace ccad
