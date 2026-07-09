@@ -38,6 +38,7 @@ add_library(ccad_core
   src/ccad_core/drc.cpp
   src/ccad_core/erc.cpp
   src/ccad_core/geometry.cpp
+  src/ccad_core/gfx_import_utils.cpp
   src/ccad_core/json.cpp
   src/ccad_core/kicad_footprint_import.cpp
   src/ccad_core/kicad_symbol_import.cpp
