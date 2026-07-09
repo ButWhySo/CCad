@@ -76,7 +76,6 @@ add_library(ccad_core
   src/ccad_core/cvpcb_listboxes.cpp
   src/ccad_core/auto_associate.cpp
   src/ccad_core/ar_autoplacer.cpp
-  src/ccad_core/spread_footprints.cpp
   src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp

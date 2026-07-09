@@ -20,6 +20,12 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 275**: Cvpcb auto associate footprint heuristic stubs (`auto_associate`).
+  - **Goal**: Add C++ headless utility classes for footprint auto assignment heuristics.
+  - **Status**: Completed. Merged into `ccad_core`.
+- **Sprint 274**: Cvpcb schematic netlist reader and listbox stubs (`read_netlist`, `cvpcb_listboxes`).
+  - **Goal**: Add C++ headless utility classes for reading legacy KiCad schematic netlists and assigning footprints.
+  - **Status**: Completed. Merged into `ccad_core`.
 - **Sprint 273**: 3D scene graph, materials, and raytracing engine stubs (`3d_scene_graph`, `3d_material`, `3d_raytracer`).
   - **Goal**: Add C++ headless utility classes for interacting with 3D hierarchies and photorealistic rendering logic.
   - **Status**: Completed. Merged into `ccad_core`.

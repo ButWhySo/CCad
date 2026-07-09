@@ -326,8 +326,8 @@ Each sprint must ship a meaningful batch of at least eight to ten visible/user-m
 - [x] Stub: `3d_canvas/`, `3d_rendering/` (OpenGL scene graph, materials, and raytracing engine) (Sprint 273)
 
 
-- [ ] Stub: `cvpcb/read_netlist.cpp`, `cvpcb/listboxes.cpp` (Parsing schematic netlists for footprint assignment)
-- [ ] Stub: `cvpcb/auto_associate.cpp` (Heuristics for automatically assigning footprints based on symbol properties)
+- [x] Stub: `cvpcb/read_netlist.cpp`, `cvpcb/listboxes.cpp` (Parsing schematic netlists for footprint assignment) (Sprint 274)
+- [x] Stub: `cvpcb/auto_associate.cpp` (Heuristics for automatically assigning footprints based on symbol properties) (Sprint 275)
 
 
 - [ ] Stub: `pcbnew/autorouter/ar_autoplacer.cpp`, `pcbnew/autorouter/spread_footprints.cpp` (Heuristics for packing and spreading footprints)
