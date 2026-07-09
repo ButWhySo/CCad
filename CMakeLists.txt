@@ -46,6 +46,9 @@ add_library(ccad_core
   src/ccad_core/3d_fastmath.cpp
   src/ccad_core/3d_math.cpp
   src/ccad_core/3d_resolver.cpp
+  src/ccad_core/3d_material.cpp
+  src/ccad_core/3d_raytracer.cpp
+  src/ccad_core/3d_scene_graph.cpp
   src/ccad_core/drc_engine.cpp
   src/ccad_core/drc.cpp
   src/ccad_core/erc.cpp
