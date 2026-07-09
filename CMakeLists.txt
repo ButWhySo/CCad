@@ -85,6 +85,7 @@ add_library(ccad_core
   src/ccad_core/pns_meander_placer.cpp
   src/ccad_core/eda_importers.cpp
   src/ccad_core/sch_symbol.cpp
+  src/ccad_core/gal_base.cpp
   src/ccad_core/pagelayout_editor.cpp
   src/ccad_core/pcb_calculator.cpp
   src/ccad_core/bitmap2component.cpp
