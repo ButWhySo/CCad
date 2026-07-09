@@ -21,6 +21,9 @@ add_library(ccad_core
   src/ccad_core/sch_connection.cpp
   src/ccad_core/sch_netchain.cpp
   src/ccad_core/net_navigator.cpp
+  src/ccad_core/am_param.cpp
+  src/ccad_core/am_primitive.cpp
+  src/ccad_core/aperture_macro.cpp
   src/ccad_core/agent_policy.cpp
   src/ccad_core/autorouter_matrix.cpp
   src/ccad_core/autoplacer.cpp
