@@ -90,6 +90,8 @@ add_library(ccad_core
   src/ccad_core/plotter.cpp
   src/ccad_core/drawing_sheet.cpp
   src/ccad_core/netlist_reader.cpp
+  src/ccad_core/job_manager.cpp
+  src/ccad_core/io_base.cpp
   src/ccad_core/pagelayout_editor.cpp
   src/ccad_core/pcb_calculator.cpp
   src/ccad_core/bitmap2component.cpp
