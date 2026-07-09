@@ -335,11 +335,11 @@ Each sprint must ship a meaningful batch of at least eight to ten visible/user-m
 - [x] Stub: `pcbnew/router/pns_dragger.cpp`, `pcbnew/router/pns_diff_pair_placer.cpp`, `pcbnew/router/pns_meander_placer.cpp` (Algorithms for shoving tracks, routing differential pairs, and length matching) (Sprint 277)
 
 
-- [ ] Stub: `pcbnew/pcb_io/allegro`, `altium`, `cadstar`, `eagle`, `easyeda`, `easyedapro`, `fabmaster`, `geda`, `pads`, `pcad`, `sprint_layout` (Importers for external 3rd-party EDA formats)
+- [x] Stub: `pcbnew/pcb_io/allegro`, `altium`, `cadstar`, `eagle`, `easyeda`, `easyedapro`, `fabmaster`, `geda`, `pads`, `pcad`, `sprint_layout` (Importers for external 3rd-party EDA formats) (Sprint 278)
 
 
-- [ ] Stub: `pagelayout_editor` (Custom drawing sheet and title block editor)
-- [ ] Stub: `pcb_calculator` (RF transmission line, E-series, and track current calculators)
-- [ ] Stub: `bitmap2component` (Raster image to PCB geometric footprint converter)
+- [x] Stub: `pagelayout_editor` (Custom drawing sheet and title block editor) (Sprint 279)
+- [x] Stub: `pcb_calculator` (RF transmission line, E-series, and track current calculators) (Sprint 279)
+- [x] Stub: `bitmap2component` (Raster image to PCB geometric footprint converter) (Sprint 279)
 
-- [ ] Stub: Agent Orchestration Settings UI and backend logic to store and reflect user settings in appropriate fields, and tweak base agent-orchestrator behavior according to these settings.
+- [x] Stub: Agent Orchestration Settings UI and backend logic to store and reflect user settings in appropriate fields, and tweak base agent-orchestrator behavior according to these settings. (Sprint 279)

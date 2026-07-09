@@ -20,6 +20,12 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 279**: Final ecosystem and agent settings stubs (`pagelayout_editor`, `pcb_calculator`, `bitmap2component`, `agent_settings`).
+  - **Goal**: Add C++ headless utility classes for the remaining auxiliary tools.
+  - **Status**: Completed. Merged into `ccad_core`.
+- **Sprint 278**: 3rd-party EDA format importer stubs (`eda_importers`).
+  - **Goal**: Add C++ headless utility classes for parsing layouts from 11 different legacy EDA tools.
+  - **Status**: Completed. Merged into `ccad_core`.
 - **Sprint 277**: Pcbnew Push and Shove router heuristics and algorithmic stubs (`pns_algo_base`, `pns_index`, `pns_node`, `pns_dragger`, `pns_diff_pair_placer`, `pns_meander_placer`).
   - **Goal**: Add C++ headless utility classes for the Push and Shove (PNS) interactive routing system.
   - **Status**: Completed. Merged into `ccad_core`.
