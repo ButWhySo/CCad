@@ -316,7 +316,7 @@ Each sprint must ship a meaningful batch of at least eight to ten visible/user-m
 
 
 - [x] Stub: `gerber_draw_item.cpp`, `gerber_file_image.cpp`, `gerber_file_image_list.cpp` (Gerber graphic primitives and document image model) (Sprint 269)
-- [ ] Stub: `readgerb.cpp`, `rs274x.cpp`, `rs274d.cpp`, `X2_gerber_attributes.cpp`, `job_file_reader.cpp` (Gerber RS-274X syntax and attributes parsers)
+- [x] Stub: `readgerb.cpp`, `rs274x.cpp`, `rs274d.cpp`, `X2_gerber_attributes.cpp`, `job_file_reader.cpp` (Gerber RS-274X syntax and attributes parsers) (Sprint 270)
 - [ ] Stub: `gerber_to_polyset.cpp` (Translating Gerber flashes to geometric polygons)
 - [ ] Stub: `gerber_collectors.cpp`, `gerber_diff.cpp` (Hit testing and file comparison)
 
