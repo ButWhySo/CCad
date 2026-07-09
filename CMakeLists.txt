@@ -53,6 +53,9 @@ add_library(ccad_core
   src/ccad_core/am_evaluate.cpp
   src/ccad_core/excellon_read_drill.cpp
   src/ccad_core/gbr_layout.cpp
+  src/ccad_core/gerber_draw_item.cpp
+  src/ccad_core/gerber_file_image.cpp
+  src/ccad_core/gerber_file_image_list.cpp
   src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
