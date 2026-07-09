@@ -309,10 +309,10 @@ Each sprint must ship a meaningful batch of at least eight to ten visible/user-m
 
 
 - [x] Stub: `am_param.cpp`, `am_primitive.cpp`, `aperture_macro.cpp` (Gerber aperture macros and parameters) (Sprint 267)
-- [ ] Stub: `dcode.cpp` (Gerber D-Code tool definitions)
-- [ ] Stub: `evaluate.cpp` (Expression evaluation for aperture variables)
-- [ ] Stub: `excellon_read_drill_file.cpp` (Excellon drill file parsing)
-- [ ] Stub: `gbr_layout.cpp` (Gerber layer and layout models)
+- [x] Stub: `dcode.cpp` (Gerber D-Code tool definitions) (Sprint 268)
+- [x] Stub: `evaluate.cpp` (Expression evaluation for aperture variables) (Sprint 268)
+- [x] Stub: `excellon_read_drill_file.cpp` (Excellon drill file parsing) (Sprint 268)
+- [x] Stub: `gbr_layout.cpp` (Gerber layer and layout models) (Sprint 268)
 
 
 - [ ] Stub: `gerber_draw_item.cpp`, `gerber_file_image.cpp`, `gerber_file_image_list.cpp` (Gerber graphic primitives and document image model)
