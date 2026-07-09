@@ -42,6 +42,11 @@ add_library(ccad_core
   src/ccad_core/model.cpp
   src/ccad_core/component_generator.cpp
   src/ccad_core/diff.cpp
+  src/ccad_core/3d_cache.cpp
+  src/ccad_core/3d_fastmath.cpp
+  src/ccad_core/3d_math.cpp
+  src/ccad_core/3d_resolver.cpp
+  src/ccad_core/drc_engine.cpp
   src/ccad_core/drc.cpp
   src/ccad_core/erc.cpp
   src/ccad_core/geometry.cpp
