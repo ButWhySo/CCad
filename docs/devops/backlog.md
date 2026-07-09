@@ -321,8 +321,8 @@ Each sprint must ship a meaningful batch of at least eight to ten visible/user-m
 - [x] Stub: `gerber_collectors.cpp`, `gerber_diff.cpp` (Hit testing and file comparison) (Sprint 271)
 
 
-- [ ] Stub: `3d_fastmath.cpp`, `3d_math.cpp` (3D coordinate transformations and fast approximations)
-- [ ] Stub: `3d_cache/` (STEP/IGES/WRL model parsing and caching engine)
+- [x] Stub: `3d_fastmath.cpp`, `3d_math.cpp` (3D coordinate transformations and fast approximations) (Sprint 272)
+- [x] Stub: `3d_cache.cpp`, `3d_resolver.cpp` (3D model asset caching and path resolution) (Sprint 272)
 - [ ] Stub: `3d_canvas/`, `3d_rendering/` (OpenGL scene graph, materials, and raytracing engine)
 
 

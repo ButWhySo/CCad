@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 272**: 3D coordinate transformations and model cache stubs (`3d_math`, `3d_fastmath`, `3d_cache`, `3d_resolver`).
+  - **Goal**: Add C++ headless utility classes for interacting with 3D geometry transformations and 3D asset caching.
+  - **Status**: Completed. Merged into `ccad_core`.
 - **Sprint 271**: Gerber tools for polyset translation, hit-testing and diffing stubs (`gerber_to_polyset`, `gerber_collectors`, `gerber_diff`).
   - **Goal**: Add C++ headless utility classes for interacting with Gerber datasets.
   - **Status**: Completed. Merged into `ccad_core`.
