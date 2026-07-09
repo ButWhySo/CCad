@@ -108,6 +108,7 @@ add_library(ccad_core
   src/ccad_core/drc_test_provider_clearance.cpp
   src/ccad_core/drc_test_provider_unrouted.cpp
   src/ccad_core/drc_test_provider_courtyard.cpp
+  src/ccad_core/drc_test_provider_edge_clearance.cpp
   src/ccad_core/pagelayout_editor.cpp
   src/ccad_core/pcb_calculator.cpp
   src/ccad_core/bitmap2component.cpp
