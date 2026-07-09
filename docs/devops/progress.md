@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 269**: Gerber graphic primitives and document image model stubs (`gerber_draw_item`, `gerber_file_image`, `gerber_file_image_list`).
+  - **Goal**: Add C++ headless primitives for modeling Gerber document images and geometries.
+  - **Status**: Completed. Merged into `ccad_core`.
 - **Sprint 268**: Gerber manufacturing read stubs (`dcode`, `am_evaluate`, `excellon_read_drill`, `gbr_layout`).
   - **Goal**: Add headless C++ primitives for legacy Gerber parsing and drilling operations.
   - **Status**: Completed. Merged into `ccad_core`.
