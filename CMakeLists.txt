@@ -98,6 +98,7 @@ add_library(ccad_core
   src/ccad_core/kiplatform.cpp
   src/ccad_core/kinng_base.cpp
   src/ccad_core/idf_exporter.cpp
+  src/ccad_core/api_bridge.cpp
   src/ccad_core/pagelayout_editor.cpp
   src/ccad_core/pcb_calculator.cpp
   src/ccad_core/bitmap2component.cpp
