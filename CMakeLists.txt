@@ -103,6 +103,7 @@ add_library(ccad_core
   src/ccad_core/test_zone_intersection.cpp
   src/ccad_core/bus_wire_junction.cpp
   src/ccad_core/pcb_parser.cpp
+  src/ccad_core/drc_item.cpp
   src/ccad_core/pagelayout_editor.cpp
   src/ccad_core/pcb_calculator.cpp
   src/ccad_core/bitmap2component.cpp
