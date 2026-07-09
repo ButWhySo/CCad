@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 273**: 3D scene graph, materials, and raytracing engine stubs (`3d_scene_graph`, `3d_material`, `3d_raytracer`).
+  - **Goal**: Add C++ headless utility classes for interacting with 3D hierarchies and photorealistic rendering logic.
+  - **Status**: Completed. Merged into `ccad_core`.
 - **Sprint 272**: 3D coordinate transformations and model cache stubs (`3d_math`, `3d_fastmath`, `3d_cache`, `3d_resolver`).
   - **Goal**: Add C++ headless utility classes for interacting with 3D geometry transformations and 3D asset caching.
   - **Status**: Completed. Merged into `ccad_core`.
