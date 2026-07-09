@@ -61,6 +61,9 @@ add_library(ccad_core
   src/ccad_core/rs274d.cpp
   src/ccad_core/x2_gerber_attributes.cpp
   src/ccad_core/job_file_reader.cpp
+  src/ccad_core/gerber_to_polyset.cpp
+  src/ccad_core/gerber_collectors.cpp
+  src/ccad_core/gerber_diff.cpp
   src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
