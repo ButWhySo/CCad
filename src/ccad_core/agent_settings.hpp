@@ -14,6 +14,9 @@ public:
     void setOption(const std::string& key, const std::string& value);
     std::string getOption(const std::string& key, const std::string& default_value = "") const;
 
+    bool loadFromFile(const std::string& filepath);
+    bool saveToFile(const std::string& filepath) const;
+
 private:
     std::map<std::string, std::string> settings_;
 };
