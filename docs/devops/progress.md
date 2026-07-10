@@ -6,7 +6,7 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 336
+- Sprint: 337
 - Branch: `main`
 - Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 337**: 3D Scene Graph Bridge (`scene_3d_graph_bridge`).
+  - **Goal**: Implement translation of 2D geometry and models into a 3D bounding volume scene graph.
+  - **Status**: Completed. Merged into `ccad_core`.
 - **Sprint 336**: 3D Model Registry (`model_3d_registry`).
   - **Goal**: Implement associations between physical footprints and external 3D step/wrl models.
   - **Status**: Completed. Merged into `ccad_core`.
