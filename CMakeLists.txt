@@ -114,6 +114,7 @@ add_library(ccad_core
   src/ccad_core/pcb_calculator.cpp
   src/ccad_core/bitmap2component.cpp
   src/ccad_core/agent_settings.cpp
+  src/ccad_core/io_mgr.cpp
   src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
