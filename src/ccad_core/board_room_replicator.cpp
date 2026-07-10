@@ -1,5 +1,5 @@
 #include "board_room_replicator.hpp"
-#include "board.hpp"
+#include "model.hpp"
 #include "hierarchical_sheet_parser.hpp"
 
 namespace ccad {
@@ -9,6 +9,10 @@ BoardRoomReplicator::BoardRoomReplicator(Board* board)
 }
 
 bool BoardRoomReplicator::replicateLayout(const HierarchicalRoom& sourceRoom, const HierarchicalRoom& targetRoom, double targetOriginX, double targetOriginY) {
+    (void)sourceRoom;
+    (void)targetRoom;
+    (void)targetOriginX;
+    (void)targetOriginY;
     if (!board_) return false;
     
     // Stub:

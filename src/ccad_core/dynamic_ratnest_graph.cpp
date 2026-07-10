@@ -1,5 +1,5 @@
 #include "dynamic_ratnest_graph.hpp"
-#include "board.hpp"
+#include "model.hpp"
 
 namespace ccad {
 

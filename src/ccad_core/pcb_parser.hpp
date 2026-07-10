@@ -3,7 +3,7 @@
 
 #include <string>
 #include <memory>
-#include "board.hpp"
+#include "model.hpp"
 #include "sexpr_parser.hpp"
 
 namespace ccad {

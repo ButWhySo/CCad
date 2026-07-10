@@ -1,5 +1,5 @@
 #include "altium_plugin.hpp"
-#include "board.hpp"
+#include "model.hpp"
 
 namespace ccad {
 

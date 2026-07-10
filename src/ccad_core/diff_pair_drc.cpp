@@ -1,5 +1,5 @@
 #include "diff_pair_drc.hpp"
-#include "board.hpp"
+#include "model.hpp"
 
 namespace ccad {
 

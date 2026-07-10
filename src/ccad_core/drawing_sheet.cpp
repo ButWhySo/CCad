@@ -3,7 +3,8 @@
 namespace ccad {
 
 void DrawingSheet::setTitle(const std::string& title) {
-    // Stub
+    (void)title;
+    // Stub implementation to set title
 }
 
 std::string DrawingSheet::getTitle() const {

@@ -1,5 +1,5 @@
 #include "teardrop_generator.hpp"
-#include "board.hpp"
+#include "model.hpp"
 
 namespace ccad {
 

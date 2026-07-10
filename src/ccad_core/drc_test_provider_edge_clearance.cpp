@@ -3,6 +3,8 @@
 namespace ccad {
 
 void DrcTestProviderEdgeClearance::run(const Board& board, std::vector<DrcItem>& violations) {
+    (void)board;
+    (void)violations;
     // Basic structural iteration stub for board edge clearance checking
     // Future implementations will map copper polygons against edge cuts layer
     

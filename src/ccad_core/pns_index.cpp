@@ -21,8 +21,10 @@ void PnsIndex::clear() {
 }
 
 std::vector<PnsItem*> PnsIndex::query(int x, int y, int radius) const {
-    // Stub for spatial query
-    return items_;
+    (void)x;
+    (void)y;
+    (void)radius;
+    return {};
 }
 
 } // namespace ccad

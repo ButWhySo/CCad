@@ -3,6 +3,9 @@
 namespace ccad {
 
 void DrcTestProviderUnrouted::run(const Board& board, std::vector<DrcItem>& violations) {
+    (void)board;
+    (void)violations;
+
     // Basic structural iteration stub for unrouted checking
     // Future implementations will traverse the ConnectionGraph
     

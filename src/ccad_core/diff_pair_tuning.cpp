@@ -1,5 +1,5 @@
 #include "diff_pair_tuning.hpp"
-#include "board.hpp"
+#include "model.hpp"
 
 namespace ccad {
 
@@ -16,12 +16,16 @@ DiffPairTuning::DiffPairSettings DiffPairTuning::getSettings() const {
 }
 
 double DiffPairTuning::calculateCurrentSkew(const std::string& netCodeP, const std::string& netCodeN) const {
+    (void)netCodeP;
+    (void)netCodeN;
     if (!board_) return 0.0;
     // Stub: sum lengths of P and N, return absolute difference
     return 0.0;
 }
 
 bool DiffPairTuning::applyTuning(const std::string& trackIdP, const std::string& trackIdN) {
+    (void)trackIdP;
+    (void)trackIdN;
     if (!board_) return false;
     // Stub:
     // 1. Identify areas where P and N are routed parallel and meet the coupledGap setting

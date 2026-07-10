@@ -1,5 +1,5 @@
 #include "custom_drc_rules.hpp"
-#include "board.hpp"
+#include "model.hpp"
 
 namespace ccad {
 
@@ -19,6 +19,8 @@ bool CustomDrcRules::parseRules(const std::string& rawRulesText) {
 }
 
 double CustomDrcRules::evaluateClearanceOverride(const std::string& itemA_Id, const std::string& itemB_Id) const {
+    (void)itemA_Id;
+    (void)itemB_Id;
     if (!board_ || parsedRules_.empty()) return -1.0;
     
     // Stub:

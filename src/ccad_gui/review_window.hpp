@@ -180,6 +180,8 @@ class ReviewWindow final : public QMainWindow {
   void showFutureToolStatus(const QString& action_id, const QString& label);
   QString triggerDisplayStateActionJson(const QString& action_id);
   QString deleteSelectedBoardObject();
+  void rotateSelectedObjects(QGraphicsView* view);
+  void flipSelectedObjects(QGraphicsView* view);
   void applyDisplayStateToViews();
   void refreshCursorStatusFromActiveView();
   void renderPcbScene(const ccad::CanvasScene& scene,

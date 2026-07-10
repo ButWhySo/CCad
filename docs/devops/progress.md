@@ -17,9 +17,18 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 5: Python IPC Process Wrapper Implementation (Sprint 212)
 - [x] Phase 6: True Tool Bridging with ToolBroker and ContextBuilder
 - [x] Phase 7: Live LangGraph Integration with Context
-- [x] Phase 8: Multi-Agent Refinement
-
-## Current Sprint
+- **Sprint 355**: Selection Cross-Probing (`selection_cross_probing`).
+  - **Goal**: Sync selections between schematic and PCB canvases.
+  - **Status**: Completed. Merged into `ccad_gui`.
+- **Sprint 354**: Drag-to-Move Tool (`drag_to_move`).
+  - **Goal**: Enable drag-to-move for footprints after placement.
+  - **Status**: Completed. Merged into `ccad_gui`.
+- **Sprint 353**: GUI Docking Framework (`gui_docking`).
+  - **Goal**: Convert fixed side panels to QDockWidgets and hide diagnostics by default.
+  - **Status**: Completed. Merged into `ccad_gui`.
+- **Sprint 352**: KiCad Source Walk & Backlog Generation (`backlog_generation`).
+  - **Goal**: Scrape KiCad source to identify missing GUI functionality.
+  - **Status**: Completed. Updated `backlog.md`.
 - **Sprint 351**: Plugin API Registry (`plugin_api_registry`).
   - **Goal**: Implement central C++ registry for third-party extensions.
   - **Status**: Completed. Merged into `ccad_core`.

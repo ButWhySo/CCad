@@ -1,6 +1,6 @@
 #include "net_chain_bridging.hpp"
-#include "board.hpp"
-#include "track.hpp"
+#include "model.hpp"
+// track is in model
 
 namespace ccad {
 

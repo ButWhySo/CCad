@@ -4,6 +4,7 @@
 namespace ccad {
 
 void ConnectivityData::build(const std::vector<BoardItem*>& items) {
+    (void)items;
     clear();
     // Stub for scanning items and rebuilding graph connectivity
 }

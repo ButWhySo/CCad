@@ -1,5 +1,5 @@
 #include "position_file_exporter.hpp"
-#include "board.hpp"
+#include "model.hpp"
 
 namespace ccad {
 

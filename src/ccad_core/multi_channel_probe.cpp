@@ -1,5 +1,5 @@
 #include "multi_channel_probe.hpp"
-#include "board.hpp"
+#include "model.hpp"
 #include "hierarchical_sheet_parser.hpp"
 
 namespace ccad {
@@ -9,6 +9,8 @@ MultiChannelProbe::MultiChannelProbe(Board* board, HierarchicalSheetParser* pars
 }
 
 std::vector<std::string> MultiChannelProbe::resolveProbedComponents(const std::string& sheetPathUuid, const std::string& componentRef) const {
+    (void)sheetPathUuid;
+    (void)componentRef;
     std::vector<std::string> matchedIds;
     if (!board_ || !parser_) return matchedIds;
 
@@ -21,6 +23,9 @@ std::vector<std::string> MultiChannelProbe::resolveProbedComponents(const std::s
 }
 
 bool MultiChannelProbe::resolveProbedFootprint(const std::string& footprintId, std::string& outSheetPathUuid, std::string& outComponentRef) const {
+    (void)footprintId;
+    (void)outSheetPathUuid;
+    (void)outComponentRef;
     if (!board_ || !parser_) return false;
 
     // Stub:

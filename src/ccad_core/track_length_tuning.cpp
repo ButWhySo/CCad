@@ -1,5 +1,5 @@
 #include "track_length_tuning.hpp"
-#include "board.hpp"
+#include "model.hpp"
 
 namespace ccad {
 
@@ -16,12 +16,14 @@ TrackLengthTuning::TuningSettings TrackLengthTuning::getSettings() const {
 }
 
 double TrackLengthTuning::calculateCurrentLength(const std::string& netCode) const {
+    (void)netCode;
     if (!board_) return 0.0;
     // Stub: sum lengths of all track segments in the net
     return 0.0;
 }
 
 bool TrackLengthTuning::applyTuning(const std::string& trackId) {
+    (void)trackId;
     if (!board_) return false;
     // Stub:
     // 1. Calculate difference between current length and target length

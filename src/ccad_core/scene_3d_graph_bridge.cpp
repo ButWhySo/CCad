@@ -1,5 +1,5 @@
 #include "scene_3d_graph_bridge.hpp"
-#include "board.hpp"
+#include "model.hpp"
 
 namespace ccad {
 
