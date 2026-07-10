@@ -155,6 +155,7 @@ add_library(ccad_core
   src/ccad_core/multi_channel_probe.cpp
   src/ccad_core/dynamic_ratnest_graph.cpp
   src/ccad_core/nearest_neighbor_connectivity.cpp
+  src/ccad_core/event_driven_ratnest.cpp
   src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
