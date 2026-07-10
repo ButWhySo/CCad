@@ -6,7 +6,7 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 321
+- Sprint: 322
 - Branch: `main`
 - Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 322**: Footprint Chooser Bridge (`footprint_chooser_bridge`).
+  - **Goal**: Wire UI footprint library search queries to the core catalog model.
+  - **Status**: Completed. Merged into `ccad_core`.
 - **Sprint 321**: Footprint Catalog Cache (`footprint_catalog_cache`).
   - **Goal**: Add logic for indexing and searching the local footprint library cache.
   - **Status**: Completed. Merged into `ccad_core`.
