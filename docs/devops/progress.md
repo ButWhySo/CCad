@@ -6,7 +6,7 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 329
+- Sprint: 330
 - Branch: `main`
 - Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 330**: Board Design Settings (`board_design_settings`).
+  - **Goal**: Implement schema for global project routing defaults (trace widths, via sizes).
+  - **Status**: Completed. Merged into `ccad_core`.
 - **Sprint 329**: Undo/Redo Engine (`undo_redo`).
   - **Goal**: Implement the transactional stack for reverting board changes.
   - **Status**: Completed. Merged into `ccad_core`. Phase 15 complete.
