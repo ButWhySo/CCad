@@ -128,6 +128,7 @@ add_library(ccad_core
   src/ccad_core/selection_filter.cpp
   src/ccad_core/footprint_catalog_cache.cpp
   src/ccad_core/footprint_chooser_bridge.cpp
+  src/ccad_core/placement_ghost_tool.cpp
   src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
