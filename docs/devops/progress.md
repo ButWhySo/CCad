@@ -6,7 +6,7 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 316
+- Sprint: 317
 - Branch: `main`
 - Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 317**: Routing Tool Hooks (`routing_tool_hooks`).
+  - **Goal**: Add interactive lifecycle hooks to the RouterTool for driving PNS interactively.
+  - **Status**: Completed. Merged into `ccad_core`. Phase 11 complete.
 - **Sprint 316**: Drawing Tool Parity (`drawing_tool`).
   - **Goal**: Implement standard interactive bridge stubs for primitive canvas drawing (lines, text).
   - **Status**: Completed. Merged into `ccad_core`.
