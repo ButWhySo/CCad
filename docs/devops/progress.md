@@ -6,7 +6,7 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 338
+- Sprint: 339
 - Branch: `main`
 - Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 339**: Teardrop Generator (`teardrop_generator`).
+  - **Goal**: Implement teardrop calculation tracking and stub logic for pads/vias.
+  - **Status**: Completed. Merged into `ccad_core`.
 - **Sprint 338**: 3D Camera Controls (`camera_3d_controls`).
   - **Goal**: Implement matrix transformations and isometric presets for external 3D viewer overlays.
   - **Status**: Completed. Merged into `ccad_core`. Phase 18 complete.
