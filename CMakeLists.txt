@@ -151,6 +151,7 @@ add_library(ccad_core
   src/ccad_core/custom_drc_rules.cpp
   src/ccad_core/net_tie_drc.cpp
   src/ccad_core/hierarchical_sheet_parser.cpp
+  src/ccad_core/board_room_replicator.cpp
   src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
