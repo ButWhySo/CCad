@@ -2030,33 +2030,30 @@ ReviewWindow::ReviewWindow() {
   updateAgentPanelContext();
 
   auto* diagnostics_dock = new QDockWidget("Diagnostics", this);
-  bottom_tabs_ = new QTabWidget(diagnostics_dock);
-  bottom_tabs_->setObjectName("bottomReviewTabs");
-  bottom_tabs_->addTab(diagnostics_, "Diagnostics");
-  bottom_tabs_->addTab(transaction_timeline_, "Transactions");
-  diagnostics_dock->setWidget(bottom_tabs_);
   diagnostics_dock->setObjectName("dock:diagnostics");
+  diagnostics_dock->setWidget(diagnostics_);
+  diagnostics_dock->hide();
   addDockWidget(Qt::BottomDockWidgetArea, diagnostics_dock);
 
-  auto* right_panel = new QWidget(this);
-  auto* right_layout = new QVBoxLayout(right_panel);
-  right_layout->setContentsMargins(8, 8, 8, 8);
-  right_layout->setSpacing(8);
-  selection_inspector_ = new SelectionInspectorPanel(right_panel);
+  auto* transactions_dock = new QDockWidget("Transactions", this);
+  transactions_dock->setObjectName("dock:transactions");
+  transactions_dock->setWidget(transaction_timeline_);
+  transactions_dock->hide();
+  addDockWidget(Qt::BottomDockWidgetArea, transactions_dock);
+
+  selection_inspector_ = new SelectionInspectorPanel(this);
   selection_inspector_->setObjectName("selectionInspectorPanel");
-  selection_inspector_->setMaximumHeight(280);
-  selection_inspector_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
-  selection_inspector_->hide(); // Hide by default until explicitly invoked
-  object_browser_ = new ObjectBrowserPanel(right_panel);
-  object_browser_->setMinimumHeight(80);
-  right_layout->addWidget(selection_inspector_);
-  right_layout->addWidget(object_browser_, 1);
-  auto* layers_dock = new QDockWidget("Layers / Objects", this);
-  layers_dock->setObjectName("dock:layers");
-  layers_dock->setMinimumWidth(280);
-  layers_dock->setMinimumHeight(180);
-  layers_dock->setWidget(right_panel);
-  addDockWidget(Qt::RightDockWidgetArea, layers_dock);
+  auto* selection_dock = new QDockWidget("Selection", this);
+  selection_dock->setObjectName("dock:selection");
+  selection_dock->setWidget(selection_inspector_);
+  selection_dock->hide();
+  addDockWidget(Qt::RightDockWidgetArea, selection_dock);
+
+  object_browser_ = new ObjectBrowserPanel(this);
+  auto* objects_dock = new QDockWidget("Layers / Objects", this);
+  objects_dock->setObjectName("dock:objects");
+  objects_dock->setWidget(object_browser_);
+  addDockWidget(Qt::RightDockWidgetArea, objects_dock);
 
   auto* agent_dock = new QDockWidget("Agent", this);
   agent_dock->setWidget(agent_panel_);
@@ -2064,7 +2061,7 @@ ReviewWindow::ReviewWindow() {
   agent_dock->setMinimumWidth(360);
   agent_dock->setMinimumHeight(340);
   addDockWidget(Qt::RightDockWidgetArea, agent_dock);
-  splitDockWidget(layers_dock, agent_dock, Qt::Horizontal);
+  splitDockWidget(objects_dock, agent_dock, Qt::Horizontal);
   connect(agent_dock, &QDockWidget::visibilityChanged, this, [this](bool) {
     markUiMapChanged({"tab:agent",
                       "panel:agent",
@@ -2250,9 +2247,9 @@ ReviewWindow::ReviewWindow() {
 
   setCentralWidget(editor_tabs_);
   setDockNestingEnabled(true);
-  resizeDocks({project_dock, layers_dock}, {360, 320}, Qt::Horizontal);
+  resizeDocks({project_dock, objects_dock}, {360, 320}, Qt::Horizontal);
   resizeDocks({project_dock, diagnostics_dock}, {620, 240}, Qt::Vertical);
-  resizeDocks({layers_dock, agent_dock}, {300, 380}, Qt::Horizontal);
+  resizeDocks({objects_dock, agent_dock}, {300, 380}, Qt::Horizontal);
 
   auto* navigation_help_action = new QAction("Navigation Controls", this);
   navigation_help_action->setObjectName("action:navigation_help");
@@ -2330,6 +2327,13 @@ ReviewWindow::ReviewWindow() {
   view_menu->addAction("Fit on Screen", Qt::Key_Home, this, [this]() {
     if (auto* view = dynamic_cast<BoardCanvasView*>(editor_tabs_->currentWidget())) view->zoomToFit();
   });
+  view_menu->addSeparator();
+  view_menu->addAction(project_dock->toggleViewAction());
+  view_menu->addAction(objects_dock->toggleViewAction());
+  view_menu->addAction(selection_dock->toggleViewAction());
+  view_menu->addAction(diagnostics_dock->toggleViewAction());
+  view_menu->addAction(transactions_dock->toggleViewAction());
+  view_menu->addAction(agent_dock->toggleViewAction());
 
   QMenu* place_menu = menuBar()->addMenu("&Place");
   place_menu->addAction("Add Symbol...");
@@ -2342,12 +2346,6 @@ ReviewWindow::ReviewWindow() {
 
   menuBar()->addMenu("&Tools");
   menuBar()->addMenu("P&references");
-
-  QMenu* window_menu = menuBar()->addMenu("&Window");
-  window_menu->addAction(project_dock->toggleViewAction());
-  window_menu->addAction(layers_dock->toggleViewAction());
-  window_menu->addAction(diagnostics_dock->toggleViewAction());
-  window_menu->addAction(agent_dock->toggleViewAction());
 
   QMenu* help_menu = menuBar()->addMenu("&Help");
   help_menu->addAction(navigation_help_action);
