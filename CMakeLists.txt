@@ -132,6 +132,7 @@ add_library(ccad_core
   src/ccad_core/pcb_text.cpp
   src/ccad_core/pcb_shape.cpp
   src/ccad_core/pcb_dimension.cpp
+  src/ccad_core/tracks_cleaner.cpp
   src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
