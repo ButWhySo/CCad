@@ -119,6 +119,7 @@ add_library(ccad_core
   src/ccad_core/legacy_plugin.cpp
   src/ccad_core/altium_plugin.cpp
   src/ccad_core/eagle_plugin.cpp
+  src/ccad_core/connectivity_data.cpp
   src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
