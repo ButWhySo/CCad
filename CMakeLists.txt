@@ -126,6 +126,7 @@ add_library(ccad_core
   src/ccad_core/tool_state_control.cpp
   src/ccad_core/appearance_manager.cpp
   src/ccad_core/selection_filter.cpp
+  src/ccad_core/footprint_catalog_cache.cpp
   src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
