@@ -15,6 +15,12 @@ public:
     void setBoard(Board* board);
     void routeTrack(double x1, double y1, double x2, double y2);
 
+    // Interactive UI hooks
+    void startRouting(double x, double y, int layer);
+    void updateRouting(double x, double y);
+    void commitRouting();
+    void cancelRouting();
+
 private:
     Board* board_ = nullptr;
     // PnsRouter* router_ = nullptr; // Intentionally deferred logic
