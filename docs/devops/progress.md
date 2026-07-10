@@ -6,7 +6,7 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 326
+- Sprint: 327
 - Branch: `main`
 - Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 327**: Tracks Cleaner (`tracks_cleaner`).
+  - **Goal**: Add algorithms for detecting and removing redundant tracks and dangling segments.
+  - **Status**: Completed. Merged into `ccad_core`.
 - **Sprint 326**: PCB Dimension and Target (`pcb_dimension`).
   - **Goal**: Implement models for measuring dimensions and optical fiducial targets on the board.
   - **Status**: Completed. Merged into `ccad_core`. Phase 14 complete.
