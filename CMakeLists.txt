@@ -122,6 +122,7 @@ add_library(ccad_core
   src/ccad_core/connectivity_data.cpp
   src/ccad_core/router_tool.cpp
   src/ccad_core/selection_tool.cpp
+  src/ccad_core/drawing_tool.cpp
   src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
