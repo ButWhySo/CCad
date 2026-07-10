@@ -2854,6 +2854,12 @@ void ReviewWindow::handleObjectsMoved(const QPointF& delta) {
         moved = true; break;
       }
     }
+    for (auto& footprint : project_cache_.boards[0].footprints) {
+      if (footprint.id == id) {
+        footprint.position.x.nanometers += p_delta.x.nanometers; footprint.position.y.nanometers += p_delta.y.nanometers;
+        moved = true; break;
+      }
+    }
     for (auto& comp : project_cache_.schematics[0].symbols) {
       if (comp.id == id) {
         comp.position.x.nanometers += p_delta.x.nanometers; comp.position.y.nanometers += p_delta.y.nanometers;
