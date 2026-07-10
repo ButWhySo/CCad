@@ -6,7 +6,7 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 343
+- Sprint: 344
 - Branch: `main`
 - Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
 
@@ -20,6 +20,9 @@ Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permis
 - [x] Phase 8: Multi-Agent Refinement
 
 ## Current Sprint
+- **Sprint 344**: Net-Tie Constraint Checker (`net_tie_drc`).
+  - **Goal**: Implement DRC suppression for intentionally shorted nets across registered footprint areas.
+  - **Status**: Completed. Merged into `ccad_core`. Phase 20 complete.
 - **Sprint 343**: Custom DRC Rules Engine (`custom_drc_rules`).
   - **Goal**: Implement parsing logic for text-based rule constraints.
   - **Status**: Completed. Merged into `ccad_core`.
