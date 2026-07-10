@@ -147,6 +147,7 @@ add_library(ccad_core
   src/ccad_core/teardrop_generator.cpp
   src/ccad_core/track_length_tuning.cpp
   src/ccad_core/diff_pair_tuning.cpp
+  src/ccad_core/diff_pair_drc.cpp
   src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
