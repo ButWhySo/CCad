@@ -141,6 +141,7 @@ add_library(ccad_core
   src/ccad_core/gerber_plotter_bridge.cpp
   src/ccad_core/drill_file_exporter.cpp
   src/ccad_core/position_file_exporter.cpp
+  src/ccad_core/model_3d_registry.cpp
   src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
