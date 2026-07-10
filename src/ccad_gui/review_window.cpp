@@ -2617,8 +2617,29 @@ ReviewWindow::ReviewWindow() {
                      {"action", "panel"});
   });
 
-  connect(canvas_scene_, &QGraphicsScene::selectionChanged, this,
-          [this]() { updateSelectionStatus(); });
+  connect(canvas_scene_, &QGraphicsScene::selectionChanged, this, [this]() {
+    updateSelectionStatus();
+    if (cross_probing_active_) return;
+    cross_probing_active_ = true;
+    schematic_scene_->clearSelection();
+    for (QGraphicsItem* item : canvas_scene_->selectedItems()) {
+      QString id = item->data(Qt::UserRole).toString();
+      if (!id.isEmpty()) selectCanvasObjectById(*schematic_scene_, id);
+    }
+    cross_probing_active_ = false;
+  });
+  
+  connect(schematic_scene_, &QGraphicsScene::selectionChanged, this, [this]() {
+    updateSelectionStatus();
+    if (cross_probing_active_) return;
+    cross_probing_active_ = true;
+    canvas_scene_->clearSelection();
+    for (QGraphicsItem* item : schematic_scene_->selectedItems()) {
+      QString id = item->data(Qt::UserRole).toString();
+      if (!id.isEmpty()) selectCanvasObjectById(*canvas_scene_, id);
+    }
+    cross_probing_active_ = false;
+  });
   connect(diagnostics_, &QTableWidget::cellClicked, this, [this](const int row, int) {
     selectCanvasObjectById(*canvas_scene_, diagnostics_->objectIdForRow(row));
   });

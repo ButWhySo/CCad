@@ -274,6 +274,7 @@ class ReviewWindow final : public QMainWindow {
   QPointF interaction_last_mouse_pos_;
   QPointF interaction_start_mouse_pos_;
   bool interaction_has_anchor_ = false;
+  bool cross_probing_active_ = false;
   int ui_map_epoch_ = 1;
   mutable QStringList dirty_ui_map_ids_;
   mutable QStringList dirty_ui_map_roles_;
