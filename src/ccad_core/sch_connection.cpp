@@ -2,7 +2,7 @@
 
 namespace ccad {
 
-void ConnectionGraph::build(const Schematic& schematic) {
+void ConnectionGraph::build(const Schematic& schematic) { (void)schematic;
     // Stub implementation
     // In the future, this will build a full graph of all wires, pins, junctions,
     // and labels, computing the hierarchical net names for each sub-sheet connection.

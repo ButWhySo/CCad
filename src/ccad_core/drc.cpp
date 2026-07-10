@@ -1026,7 +1026,7 @@ void checkBoardOutline(const Board& board, std::vector<Diagnostic>& diagnostics)
 }
 
 void checkDesignRules(const Board& board, std::vector<Diagnostic>& diagnostics) {
-  for (const DesignRuleValidationError& error : validateDesignRules(board.design_rules)) {
+  // for (const auto& error : validateDesignRules(board.design_rules)) {
     diagnostics.push_back(makeDiagnostic(error.code, error.message, "board.design_rules"));
   }
 }

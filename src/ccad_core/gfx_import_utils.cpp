@@ -15,11 +15,11 @@ void convertImageToPolygons(const ImageImportData& img, Point pixel_scale, std::
     SchGraphic placeholder;
     placeholder.start = { Length(0), Length(0) };
     placeholder.end = { Length(img.width * pixel_scale.x.nanometers), Length(img.height * pixel_scale.y.nanometers) };
-    placeholder.type = "rect";
+    placeholder.kind = "rect";
     out_graphics.push_back(placeholder);
 }
 
-void convertSVGToLibShapes(const std::string& svg_data, Point pixel_scale, Point offset, std::vector<SchGraphic>& out_graphics) {
+void convertSVGToLibShapes(const std::string& svg_data, Point pixel_scale, Point offset, std::vector<SchGraphic>& out_graphics) { (void)svg_data; (void)pixel_scale; (void)offset; (void)out_graphics;
     // Stub implementation for now.
     // In the future, we'll use a headless SVG parsing library (like nanosvg) to convert
     // paths, polygons, and primitive shapes into SchGraphics.
