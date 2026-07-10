@@ -145,6 +145,7 @@ add_library(ccad_core
   src/ccad_core/scene_3d_graph_bridge.cpp
   src/ccad_core/camera_3d_controls.cpp
   src/ccad_core/teardrop_generator.cpp
+  src/ccad_core/track_length_tuning.cpp
   src/ccad_core/kicad_symbol_import.cpp
   src/ccad_core/kicad_footprint_export.cpp
   src/ccad_core/kicad_pcb_export.cpp
