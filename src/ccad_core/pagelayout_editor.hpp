@@ -11,6 +11,16 @@ public:
     PagelayoutEditor() = default;
 
     void loadTemplate(const std::string& filepath);
+
+    std::string getTitle() const;
+    void setTitle(const std::string& title);
+
+    std::string getPaperSize() const;
+    void setPaperSize(const std::string& size);
+
+private:
+    std::string title_;
+    std::string paper_size_ = "A4";
 };
 
 } // namespace ccad
