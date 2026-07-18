@@ -343,3 +343,426 @@ Each sprint must ship a meaningful batch of at least eight to ten visible/user-m
 - [x] Stub: `bitmap2component` (Raster image to PCB geometric footprint converter) (Sprint 279)
 
 - [x] Stub: Agent Orchestration Settings UI and backend logic to store and reflect user settings in appropriate fields, and tweak base agent-orchestrator behavior according to these settings. (Sprint 279)
+
+## Schematic Netlist Reader & Component Association
+- **legacy_netlist_reader.cpp**: Parses older format netlists to construct internal NETLIST structures. CCad natively serializes netlists as JSON, but legacy netlist reading is critical for backwards compatibility with pre-2015 KiCad tools and external capture utilities.
+- **netlist_reader.h/cpp**: The base class NETLIST_READER defines the contract for streaming in pin-to-net connectivity and footprint assignments (CMP_READER). The parsing logic is token-based. CCad will need a modernized ccad::NetlistReader abstract base class to handle incoming netlist streams.
+- **netlist.cpp, pcb_netlist.cpp/h**: NETLIST and PCB_NETLIST encapsulate the in-memory graph of components and their nets before they are resolved into the ccad::Board model. 
+- **pcb_component.cpp/h**: Represents a parsed component from the netlist (COMPONENT), bridging the gap between the schematic symbol and the physical footprint. It stores the reference designator, value, and intended footprint string. CCad represents this natively in ccad::SchematicComponent.
+
+## PCB IO & Plugin Manager
+- **pcb_io.cpp/h, pcb_io_mgr.cpp/h**: Defines the PCB_IO abstract base class and PCB_IO_MGR factory. This architecture allows dynamically loading or instantiating format-specific importers at runtime. CCad relies on a much simpler JSON/binary internal format and uses stateless function endpoints for conversions, eliminating the need for a heavy object-oriented plugin manager.
+
+## Allegro Importer
+- **allegro_builder.cpp/h, pcb_io_allegro.cpp/h, allegro_db_utils.cpp/h**: The BOARD_BUILDER class translates an Allegro BRD_DB into a KiCad BOARD. The PCB_IO_ALLEGRO wrapper maps this back to the standard plugin interface. CCad will need a robust layer-mapping system (LAYER_MAPPER / LAYER_MAPPABLE_PLUGIN) to safely import foreign layer stacks into the unified CCad oard_stackup_manager.
+
+## Component Classes (Cache Proxy & Manager)
+- **component_class_cache_proxy.cpp/h**: Implements COMPONENT_CLASS_CACHE_PROXY. Creating dynamic component classes from class generators is an expensive operation. This class acts as a cache-aware proxy for a FOOTPRINT's component class to optimize the runtime overhead. In CCad, footprint component classifications are cached directly inside ccad::SchematicComponent or ccad::Footprint during board ingestion, effectively achieving O(1) lookup without needing a dedicated proxy object.
+- **component_class_manager.cpp/h**: Implements COMPONENT_CLASS_MANAGER. This manager operates within the BOARD context. It owns generated COMPONENT_CLASS objects and ensures that pointers to managed classes remain valid. For CCad, this logic maps seamlessly into the ccad::Board data structure where design rules and component groupings are centrally evaluated during DRC.
+
+## Core Connectivity Algorithms
+- **connectivity_algo.cpp/h**: Defines CN_CONNECTIVITY_ALGO and CN_EDGE. This is the spatial and logical intersection solver that groups distinct layout primitives (tracks, vias, pads) into electrically connected clusters. CCad's connectivity_algo handles this directly inside the board model using spatial R-trees, avoiding decoupled calculation passes.
+- **connectivity_data.cpp/h**: CONNECTIVITY_DATA manages the live cache of net graphs and detached net clusters (CN_DISJOINT_NET_ENTRY). It is responsible for calculating unrouted paths (RN_DYNAMIC_LINE). In CCad, connectivity_data has been mapped to ccad::Board's internal node sets, ensuring memory-efficient footprint association.
+- **connectivity_items.cpp**: Maps basic primitives into generic CN_ITEM structs for the algorithm to process blindly. CCad uses its typed C++ structures directly, skipping the secondary mapping overhead.
+
+## Connectivity Auxiliaries (Topology & Cache)
+- **connectivity_items.h**: Defines CN_ANCHOR, CN_ITEM, CN_CLUSTER. Maps basic layout primitives into connectivity-aware generic structures. As noted previously, CCad avoids this secondary mapping step by building connectivity natively into the objects themselves.
+- **connectivity_rtree.h**: Spatial index used specifically by the connectivity algorithm for finding nearest neighboring elements. CCad leverages a unified SpatialIndex structure across both rendering and connectivity queries.
+- **from_to_cache.cpp/h**: Defines FROM_TO_CACHE for accelerating netlist-to-pad mappings. In CCad, mapping from netlist endpoints to footprint pads is solved during footprint auto-placement using the native ccad::Schematic context.
+- **topo_match.cpp/h**: Contains CONNECTION_GRAPH and an isomorphic backtracking algorithm (BACKTRACK_STAGE) used for identifying partially matched topology structures (e.g. diff pairs, multi-gate packages). This logic is immensely valuable; CCad will port this exact backtracking algorithm into ccad_core/net_tie_drc.cpp and multi_channel_probe for robust pattern matching.
+
+## Dialogs: Barcodes & Reannotation (UI Domain Logic)
+- **dialog_barcode_properties.cpp/h/base**: Manages the properties of a PCB_BARCODE object. While the dialog itself is wxWidgets, the data binding maps to barcode rendering attributes which CCad needs to replicate in its native Qt property inspectors.
+- **dialog_board_reannotate.cpp/h/base**: Contains REFDES_CHANGE, REFDES_INFO, and REFDES_PREFIX_INFO. This perfectly illustrates why the UI cannot be skipped! KiCad has hidden core business logic (UUID tracking for RefDes changes, footprint prefix tracking, and collision sets) inside the dialog headers. CCad MUST extract these structures out of the GUI and place them into a standalone ccad_core/reannotation_engine.h so that the CLI and Qt GUI can both access this logic symmetrically.
+
+## Dialogs: Board Setup & Statistics (Master State Hubs)
+- **dialog_board_setup.cpp/h**: This single dialog is the master hub for board initialization, linking together massive subsets of business logic: constraints, stackups, layers, defaults, netclasses, rules, and tuning profiles (PANEL_SETUP_CONSTRAINTS, PANEL_SETUP_BOARD_STACKUP, etc.). 
+  - **CCad Architectural Decision**: CCad will strip this monolithic setup dialog pattern. Instead of a mega-dialog, these properties map to discrete ccad::Board kernel settings. The GUI will use decentralized QDockWidget inspectors that modify these properties via atomic kernel transactions.
+- **dialog_board_statistics.cpp/h/base, dialog_board_stats_job.cpp/h**: Aggregates board-level statistics (components, pads, vias, tracks) and manages background jobs (JOB_EXPORT_PCB_STATS) for exporting them. CCad's kernel natively exposes these counts through the CLI (e.g., ccad pcb stats), removing the need for a GUI-bound statistics job tracker.
+
+## Dialogs: Cleanup Jobs (Graphics, Tracks, Vias)
+- **dialog_cleanup_graphics.cpp/h/base**: Configuration UI for cleaning up degenerate graphics (e.g., zero-length segments, overlapping items). 
+- **dialog_cleanup_tracks_and_vias.cpp/h/base**: Configuration UI for deleting dangling tracks, merging co-linear segments, and removing redundant vias. 
+  - **CCad Architectural Decision**: In KiCad, these dialogs often directly invoke cleanup routines. CCad explicitly isolates cleanup algorithms into the ccad_core transaction engine. The CLI (ccad pcb cleanup --all) and any future Qt cleanup dialogs will merely pass configuration parameters (flags) to the stateless kernel cleanup endpoint, keeping the UI entirely devoid of geometry mutation logic.
+
+## Dialogs: Editing Tools & DRC (Modal Logic)
+- **dialog_copper_zones_base, dialog_dimension_properties**: Basic wxWidgets forms configuring physical primitives. CCad completely replaces these with dynamic QPropertyWidget panels tied directly to the selected ccad::Zone or ccad::Dimension object.
+- **dialog_create_array.cpp/h/base**: This dialog derives from PCB_PICKER_TOOL::RECEIVER, revealing tight coupling between the modal UI and the canvas mouse picker (for defining array origins). 
+  - **CCad Architectural Decision**: CCad breaks this coupling. We rely on the CLI (ccad pcb array) which natively pauses for coordinate inputs (via the active tool state machine) without needing a persistent modal dialog to own the picker callback.
+- **dialog_drc.cpp/h/base**: The DRC control dialog. In KiCad, this triggers the DRC routines and displays violations. CCad shifts the entire DRC loop to the headless ccad_core/drc_engine. The Qt GUI will only feature a passive "DRC Violations" dock widget that listens to standard kernel reporting events.
+
+## Dialogs: Footprint Exchange & Exporters
+- **dialog_enum_pads.cpp/h/base**: UI for pad numbering (auto-incrementing pad names during footprint creation). CCad maps this to a dedicated CLI command ccad footprint pad-renumber and a standalone Qt property action.
+- **dialog_exchange_footprints.cpp/h/base**: Handles replacing a FOOTPRINT with a new LIB_ID. In KiCad, this UI directly manipulates the board items. CCad strictly separates this: the UI just collects the mapping (Old_LIB_ID -> New_LIB_ID) and passes it to the ccad_core/footprint_manager endpoint to execute the atomic swap. This ensures CLI scripts can exchange footprints without invoking the GUI.
+- **dialog_export_2581.cpp/h/base, dialog_export_idf.cpp/h/base**: Configuration dialogs binding to JOB_EXPORT_PCB_IPC2581 and JOB_EXPORT_IDF. CCad implements these exporters headlessly; the Qt UI merely serializes the form data into the exact same JSON configuration structure used by ccad pcb export ipc2581.
+
+## Dialogs: Manufacturing Exporters (ODB++, STEP, VRML)
+- **dialog_export_odbpp.cpp/h/base**: UI form binding to JOB_EXPORT_PCB_ODB.
+- **dialog_export_step.cpp/h/base**: UI form binding to JOB_EXPORT_PCB_3D.
+- **dialog_export_vrml.cpp/h/base**: VRML legacy exporter.
+  - **CCad Architectural Decision**: Like IPC2581/IDF, these dialogs primarily act as serialization boundaries, mapping checkboxes to job properties. CCad will handle ODB++, STEP, and VRML through headless stateless executors (ccad pcb export step) driven by JSON rule files, decoupling the manufacturing pipeline entirely from the Qt presentation layer.
+
+## Dialogs: Search, Filter, and Associations
+- **dialog_filter_selection.cpp/h/base**: Configuration for what types of objects the mouse picker is allowed to select. CCad natively supports CLI-driven selection masks (e.g., ccad pcb select --type Pad) and uses Qt event filters for GUI canvas picking, entirely superseding this dialog.
+- **dialog_find.cpp/h/base, dialog_find_by_properties.cpp/h/base**: Implements text search and advanced property-based querying (PROPERTY_MATCH_MODE, PROPERTY_ROW_DATA). 
+  - **CCad Architectural Decision**: Advanced querying is a core feature of the CLI (e.g., ccad pcb find "layer == F.Cu and type == Track"). The expression parser and property matching engine MUST be decoupled from the UI and placed into ccad_core/query_engine.h so that both the Qt Search dock and the CLI can use the exact same AST evaluator.
+- **dialog_footprint_associations.cpp/h/base**: Displays library and symbol link provenance for a FOOTPRINT. In CCad, this is a passive read-only view in the dynamic Qt Property Inspector.
+
+## Dialogs: Footprint Editing & Validation
+- **dialog_footprint_checker.cpp/h/base**: UI that triggers the footprint validation logic (PCB_MARKER generation). Like DIALOG_DRC, CCad pushes this entirely to the kernel (e.g., ccad footprint validate) which emits standard diagnostic messages.
+- **dialog_footprint_properties.cpp/h/base**: A monolithic properties window aggregating PANEL_FP_PROPERTIES_3D_MODEL, PANEL_EMBEDDED_FILES, and PCB_FIELDS_GRID_TABLE. 
+  - **CCad Architectural Decision**: CCad decentralizes footprint properties. Text fields, 3D models, and custom embedded parameters are exposed natively to the standard Qt Property Inspector via the ccad::Footprint object model, entirely negating the need for a custom C++ dialog form.
+- **dialog_footprint_wizard_list.cpp/h/base**: Displays available python footprint generators. CCad's CLI handles generator listing natively via ccad footprint generate --list.
+
+## Dialogs: Pad Tables, Drilling & GenCAD
+- **dialog_fp_edit_pad_table.cpp/h/base**: Advanced footprint pad property editor.
+- **dialog_gendrill.cpp/h/base, dialog_gencad_export_options.cpp/h**: These bind to JOB_EXPORT_PCB_DRILL and GenCAD exporters. 
+- **dialog_generators.cpp/h/base**: Manages dynamic design generators (e.g., Python scripts for arrays/teardrops) by hooking into BOARD_LISTENER. 
+  - **CCad Architectural Decision**: CCad will use a headless event bus for BOARD_LISTENER triggers, ensuring generator scripts can react to CLI manipulation (e.g. ccad pcb route) without requiring a GUI context. Drill generation will be standardized under the ccad pcb export drill headless executor.
+
+## Dialogs: Placement Export, Fetchers & Bulk Mutations
+- **dialog_gen_footprint_position.cpp/h/base**: Binds to JOB_EXPORT_PCB_POS to export component centroid (placement) files for Pick & Place machines. 
+  - **CCad Architectural Decision**: Like the other manufacturing exporters, CCad strictly offloads this to a headless CLI exporter (ccad pcb export pos). 
+- **dialog_get_footprint_by_name.cpp/h/base**: A modal fetcher to grab a footprint from the library by string name. CCad achieves this via direct CLI parameter insertion (ccad pcb place-footprint [lib:name]) without a blocking modal.
+- **dialog_global_deletion.cpp/h/base**: UI form to bulk delete items by type or layer (e.g., "Delete all tracks"). CCad natively handles this via standard querying and mutation commands (e.g., ccad pcb delete --type Track).
+- **dialog_global_edit_teardrops**: Bulk teardrop modifier. CCad executes teardrop logic natively in the kernel, so this UI is superseded by direct CLI commands.
+
+## Dialogs: Global Mutators & Settings Importers
+- **dialog_global_edit_text_and_graphics.cpp/h/base, dialog_global_edit_tracks_and_vias.cpp/h/base**: Form views for bulk manipulating tracks, vias, text, and graphic properties. dialog_global_edit_tracks_and_vias employs a VIA_PROTECTION_UI_MIXIN. 
+  - **CCad Architectural Decision**: CCad shifts this entire paradigm. We do not use modal dialogs for global mutation. CCad relies on the ccad pcb set command combined with selection masks (e.g., ccad pcb set --type Via --tented true --mask "net == GND"). The GUI simply exposes this batching mechanism through a multi-select property inspector.
+- **dialog_import_netlist.cpp/h/base**: The UI for applying a NETLIST to the current board. CCad isolates this logic into ccad_core/board_netlist_updater and exposes it via ccad pcb import-netlist, completely decoupling the synchronization engine from the view layer.
+- **dialog_import_settings.cpp/h**: UI for importing constraints and design rules from another board. Superseded in CCad by ccad pcb import-settings [file].
+
+## Dialogs: Layer Mapping & Precision Transforms
+- **dialog_map_layers.cpp/h/base**: Collects a mapping array of INPUT_LAYER_DESC when importing foreign formats (DXF/Allegro). CCad handles this natively via headless configuration maps (ccad pcb import-layers --map mapping.json), completely decoupling the import layer resolver from the UI.
+- **dialog_migrate_3d_models.cpp/h/base**: Utility to convert legacy 3D path macros.
+- **dialog_move_exact.cpp/h/base**: A modal dialog for applying precise VECTOR2I translation and EDA_ANGLE rotation to a selection using a ROTATION_ANCHOR.
+  - **CCad Architectural Decision**: CCad rejects modal transform dialogs. We expose exact transformation through the native CLI (ccad pcb move --dx 10 --dy 5 --rot 45). The Qt GUI's "Move Exact" action simply pipes values directly to this unified endpoint, enforcing identical behavior across scripted and manual workflows.
+
+## Dialogs: Multi-Channel Layouts & Offsets
+- **dialog_multichannel_repeat_layout.cpp/h/base, dialog_multichannel_generate_rule_areas.cpp/h/base**: Binds to MULTICHANNEL_TOOL and RULE_AREA to automate the replication of hierarchical schematic sheets (rooms) in the PCB layout. 
+  - **CCad Architectural Decision**: Hierarchical replication is a cornerstone of modern CAD. In CCad, this logic must be decoupled from the MULTICHANNEL_TOOL UI action and implemented as a kernel transaction (ccad_core/multichannel_replicator). The CLI will expose this via ccad pcb replicate-layout --source RoomA --target RoomB.
+- **dialog_non_copper_zones_properties**: Standard property editor for keepouts and non-copper fills. CCad uses QPropertyWidget bindings.
+- **dialog_offset_item.cpp/h/base**: A modal to offset an item by a specific vector. Completely superseded in CCad by the unified ccad pcb move transform pipeline.
+
+## Dialogs: Exporters & PNS Router Settings
+- **dialog_outset_items.cpp/h/base**: Configuration for the geometry outset operation (expanding shapes).
+- **dialog_pad_properties.cpp/h/base**: Complex pad property editor. CCad replaces this entire UI surface with the standard Qt QPropertyWidget mapped natively to ccad::Pad parameters.
+- **dialog_plot.cpp/h/base**: Binds to JOB_EXPORT_PCB_PLOT. This is the Gerber, SVG, and PDF plot generator form. 
+  - **CCad Architectural Decision**: CCad shifts all plotting to the headless CLI (ccad pcb export plot --config plot.json). The Qt UI serves only to construct the JSON job configuration.
+- **dialog_pns_diff_pair_dimensions.cpp/h/base**: Modifies PNS::SIZES_SETTINGS for the Push and Shove Router. CCad decouples PNS settings from modal dialogs, mapping them directly to active design rules within the ccad::Board context so the router can adapt in real-time based on the local spatial area.
+
+## Dialogs: Routing Settings & Property Broadcast
+- **dialog_pns_settings.cpp/h/base**: The UI for configuring PNS::ROUTING_SETTINGS (shove rules, smoothing). In CCad, these settings are exposed natively in the Qt QDockWidget for the Active Tool, avoiding a blocking modal so the user can tune shoving behaviors while actively routing.
+- **dialog_position_relative.cpp/h/base**: Modal for moving items relative to another anchor. Fully superseded by ccad pcb move --relative-to [anchor_id].
+- **dialog_print_pcbnew, dialog_produce_pcb_base**: UI bindings for the legacy print system.
+- **dialog_push_pad_properties.cpp/h/base**: A specific UI for copying one pad's properties to other pads in the footprint or board. 
+  - **CCad Architectural Decision**: CCad completely avoids building custom C++ "property broadcaster" dialogs. Property broadcast is natively handled by the CLI selection engine. A user or GUI can simply execute ccad pcb set --type Pad --shape Round --mask "parent == U1" to broadcast properties. The native Qt property inspector natively supports multi-select broadcasting, making this custom dialog obsolete.
+
+## Dialogs: Images, Renderer & Rule Areas
+- **dialog_reference_image_properties.cpp/h/base**: Configuration for reference background images on the canvas. 
+- **dialog_render_job.cpp/h/base**: Configures a 3D raytracing render job. CCad handles 3D rendering headlessly (e.g., via standard OpenGL/Vulkan contexts bound directly to ccad::Board3D), meaning we do not use a modal dialog to configure raytracing pipelines.
+- **dialog_router_save_test_case.cpp/h/base**: A developer utility that saves the current board state as a PNS test case. CCad replicates this natively in the CLI via ccad debug save-router-test.
+- **dialog_rule_area_properties.cpp/base**: Configures Keepouts (Rule Areas). 
+  - **CCad Architectural Decision**: Keepouts in CCad are primary primitives (ccad::RuleArea). CCad completely ditches the modal dialog in favor of binding ccad::RuleArea instances directly to standard QPropertyWidget inspectors, where layers, track constraints, and via constraints are toggled natively.
+
+## Dialogs: Shape & Table Properties, Layer Swapper
+- **dialog_shape_properties.cpp/h/base**: Manages base graphics (lines, circles). CCad uses the ccad::Shape property inspector natively without a separate modal window.
+- **dialog_swap_layers.cpp/h/base**: A modal dialog constructing a std::map<PCB_LAYER_ID, PCB_LAYER_ID> to batch-move items between layers. CCad handles this completely through the CLI: ccad pcb swap-layers --map "F.Cu=B.Cu".
+- **dialog_table_properties.cpp/h/base, dialog_tablecell_properties.cpp/h/base**: UI forms for editing PCB_TABLE dimensions and cell content. CCad merges these directly into the Qt Inspector dock when a ccad::Table object is selected.
+
+## Dialogs: Primitives & Board Properties
+- **dialog_target_properties, dialog_textbox_properties, dialog_text_properties**: Simple properties configuration for drafting primitives. Replaced in CCad by Qt's native QPropertyWidget.
+- **dialog_track_via_properties.cpp/h/base**: A monolithic UI for configuring PCB_SELECTION (tracks, vias). Like global tracking, it uses a VIA_PROTECTION_UI_MIXIN. 
+  - **CCad Architectural Decision**: CCad completely discards this dialog. The Qt object inspector (similar to Altium's Properties panel) dynamically parses the selected ccad::Track or ccad::Via structure using C++ introspection/Qt Meta-Object system, rendering fields natively without a bespoke dialog window.
+
+## Dialogs: Track Tuning, Pads & Schematic Sync
+- **dialog_track_via_size.cpp/h/base**: Manages global track and via sizes. CCad manages this via rule stacks rather than floating dialogs.
+- **dialog_tuning_pattern_properties.cpp/h/base**: Modifies length-tuning/meander properties. In CCad, meander settings are bound directly to the active tuning tool state and can be modified via the CLI (e.g., ccad pcb route tune --amplitude 2mm).
+- **dialog_unused_pad_layers.cpp/h/base**: Triggers the algorithm that removes unused inner layers from pads to reduce capacitance. CCad makes this a headless CLI optimization step (ccad pcb optimize --remove-unused-pads).
+- **dialog_update_pcb.cpp/h/base**: The main dialog for synchronizing a schematic NETLIST to the board layout. 
+  - **CCad Architectural Decision**: Synchronization is a core headless transaction. CCad separates the UI preview log from the actual transaction engine. The engine lives in ccad_core/board_netlist_updater and is invoked seamlessly via ccad pcb import-netlist or ccad pcb sync.
+
+## Dialog Panels: Application Settings
+- **panel_assign_component_classes.cpp/base**: Configuration pane for mapping footprints to classes.
+- **panel_display_options.cpp/h/base**: Modifies PCBNEW_SETTINGS and APP_SETTINGS_BASE (e.g., rendering modes, grid colors). 
+- **panel_edit_options.cpp/h/base**: Modifies FOOTPRINT_EDITOR_SETTINGS and PCBNEW_SETTINGS (e.g., magnetic snapping, rotation angles).
+- **panel_fp_editor_color_settings.cpp/h, panel_fp_editor_field_defaults.cpp/h**: Footprint editor specific configurations.
+  - **CCad Architectural Decision**: In KiCad, these panels directly modify global application structs. CCad centralizes all application and editor settings into ccad_core/settings_manager.h, serialized to JSON profiles. The Qt QSettings UI panes will bind directly to these schema paths via Model-View-Controller patterns, keeping the UI panels completely devoid of domain configuration structs.
+
+## Dialog Panels: Footprint Editor & Libraries
+- **panel_fp_editor_graphics_defaults.cpp/h**: Manages default geometry dimensions for footprint creation (e.g., default silk width). In CCad, this is serialized directly to the active ccad_core/settings_manager.h footprint profile.
+- **panel_fp_lib_table.cpp/h/base**: Edits the FP_LIB_TABLE (which libraries are active). CCad handles the catalog metadata natively. The GUI wraps ccad_core/library_manager through Qt's QAbstractTableModel.
+- **panel_fp_properties_3d_model.cpp/h**: Binds a PANEL_PREVIEW_3D_MODEL to a footprint. As established, CCad uses the ccad::Footprint property inspector to manage 3D paths, completely decoupling the UI panel from the model data.
+- **panel_fp_user_layer_names.cpp/h**: Edits custom layer names for the footprint. CCad manages this via ccad pcb set-layer-name and standard Qt layer views.
+
+## Dialog Panels: Plugins, Origins & Sub-Panels
+- **panel_pcbnew_action_plugins.cpp/h/base**: Configuration UI for Python Action Plugins. 
+  - **CCad Architectural Decision**: CCad shifts plugin architecture completely to the backend. The core kernel provides a generic WASM/Python embedding interface. The CLI discovers plugins (ccad plugin list) and executes them (ccad plugin run <name>). A Qt UI panel is strictly optional and merely reflects the CLI's plugin manifest.
+- **panel_pcbnew_display_origin.cpp/h/base**: Modifies display origin coordinates (e.g., relative vs absolute). CCad maps this to settings_manager.h.
+- **panel_rule_area_properties_keepout_base/placement_base**: UI forms for rule area properties. As documented earlier, CCad replaces all rule area UI dialogs with native QPropertyWidget integrations.
+
+## Dialog Panels: Board Design Settings
+- **panel_setup_constraints.cpp/h/base**: The core form for editing design rules (minimum track width, clearance, via size). Modifies BOARD_DESIGN_SETTINGS. 
+  - **CCad Architectural Decision**: CCad maps design rules into the ccad::DesignRules AST within the ccad_core kernel. The Qt UI will use a unified generic rule editor (similar to Altium's query-based rule editor) rather than hardcoded C++ forms for specific constraints. The CLI accesses this via ccad pcb rule set --rule TrackWidth --value 0.2mm.
+- **panel_setup_defaults, panel_setup_dimensions, panel_setup_formatting**: Forms for defaults and text formatting.
+- **panel_setup_layers.cpp/h/base**: Modifies active layers and stackup bindings via PANEL_SETUP_LAYERS_CTLs. CCad moves the stackup definition into an independent engine (ccad_core/stackup_manager.h), modified via ccad pcb stackup.
+
+## Dialog Panels: Custom Rules & Solder Mask
+- **panel_setup_mask_and_paste.cpp/h/base**: Modifies global mask expansions in BOARD_DESIGN_SETTINGS. 
+- **panel_setup_rules.cpp/h/base**: The UI for the custom Design Rule syntax (s-expression like syntax). Manipulates DRC_RULE. 
+  - **CCad Architectural Decision**: CCad parses design rules natively into the ccad_core/rule_evaluator AST. The Qt UI uses standard text editing (like SCINTILLA_TRICKS) to author the rules, but the rules are evaluated completely independently by the kernel when ccad pcb drc is invoked.
+
+## Design Rule Check (DRC) Engine: Core
+- **panel_zone_properties.cpp/h/base**: Finally out of dialogs/. Standard zone properties, superseded by native Qt property inspector.
+- **drc_engine.cpp/h**: The beating mechanical heart of the CAD validator. Contains DRC_ENGINE, DRC_RULE, DRC_CONSTRAINT, and the DRC_VIOLATION_HANDLER callback type.
+  - **CCad Architectural Decision**: CCad perfectly mirrors this headless engine structure. ccad_core/drc/drc_engine parses the AST, calculates physical intersections, and emits violations. The GUI operates merely as a consumer of this output stream (e.g., parsing the JSON output of ccad pcb drc).
+- **drc_cache_generator.cpp/h**: Subclasses DRC_TEST_PROVIDER to build spatial caches (R-Trees/Grids) before running collision checks.
+- **drc_chain_topology.cpp/h**: Analyzes connectivity graphs via CHAIN_TOPOLOGY to find stubs and branches. Used heavily by the High-Speed routing constraint checkers.
+
+## Design Rule Check (DRC) Engine: Parsers & Test Providers
+- **drc_rule_parser.cpp/h**: Implements the S-expression parser DRC_RULES_PARSER generating a std::vector<std::shared_ptr<DRC_RULE>>. 
+  - **CCad Architectural Decision**: CCad retains the S-Expression grammar for backward compatibility but implements the parser strictly within ccad_core/drc_parser. The CLI executes ccad pcb rule compile to ingest these text files.
+- **drc_test_provider.cpp/h**: Defines the DRC_TEST_PROVIDER interface and DRC_TEST_PROVIDER_REGISTRY. This is a classic plugin registry pattern for physical tests. 
+  - **CCad Architectural Decision**: CCad will use this exact registry pattern. Specific geometrical tests (annular width, connection width, connectivity, courtyard) will be compiled as independent headless DRC_TEST_PROVIDER modules in ccad_core/drc/providers. This allows agents to write new custom DRC checks simply by implementing a new provider class without touching the core drc_engine.cpp.
+
+## Design Rule Check (DRC) Engine: Rule Editor UI
+- **rule_editor/dialog_drc_rule_editor.cpp/h**: The main container for the visual rule editor (the new visual rule builder in KiCad 8+). It translates visual constraints into the text-based S-expressions.
+- **rule_editor/drc_re_condition_group_panel.cpp/h**: Manages logic gates (AND, OR, AND NOT, OR NOT) between different rule conditions.
+- **rule_editor/drc_re_*_overlay_panel.cpp/h**: Various input widgets for absolute lengths, boolean inputs, and allowed orientations for specific rule parameters.
+  - **CCad Architectural Decision**: CCad separates the rule authoring UI completely from the rule execution engine. The Qt Inspector will host a visual query builder (similar to Altium's query helper) that outputs standard CCad CLI queries (e.g., 
+et_class == "HighSpeed"), serializing them to JSON profiles instead of S-expressions. The dialog_drc_rule_editor logic is replaced by standard Qt Model-View controllers over ccad::DesignRules.
+
+## Design Rule Check (DRC) Engine: Rule Editor Overlay Panels
+- **rule_editor/drc_re_*_overlay_panel.cpp/h**: (e.g. drc_re_abs_length_two_overlay_panel, drc_re_bool_input_overlay_panel, drc_re_permitted_layers_overlay_panel). Dozens of custom C++ Qt widgets explicitly coded to handle specific types of rule data inputs.
+  - **CCad Architectural Decision**: CCad leverages the Qt Meta-Object system to automatically generate these property editors. By subclassing ccad::DRCConstraint into types like ccad::NumericConstraint or ccad::LayerConstraint and decorating them with Q_PROPERTY macros, the generic Qt Property Inspector completely replaces these 50+ bespoke drc_re_ UI files.
+
+## Exporters: Base Interfaces & Legacy Formats
+- **board_exporter_base.h**: The abstract interface BOARD_EXPORTER_BASE for all serialization engines. It consumes REPORTER and PROGRESS_REPORTER.
+- **export_d356, export_gencad, export_hyperlynx, export_idf, export_vrml**: Various legacy and simulation format generators.
+- **gendrill_excellon_writer.cpp/h**: EXCELLON_WRITER parses the board and emits standard N/C Drill files.
+  - **CCad Architectural Decision**: CCad will directly preserve these writer classes in the ccad_core/exporters/ kernel. Since they already depend solely on BOARD and not on Qt UI contexts, they can be flawlessly wired into the headless CLI pipeline (e.g., ccad pcb export excellon --board myboard.kicad_pcb).
+## Exporters: Drill, Gerber, POS & STEP
+- **gendrill_writer_base.cpp/h**: Base class for Drill writers.
+- **gerber_jobfile_writer.cpp/h, gerber_placefile_writer.cpp/h**: Writers for Gerber X2/X3 attributes and pick & place files.
+- **place_file_exporter.cpp/h**: Base centroid generator for SMD placements.
+- **step/exporter_step.cpp/h, step/step_pcb_model.cpp/h**: STEP 3D MCAD export subsystem. Converts 2D BOARD primitives to OpenCASCADE-compatible 3D B-reps.
+  - **CCad Architectural Decision**: All of these exporters (place_file_exporter, exporter_step, gerber_jobfile_writer) are inherently headless in KiCad's source. CCad seamlessly ports them to ccad_core/exporters/ without modification, directly mounting them to the CLI endpoints (ccad pcb export gerber/pos/step).
+
+## Exporters (U3D) & Generators & Git Merging
+- **exporters/u3d/**: Legacy Universal 3D format exporters. CCad natively supports 3D export via headless CLI (ccad pcb export u3d).
+- **generators/pcb_tuning_pattern.cpp/h**: Implements PCB_TUNING_PATTERN and TUNING_STATUS_VIEW_ITEM. This is the engine that calculates meander geometry for length matching. 
+  - **CCad Architectural Decision**: CCad decouples the physical generator from the GUI view items. The geometry is generated strictly in the kernel ccad_core/generators/ and returned to the UI as immutable ccad::Shape buffers.
+- **git/kigit_pcb_merge.cpp/h**: Implements KIGIT_PCB_MERGE which acts as a custom git_merge_driver_source for resolving S-expression merge conflicts automatically. CCad provides a dedicated CLI binary (ccad-git-merge) to act as the .gitconfig merge driver for .kicad_pcb files.
+- **import_gfx/dialog_import_graphics.cpp/h**: A UI for importing DXF/SVG images onto the board. Replaced by ccad pcb import-graphics [file].
+
+## High-Speed Analytics, Microwave Tools & Input Nav
+- **length_delay_calculation/length_delay_calculation.cpp/h**: Implements LENGTH_DELAY_CALCULATION and LENGTH_DELAY_STATS. Analyzes electrical delay across paths considering via spans and pad clips. 
+  - **CCad Architectural Decision**: This is a pure analytical kernel. CCad will migrate this directly into ccad_core/analytics/length_delay. It runs headlessly and feeds both the DRC engine and the GUI property inspectors.
+- **microwave/microwave_tool.cpp/h**: MICROWAVE_TOOL generates RF patterns (e.g. MICROWAVE_INDUCTOR_PATTERN). In CCad, RF pattern generators are abstracted as standard headless script generators, executable via ccad footprint generate rf-inductor.
+- **navlib/**: 3DConnexion SpaceMouse library bindings. CCad abstracts spatial navigation through generic Qt HID event interceptors rather than bespoke CAD-level implementations.
+
+## Netlist Synchronization & I/O Architecture
+- **netlist_reader/board_netlist_updater.cpp/h**: BOARD_NETLIST_UPDATER takes a BOARD* and a NETLIST* and performs the synchronization algorithms (Update PCB from Schematic). 
+  - **CCad Architectural Decision**: This is a pure transaction. CCad migrates this to ccad_core/board_netlist_updater and executes it directly via the CLI (ccad pcb import-netlist). It completely avoids UI coupling, returning a structured JSON diff of operations performed.
+- **pcb_io/pcb_io.cpp/h/mgr**: PCB_IO inheriting from IO_BASE. This represents the plugin interface for native CAD serialization (reading/writing .kicad_pcb or .kicad_mod). 
+  - **CCad Architectural Decision**: CCad replicates this exact abstract syntax. IO loaders (Eagle, Altium, KiCad) will be registered dynamically so the CLI can uniformly execute ccad pcb convert altium_file.PcbDoc output.kicad_pcb.
+
+## Unrouted Nets (Ratsnest) & Push-and-Shove (PNS) Router
+- **ratsnest/ratsnest_data.cpp/h**: RN_NET models the topological graph of unconnected pad-to-pad vectors. 
+  - **CCad Architectural Decision**: CCad maps this to ccad_core/ratsnest. It calculates minimal spanning trees via headless graph algorithms. The Qt Canvas merely requests oard->GetUnconnectedVectors() to draw the ratsnest lines.
+- **router/pns_algo_base.cpp/h**: ALGO_BASE serves as the foundation for the Push and Shove router algorithms (Walkaround, Shove, Drag). 
+  - **CCad Architectural Decision**: The PNS router in KiCad is famously well-isolated from the GUI. CCad moves the entire outer/ directory into ccad_core/router/. It operates on headless ROUTER contexts. The UI layer simply feeds coordinate events to the algorithm, and the algorithm returns the modified geometric diffs.
+
+## Freerouting Export & Teardrop Generation
+- **specctra_import_export/specctra.cpp/h**: SPECCTRA_DB lexes and emits the .dsn format used by external auto-routers (like Freerouting or Electra). 
+  - **CCad Architectural Decision**: CCad maps this seamlessly to ccad_core/exporters/specctra. It is a pure serialization endpoint and runs natively from ccad pcb export dsn.
+- **teardrop/teardrop.cpp/h**: TEARDROP_MANAGER generates smoothed teardrop zones at via/pad intersections.
+  - **CCad Architectural Decision**: This is a pure mathematical generator. CCad moves it to ccad_core/generators/teardrops and executes it completely headlessly. The GUI sees teardrops merely as ccad::Zone primitives with the teardrop boolean flag set.
+
+## Interactive Tools (GAL)
+- **tools/**: Includes lign_distribute_tool, drawing_tool, oard_editor_control, etc. These files inherit from TOOL_INTERACTIVE and define the state machines for mouse clicks (e.g., clicking to start a line, moving the mouse to draw the line, clicking to end).
+  - **CCad Architectural Decision**: CCad fundamentally abandons the stateful TOOL_INTERACTIVE paradigm. Instead, the GUI emits stateless JSON commands into the kernel, such as ccad pcb draw-track --points "[...]". The kernel verifies the action and mutates the ccad::Board. This ensures 100% parity between what an LLM Agent can execute via CLI and what a human can execute via mouse.
+
+## General UI Widgets
+- **widgets/**: Contains ppearance_controls, 
+et_inspector_panel, and panel_selection_filter. These are the docking panels in the KiCad GUI (e.g., the layer selection panel on the right).
+  - **CCad Architectural Decision**: CCad will rewrite these explicitly in ccad_gui/widgets/. They will bind directly to the ccad::Board data structures and the ccad_core/settings_manager profile. The backend logic for layer visibility and selection filtering remains purely in the core.
+
+## Zone Manager (Copper Pours)
+- **zone_manager/**: UI and backend logic for managing and prioritizing overlapping Copper Pours (ZONE).
+  - **CCad Architectural Decision**: CCad shifts zone conflict resolution and hatching completely into the kernel (ccad_core/zone_manager). The GUI simply presents the zone boundaries, and the core calculates the final poured geometry.
+
+---
+# MODULE 2: EESCHEMA (Schematic Editor)
+*Exploration Transition: Successfully exited pcbnew, entering eeschema.*
+
+## EESchema Core: Annotations, Netlists & BOM
+- **eeschema/connection_graph.cpp/h**: CONNECTION_GRAPH computes the global electrical netlist by traversing CONNECTION_SUBGRAPH elements across hierarchical sheets.
+  - **CCad Architectural Decision**: Like the DRC engine, schematic connectivity is completely headless in CCad (ccad_core/schematic/connection_graph). It computes dynamically as wires are placed and returns the net graph for ERC (Electrical Rules Check) and netlist export.
+- **eeschema/bom_plugins.cpp/h**: BOM_GENERATOR_HANDLER manages the execution of external scripts (usually Python) to generate Bill of Materials. CCad manages this natively via the ccad plugin CLI system, rendering BOM generation identical to Action Plugins.
+- **eeschema/annotate.cpp, autoplace_fields.cpp, cross-probing.cpp**: Legacy C++ files for annotation and IPC cross-probing. CCad implements annotation as a synchronous AST visitor over the schematic tree (ccad sch annotate).
+
+## EESchema Core: Fields Data Model & Junction Helpers
+- **eeschema/fields_data_model.cpp/h**, **eeschema/lib_fields_data_model.cpp/h**: These provide the underlying wxGridTableBase implementations for bulk editing component fields (Reference, Value, Footprint, Datasheet).
+  - **CCad Architectural Decision**: CCad abandons wxGridTableBase completely. The CLI provides a headless spreadsheet CSV import/export (ccad sch export-bom --format csv and ccad sch import-attributes map.csv). The UI maps this natively into QAbstractTableModel.
+- **eeschema/junction_helpers.cpp/h**: Algorithms for automatically generating wire intersections (SCH_JUNCTION) when wires cross at valid terminals.
+
+## Library Symbols & Project Rescue
+- **eeschema/lib_symbol.cpp/h**: LIB_SYMBOL represents a parsed schematic component from a .kicad_sym or legacy .lib file.
+  - **CCad Architectural Decision**: CCad maps this seamlessly into ccad_core/library/symbol. It functions identically to KiCad 6+ where symbols are fully isolated objects with Pins and Fields.
+- **eeschema/project_rescue.cpp/h**: Implements the RESCUER tool which detects when a schematic symbol is missing from active libraries and attempts to recover it from the project cache.
+  - **CCad Architectural Decision**: CCad leverages KiCad 6+ embedded symbol paradigm, meaning the RESCUER is strictly a legacy migration tool. CCad implements this as a one-time migration hook during ccad sch migrate rather than an interactive UI dialog.
+
+## EESchema Core: Schematic Root & UI Frame
+- **eeschema/schematic.cpp/h**: Defines SCHEMATIC : public EDA_ITEM, which acts as the root data structure for an entire schematic project (analogous to BOARD in pcbnew).
+  - **CCad Architectural Decision**: CCad perfectly mirrors this structure in ccad_core/schematic/schematic.h (defined as ccad::Schematic). It holds the abstract syntax tree of all sheets and symbols.
+- **eeschema/sch_base_frame.cpp/h**: Defines SCH_BASE_FRAME : public EDA_DRAW_FRAME. This is the wxWidgets monolithic UI window that binds directly to the SCHEMATIC data.
+  - **CCad Architectural Decision**: CCad fully decouples the SCHEMATIC data model from the UI. The Qt GUI wrapper (ccad_gui/schematic_editor) binds via Model-View and mutates the ccad::Schematic purely through stateless CLI/kernel transactions.
+
+## EESchema Core: Connections & Edit Frame
+- **eeschema/sch_connection.cpp/h**: SCH_CONNECTION represents an active electrical node or bus connection generated during the traversal of the CONNECTION_GRAPH.
+- **eeschema/sch_edit_frame.cpp/h**: SCH_EDIT_FRAME is the main interactive canvas for EESchema. It holds the active SCHEMATIC, manages tools, and handles the hierarchical navigation tree (HIERARCHY_PANE).
+  - **CCad Architectural Decision**: Like PCB_EDIT_FRAME, the entire interactive logic in SCH_EDIT_FRAME is fully decoupled in CCad. ccad_gui/schematic_editor binds via Model-View to the headless ccad::Schematic and executes modifications purely via JSON CLI transactions, enabling 100% agent parity.
+
+## EESchema Core: Abstract Syntax Tree (AST) Primitives
+- **eeschema/sch_item.cpp/h**: Defines SCH_ITEM : public EDA_ITEM, the foundational geometric and logical primitive for every entity drawn in the schematic editor (Symbols, Wires, Pins, Text).
+  - **CCad Architectural Decision**: CCad maps this exactly to ccad_core/schematic/item.h (ccad::SchItem). This ensures that the AST for schematic files matches the physical constraints of EDA_ITEM without inheriting Qt/wxWidgets rendering baggage.
+- **eeschema/sch_line, sch_junction, sch_label, sch_marker, sch_no_connect**: The specific implementations of SCH_ITEM representing wires, dots, net-names, DRC markers, and X-marks.
+- **eeschema/sch_netchain.cpp/h**: Implements SCH_NETCHAIN, which groups SCH_CONNECTION instances that are separated only by passive zero-ohm/passive bridge components (essential for Net Ties).
+
+## EESchema Graphics & Annotation
+- **eeschema/sch_painter.cpp/h**: Implements SCH_PAINTER, the Graphics Abstraction Layer (GAL) rendering engine for EESchema. It handles drawing SCH_SYMBOL, SCH_LINE, etc.
+  - **CCad Architectural Decision**: CCad discards GAL entirely. The ccad_gui/schematic_editor will implement a native Qt QGraphicsScene painter that directly consumes the abstract bounding boxes and vector geometry provided by ccad::SchItem.
+- **eeschema/sch_reference_list.cpp/h**: SCH_REFERENCE_LIST is the core data structure used during schematic annotation to ensure that R1, C1, etc., are uniquely assigned across hierarchical sheet paths.
+
+## EESchema Core: Hierarchical AST (Sheets and Screens)
+- **eeschema/sch_sheet.cpp/h**: SCH_SHEET : public SCH_ITEM represents a hierarchical sheet block instantiated within a schematic.
+- **eeschema/sch_screen.cpp/h**: SCH_SCREEN : public BASE_SCREEN represents the actual canvas/container holding the items inside a specific sheet. 
+  - **CCad Architectural Decision**: CCad maps this topology directly to ccad_core/schematic/. ccad::Schematic holds the tree, ccad::SchSheet is the node, and ccad::SchScreen is the item container. This is identical to KiCad's data structure but natively isolated from any GUI/Qt elements, enabling headless hierarchical traversals.
+- **eeschema/sch_sheet_path, sch_sheet_pin**: Utilities for resolving paths through complex, multi-instantiated hierarchical sheets.
+
+## EESchema Symbols & Library Manager
+- **eeschema/symbol.cpp/h**: SYMBOL : public SCH_ITEM is the abstract representation of a schematic part. 
+- **eeschema/symbol_library_manager.cpp/h**: Implements SYMBOL_LIBRARY_MANAGER and LIB_BUFFER. This caches symbols loaded from the sym-lib-table.
+  - **CCad Architectural Decision**: CCad unifies the Symbol and Footprint library managers. The exact same ccad_core/library/manager natively caches both .kicad_sym and .kicad_mod files, eliminating the duplicated logic between eeschema and pcbnew.
+- **eeschema/sch_view.cpp/h**: The graphics View (part of GAL). Replaced by QGraphicsScene.
+
+## EESchema API & Headless Validation
+- **eeschema/api/api_handler_sch.cpp/h**: API_HANDLER_SCH provides the RPC (Remote Procedure Call) endpoints for the new KiCad 8 Python API.
+- **eeschema/api/headless_sch_context.cpp/h**: HEADLESS_SCH_CONTEXT provides an execution environment for schematic queries and mutations without spawning a SCH_EDIT_FRAME UI window.
+  - **CCad Architectural Validation**: The existence of HEADLESS_SCH_CONTEXT in upstream KiCad completely validates CCad's thesis! CCad takes this architecture to its logical extreme: ccad_core/schematic *is* the headless context. There is no alternative. The GUI (ccad_gui) is just another consumer of the exact same API endpoints that the CLI Python/WASM agents use.
+
+## EESchema Dialogs
+- **eeschema/dialogs/**: Contains wxWidgets popup dialogs (e.g., dialog_annotate, dialog_bom, dialog_change_symbols). 
+  - **CCad Architectural Decision**: Similar to pcbnew/dialogs, all business logic currently housed in these UI files (like annotation traversal or BOM script invocation) MUST be entirely decoupled into ccad_core/schematic executors. The CCad GUI (ccad_gui/dialogs) will just be thin QDialog wrappers that gather options and dispatch headless commands like ccad sch annotate --scope all.
+
+## EESchema Dialogs: Change Symbols & Net Chains
+- **eeschema/dialogs/dialog_change_symbols.cpp/h**: Provides the UI and execution logic for "Update Symbols from Library" (refreshing cached footprints/symbols from the source library).
+  - **CCad Architectural Decision**: CCad extracts the update logic into ccad_core/schematic/executors/symbol_updater.cpp. It runs via CLI (ccad sch update-symbols) and the UI simply invokes this API.
+- **eeschema/dialogs/dialog_create_net_chain.cpp/h**: Provides UI logic for explicitly defining Net Ties or connecting distinct nets through a passive bridge.
+
+## EESchema Dialogs: Database Libraries & ERC
+- **eeschema/dialogs/dialog_database_lib_settings.cpp/h**: Manages ODBC/SQL database library connections.
+  - **CCad Architectural Decision**: Database library definitions in CCad are handled natively via the .ccad_pro project configuration file using JSON, and queries run headlessly in the ccad_core/library subsystem.
+- **eeschema/dialogs/dialog_erc.cpp/h**: Provides the UI for the Electrical Rules Check, but critically, it also houses the execution loop that gathers the errors and generates the .erc report file.
+  - **CCad Architectural Decision**: CCad moves the *entire* ERC execution loop into ccad_core/erc_engine. The GUI simply asks the kernel to evaluate the rules (ccad sch erc) and displays the returned ccad::Violation objects in a standard Model-View table.
+
+## EESchema Dialogs: Netlist Export & Global Edits
+- **eeschema/dialogs/dialog_export_netlist.cpp/h**: Manages the netlist export process, again coupling execution logic (writing the .net file via XSLT) to the UI.
+  - **CCad Architectural Decision**: Moved to ccad_core/exporters/netlist_exporter and executed via ccad sch export netlist.
+- **eeschema/dialogs/dialog_global_edit_text_and_graphics.cpp/h**: The bulk property editor UI. In CCad, this logic is executed by a headless AST AST Visitor (ccad sch mutate --match "type=text" --set "size=2mm").
+
+## EESchema Dialogs: Annotation & Pin Tables
+- **eeschema/dialogs/dialog_increment_annotations**: UI for Paste Special (incrementing reference designators on paste).
+- **eeschema/dialogs/dialog_lib_edit_pin_table**: UI for the bulk pin editor in the symbol library editor.
+  - **CCad Architectural Decision**: CCad moves the bulk pin editor logic out of wxWidgets and into a unified Qt Model-View spreadsheet that allows CSV import/export of pin maps, drastically speeding up high-pin-count component creation.
+
+## EESchema Dialogs: Properties and Pin Tables
+- **eeschema/dialogs/dialog_lib_edit_pin_table.cpp/h**, **dialog_lib_fields_table.cpp/h**, **dialog_lib_symbol_properties.cpp/h**, **dialog_line_properties.cpp/h**: These represent dozens of bespoke C++ wxDialogs used solely to map UI text boxes to C++ member variables (e.g., Line Thickness, Symbol Value, Pin Name).
+  - **CCad Architectural Decision**: CCad eliminates these entirely in favor of a universal ccad_gui/QPropertyWidget inspector that reflects on the ccad::SchItem AST directly, providing a unified properties panel on the right side of the screen (similar to modern CAD tools like Altium or Figma).
+
+## EESchema Dialogs: Plotting & Rescue
+- **eeschema/dialogs/dialog_plot_schematic.cpp/h**: Provides UI for exporting schematics to PDF/SVG/DXF. 
+  - **CCad Architectural Decision**: CCad extracts the plotting loop into ccad_core/exporters/plotter, executing via ccad sch plot --format pdf. The GUI merely feeds parameters to the command.
+- **eeschema/dialogs/dialog_rescue_each.cpp/h**: The interactive wizard for rescuing symbols from the cache. CCad runs rescue headlessly during project migration, removing the interactive element.
+
+## EESchema Dialogs: Setup & Properties
+- **eeschema/dialogs/dialog_schematic_setup**: Manages project-level schematic settings (Net Classes, ERC constraints, Formatting).
+  - **CCad Architectural Decision**: Mapped directly to ccad_core/settings_manager. The GUI renders the JSON config via a generic QPropertyTreeWidget, eliminating the need for custom C++ dialogs.
+- **eeschema/dialogs/dialog_sch_find**: Replaced in CCad by the universal ccad sch find --query "xxx" API endpoint.
+- **eeschema/dialogs/dialog_shape_properties**, **dialog_sheet_pin_properties**, **dialog_sheet_properties**: These are absorbed into the unified ccad_gui properties side-panel.
+
+## EESchema Dialogs: Simulation (SPICE)
+- **eeschema/dialogs/dialog_sim_*.cpp/h**: These dialogs manage the configuration of ngspice simulation models, parameters, and analysis commands (AC, DC, TRAN).
+  - **CCad Architectural Decision**: CCad shifts the entire simulation engine binding (ngspice) to ccad_core/simulation. The GUI will rely on a generic inspector, and simulation graphs will be handled by a dedicated Qt charting widget, decoupling the SPICE netlist generator from the wxWidgets UI.
+
+## EESchema Dialogs: Migration & Properties
+- **eeschema/dialogs/dialog_symbol_remap.cpp/h**: Provides the UI and execution for migrating legacy KiCad 4 schematics to KiCad 5+ (mapping symbols to their specific library tables).
+  - **CCad Architectural Decision**: Legacy schematic parsing and rescue is executed headlessly by ccad sch migrate. No UI wizard is needed.
+- **eeschema/dialogs/dialog_text_properties**, **dialog_table_properties**: More UI wrappers for AST mutations that CCad replaces with the universal QPropertyWidget inspector.
+
+## EESchema Dialogs: PCB Sync & Bus Properties
+- **eeschema/dialogs/dialog_update_from_pcb.cpp/h**: Provides the UI for back-annotation (importing pin swaps, footprint assignments, and reference changes from the PCB).
+  - **CCad Architectural Decision**: Back-annotation in CCad is a pure kernel transaction executed by ccad_core/synchronizer. The CLI invokes it via ccad sch update-from-pcb --source myboard.kicad_pcb.
+- **eeschema/dialogs/dialog_wire_bus_properties**: More UI wrappers mapped to CCad's unified properties panel.
+
+## EESchema Dialogs: Preferences Panels
+- **eeschema/dialogs/panel_*.cpp/h**: These represent the sub-panels injected into the main Preferences dialog (BOM Presets, Colors, Display, Editing).
+  - **CCad Architectural Decision**: CCad's Settings Manager drives this purely through JSON schemas. The UI dynamically builds the preferences tree from the schema, entirely eliminating the need for hardcoded C++ preference panel layouts.
+
+## EESchema Dialogs: Setup Panels
+- **eeschema/dialogs/panel_setup_*.cpp/h**: These panels configure project-specific schematic setup options (Net Chains, Pin Maps, Formatting, Buses, Data Sources). 
+  - **CCad Architectural Decision**: Like the preference panels, these setup pages are entirely replaced by the unified JSON Settings Manager and dynamically generated Qt Property Trees.
+
+## EESchema Dialogs: Symbol Editor Panels
+- **eeschema/dialogs/panel_sym_*.cpp/h**: Panels specifically for configuring the Symbol Editor (Colors, Display Options, Editing Options, Lib Table, Template Fields).
+  - **CCad Architectural Decision**: Driven purely by JSON schemas in ccad_core/settings_manager, eliminating bespoke wxWidgets C++ classes.
+
+## EESchema ERC (Electrical Rules Check)
+- **eeschema/erc/erc.cpp/h**: Defines ERC_TESTER which traverses the CONNECTION_GRAPH to validate pin conflicts, unconnected pins, and missing drivers.
+- **eeschema/erc/erc_item.cpp/h**: ERC_ITEM : public RC_ITEM represents a single electrical violation.
+  - **CCad Architectural Decision**: CCad maps this seamlessly to ccad_core/erc_engine. It runs entirely headlessly, evaluating the AST and outputting violations as JSON data via the CLI (ccad sch erc --format json), guaranteeing parity across environments.
+
+## EESchema Legacy Libraries & Exporters
+- **eeschema/libraries/legacy_symbol_library.cpp/h**: Parser for the legacy KiCad 4/5 .lib symbol format.
+  - **CCad Architectural Decision**: CCad does not natively load legacy .lib files into memory during operation. Instead, ccad sch migrate converts them headlessly to modern .kicad_sym formats for the unified library manager to consume.
+- **eeschema/netlist_exporters/**: Contains third party netlist exporters (Allegro, Cadstar, IPC-D-356).
+  - **CCad Architectural Decision**: All netlist generators are purely headless kernel plugins in ccad_core/exporters/netlist.
+
+## EESchema IO Plugins & Printing
+- **eeschema/printing/**: UI dialogs and wxWidgets wxPrintout wrappers for hardware printing.
+  - **CCad Architectural Decision**: Removed. Printing is handled headlessly via the Plotter exporter to PDF, which the user can then print via their system viewer.
+- **eeschema/sch_io/sch_io.cpp/h**: SCH_IO defines the abstract interface for loading/saving schematic files and libraries.
+- **eeschema/sch_io/sch_io_mgr.cpp/h**: SCH_IO_MGR is the plugin factory that registers parsers (e.g., KiCad S-Expr, Legacy, Altium, Eagle).
+  - **CCad Architectural Decision**: CCad replicates this exact structure natively in ccad_core/schematic_io. This guarantees that CCad can leverage KiCad's mature third-party schematic importers simply by porting the parser plugins.
+
+## EESchema Simulation (SPICE)
+- **eeschema/sim/ngspice.cpp/h**, **simulator.h**: The core bindings to the libngspice shared library.
+- **eeschema/sim/simulator_frame.cpp/h**: The wxWidgets window for plotting SPICE waveforms.
+  - **CCad Architectural Decision**: CCad isolates the ngspice engine bindings into ccad_core/simulation. The simulation engine is fully headless (ccad sch simulate --type AC). The plotting UI (simulator_frame) is rebuilt natively in ccad_gui using QtCharts, completely decoupled from the netlist generation loop.
+
+## EESchema Symbol Editor
+- **eeschema/symbol_editor/symbol_edit_frame.cpp/h**: SYMBOL_EDIT_FRAME : public SCH_BASE_FRAME manages the UI and interactive tools for drawing library symbols. 
+  - **CCad Architectural Decision**: CCad leverages its decoupled architecture here beautifully. Because ccad_core/library natively understands LIB_SYMBOL and the ccad_core/settings_manager unified the library formats, the ccad_gui/symbol_editor will literally just reuse the ccad_gui/schematic_editor drawing canvas, constrained to a single ccad::SchSymbol AST node instead of a full ccad::Schematic AST tree.
+
+## EESchema Hierarchical Sheet Synchronization
+- **eeschema/sync_sheet_pin/**: Contains sheet_synchronization_agent and sheet_synchronization_model. This logic is responsible for ensuring that a parent sheet's SCH_SHEET_PIN symbols match the SCH_HIERLABEL (Hierarchical Labels) defined inside the child schematic file.
+  - **CCad Architectural Decision**: This is a pure AST transformation and validation task. CCad moves this completely into ccad_core/schematic/synchronizer, which executes headlessly via ccad sch sync-pins. The UI dialogs are replaced by standard Model-View diff tables in ccad_gui.
+
+
+## EESchema Tools: Footprint Assignment Back-Annotation
+- **eeschema/tools/assign_footprints.cpp**: SCH_EDITOR_CONTROL::AssignFootprints() parses the cvpcb_netlist S-expression (via KiCad DSNLEXER + Boost.PropertyTree) and back-annotates footprint fields on SCH_SYMBOL objects. Also contains processCmpToFootprintLinkFile() for legacy .cmp files and ImportFPAssignments() which pops a wxFileDialog + wxSingleChoiceDialog for field-visibility preference.
+  - **CCad Architectural Decision**: CCad separates back-annotation into a pure kernel transaction: ccad sch back-annotate-footprints <netlist.json> . The kernel reads the footprint map, resolves symbol references from the flat SCH_REFERENCE_LIST equivalent in ccad_core, and issues a batch Modify transaction. No GUI dialog needed at the kernel level. The ccad_gui wraps this as a menu action that shows a simple visibility-toggle checkbox before calling the kernel command.
+
+
+## EESchema Tools: Back-Annotation Engine
+- **eeschema/tools/backannotate.cpp**: The BACK_ANNOTATE class is the full schematic-from-PCB sync engine. Key methods:
+  - getPcbModulesFromString(): Parses KiCad's pcb_netlist S-expression (DSNLEXER + Boost.PropertyTree) into PCB_FP_DATA structs with pin-to-net maps.
+  - getChangeList(): Matches PCB footprints to SCH_REFERENCE_LIST entries (by timestamp path or reference), building a changelist of (SCH_REFERENCE, PCB_FP_DATA) pairs.
+  - applyChangelist(): Applies reference, value, footprint, DNP, excludeFromBOM, and other-fields changes to each SCH_SYMBOL. Handles SKIP_STRUCT flag to prevent double-applying after unit swaps.
+  - PlanBackannotateUnitSwaps(): Standalone function that solves the unit-swap problem for multi-unit symbols (e.g. logic gate arrays) using a cycle-detection algorithm on pin-net matching.
+  - applyPinSwaps(): For symbols with swappable pins (e.g. differential pairs), physically swaps LIB_PIN geometry using SwapPinGeometry(), then rebuilds wires via SCH_LINE_WIRE_BUS_TOOL.
+  - processNetNameChange(): When a net rename is needed, finds the highest-priority driver (SCH_LABEL > SCH_GLOBAL_LABEL > power pin) via graph walk and renames or adds a label.
+  - FetchNetlistFromPCB(): Fetches live netlist from open pcbnew via Kiway ExpressMail (MAIL_PCB_GET_NETLIST). Requires non-standalone mode.
+  - **CCad Architectural Decision**: CCad separates this into two pure kernel commands: (1) ccad sch back-annotate --netlist <file> --options <json> which performs all field/ref/net changes as an AST transaction with dry-run support; (2) ccad sch back-annotate --unit-swap which runs the PlanBackannotateUnitSwaps cycle-detection algorithm. The KIWAY ExpressMail IPC is replaced by a ccad ipc fetch-pcb-netlist command. All reporting goes through the structured REPORTER pattern already in ccad_core.
