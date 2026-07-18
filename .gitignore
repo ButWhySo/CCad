@@ -1,8 +1,10 @@
 # Markdown policy for public GitHub publish
 *.md
 !README.md
+!ATTRIBUTION.md
 !.agents/workflows/*.md
 docs/
+
 
 # Build outputs
 build/
