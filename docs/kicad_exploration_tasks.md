@@ -426,14 +426,14 @@
 - [x] pcbnew\dialogs\dialog_move_exact_base.h
 - [x] pcbnew\dialogs\dialog_multichannel_generate_rule_areas.cpp
 - [x] pcbnew\dialogs\dialog_multichannel_generate_rule_areas.h
-- [ ] pcbnew\dialogs\dialog_multichannel_generate_rule_areas_base.cpp
-- [ ] pcbnew\dialogs\dialog_multichannel_generate_rule_areas_base.h
-- [ ] pcbnew\dialogs\dialog_multichannel_repeat_layout.cpp
-- [ ] pcbnew\dialogs\dialog_multichannel_repeat_layout.h
-- [ ] pcbnew\dialogs\dialog_multichannel_repeat_layout_base.cpp
-- [ ] pcbnew\dialogs\dialog_multichannel_repeat_layout_base.h
-- [ ] pcbnew\dialogs\dialog_non_copper_zones_properties.cpp
-- [ ] pcbnew\dialogs\dialog_non_copper_zones_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_multichannel_generate_rule_areas_base.cpp
+- [x] pcbnew\dialogs\dialog_multichannel_generate_rule_areas_base.h
+- [x] pcbnew\dialogs\dialog_multichannel_repeat_layout.cpp
+- [x] pcbnew\dialogs\dialog_multichannel_repeat_layout.h
+- [x] pcbnew\dialogs\dialog_multichannel_repeat_layout_base.cpp
+- [x] pcbnew\dialogs\dialog_multichannel_repeat_layout_base.h
+- [x] pcbnew\dialogs\dialog_non_copper_zones_properties.cpp
+- [x] pcbnew\dialogs\dialog_non_copper_zones_properties_base.cpp
 - [ ] pcbnew\dialogs\dialog_non_copper_zones_properties_base.h
 - [ ] pcbnew\dialogs\dialog_offset_item.cpp
 - [ ] pcbnew\dialogs\dialog_offset_item.h
