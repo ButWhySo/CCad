@@ -410,14 +410,14 @@
 - [x] pcbnew\dialogs\dialog_import_settings.h
 - [x] pcbnew\dialogs\dialog_import_settings_base.cpp
 - [x] pcbnew\dialogs\dialog_import_settings_base.h
-- [ ] pcbnew\dialogs\dialog_items_list.cpp
-- [ ] pcbnew\dialogs\dialog_items_list.h
-- [ ] pcbnew\dialogs\dialog_layer_selection_base.cpp
-- [ ] pcbnew\dialogs\dialog_layer_selection_base.h
-- [ ] pcbnew\dialogs\dialog_map_layers.cpp
-- [ ] pcbnew\dialogs\dialog_map_layers.h
-- [ ] pcbnew\dialogs\dialog_migrate_3d_models.cpp
-- [ ] pcbnew\dialogs\dialog_migrate_3d_models.h
+- [x] pcbnew\dialogs\dialog_items_list.cpp
+- [x] pcbnew\dialogs\dialog_items_list.h
+- [x] pcbnew\dialogs\dialog_layer_selection_base.cpp
+- [x] pcbnew\dialogs\dialog_layer_selection_base.h
+- [x] pcbnew\dialogs\dialog_map_layers.cpp
+- [x] pcbnew\dialogs\dialog_map_layers.h
+- [x] pcbnew\dialogs\dialog_migrate_3d_models.cpp
+- [x] pcbnew\dialogs\dialog_migrate_3d_models.h
 - [ ] pcbnew\dialogs\dialog_migrate_3d_models_base.cpp
 - [ ] pcbnew\dialogs\dialog_migrate_3d_models_base.h
 - [ ] pcbnew\dialogs\dialog_move_exact.cpp
