@@ -322,14 +322,14 @@
 - [x] pcbnew\dialogs\dialog_export_odbpp_base.h
 - [x] pcbnew\dialogs\dialog_export_step.cpp
 - [x] pcbnew\dialogs\dialog_export_step.h
-- [ ] pcbnew\dialogs\dialog_export_step_base.cpp
-- [ ] pcbnew\dialogs\dialog_export_step_base.h
-- [ ] pcbnew\dialogs\dialog_export_step_process.cpp
-- [ ] pcbnew\dialogs\dialog_export_step_process.h
-- [ ] pcbnew\dialogs\dialog_export_step_process_base.cpp
-- [ ] pcbnew\dialogs\dialog_export_step_process_base.h
-- [ ] pcbnew\dialogs\dialog_export_vrml.cpp
-- [ ] pcbnew\dialogs\dialog_export_vrml.h
+- [x] pcbnew\dialogs\dialog_export_step_base.cpp
+- [x] pcbnew\dialogs\dialog_export_step_base.h
+- [x] pcbnew\dialogs\dialog_export_step_process.cpp
+- [x] pcbnew\dialogs\dialog_export_step_process.h
+- [x] pcbnew\dialogs\dialog_export_step_process_base.cpp
+- [x] pcbnew\dialogs\dialog_export_step_process_base.h
+- [x] pcbnew\dialogs\dialog_export_vrml.cpp
+- [x] pcbnew\dialogs\dialog_export_vrml.h
 - [ ] pcbnew\dialogs\dialog_export_vrml_base.cpp
 - [ ] pcbnew\dialogs\dialog_export_vrml_base.h
 - [ ] pcbnew\dialogs\dialog_filter_selection.cpp
