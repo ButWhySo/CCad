@@ -177,25 +177,25 @@
 - [x] pcbnew\sel_layer.cpp
 - [x] pcbnew\toolbars_footprint_editor.cpp
 - [x] pcbnew\toolbars_footprint_editor.h
-- [ ] pcbnew\toolbars_footprint_viewer.cpp
-- [ ] pcbnew\toolbars_footprint_viewer.h
-- [ ] pcbnew\toolbars_footprint_wizard.cpp
-- [ ] pcbnew\toolbars_footprint_wizard.h
+- [x] pcbnew\toolbars_footprint_viewer.cpp
+- [x] pcbnew\toolbars_footprint_viewer.h
+- [x] pcbnew\toolbars_footprint_wizard.cpp
+- [x] pcbnew\toolbars_footprint_wizard.h
 - [x] pcbnew\toolbars_pcb_editor.cpp
 - [x] pcbnew\toolbars_pcb_editor.h
 - [x] pcbnew\undo_redo.cpp
 - [x] pcbnew\via_protection_ui_mixin.h
 - [x] pcbnew\zone.cpp
 - [x] pcbnew\zone.h
-- [ ] pcbnew\zones.h
-- [ ] pcbnew\zones_functions_for_undo_redo.cpp
+- [x] pcbnew\zones.h
+- [x] pcbnew\zones_functions_for_undo_redo.cpp
 - [x] pcbnew\zone_filler.cpp
 - [x] pcbnew\zone_filler.h
-- [ ] pcbnew\zone_layer_properties_grid.cpp
+- [x] pcbnew\zone_layer_properties_grid.cpp
 - [x] pcbnew\zone_layer_properties_grid.h
 - [x] pcbnew\zone_settings.cpp
 - [x] pcbnew\zone_settings.h
-- [ ] pcbnew\zone_settings_bag.cpp
+- [x] pcbnew\zone_settings_bag.cpp
 - [ ] pcbnew\zone_settings_bag.h
 - [x] pcbnew\zone_utils.cpp
 - [x] pcbnew\zone_utils.h
