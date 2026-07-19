@@ -418,14 +418,14 @@
 - [x] pcbnew\dialogs\dialog_map_layers.h
 - [x] pcbnew\dialogs\dialog_migrate_3d_models.cpp
 - [x] pcbnew\dialogs\dialog_migrate_3d_models.h
-- [ ] pcbnew\dialogs\dialog_migrate_3d_models_base.cpp
-- [ ] pcbnew\dialogs\dialog_migrate_3d_models_base.h
-- [ ] pcbnew\dialogs\dialog_move_exact.cpp
-- [ ] pcbnew\dialogs\dialog_move_exact.h
-- [ ] pcbnew\dialogs\dialog_move_exact_base.cpp
-- [ ] pcbnew\dialogs\dialog_move_exact_base.h
-- [ ] pcbnew\dialogs\dialog_multichannel_generate_rule_areas.cpp
-- [ ] pcbnew\dialogs\dialog_multichannel_generate_rule_areas.h
+- [x] pcbnew\dialogs\dialog_migrate_3d_models_base.cpp
+- [x] pcbnew\dialogs\dialog_migrate_3d_models_base.h
+- [x] pcbnew\dialogs\dialog_move_exact.cpp
+- [x] pcbnew\dialogs\dialog_move_exact.h
+- [x] pcbnew\dialogs\dialog_move_exact_base.cpp
+- [x] pcbnew\dialogs\dialog_move_exact_base.h
+- [x] pcbnew\dialogs\dialog_multichannel_generate_rule_areas.cpp
+- [x] pcbnew\dialogs\dialog_multichannel_generate_rule_areas.h
 - [ ] pcbnew\dialogs\dialog_multichannel_generate_rule_areas_base.cpp
 - [ ] pcbnew\dialogs\dialog_multichannel_generate_rule_areas_base.h
 - [ ] pcbnew\dialogs\dialog_multichannel_repeat_layout.cpp
