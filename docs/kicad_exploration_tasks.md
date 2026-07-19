@@ -92,7 +92,7 @@
 - [x] pcbnew\pad.cpp
 - [x] pcbnew\pad.h
 - [x] pcbnew\padstack.cpp
-- [ ] pcbnew\padstack.h
+- [x] pcbnew\padstack.h
 - [x] pcbnew\pad_utils.cpp
 - [x] pcbnew\pad_utils.h
 - [x] pcbnew\pcbexpr_evaluator.cpp
@@ -106,7 +106,7 @@
 - [x] pcbnew\pcbnew_jobs_handler.h
 - [x] pcbnew\pcbnew_printout.cpp
 - [x] pcbnew\pcbnew_printout.h
-- [ ] pcbnew\pcbnew_settings.cpp
+- [x] pcbnew\pcbnew_settings.cpp
 - [x] pcbnew\pcbnew_settings.h
 - [x] pcbnew\pcbplot.cpp
 - [x] pcbnew\pcbplot.h
@@ -133,16 +133,16 @@
 - [x] pcbnew\pcb_group.cpp
 - [x] pcbnew\pcb_group.h
 - [x] pcbnew\pcb_item_containers.h
-- [ ] pcbnew\pcb_layer_box_selector.cpp
-- [ ] pcbnew\pcb_layer_box_selector.h
-- [ ] pcbnew\pcb_layer_presentation.h
+- [x] pcbnew\pcb_layer_box_selector.cpp
+- [x] pcbnew\pcb_layer_box_selector.h
+- [x] pcbnew\pcb_layer_presentation.h
 - [x] pcbnew\pcb_marker.cpp
 - [x] pcbnew\pcb_marker.h
-- [ ] pcbnew\pcb_origin_transforms.cpp
-- [ ] pcbnew\pcb_origin_transforms.h
+- [x] pcbnew\pcb_origin_transforms.cpp
+- [x] pcbnew\pcb_origin_transforms.h
 - [x] pcbnew\pcb_painter.cpp
 - [x] pcbnew\pcb_painter.h
-- [ ] pcbnew\pcb_plotter.cpp
+- [x] pcbnew\pcb_plotter.cpp
 - [ ] pcbnew\pcb_plotter.h
 - [ ] pcbnew\pcb_plot_params.cpp
 - [ ] pcbnew\pcb_plot_params.h
