@@ -386,14 +386,14 @@
 - [x] pcbnew\dialogs\dialog_get_footprint_by_name.h
 - [x] pcbnew\dialogs\dialog_get_footprint_by_name_base.cpp
 - [x] pcbnew\dialogs\dialog_get_footprint_by_name_base.h
-- [ ] pcbnew\dialogs\dialog_global_deletion.cpp
-- [ ] pcbnew\dialogs\dialog_global_deletion.h
-- [ ] pcbnew\dialogs\dialog_global_deletion_base.cpp
-- [ ] pcbnew\dialogs\dialog_global_deletion_base.h
-- [ ] pcbnew\dialogs\dialog_global_edit_teardrops.cpp
-- [ ] pcbnew\dialogs\dialog_global_edit_teardrops_base.cpp
-- [ ] pcbnew\dialogs\dialog_global_edit_teardrops_base.h
-- [ ] pcbnew\dialogs\dialog_global_edit_text_and_graphics.cpp
+- [x] pcbnew\dialogs\dialog_global_deletion.cpp
+- [x] pcbnew\dialogs\dialog_global_deletion.h
+- [x] pcbnew\dialogs\dialog_global_deletion_base.cpp
+- [x] pcbnew\dialogs\dialog_global_deletion_base.h
+- [x] pcbnew\dialogs\dialog_global_edit_teardrops.cpp
+- [x] pcbnew\dialogs\dialog_global_edit_teardrops_base.cpp
+- [x] pcbnew\dialogs\dialog_global_edit_teardrops_base.h
+- [x] pcbnew\dialogs\dialog_global_edit_text_and_graphics.cpp
 - [ ] pcbnew\dialogs\dialog_global_edit_text_and_graphics_base.cpp
 - [ ] pcbnew\dialogs\dialog_global_edit_text_and_graphics_base.h
 - [ ] pcbnew\dialogs\dialog_global_edit_tracks_and_vias.cpp
