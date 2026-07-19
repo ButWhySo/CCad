@@ -196,18 +196,18 @@
 - [x] pcbnew\zone_settings.cpp
 - [x] pcbnew\zone_settings.h
 - [x] pcbnew\zone_settings_bag.cpp
-- [ ] pcbnew\zone_settings_bag.h
+- [x] pcbnew\zone_settings_bag.h
 - [x] pcbnew\zone_utils.cpp
 - [x] pcbnew\zone_utils.h
 - [x] pcbnew\api\api_handler_pcb.cpp
 - [x] pcbnew\api\api_handler_pcb.h
-- [ ] pcbnew\api\api_pcb_enums.cpp
-- [ ] pcbnew\api\api_pcb_utils.cpp
-- [ ] pcbnew\api\api_pcb_utils.h
-- [ ] pcbnew\api\board_context.cpp
-- [ ] pcbnew\api\board_context.h
-- [ ] pcbnew\api\headless_board_context.cpp
-- [ ] pcbnew\api\headless_board_context.h
+- [x] pcbnew\api\api_pcb_enums.cpp
+- [x] pcbnew\api\api_pcb_utils.cpp
+- [x] pcbnew\api\api_pcb_utils.h
+- [x] pcbnew\api\board_context.cpp
+- [x] pcbnew\api\board_context.h
+- [x] pcbnew\api\headless_board_context.cpp
+- [x] pcbnew\api\headless_board_context.h
 - [ ] pcbnew\autorouter\ar_autoplacer.cpp
 - [ ] pcbnew\autorouter\ar_autoplacer.h
 - [ ] pcbnew\autorouter\ar_matrix.cpp
