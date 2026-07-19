@@ -314,14 +314,14 @@
 - [x] pcbnew\dialogs\dialog_export_2581_base.h
 - [x] pcbnew\dialogs\dialog_export_idf.cpp
 - [x] pcbnew\dialogs\dialog_export_idf.h
-- [ ] pcbnew\dialogs\dialog_export_idf_base.cpp
-- [ ] pcbnew\dialogs\dialog_export_idf_base.h
-- [ ] pcbnew\dialogs\dialog_export_odbpp.cpp
-- [ ] pcbnew\dialogs\dialog_export_odbpp.h
-- [ ] pcbnew\dialogs\dialog_export_odbpp_base.cpp
-- [ ] pcbnew\dialogs\dialog_export_odbpp_base.h
-- [ ] pcbnew\dialogs\dialog_export_step.cpp
-- [ ] pcbnew\dialogs\dialog_export_step.h
+- [x] pcbnew\dialogs\dialog_export_idf_base.cpp
+- [x] pcbnew\dialogs\dialog_export_idf_base.h
+- [x] pcbnew\dialogs\dialog_export_odbpp.cpp
+- [x] pcbnew\dialogs\dialog_export_odbpp.h
+- [x] pcbnew\dialogs\dialog_export_odbpp_base.cpp
+- [x] pcbnew\dialogs\dialog_export_odbpp_base.h
+- [x] pcbnew\dialogs\dialog_export_step.cpp
+- [x] pcbnew\dialogs\dialog_export_step.h
 - [ ] pcbnew\dialogs\dialog_export_step_base.cpp
 - [ ] pcbnew\dialogs\dialog_export_step_base.h
 - [ ] pcbnew\dialogs\dialog_export_step_process.cpp
