@@ -163,20 +163,20 @@
 - [x] pcbnew\pcb_text.cpp
 - [x] pcbnew\pcb_text.h
 - [x] pcbnew\pcb_textbox.cpp
-- [ ] pcbnew\pcb_textbox.h
-- [ ] pcbnew\pcb_text_help_md.h
+- [x] pcbnew\pcb_textbox.h
+- [x] pcbnew\pcb_text_help_md.h
 - [x] pcbnew\pcb_track.cpp
 - [x] pcbnew\pcb_track.h
-- [ ] pcbnew\pcb_track_types.h
+- [x] pcbnew\pcb_track_types.h
 - [x] pcbnew\pcb_view.cpp
 - [x] pcbnew\pcb_view.h
-- [ ] pcbnew\plotprint_opts.h
-- [ ] pcbnew\plot_board_layers.cpp
+- [x] pcbnew\plotprint_opts.h
+- [x] pcbnew\plot_board_layers.cpp
 - [x] pcbnew\plot_brditems_plotter.cpp
 - [x] pcbnew\project_pcb.cpp
-- [ ] pcbnew\sel_layer.cpp
-- [ ] pcbnew\toolbars_footprint_editor.cpp
-- [ ] pcbnew\toolbars_footprint_editor.h
+- [x] pcbnew\sel_layer.cpp
+- [x] pcbnew\toolbars_footprint_editor.cpp
+- [x] pcbnew\toolbars_footprint_editor.h
 - [ ] pcbnew\toolbars_footprint_viewer.cpp
 - [ ] pcbnew\toolbars_footprint_viewer.h
 - [ ] pcbnew\toolbars_footprint_wizard.cpp
