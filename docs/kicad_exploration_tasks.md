@@ -208,14 +208,14 @@
 - [x] pcbnew\api\board_context.h
 - [x] pcbnew\api\headless_board_context.cpp
 - [x] pcbnew\api\headless_board_context.h
-- [ ] pcbnew\autorouter\ar_autoplacer.cpp
-- [ ] pcbnew\autorouter\ar_autoplacer.h
-- [ ] pcbnew\autorouter\ar_matrix.cpp
-- [ ] pcbnew\autorouter\ar_matrix.h
-- [ ] pcbnew\autorouter\autoplace_tool.cpp
-- [ ] pcbnew\autorouter\autoplace_tool.h
-- [ ] pcbnew\autorouter\spread_footprints.cpp
-- [ ] pcbnew\autorouter\spread_footprints.h
+- [x] pcbnew\autorouter\ar_autoplacer.cpp
+- [x] pcbnew\autorouter\ar_autoplacer.h
+- [x] pcbnew\autorouter\ar_matrix.cpp
+- [x] pcbnew\autorouter\ar_matrix.h
+- [x] pcbnew\autorouter\autoplace_tool.cpp
+- [x] pcbnew\autorouter\autoplace_tool.h
+- [x] pcbnew\autorouter\spread_footprints.cpp
+- [x] pcbnew\autorouter\spread_footprints.h
 - [x] pcbnew\board_stackup_manager\board_stackup.cpp
 - [x] pcbnew\board_stackup_manager\board_stackup.h
 - [ ] pcbnew\board_stackup_manager\board_stackup_reporter.cpp
