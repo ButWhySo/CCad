@@ -330,14 +330,14 @@
 - [x] pcbnew\dialogs\dialog_export_step_process_base.h
 - [x] pcbnew\dialogs\dialog_export_vrml.cpp
 - [x] pcbnew\dialogs\dialog_export_vrml.h
-- [ ] pcbnew\dialogs\dialog_export_vrml_base.cpp
-- [ ] pcbnew\dialogs\dialog_export_vrml_base.h
-- [ ] pcbnew\dialogs\dialog_filter_selection.cpp
-- [ ] pcbnew\dialogs\dialog_filter_selection.h
-- [ ] pcbnew\dialogs\dialog_filter_selection_base.cpp
-- [ ] pcbnew\dialogs\dialog_filter_selection_base.h
-- [ ] pcbnew\dialogs\dialog_find.cpp
-- [ ] pcbnew\dialogs\dialog_find.h
+- [x] pcbnew\dialogs\dialog_export_vrml_base.cpp
+- [x] pcbnew\dialogs\dialog_export_vrml_base.h
+- [x] pcbnew\dialogs\dialog_filter_selection.cpp
+- [x] pcbnew\dialogs\dialog_filter_selection.h
+- [x] pcbnew\dialogs\dialog_filter_selection_base.cpp
+- [x] pcbnew\dialogs\dialog_filter_selection_base.h
+- [x] pcbnew\dialogs\dialog_find.cpp
+- [x] pcbnew\dialogs\dialog_find.h
 - [ ] pcbnew\dialogs\dialog_find_base.cpp
 - [ ] pcbnew\dialogs\dialog_find_base.h
 - [ ] pcbnew\dialogs\dialog_find_by_properties.cpp
