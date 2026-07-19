@@ -226,14 +226,14 @@
 - [x] pcbnew\board_stackup_manager\dialog_dielectric_list_manager_base.h
 - [x] pcbnew\board_stackup_manager\dielectric_material.cpp
 - [x] pcbnew\board_stackup_manager\dielectric_material.h
-- [ ] pcbnew\board_stackup_manager\panel_board_finish.cpp
-- [ ] pcbnew\board_stackup_manager\panel_board_finish.h
-- [ ] pcbnew\board_stackup_manager\panel_board_finish_base.cpp
-- [ ] pcbnew\board_stackup_manager\panel_board_finish_base.h
-- [ ] pcbnew\board_stackup_manager\panel_board_stackup.cpp
-- [ ] pcbnew\board_stackup_manager\panel_board_stackup.h
-- [ ] pcbnew\board_stackup_manager\panel_board_stackup_base.cpp
-- [ ] pcbnew\board_stackup_manager\panel_board_stackup_base.h
+- [x] pcbnew\board_stackup_manager\panel_board_finish.cpp
+- [x] pcbnew\board_stackup_manager\panel_board_finish.h
+- [x] pcbnew\board_stackup_manager\panel_board_finish_base.cpp
+- [x] pcbnew\board_stackup_manager\panel_board_finish_base.h
+- [x] pcbnew\board_stackup_manager\panel_board_stackup.cpp
+- [x] pcbnew\board_stackup_manager\panel_board_stackup.h
+- [x] pcbnew\board_stackup_manager\panel_board_stackup_base.cpp
+- [x] pcbnew\board_stackup_manager\panel_board_stackup_base.h
 - [ ] pcbnew\board_stackup_manager\stackup_predefined_prms.cpp
 - [ ] pcbnew\board_stackup_manager\stackup_predefined_prms.h
 - [ ] pcbnew\board_tables\board_characteristics_table.cpp
