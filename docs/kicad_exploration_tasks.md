@@ -274,14 +274,14 @@
 - [x] pcbnew\dialogs\dialog_board_stats_job.cpp
 - [x] pcbnew\dialogs\dialog_board_stats_job.h
 - [x] pcbnew\dialogs\dialog_board_stats_job_base.cpp
-- [ ] pcbnew\dialogs\dialog_board_stats_job_base.h
-- [ ] pcbnew\dialogs\dialog_cleanup_graphics.cpp
-- [ ] pcbnew\dialogs\dialog_cleanup_graphics.h
-- [ ] pcbnew\dialogs\dialog_cleanup_graphics_base.cpp
-- [ ] pcbnew\dialogs\dialog_cleanup_graphics_base.h
-- [ ] pcbnew\dialogs\dialog_cleanup_tracks_and_vias.cpp
-- [ ] pcbnew\dialogs\dialog_cleanup_tracks_and_vias.h
-- [ ] pcbnew\dialogs\dialog_cleanup_tracks_and_vias_base.cpp
+- [x] pcbnew\dialogs\dialog_board_stats_job_base.h
+- [x] pcbnew\dialogs\dialog_cleanup_graphics.cpp
+- [x] pcbnew\dialogs\dialog_cleanup_graphics.h
+- [x] pcbnew\dialogs\dialog_cleanup_graphics_base.cpp
+- [x] pcbnew\dialogs\dialog_cleanup_graphics_base.h
+- [x] pcbnew\dialogs\dialog_cleanup_tracks_and_vias.cpp
+- [x] pcbnew\dialogs\dialog_cleanup_tracks_and_vias.h
+- [x] pcbnew\dialogs\dialog_cleanup_tracks_and_vias_base.cpp
 - [ ] pcbnew\dialogs\dialog_cleanup_tracks_and_vias_base.h
 - [ ] pcbnew\dialogs\dialog_copper_zones.cpp
 - [ ] pcbnew\dialogs\dialog_copper_zones_base.cpp
