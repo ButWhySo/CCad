@@ -258,14 +258,14 @@
 - [x] pcbnew\connectivity\topo_match.cpp
 - [x] pcbnew\connectivity\topo_match.h
 - [x] pcbnew\dialogs\dialog_barcode_properties.cpp
-- [ ] pcbnew\dialogs\dialog_barcode_properties.h
-- [ ] pcbnew\dialogs\dialog_barcode_properties_base.cpp
-- [ ] pcbnew\dialogs\dialog_barcode_properties_base.h
-- [ ] pcbnew\dialogs\dialog_board_reannotate.cpp
-- [ ] pcbnew\dialogs\dialog_board_reannotate.h
-- [ ] pcbnew\dialogs\dialog_board_reannotate_base.cpp
-- [ ] pcbnew\dialogs\dialog_board_reannotate_base.h
-- [ ] pcbnew\dialogs\dialog_board_setup.cpp
+- [x] pcbnew\dialogs\dialog_barcode_properties.h
+- [x] pcbnew\dialogs\dialog_barcode_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_barcode_properties_base.h
+- [x] pcbnew\dialogs\dialog_board_reannotate.cpp
+- [x] pcbnew\dialogs\dialog_board_reannotate.h
+- [x] pcbnew\dialogs\dialog_board_reannotate_base.cpp
+- [x] pcbnew\dialogs\dialog_board_reannotate_base.h
+- [x] pcbnew\dialogs\dialog_board_setup.cpp
 - [ ] pcbnew\dialogs\dialog_board_setup.h
 - [ ] pcbnew\dialogs\dialog_board_statistics.cpp
 - [ ] pcbnew\dialogs\dialog_board_statistics.h
