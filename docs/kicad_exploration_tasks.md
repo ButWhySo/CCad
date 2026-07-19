@@ -378,14 +378,14 @@
 - [x] pcbnew\dialogs\dialog_generators.h
 - [x] pcbnew\dialogs\dialog_generators_base.cpp
 - [x] pcbnew\dialogs\dialog_generators_base.h
-- [ ] pcbnew\dialogs\dialog_gen_footprint_position.cpp
-- [ ] pcbnew\dialogs\dialog_gen_footprint_position.h
-- [ ] pcbnew\dialogs\dialog_gen_footprint_position_file_base.cpp
-- [ ] pcbnew\dialogs\dialog_gen_footprint_position_file_base.h
-- [ ] pcbnew\dialogs\dialog_get_footprint_by_name.cpp
-- [ ] pcbnew\dialogs\dialog_get_footprint_by_name.h
-- [ ] pcbnew\dialogs\dialog_get_footprint_by_name_base.cpp
-- [ ] pcbnew\dialogs\dialog_get_footprint_by_name_base.h
+- [x] pcbnew\dialogs\dialog_gen_footprint_position.cpp
+- [x] pcbnew\dialogs\dialog_gen_footprint_position.h
+- [x] pcbnew\dialogs\dialog_gen_footprint_position_file_base.cpp
+- [x] pcbnew\dialogs\dialog_gen_footprint_position_file_base.h
+- [x] pcbnew\dialogs\dialog_get_footprint_by_name.cpp
+- [x] pcbnew\dialogs\dialog_get_footprint_by_name.h
+- [x] pcbnew\dialogs\dialog_get_footprint_by_name_base.cpp
+- [x] pcbnew\dialogs\dialog_get_footprint_by_name_base.h
 - [ ] pcbnew\dialogs\dialog_global_deletion.cpp
 - [ ] pcbnew\dialogs\dialog_global_deletion.h
 - [ ] pcbnew\dialogs\dialog_global_deletion_base.cpp
