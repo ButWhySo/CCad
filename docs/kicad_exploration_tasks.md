@@ -282,14 +282,14 @@
 - [x] pcbnew\dialogs\dialog_cleanup_tracks_and_vias.cpp
 - [x] pcbnew\dialogs\dialog_cleanup_tracks_and_vias.h
 - [x] pcbnew\dialogs\dialog_cleanup_tracks_and_vias_base.cpp
-- [ ] pcbnew\dialogs\dialog_cleanup_tracks_and_vias_base.h
-- [ ] pcbnew\dialogs\dialog_copper_zones.cpp
-- [ ] pcbnew\dialogs\dialog_copper_zones_base.cpp
-- [ ] pcbnew\dialogs\dialog_copper_zones_base.h
-- [ ] pcbnew\dialogs\dialog_create_array.cpp
-- [ ] pcbnew\dialogs\dialog_create_array.h
-- [ ] pcbnew\dialogs\dialog_create_array_base.cpp
-- [ ] pcbnew\dialogs\dialog_create_array_base.h
+- [x] pcbnew\dialogs\dialog_cleanup_tracks_and_vias_base.h
+- [x] pcbnew\dialogs\dialog_copper_zones.cpp
+- [x] pcbnew\dialogs\dialog_copper_zones_base.cpp
+- [x] pcbnew\dialogs\dialog_copper_zones_base.h
+- [x] pcbnew\dialogs\dialog_create_array.cpp
+- [x] pcbnew\dialogs\dialog_create_array.h
+- [x] pcbnew\dialogs\dialog_create_array_base.cpp
+- [x] pcbnew\dialogs\dialog_create_array_base.h
 - [ ] pcbnew\dialogs\dialog_dimension_properties.cpp
 - [ ] pcbnew\dialogs\dialog_dimension_properties.h
 - [ ] pcbnew\dialogs\dialog_dimension_properties_base.cpp
