@@ -1,11 +1,11 @@
 # KiCad Exploration Tasks
 
-- [ ] pcbnew\array_pad_number_provider.cpp
-- [ ] pcbnew\array_pad_number_provider.h
-- [ ] pcbnew\board.cpp
-- [ ] pcbnew\board.h
-- [ ] pcbnew\board_bounding_box.cpp
-- [ ] pcbnew\board_bounding_box.h
+- [x] pcbnew\array_pad_number_provider.cpp
+- [x] pcbnew\array_pad_number_provider.h
+- [x] pcbnew\board.cpp
+- [x] pcbnew\board.h
+- [x] pcbnew\board_bounding_box.cpp
+- [x] pcbnew\board_bounding_box.h
 - [x] pcbnew\board_commit.cpp
 - [x] pcbnew\board_commit.h
 - [x] pcbnew\board_connected_item.cpp
@@ -39,7 +39,7 @@
 - [x] pcbnew\footprint.h
 - [x] pcbnew\footprint_chooser_frame.cpp
 - [x] pcbnew\footprint_chooser_frame.h
-- [ ] pcbnew\footprint_editor_settings.cpp
+- [x] pcbnew\footprint_editor_settings.cpp
 - [x] pcbnew\footprint_editor_utils.cpp
 - [x] pcbnew\footprint_edit_frame.cpp
 - [x] pcbnew\footprint_edit_frame.h
@@ -101,7 +101,7 @@
 - [x] pcbnew\pcbnew.cpp
 - [x] pcbnew\pcbnew_config.cpp
 - [x] pcbnew\pcbnew_config.h
-- [ ] pcbnew\pcbnew_id.h
+- [x] pcbnew\pcbnew_id.h
 - [x] pcbnew\pcbnew_jobs_handler.cpp
 - [x] pcbnew\pcbnew_jobs_handler.h
 - [x] pcbnew\pcbnew_printout.cpp
