@@ -143,14 +143,14 @@
 - [x] pcbnew\pcb_painter.cpp
 - [x] pcbnew\pcb_painter.h
 - [x] pcbnew\pcb_plotter.cpp
-- [ ] pcbnew\pcb_plotter.h
-- [ ] pcbnew\pcb_plot_params.cpp
-- [ ] pcbnew\pcb_plot_params.h
-- [ ] pcbnew\pcb_plot_params_parser.h
-- [ ] pcbnew\pcb_point.cpp
-- [ ] pcbnew\pcb_point.h
-- [ ] pcbnew\pcb_reference_image.cpp
-- [ ] pcbnew\pcb_reference_image.h
+- [x] pcbnew\pcb_plotter.h
+- [x] pcbnew\pcb_plot_params.cpp
+- [x] pcbnew\pcb_plot_params.h
+- [x] pcbnew\pcb_plot_params_parser.h
+- [x] pcbnew\pcb_point.cpp
+- [x] pcbnew\pcb_point.h
+- [x] pcbnew\pcb_reference_image.cpp
+- [x] pcbnew\pcb_reference_image.h
 - [ ] pcbnew\pcb_screen.cpp
 - [x] pcbnew\pcb_shape.cpp
 - [x] pcbnew\pcb_shape.h
