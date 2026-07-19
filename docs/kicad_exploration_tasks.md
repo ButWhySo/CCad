@@ -370,14 +370,14 @@
 - [x] pcbnew\dialogs\dialog_fp_edit_pad_table_base.h
 - [x] pcbnew\dialogs\dialog_gencad_export_options.cpp
 - [x] pcbnew\dialogs\dialog_gencad_export_options.h
-- [ ] pcbnew\dialogs\dialog_gendrill.cpp
-- [ ] pcbnew\dialogs\dialog_gendrill.h
-- [ ] pcbnew\dialogs\dialog_gendrill_base.cpp
-- [ ] pcbnew\dialogs\dialog_gendrill_base.h
-- [ ] pcbnew\dialogs\dialog_generators.cpp
-- [ ] pcbnew\dialogs\dialog_generators.h
-- [ ] pcbnew\dialogs\dialog_generators_base.cpp
-- [ ] pcbnew\dialogs\dialog_generators_base.h
+- [x] pcbnew\dialogs\dialog_gendrill.cpp
+- [x] pcbnew\dialogs\dialog_gendrill.h
+- [x] pcbnew\dialogs\dialog_gendrill_base.cpp
+- [x] pcbnew\dialogs\dialog_gendrill_base.h
+- [x] pcbnew\dialogs\dialog_generators.cpp
+- [x] pcbnew\dialogs\dialog_generators.h
+- [x] pcbnew\dialogs\dialog_generators_base.cpp
+- [x] pcbnew\dialogs\dialog_generators_base.h
 - [ ] pcbnew\dialogs\dialog_gen_footprint_position.cpp
 - [ ] pcbnew\dialogs\dialog_gen_footprint_position.h
 - [ ] pcbnew\dialogs\dialog_gen_footprint_position_file_base.cpp
