@@ -354,14 +354,14 @@
 - [x] pcbnew\dialogs\dialog_footprint_checker_base.h
 - [x] pcbnew\dialogs\dialog_footprint_properties.cpp
 - [x] pcbnew\dialogs\dialog_footprint_properties.h
-- [ ] pcbnew\dialogs\dialog_footprint_properties_base.cpp
-- [ ] pcbnew\dialogs\dialog_footprint_properties_base.h
-- [ ] pcbnew\dialogs\dialog_footprint_properties_fp_editor.cpp
-- [ ] pcbnew\dialogs\dialog_footprint_properties_fp_editor.h
-- [ ] pcbnew\dialogs\dialog_footprint_properties_fp_editor_base.cpp
-- [ ] pcbnew\dialogs\dialog_footprint_properties_fp_editor_base.h
-- [ ] pcbnew\dialogs\dialog_footprint_wizard_list.cpp
-- [ ] pcbnew\dialogs\dialog_footprint_wizard_list.h
+- [x] pcbnew\dialogs\dialog_footprint_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_footprint_properties_base.h
+- [x] pcbnew\dialogs\dialog_footprint_properties_fp_editor.cpp
+- [x] pcbnew\dialogs\dialog_footprint_properties_fp_editor.h
+- [x] pcbnew\dialogs\dialog_footprint_properties_fp_editor_base.cpp
+- [x] pcbnew\dialogs\dialog_footprint_properties_fp_editor_base.h
+- [x] pcbnew\dialogs\dialog_footprint_wizard_list.cpp
+- [x] pcbnew\dialogs\dialog_footprint_wizard_list.h
 - [ ] pcbnew\dialogs\dialog_footprint_wizard_list_base.cpp
 - [ ] pcbnew\dialogs\dialog_footprint_wizard_list_base.h
 - [ ] pcbnew\dialogs\dialog_fp_edit_pad_table.cpp
