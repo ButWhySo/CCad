@@ -434,14 +434,14 @@
 - [x] pcbnew\dialogs\dialog_multichannel_repeat_layout_base.h
 - [x] pcbnew\dialogs\dialog_non_copper_zones_properties.cpp
 - [x] pcbnew\dialogs\dialog_non_copper_zones_properties_base.cpp
-- [ ] pcbnew\dialogs\dialog_non_copper_zones_properties_base.h
-- [ ] pcbnew\dialogs\dialog_offset_item.cpp
-- [ ] pcbnew\dialogs\dialog_offset_item.h
-- [ ] pcbnew\dialogs\dialog_offset_item_base.cpp
-- [ ] pcbnew\dialogs\dialog_offset_item_base.h
-- [ ] pcbnew\dialogs\dialog_outset_items.cpp
-- [ ] pcbnew\dialogs\dialog_outset_items.h
-- [ ] pcbnew\dialogs\dialog_outset_items_base.cpp
+- [x] pcbnew\dialogs\dialog_non_copper_zones_properties_base.h
+- [x] pcbnew\dialogs\dialog_offset_item.cpp
+- [x] pcbnew\dialogs\dialog_offset_item.h
+- [x] pcbnew\dialogs\dialog_offset_item_base.cpp
+- [x] pcbnew\dialogs\dialog_offset_item_base.h
+- [x] pcbnew\dialogs\dialog_outset_items.cpp
+- [x] pcbnew\dialogs\dialog_outset_items.h
+- [x] pcbnew\dialogs\dialog_outset_items_base.cpp
 - [ ] pcbnew\dialogs\dialog_outset_items_base.h
 - [ ] pcbnew\dialogs\dialog_pad_properties.cpp
 - [ ] pcbnew\dialogs\dialog_pad_properties.h
