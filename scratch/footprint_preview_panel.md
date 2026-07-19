@@ -1,0 +1,11 @@
+## footprint_preview_panel
+- **File**: `pcbnew/footprint_preview_panel.cpp`, `pcbnew/footprint_preview_panel.h`
+- **Purpose**: A standalone canvas panel specifically for rendering a footprint preview using GAL.
+- **Functionality**: 
+  - Extends `PCB_DRAW_PANEL_GAL` and implements `FOOTPRINT_PREVIEW_PANEL_BASE`.
+  - Maintains its own dummy `BOARD` to host the footprint.
+  - Can fetch footprints via `FOOTPRINT_LIBRARY_ADAPTER::LoadFootprint`.
+  - Can render a single footprint (`DisplayFootprint`) or compare two (`DisplayFootprints`).
+  - Supports applying specific pin function text to pads for previewing footprint/symbol mapping.
+  - Handles auto-zooming / fitting (`fitToCurrentFootprint`).
+- **Context**: Used heavily in UI dialogs like `FOOTPRINT_CHOOSER_FRAME`, CvPcb (assigning footprints), and the `PANEL_FOOTPRINT_PROPERTIES`.

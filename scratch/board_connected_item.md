@@ -1,0 +1,11 @@
+## BOARD_CONNECTED_ITEM
+- **File**: `pcbnew/board_connected_item.cpp`, `pcbnew/board_connected_item.h`
+- **Purpose**: A base class for printed circuit board items that belong to a net (e.g. tracks, vias, pads, zones) and thus participate in connectivity and DRC rules.
+- **Functionality**: 
+  - Inherits from `BOARD_ITEM`.
+  - Maintains a pointer to `NETINFO_ITEM` (`m_netinfo`) which defines the electrical net the item is connected to.
+  - Exposes common methods like `GetNetCode()`, `SetNetCode()`, `GetNetname()`, `GetShortNetname()`, and `GetEffectiveNetClass()` for fetching the effective rules applying to this element.
+  - Exposes `GetOwnClearance()` to query the DRC engine for clearance requirements in a given copper layer.
+  - Encapsulates `TEARDROP_PARAMETERS` and properties (e.g. `SetTeardropsEnabled()`, `GetTeardropBestLengthRatio()`) for teardrop calculations, making them manageable from a centralized UI property system (`_BOARD_CONNECTED_ITEM_DESC`).
+  - Supports protocol buffer serialization (`UnpackNet`, `PackNet`) mapping between protobuf messages and internal NETINFO structures.
+- **Context**: Foundation for any physical layout object that carries an electrical signal (tracks, pads, polygons).

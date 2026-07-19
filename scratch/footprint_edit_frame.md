@@ -1,0 +1,12 @@
+## footprint_edit_frame & footprint_editor_utils
+- **File**: `pcbnew/footprint_edit_frame.cpp`, `pcbnew/footprint_edit_frame.h`, `pcbnew/footprint_editor_utils.cpp`
+- **Purpose**: Implements the main window and UI logic for the Footprint Editor (library editor) in KiCad.
+- **Functionality**: 
+  - Subclasses `PCB_BASE_EDIT_FRAME` and provides a dedicated workspace for authoring footprints.
+  - Maintains a private, dummy `BOARD` object where exactly one footprint is placed for editing.
+  - Features dedicated toolbars, menu bars, layer managers (appearance panel), property panels, and a library tree pane for selecting footprints.
+  - Integrates `FOOTPRINT_TREE_PANE` for browsing local libraries.
+  - `LoadFootprintFromLibrary()` handles fetching a footprint, clearing the dummy board, and placing the loaded footprint at the origin (0,0).
+  - Handles IPC mail (like `MAIL_FP_EDIT`) to open footprints directly from Schematic cross-probing.
+  - Dispatching of edit dialogs (e.g., `OnEditItemRequest()`) for all footprint primitives (pads, shapes, text, dimensions, etc.).
+- **Context**: The primary interface for users to build or modify individual part footprints before they are used in a real board.
