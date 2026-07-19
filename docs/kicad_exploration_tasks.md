@@ -346,14 +346,14 @@
 - [x] pcbnew\dialogs\dialog_find_by_properties_base.h
 - [x] pcbnew\dialogs\dialog_footprint_associations.cpp
 - [x] pcbnew\dialogs\dialog_footprint_associations.h
-- [ ] pcbnew\dialogs\dialog_footprint_associations_base.cpp
-- [ ] pcbnew\dialogs\dialog_footprint_associations_base.h
-- [ ] pcbnew\dialogs\dialog_footprint_checker.cpp
-- [ ] pcbnew\dialogs\dialog_footprint_checker.h
-- [ ] pcbnew\dialogs\dialog_footprint_checker_base.cpp
-- [ ] pcbnew\dialogs\dialog_footprint_checker_base.h
-- [ ] pcbnew\dialogs\dialog_footprint_properties.cpp
-- [ ] pcbnew\dialogs\dialog_footprint_properties.h
+- [x] pcbnew\dialogs\dialog_footprint_associations_base.cpp
+- [x] pcbnew\dialogs\dialog_footprint_associations_base.h
+- [x] pcbnew\dialogs\dialog_footprint_checker.cpp
+- [x] pcbnew\dialogs\dialog_footprint_checker.h
+- [x] pcbnew\dialogs\dialog_footprint_checker_base.cpp
+- [x] pcbnew\dialogs\dialog_footprint_checker_base.h
+- [x] pcbnew\dialogs\dialog_footprint_properties.cpp
+- [x] pcbnew\dialogs\dialog_footprint_properties.h
 - [ ] pcbnew\dialogs\dialog_footprint_properties_base.cpp
 - [ ] pcbnew\dialogs\dialog_footprint_properties_base.h
 - [ ] pcbnew\dialogs\dialog_footprint_properties_fp_editor.cpp
