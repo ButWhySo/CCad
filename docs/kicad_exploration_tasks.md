@@ -402,14 +402,14 @@
 - [x] pcbnew\dialogs\dialog_global_edit_tracks_and_vias_base.h
 - [x] pcbnew\dialogs\dialog_imported_layers_base.cpp
 - [x] pcbnew\dialogs\dialog_imported_layers_base.h
-- [ ] pcbnew\dialogs\dialog_import_netlist.cpp
-- [ ] pcbnew\dialogs\dialog_import_netlist.h
-- [ ] pcbnew\dialogs\dialog_import_netlist_base.cpp
-- [ ] pcbnew\dialogs\dialog_import_netlist_base.h
-- [ ] pcbnew\dialogs\dialog_import_settings.cpp
-- [ ] pcbnew\dialogs\dialog_import_settings.h
-- [ ] pcbnew\dialogs\dialog_import_settings_base.cpp
-- [ ] pcbnew\dialogs\dialog_import_settings_base.h
+- [x] pcbnew\dialogs\dialog_import_netlist.cpp
+- [x] pcbnew\dialogs\dialog_import_netlist.h
+- [x] pcbnew\dialogs\dialog_import_netlist_base.cpp
+- [x] pcbnew\dialogs\dialog_import_netlist_base.h
+- [x] pcbnew\dialogs\dialog_import_settings.cpp
+- [x] pcbnew\dialogs\dialog_import_settings.h
+- [x] pcbnew\dialogs\dialog_import_settings_base.cpp
+- [x] pcbnew\dialogs\dialog_import_settings_base.h
 - [ ] pcbnew\dialogs\dialog_items_list.cpp
 - [ ] pcbnew\dialogs\dialog_items_list.h
 - [ ] pcbnew\dialogs\dialog_layer_selection_base.cpp
