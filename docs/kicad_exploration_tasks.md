@@ -306,14 +306,14 @@
 - [x] pcbnew\dialogs\dialog_enum_pads_base.h
 - [x] pcbnew\dialogs\dialog_exchange_footprints.cpp
 - [x] pcbnew\dialogs\dialog_exchange_footprints.h
-- [ ] pcbnew\dialogs\dialog_exchange_footprints_base.cpp
-- [ ] pcbnew\dialogs\dialog_exchange_footprints_base.h
-- [ ] pcbnew\dialogs\dialog_export_2581.cpp
-- [ ] pcbnew\dialogs\dialog_export_2581.h
-- [ ] pcbnew\dialogs\dialog_export_2581_base.cpp
-- [ ] pcbnew\dialogs\dialog_export_2581_base.h
-- [ ] pcbnew\dialogs\dialog_export_idf.cpp
-- [ ] pcbnew\dialogs\dialog_export_idf.h
+- [x] pcbnew\dialogs\dialog_exchange_footprints_base.cpp
+- [x] pcbnew\dialogs\dialog_exchange_footprints_base.h
+- [x] pcbnew\dialogs\dialog_export_2581.cpp
+- [x] pcbnew\dialogs\dialog_export_2581.h
+- [x] pcbnew\dialogs\dialog_export_2581_base.cpp
+- [x] pcbnew\dialogs\dialog_export_2581_base.h
+- [x] pcbnew\dialogs\dialog_export_idf.cpp
+- [x] pcbnew\dialogs\dialog_export_idf.h
 - [ ] pcbnew\dialogs\dialog_export_idf_base.cpp
 - [ ] pcbnew\dialogs\dialog_export_idf_base.h
 - [ ] pcbnew\dialogs\dialog_export_odbpp.cpp
