@@ -234,10 +234,10 @@
 - [x] pcbnew\board_stackup_manager\panel_board_stackup.h
 - [x] pcbnew\board_stackup_manager\panel_board_stackup_base.cpp
 - [x] pcbnew\board_stackup_manager\panel_board_stackup_base.h
-- [ ] pcbnew\board_stackup_manager\stackup_predefined_prms.cpp
-- [ ] pcbnew\board_stackup_manager\stackup_predefined_prms.h
-- [ ] pcbnew\board_tables\board_characteristics_table.cpp
-- [ ] pcbnew\board_tables\board_stackup_table.cpp
+- [x] pcbnew\board_stackup_manager\stackup_predefined_prms.cpp
+- [x] pcbnew\board_stackup_manager\stackup_predefined_prms.h
+- [x] pcbnew\board_tables\board_characteristics_table.cpp
+- [x] pcbnew\board_tables\board_stackup_table.cpp
 - [x] pcbnew\component_classes\component_class.cpp
 - [x] pcbnew\component_classes\component_class.h
 - [x] pcbnew\component_classes\component_class_assignment_rule.cpp
@@ -252,12 +252,12 @@
 - [x] pcbnew\connectivity\connectivity_data.h
 - [x] pcbnew\connectivity\connectivity_items.cpp
 - [x] pcbnew\connectivity\connectivity_items.h
-- [ ] pcbnew\connectivity\connectivity_rtree.h
+- [x] pcbnew\connectivity\connectivity_rtree.h
 - [x] pcbnew\connectivity\from_to_cache.cpp
 - [x] pcbnew\connectivity\from_to_cache.h
-- [ ] pcbnew\connectivity\topo_match.cpp
-- [ ] pcbnew\connectivity\topo_match.h
-- [ ] pcbnew\dialogs\dialog_barcode_properties.cpp
+- [x] pcbnew\connectivity\topo_match.cpp
+- [x] pcbnew\connectivity\topo_match.h
+- [x] pcbnew\dialogs\dialog_barcode_properties.cpp
 - [ ] pcbnew\dialogs\dialog_barcode_properties.h
 - [ ] pcbnew\dialogs\dialog_barcode_properties_base.cpp
 - [ ] pcbnew\dialogs\dialog_barcode_properties_base.h
