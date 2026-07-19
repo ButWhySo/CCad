@@ -290,14 +290,14 @@
 - [x] pcbnew\dialogs\dialog_create_array.h
 - [x] pcbnew\dialogs\dialog_create_array_base.cpp
 - [x] pcbnew\dialogs\dialog_create_array_base.h
-- [ ] pcbnew\dialogs\dialog_dimension_properties.cpp
-- [ ] pcbnew\dialogs\dialog_dimension_properties.h
-- [ ] pcbnew\dialogs\dialog_dimension_properties_base.cpp
-- [ ] pcbnew\dialogs\dialog_dimension_properties_base.h
-- [ ] pcbnew\dialogs\dialog_drc.cpp
-- [ ] pcbnew\dialogs\dialog_drc.h
-- [ ] pcbnew\dialogs\dialog_drc_base.cpp
-- [ ] pcbnew\dialogs\dialog_drc_base.h
+- [x] pcbnew\dialogs\dialog_dimension_properties.cpp
+- [x] pcbnew\dialogs\dialog_dimension_properties.h
+- [x] pcbnew\dialogs\dialog_dimension_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_dimension_properties_base.h
+- [x] pcbnew\dialogs\dialog_drc.cpp
+- [x] pcbnew\dialogs\dialog_drc.h
+- [x] pcbnew\dialogs\dialog_drc_base.cpp
+- [x] pcbnew\dialogs\dialog_drc_base.h
 - [ ] pcbnew\dialogs\dialog_drc_job_config.cpp
 - [ ] pcbnew\dialogs\dialog_drc_job_config.h
 - [ ] pcbnew\dialogs\dialog_enum_pads.cpp
