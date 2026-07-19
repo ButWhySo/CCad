@@ -151,18 +151,18 @@
 - [x] pcbnew\pcb_point.h
 - [x] pcbnew\pcb_reference_image.cpp
 - [x] pcbnew\pcb_reference_image.h
-- [ ] pcbnew\pcb_screen.cpp
+- [x] pcbnew\pcb_screen.cpp
 - [x] pcbnew\pcb_shape.cpp
 - [x] pcbnew\pcb_shape.h
-- [ ] pcbnew\pcb_table.cpp
-- [ ] pcbnew\pcb_table.h
-- [ ] pcbnew\pcb_tablecell.cpp
-- [ ] pcbnew\pcb_tablecell.h
-- [ ] pcbnew\pcb_target.cpp
-- [ ] pcbnew\pcb_target.h
+- [x] pcbnew\pcb_table.cpp
+- [x] pcbnew\pcb_table.h
+- [x] pcbnew\pcb_tablecell.cpp
+- [x] pcbnew\pcb_tablecell.h
+- [x] pcbnew\pcb_target.cpp
+- [x] pcbnew\pcb_target.h
 - [x] pcbnew\pcb_text.cpp
 - [x] pcbnew\pcb_text.h
-- [ ] pcbnew\pcb_textbox.cpp
+- [x] pcbnew\pcb_textbox.cpp
 - [ ] pcbnew\pcb_textbox.h
 - [ ] pcbnew\pcb_text_help_md.h
 - [x] pcbnew\pcb_track.cpp
