@@ -218,14 +218,14 @@
 - [x] pcbnew\autorouter\spread_footprints.h
 - [x] pcbnew\board_stackup_manager\board_stackup.cpp
 - [x] pcbnew\board_stackup_manager\board_stackup.h
-- [ ] pcbnew\board_stackup_manager\board_stackup_reporter.cpp
-- [ ] pcbnew\board_stackup_manager\board_stackup_reporter.h
-- [ ] pcbnew\board_stackup_manager\dialog_dielectric_list_manager.cpp
-- [ ] pcbnew\board_stackup_manager\dialog_dielectric_list_manager.h
-- [ ] pcbnew\board_stackup_manager\dialog_dielectric_list_manager_base.cpp
-- [ ] pcbnew\board_stackup_manager\dialog_dielectric_list_manager_base.h
-- [ ] pcbnew\board_stackup_manager\dielectric_material.cpp
-- [ ] pcbnew\board_stackup_manager\dielectric_material.h
+- [x] pcbnew\board_stackup_manager\board_stackup_reporter.cpp
+- [x] pcbnew\board_stackup_manager\board_stackup_reporter.h
+- [x] pcbnew\board_stackup_manager\dialog_dielectric_list_manager.cpp
+- [x] pcbnew\board_stackup_manager\dialog_dielectric_list_manager.h
+- [x] pcbnew\board_stackup_manager\dialog_dielectric_list_manager_base.cpp
+- [x] pcbnew\board_stackup_manager\dialog_dielectric_list_manager_base.h
+- [x] pcbnew\board_stackup_manager\dielectric_material.cpp
+- [x] pcbnew\board_stackup_manager\dielectric_material.h
 - [ ] pcbnew\board_stackup_manager\panel_board_finish.cpp
 - [ ] pcbnew\board_stackup_manager\panel_board_finish.h
 - [ ] pcbnew\board_stackup_manager\panel_board_finish_base.cpp
