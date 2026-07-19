@@ -362,14 +362,14 @@
 - [x] pcbnew\dialogs\dialog_footprint_properties_fp_editor_base.h
 - [x] pcbnew\dialogs\dialog_footprint_wizard_list.cpp
 - [x] pcbnew\dialogs\dialog_footprint_wizard_list.h
-- [ ] pcbnew\dialogs\dialog_footprint_wizard_list_base.cpp
-- [ ] pcbnew\dialogs\dialog_footprint_wizard_list_base.h
-- [ ] pcbnew\dialogs\dialog_fp_edit_pad_table.cpp
-- [ ] pcbnew\dialogs\dialog_fp_edit_pad_table.h
-- [ ] pcbnew\dialogs\dialog_fp_edit_pad_table_base.cpp
-- [ ] pcbnew\dialogs\dialog_fp_edit_pad_table_base.h
-- [ ] pcbnew\dialogs\dialog_gencad_export_options.cpp
-- [ ] pcbnew\dialogs\dialog_gencad_export_options.h
+- [x] pcbnew\dialogs\dialog_footprint_wizard_list_base.cpp
+- [x] pcbnew\dialogs\dialog_footprint_wizard_list_base.h
+- [x] pcbnew\dialogs\dialog_fp_edit_pad_table.cpp
+- [x] pcbnew\dialogs\dialog_fp_edit_pad_table.h
+- [x] pcbnew\dialogs\dialog_fp_edit_pad_table_base.cpp
+- [x] pcbnew\dialogs\dialog_fp_edit_pad_table_base.h
+- [x] pcbnew\dialogs\dialog_gencad_export_options.cpp
+- [x] pcbnew\dialogs\dialog_gencad_export_options.h
 - [ ] pcbnew\dialogs\dialog_gendrill.cpp
 - [ ] pcbnew\dialogs\dialog_gendrill.h
 - [ ] pcbnew\dialogs\dialog_gendrill_base.cpp
