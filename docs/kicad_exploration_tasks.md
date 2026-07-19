@@ -298,14 +298,14 @@
 - [x] pcbnew\dialogs\dialog_drc.h
 - [x] pcbnew\dialogs\dialog_drc_base.cpp
 - [x] pcbnew\dialogs\dialog_drc_base.h
-- [ ] pcbnew\dialogs\dialog_drc_job_config.cpp
-- [ ] pcbnew\dialogs\dialog_drc_job_config.h
-- [ ] pcbnew\dialogs\dialog_enum_pads.cpp
-- [ ] pcbnew\dialogs\dialog_enum_pads.h
-- [ ] pcbnew\dialogs\dialog_enum_pads_base.cpp
-- [ ] pcbnew\dialogs\dialog_enum_pads_base.h
-- [ ] pcbnew\dialogs\dialog_exchange_footprints.cpp
-- [ ] pcbnew\dialogs\dialog_exchange_footprints.h
+- [x] pcbnew\dialogs\dialog_drc_job_config.cpp
+- [x] pcbnew\dialogs\dialog_drc_job_config.h
+- [x] pcbnew\dialogs\dialog_enum_pads.cpp
+- [x] pcbnew\dialogs\dialog_enum_pads.h
+- [x] pcbnew\dialogs\dialog_enum_pads_base.cpp
+- [x] pcbnew\dialogs\dialog_enum_pads_base.h
+- [x] pcbnew\dialogs\dialog_exchange_footprints.cpp
+- [x] pcbnew\dialogs\dialog_exchange_footprints.h
 - [ ] pcbnew\dialogs\dialog_exchange_footprints_base.cpp
 - [ ] pcbnew\dialogs\dialog_exchange_footprints_base.h
 - [ ] pcbnew\dialogs\dialog_export_2581.cpp
