@@ -442,740 +442,740 @@
 - [x] pcbnew\dialogs\dialog_outset_items.cpp
 - [x] pcbnew\dialogs\dialog_outset_items.h
 - [x] pcbnew\dialogs\dialog_outset_items_base.cpp
-- [ ] pcbnew\dialogs\dialog_outset_items_base.h
-- [ ] pcbnew\dialogs\dialog_pad_properties.cpp
-- [ ] pcbnew\dialogs\dialog_pad_properties.h
-- [ ] pcbnew\dialogs\dialog_pad_properties_base.cpp
-- [ ] pcbnew\dialogs\dialog_pad_properties_base.h
-- [ ] pcbnew\dialogs\dialog_plot.cpp
-- [ ] pcbnew\dialogs\dialog_plot.h
-- [ ] pcbnew\dialogs\dialog_plot_base.cpp
-- [ ] pcbnew\dialogs\dialog_plot_base.h
-- [ ] pcbnew\dialogs\dialog_pns_diff_pair_dimensions.cpp
-- [ ] pcbnew\dialogs\dialog_pns_diff_pair_dimensions.h
-- [ ] pcbnew\dialogs\dialog_pns_diff_pair_dimensions_base.cpp
-- [ ] pcbnew\dialogs\dialog_pns_diff_pair_dimensions_base.h
-- [ ] pcbnew\dialogs\dialog_pns_settings.cpp
-- [ ] pcbnew\dialogs\dialog_pns_settings.h
-- [ ] pcbnew\dialogs\dialog_pns_settings_base.cpp
-- [ ] pcbnew\dialogs\dialog_pns_settings_base.h
-- [ ] pcbnew\dialogs\dialog_position_relative.cpp
-- [ ] pcbnew\dialogs\dialog_position_relative.h
-- [ ] pcbnew\dialogs\dialog_position_relative_base.cpp
-- [ ] pcbnew\dialogs\dialog_position_relative_base.h
-- [ ] pcbnew\dialogs\dialog_print_pcbnew.cpp
-- [ ] pcbnew\dialogs\dialog_produce_pcb_base.cpp
-- [ ] pcbnew\dialogs\dialog_produce_pcb_base.h
-- [ ] pcbnew\dialogs\dialog_push_pad_properties.cpp
-- [ ] pcbnew\dialogs\dialog_push_pad_properties.h
-- [ ] pcbnew\dialogs\dialog_push_pad_properties_base.cpp
-- [ ] pcbnew\dialogs\dialog_push_pad_properties_base.h
-- [ ] pcbnew\dialogs\dialog_reference_image_properties.cpp
-- [ ] pcbnew\dialogs\dialog_reference_image_properties.h
-- [ ] pcbnew\dialogs\dialog_reference_image_properties_base.cpp
-- [ ] pcbnew\dialogs\dialog_reference_image_properties_base.h
-- [ ] pcbnew\dialogs\dialog_render_job.cpp
-- [ ] pcbnew\dialogs\dialog_render_job.h
-- [ ] pcbnew\dialogs\dialog_render_job_base.cpp
-- [ ] pcbnew\dialogs\dialog_render_job_base.h
-- [ ] pcbnew\dialogs\dialog_router_save_test_case.cpp
-- [ ] pcbnew\dialogs\dialog_router_save_test_case.h
-- [ ] pcbnew\dialogs\dialog_router_save_test_case_base.cpp
-- [ ] pcbnew\dialogs\dialog_router_save_test_case_base.h
-- [ ] pcbnew\dialogs\dialog_rule_area_properties.cpp
-- [ ] pcbnew\dialogs\dialog_rule_area_properties_base.cpp
-- [ ] pcbnew\dialogs\dialog_rule_area_properties_base.h
-- [ ] pcbnew\dialogs\dialog_shape_properties.cpp
-- [ ] pcbnew\dialogs\dialog_shape_properties_base.cpp
-- [ ] pcbnew\dialogs\dialog_shape_properties_base.h
-- [ ] pcbnew\dialogs\dialog_swap_layers.cpp
-- [ ] pcbnew\dialogs\dialog_swap_layers.h
-- [ ] pcbnew\dialogs\dialog_swap_layers_base.cpp
-- [ ] pcbnew\dialogs\dialog_swap_layers_base.h
-- [ ] pcbnew\dialogs\dialog_tablecell_properties.cpp
-- [ ] pcbnew\dialogs\dialog_tablecell_properties.h
-- [ ] pcbnew\dialogs\dialog_tablecell_properties_base.cpp
-- [ ] pcbnew\dialogs\dialog_tablecell_properties_base.h
-- [ ] pcbnew\dialogs\dialog_table_properties.cpp
-- [ ] pcbnew\dialogs\dialog_table_properties.h
-- [ ] pcbnew\dialogs\dialog_table_properties_base.cpp
-- [ ] pcbnew\dialogs\dialog_table_properties_base.h
-- [ ] pcbnew\dialogs\dialog_target_properties.cpp
-- [ ] pcbnew\dialogs\dialog_target_properties_base.cpp
-- [ ] pcbnew\dialogs\dialog_target_properties_base.h
-- [ ] pcbnew\dialogs\dialog_textbox_properties.cpp
-- [ ] pcbnew\dialogs\dialog_textbox_properties.h
-- [ ] pcbnew\dialogs\dialog_textbox_properties_base.cpp
-- [ ] pcbnew\dialogs\dialog_textbox_properties_base.h
-- [ ] pcbnew\dialogs\dialog_text_properties.cpp
-- [ ] pcbnew\dialogs\dialog_text_properties.h
-- [ ] pcbnew\dialogs\dialog_text_properties_base.cpp
-- [ ] pcbnew\dialogs\dialog_text_properties_base.h
-- [ ] pcbnew\dialogs\dialog_track_via_properties.cpp
-- [ ] pcbnew\dialogs\dialog_track_via_properties.h
-- [ ] pcbnew\dialogs\dialog_track_via_properties_base.cpp
-- [ ] pcbnew\dialogs\dialog_track_via_properties_base.h
-- [ ] pcbnew\dialogs\dialog_track_via_size.cpp
-- [ ] pcbnew\dialogs\dialog_track_via_size.h
-- [ ] pcbnew\dialogs\dialog_track_via_size_base.cpp
-- [ ] pcbnew\dialogs\dialog_track_via_size_base.h
-- [ ] pcbnew\dialogs\dialog_tuning_pattern_properties.cpp
-- [ ] pcbnew\dialogs\dialog_tuning_pattern_properties.h
-- [ ] pcbnew\dialogs\dialog_tuning_pattern_properties_base.cpp
-- [ ] pcbnew\dialogs\dialog_tuning_pattern_properties_base.h
-- [ ] pcbnew\dialogs\dialog_unused_pad_layers.cpp
-- [ ] pcbnew\dialogs\dialog_unused_pad_layers.h
-- [ ] pcbnew\dialogs\dialog_unused_pad_layers_base.cpp
-- [ ] pcbnew\dialogs\dialog_unused_pad_layers_base.h
-- [ ] pcbnew\dialogs\dialog_update_pcb.cpp
-- [ ] pcbnew\dialogs\dialog_update_pcb.h
-- [ ] pcbnew\dialogs\dialog_update_pcb_base.cpp
-- [ ] pcbnew\dialogs\dialog_update_pcb_base.h
-- [ ] pcbnew\dialogs\panel_assign_component_classes.cpp
-- [ ] pcbnew\dialogs\panel_assign_component_classes_base.cpp
-- [ ] pcbnew\dialogs\panel_assign_component_classes_base.h
-- [ ] pcbnew\dialogs\panel_display_options.cpp
-- [ ] pcbnew\dialogs\panel_display_options.h
-- [ ] pcbnew\dialogs\panel_display_options_base.cpp
-- [ ] pcbnew\dialogs\panel_display_options_base.h
-- [ ] pcbnew\dialogs\panel_edit_options.cpp
-- [ ] pcbnew\dialogs\panel_edit_options.h
-- [ ] pcbnew\dialogs\panel_edit_options_base.cpp
-- [ ] pcbnew\dialogs\panel_edit_options_base.h
-- [ ] pcbnew\dialogs\panel_fp_editor_color_settings.cpp
-- [ ] pcbnew\dialogs\panel_fp_editor_color_settings.h
-- [ ] pcbnew\dialogs\panel_fp_editor_field_defaults.cpp
-- [ ] pcbnew\dialogs\panel_fp_editor_field_defaults.h
-- [ ] pcbnew\dialogs\panel_fp_editor_field_defaults_base.cpp
-- [ ] pcbnew\dialogs\panel_fp_editor_field_defaults_base.h
-- [ ] pcbnew\dialogs\panel_fp_editor_graphics_defaults.cpp
-- [ ] pcbnew\dialogs\panel_fp_editor_graphics_defaults.h
-- [ ] pcbnew\dialogs\panel_fp_editor_graphics_defaults_base.cpp
-- [ ] pcbnew\dialogs\panel_fp_editor_graphics_defaults_base.h
-- [ ] pcbnew\dialogs\panel_fp_lib_table.cpp
-- [ ] pcbnew\dialogs\panel_fp_lib_table.h
-- [ ] pcbnew\dialogs\panel_fp_lib_table_base.cpp
-- [ ] pcbnew\dialogs\panel_fp_lib_table_base.h
-- [ ] pcbnew\dialogs\panel_fp_properties_3d_model.cpp
-- [ ] pcbnew\dialogs\panel_fp_properties_3d_model.h
-- [ ] pcbnew\dialogs\panel_fp_properties_3d_model_base.cpp
-- [ ] pcbnew\dialogs\panel_fp_properties_3d_model_base.h
-- [ ] pcbnew\dialogs\panel_fp_user_layer_names.cpp
-- [ ] pcbnew\dialogs\panel_fp_user_layer_names.h
-- [ ] pcbnew\dialogs\panel_fp_user_layer_names_base.cpp
-- [ ] pcbnew\dialogs\panel_fp_user_layer_names_base.h
-- [ ] pcbnew\dialogs\panel_pcbnew_action_plugins.cpp
-- [ ] pcbnew\dialogs\panel_pcbnew_action_plugins.h
-- [ ] pcbnew\dialogs\panel_pcbnew_action_plugins_base.cpp
-- [ ] pcbnew\dialogs\panel_pcbnew_action_plugins_base.h
-- [ ] pcbnew\dialogs\panel_pcbnew_color_settings.cpp
-- [ ] pcbnew\dialogs\panel_pcbnew_color_settings.h
-- [ ] pcbnew\dialogs\panel_pcbnew_display_origin.cpp
-- [ ] pcbnew\dialogs\panel_pcbnew_display_origin.h
-- [ ] pcbnew\dialogs\panel_pcbnew_display_origin_base.cpp
-- [ ] pcbnew\dialogs\panel_pcbnew_display_origin_base.h
-- [ ] pcbnew\dialogs\panel_rule_area_properties_keepout_base.cpp
-- [ ] pcbnew\dialogs\panel_rule_area_properties_keepout_base.h
-- [ ] pcbnew\dialogs\panel_rule_area_properties_placement_base.cpp
-- [ ] pcbnew\dialogs\panel_rule_area_properties_placement_base.h
-- [ ] pcbnew\dialogs\panel_setup_condition_help_1clauses.h
-- [ ] pcbnew\dialogs\panel_setup_condition_help_6notes.h
-- [ ] pcbnew\dialogs\panel_setup_constraints.cpp
-- [ ] pcbnew\dialogs\panel_setup_constraints.h
-- [ ] pcbnew\dialogs\panel_setup_constraints_base.cpp
-- [ ] pcbnew\dialogs\panel_setup_constraints_base.h
-- [ ] pcbnew\dialogs\panel_setup_defaults.cpp
-- [ ] pcbnew\dialogs\panel_setup_defaults.h
-- [ ] pcbnew\dialogs\panel_setup_defaults_base.cpp
-- [ ] pcbnew\dialogs\panel_setup_defaults_base.h
-- [ ] pcbnew\dialogs\panel_setup_dimensions.cpp
-- [ ] pcbnew\dialogs\panel_setup_dimensions.h
-- [ ] pcbnew\dialogs\panel_setup_dimensions_base.cpp
-- [ ] pcbnew\dialogs\panel_setup_dimensions_base.h
-- [ ] pcbnew\dialogs\panel_setup_formatting.cpp
-- [ ] pcbnew\dialogs\panel_setup_formatting.h
-- [ ] pcbnew\dialogs\panel_setup_formatting_base.cpp
-- [ ] pcbnew\dialogs\panel_setup_formatting_base.h
-- [ ] pcbnew\dialogs\panel_setup_layers.cpp
-- [ ] pcbnew\dialogs\panel_setup_layers.h
-- [ ] pcbnew\dialogs\panel_setup_layers_base.cpp
-- [ ] pcbnew\dialogs\panel_setup_layers_base.h
-- [ ] pcbnew\dialogs\panel_setup_mask_and_paste.cpp
-- [ ] pcbnew\dialogs\panel_setup_mask_and_paste.h
-- [ ] pcbnew\dialogs\panel_setup_mask_and_paste_base.cpp
-- [ ] pcbnew\dialogs\panel_setup_mask_and_paste_base.h
-- [ ] pcbnew\dialogs\panel_setup_rules.cpp
-- [ ] pcbnew\dialogs\panel_setup_rules.h
-- [ ] pcbnew\dialogs\panel_setup_rules_base.cpp
-- [ ] pcbnew\dialogs\panel_setup_rules_base.h
-- [ ] pcbnew\dialogs\panel_setup_rules_help_10documentation.h
-- [ ] pcbnew\dialogs\panel_setup_rules_help_1clauses.h
-- [ ] pcbnew\dialogs\panel_setup_rules_help_2constraints.h
-- [ ] pcbnew\dialogs\panel_setup_rules_help_3items.h
-- [ ] pcbnew\dialogs\panel_setup_rules_help_4severity_names.h
-- [ ] pcbnew\dialogs\panel_setup_rules_help_5examples.h
-- [ ] pcbnew\dialogs\panel_setup_rules_help_6notes.h
-- [ ] pcbnew\dialogs\panel_setup_rules_help_7properties.h
-- [ ] pcbnew\dialogs\panel_setup_rules_help_8expression_functions.h
-- [ ] pcbnew\dialogs\panel_setup_rules_help_9more_examples.h
-- [ ] pcbnew\dialogs\panel_setup_teardrops.cpp
-- [ ] pcbnew\dialogs\panel_setup_teardrops.h
-- [ ] pcbnew\dialogs\panel_setup_teardrops_base.cpp
-- [ ] pcbnew\dialogs\panel_setup_teardrops_base.h
-- [ ] pcbnew\dialogs\panel_setup_text_and_graphics.cpp
-- [ ] pcbnew\dialogs\panel_setup_text_and_graphics.h
-- [ ] pcbnew\dialogs\panel_setup_text_and_graphics_base.cpp
-- [ ] pcbnew\dialogs\panel_setup_text_and_graphics_base.h
-- [ ] pcbnew\dialogs\panel_setup_tracks_and_vias.cpp
-- [ ] pcbnew\dialogs\panel_setup_tracks_and_vias.h
-- [ ] pcbnew\dialogs\panel_setup_tracks_and_vias_base.cpp
-- [ ] pcbnew\dialogs\panel_setup_tracks_and_vias_base.h
-- [ ] pcbnew\dialogs\panel_setup_tuning_patterns.cpp
-- [ ] pcbnew\dialogs\panel_setup_tuning_patterns.h
-- [ ] pcbnew\dialogs\panel_setup_tuning_patterns_base.cpp
-- [ ] pcbnew\dialogs\panel_setup_tuning_patterns_base.h
-- [ ] pcbnew\dialogs\panel_setup_tuning_profiles.cpp
-- [ ] pcbnew\dialogs\panel_setup_tuning_profiles.h
-- [ ] pcbnew\dialogs\panel_setup_tuning_profiles_base.cpp
-- [ ] pcbnew\dialogs\panel_setup_tuning_profiles_base.h
-- [ ] pcbnew\dialogs\panel_setup_tuning_profile_info.cpp
-- [ ] pcbnew\dialogs\panel_setup_tuning_profile_info.h
-- [ ] pcbnew\dialogs\panel_setup_tuning_profile_info_base.cpp
-- [ ] pcbnew\dialogs\panel_setup_tuning_profile_info_base.h
-- [ ] pcbnew\dialogs\panel_setup_zones.cpp
-- [ ] pcbnew\dialogs\panel_setup_zones.h
-- [ ] pcbnew\dialogs\panel_setup_zones_base.cpp
-- [ ] pcbnew\dialogs\panel_setup_zones_base.h
-- [ ] pcbnew\dialogs\panel_setup_zone_hatch_offsets.cpp
-- [ ] pcbnew\dialogs\panel_setup_zone_hatch_offsets.h
-- [ ] pcbnew\dialogs\panel_setup_zone_hatch_offsets_base.cpp
-- [ ] pcbnew\dialogs\panel_setup_zone_hatch_offsets_base.h
-- [ ] pcbnew\dialogs\panel_zone_properties.cpp
-- [ ] pcbnew\dialogs\panel_zone_properties.h
-- [ ] pcbnew\dialogs\panel_zone_properties_base.cpp
-- [ ] pcbnew\dialogs\panel_zone_properties_base.h
-- [ ] pcbnew\drc\drc_cache_generator.cpp
-- [ ] pcbnew\drc\drc_cache_generator.h
-- [ ] pcbnew\drc\drc_chain_topology.cpp
-- [ ] pcbnew\drc\drc_chain_topology.h
-- [ ] pcbnew\drc\drc_creepage_utils.cpp
-- [ ] pcbnew\drc\drc_creepage_utils.h
+- [x] pcbnew\dialogs\dialog_outset_items_base.h
+- [x] pcbnew\dialogs\dialog_pad_properties.cpp
+- [x] pcbnew\dialogs\dialog_pad_properties.h
+- [x] pcbnew\dialogs\dialog_pad_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_pad_properties_base.h
+- [x] pcbnew\dialogs\dialog_plot.cpp
+- [x] pcbnew\dialogs\dialog_plot.h
+- [x] pcbnew\dialogs\dialog_plot_base.cpp
+- [x] pcbnew\dialogs\dialog_plot_base.h
+- [x] pcbnew\dialogs\dialog_pns_diff_pair_dimensions.cpp
+- [x] pcbnew\dialogs\dialog_pns_diff_pair_dimensions.h
+- [x] pcbnew\dialogs\dialog_pns_diff_pair_dimensions_base.cpp
+- [x] pcbnew\dialogs\dialog_pns_diff_pair_dimensions_base.h
+- [x] pcbnew\dialogs\dialog_pns_settings.cpp
+- [x] pcbnew\dialogs\dialog_pns_settings.h
+- [x] pcbnew\dialogs\dialog_pns_settings_base.cpp
+- [x] pcbnew\dialogs\dialog_pns_settings_base.h
+- [x] pcbnew\dialogs\dialog_position_relative.cpp
+- [x] pcbnew\dialogs\dialog_position_relative.h
+- [x] pcbnew\dialogs\dialog_position_relative_base.cpp
+- [x] pcbnew\dialogs\dialog_position_relative_base.h
+- [x] pcbnew\dialogs\dialog_print_pcbnew.cpp
+- [x] pcbnew\dialogs\dialog_produce_pcb_base.cpp
+- [x] pcbnew\dialogs\dialog_produce_pcb_base.h
+- [x] pcbnew\dialogs\dialog_push_pad_properties.cpp
+- [x] pcbnew\dialogs\dialog_push_pad_properties.h
+- [x] pcbnew\dialogs\dialog_push_pad_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_push_pad_properties_base.h
+- [x] pcbnew\dialogs\dialog_reference_image_properties.cpp
+- [x] pcbnew\dialogs\dialog_reference_image_properties.h
+- [x] pcbnew\dialogs\dialog_reference_image_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_reference_image_properties_base.h
+- [x] pcbnew\dialogs\dialog_render_job.cpp
+- [x] pcbnew\dialogs\dialog_render_job.h
+- [x] pcbnew\dialogs\dialog_render_job_base.cpp
+- [x] pcbnew\dialogs\dialog_render_job_base.h
+- [x] pcbnew\dialogs\dialog_router_save_test_case.cpp
+- [x] pcbnew\dialogs\dialog_router_save_test_case.h
+- [x] pcbnew\dialogs\dialog_router_save_test_case_base.cpp
+- [x] pcbnew\dialogs\dialog_router_save_test_case_base.h
+- [x] pcbnew\dialogs\dialog_rule_area_properties.cpp
+- [x] pcbnew\dialogs\dialog_rule_area_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_rule_area_properties_base.h
+- [x] pcbnew\dialogs\dialog_shape_properties.cpp
+- [x] pcbnew\dialogs\dialog_shape_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_shape_properties_base.h
+- [x] pcbnew\dialogs\dialog_swap_layers.cpp
+- [x] pcbnew\dialogs\dialog_swap_layers.h
+- [x] pcbnew\dialogs\dialog_swap_layers_base.cpp
+- [x] pcbnew\dialogs\dialog_swap_layers_base.h
+- [x] pcbnew\dialogs\dialog_tablecell_properties.cpp
+- [x] pcbnew\dialogs\dialog_tablecell_properties.h
+- [x] pcbnew\dialogs\dialog_tablecell_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_tablecell_properties_base.h
+- [x] pcbnew\dialogs\dialog_table_properties.cpp
+- [x] pcbnew\dialogs\dialog_table_properties.h
+- [x] pcbnew\dialogs\dialog_table_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_table_properties_base.h
+- [x] pcbnew\dialogs\dialog_target_properties.cpp
+- [x] pcbnew\dialogs\dialog_target_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_target_properties_base.h
+- [x] pcbnew\dialogs\dialog_textbox_properties.cpp
+- [x] pcbnew\dialogs\dialog_textbox_properties.h
+- [x] pcbnew\dialogs\dialog_textbox_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_textbox_properties_base.h
+- [x] pcbnew\dialogs\dialog_text_properties.cpp
+- [x] pcbnew\dialogs\dialog_text_properties.h
+- [x] pcbnew\dialogs\dialog_text_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_text_properties_base.h
+- [x] pcbnew\dialogs\dialog_track_via_properties.cpp
+- [x] pcbnew\dialogs\dialog_track_via_properties.h
+- [x] pcbnew\dialogs\dialog_track_via_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_track_via_properties_base.h
+- [x] pcbnew\dialogs\dialog_track_via_size.cpp
+- [x] pcbnew\dialogs\dialog_track_via_size.h
+- [x] pcbnew\dialogs\dialog_track_via_size_base.cpp
+- [x] pcbnew\dialogs\dialog_track_via_size_base.h
+- [x] pcbnew\dialogs\dialog_tuning_pattern_properties.cpp
+- [x] pcbnew\dialogs\dialog_tuning_pattern_properties.h
+- [x] pcbnew\dialogs\dialog_tuning_pattern_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_tuning_pattern_properties_base.h
+- [x] pcbnew\dialogs\dialog_unused_pad_layers.cpp
+- [x] pcbnew\dialogs\dialog_unused_pad_layers.h
+- [x] pcbnew\dialogs\dialog_unused_pad_layers_base.cpp
+- [x] pcbnew\dialogs\dialog_unused_pad_layers_base.h
+- [x] pcbnew\dialogs\dialog_update_pcb.cpp
+- [x] pcbnew\dialogs\dialog_update_pcb.h
+- [x] pcbnew\dialogs\dialog_update_pcb_base.cpp
+- [x] pcbnew\dialogs\dialog_update_pcb_base.h
+- [x] pcbnew\dialogs\panel_assign_component_classes.cpp
+- [x] pcbnew\dialogs\panel_assign_component_classes_base.cpp
+- [x] pcbnew\dialogs\panel_assign_component_classes_base.h
+- [x] pcbnew\dialogs\panel_display_options.cpp
+- [x] pcbnew\dialogs\panel_display_options.h
+- [x] pcbnew\dialogs\panel_display_options_base.cpp
+- [x] pcbnew\dialogs\panel_display_options_base.h
+- [x] pcbnew\dialogs\panel_edit_options.cpp
+- [x] pcbnew\dialogs\panel_edit_options.h
+- [x] pcbnew\dialogs\panel_edit_options_base.cpp
+- [x] pcbnew\dialogs\panel_edit_options_base.h
+- [x] pcbnew\dialogs\panel_fp_editor_color_settings.cpp
+- [x] pcbnew\dialogs\panel_fp_editor_color_settings.h
+- [x] pcbnew\dialogs\panel_fp_editor_field_defaults.cpp
+- [x] pcbnew\dialogs\panel_fp_editor_field_defaults.h
+- [x] pcbnew\dialogs\panel_fp_editor_field_defaults_base.cpp
+- [x] pcbnew\dialogs\panel_fp_editor_field_defaults_base.h
+- [x] pcbnew\dialogs\panel_fp_editor_graphics_defaults.cpp
+- [x] pcbnew\dialogs\panel_fp_editor_graphics_defaults.h
+- [x] pcbnew\dialogs\panel_fp_editor_graphics_defaults_base.cpp
+- [x] pcbnew\dialogs\panel_fp_editor_graphics_defaults_base.h
+- [x] pcbnew\dialogs\panel_fp_lib_table.cpp
+- [x] pcbnew\dialogs\panel_fp_lib_table.h
+- [x] pcbnew\dialogs\panel_fp_lib_table_base.cpp
+- [x] pcbnew\dialogs\panel_fp_lib_table_base.h
+- [x] pcbnew\dialogs\panel_fp_properties_3d_model.cpp
+- [x] pcbnew\dialogs\panel_fp_properties_3d_model.h
+- [x] pcbnew\dialogs\panel_fp_properties_3d_model_base.cpp
+- [x] pcbnew\dialogs\panel_fp_properties_3d_model_base.h
+- [x] pcbnew\dialogs\panel_fp_user_layer_names.cpp
+- [x] pcbnew\dialogs\panel_fp_user_layer_names.h
+- [x] pcbnew\dialogs\panel_fp_user_layer_names_base.cpp
+- [x] pcbnew\dialogs\panel_fp_user_layer_names_base.h
+- [x] pcbnew\dialogs\panel_pcbnew_action_plugins.cpp
+- [x] pcbnew\dialogs\panel_pcbnew_action_plugins.h
+- [x] pcbnew\dialogs\panel_pcbnew_action_plugins_base.cpp
+- [x] pcbnew\dialogs\panel_pcbnew_action_plugins_base.h
+- [x] pcbnew\dialogs\panel_pcbnew_color_settings.cpp
+- [x] pcbnew\dialogs\panel_pcbnew_color_settings.h
+- [x] pcbnew\dialogs\panel_pcbnew_display_origin.cpp
+- [x] pcbnew\dialogs\panel_pcbnew_display_origin.h
+- [x] pcbnew\dialogs\panel_pcbnew_display_origin_base.cpp
+- [x] pcbnew\dialogs\panel_pcbnew_display_origin_base.h
+- [x] pcbnew\dialogs\panel_rule_area_properties_keepout_base.cpp
+- [x] pcbnew\dialogs\panel_rule_area_properties_keepout_base.h
+- [x] pcbnew\dialogs\panel_rule_area_properties_placement_base.cpp
+- [x] pcbnew\dialogs\panel_rule_area_properties_placement_base.h
+- [x] pcbnew\dialogs\panel_setup_condition_help_1clauses.h
+- [x] pcbnew\dialogs\panel_setup_condition_help_6notes.h
+- [x] pcbnew\dialogs\panel_setup_constraints.cpp
+- [x] pcbnew\dialogs\panel_setup_constraints.h
+- [x] pcbnew\dialogs\panel_setup_constraints_base.cpp
+- [x] pcbnew\dialogs\panel_setup_constraints_base.h
+- [x] pcbnew\dialogs\panel_setup_defaults.cpp
+- [x] pcbnew\dialogs\panel_setup_defaults.h
+- [x] pcbnew\dialogs\panel_setup_defaults_base.cpp
+- [x] pcbnew\dialogs\panel_setup_defaults_base.h
+- [x] pcbnew\dialogs\panel_setup_dimensions.cpp
+- [x] pcbnew\dialogs\panel_setup_dimensions.h
+- [x] pcbnew\dialogs\panel_setup_dimensions_base.cpp
+- [x] pcbnew\dialogs\panel_setup_dimensions_base.h
+- [x] pcbnew\dialogs\panel_setup_formatting.cpp
+- [x] pcbnew\dialogs\panel_setup_formatting.h
+- [x] pcbnew\dialogs\panel_setup_formatting_base.cpp
+- [x] pcbnew\dialogs\panel_setup_formatting_base.h
+- [x] pcbnew\dialogs\panel_setup_layers.cpp
+- [x] pcbnew\dialogs\panel_setup_layers.h
+- [x] pcbnew\dialogs\panel_setup_layers_base.cpp
+- [x] pcbnew\dialogs\panel_setup_layers_base.h
+- [x] pcbnew\dialogs\panel_setup_mask_and_paste.cpp
+- [x] pcbnew\dialogs\panel_setup_mask_and_paste.h
+- [x] pcbnew\dialogs\panel_setup_mask_and_paste_base.cpp
+- [x] pcbnew\dialogs\panel_setup_mask_and_paste_base.h
+- [x] pcbnew\dialogs\panel_setup_rules.cpp
+- [x] pcbnew\dialogs\panel_setup_rules.h
+- [x] pcbnew\dialogs\panel_setup_rules_base.cpp
+- [x] pcbnew\dialogs\panel_setup_rules_base.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_10documentation.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_1clauses.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_2constraints.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_3items.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_4severity_names.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_5examples.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_6notes.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_7properties.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_8expression_functions.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_9more_examples.h
+- [x] pcbnew\dialogs\panel_setup_teardrops.cpp
+- [x] pcbnew\dialogs\panel_setup_teardrops.h
+- [x] pcbnew\dialogs\panel_setup_teardrops_base.cpp
+- [x] pcbnew\dialogs\panel_setup_teardrops_base.h
+- [x] pcbnew\dialogs\panel_setup_text_and_graphics.cpp
+- [x] pcbnew\dialogs\panel_setup_text_and_graphics.h
+- [x] pcbnew\dialogs\panel_setup_text_and_graphics_base.cpp
+- [x] pcbnew\dialogs\panel_setup_text_and_graphics_base.h
+- [x] pcbnew\dialogs\panel_setup_tracks_and_vias.cpp
+- [x] pcbnew\dialogs\panel_setup_tracks_and_vias.h
+- [x] pcbnew\dialogs\panel_setup_tracks_and_vias_base.cpp
+- [x] pcbnew\dialogs\panel_setup_tracks_and_vias_base.h
+- [x] pcbnew\dialogs\panel_setup_tuning_patterns.cpp
+- [x] pcbnew\dialogs\panel_setup_tuning_patterns.h
+- [x] pcbnew\dialogs\panel_setup_tuning_patterns_base.cpp
+- [x] pcbnew\dialogs\panel_setup_tuning_patterns_base.h
+- [x] pcbnew\dialogs\panel_setup_tuning_profiles.cpp
+- [x] pcbnew\dialogs\panel_setup_tuning_profiles.h
+- [x] pcbnew\dialogs\panel_setup_tuning_profiles_base.cpp
+- [x] pcbnew\dialogs\panel_setup_tuning_profiles_base.h
+- [x] pcbnew\dialogs\panel_setup_tuning_profile_info.cpp
+- [x] pcbnew\dialogs\panel_setup_tuning_profile_info.h
+- [x] pcbnew\dialogs\panel_setup_tuning_profile_info_base.cpp
+- [x] pcbnew\dialogs\panel_setup_tuning_profile_info_base.h
+- [x] pcbnew\dialogs\panel_setup_zones.cpp
+- [x] pcbnew\dialogs\panel_setup_zones.h
+- [x] pcbnew\dialogs\panel_setup_zones_base.cpp
+- [x] pcbnew\dialogs\panel_setup_zones_base.h
+- [x] pcbnew\dialogs\panel_setup_zone_hatch_offsets.cpp
+- [x] pcbnew\dialogs\panel_setup_zone_hatch_offsets.h
+- [x] pcbnew\dialogs\panel_setup_zone_hatch_offsets_base.cpp
+- [x] pcbnew\dialogs\panel_setup_zone_hatch_offsets_base.h
+- [x] pcbnew\dialogs\panel_zone_properties.cpp
+- [x] pcbnew\dialogs\panel_zone_properties.h
+- [x] pcbnew\dialogs\panel_zone_properties_base.cpp
+- [x] pcbnew\dialogs\panel_zone_properties_base.h
+- [x] pcbnew\drc\drc_cache_generator.cpp
+- [x] pcbnew\drc\drc_cache_generator.h
+- [x] pcbnew\drc\drc_chain_topology.cpp
+- [x] pcbnew\drc\drc_chain_topology.h
+- [x] pcbnew\drc\drc_creepage_utils.cpp
+- [x] pcbnew\drc\drc_creepage_utils.h
 - [x] pcbnew\drc\drc_engine.cpp
 - [x] pcbnew\drc\drc_engine.h
-- [ ] pcbnew\drc\drc_interactive_courtyard_clearance.cpp
-- [ ] pcbnew\drc\drc_interactive_courtyard_clearance.h
+- [x] pcbnew\drc\drc_interactive_courtyard_clearance.cpp
+- [x] pcbnew\drc\drc_interactive_courtyard_clearance.h
 - [x] pcbnew\drc\drc_item.cpp
 - [x] pcbnew\drc\drc_item.h
-- [ ] pcbnew\drc\drc_length_report.h
-- [ ] pcbnew\drc\drc_report.cpp
-- [ ] pcbnew\drc\drc_report.h
+- [x] pcbnew\drc\drc_length_report.h
+- [x] pcbnew\drc\drc_report.cpp
+- [x] pcbnew\drc\drc_report.h
 - [x] pcbnew\drc\drc_rtree.h
 - [x] pcbnew\drc\drc_rule.cpp
 - [x] pcbnew\drc\drc_rule.h
-- [ ] pcbnew\drc\drc_rule_condition.cpp
-- [ ] pcbnew\drc\drc_rule_condition.h
-- [ ] pcbnew\drc\drc_rule_parser.cpp
-- [ ] pcbnew\drc\drc_rule_parser.h
-- [ ] pcbnew\drc\drc_test_provider.cpp
-- [ ] pcbnew\drc\drc_test_provider.h
-- [ ] pcbnew\drc\drc_test_provider_annular_width.cpp
-- [ ] pcbnew\drc\drc_test_provider_connection_width.cpp
-- [ ] pcbnew\drc\drc_test_provider_connectivity.cpp
-- [ ] pcbnew\drc\drc_test_provider_copper_clearance.cpp
-- [ ] pcbnew\drc\drc_test_provider_courtyard_clearance.cpp
-- [ ] pcbnew\drc\drc_test_provider_creepage.cpp
-- [ ] pcbnew\drc\drc_test_provider_diff_pair_coupling.cpp
-- [ ] pcbnew\drc\drc_test_provider_disallow.cpp
-- [ ] pcbnew\drc\drc_test_provider_edge_clearance.cpp
-- [ ] pcbnew\drc\drc_test_provider_footprint_checks.cpp
-- [ ] pcbnew\drc\drc_test_provider_hole_size.cpp
-- [ ] pcbnew\drc\drc_test_provider_hole_to_hole.cpp
-- [ ] pcbnew\drc\drc_test_provider_library_parity.cpp
-- [ ] pcbnew\drc\drc_test_provider_matched_length.cpp
-- [ ] pcbnew\drc\drc_test_provider_misc.cpp
-- [ ] pcbnew\drc\drc_test_provider_physical_clearance.cpp
-- [ ] pcbnew\drc\drc_test_provider_schematic_parity.cpp
-- [ ] pcbnew\drc\drc_test_provider_silk_clearance.cpp
-- [ ] pcbnew\drc\drc_test_provider_sliver_checker.cpp
-- [ ] pcbnew\drc\drc_test_provider_solder_mask.cpp
-- [ ] pcbnew\drc\drc_test_provider_text_dims.cpp
-- [ ] pcbnew\drc\drc_test_provider_text_mirroring.cpp
-- [ ] pcbnew\drc\drc_test_provider_track_angle.cpp
-- [ ] pcbnew\drc\drc_test_provider_track_segment_length.cpp
-- [ ] pcbnew\drc\drc_test_provider_track_width.cpp
-- [ ] pcbnew\drc\drc_test_provider_via_diameter.cpp
-- [ ] pcbnew\drc\drc_test_provider_zone_connections.cpp
-- [ ] pcbnew\drc\rule_editor\dialog_drc_rule_editor.cpp
-- [ ] pcbnew\drc\rule_editor\dialog_drc_rule_editor.h
-- [ ] pcbnew\drc\rule_editor\drc_re_abs_length_two_constraint_data.h
-- [ ] pcbnew\drc\rule_editor\drc_re_abs_length_two_overlay_panel.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_abs_length_two_overlay_panel.h
-- [ ] pcbnew\drc\rule_editor\drc_re_allowed_orientation_constraint_data.h
-- [ ] pcbnew\drc\rule_editor\drc_re_allowed_orientation_overlay_panel.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_allowed_orientation_overlay_panel.h
-- [ ] pcbnew\drc\rule_editor\drc_re_base_constraint_data.h
-- [ ] pcbnew\drc\rule_editor\drc_re_bitmap_overlay_panel.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_bitmap_overlay_panel.h
-- [ ] pcbnew\drc\rule_editor\drc_re_bool_input_constraint_data.h
-- [ ] pcbnew\drc\rule_editor\drc_re_bool_input_overlay_panel.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_bool_input_overlay_panel.h
-- [ ] pcbnew\drc\rule_editor\drc_re_condition_group_panel.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_condition_group_panel.h
-- [ ] pcbnew\drc\rule_editor\drc_re_condition_row_panel.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_condition_row_panel.h
-- [ ] pcbnew\drc\rule_editor\drc_re_constraint_panel_params.h
-- [ ] pcbnew\drc\rule_editor\drc_re_content_panel_base.h
-- [ ] pcbnew\drc\rule_editor\drc_re_custom_rule_constraint_data.h
-- [ ] pcbnew\drc\rule_editor\drc_re_custom_rule_panel.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_custom_rule_panel.h
-- [ ] pcbnew\drc\rule_editor\drc_re_loaded_rule.h
-- [ ] pcbnew\drc\rule_editor\drc_re_matched_length_diff_pair_overlay_panel.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_matched_length_diff_pair_overlay_panel.h
-- [ ] pcbnew\drc\rule_editor\drc_re_min_txt_ht_th_constraint_data.h
-- [ ] pcbnew\drc\rule_editor\drc_re_min_txt_ht_th_overlay_panel.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_min_txt_ht_th_overlay_panel.h
-- [ ] pcbnew\drc\rule_editor\drc_re_numeric_constraint_types.h
-- [ ] pcbnew\drc\rule_editor\drc_re_numeric_input_constraint_data.h
-- [ ] pcbnew\drc\rule_editor\drc_re_numeric_input_overlay_panel.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_numeric_input_overlay_panel.h
-- [ ] pcbnew\drc\rule_editor\drc_re_object_selector_panel.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_object_selector_panel.h
-- [ ] pcbnew\drc\rule_editor\drc_re_overlay_field.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_overlay_field.h
-- [ ] pcbnew\drc\rule_editor\drc_re_overlay_types.h
-- [ ] pcbnew\drc\rule_editor\drc_re_panel_matcher.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_panel_matcher.h
-- [ ] pcbnew\drc\rule_editor\drc_re_permitted_layers_constraint_data.h
-- [ ] pcbnew\drc\rule_editor\drc_re_permitted_layers_overlay_panel.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_permitted_layers_overlay_panel.h
-- [ ] pcbnew\drc\rule_editor\drc_re_routing_width_constraint_data.h
-- [ ] pcbnew\drc\rule_editor\drc_re_routing_width_overlay_panel.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_routing_width_overlay_panel.h
-- [ ] pcbnew\drc\rule_editor\drc_re_rtg_diff_pair_constraint_data.h
-- [ ] pcbnew\drc\rule_editor\drc_re_rtg_diff_pair_overlay_panel.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_rtg_diff_pair_overlay_panel.h
-- [ ] pcbnew\drc\rule_editor\drc_re_rule_loader.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_rule_loader.h
-- [ ] pcbnew\drc\rule_editor\drc_re_rule_saver.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_rule_saver.h
-- [ ] pcbnew\drc\rule_editor\drc_re_validator_checkbox_list.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_validator_checkbox_list.h
-- [ ] pcbnew\drc\rule_editor\drc_re_validator_combo_ctrl.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_validator_combo_ctrl.h
-- [ ] pcbnew\drc\rule_editor\drc_re_validator_min_max_ctrl.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_validator_min_max_ctrl.h
-- [ ] pcbnew\drc\rule_editor\drc_re_validator_min_preferred_max_ctrl.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_validator_min_preferred_max_ctrl.h
-- [ ] pcbnew\drc\rule_editor\drc_re_validator_numeric_ctrl.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_validator_numeric_ctrl.h
-- [ ] pcbnew\drc\rule_editor\drc_re_vias_under_smd_constraint_data.h
-- [ ] pcbnew\drc\rule_editor\drc_re_vias_under_smd_overlay_panel.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_vias_under_smd_overlay_panel.h
-- [ ] pcbnew\drc\rule_editor\drc_re_via_style_constraint_data.h
-- [ ] pcbnew\drc\rule_editor\drc_re_via_style_overlay_panel.cpp
-- [ ] pcbnew\drc\rule_editor\drc_re_via_style_overlay_panel.h
-- [ ] pcbnew\drc\rule_editor\drc_rule_editor_enums.h
-- [ ] pcbnew\drc\rule_editor\drc_rule_editor_utils.cpp
-- [ ] pcbnew\drc\rule_editor\drc_rule_editor_utils.h
-- [ ] pcbnew\drc\rule_editor\panel_drc_group_header.cpp
-- [ ] pcbnew\drc\rule_editor\panel_drc_group_header.h
-- [ ] pcbnew\drc\rule_editor\panel_drc_group_header_base.cpp
-- [ ] pcbnew\drc\rule_editor\panel_drc_group_header_base.h
-- [ ] pcbnew\drc\rule_editor\panel_drc_rule_editor.cpp
-- [ ] pcbnew\drc\rule_editor\panel_drc_rule_editor.h
-- [ ] pcbnew\drc\rule_editor\panel_drc_rule_editor_base.cpp
-- [ ] pcbnew\drc\rule_editor\panel_drc_rule_editor_base.h
-- [ ] pcbnew\exporters\board_exporter_base.h
-- [ ] pcbnew\exporters\exporter_vrml.cpp
-- [ ] pcbnew\exporters\exporter_vrml.h
-- [ ] pcbnew\exporters\export_d356.cpp
-- [ ] pcbnew\exporters\export_d356.h
-- [ ] pcbnew\exporters\export_footprint_associations.cpp
-- [ ] pcbnew\exporters\export_gencad.cpp
-- [ ] pcbnew\exporters\export_gencad_writer.cpp
-- [ ] pcbnew\exporters\export_gencad_writer.h
-- [ ] pcbnew\exporters\export_hyperlynx.cpp
-- [ ] pcbnew\exporters\export_idf.cpp
-- [ ] pcbnew\exporters\export_vrml.h
-- [ ] pcbnew\exporters\gendrill_excellon_writer.cpp
-- [ ] pcbnew\exporters\gendrill_excellon_writer.h
-- [ ] pcbnew\exporters\gendrill_gerber_writer.cpp
-- [ ] pcbnew\exporters\gendrill_gerber_writer.h
-- [ ] pcbnew\exporters\gendrill_writer_base.cpp
-- [ ] pcbnew\exporters\gendrill_writer_base.h
-- [ ] pcbnew\exporters\gerber_jobfile_writer.cpp
-- [ ] pcbnew\exporters\gerber_jobfile_writer.h
-- [ ] pcbnew\exporters\gerber_placefile_writer.cpp
-- [ ] pcbnew\exporters\gerber_placefile_writer.h
-- [ ] pcbnew\exporters\place_file_exporter.cpp
-- [ ] pcbnew\exporters\place_file_exporter.h
-- [ ] pcbnew\exporters\step\exporter_step.cpp
-- [ ] pcbnew\exporters\step\exporter_step.h
-- [ ] pcbnew\exporters\step\kicad3d_info.cpp
-- [ ] pcbnew\exporters\step\kicad3d_info.h
-- [ ] pcbnew\exporters\step\step_pcb_model.cpp
-- [ ] pcbnew\exporters\step\step_pcb_model.h
-- [ ] pcbnew\exporters\u3d\bit_stream_writer.cpp
-- [ ] pcbnew\exporters\u3d\bit_stream_writer.h
-- [ ] pcbnew\exporters\u3d\constants.cpp
-- [ ] pcbnew\exporters\u3d\constants.h
-- [ ] pcbnew\exporters\u3d\context_manager.cpp
-- [ ] pcbnew\exporters\u3d\context_manager.h
-- [ ] pcbnew\exporters\u3d\data_block.cpp
-- [ ] pcbnew\exporters\u3d\data_block.h
-- [ ] pcbnew\exporters\u3d\writer.cpp
-- [ ] pcbnew\exporters\u3d\writer.h
-- [ ] pcbnew\generators\pcb_tuning_pattern.cpp
-- [ ] pcbnew\generators\pcb_tuning_pattern.h
-- [ ] pcbnew\git\kigit_pcb_merge.cpp
-- [ ] pcbnew\git\kigit_pcb_merge.h
-- [ ] pcbnew\import_gfx\dialog_import_graphics.cpp
-- [ ] pcbnew\import_gfx\dialog_import_graphics.h
-- [ ] pcbnew\import_gfx\dialog_import_graphics_base.cpp
-- [ ] pcbnew\import_gfx\dialog_import_graphics_base.h
-- [ ] pcbnew\import_gfx\graphics_importer_pcbnew.cpp
-- [ ] pcbnew\import_gfx\graphics_importer_pcbnew.h
-- [ ] pcbnew\length_delay_calculation\length_delay_calculation.cpp
-- [ ] pcbnew\length_delay_calculation\length_delay_calculation.h
-- [ ] pcbnew\length_delay_calculation\length_delay_calculation_item.cpp
-- [ ] pcbnew\length_delay_calculation\length_delay_calculation_item.h
-- [ ] pcbnew\length_delay_calculation\tuning_profile_parameters_iface.h
-- [ ] pcbnew\length_delay_calculation\tuning_profile_parameters_user_defined.cpp
-- [ ] pcbnew\length_delay_calculation\tuning_profile_parameters_user_defined.h
-- [ ] pcbnew\microwave\microwave_footprint.cpp
-- [ ] pcbnew\microwave\microwave_inductor.cpp
-- [ ] pcbnew\microwave\microwave_polygon.cpp
-- [ ] pcbnew\microwave\microwave_tool.cpp
-- [ ] pcbnew\microwave\microwave_tool.h
-- [ ] pcbnew\navlib\nl_pcbnew_plugin.cpp
-- [ ] pcbnew\navlib\nl_pcbnew_plugin.h
-- [ ] pcbnew\navlib\nl_pcbnew_plugin_impl.cpp
-- [ ] pcbnew\navlib\nl_pcbnew_plugin_impl.h
-- [ ] pcbnew\netlist_reader\board_netlist_updater.cpp
-- [ ] pcbnew\netlist_reader\board_netlist_updater.h
-- [ ] pcbnew\netlist_reader\kicad_netlist_parser.h
-- [ ] pcbnew\netlist_reader\kicad_netlist_reader.cpp
-- [ ] pcbnew\netlist_reader\legacy_netlist_reader.cpp
-- [ ] pcbnew\netlist_reader\netlist.cpp
-- [ ] pcbnew\netlist_reader\netlist_reader.cpp
-- [ ] pcbnew\netlist_reader\netlist_reader.h
-- [ ] pcbnew\netlist_reader\pcb_component.cpp
-- [ ] pcbnew\netlist_reader\pcb_component.h
-- [ ] pcbnew\netlist_reader\pcb_netlist.cpp
-- [ ] pcbnew\netlist_reader\pcb_netlist.h
-- [ ] pcbnew\pcb_io\pcb_io.cpp
-- [ ] pcbnew\pcb_io\pcb_io.h
-- [ ] pcbnew\pcb_io\pcb_io_mgr.cpp
-- [ ] pcbnew\pcb_io\pcb_io_mgr.h
-- [ ] pcbnew\pcb_io\allegro\allegro_builder.cpp
-- [ ] pcbnew\pcb_io\allegro\allegro_builder.h
-- [ ] pcbnew\pcb_io\allegro\allegro_db_utils.cpp
-- [ ] pcbnew\pcb_io\allegro\allegro_db_utils.h
-- [ ] pcbnew\pcb_io\allegro\pcb_io_allegro.cpp
-- [ ] pcbnew\pcb_io\allegro\pcb_io_allegro.h
-- [ ] pcbnew\pcb_io\allegro\convert\allegro_db.cpp
-- [ ] pcbnew\pcb_io\allegro\convert\allegro_db.h
-- [ ] pcbnew\pcb_io\allegro\convert\allegro_parser.cpp
-- [ ] pcbnew\pcb_io\allegro\convert\allegro_parser.h
-- [ ] pcbnew\pcb_io\allegro\convert\allegro_pcb_structs.h
-- [ ] pcbnew\pcb_io\allegro\convert\allegro_stream.h
-- [ ] pcbnew\pcb_io\altium\altium_parser_pcb.cpp
-- [ ] pcbnew\pcb_io\altium\altium_parser_pcb.h
-- [ ] pcbnew\pcb_io\altium\altium_pcb.cpp
-- [ ] pcbnew\pcb_io\altium\altium_pcb.h
-- [ ] pcbnew\pcb_io\altium\altium_pcb_compound_file.cpp
-- [ ] pcbnew\pcb_io\altium\altium_pcb_compound_file.h
-- [ ] pcbnew\pcb_io\altium\altium_rule_transformer.cpp
-- [ ] pcbnew\pcb_io\altium\altium_rule_transformer.h
-- [ ] pcbnew\pcb_io\altium\pcb_io_altium_circuit_maker.cpp
-- [ ] pcbnew\pcb_io\altium\pcb_io_altium_circuit_maker.h
-- [ ] pcbnew\pcb_io\altium\pcb_io_altium_circuit_studio.cpp
-- [ ] pcbnew\pcb_io\altium\pcb_io_altium_circuit_studio.h
-- [ ] pcbnew\pcb_io\altium\pcb_io_altium_designer.cpp
-- [ ] pcbnew\pcb_io\altium\pcb_io_altium_designer.h
-- [ ] pcbnew\pcb_io\altium\pcb_io_solidworks.cpp
-- [ ] pcbnew\pcb_io\altium\pcb_io_solidworks.h
-- [ ] pcbnew\pcb_io\cadstar\cadstar_pcb_archive_loader.cpp
-- [ ] pcbnew\pcb_io\cadstar\cadstar_pcb_archive_loader.h
-- [ ] pcbnew\pcb_io\cadstar\cadstar_pcb_archive_parser.cpp
-- [ ] pcbnew\pcb_io\cadstar\cadstar_pcb_archive_parser.h
-- [ ] pcbnew\pcb_io\cadstar\pcb_io_cadstar_archive.cpp
-- [ ] pcbnew\pcb_io\cadstar\pcb_io_cadstar_archive.h
-- [ ] pcbnew\pcb_io\common\plugin_common_layer_mapping.h
-- [ ] pcbnew\pcb_io\eagle\pcb_io_eagle.cpp
-- [ ] pcbnew\pcb_io\eagle\pcb_io_eagle.h
-- [ ] pcbnew\pcb_io\easyeda\pcb_io_easyeda_parser.cpp
-- [ ] pcbnew\pcb_io\easyeda\pcb_io_easyeda_parser.h
-- [ ] pcbnew\pcb_io\easyeda\pcb_io_easyeda_plugin.cpp
-- [ ] pcbnew\pcb_io\easyeda\pcb_io_easyeda_plugin.h
-- [ ] pcbnew\pcb_io\easyedapro\pcb_io_easyedapro.cpp
-- [ ] pcbnew\pcb_io\easyedapro\pcb_io_easyedapro.h
-- [ ] pcbnew\pcb_io\easyedapro\pcb_io_easyedapro_parser.cpp
-- [ ] pcbnew\pcb_io\easyedapro\pcb_io_easyedapro_parser.h
-- [ ] pcbnew\pcb_io\fabmaster\import_fabmaster.cpp
-- [ ] pcbnew\pcb_io\fabmaster\import_fabmaster.h
-- [ ] pcbnew\pcb_io\fabmaster\pcb_io_fabmaster.cpp
-- [ ] pcbnew\pcb_io\fabmaster\pcb_io_fabmaster.h
-- [ ] pcbnew\pcb_io\geda\pcb_io_geda.cpp
-- [ ] pcbnew\pcb_io\geda\pcb_io_geda.h
-- [ ] pcbnew\pcb_io\ipc2581\ipc2581_types.h
-- [ ] pcbnew\pcb_io\ipc2581\pcb_io_ipc2581.cpp
-- [ ] pcbnew\pcb_io\ipc2581\pcb_io_ipc2581.h
-- [ ] pcbnew\pcb_io\kicad_legacy\pcb_io_kicad_legacy.cpp
-- [ ] pcbnew\pcb_io\kicad_legacy\pcb_io_kicad_legacy.h
-- [ ] pcbnew\pcb_io\kicad_sexpr\pcb_io_kicad_sexpr.cpp
-- [ ] pcbnew\pcb_io\kicad_sexpr\pcb_io_kicad_sexpr.h
-- [ ] pcbnew\pcb_io\kicad_sexpr\pcb_io_kicad_sexpr_parser.cpp
-- [ ] pcbnew\pcb_io\kicad_sexpr\pcb_io_kicad_sexpr_parser.h
-- [ ] pcbnew\pcb_io\odbpp\odb_attribute.cpp
-- [ ] pcbnew\pcb_io\odbpp\odb_attribute.h
-- [ ] pcbnew\pcb_io\odbpp\odb_component.cpp
-- [ ] pcbnew\pcb_io\odbpp\odb_component.h
-- [ ] pcbnew\pcb_io\odbpp\odb_defines.h
-- [ ] pcbnew\pcb_io\odbpp\odb_eda_data.cpp
-- [ ] pcbnew\pcb_io\odbpp\odb_eda_data.h
-- [ ] pcbnew\pcb_io\odbpp\odb_entity.cpp
-- [ ] pcbnew\pcb_io\odbpp\odb_entity.h
-- [ ] pcbnew\pcb_io\odbpp\odb_feature.cpp
-- [ ] pcbnew\pcb_io\odbpp\odb_feature.h
-- [ ] pcbnew\pcb_io\odbpp\odb_fonts.cpp
-- [ ] pcbnew\pcb_io\odbpp\odb_netlist.cpp
-- [ ] pcbnew\pcb_io\odbpp\odb_netlist.h
-- [ ] pcbnew\pcb_io\odbpp\odb_util.cpp
-- [ ] pcbnew\pcb_io\odbpp\odb_util.h
-- [ ] pcbnew\pcb_io\odbpp\pcb_io_odbpp.cpp
-- [ ] pcbnew\pcb_io\odbpp\pcb_io_odbpp.h
-- [ ] pcbnew\pcb_io\pads\pads_binary_parser.cpp
-- [ ] pcbnew\pcb_io\pads\pads_binary_parser.h
-- [ ] pcbnew\pcb_io\pads\pads_layer_mapper.cpp
-- [ ] pcbnew\pcb_io\pads\pads_layer_mapper.h
-- [ ] pcbnew\pcb_io\pads\pads_parser.cpp
-- [ ] pcbnew\pcb_io\pads\pads_parser.h
-- [ ] pcbnew\pcb_io\pads\pcb_io_pads.cpp
-- [ ] pcbnew\pcb_io\pads\pcb_io_pads.h
-- [ ] pcbnew\pcb_io\pads\pcb_io_pads_binary.cpp
-- [ ] pcbnew\pcb_io\pads\pcb_io_pads_binary.h
-- [ ] pcbnew\pcb_io\pcad\pcad2kicad_common.cpp
-- [ ] pcbnew\pcb_io\pcad\pcad2kicad_common.h
-- [ ] pcbnew\pcb_io\pcad\pcad_arc.cpp
-- [ ] pcbnew\pcb_io\pcad\pcad_arc.h
-- [ ] pcbnew\pcb_io\pcad\pcad_callbacks.h
-- [ ] pcbnew\pcb_io\pcad\pcad_copper_pour.cpp
-- [ ] pcbnew\pcb_io\pcad\pcad_copper_pour.h
-- [ ] pcbnew\pcb_io\pcad\pcad_cutout.cpp
-- [ ] pcbnew\pcb_io\pcad\pcad_cutout.h
-- [ ] pcbnew\pcb_io\pcad\pcad_footprint.cpp
-- [ ] pcbnew\pcb_io\pcad\pcad_footprint.h
-- [ ] pcbnew\pcb_io\pcad\pcad_item_types.h
-- [ ] pcbnew\pcb_io\pcad\pcad_keepout.cpp
-- [ ] pcbnew\pcb_io\pcad\pcad_keepout.h
-- [ ] pcbnew\pcb_io\pcad\pcad_line.cpp
-- [ ] pcbnew\pcb_io\pcad\pcad_line.h
-- [ ] pcbnew\pcb_io\pcad\pcad_nets.cpp
-- [ ] pcbnew\pcb_io\pcad\pcad_nets.h
-- [ ] pcbnew\pcb_io\pcad\pcad_pad.cpp
-- [ ] pcbnew\pcb_io\pcad\pcad_pad.h
-- [ ] pcbnew\pcb_io\pcad\pcad_pad_shape.cpp
-- [ ] pcbnew\pcb_io\pcad\pcad_pad_shape.h
-- [ ] pcbnew\pcb_io\pcad\pcad_pcb.cpp
-- [ ] pcbnew\pcb_io\pcad\pcad_pcb.h
-- [ ] pcbnew\pcb_io\pcad\pcad_pcb_component.cpp
-- [ ] pcbnew\pcb_io\pcad\pcad_pcb_component.h
-- [ ] pcbnew\pcb_io\pcad\pcad_plane.cpp
-- [ ] pcbnew\pcb_io\pcad\pcad_plane.h
-- [ ] pcbnew\pcb_io\pcad\pcad_polygon.cpp
-- [ ] pcbnew\pcb_io\pcad\pcad_polygon.h
-- [ ] pcbnew\pcb_io\pcad\pcad_text.cpp
-- [ ] pcbnew\pcb_io\pcad\pcad_text.h
-- [ ] pcbnew\pcb_io\pcad\pcad_via.cpp
-- [ ] pcbnew\pcb_io\pcad\pcad_via.h
-- [ ] pcbnew\pcb_io\pcad\pcad_via_shape.cpp
-- [ ] pcbnew\pcb_io\pcad\pcad_via_shape.h
-- [ ] pcbnew\pcb_io\pcad\pcb_io_pcad.cpp
-- [ ] pcbnew\pcb_io\pcad\pcb_io_pcad.h
-- [ ] pcbnew\pcb_io\pcad\s_expr_loader.cpp
-- [ ] pcbnew\pcb_io\pcad\s_expr_loader.h
-- [ ] pcbnew\pcb_io\sprint_layout\pcb_io_sprint_layout.cpp
-- [ ] pcbnew\pcb_io\sprint_layout\pcb_io_sprint_layout.h
-- [ ] pcbnew\pcb_io\sprint_layout\sprint_layout_parser.cpp
-- [ ] pcbnew\pcb_io\sprint_layout\sprint_layout_parser.h
-- [ ] pcbnew\ratsnest\ratsnest.cpp
-- [ ] pcbnew\ratsnest\ratsnest_data.cpp
-- [ ] pcbnew\ratsnest\ratsnest_data.h
-- [ ] pcbnew\ratsnest\ratsnest_view_item.cpp
-- [ ] pcbnew\ratsnest\ratsnest_view_item.h
-- [ ] pcbnew\router\pns_algo_base.cpp
-- [ ] pcbnew\router\pns_algo_base.h
-- [ ] pcbnew\router\pns_arc.cpp
-- [ ] pcbnew\router\pns_arc.h
-- [ ] pcbnew\router\pns_component_dragger.cpp
-- [ ] pcbnew\router\pns_component_dragger.h
-- [ ] pcbnew\router\pns_debug_decorator.h
-- [ ] pcbnew\router\pns_diff_pair.cpp
-- [ ] pcbnew\router\pns_diff_pair.h
+- [x] pcbnew\drc\drc_rule_condition.cpp
+- [x] pcbnew\drc\drc_rule_condition.h
+- [x] pcbnew\drc\drc_rule_parser.cpp
+- [x] pcbnew\drc\drc_rule_parser.h
+- [x] pcbnew\drc\drc_test_provider.cpp
+- [x] pcbnew\drc\drc_test_provider.h
+- [x] pcbnew\drc\drc_test_provider_annular_width.cpp
+- [x] pcbnew\drc\drc_test_provider_connection_width.cpp
+- [x] pcbnew\drc\drc_test_provider_connectivity.cpp
+- [x] pcbnew\drc\drc_test_provider_copper_clearance.cpp
+- [x] pcbnew\drc\drc_test_provider_courtyard_clearance.cpp
+- [x] pcbnew\drc\drc_test_provider_creepage.cpp
+- [x] pcbnew\drc\drc_test_provider_diff_pair_coupling.cpp
+- [x] pcbnew\drc\drc_test_provider_disallow.cpp
+- [x] pcbnew\drc\drc_test_provider_edge_clearance.cpp
+- [x] pcbnew\drc\drc_test_provider_footprint_checks.cpp
+- [x] pcbnew\drc\drc_test_provider_hole_size.cpp
+- [x] pcbnew\drc\drc_test_provider_hole_to_hole.cpp
+- [x] pcbnew\drc\drc_test_provider_library_parity.cpp
+- [x] pcbnew\drc\drc_test_provider_matched_length.cpp
+- [x] pcbnew\drc\drc_test_provider_misc.cpp
+- [x] pcbnew\drc\drc_test_provider_physical_clearance.cpp
+- [x] pcbnew\drc\drc_test_provider_schematic_parity.cpp
+- [x] pcbnew\drc\drc_test_provider_silk_clearance.cpp
+- [x] pcbnew\drc\drc_test_provider_sliver_checker.cpp
+- [x] pcbnew\drc\drc_test_provider_solder_mask.cpp
+- [x] pcbnew\drc\drc_test_provider_text_dims.cpp
+- [x] pcbnew\drc\drc_test_provider_text_mirroring.cpp
+- [x] pcbnew\drc\drc_test_provider_track_angle.cpp
+- [x] pcbnew\drc\drc_test_provider_track_segment_length.cpp
+- [x] pcbnew\drc\drc_test_provider_track_width.cpp
+- [x] pcbnew\drc\drc_test_provider_via_diameter.cpp
+- [x] pcbnew\drc\drc_test_provider_zone_connections.cpp
+- [x] pcbnew\drc\rule_editor\dialog_drc_rule_editor.cpp
+- [x] pcbnew\drc\rule_editor\dialog_drc_rule_editor.h
+- [x] pcbnew\drc\rule_editor\drc_re_abs_length_two_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_abs_length_two_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_abs_length_two_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_allowed_orientation_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_allowed_orientation_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_allowed_orientation_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_base_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_bitmap_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_bitmap_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_bool_input_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_bool_input_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_bool_input_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_condition_group_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_condition_group_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_condition_row_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_condition_row_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_constraint_panel_params.h
+- [x] pcbnew\drc\rule_editor\drc_re_content_panel_base.h
+- [x] pcbnew\drc\rule_editor\drc_re_custom_rule_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_custom_rule_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_custom_rule_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_loaded_rule.h
+- [x] pcbnew\drc\rule_editor\drc_re_matched_length_diff_pair_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_matched_length_diff_pair_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_min_txt_ht_th_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_min_txt_ht_th_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_min_txt_ht_th_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_numeric_constraint_types.h
+- [x] pcbnew\drc\rule_editor\drc_re_numeric_input_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_numeric_input_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_numeric_input_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_object_selector_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_object_selector_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_overlay_field.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_overlay_field.h
+- [x] pcbnew\drc\rule_editor\drc_re_overlay_types.h
+- [x] pcbnew\drc\rule_editor\drc_re_panel_matcher.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_panel_matcher.h
+- [x] pcbnew\drc\rule_editor\drc_re_permitted_layers_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_permitted_layers_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_permitted_layers_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_routing_width_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_routing_width_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_routing_width_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_rtg_diff_pair_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_rtg_diff_pair_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_rtg_diff_pair_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_rule_loader.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_rule_loader.h
+- [x] pcbnew\drc\rule_editor\drc_re_rule_saver.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_rule_saver.h
+- [x] pcbnew\drc\rule_editor\drc_re_validator_checkbox_list.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_validator_checkbox_list.h
+- [x] pcbnew\drc\rule_editor\drc_re_validator_combo_ctrl.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_validator_combo_ctrl.h
+- [x] pcbnew\drc\rule_editor\drc_re_validator_min_max_ctrl.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_validator_min_max_ctrl.h
+- [x] pcbnew\drc\rule_editor\drc_re_validator_min_preferred_max_ctrl.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_validator_min_preferred_max_ctrl.h
+- [x] pcbnew\drc\rule_editor\drc_re_validator_numeric_ctrl.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_validator_numeric_ctrl.h
+- [x] pcbnew\drc\rule_editor\drc_re_vias_under_smd_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_vias_under_smd_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_vias_under_smd_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_via_style_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_via_style_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_via_style_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_rule_editor_enums.h
+- [x] pcbnew\drc\rule_editor\drc_rule_editor_utils.cpp
+- [x] pcbnew\drc\rule_editor\drc_rule_editor_utils.h
+- [x] pcbnew\drc\rule_editor\panel_drc_group_header.cpp
+- [x] pcbnew\drc\rule_editor\panel_drc_group_header.h
+- [x] pcbnew\drc\rule_editor\panel_drc_group_header_base.cpp
+- [x] pcbnew\drc\rule_editor\panel_drc_group_header_base.h
+- [x] pcbnew\drc\rule_editor\panel_drc_rule_editor.cpp
+- [x] pcbnew\drc\rule_editor\panel_drc_rule_editor.h
+- [x] pcbnew\drc\rule_editor\panel_drc_rule_editor_base.cpp
+- [x] pcbnew\drc\rule_editor\panel_drc_rule_editor_base.h
+- [x] pcbnew\exporters\board_exporter_base.h
+- [x] pcbnew\exporters\exporter_vrml.cpp
+- [x] pcbnew\exporters\exporter_vrml.h
+- [x] pcbnew\exporters\export_d356.cpp
+- [x] pcbnew\exporters\export_d356.h
+- [x] pcbnew\exporters\export_footprint_associations.cpp
+- [x] pcbnew\exporters\export_gencad.cpp
+- [x] pcbnew\exporters\export_gencad_writer.cpp
+- [x] pcbnew\exporters\export_gencad_writer.h
+- [x] pcbnew\exporters\export_hyperlynx.cpp
+- [x] pcbnew\exporters\export_idf.cpp
+- [x] pcbnew\exporters\export_vrml.h
+- [x] pcbnew\exporters\gendrill_excellon_writer.cpp
+- [x] pcbnew\exporters\gendrill_excellon_writer.h
+- [x] pcbnew\exporters\gendrill_gerber_writer.cpp
+- [x] pcbnew\exporters\gendrill_gerber_writer.h
+- [x] pcbnew\exporters\gendrill_writer_base.cpp
+- [x] pcbnew\exporters\gendrill_writer_base.h
+- [x] pcbnew\exporters\gerber_jobfile_writer.cpp
+- [x] pcbnew\exporters\gerber_jobfile_writer.h
+- [x] pcbnew\exporters\gerber_placefile_writer.cpp
+- [x] pcbnew\exporters\gerber_placefile_writer.h
+- [x] pcbnew\exporters\place_file_exporter.cpp
+- [x] pcbnew\exporters\place_file_exporter.h
+- [x] pcbnew\exporters\step\exporter_step.cpp
+- [x] pcbnew\exporters\step\exporter_step.h
+- [x] pcbnew\exporters\step\kicad3d_info.cpp
+- [x] pcbnew\exporters\step\kicad3d_info.h
+- [x] pcbnew\exporters\step\step_pcb_model.cpp
+- [x] pcbnew\exporters\step\step_pcb_model.h
+- [x] pcbnew\exporters\u3d\bit_stream_writer.cpp
+- [x] pcbnew\exporters\u3d\bit_stream_writer.h
+- [x] pcbnew\exporters\u3d\constants.cpp
+- [x] pcbnew\exporters\u3d\constants.h
+- [x] pcbnew\exporters\u3d\context_manager.cpp
+- [x] pcbnew\exporters\u3d\context_manager.h
+- [x] pcbnew\exporters\u3d\data_block.cpp
+- [x] pcbnew\exporters\u3d\data_block.h
+- [x] pcbnew\exporters\u3d\writer.cpp
+- [x] pcbnew\exporters\u3d\writer.h
+- [x] pcbnew\generators\pcb_tuning_pattern.cpp
+- [x] pcbnew\generators\pcb_tuning_pattern.h
+- [x] pcbnew\git\kigit_pcb_merge.cpp
+- [x] pcbnew\git\kigit_pcb_merge.h
+- [x] pcbnew\import_gfx\dialog_import_graphics.cpp
+- [x] pcbnew\import_gfx\dialog_import_graphics.h
+- [x] pcbnew\import_gfx\dialog_import_graphics_base.cpp
+- [x] pcbnew\import_gfx\dialog_import_graphics_base.h
+- [x] pcbnew\import_gfx\graphics_importer_pcbnew.cpp
+- [x] pcbnew\import_gfx\graphics_importer_pcbnew.h
+- [x] pcbnew\length_delay_calculation\length_delay_calculation.cpp
+- [x] pcbnew\length_delay_calculation\length_delay_calculation.h
+- [x] pcbnew\length_delay_calculation\length_delay_calculation_item.cpp
+- [x] pcbnew\length_delay_calculation\length_delay_calculation_item.h
+- [x] pcbnew\length_delay_calculation\tuning_profile_parameters_iface.h
+- [x] pcbnew\length_delay_calculation\tuning_profile_parameters_user_defined.cpp
+- [x] pcbnew\length_delay_calculation\tuning_profile_parameters_user_defined.h
+- [x] pcbnew\microwave\microwave_footprint.cpp
+- [x] pcbnew\microwave\microwave_inductor.cpp
+- [x] pcbnew\microwave\microwave_polygon.cpp
+- [x] pcbnew\microwave\microwave_tool.cpp
+- [x] pcbnew\microwave\microwave_tool.h
+- [x] pcbnew\navlib\nl_pcbnew_plugin.cpp
+- [x] pcbnew\navlib\nl_pcbnew_plugin.h
+- [x] pcbnew\navlib\nl_pcbnew_plugin_impl.cpp
+- [x] pcbnew\navlib\nl_pcbnew_plugin_impl.h
+- [x] pcbnew\netlist_reader\board_netlist_updater.cpp
+- [x] pcbnew\netlist_reader\board_netlist_updater.h
+- [x] pcbnew\netlist_reader\kicad_netlist_parser.h
+- [x] pcbnew\netlist_reader\kicad_netlist_reader.cpp
+- [x] pcbnew\netlist_reader\legacy_netlist_reader.cpp
+- [x] pcbnew\netlist_reader\netlist.cpp
+- [x] pcbnew\netlist_reader\netlist_reader.cpp
+- [x] pcbnew\netlist_reader\netlist_reader.h
+- [x] pcbnew\netlist_reader\pcb_component.cpp
+- [x] pcbnew\netlist_reader\pcb_component.h
+- [x] pcbnew\netlist_reader\pcb_netlist.cpp
+- [x] pcbnew\netlist_reader\pcb_netlist.h
+- [x] pcbnew\pcb_io\pcb_io.cpp
+- [x] pcbnew\pcb_io\pcb_io.h
+- [x] pcbnew\pcb_io\pcb_io_mgr.cpp
+- [x] pcbnew\pcb_io\pcb_io_mgr.h
+- [x] pcbnew\pcb_io\allegro\allegro_builder.cpp
+- [x] pcbnew\pcb_io\allegro\allegro_builder.h
+- [x] pcbnew\pcb_io\allegro\allegro_db_utils.cpp
+- [x] pcbnew\pcb_io\allegro\allegro_db_utils.h
+- [x] pcbnew\pcb_io\allegro\pcb_io_allegro.cpp
+- [x] pcbnew\pcb_io\allegro\pcb_io_allegro.h
+- [x] pcbnew\pcb_io\allegro\convert\allegro_db.cpp
+- [x] pcbnew\pcb_io\allegro\convert\allegro_db.h
+- [x] pcbnew\pcb_io\allegro\convert\allegro_parser.cpp
+- [x] pcbnew\pcb_io\allegro\convert\allegro_parser.h
+- [x] pcbnew\pcb_io\allegro\convert\allegro_pcb_structs.h
+- [x] pcbnew\pcb_io\allegro\convert\allegro_stream.h
+- [x] pcbnew\pcb_io\altium\altium_parser_pcb.cpp
+- [x] pcbnew\pcb_io\altium\altium_parser_pcb.h
+- [x] pcbnew\pcb_io\altium\altium_pcb.cpp
+- [x] pcbnew\pcb_io\altium\altium_pcb.h
+- [x] pcbnew\pcb_io\altium\altium_pcb_compound_file.cpp
+- [x] pcbnew\pcb_io\altium\altium_pcb_compound_file.h
+- [x] pcbnew\pcb_io\altium\altium_rule_transformer.cpp
+- [x] pcbnew\pcb_io\altium\altium_rule_transformer.h
+- [x] pcbnew\pcb_io\altium\pcb_io_altium_circuit_maker.cpp
+- [x] pcbnew\pcb_io\altium\pcb_io_altium_circuit_maker.h
+- [x] pcbnew\pcb_io\altium\pcb_io_altium_circuit_studio.cpp
+- [x] pcbnew\pcb_io\altium\pcb_io_altium_circuit_studio.h
+- [x] pcbnew\pcb_io\altium\pcb_io_altium_designer.cpp
+- [x] pcbnew\pcb_io\altium\pcb_io_altium_designer.h
+- [x] pcbnew\pcb_io\altium\pcb_io_solidworks.cpp
+- [x] pcbnew\pcb_io\altium\pcb_io_solidworks.h
+- [x] pcbnew\pcb_io\cadstar\cadstar_pcb_archive_loader.cpp
+- [x] pcbnew\pcb_io\cadstar\cadstar_pcb_archive_loader.h
+- [x] pcbnew\pcb_io\cadstar\cadstar_pcb_archive_parser.cpp
+- [x] pcbnew\pcb_io\cadstar\cadstar_pcb_archive_parser.h
+- [x] pcbnew\pcb_io\cadstar\pcb_io_cadstar_archive.cpp
+- [x] pcbnew\pcb_io\cadstar\pcb_io_cadstar_archive.h
+- [x] pcbnew\pcb_io\common\plugin_common_layer_mapping.h
+- [x] pcbnew\pcb_io\eagle\pcb_io_eagle.cpp
+- [x] pcbnew\pcb_io\eagle\pcb_io_eagle.h
+- [x] pcbnew\pcb_io\easyeda\pcb_io_easyeda_parser.cpp
+- [x] pcbnew\pcb_io\easyeda\pcb_io_easyeda_parser.h
+- [x] pcbnew\pcb_io\easyeda\pcb_io_easyeda_plugin.cpp
+- [x] pcbnew\pcb_io\easyeda\pcb_io_easyeda_plugin.h
+- [x] pcbnew\pcb_io\easyedapro\pcb_io_easyedapro.cpp
+- [x] pcbnew\pcb_io\easyedapro\pcb_io_easyedapro.h
+- [x] pcbnew\pcb_io\easyedapro\pcb_io_easyedapro_parser.cpp
+- [x] pcbnew\pcb_io\easyedapro\pcb_io_easyedapro_parser.h
+- [x] pcbnew\pcb_io\fabmaster\import_fabmaster.cpp
+- [x] pcbnew\pcb_io\fabmaster\import_fabmaster.h
+- [x] pcbnew\pcb_io\fabmaster\pcb_io_fabmaster.cpp
+- [x] pcbnew\pcb_io\fabmaster\pcb_io_fabmaster.h
+- [x] pcbnew\pcb_io\geda\pcb_io_geda.cpp
+- [x] pcbnew\pcb_io\geda\pcb_io_geda.h
+- [x] pcbnew\pcb_io\ipc2581\ipc2581_types.h
+- [x] pcbnew\pcb_io\ipc2581\pcb_io_ipc2581.cpp
+- [x] pcbnew\pcb_io\ipc2581\pcb_io_ipc2581.h
+- [x] pcbnew\pcb_io\kicad_legacy\pcb_io_kicad_legacy.cpp
+- [x] pcbnew\pcb_io\kicad_legacy\pcb_io_kicad_legacy.h
+- [x] pcbnew\pcb_io\kicad_sexpr\pcb_io_kicad_sexpr.cpp
+- [x] pcbnew\pcb_io\kicad_sexpr\pcb_io_kicad_sexpr.h
+- [x] pcbnew\pcb_io\kicad_sexpr\pcb_io_kicad_sexpr_parser.cpp
+- [x] pcbnew\pcb_io\kicad_sexpr\pcb_io_kicad_sexpr_parser.h
+- [x] pcbnew\pcb_io\odbpp\odb_attribute.cpp
+- [x] pcbnew\pcb_io\odbpp\odb_attribute.h
+- [x] pcbnew\pcb_io\odbpp\odb_component.cpp
+- [x] pcbnew\pcb_io\odbpp\odb_component.h
+- [x] pcbnew\pcb_io\odbpp\odb_defines.h
+- [x] pcbnew\pcb_io\odbpp\odb_eda_data.cpp
+- [x] pcbnew\pcb_io\odbpp\odb_eda_data.h
+- [x] pcbnew\pcb_io\odbpp\odb_entity.cpp
+- [x] pcbnew\pcb_io\odbpp\odb_entity.h
+- [x] pcbnew\pcb_io\odbpp\odb_feature.cpp
+- [x] pcbnew\pcb_io\odbpp\odb_feature.h
+- [x] pcbnew\pcb_io\odbpp\odb_fonts.cpp
+- [x] pcbnew\pcb_io\odbpp\odb_netlist.cpp
+- [x] pcbnew\pcb_io\odbpp\odb_netlist.h
+- [x] pcbnew\pcb_io\odbpp\odb_util.cpp
+- [x] pcbnew\pcb_io\odbpp\odb_util.h
+- [x] pcbnew\pcb_io\odbpp\pcb_io_odbpp.cpp
+- [x] pcbnew\pcb_io\odbpp\pcb_io_odbpp.h
+- [x] pcbnew\pcb_io\pads\pads_binary_parser.cpp
+- [x] pcbnew\pcb_io\pads\pads_binary_parser.h
+- [x] pcbnew\pcb_io\pads\pads_layer_mapper.cpp
+- [x] pcbnew\pcb_io\pads\pads_layer_mapper.h
+- [x] pcbnew\pcb_io\pads\pads_parser.cpp
+- [x] pcbnew\pcb_io\pads\pads_parser.h
+- [x] pcbnew\pcb_io\pads\pcb_io_pads.cpp
+- [x] pcbnew\pcb_io\pads\pcb_io_pads.h
+- [x] pcbnew\pcb_io\pads\pcb_io_pads_binary.cpp
+- [x] pcbnew\pcb_io\pads\pcb_io_pads_binary.h
+- [x] pcbnew\pcb_io\pcad\pcad2kicad_common.cpp
+- [x] pcbnew\pcb_io\pcad\pcad2kicad_common.h
+- [x] pcbnew\pcb_io\pcad\pcad_arc.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_arc.h
+- [x] pcbnew\pcb_io\pcad\pcad_callbacks.h
+- [x] pcbnew\pcb_io\pcad\pcad_copper_pour.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_copper_pour.h
+- [x] pcbnew\pcb_io\pcad\pcad_cutout.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_cutout.h
+- [x] pcbnew\pcb_io\pcad\pcad_footprint.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_footprint.h
+- [x] pcbnew\pcb_io\pcad\pcad_item_types.h
+- [x] pcbnew\pcb_io\pcad\pcad_keepout.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_keepout.h
+- [x] pcbnew\pcb_io\pcad\pcad_line.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_line.h
+- [x] pcbnew\pcb_io\pcad\pcad_nets.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_nets.h
+- [x] pcbnew\pcb_io\pcad\pcad_pad.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_pad.h
+- [x] pcbnew\pcb_io\pcad\pcad_pad_shape.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_pad_shape.h
+- [x] pcbnew\pcb_io\pcad\pcad_pcb.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_pcb.h
+- [x] pcbnew\pcb_io\pcad\pcad_pcb_component.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_pcb_component.h
+- [x] pcbnew\pcb_io\pcad\pcad_plane.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_plane.h
+- [x] pcbnew\pcb_io\pcad\pcad_polygon.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_polygon.h
+- [x] pcbnew\pcb_io\pcad\pcad_text.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_text.h
+- [x] pcbnew\pcb_io\pcad\pcad_via.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_via.h
+- [x] pcbnew\pcb_io\pcad\pcad_via_shape.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_via_shape.h
+- [x] pcbnew\pcb_io\pcad\pcb_io_pcad.cpp
+- [x] pcbnew\pcb_io\pcad\pcb_io_pcad.h
+- [x] pcbnew\pcb_io\pcad\s_expr_loader.cpp
+- [x] pcbnew\pcb_io\pcad\s_expr_loader.h
+- [x] pcbnew\pcb_io\sprint_layout\pcb_io_sprint_layout.cpp
+- [x] pcbnew\pcb_io\sprint_layout\pcb_io_sprint_layout.h
+- [x] pcbnew\pcb_io\sprint_layout\sprint_layout_parser.cpp
+- [x] pcbnew\pcb_io\sprint_layout\sprint_layout_parser.h
+- [x] pcbnew\ratsnest\ratsnest.cpp
+- [x] pcbnew\ratsnest\ratsnest_data.cpp
+- [x] pcbnew\ratsnest\ratsnest_data.h
+- [x] pcbnew\ratsnest\ratsnest_view_item.cpp
+- [x] pcbnew\ratsnest\ratsnest_view_item.h
+- [x] pcbnew\router\pns_algo_base.cpp
+- [x] pcbnew\router\pns_algo_base.h
+- [x] pcbnew\router\pns_arc.cpp
+- [x] pcbnew\router\pns_arc.h
+- [x] pcbnew\router\pns_component_dragger.cpp
+- [x] pcbnew\router\pns_component_dragger.h
+- [x] pcbnew\router\pns_debug_decorator.h
+- [x] pcbnew\router\pns_diff_pair.cpp
+- [x] pcbnew\router\pns_diff_pair.h
 - [x] pcbnew\router\pns_diff_pair_placer.cpp
 - [x] pcbnew\router\pns_diff_pair_placer.h
-- [ ] pcbnew\router\pns_dp_meander_placer.cpp
-- [ ] pcbnew\router\pns_dp_meander_placer.h
-- [ ] pcbnew\router\pns_dragger.cpp
-- [ ] pcbnew\router\pns_dragger.h
-- [ ] pcbnew\router\pns_drag_algo.h
-- [ ] pcbnew\router\pns_hole.cpp
-- [ ] pcbnew\router\pns_hole.h
-- [ ] pcbnew\router\pns_index.cpp
-- [ ] pcbnew\router\pns_index.h
-- [ ] pcbnew\router\pns_item.cpp
-- [ ] pcbnew\router\pns_item.h
-- [ ] pcbnew\router\pns_itemset.cpp
-- [ ] pcbnew\router\pns_itemset.h
-- [ ] pcbnew\router\pns_joint.h
+- [x] pcbnew\router\pns_dp_meander_placer.cpp
+- [x] pcbnew\router\pns_dp_meander_placer.h
+- [x] pcbnew\router\pns_dragger.cpp
+- [x] pcbnew\router\pns_dragger.h
+- [x] pcbnew\router\pns_drag_algo.h
+- [x] pcbnew\router\pns_hole.cpp
+- [x] pcbnew\router\pns_hole.h
+- [x] pcbnew\router\pns_index.cpp
+- [x] pcbnew\router\pns_index.h
+- [x] pcbnew\router\pns_item.cpp
+- [x] pcbnew\router\pns_item.h
+- [x] pcbnew\router\pns_itemset.cpp
+- [x] pcbnew\router\pns_itemset.h
+- [x] pcbnew\router\pns_joint.h
 - [x] pcbnew\router\pns_kicad_iface.cpp
 - [x] pcbnew\router\pns_kicad_iface.h
-- [ ] pcbnew\router\pns_layerset.h
-- [ ] pcbnew\router\pns_line.cpp
-- [ ] pcbnew\router\pns_line.h
+- [x] pcbnew\router\pns_layerset.h
+- [x] pcbnew\router\pns_line.cpp
+- [x] pcbnew\router\pns_line.h
 - [x] pcbnew\router\pns_line_placer.cpp
 - [x] pcbnew\router\pns_line_placer.h
-- [ ] pcbnew\router\pns_linked_item.h
-- [ ] pcbnew\router\pns_link_holder.h
-- [ ] pcbnew\router\pns_logger.cpp
-- [ ] pcbnew\router\pns_logger.h
-- [ ] pcbnew\router\pns_meander.cpp
-- [ ] pcbnew\router\pns_meander.h
-- [ ] pcbnew\router\pns_meander_placer.cpp
-- [ ] pcbnew\router\pns_meander_placer.h
-- [ ] pcbnew\router\pns_meander_placer_base.cpp
-- [ ] pcbnew\router\pns_meander_placer_base.h
-- [ ] pcbnew\router\pns_meander_skew_placer.cpp
-- [ ] pcbnew\router\pns_meander_skew_placer.h
-- [ ] pcbnew\router\pns_mouse_trail_tracer.cpp
-- [ ] pcbnew\router\pns_mouse_trail_tracer.h
-- [ ] pcbnew\router\pns_multi_dragger.cpp
-- [ ] pcbnew\router\pns_multi_dragger.h
+- [x] pcbnew\router\pns_linked_item.h
+- [x] pcbnew\router\pns_link_holder.h
+- [x] pcbnew\router\pns_logger.cpp
+- [x] pcbnew\router\pns_logger.h
+- [x] pcbnew\router\pns_meander.cpp
+- [x] pcbnew\router\pns_meander.h
+- [x] pcbnew\router\pns_meander_placer.cpp
+- [x] pcbnew\router\pns_meander_placer.h
+- [x] pcbnew\router\pns_meander_placer_base.cpp
+- [x] pcbnew\router\pns_meander_placer_base.h
+- [x] pcbnew\router\pns_meander_skew_placer.cpp
+- [x] pcbnew\router\pns_meander_skew_placer.h
+- [x] pcbnew\router\pns_mouse_trail_tracer.cpp
+- [x] pcbnew\router\pns_mouse_trail_tracer.h
+- [x] pcbnew\router\pns_multi_dragger.cpp
+- [x] pcbnew\router\pns_multi_dragger.h
 - [x] pcbnew\router\pns_node.cpp
 - [x] pcbnew\router\pns_node.h
 - [x] pcbnew\router\pns_optimizer.cpp
 - [x] pcbnew\router\pns_optimizer.h
-- [ ] pcbnew\router\pns_placement_algo.h
+- [x] pcbnew\router\pns_placement_algo.h
 - [x] pcbnew\router\pns_router.cpp
 - [x] pcbnew\router\pns_router.h
-- [ ] pcbnew\router\pns_routing_settings.cpp
-- [ ] pcbnew\router\pns_routing_settings.h
-- [ ] pcbnew\router\pns_segment.h
+- [x] pcbnew\router\pns_routing_settings.cpp
+- [x] pcbnew\router\pns_routing_settings.h
+- [x] pcbnew\router\pns_segment.h
 - [x] pcbnew\router\pns_shove.cpp
 - [x] pcbnew\router\pns_shove.h
-- [ ] pcbnew\router\pns_sizes_settings.cpp
-- [ ] pcbnew\router\pns_sizes_settings.h
-- [ ] pcbnew\router\pns_solid.cpp
-- [ ] pcbnew\router\pns_solid.h
-- [ ] pcbnew\router\pns_tool_base.cpp
-- [ ] pcbnew\router\pns_tool_base.h
-- [ ] pcbnew\router\pns_topology.cpp
-- [ ] pcbnew\router\pns_topology.h
-- [ ] pcbnew\router\pns_utils.cpp
-- [ ] pcbnew\router\pns_utils.h
-- [ ] pcbnew\router\pns_via.cpp
-- [ ] pcbnew\router\pns_via.h
+- [x] pcbnew\router\pns_sizes_settings.cpp
+- [x] pcbnew\router\pns_sizes_settings.h
+- [x] pcbnew\router\pns_solid.cpp
+- [x] pcbnew\router\pns_solid.h
+- [x] pcbnew\router\pns_tool_base.cpp
+- [x] pcbnew\router\pns_tool_base.h
+- [x] pcbnew\router\pns_topology.cpp
+- [x] pcbnew\router\pns_topology.h
+- [x] pcbnew\router\pns_utils.cpp
+- [x] pcbnew\router\pns_utils.h
+- [x] pcbnew\router\pns_via.cpp
+- [x] pcbnew\router\pns_via.h
 - [x] pcbnew\router\pns_walkaround.cpp
 - [x] pcbnew\router\pns_walkaround.h
-- [ ] pcbnew\router\range.h
-- [ ] pcbnew\router\ranged_num.h
-- [ ] pcbnew\router\router_preview_item.cpp
-- [ ] pcbnew\router\router_preview_item.h
-- [ ] pcbnew\router\router_status_view_item.cpp
-- [ ] pcbnew\router\router_status_view_item.h
-- [ ] pcbnew\router\router_tool.cpp
-- [ ] pcbnew\router\router_tool.h
-- [ ] pcbnew\router\time_limit.cpp
-- [ ] pcbnew\router\time_limit.h
-- [ ] pcbnew\specctra_import_export\specctra.cpp
-- [ ] pcbnew\specctra_import_export\specctra.h
-- [ ] pcbnew\specctra_import_export\specctra_export.cpp
-- [ ] pcbnew\specctra_import_export\specctra_import.cpp
-- [ ] pcbnew\specctra_import_export\specctra_test.cpp
-- [ ] pcbnew\teardrop\teardrop.cpp
-- [ ] pcbnew\teardrop\teardrop.h
-- [ ] pcbnew\teardrop\teardrop_parameters.cpp
-- [ ] pcbnew\teardrop\teardrop_parameters.h
-- [ ] pcbnew\teardrop\teardrop_types.h
-- [ ] pcbnew\teardrop\teardrop_utils.cpp
-- [ ] pcbnew\tools\align_distribute_tool.cpp
-- [ ] pcbnew\tools\align_distribute_tool.h
-- [ ] pcbnew\tools\array_tool.cpp
-- [ ] pcbnew\tools\array_tool.h
+- [x] pcbnew\router\range.h
+- [x] pcbnew\router\ranged_num.h
+- [x] pcbnew\router\router_preview_item.cpp
+- [x] pcbnew\router\router_preview_item.h
+- [x] pcbnew\router\router_status_view_item.cpp
+- [x] pcbnew\router\router_status_view_item.h
+- [x] pcbnew\router\router_tool.cpp
+- [x] pcbnew\router\router_tool.h
+- [x] pcbnew\router\time_limit.cpp
+- [x] pcbnew\router\time_limit.h
+- [x] pcbnew\specctra_import_export\specctra.cpp
+- [x] pcbnew\specctra_import_export\specctra.h
+- [x] pcbnew\specctra_import_export\specctra_export.cpp
+- [x] pcbnew\specctra_import_export\specctra_import.cpp
+- [x] pcbnew\specctra_import_export\specctra_test.cpp
+- [x] pcbnew\teardrop\teardrop.cpp
+- [x] pcbnew\teardrop\teardrop.h
+- [x] pcbnew\teardrop\teardrop_parameters.cpp
+- [x] pcbnew\teardrop\teardrop_parameters.h
+- [x] pcbnew\teardrop\teardrop_types.h
+- [x] pcbnew\teardrop\teardrop_utils.cpp
+- [x] pcbnew\tools\align_distribute_tool.cpp
+- [x] pcbnew\tools\align_distribute_tool.h
+- [x] pcbnew\tools\array_tool.cpp
+- [x] pcbnew\tools\array_tool.h
 - [x] pcbnew\tools\board_editor_control.cpp
 - [x] pcbnew\tools\board_editor_control.h
-- [ ] pcbnew\tools\board_inspection_tool.cpp
-- [ ] pcbnew\tools\board_inspection_tool.h
-- [ ] pcbnew\tools\board_reannotate_tool.cpp
-- [ ] pcbnew\tools\board_reannotate_tool.h
-- [ ] pcbnew\tools\convert_tool.cpp
-- [ ] pcbnew\tools\convert_tool.h
+- [x] pcbnew\tools\board_inspection_tool.cpp
+- [x] pcbnew\tools\board_inspection_tool.h
+- [x] pcbnew\tools\board_reannotate_tool.cpp
+- [x] pcbnew\tools\board_reannotate_tool.h
+- [x] pcbnew\tools\convert_tool.cpp
+- [x] pcbnew\tools\convert_tool.h
 - [x] pcbnew\tools\drawing_tool.cpp
 - [x] pcbnew\tools\drawing_tool.h
-- [ ] pcbnew\tools\drc_rule_editor_tool.cpp
-- [ ] pcbnew\tools\drc_rule_editor_tool.h
+- [x] pcbnew\tools\drc_rule_editor_tool.cpp
+- [x] pcbnew\tools\drc_rule_editor_tool.h
 - [x] pcbnew\tools\drc_tool.cpp
 - [x] pcbnew\tools\drc_tool.h
 - [x] pcbnew\tools\edit_tool.cpp
 - [x] pcbnew\tools\edit_tool.h
 - [x] pcbnew\tools\edit_tool_move_fct.cpp
-- [ ] pcbnew\tools\footprint_chooser_selection_tool.cpp
-- [ ] pcbnew\tools\footprint_chooser_selection_tool.h
-- [ ] pcbnew\tools\footprint_editor_control.cpp
-- [ ] pcbnew\tools\footprint_editor_control.h
-- [ ] pcbnew\tools\footprint_wizard_tools.cpp
-- [ ] pcbnew\tools\footprint_wizard_tools.h
-- [ ] pcbnew\tools\generator_tool.cpp
-- [ ] pcbnew\tools\generator_tool.h
-- [ ] pcbnew\tools\generator_tool_pns_proxy.cpp
-- [ ] pcbnew\tools\generator_tool_pns_proxy.h
-- [ ] pcbnew\tools\global_edit_tool.cpp
-- [ ] pcbnew\tools\global_edit_tool.h
-- [ ] pcbnew\tools\item_modification_routine.cpp
-- [ ] pcbnew\tools\item_modification_routine.h
-- [ ] pcbnew\tools\multichannel_tool.cpp
-- [ ] pcbnew\tools\multichannel_tool.h
-- [ ] pcbnew\tools\pad_tool.cpp
-- [ ] pcbnew\tools\pad_tool.h
+- [x] pcbnew\tools\footprint_chooser_selection_tool.cpp
+- [x] pcbnew\tools\footprint_chooser_selection_tool.h
+- [x] pcbnew\tools\footprint_editor_control.cpp
+- [x] pcbnew\tools\footprint_editor_control.h
+- [x] pcbnew\tools\footprint_wizard_tools.cpp
+- [x] pcbnew\tools\footprint_wizard_tools.h
+- [x] pcbnew\tools\generator_tool.cpp
+- [x] pcbnew\tools\generator_tool.h
+- [x] pcbnew\tools\generator_tool_pns_proxy.cpp
+- [x] pcbnew\tools\generator_tool_pns_proxy.h
+- [x] pcbnew\tools\global_edit_tool.cpp
+- [x] pcbnew\tools\global_edit_tool.h
+- [x] pcbnew\tools\item_modification_routine.cpp
+- [x] pcbnew\tools\item_modification_routine.h
+- [x] pcbnew\tools\multichannel_tool.cpp
+- [x] pcbnew\tools\multichannel_tool.h
+- [x] pcbnew\tools\pad_tool.cpp
+- [x] pcbnew\tools\pad_tool.h
 - [x] pcbnew\tools\pcb_actions.cpp
 - [x] pcbnew\tools\pcb_actions.h
-- [ ] pcbnew\tools\pcb_control.cpp
-- [ ] pcbnew\tools\pcb_control.h
-- [ ] pcbnew\tools\pcb_design_block_control.cpp
-- [ ] pcbnew\tools\pcb_design_block_control.h
-- [ ] pcbnew\tools\pcb_editor_conditions.cpp
-- [ ] pcbnew\tools\pcb_editor_conditions.h
-- [ ] pcbnew\tools\pcb_edit_table_tool.cpp
-- [ ] pcbnew\tools\pcb_edit_table_tool.h
-- [ ] pcbnew\tools\pcb_grid_helper.cpp
-- [ ] pcbnew\tools\pcb_grid_helper.h
-- [ ] pcbnew\tools\pcb_group_tool.cpp
-- [ ] pcbnew\tools\pcb_group_tool.h
-- [ ] pcbnew\tools\pcb_picker_tool.cpp
-- [ ] pcbnew\tools\pcb_picker_tool.h
-- [ ] pcbnew\tools\pcb_point_editor.cpp
-- [ ] pcbnew\tools\pcb_point_editor.h
-- [ ] pcbnew\tools\pcb_selection.cpp
-- [ ] pcbnew\tools\pcb_selection.h
-- [ ] pcbnew\tools\pcb_selection_conditions.cpp
-- [ ] pcbnew\tools\pcb_selection_conditions.h
+- [x] pcbnew\tools\pcb_control.cpp
+- [x] pcbnew\tools\pcb_control.h
+- [x] pcbnew\tools\pcb_design_block_control.cpp
+- [x] pcbnew\tools\pcb_design_block_control.h
+- [x] pcbnew\tools\pcb_editor_conditions.cpp
+- [x] pcbnew\tools\pcb_editor_conditions.h
+- [x] pcbnew\tools\pcb_edit_table_tool.cpp
+- [x] pcbnew\tools\pcb_edit_table_tool.h
+- [x] pcbnew\tools\pcb_grid_helper.cpp
+- [x] pcbnew\tools\pcb_grid_helper.h
+- [x] pcbnew\tools\pcb_group_tool.cpp
+- [x] pcbnew\tools\pcb_group_tool.h
+- [x] pcbnew\tools\pcb_picker_tool.cpp
+- [x] pcbnew\tools\pcb_picker_tool.h
+- [x] pcbnew\tools\pcb_point_editor.cpp
+- [x] pcbnew\tools\pcb_point_editor.h
+- [x] pcbnew\tools\pcb_selection.cpp
+- [x] pcbnew\tools\pcb_selection.h
+- [x] pcbnew\tools\pcb_selection_conditions.cpp
+- [x] pcbnew\tools\pcb_selection_conditions.h
 - [x] pcbnew\tools\pcb_selection_tool.cpp
 - [x] pcbnew\tools\pcb_selection_tool.h
-- [ ] pcbnew\tools\pcb_tool_base.cpp
-- [ ] pcbnew\tools\pcb_tool_base.h
-- [ ] pcbnew\tools\pcb_tool_utils.cpp
-- [ ] pcbnew\tools\pcb_tool_utils.h
-- [ ] pcbnew\tools\pcb_viewer_tools.cpp
-- [ ] pcbnew\tools\pcb_viewer_tools.h
-- [ ] pcbnew\tools\position_relative_tool.cpp
-- [ ] pcbnew\tools\position_relative_tool.h
-- [ ] pcbnew\tools\tool_event_utils.cpp
-- [ ] pcbnew\tools\tool_event_utils.h
-- [ ] pcbnew\tools\zone_create_helper.cpp
-- [ ] pcbnew\tools\zone_create_helper.h
-- [ ] pcbnew\tools\zone_filler_tool.cpp
-- [ ] pcbnew\tools\zone_filler_tool.h
+- [x] pcbnew\tools\pcb_tool_base.cpp
+- [x] pcbnew\tools\pcb_tool_base.h
+- [x] pcbnew\tools\pcb_tool_utils.cpp
+- [x] pcbnew\tools\pcb_tool_utils.h
+- [x] pcbnew\tools\pcb_viewer_tools.cpp
+- [x] pcbnew\tools\pcb_viewer_tools.h
+- [x] pcbnew\tools\position_relative_tool.cpp
+- [x] pcbnew\tools\position_relative_tool.h
+- [x] pcbnew\tools\tool_event_utils.cpp
+- [x] pcbnew\tools\tool_event_utils.h
+- [x] pcbnew\tools\zone_create_helper.cpp
+- [x] pcbnew\tools\zone_create_helper.h
+- [x] pcbnew\tools\zone_filler_tool.cpp
+- [x] pcbnew\tools\zone_filler_tool.h
 - [ ] pcbnew\widgets\appearance_controls.cpp
 - [ ] pcbnew\widgets\appearance_controls.h
 - [ ] pcbnew\widgets\appearance_controls_base.cpp

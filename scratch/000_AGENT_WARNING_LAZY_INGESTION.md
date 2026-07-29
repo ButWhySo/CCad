@@ -11,7 +11,7 @@ The user has explicitly forbidden this lazy, script-based shortcut. "Ingesting" 
 When instructed to ingest KiCad files, you must:
 1. Process small batches (10-15 files).
 2. Actually **read** the whole files at the AI/LLM level (e.g. using `view_file` or similar).
-3. **Analyze** their structure, purpose, and KiCad-specific logic.
+3. **Analyze** their structure, purpose, and KiCad-specific logic, do not skip any file, not matter how useless it may seem or even if it may not be related to our scope, but process it.
 4. **Create new markdown files in `F:\CCad\scratch`** that properly summarize what the files do, how they work, and their CCad analogs.
 5. Only tick off files in `kicad_exploration_tasks.md` once they have an accompanying detailed summary in the `scratch` directory.
 
