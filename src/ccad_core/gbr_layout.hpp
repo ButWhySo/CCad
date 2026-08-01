@@ -11,13 +11,13 @@ class GbrLayout {
 public:
     GbrLayout() = default;
 
-    void addGraphic(const Graphic& graphic) {
+    void addGraphic(const SchGraphic& graphic) {
         graphics_.push_back(graphic);
     }
-    const std::vector<Graphic>& getGraphics() const { return graphics_; }
+    const std::vector<SchGraphic>& getGraphics() const { return graphics_; }
 
 private:
-    std::vector<Graphic> graphics_;
+    std::vector<SchGraphic> graphics_;
 };
 
 } // namespace ccad

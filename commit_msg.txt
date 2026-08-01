@@ -1,24 +1,20 @@
-feature: Port KiCad REFDES_TRACKER and Pin Type data structures
-
-Progress: Phase 9/9, Sprint 250, sprint-250-refdes-tracker, completed
+Stabilize ccad_core build and restore visual validation
 
 Why:
-- To achieve deterministic KiCad PCB editor parity, the kernel needs to track reference designators efficiently and parse pin properties exactly as KiCad does.
+Refactoring core dependencies (e.g., merging board into model.hpp) and enabling strict -Werror caused cascading build failures in plugins and GUI bridges due to missing includes and unused parameters.
 
 Changed:
-- src/ccad_core/refdes_tracker.hpp/.cpp: Added O(1) allocation and next-available generation.
-- src/ccad_core/pin_type.hpp/.cpp: Added KiCad string enums.
-- tests/test_refdes_tracker.cpp: Verified correct allocation sequences.
-- docs/devops/progress.md: Updated phase counters for Sprint 250.
-- docs/features/implemented-features.md: Updated feature matrix.
-- CMakeLists.txt: Added MSVC M_PI definition and wired new modules.
+- Replaced #include "board.hpp" with #include "model.hpp" across 20+ core files.
+- Added explicit (void) casts to suppress unused parameter warnings in interactive tools, DRC providers, and exporters.
+- Updated ccad_gui components to align with model.hpp structs.
 
 Behavior:
-- Internal CCad core now supports allocating reference designators with automatic gap-filling (e.g. creating R3 when R1 and R2 exist). Pin properties parse strings exactly as KiCad formatting standard.
+- Project now cleanly builds under -Werror with Qt 6 MinGW.
+- ccad_gui visual harness renders correctly with no missing headers.
 
 Verification:
-- ctest --test-dir build-qt passes cleanly on Windows Qt MinGW.
-- Visual validation completed using run_sprint_demo.ps1 demonstrating stable application run.
+- Ran full cmake --build build-qt --target ccad_gui.
+- Executed scripts/run_sprint_demo.ps1 with intercepted stdout/stderr.
 
 Demo:
-- artifacts/screenshots/sprint-250-refdes-tracker-20260703-000801.png
+- Ingested screenshot showing correct footprint and layer rendering.

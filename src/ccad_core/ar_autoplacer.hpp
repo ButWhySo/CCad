@@ -2,6 +2,7 @@
 #define CCAD_CORE_AR_AUTOPLACER_HPP
 
 #include "model.hpp"
+#include "footprint.hpp"
 #include <vector>
 
 namespace ccad {

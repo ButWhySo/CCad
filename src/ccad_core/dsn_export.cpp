@@ -1,6 +1,7 @@
 #include "dsn_export.hpp"
 
 #include <iomanip>
+#include <cmath>
 #include <cstdint>
 #include <map>
 #include <sstream>
@@ -73,13 +74,32 @@ std::string exportSpecctraDsn(const Project& project) {
     }
   }
 
+  // Map component ID to BoardFootprint
+  std::map<std::string, const BoardFootprint*> comp_footprints;
+  for (const auto& fp : board.footprints) {
+    comp_footprints[fp.reference] = &fp;
+  }
+
   // Placement
   out << "  (placement\n";
   for (const auto& pair : component_pads) {
     const std::string& comp_id = pair.first;
-    out << "    (component " << quote(comp_id) << "\n"
-        << "      (place " << quote(comp_id) << " 0.0 0.0 front 0.0)\n"
-        << "    )\n";
+    auto it = comp_footprints.find(comp_id);
+    if (it != comp_footprints.end()) {
+      const BoardFootprint* fp = it->second;
+      std::string layer = fp->layer_id == "B.Cu" ? "back" : "front";
+      out << "    (component " << quote(comp_id) << "\n"
+          << "      (place " << quote(comp_id) << " "
+          << formatMm(fp->position.x.nanometers) << " "
+          << formatMm(fp->position.y.nanometers) << " "
+          << layer << " "
+          << fp->rotation_degrees << ")\n"
+          << "    )\n";
+    } else {
+      out << "    (component " << quote(comp_id) << "\n"
+          << "      (place " << quote(comp_id) << " 0.0 0.0 front 0.0)\n"
+          << "    )\n";
+    }
   }
   out << "  )\n";
 
@@ -89,9 +109,25 @@ std::string exportSpecctraDsn(const Project& project) {
     const std::string& comp_id = pair.first;
     const std::vector<Pad>& pads = pair.second;
     out << "    (image " << quote(comp_id) << "\n";
+    
+    auto it = comp_footprints.find(comp_id);
+    double cx = 0, cy = 0, angle = 0;
+    if (it != comp_footprints.end()) {
+      cx = it->second->position.x.nanometers;
+      cy = it->second->position.y.nanometers;
+      angle = it->second->rotation_degrees * 3.14159265358979323846 / 180.0;
+    }
+
     for (const auto& pad : pads) {
-      out << "      (pin " << quote("padstack_" + pad.id) << " " << pad.pin_name << " "
-          << formatMm(pad.position.x.nanometers) << " " << formatMm(pad.position.y.nanometers) << ")\n";
+      double dx = pad.position.x.nanometers - cx;
+      double dy = pad.position.y.nanometers - cy;
+      
+      // Inverse rotate pad pos to be relative to component
+      double local_x = dx * cos(angle) + dy * sin(angle);
+      double local_y = -dx * sin(angle) + dy * cos(angle);
+      
+      out << "      (pin " << quote("padstack_" + pad.id) << " " << quote(pad.pin_name) << " "
+          << formatMm(static_cast<std::int64_t>(local_x)) << " " << formatMm(static_cast<std::int64_t>(local_y)) << ")\n";
     }
     out << "    )\n";
   }

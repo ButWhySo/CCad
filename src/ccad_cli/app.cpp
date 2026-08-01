@@ -235,6 +235,9 @@ const std::vector<CommandHelp>& commandHelp() {
       CommandHelp{.name = "pcb expand-text-variables",
                   .summary = "Expand KiCad-style project text variables in PCB text",
                   .usage = "ccad pcb expand-text-variables --file <path> [--text <value>]"},
+      CommandHelp{.name = "pcb update-teardrops",
+                  .summary = "Regenerate teardrop polygons for track-to-pad and track-to-via connections",
+                  .usage = "ccad pcb update-teardrops --file <path>"},
       CommandHelp{.name = "pcb add-zone",
                   .summary = "Append one KiCad-style rectangular copper zone",
                   .usage = "ccad pcb add-zone --file <path> --id <id> [--name <value>] "

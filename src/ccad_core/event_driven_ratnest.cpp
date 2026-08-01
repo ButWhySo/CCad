@@ -1,5 +1,5 @@
 #include "event_driven_ratnest.hpp"
-#include "board.hpp"
+#include "model.hpp"
 #include <set>
 
 namespace ccad {

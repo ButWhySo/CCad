@@ -1,0 +1,11 @@
+## footprint_viewer_frame
+- **File**: `pcbnew/footprint_viewer_frame.cpp`, `pcbnew/footprint_viewer_frame.h`
+- **Purpose**: Implements the "Footprint Library Browser" window, allowing users to browse, search, and preview footprints across all loaded libraries.
+- **Functionality**: 
+  - Subclasses `PCB_BASE_FRAME`.
+  - Uses `WX_LISTBOX` and `wxSearchCtrl` to filter and list libraries (left panel) and footprints (middle panel).
+  - Uses `PCB_DRAW_PANEL_GAL` to render the selected footprint in a main canvas.
+  - Implements its own subset of `TOOL_MANAGER` actions (selection, viewing, zoom).
+  - Integrates with Kiway IPC (e.g., `KiwayMailIn`) to synchronize selected footprints when invoked from CvPcb or Eeschema.
+  - Can "AddFootprintToPCB()" directly into a running instance of `PCB_EDIT_FRAME`.
+- **Context**: The main viewer window users interact with when pressing "O" (add footprint) in the layout editor or browsing footprint libraries externally.

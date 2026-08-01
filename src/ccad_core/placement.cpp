@@ -189,9 +189,9 @@ void placeFootprint(Project& project, const Footprint& footprint, const std::str
         .pin_type = footprint_pad.pin_type,
         .pad_to_die_length = footprint_pad.pad_to_die_length,
         .pad_to_die_delay = footprint_pad.pad_to_die_delay,
-        .teardrops_enabled = false,
         .locked = false,
         .padstack = Padstack{},
+        .teardrops_enabled = false,
     };
     pad.padstack.layer_set = pad_layers;
     pad.padstack.drill.size.width = footprint_pad.drill.value_or(Length{});

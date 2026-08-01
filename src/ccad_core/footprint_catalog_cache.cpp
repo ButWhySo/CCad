@@ -11,6 +11,7 @@ void FootprintCatalogCache::scanLibraries() {
 }
 
 std::vector<FootprintCatalogEntry> FootprintCatalogCache::searchFootprints(const std::string& query) const {
+    (void)query;
     std::vector<FootprintCatalogEntry> results;
     // Stub for returning filtered cache results based on the query string
     return results;

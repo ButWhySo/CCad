@@ -93,7 +93,8 @@ Purge intermediate `.tmp` logs, obsolete WIP screenshots, stale generated files,
 
 ### Phase 5: Commit, Merge, and Branch Cleanup
 
-Stage changes carefully and write a detailed multi-line commit message containing:
+Stage changes carefully and write a detailed multi-line commit message containing all code, tests, visual validation, and documentation updates. 
+**DO NOT spam separate commits** for documentation, `progress.md` updates, or handover notes. They must be bundled into the *same* logical commit as the code and verification they describe to form one cohesive unit of work.
 
 Merge back to `main` only after the branch is green, visually proven, documented, and backed by the required verification artifacts.
 

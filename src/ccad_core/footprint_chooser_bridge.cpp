@@ -19,6 +19,8 @@ std::vector<FootprintCatalogEntry> FootprintChooserBridge::getResults() const {
 }
 
 std::unique_ptr<Footprint> FootprintChooserBridge::getPreviewFootprint(const std::string& library, const std::string& name) const {
+    (void)library;
+    (void)name;
     // Stub: In reality, this would load the kicad_mod file from the cache entry and parse it
     return nullptr;
 }

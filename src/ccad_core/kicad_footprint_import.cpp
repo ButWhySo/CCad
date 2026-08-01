@@ -3,6 +3,7 @@
 #include "ccad_core/json.hpp"
 
 #include <cctype>
+#include <cmath>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -26,12 +27,32 @@ class SExprReader {
     SExpr root = readExpr();
     skipWhitespace();
     if (pos_ != source_.size()) {
-      throw std::runtime_error("trailing content after footprint expression");
+      throw error("trailing content after footprint expression");
     }
     return root;
   }
 
  private:
+  int line() const {
+    int l = 1;
+    for (std::size_t i = 0; i < pos_; ++i) {
+      if (source_[i] == '\n') ++l;
+    }
+    return l;
+  }
+
+  int col() const {
+    int c = 1;
+    for (std::size_t i = 0; i < pos_; ++i) {
+      if (source_[i] == '\n') c = 1;
+      else ++c;
+    }
+    return c;
+  }
+
+  std::runtime_error error(const std::string& msg) const {
+    return std::runtime_error(msg + " at line " + std::to_string(line()) + ", col " + std::to_string(col()));
+  }
   SExpr readExpr() {
     skipWhitespace();
     expect('(');
@@ -61,7 +82,7 @@ class SExprReader {
   std::string readAtom() {
     skipWhitespace();
     if (pos_ >= source_.size()) {
-      throw std::runtime_error("unexpected end of input");
+      throw error("unexpected end of input");
     }
     if (source_.at(pos_) == '"') {
       return readQuoted();
@@ -72,7 +93,7 @@ class SExprReader {
       ++pos_;
     }
     if (start == pos_) {
-      throw std::runtime_error("expected atom");
+      throw error("expected atom");
     }
     return std::string(source_.substr(start, pos_ - start));
   }
@@ -87,14 +108,14 @@ class SExprReader {
       }
       if (current == '\\') {
         if (pos_ >= source_.size()) {
-          throw std::runtime_error("unterminated escape sequence");
+          throw error("unterminated escape sequence");
         }
         value.push_back(source_.at(pos_++));
       } else {
         value.push_back(current);
       }
     }
-    throw std::runtime_error("unterminated quoted string");
+    throw error("unterminated quoted string");
   }
 
   bool peek(const char expected) const {
@@ -112,7 +133,7 @@ class SExprReader {
   void expect(const char expected) {
     skipWhitespace();
     if (!consume(expected)) {
-      throw std::runtime_error(std::string("expected '") + expected + "'");
+      throw error(std::string("expected '") + expected + "'");
     }
   }
 
@@ -140,7 +161,12 @@ double parseDouble(const std::string& value, const std::string& label) {
 }
 
 Length parseMillimeters(const std::string& value, const std::string& label) {
-  return millimeters(parseDouble(value, label));
+  double nm = parseDouble(value, label) * 1000000.0;
+  constexpr double LIMIT = 4.611686e18; // Approx INT64_MAX / 2
+  double clamped = nm;
+  if (clamped > LIMIT) clamped = LIMIT;
+  if (clamped < -LIMIT) clamped = -LIMIT;
+  return nanometers(static_cast<std::int64_t>(std::round(clamped)));
 }
 
 bool isList(const SExpr& expr, const std::string& name) {
@@ -202,6 +228,22 @@ FootprintPad importPad(const SExpr& expr) {
         throw std::runtime_error("pad chamfer_ratio requires one value");
       }
       pad.chamfer_ratio = parseDouble(child.children.at(0).value, "pad chamfer ratio");
+    } else if (isList(child, "solder_paste_margin")) {
+      if (child.children.size() >= 1) {
+        pad.paste_margin = parseMillimeters(child.children.at(0).value, "paste margin");
+      }
+    } else if (isList(child, "solder_mask_margin")) {
+      if (child.children.size() >= 1) {
+        pad.mask_margin = parseMillimeters(child.children.at(0).value, "mask margin");
+      }
+    } else if (isList(child, "thermal_width")) {
+      if (child.children.size() >= 1) {
+        pad.thermal_width = parseMillimeters(child.children.at(0).value, "thermal width");
+      }
+    } else if (isList(child, "thermal_gap")) {
+      if (child.children.size() >= 1) {
+        pad.thermal_gap = parseMillimeters(child.children.at(0).value, "thermal gap");
+      }
     }
   }
 
@@ -462,6 +504,14 @@ class FootprintJsonReader {
         pad.roundrect_rratio = readNumber();
       } else if (key == "chamfer_ratio") {
         pad.chamfer_ratio = readNumber();
+      } else if (key == "paste_margin_nm") {
+        pad.paste_margin = nanometers(readInt64());
+      } else if (key == "mask_margin_nm") {
+        pad.mask_margin = nanometers(readInt64());
+      } else if (key == "thermal_width_nm") {
+        pad.thermal_width = nanometers(readInt64());
+      } else if (key == "thermal_gap_nm") {
+        pad.thermal_gap = nanometers(readInt64());
       } else {
         throw std::runtime_error("unknown footprint pad json key: " + key);
       }
@@ -748,6 +798,71 @@ class FootprintJsonReader {
 
 }  // namespace
 
+FootprintPoly importPoly(const SExpr& expr) {
+  FootprintPoly poly;
+  for (std::size_t i = 1; i < expr.children.size(); ++i) {
+    const SExpr& child = expr.children.at(i);
+    if (isList(child, "pts")) {
+      for (std::size_t j = 1; j < child.children.size(); ++j) {
+        const SExpr& pt = child.children.at(j);
+        if (isList(pt, "xy") && pt.children.size() >= 2) {
+          Point p;
+          p.x = parseMillimeters(pt.children.at(0).value, "poly pt x");
+          p.y = parseMillimeters(pt.children.at(1).value, "poly pt y");
+          poly.points.push_back(p);
+        }
+      }
+    } else if (isList(child, "layer") && child.children.size() >= 1) {
+      poly.layer = child.children.at(0).value;
+    } else if (isList(child, "width") && child.children.size() >= 1) {
+      poly.stroke_width = parseMillimeters(child.children.at(0).value, "poly width");
+    } else if (isList(child, "stroke")) {
+      for (const SExpr& s : child.children) {
+        if (isList(s, "width") && s.children.size() >= 1) {
+          poly.stroke_width = parseMillimeters(s.children.at(0).value, "poly width");
+        }
+      }
+    }
+  }
+  return poly;
+}
+
+FootprintCurve importCurve(const SExpr& expr) {
+  FootprintCurve curve;
+  for (std::size_t i = 1; i < expr.children.size(); ++i) {
+    const SExpr& child = expr.children.at(i);
+    if (isList(child, "pts")) {
+      std::vector<Point> pts;
+      for (std::size_t j = 1; j < child.children.size(); ++j) {
+        const SExpr& pt = child.children.at(j);
+        if (isList(pt, "xy") && pt.children.size() >= 2) {
+          Point p;
+          p.x = parseMillimeters(pt.children.at(0).value, "curve pt x");
+          p.y = parseMillimeters(pt.children.at(1).value, "curve pt y");
+          pts.push_back(p);
+        }
+      }
+      if (pts.size() >= 4) {
+        curve.start = pts[0];
+        curve.control1 = pts[1];
+        curve.control2 = pts[2];
+        curve.end = pts[3];
+      }
+    } else if (isList(child, "layer") && child.children.size() >= 1) {
+      curve.layer = child.children.at(0).value;
+    } else if (isList(child, "width") && child.children.size() >= 1) {
+      curve.stroke_width = parseMillimeters(child.children.at(0).value, "curve width");
+    } else if (isList(child, "stroke")) {
+      for (const SExpr& s : child.children) {
+        if (isList(s, "width") && s.children.size() >= 1) {
+          curve.stroke_width = parseMillimeters(s.children.at(0).value, "curve width");
+        }
+      }
+    }
+  }
+  return curve;
+}
+
 Footprint importKiCadFootprint(const std::string_view source) {
   const SExpr root = SExprReader(source).readRoot();
   if (root.value != "footprint") {
@@ -770,6 +885,10 @@ Footprint importKiCadFootprint(const std::string_view source) {
       footprint.arcs.push_back(importArc(child));
     } else if (isList(child, "fp_circle")) {
       footprint.circles.push_back(importCircle(child));
+    } else if (isList(child, "fp_poly")) {
+      footprint.polys.push_back(importPoly(child));
+    } else if (isList(child, "fp_curve")) {
+      footprint.curves.push_back(importCurve(child));
     } else if (isList(child, "fp_text")) {
       footprint.texts.push_back(importText(child));
     } else if (isList(child, "model")) {
@@ -818,6 +937,18 @@ std::string dumpFootprintJson(const Footprint& footprint) {
     }
     if (pad.chamfer_ratio.has_value()) {
       out << "      \"chamfer_ratio\": " << *pad.chamfer_ratio << ",\n";
+    }
+    if (pad.paste_margin.has_value()) {
+      out << "      \"paste_margin_nm\": " << pad.paste_margin->nanometers << ",\n";
+    }
+    if (pad.mask_margin.has_value()) {
+      out << "      \"mask_margin_nm\": " << pad.mask_margin->nanometers << ",\n";
+    }
+    if (pad.thermal_width.has_value()) {
+      out << "      \"thermal_width_nm\": " << pad.thermal_width->nanometers << ",\n";
+    }
+    if (pad.thermal_gap.has_value()) {
+      out << "      \"thermal_gap_nm\": " << pad.thermal_gap->nanometers << ",\n";
     }
     out << "      \"layers\": ";
     writeStringArray(out, 6, pad.layers);

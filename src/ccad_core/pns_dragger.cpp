@@ -12,6 +12,8 @@ bool PnsDragger::start(std::shared_ptr<PnsItem> item, int x, int y) {
 
 bool PnsDragger::drag(int x, int y) {
     if (!dragged_item_) return false;
+    (void)x;
+    (void)y;
     // Core shoving heuristics would evaluate topological intersection here
     return true;
 }

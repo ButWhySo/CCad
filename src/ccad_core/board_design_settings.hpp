@@ -1,7 +1,19 @@
 #ifndef CCAD_CORE_BOARD_DESIGN_SETTINGS_HPP
 #define CCAD_CORE_BOARD_DESIGN_SETTINGS_HPP
 
+#include <string>
+#include <vector>
+
 namespace ccad {
+
+class DesignRules;
+
+struct DesignRuleValidationError {
+    std::string field;
+    std::string message;
+};
+
+std::vector<DesignRuleValidationError> validateDesignRules(const DesignRules& rules);
 
 // Manages the global constraints and default routing settings for the board
 class BoardDesignSettings {

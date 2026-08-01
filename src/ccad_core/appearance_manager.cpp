@@ -1,5 +1,5 @@
 #include "appearance_manager.hpp"
-#include "board.hpp"
+#include "model.hpp"
 
 namespace ccad {
 

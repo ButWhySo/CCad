@@ -1,5 +1,5 @@
 #include "net_tie_drc.hpp"
-#include "board.hpp"
+#include "model.hpp"
 
 namespace ccad {
 
@@ -12,6 +12,10 @@ void NetTieDrc::registerNetTie(const std::string& footprintId, const std::string
 }
 
 bool NetTieDrc::isIntersectionPermitted(const std::string& netA, const std::string& netB, double x, double y) const {
+    (void)netA;
+    (void)netB;
+    (void)x;
+    (void)y;
     if (!board_) return false;
     
     // Stub:

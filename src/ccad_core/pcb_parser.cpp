@@ -44,19 +44,27 @@ std::unique_ptr<Board> PcbParser::parse(const std::string& filepath) {
 }
 
 void PcbParser::parseSetup(const SExpr* expr, Board* board) {
-    // Deep parse of (setup ...)
+    (void)expr;
+    (void)board;
+    // Stub
 }
 
 void PcbParser::parseNet(const SExpr* expr, Board* board) {
-    // Deep parse of (net ...)
+    (void)expr;
+    (void)board;
+    // Stub
 }
 
 void PcbParser::parseFootprint(const SExpr* expr, Board* board) {
-    // Deep parse of (footprint ...)
+    (void)expr;
+    (void)board;
+    // Stub
 }
 
 void PcbParser::parseSegment(const SExpr* expr, Board* board) {
-    // Deep parse of (segment ...)
+    (void)expr;
+    (void)board;
+    // Stub
 }
 
 } // namespace ccad

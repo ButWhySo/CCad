@@ -1,6 +1,6 @@
 #include "net_chain_bridging.hpp"
-#include "board.hpp"
-#include "track.hpp"
+#include "model.hpp"
+// track is in model
 
 namespace ccad {
 
@@ -19,6 +19,10 @@ void NetChainBridging::bridgeTrackNets() {
 std::vector<std::vector<Track*>> NetChainBridging::getLogicalChains() const {
     // Stub: Return grouped chains based on spatial connections
     return {};
+}
+
+NetChainBridgingReport calculateNetChainBridges(const Project& /*project*/, const std::string& /*net_id*/) {
+    return NetChainBridgingReport{};
 }
 
 } // namespace ccad

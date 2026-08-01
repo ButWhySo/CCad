@@ -1,0 +1,11 @@
+## BOARD_ITEM
+- **File**: `pcbnew/board_item.cpp`, `include/board_item.h`
+- **Purpose**: The absolute base class for any item which can be embedded within the `BOARD` container class.
+- **Functionality**: 
+  - Inherits from `EDA_ITEM` (a core base class for generic EDA objects).
+  - Maintains layer property (`m_layer`), locked status (`m_isLocked`), and knockout status (`m_isKnockout`).
+  - Common geometric interfaces: `GetX()`, `GetY()`, `GetCenter()`, `GetBoundingBox()`, `IsOnLayer()`, `TransformShapeToPolygon()`, `TransformShapeToPolySet()`.
+  - Common transformation interfaces: `Move()`, `Rotate()`, `Flip()`, `Mirror()`, `Normalize()`.
+  - Support for custom properties and reflection via `_BOARD_ITEM_DESC` (position, layer, lock state, parent).
+  - Also includes a dummy `DELETED_BOARD_ITEM` singleton to flag items that have been deleted but might still be referenced weakly.
+- **Context**: The most fundamental base type for everything physical or annotative on a circuit board. If it's on a PCB, it inherits from `BOARD_ITEM`.

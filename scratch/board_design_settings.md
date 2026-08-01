@@ -1,0 +1,12 @@
+## BOARD_DESIGN_SETTINGS
+- **File**: `pcbnew/board_design_settings.cpp`, `include/board_design_settings.h`
+- **Purpose**: Container for all global design settings, rules, clearances, dimensions, and visual defaults for a `BOARD`.
+- **Functionality**: 
+  - Inherits from `NESTED_SETTINGS` to serialize parameters into/from JSON (typically the project file).
+  - Holds default sizes (`m_TrackWidthList`, `m_ViasDimensionsList`, `m_DiffPairDimensionsList`).
+  - Holds teardrop parameters (`TEARDROP_PARAMETERS_LIST`).
+  - Tracks enabled layers (`m_enabledLayers`), copper layer count (`m_copperLayerCount`).
+  - Maintains `DRC_ENGINE` settings, severities for DRC error codes (`m_DRCSeverities`), and DRC exclusions.
+  - Stores default zone settings, text sizes (`m_TextSize`, `m_TextThickness`), board thickness, and mask margins.
+  - Uses `PARAM_LAMBDA` and `PARAM_SCALED` to bind C++ variables to JSON properties.
+- **Context**: Central configuration object shared across the UI, DRC, routing tools, and connectivity engine to decide what is legal and how items should be initialized by default.

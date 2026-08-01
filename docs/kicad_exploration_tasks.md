@@ -1,0 +1,3295 @@
+# KiCad Exploration Tasks
+
+- [x] pcbnew\array_pad_number_provider.cpp
+- [x] pcbnew\array_pad_number_provider.h
+- [x] pcbnew\board.cpp
+- [x] pcbnew\board.h
+- [x] pcbnew\board_bounding_box.cpp
+- [x] pcbnew\board_bounding_box.h
+- [x] pcbnew\board_commit.cpp
+- [x] pcbnew\board_commit.h
+- [x] pcbnew\board_connected_item.cpp
+- [x] pcbnew\board_connected_item.h
+- [x] pcbnew\board_design_settings.cpp
+- [x] pcbnew\board_item.cpp
+- [x] pcbnew\board_item_container.h
+- [x] pcbnew\board_loader.cpp
+- [x] pcbnew\board_loader.h
+- [x] pcbnew\board_statistics.cpp
+- [x] pcbnew\board_statistics.h
+- [x] pcbnew\board_statistics_report.cpp
+- [x] pcbnew\board_statistics_report.h
+- [x] pcbnew\board_text_var_adapter.cpp
+- [x] pcbnew\board_text_var_adapter.h
+- [x] pcbnew\build_BOM_from_board.cpp
+- [x] pcbnew\cleanup_item.cpp
+- [x] pcbnew\cleanup_item.h
+- [x] pcbnew\collectors.cpp
+- [x] pcbnew\collectors.h
+- [x] pcbnew\convert_shape_list_to_polygon.cpp
+- [x] pcbnew\convert_shape_list_to_polygon.h
+- [x] pcbnew\cross-probing.cpp
+- [x] pcbnew\edit.cpp
+- [x] pcbnew\edit_track_width.cpp
+- [x] pcbnew\edit_zone_helpers.cpp
+- [x] pcbnew\files.cpp
+- [x] pcbnew\fix_board_shape.cpp
+- [x] pcbnew\fix_board_shape.h
+- [x] pcbnew\footprint.cpp
+- [x] pcbnew\footprint.h
+- [x] pcbnew\footprint_chooser_frame.cpp
+- [x] pcbnew\footprint_chooser_frame.h
+- [x] pcbnew\footprint_editor_settings.cpp
+- [x] pcbnew\footprint_editor_utils.cpp
+- [x] pcbnew\footprint_edit_frame.cpp
+- [x] pcbnew\footprint_edit_frame.h
+- [x] pcbnew\footprint_info_impl.cpp
+- [x] pcbnew\footprint_info_impl.h
+- [x] pcbnew\footprint_libraries_utils.cpp
+- [x] pcbnew\footprint_library_adapter.cpp
+- [x] pcbnew\footprint_library_adapter.h
+- [x] pcbnew\footprint_preview_panel.cpp
+- [x] pcbnew\footprint_preview_panel.h
+- [x] pcbnew\footprint_tree_pane.cpp
+- [x] pcbnew\footprint_tree_pane.h
+- [x] pcbnew\footprint_utils.cpp
+- [x] pcbnew\footprint_utils.h
+- [x] pcbnew\footprint_viewer_frame.cpp
+- [x] pcbnew\footprint_viewer_frame.h
+- [x] pcbnew\footprint_wizard.cpp
+- [x] pcbnew\footprint_wizard.h
+- [x] pcbnew\footprint_wizard_frame.cpp
+- [x] pcbnew\footprint_wizard_frame.h
+- [x] pcbnew\footprint_wizard_frame_functions.cpp
+- [x] pcbnew\fp_tree_model_adapter.cpp
+- [x] pcbnew\fp_tree_model_adapter.h
+- [x] pcbnew\fp_tree_synchronizing_adapter.cpp
+- [x] pcbnew\fp_tree_synchronizing_adapter.h
+- [x] pcbnew\generate_footprint_info.cpp
+- [x] pcbnew\generate_footprint_info.h
+- [x] pcbnew\generators_mgr.cpp
+- [x] pcbnew\generators_mgr.h
+- [x] pcbnew\graphics_cleaner.cpp
+- [x] pcbnew\graphics_cleaner.h
+- [x] pcbnew\grid_layer_box_helpers.cpp
+- [x] pcbnew\grid_layer_box_helpers.h
+- [x] pcbnew\initpcb.cpp
+- [x] pcbnew\invoke_pcb_dialog.h
+- [x] pcbnew\kicad_clipboard.cpp
+- [x] pcbnew\kicad_clipboard.h
+- [x] pcbnew\layer_pairs.cpp
+- [x] pcbnew\layer_pairs.h
+- [x] pcbnew\layer_utils.cpp
+- [x] pcbnew\layer_utils.h
+- [x] pcbnew\load_select_footprint.cpp
+- [x] pcbnew\menubar_footprint_editor.cpp
+- [x] pcbnew\menubar_pcb_editor.cpp
+- [x] pcbnew\netinfo.h
+- [x] pcbnew\netinfo_item.cpp
+- [x] pcbnew\netinfo_list.cpp
+- [x] pcbnew\net_chain_bridging.cpp
+- [x] pcbnew\net_chain_bridging.h
+- [x] pcbnew\pad.cpp
+- [x] pcbnew\pad.h
+- [x] pcbnew\padstack.cpp
+- [x] pcbnew\padstack.h
+- [x] pcbnew\pad_utils.cpp
+- [x] pcbnew\pad_utils.h
+- [x] pcbnew\pcbexpr_evaluator.cpp
+- [x] pcbnew\pcbexpr_evaluator.h
+- [x] pcbnew\pcbexpr_functions.cpp
+- [x] pcbnew\pcbnew.cpp
+- [x] pcbnew\pcbnew_config.cpp
+- [x] pcbnew\pcbnew_config.h
+- [x] pcbnew\pcbnew_id.h
+- [x] pcbnew\pcbnew_jobs_handler.cpp
+- [x] pcbnew\pcbnew_jobs_handler.h
+- [x] pcbnew\pcbnew_printout.cpp
+- [x] pcbnew\pcbnew_printout.h
+- [x] pcbnew\pcbnew_settings.cpp
+- [x] pcbnew\pcbnew_settings.h
+- [x] pcbnew\pcbplot.cpp
+- [x] pcbnew\pcbplot.h
+- [x] pcbnew\pcb_barcode.cpp
+- [x] pcbnew\pcb_barcode.h
+- [x] pcbnew\pcb_base_edit_frame.cpp
+- [x] pcbnew\pcb_base_edit_frame.h
+- [x] pcbnew\pcb_base_frame.cpp
+- [x] pcbnew\pcb_board_outline.cpp
+- [x] pcbnew\pcb_board_outline.h
+- [x] pcbnew\pcb_design_block_utils.cpp
+- [x] pcbnew\pcb_dimension.cpp
+- [x] pcbnew\pcb_dimension.h
+- [x] pcbnew\pcb_draw_panel_gal.cpp
+- [x] pcbnew\pcb_draw_panel_gal.h
+- [x] pcbnew\pcb_edit_frame.cpp
+- [x] pcbnew\pcb_edit_frame.h
+- [x] pcbnew\pcb_field.cpp
+- [x] pcbnew\pcb_field.h
+- [x] pcbnew\pcb_fields_grid_table.cpp
+- [x] pcbnew\pcb_fields_grid_table.h
+- [x] pcbnew\pcb_generator.cpp
+- [x] pcbnew\pcb_generator.h
+- [x] pcbnew\pcb_group.cpp
+- [x] pcbnew\pcb_group.h
+- [x] pcbnew\pcb_item_containers.h
+- [x] pcbnew\pcb_layer_box_selector.cpp
+- [x] pcbnew\pcb_layer_box_selector.h
+- [x] pcbnew\pcb_layer_presentation.h
+- [x] pcbnew\pcb_marker.cpp
+- [x] pcbnew\pcb_marker.h
+- [x] pcbnew\pcb_origin_transforms.cpp
+- [x] pcbnew\pcb_origin_transforms.h
+- [x] pcbnew\pcb_painter.cpp
+- [x] pcbnew\pcb_painter.h
+- [x] pcbnew\pcb_plotter.cpp
+- [x] pcbnew\pcb_plotter.h
+- [x] pcbnew\pcb_plot_params.cpp
+- [x] pcbnew\pcb_plot_params.h
+- [x] pcbnew\pcb_plot_params_parser.h
+- [x] pcbnew\pcb_point.cpp
+- [x] pcbnew\pcb_point.h
+- [x] pcbnew\pcb_reference_image.cpp
+- [x] pcbnew\pcb_reference_image.h
+- [x] pcbnew\pcb_screen.cpp
+- [x] pcbnew\pcb_shape.cpp
+- [x] pcbnew\pcb_shape.h
+- [x] pcbnew\pcb_table.cpp
+- [x] pcbnew\pcb_table.h
+- [x] pcbnew\pcb_tablecell.cpp
+- [x] pcbnew\pcb_tablecell.h
+- [x] pcbnew\pcb_target.cpp
+- [x] pcbnew\pcb_target.h
+- [x] pcbnew\pcb_text.cpp
+- [x] pcbnew\pcb_text.h
+- [x] pcbnew\pcb_textbox.cpp
+- [x] pcbnew\pcb_textbox.h
+- [x] pcbnew\pcb_text_help_md.h
+- [x] pcbnew\pcb_track.cpp
+- [x] pcbnew\pcb_track.h
+- [x] pcbnew\pcb_track_types.h
+- [x] pcbnew\pcb_view.cpp
+- [x] pcbnew\pcb_view.h
+- [x] pcbnew\plotprint_opts.h
+- [x] pcbnew\plot_board_layers.cpp
+- [x] pcbnew\plot_brditems_plotter.cpp
+- [x] pcbnew\project_pcb.cpp
+- [x] pcbnew\sel_layer.cpp
+- [x] pcbnew\toolbars_footprint_editor.cpp
+- [x] pcbnew\toolbars_footprint_editor.h
+- [x] pcbnew\toolbars_footprint_viewer.cpp
+- [x] pcbnew\toolbars_footprint_viewer.h
+- [x] pcbnew\toolbars_footprint_wizard.cpp
+- [x] pcbnew\toolbars_footprint_wizard.h
+- [x] pcbnew\toolbars_pcb_editor.cpp
+- [x] pcbnew\toolbars_pcb_editor.h
+- [x] pcbnew\undo_redo.cpp
+- [x] pcbnew\via_protection_ui_mixin.h
+- [x] pcbnew\zone.cpp
+- [x] pcbnew\zone.h
+- [x] pcbnew\zones.h
+- [x] pcbnew\zones_functions_for_undo_redo.cpp
+- [x] pcbnew\zone_filler.cpp
+- [x] pcbnew\zone_filler.h
+- [x] pcbnew\zone_layer_properties_grid.cpp
+- [x] pcbnew\zone_layer_properties_grid.h
+- [x] pcbnew\zone_settings.cpp
+- [x] pcbnew\zone_settings.h
+- [x] pcbnew\zone_settings_bag.cpp
+- [x] pcbnew\zone_settings_bag.h
+- [x] pcbnew\zone_utils.cpp
+- [x] pcbnew\zone_utils.h
+- [x] pcbnew\api\api_handler_pcb.cpp
+- [x] pcbnew\api\api_handler_pcb.h
+- [x] pcbnew\api\api_pcb_enums.cpp
+- [x] pcbnew\api\api_pcb_utils.cpp
+- [x] pcbnew\api\api_pcb_utils.h
+- [x] pcbnew\api\board_context.cpp
+- [x] pcbnew\api\board_context.h
+- [x] pcbnew\api\headless_board_context.cpp
+- [x] pcbnew\api\headless_board_context.h
+- [x] pcbnew\autorouter\ar_autoplacer.cpp
+- [x] pcbnew\autorouter\ar_autoplacer.h
+- [x] pcbnew\autorouter\ar_matrix.cpp
+- [x] pcbnew\autorouter\ar_matrix.h
+- [x] pcbnew\autorouter\autoplace_tool.cpp
+- [x] pcbnew\autorouter\autoplace_tool.h
+- [x] pcbnew\autorouter\spread_footprints.cpp
+- [x] pcbnew\autorouter\spread_footprints.h
+- [x] pcbnew\board_stackup_manager\board_stackup.cpp
+- [x] pcbnew\board_stackup_manager\board_stackup.h
+- [x] pcbnew\board_stackup_manager\board_stackup_reporter.cpp
+- [x] pcbnew\board_stackup_manager\board_stackup_reporter.h
+- [x] pcbnew\board_stackup_manager\dialog_dielectric_list_manager.cpp
+- [x] pcbnew\board_stackup_manager\dialog_dielectric_list_manager.h
+- [x] pcbnew\board_stackup_manager\dialog_dielectric_list_manager_base.cpp
+- [x] pcbnew\board_stackup_manager\dialog_dielectric_list_manager_base.h
+- [x] pcbnew\board_stackup_manager\dielectric_material.cpp
+- [x] pcbnew\board_stackup_manager\dielectric_material.h
+- [x] pcbnew\board_stackup_manager\panel_board_finish.cpp
+- [x] pcbnew\board_stackup_manager\panel_board_finish.h
+- [x] pcbnew\board_stackup_manager\panel_board_finish_base.cpp
+- [x] pcbnew\board_stackup_manager\panel_board_finish_base.h
+- [x] pcbnew\board_stackup_manager\panel_board_stackup.cpp
+- [x] pcbnew\board_stackup_manager\panel_board_stackup.h
+- [x] pcbnew\board_stackup_manager\panel_board_stackup_base.cpp
+- [x] pcbnew\board_stackup_manager\panel_board_stackup_base.h
+- [x] pcbnew\board_stackup_manager\stackup_predefined_prms.cpp
+- [x] pcbnew\board_stackup_manager\stackup_predefined_prms.h
+- [x] pcbnew\board_tables\board_characteristics_table.cpp
+- [x] pcbnew\board_tables\board_stackup_table.cpp
+- [x] pcbnew\component_classes\component_class.cpp
+- [x] pcbnew\component_classes\component_class.h
+- [x] pcbnew\component_classes\component_class_assignment_rule.cpp
+- [x] pcbnew\component_classes\component_class_assignment_rule.h
+- [x] pcbnew\component_classes\component_class_cache_proxy.cpp
+- [x] pcbnew\component_classes\component_class_cache_proxy.h
+- [x] pcbnew\component_classes\component_class_manager.cpp
+- [x] pcbnew\component_classes\component_class_manager.h
+- [x] pcbnew\connectivity\connectivity_algo.cpp
+- [x] pcbnew\connectivity\connectivity_algo.h
+- [x] pcbnew\connectivity\connectivity_data.cpp
+- [x] pcbnew\connectivity\connectivity_data.h
+- [x] pcbnew\connectivity\connectivity_items.cpp
+- [x] pcbnew\connectivity\connectivity_items.h
+- [x] pcbnew\connectivity\connectivity_rtree.h
+- [x] pcbnew\connectivity\from_to_cache.cpp
+- [x] pcbnew\connectivity\from_to_cache.h
+- [x] pcbnew\connectivity\topo_match.cpp
+- [x] pcbnew\connectivity\topo_match.h
+- [x] pcbnew\dialogs\dialog_barcode_properties.cpp
+- [x] pcbnew\dialogs\dialog_barcode_properties.h
+- [x] pcbnew\dialogs\dialog_barcode_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_barcode_properties_base.h
+- [x] pcbnew\dialogs\dialog_board_reannotate.cpp
+- [x] pcbnew\dialogs\dialog_board_reannotate.h
+- [x] pcbnew\dialogs\dialog_board_reannotate_base.cpp
+- [x] pcbnew\dialogs\dialog_board_reannotate_base.h
+- [x] pcbnew\dialogs\dialog_board_setup.cpp
+- [x] pcbnew\dialogs\dialog_board_setup.h
+- [x] pcbnew\dialogs\dialog_board_statistics.cpp
+- [x] pcbnew\dialogs\dialog_board_statistics.h
+- [x] pcbnew\dialogs\dialog_board_statistics_base.cpp
+- [x] pcbnew\dialogs\dialog_board_statistics_base.h
+- [x] pcbnew\dialogs\dialog_board_stats_job.cpp
+- [x] pcbnew\dialogs\dialog_board_stats_job.h
+- [x] pcbnew\dialogs\dialog_board_stats_job_base.cpp
+- [x] pcbnew\dialogs\dialog_board_stats_job_base.h
+- [x] pcbnew\dialogs\dialog_cleanup_graphics.cpp
+- [x] pcbnew\dialogs\dialog_cleanup_graphics.h
+- [x] pcbnew\dialogs\dialog_cleanup_graphics_base.cpp
+- [x] pcbnew\dialogs\dialog_cleanup_graphics_base.h
+- [x] pcbnew\dialogs\dialog_cleanup_tracks_and_vias.cpp
+- [x] pcbnew\dialogs\dialog_cleanup_tracks_and_vias.h
+- [x] pcbnew\dialogs\dialog_cleanup_tracks_and_vias_base.cpp
+- [x] pcbnew\dialogs\dialog_cleanup_tracks_and_vias_base.h
+- [x] pcbnew\dialogs\dialog_copper_zones.cpp
+- [x] pcbnew\dialogs\dialog_copper_zones_base.cpp
+- [x] pcbnew\dialogs\dialog_copper_zones_base.h
+- [x] pcbnew\dialogs\dialog_create_array.cpp
+- [x] pcbnew\dialogs\dialog_create_array.h
+- [x] pcbnew\dialogs\dialog_create_array_base.cpp
+- [x] pcbnew\dialogs\dialog_create_array_base.h
+- [x] pcbnew\dialogs\dialog_dimension_properties.cpp
+- [x] pcbnew\dialogs\dialog_dimension_properties.h
+- [x] pcbnew\dialogs\dialog_dimension_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_dimension_properties_base.h
+- [x] pcbnew\dialogs\dialog_drc.cpp
+- [x] pcbnew\dialogs\dialog_drc.h
+- [x] pcbnew\dialogs\dialog_drc_base.cpp
+- [x] pcbnew\dialogs\dialog_drc_base.h
+- [x] pcbnew\dialogs\dialog_drc_job_config.cpp
+- [x] pcbnew\dialogs\dialog_drc_job_config.h
+- [x] pcbnew\dialogs\dialog_enum_pads.cpp
+- [x] pcbnew\dialogs\dialog_enum_pads.h
+- [x] pcbnew\dialogs\dialog_enum_pads_base.cpp
+- [x] pcbnew\dialogs\dialog_enum_pads_base.h
+- [x] pcbnew\dialogs\dialog_exchange_footprints.cpp
+- [x] pcbnew\dialogs\dialog_exchange_footprints.h
+- [x] pcbnew\dialogs\dialog_exchange_footprints_base.cpp
+- [x] pcbnew\dialogs\dialog_exchange_footprints_base.h
+- [x] pcbnew\dialogs\dialog_export_2581.cpp
+- [x] pcbnew\dialogs\dialog_export_2581.h
+- [x] pcbnew\dialogs\dialog_export_2581_base.cpp
+- [x] pcbnew\dialogs\dialog_export_2581_base.h
+- [x] pcbnew\dialogs\dialog_export_idf.cpp
+- [x] pcbnew\dialogs\dialog_export_idf.h
+- [x] pcbnew\dialogs\dialog_export_idf_base.cpp
+- [x] pcbnew\dialogs\dialog_export_idf_base.h
+- [x] pcbnew\dialogs\dialog_export_odbpp.cpp
+- [x] pcbnew\dialogs\dialog_export_odbpp.h
+- [x] pcbnew\dialogs\dialog_export_odbpp_base.cpp
+- [x] pcbnew\dialogs\dialog_export_odbpp_base.h
+- [x] pcbnew\dialogs\dialog_export_step.cpp
+- [x] pcbnew\dialogs\dialog_export_step.h
+- [x] pcbnew\dialogs\dialog_export_step_base.cpp
+- [x] pcbnew\dialogs\dialog_export_step_base.h
+- [x] pcbnew\dialogs\dialog_export_step_process.cpp
+- [x] pcbnew\dialogs\dialog_export_step_process.h
+- [x] pcbnew\dialogs\dialog_export_step_process_base.cpp
+- [x] pcbnew\dialogs\dialog_export_step_process_base.h
+- [x] pcbnew\dialogs\dialog_export_vrml.cpp
+- [x] pcbnew\dialogs\dialog_export_vrml.h
+- [x] pcbnew\dialogs\dialog_export_vrml_base.cpp
+- [x] pcbnew\dialogs\dialog_export_vrml_base.h
+- [x] pcbnew\dialogs\dialog_filter_selection.cpp
+- [x] pcbnew\dialogs\dialog_filter_selection.h
+- [x] pcbnew\dialogs\dialog_filter_selection_base.cpp
+- [x] pcbnew\dialogs\dialog_filter_selection_base.h
+- [x] pcbnew\dialogs\dialog_find.cpp
+- [x] pcbnew\dialogs\dialog_find.h
+- [x] pcbnew\dialogs\dialog_find_base.cpp
+- [x] pcbnew\dialogs\dialog_find_base.h
+- [x] pcbnew\dialogs\dialog_find_by_properties.cpp
+- [x] pcbnew\dialogs\dialog_find_by_properties.h
+- [x] pcbnew\dialogs\dialog_find_by_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_find_by_properties_base.h
+- [x] pcbnew\dialogs\dialog_footprint_associations.cpp
+- [x] pcbnew\dialogs\dialog_footprint_associations.h
+- [x] pcbnew\dialogs\dialog_footprint_associations_base.cpp
+- [x] pcbnew\dialogs\dialog_footprint_associations_base.h
+- [x] pcbnew\dialogs\dialog_footprint_checker.cpp
+- [x] pcbnew\dialogs\dialog_footprint_checker.h
+- [x] pcbnew\dialogs\dialog_footprint_checker_base.cpp
+- [x] pcbnew\dialogs\dialog_footprint_checker_base.h
+- [x] pcbnew\dialogs\dialog_footprint_properties.cpp
+- [x] pcbnew\dialogs\dialog_footprint_properties.h
+- [x] pcbnew\dialogs\dialog_footprint_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_footprint_properties_base.h
+- [x] pcbnew\dialogs\dialog_footprint_properties_fp_editor.cpp
+- [x] pcbnew\dialogs\dialog_footprint_properties_fp_editor.h
+- [x] pcbnew\dialogs\dialog_footprint_properties_fp_editor_base.cpp
+- [x] pcbnew\dialogs\dialog_footprint_properties_fp_editor_base.h
+- [x] pcbnew\dialogs\dialog_footprint_wizard_list.cpp
+- [x] pcbnew\dialogs\dialog_footprint_wizard_list.h
+- [x] pcbnew\dialogs\dialog_footprint_wizard_list_base.cpp
+- [x] pcbnew\dialogs\dialog_footprint_wizard_list_base.h
+- [x] pcbnew\dialogs\dialog_fp_edit_pad_table.cpp
+- [x] pcbnew\dialogs\dialog_fp_edit_pad_table.h
+- [x] pcbnew\dialogs\dialog_fp_edit_pad_table_base.cpp
+- [x] pcbnew\dialogs\dialog_fp_edit_pad_table_base.h
+- [x] pcbnew\dialogs\dialog_gencad_export_options.cpp
+- [x] pcbnew\dialogs\dialog_gencad_export_options.h
+- [x] pcbnew\dialogs\dialog_gendrill.cpp
+- [x] pcbnew\dialogs\dialog_gendrill.h
+- [x] pcbnew\dialogs\dialog_gendrill_base.cpp
+- [x] pcbnew\dialogs\dialog_gendrill_base.h
+- [x] pcbnew\dialogs\dialog_generators.cpp
+- [x] pcbnew\dialogs\dialog_generators.h
+- [x] pcbnew\dialogs\dialog_generators_base.cpp
+- [x] pcbnew\dialogs\dialog_generators_base.h
+- [x] pcbnew\dialogs\dialog_gen_footprint_position.cpp
+- [x] pcbnew\dialogs\dialog_gen_footprint_position.h
+- [x] pcbnew\dialogs\dialog_gen_footprint_position_file_base.cpp
+- [x] pcbnew\dialogs\dialog_gen_footprint_position_file_base.h
+- [x] pcbnew\dialogs\dialog_get_footprint_by_name.cpp
+- [x] pcbnew\dialogs\dialog_get_footprint_by_name.h
+- [x] pcbnew\dialogs\dialog_get_footprint_by_name_base.cpp
+- [x] pcbnew\dialogs\dialog_get_footprint_by_name_base.h
+- [x] pcbnew\dialogs\dialog_global_deletion.cpp
+- [x] pcbnew\dialogs\dialog_global_deletion.h
+- [x] pcbnew\dialogs\dialog_global_deletion_base.cpp
+- [x] pcbnew\dialogs\dialog_global_deletion_base.h
+- [x] pcbnew\dialogs\dialog_global_edit_teardrops.cpp
+- [x] pcbnew\dialogs\dialog_global_edit_teardrops_base.cpp
+- [x] pcbnew\dialogs\dialog_global_edit_teardrops_base.h
+- [x] pcbnew\dialogs\dialog_global_edit_text_and_graphics.cpp
+- [x] pcbnew\dialogs\dialog_global_edit_text_and_graphics_base.cpp
+- [x] pcbnew\dialogs\dialog_global_edit_text_and_graphics_base.h
+- [x] pcbnew\dialogs\dialog_global_edit_tracks_and_vias.cpp
+- [x] pcbnew\dialogs\dialog_global_edit_tracks_and_vias.h
+- [x] pcbnew\dialogs\dialog_global_edit_tracks_and_vias_base.cpp
+- [x] pcbnew\dialogs\dialog_global_edit_tracks_and_vias_base.h
+- [x] pcbnew\dialogs\dialog_imported_layers_base.cpp
+- [x] pcbnew\dialogs\dialog_imported_layers_base.h
+- [x] pcbnew\dialogs\dialog_import_netlist.cpp
+- [x] pcbnew\dialogs\dialog_import_netlist.h
+- [x] pcbnew\dialogs\dialog_import_netlist_base.cpp
+- [x] pcbnew\dialogs\dialog_import_netlist_base.h
+- [x] pcbnew\dialogs\dialog_import_settings.cpp
+- [x] pcbnew\dialogs\dialog_import_settings.h
+- [x] pcbnew\dialogs\dialog_import_settings_base.cpp
+- [x] pcbnew\dialogs\dialog_import_settings_base.h
+- [x] pcbnew\dialogs\dialog_items_list.cpp
+- [x] pcbnew\dialogs\dialog_items_list.h
+- [x] pcbnew\dialogs\dialog_layer_selection_base.cpp
+- [x] pcbnew\dialogs\dialog_layer_selection_base.h
+- [x] pcbnew\dialogs\dialog_map_layers.cpp
+- [x] pcbnew\dialogs\dialog_map_layers.h
+- [x] pcbnew\dialogs\dialog_migrate_3d_models.cpp
+- [x] pcbnew\dialogs\dialog_migrate_3d_models.h
+- [x] pcbnew\dialogs\dialog_migrate_3d_models_base.cpp
+- [x] pcbnew\dialogs\dialog_migrate_3d_models_base.h
+- [x] pcbnew\dialogs\dialog_move_exact.cpp
+- [x] pcbnew\dialogs\dialog_move_exact.h
+- [x] pcbnew\dialogs\dialog_move_exact_base.cpp
+- [x] pcbnew\dialogs\dialog_move_exact_base.h
+- [x] pcbnew\dialogs\dialog_multichannel_generate_rule_areas.cpp
+- [x] pcbnew\dialogs\dialog_multichannel_generate_rule_areas.h
+- [x] pcbnew\dialogs\dialog_multichannel_generate_rule_areas_base.cpp
+- [x] pcbnew\dialogs\dialog_multichannel_generate_rule_areas_base.h
+- [x] pcbnew\dialogs\dialog_multichannel_repeat_layout.cpp
+- [x] pcbnew\dialogs\dialog_multichannel_repeat_layout.h
+- [x] pcbnew\dialogs\dialog_multichannel_repeat_layout_base.cpp
+- [x] pcbnew\dialogs\dialog_multichannel_repeat_layout_base.h
+- [x] pcbnew\dialogs\dialog_non_copper_zones_properties.cpp
+- [x] pcbnew\dialogs\dialog_non_copper_zones_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_non_copper_zones_properties_base.h
+- [x] pcbnew\dialogs\dialog_offset_item.cpp
+- [x] pcbnew\dialogs\dialog_offset_item.h
+- [x] pcbnew\dialogs\dialog_offset_item_base.cpp
+- [x] pcbnew\dialogs\dialog_offset_item_base.h
+- [x] pcbnew\dialogs\dialog_outset_items.cpp
+- [x] pcbnew\dialogs\dialog_outset_items.h
+- [x] pcbnew\dialogs\dialog_outset_items_base.cpp
+- [x] pcbnew\dialogs\dialog_outset_items_base.h
+- [x] pcbnew\dialogs\dialog_pad_properties.cpp
+- [x] pcbnew\dialogs\dialog_pad_properties.h
+- [x] pcbnew\dialogs\dialog_pad_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_pad_properties_base.h
+- [x] pcbnew\dialogs\dialog_plot.cpp
+- [x] pcbnew\dialogs\dialog_plot.h
+- [x] pcbnew\dialogs\dialog_plot_base.cpp
+- [x] pcbnew\dialogs\dialog_plot_base.h
+- [x] pcbnew\dialogs\dialog_pns_diff_pair_dimensions.cpp
+- [x] pcbnew\dialogs\dialog_pns_diff_pair_dimensions.h
+- [x] pcbnew\dialogs\dialog_pns_diff_pair_dimensions_base.cpp
+- [x] pcbnew\dialogs\dialog_pns_diff_pair_dimensions_base.h
+- [x] pcbnew\dialogs\dialog_pns_settings.cpp
+- [x] pcbnew\dialogs\dialog_pns_settings.h
+- [x] pcbnew\dialogs\dialog_pns_settings_base.cpp
+- [x] pcbnew\dialogs\dialog_pns_settings_base.h
+- [x] pcbnew\dialogs\dialog_position_relative.cpp
+- [x] pcbnew\dialogs\dialog_position_relative.h
+- [x] pcbnew\dialogs\dialog_position_relative_base.cpp
+- [x] pcbnew\dialogs\dialog_position_relative_base.h
+- [x] pcbnew\dialogs\dialog_print_pcbnew.cpp
+- [x] pcbnew\dialogs\dialog_produce_pcb_base.cpp
+- [x] pcbnew\dialogs\dialog_produce_pcb_base.h
+- [x] pcbnew\dialogs\dialog_push_pad_properties.cpp
+- [x] pcbnew\dialogs\dialog_push_pad_properties.h
+- [x] pcbnew\dialogs\dialog_push_pad_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_push_pad_properties_base.h
+- [x] pcbnew\dialogs\dialog_reference_image_properties.cpp
+- [x] pcbnew\dialogs\dialog_reference_image_properties.h
+- [x] pcbnew\dialogs\dialog_reference_image_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_reference_image_properties_base.h
+- [x] pcbnew\dialogs\dialog_render_job.cpp
+- [x] pcbnew\dialogs\dialog_render_job.h
+- [x] pcbnew\dialogs\dialog_render_job_base.cpp
+- [x] pcbnew\dialogs\dialog_render_job_base.h
+- [x] pcbnew\dialogs\dialog_router_save_test_case.cpp
+- [x] pcbnew\dialogs\dialog_router_save_test_case.h
+- [x] pcbnew\dialogs\dialog_router_save_test_case_base.cpp
+- [x] pcbnew\dialogs\dialog_router_save_test_case_base.h
+- [x] pcbnew\dialogs\dialog_rule_area_properties.cpp
+- [x] pcbnew\dialogs\dialog_rule_area_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_rule_area_properties_base.h
+- [x] pcbnew\dialogs\dialog_shape_properties.cpp
+- [x] pcbnew\dialogs\dialog_shape_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_shape_properties_base.h
+- [x] pcbnew\dialogs\dialog_swap_layers.cpp
+- [x] pcbnew\dialogs\dialog_swap_layers.h
+- [x] pcbnew\dialogs\dialog_swap_layers_base.cpp
+- [x] pcbnew\dialogs\dialog_swap_layers_base.h
+- [x] pcbnew\dialogs\dialog_tablecell_properties.cpp
+- [x] pcbnew\dialogs\dialog_tablecell_properties.h
+- [x] pcbnew\dialogs\dialog_tablecell_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_tablecell_properties_base.h
+- [x] pcbnew\dialogs\dialog_table_properties.cpp
+- [x] pcbnew\dialogs\dialog_table_properties.h
+- [x] pcbnew\dialogs\dialog_table_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_table_properties_base.h
+- [x] pcbnew\dialogs\dialog_target_properties.cpp
+- [x] pcbnew\dialogs\dialog_target_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_target_properties_base.h
+- [x] pcbnew\dialogs\dialog_textbox_properties.cpp
+- [x] pcbnew\dialogs\dialog_textbox_properties.h
+- [x] pcbnew\dialogs\dialog_textbox_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_textbox_properties_base.h
+- [x] pcbnew\dialogs\dialog_text_properties.cpp
+- [x] pcbnew\dialogs\dialog_text_properties.h
+- [x] pcbnew\dialogs\dialog_text_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_text_properties_base.h
+- [x] pcbnew\dialogs\dialog_track_via_properties.cpp
+- [x] pcbnew\dialogs\dialog_track_via_properties.h
+- [x] pcbnew\dialogs\dialog_track_via_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_track_via_properties_base.h
+- [x] pcbnew\dialogs\dialog_track_via_size.cpp
+- [x] pcbnew\dialogs\dialog_track_via_size.h
+- [x] pcbnew\dialogs\dialog_track_via_size_base.cpp
+- [x] pcbnew\dialogs\dialog_track_via_size_base.h
+- [x] pcbnew\dialogs\dialog_tuning_pattern_properties.cpp
+- [x] pcbnew\dialogs\dialog_tuning_pattern_properties.h
+- [x] pcbnew\dialogs\dialog_tuning_pattern_properties_base.cpp
+- [x] pcbnew\dialogs\dialog_tuning_pattern_properties_base.h
+- [x] pcbnew\dialogs\dialog_unused_pad_layers.cpp
+- [x] pcbnew\dialogs\dialog_unused_pad_layers.h
+- [x] pcbnew\dialogs\dialog_unused_pad_layers_base.cpp
+- [x] pcbnew\dialogs\dialog_unused_pad_layers_base.h
+- [x] pcbnew\dialogs\dialog_update_pcb.cpp
+- [x] pcbnew\dialogs\dialog_update_pcb.h
+- [x] pcbnew\dialogs\dialog_update_pcb_base.cpp
+- [x] pcbnew\dialogs\dialog_update_pcb_base.h
+- [x] pcbnew\dialogs\panel_assign_component_classes.cpp
+- [x] pcbnew\dialogs\panel_assign_component_classes_base.cpp
+- [x] pcbnew\dialogs\panel_assign_component_classes_base.h
+- [x] pcbnew\dialogs\panel_display_options.cpp
+- [x] pcbnew\dialogs\panel_display_options.h
+- [x] pcbnew\dialogs\panel_display_options_base.cpp
+- [x] pcbnew\dialogs\panel_display_options_base.h
+- [x] pcbnew\dialogs\panel_edit_options.cpp
+- [x] pcbnew\dialogs\panel_edit_options.h
+- [x] pcbnew\dialogs\panel_edit_options_base.cpp
+- [x] pcbnew\dialogs\panel_edit_options_base.h
+- [x] pcbnew\dialogs\panel_fp_editor_color_settings.cpp
+- [x] pcbnew\dialogs\panel_fp_editor_color_settings.h
+- [x] pcbnew\dialogs\panel_fp_editor_field_defaults.cpp
+- [x] pcbnew\dialogs\panel_fp_editor_field_defaults.h
+- [x] pcbnew\dialogs\panel_fp_editor_field_defaults_base.cpp
+- [x] pcbnew\dialogs\panel_fp_editor_field_defaults_base.h
+- [x] pcbnew\dialogs\panel_fp_editor_graphics_defaults.cpp
+- [x] pcbnew\dialogs\panel_fp_editor_graphics_defaults.h
+- [x] pcbnew\dialogs\panel_fp_editor_graphics_defaults_base.cpp
+- [x] pcbnew\dialogs\panel_fp_editor_graphics_defaults_base.h
+- [x] pcbnew\dialogs\panel_fp_lib_table.cpp
+- [x] pcbnew\dialogs\panel_fp_lib_table.h
+- [x] pcbnew\dialogs\panel_fp_lib_table_base.cpp
+- [x] pcbnew\dialogs\panel_fp_lib_table_base.h
+- [x] pcbnew\dialogs\panel_fp_properties_3d_model.cpp
+- [x] pcbnew\dialogs\panel_fp_properties_3d_model.h
+- [x] pcbnew\dialogs\panel_fp_properties_3d_model_base.cpp
+- [x] pcbnew\dialogs\panel_fp_properties_3d_model_base.h
+- [x] pcbnew\dialogs\panel_fp_user_layer_names.cpp
+- [x] pcbnew\dialogs\panel_fp_user_layer_names.h
+- [x] pcbnew\dialogs\panel_fp_user_layer_names_base.cpp
+- [x] pcbnew\dialogs\panel_fp_user_layer_names_base.h
+- [x] pcbnew\dialogs\panel_pcbnew_action_plugins.cpp
+- [x] pcbnew\dialogs\panel_pcbnew_action_plugins.h
+- [x] pcbnew\dialogs\panel_pcbnew_action_plugins_base.cpp
+- [x] pcbnew\dialogs\panel_pcbnew_action_plugins_base.h
+- [x] pcbnew\dialogs\panel_pcbnew_color_settings.cpp
+- [x] pcbnew\dialogs\panel_pcbnew_color_settings.h
+- [x] pcbnew\dialogs\panel_pcbnew_display_origin.cpp
+- [x] pcbnew\dialogs\panel_pcbnew_display_origin.h
+- [x] pcbnew\dialogs\panel_pcbnew_display_origin_base.cpp
+- [x] pcbnew\dialogs\panel_pcbnew_display_origin_base.h
+- [x] pcbnew\dialogs\panel_rule_area_properties_keepout_base.cpp
+- [x] pcbnew\dialogs\panel_rule_area_properties_keepout_base.h
+- [x] pcbnew\dialogs\panel_rule_area_properties_placement_base.cpp
+- [x] pcbnew\dialogs\panel_rule_area_properties_placement_base.h
+- [x] pcbnew\dialogs\panel_setup_condition_help_1clauses.h
+- [x] pcbnew\dialogs\panel_setup_condition_help_6notes.h
+- [x] pcbnew\dialogs\panel_setup_constraints.cpp
+- [x] pcbnew\dialogs\panel_setup_constraints.h
+- [x] pcbnew\dialogs\panel_setup_constraints_base.cpp
+- [x] pcbnew\dialogs\panel_setup_constraints_base.h
+- [x] pcbnew\dialogs\panel_setup_defaults.cpp
+- [x] pcbnew\dialogs\panel_setup_defaults.h
+- [x] pcbnew\dialogs\panel_setup_defaults_base.cpp
+- [x] pcbnew\dialogs\panel_setup_defaults_base.h
+- [x] pcbnew\dialogs\panel_setup_dimensions.cpp
+- [x] pcbnew\dialogs\panel_setup_dimensions.h
+- [x] pcbnew\dialogs\panel_setup_dimensions_base.cpp
+- [x] pcbnew\dialogs\panel_setup_dimensions_base.h
+- [x] pcbnew\dialogs\panel_setup_formatting.cpp
+- [x] pcbnew\dialogs\panel_setup_formatting.h
+- [x] pcbnew\dialogs\panel_setup_formatting_base.cpp
+- [x] pcbnew\dialogs\panel_setup_formatting_base.h
+- [x] pcbnew\dialogs\panel_setup_layers.cpp
+- [x] pcbnew\dialogs\panel_setup_layers.h
+- [x] pcbnew\dialogs\panel_setup_layers_base.cpp
+- [x] pcbnew\dialogs\panel_setup_layers_base.h
+- [x] pcbnew\dialogs\panel_setup_mask_and_paste.cpp
+- [x] pcbnew\dialogs\panel_setup_mask_and_paste.h
+- [x] pcbnew\dialogs\panel_setup_mask_and_paste_base.cpp
+- [x] pcbnew\dialogs\panel_setup_mask_and_paste_base.h
+- [x] pcbnew\dialogs\panel_setup_rules.cpp
+- [x] pcbnew\dialogs\panel_setup_rules.h
+- [x] pcbnew\dialogs\panel_setup_rules_base.cpp
+- [x] pcbnew\dialogs\panel_setup_rules_base.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_10documentation.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_1clauses.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_2constraints.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_3items.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_4severity_names.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_5examples.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_6notes.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_7properties.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_8expression_functions.h
+- [x] pcbnew\dialogs\panel_setup_rules_help_9more_examples.h
+- [x] pcbnew\dialogs\panel_setup_teardrops.cpp
+- [x] pcbnew\dialogs\panel_setup_teardrops.h
+- [x] pcbnew\dialogs\panel_setup_teardrops_base.cpp
+- [x] pcbnew\dialogs\panel_setup_teardrops_base.h
+- [x] pcbnew\dialogs\panel_setup_text_and_graphics.cpp
+- [x] pcbnew\dialogs\panel_setup_text_and_graphics.h
+- [x] pcbnew\dialogs\panel_setup_text_and_graphics_base.cpp
+- [x] pcbnew\dialogs\panel_setup_text_and_graphics_base.h
+- [x] pcbnew\dialogs\panel_setup_tracks_and_vias.cpp
+- [x] pcbnew\dialogs\panel_setup_tracks_and_vias.h
+- [x] pcbnew\dialogs\panel_setup_tracks_and_vias_base.cpp
+- [x] pcbnew\dialogs\panel_setup_tracks_and_vias_base.h
+- [x] pcbnew\dialogs\panel_setup_tuning_patterns.cpp
+- [x] pcbnew\dialogs\panel_setup_tuning_patterns.h
+- [x] pcbnew\dialogs\panel_setup_tuning_patterns_base.cpp
+- [x] pcbnew\dialogs\panel_setup_tuning_patterns_base.h
+- [x] pcbnew\dialogs\panel_setup_tuning_profiles.cpp
+- [x] pcbnew\dialogs\panel_setup_tuning_profiles.h
+- [x] pcbnew\dialogs\panel_setup_tuning_profiles_base.cpp
+- [x] pcbnew\dialogs\panel_setup_tuning_profiles_base.h
+- [x] pcbnew\dialogs\panel_setup_tuning_profile_info.cpp
+- [x] pcbnew\dialogs\panel_setup_tuning_profile_info.h
+- [x] pcbnew\dialogs\panel_setup_tuning_profile_info_base.cpp
+- [x] pcbnew\dialogs\panel_setup_tuning_profile_info_base.h
+- [x] pcbnew\dialogs\panel_setup_zones.cpp
+- [x] pcbnew\dialogs\panel_setup_zones.h
+- [x] pcbnew\dialogs\panel_setup_zones_base.cpp
+- [x] pcbnew\dialogs\panel_setup_zones_base.h
+- [x] pcbnew\dialogs\panel_setup_zone_hatch_offsets.cpp
+- [x] pcbnew\dialogs\panel_setup_zone_hatch_offsets.h
+- [x] pcbnew\dialogs\panel_setup_zone_hatch_offsets_base.cpp
+- [x] pcbnew\dialogs\panel_setup_zone_hatch_offsets_base.h
+- [x] pcbnew\dialogs\panel_zone_properties.cpp
+- [x] pcbnew\dialogs\panel_zone_properties.h
+- [x] pcbnew\dialogs\panel_zone_properties_base.cpp
+- [x] pcbnew\dialogs\panel_zone_properties_base.h
+- [x] pcbnew\drc\drc_cache_generator.cpp
+- [x] pcbnew\drc\drc_cache_generator.h
+- [x] pcbnew\drc\drc_chain_topology.cpp
+- [x] pcbnew\drc\drc_chain_topology.h
+- [x] pcbnew\drc\drc_creepage_utils.cpp
+- [x] pcbnew\drc\drc_creepage_utils.h
+- [x] pcbnew\drc\drc_engine.cpp
+- [x] pcbnew\drc\drc_engine.h
+- [x] pcbnew\drc\drc_interactive_courtyard_clearance.cpp
+- [x] pcbnew\drc\drc_interactive_courtyard_clearance.h
+- [x] pcbnew\drc\drc_item.cpp
+- [x] pcbnew\drc\drc_item.h
+- [x] pcbnew\drc\drc_length_report.h
+- [x] pcbnew\drc\drc_report.cpp
+- [x] pcbnew\drc\drc_report.h
+- [x] pcbnew\drc\drc_rtree.h
+- [x] pcbnew\drc\drc_rule.cpp
+- [x] pcbnew\drc\drc_rule.h
+- [x] pcbnew\drc\drc_rule_condition.cpp
+- [x] pcbnew\drc\drc_rule_condition.h
+- [x] pcbnew\drc\drc_rule_parser.cpp
+- [x] pcbnew\drc\drc_rule_parser.h
+- [x] pcbnew\drc\drc_test_provider.cpp
+- [x] pcbnew\drc\drc_test_provider.h
+- [x] pcbnew\drc\drc_test_provider_annular_width.cpp
+- [x] pcbnew\drc\drc_test_provider_connection_width.cpp
+- [x] pcbnew\drc\drc_test_provider_connectivity.cpp
+- [x] pcbnew\drc\drc_test_provider_copper_clearance.cpp
+- [x] pcbnew\drc\drc_test_provider_courtyard_clearance.cpp
+- [x] pcbnew\drc\drc_test_provider_creepage.cpp
+- [x] pcbnew\drc\drc_test_provider_diff_pair_coupling.cpp
+- [x] pcbnew\drc\drc_test_provider_disallow.cpp
+- [x] pcbnew\drc\drc_test_provider_edge_clearance.cpp
+- [x] pcbnew\drc\drc_test_provider_footprint_checks.cpp
+- [x] pcbnew\drc\drc_test_provider_hole_size.cpp
+- [x] pcbnew\drc\drc_test_provider_hole_to_hole.cpp
+- [x] pcbnew\drc\drc_test_provider_library_parity.cpp
+- [x] pcbnew\drc\drc_test_provider_matched_length.cpp
+- [x] pcbnew\drc\drc_test_provider_misc.cpp
+- [x] pcbnew\drc\drc_test_provider_physical_clearance.cpp
+- [x] pcbnew\drc\drc_test_provider_schematic_parity.cpp
+- [x] pcbnew\drc\drc_test_provider_silk_clearance.cpp
+- [x] pcbnew\drc\drc_test_provider_sliver_checker.cpp
+- [x] pcbnew\drc\drc_test_provider_solder_mask.cpp
+- [x] pcbnew\drc\drc_test_provider_text_dims.cpp
+- [x] pcbnew\drc\drc_test_provider_text_mirroring.cpp
+- [x] pcbnew\drc\drc_test_provider_track_angle.cpp
+- [x] pcbnew\drc\drc_test_provider_track_segment_length.cpp
+- [x] pcbnew\drc\drc_test_provider_track_width.cpp
+- [x] pcbnew\drc\drc_test_provider_via_diameter.cpp
+- [x] pcbnew\drc\drc_test_provider_zone_connections.cpp
+- [x] pcbnew\drc\rule_editor\dialog_drc_rule_editor.cpp
+- [x] pcbnew\drc\rule_editor\dialog_drc_rule_editor.h
+- [x] pcbnew\drc\rule_editor\drc_re_abs_length_two_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_abs_length_two_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_abs_length_two_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_allowed_orientation_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_allowed_orientation_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_allowed_orientation_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_base_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_bitmap_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_bitmap_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_bool_input_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_bool_input_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_bool_input_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_condition_group_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_condition_group_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_condition_row_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_condition_row_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_constraint_panel_params.h
+- [x] pcbnew\drc\rule_editor\drc_re_content_panel_base.h
+- [x] pcbnew\drc\rule_editor\drc_re_custom_rule_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_custom_rule_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_custom_rule_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_loaded_rule.h
+- [x] pcbnew\drc\rule_editor\drc_re_matched_length_diff_pair_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_matched_length_diff_pair_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_min_txt_ht_th_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_min_txt_ht_th_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_min_txt_ht_th_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_numeric_constraint_types.h
+- [x] pcbnew\drc\rule_editor\drc_re_numeric_input_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_numeric_input_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_numeric_input_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_object_selector_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_object_selector_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_overlay_field.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_overlay_field.h
+- [x] pcbnew\drc\rule_editor\drc_re_overlay_types.h
+- [x] pcbnew\drc\rule_editor\drc_re_panel_matcher.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_panel_matcher.h
+- [x] pcbnew\drc\rule_editor\drc_re_permitted_layers_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_permitted_layers_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_permitted_layers_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_routing_width_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_routing_width_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_routing_width_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_rtg_diff_pair_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_rtg_diff_pair_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_rtg_diff_pair_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_rule_loader.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_rule_loader.h
+- [x] pcbnew\drc\rule_editor\drc_re_rule_saver.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_rule_saver.h
+- [x] pcbnew\drc\rule_editor\drc_re_validator_checkbox_list.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_validator_checkbox_list.h
+- [x] pcbnew\drc\rule_editor\drc_re_validator_combo_ctrl.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_validator_combo_ctrl.h
+- [x] pcbnew\drc\rule_editor\drc_re_validator_min_max_ctrl.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_validator_min_max_ctrl.h
+- [x] pcbnew\drc\rule_editor\drc_re_validator_min_preferred_max_ctrl.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_validator_min_preferred_max_ctrl.h
+- [x] pcbnew\drc\rule_editor\drc_re_validator_numeric_ctrl.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_validator_numeric_ctrl.h
+- [x] pcbnew\drc\rule_editor\drc_re_vias_under_smd_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_vias_under_smd_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_vias_under_smd_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_re_via_style_constraint_data.h
+- [x] pcbnew\drc\rule_editor\drc_re_via_style_overlay_panel.cpp
+- [x] pcbnew\drc\rule_editor\drc_re_via_style_overlay_panel.h
+- [x] pcbnew\drc\rule_editor\drc_rule_editor_enums.h
+- [x] pcbnew\drc\rule_editor\drc_rule_editor_utils.cpp
+- [x] pcbnew\drc\rule_editor\drc_rule_editor_utils.h
+- [x] pcbnew\drc\rule_editor\panel_drc_group_header.cpp
+- [x] pcbnew\drc\rule_editor\panel_drc_group_header.h
+- [x] pcbnew\drc\rule_editor\panel_drc_group_header_base.cpp
+- [x] pcbnew\drc\rule_editor\panel_drc_group_header_base.h
+- [x] pcbnew\drc\rule_editor\panel_drc_rule_editor.cpp
+- [x] pcbnew\drc\rule_editor\panel_drc_rule_editor.h
+- [x] pcbnew\drc\rule_editor\panel_drc_rule_editor_base.cpp
+- [x] pcbnew\drc\rule_editor\panel_drc_rule_editor_base.h
+- [x] pcbnew\exporters\board_exporter_base.h
+- [x] pcbnew\exporters\exporter_vrml.cpp
+- [x] pcbnew\exporters\exporter_vrml.h
+- [x] pcbnew\exporters\export_d356.cpp
+- [x] pcbnew\exporters\export_d356.h
+- [x] pcbnew\exporters\export_footprint_associations.cpp
+- [x] pcbnew\exporters\export_gencad.cpp
+- [x] pcbnew\exporters\export_gencad_writer.cpp
+- [x] pcbnew\exporters\export_gencad_writer.h
+- [x] pcbnew\exporters\export_hyperlynx.cpp
+- [x] pcbnew\exporters\export_idf.cpp
+- [x] pcbnew\exporters\export_vrml.h
+- [x] pcbnew\exporters\gendrill_excellon_writer.cpp
+- [x] pcbnew\exporters\gendrill_excellon_writer.h
+- [x] pcbnew\exporters\gendrill_gerber_writer.cpp
+- [x] pcbnew\exporters\gendrill_gerber_writer.h
+- [x] pcbnew\exporters\gendrill_writer_base.cpp
+- [x] pcbnew\exporters\gendrill_writer_base.h
+- [x] pcbnew\exporters\gerber_jobfile_writer.cpp
+- [x] pcbnew\exporters\gerber_jobfile_writer.h
+- [x] pcbnew\exporters\gerber_placefile_writer.cpp
+- [x] pcbnew\exporters\gerber_placefile_writer.h
+- [x] pcbnew\exporters\place_file_exporter.cpp
+- [x] pcbnew\exporters\place_file_exporter.h
+- [x] pcbnew\exporters\step\exporter_step.cpp
+- [x] pcbnew\exporters\step\exporter_step.h
+- [x] pcbnew\exporters\step\kicad3d_info.cpp
+- [x] pcbnew\exporters\step\kicad3d_info.h
+- [x] pcbnew\exporters\step\step_pcb_model.cpp
+- [x] pcbnew\exporters\step\step_pcb_model.h
+- [x] pcbnew\exporters\u3d\bit_stream_writer.cpp
+- [x] pcbnew\exporters\u3d\bit_stream_writer.h
+- [x] pcbnew\exporters\u3d\constants.cpp
+- [x] pcbnew\exporters\u3d\constants.h
+- [x] pcbnew\exporters\u3d\context_manager.cpp
+- [x] pcbnew\exporters\u3d\context_manager.h
+- [x] pcbnew\exporters\u3d\data_block.cpp
+- [x] pcbnew\exporters\u3d\data_block.h
+- [x] pcbnew\exporters\u3d\writer.cpp
+- [x] pcbnew\exporters\u3d\writer.h
+- [x] pcbnew\generators\pcb_tuning_pattern.cpp
+- [x] pcbnew\generators\pcb_tuning_pattern.h
+- [x] pcbnew\git\kigit_pcb_merge.cpp
+- [x] pcbnew\git\kigit_pcb_merge.h
+- [x] pcbnew\import_gfx\dialog_import_graphics.cpp
+- [x] pcbnew\import_gfx\dialog_import_graphics.h
+- [x] pcbnew\import_gfx\dialog_import_graphics_base.cpp
+- [x] pcbnew\import_gfx\dialog_import_graphics_base.h
+- [x] pcbnew\import_gfx\graphics_importer_pcbnew.cpp
+- [x] pcbnew\import_gfx\graphics_importer_pcbnew.h
+- [x] pcbnew\length_delay_calculation\length_delay_calculation.cpp
+- [x] pcbnew\length_delay_calculation\length_delay_calculation.h
+- [x] pcbnew\length_delay_calculation\length_delay_calculation_item.cpp
+- [x] pcbnew\length_delay_calculation\length_delay_calculation_item.h
+- [x] pcbnew\length_delay_calculation\tuning_profile_parameters_iface.h
+- [x] pcbnew\length_delay_calculation\tuning_profile_parameters_user_defined.cpp
+- [x] pcbnew\length_delay_calculation\tuning_profile_parameters_user_defined.h
+- [x] pcbnew\microwave\microwave_footprint.cpp
+- [x] pcbnew\microwave\microwave_inductor.cpp
+- [x] pcbnew\microwave\microwave_polygon.cpp
+- [x] pcbnew\microwave\microwave_tool.cpp
+- [x] pcbnew\microwave\microwave_tool.h
+- [x] pcbnew\navlib\nl_pcbnew_plugin.cpp
+- [x] pcbnew\navlib\nl_pcbnew_plugin.h
+- [x] pcbnew\navlib\nl_pcbnew_plugin_impl.cpp
+- [x] pcbnew\navlib\nl_pcbnew_plugin_impl.h
+- [x] pcbnew\netlist_reader\board_netlist_updater.cpp
+- [x] pcbnew\netlist_reader\board_netlist_updater.h
+- [x] pcbnew\netlist_reader\kicad_netlist_parser.h
+- [x] pcbnew\netlist_reader\kicad_netlist_reader.cpp
+- [x] pcbnew\netlist_reader\legacy_netlist_reader.cpp
+- [x] pcbnew\netlist_reader\netlist.cpp
+- [x] pcbnew\netlist_reader\netlist_reader.cpp
+- [x] pcbnew\netlist_reader\netlist_reader.h
+- [x] pcbnew\netlist_reader\pcb_component.cpp
+- [x] pcbnew\netlist_reader\pcb_component.h
+- [x] pcbnew\netlist_reader\pcb_netlist.cpp
+- [x] pcbnew\netlist_reader\pcb_netlist.h
+- [x] pcbnew\pcb_io\pcb_io.cpp
+- [x] pcbnew\pcb_io\pcb_io.h
+- [x] pcbnew\pcb_io\pcb_io_mgr.cpp
+- [x] pcbnew\pcb_io\pcb_io_mgr.h
+- [x] pcbnew\pcb_io\allegro\allegro_builder.cpp
+- [x] pcbnew\pcb_io\allegro\allegro_builder.h
+- [x] pcbnew\pcb_io\allegro\allegro_db_utils.cpp
+- [x] pcbnew\pcb_io\allegro\allegro_db_utils.h
+- [x] pcbnew\pcb_io\allegro\pcb_io_allegro.cpp
+- [x] pcbnew\pcb_io\allegro\pcb_io_allegro.h
+- [x] pcbnew\pcb_io\allegro\convert\allegro_db.cpp
+- [x] pcbnew\pcb_io\allegro\convert\allegro_db.h
+- [x] pcbnew\pcb_io\allegro\convert\allegro_parser.cpp
+- [x] pcbnew\pcb_io\allegro\convert\allegro_parser.h
+- [x] pcbnew\pcb_io\allegro\convert\allegro_pcb_structs.h
+- [x] pcbnew\pcb_io\allegro\convert\allegro_stream.h
+- [x] pcbnew\pcb_io\altium\altium_parser_pcb.cpp
+- [x] pcbnew\pcb_io\altium\altium_parser_pcb.h
+- [x] pcbnew\pcb_io\altium\altium_pcb.cpp
+- [x] pcbnew\pcb_io\altium\altium_pcb.h
+- [x] pcbnew\pcb_io\altium\altium_pcb_compound_file.cpp
+- [x] pcbnew\pcb_io\altium\altium_pcb_compound_file.h
+- [x] pcbnew\pcb_io\altium\altium_rule_transformer.cpp
+- [x] pcbnew\pcb_io\altium\altium_rule_transformer.h
+- [x] pcbnew\pcb_io\altium\pcb_io_altium_circuit_maker.cpp
+- [x] pcbnew\pcb_io\altium\pcb_io_altium_circuit_maker.h
+- [x] pcbnew\pcb_io\altium\pcb_io_altium_circuit_studio.cpp
+- [x] pcbnew\pcb_io\altium\pcb_io_altium_circuit_studio.h
+- [x] pcbnew\pcb_io\altium\pcb_io_altium_designer.cpp
+- [x] pcbnew\pcb_io\altium\pcb_io_altium_designer.h
+- [x] pcbnew\pcb_io\altium\pcb_io_solidworks.cpp
+- [x] pcbnew\pcb_io\altium\pcb_io_solidworks.h
+- [x] pcbnew\pcb_io\cadstar\cadstar_pcb_archive_loader.cpp
+- [x] pcbnew\pcb_io\cadstar\cadstar_pcb_archive_loader.h
+- [x] pcbnew\pcb_io\cadstar\cadstar_pcb_archive_parser.cpp
+- [x] pcbnew\pcb_io\cadstar\cadstar_pcb_archive_parser.h
+- [x] pcbnew\pcb_io\cadstar\pcb_io_cadstar_archive.cpp
+- [x] pcbnew\pcb_io\cadstar\pcb_io_cadstar_archive.h
+- [x] pcbnew\pcb_io\common\plugin_common_layer_mapping.h
+- [x] pcbnew\pcb_io\eagle\pcb_io_eagle.cpp
+- [x] pcbnew\pcb_io\eagle\pcb_io_eagle.h
+- [x] pcbnew\pcb_io\easyeda\pcb_io_easyeda_parser.cpp
+- [x] pcbnew\pcb_io\easyeda\pcb_io_easyeda_parser.h
+- [x] pcbnew\pcb_io\easyeda\pcb_io_easyeda_plugin.cpp
+- [x] pcbnew\pcb_io\easyeda\pcb_io_easyeda_plugin.h
+- [x] pcbnew\pcb_io\easyedapro\pcb_io_easyedapro.cpp
+- [x] pcbnew\pcb_io\easyedapro\pcb_io_easyedapro.h
+- [x] pcbnew\pcb_io\easyedapro\pcb_io_easyedapro_parser.cpp
+- [x] pcbnew\pcb_io\easyedapro\pcb_io_easyedapro_parser.h
+- [x] pcbnew\pcb_io\fabmaster\import_fabmaster.cpp
+- [x] pcbnew\pcb_io\fabmaster\import_fabmaster.h
+- [x] pcbnew\pcb_io\fabmaster\pcb_io_fabmaster.cpp
+- [x] pcbnew\pcb_io\fabmaster\pcb_io_fabmaster.h
+- [x] pcbnew\pcb_io\geda\pcb_io_geda.cpp
+- [x] pcbnew\pcb_io\geda\pcb_io_geda.h
+- [x] pcbnew\pcb_io\ipc2581\ipc2581_types.h
+- [x] pcbnew\pcb_io\ipc2581\pcb_io_ipc2581.cpp
+- [x] pcbnew\pcb_io\ipc2581\pcb_io_ipc2581.h
+- [x] pcbnew\pcb_io\kicad_legacy\pcb_io_kicad_legacy.cpp
+- [x] pcbnew\pcb_io\kicad_legacy\pcb_io_kicad_legacy.h
+- [x] pcbnew\pcb_io\kicad_sexpr\pcb_io_kicad_sexpr.cpp
+- [x] pcbnew\pcb_io\kicad_sexpr\pcb_io_kicad_sexpr.h
+- [x] pcbnew\pcb_io\kicad_sexpr\pcb_io_kicad_sexpr_parser.cpp
+- [x] pcbnew\pcb_io\kicad_sexpr\pcb_io_kicad_sexpr_parser.h
+- [x] pcbnew\pcb_io\odbpp\odb_attribute.cpp
+- [x] pcbnew\pcb_io\odbpp\odb_attribute.h
+- [x] pcbnew\pcb_io\odbpp\odb_component.cpp
+- [x] pcbnew\pcb_io\odbpp\odb_component.h
+- [x] pcbnew\pcb_io\odbpp\odb_defines.h
+- [x] pcbnew\pcb_io\odbpp\odb_eda_data.cpp
+- [x] pcbnew\pcb_io\odbpp\odb_eda_data.h
+- [x] pcbnew\pcb_io\odbpp\odb_entity.cpp
+- [x] pcbnew\pcb_io\odbpp\odb_entity.h
+- [x] pcbnew\pcb_io\odbpp\odb_feature.cpp
+- [x] pcbnew\pcb_io\odbpp\odb_feature.h
+- [x] pcbnew\pcb_io\odbpp\odb_fonts.cpp
+- [x] pcbnew\pcb_io\odbpp\odb_netlist.cpp
+- [x] pcbnew\pcb_io\odbpp\odb_netlist.h
+- [x] pcbnew\pcb_io\odbpp\odb_util.cpp
+- [x] pcbnew\pcb_io\odbpp\odb_util.h
+- [x] pcbnew\pcb_io\odbpp\pcb_io_odbpp.cpp
+- [x] pcbnew\pcb_io\odbpp\pcb_io_odbpp.h
+- [x] pcbnew\pcb_io\pads\pads_binary_parser.cpp
+- [x] pcbnew\pcb_io\pads\pads_binary_parser.h
+- [x] pcbnew\pcb_io\pads\pads_layer_mapper.cpp
+- [x] pcbnew\pcb_io\pads\pads_layer_mapper.h
+- [x] pcbnew\pcb_io\pads\pads_parser.cpp
+- [x] pcbnew\pcb_io\pads\pads_parser.h
+- [x] pcbnew\pcb_io\pads\pcb_io_pads.cpp
+- [x] pcbnew\pcb_io\pads\pcb_io_pads.h
+- [x] pcbnew\pcb_io\pads\pcb_io_pads_binary.cpp
+- [x] pcbnew\pcb_io\pads\pcb_io_pads_binary.h
+- [x] pcbnew\pcb_io\pcad\pcad2kicad_common.cpp
+- [x] pcbnew\pcb_io\pcad\pcad2kicad_common.h
+- [x] pcbnew\pcb_io\pcad\pcad_arc.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_arc.h
+- [x] pcbnew\pcb_io\pcad\pcad_callbacks.h
+- [x] pcbnew\pcb_io\pcad\pcad_copper_pour.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_copper_pour.h
+- [x] pcbnew\pcb_io\pcad\pcad_cutout.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_cutout.h
+- [x] pcbnew\pcb_io\pcad\pcad_footprint.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_footprint.h
+- [x] pcbnew\pcb_io\pcad\pcad_item_types.h
+- [x] pcbnew\pcb_io\pcad\pcad_keepout.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_keepout.h
+- [x] pcbnew\pcb_io\pcad\pcad_line.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_line.h
+- [x] pcbnew\pcb_io\pcad\pcad_nets.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_nets.h
+- [x] pcbnew\pcb_io\pcad\pcad_pad.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_pad.h
+- [x] pcbnew\pcb_io\pcad\pcad_pad_shape.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_pad_shape.h
+- [x] pcbnew\pcb_io\pcad\pcad_pcb.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_pcb.h
+- [x] pcbnew\pcb_io\pcad\pcad_pcb_component.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_pcb_component.h
+- [x] pcbnew\pcb_io\pcad\pcad_plane.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_plane.h
+- [x] pcbnew\pcb_io\pcad\pcad_polygon.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_polygon.h
+- [x] pcbnew\pcb_io\pcad\pcad_text.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_text.h
+- [x] pcbnew\pcb_io\pcad\pcad_via.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_via.h
+- [x] pcbnew\pcb_io\pcad\pcad_via_shape.cpp
+- [x] pcbnew\pcb_io\pcad\pcad_via_shape.h
+- [x] pcbnew\pcb_io\pcad\pcb_io_pcad.cpp
+- [x] pcbnew\pcb_io\pcad\pcb_io_pcad.h
+- [x] pcbnew\pcb_io\pcad\s_expr_loader.cpp
+- [x] pcbnew\pcb_io\pcad\s_expr_loader.h
+- [x] pcbnew\pcb_io\sprint_layout\pcb_io_sprint_layout.cpp
+- [x] pcbnew\pcb_io\sprint_layout\pcb_io_sprint_layout.h
+- [x] pcbnew\pcb_io\sprint_layout\sprint_layout_parser.cpp
+- [x] pcbnew\pcb_io\sprint_layout\sprint_layout_parser.h
+- [x] pcbnew\ratsnest\ratsnest.cpp
+- [x] pcbnew\ratsnest\ratsnest_data.cpp
+- [x] pcbnew\ratsnest\ratsnest_data.h
+- [x] pcbnew\ratsnest\ratsnest_view_item.cpp
+- [x] pcbnew\ratsnest\ratsnest_view_item.h
+- [x] pcbnew\router\pns_algo_base.cpp
+- [x] pcbnew\router\pns_algo_base.h
+- [x] pcbnew\router\pns_arc.cpp
+- [x] pcbnew\router\pns_arc.h
+- [x] pcbnew\router\pns_component_dragger.cpp
+- [x] pcbnew\router\pns_component_dragger.h
+- [x] pcbnew\router\pns_debug_decorator.h
+- [x] pcbnew\router\pns_diff_pair.cpp
+- [x] pcbnew\router\pns_diff_pair.h
+- [x] pcbnew\router\pns_diff_pair_placer.cpp
+- [x] pcbnew\router\pns_diff_pair_placer.h
+- [x] pcbnew\router\pns_dp_meander_placer.cpp
+- [x] pcbnew\router\pns_dp_meander_placer.h
+- [x] pcbnew\router\pns_dragger.cpp
+- [x] pcbnew\router\pns_dragger.h
+- [x] pcbnew\router\pns_drag_algo.h
+- [x] pcbnew\router\pns_hole.cpp
+- [x] pcbnew\router\pns_hole.h
+- [x] pcbnew\router\pns_index.cpp
+- [x] pcbnew\router\pns_index.h
+- [x] pcbnew\router\pns_item.cpp
+- [x] pcbnew\router\pns_item.h
+- [x] pcbnew\router\pns_itemset.cpp
+- [x] pcbnew\router\pns_itemset.h
+- [x] pcbnew\router\pns_joint.h
+- [x] pcbnew\router\pns_kicad_iface.cpp
+- [x] pcbnew\router\pns_kicad_iface.h
+- [x] pcbnew\router\pns_layerset.h
+- [x] pcbnew\router\pns_line.cpp
+- [x] pcbnew\router\pns_line.h
+- [x] pcbnew\router\pns_line_placer.cpp
+- [x] pcbnew\router\pns_line_placer.h
+- [x] pcbnew\router\pns_linked_item.h
+- [x] pcbnew\router\pns_link_holder.h
+- [x] pcbnew\router\pns_logger.cpp
+- [x] pcbnew\router\pns_logger.h
+- [x] pcbnew\router\pns_meander.cpp
+- [x] pcbnew\router\pns_meander.h
+- [x] pcbnew\router\pns_meander_placer.cpp
+- [x] pcbnew\router\pns_meander_placer.h
+- [x] pcbnew\router\pns_meander_placer_base.cpp
+- [x] pcbnew\router\pns_meander_placer_base.h
+- [x] pcbnew\router\pns_meander_skew_placer.cpp
+- [x] pcbnew\router\pns_meander_skew_placer.h
+- [x] pcbnew\router\pns_mouse_trail_tracer.cpp
+- [x] pcbnew\router\pns_mouse_trail_tracer.h
+- [x] pcbnew\router\pns_multi_dragger.cpp
+- [x] pcbnew\router\pns_multi_dragger.h
+- [x] pcbnew\router\pns_node.cpp
+- [x] pcbnew\router\pns_node.h
+- [x] pcbnew\router\pns_optimizer.cpp
+- [x] pcbnew\router\pns_optimizer.h
+- [x] pcbnew\router\pns_placement_algo.h
+- [x] pcbnew\router\pns_router.cpp
+- [x] pcbnew\router\pns_router.h
+- [x] pcbnew\router\pns_routing_settings.cpp
+- [x] pcbnew\router\pns_routing_settings.h
+- [x] pcbnew\router\pns_segment.h
+- [x] pcbnew\router\pns_shove.cpp
+- [x] pcbnew\router\pns_shove.h
+- [x] pcbnew\router\pns_sizes_settings.cpp
+- [x] pcbnew\router\pns_sizes_settings.h
+- [x] pcbnew\router\pns_solid.cpp
+- [x] pcbnew\router\pns_solid.h
+- [x] pcbnew\router\pns_tool_base.cpp
+- [x] pcbnew\router\pns_tool_base.h
+- [x] pcbnew\router\pns_topology.cpp
+- [x] pcbnew\router\pns_topology.h
+- [x] pcbnew\router\pns_utils.cpp
+- [x] pcbnew\router\pns_utils.h
+- [x] pcbnew\router\pns_via.cpp
+- [x] pcbnew\router\pns_via.h
+- [x] pcbnew\router\pns_walkaround.cpp
+- [x] pcbnew\router\pns_walkaround.h
+- [x] pcbnew\router\range.h
+- [x] pcbnew\router\ranged_num.h
+- [x] pcbnew\router\router_preview_item.cpp
+- [x] pcbnew\router\router_preview_item.h
+- [x] pcbnew\router\router_status_view_item.cpp
+- [x] pcbnew\router\router_status_view_item.h
+- [x] pcbnew\router\router_tool.cpp
+- [x] pcbnew\router\router_tool.h
+- [x] pcbnew\router\time_limit.cpp
+- [x] pcbnew\router\time_limit.h
+- [x] pcbnew\specctra_import_export\specctra.cpp
+- [x] pcbnew\specctra_import_export\specctra.h
+- [x] pcbnew\specctra_import_export\specctra_export.cpp
+- [x] pcbnew\specctra_import_export\specctra_import.cpp
+- [ ] pcbnew\specctra_import_export\specctra_test.cpp
+- [ ] pcbnew\teardrop\teardrop.cpp
+- [x] pcbnew\teardrop\teardrop.h
+- [ ] pcbnew\teardrop\teardrop_parameters.cpp
+- [x] pcbnew\teardrop\teardrop_parameters.h
+- [ ] pcbnew\teardrop\teardrop_types.h
+- [ ] pcbnew\teardrop\teardrop_utils.cpp
+- [ ] pcbnew\tools\align_distribute_tool.cpp
+- [x] pcbnew\tools\align_distribute_tool.h
+- [ ] pcbnew\tools\array_tool.cpp
+- [x] pcbnew\tools\array_tool.h
+- [x] pcbnew\tools\board_editor_control.cpp
+- [x] pcbnew\tools\board_editor_control.h
+- [ ] pcbnew\tools\board_inspection_tool.cpp
+- [x] pcbnew\tools\board_inspection_tool.h
+- [ ] pcbnew\tools\board_reannotate_tool.cpp
+- [x] pcbnew\tools\board_reannotate_tool.h
+- [ ] pcbnew\tools\convert_tool.cpp
+- [x] pcbnew\tools\convert_tool.h
+- [x] pcbnew\tools\drawing_tool.cpp
+- [x] pcbnew\tools\drawing_tool.h
+- [ ] pcbnew\tools\drc_rule_editor_tool.cpp
+- [x] pcbnew\tools\drc_rule_editor_tool.h
+- [x] pcbnew\tools\drc_tool.cpp
+- [x] pcbnew\tools\drc_tool.h
+- [x] pcbnew\tools\edit_tool.cpp
+- [x] pcbnew\tools\edit_tool.h
+- [x] pcbnew\tools\edit_tool_move_fct.cpp
+- [ ] pcbnew\tools\footprint_chooser_selection_tool.cpp
+- [x] pcbnew\tools\footprint_chooser_selection_tool.h
+- [ ] pcbnew\tools\footprint_editor_control.cpp
+- [x] pcbnew\tools\footprint_editor_control.h
+- [ ] pcbnew\tools\footprint_wizard_tools.cpp
+- [x] pcbnew\tools\footprint_wizard_tools.h
+- [ ] pcbnew\tools\generator_tool.cpp
+- [x] pcbnew\tools\generator_tool.h
+- [ ] pcbnew\tools\generator_tool_pns_proxy.cpp
+- [ ] pcbnew\tools\generator_tool_pns_proxy.h
+- [ ] pcbnew\tools\global_edit_tool.cpp
+- [x] pcbnew\tools\global_edit_tool.h
+- [ ] pcbnew\tools\item_modification_routine.cpp
+- [x] pcbnew\tools\item_modification_routine.h
+- [ ] pcbnew\tools\multichannel_tool.cpp
+- [x] pcbnew\tools\multichannel_tool.h
+- [ ] pcbnew\tools\pad_tool.cpp
+- [x] pcbnew\tools\pad_tool.h
+- [x] pcbnew\tools\pcb_actions.cpp
+- [x] pcbnew\tools\pcb_actions.h
+- [ ] pcbnew\tools\pcb_control.cpp
+- [x] pcbnew\tools\pcb_control.h
+- [ ] pcbnew\tools\pcb_design_block_control.cpp
+- [x] pcbnew\tools\pcb_design_block_control.h
+- [ ] pcbnew\tools\pcb_editor_conditions.cpp
+- [x] pcbnew\tools\pcb_editor_conditions.h
+- [ ] pcbnew\tools\pcb_edit_table_tool.cpp
+- [x] pcbnew\tools\pcb_edit_table_tool.h
+- [ ] pcbnew\tools\pcb_grid_helper.cpp
+- [x] pcbnew\tools\pcb_grid_helper.h
+- [ ] pcbnew\tools\pcb_group_tool.cpp
+- [x] pcbnew\tools\pcb_group_tool.h
+- [ ] pcbnew\tools\pcb_picker_tool.cpp
+- [x] pcbnew\tools\pcb_picker_tool.h
+- [ ] pcbnew\tools\pcb_point_editor.cpp
+- [x] pcbnew\tools\pcb_point_editor.h
+- [ ] pcbnew\tools\pcb_selection.cpp
+- [x] pcbnew\tools\pcb_selection.h
+- [ ] pcbnew\tools\pcb_selection_conditions.cpp
+- [x] pcbnew\tools\pcb_selection_conditions.h
+- [x] pcbnew\tools\pcb_selection_tool.cpp
+- [x] pcbnew\tools\pcb_selection_tool.h
+- [ ] pcbnew\tools\pcb_tool_base.cpp
+- [x] pcbnew\tools\pcb_tool_base.h
+- [ ] pcbnew\tools\pcb_tool_utils.cpp
+- [x] pcbnew\tools\pcb_tool_utils.h
+- [ ] pcbnew\tools\pcb_viewer_tools.cpp
+- [x] pcbnew\tools\pcb_viewer_tools.h
+- [ ] pcbnew\tools\position_relative_tool.cpp
+- [x] pcbnew\tools\position_relative_tool.h
+- [ ] pcbnew\tools\tool_event_utils.cpp
+- [x] pcbnew\tools\tool_event_utils.h
+- [ ] pcbnew\tools\zone_create_helper.cpp
+- [x] pcbnew\tools\zone_create_helper.h
+- [ ] pcbnew\tools\zone_filler_tool.cpp
+- [x] pcbnew\tools\zone_filler_tool.h
+- [ ] pcbnew\widgets\appearance_controls.cpp
+- [x] pcbnew\widgets\appearance_controls.h
+- [ ] pcbnew\widgets\appearance_controls_base.cpp
+- [ ] pcbnew\widgets\appearance_controls_base.h
+- [ ] pcbnew\widgets\filedlg_hook_save_project.h
+- [ ] pcbnew\widgets\footprint_wizard_properties_panel.cpp
+- [x] pcbnew\widgets\footprint_wizard_properties_panel.h
+- [ ] pcbnew\widgets\legacyfiledlg_netlist_options.h
+- [ ] pcbnew\widgets\net_inspector_panel.cpp
+- [x] pcbnew\widgets\net_inspector_panel.h
+- [ ] pcbnew\widgets\panel_footprint_chooser.cpp
+- [x] pcbnew\widgets\panel_footprint_chooser.h
+- [ ] pcbnew\widgets\panel_selection_filter.cpp
+- [x] pcbnew\widgets\panel_selection_filter.h
+- [ ] pcbnew\widgets\panel_selection_filter_base.cpp
+- [ ] pcbnew\widgets\panel_selection_filter_base.h
+- [ ] pcbnew\widgets\pcb_design_block_pane.cpp
+- [x] pcbnew\widgets\pcb_design_block_pane.h
+- [ ] pcbnew\widgets\pcb_design_block_preview_widget.cpp
+- [x] pcbnew\widgets\pcb_design_block_preview_widget.h
+- [ ] pcbnew\widgets\pcb_net_inspector_panel.cpp
+- [x] pcbnew\widgets\pcb_net_inspector_panel.h
+- [x] pcbnew\widgets\pcb_net_inspector_panel_data_model.h
+- [ ] pcbnew\widgets\pcb_properties_panel.cpp
+- [x] pcbnew\widgets\pcb_properties_panel.h
+- [ ] pcbnew\widgets\pcb_search_pane.cpp
+- [x] pcbnew\widgets\pcb_search_pane.h
+- [ ] pcbnew\widgets\search_handlers.cpp
+- [x] pcbnew\widgets\search_handlers.h
+- [ ] pcbnew\widgets\vertex_editor_pane.cpp
+- [x] pcbnew\widgets\vertex_editor_pane.h
+- [ ] pcbnew\zone_manager\board_edges_bounding_item.cpp
+- [x] pcbnew\zone_manager\board_edges_bounding_item.h
+- [ ] pcbnew\zone_manager\dialog_zone_manager.cpp
+- [x] pcbnew\zone_manager\dialog_zone_manager.h
+- [ ] pcbnew\zone_manager\dialog_zone_manager_base.cpp
+- [ ] pcbnew\zone_manager\dialog_zone_manager_base.h
+- [ ] pcbnew\zone_manager\model_zones_overview.cpp
+- [x] pcbnew\zone_manager\model_zones_overview.h
+- [ ] pcbnew\zone_manager\zone_preview_canvas.cpp
+- [x] pcbnew\zone_manager\zone_preview_canvas.h
+- [ ] pcbnew\zone_manager\zone_preview_notebook.cpp
+- [x] pcbnew\zone_manager\zone_preview_notebook.h
+- [x] eeschema\annotate.cpp
+- [ ] eeschema\autoplace_fields.cpp
+- [ ] eeschema\bom_plugins.cpp
+- [x] eeschema\bom_plugins.h
+- [ ] eeschema\bus-wire-junction.cpp
+- [x] eeschema\bus_alias.h
+- [ ] eeschema\connection_graph.cpp
+- [x] eeschema\connection_graph.h
+- [x] eeschema\cross-probing.cpp
+- [x] eeschema\default_values.h
+- [ ] eeschema\eeschema.cpp
+- [ ] eeschema\eeschema_config.cpp
+- [ ] eeschema\eeschema_helpers.cpp
+- [x] eeschema\eeschema_helpers.h
+- [x] eeschema\eeschema_id.h
+- [ ] eeschema\eeschema_jobs_handler.cpp
+- [x] eeschema\eeschema_jobs_handler.h
+- [ ] eeschema\eeschema_settings.cpp
+- [x] eeschema\eeschema_settings.h
+- [ ] eeschema\fields_data_model.cpp
+- [x] eeschema\fields_data_model.h
+- [x] eeschema\fields_grid_table.cpp
+- [x] eeschema\fields_grid_table.h
+- [ ] eeschema\files-io.cpp
+- [ ] eeschema\general.h
+- [ ] eeschema\generate_alias_info.cpp
+- [x] eeschema\generate_alias_info.h
+- [ ] eeschema\gfx_import_utils.cpp
+- [ ] eeschema\gfx_import_utils.h
+- [x] eeschema\invoke_sch_dialog.h
+- [ ] eeschema\junction_helpers.cpp
+- [x] eeschema\junction_helpers.h
+- [ ] eeschema\lib_fields_data_model.cpp
+- [x] eeschema\lib_fields_data_model.h
+- [ ] eeschema\lib_symbol.cpp
+- [x] eeschema\lib_symbol.h
+- [ ] eeschema\menubar.cpp
+- [ ] eeschema\multiline_pin_text.cpp
+- [x] eeschema\multiline_pin_text.h
+- [ ] eeschema\net_navigator.cpp
+- [ ] eeschema\picksymbol.cpp
+- [ ] eeschema\pin_layout_cache.cpp
+- [x] eeschema\pin_layout_cache.h
+- [ ] eeschema\pin_type.cpp
+- [ ] eeschema\project_rescue.cpp
+- [x] eeschema\project_rescue.h
+- [ ] eeschema\project_sch.cpp
+- [x] eeschema\project_sch.h
+- [ ] eeschema\refdes_tracker.cpp
+- [x] eeschema\refdes_tracker.h
+- [ ] eeschema\remote_symbol_download_manager.cpp
+- [ ] eeschema\remote_symbol_download_manager.h
+- [ ] eeschema\remote_symbol_import_job.cpp
+- [x] eeschema\remote_symbol_import_job.h
+- [ ] eeschema\remote_symbol_import_utils.cpp
+- [x] eeschema\remote_symbol_import_utils.h
+- [x] eeschema\save_project_utils.h
+- [ ] eeschema\schematic.cpp
+- [x] eeschema\schematic.h
+- [x] eeschema\schematic_holder.h
+- [ ] eeschema\schematic_settings.cpp
+- [ ] eeschema\schematic_settings.h
+- [ ] eeschema\schematic_text_var_adapter.cpp
+- [x] eeschema\schematic_text_var_adapter.h
+- [ ] eeschema\schematic_undo_redo.cpp
+- [ ] eeschema\sch_base_frame.cpp
+- [x] eeschema\sch_base_frame.h
+- [ ] eeschema\sch_bitmap.cpp
+- [ ] eeschema\sch_bitmap.h
+- [ ] eeschema\sch_bus_entry.cpp
+- [x] eeschema\sch_bus_entry.h
+- [ ] eeschema\sch_collectors.cpp
+- [x] eeschema\sch_collectors.h
+- [ ] eeschema\sch_commit.cpp
+- [x] eeschema\sch_commit.h
+- [ ] eeschema\sch_connection.cpp
+- [x] eeschema\sch_connection.h
+- [ ] eeschema\sch_design_block_utils.cpp
+- [ ] eeschema\sch_draw_panel.cpp
+- [x] eeschema\sch_draw_panel.h
+- [ ] eeschema\sch_edit_frame.cpp
+- [x] eeschema\sch_edit_frame.h
+- [ ] eeschema\sch_field.cpp
+- [x] eeschema\sch_field.h
+- [ ] eeschema\sch_file_versions.h
+- [ ] eeschema\sch_group.cpp
+- [x] eeschema\sch_group.h
+- [ ] eeschema\sch_item.cpp
+- [x] eeschema\sch_item.h
+- [ ] eeschema\sch_item_alignment.cpp
+- [ ] eeschema\sch_item_alignment.h
+- [ ] eeschema\sch_junction.cpp
+- [x] eeschema\sch_junction.h
+- [ ] eeschema\sch_label.cpp
+- [x] eeschema\sch_label.h
+- [ ] eeschema\sch_line.cpp
+- [x] eeschema\sch_line.h
+- [ ] eeschema\sch_marker.cpp
+- [x] eeschema\sch_marker.h
+- [ ] eeschema\sch_netchain.cpp
+- [x] eeschema\sch_netchain.h
+- [ ] eeschema\sch_no_connect.cpp
+- [x] eeschema\sch_no_connect.h
+- [ ] eeschema\sch_painter.cpp
+- [x] eeschema\sch_painter.h
+- [ ] eeschema\sch_pin.cpp
+- [x] eeschema\sch_pin.h
+- [ ] eeschema\sch_plotter.cpp
+- [x] eeschema\sch_plotter.h
+- [ ] eeschema\sch_preview_panel.cpp
+- [ ] eeschema\sch_preview_panel.h
+- [ ] eeschema\sch_reference_list.cpp
+- [x] eeschema\sch_reference_list.h
+- [ ] eeschema\sch_render_settings.cpp
+- [x] eeschema\sch_render_settings.h
+- [x] eeschema\sch_rtree.h
+- [ ] eeschema\sch_rule_area.cpp
+- [x] eeschema\sch_rule_area.h
+- [ ] eeschema\sch_screen.cpp
+- [x] eeschema\sch_screen.h
+- [ ] eeschema\sch_shape.cpp
+- [x] eeschema\sch_shape.h
+- [ ] eeschema\sch_sheet.cpp
+- [x] eeschema\sch_sheet.h
+- [ ] eeschema\sch_sheet_path.cpp
+- [x] eeschema\sch_sheet_path.h
+- [ ] eeschema\sch_sheet_pin.cpp
+- [x] eeschema\sch_sheet_pin.h
+- [ ] eeschema\sch_symbol.cpp
+- [x] eeschema\sch_symbol.h
+- [ ] eeschema\sch_table.cpp
+- [x] eeschema\sch_table.h
+- [ ] eeschema\sch_tablecell.cpp
+- [x] eeschema\sch_tablecell.h
+- [ ] eeschema\sch_text.cpp
+- [x] eeschema\sch_text.h
+- [ ] eeschema\sch_textbox.cpp
+- [x] eeschema\sch_textbox.h
+- [ ] eeschema\sch_text_help_md.h
+- [ ] eeschema\sch_validators.cpp
+- [x] eeschema\sch_validators.h
+- [ ] eeschema\sch_view.cpp
+- [x] eeschema\sch_view.h
+- [ ] eeschema\sheet.cpp
+- [ ] eeschema\symbol.cpp
+- [x] eeschema\symbol.h
+- [ ] eeschema\symbol_checker.cpp
+- [ ] eeschema\symbol_chooser_frame.cpp
+- [x] eeschema\symbol_chooser_frame.h
+- [ ] eeschema\symbol_chooser_timing.h
+- [ ] eeschema\symbol_import_manager.cpp
+- [x] eeschema\symbol_import_manager.h
+- [x] eeschema\symbol_library_common.h
+- [ ] eeschema\symbol_library_manager.cpp
+- [x] eeschema\symbol_library_manager.h
+- [ ] eeschema\symbol_tree_model_adapter.cpp
+- [x] eeschema\symbol_tree_model_adapter.h
+- [ ] eeschema\symbol_tree_synchronizing_adapter.cpp
+- [x] eeschema\symbol_tree_synchronizing_adapter.h
+- [ ] eeschema\symbol_viewer_frame.cpp
+- [x] eeschema\symbol_viewer_frame.h
+- [ ] eeschema\symb_transforms_utils.cpp
+- [x] eeschema\symb_transforms_utils.h
+- [ ] eeschema\toolbars_sch_editor.cpp
+- [x] eeschema\toolbars_sch_editor.h
+- [ ] eeschema\toolbars_symbol_viewer.cpp
+- [ ] eeschema\toolbars_symbol_viewer.h
+- [ ] eeschema\api\api_handler_sch.cpp
+- [x] eeschema\api\api_handler_sch.h
+- [ ] eeschema\api\api_sch_enums.cpp
+- [ ] eeschema\api\api_sch_utils.cpp
+- [x] eeschema\api\api_sch_utils.h
+- [ ] eeschema\api\headless_sch_context.cpp
+- [x] eeschema\api\headless_sch_context.h
+- [ ] eeschema\api\sch_context.cpp
+- [x] eeschema\api\sch_context.h
+- [x] eeschema\dialogs\dialog_annotate.cpp
+- [ ] eeschema\dialogs\dialog_annotate_base.cpp
+- [ ] eeschema\dialogs\dialog_annotate_base.h
+- [ ] eeschema\dialogs\dialog_bom.cpp
+- [x] eeschema\dialogs\dialog_bom.h
+- [ ] eeschema\dialogs\dialog_bom_base.cpp
+- [ ] eeschema\dialogs\dialog_bom_base.h
+- [ ] eeschema\dialogs\dialog_bom_help_md.h
+- [ ] eeschema\dialogs\dialog_change_symbols.cpp
+- [x] eeschema\dialogs\dialog_change_symbols.h
+- [ ] eeschema\dialogs\dialog_change_symbols_base.cpp
+- [ ] eeschema\dialogs\dialog_change_symbols_base.h
+- [x] eeschema\dialogs\dialog_choose_symbol.h
+- [ ] eeschema\dialogs\dialog_create_net_chain.cpp
+- [x] eeschema\dialogs\dialog_create_net_chain.h
+- [ ] eeschema\dialogs\dialog_create_net_chain_base.cpp
+- [ ] eeschema\dialogs\dialog_create_net_chain_base.h
+- [ ] eeschema\dialogs\dialog_database_lib_settings.cpp
+- [x] eeschema\dialogs\dialog_database_lib_settings.h
+- [ ] eeschema\dialogs\dialog_database_lib_settings_base.cpp
+- [ ] eeschema\dialogs\dialog_database_lib_settings_base.h
+- [ ] eeschema\dialogs\dialog_edit_symbols_libid.cpp
+- [ ] eeschema\dialogs\dialog_edit_symbols_libid_base.cpp
+- [ ] eeschema\dialogs\dialog_edit_symbols_libid_base.h
+- [ ] eeschema\dialogs\dialog_eeschema_page_settings.cpp
+- [x] eeschema\dialogs\dialog_eeschema_page_settings.h
+- [ ] eeschema\dialogs\dialog_erc.cpp
+- [x] eeschema\dialogs\dialog_erc.h
+- [ ] eeschema\dialogs\dialog_erc_base.cpp
+- [ ] eeschema\dialogs\dialog_erc_base.h
+- [ ] eeschema\dialogs\dialog_erc_job_config.cpp
+- [x] eeschema\dialogs\dialog_erc_job_config.h
+- [ ] eeschema\dialogs\dialog_export_netlist.cpp
+- [x] eeschema\dialogs\dialog_export_netlist.h
+- [ ] eeschema\dialogs\dialog_export_netlist_base.cpp
+- [ ] eeschema\dialogs\dialog_export_netlist_base.h
+- [ ] eeschema\dialogs\dialog_field_properties.cpp
+- [x] eeschema\dialogs\dialog_field_properties.h
+- [ ] eeschema\dialogs\dialog_field_properties_base.cpp
+- [ ] eeschema\dialogs\dialog_field_properties_base.h
+- [x] eeschema\dialogs\dialog_global_edit_text_and_graphics.cpp
+- [x] eeschema\dialogs\dialog_global_edit_text_and_graphics_base.cpp
+- [ ] eeschema\dialogs\dialog_global_edit_text_and_graphics_base.h
+- [ ] eeschema\dialogs\dialog_ibis_parser_reporter.cpp
+- [x] eeschema\dialogs\dialog_ibis_parser_reporter.h
+- [ ] eeschema\dialogs\dialog_ibis_parser_reporter_base.cpp
+- [ ] eeschema\dialogs\dialog_ibis_parser_reporter_base.h
+- [ ] eeschema\dialogs\dialog_image_properties.cpp
+- [x] eeschema\dialogs\dialog_image_properties.h
+- [ ] eeschema\dialogs\dialog_image_properties_base.cpp
+- [ ] eeschema\dialogs\dialog_image_properties_base.h
+- [ ] eeschema\dialogs\dialog_import_symbol_select.cpp
+- [x] eeschema\dialogs\dialog_import_symbol_select.h
+- [ ] eeschema\dialogs\dialog_import_symbol_select_base.cpp
+- [ ] eeschema\dialogs\dialog_import_symbol_select_base.h
+- [ ] eeschema\dialogs\dialog_increment_annotations_base.cpp
+- [ ] eeschema\dialogs\dialog_increment_annotations_base.h
+- [ ] eeschema\dialogs\dialog_junction_props.cpp
+- [x] eeschema\dialogs\dialog_junction_props.h
+- [ ] eeschema\dialogs\dialog_junction_props_base.cpp
+- [ ] eeschema\dialogs\dialog_junction_props_base.h
+- [ ] eeschema\dialogs\dialog_label_properties.cpp
+- [x] eeschema\dialogs\dialog_label_properties.h
+- [ ] eeschema\dialogs\dialog_label_properties_base.cpp
+- [ ] eeschema\dialogs\dialog_label_properties_base.h
+- [ ] eeschema\dialogs\dialog_lib_edit_pin_table.cpp
+- [x] eeschema\dialogs\dialog_lib_edit_pin_table.h
+- [ ] eeschema\dialogs\dialog_lib_edit_pin_table_base.cpp
+- [ ] eeschema\dialogs\dialog_lib_edit_pin_table_base.h
+- [ ] eeschema\dialogs\dialog_lib_fields_table.cpp
+- [x] eeschema\dialogs\dialog_lib_fields_table.h
+- [ ] eeschema\dialogs\dialog_lib_fields_table_base.cpp
+- [ ] eeschema\dialogs\dialog_lib_fields_table_base.h
+- [ ] eeschema\dialogs\dialog_lib_new_symbol.cpp
+- [x] eeschema\dialogs\dialog_lib_new_symbol.h
+- [ ] eeschema\dialogs\dialog_lib_new_symbol_base.cpp
+- [ ] eeschema\dialogs\dialog_lib_new_symbol_base.h
+- [ ] eeschema\dialogs\dialog_lib_symbol_properties.cpp
+- [x] eeschema\dialogs\dialog_lib_symbol_properties.h
+- [ ] eeschema\dialogs\dialog_lib_symbol_properties_base.cpp
+- [ ] eeschema\dialogs\dialog_lib_symbol_properties_base.h
+- [ ] eeschema\dialogs\dialog_line_properties.cpp
+- [x] eeschema\dialogs\dialog_line_properties.h
+- [ ] eeschema\dialogs\dialog_line_properties_base.cpp
+- [ ] eeschema\dialogs\dialog_line_properties_base.h
+- [ ] eeschema\dialogs\dialog_migrate_buses.cpp
+- [x] eeschema\dialogs\dialog_migrate_buses.h
+- [ ] eeschema\dialogs\dialog_migrate_buses_base.cpp
+- [ ] eeschema\dialogs\dialog_migrate_buses_base.h
+- [ ] eeschema\dialogs\dialog_pin_properties.cpp
+- [x] eeschema\dialogs\dialog_pin_properties.h
+- [ ] eeschema\dialogs\dialog_pin_properties_base.cpp
+- [ ] eeschema\dialogs\dialog_pin_properties_base.h
+- [ ] eeschema\dialogs\dialog_plot_schematic.cpp
+- [x] eeschema\dialogs\dialog_plot_schematic.h
+- [ ] eeschema\dialogs\dialog_plot_schematic_base.cpp
+- [ ] eeschema\dialogs\dialog_plot_schematic_base.h
+- [ ] eeschema\dialogs\dialog_remote_symbol_config.cpp
+- [x] eeschema\dialogs\dialog_remote_symbol_config.h
+- [x] eeschema\dialogs\dialog_rescue_each.cpp
+- [ ] eeschema\dialogs\dialog_rescue_each_base.cpp
+- [ ] eeschema\dialogs\dialog_rescue_each_base.h
+- [ ] eeschema\dialogs\dialog_resolve_field_case_conflicts.cpp
+- [x] eeschema\dialogs\dialog_resolve_field_case_conflicts.h
+- [ ] eeschema\dialogs\dialog_resolve_field_case_conflicts_base.cpp
+- [ ] eeschema\dialogs\dialog_resolve_field_case_conflicts_base.h
+- [ ] eeschema\dialogs\dialog_schematic_setup.cpp
+- [x] eeschema\dialogs\dialog_schematic_setup.h
+- [ ] eeschema\dialogs\dialog_sch_find.cpp
+- [x] eeschema\dialogs\dialog_sch_find.h
+- [ ] eeschema\dialogs\dialog_sch_find_base.cpp
+- [ ] eeschema\dialogs\dialog_sch_find_base.h
+- [ ] eeschema\dialogs\dialog_sch_import_settings.cpp
+- [x] eeschema\dialogs\dialog_sch_import_settings.h
+- [ ] eeschema\dialogs\dialog_sch_import_settings_base.cpp
+- [ ] eeschema\dialogs\dialog_sch_import_settings_base.h
+- [ ] eeschema\dialogs\dialog_shape_properties.cpp
+- [x] eeschema\dialogs\dialog_shape_properties.h
+- [ ] eeschema\dialogs\dialog_shape_properties_base.cpp
+- [ ] eeschema\dialogs\dialog_shape_properties_base.h
+- [ ] eeschema\dialogs\dialog_sheet_pin_properties.cpp
+- [x] eeschema\dialogs\dialog_sheet_pin_properties.h
+- [ ] eeschema\dialogs\dialog_sheet_pin_properties_base.cpp
+- [ ] eeschema\dialogs\dialog_sheet_pin_properties_base.h
+- [ ] eeschema\dialogs\dialog_sheet_properties.cpp
+- [x] eeschema\dialogs\dialog_sheet_properties.h
+- [ ] eeschema\dialogs\dialog_sheet_properties_base.cpp
+- [ ] eeschema\dialogs\dialog_sheet_properties_base.h
+- [ ] eeschema\dialogs\dialog_sim_command.cpp
+- [x] eeschema\dialogs\dialog_sim_command.h
+- [ ] eeschema\dialogs\dialog_sim_command_base.cpp
+- [ ] eeschema\dialogs\dialog_sim_command_base.h
+- [ ] eeschema\dialogs\dialog_sim_format_value.cpp
+- [x] eeschema\dialogs\dialog_sim_format_value.h
+- [ ] eeschema\dialogs\dialog_sim_format_value_base.cpp
+- [ ] eeschema\dialogs\dialog_sim_format_value_base.h
+- [ ] eeschema\dialogs\dialog_sim_model.cpp
+- [x] eeschema\dialogs\dialog_sim_model.h
+- [ ] eeschema\dialogs\dialog_sim_model_base.cpp
+- [ ] eeschema\dialogs\dialog_sim_model_base.h
+- [ ] eeschema\dialogs\dialog_symbol_chooser.cpp
+- [x] eeschema\dialogs\dialog_symbol_chooser.h
+- [ ] eeschema\dialogs\dialog_symbol_fields_table.cpp
+- [x] eeschema\dialogs\dialog_symbol_fields_table.h
+- [ ] eeschema\dialogs\dialog_symbol_fields_table_base.cpp
+- [ ] eeschema\dialogs\dialog_symbol_fields_table_base.h
+- [ ] eeschema\dialogs\dialog_symbol_properties.cpp
+- [x] eeschema\dialogs\dialog_symbol_properties.h
+- [ ] eeschema\dialogs\dialog_symbol_properties_base.cpp
+- [ ] eeschema\dialogs\dialog_symbol_properties_base.h
+- [ ] eeschema\dialogs\dialog_symbol_remap.cpp
+- [x] eeschema\dialogs\dialog_symbol_remap.h
+- [ ] eeschema\dialogs\dialog_symbol_remap_base.cpp
+- [ ] eeschema\dialogs\dialog_symbol_remap_base.h
+- [ ] eeschema\dialogs\dialog_tablecell_properties.cpp
+- [x] eeschema\dialogs\dialog_tablecell_properties.h
+- [ ] eeschema\dialogs\dialog_tablecell_properties_base.cpp
+- [x] eeschema\dialogs\dialog_tablecell_properties_base.h
+- [ ] eeschema\dialogs\dialog_table_properties.cpp
+- [x] eeschema\dialogs\dialog_table_properties.h
+- [ ] eeschema\dialogs\dialog_table_properties_base.cpp
+- [x] eeschema\dialogs\dialog_table_properties_base.h
+- [ ] eeschema\dialogs\dialog_text_properties.cpp
+- [x] eeschema\dialogs\dialog_text_properties.h
+- [x] eeschema\dialogs\dialog_text_properties_base.cpp
+- [x] eeschema\dialogs\dialog_text_properties_base.h
+- [ ] eeschema\dialogs\dialog_update_from_pcb.cpp
+- [x] eeschema\dialogs\dialog_update_from_pcb.h
+- [ ] eeschema\dialogs\dialog_update_from_pcb_base.cpp
+- [ ] eeschema\dialogs\dialog_update_from_pcb_base.h
+- [ ] eeschema\dialogs\dialog_update_symbol_fields.cpp
+- [x] eeschema\dialogs\dialog_update_symbol_fields.h
+- [ ] eeschema\dialogs\dialog_update_symbol_fields_base.cpp
+- [ ] eeschema\dialogs\dialog_update_symbol_fields_base.h
+- [ ] eeschema\dialogs\dialog_user_defined_signals.cpp
+- [x] eeschema\dialogs\dialog_user_defined_signals.h
+- [ ] eeschema\dialogs\dialog_user_defined_signals_base.cpp
+- [ ] eeschema\dialogs\dialog_user_defined_signals_base.h
+- [ ] eeschema\dialogs\dialog_wire_bus_properties.cpp
+- [x] eeschema\dialogs\dialog_wire_bus_properties.h
+- [ ] eeschema\dialogs\dialog_wire_bus_properties_base.cpp
+- [ ] eeschema\dialogs\dialog_wire_bus_properties_base.h
+- [ ] eeschema\dialogs\panel_bom_presets.cpp
+- [x] eeschema\dialogs\panel_bom_presets.h
+- [ ] eeschema\dialogs\panel_bom_presets_base.cpp
+- [ ] eeschema\dialogs\panel_bom_presets_base.h
+- [ ] eeschema\dialogs\panel_eeschema_annotation_options.cpp
+- [x] eeschema\dialogs\panel_eeschema_annotation_options.h
+- [ ] eeschema\dialogs\panel_eeschema_annotation_options_base.cpp
+- [ ] eeschema\dialogs\panel_eeschema_annotation_options_base.h
+- [ ] eeschema\dialogs\panel_eeschema_color_settings.cpp
+- [x] eeschema\dialogs\panel_eeschema_color_settings.h
+- [ ] eeschema\dialogs\panel_eeschema_display_options.cpp
+- [x] eeschema\dialogs\panel_eeschema_display_options.h
+- [ ] eeschema\dialogs\panel_eeschema_display_options_base.cpp
+- [ ] eeschema\dialogs\panel_eeschema_display_options_base.h
+- [ ] eeschema\dialogs\panel_eeschema_editing_options.cpp
+- [x] eeschema\dialogs\panel_eeschema_editing_options.h
+- [ ] eeschema\dialogs\panel_eeschema_editing_options_base.cpp
+- [ ] eeschema\dialogs\panel_eeschema_editing_options_base.h
+- [ ] eeschema\dialogs\panel_sch_data_sources.cpp
+- [x] eeschema\dialogs\panel_sch_data_sources.h
+- [ ] eeschema\dialogs\panel_setup_buses.cpp
+- [x] eeschema\dialogs\panel_setup_buses.h
+- [ ] eeschema\dialogs\panel_setup_buses_base.cpp
+- [ ] eeschema\dialogs\panel_setup_buses_base.h
+- [x] eeschema\dialogs\panel_setup_formatting.cpp
+- [x] eeschema\dialogs\panel_setup_formatting.h
+- [x] eeschema\dialogs\panel_setup_formatting_base.cpp
+- [x] eeschema\dialogs\panel_setup_formatting_base.h
+- [ ] eeschema\dialogs\panel_setup_net_chains.cpp
+- [x] eeschema\dialogs\panel_setup_net_chains.h
+- [ ] eeschema\dialogs\panel_setup_net_chains_base.cpp
+- [ ] eeschema\dialogs\panel_setup_net_chains_base.h
+- [ ] eeschema\dialogs\panel_setup_pinmap.cpp
+- [x] eeschema\dialogs\panel_setup_pinmap.h
+- [ ] eeschema\dialogs\panel_setup_pinmap_base.cpp
+- [ ] eeschema\dialogs\panel_setup_pinmap_base.h
+- [ ] eeschema\dialogs\panel_simulator_preferences.cpp
+- [x] eeschema\dialogs\panel_simulator_preferences.h
+- [ ] eeschema\dialogs\panel_simulator_preferences_base.cpp
+- [ ] eeschema\dialogs\panel_simulator_preferences_base.h
+- [ ] eeschema\dialogs\panel_sym_color_settings.cpp
+- [x] eeschema\dialogs\panel_sym_color_settings.h
+- [ ] eeschema\dialogs\panel_sym_color_settings_base.cpp
+- [ ] eeschema\dialogs\panel_sym_color_settings_base.h
+- [ ] eeschema\dialogs\panel_sym_display_options.cpp
+- [x] eeschema\dialogs\panel_sym_display_options.h
+- [ ] eeschema\dialogs\panel_sym_display_options_base.cpp
+- [ ] eeschema\dialogs\panel_sym_display_options_base.h
+- [ ] eeschema\dialogs\panel_sym_editing_options.cpp
+- [x] eeschema\dialogs\panel_sym_editing_options.h
+- [ ] eeschema\dialogs\panel_sym_editing_options_base.cpp
+- [ ] eeschema\dialogs\panel_sym_editing_options_base.h
+- [ ] eeschema\dialogs\panel_sym_lib_table.cpp
+- [x] eeschema\dialogs\panel_sym_lib_table.h
+- [ ] eeschema\dialogs\panel_sym_lib_table_base.cpp
+- [ ] eeschema\dialogs\panel_sym_lib_table_base.h
+- [ ] eeschema\dialogs\panel_template_fieldnames.cpp
+- [x] eeschema\dialogs\panel_template_fieldnames.h
+- [ ] eeschema\dialogs\panel_template_fieldnames_base.cpp
+- [ ] eeschema\dialogs\panel_template_fieldnames_base.h
+- [ ] eeschema\dialogs\pin_table_data_model.h
+- [x] eeschema\erc\erc.cpp
+- [x] eeschema\erc\erc.h
+- [ ] eeschema\erc\erc_item.cpp
+- [x] eeschema\erc\erc_item.h
+- [ ] eeschema\erc\erc_report.cpp
+- [ ] eeschema\erc\erc_report.h
+- [ ] eeschema\erc\erc_sch_pin_context.cpp
+- [x] eeschema\erc\erc_sch_pin_context.h
+- [ ] eeschema\erc\erc_settings.cpp
+- [x] eeschema\erc\erc_settings.h
+- [ ] eeschema\import_gfx\dialog_import_gfx_sch.cpp
+- [ ] eeschema\import_gfx\dialog_import_gfx_sch.h
+- [ ] eeschema\import_gfx\dialog_import_gfx_sch_base.cpp
+- [ ] eeschema\import_gfx\dialog_import_gfx_sch_base.h
+- [ ] eeschema\import_gfx\graphics_importer_lib_symbol.cpp
+- [x] eeschema\import_gfx\graphics_importer_lib_symbol.h
+- [ ] eeschema\import_gfx\graphics_importer_sch.cpp
+- [x] eeschema\import_gfx\graphics_importer_sch.h
+- [ ] eeschema\libraries\legacy_symbol_library.cpp
+- [ ] eeschema\libraries\legacy_symbol_library.h
+- [ ] eeschema\libraries\symbol_library_adapter.cpp
+- [x] eeschema\libraries\symbol_library_adapter.h
+- [ ] eeschema\navlib\nl_schematic_plugin.cpp
+- [x] eeschema\navlib\nl_schematic_plugin.h
+- [ ] eeschema\navlib\nl_schematic_plugin_impl.cpp
+- [ ] eeschema\navlib\nl_schematic_plugin_impl.h
+- [x] eeschema\netlist_exporters\netlist.h
+- [ ] eeschema\netlist_exporters\netlist_exporter_allegro.cpp
+- [ ] eeschema\netlist_exporters\netlist_exporter_allegro.h
+- [ ] eeschema\netlist_exporters\netlist_exporter_base.cpp
+- [x] eeschema\netlist_exporters\netlist_exporter_base.h
+- [ ] eeschema\netlist_exporters\netlist_exporter_cadstar.cpp
+- [ ] eeschema\netlist_exporters\netlist_exporter_cadstar.h
+- [ ] eeschema\netlist_exporters\netlist_exporter_kicad.cpp
+- [x] eeschema\netlist_exporters\netlist_exporter_kicad.h
+- [ ] eeschema\netlist_exporters\netlist_exporter_orcadpcb2.cpp
+- [ ] eeschema\netlist_exporters\netlist_exporter_orcadpcb2.h
+- [ ] eeschema\netlist_exporters\netlist_exporter_pads.cpp
+- [ ] eeschema\netlist_exporters\netlist_exporter_pads.h
+- [ ] eeschema\netlist_exporters\netlist_exporter_spice.cpp
+- [x] eeschema\netlist_exporters\netlist_exporter_spice.h
+- [ ] eeschema\netlist_exporters\netlist_exporter_spice_model.cpp
+- [ ] eeschema\netlist_exporters\netlist_exporter_spice_model.h
+- [ ] eeschema\netlist_exporters\netlist_exporter_xml.cpp
+- [x] eeschema\netlist_exporters\netlist_exporter_xml.h
+- [ ] eeschema\netlist_exporters\netlist_generator.cpp
+- [ ] eeschema\printing\dialog_print.cpp
+- [ ] eeschema\printing\dialog_print.h
+- [ ] eeschema\printing\dialog_print_base.cpp
+- [ ] eeschema\printing\dialog_print_base.h
+- [ ] eeschema\printing\sch_printout.cpp
+- [x] eeschema\printing\sch_printout.h
+- [ ] eeschema\sch_io\sch_io.cpp
+- [x] eeschema\sch_io\sch_io.h
+- [ ] eeschema\sch_io\sch_io_lib_cache.cpp
+- [ ] eeschema\sch_io\sch_io_lib_cache.h
+- [ ] eeschema\sch_io\sch_io_mgr.cpp
+- [x] eeschema\sch_io\sch_io_mgr.h
+- [ ] eeschema\sch_io\altium\altium_parser_sch.cpp
+- [ ] eeschema\sch_io\altium\altium_parser_sch.h
+- [ ] eeschema\sch_io\altium\sch_io_altium.cpp
+- [x] eeschema\sch_io\altium\sch_io_altium.h
+- [ ] eeschema\sch_io\altium\sch_io_altium_lib_cache.h
+- [ ] eeschema\sch_io\cadstar\cadstar_sch_archive_loader.cpp
+- [ ] eeschema\sch_io\cadstar\cadstar_sch_archive_loader.h
+- [ ] eeschema\sch_io\cadstar\cadstar_sch_archive_parser.cpp
+- [ ] eeschema\sch_io\cadstar\cadstar_sch_archive_parser.h
+- [ ] eeschema\sch_io\cadstar\sch_io_cadstar_archive.cpp
+- [x] eeschema\sch_io\cadstar\sch_io_cadstar_archive.h
+- [ ] eeschema\sch_io\database\sch_io_database.cpp
+- [x] eeschema\sch_io\database\sch_io_database.h
+- [ ] eeschema\sch_io\eagle\sch_io_eagle.cpp
+- [x] eeschema\sch_io\eagle\sch_io_eagle.h
+- [ ] eeschema\sch_io\easyeda\sch_easyeda_parser.cpp
+- [ ] eeschema\sch_io\easyeda\sch_easyeda_parser.h
+- [ ] eeschema\sch_io\easyeda\sch_io_easyeda.cpp
+- [x] eeschema\sch_io\easyeda\sch_io_easyeda.h
+- [ ] eeschema\sch_io\easyedapro\sch_easyedapro_parser.cpp
+- [ ] eeschema\sch_io\easyedapro\sch_easyedapro_parser.h
+- [ ] eeschema\sch_io\easyedapro\sch_io_easyedapro.cpp
+- [ ] eeschema\sch_io\easyedapro\sch_io_easyedapro.h
+- [ ] eeschema\sch_io\geda\sch_io_geda.cpp
+- [ ] eeschema\sch_io\geda\sch_io_geda.h
+- [ ] eeschema\sch_io\http_lib\sch_io_http_lib.cpp
+- [x] eeschema\sch_io\http_lib\sch_io_http_lib.h
+- [ ] eeschema\sch_io\kicad_legacy\sch_io_kicad_legacy.cpp
+- [x] eeschema\sch_io\kicad_legacy\sch_io_kicad_legacy.h
+- [ ] eeschema\sch_io\kicad_legacy\sch_io_kicad_legacy_helpers.cpp
+- [ ] eeschema\sch_io\kicad_legacy\sch_io_kicad_legacy_helpers.h
+- [ ] eeschema\sch_io\kicad_legacy\sch_io_kicad_legacy_lib_cache.cpp
+- [ ] eeschema\sch_io\kicad_legacy\sch_io_kicad_legacy_lib_cache.h
+- [ ] eeschema\sch_io\kicad_sexpr\sch_io_kicad_sexpr.cpp
+- [x] eeschema\sch_io\kicad_sexpr\sch_io_kicad_sexpr.h
+- [ ] eeschema\sch_io\kicad_sexpr\sch_io_kicad_sexpr_common.cpp
+- [ ] eeschema\sch_io\kicad_sexpr\sch_io_kicad_sexpr_common.h
+- [ ] eeschema\sch_io\kicad_sexpr\sch_io_kicad_sexpr_lib_cache.cpp
+- [ ] eeschema\sch_io\kicad_sexpr\sch_io_kicad_sexpr_lib_cache.h
+- [ ] eeschema\sch_io\kicad_sexpr\sch_io_kicad_sexpr_parser.cpp
+- [x] eeschema\sch_io\kicad_sexpr\sch_io_kicad_sexpr_parser.h
+- [ ] eeschema\sch_io\ltspice\ltspice_schematic.cpp
+- [ ] eeschema\sch_io\ltspice\ltspice_schematic.h
+- [ ] eeschema\sch_io\ltspice\sch_io_ltspice.cpp
+- [x] eeschema\sch_io\ltspice\sch_io_ltspice.h
+- [ ] eeschema\sch_io\ltspice\sch_io_ltspice_parser.cpp
+- [ ] eeschema\sch_io\ltspice\sch_io_ltspice_parser.h
+- [ ] eeschema\sch_io\pads\pads_sch_parser.cpp
+- [x] eeschema\sch_io\pads\pads_sch_parser.h
+- [ ] eeschema\sch_io\pads\pads_sch_schematic_builder.cpp
+- [ ] eeschema\sch_io\pads\pads_sch_schematic_builder.h
+- [ ] eeschema\sch_io\pads\pads_sch_symbol_builder.cpp
+- [ ] eeschema\sch_io\pads\pads_sch_symbol_builder.h
+- [ ] eeschema\sch_io\pads\sch_io_pads.cpp
+- [x] eeschema\sch_io\pads\sch_io_pads.h
+- [ ] eeschema\sim\legacy_workbook.cpp
+- [ ] eeschema\sim\ngspice.cpp
+- [x] eeschema\sim\ngspice.h
+- [x] eeschema\sim\simulator.h
+- [ ] eeschema\sim\simulator_frame.cpp
+- [x] eeschema\sim\simulator_frame.h
+- [ ] eeschema\sim\simulator_frame_ui.cpp
+- [ ] eeschema\sim\simulator_frame_ui.h
+- [ ] eeschema\sim\simulator_frame_ui_base.cpp
+- [ ] eeschema\sim\simulator_frame_ui_base.h
+- [ ] eeschema\sim\simulator_reporter.h
+- [ ] eeschema\sim\sim_library.cpp
+- [x] eeschema\sim\sim_library.h
+- [ ] eeschema\sim\sim_library_ibis.cpp
+- [x] eeschema\sim\sim_library_ibis.h
+- [ ] eeschema\sim\sim_library_spice.cpp
+- [x] eeschema\sim\sim_library_spice.h
+- [ ] eeschema\sim\sim_lib_mgr.cpp
+- [x] eeschema\sim\sim_lib_mgr.h
+- [ ] eeschema\sim\sim_model.cpp
+- [x] eeschema\sim\sim_model.h
+- [ ] eeschema\sim\sim_model_behavioral.cpp
+- [ ] eeschema\sim\sim_model_behavioral.h
+- [ ] eeschema\sim\sim_model_ibis.cpp
+- [ ] eeschema\sim\sim_model_ibis.h
+- [ ] eeschema\sim\sim_model_ideal.cpp
+- [x] eeschema\sim\sim_model_ideal.h
+- [ ] eeschema\sim\sim_model_l_mutual.cpp
+- [x] eeschema\sim\sim_model_l_mutual.h
+- [ ] eeschema\sim\sim_model_ngspice.cpp
+- [x] eeschema\sim\sim_model_ngspice.h
+- [ ] eeschema\sim\sim_model_ngspice_data_b3soi.cpp
+- [ ] eeschema\sim\sim_model_ngspice_data_b4soi.cpp
+- [ ] eeschema\sim\sim_model_ngspice_data_bjt.cpp
+- [ ] eeschema\sim\sim_model_ngspice_data_bsim1.cpp
+- [ ] eeschema\sim\sim_model_ngspice_data_bsim2.cpp
+- [ ] eeschema\sim\sim_model_ngspice_data_bsim3.cpp
+- [ ] eeschema\sim\sim_model_ngspice_data_bsim4.cpp
+- [x] eeschema\sim\sim_model_ngspice_data_diode.cpp
+- [ ] eeschema\sim\sim_model_ngspice_data_hfet.cpp
+- [ ] eeschema\sim\sim_model_ngspice_data_hicum2.cpp
+- [ ] eeschema\sim\sim_model_ngspice_data_hsim.cpp
+- [ ] eeschema\sim\sim_model_ngspice_data_jfet.cpp
+- [ ] eeschema\sim\sim_model_ngspice_data_mes.cpp
+- [ ] eeschema\sim\sim_model_ngspice_data_mos.cpp
+- [ ] eeschema\sim\sim_model_ngspice_data_mos6.cpp
+- [ ] eeschema\sim\sim_model_ngspice_data_mos9.cpp
+- [ ] eeschema\sim\sim_model_ngspice_data_vbic.cpp
+- [ ] eeschema\sim\sim_model_raw_spice.cpp
+- [x] eeschema\sim\sim_model_raw_spice.h
+- [ ] eeschema\sim\sim_model_r_pot.cpp
+- [x] eeschema\sim\sim_model_r_pot.h
+- [ ] eeschema\sim\sim_model_serializer.cpp
+- [x] eeschema\sim\sim_model_serializer.h
+- [ ] eeschema\sim\sim_model_source.cpp
+- [ ] eeschema\sim\sim_model_source.h
+- [ ] eeschema\sim\sim_model_spice.cpp
+- [x] eeschema\sim\sim_model_spice.h
+- [ ] eeschema\sim\sim_model_spice_fallback.cpp
+- [ ] eeschema\sim\sim_model_spice_fallback.h
+- [ ] eeschema\sim\sim_model_subckt.cpp
+- [x] eeschema\sim\sim_model_subckt.h
+- [ ] eeschema\sim\sim_model_switch.cpp
+- [ ] eeschema\sim\sim_model_switch.h
+- [ ] eeschema\sim\sim_model_tline.cpp
+- [x] eeschema\sim\sim_model_tline.h
+- [ ] eeschema\sim\sim_model_xspice.cpp
+- [x] eeschema\sim\sim_model_xspice.h
+- [ ] eeschema\sim\sim_plot_colors.cpp
+- [ ] eeschema\sim\sim_plot_colors.h
+- [ ] eeschema\sim\sim_plot_tab.cpp
+- [x] eeschema\sim\sim_plot_tab.h
+- [ ] eeschema\sim\sim_preferences.h
+- [ ] eeschema\sim\sim_property.cpp
+- [x] eeschema\sim\sim_property.h
+- [ ] eeschema\sim\sim_tab.cpp
+- [x] eeschema\sim\sim_tab.h
+- [ ] eeschema\sim\sim_types.h
+- [ ] eeschema\sim\sim_value.cpp
+- [ ] eeschema\sim\sim_value.h
+- [ ] eeschema\sim\sim_xspice_parser.h
+- [ ] eeschema\sim\spice_circuit_model.cpp
+- [x] eeschema\sim\spice_circuit_model.h
+- [ ] eeschema\sim\spice_generator.cpp
+- [x] eeschema\sim\spice_generator.h
+- [ ] eeschema\sim\spice_grammar.h
+- [ ] eeschema\sim\spice_library_parser.cpp
+- [x] eeschema\sim\spice_library_parser.h
+- [ ] eeschema\sim\spice_model_parser.cpp
+- [ ] eeschema\sim\spice_model_parser.h
+- [ ] eeschema\sim\spice_settings.cpp
+- [ ] eeschema\sim\spice_settings.h
+- [ ] eeschema\sim\spice_simulator.cpp
+- [x] eeschema\sim\spice_simulator.h
+- [ ] eeschema\sim\spice_value.cpp
+- [x] eeschema\sim\spice_value.h
+- [ ] eeschema\sim\toolbars_simulator_frame.cpp
+- [x] eeschema\sim\toolbars_simulator_frame.h
+- [ ] eeschema\sim\user_defined_signals_help_md.h
+- [ ] eeschema\sim\kibis\ibis_parser.cpp
+- [ ] eeschema\sim\kibis\ibis_parser.h
+- [ ] eeschema\sim\kibis\kibis.cpp
+- [x] eeschema\sim\kibis\kibis.h
+- [ ] eeschema\symbol_editor\lib_logger.cpp
+- [x] eeschema\symbol_editor\lib_logger.h
+- [ ] eeschema\symbol_editor\lib_symbol_library_manager.cpp
+- [x] eeschema\symbol_editor\lib_symbol_library_manager.h
+- [ ] eeschema\symbol_editor\menubar_symbol_editor.cpp
+- [ ] eeschema\symbol_editor\symbol_editor.cpp
+- [ ] eeschema\symbol_editor\symbol_editor_import_export.cpp
+- [ ] eeschema\symbol_editor\symbol_editor_plotter.cpp
+- [ ] eeschema\symbol_editor\symbol_editor_settings.cpp
+- [x] eeschema\symbol_editor\symbol_editor_settings.h
+- [ ] eeschema\symbol_editor\symbol_editor_undo_redo.cpp
+- [ ] eeschema\symbol_editor\symbol_edit_frame.cpp
+- [x] eeschema\symbol_editor\symbol_edit_frame.h
+- [x] eeschema\symbol_editor\symbol_saveas_type.h
+- [ ] eeschema\symbol_editor\toolbars_symbol_editor.cpp
+- [x] eeschema\symbol_editor\toolbars_symbol_editor.h
+- [ ] eeschema\sync_sheet_pin\dialog_sync_sheet_pins.cpp
+- [x] eeschema\sync_sheet_pin\dialog_sync_sheet_pins.h
+- [ ] eeschema\sync_sheet_pin\dialog_sync_sheet_pins_base.cpp
+- [ ] eeschema\sync_sheet_pin\dialog_sync_sheet_pins_base.h
+- [ ] eeschema\sync_sheet_pin\panel_sync_sheet_pins.cpp
+- [ ] eeschema\sync_sheet_pin\panel_sync_sheet_pins.h
+- [ ] eeschema\sync_sheet_pin\panel_sync_sheet_pins_base.cpp
+- [ ] eeschema\sync_sheet_pin\panel_sync_sheet_pins_base.h
+- [ ] eeschema\sync_sheet_pin\sheet_synchronization_agent.cpp
+- [x] eeschema\sync_sheet_pin\sheet_synchronization_agent.h
+- [ ] eeschema\sync_sheet_pin\sheet_synchronization_item.cpp
+- [ ] eeschema\sync_sheet_pin\sheet_synchronization_item.h
+- [ ] eeschema\sync_sheet_pin\sheet_synchronization_model.cpp
+- [x] eeschema\sync_sheet_pin\sheet_synchronization_model.h
+- [ ] eeschema\sync_sheet_pin\sheet_synchronization_notifier.cpp
+- [x] eeschema\sync_sheet_pin\sheet_synchronization_notifier.h
+- [ ] eeschema\sync_sheet_pin\sync_sheet_pin_preference.h
+- [ ] eeschema\tools\assign_footprints.cpp
+- [ ] eeschema\tools\backannotate.cpp
+- [x] eeschema\tools\backannotate.h
+- [ ] eeschema\tools\ee_grid_helper.cpp
+- [x] eeschema\tools\ee_grid_helper.h
+- [ ] eeschema\tools\rule_area_create_helper.cpp
+- [ ] eeschema\tools\rule_area_create_helper.h
+- [ ] eeschema\tools\sch_actions.cpp
+- [x] eeschema\tools\sch_actions.h
+- [ ] eeschema\tools\sch_align_tool.cpp
+- [x] eeschema\tools\sch_align_tool.h
+- [ ] eeschema\tools\sch_design_block_control.cpp
+- [ ] eeschema\tools\sch_design_block_control.h
+- [ ] eeschema\tools\sch_drag_net_collision.cpp
+- [ ] eeschema\tools\sch_drag_net_collision.h
+- [ ] eeschema\tools\sch_drawing_tools.cpp
+- [x] eeschema\tools\sch_drawing_tools.h
+- [ ] eeschema\tools\sch_editor_conditions.cpp
+- [x] eeschema\tools\sch_editor_conditions.h
+- [ ] eeschema\tools\sch_editor_control.cpp
+- [x] eeschema\tools\sch_editor_control.h
+- [ ] eeschema\tools\sch_edit_table_tool.cpp
+- [ ] eeschema\tools\sch_edit_table_tool.h
+- [ ] eeschema\tools\sch_edit_tool.cpp
+- [x] eeschema\tools\sch_edit_tool.h
+- [ ] eeschema\tools\sch_find_replace_tool.cpp
+- [x] eeschema\tools\sch_find_replace_tool.h
+- [ ] eeschema\tools\sch_group_tool.cpp
+- [ ] eeschema\tools\sch_group_tool.h
+- [ ] eeschema\tools\sch_inspection_tool.cpp
+- [x] eeschema\tools\sch_inspection_tool.h
+- [ ] eeschema\tools\sch_line_wire_bus_tool.cpp
+- [x] eeschema\tools\sch_line_wire_bus_tool.h
+- [ ] eeschema\tools\sch_move_tool.cpp
+- [x] eeschema\tools\sch_move_tool.h
+- [ ] eeschema\tools\sch_navigate_tool.cpp
+- [ ] eeschema\tools\sch_navigate_tool.h
+- [ ] eeschema\tools\sch_point_editor.cpp
+- [ ] eeschema\tools\sch_point_editor.h
+- [ ] eeschema\tools\sch_selection.cpp
+- [x] eeschema\tools\sch_selection.h
+- [ ] eeschema\tools\sch_selection_tool.cpp
+- [x] eeschema\tools\sch_selection_tool.h
+- [x] eeschema\tools\sch_tool_base.h
+- [ ] eeschema\tools\sch_tool_utils.cpp
+- [ ] eeschema\tools\sch_tool_utils.h
+- [ ] eeschema\tools\simulator_control.cpp
+- [ ] eeschema\tools\simulator_control.h
+- [ ] eeschema\tools\symbol_editor_control.cpp
+- [ ] eeschema\tools\symbol_editor_control.h
+- [ ] eeschema\tools\symbol_editor_drawing_tools.cpp
+- [x] eeschema\tools\symbol_editor_drawing_tools.h
+- [ ] eeschema\tools\symbol_editor_edit_tool.cpp
+- [x] eeschema\tools\symbol_editor_edit_tool.h
+- [ ] eeschema\tools\symbol_editor_move_tool.cpp
+- [ ] eeschema\tools\symbol_editor_move_tool.h
+- [ ] eeschema\tools\symbol_editor_pin_tool.cpp
+- [x] eeschema\tools\symbol_editor_pin_tool.h
+- [ ] eeschema\widgets\filedlg_hook_save_project.h
+- [ ] eeschema\widgets\hierarchy_pane.cpp
+- [x] eeschema\widgets\hierarchy_pane.h
+- [ ] eeschema\widgets\panel_remote_symbol.cpp
+- [x] eeschema\widgets\panel_remote_symbol.h
+- [ ] eeschema\widgets\panel_sch_selection_filter.cpp
+- [ ] eeschema\widgets\panel_sch_selection_filter.h
+- [ ] eeschema\widgets\panel_sch_selection_filter_base.cpp
+- [ ] eeschema\widgets\panel_sch_selection_filter_base.h
+- [ ] eeschema\widgets\panel_symbol_chooser.cpp
+- [x] eeschema\widgets\panel_symbol_chooser.h
+- [ ] eeschema\widgets\pinshape_combobox.cpp
+- [ ] eeschema\widgets\pinshape_combobox.h
+- [ ] eeschema\widgets\pintype_combobox.cpp
+- [ ] eeschema\widgets\pintype_combobox.h
+- [ ] eeschema\widgets\sch_design_block_pane.cpp
+- [x] eeschema\widgets\sch_design_block_pane.h
+- [ ] eeschema\widgets\sch_design_block_preview_widget.cpp
+- [ ] eeschema\widgets\sch_design_block_preview_widget.h
+- [ ] eeschema\widgets\sch_properties_panel.cpp
+- [x] eeschema\widgets\sch_properties_panel.h
+- [x] eeschema\widgets\sch_search_pane.cpp
+- [ ] eeschema\widgets\sch_search_pane.h
+- [ ] eeschema\widgets\search_handlers.cpp
+- [x] eeschema\widgets\search_handlers.h
+- [ ] eeschema\widgets\symbol_diff_widget.cpp
+- [x] eeschema\widgets\symbol_diff_widget.h
+- [ ] eeschema\widgets\symbol_filter_combobox.cpp
+- [ ] eeschema\widgets\symbol_filter_combobox.h
+- [ ] eeschema\widgets\symbol_library_save_as_filedlg_hook.h
+- [ ] eeschema\widgets\symbol_preview_widget.cpp
+- [x] eeschema\widgets\symbol_preview_widget.h
+- [ ] eeschema\widgets\symbol_tree_pane.cpp
+- [x] eeschema\widgets\symbol_tree_pane.h
+- [ ] eeschema\widgets\tuner_slider.cpp
+- [x] eeschema\widgets\tuner_slider.h
+- [ ] eeschema\widgets\tuner_slider_base.cpp
+- [ ] eeschema\widgets\tuner_slider_base.h
+- [x] common\advanced_config.cpp
+- [ ] common\app_monitor.cpp
+- [ ] common\array_axis.cpp
+- [ ] common\array_options.cpp
+- [ ] common\asset_archive.cpp
+- [x] common\background_jobs_monitor.cpp
+- [x] common\base_screen.cpp
+- [ ] common\bin_mod.cpp
+- [ ] common\bitmap.cpp
+- [ ] common\bitmap_base.cpp
+- [ ] common\bitmap_info.cpp
+- [ ] common\bitmap_store.cpp
+- [x] common\board_printout.cpp
+- [ ] common\build_version.cpp
+- [ ] common\callback_gal.cpp
+- [x] common\clipboard.cpp
+- [x] common\cli_progress_reporter.cpp
+- [x] common\commit.cpp
+- [x] common\common.cpp
+- [ ] common\config_params.cpp
+- [ ] common\confirm.cpp
+- [ ] common\design_block.cpp
+- [x] common\design_block.h
+- [ ] common\design_block_info.cpp
+- [ ] common\design_block_io.cpp
+- [x] common\design_block_io.h
+- [ ] common\design_block_library_adapter.cpp
+- [ ] common\design_block_library_adapter.h
+- [ ] common\design_block_tree_model_adapter.cpp
+- [ ] common\design_block_tree_model_adapter.h
+- [x] common\dialog_shim.cpp
+- [ ] common\dpi_scaling.cpp
+- [ ] common\dpi_scaling_common.cpp
+- [x] common\draw_panel_gal.cpp
+- [ ] common\dsnlexer.cpp
+- [x] common\eda_base_frame.cpp
+- [ ] common\eda_dde.cpp
+- [ ] common\eda_doc.cpp
+- [x] common\eda_draw_frame.cpp
+- [ ] common\eda_group.cpp
+- [ ] common\eda_group.h
+- [x] common\eda_item.cpp
+- [ ] common\eda_pattern_match.cpp
+- [ ] common\eda_shape.cpp
+- [x] common\eda_text.cpp
+- [x] common\eda_units.cpp
+- [ ] common\embedded_files.cpp
+- [ ] common\env_paths.cpp
+- [ ] common\env_vars.cpp
+- [ ] common\exceptions.cpp
+- [ ] common\executable_names.cpp
+- [ ] common\filename_resolver.cpp
+- [ ] common\file_history.cpp
+- [ ] common\filter_reader.cpp
+- [x] common\footprint_filter.cpp
+- [x] common\footprint_info.cpp
+- [ ] common\gal_display_options_common.cpp
+- [ ] common\gbr_metadata.cpp
+- [ ] common\gestfich.cpp
+- [ ] common\grid_tricks.cpp
+- [ ] common\gr_basic.cpp
+- [ ] common\gr_text.cpp
+- [ ] common\hash_eda.cpp
+- [ ] common\history_lock.cpp
+- [ ] common\hotkeys_basic.cpp
+- [x] common\hotkey_store.cpp
+- [ ] common\increment.cpp
+- [ ] common\inspectable.cpp
+- [ ] common\item_realignment.cpp
+- [ ] common\json_conversions.cpp
+- [ ] common\json_schema_validator.cpp
+- [ ] common\kidialog.cpp
+- [x] common\kiface_base.cpp
+- [x] common\kiid.cpp
+- [x] common\kiway.cpp
+- [ ] common\kiway_holder.cpp
+- [ ] common\kiway_mail.cpp
+- [x] common\kiway_player.cpp
+- [ ] common\launch_ext.cpp
+- [ ] common\layer_id.cpp
+- [ ] common\lib_id.cpp
+- [ ] common\lib_table_grid_tricks.cpp
+- [ ] common\lib_table_notebook_panel.cpp
+- [ ] common\lib_tree_model.cpp
+- [x] common\lib_tree_model_adapter.cpp
+- [ ] common\locale_io.cpp
+- [x] common\local_history.cpp
+- [ ] common\lseq.cpp
+- [ ] common\lset.cpp
+- [ ] common\marker_base.cpp
+- [ ] common\markup_parser.cpp
+- [x] common\netclass.cpp
+- [ ] common\newstroke_font.cpp
+- [ ] common\notifications_manager.cpp
+- [x] common\origin_transforms.cpp
+- [ ] common\origin_viewitem.cpp
+- [x] common\page_info.cpp
+- [x] common\paths.cpp
+- [ ] common\pgm_base.cpp
+- [ ] common\pin_numbers.cpp
+- [ ] common\pin_numbers.h
+- [ ] common\pin_type.h
+- [x] common\printout.cpp
+- [x] common\project.cpp
+- [ ] common\ptree.cpp
+- [x] common\rc_item.cpp
+- [x] common\refdes_utils.cpp
+- [x] common\reference_image.cpp
+- [ ] common\remote_provider_client.cpp
+- [ ] common\remote_provider_metadata.cpp
+- [ ] common\remote_provider_models.cpp
+- [ ] common\remote_provider_settings.cpp
+- [ ] common\remote_provider_utils.cpp
+- [x] common\render_settings.cpp
+- [x] common\reporter.cpp
+- [x] common\richio.cpp
+- [ ] common\scintilla_tricks.cpp
+- [ ] common\searchhelpfilefullpath.cpp
+- [x] common\search_stack.cpp
+- [ ] common\singleton.cpp
+- [ ] common\single_top.cpp
+- [x] common\spacemouse.cpp
+- [ ] common\status_popup.cpp
+- [ ] common\streamwrapper.cpp
+- [ ] common\string_utils.cpp
+- [ ] common\stroke_params.cpp
+- [ ] common\systemdirsappend.cpp
+- [ ] common\template_fieldnames.cpp
+- [ ] common\textentry_tricks.cpp
+- [ ] common\text_var_dependency.cpp
+- [x] common\thread_pool.cpp
+- [ ] common\title_block.cpp
+- [ ] common\trace_helpers.cpp
+- [x] common\ui_events.cpp
+- [x] common\undo_redo_container.cpp
+- [ ] common\validators.cpp
+- [ ] common\wildcards_and_files_ext.cpp
+- [ ] common\wx_filename.cpp
+- [ ] common\xnode.cpp
+- [ ] common\api\api_enums.cpp
+- [x] common\api\api_handler.cpp
+- [ ] common\api\api_handler_common.cpp
+- [ ] common\api\api_handler_editor.cpp
+- [x] common\api\api_plugin.cpp
+- [ ] common\api\api_plugin_manager.cpp
+- [x] common\api\api_server.cpp
+- [ ] common\api\api_utils.cpp
+- [x] common\api\python_manager.cpp
+- [ ] common\api\python_manager.h
+- [ ] common\api\serializable.cpp
+- [x] common\database\database_connection.cpp
+- [ ] common\database\database_lib_settings.cpp
+- [ ] common\dialogs\dialog_assign_netclass.cpp
+- [ ] common\dialogs\dialog_assign_netclass_base.cpp
+- [ ] common\dialogs\dialog_assign_netclass_base.h
+- [x] common\dialogs\dialog_autosave_recovery.cpp
+- [ ] common\dialogs\dialog_autosave_recovery.h
+- [ ] common\dialogs\dialog_autosave_recovery_base.cpp
+- [ ] common\dialogs\dialog_autosave_recovery_base.h
+- [ ] common\dialogs\dialog_book_reporter.cpp
+- [ ] common\dialogs\dialog_book_reporter_base.cpp
+- [ ] common\dialogs\dialog_book_reporter_base.h
+- [x] common\dialogs\dialog_color_picker.cpp
+- [ ] common\dialogs\dialog_color_picker_base.cpp
+- [ ] common\dialogs\dialog_color_picker_base.h
+- [x] common\dialogs\dialog_configure_paths.cpp
+- [ ] common\dialogs\dialog_configure_paths_base.cpp
+- [ ] common\dialogs\dialog_configure_paths_base.h
+- [x] common\dialogs\dialog_design_block_properties.cpp
+- [ ] common\dialogs\dialog_design_block_properties.h
+- [ ] common\dialogs\dialog_design_block_properties_base.cpp
+- [ ] common\dialogs\dialog_design_block_properties_base.h
+- [ ] common\dialogs\dialog_display_html_text_base.cpp
+- [ ] common\dialogs\dialog_display_html_text_base.h
+- [x] common\dialogs\dialog_edit_library_tables.cpp
+- [ ] common\dialogs\dialog_generate_database_connection.cpp
+- [x] common\dialogs\dialog_grid_settings.cpp
+- [ ] common\dialogs\dialog_grid_settings_base.cpp
+- [ ] common\dialogs\dialog_grid_settings_base.h
+- [ ] common\dialogs\dialog_group_properties.cpp
+- [ ] common\dialogs\dialog_group_properties.h
+- [ ] common\dialogs\dialog_group_properties_base.cpp
+- [ ] common\dialogs\dialog_group_properties_base.h
+- [ ] common\dialogs\dialog_hotkey_list.cpp
+- [ ] common\dialogs\dialog_HTML_reporter_base.cpp
+- [ ] common\dialogs\dialog_HTML_reporter_base.h
+- [x] common\dialogs\dialog_import_choose_project.cpp
+- [ ] common\dialogs\dialog_import_choose_project.h
+- [ ] common\dialogs\dialog_import_choose_project_base.cpp
+- [ ] common\dialogs\dialog_import_choose_project_base.h
+- [ ] common\dialogs\dialog_multi_unit_entry.cpp
+- [x] common\dialogs\dialog_page_settings.cpp
+- [ ] common\dialogs\dialog_page_settings_base.cpp
+- [ ] common\dialogs\dialog_page_settings_base.h
+- [x] common\dialogs\dialog_paste_special.cpp
+- [ ] common\dialogs\dialog_paste_special_base.cpp
+- [ ] common\dialogs\dialog_paste_special_base.h
+- [ ] common\dialogs\dialog_plugin_options.cpp
+- [ ] common\dialogs\dialog_plugin_options_base.cpp
+- [ ] common\dialogs\dialog_plugin_options_base.h
+- [x] common\dialogs\dialog_print_generic.cpp
+- [ ] common\dialogs\dialog_print_generic_base.cpp
+- [ ] common\dialogs\dialog_print_generic_base.h
+- [ ] common\dialogs\dialog_rc_job.cpp
+- [ ] common\dialogs\dialog_rc_job.h
+- [ ] common\dialogs\dialog_rc_job_base.cpp
+- [ ] common\dialogs\dialog_rc_job_base.h
+- [x] common\dialogs\dialog_restore_local_history.cpp
+- [ ] common\dialogs\dialog_restore_local_history.h
+- [x] common\dialogs\dialog_text_entry.cpp
+- [ ] common\dialogs\dialog_text_entry_base.cpp
+- [ ] common\dialogs\dialog_text_entry_base.h
+- [ ] common\dialogs\dialog_unit_entry.cpp
+- [ ] common\dialogs\dialog_unit_entry_base.cpp
+- [ ] common\dialogs\dialog_unit_entry_base.h
+- [x] common\dialogs\eda_list_dialog.cpp
+- [ ] common\dialogs\eda_list_dialog_base.cpp
+- [ ] common\dialogs\eda_list_dialog_base.h
+- [x] common\dialogs\eda_reorderable_list_dialog.cpp
+- [ ] common\dialogs\eda_reorderable_list_dialog_base.cpp
+- [ ] common\dialogs\eda_reorderable_list_dialog_base.h
+- [ ] common\dialogs\eda_view_switcher.cpp
+- [ ] common\dialogs\eda_view_switcher_base.cpp
+- [ ] common\dialogs\eda_view_switcher_base.h
+- [ ] common\dialogs\hotkey_cycle_popup.cpp
+- [ ] common\dialogs\hotkey_cycle_popup.h
+- [ ] common\dialogs\html_message_box.cpp
+- [x] common\dialogs\panel_base_display_options.cpp
+- [x] common\dialogs\panel_color_settings.cpp
+- [ ] common\dialogs\panel_color_settings_base.cpp
+- [ ] common\dialogs\panel_color_settings_base.h
+- [ ] common\dialogs\panel_common_settings.cpp
+- [ ] common\dialogs\panel_common_settings_base.cpp
+- [ ] common\dialogs\panel_common_settings_base.h
+- [x] common\dialogs\panel_data_collection.cpp
+- [ ] common\dialogs\panel_data_collection_base.cpp
+- [ ] common\dialogs\panel_data_collection_base.h
+- [x] common\dialogs\panel_design_block_lib_table.cpp
+- [ ] common\dialogs\panel_design_block_lib_table.h
+- [ ] common\dialogs\panel_design_block_lib_table_base.cpp
+- [ ] common\dialogs\panel_design_block_lib_table_base.h
+- [ ] common\dialogs\panel_embedded_files.cpp
+- [ ] common\dialogs\panel_embedded_files.h
+- [ ] common\dialogs\panel_embedded_files_base.cpp
+- [ ] common\dialogs\panel_embedded_files_base.h
+- [x] common\dialogs\panel_gal_options.cpp
+- [ ] common\dialogs\panel_gal_options_base.cpp
+- [ ] common\dialogs\panel_gal_options_base.h
+- [x] common\dialogs\panel_grid_settings.cpp
+- [ ] common\dialogs\panel_grid_settings_base.cpp
+- [ ] common\dialogs\panel_grid_settings_base.h
+- [ ] common\dialogs\panel_hotkeys_editor.cpp
+- [ ] common\dialogs\panel_image_editor.cpp
+- [ ] common\dialogs\panel_image_editor_base.cpp
+- [ ] common\dialogs\panel_image_editor_base.h
+- [x] common\dialogs\panel_maintenance.cpp
+- [ ] common\dialogs\panel_maintenance_base.cpp
+- [ ] common\dialogs\panel_maintenance_base.h
+- [x] common\dialogs\panel_mouse_settings.cpp
+- [ ] common\dialogs\panel_mouse_settings_base.cpp
+- [ ] common\dialogs\panel_mouse_settings_base.h
+- [ ] common\dialogs\panel_packages_and_updates.cpp
+- [ ] common\dialogs\panel_packages_and_updates.h
+- [ ] common\dialogs\panel_packages_and_updates_base.cpp
+- [ ] common\dialogs\panel_packages_and_updates_base.h
+- [x] common\dialogs\panel_plugin_settings.cpp
+- [ ] common\dialogs\panel_plugin_settings_base.cpp
+- [ ] common\dialogs\panel_plugin_settings_base.h
+- [ ] common\dialogs\panel_printer_list.cpp
+- [ ] common\dialogs\panel_printer_list_base.cpp
+- [ ] common\dialogs\panel_printer_list_base.h
+- [x] common\dialogs\panel_setup_netclasses.cpp
+- [ ] common\dialogs\panel_setup_netclasses_base.cpp
+- [ ] common\dialogs\panel_setup_netclasses_base.h
+- [x] common\dialogs\panel_setup_severities.cpp
+- [x] common\dialogs\panel_spacemouse.cpp
+- [ ] common\dialogs\panel_spacemouse_base.cpp
+- [ ] common\dialogs\panel_spacemouse_base.h
+- [ ] common\dialogs\panel_startwizard_libraries_base.cpp
+- [ ] common\dialogs\panel_startwizard_libraries_base.h
+- [ ] common\dialogs\panel_startwizard_privacy_base.cpp
+- [ ] common\dialogs\panel_startwizard_privacy_base.h
+- [ ] common\dialogs\panel_startwizard_settings_base.cpp
+- [ ] common\dialogs\panel_startwizard_settings_base.h
+- [x] common\dialogs\panel_text_variables.cpp
+- [ ] common\dialogs\panel_text_variables_base.cpp
+- [ ] common\dialogs\panel_text_variables_base.h
+- [ ] common\dialogs\panel_toolbar_customization.cpp
+- [ ] common\dialogs\panel_toolbar_customization_base.cpp
+- [ ] common\dialogs\panel_toolbar_customization_base.h
+- [ ] common\dialogs\rule_editor_dialog_base.cpp
+- [x] common\dialogs\git\dialog_git_commit.cpp
+- [ ] common\dialogs\git\dialog_git_commit.h
+- [ ] common\dialogs\git\dialog_git_credentials.cpp
+- [ ] common\dialogs\git\dialog_git_credentials.h
+- [ ] common\dialogs\git\dialog_git_credentials_base.cpp
+- [ ] common\dialogs\git\dialog_git_credentials_base.h
+- [x] common\dialogs\git\dialog_git_progress.cpp
+- [x] common\dialogs\git\dialog_git_repository.cpp
+- [ ] common\dialogs\git\dialog_git_repository.h
+- [ ] common\dialogs\git\dialog_git_repository_base.cpp
+- [ ] common\dialogs\git\dialog_git_repository_base.h
+- [ ] common\dialogs\git\dialog_git_switch.cpp
+- [ ] common\dialogs\git\dialog_git_switch.h
+- [x] common\dialogs\git\panel_git_repos.cpp
+- [ ] common\dialogs\git\panel_git_repos.h
+- [ ] common\dialogs\git\panel_git_repos_base.cpp
+- [ ] common\dialogs\git\panel_git_repos_base.h
+- [x] common\dialog_about\AboutDialog_main.cpp
+- [ ] common\dialog_about\aboutinfo.h
+- [ ] common\dialog_about\dialog_about.cpp
+- [ ] common\dialog_about\dialog_about.h
+- [ ] common\dialog_about\dialog_about_base.cpp
+- [ ] common\dialog_about\dialog_about_base.h
+- [ ] common\drawing_sheet\drawing_sheet_default_description.cpp
+- [x] common\drawing_sheet\drawing_sheet_parser.cpp
+- [ ] common\drawing_sheet\ds_data_item.cpp
+- [x] common\drawing_sheet\ds_data_model.cpp
+- [ ] common\drawing_sheet\ds_data_model_io.cpp
+- [ ] common\drawing_sheet\ds_draw_item.cpp
+- [ ] common\drawing_sheet\ds_painter.cpp
+- [ ] common\drawing_sheet\ds_proxy_undo_item.cpp
+- [ ] common\drawing_sheet\ds_proxy_view_item.cpp
+- [x] common\font\font.cpp
+- [ ] common\font\fontconfig.cpp
+- [ ] common\font\glyph.cpp
+- [ ] common\font\outline_decomposer.cpp
+- [x] common\font\outline_font.cpp
+- [x] common\font\stroke_font.cpp
+- [ ] common\font\text_attributes.cpp
+- [ ] common\font\version_info.cpp
+- [ ] common\gal\color4d.cpp
+- [ ] common\gal\cursors.cpp
+- [ ] common\gal\gal_display_options.cpp
+- [x] common\gal\graphics_abstraction_layer.cpp
+- [ ] common\gal\hidpi_gl_3D_canvas.cpp
+- [ ] common\gal\hidpi_gl_canvas.cpp
+- [x] common\gal\painter.cpp
+- [ ] common\gal\3d\camera.cpp
+- [ ] common\gal\cairo\cairo_compositor.cpp
+- [x] common\gal\cairo\cairo_gal.cpp
+- [ ] common\gal\cairo\cairo_print.cpp
+- [ ] common\gal\opengl\antialiasing.cpp
+- [ ] common\gal\opengl\antialiasing.h
+- [ ] common\gal\opengl\bitmap_font_desc.c
+- [ ] common\gal\opengl\bitmap_font_img.c
+- [x] common\gal\opengl\cached_container.cpp
+- [ ] common\gal\opengl\cached_container_gpu.cpp
+- [ ] common\gal\opengl\cached_container_ram.cpp
+- [ ] common\gal\opengl\gl_resources.cpp
+- [ ] common\gal\opengl\gl_resources.h
+- [x] common\gal\opengl\gpu_manager.cpp
+- [ ] common\gal\opengl\noncached_container.cpp
+- [ ] common\gal\opengl\opengl_compositor.cpp
+- [x] common\gal\opengl\opengl_gal.cpp
+- [x] common\gal\opengl\shader.cpp
+- [ ] common\gal\opengl\SmaaAreaTex.h
+- [ ] common\gal\opengl\SmaaSearchTex.h
+- [x] common\gal\opengl\utils.cpp
+- [ ] common\gal\opengl\vertex_container.cpp
+- [ ] common\gal\opengl\vertex_item.cpp
+- [ ] common\gal\opengl\vertex_manager.cpp
+- [ ] common\git\git_add_to_index_handler.cpp
+- [ ] common\git\git_add_to_index_handler.h
+- [x] common\git\git_backend.cpp
+- [ ] common\git\git_backend.h
+- [ ] common\git\git_branch_handler.cpp
+- [ ] common\git\git_branch_handler.h
+- [ ] common\git\git_clone_handler.cpp
+- [ ] common\git\git_clone_handler.h
+- [x] common\git\git_commit_handler.cpp
+- [ ] common\git\git_commit_handler.h
+- [ ] common\git\git_compare_handler.cpp
+- [ ] common\git\git_compare_handler.h
+- [ ] common\git\git_config_handler.cpp
+- [ ] common\git\git_config_handler.h
+- [ ] common\git\git_init_handler.cpp
+- [ ] common\git\git_init_handler.h
+- [ ] common\git\git_progress.h
+- [x] common\git\git_pull_handler.cpp
+- [ ] common\git\git_pull_handler.h
+- [x] common\git\git_push_handler.cpp
+- [ ] common\git\git_push_handler.h
+- [ ] common\git\git_remove_from_index_handler.cpp
+- [ ] common\git\git_remove_from_index_handler.h
+- [ ] common\git\git_remove_vcs_handler.cpp
+- [ ] common\git\git_remove_vcs_handler.h
+- [ ] common\git\git_repo_mixin.h
+- [x] common\git\git_resolve_conflict_handler.cpp
+- [ ] common\git\git_resolve_conflict_handler.h
+- [ ] common\git\git_revert_handler.cpp
+- [ ] common\git\git_revert_handler.h
+- [x] common\git\git_status_handler.cpp
+- [ ] common\git\git_status_handler.h
+- [ ] common\git\git_switch_branch_handler.cpp
+- [ ] common\git\git_switch_branch_handler.h
+- [x] common\git\git_sync_handler.cpp
+- [ ] common\git\git_sync_handler.h
+- [ ] common\git\kicad_git_blob_reader.h
+- [x] common\git\kicad_git_common.cpp
+- [ ] common\git\kicad_git_common.h
+- [ ] common\git\kicad_git_compat.h
+- [ ] common\git\kicad_git_errors.cpp
+- [ ] common\git\kicad_git_errors.h
+- [ ] common\git\kicad_git_memory.h
+- [ ] common\git\kigit_orphan_registry.cpp
+- [ ] common\git\kigit_orphan_registry.h
+- [x] common\git\libgit_backend.cpp
+- [ ] common\git\libgit_backend.h
+- [x] common\git\project_git_utils.cpp
+- [ ] common\git\project_git_utils.h
+- [ ] common\http_lib\http_lib_connection.cpp
+- [ ] common\http_lib\http_lib_settings.cpp
+- [ ] common\import_gfx\dxf_import_plugin.cpp
+- [ ] common\import_gfx\dxf_import_plugin.h
+- [x] common\import_gfx\graphics_importer.cpp
+- [ ] common\import_gfx\graphics_importer.h
+- [x] common\import_gfx\graphics_importer_buffer.cpp
+- [ ] common\import_gfx\graphics_importer_buffer.h
+- [x] common\import_gfx\graphics_import_mgr.cpp
+- [ ] common\import_gfx\graphics_import_mgr.h
+- [ ] common\import_gfx\graphics_import_plugin.h
+- [ ] common\import_gfx\svg_import_plugin.cpp
+- [ ] common\import_gfx\svg_import_plugin.h
+- [x] common\io\csv.cpp
+- [ ] common\io\csv.h
+- [ ] common\io\io_base.cpp
+- [x] common\io\io_utils.cpp
+- [x] common\io\io_utils.h
+- [x] common\io\altium\altium_ascii_parser.cpp
+- [ ] common\io\altium\altium_ascii_parser.h
+- [x] common\io\altium\altium_binary_parser.cpp
+- [ ] common\io\altium\altium_binary_parser.h
+- [ ] common\io\altium\altium_parser_utils.cpp
+- [ ] common\io\altium\altium_parser_utils.h
+- [ ] common\io\altium\altium_project_variants.cpp
+- [ ] common\io\altium\altium_project_variants.h
+- [x] common\io\altium\altium_props_utils.cpp
+- [ ] common\io\altium\altium_props_utils.h
+- [ ] common\io\cadstar\cadstar_archive_objects.h
+- [x] common\io\cadstar\cadstar_archive_parser.cpp
+- [ ] common\io\cadstar\cadstar_archive_parser.h
+- [ ] common\io\cadstar\cadstar_parts_lib_grammar.h
+- [ ] common\io\cadstar\cadstar_parts_lib_model.h
+- [ ] common\io\cadstar\cadstar_parts_lib_parser.cpp
+- [ ] common\io\cadstar\cadstar_parts_lib_parser.h
+- [ ] common\io\common\plugin_common_choose_project.h
+- [x] common\io\eagle\eagle_parser.cpp
+- [ ] common\io\eagle\eagle_parser.h
+- [x] common\io\easyeda\easyeda_parser_base.cpp
+- [ ] common\io\easyeda\easyeda_parser_base.h
+- [ ] common\io\easyeda\easyeda_parser_structs.cpp
+- [ ] common\io\easyeda\easyeda_parser_structs.h
+- [ ] common\io\easyedapro\easyedapro_import_utils.cpp
+- [ ] common\io\easyedapro\easyedapro_import_utils.h
+- [x] common\io\easyedapro\easyedapro_parser.cpp
+- [ ] common\io\easyedapro\easyedapro_parser.h
+- [x] common\io\kicad\kicad_io_utils.cpp
+- [ ] common\io\pads\pads_attribute_mapper.cpp
+- [ ] common\io\pads\pads_attribute_mapper.h
+- [ ] common\io\pads\pads_common.cpp
+- [ ] common\io\pads\pads_common.h
+- [ ] common\io\pads\pads_unit_converter.cpp
+- [ ] common\io\pads\pads_unit_converter.h
+- [x] common\jobs\job.cpp
+- [x] common\jobs\job.h
+- [x] common\jobs\jobset.cpp
+- [ ] common\jobs\jobset.h
+- [ ] common\jobs\jobs_output.h
+- [ ] common\jobs\jobs_output_archive.cpp
+- [ ] common\jobs\jobs_output_archive.h
+- [ ] common\jobs\jobs_output_folder.cpp
+- [ ] common\jobs\jobs_output_folder.h
+- [x] common\jobs\job_dispatcher.cpp
+- [ ] common\jobs\job_dispatcher.h
+- [x] common\jobs\job_export_pcb_3d.cpp
+- [ ] common\jobs\job_export_pcb_3d.h
+- [x] common\jobs\job_export_pcb_drill.cpp
+- [ ] common\jobs\job_export_pcb_drill.h
+- [ ] common\jobs\job_export_pcb_dxf.cpp
+- [ ] common\jobs\job_export_pcb_dxf.h
+- [ ] common\jobs\job_export_pcb_gencad.cpp
+- [ ] common\jobs\job_export_pcb_gencad.h
+- [x] common\jobs\job_export_pcb_gerber.cpp
+- [ ] common\jobs\job_export_pcb_gerber.h
+- [x] common\jobs\job_export_pcb_gerbers.cpp
+- [ ] common\jobs\job_export_pcb_gerbers.h
+- [ ] common\jobs\job_export_pcb_hpgl.cpp
+- [ ] common\jobs\job_export_pcb_hpgl.h
+- [x] common\jobs\job_export_pcb_ipc2581.cpp
+- [ ] common\jobs\job_export_pcb_ipc2581.h
+- [ ] common\jobs\job_export_pcb_ipcd356.cpp
+- [ ] common\jobs\job_export_pcb_ipcd356.h
+- [x] common\jobs\job_export_pcb_odb.cpp
+- [ ] common\jobs\job_export_pcb_odb.h
+- [x] common\jobs\job_export_pcb_pdf.cpp
+- [ ] common\jobs\job_export_pcb_pdf.h
+- [x] common\jobs\job_export_pcb_plot.cpp
+- [ ] common\jobs\job_export_pcb_plot.h
+- [ ] common\jobs\job_export_pcb_png.cpp
+- [ ] common\jobs\job_export_pcb_png.h
+- [x] common\jobs\job_export_pcb_pos.cpp
+- [ ] common\jobs\job_export_pcb_pos.h
+- [ ] common\jobs\job_export_pcb_ps.cpp
+- [ ] common\jobs\job_export_pcb_ps.h
+- [ ] common\jobs\job_export_pcb_stats.cpp
+- [ ] common\jobs\job_export_pcb_stats.h
+- [ ] common\jobs\job_export_pcb_svg.cpp
+- [ ] common\jobs\job_export_pcb_svg.h
+- [x] common\jobs\job_export_sch_bom.cpp
+- [ ] common\jobs\job_export_sch_bom.h
+- [x] common\jobs\job_export_sch_netlist.cpp
+- [ ] common\jobs\job_export_sch_netlist.h
+- [ ] common\jobs\job_export_sch_plot.cpp
+- [ ] common\jobs\job_export_sch_plot.h
+- [x] common\jobs\job_export_sch_pythonbom.cpp
+- [ ] common\jobs\job_export_sch_pythonbom.h
+- [ ] common\jobs\job_fp_export_svg.cpp
+- [ ] common\jobs\job_fp_export_svg.h
+- [x] common\jobs\job_fp_upgrade.cpp
+- [ ] common\jobs\job_fp_upgrade.h
+- [x] common\jobs\job_gerber_diff.cpp
+- [ ] common\jobs\job_gerber_diff.h
+- [ ] common\jobs\job_gerber_export_png.cpp
+- [ ] common\jobs\job_gerber_export_png.h
+- [x] common\jobs\job_gerber_info.cpp
+- [ ] common\jobs\job_gerber_info.h
+- [x] common\jobs\job_pcb_drc.cpp
+- [ ] common\jobs\job_pcb_drc.h
+- [ ] common\jobs\job_pcb_import.cpp
+- [ ] common\jobs\job_pcb_import.h
+- [x] common\jobs\job_pcb_render.cpp
+- [ ] common\jobs\job_pcb_render.h
+- [ ] common\jobs\job_pcb_upgrade.cpp
+- [ ] common\jobs\job_pcb_upgrade.h
+- [x] common\jobs\job_rc.cpp
+- [ ] common\jobs\job_rc.h
+- [x] common\jobs\job_registry.cpp
+- [ ] common\jobs\job_registry.h
+- [x] common\jobs\job_sch_erc.cpp
+- [ ] common\jobs\job_sch_erc.h
+- [ ] common\jobs\job_sch_upgrade.cpp
+- [ ] common\jobs\job_sch_upgrade.h
+- [ ] common\jobs\job_special_copyfiles.cpp
+- [ ] common\jobs\job_special_copyfiles.h
+- [x] common\jobs\job_special_execute.cpp
+- [ ] common\jobs\job_special_execute.h
+- [ ] common\jobs\job_sym_export_svg.cpp
+- [ ] common\jobs\job_sym_export_svg.h
+- [ ] common\jobs\job_sym_upgrade.cpp
+- [ ] common\jobs\job_sym_upgrade.h
+- [x] common\kicad_curl\kicad_curl.cpp
+- [ ] common\kicad_curl\kicad_curl_easy.cpp
+- [x] common\kicad_gl\gl_context_mgr.cpp
+- [ ] common\kicad_gl\gl_utils.cpp
+- [x] common\libeval\numeric_evaluator.cpp
+- [ ] common\libeval_compiler\libeval_compiler.cpp
+- [x] common\libraries\library_manager.cpp
+- [ ] common\libraries\library_table.cpp
+- [ ] common\libraries\library_table_parser.cpp
+- [ ] common\libraries\lib_table_grid_data_model.cpp
+- [x] common\netlist_reader\kicad_netlist_parser.h
+- [x] common\netlist_reader\kicad_netlist_reader.cpp
+- [x] common\netlist_reader\legacy_netlist_reader.cpp
+- [x] common\netlist_reader\netlist.cpp
+- [x] common\netlist_reader\netlist.h
+- [x] common\netlist_reader\netlist_reader.cpp
+- [x] common\netlist_reader\netlist_reader.h
+- [ ] common\oauth\oauth_loopback_server.cpp
+- [ ] common\oauth\oauth_pkce.cpp
+- [x] common\oauth\oauth_session.cpp
+- [ ] common\oauth\secure_token_store.cpp
+- [ ] common\plotters\common_plot_functions.cpp
+- [x] common\plotters\DXF_plotter.cpp
+- [x] common\plotters\GERBER_plotter.cpp
+- [ ] common\plotters\pdf_outline_font.cpp
+- [ ] common\plotters\PDF_plotter.cpp
+- [ ] common\plotters\pdf_stroke_font.cpp
+- [x] common\plotters\plotter.cpp
+- [ ] common\plotters\PNG_plotter.cpp
+- [ ] common\plotters\PS_plotter.cpp
+- [x] common\plotters\SVG_plotter.cpp
+- [ ] common\preview_items\anchor_debug.cpp
+- [ ] common\preview_items\angle_item.cpp
+- [x] common\preview_items\arc_assistant.cpp
+- [x] common\preview_items\arc_geom_manager.cpp
+- [ ] common\preview_items\bezier_assistant.cpp
+- [ ] common\preview_items\bezier_geom_manager.cpp
+- [ ] common\preview_items\centreline_rect_item.cpp
+- [ ] common\preview_items\construction_geom.cpp
+- [x] common\preview_items\draw_context.cpp
+- [ ] common\preview_items\item_drawing_utils.cpp
+- [ ] common\preview_items\polygon_geom_manager.cpp
+- [ ] common\preview_items\polygon_item.cpp
+- [ ] common\preview_items\preview_utils.cpp
+- [x] common\preview_items\ruler_item.cpp
+- [ ] common\preview_items\selection_area.cpp
+- [ ] common\preview_items\simple_overlay_item.cpp
+- [ ] common\preview_items\snap_indicator.cpp
+- [ ] common\preview_items\two_point_assistant.cpp
+- [x] common\project\board_project_settings.cpp
+- [ ] common\project\component_class_settings.cpp
+- [ ] common\project\net_settings.cpp
+- [x] common\project\project_archiver.cpp
+- [x] common\project\project_file.cpp
+- [ ] common\project\project_local_settings.cpp
+- [x] common\project\tuning_profiles.cpp
+- [ ] common\properties\color4d_variant.cpp
+- [ ] common\properties\eda_angle_variant.cpp
+- [ ] common\properties\pg_cell_renderer.cpp
+- [ ] common\properties\pg_editors.cpp
+- [ ] common\properties\pg_properties.cpp
+- [x] common\properties\property_mgr.cpp
+- [ ] common\properties\std_optional_variants.cpp
+- [x] common\settings\app_settings.cpp
+- [ ] common\settings\aui_settings.cpp
+- [ ] common\settings\bom_settings.cpp
+- [ ] common\settings\builtin_color_themes.h
+- [x] common\settings\color_settings.cpp
+- [ ] common\settings\common_settings.cpp
+- [ ] common\settings\cvpcb_settings.cpp
+- [x] common\settings\grid_settings.cpp
+- [x] common\settings\json_settings.cpp
+- [ ] common\settings\kicad_settings.cpp
+- [ ] common\settings\layer_settings_utils.cpp
+- [ ] common\settings\nested_settings.cpp
+- [ ] common\settings\parameters.cpp
+- [x] common\settings\settings_manager.cpp
+- [x] common\spacenav\libspnav_driver.cpp
+- [ ] common\spacenav\libspnav_driver.h
+- [ ] common\spacenav\spacenav_driver.h
+- [ ] common\spacenav\spnav_2d_plugin.cpp
+- [ ] common\spacenav\spnav_2d_plugin.h
+- [ ] common\startwizard\startwizard.cpp
+- [x] common\startwizard\startwizard_provider_libraries.cpp
+- [ ] common\startwizard\startwizard_provider_libraries.h
+- [ ] common\startwizard\startwizard_provider_privacy.cpp
+- [ ] common\startwizard\startwizard_provider_privacy.h
+- [ ] common\startwizard\startwizard_provider_settings.cpp
+- [ ] common\startwizard\startwizard_provider_settings.h
+- [x] common\text_eval\text_eval_parser.cpp
+- [ ] common\text_eval\text_eval_vcs.cpp
+- [ ] common\text_eval\text_eval_vcs.h
+- [ ] common\text_eval\text_eval_wrapper.cpp
+- [x] common\tool\actions.cpp
+- [x] common\tool\action_manager.cpp
+- [ ] common\tool\action_menu.cpp
+- [x] common\tool\action_toolbar.cpp
+- [ ] common\tool\common_control.cpp
+- [ ] common\tool\common_tools.cpp
+- [ ] common\tool\conditional_menu.cpp
+- [ ] common\tool\construction_manager.cpp
+- [ ] common\tool\design_block_control.cpp
+- [x] common\tool\design_block_control.h
+- [x] common\tool\editor_conditions.cpp
+- [ ] common\tool\edit_constraints.cpp
+- [ ] common\tool\edit_points.cpp
+- [ ] common\tool\embed_tool.cpp
+- [x] common\tool\grid_helper.cpp
+- [ ] common\tool\grid_menu.cpp
+- [ ] common\tool\group_tool.cpp
+- [x] common\tool\group_tool.h
+- [ ] common\tool\library_editor_control.cpp
+- [ ] common\tool\library_editor_control.h
+- [ ] common\tool\picker_tool.cpp
+- [ ] common\tool\point_editor_behavior.cpp
+- [ ] common\tool\properties_tool.cpp
+- [x] common\tool\selection.cpp
+- [ ] common\tool\selection_conditions.cpp
+- [x] common\tool\selection_tool.cpp
+- [x] common\tool\tools_holder.cpp
+- [ ] common\tool\tool_action.cpp
+- [x] common\tool\tool_base.cpp
+- [x] common\tool\tool_dispatcher.cpp
+- [ ] common\tool\tool_event.cpp
+- [x] common\tool\tool_interactive.cpp
+- [x] common\tool\tool_manager.cpp
+- [ ] common\tool\tool_menu.cpp
+- [ ] common\tool\zoom_menu.cpp
+- [ ] common\tool\zoom_tool.cpp
+- [ ] common\tool\ui\toolbar_configuration.cpp
+- [ ] common\tool\ui\toolbar_context_menu_registry.cpp
+- [ ] common\transline_calculations\coax.cpp
+- [ ] common\transline_calculations\coax.h
+- [x] common\transline_calculations\coplanar.cpp
+- [ ] common\transline_calculations\coplanar.h
+- [ ] common\transline_calculations\coupled_microstrip.cpp
+- [ ] common\transline_calculations\coupled_microstrip.h
+- [ ] common\transline_calculations\coupled_stripline.cpp
+- [ ] common\transline_calculations\coupled_stripline.h
+- [x] common\transline_calculations\dielectric_djordjevic_sarkar.cpp
+- [ ] common\transline_calculations\dielectric_djordjevic_sarkar.h
+- [ ] common\transline_calculations\microstrip.cpp
+- [ ] common\transline_calculations\microstrip.h
+- [ ] common\transline_calculations\rectwaveguide.cpp
+- [ ] common\transline_calculations\rectwaveguide.h
+- [x] common\transline_calculations\stripline.cpp
+- [ ] common\transline_calculations\stripline.h
+- [x] common\transline_calculations\transline_calculation_base.cpp
+- [ ] common\transline_calculations\transline_calculation_base.h
+- [ ] common\transline_calculations\twistedpair.cpp
+- [ ] common\transline_calculations\twistedpair.h
+- [ ] common\transline_calculations\units.h
+- [ ] common\transline_calculations\units_scales.h
+- [x] common\view\view.cpp
+- [x] common\view\view_controls.cpp
+- [ ] common\view\view_group.cpp
+- [x] common\view\view_item.cpp
+- [ ] common\view\view_overlay.cpp
+- [x] common\view\wx_view_controls.cpp
+- [ ] common\view\zoom_controller.cpp
+- [ ] common\widgets\app_progress_dialog.cpp
+- [ ] common\widgets\area_selector.cpp
+- [ ] common\widgets\aui_json_serializer.cpp
+- [ ] common\widgets\bitmap_button.cpp
+- [x] common\widgets\bitmap_toggle.cpp
+- [ ] common\widgets\button_row_panel.cpp
+- [x] common\widgets\color_swatch.cpp
+- [ ] common\widgets\design_block_pane.cpp
+- [x] common\widgets\design_block_pane.h
+- [x] common\widgets\design_block_preview_widget.h
+- [ ] common\widgets\filter_combobox.cpp
+- [ ] common\widgets\font_choice.cpp
+- [ ] common\widgets\footprint_choice.cpp
+- [x] common\widgets\footprint_diff_widget.cpp
+- [x] common\widgets\footprint_preview_widget.cpp
+- [ ] common\widgets\footprint_select_widget.cpp
+- [ ] common\widgets\gal_options_panel_base.cpp
+- [ ] common\widgets\gal_options_panel_base.h
+- [ ] common\widgets\grid_bitmap_toggle.cpp
+- [ ] common\widgets\grid_button.cpp
+- [ ] common\widgets\grid_checkbox.cpp
+- [ ] common\widgets\grid_color_swatch_helpers.cpp
+- [ ] common\widgets\grid_combobox.cpp
+- [ ] common\widgets\grid_icon_text_helpers.cpp
+- [ ] common\widgets\grid_striped_renderer.cpp
+- [ ] common\widgets\grid_text_button_helpers.cpp
+- [ ] common\widgets\grid_text_helpers.cpp
+- [ ] common\widgets\html_window.cpp
+- [ ] common\widgets\indicator_icon.cpp
+- [ ] common\widgets\kistatusbar.cpp
+- [x] common\widgets\layer_box_selector.cpp
+- [x] common\widgets\layer_presentation.cpp
+- [ ] common\widgets\lib_tree.cpp
+- [ ] common\widgets\listbox_tricks.cpp
+- [ ] common\widgets\margin_offset_binder.cpp
+- [ ] common\widgets\mathplot.cpp
+- [ ] common\widgets\msgpanel.cpp
+- [ ] common\widgets\netclass_selector.cpp
+- [x] common\widgets\net_selector.cpp
+- [x] common\widgets\number_badge.cpp
+- [ ] common\widgets\paged_dialog.cpp
+- [ ] common\widgets\panel_design_block_chooser.cpp
+- [ ] common\widgets\panel_design_block_chooser.h
+- [ ] common\widgets\panel_notebook_base.h
+- [ ] common\widgets\progress_reporter_base.cpp
+- [x] common\widgets\properties_panel.cpp
+- [x] common\widgets\properties_panel.h
+- [ ] common\widgets\report_severity.cpp
+- [x] common\widgets\search_pane.cpp
+- [ ] common\widgets\search_pane_base.cpp
+- [ ] common\widgets\search_pane_base.h
+- [ ] common\widgets\search_pane_tab.cpp
+- [x] common\widgets\split_button.cpp
+- [ ] common\widgets\std_bitmap_button.cpp
+- [ ] common\widgets\stepped_slider.cpp
+- [x] common\widgets\text_ctrl_eval.cpp
+- [ ] common\widgets\ui_common.cpp
+- [x] common\widgets\unit_binder.cpp
+- [ ] common\widgets\up_down_tree.cpp
+- [ ] common\widgets\up_down_tree.h
+- [ ] common\widgets\webview_panel.cpp
+- [ ] common\widgets\widget_hotkey_list.cpp
+- [ ] common\widgets\widget_save_restore.cpp
+- [x] common\widgets\wx_aui_art_providers.cpp
+- [ ] common\widgets\wx_aui_utils.cpp
+- [ ] common\widgets\wx_bitmap_combobox.cpp
+- [x] common\widgets\wx_busy_indicator.cpp
+- [ ] common\widgets\wx_collapsible_pane.cpp
+- [ ] common\widgets\wx_combobox.cpp
+- [ ] common\widgets\wx_dataviewctrl.cpp
+- [ ] common\widgets\wx_data_view_hyperlink_renderer.cpp
+- [ ] common\widgets\wx_data_view_hyperlink_renderer.h
+- [ ] common\widgets\wx_ellipsized_static_text.cpp
+- [x] common\widgets\wx_grid.cpp
+- [x] common\widgets\wx_html_report_box.cpp
+- [ ] common\widgets\wx_html_report_box.h
+- [ ] common\widgets\wx_html_report_panel.cpp
+- [ ] common\widgets\wx_html_report_panel.h
+- [ ] common\widgets\wx_html_report_panel_base.cpp
+- [ ] common\widgets\wx_html_report_panel_base.h
+- [ ] common\widgets\wx_infobar.cpp
+- [ ] common\widgets\wx_listbox.cpp
+- [ ] common\widgets\wx_panel.cpp
+- [x] common\widgets\wx_progress_reporters.cpp
+- [x] common\widgets\wx_splitter_window.cpp
+- [ ] common\widgets\wx_treebook.cpp
+- [ ] common\widgets\zoom_correction_ctrl.cpp
+- [ ] include\3d_enums.h
+- [ ] include\advanced_config.h
+- [ ] include\app_monitor.h
+- [ ] include\array_axis.h
+- [ ] include\array_options.h
+- [ ] include\asset_archive.h
+- [x] include\background_jobs_monitor.h
+- [x] include\base_screen.h
+- [ ] include\base_set.h
+- [ ] include\base_units.h
+- [ ] include\bin_mod.h
+- [ ] include\bitmaps.h
+- [ ] include\bitmap_base.h
+- [ ] include\bitmap_store.h
+- [x] include\board_design_settings.h
+- [x] include\board_item.h
+- [ ] include\board_printout.h
+- [ ] include\build_version.h
+- [ ] include\callback_gal.h
+- [ ] include\case_insensitive_map.h
+- [x] include\class_draw_panel_gal.h
+- [x] include\clipboard.h
+- [ ] include\cli_progress_reporter.h
+- [ ] include\collector.h
+- [x] include\commit.h
+- [x] include\common.h
+- [ ] include\config_map.h
+- [ ] include\config_params.h
+- [ ] include\confirm.h
+- [ ] include\ctl_flags.h
+- [x] include\dialog_shim.h
+- [ ] include\dpi_scaling.h
+- [ ] include\dpi_scaling_common.h
+- [ ] include\dsnlexer.h
+- [x] include\eda_base_frame.h
+- [ ] include\eda_dde.h
+- [ ] include\eda_doc.h
+- [x] include\eda_draw_frame.h
+- [x] include\eda_item.h
+- [ ] include\eda_item_flags.h
+- [ ] include\eda_list_dialog.h
+- [ ] include\eda_pattern_match.h
+- [ ] include\eda_search_data.h
+- [ ] include\eda_shape.h
+- [ ] include\eda_text.h
+- [ ] include\eda_units.h
+- [ ] include\embedded_files.h
+- [ ] include\embedded_files_parser.h
+- [ ] include\enum_vector.h
+- [x] include\env_paths.h
+- [ ] include\env_vars.h
+- [ ] include\executable_names.h
+- [x] include\filename_resolver.h
+- [ ] include\file_history.h
+- [ ] include\filter_reader.h
+- [ ] include\fmt.h
+- [ ] include\footprint_editor_settings.h
+- [ ] include\footprint_filter.h
+- [x] include\footprint_info.h
+- [ ] include\frame_type.h
+- [ ] include\gal_display_options_common.h
+- [ ] include\gbr_metadata.h
+- [ ] include\gbr_netlist_metadata.h
+- [ ] include\gestfich.h
+- [x] include\grid_tricks.h
+- [ ] include\gr_basic.h
+- [ ] include\gr_text.h
+- [ ] include\hashtables.h
+- [ ] include\hash_eda.h
+- [ ] include\history_lock.h
+- [x] include\hotkeys_basic.h
+- [x] include\hotkey_store.h
+- [ ] include\i18n_utility.h
+- [x] include\id.h
+- [ ] include\import_export.h
+- [ ] include\increment.h
+- [ ] include\inspectable.h
+- [ ] include\inspectable_impl.h
+- [ ] include\item_realignment.h
+- [ ] include\json_common.h
+- [ ] include\json_conversions.h
+- [ ] include\json_schema_validator.h
+- [ ] include\kicommon.h
+- [x] include\kidialog.h
+- [x] include\kiface_base.h
+- [ ] include\kiface_ids.h
+- [ ] include\kiid.h
+- [x] include\kiway.h
+- [ ] include\kiway_holder.h
+- [x] include\kiway_mail.h
+- [ ] include\kiway_player.h
+- [ ] include\ki_any.h
+- [ ] include\ki_exception.h
+- [ ] include\launch_ext.h
+- [x] include\layer_ids.h
+- [ ] include\layer_range.h
+- [x] include\lib_id.h
+- [ ] include\lib_table_grid_data_model.h
+- [ ] include\lib_table_grid_tricks.h
+- [ ] include\lib_table_notebook_panel.h
+- [ ] include\lib_tree_item.h
+- [x] include\lib_tree_model.h
+- [ ] include\lib_tree_model_adapter.h
+- [ ] include\locale_io.h
+- [ ] include\local_history.h
+- [ ] include\lockfile.h
+- [ ] include\logging.h
+- [ ] include\lseq.h
+- [x] include\lset.h
+- [ ] include\macros.h
+- [ ] include\mail_type.h
+- [ ] include\marker_base.h
+- [ ] include\markup_parser.h
+- [ ] include\mouse_drag_action.h
+- [x] include\netclass.h
+- [ ] include\newstroke_font.h
+- [ ] include\notifications_manager.h
+- [x] include\origin_transforms.h
+- [ ] include\origin_viewitem.h
+- [ ] include\page_info.h
+- [ ] include\panel_hotkeys_editor.h
+- [ ] include\panel_text_variables.h
+- [x] include\paths.h
+- [x] include\pcb_base_frame.h
+- [ ] include\pcb_display_options.h
+- [x] include\pcb_screen.h
+- [x] include\pgm_base.h
+- [ ] include\policy_keys.h
+- [x] include\printout.h
+- [ ] include\priority_thread_pool_task.h
+- [ ] include\progress_reporter.h
+- [x] include\project.h
+- [ ] include\project_pcb.h
+- [ ] include\property_holder.h
+- [ ] include\ptree.h
+- [x] include\rc_item.h
+- [ ] include\rc_json_schema.h
+- [ ] include\refdes_utils.h
+- [x] include\reference_image.h
+- [ ] include\remote_provider_client.h
+- [ ] include\remote_provider_metadata.h
+- [ ] include\remote_provider_models.h
+- [ ] include\remote_provider_settings.h
+- [ ] include\remote_provider_utils.h
+- [x] include\render_settings.h
+- [x] include\reporter.h
+- [x] include\richio.h
+- [ ] include\rtti_dump.h
+- [ ] include\scintilla_tricks.h
+- [ ] include\scoped_set_reset.h
+- [x] include\search_stack.h
+- [ ] include\singleton.h
+- [ ] include\spacemouse.h
+- [ ] include\status_popup.h
+- [ ] include\streamwrapper.h
+- [ ] include\string_any_map.h
+- [ ] include\string_utils.h
+- [ ] include\stroke_params.h
+- [ ] include\stroke_params_parser.h
+- [ ] include\systemdirsappend.h
+- [x] include\template_fieldnames.h
+- [ ] include\textentry_tricks.h
+- [x] include\text_var_dependency.h
+- [ ] include\thread_pool.h
+- [x] include\title_block.h
+- [ ] include\trace_helpers.h
+- [x] include\ui_events.h
+- [x] include\undo_redo_container.h
+- [ ] include\units_provider.h
+- [x] include\validators.h
+- [ ] include\wildcards_and_files_ext.h
+- [ ] include\wxstream_helper.h
+- [ ] include\wx_filename.h
+- [ ] include\wx_fstream_progress.h
+- [ ] include\xnode.h
+- [ ] include\zoom_defines.h
+- [ ] include\api\api_enums.h
+- [x] include\api\api_handler.h
+- [ ] include\api\api_handler_common.h
+- [ ] include\api\api_handler_editor.h
+- [ ] include\api\api_plugin.h
+- [ ] include\api\api_plugin_manager.h
+- [x] include\api\api_server.h
+- [ ] include\api\api_utils.h
+- [ ] include\api\plugin_action_scope.h
+- [ ] include\api\serializable.h
+- [ ] include\bitmaps\bitmaps_list.h
+- [ ] include\bitmaps\bitmap_info.h
+- [ ] include\bitmaps\bitmap_types.h
+- [ ] include\cli\exit_codes.h
+- [ ] include\core\leak_at_exit.h
+- [ ] include\core\mirror.h
+- [ ] include\core\throttle.h
+- [ ] include\core\typeinfo.h
+- [x] include\database\database_cache.h
+- [x] include\database\database_connection.h
+- [x] include\database\database_lib_settings.h
+- [ ] include\dialogs\dialog_assign_netclass.h
+- [x] include\dialogs\dialog_book_reporter.h
+- [ ] include\dialogs\dialog_color_picker.h
+- [ ] include\dialogs\dialog_configure_paths.h
+- [ ] include\dialogs\dialog_edit_library_tables.h
+- [ ] include\dialogs\dialog_generate_database_connection.h
+- [ ] include\dialogs\dialog_grid_settings.h
+- [ ] include\dialogs\dialog_hotkey_list.h
+- [ ] include\dialogs\dialog_image_editor.h
+- [ ] include\dialogs\dialog_multi_unit_entry.h
+- [ ] include\dialogs\dialog_page_settings.h
+- [ ] include\dialogs\dialog_paste_special.h
+- [ ] include\dialogs\dialog_plugin_options.h
+- [ ] include\dialogs\dialog_print_generic.h
+- [ ] include\dialogs\dialog_text_entry.h
+- [ ] include\dialogs\dialog_unit_entry.h
+- [x] include\dialogs\eda_reorderable_list_dialog.h
+- [x] include\dialogs\eda_view_switcher.h
+- [ ] include\dialogs\html_message_box.h
+- [ ] include\dialogs\panel_assign_component_classes.h
+- [ ] include\dialogs\panel_base_display_options.h
+- [x] include\dialogs\panel_color_settings.h
+- [ ] include\dialogs\panel_common_settings.h
+- [ ] include\dialogs\panel_data_collection.h
+- [x] include\dialogs\panel_gal_options.h
+- [ ] include\dialogs\panel_generate_component_classes.h
+- [ ] include\dialogs\panel_global_lib_table_config.h
+- [ ] include\dialogs\panel_grid_settings.h
+- [ ] include\dialogs\panel_image_editor.h
+- [ ] include\dialogs\panel_maintenance.h
+- [ ] include\dialogs\panel_mouse_settings.h
+- [ ] include\dialogs\panel_plugin_settings.h
+- [ ] include\dialogs\panel_printer_list.h
+- [x] include\dialogs\panel_setup_netclasses.h
+- [x] include\dialogs\panel_setup_severities.h
+- [ ] include\dialogs\panel_spacemouse.h
+- [ ] include\dialogs\panel_toolbar_customization.h
+- [ ] include\dialogs\rule_editor_data_base.h
+- [ ] include\dialogs\rule_editor_dialog_base.h
+- [ ] include\drawing_sheet\ds_data_item.h
+- [x] include\drawing_sheet\ds_data_model.h
+- [ ] include\drawing_sheet\ds_draw_item.h
+- [ ] include\drawing_sheet\ds_file_versions.h
+- [ ] include\drawing_sheet\ds_painter.h
+- [ ] include\drawing_sheet\ds_proxy_undo_item.h
+- [ ] include\drawing_sheet\ds_proxy_view_item.h
+- [x] include\font\font.h
+- [ ] include\font\fontconfig.h
+- [ ] include\font\fontinfo.h
+- [ ] include\font\font_metrics.h
+- [x] include\font\glyph.h
+- [ ] include\font\kicad_font_name.h
+- [ ] include\font\outline_decomposer.h
+- [ ] include\font\outline_font.h
+- [ ] include\font\stroke_font.h
+- [ ] include\font\text_attributes.h
+- [ ] include\font\version_info.h
+- [x] include\gal\color4d.h
+- [ ] include\gal\compositor.h
+- [ ] include\gal\cursors.h
+- [ ] include\gal\definitions.h
+- [x] include\gal\gal.h
+- [ ] include\gal\gal_display_options.h
+- [ ] include\gal\gal_print.h
+- [x] include\gal\graphics_abstraction_layer.h
+- [ ] include\gal\hidpi_gl_3D_canvas.h
+- [ ] include\gal\hidpi_gl_canvas.h
+- [x] include\gal\painter.h
+- [ ] include\gal\3d\camera.h
+- [ ] include\gal\cairo\cairo_compositor.h
+- [ ] include\gal\cairo\cairo_gal.h
+- [ ] include\gal\cairo\cairo_print.h
+- [x] include\gal\opengl\cached_container.h
+- [ ] include\gal\opengl\cached_container_gpu.h
+- [ ] include\gal\opengl\cached_container_ram.h
+- [ ] include\gal\opengl\gpu_manager.h
+- [ ] include\gal\opengl\noncached_container.h
+- [ ] include\gal\opengl\opengl_compositor.h
+- [x] include\gal\opengl\opengl_gal.h
+- [ ] include\gal\opengl\shader.h
+- [x] include\gal\opengl\utils.h
+- [ ] include\gal\opengl\vertex_common.h
+- [ ] include\gal\opengl\vertex_container.h
+- [ ] include\gal\opengl\vertex_item.h
+- [ ] include\gal\opengl\vertex_manager.h
+- [ ] include\http_lib\http_lib_connection.h
+- [ ] include\http_lib\http_lib_settings.h
+- [x] include\io\io_base.h
+- [x] include\io\io_mgr.h
+- [x] include\io\kicad\kicad_io_utils.h
+- [ ] include\kicad_curl\kicad_curl.h
+- [ ] include\kicad_curl\kicad_curl_easy.h
+- [ ] include\kicad_gl\gl_context_mgr.h
+- [ ] include\kicad_gl\gl_utils.h
+- [ ] include\kicad_gl\kiglad.h
+- [ ] include\kicad_gl\kiglu.h
+- [ ] include\libeval\numeric_evaluator.h
+- [ ] include\libeval_compiler\libeval_compiler.h
+- [x] include\libraries\library_manager.h
+- [x] include\libraries\library_table.h
+- [ ] include\libraries\library_table_grammar.h
+- [x] include\libraries\library_table_parser.h
+- [ ] include\oauth\oauth_loopback_server.h
+- [ ] include\oauth\oauth_pkce.h
+- [ ] include\oauth\oauth_session.h
+- [ ] include\oauth\secure_token_store.h
+- [ ] include\plotters\gbr_plotter_apertures.h
+- [ ] include\plotters\gbr_plotter_aperture_macros.h
+- [ ] include\plotters\pdf_outline_font.h
+- [ ] include\plotters\pdf_stroke_font.h
+- [x] include\plotters\plotter.h
+- [ ] include\plotters\plotters_pslike.h
+- [ ] include\plotters\plotter_dxf.h
+- [x] include\plotters\plotter_gerber.h
+- [ ] include\plotters\plotter_png.h
+- [ ] include\plugins\kicad_plugin.h
+- [ ] include\plugins\3d\3d_plugin.h
+- [ ] include\plugins\3dapi\c3dmodel.h
+- [ ] include\plugins\3dapi\ifsg_all.h
+- [x] include\plugins\3dapi\ifsg_api.h
+- [ ] include\plugins\3dapi\ifsg_appearance.h
+- [ ] include\plugins\3dapi\ifsg_colors.h
+- [ ] include\plugins\3dapi\ifsg_coordindex.h
+- [ ] include\plugins\3dapi\ifsg_coords.h
+- [ ] include\plugins\3dapi\ifsg_defs.h
+- [ ] include\plugins\3dapi\ifsg_faceset.h
+- [ ] include\plugins\3dapi\ifsg_index.h
+- [x] include\plugins\3dapi\ifsg_node.h
+- [ ] include\plugins\3dapi\ifsg_normals.h
+- [x] include\plugins\3dapi\ifsg_shape.h
+- [ ] include\plugins\3dapi\ifsg_transform.h
+- [ ] include\plugins\3dapi\sg_base.h
+- [ ] include\plugins\3dapi\sg_types.h
+- [ ] include\plugins\3dapi\sg_version.h
+- [ ] include\plugins\3dapi\xv3d_types.h
+- [ ] include\preview_items\anchor_debug.h
+- [ ] include\preview_items\angle_item.h
+- [ ] include\preview_items\arc_assistant.h
+- [x] include\preview_items\arc_geom_manager.h
+- [ ] include\preview_items\bezier_assistant.h
+- [ ] include\preview_items\bezier_geom_manager.h
+- [ ] include\preview_items\centreline_rect_item.h
+- [ ] include\preview_items\construction_geom.h
+- [ ] include\preview_items\draw_context.h
+- [ ] include\preview_items\item_drawing_utils.h
+- [x] include\preview_items\multistep_geom_manager.h
+- [x] include\preview_items\polygon_geom_manager.h
+- [ ] include\preview_items\polygon_item.h
+- [ ] include\preview_items\preview_utils.h
+- [ ] include\preview_items\ruler_item.h
+- [ ] include\preview_items\selection_area.h
+- [ ] include\preview_items\simple_overlay_item.h
+- [ ] include\preview_items\snap_indicator.h
+- [ ] include\preview_items\two_point_assistant.h
+- [ ] include\preview_items\two_point_geom_manager.h
+- [x] include\project\board_project_settings.h
+- [ ] include\project\board_project_settings_params.h
+- [ ] include\project\component_class_settings.h
+- [x] include\project\net_settings.h
+- [ ] include\project\project_archiver.h
+- [ ] include\project\project_file.h
+- [ ] include\project\project_local_settings.h
+- [ ] include\project\sch_project_settings.h
+- [ ] include\project\tuning_profiles.h
+- [ ] include\properties\color4d_variant.h
+- [ ] include\properties\eda_angle_variant.h
+- [ ] include\properties\pg_cell_renderer.h
+- [ ] include\properties\pg_editors.h
+- [ ] include\properties\pg_properties.h
+- [ ] include\properties\property.h
+- [ ] include\properties\property_mgr.h
+- [ ] include\properties\property_validator.h
+- [ ] include\properties\property_validators.h
+- [ ] include\properties\std_optional_variants.h
+- [ ] include\settings\app_settings.h
+- [ ] include\settings\aui_settings.h
+- [ ] include\settings\bom_settings.h
+- [ ] include\settings\color_settings.h
+- [ ] include\settings\common_settings.h
+- [ ] include\settings\common_settings_internals.h
+- [ ] include\settings\cvpcb_settings.h
+- [ ] include\settings\environment.h
+- [ ] include\settings\grid_settings.h
+- [ ] include\settings\json_settings.h
+- [ ] include\settings\json_settings_internals.h
+- [ ] include\settings\kicad_settings.h
+- [ ] include\settings\layer_settings_utils.h
+- [ ] include\settings\nested_settings.h
+- [ ] include\settings\parameters.h
+- [ ] include\settings\settings_manager.h
+- [ ] include\startwizard\startwizard.h
+- [ ] include\startwizard\startwizard_provider.h
+- [ ] include\text_eval\text_eval_parser.h
+- [ ] include\text_eval\text_eval_types.h
+- [ ] include\text_eval\text_eval_units.h
+- [ ] include\text_eval\text_eval_wrapper.h
+- [ ] include\tool\actions.h
+- [ ] include\tool\action_manager.h
+- [ ] include\tool\action_menu.h
+- [ ] include\tool\action_toolbar.h
+- [ ] include\tool\common_control.h
+- [ ] include\tool\common_tools.h
+- [ ] include\tool\conditional_menu.h
+- [ ] include\tool\construction_manager.h
+- [ ] include\tool\coroutine.h
+- [ ] include\tool\editor_conditions.h
+- [ ] include\tool\edit_constraints.h
+- [ ] include\tool\edit_points.h
+- [ ] include\tool\edit_table_tool_base.h
+- [ ] include\tool\embed_tool.h
+- [ ] include\tool\grid_helper.h
+- [ ] include\tool\grid_menu.h
+- [ ] include\tool\picker_tool.h
+- [ ] include\tool\point_editor_behavior.h
+- [ ] include\tool\properties_tool.h
+- [ ] include\tool\selection.h
+- [ ] include\tool\selection_conditions.h
+- [ ] include\tool\selection_tool.h
+- [ ] include\tool\tools_holder.h
+- [ ] include\tool\tool_action.h
+- [ ] include\tool\tool_base.h
+- [ ] include\tool\tool_dispatcher.h
+- [ ] include\tool\tool_event.h
+- [ ] include\tool\tool_interactive.h
+- [ ] include\tool\tool_manager.h
+- [ ] include\tool\tool_menu.h
+- [ ] include\tool\zoom_menu.h
+- [ ] include\tool\zoom_tool.h
+- [ ] include\tool\examples\delegate_example.cpp
+- [ ] include\tool\ui\toolbar_configuration.h
+- [ ] include\tool\ui\toolbar_context_menu_registry.h
+- [ ] include\view\view.h
+- [ ] include\view\view_controls.h
+- [ ] include\view\view_group.h
+- [ ] include\view\view_item.h
+- [ ] include\view\view_overlay.h
+- [ ] include\view\view_rtree.h
+- [ ] include\view\wx_view_controls.h
+- [ ] include\view\zoom_controller.h
+- [ ] include\widgets\app_progress_dialog.h
+- [ ] include\widgets\area_selector.h
+- [ ] include\widgets\aui_json_serializer.h
+- [ ] include\widgets\bitmap_button.h
+- [ ] include\widgets\bitmap_toggle.h
+- [ ] include\widgets\busy_indicator.h
+- [ ] include\widgets\button_row_panel.h
+- [ ] include\widgets\color_swatch.h
+- [ ] include\widgets\filedlg_hook_embed_file.h
+- [ ] include\widgets\filedlg_hook_new_library.h
+- [ ] include\widgets\filedlg_import_non_kicad.h
+- [ ] include\widgets\filter_combobox.h
+- [ ] include\widgets\font_choice.h
+- [ ] include\widgets\footprint_choice.h
+- [ ] include\widgets\footprint_diff_widget.h
+- [ ] include\widgets\footprint_preview_widget.h
+- [ ] include\widgets\footprint_select_widget.h
+- [ ] include\widgets\grid_bitmap_toggle.h
+- [ ] include\widgets\grid_button.h
+- [ ] include\widgets\grid_checkbox.h
+- [ ] include\widgets\grid_color_swatch_helpers.h
+- [ ] include\widgets\grid_combobox.h
+- [ ] include\widgets\grid_icon_text_helpers.h
+- [ ] include\widgets\grid_readonly_text_helpers.h
+- [ ] include\widgets\grid_striped_renderer.h
+- [ ] include\widgets\grid_text_button_helpers.h
+- [ ] include\widgets\grid_text_helpers.h
+- [ ] include\widgets\html_window.h
+- [ ] include\widgets\indicator_icon.h
+- [ ] include\widgets\kistatusbar.h
+- [ ] include\widgets\layer_box_selector.h
+- [ ] include\widgets\layer_presentation.h
+- [ ] include\widgets\lib_tree.h
+- [ ] include\widgets\listbox_tricks.h
+- [ ] include\widgets\margin_offset_binder.h
+- [ ] include\widgets\mathplot.h
+- [ ] include\widgets\msgpanel.h
+- [ ] include\widgets\netclass_selector.h
+- [ ] include\widgets\net_selector.h
+- [ ] include\widgets\number_badge.h
+- [ ] include\widgets\paged_dialog.h
+- [ ] include\widgets\progress_reporter_base.h
+- [ ] include\widgets\report_severity.h
+- [ ] include\widgets\resettable_panel.h
+- [ ] include\widgets\search_pane.h
+- [ ] include\widgets\search_pane_tab.h
+- [ ] include\widgets\split_button.h
+- [ ] include\widgets\std_bitmap_button.h
+- [ ] include\widgets\stepped_slider.h
+- [ ] include\widgets\tab_traversal.h
+- [ ] include\widgets\text_ctrl_eval.h
+- [ ] include\widgets\ui_common.h
+- [ ] include\widgets\unit_binder.h
+- [ ] include\widgets\webview_panel.h
+- [ ] include\widgets\widget_hotkey_list.h
+- [ ] include\widgets\widget_save_restore.h
+- [ ] include\widgets\wx_aui_art_providers.h
+- [ ] include\widgets\wx_aui_utils.h
+- [ ] include\widgets\wx_bitmap_combobox.h
+- [ ] include\widgets\wx_busy_indicator.h
+- [ ] include\widgets\wx_collapsible_pane.h
+- [ ] include\widgets\wx_combobox.h
+- [ ] include\widgets\wx_dataviewctrl.h
+- [ ] include\widgets\wx_ellipsized_static_text.h
+- [ ] include\widgets\wx_event_utils.h
+- [ ] include\widgets\wx_grid.h
+- [ ] include\widgets\wx_infobar.h
+- [ ] include\widgets\wx_infobar_message_type.h
+- [ ] include\widgets\wx_listbox.h
+- [ ] include\widgets\wx_menubar.h
+- [ ] include\widgets\wx_panel.h
+- [ ] include\widgets\wx_progress_reporters.h
+- [ ] include\widgets\wx_splash.h
+- [ ] include\widgets\wx_splitter_window.h
+- [ ] include\widgets\wx_treebook.h
+- [ ] include\widgets\zoom_correction_ctrl.h

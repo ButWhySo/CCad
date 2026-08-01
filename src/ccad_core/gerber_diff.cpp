@@ -3,6 +3,8 @@
 namespace ccad {
 
 bool GerberDiff::compare(const GerberFileImage& a, const GerberFileImage& b) {
+    (void)a;
+    (void)b;
     // Stub implementation for Gerber diff
     return true;
 }

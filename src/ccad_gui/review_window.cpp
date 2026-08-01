@@ -2876,7 +2876,7 @@ void ReviewWindow::handleObjectsMoved(const QPointF& delta) {
       }
     }
     for (auto& footprint : project_cache_.boards[0].footprints) {
-      if (footprint.id == id) {
+      if (footprint.reference == id) {
         footprint.position.x.nanometers += p_delta.x.nanometers; footprint.position.y.nanometers += p_delta.y.nanometers;
         moved = true; break;
       }
@@ -2893,11 +2893,87 @@ void ReviewWindow::handleObjectsMoved(const QPointF& delta) {
   }
 }
 
+void ReviewWindow::rotateSelectedObjects(QGraphicsView* view) {
+  QGraphicsScene* active_scene = view->scene();
+  if (active_scene == canvas_scene_ && project_cache_.boards.empty()) return;
+  if (active_scene == schematic_scene_ && project_cache_.schematics.empty()) return;
+
+  bool mutated = false;
+  for (QGraphicsItem* item : active_scene->selectedItems()) {
+    QString id_str = item->data(Qt::UserRole).toString();
+    if (id_str.isEmpty()) continue;
+    std::string id = id_str.toStdString();
+
+    if (active_scene == canvas_scene_) {
+      for (auto& footprint : project_cache_.boards[0].footprints) {
+        if (footprint.reference == id) {
+          footprint.rotation_degrees += 90.0;
+          if (footprint.rotation_degrees >= 360.0) footprint.rotation_degrees -= 360.0;
+          mutated = true; break;
+        }
+      }
+      for (auto& text : project_cache_.boards[0].texts) {
+        if (text.id == id) {
+          text.rotation_degrees += 90.0;
+          if (text.rotation_degrees >= 360.0) text.rotation_degrees -= 360.0;
+          mutated = true; break;
+        }
+      }
+    } else if (active_scene == schematic_scene_) {
+      for (auto& comp : project_cache_.schematics[0].symbols) {
+        if (comp.id == id) {
+          comp.rotation_degrees += 90.0;
+          if (comp.rotation_degrees >= 360.0) comp.rotation_degrees -= 360.0;
+          mutated = true; break;
+        }
+      }
+    }
+  }
+  if (mutated) {
+    saveProjectCacheAfterMutation("Rotated selected objects");
+  }
+}
+
+void ReviewWindow::flipSelectedObjects(QGraphicsView* view) {
+  QGraphicsScene* active_scene = view->scene();
+  if (active_scene == canvas_scene_ && project_cache_.boards.empty()) return;
+  if (active_scene == schematic_scene_ && project_cache_.schematics.empty()) return;
+
+  bool mutated = false;
+  for (QGraphicsItem* item : active_scene->selectedItems()) {
+    QString id_str = item->data(Qt::UserRole).toString();
+    if (id_str.isEmpty()) continue;
+    std::string id = id_str.toStdString();
+
+    if (active_scene == canvas_scene_) {
+      for (auto& footprint : project_cache_.boards[0].footprints) {
+        if (footprint.reference == id) {
+          if (footprint.layer_id == "F.Cu") footprint.layer_id = "B.Cu";
+          else if (footprint.layer_id == "B.Cu") footprint.layer_id = "F.Cu";
+          mutated = true; break;
+        }
+      }
+    } else if (active_scene == schematic_scene_) {
+      for (auto& comp : project_cache_.schematics[0].symbols) {
+        if (comp.id == id) {
+          comp.mirror_x = !comp.mirror_x;
+          mutated = true; break;
+        }
+      }
+    }
+  }
+  if (mutated) {
+    saveProjectCacheAfterMutation("Flipped selected objects");
+  }
+}
+
 void ReviewWindow::showCanvasContextMenu(const QPoint& pos) {
   QGraphicsView* view = dynamic_cast<QGraphicsView*>(sender());
   if (!view) return;
   QMenu menu(this);
   if (view->scene() && !view->scene()->selectedItems().isEmpty()) {
+    menu.addAction("Rotate (R)", this, [this, view]() { rotateSelectedObjects(view); });
+    menu.addAction("Flip (F)", this, [this, view]() { flipSelectedObjects(view); });
     menu.addAction("Properties...", this, [this]() {
         if (selection_inspector_ && !selection_inspector_->isVisible()) {
             selection_inspector_->setVisible(true);

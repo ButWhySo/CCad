@@ -1,5 +1,5 @@
 #include "gerber_plotter_bridge.hpp"
-#include "board.hpp"
+#include "model.hpp"
 
 namespace ccad {
 
@@ -16,6 +16,7 @@ std::string GerberPlotterBridge::getOutputDirectory() const {
 }
 
 bool GerberPlotterBridge::plotLayers(const std::vector<std::string>& layerNames) {
+    (void)layerNames;
     if (!board_) return false;
     // Stub: Loop through specified layerNames, convert primitives to Gerber ops, write files
     return true;

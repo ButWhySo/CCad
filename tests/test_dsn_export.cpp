@@ -1,4 +1,5 @@
 #include "ccad_core/dsn_export.hpp"
+#include "ccad_core/dsn_import.hpp"
 
 #include <iostream>
 
@@ -89,11 +90,29 @@ void testDsnExportKeepsLargeNanometerCoordinates() {
                  "keeps large 64-bit board boundary coordinates");
 }
 
+void testSesImport() {
+  const std::string ses = "(session (route (network (net \"N1\" (wire (path \"F.Cu\" 0.25 1.0 2.0 3.0 4.0 5.0 6.0)) (via \"viastack_V1\" 7.0 8.0))))))";
+  auto routing = importSpecctraSes(ses);
+  if (routing.tracks.size() != 2) throw std::runtime_error("expected 2 tracks from polyline");
+  if (routing.vias.size() != 1) throw std::runtime_error("expected 1 via");
+  
+  if (routing.tracks[0].start.x.nanometers != 1000000 || routing.tracks[0].end.y.nanometers != 4000000) {
+    throw std::runtime_error("track 0 coordinates wrong");
+  }
+  if (routing.tracks[1].start.x.nanometers != 3000000 || routing.tracks[1].end.y.nanometers != 6000000) {
+    throw std::runtime_error("track 1 coordinates wrong");
+  }
+  if (routing.vias[0].position.x.nanometers != 7000000 || routing.vias[0].position.y.nanometers != 8000000) {
+    throw std::runtime_error("via coordinates wrong");
+  }
+}
+
 int main() {
   try {
     testDsnExport();
     testDsnExportKeepsLargeNanometerCoordinates();
-    std::cout << "PASS dsn export\n";
+    testSesImport();
+    std::cout << "PASS dsn export and ses import\n";
     return 0;
   } catch (const std::exception& e) {
     std::cerr << "FAIL: " << e.what() << '\n';

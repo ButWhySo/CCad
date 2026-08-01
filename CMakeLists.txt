@@ -170,6 +170,7 @@ add_library(ccad_core
   src/ccad_core/transaction.cpp
   src/ccad_core/placement.cpp
   src/ccad_core/dsn_export.cpp
+  src/ccad_core/dsn_import.cpp
   src/ccad_core/bom_export.cpp
   src/ccad_core/pnp_export.cpp
   src/ccad_core/drill_export.cpp

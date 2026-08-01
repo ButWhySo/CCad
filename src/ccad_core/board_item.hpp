@@ -30,6 +30,7 @@ BoardItemMetadata boardItemMetadata(const Board& board, const TrackArc& arc);
 BoardItemMetadata boardItemMetadata(const Board& board, const BoardGraphic& graphic);
 BoardItemMetadata boardItemMetadata(const Board& board, const BoardText& text);
 BoardItemMetadata boardItemMetadata(const Board& board, const BoardZone& zone);
+BoardItemMetadata boardItemMetadata(const Board& board, const BoardTeardrop& teardrop);
 BoardItemMetadata boardItemMetadata(const Board& board, const std::vector<std::string>& layer_ids,
                                     bool groupable, bool has_hole, bool has_drilled_hole,
                                     bool locked = false, bool knockout = false);

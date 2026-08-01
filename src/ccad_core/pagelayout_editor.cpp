@@ -3,6 +3,7 @@
 namespace ccad {
 
 void PagelayoutEditor::loadTemplate(const std::string& filepath) {
+    (void)filepath;
     // Stub implementation to load pagelayout templates
     // E.g., parse KiCad .kicad_wks files
 }

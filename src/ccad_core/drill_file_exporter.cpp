@@ -1,5 +1,5 @@
 #include "drill_file_exporter.hpp"
-#include "board.hpp"
+#include "model.hpp"
 
 namespace ccad {
 
@@ -22,6 +22,8 @@ bool DrillFileExporter::generateDrillFiles() {
 }
 
 std::string DrillFileExporter::generateDrillString(bool includePlated, bool includeNonPlated) {
+    (void)includePlated;
+    (void)includeNonPlated;
     if (!board_) return "";
     // Stub: traverse vias/pads and emit Excellon NC drill coordinates
     std::string excellonOut;

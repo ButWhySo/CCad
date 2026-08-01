@@ -328,9 +328,9 @@ struct Pad {
   std::string pin_type = "";
   std::optional<Length> pad_to_die_length = std::nullopt;
   std::optional<double> pad_to_die_delay = std::nullopt;
-  bool teardrops_enabled = false;
   bool locked = false;
   Padstack padstack;
+  bool teardrops_enabled = false;
 };
 
 struct Via {
@@ -339,8 +339,8 @@ struct Via {
   Point position;
   Length diameter;
   Length drill;
-  bool teardrops_enabled = false;
   bool locked = false;
+  bool teardrops_enabled = false;
 };
 
 struct TrackSegment {
@@ -474,6 +474,14 @@ struct BoardZone {
   bool locked = false;
 };
 
+struct BoardTeardrop {
+  std::string id;
+  std::string net_id;
+  std::string layer_id;
+  std::vector<Point> outline;
+  bool locked = false;
+};
+
 struct RouteRequest {
   std::string id;
   std::string net_id;
@@ -528,6 +536,7 @@ struct Board {
   std::vector<BoardTarget> targets;
   std::vector<BoardZone> zones;
   std::vector<RouteRequest> route_requests;
+  std::vector<BoardTeardrop> teardrops;
 };
 
 struct Schematic {
