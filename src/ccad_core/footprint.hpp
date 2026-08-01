@@ -29,6 +29,10 @@ struct FootprintPad {
   std::vector<std::string> layers;
   std::optional<double> roundrect_rratio = std::nullopt;
   std::optional<double> chamfer_ratio = std::nullopt;
+  std::optional<Length> paste_margin = std::nullopt;
+  std::optional<Length> mask_margin = std::nullopt;
+  std::optional<Length> thermal_width = std::nullopt;
+  std::optional<Length> thermal_gap = std::nullopt;
 };
 
 struct FootprintLine {
@@ -55,6 +59,21 @@ struct FootprintCircle {
 
 struct FootprintPolyline {
   std::vector<Point> points;
+  Length stroke_width;
+  std::string layer;
+};
+
+struct FootprintPoly {
+  std::vector<Point> points;
+  Length stroke_width;
+  std::string layer;
+};
+
+struct FootprintCurve {
+  Point start;
+  Point end;
+  Point control1;
+  Point control2;
   Length stroke_width;
   std::string layer;
 };
@@ -90,6 +109,8 @@ struct Footprint {
   std::vector<FootprintArc> arcs;
   std::vector<FootprintCircle> circles;
   std::vector<FootprintPolyline> polylines;
+  std::vector<FootprintPoly> polys;
+  std::vector<FootprintCurve> curves;
   std::vector<FootprintText> texts;
   std::vector<FootprintModel3D> models;
 };

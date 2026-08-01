@@ -18,6 +18,7 @@
 #include "ccad_core/diff.hpp"
 #include "ccad_core/drill_export.hpp"
 #include "ccad_core/dsn_export.hpp"
+#include "ccad_core/dsn_import.hpp"
 #include "ccad_core/kicad_pcb_export.hpp"
 #include "ccad_core/item_geometry.hpp"
 #include "ccad_core/json.hpp"
@@ -25,6 +26,7 @@
 #include "ccad_core/placement.hpp"
 #include "ccad_core/pnp_export.hpp"
 #include "ccad_core/serialize.hpp"
+#include "ccad_core/teardrop_generator.hpp"
 #include "ccad_core/filesystem_u8.hpp"
 #include "ccad_core/spread_footprints.hpp"
 #include <fstream>
@@ -2486,6 +2488,22 @@ int pcbCommand(const std::vector<std::string>& args) {
       return 0;
     }
 
+    if (subcommand == "update-teardrops") {
+      const std::map<std::string, std::string> options = parseOptions(args, 1, {"--file"});
+      const std::string file = requireOption(options, "--file");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      
+      ccad::TeardropGenerator generator(&board);
+      generator.generateTeardrops();
+
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
+      return 0;
+    }
+
     if (subcommand == "add-zone") {
       const std::map<std::string, std::string> options = parseOptions(
           args, 1,
@@ -2771,6 +2789,40 @@ int pcbCommand(const std::vector<std::string>& args) {
         throw std::runtime_error("failed to open output file: " + output);
       }
       out << exported;
+      return 0;
+    }
+
+    if (subcommand == "import-ses") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--input"});
+      const std::string file = requireOption(options, "--file");
+      const std::string input = requireOption(options, "--input");
+      ccad::Project project = loadProjectFile(file);
+      ccad::Board& board = requireBoard(project);
+      
+      std::ifstream in(ccad::u8ToPath(input));
+      if (!in) {
+        throw std::runtime_error("failed to open input file: " + input);
+      }
+      std::stringstream buffer;
+      buffer << in.rdbuf();
+      
+      ccad::SesRouting routing = ccad::importSpecctraSes(buffer.str());
+      
+      for (auto& track : routing.tracks) {
+        // give unique IDs relative to existing tracks
+        track.id += "_" + std::to_string(board.tracks.size());
+        board.tracks.push_back(track);
+      }
+      for (auto& via : routing.vias) {
+        via.id += "_" + std::to_string(board.vias.size());
+        board.vias.push_back(via);
+      }
+      
+      if (!writeProjectFile(file, project)) {
+        std::cerr << "failed to write project file: " << file << '\n';
+        return 2;
+      }
       return 0;
     }
 

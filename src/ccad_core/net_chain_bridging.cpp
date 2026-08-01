@@ -21,4 +21,8 @@ std::vector<std::vector<Track*>> NetChainBridging::getLogicalChains() const {
     return {};
 }
 
+NetChainBridgingReport calculateNetChainBridges(const Project& /*project*/, const std::string& /*net_id*/) {
+    return NetChainBridgingReport{};
+}
+
 } // namespace ccad

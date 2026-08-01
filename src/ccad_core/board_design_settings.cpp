@@ -31,4 +31,9 @@ double BoardDesignSettings::getDefaultClearance() const {
     return defaultClearance_;
 }
 
+std::vector<DesignRuleValidationError> validateDesignRules(const DesignRules& /*rules*/) {
+    // Stub implementation for compilation
+    return {};
+}
+
 } // namespace ccad

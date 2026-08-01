@@ -152,4 +152,13 @@ BoardItemMetadata boardItemMetadata(const Board& board, const BoardZone& zone) {
   return boardItemMetadata(board, zone.layer_ids, true, false, false, zone.locked);
 }
 
+BoardItemMetadata boardItemMetadata(const Board& board, const BoardTeardrop& teardrop) {
+  return boardItemMetadata(board,
+                           std::vector<std::string>{teardrop.layer_id},
+                           true,
+                           false,
+                           false,
+                           teardrop.locked);
+}
+
 }  // namespace ccad
