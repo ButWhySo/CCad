@@ -2359,3 +2359,4 @@ Board-aware zone refill reports thermal spokes for matching-net pads through `pc
 Board-aware thermal reporting now ignores pads on other copper layers and suppresses `direct`, `solid`, and `none` zone connection modes.
 Per-pad copper-layer thermal gap/spoke-width overrides and per-pad no-connection/solid/direct suppression are supported in board-aware refill reporting.
 PTH-only thermal connection mode (`pth_thermal`) is supported in zone validation and refill reporting; SMD/NPTH pads are excluded.
+Applied zone refill now persists thermal spoke start/end/width records through JSON reload; export/render integration of those records remains future work.

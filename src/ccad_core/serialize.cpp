@@ -2082,6 +2082,8 @@ class JsonReader {
             zone.holes = readPointArrayArray();
           } else if (key == "filled_contours") {
             zone.filled_contours = readPointArrayArray();
+          } else if (key == "filled_thermal_spokes") {
+            zone.filled_thermal_spokes = readFilledThermalSpokes();
           } else if (key == "priority") {
             zone.priority = readInt();
           } else if (key == "clearance_nm") {
@@ -2727,6 +2729,31 @@ class JsonReader {
     while (true) {
       arrays.push_back(readPointArray());
       if (consume(']')) return arrays;
+      expect(',');
+    }
+  }
+
+  std::vector<BoardZone::FilledThermalSpoke> readFilledThermalSpokes() {
+    std::vector<BoardZone::FilledThermalSpoke> spokes;
+    expect('[');
+    if (consume(']')) return spokes;
+    while (true) {
+      BoardZone::FilledThermalSpoke spoke;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "start") spoke.start = readPoint();
+          else if (key == "end") spoke.end = readPoint();
+          else if (key == "width_nm") spoke.width = nanometers(readInt64());
+          else throw std::runtime_error("unknown filled thermal spoke key: " + key);
+          if (consume('}')) break;
+          expect(',');
+        }
+      }
+      spokes.push_back(spoke);
+      if (consume(']')) return spokes;
       expect(',');
     }
   }
@@ -3402,6 +3429,17 @@ std::string dumpProjectJson(const Project& project) {
           out << (j + 1 == zone.filled_contours.at(h).size() ? "" : ",") << '\n';
         }
         out << "          ]" << (h + 1 == zone.filled_contours.size() ? "" : ",") << '\n';
+      }
+      out << "        ],\n";
+      out << "        \"filled_thermal_spokes\": [\n";
+      for (std::size_t s = 0; s < zone.filled_thermal_spokes.size(); ++s) {
+        const auto& spoke = zone.filled_thermal_spokes.at(s);
+        out << "          {\n            \"start\": ";
+        writePoint(out, 0, spoke.start);
+        out << ",\n            \"end\": ";
+        writePoint(out, 0, spoke.end);
+        out << ",\n            \"width_nm\": " << spoke.width.nanometers
+            << "\n          }" << (s + 1 == zone.filled_thermal_spokes.size() ? "" : ",") << '\n';
       }
       out << "        ],\n";
       out << "        \"priority\": " << zone.priority << ",\n";

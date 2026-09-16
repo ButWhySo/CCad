@@ -9129,6 +9129,7 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
                                           .y = ccad::nanometers(max_y)}},
                   .holes = {},
                   .filled_contours = {},
+                  .filled_thermal_spokes = {},
                   .priority = 0,
                   .clearance = defaultZoneClearance(board),
                   .min_thickness = defaultZoneMinThickness(board),

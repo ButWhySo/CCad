@@ -2082,6 +2082,12 @@ int pcbCommand(const std::vector<std::string>& args) {
         if (apply && fill.filled) {
           for (ccad::BoardZone& mutable_zone : project.boards.front().zones) {
             if (mutable_zone.id == zone.id) mutable_zone.filled_contours = fill.contours;
+            if (mutable_zone.id == zone.id) {
+              mutable_zone.filled_thermal_spokes.clear();
+              for (const ccad::ZoneThermalSpoke& spoke : fill.thermal_spokes)
+                mutable_zone.filled_thermal_spokes.push_back(
+                    {spoke.start, spoke.end, spoke.width});
+            }
           }
         }
       }

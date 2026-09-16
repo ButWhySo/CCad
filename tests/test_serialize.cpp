@@ -136,6 +136,9 @@ int main() {
                               ccad::Point{.x = ccad::millimeters(19.8), .y = ccad::millimeters(2.2)},
                               ccad::Point{.x = ccad::millimeters(19.8), .y = ccad::millimeters(11.8)},
                               ccad::Point{.x = ccad::millimeters(2.2), .y = ccad::millimeters(11.8)}}},
+          .filled_thermal_spokes = {{ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(5)},
+                                     ccad::Point{.x = ccad::millimeters(6), .y = ccad::millimeters(5)},
+                                     ccad::millimeters(0.5)}},
           .priority = 1,
           .clearance = ccad::millimeters(0.2),
           .min_thickness = ccad::millimeters(0.25),
@@ -431,6 +434,11 @@ int main() {
           "board zone filled contour round trips");
   require(loaded.boards[0].zones.at(0).filled_contours.at(0).at(0).x.nanometers == 2200000,
           "board zone filled contour geometry round trips");
+  require(loaded.boards[0].zones.at(0).filled_thermal_spokes.size() == 1,
+          "board zone thermal spokes round trips");
+  require(loaded.boards[0].zones.at(0).filled_thermal_spokes.at(0).end.x.nanometers == 6000000 &&
+              loaded.boards[0].zones.at(0).filled_thermal_spokes.at(0).width.nanometers == 500000,
+          "board zone thermal spoke geometry round trips");
   require(loaded.boards[0].route_requests.size() == 1, "route requests round trip");
   require(loaded.boards[0].route_requests.at(0).from_object_id == "P1",
           "route request start object round trips");

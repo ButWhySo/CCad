@@ -1187,6 +1187,8 @@ int main() {
   const std::string refilled_project_json = readFile(board_project_path);
   require(refilled_project_json.find("\"filled_contours\"") != std::string::npos,
           "pcb refill-zones persists filled contours");
+  require(refilled_project_json.find("\"filled_thermal_spokes\"") != std::string::npos,
+          "pcb refill-zones persists thermal spokes");
 
   const std::string add_placement_region_command =
       quote(CCAD_BINARY) + " pcb add-placement-region --file " + quote(board_project_path) +

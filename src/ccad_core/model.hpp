@@ -483,6 +483,12 @@ struct BoardZone {
   std::vector<std::vector<Point>> holes;
   // Last deterministic fill result; empty means no fill has been committed.
   std::vector<std::vector<Point>> filled_contours;
+  struct FilledThermalSpoke {
+    Point start;
+    Point end;
+    Length width;
+  };
+  std::vector<FilledThermalSpoke> filled_thermal_spokes;
   int priority = 0;
   Length clearance;
   Length min_thickness;

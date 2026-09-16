@@ -1209,3 +1209,7 @@ Per-pad copper properties now override thermal gap and spoke width, and per-pad 
 ## Sprint 491 progress update (2026-09-17)
 
 References checked: KiCad names the PTH-only mode `THT_THERMAL` / “thermal reliefs for PTH”; it applies thermals to plated through-hole pads while SMD pads use solid connection. CCad accepts `pth_thermal` in CLI/DRC and board-aware fill reporting, includes `thru_hole`/`through_hole`/`pth`, and ignores SMD/NPTH types. Full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
+
+## Sprint 492 progress update (2026-09-17)
+
+Persisted zone state now includes `filled_thermal_spokes`; `pcb refill-zones --apply true` saves computed spoke records, and serializer coverage verifies start/end/width round-trip. Added explicit GUI aggregate initialization required by strict `-Werror` builds. Full Qt Ninja build completed 155/155; CTest passed 91/91 with Qt runtime PATH; official harness passed, screenshot inspected, stderr empty.
