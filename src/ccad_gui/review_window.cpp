@@ -2315,9 +2315,22 @@ ReviewWindow::ReviewWindow() {
     bool ok;
     QString text = QInputDialog::getText(this, "Find Component", "Enter component designator (e.g., R1):", QLineEdit::Normal, "", &ok);
     if (ok && !text.isEmpty()) {
-        statusBar()->showMessage("Searching for " + text + "...");
-        // TODO: Actually select the component in the canvas
-        // This clears the "Not Implemented" stub. The core canvas search will be wired next.
+        const QString query = text.trimmed();
+        bool selected = false;
+        if (canvas_scene_ != nullptr) {
+          for (QGraphicsItem* item : canvas_scene_->items()) {
+            if (canvasObjectType(*item).compare("footprint", Qt::CaseInsensitive) == 0 &&
+                canvasObjectId(*item).compare(query, Qt::CaseInsensitive) == 0) {
+              selected = selectCanvasObjectById(*canvas_scene_, canvasObjectId(*item));
+              break;
+            }
+          }
+        }
+        statusBar()->showMessage(selected ? "Selected " + query : "Component not found: " + query);
+        if (selected) {
+          updateSelectionStatus();
+          canvas_scene_->update();
+        }
     }
   });
   undo_action_ = undo_action;
