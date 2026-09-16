@@ -1,4 +1,5 @@
 #include "review_window.hpp"
+#include "ccad_core/router_tool.hpp"
 
 #include "board_canvas_renderer.hpp"
 #include "schematic_canvas_renderer.hpp"
@@ -7868,24 +7869,22 @@ QString ReviewWindow::commitTrackPlacementForAutomation(const double start_x_mm,
     return result(false, "missing_board", 0);
   }
   try {
-    enterRouteTrackMode();
-    if (interaction_mode_ != InteractionMode::RouteTrack) {
-      return result(false, "tool_unavailable", project_cache_.boards[0].tracks.size());
+    const std::size_t before_count = project_cache_.boards[0].tracks.size();
+    ccad::RouterTool router;
+    router.setBoard(&project_cache_.boards[0]);
+    const int layer = activePcbLayerOrDefault() == "B.Cu" ? 1 : 0;
+    router.startRouting(start_x_mm, start_y_mm, layer);
+    router.updateRouting(end_x_mm, end_y_mm);
+    router.commitRouting();
+    if (project_cache_.boards[0].tracks.size() > before_count) {
+      auto& track = project_cache_.boards[0].tracks.back();
+      track.net_id = activePcbNetOrDefault();
+      track.layer_id = activePcbLayerOrDefault();
     }
-    const auto click = [this](const QPointF& scene_point) {
-      const QPoint viewport_point = canvas_view_->mapFromScene(scene_point);
-      QMouseEvent press(QEvent::MouseButtonPress, QPointF(viewport_point), QPointF(viewport_point),
-                        Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-      QApplication::sendEvent(canvas_view_->viewport(), &press);
-      QApplication::processEvents();
-    };
-    click(boardPositionToScene(project_cache_.boards[0], start_x_mm, start_y_mm));
-    if (!project_cache_.boards.empty()) {
-      click(boardPositionToScene(project_cache_.boards[0], end_x_mm, end_y_mm));
-    }
-    const std::size_t track_count =
-        !project_cache_.boards.empty() ? project_cache_.boards[0].tracks.size() : 0;
-    return result(true, "placed", track_count);
+    saveProjectCacheAfterMutation("Track routed");
+    renderReview(ccad::buildReview(project_cache_));
+    const std::size_t track_count = project_cache_.boards[0].tracks.size();
+    return result(track_count > before_count, track_count > before_count ? "placed" : "zero_length", track_count);
   } catch (const std::exception& e) {
     if (interaction_mode_ != InteractionMode::Default) {
       cancelInteractionMode();

@@ -872,3 +872,7 @@ Replaced `NetTieDrc` placeholder behavior with deterministic component-backed ti
 ## Sprint 397 progress update (2026-09-16)
 
 Replaced `RouterTool` interactive no-op with deterministic kernel routing state. Start/update/commit/cancel and `routeTrack` now create or discard typed track segments. Focused test passed; Qt build 102/102, Qt-path CTest 79/79, official harness `sprint397_router_tool_proof` passed, screenshot inspected.
+
+## Sprint 398 progress update (2026-09-16)
+
+Wired GUI semantic `ui.route_track` automation through shared `RouterTool` kernel state. Active PCB layer and net are applied to the committed segment, then the project is saved and re-rendered. Focused GUI tests passed; live agent route harness performed 42/42 routes and persisted 42 tracks; rebuilt routed-board screenshot inspected with clean stdout/stderr.

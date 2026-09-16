@@ -1055,3 +1055,7 @@ Primary DRC now calls `checkUnroutedPhysicalNets` after physical geometry checks
 ## Sprint 397 handover
 
 `RouterTool` now owns a minimal route gesture: start/update store an in-progress segment, commit appends a deterministic `TrackSegment` with F.Cu/B.Cu selection and 0.25 mm width, cancel discards it, and `routeTrack` performs the complete gesture. Net selection, snapping, multi-segment routing, and GUI action wiring remain next.
+
+## Sprint 398 handover
+
+`ReviewWindow::commitTrackPlacementForAutomation` now invokes `RouterTool` directly for semantic `ui.route_track` calls, then assigns active net/layer metadata, saves, and re-renders. Live proof used `scripts/live_agent_route_demo.py`: 42 route calls all returned `performed=true`; `inspect` reported 42 tracks and 6 vias. Target screenshot: `artifacts/screenshots/sprint398-live-route-target.png`.
