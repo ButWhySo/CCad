@@ -1201,3 +1201,7 @@ Zone fill now has a board-aware overload that derives thermal spokes for matchin
 ## Sprint 489 progress update (2026-09-17)
 
 References checked: current KiCad documentation states zone connection applies to same-net pads on the zone layer, with `solid`, `thermal`, and `none` behavior. CCad board-aware refill now filters pads by zone copper layer and suppresses spokes for `direct`, `solid`, and `none` connections. Focused tests pass; full CTest rerun passed 91/91 after one transient idle orchestrator-test stall; official harness passed, screenshot inspected, stderr empty.
+
+## Sprint 490 progress update (2026-09-17)
+
+Per-pad copper properties now override thermal gap and spoke width, and per-pad `zone_connection=none|solid|direct` suppresses that pad's relief. Tests cover override geometry and suppression. Full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.

@@ -204,6 +204,18 @@ ZoneFillResult calculateZoneFill(const BoardZone& zone, const std::vector<Pad>& 
     return result;
   for (const Pad& pad : pads) {
     if (pad.net_id != zone.net_id || pad.net_id.empty() || !padOnZoneLayer(zone, pad)) continue;
+    const PadstackCopperLayerProps* copper_props = nullptr;
+    for (const auto& [layer, props] : pad.padstack.copper_props) {
+      if (zone.layer_ids.empty() || std::find(zone.layer_ids.begin(), zone.layer_ids.end(), layer) !=
+                                         zone.layer_ids.end()) {
+        copper_props = &props;
+        break;
+      }
+    }
+    if (copper_props && copper_props->zone_connection.has_value() &&
+        (copper_props->zone_connection == "direct" || copper_props->zone_connection == "solid" ||
+         copper_props->zone_connection == "none"))
+      continue;
     int64_t width = 0;
     for (const auto& [layer, props] : pad.padstack.copper_props) {
       (void)layer;
@@ -212,8 +224,14 @@ ZoneFillResult calculateZoneFill(const BoardZone& zone, const std::vector<Pad>& 
     }
     const int64_t radius = width / 2;
     if (radius <= 0) continue;
+    const Length pad_gap = copper_props && copper_props->thermal_gap.has_value()
+                               ? *copper_props->thermal_gap
+                               : gap;
+    const Length pad_spoke_width = copper_props && copper_props->thermal_spoke_width.has_value()
+                                       ? *copper_props->thermal_spoke_width
+                                       : spoke_width;
     const auto spokes = buildRectangularThermalSpokes(
-        zone, pad.position, nanometers(radius), gap, spoke_width);
+        zone, pad.position, nanometers(radius), pad_gap, pad_spoke_width);
     result.thermal_spokes.insert(result.thermal_spokes.end(), spokes.begin(), spokes.end());
   }
   return result;

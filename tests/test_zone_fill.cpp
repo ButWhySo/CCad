@@ -65,9 +65,18 @@ int main() {
   pad.position = p(5, 5);
   pad.padstack.copper_props["F.Cu"].shape.size =
       {ccad::nanometers(2), ccad::nanometers(2)};
+  pad.padstack.copper_props["F.Cu"].thermal_gap = ccad::nanometers(2);
+  pad.padstack.copper_props["F.Cu"].thermal_spoke_width = ccad::nanometers(3);
   const auto board_fill = ccad::calculateZoneFill(zone, std::vector<ccad::Pad>{pad});
   require(board_fill.filled && board_fill.thermal_spokes.size() == 4,
           "board zone fill reports matching-pad thermal spokes");
+  require(board_fill.thermal_spokes.front().start.x.nanometers == 8 &&
+              board_fill.thermal_spokes.front().width.nanometers == 3,
+          "pad thermal overrides control spoke geometry");
+  pad.padstack.copper_props["F.Cu"].zone_connection = "none";
+  const auto pad_none_fill = ccad::calculateZoneFill(zone, std::vector<ccad::Pad>{pad});
+  require(pad_none_fill.thermal_spokes.empty(), "pad connection override suppresses spokes");
+  pad.padstack.copper_props["F.Cu"].zone_connection.reset();
   zone.layer_ids = {"F.Cu"};
   zone.pad_connection = "thermal";
   pad.padstack.layer_set = {"B.Cu"};
