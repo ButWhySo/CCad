@@ -1063,3 +1063,7 @@ Added `meanderToTarget()`: direct destination when already sufficient, otherwise
 ## Sprint 453 progress update (2026-09-16)
 
 Extended target meander generation with optional multi-bend count while retaining one-bend default compatibility. Alternating perpendicular bends now create a first serpentine-like path; clearance, obstacle avoidance, and optimal amplitude remain future work.
+
+## Sprint 455 progress update (2026-09-16)
+
+Added `PnsNode::removeItem()` with synchronized index removal and ownership erase. Regression proves removed items disappear from node queries and repeated removal is safe. Full build/CTest and official visual harness passed; screenshot inspected.

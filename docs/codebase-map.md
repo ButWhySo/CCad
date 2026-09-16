@@ -1161,4 +1161,6 @@ Sprint 451 adds `PnsMeanderPlacer::meanderToTarget()`, which uses current target
 
 Sprint 453 extends `meanderToTarget()` with optional `bends`; positive counts generate alternating perpendicular intermediate points, defaulting to one bend for API compatibility. This is first serpentine-like geometry, not yet obstacle-aware routing.
 
+Sprint 455 adds `PnsNode::removeItem()`, which removes owned items from both node storage and spatial index, returning false for null or missing items.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.

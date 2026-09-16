@@ -34,6 +34,7 @@ public:
     ~PnsNode() = default;
 
     void addItem(std::shared_ptr<PnsItem> item);
+    bool removeItem(PnsItem* item);
     void clear();
     std::vector<PnsItem*> query(int x, int y, int radius) const;
 

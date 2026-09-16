@@ -22,6 +22,12 @@ int main() {
     ccad::PnsNode node;
     node.addItem(std::make_shared<ccad::PnsItem>(near));
     require(node.query(12, 10, 0).size() == 1, "PNS node forwards indexed query");
+    auto removable = std::make_shared<ccad::PnsItem>();
+    removable->setPosition(50, 50);
+    node.addItem(removable);
+    require(node.removeItem(removable.get()), "PNS node removes owned item");
+    require(node.query(50, 50, 0).empty(), "removed item leaves index");
+    require(!node.removeItem(removable.get()), "missing item removal is false");
     node.clear();
     require(node.query(12, 10, 0).empty(), "PNS node query is empty after clear");
   return 0;
