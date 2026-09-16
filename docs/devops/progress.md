@@ -1017,3 +1017,7 @@ Replaced `convertImageToPolygons()` bounding-box placeholder with alpha-aware, c
 ## Sprint 440 progress update (2026-09-16)
 
 Replaced empty `convertSVGToLibShapes()` stub with headless parsing for common SVG line, rectangle, polygon, and polyline elements, including fill, offset, and pixel-scale conversion. Focused SVG test passed; Qt build completed 80/80; full Qt CTest passed 83/83; official harness screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 441 progress update (2026-09-16)
+
+`DiffPairTuning::calculateCurrentSkew()` now measures routed TrackSegment lengths for positive/negative nets and returns absolute skew in millimetres, with safe zero result for missing pairs. Focused diff-pair test passed; Qt build completed 107/107; full Qt CTest passed 84/84; official harness screenshot was ingested and visually inspected with empty stderr.

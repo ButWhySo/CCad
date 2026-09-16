@@ -246,6 +246,10 @@ add_executable(ccad_gfx_import_utils_tests tests/test_gfx_import_utils.cpp)
 target_link_libraries(ccad_gfx_import_utils_tests PRIVATE ccad_core)
 add_test(NAME gfx_import_utils COMMAND ccad_gfx_import_utils_tests)
 
+add_executable(ccad_diff_pair_tuning_tests tests/test_diff_pair_tuning.cpp)
+target_link_libraries(ccad_diff_pair_tuning_tests PRIVATE ccad_core)
+add_test(NAME diff_pair_tuning COMMAND ccad_diff_pair_tuning_tests)
+
 add_executable(ccad_track_length_tuning_tests
   tests/test_track_length_tuning.cpp
 )

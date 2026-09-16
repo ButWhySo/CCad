@@ -2282,3 +2282,5 @@ The GUI regression suite now exercises this persistence path with a real tempora
 `convertImageToPolygons()` now emits real schematic polygon geometry from RGBA image data instead of a bounding-box placeholder. Transparent pixels are skipped, adjacent same-color pixels on each row are merged, RGB color is retained as hex, and pixel scale is converted to CCad lengths. `ccad_gfx_import_utils_tests` covers this behavior.
 
 `convertSVGToLibShapes()` now imports common SVG `line`, `rect`, `polygon`, and `polyline` elements into typed schematic graphics, retaining fill values and applying scale/offset transforms. Unknown or unsupported elements are ignored without crashing; the focused graphics-import test covers representative primitives.
+
+`DiffPairTuning::calculateCurrentSkew()` now reports measured positive/negative routed-length difference in millimetres from board track geometry. It safely returns zero when either requested net is absent; `ccad_diff_pair_tuning_tests` covers measurement and missing-net behavior.

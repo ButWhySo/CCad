@@ -1138,3 +1138,5 @@ Sprint 438 `tests/test_gui_agent_panel.cpp` verifies AgentPanel queue checkpoint
 Sprint 439 `gfx_import_utils` converts RGBA raster rows into scaled polygon spans, omitting transparent pixels and preserving RGB color; malformed dimensions safely produce no geometry.
 
 Sprint 440 `gfx_import_utils` converts common SVG primitives into `SchGraphic` line/rectangle/polygon geometry with fill and coordinate transforms; unsupported SVG elements remain ignored safely.
+
+Sprint 441 `DiffPairTuning::calculateCurrentSkew()` computes absolute routed length difference from board TrackSegments in millimetres; pair absence returns zero and does not create a false violation.
