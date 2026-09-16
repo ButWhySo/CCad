@@ -1185,4 +1185,6 @@ Sprint 465 gives Agent panel composer and header actions stable `action:*` objec
 
 Sprint 466 adds `PnsArcItem` and arc envelope checks to `PnsIndex::querySegment()`. `PnsBoardObstacleIndex` adapts active-layer different-net `TrackArc` objects; RouterTool's existing exact arc checker remains authoritative.
 
+Sprint 467 adds `shellArgument()` to the CLI integration test harness for platform-correct packet quoting. POSIX `$NET` cross-probe arguments are single-quoted with embedded-quote escaping; Windows retains double-quoted arguments.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.

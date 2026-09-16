@@ -32,6 +32,18 @@ std::string shellLiteral(const std::string& value) {
 #endif
 }
 
+std::string shellArgument(const std::string& value) {
+#ifdef _WIN32
+  return "\"" + value + "\"";
+#else
+  std::string escaped = "'";
+  for (const char character : value) {
+    escaped += character == '\'' ? "'\\''" : std::string(1, character);
+  }
+  return escaped + "'";
+#endif
+}
+
 int run(const std::string& command) {
 #ifdef _WIN32
   const std::string shell_command = "cmd /C \"" + command + "\"";
@@ -2318,7 +2330,7 @@ int main() {
 
   const std::filesystem::path cross_probe_path = temp / "cross-probe.json";
   require(run(quote(CCAD_BINARY) + " pcb cross-probe --file " + quote(board_project_path) +
-              " --packet \"" + shellLiteral("$NET: N1") + "\" > " + quote(cross_probe_path)) == 0,
+              " --packet " + shellArgument("$NET: N1") + " > " + quote(cross_probe_path)) == 0,
           "pcb cross-probe exits zero");
   const std::string cross_probe_json = readFile(cross_probe_path);
   require(cross_probe_json.find("\"kicad_source\": \"pcbnew/cross-probing.cpp\"") !=

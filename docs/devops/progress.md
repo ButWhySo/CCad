@@ -1112,3 +1112,7 @@ Made Agent panel actions semantically targetable by assigning stable object IDs 
 ## Sprint 466 progress update (2026-09-17)
 
 Added PNS arc obstacles using a typed arc item and a 16-step quadratic envelope with track-width clearance. Active-layer, different-net arcs now enter the board adapter; focused regression, full build 96/96, CTest 89/89, official harness, and screenshot inspection passed with empty stderr.
+
+## Sprint 467 progress update (2026-09-17)
+
+Fixed POSIX CLI cross-probe test quoting: packets containing `$NET` now use a platform-safe shell argument instead of relying on nested double-quote escaping. This directly addresses Linux CTest failure at `pcb cross-probe reports net packet kind`. Focused CLI test, full CTest 89/89, and official visual harness passed; stderr empty.

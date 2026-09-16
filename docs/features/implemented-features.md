@@ -2326,6 +2326,8 @@ PNS board obstacles now preserve track segment geometry, so active-layer differe
 Agent panel navigation and composer controls expose stable semantic IDs and tooltips for reliable human and agent interaction.
 
 PNS obstacle adaptation now includes active-layer different-net track arcs with width-aware sampled envelope collision checks.
+
+CLI cross-probe integration coverage now passes packet values containing `$` safely on POSIX and Windows shells.
 ## PNS spatial index
 
 PNS items can now expose integer position and radius, and the native `PnsIndex` performs radius-aware point queries with duplicate suppression and invalid-radius rejection. `PnsNode` synchronizes ownership and index membership. This establishes query infrastructure for later topology-aware shove and differential-pair routing.
