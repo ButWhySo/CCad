@@ -213,6 +213,13 @@ int main() {
   require(exported.find("(min_thickness 0.250000)") != std::string::npos, "Board zone min thickness exports");
   require(exported.find("(polygon (pts (xy 2.000000 2.000000) (xy 40.000000 2.000000) (xy 40.000000 30.000000) (xy 2.000000 30.000000)))") != std::string::npos, "Board zone outline exports");
   require(exported.find("(filled_polygon (layer \"F.Cu\") (pts (xy 2.000000 2.000000) (xy 40.000000 2.000000) (xy 40.000000 30.000000) (xy 2.000000 30.000000)))") != std::string::npos, "Board zone filled preview exports");
+  project.boards.front().zones.front().filled_contours = {{ccad::Point{.x = ccad::millimeters(3), .y = ccad::millimeters(3)},
+                                          ccad::Point{.x = ccad::millimeters(39), .y = ccad::millimeters(3)},
+                                          ccad::Point{.x = ccad::millimeters(39), .y = ccad::millimeters(29)},
+                                          ccad::Point{.x = ccad::millimeters(3), .y = ccad::millimeters(29)}}};
+  const std::string committed_fill_export = ccad::exportToKiCadPcb(project);
+  require(committed_fill_export.find("(filled_polygon (layer \"F.Cu\") (pts (xy 3.000000 3.000000) (xy 39.000000 3.000000) (xy 39.000000 29.000000) (xy 3.000000 29.000000)))") != std::string::npos,
+          "committed zone fill contour exports");
 
   // Keepout details
   require(exported.find("(keepout (tracks not_allowed) (vias not_allowed) (pads not_allowed) (copperareas not_allowed))") != std::string::npos, "Keepout rules match");

@@ -1200,3 +1200,4 @@ Zone fill first slice: `src/ccad_core/zone_fill.*` exposes `calculateZoneFill(co
 CLI `pcb refill-zones` exposes this result as JSON without mutating the project. It is the agent-facing inspection surface pending transactional refill mutation and full KiCad filler semantics.
 `pcb refill-zones --apply true` now persists `BoardZone.filled_contours`; default invocation remains read-only. Filled contours are still preparatory geometry and do not yet encode clearance knockouts or thermal spokes.
 Agent capability metadata now advertises `RefillZones` through `pcb refill-zones` as `first_slice` with deterministic-only caveat.
+`kicad_pcb_export.cpp` emits the first committed fill contour when available; empty `filled_contours` preserves legacy outline preview behavior. Hole-aware KiCad fill export remains future work.

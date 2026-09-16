@@ -352,7 +352,10 @@ std::string exportToKiCadPcb(const Project& project) {
     if (zone.fill_enabled) {
       for (const std::string& layer_id : zone.layer_ids) {
         out << "    (filled_polygon (layer \"" << escapeKiCadString(layer_id) << "\") (pts";
-        for (const Point& point : zone.outline) {
+        const std::vector<Point>& fill_contour = zone.filled_contours.empty()
+                                                     ? zone.outline
+                                                     : zone.filled_contours.front();
+        for (const Point& point : fill_contour) {
           out << " (xy " << (point.x.nanometers / 1000000.0) << " "
               << (point.y.nanometers / 1000000.0) << ")";
         }

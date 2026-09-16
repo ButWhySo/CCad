@@ -2343,3 +2343,4 @@ Zone settings validate thermal spoke width, thermal gap, and minimum island area
 `ccad pcb refill-zones --file <path> [--zone-id <id>]` exposes this deterministic result as JSON, including diagnostics for malformed contours.
 Add `--apply true` to persist valid contours in `BoardZone.filled_contours`; omit it for read-only inspection.
 Agent capability discovery maps `RefillZones` to this CLI surface and labels unsupported full-filler semantics explicitly.
+KiCad PCB export consumes committed fill contours when present, with backward-compatible outline fallback.

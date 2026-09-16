@@ -1147,3 +1147,6 @@ Updated the agent capability registry so `RefillZones` resolves to `pcb refill-z
 ## Sprint 471 progress update (2026-09-17)
 
 Added finite, non-negative validation for global zone thermal spoke width, thermal gap, and minimum island area settings. Focused zone-settings test passed; Qt Release build completed 118/118; full CTest passed 90/90; official harness passed with screenshot inspection and empty stderr. KiCad `ZONE_FILLER` comparison confirms actual filled polygon storage, clearance knockouts, thermal reliefs, and island policy remain future implementation work.
+## Sprint 476 progress update (2026-09-17)
+
+KiCad PCB export now prefers committed `BoardZone.filled_contours` for `filled_polygon` output and retains outline fallback for legacy projects without committed fills. Export regression passed; full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
