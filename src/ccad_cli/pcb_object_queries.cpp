@@ -516,7 +516,10 @@ std::string pcbViaObjectJson(const ccad::Board& board, const ccad::Via& via) {
   writePointJson(out, via.position, 6);
   out << "\n    },\n"
       << "    \"diameter_nm\": " << via.diameter.nanometers << ",\n"
-      << "    \"drill_nm\": " << via.drill.nanometers;
+      << "    \"drill_nm\": " << via.drill.nanometers << ",\n"
+      << "    \"via_type\": \"" << ccad::escapeJson(via.via_type) << "\",\n"
+      << "    \"start_layer_id\": \"" << ccad::escapeJson(via.start_layer_id) << "\",\n"
+      << "    \"end_layer_id\": \"" << ccad::escapeJson(via.end_layer_id) << "\"";
   appendBoardItemMetadata(out, ccad::boardItemMetadata(board, via));
   appendConnectedItemMetadata(out, via.net_id, true);
   out << "\n"
@@ -1306,7 +1309,8 @@ std::string exportRouteJobJson(const ccad::Board& board, const std::string& requ
     out << "        {\"id\": \"" << ccad::escapeJson(via.id) << "\", \"net_id\": \""
         << ccad::escapeJson(via.net_id) << "\", \"x_nm\": " << via.position.x.nanometers
         << ", \"y_nm\": " << via.position.y.nanometers << ", \"diameter_nm\": "
-        << via.diameter.nanometers << ", \"drill_nm\": " << via.drill.nanometers;
+        << via.diameter.nanometers << ", \"drill_nm\": " << via.drill.nanometers
+        << ", \"via_type\": \"" << ccad::escapeJson(via.via_type) << "\"";
     appendConnectedItemMetadata(out, via.net_id, true);
     out << "}" << (i + 1 == board.vias.size() ? "" : ",") << '\n';
   }

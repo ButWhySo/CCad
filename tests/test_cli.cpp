@@ -1209,6 +1209,17 @@ int main() {
   require(pad_lookup_json.find("\"view_layer_ids\": [\"F.Cu\"]") != std::string::npos,
           "pcb get-object exposes board item view layers");
 
+  const std::filesystem::path via_lookup_path = temp / "via-lookup.json";
+  const std::string via_lookup_command =
+      quote(CCAD_BINARY) + " pcb get-object --file " + quote(board_project_path) +
+      " --id V1 > " + quote(via_lookup_path);
+  require(run(via_lookup_command) == 0, "pcb get-object finds via");
+  const std::string via_lookup_json = readFile(via_lookup_path);
+  require(via_lookup_json.find("\"via_type\": \"through\"") != std::string::npos,
+          "pcb get-object exposes via type");
+  require(via_lookup_json.find("\"start_layer_id\": \"\"") != std::string::npos,
+          "pcb get-object exposes via start layer");
+
   const std::filesystem::path zone_lookup_path = temp / "zone-lookup.json";
   const std::string zone_lookup_command =
       quote(CCAD_BINARY) + " pcb get-object --file " + quote(board_project_path) +

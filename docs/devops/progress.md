@@ -969,3 +969,7 @@ Via layer-span fields now carry default initializers and follow existing aggrega
 ## Sprint 428 progress update (2026-09-16)
 
 Added explicit `Via::via_type` persistence with SES inference for through, blind, buried, and microvia classes from layer span and drill size. Legacy vias default to through. Build completed 88-target focused rebuild; full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 429 progress update (2026-09-16)
+
+CLI object queries now expose via type and layer-span metadata, allowing agents and scripts to distinguish imported via classes without reopening project JSON. CLI CTest passed; full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
