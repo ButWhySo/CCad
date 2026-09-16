@@ -51,6 +51,41 @@ bool pointInContour(const Point& point, const std::vector<Point>& contour) {
   }
   return inside;
 }
+
+bool horizontalOrVerticalSpokeBlocked(const Point& start, const Point& end,
+                                      const std::vector<Point>& hole) {
+  if (hole.size() != 4) return false;
+  const auto bounds = [](const std::vector<Point>& contour, bool x_axis) {
+    auto cmp = [x_axis](const Point& a, const Point& b) {
+      return (x_axis ? a.x.nanometers : a.y.nanometers) <
+             (x_axis ? b.x.nanometers : b.y.nanometers);
+    };
+    const auto lo = std::min_element(contour.begin(), contour.end(), cmp);
+    const auto hi = std::max_element(contour.begin(), contour.end(), cmp);
+    return std::pair<int64_t, int64_t>{x_axis ? lo->x.nanometers : lo->y.nanometers,
+                                       x_axis ? hi->x.nanometers : hi->y.nanometers};
+  };
+  const auto hx = bounds(hole, true);
+  const auto hy = bounds(hole, false);
+  if (start.y.nanometers == end.y.nanometers &&
+      start.y.nanometers > hy.first && start.y.nanometers < hy.second) {
+    const auto sx = std::minmax(start.x.nanometers, end.x.nanometers);
+    return sx.second > hx.first && sx.first < hx.second;
+  }
+  if (start.x.nanometers == end.x.nanometers &&
+      start.x.nanometers > hx.first && start.x.nanometers < hx.second) {
+    const auto sy = std::minmax(start.y.nanometers, end.y.nanometers);
+    return sy.second > hy.first && sy.first < hy.second;
+  }
+  return false;
+}
+
+bool blockedByHole(const Point& start, const Point& end,
+                  const std::vector<std::vector<Point>>& holes) {
+  return std::any_of(holes.begin(), holes.end(), [&](const auto& hole) {
+    return horizontalOrVerticalSpokeBlocked(start, end, hole);
+  });
+}
 }  // namespace
 
 std::vector<ZoneThermalSpoke> buildRectangularThermalSpokes(
@@ -72,18 +107,22 @@ std::vector<ZoneThermalSpoke> buildRectangularThermalSpokes(
   const int64_t max_y = std::max_element(outer.begin(), outer.end(),
       [](const Point& a, const Point& b) { return a.y.nanometers < b.y.nanometers; })->y.nanometers;
   const int64_t start = pad_radius.nanometers + gap.nanometers;
+  const auto add = [&](Point spoke_start, Point spoke_end) {
+    if (!blockedByHole(spoke_start, spoke_end, zone.holes))
+      spokes.push_back({spoke_start, spoke_end, spoke_width});
+  };
   if (pad_center.x.nanometers + start < max_x)
-    spokes.push_back({{nanometers(pad_center.x.nanometers + start), pad_center.y},
-                      {nanometers(max_x), pad_center.y}, spoke_width});
+    add({nanometers(pad_center.x.nanometers + start), pad_center.y},
+        {nanometers(max_x), pad_center.y});
   if (pad_center.x.nanometers - start > min_x)
-    spokes.push_back({{nanometers(pad_center.x.nanometers - start), pad_center.y},
-                      {nanometers(min_x), pad_center.y}, spoke_width});
+    add({nanometers(pad_center.x.nanometers - start), pad_center.y},
+        {nanometers(min_x), pad_center.y});
   if (pad_center.y.nanometers + start < max_y)
-    spokes.push_back({{pad_center.x, nanometers(pad_center.y.nanometers + start)},
-                      {pad_center.x, nanometers(max_y)}, spoke_width});
+    add({pad_center.x, nanometers(pad_center.y.nanometers + start)},
+        {pad_center.x, nanometers(max_y)});
   if (pad_center.y.nanometers - start > min_y)
-    spokes.push_back({{pad_center.x, nanometers(pad_center.y.nanometers - start)},
-                      {pad_center.x, nanometers(min_y)}, spoke_width});
+    add({pad_center.x, nanometers(pad_center.y.nanometers - start)},
+        {pad_center.x, nanometers(min_y)});
   return spokes;
 }
 

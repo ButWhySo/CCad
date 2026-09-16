@@ -1181,3 +1181,7 @@ Added deterministic rectangular thermal-spoke geometry preparation to `zone_fill
 ## Sprint 484 progress update (2026-09-17)
 
 References checked: current KiCad PCB Editor and zone documentation define thermal relief as a pad-zone gap plus spoke width, commonly four spokes, with relief suppressed when pad/antipad geometry cannot fit. CCad now rejects a pad center inside a zone hole before generating rectangular thermal spokes, preventing false connectivity. Focused test passed; full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty. Thermal spokes remain preparatory and are not yet integrated into refill/export/persistence.
+
+## Sprint 485 progress update (2026-09-17)
+
+Thermal spokes now suppress any axial spoke whose segment crosses a supported rectangular zone hole. This prevents a thermal bridge through a copper knockout; malformed/non-rectangular holes remain outside this first slice. Focused test passed; full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
