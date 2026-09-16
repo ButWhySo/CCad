@@ -2337,3 +2337,4 @@ PNS obstacle adaptation includes filled active-layer different-net zones, detect
 ## PNS spatial index
 
 PNS items can now expose integer position and radius, and the native `PnsIndex` performs radius-aware point queries with duplicate suppression and invalid-radius rejection. `PnsNode` synchronizes ownership and index membership. This establishes query infrastructure for later topology-aware shove and differential-pair routing.
+Zone settings validate thermal spoke width, thermal gap, and minimum island area as finite, non-negative values. Invalid values throw `std::invalid_argument`; zone refill geometry is not yet implemented.

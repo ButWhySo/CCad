@@ -1128,3 +1128,6 @@ Added typed PNS polygon obstacles for filled, active-layer, different-net zones.
 ## Sprint 470 progress update (2026-09-17)
 
 Extended PNS polygon obstacles with zone holes. Routes strictly inside holes are excluded from solid-zone blocking, while contour boundaries remain conservative. Focused test, full build 96/96, CTest 89/89, official harness, and screenshot inspection passed with empty stderr.
+## Sprint 471 progress update (2026-09-17)
+
+Added finite, non-negative validation for global zone thermal spoke width, thermal gap, and minimum island area settings. Focused zone-settings test passed; Qt Release build completed 118/118; full CTest passed 90/90; official harness passed with screenshot inspection and empty stderr. KiCad `ZONE_FILLER` comparison confirms actual filled polygon storage, clearance knockouts, thermal reliefs, and island policy remain future implementation work.

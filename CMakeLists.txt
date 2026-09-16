@@ -1267,3 +1267,9 @@ add_executable(ccad_router_pns_adapter_tests
 )
 target_link_libraries(ccad_router_pns_adapter_tests PRIVATE ccad_core)
 add_test(NAME router_pns_adapter COMMAND ccad_router_pns_adapter_tests)
+
+add_executable(ccad_zone_settings_tests
+  tests/test_zone_settings.cpp
+)
+target_link_libraries(ccad_zone_settings_tests PRIVATE ccad_core)
+add_test(NAME zone_settings COMMAND ccad_zone_settings_tests)
