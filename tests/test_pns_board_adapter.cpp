@@ -12,17 +12,29 @@ int main() {
     board.pads.push_back(obstacle);
     ccad::Pad same_net = obstacle;
     same_net.net_id = "N1";
-    same_net.position = {ccad::nanometers(80), ccad::nanometers(80)};
+    same_net.position = {ccad::nanometers(80), ccad::nanometers(90)};
     board.pads.push_back(same_net);
+    board.layers = {{.id = "F.Cu"}, {.id = "In1.Cu"}, {.id = "B.Cu"}};
+    ccad::Via blind;
+    blind.net_id = "N2";
+    blind.position = {ccad::nanometers(70), ccad::nanometers(70)};
+    blind.diameter = ccad::nanometers(20);
+    blind.start_layer_id = "F.Cu";
+    blind.end_layer_id = "In1.Cu";
+    blind.via_type = "blind";
+    board.vias.push_back(blind);
 
     ccad::PnsBoardObstacleIndex index;
     index.rebuild(board, "N1", "F.Cu");
-    require(index.size() == 1, "adapter indexes only different-net active-layer pad");
+    require(index.size() == 2, "adapter indexes different-net active-layer pad and via");
     require(index.blockedSegment(0, 50, 100, 50, 0), "adapter blocks different-net pad");
     require(index.blockingItems(0, 50, 100, 50, 0).front()->netId() == "N2",
             "adapter reports blocking item identity");
-    require(!index.blockedSegment(0, 80, 100, 80, 0), "adapter excludes same-net pad");
+    require(index.blockingItems(70, 0, 70, 100, 0).front()->netId() == "N2",
+            "adapter reports via blocking item identity");
+    require(!index.blockedSegment(0, 90, 100, 90, 0), "adapter excludes same-net pad");
     index.rebuild(board, "N1", "B.Cu");
     require(!index.blockedSegment(0, 50, 100, 50, 0), "adapter filters pad layer");
+    require(!index.blockedSegment(70, 0, 70, 100, 0), "adapter filters blind via span");
     return 0;
 }

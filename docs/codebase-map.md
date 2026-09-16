@@ -1177,4 +1177,6 @@ Sprint 461 adds `PnsBoardObstacleIndex::blockingItems()`, returning matched PNS 
 
 Sprint 462 wires the board adapter into RouterTool's commit path after existing precise pad/via checks. PNS fallback reports `pns_pad_via`; existing `pad`/`via`/track/zone/arc reasons remain preferred.
 
+Sprint 463 makes `PnsBoardObstacleIndex` span-aware for non-through vias. It indexes a blind or buried via only when the active copper layer lies within its declared start/end span; incomplete metadata remains conservatively treated as endpoint-covered.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.

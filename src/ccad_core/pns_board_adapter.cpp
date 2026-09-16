@@ -6,6 +6,25 @@
 
 namespace ccad {
 
+bool viaCoversLayer(const Via& via, const Board& board, const std::string& layer_id) {
+    if (via.via_type == "through" || via.start_layer_id.empty() || via.end_layer_id.empty()) return true;
+    auto start = std::find_if(board.layers.begin(), board.layers.end(), [&](const Layer& l) {
+        return l.id == via.start_layer_id;
+    });
+    auto end = std::find_if(board.layers.begin(), board.layers.end(), [&](const Layer& l) {
+        return l.id == via.end_layer_id;
+    });
+    auto active = std::find_if(board.layers.begin(), board.layers.end(), [&](const Layer& l) {
+        return l.id == layer_id;
+    });
+    if (start == board.layers.end() || end == board.layers.end() || active == board.layers.end())
+        return layer_id == via.start_layer_id || layer_id == via.end_layer_id;
+    const auto first = std::min(start - board.layers.begin(), end - board.layers.begin());
+    const auto last = std::max(start - board.layers.begin(), end - board.layers.begin());
+    const auto current = active - board.layers.begin();
+    return current >= first && current <= last;
+}
+
 void PnsBoardObstacleIndex::rebuild(const Board& board, const std::string& active_net,
                                     const std::string& layer_id) {
     node_.clear();
@@ -25,7 +44,7 @@ void PnsBoardObstacleIndex::rebuild(const Board& board, const std::string& activ
         items_.push_back(std::move(item));
     }
     for (const Via& via : board.vias) {
-        if (via.net_id.empty() || via.net_id == active_net) continue;
+        if (via.net_id.empty() || via.net_id == active_net || !viaCoversLayer(via, board, layer_id)) continue;
         auto item = std::make_shared<PnsItem>();
         item->setPosition(static_cast<int>(via.position.x.nanometers),
                           static_cast<int>(via.position.y.nanometers),
