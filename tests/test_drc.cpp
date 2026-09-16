@@ -376,6 +376,17 @@ int main() {
   require(!hasCode(ccad::runDrc(relaxed_via_drill), "VIA_DRILL_BELOW_MINIMUM"),
           "drc obeys configured minimum through hole drill");
 
+  ccad::Project invalid_via_span = validBoardProject();
+  invalid_via_span.boards[0].vias.at(0).via_type = "blind";
+  invalid_via_span.boards[0].vias.at(0).start_layer_id = "F.Cu";
+  invalid_via_span.boards[0].vias.at(0).end_layer_id = "F.Cu";
+  require(hasCode(ccad::runDrc(invalid_via_span), "VIA_LAYER_SPAN_INVALID"),
+          "drc rejects blind via with identical layer endpoints");
+  ccad::Project unknown_via_span = invalid_via_span;
+  unknown_via_span.boards[0].vias.at(0).end_layer_id = "Missing.Cu";
+  require(hasCode(ccad::runDrc(unknown_via_span), "VIA_LAYER_SPAN_UNKNOWN_LAYER"),
+          "drc rejects via span with unknown layer");
+
   ccad::Project zero_length_track = validBoardProject();
   zero_length_track.boards[0].tracks.at(0).end = zero_length_track.boards[0].tracks.at(0).start;
   require(hasCode(ccad::runDrc(zero_length_track), "ZERO_LENGTH_TRACK"),

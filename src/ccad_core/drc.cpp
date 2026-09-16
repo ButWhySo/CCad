@@ -677,6 +677,20 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
                                            "Via drill must be less than or equal to diameter",
                                            via.id));
     }
+    if (via.via_type != "through" && via.via_type != "blind" && via.via_type != "buried" &&
+        via.via_type != "microvia") {
+      diagnostics.push_back(makeDiagnostic("VIA_TYPE_INVALID", "Via type is unsupported", via.id));
+    }
+    if (via.via_type != "through") {
+      if (via.start_layer_id.empty() || via.end_layer_id.empty() ||
+          via.start_layer_id == via.end_layer_id) {
+        diagnostics.push_back(makeDiagnostic("VIA_LAYER_SPAN_INVALID",
+                                             "Non-through via must span two distinct layers", via.id));
+      } else if (!hasLayer(board, via.start_layer_id) || !hasLayer(board, via.end_layer_id)) {
+        diagnostics.push_back(makeDiagnostic("VIA_LAYER_SPAN_UNKNOWN_LAYER",
+                                             "Via span references an unknown layer", via.id));
+      }
+    }
     if (via_size_positive && board.design_rules.min_via_diameter.nanometers > 0 &&
         via.diameter.nanometers < board.design_rules.min_via_diameter.nanometers) {
       diagnostics.push_back(makeDiagnostic(

@@ -977,3 +977,7 @@ CLI object queries now expose via type and layer-span metadata, allowing agents 
 ## Sprint 430 progress update (2026-09-16)
 
 Via selection inspector now displays Via Type, Start Layer, and End Layer beside editable diameter/drill values. Targeted GUI inspector test passed; full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 431 progress update (2026-09-16)
+
+DRC now validates non-through via type and layer spans, reporting invalid identical endpoints, unknown layers, and unsupported via types. Targeted DRC test passed; full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
