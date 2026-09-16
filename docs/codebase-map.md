@@ -1208,3 +1208,4 @@ Negative zone clearance is rejected by `calculateZoneFill()`; invalid board stat
 Fill holes are validated against the outer contour before area subtraction; outside holes produce an unapplied diagnostic result.
 `test_serialize.cpp` now verifies committed filled-contour geometry round-trips through project persistence.
 `zone_fill.*` now also exposes `buildRectangularThermalSpokes()` for deterministic four-direction spoke geometry around a pad in an axis-aligned rectangular zone. This is preparatory API only; it is not wired into fill results, persistence, export, DRC, hole clipping, or KiCad thermal-mode semantics.
+The spoke helper rejects pad centers inside valid zone holes. Caller/test: `tests/test_zone_fill.cpp`; no production caller yet. KiCad reference checked: zone thermal relief uses gap and spoke-width parameters and may suppress relief when geometry cannot fit.

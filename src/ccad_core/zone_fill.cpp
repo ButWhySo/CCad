@@ -61,6 +61,8 @@ std::vector<ZoneThermalSpoke> buildRectangularThermalSpokes(
       spoke_width.nanometers <= 0) return spokes;
   const auto outer = offsetRectangle(zone.outline, 0);
   if (outer.empty() || !pointInContour(pad_center, outer)) return spokes;
+  for (const auto& hole : zone.holes)
+    if (hole.size() >= 3 && pointInContour(pad_center, hole)) return spokes;
   const int64_t min_x = std::min_element(outer.begin(), outer.end(),
       [](const Point& a, const Point& b) { return a.x.nanometers < b.x.nanometers; })->x.nanometers;
   const int64_t max_x = std::max_element(outer.begin(), outer.end(),

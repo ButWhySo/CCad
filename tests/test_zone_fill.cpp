@@ -46,5 +46,9 @@ int main() {
   require(spokes.size() == 4 && spokes.front().start.x.nanometers == 7 &&
               spokes.front().end.x.nanometers == 10,
           "rectangular thermal spokes reach zone boundary");
+  zone.holes = {{p(4, 4), p(6, 4), p(6, 6), p(4, 6)}};
+  const auto hole_spokes = ccad::buildRectangularThermalSpokes(
+      zone, p(5, 5), ccad::nanometers(1), ccad::nanometers(1), ccad::nanometers(1));
+  require(hole_spokes.empty(), "thermal spokes reject pad inside zone hole");
   std::cout << "Zone fill tests passed!\n";
 }

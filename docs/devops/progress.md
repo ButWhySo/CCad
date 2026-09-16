@@ -1177,3 +1177,7 @@ Added serializer regression for committed fill contours, proving outer fill geom
 ## Sprint 483 progress update (2026-09-17)
 
 Added deterministic rectangular thermal-spoke geometry preparation to `zone_fill.*`, with focused coverage proving four axial spokes begin after pad clearance and reach the rectangular zone boundary. This is an explicit first slice only: it is not yet integrated into `calculateZoneFill()`, persistence, export, or DRC, and it does not clip against holes or implement KiCad thermal modes. Full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
+
+## Sprint 484 progress update (2026-09-17)
+
+References checked: current KiCad PCB Editor and zone documentation define thermal relief as a pad-zone gap plus spoke width, commonly four spokes, with relief suppressed when pad/antipad geometry cannot fit. CCad now rejects a pad center inside a zone hole before generating rectangular thermal spokes, preventing false connectivity. Focused test passed; full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty. Thermal spokes remain preparatory and are not yet integrated into refill/export/persistence.
