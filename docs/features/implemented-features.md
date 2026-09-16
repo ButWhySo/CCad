@@ -2345,3 +2345,4 @@ Add `--apply true` to persist valid contours in `BoardZone.filled_contours`; omi
 Agent capability discovery maps `RefillZones` to this CLI surface and labels unsupported full-filler semantics explicitly.
 KiCad PCB export consumes committed fill contours when present, with backward-compatible outline fallback.
 PNS routing obstacle adaptation consumes committed fill contours when present, avoiding stale-outline blocking after refill application.
+Rectangular zone refill applies configured clearance as an inset before persistence/export; non-rectangular clearance is diagnosed as unsupported.

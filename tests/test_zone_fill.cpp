@@ -18,6 +18,11 @@ int main() {
   require(filled.filled, "enabled zone fills");
   require(filled.contours.size() == 2, "fill retains outer and hole contours");
   require(filled.area_square_nanometers == 96, "fill area subtracts hole");
+  zone.clearance = ccad::nanometers(1);
+  const auto cleared = ccad::calculateZoneFill(zone);
+  require(cleared.filled && cleared.contours.front().at(0).x.nanometers == 1,
+          "rectangular fill applies clearance inset");
+  require(cleared.area_square_nanometers == 60, "clearance fill area subtracts hole");
   zone.fill_enabled = false;
   require(!ccad::calculateZoneFill(zone).filled, "disabled zone does not fill");
   zone.fill_enabled = true;

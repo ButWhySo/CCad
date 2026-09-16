@@ -1202,3 +1202,4 @@ CLI `pcb refill-zones` exposes this result as JSON without mutating the project.
 Agent capability metadata now advertises `RefillZones` through `pcb refill-zones` as `first_slice` with deterministic-only caveat.
 `kicad_pcb_export.cpp` emits the first committed fill contour when available; empty `filled_contours` preserves legacy outline preview behavior. Hole-aware KiCad fill export remains future work.
 `pns_board_adapter.cpp` likewise prefers the first committed fill contour for different-net zone obstacles, preserving outline fallback. This keeps routing aligned with applied refill state; thermal/clearance semantics remain incomplete.
+`zone_fill.cpp` applies clearance inset for axis-aligned rectangles. General polygon clipping, pad/via/track knockouts, thermals, and island policy remain deferred.
