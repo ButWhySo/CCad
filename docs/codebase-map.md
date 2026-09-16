@@ -1163,4 +1163,6 @@ Sprint 453 extends `meanderToTarget()` with optional `bends`; positive counts ge
 
 Sprint 455 adds `PnsNode::removeItem()`, which removes owned items from both node storage and spatial index, returning false for null or missing items.
 
+Sprint 456 adds `PnsNode::hasObstacle()`, a boolean clearance query backed by `PnsIndex::query()` and item radii, giving routing callers a direct obstacle decision.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.

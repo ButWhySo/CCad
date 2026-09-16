@@ -1067,3 +1067,7 @@ Extended target meander generation with optional multi-bend count while retainin
 ## Sprint 455 progress update (2026-09-16)
 
 Added `PnsNode::removeItem()` with synchronized index removal and ownership erase. Regression proves removed items disappear from node queries and repeated removal is safe. Full build/CTest and official visual harness passed; screenshot inspected.
+
+## Sprint 456 progress update (2026-09-16)
+
+Added `PnsNode::hasObstacle()` as a direct clearance decision over indexed expanded-radius queries. Regression covers obstacle hit and distant miss. Full build/CTest and official harness passed; screenshot inspected.

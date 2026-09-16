@@ -12,6 +12,8 @@ Meander placement also reports current length, non-negative remaining target dis
 
 PNS nodes can remove owned items while keeping spatial queries synchronized.
 
+PNS nodes can also answer clearance-aware obstacle queries through `hasObstacle()`.
+
 PNS differential-pair placement now supports distinct endpoints, configurable non-negative gap, and coupled endpoint updates during start/route. This is an endpoint-placement primitive, not yet a complete KiCad-equivalent differential-pair track router.
 
 ## Build System And DevOps

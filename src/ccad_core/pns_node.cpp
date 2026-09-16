@@ -29,4 +29,8 @@ std::vector<PnsItem*> PnsNode::query(int x, int y, int radius) const {
     return index_.query(x, y, radius);
 }
 
+bool PnsNode::hasObstacle(int x, int y, int clearance) const {
+    return !query(x, y, clearance).empty();
+}
+
 } // namespace ccad
