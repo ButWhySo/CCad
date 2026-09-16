@@ -1153,4 +1153,6 @@ Sprint 446 gives the PNS substrate a usable spatial primitive. `PnsItem` stores 
 
 Sprint 447 gives `PnsDiffPairPlacer` a first executable coupled-placement contract: distinct positive/negative items are required, `setGap()` clamps invalid values, and both `start()` and `route()` update endpoint positions while preserving configured separation. Full track topology, clearance rules, and shove remain later work.
 
+Sprint 448 gives `PnsMeanderPlacer` an observable polyline contract through `path()`. `start()` records origin, `meander()` appends only changed destinations and updates item, and `finish()` clears active path state. This is groundwork for future length-targeted serpentine generation.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.

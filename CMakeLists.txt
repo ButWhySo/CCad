@@ -1248,3 +1248,9 @@ add_executable(ccad_pns_diff_pair_tests
 )
 target_link_libraries(ccad_pns_diff_pair_tests PRIVATE ccad_core)
 add_test(NAME pns_diff_pair COMMAND ccad_pns_diff_pair_tests)
+
+add_executable(ccad_pns_meander_tests
+  tests/test_pns_meander_placer.cpp
+)
+target_link_libraries(ccad_pns_meander_tests PRIVATE ccad_core)
+add_test(NAME pns_meander COMMAND ccad_pns_meander_tests)

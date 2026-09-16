@@ -3,24 +3,26 @@
 namespace ccad {
 
 bool PnsMeanderPlacer::start(std::shared_ptr<PnsItem> item, int x, int y) {
-    (void)x;
-    (void)y;
     if (!item || !node_) return false;
     start_item_ = item;
-    // Setup initial tuning amplitude and spacing
+    path_.clear();
+    path_.emplace_back(x, y);
+    start_item_->setPosition(x, y);
     return true;
 }
 
 bool PnsMeanderPlacer::meander(int x, int y) {
-    (void)x;
-    (void)y;
     if (!start_item_) return false;
-    // Calculate length and generate serpentines
+    if (path_.empty() || path_.back() != std::pair<int, int>{x, y}) {
+        path_.emplace_back(x, y);
+        start_item_->setPosition(x, y);
+    }
     return true;
 }
 
 void PnsMeanderPlacer::finish() {
     start_item_.reset();
+    path_.clear();
 }
 
 } // namespace ccad
