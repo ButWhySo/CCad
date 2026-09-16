@@ -1107,3 +1107,4 @@ Track collision margin is `board copper clearance + route half-width + existing 
 ## Sprint 413 handover (2026-09-16)
 
 `tests/test_router_width_clearance.cpp` is the focused contract for existing-track width margin. CMake registers it as `router_width_clearance`; it constructs a 4 mm different-net F.Cu track, attempts a nearby N1 route, and verifies no mutation plus `routeBlocked()`. Keep this separate test when changing clearance math.
+Sprint 414 added serialized `BoardZone::holes` and hole-aware routing exceptions, preserving conservative zone boundaries. Router portability now uses explicit TrackArc coordinate casts and consistent `Project` struct declarations; width-aware track distances convert geometry nanometres to millimetres before comparing rule clearance. Core warnings-as-errors and Qt test gates were revalidated.

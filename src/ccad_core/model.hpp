@@ -476,6 +476,7 @@ struct BoardZone {
   std::string net_id;
   std::vector<std::string> layer_ids;
   std::vector<Point> outline;
+  std::vector<std::vector<Point>> holes;
   int priority = 0;
   Length clearance;
   Length min_thickness;

@@ -924,3 +924,6 @@ Different-net track obstacle checks now include existing track half-width in cle
 ## Sprint 413 progress update (2026-09-16)
 
 Added dedicated `router_width_clearance` regression target proving a wide different-net track blocks a near-parallel route without relying on the monolithic router fixture. Qt Release build completed 318/318 graph steps; Qt-path CTest completed 80/80; official visual harness screenshot was ingested and inspected.
+## Sprint 414 progress update (2026-09-16)
+
+Persisted board-zone holes through native JSON serialization and made routes wholly contained within one hole pass through while boundary entry remains blocked. Fixed MSVC portability by explicitly casting TrackArc coordinates and matching `Project`'s struct forward declaration. Corrected track-clearance unit conversion from nanometres to millimetres. CI-equivalent core build completed 324/324 and CTest 64/64 with MinGW runtime PATH; Qt Release CTest completed 80/80. Official harness `sprint414_ci_zoneholes` produced screenshot and stdout/stderr logs; screenshot inspection confirmed stable PCB canvas, layer panel, agent panel, and routed geometry.

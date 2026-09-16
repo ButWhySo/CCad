@@ -2256,3 +2256,10 @@ Route gestures now account for both candidate route width and existing different
 ### Width-clearance regression contract
 
 Dedicated automated coverage now proves wide existing copper blocks near-parallel different-net routes and leaves the board unchanged.
+### Zone-hole persistence and routing
+
+Board-zone holes are stored and restored in native JSON. A route whose endpoints remain within the same zone hole is allowed, while routes crossing the hole boundary remain subject to the parent zone obstacle check.
+
+### CI portability and clearance units
+
+Track-arc nanometre coordinates use explicit long-double casts for strict MSVC builds, `Project` forward declarations match its struct definition, and track obstacle distances are converted to millimetres before comparison with design-rule clearance.

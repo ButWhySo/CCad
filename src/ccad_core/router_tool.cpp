@@ -43,10 +43,18 @@ bool segmentTouchesPolygon(const Point& start, const Point& end, const std::vect
   }
   return false;
 }
+bool pointsInsideSameHole(const Point& a, const Point& b, const BoardZone& zone) {
+  for (const auto& hole : zone.holes)
+    if (pointInsidePolygon(a, hole) && pointInsidePolygon(b, hole)) return true;
+  return false;
+}
 bool segmentTouchesArc(const Point& start, const Point& end, const TrackArc& arc, double clearance) {
-  const long double ax = arc.start.x.nanometers, ay = arc.start.y.nanometers;
-  const long double bx = arc.mid.x.nanometers, by = arc.mid.y.nanometers;
-  const long double cx = arc.end.x.nanometers, cy = arc.end.y.nanometers;
+  const long double ax = static_cast<long double>(arc.start.x.nanometers);
+  const long double ay = static_cast<long double>(arc.start.y.nanometers);
+  const long double bx = static_cast<long double>(arc.mid.x.nanometers);
+  const long double by = static_cast<long double>(arc.mid.y.nanometers);
+  const long double cx = static_cast<long double>(arc.end.x.nanometers);
+  const long double cy = static_cast<long double>(arc.end.y.nanometers);
   const long double determinant = 2.0L * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
   const bool circular = std::abs(determinant) > 1e-9L;
   long double center_x = 0.0L, center_y = 0.0L, radius = 0.0L, start_angle = 0.0L, sweep = 0.0L;
@@ -152,6 +160,7 @@ void RouterTool::commitRouting() {
     if (!zone.fill_enabled || zone.net_id.empty() || zone.net_id == active_net_id_ ||
         std::find(zone.layer_ids.begin(), zone.layer_ids.end(), layer_id) == zone.layer_ids.end()) continue;
     const double zone_clearance = static_cast<double>(zone.clearance.nanometers) / 1'000'000.0 + 0.125;
+    if (pointsInsideSameHole(start, end, zone)) continue;
     if (segmentTouchesPolygon(start, end, zone.outline, zone_clearance)) {
       routing_ = false;
       last_commit_blocked_ = true;
@@ -163,9 +172,10 @@ void RouterTool::commitRouting() {
     if (track.layer_id != layer_id || active_net_id_.empty() || track.net_id.empty() ||
         track.net_id == active_net_id_) continue;
     const double track_clearance = required + static_cast<double>(track.width.nanometers) / 2'000'000.0;
+    const double start_distance_mm = distancePointToSegment(track.start, start, end) / 1'000'000.0;
+    const double end_distance_mm = distancePointToSegment(track.end, start, end) / 1'000'000.0;
     if (intersects(start, end, track.start, track.end) ||
-        distancePointToSegment(track.start, start, end) < track_clearance ||
-        distancePointToSegment(track.end, start, end) < track_clearance) {
+        start_distance_mm < track_clearance || end_distance_mm < track_clearance) {
       routing_ = false;
       last_commit_blocked_=true;
       blocked_reason_="track";

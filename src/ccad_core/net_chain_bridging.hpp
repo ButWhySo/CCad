@@ -9,7 +9,7 @@ namespace ccad {
 
 struct Board;
 class Track;
-class Project;
+struct Project;
 
 struct NetChainBridge {
     std::string component_id;

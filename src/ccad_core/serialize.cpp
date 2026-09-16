@@ -2066,6 +2066,8 @@ class JsonReader {
             zone.layer_ids = readStringArray();
           } else if (key == "outline") {
             zone.outline = readPointArray();
+          } else if (key == "holes") {
+            zone.holes = readPointArrayArray();
           } else if (key == "priority") {
             zone.priority = readInt();
           } else if (key == "clearance_nm") {
@@ -2693,6 +2695,17 @@ class JsonReader {
       if (peek(']')) {
         throw std::runtime_error("trailing comma in point array");
       }
+    }
+  }
+
+  std::vector<std::vector<Point>> readPointArrayArray() {
+    std::vector<std::vector<Point>> arrays;
+    expect('[');
+    if (consume(']')) return arrays;
+    while (true) {
+      arrays.push_back(readPointArray());
+      if (consume(']')) return arrays;
+      expect(',');
     }
   }
 
@@ -3326,6 +3339,16 @@ std::string dumpProjectJson(const Project& project) {
       for (std::size_t j = 0; j < zone.outline.size(); ++j) {
         writePoint(out, 10, zone.outline.at(j));
         out << (j + 1 == zone.outline.size() ? "" : ",") << '\n';
+      }
+      out << "        ],\n";
+      out << "        \"holes\": [\n";
+      for (std::size_t h = 0; h < zone.holes.size(); ++h) {
+        out << "          [\n";
+        for (std::size_t j = 0; j < zone.holes.at(h).size(); ++j) {
+          writePoint(out, 12, zone.holes.at(h).at(j));
+          out << (j + 1 == zone.holes.at(h).size() ? "" : ",") << '\n';
+        }
+        out << "          ]" << (h + 1 == zone.holes.size() ? "" : ",") << '\n';
       }
       out << "        ],\n";
       out << "        \"priority\": " << zone.priority << ",\n";
