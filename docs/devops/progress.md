@@ -915,3 +915,6 @@ Agent-panel provider fallback messages now render as compact `noticeCard` warnin
 ## Sprint 410 progress update (2026-09-16)
 
 GUI semantic route responses now distinguish `blocked_obstacle` from `zero_length`, exposing RouterTool obstacle rejection to agents without mutating the board. Targeted router and agent-panel tests passed; Qt Release build completed 90/90; Qt-path CTest completed 79/79; official visual harness screenshot was inspected and showed stable canvas, layers, and agent panel.
+## Sprint 411 progress update (2026-09-16)
+
+Agent route responses now include obstacle class in reason values: `blocked_obstacle_pad`, `via`, `arc`, `zone`, or `track`. Targeted tests passed; Qt Release build completed 81/81; Qt-path CTest completed 79/79; official visual harness screenshot was ingested and inspected.

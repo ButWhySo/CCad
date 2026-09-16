@@ -25,6 +25,7 @@ public:
     void commitRouting();
     void cancelRouting();
     bool routeBlocked() const { return last_commit_blocked_; }
+    const std::string& blockedReason() const { return blocked_reason_; }
 
 private:
     Board* board_ = nullptr;
@@ -34,6 +35,7 @@ private:
     int layer_ = 0;
     std::string active_net_id_;
     bool last_commit_blocked_ = false;
+    std::string blocked_reason_;
 };
 
 } // namespace ccad

@@ -2247,3 +2247,6 @@ Provider fallback/status messages now use a compact warning card, visually separ
 ### Agent route rejection feedback
 
 Agent-facing route responses now report `blocked_obstacle` when copper clearance prevents placement, allowing callers to distinguish a real design-rule rejection from a zero-length gesture.
+### Typed route obstacle feedback
+
+Agent-facing route responses identify the blocking copper class, such as `blocked_obstacle_via` or `blocked_obstacle_zone`, instead of returning only a generic obstacle failure.

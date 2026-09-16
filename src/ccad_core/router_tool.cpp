@@ -98,7 +98,7 @@ void RouterTool::routeTrack(double x1,double y1,double x2,double y2, int layer) 
   updateRouting(x2, y2);
   commitRouting();
 }
-void RouterTool::startRouting(double x,double y,int layer) { if (!board_) return; routing_=true; last_commit_blocked_=false; start_x_=x; start_y_=y; layer_=layer; current_x_=x; current_y_=y; }
+void RouterTool::startRouting(double x,double y,int layer) { if (!board_) return; routing_=true; last_commit_blocked_=false; blocked_reason_.clear(); start_x_=x; start_y_=y; layer_=layer; current_x_=x; current_y_=y; }
 void RouterTool::updateRouting(double x,double y) {
   if (!board_ || !routing_) return;
   current_x_=x; current_y_=y;
@@ -125,7 +125,7 @@ void RouterTool::commitRouting() {
   const double required = static_cast<double>(board_->design_rules.copper_clearance.nanometers) / 1'000'000.0 + 0.125;
   for (const Pad& pad : board_->pads) {
     if (active_net_id_.empty() || pad.net_id.empty() || pad.net_id == active_net_id_) continue;
-    if (distancePointToSegment(pad.position, start, end) < required) { routing_ = false; last_commit_blocked_=true; return; }
+    if (distancePointToSegment(pad.position, start, end) < required) { routing_ = false; last_commit_blocked_=true; blocked_reason_="pad"; return; }
   }
   for (const Via& via : board_->vias) {
     if (active_net_id_.empty() || via.net_id.empty() || via.net_id == active_net_id_) continue;
@@ -133,6 +133,7 @@ void RouterTool::commitRouting() {
     if (distancePointToSegment(via.position, start, end) < required + via_radius) {
       routing_ = false;
       last_commit_blocked_ = true;
+      blocked_reason_="via";
       return;
     }
   }
@@ -143,6 +144,7 @@ void RouterTool::commitRouting() {
     if (segmentTouchesArc(start, end, arc, arc_clearance)) {
       routing_ = false;
       last_commit_blocked_ = true;
+      blocked_reason_="arc";
       return;
     }
   }
@@ -153,6 +155,7 @@ void RouterTool::commitRouting() {
     if (segmentTouchesPolygon(start, end, zone.outline, zone_clearance)) {
       routing_ = false;
       last_commit_blocked_ = true;
+      blocked_reason_="zone";
       return;
     }
   }
@@ -164,6 +167,7 @@ void RouterTool::commitRouting() {
         distancePointToSegment(track.end, start, end) < required) {
       routing_ = false;
       last_commit_blocked_=true;
+      blocked_reason_="track";
       return;
     }
   }
