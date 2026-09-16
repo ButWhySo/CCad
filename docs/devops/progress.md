@@ -1221,3 +1221,7 @@ References checked: KiCad S-expression format defines `connect_pads thru_hole_on
 ## Sprint 494 progress update (2026-09-17)
 
 Persisted thermal spokes now flow into `CanvasScene` and render as tagged copper-layer line geometry in the Qt board canvas. Official harness fixture now adds a real B.Cu PTH pad, applies refill, and captures the rendered result, closing the previous generic-screenshot gap. Full Qt Ninja build completed 120/120; CTest passed 91/91; targeted harness screenshot inspected, stderr empty.
+
+## Sprint 495 progress update (2026-09-17)
+
+Corrected Qt thermal-spoke pen width: renderer now uses each persisted spoke's width instead of zone minimum thickness. KiCad reference confirms spoke width is an independent thermal parameter. Targeted harness screenshot visibly shows thick B.Cu relief geometry; full Qt Ninja build completed 120/120; CTest passed 91/91; stderr empty.

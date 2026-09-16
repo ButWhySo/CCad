@@ -359,10 +359,11 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     item->setToolTip((zone.is_teardrop ? "Teardrop " : "Zone ") + qstr(zone.id) + " " + layers_str);
     tagObject(*item, zone.is_teardrop ? "teardrop" : "zone", qstr(zone.id), zone_color, qstr(zone.net_id), layers_str);
     if (!zone.is_teardrop) {
-      QPen thermal_pen(zone_color.lighter(160), std::max(1.0, zone.min_thickness_units * scale));
-      thermal_pen.setCapStyle(Qt::RoundCap);
       for (const ccad::CanvasLine& spoke : zone.thermal_spokes) {
         if (!layerIsVisible(hidden_layers, spoke.layer_id)) continue;
+        QPen thermal_pen(zone_color.lighter(160),
+                         std::max(1.0, spoke.width_units * scale));
+        thermal_pen.setCapStyle(Qt::RoundCap);
         auto* spoke_item = canvas_scene.addLine(
             sceneX(scene, spoke.start_x_units, margin, scale),
             sceneY(scene, spoke.start_y_units, margin, scale),
