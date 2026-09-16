@@ -1021,3 +1021,7 @@ Replaced empty `convertSVGToLibShapes()` stub with headless parsing for common S
 ## Sprint 441 progress update (2026-09-16)
 
 `DiffPairTuning::calculateCurrentSkew()` now measures routed TrackSegment lengths for positive/negative nets and returns absolute skew in millimetres, with safe zero result for missing pairs. Focused diff-pair test passed; Qt build completed 107/107; full Qt CTest passed 84/84; official harness screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 442 progress update (2026-09-16)
+
+Hardened unsupported `DiffPairTuning::applyTuning()` to return `false` instead of claiming a successful no-op mutation; real meander topology remains explicitly deferred. Focused regression passed; Qt build completed 81/81; full Qt CTest passed 84/84; official harness screenshot was ingested and visually inspected with empty stderr.

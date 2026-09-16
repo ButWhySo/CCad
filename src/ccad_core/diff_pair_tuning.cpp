@@ -45,12 +45,10 @@ double DiffPairTuning::calculateCurrentSkew(const std::string& netCodeP, const s
 bool DiffPairTuning::applyTuning(const std::string& trackIdP, const std::string& trackIdN) {
     (void)trackIdP;
     (void)trackIdN;
-    if (!board_) return false;
-    // Stub:
-    // 1. Identify areas where P and N are routed parallel and meet the coupledGap setting
-    // 2. Add small "bump" meanders to correct phase skew at the uncoupled ends
-    // 3. Add large coupled serpentine meanders to both traces to hit the target length
-    return true;
+    // Meander generation requires routed-pair topology and board clearance rules,
+    // neither of which this API can represent yet. Never report a mutation that
+    // did not occur.
+    return false;
 }
 
 } // namespace ccad

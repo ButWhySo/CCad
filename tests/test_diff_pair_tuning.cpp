@@ -17,5 +17,7 @@ int main() {
           "diff pair skew equals absolute routed length difference in millimetres");
   require(tuning.calculateCurrentSkew("missing", "D-") == 0.0,
           "missing diff pair net has zero skew");
+  require(!tuning.applyTuning("P1", "N1"),
+          "tuning does not claim success before meander geometry exists");
   return 0;
 }
