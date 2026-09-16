@@ -2226,3 +2226,6 @@ Board text stores optional stroke width; CLI accepts stroke-width setting, and D
 ### Router obstacle checks
 
 Interactive and agent route gestures reject same-layer different-net track crossings and different-net via proximity. Checks preserve same-net and cross-layer routing, use physical clearance, and leave blocked multi-segment requests uncommitted. Via checks are conservative until layer-span metadata exists.
+### Zone-aware routing
+
+Interactive and agent route gestures now avoid filled different-net copper-zone polygons on the selected layer. Boundary crossings, interior endpoints, and configured clearance are rejected while same-net zones and other layers remain available.

@@ -22,6 +22,27 @@ bool intersects(const Point& a, const Point& b, const Point& c, const Point& d) 
   if (((ab_c > 0 && ab_d < 0) || (ab_c < 0 && ab_d > 0)) && ((cd_a > 0 && cd_b < 0) || (cd_a < 0 && cd_b > 0))) return true;
   return (ab_c == 0 && onSegment(a, b, c)) || (ab_d == 0 && onSegment(a, b, d)) || (cd_a == 0 && onSegment(c, d, a)) || (cd_b == 0 && onSegment(c, d, b));
 }
+bool pointInsidePolygon(const Point& p, const std::vector<Point>& polygon) {
+  bool inside = false;
+  for (std::size_t i = 0, j = polygon.size() - 1; i < polygon.size(); j = i++) {
+    const bool crosses = ((polygon[i].y.nanometers > p.y.nanometers) != (polygon[j].y.nanometers > p.y.nanometers));
+    if (crosses && static_cast<long double>(p.x.nanometers) <
+        static_cast<long double>(polygon[j].x.nanometers - polygon[i].x.nanometers) *
+        (p.y.nanometers - polygon[i].y.nanometers) /
+        (polygon[j].y.nanometers - polygon[i].y.nanometers) + polygon[i].x.nanometers) inside = !inside;
+  }
+  return inside;
+}
+bool segmentTouchesPolygon(const Point& start, const Point& end, const std::vector<Point>& polygon, double clearance) {
+  if (polygon.size() < 3 || pointInsidePolygon(start, polygon) || pointInsidePolygon(end, polygon)) return true;
+  for (std::size_t i = 0; i < polygon.size(); ++i) {
+    const Point& a = polygon[i];
+    const Point& b = polygon[(i + 1) % polygon.size()];
+    if (intersects(start, end, a, b) || distancePointToSegment(a, start, end) < clearance ||
+        distancePointToSegment(b, start, end) < clearance) return true;
+  }
+  return false;
+}
 }
 void RouterTool::setBoard(Board* board) { board_ = board; }
 void RouterTool::setActiveNet(const std::string& net_id) { active_net_id_ = net_id; }
@@ -79,6 +100,16 @@ void RouterTool::commitRouting() {
     }
   }
   const std::string layer_id = layer_ == 0 ? "F.Cu" : "B.Cu";
+  for (const BoardZone& zone : board_->zones) {
+    if (!zone.fill_enabled || zone.net_id.empty() || zone.net_id == active_net_id_ ||
+        std::find(zone.layer_ids.begin(), zone.layer_ids.end(), layer_id) == zone.layer_ids.end()) continue;
+    const double zone_clearance = static_cast<double>(zone.clearance.nanometers) / 1'000'000.0 + 0.125;
+    if (segmentTouchesPolygon(start, end, zone.outline, zone_clearance)) {
+      routing_ = false;
+      last_commit_blocked_ = true;
+      return;
+    }
+  }
   for (const TrackSegment& track : board_->tracks) {
     if (track.layer_id != layer_id || active_net_id_.empty() || track.net_id.empty() ||
         track.net_id == active_net_id_) continue;

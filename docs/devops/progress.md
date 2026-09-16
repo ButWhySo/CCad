@@ -894,3 +894,6 @@ Added RouterTool rejection for same-layer, different-net track obstacles using e
 ## Sprint 403 progress update (2026-09-16)
 
 Extended RouterTool copper-obstacle rejection to different-net vias. Via diameter contributes conservative radial clearance and blocks both layers because the current model has no via layer-span field. Focused router test, full Qt build, full Qt-path CTest, official harness, and screenshot inspection passed. Track arcs and zones remain next obstacle classes.
+## Sprint 404 progress update (2026-09-16)
+
+RouterTool now rejects candidate segments entering or approaching filled different-net zones on the selected copper layer. Polygon edge intersection, endpoint clearance, and interior checks use the existing physical geometry model. Focused router test passed; Qt Release build completed 76/76; Qt-path CTest completed 79/79; official visual harness screenshot was inspected. Zone checks remain conservative and do not yet model filled-island holes or thermal connections.

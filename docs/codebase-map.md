@@ -1077,3 +1077,6 @@ Primary DRC now calls `checkUnroutedPhysicalNets` after physical geometry checks
 ## Sprint 403 handover (2026-09-16)
 
 `RouterTool::commitRouting` rejects a candidate segment near a different-net via using via radius plus copper clearance and route half-width. Since `Via` currently models no layer span, check applies on F.Cu and B.Cu. This is conservative for through vias; blind/buried span-aware routing remains deferred.
+## Sprint 404 handover (2026-09-16)
+
+`RouterTool::commitRouting` checks `BoardZone` outlines for filled zones with a different net on the active layer. Candidate segments are rejected on polygon crossing, endpoint interior, or boundary-clearance proximity; zone clearance plus route half-width is used. Zone holes, filled-island topology, priority interactions, and thermal relief semantics remain deferred.
