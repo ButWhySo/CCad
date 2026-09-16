@@ -4,6 +4,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 
 namespace ccad {
 
@@ -24,6 +25,25 @@ SesRouting importSpecctraSes(std::string_view source) {
   auto root = parseSExpr(source);
   if (!root) {
     throw std::runtime_error("failed to parse SES file");
+  }
+
+  std::unordered_map<std::string, double> via_diameters_mm;
+  std::vector<const SExpr*> library_stack = {root.get()};
+  while (!library_stack.empty()) {
+    const SExpr* node = library_stack.back();
+    library_stack.pop_back();
+    if (node->is_list && node->children.size() >= 2 && node->children[0]->value == "padstack") {
+      const std::string& id = node->children[1]->value;
+      for (const auto& child : node->children) {
+        if (child->is_list && child->children.size() >= 2 && child->children[0]->value == "shape" &&
+            child->children[1]->is_list && child->children[1]->children.size() >= 3 &&
+            child->children[1]->children[0]->value == "circle") {
+          via_diameters_mm[id] = 2.0 * parseMm(child->children[1]->children[2]->value);
+          break;
+        }
+      }
+    }
+    for (const auto& child : node->children) library_stack.push_back(child.get());
   }
 
   struct PendingNode {
@@ -68,8 +88,11 @@ SesRouting importSpecctraSes(std::string_view source) {
         Via via;
         via.id = "ses_via_" + std::to_string(result.vias.size());
         via.net_id = net_id;
-        via.diameter = millimeters(0.6); // stub
-        via.drill = millimeters(0.3); // stub
+        via.diameter = millimeters(0.6);
+        if (auto it = via_diameters_mm.find(node->children[1]->value); it != via_diameters_mm.end()) {
+          via.diameter = mmToLength(it->second);
+        }
+        via.drill = millimeters(0.3);
         via.position.x = mmToLength(parseMm(node->children[2]->value));
         via.position.y = mmToLength(parseMm(node->children[3]->value));
         result.vias.push_back(via);

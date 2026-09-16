@@ -945,3 +945,7 @@ Edit > Find now resolves case-insensitive footprint references against typed can
 ## Sprint 421 progress update (2026-09-16)
 
 SES import now propagates enclosing Specctra `(net ...)` identity onto imported track segments and vias. This preserves routability metadata instead of silently producing geometry with empty nets. Focused DSN test passed; full Qt CTest completed 81/81; official visual harness completed with screenshot inspection and empty stderr. Via dimensions remain defaulted because SES references external padstack definitions, recorded as future parser work.
+
+## Sprint 423 progress update (2026-09-16)
+
+SES importer now resolves via diameter from route-library padstack circle shapes, matching KiCad Specctra import behavior; net identity remains preserved. Drill stays at safe fallback when SES padstack IDs carry no encoded drill. Focused DSN test and full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
