@@ -17,6 +17,9 @@ public:
     bool blockedSegment(std::int64_t x1_nm, std::int64_t y1_nm,
                         std::int64_t x2_nm, std::int64_t y2_nm,
                         std::int64_t clearance_nm) const;
+    std::vector<const PnsItem*> blockingItems(std::int64_t x1_nm, std::int64_t y1_nm,
+                                              std::int64_t x2_nm, std::int64_t y2_nm,
+                                              std::int64_t clearance_nm) const;
     std::size_t size() const { return node_.itemCount(); }
 
 private:

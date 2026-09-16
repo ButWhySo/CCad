@@ -19,6 +19,8 @@ int main() {
     index.rebuild(board, "N1", "F.Cu");
     require(index.size() == 1, "adapter indexes only different-net active-layer pad");
     require(index.blockedSegment(0, 50, 100, 50, 0), "adapter blocks different-net pad");
+    require(index.blockingItems(0, 50, 100, 50, 0).front()->netId() == "N2",
+            "adapter reports blocking item identity");
     require(!index.blockedSegment(0, 80, 100, 80, 0), "adapter excludes same-net pad");
     index.rebuild(board, "N1", "B.Cu");
     require(!index.blockedSegment(0, 50, 100, 50, 0), "adapter filters pad layer");

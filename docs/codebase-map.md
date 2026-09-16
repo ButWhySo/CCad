@@ -1173,4 +1173,6 @@ Sprint 459 adds optional `PnsItem` net/layer identity and filtered segment queri
 
 Sprint 460 adds `PnsBoardObstacleIndex`, a narrow board-to-PNS adapter for different-net pads and vias on an active layer. It exposes nanometre segment blocking while leaving RouterTool's existing track/zone/arc checks authoritative.
 
+Sprint 461 adds `PnsBoardObstacleIndex::blockingItems()`, returning matched PNS items for diagnostics while retaining `blockedSegment()` convenience behavior.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.

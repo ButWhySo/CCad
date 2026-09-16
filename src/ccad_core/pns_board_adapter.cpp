@@ -39,12 +39,21 @@ void PnsBoardObstacleIndex::rebuild(const Board& board, const std::string& activ
 bool PnsBoardObstacleIndex::blockedSegment(std::int64_t x1_nm, std::int64_t y1_nm,
                                            std::int64_t x2_nm, std::int64_t y2_nm,
                                            std::int64_t clearance_nm) const {
+    return !blockingItems(x1_nm, y1_nm, x2_nm, y2_nm, clearance_nm).empty();
+}
+
+std::vector<const PnsItem*> PnsBoardObstacleIndex::blockingItems(
+    std::int64_t x1_nm, std::int64_t y1_nm, std::int64_t x2_nm, std::int64_t y2_nm,
+    std::int64_t clearance_nm) const {
+    std::vector<const PnsItem*> result;
     if (x1_nm < INT_MIN || x1_nm > INT_MAX || y1_nm < INT_MIN || y1_nm > INT_MAX ||
         x2_nm < INT_MIN || x2_nm > INT_MAX || y2_nm < INT_MIN || y2_nm > INT_MAX ||
-        clearance_nm < 0 || clearance_nm > INT_MAX) return false;
-    return !node_.querySegment(static_cast<int>(x1_nm), static_cast<int>(y1_nm),
-                               static_cast<int>(x2_nm), static_cast<int>(y2_nm),
-                               static_cast<int>(clearance_nm)).empty();
+        clearance_nm < 0 || clearance_nm > INT_MAX) return result;
+    for (PnsItem* item : node_.querySegment(static_cast<int>(x1_nm), static_cast<int>(y1_nm),
+                                            static_cast<int>(x2_nm), static_cast<int>(y2_nm),
+                                            static_cast<int>(clearance_nm)))
+        result.push_back(item);
+    return result;
 }
 
 } // namespace ccad

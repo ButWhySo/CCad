@@ -1089,6 +1089,10 @@ Added PNS item net/layer identity and filtered segment queries. Callers can excl
 
 Added PNS item net/layer identity and filtered segment queries. Callers can exclude same-net items and restrict obstacles to one layer before routing adaptation. Full build/CTest and official harness passed; screenshot inspected with empty stderr.
 
+## Sprint 461 progress update (2026-09-17)
+
+Added `PnsBoardObstacleIndex::blockingItems()` so adapter callers can retrieve blocker identities, not only boolean status. This supports actionable agent/router diagnostics. Full build/CTest and official harness passed; screenshot inspected with empty stderr.
+
 ## Sprint 460 progress update (2026-09-17)
 
 Added `PnsBoardObstacleIndex`, converting board pads/vias into filtered PNS obstacles for active net/layer segment checks. Existing RouterTool remains authority for tracks/zones/arcs until richer PNS geometry adapters exist. Full build/CTest and official harness passed; screenshot inspected with empty stderr.
