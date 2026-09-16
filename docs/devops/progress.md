@@ -1005,3 +1005,7 @@ Implemented `AgentRunner::load_queue()` for the native queue schema. It restores
 ## Sprint 437 progress update (2026-09-16)
 
 AgentPanel session checkpoints now persist the local run-queue state, and session loading restores queue ID, status, current step, counts, depth, and cancelability through the existing JSON session path. GUI panel test passed; changed Qt targets rebuilt 28/28; full Qt CTest passed 82/82; official harness screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 438 progress update (2026-09-16)
+
+Added feature-specific GUI regression coverage for run-queue checkpoint round-trip: a session checkpoint writes `run_queue_state`, and a second AgentPanel restores the visible queue depth. Focused GUI test passed; full Qt CTest passed 82/82; official harness screenshot was ingested and visually inspected with empty stderr.

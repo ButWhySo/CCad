@@ -6,6 +6,11 @@
 #include <QPushButton>
 #include <QTextEdit>
 #include <QListWidget>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QTemporaryDir>
+#include <QLabel>
 
 #include "ccad_gui/agent_settings_dialog.hpp"
 #include "ccad_gui/agent_marketplace_dialog.hpp"
@@ -109,6 +114,43 @@ private slots:
 
     QVERIFY(dialog.isVisible());
     dialog.accept();
+  }
+
+  void testQueueStateCheckpointRoundTrip() {
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
+    const QString path = temp.filePath("agent-session.json");
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    const QJsonObject session{{"session_kind", "ccad_agent_session"},
+                              {"session_id", "session-queue"},
+                              {"thread_id", "thread-queue"},
+                              {"checkpoints", QJsonArray{}}};
+    file.write(QJsonDocument(session).toJson(QJsonDocument::Compact));
+    file.close();
+
+    AgentPanel source;
+    source.bindSessionFile(path);
+    source.checkpointSession();
+
+    QFile saved(path);
+    QVERIFY(saved.open(QIODevice::ReadOnly));
+    const QJsonObject saved_session =
+        QJsonDocument::fromJson(saved.readAll()).object();
+    QVERIFY(saved_session.value("run_queue_state").isObject());
+    QCOMPARE(saved_session.value("run_queue_state").toObject().value("run_queue_depth").toInt(), 3);
+
+    AgentPanel restored;
+    restored.bindSessionFile(path);
+    const auto labels = restored.findChildren<QLabel*>();
+    bool queue_label_found = false;
+    for (const auto* label : labels) {
+      if (label->text().contains("3 queued")) {
+        queue_label_found = true;
+        break;
+      }
+    }
+    QVERIFY(queue_label_found);
   }
 };
 
