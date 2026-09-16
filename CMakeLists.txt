@@ -138,6 +138,7 @@ add_library(ccad_core
   src/ccad_core/board_design_settings.cpp
   src/ccad_core/board_stackup_manager.cpp
   src/ccad_core/zone_settings.cpp
+  src/ccad_core/zone_fill.cpp
   src/ccad_core/gerber_plotter_bridge.cpp
   src/ccad_core/drill_file_exporter.cpp
   src/ccad_core/position_file_exporter.cpp
@@ -1273,3 +1274,7 @@ add_executable(ccad_zone_settings_tests
 )
 target_link_libraries(ccad_zone_settings_tests PRIVATE ccad_core)
 add_test(NAME zone_settings COMMAND ccad_zone_settings_tests)
+
+add_executable(ccad_zone_fill_tests tests/test_zone_fill.cpp)
+target_link_libraries(ccad_zone_fill_tests PRIVATE ccad_core)
+add_test(NAME zone_fill COMMAND ccad_zone_fill_tests)
