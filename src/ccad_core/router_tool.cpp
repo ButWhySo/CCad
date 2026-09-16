@@ -69,6 +69,15 @@ void RouterTool::commitRouting() {
     if (active_net_id_.empty() || pad.net_id.empty() || pad.net_id == active_net_id_) continue;
     if (distancePointToSegment(pad.position, start, end) < required) { routing_ = false; last_commit_blocked_=true; return; }
   }
+  for (const Via& via : board_->vias) {
+    if (active_net_id_.empty() || via.net_id.empty() || via.net_id == active_net_id_) continue;
+    const double via_radius = static_cast<double>(via.diameter.nanometers) / 2'000'000.0;
+    if (distancePointToSegment(via.position, start, end) < required + via_radius) {
+      routing_ = false;
+      last_commit_blocked_ = true;
+      return;
+    }
+  }
   const std::string layer_id = layer_ == 0 ? "F.Cu" : "B.Cu";
   for (const TrackSegment& track : board_->tracks) {
     if (track.layer_id != layer_id || active_net_id_.empty() || track.net_id.empty() ||

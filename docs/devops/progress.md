@@ -891,3 +891,6 @@ Wired GUI semantic `ui.route_track` automation through shared `RouterTool` kerne
 ## Sprint 402 progress update (2026-09-16)
 
 Added RouterTool rejection for same-layer, different-net track obstacles using exact segment intersection plus copper-clearance endpoint checks. Fixed collinear non-overlap handling, prevented diagonal routes from committing a second segment after a blocked first segment, and passed active F.Cu/B.Cu through GUI semantic routing. Focused router test passed; Qt Release build completed 81/81; Qt-path CTest completed 79/79; official visual harness produced and screenshot inspection confirmed board canvas, layers, routed geometry, and agent panel remain rendered without crash.
+## Sprint 403 progress update (2026-09-16)
+
+Extended RouterTool copper-obstacle rejection to different-net vias. Via diameter contributes conservative radial clearance and blocks both layers because the current model has no via layer-span field. Focused router test, full Qt build, full Qt-path CTest, official harness, and screenshot inspection passed. Track arcs and zones remain next obstacle classes.

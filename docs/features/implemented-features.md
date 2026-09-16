@@ -2223,3 +2223,6 @@ Projects can configure minimum and maximum connected-track angles through `pcb s
 Projects can configure minimum and maximum straight track-segment lengths through `pcb set-rules`. DRC reports `TRACK_SEGMENT_LENGTH` for segments outside the configured range; track arcs remain pending.
 Track arcs now use circular-sweep length for the same DRC rule, with collinear chord fallback.
 Board text stores optional stroke width; CLI accepts stroke-width setting, and DRC enforces configured minimum text thickness.
+### Router obstacle checks
+
+Interactive and agent route gestures reject same-layer different-net track crossings and different-net via proximity. Checks preserve same-net and cross-layer routing, use physical clearance, and leave blocked multi-segment requests uncommitted. Via checks are conservative until layer-span metadata exists.

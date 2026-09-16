@@ -1074,3 +1074,6 @@ Primary DRC now calls `checkUnroutedPhysicalNets` after physical geometry checks
 ## Sprint 402 handover (2026-09-16)
 
 `RouterTool` now checks existing same-layer tracks belonging to another net before committing a segment. Collision uses nanometre segment intersection plus endpoint-to-segment clearance, so distant collinear tracks do not falsely block. `routeTrack` accepts an optional layer and stops atomically when a Manhattan segment is rejected; GUI semantic route calls pass the selected copper layer. Pad and track obstacle checks remain intentionally local; vias, zones, arcs, and richer width-aware clearance remain backlog work.
+## Sprint 403 handover (2026-09-16)
+
+`RouterTool::commitRouting` rejects a candidate segment near a different-net via using via radius plus copper clearance and route half-width. Since `Via` currently models no layer span, check applies on F.Cu and B.Cu. This is conservative for through vias; blind/buried span-aware routing remains deferred.
