@@ -864,3 +864,7 @@ Implemented `DrcTestProviderUnrouted` using deterministic physical-node componen
 ## Sprint 395 progress update (2026-09-16)
 
 Integrated deterministic unrouted physical-net checking into primary `runDrc`. Same-net pad/via endpoints are grouped with exact-coordinate track endpoints; disconnected physical components now emit `UNROUTED_NET` errors consumed by CLI review and the Qt diagnostics/marker path. Added regression coverage in `tests/test_drc.cpp`. Full Qt build completed 74/74 and Qt-path CTest completed 77/77. Official harness `sprint395_unrouted_primary_proof` ran on rebuilt binaries; DRC artifact contains `UNROUTED_NET` for `DC_NEG` and `DC_POS`, both screenshots were visually inspected, stdout/stderr showed no GUI crash or warning. UI-map lookup confirmed `action:run_drc` and `panel:diagnostics`; safe-trigger correctly refused direct DRC execution because it requires human/kernel approval.
+
+## Sprint 396 progress update (2026-09-16)
+
+Replaced `NetTieDrc` placeholder behavior with deterministic component-backed tie semantics. Registered ties require both declared nets on the component; intersection checks use their axis-aligned pad span; missing-net ties are reported. Focused test passes; full gate and feature-specific visual proof remain.

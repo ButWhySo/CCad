@@ -1047,3 +1047,7 @@ Primary `runDrc` now checks via center-to-edge distance minus via radius and emi
 ## Sprint 395 handover
 
 Primary DRC now calls `checkUnroutedPhysicalNets` after physical geometry checks. It uses exact nanometre endpoint equality and ignores empty-net physical items. Regression lives in `tests/test_drc.cpp`; valid fixture connectivity remains clean, while two disconnected `N1` pads produce object id `N1`. Qt diagnostics already consumes `runDrc`, so no GUI-specific adapter was required. Visual proof: `artifacts/screenshots/sprint395_unrouted_primary_proof-20260916-112440.png` and its teardrop-before companion; DRC proof: `artifacts/demos/sprint395_unrouted_primary_proof.drc.json`.
+
+## Sprint 396 handover
+
+`NetTieDrc` now implements its first model-supported slice. Registered ties require pads for both declared nets on the component; intersections are permitted only inside their axis-aligned span; missing-net ties are reported. Exact courtyard geometry, track/zone bridge validation, and aggregate DRC integration remain deferred because `BoardFootprint` lacks a courtyard/bridge-region model.
