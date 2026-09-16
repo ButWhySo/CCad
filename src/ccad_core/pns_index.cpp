@@ -35,6 +35,18 @@ static long double arcPoint(long double a, long double m, long double b, long do
     return (1 - t) * (1 - t) * a + 2 * (1 - t) * t * m + t * t * b;
 }
 
+static bool pointInPolygon(int x, int y, const std::vector<std::pair<int, int>>& points) {
+    bool inside = false;
+    for (std::size_t i = 0, j = points.size() - 1; i < points.size(); j = i++) {
+        const auto [xi, yi] = points[i];
+        const auto [xj, yj] = points[j];
+        if (((yi > y) != (yj > y)) &&
+            (x < (xj - xi) * static_cast<long double>(y - yi) /
+                         static_cast<long double>(yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+}
+
 void PnsIndex::add(PnsItem* item) {
     if (item && std::find(items_.begin(), items_.end(), item) == items_.end()) {
         items_.push_back(item);
@@ -80,7 +92,23 @@ std::vector<PnsItem*> PnsIndex::querySegment(int x1, int y1, int x2, int y2, int
         if ((!layer_id.empty() && item->layerId() != layer_id) ||
             (!net_id.empty() && item->netId() == net_id)) continue;
         long double distance_sq = 0.0L;
-        if (const auto* arc = dynamic_cast<const PnsArcItem*>(item)) {
+        if (const auto* polygon = dynamic_cast<const PnsPolygonItem*>(item)) {
+            distance_sq = 1e100L;
+            const auto& points = polygon->points();
+            if (points.size() >= 3 && (pointInPolygon(x1, y1, points) || pointInPolygon(x2, y2, points))) {
+                distance_sq = 0.0L;
+            }
+            for (std::size_t i = 0; i < points.size(); ++i) {
+                const auto [ax, ay] = points[i];
+                const auto [bx, by] = points[(i + 1) % points.size()];
+                if (segmentsIntersect(x1, y1, x2, y2, ax, ay, bx, by)) distance_sq = 0.0L;
+                else distance_sq = std::min(distance_sq, std::min({
+                    pointSegmentDistanceSq(ax, ay, x1, y1, x2, y2),
+                    pointSegmentDistanceSq(bx, by, x1, y1, x2, y2),
+                    pointSegmentDistanceSq(x1, y1, ax, ay, bx, by),
+                    pointSegmentDistanceSq(x2, y2, ax, ay, bx, by)}));
+            }
+        } else if (const auto* arc = dynamic_cast<const PnsArcItem*>(item)) {
             distance_sq = 1e100L;
             int px = arc->x1(), py = arc->y1();
             for (int i = 1; i <= 16; ++i) {

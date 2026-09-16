@@ -74,6 +74,20 @@ void PnsBoardObstacleIndex::rebuild(const Board& board, const std::string& activ
         node_.addItem(item);
         items_.push_back(std::move(item));
     }
+    for (const BoardZone& zone : board.zones) {
+        if (zone.net_id.empty() || zone.net_id == active_net || !zone.fill_enabled ||
+            std::find(zone.layer_ids.begin(), zone.layer_ids.end(), layer_id) == zone.layer_ids.end() ||
+            zone.outline.size() < 3) continue;
+        auto item = std::make_shared<PnsPolygonItem>();
+        std::vector<std::pair<int, int>> points;
+        points.reserve(zone.outline.size());
+        for (const Point& point : zone.outline)
+            points.emplace_back(static_cast<int>(point.x.nanometers), static_cast<int>(point.y.nanometers));
+        item->setPolygon(std::move(points), static_cast<int>(std::max<std::int64_t>(0, zone.clearance.nanometers)));
+        item->setIdentity(zone.net_id, layer_id);
+        node_.addItem(item);
+        items_.push_back(std::move(item));
+    }
 }
 
 bool PnsBoardObstacleIndex::blockedSegment(std::int64_t x1_nm, std::int64_t y1_nm,

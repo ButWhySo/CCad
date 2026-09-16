@@ -38,10 +38,18 @@ int main() {
     arc.end = {ccad::nanometers(40), ccad::nanometers(80)};
     arc.width = ccad::nanometers(10);
     board.track_arcs.push_back(arc);
+    ccad::BoardZone zone;
+    zone.net_id = "N5";
+    zone.layer_ids = {"F.Cu"};
+    zone.outline = {{ccad::nanometers(85), ccad::nanometers(20)},
+                    {ccad::nanometers(95), ccad::nanometers(20)},
+                    {ccad::nanometers(95), ccad::nanometers(80)},
+                    {ccad::nanometers(85), ccad::nanometers(80)}};
+    board.zones.push_back(zone);
 
     ccad::PnsBoardObstacleIndex index;
     index.rebuild(board, "N1", "F.Cu");
-    require(index.size() == 4, "adapter indexes different-net active-layer pad, via, track, and arc");
+    require(index.size() == 5, "adapter indexes different-net active-layer pad, via, track, arc, and zone");
     require(index.blockedSegment(0, 50, 100, 50, 0), "adapter blocks different-net pad");
     require(index.blockingItems(0, 50, 100, 50, 0).front()->netId() == "N2",
             "adapter reports blocking item identity");
@@ -49,6 +57,7 @@ int main() {
             "adapter reports via blocking item identity");
     require(index.blockedSegment(0, 50, 100, 50, 0), "adapter detects crossing track obstacle");
     require(index.blockedSegment(30, 50, 100, 50, 0), "adapter detects crossing arc obstacle");
+    require(index.blockedSegment(86, 50, 94, 50, 0), "adapter detects route inside zone obstacle");
     require(!index.blockedSegment(0, 100, 100, 100, 0), "adapter excludes same-net pad");
     index.rebuild(board, "N1", "B.Cu");
     require(!index.blockedSegment(0, 50, 100, 50, 0), "adapter filters pad layer");

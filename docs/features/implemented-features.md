@@ -2330,6 +2330,8 @@ PNS obstacle adaptation now includes active-layer different-net track arcs with 
 CLI cross-probe integration coverage now passes packet values containing `$` safely on POSIX and Windows shells.
 
 Cross-probe packet parsing tolerates a preserved leading dollar escape, keeping `$NET` classification stable across command transports.
+
+PNS obstacle adaptation includes filled active-layer different-net zones, detecting route boundary crossings and routes inside zone solids.
 ## PNS spatial index
 
 PNS items can now expose integer position and radius, and the native `PnsIndex` performs radius-aware point queries with duplicate suppression and invalid-radius rejection. `PnsNode` synchronizes ownership and index membership. This establishes query infrastructure for later topology-aware shove and differential-pair routing.

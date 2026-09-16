@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace ccad {
 
@@ -61,6 +62,17 @@ public:
     int x2() const { return x2_; } int y2() const { return y2_; }
 private:
     int x1_ = 0, y1_ = 0, xm_ = 0, ym_ = 0, x2_ = 0, y2_ = 0;
+};
+
+class PnsPolygonItem final : public PnsItem {
+public:
+    void setPolygon(std::vector<std::pair<int, int>> points, int radius = 0) {
+        points_ = std::move(points);
+        if (!points_.empty()) setPosition(points_.front().first, points_.front().second, radius);
+    }
+    const std::vector<std::pair<int, int>>& points() const { return points_; }
+private:
+    std::vector<std::pair<int, int>> points_;
 };
 
 // Graph node for Push and Shove topology.
