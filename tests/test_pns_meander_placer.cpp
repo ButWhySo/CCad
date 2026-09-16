@@ -30,6 +30,10 @@ int main() {
     require(placer.meanderToTarget(30, 40), "meander creates target-reaching detour");
     require(placer.path().size() == 3 && placer.targetReached(),
             "target detour records bend and reaches target");
+    placer.setTargetLength(50);
+    require(placer.start(item, 10, 20) && placer.meanderToTarget(30, 40, 1),
+            "small requested amplitude still generates target detour");
+    require(placer.targetReached(), "requested amplitude cannot undercut target");
     placer.finish();
     require(placer.path().empty() && !placer.meander(0, 0),
             "finish clears path and disables routing");

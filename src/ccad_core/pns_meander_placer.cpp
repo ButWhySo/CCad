@@ -34,11 +34,10 @@ bool PnsMeanderPlacer::meanderToTarget(int x, int y, int amplitude) {
     const long double half = (static_cast<long double>(target_length_) - length()) / 2.0L;
     const long double half_direct = direct / 2.0L;
     const long double detour = std::sqrt(std::max(0.0L, half * half - half_direct * half_direct));
-    const long double scale = direct > 0.0L ? detour / direct : 0.0L;
-    const long double offset = amplitude > 0 ? static_cast<long double>(amplitude) : detour;
+    const long double requested_offset = amplitude > 0 ? static_cast<long double>(amplitude) : 0.0L;
+    const long double offset = std::max(requested_offset, detour + 1.0L);
     const long double ox = direct > 0.0L ? -dy / direct * offset : 0.0L;
     const long double oy = direct > 0.0L ? dx / direct * offset : offset;
-    (void)scale;
     const int mid_x = static_cast<int>(std::llround(static_cast<long double>(origin.first) + dx / 2.0L + ox));
     const int mid_y = static_cast<int>(std::llround(static_cast<long double>(origin.second) + dy / 2.0L + oy));
     meander(mid_x, mid_y);
