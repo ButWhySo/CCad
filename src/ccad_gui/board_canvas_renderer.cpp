@@ -5,7 +5,9 @@
 #include <QFont>
 #include <QGraphicsEllipseItem>
 #include <QGraphicsPathItem>
+#include <QGraphicsPixmapItem>
 #include <QGraphicsTextItem>
+#include <QImage>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPen>
@@ -662,25 +664,35 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
   for (const ccad::CanvasReferenceImage& ref : scene.reference_images) {
     if (hidden_layers.count(ref.layer_id)) continue;
     const QColor layer_color = colorForKiCadLayer(theme, ref.layer_id);
-    QPen pen(layer_color, 1.0, Qt::DashLine);
-    
     double cx = sceneX(scene, ref.x_units, margin, scale);
     double cy = sceneY(scene, ref.y_units, margin, scale);
-    // Fixed placeholder size since we don't parse the base64 to image yet
-    double w = 40.0 * ref.scale * scale; 
-    double h = 40.0 * ref.scale * scale;
-    
+    QByteArray encoded = QByteArray::fromStdString(ref.data);
+    const int comma = encoded.indexOf(',');
+    if (encoded.startsWith("data:") && comma >= 0) encoded = encoded.mid(comma + 1);
+    const QImage image = QImage::fromData(QByteArray::fromBase64(encoded));
+    if (!image.isNull()) {
+      auto* item = canvas_scene.addPixmap(QPixmap::fromImage(image));
+      item->setOffset(-image.width() / 2.0, -image.height() / 2.0);
+      item->setPos(cx, cy);
+      item->setScale(ref.scale * scale);
+      item->setOpacity(std::clamp(ref.opacity, 0.0, 1.0));
+      item->setToolTip("Reference Image " + qstr(ref.id));
+      tagObject(*item, "reference_image", qstr(ref.id), layer_color, "", qstr(ref.layer_id));
+      continue;
+    }
+    QPen pen(layer_color, 1.0, Qt::DashLine);
+    const double w = 40.0 * ref.scale * scale;
+    const double h = 40.0 * ref.scale * scale;
     QPainterPath path;
-    path.addRect(cx - w/2.0, cy - h/2.0, w, h);
-    path.moveTo(cx - w/2.0, cy - h/2.0);
-    path.lineTo(cx + w/2.0, cy + h/2.0);
-    path.moveTo(cx + w/2.0, cy - h/2.0);
-    path.lineTo(cx - w/2.0, cy + h/2.0);
-    
+    path.addRect(cx - w / 2.0, cy - h / 2.0, w, h);
+    path.moveTo(cx - w / 2.0, cy - h / 2.0);
+    path.lineTo(cx + w / 2.0, cy + h / 2.0);
+    path.moveTo(cx + w / 2.0, cy - h / 2.0);
+    path.lineTo(cx - w / 2.0, cy + h / 2.0);
     QColor brush_color = layer_color;
     brush_color.setAlphaF(ref.opacity * 0.3);
     auto* item = addHighlightPath(canvas_scene, path, pen, QBrush(brush_color));
-    item->setToolTip("Reference Image " + qstr(ref.id));
+    item->setToolTip("Reference Image " + qstr(ref.id) + " (invalid image data)");
     tagObject(*item, "reference_image", qstr(ref.id), layer_color, "", qstr(ref.layer_id));
   }
 

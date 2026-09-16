@@ -4,6 +4,7 @@
 #include <QApplication>
 #include <QColor>
 #include <QGraphicsPathItem>
+#include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
 
 namespace {
@@ -34,6 +35,23 @@ ccad::CanvasScene selectionScene() {
       .y_units = 6.0,
       .width_units = 1.5,
       .height_units = 1.0,
+  });
+  return scene;
+}
+
+ccad::CanvasScene referenceImageScene() {
+  ccad::CanvasScene scene;
+  scene.has_board = true;
+  scene.view_width_units = 20.0;
+  scene.view_height_units = 20.0;
+  scene.reference_images.push_back(ccad::CanvasReferenceImage{
+      .id = "IMG1",
+      .layer_id = "F.Cu",
+      .data = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+      .x_units = 10.0,
+      .y_units = 10.0,
+      .scale = 2.0,
+      .opacity = 0.75,
   });
   return scene;
 }
@@ -283,4 +301,15 @@ int main(int argc, char** argv) {
   require(!saw_hidden_copper_pad, "hidden copper layer does not render as copper because mask is visible");
   require(saw_mask_aperture, "visible solder mask aperture renders as a separate layer object");
   require(saw_paste_aperture, "visible solder paste aperture renders as a separate layer object");
+
+  QGraphicsScene reference_scene;
+  renderBoardCanvas(reference_scene, referenceImageScene());
+  bool saw_reference_pixmap = false;
+  for (QGraphicsItem* item : reference_scene.items()) {
+    if (canvasObjectType(*item) == "reference_image" && dynamic_cast<QGraphicsPixmapItem*>(item) != nullptr) {
+      saw_reference_pixmap = true;
+      require(item->opacity() == 0.75, "reference image preserves opacity");
+    }
+  }
+  require(saw_reference_pixmap, "valid base64 reference image renders as a pixmap");
 }

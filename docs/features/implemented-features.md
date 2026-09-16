@@ -2288,3 +2288,5 @@ The GUI regression suite now exercises this persistence path with a real tempora
 Differential-pair tuning now has a truthful mutation contract: `applyTuning()` returns failure until the board model exposes the topology and clearance data required to generate real coupled meanders, preventing silent no-op success.
 
 Schematic labels distinguish local, global, hierarchical, and directive types. JSON reads and writes `label_type` while retaining the legacy `global` field, and the schematic collector recognizes KiCad directive labels.
+
+Board reference images with valid base64 image data render as scaled, opacity-preserving pixmaps in the PCB canvas; malformed data renders a tagged diagnostic placeholder.

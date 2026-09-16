@@ -1144,3 +1144,5 @@ Sprint 441 `DiffPairTuning::calculateCurrentSkew()` computes absolute routed len
 Sprint 442 `DiffPairTuning::applyTuning()` now reports unsupported meander generation as failure rather than returning success without changing board geometry.
 
 Sprint 443 adds explicit Directive schematic-label typing and round-trippable `label_type` serialization while retaining legacy `global` field compatibility; the collector recognizes `SCH_DIRECTIVE_LABEL_T`.
+
+Sprint 444 makes `board_canvas_renderer.cpp` decode valid base64 board reference images into `QGraphicsPixmapItem` objects with scale and opacity; invalid data remains visibly marked and tagged for diagnosis.

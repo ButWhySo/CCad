@@ -1029,3 +1029,7 @@ Hardened unsupported `DiffPairTuning::applyTuning()` to return `false` instead o
 ## Sprint 443 progress update (2026-09-16)
 
 Schematic labels now support explicit Directive type across the model, KiCad-style collector, and JSON serialization while preserving legacy global boolean compatibility. Focused tests passed; Qt Release build completed 231/231; full Qt CTest passed 84/84; official harness passed with empty stderr, and its screenshot was ingested and visually inspected.
+
+## Sprint 444 progress update (2026-09-16)
+
+Replaced the board reference-image crossed-box renderer placeholder with base64 image decoding and Qt pixmap rendering, retaining an explicit fallback marker for invalid image data. Focused GUI test passed; Qt Release build completed 18/18 incremental targets; full Qt CTest passed 84/84; official harness passed with empty stderr, and its screenshot was ingested and visually inspected.
