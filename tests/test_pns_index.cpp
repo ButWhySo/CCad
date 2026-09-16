@@ -30,6 +30,12 @@ int main() {
     require(node.query(50, 50, 0).empty(), "removed item leaves index");
     require(node.hasObstacle(12, 10, 0), "PNS node detects indexed obstacle");
     require(!node.hasObstacle(100, 100, 0), "PNS node misses distant obstacle");
+    require(node.querySegment(0, 0, 100, 100, 0).size() == 1,
+            "PNS segment query detects obstacle on segment");
+    require(node.querySegment(0, 20, 100, 20, 0).empty(),
+            "PNS segment query misses parallel distant item");
+    require(node.querySegment(0, 0, 100, 100, -1).empty(),
+            "PNS segment query rejects negative clearance");
     require(!node.removeItem(removable.get()), "missing item removal is false");
     node.clear();
     require(node.query(12, 10, 0).empty(), "PNS node query is empty after clear");

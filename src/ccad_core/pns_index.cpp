@@ -34,4 +34,29 @@ std::vector<PnsItem*> PnsIndex::query(int x, int y, int radius) const {
     return results;
 }
 
+std::vector<PnsItem*> PnsIndex::querySegment(int x1, int y1, int x2, int y2, int clearance) const {
+    std::vector<PnsItem*> results;
+    if (clearance < 0) return results;
+    const long double dx = static_cast<long double>(x2) - x1;
+    const long double dy = static_cast<long double>(y2) - y1;
+    const long double length_sq = dx * dx + dy * dy;
+    for (PnsItem* item : items_) {
+        long double t = 0.0L;
+        if (length_sq > 0.0L) {
+            t = ((static_cast<long double>(item->x()) - x1) * dx +
+                 (static_cast<long double>(item->y()) - y1) * dy) / length_sq;
+            t = std::clamp(t, 0.0L, 1.0L);
+        }
+        const long double px = static_cast<long double>(x1) + t * dx;
+        const long double py = static_cast<long double>(y1) + t * dy;
+        const long double distance_sq = (static_cast<long double>(item->x()) - px) *
+                                            (static_cast<long double>(item->x()) - px) +
+                                        (static_cast<long double>(item->y()) - py) *
+                                            (static_cast<long double>(item->y()) - py);
+        const long double reach = static_cast<long double>(clearance) + item->radius();
+        if (distance_sq <= reach * reach) results.push_back(item);
+    }
+    return results;
+}
+
 } // namespace ccad

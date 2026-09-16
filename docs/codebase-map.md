@@ -1167,4 +1167,6 @@ Sprint 456 adds `PnsNode::hasObstacle()`, a boolean clearance query backed by `P
 
 Sprint 457 makes node insertion idempotent by pointer identity, keeping owned-item storage consistent with index deduplication and removal.
 
+Sprint 458 adds segment obstacle queries to `PnsIndex`/`PnsNode`. They test each indexed item's point against a segment with expanded radius, covering mid-segment hits while rejecting invalid clearance.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.

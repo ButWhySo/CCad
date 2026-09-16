@@ -18,6 +18,7 @@ public:
     void clear();
 
     std::vector<PnsItem*> query(int x, int y, int radius) const;
+    std::vector<PnsItem*> querySegment(int x1, int y1, int x2, int y2, int clearance) const;
 
 private:
     std::vector<PnsItem*> items_;

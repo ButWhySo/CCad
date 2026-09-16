@@ -16,6 +16,8 @@ PNS nodes can also answer clearance-aware obstacle queries through `hasObstacle(
 
 Repeated insertion of the same PNS item is safely ignored at node level.
 
+PNS spatial queries now include segment-versus-item obstacle detection with clearance expansion.
+
 PNS differential-pair placement now supports distinct endpoints, configurable non-negative gap, and coupled endpoint updates during start/route. This is an endpoint-placement primitive, not yet a complete KiCad-equivalent differential-pair track router.
 
 ## Build System And DevOps

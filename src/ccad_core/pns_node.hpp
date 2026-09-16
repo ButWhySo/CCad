@@ -37,6 +37,7 @@ public:
     bool removeItem(PnsItem* item);
     void clear();
     std::vector<PnsItem*> query(int x, int y, int radius) const;
+    std::vector<PnsItem*> querySegment(int x1, int y1, int x2, int y2, int clearance) const;
     bool hasObstacle(int x, int y, int clearance) const;
 
 private:
