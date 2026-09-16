@@ -715,6 +715,15 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
   }
 
   // Draw zones
+  for (const ccad::CanvasFootprint& footprint : scene.footprints) {
+    const double cx = sceneX(scene, footprint.x_units, margin, scale);
+    const double cy = sceneY(scene, footprint.y_units, margin, scale);
+    QPen pen(colorForKiCadLayer(theme, footprint.layer_id), 1.5);
+    auto* item = canvas_scene.addRect(cx - 12.0, cy - 8.0, 24.0, 16.0, pen);
+    tagObject(*item, "footprint", qstr(footprint.id), pen.color(), "", qstr(footprint.layer_id));
+    item->setToolTip(qstr(footprint.reference + " (" + footprint.value + ")"));
+  }
+
   // Render Schematic Components
   QPen component_pen(theme.board_outline_color);
   component_pen.setWidthF(1.5);

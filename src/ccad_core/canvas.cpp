@@ -83,6 +83,18 @@ CanvasScene buildCanvasScene(const Board& board) {
     });
   }
 
+  for (const BoardFootprint& footprint : board.footprints) {
+    scene.footprints.push_back(CanvasFootprint{
+        .id = footprint.reference,
+        .reference = footprint.reference,
+        .value = footprint.value,
+        .layer_id = footprint.layer_id,
+        .x_units = toMillimeters(footprint.position.x),
+        .y_units = toMillimeters(footprint.position.y),
+        .rotation_degrees = footprint.rotation_degrees,
+    });
+  }
+
   for (const Keepout& keepout : board.keepouts) {
     scene.keepouts.push_back(CanvasKeepout{
         .id = keepout.id,

@@ -933,3 +933,7 @@ Made the CLI cross-probe regression shell-portable by escaping `$NET` on POSIX s
 ## Sprint 416 progress update (2026-09-16)
 
 Added typed front/back courtyard polygon storage to `BoardFootprint`, native JSON round-trip coverage, and a first courtyard DRC provider slice that reports deterministic front/back polygon overlaps. Existing missing/malformed courtyard and PTH/NPTH-specific rules remain deferred until import semantics are defined. Qt build completed 239/239; CTest completed 81/81; focused courtyard test passed; official visual harness screenshot was ingested and inspected with empty stderr.
+
+## Sprint 419 progress update (2026-09-16)
+
+Added a dedicated `CanvasFootprint` identity record and board-scene emission for footprint reference, value, layer, position, and rotation. The renderer now exposes a selectable footprint marker with canonical reference identity. Find-by-reference action wiring remains the next slice. Qt Release build completed 337/337; CTest completed 81/81; official visual harness screenshot was ingested and inspected with empty stderr.
