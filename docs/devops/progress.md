@@ -1080,3 +1080,11 @@ Made `PnsNode::addItem()` ownership-deduplicating, matching existing index dedup
 ## Sprint 458 progress update (2026-09-16)
 
 Added `PnsIndex::querySegment()` and node forwarding. Segment queries use point-to-segment distance plus item radius and clearance, enabling future router adapters to detect mid-segment obstacles. Focused and full gates passed; official harness screenshot inspected with empty stderr.
+
+## Sprint 459 progress update (2026-09-17)
+
+Added PNS item net/layer identity and filtered segment queries. Callers can exclude same-net items and restrict obstacles to one layer before routing adaptation. Focused regression passed; full gate and visual proof pending.
+
+## Sprint 459 progress update (2026-09-17)
+
+Added PNS item net/layer identity and filtered segment queries. Callers can exclude same-net items and restrict obstacles to one layer before routing adaptation. Full build/CTest and official harness passed; screenshot inspected with empty stderr.

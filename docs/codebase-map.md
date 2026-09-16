@@ -1169,4 +1169,6 @@ Sprint 457 makes node insertion idempotent by pointer identity, keeping owned-it
 
 Sprint 458 adds segment obstacle queries to `PnsIndex`/`PnsNode`. They test each indexed item's point against a segment with expanded radius, covering mid-segment hits while rejecting invalid clearance.
 
+Sprint 459 adds optional `PnsItem` net/layer identity and filtered segment queries. Same-net items and other layers can be excluded, preventing unsafe false blocks when adapting board routing into PNS.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.

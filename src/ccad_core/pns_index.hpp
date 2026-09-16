@@ -2,6 +2,7 @@
 #define CCAD_CORE_PNS_INDEX_HPP
 
 #include <vector>
+#include <string>
 
 namespace ccad {
 
@@ -19,6 +20,8 @@ public:
 
     std::vector<PnsItem*> query(int x, int y, int radius) const;
     std::vector<PnsItem*> querySegment(int x1, int y1, int x2, int y2, int clearance) const;
+    std::vector<PnsItem*> querySegment(int x1, int y1, int x2, int y2, int clearance,
+                                       const std::string& net_id, const std::string& layer_id) const;
 
 private:
     std::vector<PnsItem*> items_;

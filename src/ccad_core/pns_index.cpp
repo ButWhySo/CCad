@@ -35,12 +35,19 @@ std::vector<PnsItem*> PnsIndex::query(int x, int y, int radius) const {
 }
 
 std::vector<PnsItem*> PnsIndex::querySegment(int x1, int y1, int x2, int y2, int clearance) const {
+    return querySegment(x1, y1, x2, y2, clearance, {}, {});
+}
+
+std::vector<PnsItem*> PnsIndex::querySegment(int x1, int y1, int x2, int y2, int clearance,
+                                             const std::string& net_id, const std::string& layer_id) const {
     std::vector<PnsItem*> results;
     if (clearance < 0) return results;
     const long double dx = static_cast<long double>(x2) - x1;
     const long double dy = static_cast<long double>(y2) - y1;
     const long double length_sq = dx * dx + dy * dy;
     for (PnsItem* item : items_) {
+        if ((!layer_id.empty() && item->layerId() != layer_id) ||
+            (!net_id.empty() && item->netId() == net_id)) continue;
         long double t = 0.0L;
         if (length_sq > 0.0L) {
             t = ((static_cast<long double>(item->x()) - x1) * dx +

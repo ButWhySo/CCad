@@ -36,6 +36,11 @@ std::vector<PnsItem*> PnsNode::querySegment(int x1, int y1, int x2, int y2, int 
     return index_.querySegment(x1, y1, x2, y2, clearance);
 }
 
+std::vector<PnsItem*> PnsNode::querySegment(int x1, int y1, int x2, int y2, int clearance,
+                                            const std::string& net_id, const std::string& layer_id) const {
+    return index_.querySegment(x1, y1, x2, y2, clearance, net_id, layer_id);
+}
+
 bool PnsNode::hasObstacle(int x, int y, int clearance) const {
     return !query(x, y, clearance).empty();
 }
