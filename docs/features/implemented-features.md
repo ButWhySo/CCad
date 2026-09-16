@@ -2229,3 +2229,6 @@ Interactive and agent route gestures reject same-layer different-net track cross
 ### Zone-aware routing
 
 Interactive and agent route gestures now avoid filled different-net copper-zone polygons on the selected layer. Boundary crossings, interior endpoints, and configured clearance are rejected while same-net zones and other layers remain available.
+### Arc-aware routing
+
+Interactive and agent route gestures avoid different-net track arcs on the active copper layer using conservative chord and vertex-clearance checks. Same-net arcs and arcs on other layers remain routable.

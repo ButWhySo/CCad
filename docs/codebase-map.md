@@ -1080,3 +1080,6 @@ Primary DRC now calls `checkUnroutedPhysicalNets` after physical geometry checks
 ## Sprint 404 handover (2026-09-16)
 
 `RouterTool::commitRouting` checks `BoardZone` outlines for filled zones with a different net on the active layer. Candidate segments are rejected on polygon crossing, endpoint interior, or boundary-clearance proximity; zone clearance plus route half-width is used. Zone holes, filled-island topology, priority interactions, and thermal relief semantics remain deferred.
+## Sprint 405 handover (2026-09-16)
+
+`RouterTool::commitRouting` checks different-net `TrackArc` items on the active layer. Collision uses start-mid and mid-end chord intersections plus clearance to start, mid, and end vertices, including arc width. This is a conservative approximation; exact swept-circle geometry and arc endpoint connectivity remain deferred.

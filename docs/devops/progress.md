@@ -897,3 +897,6 @@ Extended RouterTool copper-obstacle rejection to different-net vias. Via diamete
 ## Sprint 404 progress update (2026-09-16)
 
 RouterTool now rejects candidate segments entering or approaching filled different-net zones on the selected copper layer. Polygon edge intersection, endpoint clearance, and interior checks use the existing physical geometry model. Focused router test passed; Qt Release build completed 76/76; Qt-path CTest completed 79/79; official visual harness screenshot was inspected. Zone checks remain conservative and do not yet model filled-island holes or thermal connections.
+## Sprint 405 progress update (2026-09-16)
+
+RouterTool now conservatively rejects different-net `TrackArc` crossings and vertex-clearance violations on the active copper layer by testing the arc's two chord segments and three defining points. Focused router test passed; Qt Release build completed 76/76; Qt-path CTest completed 79/79; official visual harness screenshot was inspected. Exact circular arc tessellation remains future refinement.

@@ -43,6 +43,12 @@ bool segmentTouchesPolygon(const Point& start, const Point& end, const std::vect
   }
   return false;
 }
+bool segmentTouchesArc(const Point& start, const Point& end, const TrackArc& arc, double clearance) {
+  return intersects(start, end, arc.start, arc.mid) || intersects(start, end, arc.mid, arc.end) ||
+         distancePointToSegment(arc.start, start, end) < clearance ||
+         distancePointToSegment(arc.mid, start, end) < clearance ||
+         distancePointToSegment(arc.end, start, end) < clearance;
+}
 }
 void RouterTool::setBoard(Board* board) { board_ = board; }
 void RouterTool::setActiveNet(const std::string& net_id) { active_net_id_ = net_id; }
@@ -100,6 +106,15 @@ void RouterTool::commitRouting() {
     }
   }
   const std::string layer_id = layer_ == 0 ? "F.Cu" : "B.Cu";
+  for (const TrackArc& arc : board_->track_arcs) {
+    if (arc.layer_id != layer_id || active_net_id_.empty() || arc.net_id.empty() || arc.net_id == active_net_id_) continue;
+    const double arc_clearance = required + static_cast<double>(arc.width.nanometers) / 2'000'000.0;
+    if (segmentTouchesArc(start, end, arc, arc_clearance)) {
+      routing_ = false;
+      last_commit_blocked_ = true;
+      return;
+    }
+  }
   for (const BoardZone& zone : board_->zones) {
     if (!zone.fill_enabled || zone.net_id.empty() || zone.net_id == active_net_id_ ||
         std::find(zone.layer_ids.begin(), zone.layer_ids.end(), layer_id) == zone.layer_ids.end()) continue;
