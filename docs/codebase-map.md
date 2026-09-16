@@ -1171,4 +1171,6 @@ Sprint 458 adds segment obstacle queries to `PnsIndex`/`PnsNode`. They test each
 
 Sprint 459 adds optional `PnsItem` net/layer identity and filtered segment queries. Same-net items and other layers can be excluded, preventing unsafe false blocks when adapting board routing into PNS.
 
+Sprint 460 adds `PnsBoardObstacleIndex`, a narrow board-to-PNS adapter for different-net pads and vias on an active layer. It exposes nanometre segment blocking while leaving RouterTool's existing track/zone/arc checks authoritative.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.

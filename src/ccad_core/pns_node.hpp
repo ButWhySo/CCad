@@ -50,6 +50,7 @@ public:
     std::vector<PnsItem*> querySegment(int x1, int y1, int x2, int y2, int clearance,
                                        const std::string& net_id, const std::string& layer_id) const;
     bool hasObstacle(int x, int y, int clearance) const;
+    std::size_t itemCount() const { return items_.size(); }
 
 private:
     PnsIndex index_;

@@ -20,6 +20,8 @@ PNS spatial queries now include segment-versus-item obstacle detection with clea
 
 Segment obstacle queries can filter by active net and copper layer.
 
+`PnsBoardObstacleIndex` builds a filtered PNS obstacle view from board pads/vias for agent and router integration.
+
 PNS differential-pair placement now supports distinct endpoints, configurable non-negative gap, and coupled endpoint updates during start/route. This is an endpoint-placement primitive, not yet a complete KiCad-equivalent differential-pair track router.
 
 ## Build System And DevOps

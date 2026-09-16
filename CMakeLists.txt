@@ -82,6 +82,7 @@ add_library(ccad_core
   src/ccad_core/pns_dragger.cpp
   src/ccad_core/pns_diff_pair_placer.cpp
   src/ccad_core/pns_meander_placer.cpp
+  src/ccad_core/pns_board_adapter.cpp
   src/ccad_core/eda_importers.cpp
   src/ccad_core/sch_symbol.cpp
   src/ccad_core/gal_base.cpp
@@ -1254,3 +1255,9 @@ add_executable(ccad_pns_meander_tests
 )
 target_link_libraries(ccad_pns_meander_tests PRIVATE ccad_core)
 add_test(NAME pns_meander COMMAND ccad_pns_meander_tests)
+
+add_executable(ccad_pns_board_adapter_tests
+  tests/test_pns_board_adapter.cpp
+)
+target_link_libraries(ccad_pns_board_adapter_tests PRIVATE ccad_core)
+add_test(NAME pns_board_adapter COMMAND ccad_pns_board_adapter_tests)
