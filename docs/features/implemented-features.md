@@ -2355,3 +2355,4 @@ Thermal-spoke preparation rejects pad centers inside zone holes, avoiding false 
 Thermal-spoke preparation also blocks axial spokes crossing supported rectangular zone holes. General polygon clipping and full KiCad connection-mode behavior remain future work.
 Regression coverage confirms a hole placed on a spoke ray removes only blocked spoke geometry while preserving other directions.
 Thermal-spoke hole blocking now handles arbitrary valid polygon edges, with rectangular and triangular crossing regressions.
+Board-aware zone refill reports thermal spokes for matching-net pads through `pcb refill-zones`; explicit gap and width are currently 0.5 mm. Spokes are not yet persisted or exported as filled copper geometry.

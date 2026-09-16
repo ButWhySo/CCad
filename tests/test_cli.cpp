@@ -1179,6 +1179,8 @@ int main() {
           "pcb refill-zones reports filled state");
   require(refill_zones_json.find("\"contour_count\": 1") != std::string::npos,
           "pcb refill-zones reports contour count");
+  require(refill_zones_json.find("\"thermal_spoke_count\": ") != std::string::npos,
+          "pcb refill-zones reports thermal spoke count");
   require(run(quote(CCAD_BINARY) + " pcb refill-zones --file " + quote(board_project_path) +
               " --zone-id Z1 --apply true") == 0,
           "pcb refill-zones apply exits zero");

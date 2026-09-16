@@ -58,5 +58,15 @@ int main() {
   const auto polygon_blocked_spokes = ccad::buildRectangularThermalSpokes(
       zone, p(5, 5), ccad::nanometers(1), ccad::nanometers(1), ccad::nanometers(1));
   require(polygon_blocked_spokes.size() == 3, "thermal spokes stop at polygon hole");
+  zone.holes.clear();
+  zone.net_id = "GND";
+  ccad::Pad pad;
+  pad.net_id = "GND";
+  pad.position = p(5, 5);
+  pad.padstack.copper_props["F.Cu"].shape.size =
+      {ccad::nanometers(2), ccad::nanometers(2)};
+  const auto board_fill = ccad::calculateZoneFill(zone, std::vector<ccad::Pad>{pad});
+  require(board_fill.filled && board_fill.thermal_spokes.size() == 4,
+          "board zone fill reports matching-pad thermal spokes");
   std::cout << "Zone fill tests passed!\n";
 }

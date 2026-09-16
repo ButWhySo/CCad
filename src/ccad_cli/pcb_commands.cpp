@@ -2063,13 +2063,15 @@ int pcbCommand(const std::vector<std::string>& args) {
       bool first = true;
       for (const ccad::BoardZone& zone : board.zones) {
         if (!requested_id.empty() && zone.id != requested_id) continue;
-        const ccad::ZoneFillResult fill = ccad::calculateZoneFill(zone);
+        const ccad::ZoneFillResult fill = ccad::calculateZoneFill(
+            zone, board.pads, ccad::millimeters(0.5), ccad::millimeters(0.5));
         if (!first) out << ",\n";
         first = false;
         out << "    {\n      \"id\": \"" << ccad::escapeJson(zone.id)
             << "\",\n      \"filled\": " << (fill.filled ? "true" : "false")
             << ",\n      \"contour_count\": " << fill.contours.size()
             << ",\n      \"area_square_nanometers\": " << fill.area_square_nanometers
+            << ",\n      \"thermal_spoke_count\": " << fill.thermal_spokes.size()
             << ",\n      \"applied\": " << (apply && fill.filled ? "true" : "false")
             << ",\n      \"diagnostics\": [";
         for (std::size_t i = 0; i < fill.diagnostics.size(); ++i) {

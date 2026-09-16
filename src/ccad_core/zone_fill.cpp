@@ -180,4 +180,29 @@ ZoneFillResult calculateZoneFill(const BoardZone& zone) {
   if (result.area_square_nanometers < 0) result.area_square_nanometers = 0;
   return result;
 }
+
+ZoneFillResult calculateZoneFill(const BoardZone& zone, const std::vector<Pad>& pads) {
+  return calculateZoneFill(zone, pads, nanometers(1), nanometers(1));
+}
+
+ZoneFillResult calculateZoneFill(const BoardZone& zone, const std::vector<Pad>& pads,
+                                 Length gap, Length spoke_width) {
+  ZoneFillResult result = calculateZoneFill(zone);
+  if (!result.filled || zone.pad_connection == "direct") return result;
+  for (const Pad& pad : pads) {
+    if (pad.net_id != zone.net_id || pad.net_id.empty()) continue;
+    int64_t width = 0;
+    for (const auto& [layer, props] : pad.padstack.copper_props) {
+      (void)layer;
+      width = std::max(props.shape.size.width.nanometers, props.shape.size.height.nanometers);
+      if (width > 0) break;
+    }
+    const int64_t radius = width / 2;
+    if (radius <= 0) continue;
+    const auto spokes = buildRectangularThermalSpokes(
+        zone, pad.position, nanometers(radius), gap, spoke_width);
+    result.thermal_spokes.insert(result.thermal_spokes.end(), spokes.begin(), spokes.end());
+  }
+  return result;
+}
 }  // namespace ccad

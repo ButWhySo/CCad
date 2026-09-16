@@ -1193,3 +1193,7 @@ References checked: KiCad's zone-fill geometry uses explicit segment/shape inter
 ## Sprint 487 progress update (2026-09-17)
 
 Generalized thermal-spoke hole blocking from rectangular bounds to polygon edge intersection. Rectangular and triangular hole regressions pass; invalid short holes remain ignored by spoke blocking and are still diagnosed by fill calculation. Full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
+
+## Sprint 488 progress update (2026-09-17)
+
+Zone fill now has a board-aware overload that derives thermal spokes for matching-net pads, and `pcb refill-zones` reports `thermal_spoke_count` using explicit 0.5 mm gap/width defaults. Legacy zone-only API and persisted contour schema remain compatible; spokes are reported geometry, not yet persisted/exported as copper. Full Qt Ninja build completed 155/155; CTest passed 91/91; CLI+zone focused tests passed 2/2; official harness passed, screenshot inspected, stderr empty.

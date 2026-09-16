@@ -8,20 +8,21 @@
 
 namespace ccad {
 
+struct ZoneThermalSpoke {
+  Point start;
+  Point end;
+  Length width;
+};
+
 // Deterministic first-stage zone fill result. Contours retain outer/holes
 // separately so later clearance and thermal passes can replace them without
 // changing the agent-facing contract.
 struct ZoneFillResult {
   bool filled = false;
   std::vector<std::vector<Point>> contours;
+  std::vector<ZoneThermalSpoke> thermal_spokes;
   int64_t area_square_nanometers = 0;
   std::vector<std::string> diagnostics;
-};
-
-struct ZoneThermalSpoke {
-  Point start;
-  Point end;
-  Length width;
 };
 
 std::vector<ZoneThermalSpoke> buildRectangularThermalSpokes(
@@ -29,6 +30,9 @@ std::vector<ZoneThermalSpoke> buildRectangularThermalSpokes(
     Length gap, Length spoke_width);
 
 ZoneFillResult calculateZoneFill(const BoardZone& zone);
+ZoneFillResult calculateZoneFill(const BoardZone& zone, const std::vector<Pad>& pads);
+ZoneFillResult calculateZoneFill(const BoardZone& zone, const std::vector<Pad>& pads,
+                                 Length gap, Length spoke_width);
 
 }  // namespace ccad
 
