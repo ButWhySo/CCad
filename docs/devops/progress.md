@@ -1150,3 +1150,7 @@ Added finite, non-negative validation for global zone thermal spoke width, therm
 ## Sprint 476 progress update (2026-09-17)
 
 KiCad PCB export now prefers committed `BoardZone.filled_contours` for `filled_polygon` output and retains outline fallback for legacy projects without committed fills. Export regression passed; full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
+
+## Sprint 477 progress update (2026-09-17)
+
+PNS board obstacle adaptation now uses the committed filled contour as zone outer geometry, falling back to the design outline for legacy zones. Routing regression proves routes outside an applied fill are no longer blocked by stale outline geometry. Full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.

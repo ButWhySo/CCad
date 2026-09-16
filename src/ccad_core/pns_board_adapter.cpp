@@ -75,13 +75,14 @@ void PnsBoardObstacleIndex::rebuild(const Board& board, const std::string& activ
         items_.push_back(std::move(item));
     }
     for (const BoardZone& zone : board.zones) {
+        const auto& fill_outline = zone.filled_contours.empty() ? zone.outline : zone.filled_contours.front();
         if (zone.net_id.empty() || zone.net_id == active_net || !zone.fill_enabled ||
             std::find(zone.layer_ids.begin(), zone.layer_ids.end(), layer_id) == zone.layer_ids.end() ||
-            zone.outline.size() < 3) continue;
+            fill_outline.size() < 3) continue;
         auto item = std::make_shared<PnsPolygonItem>();
         std::vector<std::pair<int, int>> points;
-        points.reserve(zone.outline.size());
-        for (const Point& point : zone.outline)
+        points.reserve(fill_outline.size());
+        for (const Point& point : fill_outline)
             points.emplace_back(static_cast<int>(point.x.nanometers), static_cast<int>(point.y.nanometers));
         std::vector<std::vector<std::pair<int, int>>> holes;
         for (const auto& hole : zone.holes) {

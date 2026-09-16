@@ -1201,3 +1201,4 @@ CLI `pcb refill-zones` exposes this result as JSON without mutating the project.
 `pcb refill-zones --apply true` now persists `BoardZone.filled_contours`; default invocation remains read-only. Filled contours are still preparatory geometry and do not yet encode clearance knockouts or thermal spokes.
 Agent capability metadata now advertises `RefillZones` through `pcb refill-zones` as `first_slice` with deterministic-only caveat.
 `kicad_pcb_export.cpp` emits the first committed fill contour when available; empty `filled_contours` preserves legacy outline preview behavior. Hole-aware KiCad fill export remains future work.
+`pns_board_adapter.cpp` likewise prefers the first committed fill contour for different-net zone obstacles, preserving outline fallback. This keeps routing aligned with applied refill state; thermal/clearance semantics remain incomplete.
