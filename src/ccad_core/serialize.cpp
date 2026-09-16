@@ -939,6 +939,8 @@ class JsonReader {
             via.start_layer_id = readString();
           } else if (key == "end_layer_id") {
             via.end_layer_id = readString();
+          } else if (key == "via_type") {
+            via.via_type = readString();
           } else if (key == "locked") {
             via.locked = readBool();
           } else if (key == "teardrops_enabled") {
@@ -3426,6 +3428,9 @@ std::string dumpProjectJson(const Project& project) {
       }
       if (!via.end_layer_id.empty()) {
         out << ",\n        \"end_layer_id\": \"" << escapeJson(via.end_layer_id) << "\"";
+      }
+      if (via.via_type != "through") {
+        out << ",\n        \"via_type\": \"" << escapeJson(via.via_type) << "\"";
       }
       if (via.teardrops_enabled) {
         out << ",\n        \"teardrops_enabled\": true";

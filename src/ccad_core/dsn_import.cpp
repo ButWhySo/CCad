@@ -124,6 +124,17 @@ SesRouting importSpecctraSes(std::string_view source) {
         if (auto span = via_layer_spans.find(node->children[1]->value); span != via_layer_spans.end()) {
           via.start_layer_id = span->second.first;
           via.end_layer_id = span->second.second;
+          if (via.drill.nanometers <= 100000) {
+            via.via_type = "microvia";
+          } else if ((via.start_layer_id == "F.Cu" && via.end_layer_id == "B.Cu") ||
+                     (via.start_layer_id == "B.Cu" && via.end_layer_id == "F.Cu")) {
+            via.via_type = "through";
+          } else if (via.start_layer_id == "F.Cu" || via.end_layer_id == "B.Cu" ||
+                     via.start_layer_id == "B.Cu" || via.end_layer_id == "F.Cu") {
+            via.via_type = "blind";
+          } else {
+            via.via_type = "buried";
+          }
         }
         via.position.x = mmToLength(parseMm(node->children[2]->value));
         via.position.y = mmToLength(parseMm(node->children[3]->value));

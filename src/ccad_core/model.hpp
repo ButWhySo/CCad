@@ -351,6 +351,7 @@ struct Via {
   bool teardrops_enabled = false;
   std::string start_layer_id = "";
   std::string end_layer_id = "";
+  std::string via_type = "through";
 };
 
 struct TrackSegment {

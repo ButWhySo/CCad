@@ -1117,3 +1117,4 @@ Sprint 424 parses the KiCad Specctra drill convention `<prefix>:<drill>_mil` in 
 Sprint 425 adds optional `Via::start_layer_id` and `end_layer_id`, serialized when present; SES padstack circle layers infer the span in source order. Existing callers omit fields and retain prior through-via assumptions.
 Sprint 426 validates referenced SES via padstacks: known definitions require at least one circular shape, while absent definitions retain legacy diameter/drill fallback.
 Sprint 427 keeps new `Via` layer-span fields aggregate-initializer compatible through default values and trailing placement; existing designated callers need no edits.
+Sprint 428 adds serialized `Via::via_type` (default `through`); SES inference marks microvias by small drill, through vias by F.Cu/B.Cu span, blind vias when one endpoint is outer copper, and buried vias otherwise.

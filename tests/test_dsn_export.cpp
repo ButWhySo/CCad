@@ -105,7 +105,7 @@ void testSesImport() {
   if (routing.vias[0].net_id != "N1" || routing.vias[0].diameter.nanometers != 1000000 || routing.vias[0].drill.nanometers != 203200 || routing.vias[0].position.x.nanometers != 7000000 || routing.vias[0].position.y.nanometers != 8000000) {
     throw std::runtime_error("via coordinates wrong");
   }
-  if (routing.vias[0].start_layer_id != "F.Cu" || routing.vias[0].end_layer_id != "B.Cu") {
+  if (routing.vias[0].start_layer_id != "F.Cu" || routing.vias[0].end_layer_id != "B.Cu" || routing.vias[0].via_type != "through") {
     throw std::runtime_error("via layer span wrong");
   }
 }

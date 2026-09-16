@@ -965,3 +965,7 @@ SES via padstack validation now rejects a referenced padstack without a supporte
 ## Sprint 427 progress update (2026-09-16)
 
 Via layer-span fields now carry default initializers and follow existing aggregate fields, preventing `-Werror=missing-field-initializers` regressions in older callers and GUI construction sites. Retry build completed 316/316; full Qt CTest passed 81/81; final official harness completed and screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 428 progress update (2026-09-16)
+
+Added explicit `Via::via_type` persistence with SES inference for through, blind, buried, and microvia classes from layer span and drill size. Legacy vias default to through. Build completed 88-target focused rebuild; full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
