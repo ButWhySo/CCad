@@ -5,7 +5,17 @@
 namespace ccad {
 void RouterTool::setBoard(Board* board) { board_ = board; }
 void RouterTool::setActiveNet(const std::string& net_id) { active_net_id_ = net_id; }
-void RouterTool::routeTrack(double x1,double y1,double x2,double y2) { if (!board_) return; startRouting(x1,y1,0); updateRouting(x2,y2); commitRouting(); }
+void RouterTool::routeTrack(double x1,double y1,double x2,double y2) {
+  if (!board_) return;
+  startRouting(x1, y1, 0);
+  if (x1 != x2 && y1 != y2) {
+    updateRouting(x2, y1);
+    commitRouting();
+    startRouting(x2, y1, 0);
+  }
+  updateRouting(x2, y2);
+  commitRouting();
+}
 void RouterTool::startRouting(double x,double y,int layer) { if (!board_) return; routing_=true; start_x_=x; start_y_=y; layer_=layer; current_x_=x; current_y_=y; }
 void RouterTool::updateRouting(double x,double y) {
   if (!board_ || !routing_) return;

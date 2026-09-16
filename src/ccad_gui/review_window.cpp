@@ -6465,25 +6465,14 @@ QString ReviewWindow::uiWorkflowRouteTrackJson(const double start_x_mm, const do
     return jsonObjectLine(response);
   }
 
-  const QJsonObject start_click = parsedJsonObjectOrRaw(uiCanvasClickJson(start_x_mm, start_y_mm,
-                                                                          false, canvas_id, {}));
-  response.insert("start_click", start_click);
-  if (!start_click.value("performed").toBool(false)) {
-    response.insert("performed", false);
-    response.insert("reason", "start_click_failed");
-    response.insert("mode_after", interactionModeName(interaction_mode_));
-    copyBoardObjectCounts(response, start_click);
-    return jsonObjectLine(response);
-  }
-  const QJsonObject end_click = parsedJsonObjectOrRaw(uiCanvasClickJson(end_x_mm, end_y_mm,
-                                                                        false, canvas_id, {}));
-  response.insert("end_click", end_click);
-  response.insert("performed", end_click.value("performed").toBool(false));
-  response.insert("reason", end_click.value("performed").toBool(false)
-                                ? "workflow_completed"
-                                : end_click.value("reason").toString("end_click_failed"));
+  const QJsonObject route = parsedJsonObjectOrRaw(
+      commitTrackPlacementForAutomation(start_x_mm, start_y_mm, end_x_mm, end_y_mm));
+  response.insert("route", route);
+  response.insert("performed", route.value("performed").toBool(false));
+  response.insert("reason", route.value("performed").toBool(false)
+                                ? "workflow_completed" : route.value("reason").toString("route_failed"));
   response.insert("mode_after", interactionModeName(interaction_mode_));
-  copyBoardObjectCounts(response, end_click);
+  copyBoardObjectCounts(response, route);
   return jsonObjectLine(response);
 }
 
@@ -7873,12 +7862,9 @@ QString ReviewWindow::commitTrackPlacementForAutomation(const double start_x_mm,
     ccad::RouterTool router;
     router.setBoard(&project_cache_.boards[0]);
     router.setActiveNet(activePcbNetOrDefault());
-    const int layer = activePcbLayerOrDefault() == "B.Cu" ? 1 : 0;
-    router.startRouting(start_x_mm, start_y_mm, layer);
-    router.updateRouting(end_x_mm, end_y_mm);
-    router.commitRouting();
-    if (project_cache_.boards[0].tracks.size() > before_count) {
-      auto& track = project_cache_.boards[0].tracks.back();
+    router.routeTrack(start_x_mm, start_y_mm, end_x_mm, end_y_mm);
+    for (std::size_t index = before_count; index < project_cache_.boards[0].tracks.size(); ++index) {
+      auto& track = project_cache_.boards[0].tracks[index];
       track.net_id = activePcbNetOrDefault();
       track.layer_id = activePcbLayerOrDefault();
     }

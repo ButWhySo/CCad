@@ -1063,3 +1063,7 @@ Primary DRC now calls `checkUnroutedPhysicalNets` after physical geometry checks
 ## Sprint 399 handover
 
 `RouterTool::setActiveNet` enables same-net endpoint snapping during `updateRouting`; nearest pad/via within 0.75 mm becomes route endpoint, while empty active-net state permits generic routing. Commit writes the active net directly. GUI semantic route path supplies active net before gesture execution. Snapping remains point-only; arc/multi-segment and clearance-aware routing remain next.
+
+## Sprint 400 handover
+
+`RouterTool::routeTrack` splits diagonal requests at `(end_x, start_y)`, commits both connected segments, and preserves one-segment behavior for horizontal/vertical routes. `ReviewWindow::uiWorkflowRouteTrackJson` now calls the shared route commit path rather than simulating two canvas clicks, so semantic GUI routes receive multi-segment behavior. Live proof: 42 calls, 84 persisted tracks.
