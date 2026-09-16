@@ -1140,6 +1140,10 @@ Exposed the first fill result through `ccad pcb refill-zones --file <path> [--zo
 ## Sprint 474 progress update (2026-09-17)
 
 Persisted deterministic fill contours in `BoardZone.filled_contours` and added `--apply true` to `pcb refill-zones`. JSON round-trip and CLI regression prove applied results survive reload. Corrected all aggregate initializers for strict Qt `-Werror` builds and reconfigured the Qt build to use Qt Ninja rather than the CodeBlocks Ninja. Full corrected build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
+
+## Sprint 475 progress update (2026-09-17)
+
+Updated the agent capability registry so `RefillZones` resolves to `pcb refill-zones` as `first_slice`, with explicit `deterministic_contour_refill` caveat. Agent-serve regression passed; full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
 ## Sprint 471 progress update (2026-09-17)
 
 Added finite, non-negative validation for global zone thermal spoke width, thermal gap, and minimum island area settings. Focused zone-settings test passed; Qt Release build completed 118/118; full CTest passed 90/90; official harness passed with screenshot inspection and empty stderr. KiCad `ZONE_FILLER` comparison confirms actual filled polygon storage, clearance knockouts, thermal reliefs, and island policy remain future implementation work.

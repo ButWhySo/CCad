@@ -1199,3 +1199,4 @@ Zone settings: `src/ccad_core/zone_settings.*` owns global zone defaults and now
 Zone fill first slice: `src/ccad_core/zone_fill.*` exposes `calculateZoneFill(const BoardZone&)`, returning enabled state, outer/hole contours, net area, and diagnostics. It is deterministic geometry preparation, not yet KiCad-equivalent clearance/thermal/island filling.
 CLI `pcb refill-zones` exposes this result as JSON without mutating the project. It is the agent-facing inspection surface pending transactional refill mutation and full KiCad filler semantics.
 `pcb refill-zones --apply true` now persists `BoardZone.filled_contours`; default invocation remains read-only. Filled contours are still preparatory geometry and do not yet encode clearance knockouts or thermal spokes.
+Agent capability metadata now advertises `RefillZones` through `pcb refill-zones` as `first_slice` with deterministic-only caveat.

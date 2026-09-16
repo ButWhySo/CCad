@@ -275,7 +275,7 @@ std::string agentPcbApiSchemaJson() {
       {"GetItemsByNet", "pcb list-by-net", "first_slice", "net_equivalent_first_slice"},
       {"GetItemsByNetClass", "", "gap", "netclass_model_missing"},
       {"GetNetClassForNets", "", "gap", "netclass_model_missing"},
-      {"RefillZones", "", "gap", "zone_refill_engine_missing"},
+      {"RefillZones", "pcb refill-zones", "first_slice", "deterministic_contour_refill"},
       {"SaveDocumentToString", "", "gap", "document_string_export_api_missing"},
       {"SaveSelectionToString", "", "gap", "selection_serialization_missing"},
       {"ParseAndCreateItemsFromString", "", "gap", "clipboard_parse_create_api_missing"},
