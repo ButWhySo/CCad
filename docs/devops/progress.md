@@ -868,3 +868,7 @@ Integrated deterministic unrouted physical-net checking into primary `runDrc`. S
 ## Sprint 396 progress update (2026-09-16)
 
 Replaced `NetTieDrc` placeholder behavior with deterministic component-backed tie semantics. Registered ties require both declared nets on the component; intersection checks use their axis-aligned pad span; missing-net ties are reported. Focused test passes; full gate and feature-specific visual proof remain.
+
+## Sprint 397 progress update (2026-09-16)
+
+Replaced `RouterTool` interactive no-op with deterministic kernel routing state. Start/update/commit/cancel and `routeTrack` now create or discard typed track segments. Focused test passed; Qt build 102/102, Qt-path CTest 79/79, official harness `sprint397_router_tool_proof` passed, screenshot inspected.

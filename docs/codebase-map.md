@@ -1051,3 +1051,7 @@ Primary DRC now calls `checkUnroutedPhysicalNets` after physical geometry checks
 ## Sprint 396 handover
 
 `NetTieDrc` now implements its first model-supported slice. Registered ties require pads for both declared nets on the component; intersections are permitted only inside their axis-aligned span; missing-net ties are reported. Exact courtyard geometry, track/zone bridge validation, and aggregate DRC integration remain deferred because `BoardFootprint` lacks a courtyard/bridge-region model.
+
+## Sprint 397 handover
+
+`RouterTool` now owns a minimal route gesture: start/update store an in-progress segment, commit appends a deterministic `TrackSegment` with F.Cu/B.Cu selection and 0.25 mm width, cancel discards it, and `routeTrack` performs the complete gesture. Net selection, snapping, multi-segment routing, and GUI action wiring remain next.
