@@ -1071,3 +1071,6 @@ Primary DRC now calls `checkUnroutedPhysicalNets` after physical geometry checks
 ## Sprint 401 handover
 
 `RouterTool::commitRouting` rejects a candidate segment when its centerline approaches a different-net pad closer than board copper clearance plus the fixed 0.125 mm route half-width. Rejection clears in-progress state without mutating tracks. This is pad-only first slice; track/via/zone obstacle indexing and route error response remain next.
+## Sprint 402 handover (2026-09-16)
+
+`RouterTool` now checks existing same-layer tracks belonging to another net before committing a segment. Collision uses nanometre segment intersection plus endpoint-to-segment clearance, so distant collinear tracks do not falsely block. `routeTrack` accepts an optional layer and stops atomically when a Manhattan segment is rejected; GUI semantic route calls pass the selected copper layer. Pad and track obstacle checks remain intentionally local; vias, zones, arcs, and richer width-aware clearance remain backlog work.

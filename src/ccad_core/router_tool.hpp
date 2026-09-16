@@ -17,6 +17,7 @@ public:
     void setBoard(Board* board);
     void setActiveNet(const std::string& net_id);
     void routeTrack(double x1, double y1, double x2, double y2);
+    void routeTrack(double x1, double y1, double x2, double y2, int layer);
 
     // Interactive UI hooks
     void startRouting(double x, double y, int layer);
@@ -31,6 +32,7 @@ private:
     double current_x_ = 0.0, current_y_ = 0.0;
     int layer_ = 0;
     std::string active_net_id_;
+    bool last_commit_blocked_ = false;
 };
 
 } // namespace ccad

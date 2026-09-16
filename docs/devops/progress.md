@@ -888,3 +888,6 @@ Added clearance-aware route rejection against different-net pads using board cop
 ## Sprint 398 progress update (2026-09-16)
 
 Wired GUI semantic `ui.route_track` automation through shared `RouterTool` kernel state. Active PCB layer and net are applied to the committed segment, then the project is saved and re-rendered. Focused GUI tests passed; live agent route harness performed 42/42 routes and persisted 42 tracks; rebuilt routed-board screenshot inspected with clean stdout/stderr.
+## Sprint 402 progress update (2026-09-16)
+
+Added RouterTool rejection for same-layer, different-net track obstacles using exact segment intersection plus copper-clearance endpoint checks. Fixed collinear non-overlap handling, prevented diagonal routes from committing a second segment after a blocked first segment, and passed active F.Cu/B.Cu through GUI semantic routing. Focused router test passed; Qt Release build completed 81/81; Qt-path CTest completed 79/79; official visual harness produced and screenshot inspection confirmed board canvas, layers, routed geometry, and agent panel remain rendered without crash.
