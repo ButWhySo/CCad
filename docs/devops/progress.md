@@ -1104,3 +1104,7 @@ Filtered PNS via obstacles by declared blind/buried layer span, preserving throu
 ## Sprint 464 progress update (2026-09-17)
 
 Added real PNS segment items with full endpoint geometry and segment-to-segment clearance checks. The board adapter now indexes different-net tracks on the active copper layer, with crossing-track regression coverage. Full build 96/96, CTest 89/89, and official harness passed; screenshot inspected and stderr empty.
+
+## Sprint 465 progress update (2026-09-17)
+
+Made Agent panel actions semantically targetable by assigning stable object IDs and tooltips to navigation, templates, settings, attach, marketplace, context refresh, voice, and send controls. Focused GUI test, full CTest 89/89, official harness, and screenshot inspection passed; stderr empty.

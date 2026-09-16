@@ -116,6 +116,17 @@ private slots:
     dialog.accept();
   }
 
+  void testChatActionsAreTargetable() {
+    AgentPanel panel;
+    auto* send = panel.findChild<QPushButton*>("action:agent_submit_chat");
+    QVERIFY(send != nullptr);
+    QVERIFY(!send->toolTip().isEmpty());
+    QVERIFY(panel.findChild<QPushButton*>("action:agent_attach") != nullptr);
+    QVERIFY(panel.findChild<QPushButton*>("action:agent_marketplace") != nullptr);
+    QVERIFY(panel.findChild<QPushButton*>("action:agent_context_refresh") != nullptr);
+    QVERIFY(panel.findChild<QPushButton*>("action:agent_voice") != nullptr);
+  }
+
   void testQueueStateCheckpointRoundTrip() {
     QTemporaryDir temp;
     QVERIFY(temp.isValid());

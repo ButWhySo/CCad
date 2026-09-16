@@ -621,6 +621,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   top_layout->setContentsMargins(8, 8, 8, 8);
   
   auto* back_btn = new QPushButton(top_bar);
+  back_btn->setObjectName("action:agent_menu");
+  back_btn->setToolTip("Open agent navigation");
   back_btn->setIcon(load_svg_icon(ccad_icons::icon_menu)); // Stand-in for back
   back_btn->setProperty("agentRole", "iconButton");
   back_btn->setFixedSize(24, 24);
@@ -630,6 +632,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   title->setAlignment(Qt::AlignCenter);
 
   auto* templates_btn = new QPushButton(top_bar);
+  templates_btn->setObjectName("action:agent_templates");
+  templates_btn->setToolTip("Insert prompt template");
   templates_btn->setIcon(load_svg_icon(ccad_icons::icon_templates));
   templates_btn->setProperty("agentRole", "iconButton");
   templates_btn->setFixedSize(24, 24);
@@ -642,6 +646,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
 
   auto* settings_btn = new QPushButton(top_bar);
   settings_btn->setObjectName("action:settingsBtn");
+  settings_btn->setToolTip("Agent settings");
   settings_btn->setIcon(load_svg_icon(ccad_icons::icon_settings));
   settings_btn->setProperty("agentRole", "iconButton");
   settings_btn->setFixedSize(24, 24);
@@ -651,6 +656,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   });
 
   auto* close_btn = new QPushButton(top_bar);
+  close_btn->setObjectName("action:agent_close");
+  close_btn->setToolTip("Close agent panel");
   close_btn->setIcon(load_svg_icon(ccad_icons::icon_close));
   close_btn->setProperty("agentRole", "iconButton");
   close_btn->setFixedSize(24, 24);
@@ -702,6 +709,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   
   auto* actions_layout = new QHBoxLayout();
   auto* paperclip_btn = new QPushButton(composer_container);
+  paperclip_btn->setObjectName("action:agent_attach");
+  paperclip_btn->setToolTip("Attach file");
   paperclip_btn->setIcon(load_svg_icon(ccad_icons::icon_attach));
   paperclip_btn->setProperty("agentRole", "iconButton");
   paperclip_btn->setFixedSize(24, 24);
@@ -714,6 +723,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   });
   
   auto* marketplace_btn = new QPushButton(composer_container);
+  marketplace_btn->setObjectName("action:agent_marketplace");
+  marketplace_btn->setToolTip("Browse agent tools and providers");
   marketplace_btn->setIcon(load_svg_icon(ccad_icons::icon_menu));
   marketplace_btn->setProperty("agentRole", "iconButton");
   marketplace_btn->setFixedSize(24, 24);
@@ -723,6 +734,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   });
   
   auto* context_circle = new QPushButton(composer_container);
+  context_circle->setObjectName("action:agent_context_refresh");
+  context_circle->setToolTip("Refresh project context");
   context_circle->setIcon(load_svg_icon(ccad_icons::icon_settings)); // Reusing settings as context pie stand-in
   context_circle->setProperty("agentRole", "iconButton");
   context_circle->setFixedSize(24, 24);
@@ -736,6 +749,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   });
 
   auto* stt_btn = new QPushButton(composer_container);
+  stt_btn->setObjectName("action:agent_voice");
+  stt_btn->setToolTip("Voice input");
   stt_btn->setIcon(load_svg_icon(ccad_icons::icon_mic));
   stt_btn->setProperty("agentRole", "iconButton");
   stt_btn->setFixedSize(32, 24);
@@ -747,6 +762,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   send_btn->setIcon(load_svg_icon(ccad_icons::icon_send));
   send_btn->setProperty("agentRole", "iconButtonPrimary");
   send_btn->setObjectName("action:agent_submit_chat");
+  send_btn->setToolTip("Send message");
   send_btn->setProperty("target_id", "action:agent_submit_chat");
   send_btn->setFixedSize(32, 32);
   connect(send_btn, &QPushButton::clicked, this, &AgentPanel::submitChat);

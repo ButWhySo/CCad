@@ -1181,4 +1181,6 @@ Sprint 463 makes `PnsBoardObstacleIndex` span-aware for non-through vias. It ind
 
 Sprint 464 adds `PnsSegmentItem` to the PNS model. `PnsIndex::querySegment()` now detects segment intersections and endpoint clearance against segment obstacles, and `PnsBoardObstacleIndex` adapts different-net active-layer `TrackSegment` objects without reducing them to endpoint points.
 
+Sprint 465 gives Agent panel composer and header actions stable `action:*` object IDs and concise tooltips. These IDs are discoverable by the GUI map and keep mouse/agent targeting aligned.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.

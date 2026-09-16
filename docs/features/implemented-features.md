@@ -2322,6 +2322,8 @@ Schematic sheet pins may persist KiCad side values (`left`, `right`, `top`, `bot
 PNS board obstacles now respect blind and buried via layer spans, preventing a via on another copper layer from falsely blocking routing while retaining conservative handling for legacy incomplete via metadata.
 
 PNS board obstacles now preserve track segment geometry, so active-layer different-net tracks can block a candidate route when their spans cross or violate configured clearance.
+
+Agent panel navigation and composer controls expose stable semantic IDs and tooltips for reliable human and agent interaction.
 ## PNS spatial index
 
 PNS items can now expose integer position and radius, and the native `PnsIndex` performs radius-aware point queries with duplicate suppression and invalid-radius rejection. `PnsNode` synchronizes ownership and index membership. This establishes query infrastructure for later topology-aware shove and differential-pair routing.
