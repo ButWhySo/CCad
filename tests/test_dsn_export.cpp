@@ -96,13 +96,13 @@ void testSesImport() {
   if (routing.tracks.size() != 2) throw std::runtime_error("expected 2 tracks from polyline");
   if (routing.vias.size() != 1) throw std::runtime_error("expected 1 via");
   
-  if (routing.tracks[0].start.x.nanometers != 1000000 || routing.tracks[0].end.y.nanometers != 4000000) {
+  if (routing.tracks[0].net_id != "N1" || routing.tracks[0].start.x.nanometers != 1000000 || routing.tracks[0].end.y.nanometers != 4000000) {
     throw std::runtime_error("track 0 coordinates wrong");
   }
   if (routing.tracks[1].start.x.nanometers != 3000000 || routing.tracks[1].end.y.nanometers != 6000000) {
     throw std::runtime_error("track 1 coordinates wrong");
   }
-  if (routing.vias[0].position.x.nanometers != 7000000 || routing.vias[0].position.y.nanometers != 8000000) {
+  if (routing.vias[0].net_id != "N1" || routing.vias[0].position.x.nanometers != 7000000 || routing.vias[0].position.y.nanometers != 8000000) {
     throw std::runtime_error("via coordinates wrong");
   }
 }

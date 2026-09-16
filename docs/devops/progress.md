@@ -941,3 +941,7 @@ Added a dedicated `CanvasFootprint` identity record and board-scene emission for
 ## Sprint 420 progress update (2026-09-16)
 
 Edit > Find now resolves case-insensitive footprint references against typed canvas identities, selects the matching footprint, refreshes selection state, and reports clear not-found status. Qt Release build completed 130/130; isolated CLI CTest passed; full Qt CTest completed 81/81 after rerunning transient agent-orchestrator hang; official harness completed and screenshot was visually inspected with empty stderr. Remote run 35084020399 remains older-SHA failure: exposed CLI cross-probe assertion is not reproducible on current main.
+
+## Sprint 421 progress update (2026-09-16)
+
+SES import now propagates enclosing Specctra `(net ...)` identity onto imported track segments and vias. This preserves routability metadata instead of silently producing geometry with empty nets. Focused DSN test passed; full Qt CTest completed 81/81; official visual harness completed with screenshot inspection and empty stderr. Via dimensions remain defaulted because SES references external padstack definitions, recorded as future parser work.

@@ -26,13 +26,22 @@ SesRouting importSpecctraSes(std::string_view source) {
     throw std::runtime_error("failed to parse SES file");
   }
 
-  std::vector<const SExpr*> stack = {root.get()};
+  struct PendingNode {
+    const SExpr* node;
+    std::string net_id;
+  };
+  std::vector<PendingNode> stack = {{root.get(), {}}};
   while (!stack.empty()) {
-    const SExpr* node = stack.back();
+    const PendingNode pending = std::move(stack.back());
     stack.pop_back();
+    const SExpr* node = pending.node;
+    std::string net_id = pending.net_id;
 
     if (node->is_list && !node->children.empty()) {
       const std::string& type = node->children[0]->value;
+      if (type == "net" && node->children.size() >= 2) {
+        net_id = node->children[1]->value;
+      }
       
       if (type == "wire" && node->children.size() >= 2) {
         // (wire (path layer_name width x1 y1 x2 y2 ...))
@@ -44,6 +53,7 @@ SesRouting importSpecctraSes(std::string_view source) {
           for (size_t i = 3; i + 3 < path->children.size(); i += 2) {
             TrackSegment track;
             track.id = "ses_" + std::to_string(result.tracks.size());
+            track.net_id = net_id;
             track.layer_id = layer;
             track.width = width;
             track.start.x = mmToLength(parseMm(path->children[i]->value));
@@ -57,6 +67,7 @@ SesRouting importSpecctraSes(std::string_view source) {
         // (via via_name x y)
         Via via;
         via.id = "ses_via_" + std::to_string(result.vias.size());
+        via.net_id = net_id;
         via.diameter = millimeters(0.6); // stub
         via.drill = millimeters(0.3); // stub
         via.position.x = mmToLength(parseMm(node->children[2]->value));
@@ -65,7 +76,7 @@ SesRouting importSpecctraSes(std::string_view source) {
       } else {
         // push children in reverse order so they are processed in order
         for (auto it = node->children.rbegin(); it != node->children.rend(); ++it) {
-          stack.push_back(it->get());
+          stack.push_back(PendingNode{it->get(), net_id});
         }
       }
     }
