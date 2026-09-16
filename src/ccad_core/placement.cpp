@@ -254,6 +254,9 @@ void placeFootprint(Project& project, const Footprint& footprint, const std::str
       .position = origin,
       .rotation_degrees = rotation_deg,
       .exclude_from_bom = footprint.exclude_from_bom || exclude_from_bom,
+      .locked = false,
+      .front_courtyard = {},
+      .back_courtyard = {},
   });
 }
 

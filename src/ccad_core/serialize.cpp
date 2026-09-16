@@ -591,6 +591,10 @@ class JsonReader {
             footprint.exclude_from_bom = readBool();
           } else if (key == "locked") {
             footprint.locked = readBool();
+          } else if (key == "front_courtyard") {
+            footprint.front_courtyard = readPointArrayArray();
+          } else if (key == "back_courtyard") {
+            footprint.back_courtyard = readPointArrayArray();
           } else {
             throw std::runtime_error("unknown board footprint key: " + key);
           }
@@ -3052,6 +3056,27 @@ std::string dumpProjectJson(const Project& project) {
           << (footprint.exclude_from_bom ? "true" : "false");
       if (footprint.locked) {
         out << ",\n        \"locked\": true";
+      }
+      if (!footprint.front_courtyard.empty() || !footprint.back_courtyard.empty()) {
+        out << ",\n        \"front_courtyard\": [\n";
+        for (std::size_t p = 0; p < footprint.front_courtyard.size(); ++p) {
+          out << "          [";
+          for (std::size_t q = 0; q < footprint.front_courtyard[p].size(); ++q) {
+            writePoint(out, 0, footprint.front_courtyard[p][q]);
+            if (q + 1 != footprint.front_courtyard[p].size()) out << ", ";
+          }
+          out << "]" << (p + 1 == footprint.front_courtyard.size() ? "" : ",") << "\n";
+        }
+        out << "        ],\n        \"back_courtyard\": [\n";
+        for (std::size_t p = 0; p < footprint.back_courtyard.size(); ++p) {
+          out << "          [";
+          for (std::size_t q = 0; q < footprint.back_courtyard[p].size(); ++q) {
+            writePoint(out, 0, footprint.back_courtyard[p][q]);
+            if (q + 1 != footprint.back_courtyard[p].size()) out << ", ";
+          }
+          out << "]" << (p + 1 == footprint.back_courtyard.size() ? "" : ",") << "\n";
+        }
+        out << "        ]";
       }
       out << '\n';
       out << "      }" << (i + 1 == board.footprints.size() ? "" : ",") << '\n';

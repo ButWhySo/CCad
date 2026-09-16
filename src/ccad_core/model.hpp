@@ -532,6 +532,8 @@ struct BoardFootprint {
   double rotation_degrees = 0.0;
   bool exclude_from_bom = false;
   bool locked = false;
+  std::vector<std::vector<Point>> front_courtyard;
+  std::vector<std::vector<Point>> back_courtyard;
 };
 
 struct Board {

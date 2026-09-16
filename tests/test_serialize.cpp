@@ -56,6 +56,18 @@ int main() {
                  ccad::Layer{.id = "B.Cu", .name = "Back copper", .kind = "copper", .visible = true},
                  ccad::Layer{.id = "F.SilkS", .name = "Front silkscreen", .kind = "silkscreen", .visible = true},
                  ccad::Layer{.id = "Dwgs.User", .name = "User drawings", .kind = "user", .visible = true}},
+      .footprints = {ccad::BoardFootprint{
+          .reference = "R1",
+          .footprint_name = "R_0603",
+          .layer_id = "F.Cu",
+          .position = {.x = ccad::millimeters(10), .y = ccad::millimeters(10)},
+          .front_courtyard = {{
+              {.x = ccad::millimeters(9), .y = ccad::millimeters(9)},
+              {.x = ccad::millimeters(11), .y = ccad::millimeters(9)},
+              {.x = ccad::millimeters(11), .y = ccad::millimeters(11)},
+              {.x = ccad::millimeters(9), .y = ccad::millimeters(11)},
+          }},
+      }},
       .placement_regions = {ccad::PlacementRegion{
           .id = "PR1",
           .kind = "component",
@@ -356,6 +368,11 @@ int main() {
   require(loaded.boards[0].design_rules.cap_vias, "via capping flag round trips");
   require(!loaded.boards[0].design_rules.fill_vias, "via filling flag round trips");
   require(loaded.boards[0].layers.size() == 4, "board layers round trip");
+  require(loaded.boards[0].footprints.size() == 1, "footprint round trips");
+  require(loaded.boards[0].footprints[0].front_courtyard.size() == 1,
+          "front courtyard polygon round trips");
+  require(loaded.boards[0].footprints[0].front_courtyard[0].at(2).x.nanometers == 11000000,
+          "front courtyard geometry round trips");
   require(loaded.boards[0].layers.at(2).id == "F.SilkS", "front silkscreen layer round trips");
   require(loaded.boards[0].layers.at(3).id == "Dwgs.User", "user drawing layer round trips");
   require(loaded.boards[0].placement_regions.size() == 1, "board placement regions round trip");

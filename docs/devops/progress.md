@@ -930,3 +930,6 @@ Persisted board-zone holes through native JSON serialization and made routes who
 ## Sprint 415 progress update (2026-09-16)
 
 Made the CLI cross-probe regression shell-portable by escaping `$NET` on POSIX shells through the existing `shellLiteral` helper. Removed an orphaned tracked Copilot gitlink with no `.gitmodules` URL, eliminating checkout cleanup failure. Core CLI target build and focused CTest passed; official visual harness from Sprint 414 remains the unchanged GUI proof for this CLI-only sprint.
+## Sprint 416 progress update (2026-09-16)
+
+Added typed front/back courtyard polygon storage to `BoardFootprint`, native JSON round-trip coverage, and a first courtyard DRC provider slice that reports deterministic front/back polygon overlaps. Existing missing/malformed courtyard and PTH/NPTH-specific rules remain deferred until import semantics are defined. Qt build completed 239/239; CTest completed 81/81; focused courtyard test passed; official visual harness screenshot was ingested and inspected with empty stderr.
