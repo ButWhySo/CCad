@@ -247,7 +247,7 @@ const std::vector<CommandHelp>& commandHelp() {
                            "[--net <id>] --layers <ids> --x-mm <n> --y-mm <n> "
                            "--width-mm <n> --height-mm <n> --priority <n> "
                            "--clearance-mm <n> --min-thickness-mm <n> "
-                           "--pad-connection thermal|solid|none"},
+                           "--pad-connection thermal|solid|none|pth_thermal"},
       CommandHelp{.name = "pcb refill-zones",
                   .summary = "Calculate deterministic zone fill contours",
                   .usage = "ccad pcb refill-zones --file <path> [--zone-id <id>] [--apply true|false]"},

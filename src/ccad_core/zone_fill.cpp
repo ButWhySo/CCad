@@ -98,6 +98,10 @@ bool padOnZoneLayer(const BoardZone& zone, const Pad& pad) {
                        });
   });
 }
+
+bool isPlatedThroughHole(const Pad& pad) {
+  return pad.type == "thru_hole" || pad.type == "through_hole" || pad.type == "pth";
+}
 }  // namespace
 
 std::vector<ZoneThermalSpoke> buildRectangularThermalSpokes(
@@ -204,6 +208,7 @@ ZoneFillResult calculateZoneFill(const BoardZone& zone, const std::vector<Pad>& 
     return result;
   for (const Pad& pad : pads) {
     if (pad.net_id != zone.net_id || pad.net_id.empty() || !padOnZoneLayer(zone, pad)) continue;
+    if (zone.pad_connection == "pth_thermal" && !isPlatedThroughHole(pad)) continue;
     const PadstackCopperLayerProps* copper_props = nullptr;
     for (const auto& [layer, props] : pad.padstack.copper_props) {
       if (zone.layer_ids.empty() || std::find(zone.layer_ids.begin(), zone.layer_ids.end(), layer) !=

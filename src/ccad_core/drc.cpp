@@ -951,7 +951,8 @@ void checkBoardTexts(const Board& board, std::vector<Diagnostic>& diagnostics) {
 }
 
 bool isSupportedZonePadConnection(const std::string& pad_connection) {
-  return pad_connection == "thermal" || pad_connection == "solid" || pad_connection == "none";
+  return pad_connection == "thermal" || pad_connection == "solid" || pad_connection == "none" ||
+         pad_connection == "pth_thermal";
 }
 
 void checkBoardZones(const Project& project, const Board& board,

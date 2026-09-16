@@ -2358,3 +2358,4 @@ Thermal-spoke hole blocking now handles arbitrary valid polygon edges, with rect
 Board-aware zone refill reports thermal spokes for matching-net pads through `pcb refill-zones`; explicit gap and width are currently 0.5 mm. Spokes are not yet persisted or exported as filled copper geometry.
 Board-aware thermal reporting now ignores pads on other copper layers and suppresses `direct`, `solid`, and `none` zone connection modes.
 Per-pad copper-layer thermal gap/spoke-width overrides and per-pad no-connection/solid/direct suppression are supported in board-aware refill reporting.
+PTH-only thermal connection mode (`pth_thermal`) is supported in zone validation and refill reporting; SMD/NPTH pads are excluded.

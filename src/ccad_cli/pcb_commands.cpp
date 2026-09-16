@@ -840,8 +840,8 @@ int requireNonNegativeIntOption(const std::map<std::string, std::string>& option
 
 std::string requireZonePadConnection(const std::map<std::string, std::string>& options) {
   const std::string value = requireOption(options, "--pad-connection");
-  if (value != "thermal" && value != "solid" && value != "none") {
-    throw std::runtime_error("--pad-connection must be thermal, solid, or none");
+  if (value != "thermal" && value != "solid" && value != "none" && value != "pth_thermal") {
+    throw std::runtime_error("--pad-connection must be thermal, solid, none, or pth_thermal");
   }
   return value;
 }

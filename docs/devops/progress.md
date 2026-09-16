@@ -1205,3 +1205,7 @@ References checked: current KiCad documentation states zone connection applies t
 ## Sprint 490 progress update (2026-09-17)
 
 Per-pad copper properties now override thermal gap and spoke width, and per-pad `zone_connection=none|solid|direct` suppresses that pad's relief. Tests cover override geometry and suppression. Full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
+
+## Sprint 491 progress update (2026-09-17)
+
+References checked: KiCad names the PTH-only mode `THT_THERMAL` / “thermal reliefs for PTH”; it applies thermals to plated through-hole pads while SMD pads use solid connection. CCad accepts `pth_thermal` in CLI/DRC and board-aware fill reporting, includes `thru_hole`/`through_hole`/`pth`, and ignores SMD/NPTH types. Full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.

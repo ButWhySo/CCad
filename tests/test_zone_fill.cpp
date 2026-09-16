@@ -86,5 +86,12 @@ int main() {
   zone.pad_connection = "none";
   const auto none_fill = ccad::calculateZoneFill(zone, std::vector<ccad::Pad>{pad});
   require(none_fill.thermal_spokes.empty(), "none pad connection suppresses thermal spokes");
+  zone.pad_connection = "pth_thermal";
+  pad.type = "smd";
+  const auto smd_pth_fill = ccad::calculateZoneFill(zone, std::vector<ccad::Pad>{pad});
+  require(smd_pth_fill.thermal_spokes.empty(), "PTH-only connection ignores SMD pad");
+  pad.type = "thru_hole";
+  const auto pth_fill = ccad::calculateZoneFill(zone, std::vector<ccad::Pad>{pad});
+  require(pth_fill.thermal_spokes.size() == 4, "PTH-only connection includes plated pad");
   std::cout << "Zone fill tests passed!\n";
 }
