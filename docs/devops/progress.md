@@ -1185,3 +1185,7 @@ References checked: current KiCad PCB Editor and zone documentation define therm
 ## Sprint 485 progress update (2026-09-17)
 
 Thermal spokes now suppress any axial spoke whose segment crosses a supported rectangular zone hole. This prevents a thermal bridge through a copper knockout; malformed/non-rectangular holes remain outside this first slice. Focused test passed; full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
+
+## Sprint 486 progress update (2026-09-17)
+
+References checked: KiCad's zone-fill geometry uses explicit segment/shape intersection machinery rather than endpoint-only tests. CCad's rectangular thermal helper now rejects axial spoke segments whose interior overlaps rectangular hole bounds, with regression coverage for a hole placed directly on a spoke ray. Full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
