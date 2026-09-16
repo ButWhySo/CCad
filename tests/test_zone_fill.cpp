@@ -30,5 +30,10 @@ int main() {
   zone.holes[0].pop_back();
   const auto invalid = ccad::calculateZoneFill(zone);
   require(!invalid.filled && !invalid.diagnostics.empty(), "invalid hole rejected");
+  zone.holes[0] = {p(2, 2), p(4, 2), p(4, 4), p(2, 4)};
+  zone.clearance = ccad::nanometers(-1);
+  const auto invalid_clearance = ccad::calculateZoneFill(zone);
+  require(!invalid_clearance.filled && !invalid_clearance.diagnostics.empty(),
+          "negative clearance rejected");
   std::cout << "Zone fill tests passed!\n";
 }

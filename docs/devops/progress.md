@@ -1162,3 +1162,7 @@ Added clearance inset for axis-aligned rectangular zone fills. `calculateZoneFil
 ## Sprint 479 progress update (2026-09-17)
 
 Corrected rectangular hole clearance semantics: outer contour shrinks by clearance while hole contours expand by clearance, reducing filled copper correctly. Focused zone-fill test passed; full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
+
+## Sprint 480 progress update (2026-09-17)
+
+Zone fill now rejects negative clearance with a diagnostic instead of silently clamping it to zero. Focused test passed; full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.

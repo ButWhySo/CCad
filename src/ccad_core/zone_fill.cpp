@@ -47,8 +47,12 @@ ZoneFillResult calculateZoneFill(const BoardZone& zone) {
     result.diagnostics.push_back("zone outline requires at least three points");
     return result;
   }
+  if (zone.clearance.nanometers < 0) {
+    result.diagnostics.push_back("zone clearance must be non-negative");
+    return result;
+  }
   result.filled = true;
-  const int64_t clearance = std::max<int64_t>(0, zone.clearance.nanometers);
+  const int64_t clearance = zone.clearance.nanometers;
   std::vector<Point> outer = clearance == 0 ? zone.outline : offsetRectangle(zone.outline, clearance);
   if (outer.empty()) {
     result.filled = false;

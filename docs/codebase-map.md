@@ -1204,3 +1204,4 @@ Agent capability metadata now advertises `RefillZones` through `pcb refill-zones
 `pns_board_adapter.cpp` likewise prefers the first committed fill contour for different-net zone obstacles, preserving outline fallback. This keeps routing aligned with applied refill state; thermal/clearance semantics remain incomplete.
 `zone_fill.cpp` applies clearance inset for axis-aligned rectangles. General polygon clipping, pad/via/track knockouts, thermals, and island policy remain deferred.
 For rectangular holes, the same clearance is applied outward as a knockout; non-rectangular offset geometry remains explicitly unsupported.
+Negative zone clearance is rejected by `calculateZoneFill()`; invalid board state cannot produce a successful fill result.
