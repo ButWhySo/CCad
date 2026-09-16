@@ -19,8 +19,10 @@ int main() {
   require(index.query(0, 0, 1).empty(), "PNS query excludes distant items");
   require(index.query(0, 0, -1).empty(), "PNS query rejects negative search radius");
 
-  ccad::PnsNode node;
-  node.addItem(std::make_shared<ccad::PnsItem>(near));
-  node.clear();
+    ccad::PnsNode node;
+    node.addItem(std::make_shared<ccad::PnsItem>(near));
+    require(node.query(12, 10, 0).size() == 1, "PNS node forwards indexed query");
+    node.clear();
+    require(node.query(12, 10, 0).empty(), "PNS node query is empty after clear");
   return 0;
 }

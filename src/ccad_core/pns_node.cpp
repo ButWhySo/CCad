@@ -14,4 +14,8 @@ void PnsNode::clear() {
     index_.clear();
 }
 
+std::vector<PnsItem*> PnsNode::query(int x, int y, int radius) const {
+    return index_.query(x, y, radius);
+}
+
 } // namespace ccad

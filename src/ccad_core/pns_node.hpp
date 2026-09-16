@@ -35,6 +35,7 @@ public:
 
     void addItem(std::shared_ptr<PnsItem> item);
     void clear();
+    std::vector<PnsItem*> query(int x, int y, int radius) const;
 
 private:
     PnsIndex index_;
