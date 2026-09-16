@@ -23,7 +23,10 @@ public:
 
 private:
     Board* board_ = nullptr;
-    // PnsRouter* router_ = nullptr; // Intentionally deferred logic
+    bool routing_ = false;
+    double start_x_ = 0.0, start_y_ = 0.0;
+    double current_x_ = 0.0, current_y_ = 0.0;
+    int layer_ = 0;
 };
 
 } // namespace ccad

@@ -264,6 +264,9 @@ add_test(NAME drc_test_provider_unrouted COMMAND ccad_drc_test_provider_unrouted
 add_executable(ccad_net_tie_drc_tests tests/test_net_tie_drc.cpp)
 target_link_libraries(ccad_net_tie_drc_tests PRIVATE ccad_core)
 add_test(NAME net_tie_drc COMMAND ccad_net_tie_drc_tests)
+add_executable(ccad_router_tool_tests tests/test_router_tool.cpp)
+target_link_libraries(ccad_router_tool_tests PRIVATE ccad_core)
+add_test(NAME router_tool COMMAND ccad_router_tool_tests)
 
 add_executable(ccad_3d_fastmath_tests
   tests/test_3d_fastmath.cpp
