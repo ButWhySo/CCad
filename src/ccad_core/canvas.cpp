@@ -787,13 +787,13 @@ CanvasScene buildSchematicScene(const Schematic& schematic) {
       cl.start_y_units = toMillimeters(pin.position.y);
       const double px = toMillimeters(pin.position.x);
       const double py = toMillimeters(pin.position.y);
-      // Rough orientation logic (towards center of sheet)
+      // Prefer the imported KiCad side; infer it for legacy data.
       double ox = px;
       double oy = py;
-      if (std::abs(px - sx) < 0.1) ox += 2.0;
-      else if (std::abs(px - ex) < 0.1) ox -= 2.0;
-      else if (std::abs(py - sy) < 0.1) oy += 2.0;
-      else if (std::abs(py - ey) < 0.1) oy -= 2.0;
+      if (pin.side == "left" || (pin.side.empty() && std::abs(px - sx) < 0.1)) ox += 2.0;
+      else if (pin.side == "right" || (pin.side.empty() && std::abs(px - ex) < 0.1)) ox -= 2.0;
+      else if (pin.side == "top" || (pin.side.empty() && std::abs(py - sy) < 0.1)) oy += 2.0;
+      else if (pin.side == "bottom" || (pin.side.empty() && std::abs(py - ey) < 0.1)) oy -= 2.0;
       cl.end_x_units = ox;
       cl.end_y_units = oy;
       cl.width_units = 0.2;

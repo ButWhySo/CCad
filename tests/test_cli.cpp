@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -55,7 +56,9 @@ void writeFile(const std::filesystem::path& path, const std::string& content) {
 }  // namespace
 
 int main() {
-  const std::filesystem::path temp = std::filesystem::temp_directory_path() / "ccad_cli_test";
+  const auto nonce = std::chrono::steady_clock::now().time_since_epoch().count();
+  const std::filesystem::path temp =
+      std::filesystem::temp_directory_path() / ("ccad_cli_test_" + std::to_string(nonce));
   std::filesystem::remove_all(temp);
   std::filesystem::create_directories(temp);
   const std::filesystem::path project_path = temp / "demo.ccad.json";

@@ -120,6 +120,7 @@ struct SchSheetPin {
   std::string name;
   std::string type;
   Point position;
+  std::string side; // Optional KiCad side: left, right, top, or bottom.
 };
 
 struct SchSheet {

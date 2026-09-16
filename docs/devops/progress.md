@@ -1033,3 +1033,7 @@ Schematic labels now support explicit Directive type across the model, KiCad-sty
 ## Sprint 444 progress update (2026-09-16)
 
 Replaced the board reference-image crossed-box renderer placeholder with base64 image decoding and Qt pixmap rendering, retaining an explicit fallback marker for invalid image data. Focused GUI test passed; Qt Release build completed 18/18 incremental targets; full Qt CTest passed 84/84; official harness passed with empty stderr, and its screenshot was ingested and visually inspected.
+
+## Sprint 445 progress update (2026-09-16)
+
+Added optional KiCad-compatible sheet-pin side serialization and side-aware canvas orientation while preserving legacy position inference. Hardened the CLI integration test with a unique per-process temporary workspace, eliminating concurrent-run file races. Full Qt build completed; Qt-correct CTest passed 84/84, isolated CLI passed, official harness passed with empty stderr, and its screenshot was ingested and visually inspected.

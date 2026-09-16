@@ -1637,6 +1637,8 @@ class JsonReader {
             pin.type = readString();
           } else if (key == "position") {
             pin.position = readPoint();
+          } else if (key == "side") {
+            pin.side = readString();
           } else {
             throw std::runtime_error("unknown sch sheet pin key: " + key);
           }
@@ -3720,7 +3722,8 @@ std::string dumpProjectJson(const Project& project) {
       writeField(out, 10, "type", pin.type);
       out << "          \"position\": ";
       writePoint(out, 0, pin.position);
-      out << "\n";
+      out << ",\n";
+      writeField(out, 10, "side", pin.side, false);
       out << "        }" << (j + 1 == sheet.pins.size() ? "" : ",") << '\n';
     }
     out << "      ]\n";
