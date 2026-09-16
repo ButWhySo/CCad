@@ -941,3 +941,93 @@ Sprint 248 extended the deterministic GUI action capabilities inside the review 
 
 
 
+## Current handover: Sprint 358 DRC provider parity
+
+`src/ccad_core/drc.cpp` now owns typed checks for through-hole pad drill presence and minimum size, pad copper-to-board-edge clearance, and via-to-via drilled-hole clearance. Tests live in `tests/test_drc.cpp`; KiCad source comparison is recorded in `scratch/055-056_drc_provider_to_ccad_implementation.md` and the sprint record. The latest proof is `artifacts/screenshots/sprint358-hole-proof-20260916-025459.png`; provider credentials remain unavailable by design, while the agent panel preserves local CCad functionality.
+## Sprint 359 handover
+
+`src/ccad_core/3d_fastmath.cpp` now provides correct `FastMath3D::fastSin` and `fastCos` behavior through `<cmath>`, covered by `tests/test_3d_fastmath.cpp` and CTest `3d_fastmath`. No performance promise is made until a measured approximation contract exists.
+## Sprint 360 handover
+
+`Math3D::transform` in `src/ccad_core/3d_math.cpp` now applies matrix scale/translation and homogeneous `w` normalization; coverage is in `tests/test_3d_fastmath.cpp`. There is no 3D GUI integration claim yet.
+## Sprint 361 handover
+
+`NearestNeighborConnectivity::computeOptimalRatnests` now returns a deterministic minimum-spanning tree for supplied `RatnestNode` values. It is core-only; `DynamicRatnestGraph` population and GUI rendering remain separate pending a typed connectivity integration.
+## Sprint 362 handover
+
+`DynamicRatnestGraph::buildGraph` now creates deterministic per-net nodes from board pads, vias, and track segment endpoints. Track nodes use `<track-id>:start` and `<track-id>:end`; empty net/id entries are omitted. Connected-component subtraction and GUI overlay are not yet implemented.
+## Sprint 363 handover
+
+`ReviewWindow::addRatsnestOverlays` now calls `NearestNeighborConnectivity` over canvas pads, vias, and track endpoints, then renders canonical MST edges. Toggle behavior remains `action:show_ratsnest`; physical subtraction of already-routed connections is intentionally not claimed.
+## Sprint 364 handover
+
+`EventDrivenRatnest::onBoardModified` now rebuilds graph nodes, enumerates board nets, computes MST edges, and publishes them to `DynamicRatnestGraph`. The GUI consumes the same core MST during render; UI-map count assertions and routed-component subtraction remain next.
+## Sprint 365 handover
+
+UI-map target lookup now handles mnemonic menu names, the Agent dock member, QTextEdit controls, and stable agent composer object names. The current official target sequence reports 15/15 found in both passes.
+## Sprint 367 handover
+
+`DesignRules.max_track_width` and `max_via_diameter` are persisted and configurable via CLI; zero disables each maximum. DRC emits `TRACK_TOO_WIDE` and `VIA_DIAMETER_ABOVE_MAXIMUM`. Validation rejects a positive maximum below its corresponding minimum.
+## Sprint 368 handover
+
+CLI help now advertises both maximum-rule flags. `test_cli` verifies emitted JSON fields, while `test_serialize` verifies exact load/dump round trips. Official visual proof remains clean; continue ordered scratch survey at 058.
+## Sprint 369 handover
+
+`TrackLengthTuning::calculateCurrentLength` now returns net-scoped track length in millimetres and is covered by `track_length_tuning`. `applyTuning` still returns unsupported until meander geometry and transaction APIs are defined.
+## Sprint 370 handover
+
+Length measurement includes matching `TrackArc` geometry using three-point circular sweep; collinear input falls back to two chords. Meander mutation remains explicitly unsupported.
+## Sprint 371 handover
+
+Net length measurement optionally includes board-thickness contribution per matching via, controlled by `DesignRules.use_height_for_length_calcs`; this is a full-board via approximation until blind/buried via layer spans exist.
+## Sprint 372 handover
+
+DRC now emits `SILK_CLEARANCE` when axis-aligned F/B.SilkS text box overlaps configured clearance around copper pads. Rotation-aware text geometry and silk-via/outline/zone checks are not yet implemented.
+## Sprint 373 handover
+
+Silkscreen text clearance also checks valid copper vias. Text geometry remains axis-aligned; silk outline/zone checks remain pending.
+## Sprint 374 handover
+
+Silkscreen text clearance now checks valid copper track segments using track half-width. Rotation-aware text and silk outline/zone checks remain pending.
+## Sprint 375 handover
+
+Silkscreen text edge clearance now checks bounding-box corners against board outline edge distance. Rotation-aware geometry and silk-to-zone checks remain pending.
+## Sprint 376 handover
+
+Silkscreen text clearance now checks copper zone polygon overlap/proximity. Text model remains axis-aligned and does not yet represent glyph strokes.
+## Sprint 377 handover
+
+Complete silk clearance chain is verified across pads, vias, tracks, board edge, and zones. Next parity work must first define BoardFootprint-to-SchSymbol reference semantics.
+## Sprint 379 handover
+
+`checkSchematicFootprintParity` compares annotated schematic refs with explicit board footprint refs, plus pad component IDs for metadata-light boards. Emits missing, extra, duplicate diagnostics. DNP/BOM and pin mapping remain next.
+## Sprint 380 handover
+
+Parity now emits `FOOTPRINT_BOM_PARITY` when matching schematic `in_bom` and board `exclude_from_bom` disagree. Pin-level membership remains next.
+## Sprint 381 handover
+
+Explicit board footprints now require matching pads for on-board schematic pins; missing mappings emit `MISSING_PAD`. Pad-only imported boards remain metadata-light and are not over-constrained.
+## Sprint 382 handover
+
+Schematic parity respects `SchSymbol.on_board`; off-board symbols are excluded from missing-footprint and missing-pad requirements.
+## Sprint 383 handover
+
+`checkSolderMaskBridges` emits `SOLDERMASK_BRIDGE` for different non-empty nets whose valid copper pad mask boxes leave less than `DesignRules.solder_mask_min_width` web after global `solder_mask_expansion`. Current geometry is axis-aligned and pad-only; NPTH, per-pad overrides, and exact apertures remain deferred.
+## Sprint 384 handover
+
+`DesignRules::min_text_height` persists through project JSON and `pcb set-rules --min-text-height-mm`. `checkBoardTexts` emits `TEXT_HEIGHT_BELOW_MINIMUM` for positive board text whose declared height is below the rule. Text stroke thickness is not inferable from current `BoardText`; add an explicit stroke-width field before implementing KiCad-like thickness/glyph checks.
+## Sprint 385 handover
+
+`BoardText::mirrored` persists through JSON and is optionally set by `pcb add-text --mirrored`. `checkBoardTexts` emits `MIRRORED_TEXT_ON_FRONT_LAYER` for mirrored non-`B.` text and `NONMIRRORED_TEXT_ON_BACK_LAYER` for unmirrored `B.` text. Future layer classification should use canonical layer metadata instead of prefix-only fallback.
+## Sprint 386 handover
+
+`DesignRules::min_track_angle_degrees` and `max_track_angle_degrees` persist through JSON and `pcb set-rules`. `checkTrackAngles` emits `TRACK_ANGLE` for same-net, same-layer straight segments sharing an exact endpoint outside the configured range. Arc junctions and custom-rule scoping remain future work.
+## Sprint 387 handover
+
+`DesignRules::min_track_segment_length` and `max_track_segment_length` persist through JSON and `pcb set-rules`. `checkTrackSegmentLengths` emits `TRACK_SEGMENT_LENGTH` for straight `TrackSegment` items outside configured bounds. `TrackArc` items remain unhandled by this DRC provider.
+## Sprint 388 handover
+
+`checkTrackSegmentLengths` now measures `TrackArc` items using three-point circular sweep, with two-chord fallback for collinear points, and emits `TRACK_SEGMENT_LENGTH` against the same bounds as straight segments.
+## Sprint 389 handover
+
+BoardText stroke_width and DesignRules min_text_thickness persist through JSON. CLI sets declared stroke width; DRC emits TEXT_THICKNESS_BELOW_MINIMUM when enabled and missing or undersized. Font-outline collapse analysis remains deferred.

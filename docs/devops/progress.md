@@ -755,3 +755,96 @@ Sprint 242 is verified on branch `sprint-242-graphics-cleaner`. The batch comple
 Sprint 243 is verified on branch `sprint-243-schematic-annotation`. The batch ported KiCad's `annotate.cpp` automatic reference designator annotation logic to CCad native constructs in `annotate.hpp` and `annotate.cpp`. The implementation includes tracking used prefixes, spatial sorting via bounding box thresholds (Sort X and Sort Y), and applying algorithms to retain or reset existing designations. The feature was exposed natively via the `ccad sch annotate` CLI command. Isolated tests in `test_annotate.cpp` were incorporated into the CMake build, bringing the passing CTest suite up to 62 tests. The official sprint demo was invoked to visually prove system stability, outputting to `artifacts/screenshots/sprint-demo-20260702-082538.png`.
 
 Sprint 244 is verified on branch `sprint-244-schematic-autoplace-fields`. The batch ported KiCad's `autoplace_fields.cpp` heuristic property layout logic to CCad native constructs in `autoplace_fields.hpp` and `autoplace_fields.cpp`. The implementation includes collision avoidance against nearby wires, and uses a simplified density algorithm based on nested `SymbolPin` locations to pick the clearest side (Top, Bottom, Left, or Right) for symbol property texts. The feature is exposed via the `ccad sch autoplace` CLI command. The robust `ccad_autoplace_fields_tests` were integrated to push the passing test count to 63/63. The visual sprint demo executed cleanly, proving stability, outputting to `artifacts/screenshots/sprint-demo-20260702-083917.png`.
+## Sprint 358 progress update (2026-09-16)
+
+The DRC provider-parity batch now validates through-hole pad drill presence and minimum size, pad copper edge clearance, and drilled via hole spacing. Full Qt build passed 70/70 and CTest passed 69/69; official visual proof `sprint358-hole-proof` passed with an inspected screenshot and empty harness stderr. The demo fixture did not exercise the new violation cases, which remain covered by focused DRC tests. Next ordered survey batch is scratch 058.
+## Sprint 359 progress update (2026-09-16)
+
+Removed the explicit FastMath3D sine/cosine stubs and added regression coverage. Corrected full Qt build passed 94/94, CTest passed 70/70, and the official visual proof passed with an inspected screenshot and empty stderr. KiCad survey continuation remains at scratch 058/059.
+## Sprint 360 progress update (2026-09-16)
+
+Implemented the Math3D 4x4 homogeneous transform and regression coverage. Full Qt build passed 67/67 incremental steps, CTest passed 70/70, and official visual proof passed with inspected screenshot and empty stderr. Continue KiCad survey at scratch 058-060.
+## Sprint 361 progress update (2026-09-16)
+
+Implemented deterministic Prim MST generation for core ratnest lines and added a four-node regression test. Full Qt build passed 94/94, CTest passed 71/71, and official visual proof passed with inspected screenshot and empty stderr. GUI ratsnest rendering remains a documented next integration step.
+## Sprint 362 progress update (2026-09-16)
+
+Implemented DynamicRatnestGraph board population for net-bearing pads, vias, and track endpoints. Full Qt build passed 95/95, CTest passed 72/72, and official visual proof passed with inspected screenshot and empty stderr. GUI ratsnest overlay remains the next integration step.
+## Sprint 363 progress update (2026-09-16)
+
+Connected the existing GUI ratsnest overlay to the core deterministic MST algorithm. Full incremental Qt build passed 9/9, CTest passed 72/72, and official visual proof passed with an inspected MST-style overlay screenshot and empty stderr. Next is feature-specific UI-map proof and connected-component semantics.
+## Sprint 364 progress update (2026-09-16)
+
+Completed event-driven ratnest recomputation: board modification now publishes per-net MST edges instead of clearing the active list. Full Qt build passed 69/69, CTest passed 72/72, and official visual proof passed with inspected screenshot and empty stderr.
+## Sprint 364 UI-map proof update
+
+Official UI-map mouse harness completed two 15-target passes for ratsnest toggle coverage; 22 generated screenshots loaded successfully, and the show-ratsnest target was exercised in both passes. Existing unavailable menu/tab/chat-input targets remain documented.
+## Sprint 365 progress update (2026-09-16)
+
+Repaired UI-map menu mnemonic, Agent dock, QTextEdit composer, and send-button target coverage. Official UI-map harness reached 15/15 targets in both passes with 30 PNGs ingested; final build passed 7/7, CTest 72/72, and official visual proof passed with inspected screenshot and empty stderr.
+## Sprint 367 progress update (2026-09-16)
+
+Added optional max track-width and via-diameter DRC rules across typed model, JSON, CLI, and diagnostics. Final rebuild passed 200/200, CTest 72/72, and official visual proof passed after resolving a stale GUI binary; screenshot inspected, stderr empty.
+## Sprint 368 progress update (2026-09-16)
+
+Made max track-width and max via-diameter rules discoverable in `pcb set-rules` help and added explicit CLI/JSON round-trip assertions. Targeted tests passed 3/3, full CTest passed 72/72, and official visual proof `sprint368-max-rule-help-proof` exited 0 with inspected screenshot and empty stderr. Ordered KiCad survey resumes at scratch 058.
+## Sprint 369 progress update (2026-09-16)
+
+Replaced track-length measurement stub with net-scoped Euclidean segment summation and added CTest `track_length_tuning`. Full build passed 96/96, CTest passed 73/73, and official visual proof `sprint369-track-length-proof` passed with inspected screenshot and empty stderr. Meander mutation remains explicitly deferred pending routing transaction semantics.
+## Sprint 370 progress update (2026-09-16)
+
+Extended net length measurement to three-point track arcs with circular sweep and collinear fallback. Focused test, full build 70/70, CTest 73/73, and official visual proof `sprint370-track-arc-length-proof` all passed; screenshot inspected, stderr empty.
+## Sprint 371 progress update (2026-09-16)
+
+Added board-thickness contribution for matching vias when height-for-length calculation is enabled, with toggle regression coverage. Full build 70/70, CTest 73/73, and official visual proof `sprint371-via-height-proof` passed; screenshot inspected, stderr empty.
+## Sprint 372 progress update (2026-09-16)
+
+Added `SILK_CLEARANCE` DRC for front/back silkscreen text against copper pads. Full build 70/70, CTest 73/73, and official visual proof `sprint372-silk-clearance-proof` passed; screenshot inspected and stderr empty. Rotation-aware text and other silk targets remain backlog.
+## Sprint 373 progress update (2026-09-16)
+
+Extended `SILK_CLEARANCE` to copper vias with regression coverage. Full build 70/70, CTest 73/73, and official visual proof `sprint373-silk-via-proof` passed; screenshot inspected, stderr empty.
+## Sprint 374 progress update (2026-09-16)
+
+Extended `SILK_CLEARANCE` to copper track segments with width-aware distance and regression coverage. Full build 70/70, CTest 73/73, and official visual proof `sprint374-silk-track-proof` passed; screenshot inspected, stderr empty.
+## Sprint 375 progress update (2026-09-16)
+
+Extended `SILK_CLEARANCE` to board-edge distance using text bounding-box corners. Full build 70/70, CTest 73/73, and official visual proof `sprint375-silk-edge-proof` passed; screenshot inspected, stderr empty.
+## Sprint 376 progress update (2026-09-16)
+
+Extended `SILK_CLEARANCE` to copper zones with polygon overlap/proximity detection. Full build 70/70, CTest 73/73, and official visual proof `sprint376-silk-zone-proof` passed; screenshot inspected, stderr empty.
+## Sprint 377 progress update (2026-09-16)
+
+Revalidated the complete silk clearance chain after zone integration: focused DRC 1/1, full build 70/70, CTest 73/73, and official visual proof `sprint376-silk-zone-proof` passed; screenshot inspected, stderr empty. Schematic parity is next; footprint/reference semantics remain under analysis.
+## Sprint 379 progress update (2026-09-16)
+
+Added schematic/board footprint parity diagnostics for missing, extra, and duplicate footprint references. Pad component IDs count as physical footprint presence when metadata is absent. Full build 70/70, CTest 73/73, and official visual proof `sprint379-parity-proof` passed; screenshot inspected, stderr empty, demo false missing reports removed.
+## Sprint 380 progress update (2026-09-16)
+
+Added `FOOTPRINT_BOM_PARITY`, comparing schematic `in_bom` with board footprint `exclude_from_bom`. Full build 70/70, CTest 73/73, and official visual proof `sprint380-bom-parity-proof` passed; screenshot inspected, stderr empty, demo parity remains clean.
+## Sprint 381 progress update (2026-09-16)
+
+Added explicit-footprint schematic pin to board pad parity with `MISSING_PAD`, matching component reference and pin number/name. Full build 70/70, CTest 73/73, and official visual proof `sprint381-pin-parity-proof` passed; screenshot inspected, stderr empty, demo parity remains clean.
+## Sprint 382 progress update (2026-09-16)
+
+Corrected parity for schematic-only symbols: `on_board=false` no longer requires footprint/pad presence. Focused DRC, full build 70/70, CTest 73/73, and official visual proof `sprint382-on-board-parity-proof` passed; screenshot inspected, stderr empty.
+## Sprint 383 progress update (2026-09-16)
+
+Added `SOLDERMASK_BRIDGE` DRC for expanded copper-pad mask webs between different nets, with focused regression coverage. Full build passed 70/70, CTest 73/73, and official visual proof `sprint383_soldermask_proof` exited 0; screenshot inspected, DRC summary recorded, stderr empty. Geometry is intentionally axis-aligned/global-expansion approximation; NPTH and per-pad mask overrides remain backlog.
+## Sprint 384 progress update (2026-09-16)
+
+Added typed minimum board-text height rule, JSON/CLI persistence, validation, and `TEXT_HEIGHT_BELOW_MINIMUM` DRC with regression coverage. Full build passed 212/212, CTest 73/73, and official visual proof `sprint384_text_height_proof` exited 0; screenshot inspected, stderr empty. Text thickness awaits explicit stroke-width model.
+## Sprint 385 progress update (2026-09-16)
+
+Added explicit board-text mirroring state, JSON persistence, CLI support, and front/back layer DRC diagnostics. Full build passed 200/200, CTest 73/73, and official visual proof `sprint385_text_mirror_proof` exited 0; screenshot inspected, stderr empty.
+## Sprint 386 progress update (2026-09-16)
+
+Added optional minimum/maximum connected-track angle rules with JSON/CLI persistence, validation, and `TRACK_ANGLE` DRC coverage. Full build passed 202/202, CTest 73/73, and official visual proof `sprint386_track_angle_proof` exited 0; screenshot inspected, stderr empty.
+## Sprint 387 progress update (2026-09-16)
+
+Added optional minimum/maximum straight track-segment length rules with JSON/CLI persistence, validation, and `TRACK_SEGMENT_LENGTH` DRC coverage. Full build passed 202/202, CTest 73/73, and official visual proof `sprint387_segment_length_proof` exited 0; screenshot inspected, stderr empty. Track-arc DRC remains next.
+## Sprint 388 progress update (2026-09-16)
+
+Extended `TRACK_SEGMENT_LENGTH` to three-point track arcs with circular-sweep and collinear fallback measurement. Full build passed 70/70, CTest 73/73, and official visual proof `sprint388_arc_length_proof` exited 0; screenshot inspected, stderr empty.
+## Sprint 389 progress update (2026-09-16)
+
+Added explicit board-text stroke width, minimum-thickness rule, JSON/CLI persistence, validation, and TEXT_THICKNESS_BELOW_MINIMUM DRC. Full build 200/200, CTest 73/73, official visual proof passed; screenshot inspected, stderr empty.

@@ -40,6 +40,22 @@ int main() {
     return 1;
   }
 
+  if (report.net_id != "NET_A" || report.parity_scope.empty() ||
+      report.bridges[0].is_valid || report.pending_kicad_features.empty()) {
+    std::cerr << "Candidate report must not imply verified electrical connectivity\n";
+    return 1;
+  }
+  if (!calculateNetChainBridges(proj, "MISSING").bridges.empty() ||
+      !calculateNetChainBridges(proj, "").bridges.empty()) return 1;
+  proj.boards[0].pads[1].net_id = "NET_A";
+  if (!calculateNetChainBridges(proj, "NET_A").bridges.empty()) return 1;
+  proj.boards[0].pads[1].net_id = "NET_B";
+  proj.boards[0].pads[1].component_id = "R2";
+  if (!calculateNetChainBridges(proj, "NET_A").bridges.empty()) return 1;
+  proj.boards[0].pads[0].component_id.clear();
+  proj.boards[0].pads[1].component_id.clear();
+  if (!calculateNetChainBridges(proj, "NET_A").bridges.empty()) return 1;
+
   std::cout << "test_net_chain_bridging passed" << std::endl;
   return 0;
 }

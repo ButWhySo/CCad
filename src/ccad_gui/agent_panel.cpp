@@ -681,7 +681,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   composer_layout->setContentsMargins(8, 8, 8, 8);
   
   chat_input_ = new QTextEdit(composer_container);
-  chat_input_->setObjectName("chatInput");
+  chat_input_->setObjectName("control:agent_chat_input");
   chat_input_->setPlaceholderText("Message Agent...");
   chat_input_->setFixedHeight(60);
   connect(chat_input_, &QTextEdit::textChanged, this, [this]() {
@@ -737,6 +737,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   auto* send_btn = new QPushButton(composer_container);
   send_btn->setIcon(load_svg_icon(ccad_icons::icon_send));
   send_btn->setProperty("agentRole", "iconButtonPrimary");
+  send_btn->setObjectName("action:agent_submit_chat");
   send_btn->setProperty("target_id", "action:agent_submit_chat");
   send_btn->setFixedSize(32, 32);
   connect(send_btn, &QPushButton::clicked, this, &AgentPanel::submitChat);

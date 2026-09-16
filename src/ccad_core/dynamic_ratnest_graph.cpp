@@ -1,6 +1,8 @@
 #include "dynamic_ratnest_graph.hpp"
 #include "model.hpp"
 
+#include <algorithm>
+
 namespace ccad {
 
 DynamicRatnestGraph::DynamicRatnestGraph(Board* board)
@@ -11,10 +13,28 @@ void DynamicRatnestGraph::buildGraph() {
     netNodes_.clear();
     if (!board_) return;
     
-    // Stub:
-    // 1. Scan board for all pads and track endpoints
-    // 2. Identify nodes that are not fully connected by physical copper tracks
-    // 3. Populate netNodes_ grouped by their netCode
+    auto addNode = [this](const std::string& net, const std::string& id, double x, double y) {
+        if (!net.empty() && !id.empty()) netNodes_[net].push_back({id, net, x, y});
+    };
+    for (const Pad& pad : board_->pads) {
+        addNode(pad.net_id, pad.id, pad.position.x.nanometers / 1e6,
+                pad.position.y.nanometers / 1e6);
+    }
+    for (const Via& via : board_->vias) {
+        addNode(via.net_id, via.id, via.position.x.nanometers / 1e6,
+                via.position.y.nanometers / 1e6);
+    }
+    for (const TrackSegment& track : board_->tracks) {
+        addNode(track.net_id, track.id + ":start", track.start.x.nanometers / 1e6,
+                track.start.y.nanometers / 1e6);
+        addNode(track.net_id, track.id + ":end", track.end.x.nanometers / 1e6,
+                track.end.y.nanometers / 1e6);
+    }
+    for (auto& [net, nodes] : netNodes_) {
+        std::sort(nodes.begin(), nodes.end(), [](const RatnestNode& a, const RatnestNode& b) {
+            return a.nodeId < b.nodeId;
+        });
+    }
 }
 
 std::vector<RatnestNode> DynamicRatnestGraph::getNodesForNet(const std::string& netCode) const {

@@ -1,5 +1,6 @@
 #include "event_driven_ratnest.hpp"
 #include "model.hpp"
+#include <algorithm>
 #include <set>
 
 namespace ccad {
@@ -11,18 +12,23 @@ EventDrivenRatnest::EventDrivenRatnest(Board* board, DynamicRatnestGraph* graph,
 void EventDrivenRatnest::onBoardModified() {
     if (!board_ || !graph_ || !algorithm_) return;
 
-    // Stub:
-    // 1. Instruct the graph to rebuild the unconnected node map
     graph_->buildGraph();
-    
-    // 2. Identify which nets need their ratnests updated
-    // (For now, we update all nets present in the graph)
     std::vector<RatnestLine> updatedRatnests;
     std::set<std::string> processedNets;
-    
-    // In a real implementation, we would extract the unique nets and calculate the MST for each
-    
-    // 3. Set the newly calculated active ratnests on the graph for rendering
+    for (const Pad& pad : board_->pads) {
+        if (!pad.net_id.empty()) processedNets.insert(pad.net_id);
+    }
+    for (const Via& via : board_->vias) {
+        if (!via.net_id.empty()) processedNets.insert(via.net_id);
+    }
+    for (const TrackSegment& track : board_->tracks) {
+        if (!track.net_id.empty()) processedNets.insert(track.net_id);
+    }
+    for (const std::string& net : processedNets) {
+        const auto nodes = graph_->getNodesForNet(net);
+        const auto lines = algorithm_->computeOptimalRatnests(nodes);
+        updatedRatnests.insert(updatedRatnests.end(), lines.begin(), lines.end());
+    }
     graph_->setActiveRatnests(updatedRatnests);
 }
 

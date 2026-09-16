@@ -151,9 +151,11 @@ def init_provider():
             return True
         except ImportError:
             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Warning: langchain_openai not installed."}})
-        except Exception as e:
-            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Warning: Failed to initialize ChatOpenAI: {e}"}})
-    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Error: Failed to initialize provider '{provider}'. API key may be missing or dependencies not installed."}})
+        except Exception:
+            # Keep provider diagnostics out of the conversation transcript. The
+            # structured provider-status command remains the support surface.
+            pass
+    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Agent provider '{provider}' unavailable. Configure its environment in Agent Settings; local CCad tools remain available."}})
     return False
 
 init_provider()

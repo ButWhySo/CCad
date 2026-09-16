@@ -4,7 +4,8 @@ param(
   [string]$Name = "sprint-demo",
   [switch]$ClickSelection,
   [int]$GuiWaitSeconds = 7,
-  [switch]$PreferInternalScreenshot
+  [switch]$PreferInternalScreenshot,
+  [switch]$TeardropProof
 )
 
 $ErrorActionPreference = "Stop"
@@ -236,7 +237,9 @@ Invoke-Ccad pcb add-text --file $Project --id BT_TITLE --layer F.SilkS --text "F
 Invoke-Ccad pcb add-barcode --file $Project --id BC1 --layer F.SilkS --text "CCad Prototype" --kind QRCode --x-mm 10 --y-mm 28 --size-x-mm 5 --size-y-mm 5
 Invoke-Ccad pcb add-dimension --file $Project --id DIM1 --layer F.Fab --kind linear --text "10.0 mm" --start-x-mm 5 --start-y-mm 3 --end-x-mm 15 --end-y-mm 3 --text-x-mm 10 --text-y-mm 2
 Invoke-Ccad pcb add-group --file $Project --id GRP1 --name "Bridge Components" --members "TAC1.1,TAC1.2,TAC2.1,TAC2.2"
-Invoke-Ccad pcb add-reference-image --file $Project --id IMG1 --layer F.SilkS --data "dummy_base64" --x-mm -10 --y-mm -10 --scale 1.5 --opacity 0.8
+if (-not $TeardropProof) {
+  Invoke-Ccad pcb add-reference-image --file $Project --id IMG1 --layer F.SilkS --data "dummy_base64" --x-mm -10 --y-mm -10 --scale 1.5 --opacity 0.8
+}
 Invoke-Ccad pcb add-table --file $Project --id TBL1 --layer F.Fab --x-mm 30 --y-mm 30 --rows 3 --cols 2 --width-mm 20 --height-mm 15
 
 $ProjectObject = Get-Content -Raw $Project | ConvertFrom-Json
@@ -315,6 +318,29 @@ Invoke-CcadDrcReport
 Invoke-Ccad lib import-footprint --in $KiCadFootprint --out $ImportedFootprint
 Invoke-Ccad pcb place-footprint --file $Project --component U_DEMO --footprint $ImportedFootprint --at-x-mm 10 --at-y-mm 10 --rotation-deg 0 --layer F.Cu
 
+if ($TeardropProof) {
+  # Exercise the imported, placed SMD pad through the public authoring command.
+  Invoke-Ccad pcb add-track --file $Project --id TD_PROOF --net AC1 --layer F.Cu --start-x-mm 8 --start-y-mm 17 --end-x-mm 5 --end-y-mm 17 --width-mm 0.25
+  Invoke-Ccad pcb add-via --file $Project --id TD_VIA --net AC1 --x-mm 8 --y-mm 17 --diameter-mm 1.0 --drill-mm 0.5
+  $BeforeScreenshot = Join-Path $ScreenshotDir "$Name-teardrops-before.png"
+  & $Gui --screenshot-measure $Project $BeforeScreenshot 1> (Join-Path $ScreenshotDir "$Name-before.stdout.log") 2> (Join-Path $ScreenshotDir "$Name-before.stderr.log")
+  if ($LASTEXITCODE -ne 0 -or -not (Test-Path $BeforeScreenshot)) { throw "Teardrop before capture failed" }
+  Invoke-Ccad pcb update-teardrops --file $Project --enable-pads true --enable-vias true --smd true --curved true
+  $AfterTeardrops = Get-Content -Raw $Project | ConvertFrom-Json
+  $BoardProof = @($AfterTeardrops.boards)[0]
+  if (-not $BoardProof) { $BoardProof = $AfterTeardrops.board }
+  if (@($BoardProof.teardrops).Count -lt 1) { throw "Teardrop generation did not survive save" }
+  if (-not (@($BoardProof.teardrops) | Where-Object { $_.anchor_track_id -eq 'TD_PROOF' })) {
+    throw "Feature-specific taper was not generated"
+  }
+  $FirstCount = @($BoardProof.teardrops).Count
+  Invoke-Ccad pcb update-teardrops --file $Project --smd true --curved true
+  $Repeated = Get-Content -Raw $Project | ConvertFrom-Json
+  $RepeatedBoard = @($Repeated.boards)[0]
+  if (-not $RepeatedBoard) { $RepeatedBoard = $Repeated.board }
+  if (@($RepeatedBoard.teardrops).Count -ne $FirstCount) { throw "Repeated generation changed the count" }
+}
+
 Invoke-Ccad inspect $Project | Set-Content -Encoding UTF8 $Inspect
 Invoke-Ccad validate $Project | Set-Content -Encoding UTF8 $Validate
 Invoke-CcadDrcReport
@@ -323,7 +349,8 @@ Invoke-PreScreenshotBeep -RootPath $Root
 Start-Sleep -Seconds 2
 
 if ($PreferInternalScreenshot) {
-  $GuiOutput = & $Gui --screenshot-measure $Project $Screenshot
+  $GuiOutput = & $Gui --screenshot-measure $Project $Screenshot 2> (Join-Path $ScreenshotDir "$Name-final.stderr.log")
+  $GuiOutput | Set-Content (Join-Path $ScreenshotDir "$Name-final.stdout.log")
   $GuiExitCode = $LASTEXITCODE
   if ($GuiExitCode -ne 0 -or -not (Test-Path $Screenshot)) {
     $internalOutput = ($GuiOutput | Out-String)

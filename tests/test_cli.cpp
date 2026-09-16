@@ -73,6 +73,10 @@ int main() {
           "help json describes layer authoring");
   require(help_json.find("\"name\": \"pcb add-standard-layers\"") != std::string::npos,
           "help json describes KiCad standard layer authoring");
+  require(help_json.find("--max-track-width-mm") != std::string::npos,
+          "help documents maximum track width rule");
+  require(help_json.find("--max-via-diameter-mm") != std::string::npos,
+          "help documents maximum via diameter rule");
   require(help_json.find("\"name\": \"pcb set-layer\"") != std::string::npos,
           "help json describes layer metadata editing");
   require(help_json.find("\"name\": \"pcb get-object\"") != std::string::npos,
@@ -797,6 +801,7 @@ int main() {
       " --copper-clearance-mm 0.15 --min-track-width-mm 0.12"
       " --min-via-annular-ring-mm 0.08 --min-connection-mm 0.01"
       " --min-via-diameter-mm 0.60 --min-through-hole-drill-mm 0.35"
+      " --max-track-width-mm 0.40 --max-via-diameter-mm 1.20"
       " --min-microvia-diameter-mm 0.20 --min-microvia-drill-mm 0.10"
       " --min-hole-to-hole-mm 0.25 --hole-clearance-mm 0.25"
       " --copper-edge-clearance-mm 0.50 --silk-clearance-mm 0.02"
@@ -815,10 +820,14 @@ int main() {
           "pcb set-rules writes copper clearance");
   require(rules_json.find("\"min_track_width_nm\": 120000") != std::string::npos,
           "pcb set-rules writes minimum track width");
+  require(rules_json.find("\"max_track_width_nm\": 400000") != std::string::npos,
+          "pcb set-rules writes maximum track width");
   require(rules_json.find("\"min_via_annular_ring_nm\": 80000") != std::string::npos,
           "pcb set-rules writes minimum via annular ring");
   require(rules_json.find("\"min_via_diameter_nm\": 600000") != std::string::npos,
           "pcb set-rules writes minimum via diameter");
+  require(rules_json.find("\"max_via_diameter_nm\": 1200000") != std::string::npos,
+          "pcb set-rules writes maximum via diameter");
   require(rules_json.find("\"min_through_hole_drill_nm\": 350000") != std::string::npos,
           "pcb set-rules writes minimum through hole drill");
   require(rules_json.find("\"solder_mask_expansion_nm\": 30000") != std::string::npos,

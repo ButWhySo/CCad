@@ -241,6 +241,20 @@ CanvasScene buildCanvasScene(const Board& board) {
     scene.zones.push_back(canvas_zone);
   }
 
+  for (const BoardTeardrop& td : board.teardrops) {
+    CanvasZone shape;
+    shape.id = td.id;
+    shape.name = "Teardrop";
+    shape.net_id = td.net_id;
+    shape.layer_ids = {td.layer_id};
+    shape.is_teardrop = true;
+    for (const Point& point : td.outline) {
+      shape.pts_x_units.push_back(toMillimeters(point.x));
+      shape.pts_y_units.push_back(toMillimeters(point.y));
+    }
+    scene.zones.push_back(std::move(shape));
+  }
+
   for (const BoardBarcode& barcode : board.barcodes) {
     CanvasBarcode cb{
         .id = barcode.id,

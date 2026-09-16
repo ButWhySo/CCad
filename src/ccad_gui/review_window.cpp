@@ -9,6 +9,7 @@
 #include "ccad_core/component_generator.hpp"
 #include "ccad_core/drc.hpp"
 #include "ccad_core/agent_orchestrator.hpp"
+#include "ccad_core/nearest_neighbor_connectivity.hpp"
 #include "ccad_gui/component_wizard_dialog.hpp"
 #include "ccad_gui/footprint_placement_dialog.hpp"
 #include "ccad_gui/library_browser_dialog.hpp"
@@ -192,6 +193,9 @@ QString normalizedIdPart(QString value) {
   QString output;
   output.reserve(value.size());
   for (const QChar ch : value) {
+    if (ch == '&') {
+      continue;
+    }
     if (ch.isLetterOrNumber()) {
       output += ch;
     } else if (!output.endsWith('_')) {
@@ -2056,6 +2060,7 @@ ReviewWindow::ReviewWindow() {
   addDockWidget(Qt::RightDockWidgetArea, objects_dock);
 
   auto* agent_dock = new QDockWidget("Agent", this);
+  agent_dock_ = agent_dock;
   agent_dock->setWidget(agent_panel_);
   agent_dock->setObjectName("dock:agent");
   agent_dock->setMinimumWidth(360);
@@ -2548,7 +2553,8 @@ ReviewWindow::ReviewWindow() {
                               "canvas:pcb", "canvas:schematic"},
                              {"tab", "action", "canvas"});
           });
-  connect(bottom_tabs_, &QTabWidget::currentChanged, this,
+  if (bottom_tabs_ != nullptr) {
+    connect(bottom_tabs_, &QTabWidget::currentChanged, this,
           [this](int) {
             markUiMapChanged({"tab:diagnostics", "tab:transactions", "tab:agent",
                               "panel:diagnostics", "panel:transactions", "panel:agent",
@@ -2565,6 +2571,7 @@ ReviewWindow::ReviewWindow() {
                               "action:agent_clear_approvals"},
                              {"tab", "panel", "control", "action"});
           });
+  }
   add_footprint_action->setVisible(true);
   add_symbol_action->setVisible(false);
   add_wire_action->setVisible(false);
@@ -3190,23 +3197,30 @@ void ReviewWindow::addRatsnestOverlays(const ccad::CanvasScene& scene) {
                    margin + ((y_units - scene.board_origin_y_units) * scale));
   };
 
-  std::map<QString, std::vector<QPointF>> endpoints_by_net;
+  std::map<QString, std::vector<ccad::RatnestNode>> nodes_by_net;
+  std::map<std::string, QPointF> screen_points;
+  const auto add_node = [&nodes_by_net, &screen_points, &scene_point](const std::string& net,
+                                                                       const std::string& id,
+                                                                       const double x,
+                                                                       const double y) {
+    if (net.empty() || id.empty()) return;
+    nodes_by_net[qstr(net)].push_back({id, net, x, y});
+    screen_points[id] = scene_point(x, y);
+  };
   for (const ccad::CanvasPad& pad : scene.pads) {
     if (!pad.net_id.empty()) {
-      endpoints_by_net[qstr(pad.net_id)].push_back(scene_point(pad.x_units, pad.y_units));
+      add_node(pad.net_id, pad.id, pad.x_units, pad.y_units);
     }
   }
   for (const ccad::CanvasVia& via : scene.vias) {
     if (!via.net_id.empty()) {
-      endpoints_by_net[qstr(via.net_id)].push_back(scene_point(via.x_units, via.y_units));
+      add_node(via.net_id, via.id, via.x_units, via.y_units);
     }
   }
   for (const ccad::CanvasTrack& track : scene.tracks) {
     if (!track.net_id.empty()) {
-      endpoints_by_net[qstr(track.net_id)].push_back(
-          scene_point(track.start_x_units, track.start_y_units));
-      endpoints_by_net[qstr(track.net_id)].push_back(
-          scene_point(track.end_x_units, track.end_y_units));
+      add_node(track.net_id, track.id + ":start", track.start_x_units, track.start_y_units);
+      add_node(track.net_id, track.id + ":end", track.end_x_units, track.end_y_units);
     }
   }
 
@@ -3214,14 +3228,14 @@ void ReviewWindow::addRatsnestOverlays(const ccad::CanvasScene& scene) {
   ratsnest_pen.setStyle(Qt::DashLine);
   ratsnest_pen.setCosmetic(true);
   ratsnest_pen.setWidthF(1.0);
-  for (const auto& [net_id, endpoints] : endpoints_by_net) {
-    Q_UNUSED(net_id);
-    if (endpoints.size() < 2) {
-      continue;
-    }
-    for (std::size_t index = 1; index < endpoints.size(); ++index) {
-      auto* line =
-          canvas_scene_->addLine(QLineF(endpoints[index - 1], endpoints[index]), ratsnest_pen);
+  ccad::NearestNeighborConnectivity connectivity;
+  for (const auto& [net_id, nodes] : nodes_by_net) {
+    const auto lines = connectivity.computeOptimalRatnests(nodes);
+    for (const ccad::RatnestLine& ratnest : lines) {
+      const auto first = screen_points.find(ratnest.nodeA);
+      const auto second = screen_points.find(ratnest.nodeB);
+      if (first == screen_points.end() || second == screen_points.end()) continue;
+      auto* line = canvas_scene_->addLine(QLineF(first->second, second->second), ratsnest_pen);
       line->setZValue(350.0);
       line->setData(kCanvasObjectTypeRole, "ratsnest");
     }
@@ -5216,6 +5230,20 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
   }
 
   for (const QLineEdit* input : findChildren<QLineEdit*>()) {
+    if (input->objectName() != id || !id.startsWith("control:")) {
+      continue;
+    }
+    ensureWidgetVisibleInAncestorScrollAreas(input);
+    const QRect clipped_rect = clippedWidgetGlobalRect(input);
+    const QRect global_rect = clipped_rect.isEmpty()
+                                  ? QRect(input->mapToGlobal(QPoint(0, 0)), input->size())
+                                  : clipped_rect;
+    const QString label = input->accessibleName().isEmpty() ? id : input->accessibleName();
+    return foundTarget(id, "control", label, input->isVisible() && !clipped_rect.isEmpty(),
+                       input->isEnabled(), global_rect.center());
+  }
+
+  for (const QTextEdit* input : findChildren<QTextEdit*>()) {
     if (input->objectName() != id || !id.startsWith("control:")) {
       continue;
     }

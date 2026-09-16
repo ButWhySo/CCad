@@ -351,11 +351,11 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
                   std::max(1.0, zone.min_thickness_units * scale));
     zone_pen.setJoinStyle(Qt::RoundJoin);
     QBrush zone_brush(zone.fill_enabled
-                          ? QColor(zone_color.red(), zone_color.green(), zone_color.blue(), 64)
+                          ? QColor(zone_color.red(), zone_color.green(), zone_color.blue(), zone.is_teardrop ? 255 : 64)
                           : QColor(Qt::transparent));
     auto* item = addHighlightPath(canvas_scene, zone_path, zone_pen, zone_brush);
-    item->setToolTip("Zone " + qstr(zone.id) + " " + layers_str);
-    tagObject(*item, "zone", qstr(zone.id), zone_color, qstr(zone.net_id), layers_str);
+    item->setToolTip((zone.is_teardrop ? "Teardrop " : "Zone ") + qstr(zone.id) + " " + layers_str);
+    tagObject(*item, zone.is_teardrop ? "teardrop" : "zone", qstr(zone.id), zone_color, qstr(zone.net_id), layers_str);
   }
 
   QPen track_pen(theme.track_color);

@@ -217,9 +217,11 @@ struct Layer {
 struct DesignRules {
   Length copper_clearance = millimeters(0.20);
   Length min_track_width = millimeters(0.15);
+  Length max_track_width = millimeters(0.0);
   Length min_via_annular_ring = millimeters(0.10);
   Length min_connection = millimeters(0.0);
   Length min_via_diameter = millimeters(0.50);
+  Length max_via_diameter = millimeters(0.0);
   Length min_through_hole_drill = millimeters(0.30);
   Length min_microvia_diameter = millimeters(0.20);
   Length min_microvia_drill = millimeters(0.10);
@@ -227,6 +229,12 @@ struct DesignRules {
   Length hole_clearance = millimeters(0.25);
   Length copper_edge_clearance = millimeters(0.50);
   Length silk_clearance = millimeters(0.0);
+  Length min_text_height = millimeters(0.0);
+  Length min_text_thickness = millimeters(0.0);
+  double min_track_angle_degrees = 0.0;
+  double max_track_angle_degrees = 0.0;
+  Length min_track_segment_length = millimeters(0.0);
+  Length max_track_segment_length = millimeters(0.0);
   Length min_groove_width = millimeters(0.0);
   Length solder_mask_expansion = millimeters(0.0);
   Length solder_mask_min_width = millimeters(0.0);
@@ -384,6 +392,8 @@ struct BoardText {
   Point position;
   double rotation_degrees = 0.0;
   Size size;
+  bool mirrored = false;
+  Length stroke_width = millimeters(0.0);
   bool locked = false;
 };
 
@@ -480,6 +490,14 @@ struct BoardTeardrop {
   std::string layer_id;
   std::vector<Point> outline;
   bool locked = false;
+  // Back-references to the pad or via that anchors this teardrop.
+  // Exactly one of these should be non-empty.  Used for incremental update
+  // (re-generate only teardrops whose anchor was modified) and for DRC
+  // reporting (name the anchoring object in diagnostics).
+  std::string anchor_pad_id;
+  std::string anchor_via_id;
+  // Track id that forms the approaching-track side of this teardrop.
+  std::string anchor_track_id;
 };
 
 struct RouteRequest {

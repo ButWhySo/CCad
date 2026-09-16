@@ -5,6 +5,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -57,8 +58,14 @@ int main() {
   zero_allowed.min_track_width = ccad::nanometers(0);
   zero_allowed.min_via_annular_ring = ccad::nanometers(0);
   zero_allowed.solder_mask_expansion = ccad::millimeters(-0.01);
+  zero_allowed.solder_paste_margin_ratio = -1.0;
   require(ccad::validateDesignRules(zero_allowed).empty(),
           "KiCad-style board rules allow zero minima and small negative mask expansion");
+
+  auto nonfinite = zero_allowed;
+  nonfinite.solder_paste_margin_ratio = std::numeric_limits<double>::quiet_NaN();
+  require(hasField(ccad::validateDesignRules(nonfinite), "solder_paste_margin_ratio"),
+          "reject nonfinite paste ratio");
 
   ccad::DesignRules out_of_range = ccad::DesignRules{};
   out_of_range.copper_clearance = ccad::millimeters(25.01);

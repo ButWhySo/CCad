@@ -9,6 +9,7 @@ namespace ccad {
 class DesignRules;
 
 struct DesignRuleValidationError {
+    std::string code;
     std::string field;
     std::string message;
 };

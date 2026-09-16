@@ -1481,11 +1481,14 @@ int pcbCommand(const std::vector<std::string>& args) {
     if (subcommand == "set-rules") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--copper-clearance-mm", "--min-track-width-mm",
+                                 "--max-track-width-mm",
                                  "--min-via-annular-ring-mm", "--min-connection-mm",
-                                 "--min-via-diameter-mm", "--min-through-hole-drill-mm",
+                                 "--min-via-diameter-mm", "--max-via-diameter-mm", "--min-through-hole-drill-mm",
                                  "--min-microvia-diameter-mm", "--min-microvia-drill-mm",
                                  "--min-hole-to-hole-mm", "--hole-clearance-mm",
-                                 "--copper-edge-clearance-mm", "--silk-clearance-mm",
+                                 "--copper-edge-clearance-mm", "--silk-clearance-mm", "--min-text-height-mm",
+                                 "--min-track-angle-degrees", "--max-track-angle-degrees",
+                                 "--min-track-segment-length-mm", "--max-track-segment-length-mm",
                                  "--min-groove-width-mm", "--solder-mask-expansion-mm",
                                  "--solder-mask-min-width-mm",
                                  "--solder-mask-to-copper-clearance-mm",
@@ -1500,10 +1503,12 @@ int pcbCommand(const std::vector<std::string>& args) {
       ccad::DesignRules rules = board.design_rules;
       rules.copper_clearance = requirePositiveMillimeters(options, "--copper-clearance-mm");
       rules.min_track_width = requirePositiveMillimeters(options, "--min-track-width-mm");
+      setOptionalMillimeters(options, "--max-track-width-mm", rules.max_track_width);
       rules.min_via_annular_ring =
           requirePositiveMillimeters(options, "--min-via-annular-ring-mm");
       setOptionalMillimeters(options, "--min-connection-mm", rules.min_connection);
       setOptionalMillimeters(options, "--min-via-diameter-mm", rules.min_via_diameter);
+      setOptionalMillimeters(options, "--max-via-diameter-mm", rules.max_via_diameter);
       setOptionalMillimeters(options, "--min-through-hole-drill-mm",
                              rules.min_through_hole_drill);
       setOptionalMillimeters(options, "--min-microvia-diameter-mm",
@@ -1513,6 +1518,13 @@ int pcbCommand(const std::vector<std::string>& args) {
       setOptionalMillimeters(options, "--hole-clearance-mm", rules.hole_clearance);
       setOptionalMillimeters(options, "--copper-edge-clearance-mm", rules.copper_edge_clearance);
       setOptionalMillimeters(options, "--silk-clearance-mm", rules.silk_clearance);
+      setOptionalMillimeters(options, "--min-text-height-mm", rules.min_text_height);
+      if (options.contains("--min-track-angle-degrees"))
+        rules.min_track_angle_degrees = requireDoubleOption(options, "--min-track-angle-degrees");
+      if (options.contains("--max-track-angle-degrees"))
+        rules.max_track_angle_degrees = requireDoubleOption(options, "--max-track-angle-degrees");
+      setOptionalMillimeters(options, "--min-track-segment-length-mm", rules.min_track_segment_length);
+      setOptionalMillimeters(options, "--max-track-segment-length-mm", rules.max_track_segment_length);
       setOptionalMillimeters(options, "--min-groove-width-mm", rules.min_groove_width);
       setOptionalMillimeters(options, "--solder-mask-expansion-mm",
                              rules.solder_mask_expansion);
@@ -2041,7 +2053,7 @@ int pcbCommand(const std::vector<std::string>& args) {
     if (subcommand == "add-text") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--layer", "--text", "--x-mm", "--y-mm",
-                                 "--size-x-mm", "--size-y-mm", "--rotation-deg"});
+                                 "--size-x-mm", "--size-y-mm", "--rotation-deg", "--mirrored", "--stroke-width-mm"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
       ccad::Board& board = requireBoard(project);
@@ -2068,6 +2080,8 @@ int pcbCommand(const std::vector<std::string>& args) {
           .rotation_degrees = requireDoubleOption(options, "--rotation-deg"),
           .size = size,
       });
+      setOptionalBool(options, "--mirrored", board.texts.back().mirrored);
+      setOptionalMillimeters(options, "--stroke-width-mm", board.texts.back().stroke_width);
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
@@ -2489,18 +2503,38 @@ int pcbCommand(const std::vector<std::string>& args) {
     }
 
     if (subcommand == "update-teardrops") {
-      const std::map<std::string, std::string> options = parseOptions(args, 1, {"--file"});
+      const std::map<std::string, std::string> options = parseOptions(args, 1,
+          {"--file", "--enable-pads", "--enable-vias", "--curved", "--smd"});
       const std::string file = requireOption(options, "--file");
       ccad::Project project = loadProjectFile(file);
       ccad::Board& board = requireBoard(project);
-      
+      const auto flag = [&](const std::string& key, bool fallback) {
+        const auto it = options.find(key);
+        if (it == options.end()) return fallback;
+        if (it->second == "true") return true;
+        if (it->second == "false") return false;
+        throw std::runtime_error(key + " must be true or false");
+      };
+      // Parse all settings before changing the in-memory project.
+      const bool pads = flag("--enable-pads", false);
+      const bool vias = flag("--enable-vias", false);
+      ccad::TeardropGenerator::TeardropSettings settings;
+      settings.curvedEdges = flag("--curved", false);
+      settings.targetSMDPads = flag("--smd", false);
+      if (options.contains("--enable-pads"))
+        for (auto& pad : board.pads) pad.teardrops_enabled = pads;
+      if (options.contains("--enable-vias"))
+        for (auto& via : board.vias) via.teardrops_enabled = vias;
       ccad::TeardropGenerator generator(&board);
+      generator.setSettings(settings);
       generator.generateTeardrops();
 
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
       }
+      std::cout << "{\"teardrops\":" << board.teardrops.size()
+                << ",\"clearance_verified\":false,\"fabrication_export_supported\":false}\n";
       return 0;
     }
 

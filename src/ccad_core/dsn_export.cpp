@@ -126,7 +126,7 @@ std::string exportSpecctraDsn(const Project& project) {
       double local_x = dx * cos(angle) + dy * sin(angle);
       double local_y = -dx * sin(angle) + dy * cos(angle);
       
-      out << "      (pin " << quote("padstack_" + pad.id) << " " << quote(pad.pin_name) << " "
+      out << "      (pin " << quote("padstack_" + pad.id) << " " << pad.pin_name << " "
           << formatMm(static_cast<std::int64_t>(local_x)) << " " << formatMm(static_cast<std::int64_t>(local_y)) << ")\n";
     }
     out << "    )\n";

@@ -23,9 +23,11 @@ int main() {
       },
       .design_rules = ccad::DesignRules{.copper_clearance = ccad::millimeters(0.15),
                                         .min_track_width = ccad::millimeters(0.12),
+                                        .max_track_width = ccad::millimeters(0.40),
                                         .min_via_annular_ring = ccad::millimeters(0.08),
                                         .min_connection = ccad::millimeters(0.01),
                                         .min_via_diameter = ccad::millimeters(0.60),
+                                        .max_via_diameter = ccad::millimeters(1.20),
                                         .min_through_hole_drill = ccad::millimeters(0.35),
                                         .min_microvia_diameter = ccad::millimeters(0.20),
                                         .min_microvia_drill = ccad::millimeters(0.10),
@@ -107,7 +109,8 @@ int main() {
                                                         .y = ccad::millimeters(22)},
                                 .rotation_degrees = 90.0,
                                 .size = ccad::Size{.width = ccad::millimeters(1.5),
-                                                   .height = ccad::millimeters(1.5)}}},
+                                                   .height = ccad::millimeters(1.5)},
+                                .mirrored = true}},
       .zones = {ccad::BoardZone{
           .id = "Z_GND",
           .name = "GND pour",
@@ -314,12 +317,16 @@ int main() {
           "copper clearance rule round trips");
   require(loaded.boards[0].design_rules.min_track_width.nanometers == 120000,
           "minimum track width rule round trips");
+  require(loaded.boards[0].design_rules.max_track_width.nanometers == 400000,
+          "maximum track width rule round trips");
   require(loaded.boards[0].design_rules.min_via_annular_ring.nanometers == 80000,
           "minimum via annular ring rule round trips");
   require(loaded.boards[0].design_rules.min_connection.nanometers == 10000,
           "minimum connection rule round trips");
   require(loaded.boards[0].design_rules.min_via_diameter.nanometers == 600000,
           "minimum via diameter rule round trips");
+  require(loaded.boards[0].design_rules.max_via_diameter.nanometers == 1200000,
+          "maximum via diameter rule round trips");
   require(loaded.boards[0].design_rules.min_through_hole_drill.nanometers == 350000,
           "minimum through hole drill rule round trips");
   require(loaded.boards[0].design_rules.min_hole_to_hole.nanometers == 250000,
@@ -382,6 +389,7 @@ int main() {
           "board text rotation round trips");
   require(loaded.boards[0].texts.at(0).size.width.nanometers == 1500000,
           "board text size round trips");
+  require(loaded.boards[0].texts.at(0).mirrored, "board text mirror state round trips");
   require(loaded.boards[0].zones.size() == 1, "board zones round trip");
   require(loaded.boards[0].zones.at(0).id == "Z_GND", "board zone id round trips");
   require(loaded.boards[0].zones.at(0).name == "GND pour", "board zone name round trips");

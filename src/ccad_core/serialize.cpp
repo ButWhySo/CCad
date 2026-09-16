@@ -317,6 +317,8 @@ class JsonReader {
           board.targets = readBoardTargets();
         } else if (key == "zones") {
           board.zones = readBoardZones();
+        } else if (key == "teardrops") {
+          board.teardrops = readTeardrops();
         } else if (key == "groups") {
           board.groups = readBoardGroups();
         } else if (key == "reference_images") {
@@ -433,12 +435,16 @@ class JsonReader {
           rules.copper_clearance = nanometers(readInt64());
         } else if (key == "min_track_width_nm") {
           rules.min_track_width = nanometers(readInt64());
+        } else if (key == "max_track_width_nm") {
+          rules.max_track_width = nanometers(readInt64());
         } else if (key == "min_via_annular_ring_nm") {
           rules.min_via_annular_ring = nanometers(readInt64());
         } else if (key == "min_connection_nm") {
           rules.min_connection = nanometers(readInt64());
         } else if (key == "min_via_diameter_nm") {
           rules.min_via_diameter = nanometers(readInt64());
+        } else if (key == "max_via_diameter_nm") {
+          rules.max_via_diameter = nanometers(readInt64());
         } else if (key == "min_through_hole_drill_nm") {
           rules.min_through_hole_drill = nanometers(readInt64());
         } else if (key == "min_microvia_diameter_nm") {
@@ -453,6 +459,18 @@ class JsonReader {
           rules.copper_edge_clearance = nanometers(readInt64());
         } else if (key == "silk_clearance_nm") {
           rules.silk_clearance = nanometers(readInt64());
+          } else if (key == "min_text_height_nm") {
+          rules.min_text_height = nanometers(readInt64());
+        } else if (key == "min_text_thickness_nm") {
+          rules.min_text_thickness = nanometers(readInt64());
+        } else if (key == "min_track_angle_degrees") {
+          rules.min_track_angle_degrees = readDouble();
+        } else if (key == "max_track_angle_degrees") {
+          rules.max_track_angle_degrees = readDouble();
+        } else if (key == "min_track_segment_length_nm") {
+          rules.min_track_segment_length = nanometers(readInt64());
+        } else if (key == "max_track_segment_length_nm") {
+          rules.max_track_segment_length = nanometers(readInt64());
         } else if (key == "min_groove_width_nm") {
           rules.min_groove_width = nanometers(readInt64());
         } else if (key == "solder_mask_expansion_nm") {
@@ -860,6 +878,36 @@ class JsonReader {
     }
   }
 
+  std::vector<BoardTeardrop> readTeardrops() {
+    std::vector<BoardTeardrop> items;
+    expect('[');
+    if (consume(']')) return items;
+    while (true) {
+      BoardTeardrop item;
+      expect('{');
+      if (!consume('}')) {
+        while (true) {
+          const std::string key = readString();
+          expect(':');
+          if (key == "id") item.id = readString();
+          else if (key == "net_id") item.net_id = readString();
+          else if (key == "layer_id") item.layer_id = readString();
+          else if (key == "outline") item.outline = readPointArray();
+          else if (key == "locked") item.locked = readBool();
+          else if (key == "anchor_pad_id") item.anchor_pad_id = readString();
+          else if (key == "anchor_via_id") item.anchor_via_id = readString();
+          else if (key == "anchor_track_id") item.anchor_track_id = readString();
+          else throw std::runtime_error("unknown teardrop key: " + key);
+          if (consume('}')) break;
+          expect(',');
+        }
+      }
+      items.push_back(std::move(item));
+      if (consume(']')) return items;
+      expect(',');
+    }
+  }
+
   std::vector<Via> readVias() {
     std::vector<Via> vias;
     expect('[');
@@ -885,6 +933,8 @@ class JsonReader {
             via.drill = nanometers(readInt64());
           } else if (key == "locked") {
             via.locked = readBool();
+          } else if (key == "teardrops_enabled") {
+            via.teardrops_enabled = readBool();
           } else {
             throw std::runtime_error("unknown via key: " + key);
           }
@@ -1082,6 +1132,10 @@ class JsonReader {
             text.rotation_degrees = readDouble();
           } else if (key == "size") {
             text.size = readSize();
+          } else if (key == "mirrored") {
+            text.mirrored = readBool();
+          } else if (key == "stroke_width_nm") {
+            text.stroke_width = nanometers(readInt64());
           } else if (key == "locked") {
             text.locked = readBool();
           } else {
@@ -2889,12 +2943,16 @@ std::string dumpProjectJson(const Project& project) {
         << board.design_rules.copper_clearance.nanometers << ",\n";
     out << "      \"min_track_width_nm\": "
         << board.design_rules.min_track_width.nanometers << ",\n";
+    out << "      \"max_track_width_nm\": "
+        << board.design_rules.max_track_width.nanometers << ",\n";
     out << "      \"min_via_annular_ring_nm\": "
         << board.design_rules.min_via_annular_ring.nanometers << ",\n";
     out << "      \"min_connection_nm\": "
         << board.design_rules.min_connection.nanometers << ",\n";
     out << "      \"min_via_diameter_nm\": "
         << board.design_rules.min_via_diameter.nanometers << ",\n";
+    out << "      \"max_via_diameter_nm\": "
+        << board.design_rules.max_via_diameter.nanometers << ",\n";
     out << "      \"min_through_hole_drill_nm\": "
         << board.design_rules.min_through_hole_drill.nanometers << ",\n";
     out << "      \"min_microvia_diameter_nm\": "
@@ -2909,6 +2967,18 @@ std::string dumpProjectJson(const Project& project) {
         << board.design_rules.copper_edge_clearance.nanometers << ",\n";
     out << "      \"silk_clearance_nm\": "
         << board.design_rules.silk_clearance.nanometers << ",\n";
+    out << "      \"min_text_height_nm\": "
+        << board.design_rules.min_text_height.nanometers << ",\n";
+    out << "      \"min_text_thickness_nm\": "
+        << board.design_rules.min_text_thickness.nanometers << ",\n";
+    out << "      \"min_track_angle_degrees\": "
+        << board.design_rules.min_track_angle_degrees << ",\n";
+    out << "      \"max_track_angle_degrees\": "
+        << board.design_rules.max_track_angle_degrees << ",\n";
+    out << "      \"min_track_segment_length_nm\": "
+        << board.design_rules.min_track_segment_length.nanometers << ",\n";
+    out << "      \"max_track_segment_length_nm\": "
+        << board.design_rules.max_track_segment_length.nanometers << ",\n";
     out << "      \"min_groove_width_nm\": "
         << board.design_rules.min_groove_width.nanometers << ",\n";
     out << "      \"solder_mask_expansion_nm\": "
@@ -3125,6 +3195,12 @@ std::string dumpProjectJson(const Project& project) {
       out << "        \"rotation_degrees\": " << text.rotation_degrees << ",\n";
       out << "        \"size\": ";
       writeSize(out, 0, text.size);
+      if (text.mirrored) {
+        out << ",\n        \"mirrored\": true";
+      }
+      if (text.stroke_width.nanometers > 0) {
+        out << ",\n        \"stroke_width_nm\": " << text.stroke_width.nanometers;
+      }
       if (text.locked) {
         out << ",\n        \"locked\": true";
       }
@@ -3263,6 +3339,25 @@ std::string dumpProjectJson(const Project& project) {
       out << "      }" << (i + 1 == board.zones.size() ? "" : ",") << '\n';
     }
     out << "    ],\n";
+    out << "    \"teardrops\": [\n";
+    for (std::size_t i = 0; i < board.teardrops.size(); ++i) {
+      const auto& td = board.teardrops[i];
+      out << "      {\n";
+      writeField(out, 8, "id", td.id);
+      writeField(out, 8, "net_id", td.net_id);
+      writeField(out, 8, "layer_id", td.layer_id);
+      writeField(out, 8, "anchor_pad_id", td.anchor_pad_id);
+      writeField(out, 8, "anchor_via_id", td.anchor_via_id);
+      writeField(out, 8, "anchor_track_id", td.anchor_track_id);
+      out << "        \"locked\": " << (td.locked ? "true" : "false") << ",\n";
+      out << "        \"outline\": [\n";
+      for (std::size_t j = 0; j < td.outline.size(); ++j) {
+        writePoint(out, 10, td.outline[j]);
+        out << (j + 1 == td.outline.size() ? "" : ",") << '\n';
+      }
+      out << "        ]\n      }" << (i + 1 == board.teardrops.size() ? "" : ",") << '\n';
+    }
+    out << "    ],\n";
     out << "    \"vias\": [\n";
     for (std::size_t i = 0; i < board.vias.size(); ++i) {
       const Via& via = board.vias.at(i);
@@ -3274,6 +3369,9 @@ std::string dumpProjectJson(const Project& project) {
       out << ",\n";
       out << "        \"diameter_nm\": " << via.diameter.nanometers << ",\n";
       out << "        \"drill_nm\": " << via.drill.nanometers;
+      if (via.teardrops_enabled) {
+        out << ",\n        \"teardrops_enabled\": true";
+      }
       if (via.locked) {
         out << ",\n        \"locked\": true";
       }

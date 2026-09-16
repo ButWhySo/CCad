@@ -33,6 +33,7 @@ ccad::Board shiftedBoard() {
       .targets = {},
       .zones = {},
       .route_requests = {},
+      .teardrops = {},
   };
 }
 

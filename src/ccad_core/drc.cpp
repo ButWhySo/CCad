@@ -579,6 +579,23 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
             "PAD_GEOMETRY_OUTSIDE_BOARD", "Pad geometry extends outside board outline", pad.id));
       }
     }
+    if ((pad.type == "through_hole" || pad.type == "thru_hole") &&
+        (!isPositive(pad.padstack.drill.size.width) ||
+         !isPositive(pad.padstack.drill.size.height))) {
+      diagnostics.push_back(makeDiagnostic(
+          "PAD_THROUGH_HOLE_WITHOUT_DRILL",
+          "Through-hole pad must define a positive drill geometry", pad.id));
+    } else if ((pad.type == "through_hole" || pad.type == "thru_hole") &&
+               board.design_rules.min_through_hole_drill.nanometers > 0 &&
+               std::min(pad.padstack.drill.size.width.nanometers,
+                        pad.padstack.drill.size.height.nanometers) <
+                   board.design_rules.min_through_hole_drill.nanometers) {
+      diagnostics.push_back(makeDiagnostic(
+          "PAD_DRILL_BELOW_MINIMUM",
+          "Through-hole pad drill is below configured minimum " +
+              std::to_string(board.design_rules.min_through_hole_drill.nanometers) + " nm",
+          pad.id));
+    }
     if (pad.net_id.empty()) {
       diagnostics.push_back(makeWarning("UNCONNECTED_PAD", "Pad has no assigned net", pad.id));
     } else if (has_schematic && !hasNet(project, pad.net_id)) {
@@ -593,6 +610,18 @@ void checkPads(const Project& project, const Board& board, std::vector<Diagnosti
       }
     }
     if (pad_size_positive) {
+      const long double edge_clearance = static_cast<long double>(
+          board.design_rules.copper_edge_clearance.nanometers);
+      if (edge_clearance > 0.0L) {
+        for (const Point& corner : padCorners(pad)) {
+          if (distanceToBoardEdge(board, corner) < edge_clearance) {
+            diagnostics.push_back(makeDiagnostic(
+                "PAD_EDGE_CLEARANCE", "Pad copper is closer to board edge than configured clearance",
+                pad.id));
+            break;
+          }
+        }
+      }
       for (const Keepout& keepout : board.keepouts) {
         if (polygonIntersectsRect(padCorners(pad), keepout.area)) {
           diagnostics.push_back(
@@ -655,6 +684,12 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
               std::to_string(board.design_rules.min_via_diameter.nanometers) + " nm",
           via.id));
     }
+    if (via_size_positive && board.design_rules.max_via_diameter.nanometers > 0 &&
+        via.diameter.nanometers > board.design_rules.max_via_diameter.nanometers) {
+      diagnostics.push_back(makeDiagnostic("VIA_DIAMETER_ABOVE_MAXIMUM",
+          "Via diameter is above configured maximum " +
+              std::to_string(board.design_rules.max_via_diameter.nanometers) + " nm", via.id));
+    }
     if (via_size_positive && board.design_rules.min_through_hole_drill.nanometers > 0 &&
         via.drill.nanometers < board.design_rules.min_through_hole_drill.nanometers) {
       diagnostics.push_back(makeDiagnostic(
@@ -681,6 +716,29 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
               makeDiagnostic("VIA_IN_KEEPOUT", "Via geometry intersects keepout " + keepout.id,
                              via.id));
         }
+      }
+    }
+  }
+}
+
+void checkHoleToHole(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  const auto holeRadius = [](const Length& diameter) {
+    return static_cast<long double>(diameter.nanometers) / 2.0L;
+  };
+  for (std::size_t i = 0; i < board.vias.size(); ++i) {
+    const Via& a = board.vias[i];
+    if (!isPositive(a.drill) || !isPositive(a.diameter)) continue;
+    for (std::size_t j = i + 1; j < board.vias.size(); ++j) {
+      const Via& b = board.vias[j];
+      if (!isPositive(b.drill) || !isPositive(b.diameter) || a.net_id == b.net_id) continue;
+      const long double centre_distance = distanceBetweenPoints(a.position, b.position);
+      const long double edge_clearance = centre_distance - holeRadius(a.drill) - holeRadius(b.drill);
+      if (edge_clearance <= 0.0L) {
+        diagnostics.push_back(makeDiagnostic("DRILLED_HOLES_COLOCATED",
+            "Different-net drilled holes are colocated", b.id));
+      } else if (edge_clearance < board.design_rules.min_hole_to_hole.nanometers) {
+        diagnostics.push_back(makeDiagnostic("DRILLED_HOLES_TOO_CLOSE",
+            "Different-net drilled holes are closer than configured clearance", b.id));
       }
     }
   }
@@ -732,6 +790,12 @@ void checkTracks(const Project& project, const Board& board, std::vector<Diagnos
             "Track width is below configured minimum " +
                 std::to_string(board.design_rules.min_track_width.nanometers) + " nm",
             track.id));
+      }
+      if (board.design_rules.max_track_width.nanometers > 0 &&
+          track.width.nanometers > board.design_rules.max_track_width.nanometers) {
+        diagnostics.push_back(makeDiagnostic("TRACK_TOO_WIDE",
+            "Track width is above configured maximum " +
+                std::to_string(board.design_rules.max_track_width.nanometers) + " nm", track.id));
       }
       const long double half_width = static_cast<long double>(track.width.nanometers) / 2.0L;
       if (distanceToBoardEdge(board, track.start) < half_width ||
@@ -834,10 +898,30 @@ void checkBoardTexts(const Board& board, std::vector<Diagnostic>& diagnostics) {
                                            "Board text width and height must be positive",
                                            text.id));
     }
+    if (board.design_rules.min_text_height.nanometers > 0 &&
+        text.size.height.nanometers < board.design_rules.min_text_height.nanometers) {
+      diagnostics.push_back(makeDiagnostic("TEXT_HEIGHT_BELOW_MINIMUM",
+                                           "Board text height is below configured minimum",
+                                           text.id));
+    }
+    if (board.design_rules.min_text_thickness.nanometers > 0 &&
+        (text.stroke_width.nanometers <= 0 ||
+         text.stroke_width.nanometers < board.design_rules.min_text_thickness.nanometers)) {
+      diagnostics.push_back(makeDiagnostic("TEXT_THICKNESS_BELOW_MINIMUM",
+                                           "Board text stroke width is below configured minimum",
+                                           text.id));
+    }
     if (!containsPoint(board, text.position)) {
       diagnostics.push_back(makeDiagnostic("BOARD_TEXT_OUTSIDE_BOARD",
                                            "Board text origin is outside board outline",
                                            text.id));
+    }
+    const bool back_layer = text.layer_id.starts_with("B.");
+    if ((back_layer && !text.mirrored) || (!back_layer && text.mirrored)) {
+      diagnostics.push_back(makeDiagnostic(
+          back_layer ? "NONMIRRORED_TEXT_ON_BACK_LAYER" : "MIRRORED_TEXT_ON_FRONT_LAYER",
+          back_layer ? "Back-layer text must be mirrored" : "Front-layer text must not be mirrored",
+          text.id));
     }
   }
 }
@@ -1026,10 +1110,9 @@ void checkBoardOutline(const Board& board, std::vector<Diagnostic>& diagnostics)
 }
 
 void checkDesignRules(const Board& board, std::vector<Diagnostic>& diagnostics) {
-  (void)board; (void)diagnostics;
-  // for (const auto& error : validateDesignRules(board.design_rules)) {
-  //  diagnostics.push_back(makeDiagnostic(error.code, error.message, "board.design_rules"));
-  // }
+  for (const auto& error : validateDesignRules(board.design_rules)) {
+    diagnostics.push_back(makeDiagnostic(error.code, error.message, "board.design_rules"));
+  }
 }
 
 void checkLayers(const Board& board, std::vector<Diagnostic>& diagnostics) {
@@ -1298,6 +1381,253 @@ void checkCopperClearance(const Board& board, std::vector<Diagnostic>& diagnosti
   }
 }
 
+void checkTrackAngles(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  const double minimum = board.design_rules.min_track_angle_degrees;
+  const double maximum = board.design_rules.max_track_angle_degrees;
+  if (minimum <= 0.0 && maximum <= 0.0) return;
+  for (std::size_t left = 0; left < board.tracks.size(); ++left) {
+    for (std::size_t right = left + 1; right < board.tracks.size(); ++right) {
+      const TrackSegment& first = board.tracks.at(left);
+      const TrackSegment& second = board.tracks.at(right);
+      if (!hasValidTrackGeometry(first) || !hasValidTrackGeometry(second) ||
+          first.net_id.empty() || first.net_id != second.net_id ||
+          first.layer_id != second.layer_id) continue;
+      Point vertex{};
+      Point first_other{};
+      Point second_other{};
+      if (samePoint(first.start, second.start)) {
+        vertex = first.start; first_other = first.end; second_other = second.end;
+      } else if (samePoint(first.start, second.end)) {
+        vertex = first.start; first_other = first.end; second_other = second.start;
+      } else if (samePoint(first.end, second.start)) {
+        vertex = first.end; first_other = first.start; second_other = second.end;
+      } else if (samePoint(first.end, second.end)) {
+        vertex = first.end; first_other = first.start; second_other = second.start;
+      } else continue;
+      const long double ax = static_cast<long double>(first_other.x.nanometers - vertex.x.nanometers);
+      const long double ay = static_cast<long double>(first_other.y.nanometers - vertex.y.nanometers);
+      const long double bx = static_cast<long double>(second_other.x.nanometers - vertex.x.nanometers);
+      const long double by = static_cast<long double>(second_other.y.nanometers - vertex.y.nanometers);
+      const long double lengths = std::hypotl(ax, ay) * std::hypotl(bx, by);
+      if (lengths <= 0.0L) continue;
+      const long double cosine = std::clamp((ax * bx + ay * by) / lengths, -1.0L, 1.0L);
+      const double angle = static_cast<double>(std::acos(cosine) * 180.0L / std::acos(-1.0L));
+      if ((minimum > 0.0 && angle < minimum) || (maximum > 0.0 && angle > maximum))
+        diagnostics.push_back(makeDiagnostic("TRACK_ANGLE", "Connected track angle violates configured range", second.id));
+    }
+  }
+}
+
+void checkTrackSegmentLengths(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  const auto minimum = board.design_rules.min_track_segment_length.nanometers;
+  const auto maximum = board.design_rules.max_track_segment_length.nanometers;
+  if (minimum <= 0 && maximum <= 0) return;
+  for (const TrackSegment& track : board.tracks) {
+    if (!hasValidTrackGeometry(track)) continue;
+    const auto length = static_cast<std::int64_t>(std::llround(
+        std::hypotl(static_cast<long double>(track.end.x.nanometers - track.start.x.nanometers),
+                    static_cast<long double>(track.end.y.nanometers - track.start.y.nanometers))));
+    if ((minimum > 0 && length < minimum) || (maximum > 0 && length > maximum))
+      diagnostics.push_back(makeDiagnostic("TRACK_SEGMENT_LENGTH",
+                                           "Track segment length violates configured range",
+                                           track.id));
+  }
+  for (const TrackArc& arc : board.track_arcs) {
+    if (arc.id.empty()) continue;
+    const long double ax = static_cast<long double>(arc.start.x.nanometers);
+    const long double ay = static_cast<long double>(arc.start.y.nanometers);
+    const long double bx = static_cast<long double>(arc.mid.x.nanometers);
+    const long double by = static_cast<long double>(arc.mid.y.nanometers);
+    const long double cx = static_cast<long double>(arc.end.x.nanometers);
+    const long double cy = static_cast<long double>(arc.end.y.nanometers);
+    const long double cross = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+    const long double denom = 2.0L * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+    long double length = 0.0L;
+    if (std::abs(cross) < 1e-9L || std::abs(denom) < 1e-9L) {
+      length = std::hypotl(bx - ax, by - ay) + std::hypotl(cx - bx, cy - by);
+    } else {
+      const long double center_x = ((ax * ax + ay * ay) * (by - cy) +
+                                    (bx * bx + by * by) * (cy - ay) +
+                                    (cx * cx + cy * cy) * (ay - by)) / denom;
+      const long double center_y = ((ax * ax + ay * ay) * (cx - bx) +
+                                    (bx * bx + by * by) * (ax - cx) +
+                                    (cx * cx + cy * cy) * (bx - ax)) / denom;
+      const long double radius = std::hypotl(ax - center_x, ay - center_y);
+      const long double start_angle = std::atan2(ay - center_y, ax - center_x);
+      const long double mid_angle = std::atan2(by - center_y, bx - center_x);
+      const long double end_angle = std::atan2(cy - center_y, cx - center_x);
+      const long double direction = cross > 0.0L ? 1.0L : -1.0L;
+      long double sweep = direction > 0.0L ? end_angle - start_angle : start_angle - end_angle;
+      long double mid_sweep = direction > 0.0L ? mid_angle - start_angle : start_angle - mid_angle;
+      constexpr long double two_pi = 6.283185307179586476925286766559L;
+      while (sweep < 0.0L) sweep += two_pi;
+      while (mid_sweep < 0.0L) mid_sweep += two_pi;
+      if (mid_sweep > sweep) sweep += two_pi;
+      length = radius * sweep;
+    }
+    const auto length_nm = static_cast<std::int64_t>(std::llround(length));
+    if ((minimum > 0 && length_nm < minimum) || (maximum > 0 && length_nm > maximum))
+      diagnostics.push_back(makeDiagnostic("TRACK_SEGMENT_LENGTH",
+                                           "Track arc length violates configured range", arc.id));
+  }
+}
+
+void checkSchematicFootprintParity(const Project& project, const Board& board,
+                                   std::vector<Diagnostic>& diagnostics) {
+  const Schematic* schematic = primarySchematic(project);
+  if (schematic == nullptr || board.footprints.empty()) return;
+  std::set<std::string> board_refs;
+  for (const BoardFootprint& footprint : board.footprints) {
+    if (footprint.reference.empty()) continue;
+    if (!board_refs.insert(footprint.reference).second) {
+      diagnostics.push_back(makeDiagnostic("DUPLICATE_FOOTPRINT",
+                                           "Board contains duplicate footprint reference",
+                                           footprint.reference));
+    }
+  }
+  // Imported/hand-authored boards may carry pads before optional footprint metadata.
+  // Their component_id still proves physical footprint presence for parity purposes.
+  for (const Pad& pad : board.pads) {
+    if (!pad.component_id.empty()) board_refs.insert(pad.component_id);
+  }
+  std::set<std::string> schematic_refs;
+  for (const SchSymbol& symbol : schematic->symbols) {
+    const std::string reference = symbol.reference.empty() ? symbol.id : symbol.reference;
+    if (reference.empty() || reference.ends_with("?")) continue;
+    schematic_refs.insert(reference);
+    if (symbol.on_board && !board_refs.contains(reference)) {
+      diagnostics.push_back(makeDiagnostic("MISSING_FOOTPRINT",
+                                           "Schematic component has no board footprint",
+                                           reference));
+    } else {
+      const auto footprint = std::find_if(board.footprints.begin(), board.footprints.end(),
+                                          [&reference](const BoardFootprint& candidate) {
+                                            return candidate.reference == reference;
+                                          });
+      if (footprint != board.footprints.end() && symbol.in_bom == footprint->exclude_from_bom) {
+        diagnostics.push_back(makeDiagnostic("FOOTPRINT_BOM_PARITY",
+                                             "Schematic BOM inclusion disagrees with board footprint exclusion",
+                                             reference));
+      }
+      if (footprint != board.footprints.end() && symbol.on_board) {
+        for (const SchPin& pin : symbol.pins) {
+          const std::string pin_key = pin.number.empty() ? pin.name : pin.number;
+          if (pin_key.empty()) continue;
+          const bool has_pad = std::any_of(board.pads.begin(), board.pads.end(),
+                                           [&reference, &pin_key](const Pad& pad) {
+                                             return pad.component_id == reference &&
+                                                    pad.pin_name == pin_key;
+                                           });
+          if (!has_pad) {
+            diagnostics.push_back(makeDiagnostic("MISSING_PAD",
+                                                 "Board footprint has no pad for schematic pin",
+                                                 reference + "." + pin_key));
+          }
+        }
+      }
+    }
+  }
+  for (const BoardFootprint& footprint : board.footprints) {
+    if (!footprint.reference.empty() && !schematic_refs.contains(footprint.reference)) {
+      diagnostics.push_back(makeDiagnostic("EXTRA_FOOTPRINT",
+                                           "Board footprint has no schematic component",
+                                           footprint.reference));
+    }
+  }
+}
+
+void checkSilkClearance(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  const long double clearance = static_cast<long double>(board.design_rules.silk_clearance.nanometers);
+  if (clearance <= 0) return;
+  for (const BoardText& text : board.texts) {
+    if (text.layer_id != "F.SilkS" && text.layer_id != "B.SilkS") continue;
+    const Rect text_area{.origin = {.x = nanometers(text.position.x.nanometers - text.size.width.nanometers / 2),
+                                    .y = nanometers(text.position.y.nanometers - text.size.height.nanometers / 2)},
+                         .size = text.size};
+    for (const Point& corner : rectCorners(text_area)) {
+      if (distanceToBoardEdge(board, corner) < clearance) {
+        diagnostics.push_back(makeDiagnostic("SILK_CLEARANCE",
+                                             "Silkscreen text is too close to board edge",
+                                             text.id));
+        break;
+      }
+    }
+    for (const Pad& pad : board.pads) {
+      if (!hasValidPadGeometry(pad) || !padOnCopperLayer(board, pad)) continue;
+      if (distanceBetweenPolygons(rectCorners(text_area), padCorners(pad)) < clearance) {
+        diagnostics.push_back(makeDiagnostic("SILK_CLEARANCE",
+                                             "Silkscreen text is too close to copper pad",
+                                             text.id));
+      }
+    }
+    for (const Via& via : board.vias) {
+      if (!hasValidViaGeometry(via)) continue;
+      if (distanceBetweenPoints(via.position, text.position) -
+              static_cast<long double>(via.diameter.nanometers) / 2.0L < clearance) {
+        diagnostics.push_back(makeDiagnostic("SILK_CLEARANCE",
+                                             "Silkscreen text is too close to copper via",
+                                             text.id));
+      }
+    }
+    for (const TrackSegment& track : board.tracks) {
+      if (!hasValidTrackGeometry(track) || !isCopperLayer(board, track.layer_id)) continue;
+      const long double edge_distance =
+          distanceSegmentToPolygon(track.start, track.end, rectCorners(text_area)) -
+          static_cast<long double>(track.width.nanometers) / 2.0L;
+      if (edge_distance < clearance) {
+        diagnostics.push_back(makeDiagnostic("SILK_CLEARANCE",
+                                             "Silkscreen text is too close to copper track",
+                                             text.id));
+      }
+    }
+    for (const BoardZone& zone : board.zones) {
+      if (zone.outline.size() < 3) continue;
+      const std::vector<Point> text_polygon = rectCorners(text_area);
+      bool inside = pointInPolygon(text.position, zone.outline);
+      for (const Point& corner : text_polygon) inside = inside || pointInPolygon(corner, zone.outline);
+      if (inside || distanceBetweenPolygons(text_polygon, zone.outline) < clearance) {
+        diagnostics.push_back(makeDiagnostic("SILK_CLEARANCE",
+                                             "Silkscreen text is too close to copper zone",
+                                             text.id));
+      }
+    }
+  }
+}
+
+void checkSolderMaskBridges(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  const long double min_web = static_cast<long double>(board.design_rules.solder_mask_min_width.nanometers);
+  if (min_web <= 0) return;
+  auto maskCorners = [&board](const Pad& pad) {
+    std::vector<Point> corners = padCorners(pad);
+    const long double expansion = static_cast<long double>(board.design_rules.solder_mask_expansion.nanometers);
+    long double min_x = corners.front().x.nanometers, max_x = min_x;
+    long double min_y = corners.front().y.nanometers, max_y = min_y;
+    for (const Point& point : corners) {
+      min_x = std::min(min_x, static_cast<long double>(point.x.nanometers));
+      max_x = std::max(max_x, static_cast<long double>(point.x.nanometers));
+      min_y = std::min(min_y, static_cast<long double>(point.y.nanometers));
+      max_y = std::max(max_y, static_cast<long double>(point.y.nanometers));
+    }
+    return rectCorners(Rect{.origin = {.x = nanometers(static_cast<std::int64_t>(min_x - expansion)),
+                                       .y = nanometers(static_cast<std::int64_t>(min_y - expansion))},
+                            .size = {.width = nanometers(static_cast<std::int64_t>(max_x - min_x + 2 * expansion)),
+                                     .height = nanometers(static_cast<std::int64_t>(max_y - min_y + 2 * expansion))}});
+  };
+  for (std::size_t i = 0; i < board.pads.size(); ++i) {
+    for (std::size_t j = i + 1; j < board.pads.size(); ++j) {
+      const Pad& left = board.pads.at(i); const Pad& right = board.pads.at(j);
+      if (!hasValidPadGeometry(left) || !hasValidPadGeometry(right) ||
+          !differentNonEmptyNets(left.net_id, right.net_id) ||
+          !padsShareCopperLayer(board, left, right)) continue;
+      if (distanceBetweenPolygons(maskCorners(left), maskCorners(right)) < min_web) {
+        diagnostics.push_back(makeDiagnostic("SOLDERMASK_BRIDGE",
+                                             "Different-net solder mask apertures are too close",
+                                             right.id));
+      }
+    }
+  }
+}
+
 }  // namespace
 
 std::vector<Diagnostic> runDrc(const Project& project) {
@@ -1313,15 +1643,26 @@ std::vector<Diagnostic> runDrc(const Project& project) {
   checkLayers(board, diagnostics);
   checkPads(project, board, diagnostics);
   checkVias(project, board, diagnostics);
+  checkHoleToHole(board, diagnostics);
   checkTracks(project, board, diagnostics);
   checkBoardGraphics(board, diagnostics);
   checkBoardTexts(board, diagnostics);
+  checkSchematicFootprintParity(project, board, diagnostics);
   checkBoardZones(project, board, diagnostics);
   checkRouteRequests(project, board, diagnostics);
   checkPlacementRegions(board, diagnostics);
   checkKeepouts(board, diagnostics);
   checkPhysicalObjectIds(board, diagnostics);
   checkCopperClearance(board, diagnostics);
+  checkTrackAngles(board, diagnostics);
+  checkTrackSegmentLengths(board, diagnostics);
+  checkSilkClearance(board, diagnostics);
+  checkSolderMaskBridges(board, diagnostics);
+  if (!board.teardrops.empty()) {
+    diagnostics.push_back(makeWarning("TEARDROP_CLEARANCE_UNVERIFIED",
+        "Teardrop copper clearance and fabrication export are not yet supported; "
+        "this DRC result does not certify teardrop manufacturability.", board.teardrops.front().id));
+  }
   return diagnostics;
 }
 

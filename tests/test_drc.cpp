@@ -349,6 +349,12 @@ int main() {
   require(!hasCode(ccad::runDrc(relaxed_via_diameter), "VIA_DIAMETER_BELOW_MINIMUM"),
           "drc obeys configured minimum via diameter");
 
+  ccad::Project wide_via = validBoardProject();
+  wide_via.boards[0].design_rules.max_via_diameter = ccad::millimeters(0.70);
+  wide_via.boards[0].vias.at(0).diameter = ccad::millimeters(0.90);
+  require(hasCode(ccad::runDrc(wide_via), "VIA_DIAMETER_ABOVE_MAXIMUM"),
+          "drc reports via above configured maximum");
+
   ccad::Project via_drill_below_minimum = validBoardProject();
   via_drill_below_minimum.boards[0].design_rules.min_through_hole_drill =
       ccad::millimeters(0.50);
@@ -381,6 +387,12 @@ int main() {
   relaxed_track_width.boards[0].design_rules.min_track_width = ccad::millimeters(0.08);
   require(!hasCode(ccad::runDrc(relaxed_track_width), "TRACK_TOO_NARROW"),
           "drc obeys configured minimum track width");
+
+  ccad::Project wide_track = validBoardProject();
+  wide_track.boards[0].design_rules.max_track_width = ccad::millimeters(0.30);
+  wide_track.boards[0].tracks.at(0).width = ccad::millimeters(0.40);
+  require(hasCode(ccad::runDrc(wide_track), "TRACK_TOO_WIDE"),
+          "drc reports track above configured maximum");
 
   ccad::Project track_geometry_outside = validBoardProject();
   track_geometry_outside.boards[0].tracks.at(0).start =
@@ -421,6 +433,121 @@ int main() {
                          .height = ccad::millimeters(1.5)}});
   require(ccad::runDrc(valid_board_graphic_text).empty(),
           "valid board graphic and text have no drc diagnostics");
+  ccad::Project short_text = boardOnlyProject();
+  short_text.boards[0].design_rules.min_text_height = ccad::millimeters(1.0);
+  short_text.boards[0].texts.push_back(ccad::BoardText{
+      .id = "TXT_MIN", .layer_id = "F.SilkS", .text = "A",
+      .position = ccad::Point{.x = ccad::millimeters(10), .y = ccad::millimeters(10)},
+      .size = ccad::Size{.width = ccad::millimeters(1.0), .height = ccad::millimeters(0.5)}});
+  require(hasCode(ccad::runDrc(short_text), "TEXT_HEIGHT_BELOW_MINIMUM"),
+          "text below configured minimum height is diagnosed");
+  ccad::Project thin_text = valid_board_graphic_text;
+  thin_text.boards[0].design_rules.min_text_thickness = ccad::millimeters(0.15);
+  thin_text.boards[0].texts.at(0).stroke_width = ccad::millimeters(0.10);
+  require(hasCode(ccad::runDrc(thin_text), "TEXT_THICKNESS_BELOW_MINIMUM"),
+          "text below configured minimum thickness is diagnosed");
+  ccad::Project front_mirrored = valid_board_graphic_text;
+  front_mirrored.boards[0].texts.at(0).mirrored = true;
+  require(hasCode(ccad::runDrc(front_mirrored), "MIRRORED_TEXT_ON_FRONT_LAYER"),
+          "mirrored front text is diagnosed");
+  ccad::Project back_unmirrored = valid_board_graphic_text;
+  back_unmirrored.boards[0].texts.at(0).layer_id = "B.SilkS";
+  require(hasCode(ccad::runDrc(back_unmirrored), "NONMIRRORED_TEXT_ON_BACK_LAYER"),
+          "unmirrored back text is diagnosed");
+  ccad::Project acute_track_angle = boardOnlyProject();
+  acute_track_angle.boards[0].design_rules.min_track_angle_degrees = 150.0;
+  acute_track_angle.boards[0].tracks.push_back(ccad::TrackSegment{
+      .id = "T_ANGLE", .net_id = "N1", .layer_id = "F.Cu",
+      .start = ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(9)},
+      .end = ccad::Point{.x = ccad::millimeters(12), .y = ccad::millimeters(9)},
+      .width = ccad::millimeters(0.25)});
+  require(hasCode(ccad::runDrc(acute_track_angle), "TRACK_ANGLE"),
+          "connected track angle outside minimum is diagnosed");
+  ccad::Project short_segment = boardOnlyProject();
+  short_segment.boards[0].design_rules.min_track_segment_length = ccad::millimeters(4.0);
+  short_segment.boards[0].tracks.push_back(ccad::TrackSegment{
+      .id = "T_SHORT", .net_id = "N1", .layer_id = "F.Cu",
+      .start = ccad::Point{.x = ccad::millimeters(15), .y = ccad::millimeters(15)},
+      .end = ccad::Point{.x = ccad::millimeters(16), .y = ccad::millimeters(15)},
+      .width = ccad::millimeters(0.25)});
+  require(hasCode(ccad::runDrc(short_segment), "TRACK_SEGMENT_LENGTH"),
+          "short track segment is diagnosed");
+  ccad::Project long_arc = boardOnlyProject();
+  long_arc.boards[0].design_rules.max_track_segment_length = ccad::millimeters(2.0);
+  long_arc.boards[0].track_arcs.push_back(ccad::TrackArc{
+      .id = "A_LONG", .net_id = "N1", .layer_id = "F.Cu",
+      .start = ccad::Point{.x = ccad::millimeters(10), .y = ccad::millimeters(10)},
+      .mid = ccad::Point{.x = ccad::millimeters(11), .y = ccad::millimeters(11)},
+      .end = ccad::Point{.x = ccad::millimeters(12), .y = ccad::millimeters(10)},
+      .width = ccad::millimeters(0.25)});
+  require(hasCode(ccad::runDrc(long_arc), "TRACK_SEGMENT_LENGTH"),
+          "long track arc is diagnosed");
+
+  ccad::Project silk_pad_clearance = valid_board_graphic_text;
+  silk_pad_clearance.boards[0].design_rules.silk_clearance = ccad::millimeters(0.2);
+  silk_pad_clearance.boards[0].texts.at(0).position =
+      silk_pad_clearance.boards[0].pads.at(0).position;
+  require(hasCode(ccad::runDrc(silk_pad_clearance), "SILK_CLEARANCE"),
+          "drc reports silkscreen text too close to copper pad");
+  ccad::Project silk_via_clearance = valid_board_graphic_text;
+  silk_via_clearance.boards[0].design_rules.silk_clearance = ccad::millimeters(0.2);
+  silk_via_clearance.boards[0].texts.at(0).position = silk_via_clearance.boards[0].vias.at(0).position;
+  require(hasCode(ccad::runDrc(silk_via_clearance), "SILK_CLEARANCE"),
+          "drc reports silkscreen text too close to copper via");
+  ccad::Project silk_track_clearance = valid_board_graphic_text;
+  silk_track_clearance.boards[0].design_rules.silk_clearance = ccad::millimeters(0.2);
+  silk_track_clearance.boards[0].texts.at(0).position =
+      ccad::Point{.x = ccad::millimeters(6), .y = ccad::millimeters(6)};
+  require(hasCode(ccad::runDrc(silk_track_clearance), "SILK_CLEARANCE"),
+          "drc reports silkscreen text too close to copper track");
+  ccad::Project silk_edge_clearance = valid_board_graphic_text;
+  silk_edge_clearance.boards[0].design_rules.silk_clearance = ccad::millimeters(0.2);
+  silk_edge_clearance.boards[0].texts.at(0).position =
+      ccad::Point{.x = ccad::millimeters(0.5), .y = ccad::millimeters(0.5)};
+  require(hasCode(ccad::runDrc(silk_edge_clearance), "SILK_CLEARANCE"),
+          "drc reports silkscreen text too close to board edge");
+  ccad::Project silk_zone_clearance = valid_board_graphic_text;
+  silk_zone_clearance.boards[0].design_rules.silk_clearance = ccad::millimeters(0.2);
+  silk_zone_clearance.boards[0].texts.at(0).position =
+      ccad::Point{.x = ccad::millimeters(10), .y = ccad::millimeters(10)};
+  require(hasCode(ccad::runDrc(silk_zone_clearance), "SILK_CLEARANCE"),
+          "drc reports silkscreen text over copper zone");
+
+  ccad::Project missing_footprint = validBoardProject();
+  missing_footprint.schematics[0].symbols.push_back(
+      ccad::SchSymbol{.id = "U2", .reference = "U2"});
+  missing_footprint.boards[0].footprints.push_back(
+      ccad::BoardFootprint{.reference = "R1", .footprint_name = "0603"});
+  require(hasCode(ccad::runDrc(missing_footprint), "MISSING_FOOTPRINT"),
+          "drc reports schematic component missing board footprint");
+  ccad::Project extra_footprint = validBoardProject();
+  extra_footprint.boards[0].footprints.push_back(
+      ccad::BoardFootprint{.reference = "R1", .footprint_name = "0603"});
+  require(hasCode(ccad::runDrc(extra_footprint), "EXTRA_FOOTPRINT"),
+          "drc reports board footprint missing schematic component");
+  ccad::Project bom_parity = validBoardProject();
+  bom_parity.boards[0].footprints.push_back(
+      ccad::BoardFootprint{.reference = "U1", .exclude_from_bom = true});
+  require(hasCode(ccad::runDrc(bom_parity), "FOOTPRINT_BOM_PARITY"),
+          "drc reports schematic and footprint BOM parity mismatch");
+  ccad::Project missing_pad = validBoardProject();
+  missing_pad.boards[0].footprints.push_back(ccad::BoardFootprint{.reference = "U1"});
+  missing_pad.schematics[0].symbols.front().pins.push_back(
+      ccad::SchPin{.name = "2", .number = "2"});
+  require(hasCode(ccad::runDrc(missing_pad), "MISSING_PAD"),
+          "drc reports schematic pin missing from board footprint");
+  ccad::Project schematic_only = validBoardProject();
+  schematic_only.schematics[0].symbols.front().on_board = false;
+  require(!hasCode(ccad::runDrc(schematic_only), "MISSING_FOOTPRINT"),
+          "drc allows schematic-only component without board footprint");
+  ccad::Project mask_bridge = boardOnlyProject();
+  mask_bridge.boards[0].design_rules.solder_mask_min_width = ccad::millimeters(0.1);
+  mask_bridge.boards[0].design_rules.solder_mask_expansion = ccad::millimeters(0.05);
+  ccad::Pad mask_pad = mask_bridge.boards[0].pads.front();
+  mask_pad.id = "P2"; mask_pad.net_id = "N2"; mask_pad.position.x = ccad::millimeters(5.8);
+  mask_bridge.boards[0].pads.push_back(mask_pad);
+  require(hasCode(ccad::runDrc(mask_bridge), "SOLDERMASK_BRIDGE"),
+          "drc reports different-net solder mask bridge");
 
   ccad::Project empty_graphic_id = valid_board_graphic_text;
   empty_graphic_id.boards[0].graphics.at(0).id.clear();
@@ -1042,4 +1169,31 @@ int main() {
   require(!hasDiagnosticForObject(ccad::runDrc(invalid_via_size_clearance),
                                   "COPPER_CLEARANCE", "V_BAD"),
           "drc does not report copper clearance for invalid via geometry");
+
+  ccad::Project through_hole_without_drill = validBoardProject();
+  through_hole_without_drill.boards[0].pads[0].type = "through_hole";
+  require(hasDiagnosticForObject(ccad::runDrc(through_hole_without_drill),
+                                 "PAD_THROUGH_HOLE_WITHOUT_DRILL", "P1"),
+          "drc reports through-hole pad without drill geometry");
+
+  ccad::Project pad_drill_below_minimum = validBoardProject();
+  pad_drill_below_minimum.boards[0].pads[0].type = "through_hole";
+  pad_drill_below_minimum.boards[0].pads[0].padstack.drill.size.width = ccad::millimeters(0.2);
+  pad_drill_below_minimum.boards[0].pads[0].padstack.drill.size.height = ccad::millimeters(0.2);
+  pad_drill_below_minimum.boards[0].design_rules.min_through_hole_drill = ccad::millimeters(0.3);
+  require(hasDiagnosticForObject(ccad::runDrc(pad_drill_below_minimum),
+                                 "PAD_DRILL_BELOW_MINIMUM", "P1"),
+          "drc reports through-hole pad drill below configured minimum");
+
+  ccad::Project pad_edge = validBoardProject();
+  pad_edge.boards[0].pads[0].position.x = ccad::millimeters(1.0);
+  require(hasDiagnosticForObject(ccad::runDrc(pad_edge), "PAD_EDGE_CLEARANCE", "P1"),
+          "drc reports pad copper too close to board edge");
+
+  ccad::Project close_holes = validBoardProject();
+  close_holes.boards[0].vias.push_back(ccad::Via{
+      .id = "V2", .net_id = "N2", .position = ccad::Point{.x = ccad::millimeters(8.45), .y = ccad::millimeters(9)},
+      .diameter = ccad::millimeters(0.8), .drill = ccad::millimeters(0.4)});
+  require(hasDiagnosticForObject(ccad::runDrc(close_holes), "DRILLED_HOLES_TOO_CLOSE", "V2"),
+          "drc reports via holes below hole-to-hole clearance");
 }

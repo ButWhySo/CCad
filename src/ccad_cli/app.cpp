@@ -180,7 +180,8 @@ const std::vector<CommandHelp>& commandHelp() {
                   .summary = "Set board-level physical DRC rule defaults",
                   .usage = "ccad pcb set-rules --file <path> --copper-clearance-mm <n> "
                            "--min-track-width-mm <n> --min-via-annular-ring-mm <n> "
-                           "[--min-via-diameter-mm <n>] [--min-through-hole-drill-mm <n>] "
+                           "[--min-via-diameter-mm <n>] [--max-track-width-mm <n>] "
+                           "[--max-via-diameter-mm <n>] [--min-through-hole-drill-mm <n>] "
                            "[--board-thickness-mm <n>] [--solder-mask-expansion-mm <n>]"},
       CommandHelp{.name = "pcb get-outline",
                   .summary = "Return the rectangular board outline bounds",
@@ -231,13 +232,15 @@ const std::vector<CommandHelp>& commandHelp() {
                   .summary = "Append one KiCad-style board text object",
                   .usage = "ccad pcb add-text --file <path> --id <id> --layer <id> "
                            "--text <value> --x-mm <n> --y-mm <n> --size-x-mm <n> "
-                           "--size-y-mm <n> --rotation-deg <n>"},
+                           "--size-y-mm <n> --rotation-deg <n> [--mirrored true|false] "
+                           "[--stroke-width-mm <n>]"},
       CommandHelp{.name = "pcb expand-text-variables",
                   .summary = "Expand KiCad-style project text variables in PCB text",
                   .usage = "ccad pcb expand-text-variables --file <path> [--text <value>]"},
       CommandHelp{.name = "pcb update-teardrops",
                   .summary = "Regenerate teardrop polygons for track-to-pad and track-to-via connections",
-                  .usage = "ccad pcb update-teardrops --file <path>"},
+                  .usage = "ccad pcb update-teardrops --file <path> [--enable-pads true|false] "
+                           "[--enable-vias true|false] [--curved true|false] [--smd true|false]"},
       CommandHelp{.name = "pcb add-zone",
                   .summary = "Append one KiCad-style rectangular copper zone",
                   .usage = "ccad pcb add-zone --file <path> --id <id> [--name <value>] "

@@ -239,6 +239,45 @@ if(MINGW)
 endif()
 add_test(NAME serialize COMMAND ccad_tests)
 
+add_executable(ccad_track_length_tuning_tests
+  tests/test_track_length_tuning.cpp
+)
+target_link_libraries(ccad_track_length_tuning_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_track_length_tuning_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME track_length_tuning COMMAND ccad_track_length_tuning_tests)
+add_executable(ccad_custom_drc_rules_tests tests/test_custom_drc_rules.cpp)
+target_link_libraries(ccad_custom_drc_rules_tests PRIVATE ccad_core)
+add_test(NAME custom_drc_rules COMMAND ccad_custom_drc_rules_tests)
+
+add_executable(ccad_3d_fastmath_tests
+  tests/test_3d_fastmath.cpp
+)
+target_link_libraries(ccad_3d_fastmath_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_3d_fastmath_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME 3d_fastmath COMMAND ccad_3d_fastmath_tests)
+
+add_executable(ccad_nearest_neighbor_connectivity_tests
+  tests/test_nearest_neighbor_connectivity.cpp
+)
+target_link_libraries(ccad_nearest_neighbor_connectivity_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_nearest_neighbor_connectivity_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME nearest_neighbor_connectivity COMMAND ccad_nearest_neighbor_connectivity_tests)
+
+add_executable(ccad_dynamic_ratnest_graph_tests
+  tests/test_dynamic_ratnest_graph.cpp
+)
+target_link_libraries(ccad_dynamic_ratnest_graph_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_dynamic_ratnest_graph_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME dynamic_ratnest_graph COMMAND ccad_dynamic_ratnest_graph_tests)
+
 add_executable(ccad_schematic_collector_tests
   tests/test_schematic_collector.cpp
 )
@@ -500,6 +539,15 @@ if(MINGW)
   target_link_options(ccad_dsn_export_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME dsn_export COMMAND ccad_dsn_export_tests)
+
+add_executable(ccad_teardrop_generator_tests
+  tests/test_teardrop_generator.cpp
+)
+target_link_libraries(ccad_teardrop_generator_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_teardrop_generator_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME teardrop_generator COMMAND ccad_teardrop_generator_tests)
 
 add_executable(ccad_bom_export_tests
   tests/test_bom_export.cpp
