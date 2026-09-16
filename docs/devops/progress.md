@@ -851,3 +851,6 @@ Added explicit board-text stroke width, minimum-thickness rule, JSON/CLI persist
 ## Sprint 390-391 progress update (2026-09-16)
 
 Implemented the clearance DRC provider pad/pad, pad/via, and via/via checks with focused coverage. Repaired CI portability: POSIX CLI test now preserves literal `${VAR}` tokens, MSVC forward declarations match struct definitions, duplicate math macro definitions are removed, π is guarded locally, and nanometer-to-floating conversions are explicit. Full Qt build 112/112, CTest 75/75, focused CLI and clearance tests passed; official visual proof `sprint391_ci_portability_proof` passed with empty stderr and inspected screenshot.
+## Sprint 392 progress update (2026-09-16)
+
+Implemented `DrcTestProviderEdgeClearance` for pad and via copper against rectangular board edges, with nanometer-safe distance conversion and focused regression coverage. Full Qt build 99/99, CTest 76/76, official visual harness `sprint392_edge_clearance_proof` passed; before/after screenshots individually inspected, stderr empty. Provider output remains kernel diagnostic; exact diagnostic rendering remains tied to main DRC pipeline.

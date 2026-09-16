@@ -1034,3 +1034,6 @@ BoardText stroke_width and DesignRules min_text_thickness persist through JSON. 
 ## Sprint 390-391 handover
 
 `DrcTestProviderClearance` now reports different-net pad/pad, pad/via, and via/via proximity using copper clearance and conservative circularized pad extents. `tests/test_cli.cpp` escapes dollar tokens on POSIX shells so KiCad-style text variables reach CCad unchanged. Forward declarations for model structs now use `struct`, math constants are portable under warnings-as-errors, and explicit casts satisfy MSVC. Full integration DRC remains authoritative for production diagnostics; provider is independently tested.
+## Sprint 392 handover
+
+`DrcTestProviderEdgeClearance` reports error code 4 for pads and vias whose conservative copper radius plus `copper_edge_clearance` reaches a rectangular board edge. It uses `distancePointToSegment` and converts nanometers to millimeters before comparison. Track and polygon edge providers remain separate backlog work; provider is not yet wired into primary DRC aggregator.
