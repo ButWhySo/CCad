@@ -1089,3 +1089,6 @@ Primary DRC now calls `checkUnroutedPhysicalNets` after physical geometry checks
 ## Sprint 407 handover (2026-09-16)
 
 `segmentTouchesArc` derives the circumcenter, radius, orientation, and midpoint-containing sweep from `TrackArc.start/mid/end`; it samples that circular sweep into 16 segments and checks route intersection plus sampled-point clearance. Collinear arcs use quadratic fallback. Adaptive sampling and exact analytic arc-to-segment distance remain future precision improvements.
+## Sprint 408 handover (2026-09-16)
+
+Arc collision now derives circular geometry from three points, chooses orientation from the signed cross product, and unwraps sweep through the midpoint before sampling 16 arc intervals. This aligns obstacle shape with stored circular TrackArc semantics; clearance still uses sampled vertices/segments and can be made adaptive later.

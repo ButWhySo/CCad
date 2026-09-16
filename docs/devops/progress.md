@@ -906,3 +906,6 @@ Improved different-net TrackArc routing rejection from two-chord testing to a 16
 ## Sprint 407 progress update (2026-09-16)
 
 TrackArc route-obstacle checks now sample the true three-point circumcircle sweep containing the arc midpoint, with quadratic fallback for collinear points. This removes quadratic-envelope distortion while retaining 16-segment conservative collision sampling and width/clearance checks. Qt Release build completed 76/76; Qt-path CTest completed 79/79; official visual harness screenshot was inspected.
+## Sprint 408 progress update (2026-09-16)
+
+Replaced quadratic TrackArc obstacle approximation with circumcircle reconstruction and midpoint-containing sweep sampling. Collinear arcs retain fallback. Qt Release build completed 76/76; Qt-path CTest completed 79/79; official visual harness screenshot inspected. Analytic closest-point clearance remains a precision backlog item.

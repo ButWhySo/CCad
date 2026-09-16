@@ -2238,3 +2238,6 @@ Different-net track arcs are now checked across a 16-point curve envelope, not o
 ### Circular arc route clearance
 
 Different-net circular track arcs are now checked using their reconstructed three-point circular sweep rather than a distorted quadratic approximation. Routes crossing sampled arc geometry or its configured clearance are rejected on the active layer.
+### Reconstructed circular-arc obstacles
+
+Router obstacle checks reconstruct stored three-point circular arcs and follow the midpoint-containing sweep. Different-net routes crossing that sampled circular path or its clearance are rejected on the active layer.
