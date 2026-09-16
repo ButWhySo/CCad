@@ -2232,3 +2232,6 @@ Interactive and agent route gestures now avoid filled different-net copper-zone 
 ### Arc-aware routing
 
 Interactive and agent route gestures avoid different-net track arcs on the active copper layer using conservative chord and vertex-clearance checks. Same-net arcs and arcs on other layers remain routable.
+### Sampled curved-copper routing safety
+
+Different-net track arcs are now checked across a 16-point curve envelope, not only at their endpoints or two coarse chords. Routes crossing or approaching the sampled curved copper are rejected on the active layer.

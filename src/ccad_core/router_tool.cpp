@@ -44,10 +44,20 @@ bool segmentTouchesPolygon(const Point& start, const Point& end, const std::vect
   return false;
 }
 bool segmentTouchesArc(const Point& start, const Point& end, const TrackArc& arc, double clearance) {
-  return intersects(start, end, arc.start, arc.mid) || intersects(start, end, arc.mid, arc.end) ||
-         distancePointToSegment(arc.start, start, end) < clearance ||
-         distancePointToSegment(arc.mid, start, end) < clearance ||
-         distancePointToSegment(arc.end, start, end) < clearance;
+  Point previous = arc.start;
+  for (int step = 1; step <= 16; ++step) {
+    const long double t = static_cast<long double>(step) / 16.0L;
+    const long double one_minus_t = 1.0L - t;
+    const long double x = one_minus_t * one_minus_t * arc.start.x.nanometers +
+                          2.0L * one_minus_t * t * arc.mid.x.nanometers + t * t * arc.end.x.nanometers;
+    const long double y = one_minus_t * one_minus_t * arc.start.y.nanometers +
+                          2.0L * one_minus_t * t * arc.mid.y.nanometers + t * t * arc.end.y.nanometers;
+    const Point current{nanometers(static_cast<std::int64_t>(std::llround(x))),
+                        nanometers(static_cast<std::int64_t>(std::llround(y)))};
+    if (intersects(start, end, previous, current) || distancePointToSegment(previous, start, end) < clearance) return true;
+    previous = current;
+  }
+  return distancePointToSegment(previous, start, end) < clearance;
 }
 }
 void RouterTool::setBoard(Board* board) { board_ = board; }

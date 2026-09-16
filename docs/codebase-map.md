@@ -1083,3 +1083,6 @@ Primary DRC now calls `checkUnroutedPhysicalNets` after physical geometry checks
 ## Sprint 405 handover (2026-09-16)
 
 `RouterTool::commitRouting` checks different-net `TrackArc` items on the active layer. Collision uses start-mid and mid-end chord intersections plus clearance to start, mid, and end vertices, including arc width. This is a conservative approximation; exact swept-circle geometry and arc endpoint connectivity remain deferred.
+## Sprint 406 handover (2026-09-16)
+
+`segmentTouchesArc` samples the quadratic curve from `TrackArc.start` through `mid` to `end` at 16 intervals, checks each envelope segment for intersection, and checks sampled vertices against route clearance. This catches curved-span crossings missed by endpoint-only checks. It is intentionally conservative and not yet KiCad-equivalent exact circular-arc geometry.

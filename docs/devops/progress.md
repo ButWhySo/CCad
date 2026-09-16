@@ -900,3 +900,6 @@ RouterTool now rejects candidate segments entering or approaching filled differe
 ## Sprint 405 progress update (2026-09-16)
 
 RouterTool now conservatively rejects different-net `TrackArc` crossings and vertex-clearance violations on the active copper layer by testing the arc's two chord segments and three defining points. Focused router test passed; Qt Release build completed 76/76; Qt-path CTest completed 79/79; official visual harness screenshot was inspected. Exact circular arc tessellation remains future refinement.
+## Sprint 406 progress update (2026-09-16)
+
+Improved different-net TrackArc routing rejection from two-chord testing to a 16-sample quadratic envelope, catching curved-span crossings between defining vertices while retaining width and clearance checks. Qt Release build completed 76/76; Qt-path CTest completed 79/79; official visual harness screenshot was inspected. Exact circumcircle sweep and adaptive tessellation remain future precision work.
