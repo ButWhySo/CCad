@@ -245,10 +245,22 @@ CanvasScene buildCanvasScene(const Board& board) {
         .min_thickness_units = toMillimeters(zone.min_thickness),
         .fill_enabled = zone.fill_enabled,
         .pad_connection = zone.pad_connection,
+        .thermal_spokes = {},
     };
     for (const Point& point : zone.outline) {
       canvas_zone.pts_x_units.push_back(toMillimeters(point.x));
       canvas_zone.pts_y_units.push_back(toMillimeters(point.y));
+    }
+    for (std::size_t index = 0; index < zone.filled_thermal_spokes.size(); ++index) {
+      const auto& spoke = zone.filled_thermal_spokes.at(index);
+      canvas_zone.thermal_spokes.push_back(CanvasLine{
+          .id = zone.id + "_thermal_" + std::to_string(index),
+          .layer_id = zone.layer_ids.empty() ? "" : zone.layer_ids.front(),
+          .start_x_units = toMillimeters(spoke.start.x),
+          .start_y_units = toMillimeters(spoke.start.y),
+          .end_x_units = toMillimeters(spoke.end.x),
+          .end_y_units = toMillimeters(spoke.end.y),
+          .width_units = toMillimeters(spoke.width)});
     }
     scene.zones.push_back(canvas_zone);
   }

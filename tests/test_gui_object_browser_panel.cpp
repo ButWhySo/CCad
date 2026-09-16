@@ -28,7 +28,8 @@ ccad::CanvasScene browserScene() {
       .layer_ids = {"F.Cu"},
       .pts_x_units = {2.0, 18.0, 18.0, 2.0},
       .pts_y_units = {2.0, 2.0, 12.0, 12.0},
-      .pad_connection = "thermal"});
+      .pad_connection = "thermal",
+      .thermal_spokes = {}});
   scene.route_requests.push_back(ccad::CanvasRouteRequest{.id = "RR1",
                                                           .net_id = "N1",
                                                           .from_object_id = "P1",

@@ -1217,3 +1217,7 @@ Persisted zone state now includes `filled_thermal_spokes`; `pcb refill-zones --a
 ## Sprint 493 progress update (2026-09-17)
 
 References checked: KiCad S-expression format defines `connect_pads thru_hole_only` for PTH-only zone connections. CCad PCB export now emits this token for `pth_thermal`, with exporter regression coverage. Full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
+
+## Sprint 494 progress update (2026-09-17)
+
+Persisted thermal spokes now flow into `CanvasScene` and render as tagged copper-layer line geometry in the Qt board canvas. Official harness fixture now adds a real B.Cu PTH pad, applies refill, and captures the rendered result, closing the previous generic-screenshot gap. Full Qt Ninja build completed 120/120; CTest passed 91/91; targeted harness screenshot inspected, stderr empty.

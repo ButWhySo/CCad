@@ -358,6 +358,21 @@ void renderBoardCanvas(QGraphicsScene& canvas_scene, const ccad::CanvasScene& sc
     auto* item = addHighlightPath(canvas_scene, zone_path, zone_pen, zone_brush);
     item->setToolTip((zone.is_teardrop ? "Teardrop " : "Zone ") + qstr(zone.id) + " " + layers_str);
     tagObject(*item, zone.is_teardrop ? "teardrop" : "zone", qstr(zone.id), zone_color, qstr(zone.net_id), layers_str);
+    if (!zone.is_teardrop) {
+      QPen thermal_pen(zone_color.lighter(160), std::max(1.0, zone.min_thickness_units * scale));
+      thermal_pen.setCapStyle(Qt::RoundCap);
+      for (const ccad::CanvasLine& spoke : zone.thermal_spokes) {
+        if (!layerIsVisible(hidden_layers, spoke.layer_id)) continue;
+        auto* spoke_item = canvas_scene.addLine(
+            sceneX(scene, spoke.start_x_units, margin, scale),
+            sceneY(scene, spoke.start_y_units, margin, scale),
+            sceneX(scene, spoke.end_x_units, margin, scale),
+            sceneY(scene, spoke.end_y_units, margin, scale), thermal_pen);
+        spoke_item->setToolTip("Thermal spoke " + qstr(spoke.id));
+        tagObject(*spoke_item, "thermal_spoke", qstr(spoke.id), thermal_pen.color(),
+                  qstr(zone.net_id), qstr(spoke.layer_id));
+      }
+    }
   }
 
   QPen track_pen(theme.track_color);

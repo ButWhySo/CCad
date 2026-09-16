@@ -226,6 +226,7 @@ struct CanvasZone {
   double min_thickness_units = 0.0;
   bool fill_enabled = true;
   std::string pad_connection;
+  std::vector<CanvasLine> thermal_spokes;
   bool is_teardrop = false;
 };
 

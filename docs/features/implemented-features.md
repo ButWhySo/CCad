@@ -2361,3 +2361,4 @@ Per-pad copper-layer thermal gap/spoke-width overrides and per-pad no-connection
 PTH-only thermal connection mode (`pth_thermal`) is supported in zone validation and refill reporting; SMD/NPTH pads are excluded.
 Applied zone refill now persists thermal spoke start/end/width records through JSON reload; export/render integration of those records remains future work.
 KiCad PCB export preserves PTH-only zone connection semantics with `connect_pads thru_hole_only`; resolved spoke record emission into KiCad filled polygons remains deferred.
+Qt canvas renders persisted thermal spoke records on visible zone layers, and official demo fixture visibly exercises the path with an applied B.Cu PTH pad.

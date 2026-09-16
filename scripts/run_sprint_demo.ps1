@@ -300,6 +300,8 @@ Invoke-Ccad pcb route-status --file $Project | Set-Content -Encoding UTF8 $Route
 Invoke-Ccad pcb add-placement-region --file $Project --id PR1 --kind component --x-mm 11 --y-mm 4 --width-mm 12 --height-mm 8
 Invoke-Ccad pcb add-keepout --file $Project --id K1 --kind placement --x-mm 38 --y-mm 26 --width-mm 4 --height-mm 3
 Invoke-Ccad pcb add-zone --file $Project --id Z_DC_NEG --name "DC negative copper pour" --net DC_NEG --layers B.Cu --x-mm 6 --y-mm 20 --width-mm 32 --height-mm 8 --priority 1 --clearance-mm 0.20 --min-thickness-mm 0.25 --pad-connection thermal
+Invoke-Ccad pcb add-pad --file $Project --id JDC3.1 --component JDC3 --pin 1 --net DC_NEG --layers B.Cu --x-mm 12 --y-mm 24 --width-mm 1.8 --height-mm 1.8 --type thru_hole --shape circle --drill-mm 0.8
+Invoke-Ccad pcb refill-zones --file $Project --zone-id Z_DC_NEG --apply true | Out-Null
 
 Invoke-Ccad inspect $Project | Set-Content -Encoding UTF8 $Inspect
 Invoke-Ccad validate $Project | Set-Content -Encoding UTF8 $Validate

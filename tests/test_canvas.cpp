@@ -121,6 +121,9 @@ ccad::Project boardProject() {
                       ccad::Point{.x = ccad::millimeters(18), .y = ccad::millimeters(2)},
                       ccad::Point{.x = ccad::millimeters(18), .y = ccad::millimeters(12)},
                       ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(12)}},
+          .filled_thermal_spokes = {{ccad::Point{.x = ccad::millimeters(5), .y = ccad::millimeters(5)},
+                                     ccad::Point{.x = ccad::millimeters(8), .y = ccad::millimeters(5)},
+                                     ccad::millimeters(0.3)}},
           .clearance = ccad::millimeters(0.25),
           .min_thickness = ccad::millimeters(0.1),
           .fill_enabled = true,
@@ -232,6 +235,11 @@ int main() {
   require(scene.zones.at(0).layer_ids.size() == 1, "canvas board zone layer set");
   require(scene.zones.at(0).pts_x_units.size() == 4, "canvas board zone outline points");
   require(scene.zones.at(0).fill_enabled, "canvas board zone fill state");
+  require(scene.zones.at(0).thermal_spokes.size() == 1,
+          "canvas exposes persisted thermal spoke");
+  require(scene.zones.at(0).thermal_spokes.at(0).start_x_units == 5.0 &&
+              scene.zones.at(0).thermal_spokes.at(0).width_units == 0.3,
+          "canvas converts thermal spoke geometry to mm");
   require(scene.route_requests.size() == 1, "canvas has route requests");
   require(scene.route_requests.at(0).id == "RR1", "canvas route request id");
   require(scene.route_requests.at(0).from_object_id == "P1", "canvas route from object id");
