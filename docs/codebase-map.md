@@ -1151,4 +1151,6 @@ Sprint 445 adds optional `SchSheetPin::side` persistence and uses it for explici
 
 Sprint 446 gives the PNS substrate a usable spatial primitive. `PnsItem` stores integer position/radius, `PnsIndex::query()` returns unique items whose expanded circles contain the query point, and `PnsNode::addItem()`/`clear()` keep index membership synchronized. This is intentionally a low-level geometry index, not yet KiCad's topology-aware PNS router.
 
+Sprint 447 gives `PnsDiffPairPlacer` a first executable coupled-placement contract: distinct positive/negative items are required, `setGap()` clamps invalid values, and both `start()` and `route()` update endpoint positions while preserving configured separation. Full track topology, clearance rules, and shove remain later work.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.

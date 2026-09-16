@@ -13,6 +13,8 @@ public:
 
     bool start(std::shared_ptr<PnsItem> itemP, std::shared_ptr<PnsItem> itemN, int x, int y);
     bool route(int x, int y);
+    void setGap(int gap) { gap_ = gap < 0 ? 0 : gap; }
+    int gap() const { return gap_; }
     void finish();
 
 private:

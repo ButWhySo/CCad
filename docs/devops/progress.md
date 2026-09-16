@@ -1043,3 +1043,7 @@ Added serialization regression coverage proving a sheet-pin `side` value round-t
 ## Sprint 446 progress update (2026-09-16)
 
 Replaced the empty PNS spatial-query placeholder with a radius-aware integer index. `PnsItem` now carries position and radius, `PnsNode` maintains index membership across add/clear, and duplicate index entries are ignored. Added `pns_index` regression coverage for hit radius, deduplication, misses, and invalid radius. Qt-correct full CTest passed 85/85; official harness passed with empty stderr, and its screenshot was ingested and visually inspected.
+
+## Sprint 447 progress update (2026-09-16)
+
+Made the PNS differential-pair placer perform minimal coupled placement instead of claiming placeholder success. It rejects identical endpoints, exposes a clamped gap setting, and places positive/negative items at stable configured separation during start and route. Focused regression passed; full gate and visual proof pending.
