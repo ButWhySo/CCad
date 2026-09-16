@@ -1,6 +1,8 @@
 #include "gfx_import_utils.hpp"
 
 #include <iomanip>
+#include <cstdlib>
+#include <regex>
 #include <sstream>
 
 namespace ccad {
@@ -49,12 +51,52 @@ void convertImageToPolygons(const ImageImportData& img, Point pixel_scale, std::
 }
 
 void convertSVGToLibShapes(const std::string& svg_data, Point pixel_scale, Point offset, std::vector<SchGraphic>& out_graphics) { (void)svg_data; (void)pixel_scale; (void)offset; (void)out_graphics;
-    // Stub implementation for now.
-    // In the future, we'll use a headless SVG parsing library (like nanosvg) to convert
-    // paths, polygons, and primitive shapes into SchGraphics.
-    
     if (svg_data.empty()) {
         return;
+    }
+    const auto number = [](const std::string& text, const std::string& key, double fallback = 0.0) {
+        const std::regex attr("\\b" + key + "\\s*=\\s*[\\\"]([^\\\"]+)[\\\"]");
+        std::smatch match;
+        return std::regex_search(text, match, attr) ? std::strtod(match[1].str().c_str(), nullptr) : fallback;
+    };
+    const auto color = [](const std::string& text) {
+        const std::regex attr("\\bfill\\s*=\\s*[\\\"]([^\\\"]+)[\\\"]");
+        std::smatch match;
+        return std::regex_search(text, match, attr) ? match[1].str() : std::string{};
+    };
+    const auto point = [&](double x, double y) {
+        return Point{Length(offset.x.nanometers + static_cast<int64_t>(x * pixel_scale.x.nanometers)),
+                     Length(offset.y.nanometers + static_cast<int64_t>(y * pixel_scale.y.nanometers))};
+    };
+    const std::regex element("<(line|rect|polygon|polyline)\\b([^>]*)/?>");
+    for (auto it = std::sregex_iterator(svg_data.begin(), svg_data.end(), element); it != std::sregex_iterator(); ++it) {
+        const std::string kind = (*it)[1].str();
+        const std::string attrs = (*it)[2].str();
+        SchGraphic graphic;
+        graphic.kind = kind == "rect" ? "rectangle" : kind;
+        graphic.color = color(attrs);
+        if (kind == "line") {
+            graphic.start = point(number(attrs, "x1"), number(attrs, "y1"));
+            graphic.end = point(number(attrs, "x2"), number(attrs, "y2"));
+            graphic.points = {graphic.start, graphic.end};
+        } else if (kind == "rect") {
+            graphic.start = point(number(attrs, "x"), number(attrs, "y"));
+            graphic.end = point(number(attrs, "x") + number(attrs, "width"),
+                                number(attrs, "y") + number(attrs, "height"));
+            graphic.points = {graphic.start, {graphic.end.x, graphic.start.y}, graphic.end,
+                              {graphic.start.x, graphic.end.y}};
+        } else {
+            const std::regex coordinate("(-?[0-9]+(?:\\.[0-9]+)?)\\s*,\\s*(-?[0-9]+(?:\\.[0-9]+)?)");
+            for (auto point_it = std::sregex_iterator(attrs.begin(), attrs.end(), coordinate);
+                 point_it != std::sregex_iterator(); ++point_it) {
+                graphic.points.push_back(point(std::strtod((*point_it)[1].str().c_str(), nullptr),
+                                               std::strtod((*point_it)[2].str().c_str(), nullptr)));
+            }
+            if (graphic.points.empty()) continue;
+            graphic.start = graphic.points.front();
+            graphic.end = graphic.points.back();
+        }
+        out_graphics.push_back(std::move(graphic));
     }
 }
 

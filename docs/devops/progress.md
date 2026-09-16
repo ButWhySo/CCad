@@ -1013,3 +1013,7 @@ Added feature-specific GUI regression coverage for run-queue checkpoint round-tr
 ## Sprint 439 progress update (2026-09-16)
 
 Replaced `convertImageToPolygons()` bounding-box placeholder with alpha-aware, color-preserving horizontal span polygons scaled in nanometres. Added raster conversion regression coverage. Qt build completed 106/106; full Qt CTest passed 83/83; official harness screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 440 progress update (2026-09-16)
+
+Replaced empty `convertSVGToLibShapes()` stub with headless parsing for common SVG line, rectangle, polygon, and polyline elements, including fill, offset, and pixel-scale conversion. Focused SVG test passed; Qt build completed 80/80; full Qt CTest passed 83/83; official harness screenshot was ingested and visually inspected with empty stderr.

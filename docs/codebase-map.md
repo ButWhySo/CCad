@@ -1136,3 +1136,5 @@ Sprint 437 AgentPanel stores `run_queue_state` in bound session checkpoints and 
 Sprint 438 `tests/test_gui_agent_panel.cpp` verifies AgentPanel queue checkpoint persistence through a real temporary session file and reload, including visible restored depth.
 
 Sprint 439 `gfx_import_utils` converts RGBA raster rows into scaled polygon spans, omitting transparent pixels and preserving RGB color; malformed dimensions safely produce no geometry.
+
+Sprint 440 `gfx_import_utils` converts common SVG primitives into `SchGraphic` line/rectangle/polygon geometry with fill and coordinate transforms; unsupported SVG elements remain ignored safely.
