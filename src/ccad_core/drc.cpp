@@ -709,6 +709,15 @@ void checkVias(const Project& project, const Board& board, std::vector<Diagnosti
                          via.id));
     }
     if (via_size_positive) {
+      const long double edge_clearance = static_cast<long double>(
+          board.design_rules.copper_edge_clearance.nanometers);
+      if (edge_clearance > 0.0L &&
+          distanceToBoardEdge(board, via.position) -
+                  static_cast<long double>(via.diameter.nanometers) / 2.0L < edge_clearance) {
+        diagnostics.push_back(makeDiagnostic(
+            "VIA_EDGE_CLEARANCE", "Via copper is closer to board edge than configured clearance",
+            via.id));
+      }
       for (const Keepout& keepout : board.keepouts) {
         const long double radius = static_cast<long double>(via.diameter.nanometers) / 2.0L;
         if (distancePointToRect(via.position, keepout.area) <= radius) {

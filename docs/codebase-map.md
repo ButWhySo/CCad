@@ -1037,3 +1037,6 @@ BoardText stroke_width and DesignRules min_text_thickness persist through JSON. 
 ## Sprint 392 handover
 
 `DrcTestProviderEdgeClearance` reports error code 4 for pads and vias whose conservative copper radius plus `copper_edge_clearance` reaches a rectangular board edge. It uses `distancePointToSegment` and converts nanometers to millimeters before comparison. Track and polygon edge providers remain separate backlog work; provider is not yet wired into primary DRC aggregator.
+## Sprint 393 handover
+
+Primary `runDrc` now checks via center-to-edge distance minus via radius and emits `VIA_EDGE_CLEARANCE`; GUI diagnostics consume this normal `Diagnostic` path. Target proof used a rebuilt `ccad.exe` and `ccad_gui.exe` on a moved near-edge via, confirming JSON diagnostics and rendered board state. Pad edge diagnostics already existed in `checkPads`.

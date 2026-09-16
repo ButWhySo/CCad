@@ -320,6 +320,12 @@ int main() {
   require(hasCode(ccad::runDrc(via_geometry_outside), "VIA_GEOMETRY_OUTSIDE_BOARD"),
           "drc reports via copper geometry outside board");
 
+  ccad::Project via_edge_clearance = validBoardProject();
+  via_edge_clearance.boards[0].vias.at(0).position =
+      ccad::Point{.x = ccad::millimeters(0.8), .y = ccad::millimeters(5.0)};
+  require(hasCode(ccad::runDrc(via_edge_clearance), "VIA_EDGE_CLEARANCE"),
+          "drc reports via copper too close to board edge");
+
   ccad::Project via_small_ring = validBoardProject();
   via_small_ring.boards[0].vias.at(0).diameter = ccad::millimeters(0.45);
   via_small_ring.boards[0].vias.at(0).drill = ccad::millimeters(0.4);

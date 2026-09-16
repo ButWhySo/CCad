@@ -854,3 +854,6 @@ Implemented the clearance DRC provider pad/pad, pad/via, and via/via checks with
 ## Sprint 392 progress update (2026-09-16)
 
 Implemented `DrcTestProviderEdgeClearance` for pad and via copper against rectangular board edges, with nanometer-safe distance conversion and focused regression coverage. Full Qt build 99/99, CTest 76/76, official visual harness `sprint392_edge_clearance_proof` passed; before/after screenshots individually inspected, stderr empty. Provider output remains kernel diagnostic; exact diagnostic rendering remains tied to main DRC pipeline.
+## Sprint 393 progress update (2026-09-16)
+
+Wired via edge-clearance reporting into primary `runDrc`, producing `VIA_EDGE_CLEARANCE` for copper reaching configured board-edge clearance. Focused DRC/provider tests passed; rebuilt CLI/GUI before targeted proof. Near-edge `TD_VIA` produced two errors including `VIA_EDGE_CLEARANCE`; target screenshot inspected, stderr empty.
