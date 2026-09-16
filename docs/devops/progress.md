@@ -993,3 +993,7 @@ Excellon export now rejects non-through vias with incomplete or identical layer 
 ## Sprint 434 progress update (2026-09-16)
 
 `JobManager::waitAll()` now waits for both queued and actively running tasks through a completion condition variable instead of spinning only until the queue empties. Added a delayed-task regression test. Qt Release build completed 166/166; full Qt CTest passed 82/82; official harness screenshot was ingested and visually inspected with empty stderr. CI run 35105302796 passed.
+
+## Sprint 435 progress update (2026-09-16)
+
+JobManager workers now catch task exceptions, report failures, decrement active-task state, and continue processing later tasks. Regression test confirms a throwing task does not kill worker service. Qt Release build completed 79/79; full Qt CTest passed 82/82; official harness screenshot was ingested and visually inspected with empty stderr.

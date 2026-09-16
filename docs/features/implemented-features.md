@@ -2270,3 +2270,5 @@ Footprints can persist front- and back-courtyard polygon geometry in native JSON
 ## Sprint 434 Job Manager Completion Semantics
 
 `JobManager::waitAll()` now provides a true completion barrier for background work. It waits until both the pending queue and active worker count reach zero, avoiding premature API responses and CPU-heavy polling. `ccad_job_manager_tests` covers a task that remains running after dequeue and verifies that `waitAll()` waits for its completion.
+
+JobManager workers also isolate task failures: exceptions are reported as task failures, worker threads remain available, and later queued tasks still execute. This keeps agent-triggered background services alive when one operation fails.

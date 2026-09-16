@@ -1126,3 +1126,5 @@ Sprint 432 Excellon export writes `; CCAD_VIA ...` comments for non-through/span
 Sprint 433 Excellon export validates non-through via spans before emitting output, preventing incomplete blind, buried, or microvia metadata from reaching manufacturing files.
 
 Sprint 434 `JobManager` tracks active tasks and uses a completion condition variable, so `waitAll()` cannot return while a worker is still executing. Regression coverage is in `tests/test_job_manager.cpp`.
+
+Sprint 435 `JobManager` catches exceptions raised by background tasks, reports them to stderr, and keeps worker threads alive for subsequent tasks; active-task completion bookkeeping remains guaranteed.

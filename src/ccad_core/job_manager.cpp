@@ -23,7 +23,13 @@ JobManager::JobManager() : active_tasks_(0), stop_(false) {
                     this->tasks_.pop();
                     ++this->active_tasks_;
                 }
-                task();
+                try {
+                    task();
+                } catch (const std::exception& error) {
+                    std::cerr << "[JobManager] Task failed: " << error.what() << std::endl;
+                } catch (...) {
+                    std::cerr << "[JobManager] Task failed: unknown exception" << std::endl;
+                }
                 {
                     std::unique_lock<std::mutex> lock(this->queue_mutex_);
                     --this->active_tasks_;

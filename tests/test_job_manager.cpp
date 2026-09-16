@@ -3,6 +3,7 @@
 #include <atomic>
 #include <chrono>
 #include <thread>
+#include <stdexcept>
 
 #include "test_support.hpp"
 
@@ -22,5 +23,11 @@ int main() {
   }
   manager.waitAll();
   require(finished.load(), "waitAll waits for running task completion");
+
+  std::atomic<bool> after_throw{false};
+  manager.enqueue([] { throw std::runtime_error("expected worker task failure"); });
+  manager.enqueue([&] { after_throw.store(true); });
+  manager.waitAll();
+  require(after_throw.load(), "worker survives task exception");
   return 0;
 }
