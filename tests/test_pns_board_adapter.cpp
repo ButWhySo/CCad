@@ -23,16 +23,24 @@ int main() {
     blind.end_layer_id = "In1.Cu";
     blind.via_type = "blind";
     board.vias.push_back(blind);
+    ccad::TrackSegment track;
+    track.net_id = "N3";
+    track.layer_id = "F.Cu";
+    track.start = {ccad::nanometers(20), ccad::nanometers(10)};
+    track.end = {ccad::nanometers(20), ccad::nanometers(90)};
+    track.width = ccad::nanometers(10);
+    board.tracks.push_back(track);
 
     ccad::PnsBoardObstacleIndex index;
     index.rebuild(board, "N1", "F.Cu");
-    require(index.size() == 2, "adapter indexes different-net active-layer pad and via");
+    require(index.size() == 3, "adapter indexes different-net active-layer pad, via, and track");
     require(index.blockedSegment(0, 50, 100, 50, 0), "adapter blocks different-net pad");
     require(index.blockingItems(0, 50, 100, 50, 0).front()->netId() == "N2",
             "adapter reports blocking item identity");
     require(index.blockingItems(70, 0, 70, 100, 0).front()->netId() == "N2",
             "adapter reports via blocking item identity");
-    require(!index.blockedSegment(0, 90, 100, 90, 0), "adapter excludes same-net pad");
+    require(index.blockedSegment(0, 50, 100, 50, 0), "adapter detects crossing track obstacle");
+    require(!index.blockedSegment(0, 100, 100, 100, 0), "adapter excludes same-net pad");
     index.rebuild(board, "N1", "B.Cu");
     require(!index.blockedSegment(0, 50, 100, 50, 0), "adapter filters pad layer");
     require(!index.blockedSegment(70, 0, 70, 100, 0), "adapter filters blind via span");

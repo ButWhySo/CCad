@@ -1179,4 +1179,6 @@ Sprint 462 wires the board adapter into RouterTool's commit path after existing 
 
 Sprint 463 makes `PnsBoardObstacleIndex` span-aware for non-through vias. It indexes a blind or buried via only when the active copper layer lies within its declared start/end span; incomplete metadata remains conservatively treated as endpoint-covered.
 
+Sprint 464 adds `PnsSegmentItem` to the PNS model. `PnsIndex::querySegment()` now detects segment intersections and endpoint clearance against segment obstacles, and `PnsBoardObstacleIndex` adapts different-net active-layer `TrackSegment` objects without reducing them to endpoint points.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.
