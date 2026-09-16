@@ -2292,3 +2292,6 @@ Schematic labels distinguish local, global, hierarchical, and directive types. J
 Board reference images with valid base64 image data render as scaled, opacity-preserving pixmaps in the PCB canvas; malformed data renders a tagged diagnostic placeholder.
 
 Schematic sheet pins may persist KiCad side values (`left`, `right`, `top`, `bottom`) and render with that explicit direction; older projects continue using position-based inference. CLI integration tests use isolated temporary workspaces for concurrent safety.
+## PNS spatial index
+
+PNS items can now expose integer position and radius, and the native `PnsIndex` performs radius-aware point queries with duplicate suppression and invalid-radius rejection. `PnsNode` synchronizes ownership and index membership. This establishes query infrastructure for later topology-aware shove and differential-pair routing.

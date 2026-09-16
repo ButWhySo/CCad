@@ -1236,3 +1236,9 @@ if(MINGW)
   target_link_options(ccad_graphics_cleaner_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME graphics_cleaner COMMAND ccad_graphics_cleaner_tests)
+
+add_executable(ccad_pns_index_tests
+  tests/test_pns_index.cpp
+)
+target_link_libraries(ccad_pns_index_tests PRIVATE ccad_core)
+add_test(NAME pns_index COMMAND ccad_pns_index_tests)

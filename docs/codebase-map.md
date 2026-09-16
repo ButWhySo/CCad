@@ -1149,4 +1149,6 @@ Sprint 444 makes `board_canvas_renderer.cpp` decode valid base64 board reference
 
 Sprint 445 adds optional `SchSheetPin::side` persistence and uses it for explicit canvas direction, with legacy geometric inference when absent. `test_cli.cpp` now isolates each run in a nonce-named temporary directory.
 
+Sprint 446 gives the PNS substrate a usable spatial primitive. `PnsItem` stores integer position/radius, `PnsIndex::query()` returns unique items whose expanded circles contain the query point, and `PnsNode::addItem()`/`clear()` keep index membership synchronized. This is intentionally a low-level geometry index, not yet KiCad's topology-aware PNS router.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.

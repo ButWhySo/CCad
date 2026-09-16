@@ -1039,3 +1039,7 @@ Replaced the board reference-image crossed-box renderer placeholder with base64 
 Added optional KiCad-compatible sheet-pin side serialization and side-aware canvas orientation while preserving legacy position inference. Hardened the CLI integration test with a unique per-process temporary workspace, eliminating concurrent-run file races. Full Qt build completed; Qt-correct CTest passed 84/84, isolated CLI passed, official harness passed with empty stderr, and its screenshot was ingested and visually inspected.
 
 Added serialization regression coverage proving a sheet-pin `side` value round-trips through JSON; incremental rebuild and full Qt CTest remained green at 84/84.
+
+## Sprint 446 progress update (2026-09-16)
+
+Replaced the empty PNS spatial-query placeholder with a radius-aware integer index. `PnsItem` now carries position and radius, `PnsNode` maintains index membership across add/clear, and duplicate index entries are ignored. Added `pns_index` regression coverage for hit radius, deduplication, misses, and invalid radius. Qt-correct full CTest passed 85/85; official harness passed with empty stderr, and its screenshot was ingested and visually inspected.

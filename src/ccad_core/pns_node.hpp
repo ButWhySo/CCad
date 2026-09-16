@@ -11,6 +11,20 @@ namespace ccad {
 class PnsItem {
 public:
     virtual ~PnsItem() = default;
+
+    void setPosition(int x, int y, int radius = 0) {
+        x_ = x;
+        y_ = y;
+        radius_ = radius < 0 ? 0 : radius;
+    }
+    int x() const { return x_; }
+    int y() const { return y_; }
+    int radius() const { return radius_; }
+
+private:
+    int x_ = 0;
+    int y_ = 0;
+    int radius_ = 0;
 };
 
 // Graph node for Push and Shove topology.
