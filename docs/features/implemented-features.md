@@ -2363,3 +2363,4 @@ Applied zone refill now persists thermal spoke start/end/width records through J
 KiCad PCB export preserves PTH-only zone connection semantics with `connect_pads thru_hole_only`; resolved spoke record emission into KiCad filled polygons remains deferred.
 Qt canvas renders persisted thermal spoke records on visible zone layers, and official demo fixture visibly exercises the path with an applied B.Cu PTH pad.
 Qt thermal-spoke rendering preserves persisted spoke width visually.
+KiCad PCB export now preserves persisted horizontal/vertical thermal spokes as rectangular filled copper polygons; diagonal spoke records remain unsupported and are omitted.

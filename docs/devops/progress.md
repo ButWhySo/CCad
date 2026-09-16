@@ -1225,3 +1225,7 @@ Persisted thermal spokes now flow into `CanvasScene` and render as tagged copper
 ## Sprint 495 progress update (2026-09-17)
 
 Corrected Qt thermal-spoke pen width: renderer now uses each persisted spoke's width instead of zone minimum thickness. KiCad reference confirms spoke width is an independent thermal parameter. Targeted harness screenshot visibly shows thick B.Cu relief geometry; full Qt Ninja build completed 120/120; CTest passed 91/91; stderr empty.
+
+## Sprint 496 progress update (2026-09-17)
+
+References checked: KiCad's official board-file documentation defines `filled_polygon` as board geometry and permits repeated board sections. Export now emits each persisted axis-aligned thermal spoke as a copper `filled_polygon` rectangle on every zone layer, preserving applied refill geometry in `.kicad_pcb` output. Diagonal persisted records remain skipped and documented as unsupported. Focused exporter test passed; full build, CTest, and targeted visual harness remain the sprint gate.

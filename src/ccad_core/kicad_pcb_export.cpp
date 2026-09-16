@@ -1,5 +1,6 @@
 #include "ccad_core/kicad_pcb_export.hpp"
 
+#include <algorithm>
 #include <iomanip>
 #include <map>
 #include <set>
@@ -362,6 +363,33 @@ std::string exportToKiCadPcb(const Project& project) {
               << (point.y.nanometers / 1000000.0) << ")";
         }
         out << "))\n";
+        for (const BoardZone::FilledThermalSpoke& spoke : zone.filled_thermal_spokes) {
+          const double x1 = spoke.start.x.nanometers / 1000000.0;
+          const double y1 = spoke.start.y.nanometers / 1000000.0;
+          const double x2 = spoke.end.x.nanometers / 1000000.0;
+          const double y2 = spoke.end.y.nanometers / 1000000.0;
+          const double half_width = spoke.width.nanometers / 2000000.0;
+          if (x1 != x2 && y1 != y2) {
+            continue;
+          }
+          const double min_x = std::min(x1, x2);
+          const double max_x = std::max(x1, x2);
+          const double min_y = std::min(y1, y2);
+          const double max_y = std::max(y1, y2);
+          out << "    (filled_polygon (layer \"" << escapeKiCadString(layer_id) << "\") (pts";
+          if (y1 == y2) {
+            out << " (xy " << min_x << " " << (y1 - half_width) << ")"
+                << " (xy " << max_x << " " << (y1 - half_width) << ")"
+                << " (xy " << max_x << " " << (y1 + half_width) << ")"
+                << " (xy " << min_x << " " << (y1 + half_width) << ")";
+          } else {
+            out << " (xy " << (x1 - half_width) << " " << min_y << ")"
+                << " (xy " << (x1 + half_width) << " " << min_y << ")"
+                << " (xy " << (x1 + half_width) << " " << max_y << ")"
+                << " (xy " << (x1 - half_width) << " " << max_y << ")";
+          }
+          out << "))\n";
+        }
       }
     }
     out << "  )\n";

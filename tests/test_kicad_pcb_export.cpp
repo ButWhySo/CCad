@@ -121,6 +121,9 @@ int main() {
                   ccad::Point{.x = ccad::millimeters(40), .y = ccad::millimeters(30)},
                   ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(30)}},
       .filled_contours = {},
+      .filled_thermal_spokes = {{ccad::Point{.x = ccad::millimeters(10), .y = ccad::millimeters(10)},
+                                 ccad::Point{.x = ccad::millimeters(20), .y = ccad::millimeters(10)},
+                                 ccad::millimeters(0.5)}},
       .priority = 1,
       .clearance = ccad::millimeters(0.2),
       .min_thickness = ccad::millimeters(0.25),
@@ -218,6 +221,8 @@ int main() {
   require(exported.find("(min_thickness 0.250000)") != std::string::npos, "Board zone min thickness exports");
   require(exported.find("(polygon (pts (xy 2.000000 2.000000) (xy 40.000000 2.000000) (xy 40.000000 30.000000) (xy 2.000000 30.000000)))") != std::string::npos, "Board zone outline exports");
   require(exported.find("(filled_polygon (layer \"F.Cu\") (pts (xy 2.000000 2.000000) (xy 40.000000 2.000000) (xy 40.000000 30.000000) (xy 2.000000 30.000000)))") != std::string::npos, "Board zone filled preview exports");
+  require(exported.find("(filled_polygon (layer \"F.Cu\") (pts (xy 10.000000 9.750000) (xy 20.000000 9.750000) (xy 20.000000 10.250000) (xy 10.000000 10.250000)))") != std::string::npos,
+          "Persisted thermal spoke exports as filled copper rectangle");
   project.boards.front().zones.front().filled_contours = {{ccad::Point{.x = ccad::millimeters(3), .y = ccad::millimeters(3)},
                                           ccad::Point{.x = ccad::millimeters(39), .y = ccad::millimeters(3)},
                                           ccad::Point{.x = ccad::millimeters(39), .y = ccad::millimeters(29)},
