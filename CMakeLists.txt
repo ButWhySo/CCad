@@ -268,6 +268,13 @@ add_executable(ccad_router_tool_tests tests/test_router_tool.cpp)
 target_link_libraries(ccad_router_tool_tests PRIVATE ccad_core)
 add_test(NAME router_tool COMMAND ccad_router_tool_tests)
 
+add_executable(ccad_router_width_clearance_tests tests/test_router_width_clearance.cpp)
+target_link_libraries(ccad_router_width_clearance_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_router_width_clearance_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME router_width_clearance COMMAND ccad_router_width_clearance_tests)
+
 add_executable(ccad_3d_fastmath_tests
   tests/test_3d_fastmath.cpp
 )

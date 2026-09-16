@@ -1104,3 +1104,6 @@ Arc collision now derives circular geometry from three points, chooses orientati
 ## Sprint 412 handover (2026-09-16)
 
 Track collision margin is `board copper clearance + route half-width + existing track half-width`; centerline intersection remains an immediate rejection. This improves width-aware safety for imported/wide traces. Exact polygonal copper shape and per-net rule overrides remain future work.
+## Sprint 413 handover (2026-09-16)
+
+`tests/test_router_width_clearance.cpp` is the focused contract for existing-track width margin. CMake registers it as `router_width_clearance`; it constructs a 4 mm different-net F.Cu track, attempts a nearby N1 route, and verifies no mutation plus `routeBlocked()`. Keep this separate test when changing clearance math.

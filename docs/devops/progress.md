@@ -921,3 +921,6 @@ Agent route responses now include obstacle class in reason values: `blocked_obst
 ## Sprint 412 progress update (2026-09-16)
 
 Different-net track obstacle checks now include existing track half-width in clearance, preventing overlap with wide copper even when centerlines do not cross. Qt Release build completed 84/84; Qt-path CTest completed 79/79; official visual harness screenshot was ingested and inspected.
+## Sprint 413 progress update (2026-09-16)
+
+Added dedicated `router_width_clearance` regression target proving a wide different-net track blocks a near-parallel route without relying on the monolithic router fixture. Qt Release build completed 318/318 graph steps; Qt-path CTest completed 80/80; official visual harness screenshot was ingested and inspected.

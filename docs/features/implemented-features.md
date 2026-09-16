@@ -2253,3 +2253,6 @@ Agent-facing route responses identify the blocking copper class, such as `blocke
 ### Width-aware track obstacle clearance
 
 Route gestures now account for both candidate route width and existing different-net track width when checking proximity, reducing false-safe near-parallel routing.
+### Width-clearance regression contract
+
+Dedicated automated coverage now proves wide existing copper blocks near-parallel different-net routes and leaves the board unchanged.
