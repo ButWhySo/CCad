@@ -145,6 +145,9 @@ void SelectionInspectorPanel::renderSelection(const std::optional<ccad::Board>& 
         setRow("Type", "via");
         setRow("ID", id);
         setRow("Net", via.net_id.empty() ? "--" : QString::fromStdString(via.net_id));
+        setRow("Via Type", QString::fromStdString(via.via_type));
+        setRow("Start Layer", via.start_layer_id.empty() ? "--" : QString::fromStdString(via.start_layer_id));
+        setRow("End Layer", via.end_layer_id.empty() ? "--" : QString::fromStdString(via.end_layer_id));
         setRow("Position X", formatLength(via.position.x));
         setRow("Position Y", formatLength(via.position.y));
 

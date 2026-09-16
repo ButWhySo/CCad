@@ -973,3 +973,7 @@ Added explicit `Via::via_type` persistence with SES inference for through, blind
 ## Sprint 429 progress update (2026-09-16)
 
 CLI object queries now expose via type and layer-span metadata, allowing agents and scripts to distinguish imported via classes without reopening project JSON. CLI CTest passed; full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 430 progress update (2026-09-16)
+
+Via selection inspector now displays Via Type, Start Layer, and End Layer beside editable diameter/drill values. Targeted GUI inspector test passed; full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.

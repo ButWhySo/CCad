@@ -1119,3 +1119,4 @@ Sprint 426 validates referenced SES via padstacks: known definitions require at 
 Sprint 427 keeps new `Via` layer-span fields aggregate-initializer compatible through default values and trailing placement; existing designated callers need no edits.
 Sprint 428 adds serialized `Via::via_type` (default `through`); SES inference marks microvias by small drill, through vias by F.Cu/B.Cu span, blind vias when one endpoint is outer copper, and buried vias otherwise.
 Sprint 429 exposes `via_type`, `start_layer_id`, and `end_layer_id` in `pcb get-object` via JSON and includes `via_type` in board object summaries.
+Sprint 430 renders via type and layer span in `SelectionInspectorPanel`; fields are read-only display metadata while existing diameter/drill editing remains unchanged.

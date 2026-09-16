@@ -67,6 +67,9 @@ int main(int argc, char** argv) {
   via.diameter = ccad::millimeters(0.6);
   via.drill = ccad::millimeters(0.3);
   via.net_id = "VCC";
+  via.via_type = "blind";
+  via.start_layer_id = "F.Cu";
+  via.end_layer_id = "In1.Cu";
   board.vias.push_back(via);
 
   // Add Track (dx = 3mm, dy = 4mm => length = 5mm)
@@ -163,6 +166,9 @@ int main(int argc, char** argv) {
   require(panel.rowText("Diameter") == "0.6000", "via diameter");
   require(panel.rowText("Drill") == "0.3000", "via drill");
   require(panel.rowText("Net") == "VCC", "via net");
+  require(panel.rowText("Via Type") == "blind", "via type");
+  require(panel.rowText("Start Layer") == "F.Cu", "via start layer");
+  require(panel.rowText("End Layer") == "In1.Cu", "via end layer");
 
   // Test Track Inspector Formatting
   std::printf("Testing track...\n");
