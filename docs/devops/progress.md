@@ -989,3 +989,7 @@ Excellon drill export now preserves non-through via type and layer span as stand
 ## Sprint 433 progress update (2026-09-16)
 
 Excellon export now rejects non-through vias with incomplete or identical layer spans before writing manufacturing output, while retaining metadata comments for valid spans. Drill export test passed; full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 434 progress update (2026-09-16)
+
+`JobManager::waitAll()` now waits for both queued and actively running tasks through a completion condition variable instead of spinning only until the queue empties. Added a delayed-task regression test. Qt Release build completed 166/166; full Qt CTest passed 82/82; official harness screenshot was ingested and visually inspected with empty stderr. CI run 35105302796 passed.

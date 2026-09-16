@@ -1124,3 +1124,5 @@ Sprint 431 `checkVias` validates `via_type` vocabulary and requires distinct kno
 Sprint 432 Excellon export writes `; CCAD_VIA ...` comments for non-through/span-aware vias; Excellon tool paths remain unchanged because standard format lacks native via-type semantics.
 
 Sprint 433 Excellon export validates non-through via spans before emitting output, preventing incomplete blind, buried, or microvia metadata from reaching manufacturing files.
+
+Sprint 434 `JobManager` tracks active tasks and uses a completion condition variable, so `waitAll()` cannot return while a worker is still executing. Regression coverage is in `tests/test_job_manager.cpp`.

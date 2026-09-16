@@ -4,7 +4,7 @@
 
 namespace ccad {
 
-JobManager::JobManager() : stop_(false) {
+JobManager::JobManager() : active_tasks_(0), stop_(false) {
     size_t num_threads = std::thread::hardware_concurrency();
     if (num_threads == 0) num_threads = 4;
     for (size_t i = 0; i < num_threads; ++i) {
@@ -21,8 +21,14 @@ JobManager::JobManager() : stop_(false) {
                     }
                     task = std::move(this->tasks_.front());
                     this->tasks_.pop();
+                    ++this->active_tasks_;
                 }
                 task();
+                {
+                    std::unique_lock<std::mutex> lock(this->queue_mutex_);
+                    --this->active_tasks_;
+                }
+                this->completion_condition_.notify_all();
             }
         });
     }
@@ -60,16 +66,10 @@ void JobManager::startJob(const std::string& name) {
 }
 
 void JobManager::waitAll() {
-    // Basic spin wait for tasks to clear (naive approach for stub)
-    while (true) {
-        {
-            std::unique_lock<std::mutex> lock(queue_mutex_);
-            if (tasks_.empty()) {
-                break;
-            }
-        }
-        std::this_thread::yield();
-    }
+    std::unique_lock<std::mutex> lock(queue_mutex_);
+    completion_condition_.wait(lock, [this] {
+        return tasks_.empty() && active_tasks_ == 0;
+    });
 }
 
 } // namespace ccad

@@ -232,6 +232,10 @@ enable_testing()
 add_executable(ccad_tests
   tests/test_serialize.cpp
 )
+
+add_executable(ccad_job_manager_tests tests/test_job_manager.cpp)
+target_link_libraries(ccad_job_manager_tests PRIVATE ccad_core)
+add_test(NAME job_manager COMMAND ccad_job_manager_tests)
 target_link_libraries(ccad_tests PRIVATE ccad_core)
 if(MINGW)
   target_link_options(ccad_tests PRIVATE -static -static-libgcc -static-libstdc++)

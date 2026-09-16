@@ -2267,3 +2267,6 @@ Track-arc nanometre coordinates use explicit long-double casts for strict MSVC b
 ### Typed courtyard overlap DRC
 
 Footprints can persist front- and back-courtyard polygon geometry in native JSON, and the courtyard DRC provider reports overlapping same-side courtyard polygons. Missing-definition and pad-hole semantics remain queued for a later slice.
+## Sprint 434 Job Manager Completion Semantics
+
+`JobManager::waitAll()` now provides a true completion barrier for background work. It waits until both the pending queue and active worker count reach zero, avoiding premature API responses and CPU-heavy polling. `ccad_job_manager_tests` covers a task that remains running after dequeue and verifies that `waitAll()` waits for its completion.

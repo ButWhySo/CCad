@@ -29,6 +29,8 @@ private:
     
     std::mutex queue_mutex_;
     std::condition_variable condition_;
+    std::condition_variable completion_condition_;
+    size_t active_tasks_;
     bool stop_;
 };
 
