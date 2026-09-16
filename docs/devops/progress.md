@@ -997,3 +997,7 @@ Excellon export now rejects non-through vias with incomplete or identical layer 
 ## Sprint 435 progress update (2026-09-16)
 
 JobManager workers now catch task exceptions, report failures, decrement active-task state, and continue processing later tasks. Regression test confirms a throwing task does not kill worker service. Qt Release build completed 79/79; full Qt CTest passed 82/82; official harness screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 436 progress update (2026-09-16)
+
+Implemented `AgentRunner::load_queue()` for the native queue schema. It restores pending goal/task identity, context, and tool arguments, rejects malformed roots/trailing data, and supports save/load restart continuity. Focused round-trip and malformed-input tests passed; Qt Release build completed 79/79; full Qt CTest passed 82/82; official harness screenshot was ingested and visually inspected with empty stderr.
