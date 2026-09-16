@@ -3,7 +3,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 class PnsRouter;
 
 // Interactive router tool bridge mapping interactive/CLI actions to the PNS Router.

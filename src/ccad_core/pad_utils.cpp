@@ -1,8 +1,11 @@
-#define _USE_MATH_DEFINES
 #include "ccad_core/pad_utils.hpp"
 #include "ccad_core/model.hpp"
 #include <cmath>
 #include <algorithm>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace ccad {
 

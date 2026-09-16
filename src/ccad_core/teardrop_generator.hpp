@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 class TeardropGenerator {
 public:

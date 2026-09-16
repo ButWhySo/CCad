@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Exports through-hole pad and via coordinates to Excellon format
 class DrillFileExporter {

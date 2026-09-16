@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Provides algorithms for inserting serpentine meanders into single-ended tracks to meet target lengths
 class TrackLengthTuning {

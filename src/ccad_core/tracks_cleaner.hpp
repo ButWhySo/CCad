@@ -3,7 +3,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Utility class to perform cleanup heuristics on board tracks
 class TracksCleaner {

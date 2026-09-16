@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Represents a bounding volume and rendering parameters for a 3D PCB feature
 struct Scene3DNode {

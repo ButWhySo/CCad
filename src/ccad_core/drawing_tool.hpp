@@ -5,7 +5,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Interactive drawing tool for geometric board primitives
 class DrawingTool {

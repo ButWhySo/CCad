@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Provides algorithms for coupled serpentine meandering and phase tuning for differential pairs
 class DiffPairTuning {

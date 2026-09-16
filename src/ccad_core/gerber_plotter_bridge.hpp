@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Interface for translating internal board geometry into standard Gerber (RS-274X) format
 class GerberPlotterBridge {

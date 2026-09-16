@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Plugin for parsing XML Eagle board formats (.brd)
 class EaglePlugin {

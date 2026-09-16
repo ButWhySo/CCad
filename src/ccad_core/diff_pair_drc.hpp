@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Represents a DRC violation specific to differential pair constraints
 struct DiffPairViolation {

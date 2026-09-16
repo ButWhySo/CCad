@@ -1031,3 +1031,6 @@ Schematic parity respects `SchSymbol.on_board`; off-board symbols are excluded f
 ## Sprint 389 handover
 
 BoardText stroke_width and DesignRules min_text_thickness persist through JSON. CLI sets declared stroke width; DRC emits TEXT_THICKNESS_BELOW_MINIMUM when enabled and missing or undersized. Font-outline collapse analysis remains deferred.
+## Sprint 390-391 handover
+
+`DrcTestProviderClearance` now reports different-net pad/pad, pad/via, and via/via proximity using copper clearance and conservative circularized pad extents. `tests/test_cli.cpp` escapes dollar tokens on POSIX shells so KiCad-style text variables reach CCad unchanged. Forward declarations for model structs now use `struct`, math constants are portable under warnings-as-errors, and explicit casts satisfy MSVC. Full integration DRC remains authoritative for production diagnostics; provider is independently tested.

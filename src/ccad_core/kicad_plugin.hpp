@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Plugin for parsing and saving KiCad S-expression files (.kicad_pcb)
 class KicadPlugin {

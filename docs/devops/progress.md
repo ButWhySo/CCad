@@ -848,3 +848,6 @@ Extended `TRACK_SEGMENT_LENGTH` to three-point track arcs with circular-sweep an
 ## Sprint 389 progress update (2026-09-16)
 
 Added explicit board-text stroke width, minimum-thickness rule, JSON/CLI persistence, validation, and TEXT_THICKNESS_BELOW_MINIMUM DRC. Full build 200/200, CTest 73/73, official visual proof passed; screenshot inspected, stderr empty.
+## Sprint 390-391 progress update (2026-09-16)
+
+Implemented the clearance DRC provider pad/pad, pad/via, and via/via checks with focused coverage. Repaired CI portability: POSIX CLI test now preserves literal `${VAR}` tokens, MSVC forward declarations match struct definitions, duplicate math macro definitions are removed, π is guarded locally, and nanometer-to-floating conversions are explicit. Full Qt build 112/112, CTest 75/75, focused CLI and clearance tests passed; official visual proof `sprint391_ci_portability_proof` passed with empty stderr and inspected screenshot.

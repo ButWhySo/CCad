@@ -5,7 +5,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 class BoardItem;
 
 // Tool for managing selection of items on the PCB canvas

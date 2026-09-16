@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Manages the visible layers, colors, and active drawing layers
 class AppearanceManager {

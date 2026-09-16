@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Plugin for parsing Altium board formats (.PcbDoc)
 class AltiumPlugin {

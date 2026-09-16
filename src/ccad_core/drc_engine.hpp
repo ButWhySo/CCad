@@ -7,7 +7,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Orchestrator for the Design Rule Check process.
 class DrcEngine {

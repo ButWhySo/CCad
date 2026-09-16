@@ -10,7 +10,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(MSVC)
-  add_compile_definitions(_USE_MATH_DEFINES)
 endif()
 
 add_library(ccad_core
@@ -250,6 +249,10 @@ add_test(NAME track_length_tuning COMMAND ccad_track_length_tuning_tests)
 add_executable(ccad_custom_drc_rules_tests tests/test_custom_drc_rules.cpp)
 target_link_libraries(ccad_custom_drc_rules_tests PRIVATE ccad_core)
 add_test(NAME custom_drc_rules COMMAND ccad_custom_drc_rules_tests)
+
+add_executable(ccad_drc_test_provider_clearance_tests tests/test_drc_test_provider_clearance.cpp)
+target_link_libraries(ccad_drc_test_provider_clearance_tests PRIVATE ccad_core)
+add_test(NAME drc_test_provider_clearance COMMAND ccad_drc_test_provider_clearance_tests)
 
 add_executable(ccad_3d_fastmath_tests
   tests/test_3d_fastmath.cpp

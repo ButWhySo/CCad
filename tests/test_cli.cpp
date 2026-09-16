@@ -17,6 +17,20 @@ std::string quote(const std::filesystem::path& path) {
   return "\"" + path.string() + "\"";
 }
 
+std::string shellLiteral(const std::string& value) {
+#ifdef _WIN32
+  return value;
+#else
+  std::string escaped;
+  escaped.reserve(value.size() + 8);
+  for (const char character : value) {
+    if (character == '$') escaped.push_back('\\');
+    escaped.push_back(character);
+  }
+  return escaped;
+#endif
+}
+
 int run(const std::string& command) {
 #ifdef _WIN32
   const std::string shell_command = "cmd /C \"" + command + "\"";
@@ -387,7 +401,7 @@ int main() {
           "project set-text-variable stores second variable");
   const std::string board_text_arg = "Rev_${REV}_${UNKNOWN}";
   require(run(quote(CCAD_BINARY) + " pcb add-text --file " + quote(standard_layers_path) +
-              " --id BT2 --layer F.SilkS --text " + board_text_arg +
+              " --id BT2 --layer F.SilkS --text " + shellLiteral(board_text_arg) +
               " --x-mm 10 --y-mm 22 --size-x-mm 1.5 --size-y-mm 1.5 --rotation-deg 0") == 0,
           "pcb add-text accepts variable-bearing board text");
 
@@ -413,7 +427,7 @@ int main() {
   const std::filesystem::path expand_text_path = temp / "expand-text.json";
   const std::string text_arg = "Release_${REV}_${UNKNOWN}";
   require(run(quote(CCAD_BINARY) + " pcb expand-text-variables --file " +
-              quote(standard_layers_path) + " --text " + text_arg + " > " +
+              quote(standard_layers_path) + " --text " + shellLiteral(text_arg) + " > " +
               quote(expand_text_path)) == 0,
           "pcb expand-text-variables exits zero for explicit text");
   const std::string expand_text_json = readFile(expand_text_path);

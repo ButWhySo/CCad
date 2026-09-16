@@ -5,8 +5,8 @@
 
 namespace ccad {
 
-class Board;
-class Footprint;
+struct Board;
+struct Footprint;
 
 // Handles the interactive placement of new footprints on the canvas
 class PlacementGhostTool {

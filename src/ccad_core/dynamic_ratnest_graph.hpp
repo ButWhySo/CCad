@@ -7,7 +7,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Represents an unrouted pad or track endpoint that requires connectivity
 struct RatnestNode {

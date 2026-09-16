@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Wires the connectivity graph to the board's modification event stream for real-time recalculation
 class EventDrivenRatnest {

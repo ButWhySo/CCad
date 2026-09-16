@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 class HierarchicalSheetParser;
 
 // Bridges cross-probing selection between schematic hierarchy and replicated board rooms

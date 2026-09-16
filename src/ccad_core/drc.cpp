@@ -1600,8 +1600,8 @@ void checkSolderMaskBridges(const Board& board, std::vector<Diagnostic>& diagnos
   auto maskCorners = [&board](const Pad& pad) {
     std::vector<Point> corners = padCorners(pad);
     const long double expansion = static_cast<long double>(board.design_rules.solder_mask_expansion.nanometers);
-    long double min_x = corners.front().x.nanometers, max_x = min_x;
-    long double min_y = corners.front().y.nanometers, max_y = min_y;
+    long double min_x = static_cast<long double>(corners.front().x.nanometers), max_x = min_x;
+    long double min_y = static_cast<long double>(corners.front().y.nanometers), max_y = min_y;
     for (const Point& point : corners) {
       min_x = std::min(min_x, static_cast<long double>(point.x.nanometers));
       max_x = std::max(max_x, static_cast<long double>(point.x.nanometers));

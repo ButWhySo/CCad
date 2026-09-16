@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Plugin for parsing legacy KiCad board formats (.brd)
 class LegacyPlugin {

@@ -5,7 +5,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 struct HierarchicalRoom;
 
 // Handles stamping logic for copying the internal layout of one room to another

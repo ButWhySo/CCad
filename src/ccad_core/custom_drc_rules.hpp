@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Represents a parsed custom design rule
 struct CustomDrcRule {

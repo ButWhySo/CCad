@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Evaluates valid intentional shorting between different nets across specific footprint zones
 class NetTieDrc {

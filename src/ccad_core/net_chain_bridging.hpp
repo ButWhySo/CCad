@@ -7,7 +7,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 class Track;
 class Project;
 

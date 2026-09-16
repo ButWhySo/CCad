@@ -8,7 +8,7 @@
 
 namespace ccad {
 
-class Footprint;
+struct Footprint;
 
 // Acts as a bridge between the core catalog and the interactive footprint chooser UI
 class FootprintChooserBridge {

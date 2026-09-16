@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Base class for Design Rule Check test algorithms.
 class DrcTestProvider {

@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Represents a logical grouping of components derived from a specific schematic sheet instance
 struct HierarchicalRoom {

@@ -113,8 +113,8 @@ std::string exportSpecctraDsn(const Project& project) {
     auto it = comp_footprints.find(comp_id);
     double cx = 0, cy = 0, angle = 0;
     if (it != comp_footprints.end()) {
-      cx = it->second->position.x.nanometers;
-      cy = it->second->position.y.nanometers;
+      cx = static_cast<double>(it->second->position.x.nanometers);
+      cy = static_cast<double>(it->second->position.y.nanometers);
       angle = it->second->rotation_degrees * 3.14159265358979323846 / 180.0;
     }
 

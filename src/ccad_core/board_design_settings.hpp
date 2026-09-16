@@ -6,7 +6,7 @@
 
 namespace ccad {
 
-class DesignRules;
+struct DesignRules;
 
 struct DesignRuleValidationError {
     std::string code;

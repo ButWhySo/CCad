@@ -5,7 +5,7 @@
 
 namespace ccad {
 
-class Board;
+struct Board;
 
 // Exports footprint centroids and rotations for automated pick-and-place assembly (CPL format)
 class PositionFileExporter {
