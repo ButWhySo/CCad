@@ -1067,3 +1067,7 @@ Primary DRC now calls `checkUnroutedPhysicalNets` after physical geometry checks
 ## Sprint 400 handover
 
 `RouterTool::routeTrack` splits diagonal requests at `(end_x, start_y)`, commits both connected segments, and preserves one-segment behavior for horizontal/vertical routes. `ReviewWindow::uiWorkflowRouteTrackJson` now calls the shared route commit path rather than simulating two canvas clicks, so semantic GUI routes receive multi-segment behavior. Live proof: 42 calls, 84 persisted tracks.
+
+## Sprint 401 handover
+
+`RouterTool::commitRouting` rejects a candidate segment when its centerline approaches a different-net pad closer than board copper clearance plus the fixed 0.125 mm route half-width. Rejection clears in-progress state without mutating tracks. This is pad-only first slice; track/via/zone obstacle indexing and route error response remain next.

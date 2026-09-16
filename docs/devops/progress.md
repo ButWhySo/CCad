@@ -881,6 +881,10 @@ Added active-net endpoint snapping to `RouterTool`: pad/via targets within 0.75 
 
 Added two-segment Manhattan routing for diagonal `RouterTool::routeTrack` requests; axis-aligned requests remain one segment. GUI `ui.route_track` now uses this complete kernel path. Full rebuild 81/81, Qt-path CTest 79/79, official harness passed, and live GUI harness confirmed 42/42 calls produced 84 persisted tracks. Final screenshot inspected.
 
+## Sprint 401 progress update (2026-09-16)
+
+Added clearance-aware route rejection against different-net pads using board copper clearance plus route half-width. Same-net routes remain allowed; blocked routes leave board track count unchanged. Focused test passed; full rebuild 76/76, Qt-path CTest 79/79, official harness and final routed screenshot passed inspection.
+
 ## Sprint 398 progress update (2026-09-16)
 
 Wired GUI semantic `ui.route_track` automation through shared `RouterTool` kernel state. Active PCB layer and net are applied to the committed segment, then the project is saved and re-rendered. Focused GUI tests passed; live agent route harness performed 42/42 routes and persisted 42 tracks; rebuilt routed-board screenshot inspected with clean stdout/stderr.

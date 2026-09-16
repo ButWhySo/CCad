@@ -1,5 +1,6 @@
 #include "router_tool.hpp"
 #include "model.hpp"
+#include "geometry.hpp"
 #include <string>
 #include <cmath>
 namespace ccad {
@@ -36,6 +37,18 @@ void RouterTool::updateRouting(double x,double y) {
     if (distance <= best) { best = distance; current_x_ = px; current_y_ = py; }
   }
 }
-void RouterTool::commitRouting() { if (!board_ || !routing_) return; if (start_x_!=current_x_ || start_y_!=current_y_) board_->tracks.push_back(TrackSegment{.id="interactive-track-"+std::to_string(board_->tracks.size()+1),.net_id=active_net_id_,.layer_id=layer_==0?"F.Cu":"B.Cu",.start=Point{millimeters(start_x_),millimeters(start_y_)},.end=Point{millimeters(current_x_),millimeters(current_y_)},.width=millimeters(0.25),.source_route_request_id=""}); routing_=false; }
+void RouterTool::commitRouting() {
+  if (!board_ || !routing_) return;
+  const Point start{millimeters(start_x_), millimeters(start_y_)};
+  const Point end{millimeters(current_x_), millimeters(current_y_)};
+  const double required = static_cast<double>(board_->design_rules.copper_clearance.nanometers) / 1'000'000.0 + 0.125;
+  for (const Pad& pad : board_->pads) {
+    if (active_net_id_.empty() || pad.net_id.empty() || pad.net_id == active_net_id_) continue;
+    if (distancePointToSegment(pad.position, start, end) < required) { routing_ = false; return; }
+  }
+  if (start_x_ != current_x_ || start_y_ != current_y_)
+    board_->tracks.push_back(TrackSegment{.id="interactive-track-"+std::to_string(board_->tracks.size()+1),.net_id=active_net_id_,.layer_id=layer_==0?"F.Cu":"B.Cu",.start=start,.end=end,.width=millimeters(0.25),.source_route_request_id=""});
+  routing_=false;
+}
 void RouterTool::cancelRouting() { if (board_) routing_=false; }
 } // namespace ccad
