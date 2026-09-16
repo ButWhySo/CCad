@@ -949,3 +949,7 @@ SES import now propagates enclosing Specctra `(net ...)` identity onto imported 
 ## Sprint 423 progress update (2026-09-16)
 
 SES importer now resolves via diameter from route-library padstack circle shapes, matching KiCad Specctra import behavior; net identity remains preserved. Drill stays at safe fallback when SES padstack IDs carry no encoded drill. Focused DSN test and full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 424 progress update (2026-09-16)
+
+SES via import now parses KiCad-style padstack IDs such as `Via_15:8_mil`, converting encoded drill size to CCad nanometres while retaining the safe fallback for generic IDs. Focused DSN test and full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.

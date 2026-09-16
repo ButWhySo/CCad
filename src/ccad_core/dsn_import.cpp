@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <optional>
 
 namespace ccad {
 
@@ -18,6 +19,17 @@ static double parseMm(const std::string& str) {
 
 static Length mmToLength(double mm) {
   return nanometers(static_cast<std::int64_t>(mm * 1000000.0));
+}
+
+static std::optional<Length> parseEncodedDrill(std::string_view id) {
+  const std::size_t colon = id.find(':');
+  const std::size_t suffix = id.rfind("_mil");
+  if (colon == std::string_view::npos || suffix == std::string_view::npos || suffix <= colon + 1) return std::nullopt;
+  try {
+    return mmToLength(std::stod(std::string(id.substr(colon + 1, suffix - colon - 1))) * 0.0254);
+  } catch (...) {
+    return std::nullopt;
+  }
 }
 
 SesRouting importSpecctraSes(std::string_view source) {
@@ -93,6 +105,7 @@ SesRouting importSpecctraSes(std::string_view source) {
           via.diameter = mmToLength(it->second);
         }
         via.drill = millimeters(0.3);
+        if (auto drill = parseEncodedDrill(node->children[1]->value); drill.has_value()) via.drill = *drill;
         via.position.x = mmToLength(parseMm(node->children[2]->value));
         via.position.y = mmToLength(parseMm(node->children[3]->value));
         result.vias.push_back(via);

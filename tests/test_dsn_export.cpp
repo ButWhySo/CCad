@@ -91,7 +91,7 @@ void testDsnExportKeepsLargeNanometerCoordinates() {
 }
 
 void testSesImport() {
-  const std::string ses = "(session (route (library (padstack \"viastack_V1\" (shape (circle \"F.Cu\" 0.5)) (shape (circle \"B.Cu\" 0.5)))) (network (net \"N1\" (wire (path \"F.Cu\" 0.25 1.0 2.0 3.0 4.0 5.0 6.0)) (via \"viastack_V1\" 7.0 8.0))))))";
+  const std::string ses = "(session (route (library (padstack \"Via_15:8_mil\" (shape (circle \"F.Cu\" 0.5)) (shape (circle \"B.Cu\" 0.5)))) (network (net \"N1\" (wire (path \"F.Cu\" 0.25 1.0 2.0 3.0 4.0 5.0 6.0)) (via \"Via_15:8_mil\" 7.0 8.0))))))";
   auto routing = importSpecctraSes(ses);
   if (routing.tracks.size() != 2) throw std::runtime_error("expected 2 tracks from polyline");
   if (routing.vias.size() != 1) throw std::runtime_error("expected 1 via");
@@ -102,7 +102,7 @@ void testSesImport() {
   if (routing.tracks[1].start.x.nanometers != 3000000 || routing.tracks[1].end.y.nanometers != 6000000) {
     throw std::runtime_error("track 1 coordinates wrong");
   }
-  if (routing.vias[0].net_id != "N1" || routing.vias[0].diameter.nanometers != 1000000 || routing.vias[0].position.x.nanometers != 7000000 || routing.vias[0].position.y.nanometers != 8000000) {
+  if (routing.vias[0].net_id != "N1" || routing.vias[0].diameter.nanometers != 1000000 || routing.vias[0].drill.nanometers != 203200 || routing.vias[0].position.x.nanometers != 7000000 || routing.vias[0].position.y.nanometers != 8000000) {
     throw std::runtime_error("via coordinates wrong");
   }
 }
