@@ -25,6 +25,7 @@ int main() {
     auto removable = std::make_shared<ccad::PnsItem>();
     removable->setPosition(50, 50);
     node.addItem(removable);
+    node.addItem(removable);
     require(node.removeItem(removable.get()), "PNS node removes owned item");
     require(node.query(50, 50, 0).empty(), "removed item leaves index");
     require(node.hasObstacle(12, 10, 0), "PNS node detects indexed obstacle");

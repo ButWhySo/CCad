@@ -1071,3 +1071,7 @@ Added `PnsNode::removeItem()` with synchronized index removal and ownership eras
 ## Sprint 456 progress update (2026-09-16)
 
 Added `PnsNode::hasObstacle()` as a direct clearance decision over indexed expanded-radius queries. Regression covers obstacle hit and distant miss. Full build/CTest and official harness passed; screenshot inspected.
+
+## Sprint 457 progress update (2026-09-16)
+
+Made `PnsNode::addItem()` ownership-deduplicating, matching existing index deduplication. Duplicate insertion no longer leaves hidden duplicate ownership after removal. Full build/CTest and official harness passed; screenshot inspected.

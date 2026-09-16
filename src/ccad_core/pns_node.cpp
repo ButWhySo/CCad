@@ -4,7 +4,10 @@
 namespace ccad {
 
 void PnsNode::addItem(std::shared_ptr<PnsItem> item) {
-    if (item) {
+    if (item && std::none_of(items_.begin(), items_.end(),
+                            [item](const std::shared_ptr<PnsItem>& owned) {
+                                return owned.get() == item.get();
+                            })) {
         items_.push_back(item);
         index_.add(item.get());
     }

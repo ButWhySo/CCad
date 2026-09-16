@@ -1165,4 +1165,6 @@ Sprint 455 adds `PnsNode::removeItem()`, which removes owned items from both nod
 
 Sprint 456 adds `PnsNode::hasObstacle()`, a boolean clearance query backed by `PnsIndex::query()` and item radii, giving routing callers a direct obstacle decision.
 
+Sprint 457 makes node insertion idempotent by pointer identity, keeping owned-item storage consistent with index deduplication and removal.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.
