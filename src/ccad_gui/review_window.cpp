@@ -3639,6 +3639,13 @@ void ReviewWindow::applyStyle() {
       margin-right: 32px;
       margin-left: 8px;
     }
+    QFrame[agentRole="noticeCard"] {
+      background: #2b2417;
+      border: 1px solid #8b6f35;
+      border-left: 3px solid #d29922;
+      border-radius: 7px;
+      margin: 5px 24px 5px 8px;
+    }
     QFrame[agentRole="toolCard"] {
       background: #0d1117;
       border: 1px solid #30363d;

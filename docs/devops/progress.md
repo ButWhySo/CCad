@@ -909,3 +909,6 @@ TrackArc route-obstacle checks now sample the true three-point circumcircle swee
 ## Sprint 408 progress update (2026-09-16)
 
 Replaced quadratic TrackArc obstacle approximation with circumcircle reconstruction and midpoint-containing sweep sampling. Collinear arcs retain fallback. Qt Release build completed 76/76; Qt-path CTest completed 79/79; official visual harness screenshot inspected. Analytic closest-point clearance remains a precision backlog item.
+## Sprint 409 progress update (2026-09-16)
+
+Agent-panel provider fallback messages now render as compact `noticeCard` warnings instead of oversized generic chat bubbles. Targeted agent-panel/UI-map tests passed; Qt Release build completed 87/87; Qt-path CTest completed 79/79; official visual harness screenshot was ingested and visually confirmed notice hierarchy, readable text, stable canvas, and intact local-tool status.

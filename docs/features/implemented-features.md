@@ -2241,3 +2241,6 @@ Different-net circular track arcs are now checked using their reconstructed thre
 ### Reconstructed circular-arc obstacles
 
 Router obstacle checks reconstruct stored three-point circular arcs and follow the midpoint-containing sweep. Different-net routes crossing that sampled circular path or its clearance are rejected on the active layer.
+### Agent provider notice presentation
+
+Provider fallback/status messages now use a compact warning card, visually separating environment configuration notices from normal assistant responses and tool cards while preserving local CCad tool availability text.

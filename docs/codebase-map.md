@@ -1092,3 +1092,6 @@ Primary DRC now calls `checkUnroutedPhysicalNets` after physical geometry checks
 ## Sprint 408 handover (2026-09-16)
 
 Arc collision now derives circular geometry from three points, chooses orientation from the signed cross product, and unwraps sweep through the midpoint before sampling 16 arc intervals. This aligns obstacle shape with stored circular TrackArc semantics; clearance still uses sampled vertices/segments and can be made adaptive later.
+## Sprint 409 handover (2026-09-16)
+
+`AgentPanel::appendChatMessage` classifies provider-unavailable/status notices by text prefix and assigns `agentRole=noticeCard`; both standalone AgentPanel and ReviewWindow styles define compact amber warning treatment. Provider messaging remains local-status only and does not expose secrets or enable network probing.

@@ -522,6 +522,14 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
       margin: 6px 4px;
       padding: 10px 14px;
     }
+    QFrame[agentRole="noticeCard"] {
+      background-color: #2b2417;
+      border: 1px solid #8b6f35;
+      border-left: 3px solid #d29922;
+      border-radius: 7px;
+      margin: 5px 4px;
+      padding: 6px 10px;
+    }
     QFrame[agentRole="chatBubbleUser"] {
       background-color: #2d2f36;
       border-radius: 14px;
@@ -892,7 +900,8 @@ void AgentPanel::appendChatMessage(const QString& role, const QString& text) {
   container_layout->setContentsMargins(0, 4, 0, 4);
 
   auto* bubble = new QFrame(container);
-  bubble->setProperty("agentRole", role == "agent" ? "chatBubbleAgent" : "chatBubbleUser");
+  const bool notice = text.startsWith("Agent provider ") || text.startsWith("Provider ");
+  bubble->setProperty("agentRole", notice ? "noticeCard" : (role == "agent" ? "chatBubbleAgent" : "chatBubbleUser"));
   auto* layout = new QVBoxLayout(bubble);
   layout->setContentsMargins(4, 4, 4, 4);
   
