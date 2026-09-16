@@ -2304,7 +2304,7 @@ int main() {
 
   const std::filesystem::path cross_probe_path = temp / "cross-probe.json";
   require(run(quote(CCAD_BINARY) + " pcb cross-probe --file " + quote(board_project_path) +
-              " --packet \"$NET: N1\" > " + quote(cross_probe_path)) == 0,
+              " --packet \"" + shellLiteral("$NET: N1") + "\" > " + quote(cross_probe_path)) == 0,
           "pcb cross-probe exits zero");
   const std::string cross_probe_json = readFile(cross_probe_path);
   require(cross_probe_json.find("\"kicad_source\": \"pcbnew/cross-probing.cpp\"") !=

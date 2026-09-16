@@ -927,3 +927,6 @@ Added dedicated `router_width_clearance` regression target proving a wide differ
 ## Sprint 414 progress update (2026-09-16)
 
 Persisted board-zone holes through native JSON serialization and made routes wholly contained within one hole pass through while boundary entry remains blocked. Fixed MSVC portability by explicitly casting TrackArc coordinates and matching `Project`'s struct forward declaration. Corrected track-clearance unit conversion from nanometres to millimetres. CI-equivalent core build completed 324/324 and CTest 64/64 with MinGW runtime PATH; Qt Release CTest completed 80/80. Official harness `sprint414_ci_zoneholes` produced screenshot and stdout/stderr logs; screenshot inspection confirmed stable PCB canvas, layer panel, agent panel, and routed geometry.
+## Sprint 415 progress update (2026-09-16)
+
+Made the CLI cross-probe regression shell-portable by escaping `$NET` on POSIX shells through the existing `shellLiteral` helper. Removed an orphaned tracked Copilot gitlink with no `.gitmodules` URL, eliminating checkout cleanup failure. Core CLI target build and focused CTest passed; official visual harness from Sprint 414 remains the unchanged GUI proof for this CLI-only sprint.
