@@ -1159,4 +1159,6 @@ Sprint 450 adds `length()`, `remainingLength()`, and `targetReached()` to meande
 
 Sprint 451 adds `PnsMeanderPlacer::meanderToTarget()`, which uses current target deficit to create a perpendicular single-bend detour before destination. Integer rounding may slightly overshoot or undershoot; multi-bend optimization, clearance, and obstacle avoidance remain future work.
 
+Sprint 453 extends `meanderToTarget()` with optional `bends`; positive counts generate alternating perpendicular intermediate points, defaulting to one bend for API compatibility. This is first serpentine-like geometry, not yet obstacle-aware routing.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.

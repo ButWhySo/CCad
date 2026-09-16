@@ -22,7 +22,7 @@ bool PnsMeanderPlacer::meander(int x, int y) {
     return true;
 }
 
-bool PnsMeanderPlacer::meanderToTarget(int x, int y, int amplitude) {
+bool PnsMeanderPlacer::meanderToTarget(int x, int y, int amplitude, int bends) {
     if (!start_item_ || path_.empty()) return false;
     const auto origin = path_.back();
     const long double dx = static_cast<long double>(x - origin.first);
@@ -36,11 +36,16 @@ bool PnsMeanderPlacer::meanderToTarget(int x, int y, int amplitude) {
     const long double detour = std::sqrt(std::max(0.0L, half * half - half_direct * half_direct));
     const long double requested_offset = amplitude > 0 ? static_cast<long double>(amplitude) : 0.0L;
     const long double offset = std::max(requested_offset, detour + 1.0L);
-    const long double ox = direct > 0.0L ? -dy / direct * offset : 0.0L;
-    const long double oy = direct > 0.0L ? dx / direct * offset : offset;
-    const int mid_x = static_cast<int>(std::llround(static_cast<long double>(origin.first) + dx / 2.0L + ox));
-    const int mid_y = static_cast<int>(std::llround(static_cast<long double>(origin.second) + dy / 2.0L + oy));
-    meander(mid_x, mid_y);
+    const int bend_count = std::max(1, bends);
+    for (int i = 1; i <= bend_count; ++i) {
+        const long double fraction = static_cast<long double>(i) / (bend_count + 1);
+        const long double sign = i % 2 == 0 ? -1.0L : 1.0L;
+        const long double ox = direct > 0.0L ? -dy / direct * offset * sign : 0.0L;
+        const long double oy = direct > 0.0L ? dx / direct * offset * sign : offset * sign;
+        const int bend_x = static_cast<int>(std::llround(static_cast<long double>(origin.first) + dx * fraction + ox));
+        const int bend_y = static_cast<int>(std::llround(static_cast<long double>(origin.second) + dy * fraction + oy));
+        meander(bend_x, bend_y);
+    }
     return meander(x, y);
 }
 

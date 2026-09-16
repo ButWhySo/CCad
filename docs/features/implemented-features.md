@@ -8,6 +8,8 @@ Meander placement also reports current length, non-negative remaining target dis
 
 `meanderToTarget()` can add a perpendicular bend when direct travel is shorter than requested target length, giving agents a concrete first target-reaching geometry primitive.
 
+`meanderToTarget()` accepts optional bend count and generates alternating multi-bend paths for longer targets.
+
 PNS differential-pair placement now supports distinct endpoints, configurable non-negative gap, and coupled endpoint updates during start/route. This is an endpoint-placement primitive, not yet a complete KiCad-equivalent differential-pair track router.
 
 ## Build System And DevOps
