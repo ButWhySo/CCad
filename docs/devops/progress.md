@@ -1116,3 +1116,7 @@ Added PNS arc obstacles using a typed arc item and a 16-step quadratic envelope 
 ## Sprint 467 progress update (2026-09-17)
 
 Fixed POSIX CLI cross-probe test quoting: packets containing `$NET` now use a platform-safe shell argument instead of relying on nested double-quote escaping. This directly addresses Linux CTest failure at `pcb cross-probe reports net packet kind`. Focused CLI test, full CTest 89/89, and official visual harness passed; stderr empty.
+
+## Sprint 468 progress update (2026-09-17)
+
+Hardened cross-probe packet normalization against an argv-preserved backslash before `$`, so shell transport cannot change `$NET` packet classification. Added core regression. Focused 2/2 tests, full build 85/85, CTest 89/89, and official harness passed; screenshot inspected and stderr empty.

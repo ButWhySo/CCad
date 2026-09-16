@@ -1187,4 +1187,6 @@ Sprint 466 adds `PnsArcItem` and arc envelope checks to `PnsIndex::querySegment(
 
 Sprint 467 adds `shellArgument()` to the CLI integration test harness for platform-correct packet quoting. POSIX `$NET` cross-probe arguments are single-quoted with embedded-quote escaping; Windows retains double-quoted arguments.
 
+Sprint 468 normalizes a leading escaped dollar (`\\$`) in `resolveCrossProbePacket()` before packet dispatch. This preserves packet classification if an argv transport leaves the shell escape intact.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.

@@ -282,6 +282,10 @@ std::string formatCrossProbePad(std::string_view reference, std::string_view pad
 CrossProbeReport resolveCrossProbePacket(const Project& project, std::string_view packet) {
   CrossProbeReport report;
   report.packet = trim(packet);
+  // Some shells preserve the escape protecting a leading dollar sign.
+  if (report.packet.rfind("\\$", 0) == 0) {
+    report.packet.erase(0, 1);
+  }
   addPending(report);
 
   if (report.packet.rfind("$CLEAR", 0) == 0) {

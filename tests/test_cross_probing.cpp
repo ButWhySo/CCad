@@ -96,6 +96,8 @@ void test_net_packet_resolves_board_and_schematic_targets() {
 
   require(report.kicad_source == "pcbnew/cross-probing.cpp", "report records KiCad source");
   require(report.packet_kind == "net", "packet kind is net");
+  require(ccad::resolveCrossProbePacket(project, "\\$NET: N1").packet_kind == "net",
+          "escaped dollar packet kind is net");
   require(report.requested_nets.size() == 1 && report.requested_nets.front() == "N1",
           "report records requested net");
   require(report.targets.size() == 4, "net resolves schematic net plus pad, via, and track");
