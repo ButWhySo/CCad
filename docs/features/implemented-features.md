@@ -2244,3 +2244,6 @@ Router obstacle checks reconstruct stored three-point circular arcs and follow t
 ### Agent provider notice presentation
 
 Provider fallback/status messages now use a compact warning card, visually separating environment configuration notices from normal assistant responses and tool cards while preserving local CCad tool availability text.
+### Agent route rejection feedback
+
+Agent-facing route responses now report `blocked_obstacle` when copper clearance prevents placement, allowing callers to distinguish a real design-rule rejection from a zero-length gesture.

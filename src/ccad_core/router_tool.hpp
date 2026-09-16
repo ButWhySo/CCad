@@ -24,6 +24,7 @@ public:
     void updateRouting(double x, double y);
     void commitRouting();
     void cancelRouting();
+    bool routeBlocked() const { return last_commit_blocked_; }
 
 private:
     Board* board_ = nullptr;

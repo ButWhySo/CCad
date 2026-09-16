@@ -7879,7 +7879,8 @@ QString ReviewWindow::commitTrackPlacementForAutomation(const double start_x_mm,
     saveProjectCacheAfterMutation("Track routed");
     renderReview(ccad::buildReview(project_cache_));
     const std::size_t track_count = project_cache_.boards[0].tracks.size();
-    return result(track_count > before_count, track_count > before_count ? "placed" : "zero_length", track_count);
+    return result(track_count > before_count, track_count > before_count ? "placed" :
+                  (router.routeBlocked() ? "blocked_obstacle" : "zero_length"), track_count);
   } catch (const std::exception& e) {
     if (interaction_mode_ != InteractionMode::Default) {
       cancelInteractionMode();

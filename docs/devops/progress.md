@@ -912,3 +912,6 @@ Replaced quadratic TrackArc obstacle approximation with circumcircle reconstruct
 ## Sprint 409 progress update (2026-09-16)
 
 Agent-panel provider fallback messages now render as compact `noticeCard` warnings instead of oversized generic chat bubbles. Targeted agent-panel/UI-map tests passed; Qt Release build completed 87/87; Qt-path CTest completed 79/79; official visual harness screenshot was ingested and visually confirmed notice hierarchy, readable text, stable canvas, and intact local-tool status.
+## Sprint 410 progress update (2026-09-16)
+
+GUI semantic route responses now distinguish `blocked_obstacle` from `zero_length`, exposing RouterTool obstacle rejection to agents without mutating the board. Targeted router and agent-panel tests passed; Qt Release build completed 90/90; Qt-path CTest completed 79/79; official visual harness screenshot was inspected and showed stable canvas, layers, and agent panel.

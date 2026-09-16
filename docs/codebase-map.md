@@ -1095,3 +1095,6 @@ Arc collision now derives circular geometry from three points, chooses orientati
 ## Sprint 409 handover (2026-09-16)
 
 `AgentPanel::appendChatMessage` classifies provider-unavailable/status notices by text prefix and assigns `agentRole=noticeCard`; both standalone AgentPanel and ReviewWindow styles define compact amber warning treatment. Provider messaging remains local-status only and does not expose secrets or enable network probing.
+## Sprint 410 handover (2026-09-16)
+
+`RouterTool::routeBlocked()` exposes the last gesture's obstacle result. `ReviewWindow::commitTrackPlacementForAutomation` maps a no-new-track result to `blocked_obstacle` when this flag is set, otherwise preserving `zero_length`; successful routes remain `placed`. Response schema remains version 1 with track count.
