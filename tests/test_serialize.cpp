@@ -132,6 +132,7 @@ int main() {
                       ccad::Point{.x = ccad::millimeters(20), .y = ccad::millimeters(2)},
                       ccad::Point{.x = ccad::millimeters(20), .y = ccad::millimeters(12)},
                       ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(12)}},
+          .filled_contours = {},
           .priority = 1,
           .clearance = ccad::millimeters(0.2),
           .min_thickness = ccad::millimeters(0.25),

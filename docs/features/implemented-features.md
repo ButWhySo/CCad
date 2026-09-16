@@ -2341,3 +2341,4 @@ Zone settings validate thermal spoke width, thermal gap, and minimum island area
 
 `calculateZoneFill()` now validates enabled zone contours, preserves outer and hole contours, and reports net contour area for agent/kernel consumers. It does not claim obstacle clearance, thermal spoke generation, or island pruning yet.
 `ccad pcb refill-zones --file <path> [--zone-id <id>]` exposes this deterministic result as JSON, including diagnostics for malformed contours.
+Add `--apply true` to persist valid contours in `BoardZone.filled_contours`; omit it for read-only inspection.

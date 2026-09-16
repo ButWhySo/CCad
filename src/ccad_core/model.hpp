@@ -481,6 +481,8 @@ struct BoardZone {
   std::vector<std::string> layer_ids;
   std::vector<Point> outline;
   std::vector<std::vector<Point>> holes;
+  // Last deterministic fill result; empty means no fill has been committed.
+  std::vector<std::vector<Point>> filled_contours;
   int priority = 0;
   Length clearance;
   Length min_thickness;

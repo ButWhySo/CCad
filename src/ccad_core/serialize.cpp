@@ -2080,6 +2080,8 @@ class JsonReader {
             zone.outline = readPointArray();
           } else if (key == "holes") {
             zone.holes = readPointArrayArray();
+          } else if (key == "filled_contours") {
+            zone.filled_contours = readPointArrayArray();
           } else if (key == "priority") {
             zone.priority = readInt();
           } else if (key == "clearance_nm") {
@@ -3390,6 +3392,16 @@ std::string dumpProjectJson(const Project& project) {
           out << (j + 1 == zone.holes.at(h).size() ? "" : ",") << '\n';
         }
         out << "          ]" << (h + 1 == zone.holes.size() ? "" : ",") << '\n';
+      }
+      out << "        ],\n";
+      out << "        \"filled_contours\": [\n";
+      for (std::size_t h = 0; h < zone.filled_contours.size(); ++h) {
+        out << "          [\n";
+        for (std::size_t j = 0; j < zone.filled_contours.at(h).size(); ++j) {
+          writePoint(out, 12, zone.filled_contours.at(h).at(j));
+          out << (j + 1 == zone.filled_contours.at(h).size() ? "" : ",") << '\n';
+        }
+        out << "          ]" << (h + 1 == zone.filled_contours.size() ? "" : ",") << '\n';
       }
       out << "        ],\n";
       out << "        \"priority\": " << zone.priority << ",\n";

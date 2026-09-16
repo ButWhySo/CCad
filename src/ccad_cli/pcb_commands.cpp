@@ -2053,10 +2053,11 @@ int pcbCommand(const std::vector<std::string>& args) {
 
     if (subcommand == "refill-zones") {
       const std::map<std::string, std::string> options =
-          parseOptions(args, 1, {"--file", "--zone-id"});
+          parseOptions(args, 1, {"--file", "--zone-id", "--apply"});
       ccad::Project project = loadProjectFile(requireOption(options, "--file"));
       const ccad::Board& board = requireBoard(project);
       const std::string requested_id = options.contains("--zone-id") ? options.at("--zone-id") : "";
+      const bool apply = options.contains("--apply") && requireBoolOption(options, "--apply");
       std::ostringstream out;
       out << "{\n  \"zones\": [\n";
       bool first = true;
@@ -2069,15 +2070,23 @@ int pcbCommand(const std::vector<std::string>& args) {
             << "\",\n      \"filled\": " << (fill.filled ? "true" : "false")
             << ",\n      \"contour_count\": " << fill.contours.size()
             << ",\n      \"area_square_nanometers\": " << fill.area_square_nanometers
+            << ",\n      \"applied\": " << (apply && fill.filled ? "true" : "false")
             << ",\n      \"diagnostics\": [";
         for (std::size_t i = 0; i < fill.diagnostics.size(); ++i) {
           if (i) out << ", ";
           out << "\"" << ccad::escapeJson(fill.diagnostics.at(i)) << "\"";
         }
         out << "]\n    }";
+        if (apply && fill.filled) {
+          for (ccad::BoardZone& mutable_zone : project.boards.front().zones) {
+            if (mutable_zone.id == zone.id) mutable_zone.filled_contours = fill.contours;
+          }
+        }
       }
       if (!requested_id.empty() && first) throw std::runtime_error("unknown zone: " + requested_id);
       out << "\n  ]\n}\n";
+      if (apply && !writeProjectFile(requireOption(options, "--file"), project))
+        throw std::runtime_error("failed to write refilled project");
       std::cout << out.str();
       return 0;
     }
@@ -2622,6 +2631,7 @@ int pcbCommand(const std::vector<std::string>& args) {
                       ccad::Point{.x = origin.x,
                                   .y = ccad::nanometers(origin.y.nanometers +
                                                         size.height.nanometers)}},
+          .filled_contours = {},
           .priority = requireNonNegativeIntOption(options, "--priority"),
           .clearance = requirePositiveMillimeters(options, "--clearance-mm"),
           .min_thickness = requirePositiveMillimeters(options, "--min-thickness-mm"),
