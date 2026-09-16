@@ -1261,3 +1261,9 @@ add_executable(ccad_pns_board_adapter_tests
 )
 target_link_libraries(ccad_pns_board_adapter_tests PRIVATE ccad_core)
 add_test(NAME pns_board_adapter COMMAND ccad_pns_board_adapter_tests)
+
+add_executable(ccad_router_pns_adapter_tests
+  tests/test_router_pns_adapter.cpp
+)
+target_link_libraries(ccad_router_pns_adapter_tests PRIVATE ccad_core)
+add_test(NAME router_pns_adapter COMMAND ccad_router_pns_adapter_tests)

@@ -1175,4 +1175,6 @@ Sprint 460 adds `PnsBoardObstacleIndex`, a narrow board-to-PNS adapter for diffe
 
 Sprint 461 adds `PnsBoardObstacleIndex::blockingItems()`, returning matched PNS items for diagnostics while retaining `blockedSegment()` convenience behavior.
 
+Sprint 462 wires the board adapter into RouterTool's commit path after existing precise pad/via checks. PNS fallback reports `pns_pad_via`; existing `pad`/`via`/track/zone/arc reasons remain preferred.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.

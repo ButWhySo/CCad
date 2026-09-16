@@ -24,6 +24,8 @@ Segment obstacle queries can filter by active net and copper layer.
 
 The adapter can return blocker identities for actionable routing diagnostics.
 
+Interactive routing now has PNS-backed pad/via fallback obstacle protection with an explicit `pns_pad_via` blocked reason.
+
 PNS differential-pair placement now supports distinct endpoints, configurable non-negative gap, and coupled endpoint updates during start/route. This is an endpoint-placement primitive, not yet a complete KiCad-equivalent differential-pair track router.
 
 ## Build System And DevOps

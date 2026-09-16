@@ -146,6 +146,19 @@ void RouterTool::commitRouting() {
     }
   }
   const std::string layer_id = layer_ == 0 ? "F.Cu" : "B.Cu";
+  pns_obstacles_.rebuild(*board_, active_net_id_, layer_id);
+  const auto start_x_nm = start.x.nanometers;
+  const auto start_y_nm = start.y.nanometers;
+  const auto end_x_nm = end.x.nanometers;
+  const auto end_y_nm = end.y.nanometers;
+  const auto clearance_nm = static_cast<std::int64_t>(std::llround(required * 1'000'000.0));
+  if (!active_net_id_.empty() && pns_obstacles_.blockedSegment(start_x_nm, start_y_nm,
+                                                                end_x_nm, end_y_nm, clearance_nm)) {
+    routing_ = false;
+    last_commit_blocked_ = true;
+    blocked_reason_ = "pns_pad_via";
+    return;
+  }
   for (const TrackArc& arc : board_->track_arcs) {
     if (arc.layer_id != layer_id || active_net_id_.empty() || arc.net_id.empty() || arc.net_id == active_net_id_) continue;
     const double arc_clearance = required + static_cast<double>(arc.width.nanometers) / 2'000'000.0;

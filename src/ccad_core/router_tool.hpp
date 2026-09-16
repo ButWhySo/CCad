@@ -2,6 +2,7 @@
 #define CCAD_CORE_ROUTER_TOOL_HPP
 
 #include <string>
+#include "pns_board_adapter.hpp"
 
 namespace ccad {
 
@@ -36,6 +37,7 @@ private:
     std::string active_net_id_;
     bool last_commit_blocked_ = false;
     std::string blocked_reason_;
+    PnsBoardObstacleIndex pns_obstacles_;
 };
 
 } // namespace ccad
