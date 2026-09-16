@@ -1059,3 +1059,7 @@ Primary DRC now calls `checkUnroutedPhysicalNets` after physical geometry checks
 ## Sprint 398 handover
 
 `ReviewWindow::commitTrackPlacementForAutomation` now invokes `RouterTool` directly for semantic `ui.route_track` calls, then assigns active net/layer metadata, saves, and re-renders. Live proof used `scripts/live_agent_route_demo.py`: 42 route calls all returned `performed=true`; `inspect` reported 42 tracks and 6 vias. Target screenshot: `artifacts/screenshots/sprint398-live-route-target.png`.
+
+## Sprint 399 handover
+
+`RouterTool::setActiveNet` enables same-net endpoint snapping during `updateRouting`; nearest pad/via within 0.75 mm becomes route endpoint, while empty active-net state permits generic routing. Commit writes the active net directly. GUI semantic route path supplies active net before gesture execution. Snapping remains point-only; arc/multi-segment and clearance-aware routing remain next.

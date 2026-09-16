@@ -7872,6 +7872,7 @@ QString ReviewWindow::commitTrackPlacementForAutomation(const double start_x_mm,
     const std::size_t before_count = project_cache_.boards[0].tracks.size();
     ccad::RouterTool router;
     router.setBoard(&project_cache_.boards[0]);
+    router.setActiveNet(activePcbNetOrDefault());
     const int layer = activePcbLayerOrDefault() == "B.Cu" ? 1 : 0;
     router.startRouting(start_x_mm, start_y_mm, layer);
     router.updateRouting(end_x_mm, end_y_mm);
