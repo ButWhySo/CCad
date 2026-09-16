@@ -1055,3 +1055,7 @@ Replaced the PNS meander placer no-op with observable polyline state. Start reco
 ## Sprint 450 progress update (2026-09-16)
 
 Added measurable target progress to PNS meander placement. `length()`, `remainingLength()`, and `targetReached()` expose actual polyline progress with safe target clamping. Focused and full CTest passed; official visual proof pending.
+
+## Sprint 451 progress update (2026-09-16)
+
+Added `meanderToTarget()`: direct destination when already sufficient, otherwise one perpendicular bend is generated from target deficit, then destination is appended. Regression proves bend generation and target reach; full CTest passed, official visual proof pending.

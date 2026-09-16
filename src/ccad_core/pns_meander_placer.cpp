@@ -1,4 +1,5 @@
 #include "pns_meander_placer.hpp"
+#include <algorithm>
 #include <cmath>
 
 namespace ccad {
@@ -19,6 +20,29 @@ bool PnsMeanderPlacer::meander(int x, int y) {
         start_item_->setPosition(x, y);
     }
     return true;
+}
+
+bool PnsMeanderPlacer::meanderToTarget(int x, int y, int amplitude) {
+    if (!start_item_ || path_.empty()) return false;
+    const auto origin = path_.back();
+    const long double dx = static_cast<long double>(x - origin.first);
+    const long double dy = static_cast<long double>(y - origin.second);
+    const long double direct = std::sqrt(dx * dx + dy * dy);
+    if (target_length_ <= 0 || length() + direct >= static_cast<long double>(target_length_))
+        return meander(x, y);
+
+    const long double half = (static_cast<long double>(target_length_) - length()) / 2.0L;
+    const long double half_direct = direct / 2.0L;
+    const long double detour = std::sqrt(std::max(0.0L, half * half - half_direct * half_direct));
+    const long double scale = direct > 0.0L ? detour / direct : 0.0L;
+    const long double offset = amplitude > 0 ? static_cast<long double>(amplitude) : detour;
+    const long double ox = direct > 0.0L ? -dy / direct * offset : 0.0L;
+    const long double oy = direct > 0.0L ? dx / direct * offset : offset;
+    (void)scale;
+    const int mid_x = static_cast<int>(std::llround(static_cast<long double>(origin.first) + dx / 2.0L + ox));
+    const int mid_y = static_cast<int>(std::llround(static_cast<long double>(origin.second) + dy / 2.0L + oy));
+    meander(mid_x, mid_y);
+    return meander(x, y);
 }
 
 long double PnsMeanderPlacer::length() const {

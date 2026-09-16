@@ -1157,4 +1157,6 @@ Sprint 448 gives `PnsMeanderPlacer` an observable polyline contract through `pat
 
 Sprint 450 adds `length()`, `remainingLength()`, and `targetReached()` to meander contract. Metrics derive from current Euclidean polyline geometry; target values clamp below zero, while actual serpentine synthesis remains future work.
 
+Sprint 451 adds `PnsMeanderPlacer::meanderToTarget()`, which uses current target deficit to create a perpendicular single-bend detour before destination. Integer rounding may slightly overshoot or undershoot; multi-bend optimization, clearance, and obstacle avoidance remain future work.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.

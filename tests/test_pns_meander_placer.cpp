@@ -25,6 +25,11 @@ int main() {
             "meander reports reached target after sufficient path");
     placer.setTargetLength(-1);
     require(placer.targetLength() == 0, "meander clamps negative target length");
+    placer.setTargetLength(50);
+    require(placer.start(item, 10, 20), "meander restarts for target detour");
+    require(placer.meanderToTarget(30, 40), "meander creates target-reaching detour");
+    require(placer.path().size() == 3 && placer.targetReached(),
+            "target detour records bend and reaches target");
     placer.finish();
     require(placer.path().empty() && !placer.meander(0, 0),
             "finish clears path and disables routing");

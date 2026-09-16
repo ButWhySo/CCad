@@ -6,6 +6,8 @@ PNS meander placement now records a deduplicated routed polyline, updates its ac
 
 Meander placement also reports current length, non-negative remaining target distance, and target-reached state for adaptive agent control.
 
+`meanderToTarget()` can add a perpendicular bend when direct travel is shorter than requested target length, giving agents a concrete first target-reaching geometry primitive.
+
 PNS differential-pair placement now supports distinct endpoints, configurable non-negative gap, and coupled endpoint updates during start/route. This is an endpoint-placement primitive, not yet a complete KiCad-equivalent differential-pair track router.
 
 ## Build System And DevOps
