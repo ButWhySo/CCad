@@ -2,6 +2,13 @@
 
 CCad is a ground-up, machine-callable PCB design kernel for native desktop CAD software. The first milestone builds a C++ logical circuit core, deterministic JSON representation, ERC checks, and a native CLI that agents can call without driving a GUI.
 
+## Demo
+
+
+https://github.com/user-attachments/assets/05717497-df24-4f35-9a38-16e1ddd11aba
+
+
+
 ## Current Phase
 
 Phase 8 / 8: Agent Runtime and EDA Evidence Expansion.
