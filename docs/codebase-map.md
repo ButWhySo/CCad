@@ -1040,3 +1040,6 @@ BoardText stroke_width and DesignRules min_text_thickness persist through JSON. 
 ## Sprint 393 handover
 
 Primary `runDrc` now checks via center-to-edge distance minus via radius and emits `VIA_EDGE_CLEARANCE`; GUI diagnostics consume this normal `Diagnostic` path. Target proof used a rebuilt `ccad.exe` and `ccad_gui.exe` on a moved near-edge via, confirming JSON diagnostics and rendered board state. Pad edge diagnostics already existed in `checkPads`.
+## Sprint 394 handover
+
+`DrcTestProviderUnrouted` groups pad/via endpoints by net, adds track endpoints, unions exact-coordinate track connections, and reports an unrouted net when physical nodes remain in multiple components. It is independently callable through `DrcEngine`; primary `runDrc` unrouted diagnostics remain a follow-up integration slice.

@@ -258,6 +258,10 @@ add_executable(ccad_drc_test_provider_edge_clearance_tests tests/test_drc_test_p
 target_link_libraries(ccad_drc_test_provider_edge_clearance_tests PRIVATE ccad_core)
 add_test(NAME drc_test_provider_edge_clearance COMMAND ccad_drc_test_provider_edge_clearance_tests)
 
+add_executable(ccad_drc_test_provider_unrouted_tests tests/test_drc_test_provider_unrouted.cpp)
+target_link_libraries(ccad_drc_test_provider_unrouted_tests PRIVATE ccad_core)
+add_test(NAME drc_test_provider_unrouted COMMAND ccad_drc_test_provider_unrouted_tests)
+
 add_executable(ccad_3d_fastmath_tests
   tests/test_3d_fastmath.cpp
 )

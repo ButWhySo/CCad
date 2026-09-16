@@ -857,3 +857,6 @@ Implemented `DrcTestProviderEdgeClearance` for pad and via copper against rectan
 ## Sprint 393 progress update (2026-09-16)
 
 Wired via edge-clearance reporting into primary `runDrc`, producing `VIA_EDGE_CLEARANCE` for copper reaching configured board-edge clearance. Focused DRC/provider tests passed; rebuilt CLI/GUI before targeted proof. Near-edge `TD_VIA` produced two errors including `VIA_EDGE_CLEARANCE`; target screenshot inspected, stderr empty.
+## Sprint 394 progress update (2026-09-16)
+
+Implemented `DrcTestProviderUnrouted` using deterministic physical-node components and exact track-endpoint unions. Disconnected same-net pads/vias now report error code 2; multi-segment connections resolve as connected. Focused test passed; full Qt build 100/100, CTest 77/77, official harness `sprint394_unrouted_proof` before/after screenshots individually inspected, stderr empty.
