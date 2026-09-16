@@ -347,10 +347,10 @@ struct Via {
   Point position;
   Length diameter;
   Length drill;
-  std::string start_layer_id;
-  std::string end_layer_id;
   bool locked = false;
   bool teardrops_enabled = false;
+  std::string start_layer_id = "";
+  std::string end_layer_id = "";
 };
 
 struct TrackSegment {

@@ -961,3 +961,7 @@ Added typed via start/end layer IDs, JSON persistence, and SES inference from pa
 ## Sprint 426 progress update (2026-09-16)
 
 SES via padstack validation now rejects a referenced padstack without a supported circle shape, matching KiCad’s explicit import error; missing external padstacks retain compatibility fallback. Focused DSN test and full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 427 progress update (2026-09-16)
+
+Via layer-span fields now carry default initializers and follow existing aggregate fields, preventing `-Werror=missing-field-initializers` regressions in older callers and GUI construction sites. Retry build completed 316/316; full Qt CTest passed 81/81; final official harness completed and screenshot was ingested and visually inspected with empty stderr.
