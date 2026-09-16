@@ -1206,3 +1206,4 @@ Agent capability metadata now advertises `RefillZones` through `pcb refill-zones
 For rectangular holes, the same clearance is applied outward as a knockout; non-rectangular offset geometry remains explicitly unsupported.
 Negative zone clearance is rejected by `calculateZoneFill()`; invalid board state cannot produce a successful fill result.
 Fill holes are validated against the outer contour before area subtraction; outside holes produce an unapplied diagnostic result.
+`test_serialize.cpp` now verifies committed filled-contour geometry round-trips through project persistence.

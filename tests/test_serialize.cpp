@@ -132,7 +132,10 @@ int main() {
                       ccad::Point{.x = ccad::millimeters(20), .y = ccad::millimeters(2)},
                       ccad::Point{.x = ccad::millimeters(20), .y = ccad::millimeters(12)},
                       ccad::Point{.x = ccad::millimeters(2), .y = ccad::millimeters(12)}},
-          .filled_contours = {},
+          .filled_contours = {{ccad::Point{.x = ccad::millimeters(2.2), .y = ccad::millimeters(2.2)},
+                              ccad::Point{.x = ccad::millimeters(19.8), .y = ccad::millimeters(2.2)},
+                              ccad::Point{.x = ccad::millimeters(19.8), .y = ccad::millimeters(11.8)},
+                              ccad::Point{.x = ccad::millimeters(2.2), .y = ccad::millimeters(11.8)}}},
           .priority = 1,
           .clearance = ccad::millimeters(0.2),
           .min_thickness = ccad::millimeters(0.25),
@@ -424,6 +427,10 @@ int main() {
   require(loaded.boards[0].zones.at(0).fill_enabled, "board zone fill state round trips");
   require(loaded.boards[0].zones.at(0).pad_connection == "thermal",
           "board zone pad connection round trips");
+  require(loaded.boards[0].zones.at(0).filled_contours.size() == 1,
+          "board zone filled contour round trips");
+  require(loaded.boards[0].zones.at(0).filled_contours.at(0).at(0).x.nanometers == 2200000,
+          "board zone filled contour geometry round trips");
   require(loaded.boards[0].route_requests.size() == 1, "route requests round trip");
   require(loaded.boards[0].route_requests.at(0).from_object_id == "P1",
           "route request start object round trips");

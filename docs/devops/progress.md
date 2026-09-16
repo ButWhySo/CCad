@@ -1170,3 +1170,6 @@ Zone fill now rejects negative clearance with a diagnostic instead of silently c
 ## Sprint 481 progress update (2026-09-17)
 
 Added zone-hole containment validation. A hole outside the outer contour now rejects the fill result with a diagnostic instead of subtracting unrelated area. Focused test passed; full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
+## Sprint 482 progress update (2026-09-17)
+
+Added serializer regression for committed fill contours, proving outer fill geometry survives JSON save/load. Full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
