@@ -2348,3 +2348,4 @@ PNS routing obstacle adaptation consumes committed fill contours when present, a
 Rectangular zone refill applies configured clearance as an inset before persistence/export; non-rectangular clearance is diagnosed as unsupported.
 Rectangular zone holes expand under clearance knockout, preventing over-reporting of filled copper.
 Zone fill reports negative clearance as invalid instead of silently clamping it.
+Zone fill rejects holes outside their containing outer contour.

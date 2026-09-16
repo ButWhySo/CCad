@@ -1205,3 +1205,4 @@ Agent capability metadata now advertises `RefillZones` through `pcb refill-zones
 `zone_fill.cpp` applies clearance inset for axis-aligned rectangles. General polygon clipping, pad/via/track knockouts, thermals, and island policy remain deferred.
 For rectangular holes, the same clearance is applied outward as a knockout; non-rectangular offset geometry remains explicitly unsupported.
 Negative zone clearance is rejected by `calculateZoneFill()`; invalid board state cannot produce a successful fill result.
+Fill holes are validated against the outer contour before area subtraction; outside holes produce an unapplied diagnostic result.

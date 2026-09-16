@@ -35,6 +35,22 @@ long double signedArea(const std::vector<Point>& contour) {
   }
   return twice_area / 2.0L;
 }
+
+bool pointInContour(const Point& point, const std::vector<Point>& contour) {
+  bool inside = false;
+  for (std::size_t i = 0, j = contour.size() - 1; i < contour.size(); j = i++) {
+    const auto& a = contour[i];
+    const auto& b = contour[j];
+    const bool crosses = ((a.y.nanometers > point.y.nanometers) != (b.y.nanometers > point.y.nanometers));
+    if (crosses) {
+      const long double x = static_cast<long double>(b.x.nanometers - a.x.nanometers) *
+                                (point.y.nanometers - a.y.nanometers) /
+                                static_cast<long double>(b.y.nanometers - a.y.nanometers) + a.x.nanometers;
+      if (static_cast<long double>(point.x.nanometers) < x) inside = !inside;
+    }
+  }
+  return inside;
+}
 }  // namespace
 
 ZoneFillResult calculateZoneFill(const BoardZone& zone) {
@@ -75,6 +91,13 @@ ZoneFillResult calculateZoneFill(const BoardZone& zone) {
       result.contours.clear();
       result.area_square_nanometers = 0;
       result.diagnostics.push_back("clearance knockout supports axis-aligned rectangular holes only");
+      return result;
+    }
+    if (!pointInContour(fill_hole.front(), result.contours.front())) {
+      result.filled = false;
+      result.contours.clear();
+      result.area_square_nanometers = 0;
+      result.diagnostics.push_back("zone hole must be contained by outer contour");
       return result;
     }
     result.contours.push_back(std::move(fill_hole));

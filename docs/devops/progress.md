@@ -1166,3 +1166,7 @@ Corrected rectangular hole clearance semantics: outer contour shrinks by clearan
 ## Sprint 480 progress update (2026-09-17)
 
 Zone fill now rejects negative clearance with a diagnostic instead of silently clamping it to zero. Focused test passed; full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
+
+## Sprint 481 progress update (2026-09-17)
+
+Added zone-hole containment validation. A hole outside the outer contour now rejects the fill result with a diagnostic instead of subtracting unrelated area. Focused test passed; full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
