@@ -1009,3 +1009,7 @@ AgentPanel session checkpoints now persist the local run-queue state, and sessio
 ## Sprint 438 progress update (2026-09-16)
 
 Added feature-specific GUI regression coverage for run-queue checkpoint round-trip: a session checkpoint writes `run_queue_state`, and a second AgentPanel restores the visible queue depth. Focused GUI test passed; full Qt CTest passed 82/82; official harness screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 439 progress update (2026-09-16)
+
+Replaced `convertImageToPolygons()` bounding-box placeholder with alpha-aware, color-preserving horizontal span polygons scaled in nanometres. Added raster conversion regression coverage. Qt build completed 106/106; full Qt CTest passed 83/83; official harness screenshot was ingested and visually inspected with empty stderr.

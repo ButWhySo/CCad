@@ -2278,3 +2278,5 @@ JobManager workers also isolate task failures: exceptions are reported as task f
 AgentPanel session checkpoints now include local run-queue state. Loading a bound session restores queue status, current step, counts, depth, and cancelability through existing mapped session controls; provider and external execution remain disabled by policy.
 
 The GUI regression suite now exercises this persistence path with a real temporary session file, proving checkpoint write and second-panel reload rather than only inspecting widget construction.
+
+`convertImageToPolygons()` now emits real schematic polygon geometry from RGBA image data instead of a bounding-box placeholder. Transparent pixels are skipped, adjacent same-color pixels on each row are merged, RGB color is retained as hex, and pixel scale is converted to CCad lengths. `ccad_gfx_import_utils_tests` covers this behavior.
