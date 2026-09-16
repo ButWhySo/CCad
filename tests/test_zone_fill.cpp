@@ -40,5 +40,11 @@ int main() {
   const auto outside_hole = ccad::calculateZoneFill(zone);
   require(!outside_hole.filled && !outside_hole.diagnostics.empty(),
           "outside hole rejected");
+  zone.clearance = ccad::nanometers(0);
+  const auto spokes = ccad::buildRectangularThermalSpokes(
+      zone, p(5, 5), ccad::nanometers(1), ccad::nanometers(1), ccad::nanometers(1));
+  require(spokes.size() == 4 && spokes.front().start.x.nanometers == 7 &&
+              spokes.front().end.x.nanometers == 10,
+          "rectangular thermal spokes reach zone boundary");
   std::cout << "Zone fill tests passed!\n";
 }

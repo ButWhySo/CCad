@@ -2350,3 +2350,4 @@ Rectangular zone holes expand under clearance knockout, preventing over-reportin
 Zone fill reports negative clearance as invalid instead of silently clamping it.
 Zone fill rejects holes outside their containing outer contour.
 Committed filled contours have JSON save/load regression coverage.
+Rectangular thermal-spoke preparation now returns up to four axial spokes from the pad edge plus gap to the zone boundary, with focused geometry coverage. Integration with refill results and KiCad-compatible thermal clearance/mode behavior remains future work.

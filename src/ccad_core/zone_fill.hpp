@@ -18,6 +18,16 @@ struct ZoneFillResult {
   std::vector<std::string> diagnostics;
 };
 
+struct ZoneThermalSpoke {
+  Point start;
+  Point end;
+  Length width;
+};
+
+std::vector<ZoneThermalSpoke> buildRectangularThermalSpokes(
+    const BoardZone& zone, const Point& pad_center, Length pad_radius,
+    Length gap, Length spoke_width);
+
 ZoneFillResult calculateZoneFill(const BoardZone& zone);
 
 }  // namespace ccad

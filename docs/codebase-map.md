@@ -1207,3 +1207,4 @@ For rectangular holes, the same clearance is applied outward as a knockout; non-
 Negative zone clearance is rejected by `calculateZoneFill()`; invalid board state cannot produce a successful fill result.
 Fill holes are validated against the outer contour before area subtraction; outside holes produce an unapplied diagnostic result.
 `test_serialize.cpp` now verifies committed filled-contour geometry round-trips through project persistence.
+`zone_fill.*` now also exposes `buildRectangularThermalSpokes()` for deterministic four-direction spoke geometry around a pad in an axis-aligned rectangular zone. This is preparatory API only; it is not wired into fill results, persistence, export, DRC, hole clipping, or KiCad thermal-mode semantics.

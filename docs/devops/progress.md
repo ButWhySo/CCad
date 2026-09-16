@@ -1173,3 +1173,7 @@ Added zone-hole containment validation. A hole outside the outer contour now rej
 ## Sprint 482 progress update (2026-09-17)
 
 Added serializer regression for committed fill contours, proving outer fill geometry survives JSON save/load. Full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
+
+## Sprint 483 progress update (2026-09-17)
+
+Added deterministic rectangular thermal-spoke geometry preparation to `zone_fill.*`, with focused coverage proving four axial spokes begin after pad clearance and reach the rectangular zone boundary. This is an explicit first slice only: it is not yet integrated into `calculateZoneFill()`, persistence, export, or DRC, and it does not clip against holes or implement KiCad thermal modes. Full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.

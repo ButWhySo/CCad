@@ -53,6 +53,38 @@ bool pointInContour(const Point& point, const std::vector<Point>& contour) {
 }
 }  // namespace
 
+std::vector<ZoneThermalSpoke> buildRectangularThermalSpokes(
+    const BoardZone& zone, const Point& pad_center, Length pad_radius,
+    Length gap, Length spoke_width) {
+  std::vector<ZoneThermalSpoke> spokes;
+  if (zone.outline.size() != 4 || pad_radius.nanometers < 0 || gap.nanometers < 0 ||
+      spoke_width.nanometers <= 0) return spokes;
+  const auto outer = offsetRectangle(zone.outline, 0);
+  if (outer.empty() || !pointInContour(pad_center, outer)) return spokes;
+  const int64_t min_x = std::min_element(outer.begin(), outer.end(),
+      [](const Point& a, const Point& b) { return a.x.nanometers < b.x.nanometers; })->x.nanometers;
+  const int64_t max_x = std::max_element(outer.begin(), outer.end(),
+      [](const Point& a, const Point& b) { return a.x.nanometers < b.x.nanometers; })->x.nanometers;
+  const int64_t min_y = std::min_element(outer.begin(), outer.end(),
+      [](const Point& a, const Point& b) { return a.y.nanometers < b.y.nanometers; })->y.nanometers;
+  const int64_t max_y = std::max_element(outer.begin(), outer.end(),
+      [](const Point& a, const Point& b) { return a.y.nanometers < b.y.nanometers; })->y.nanometers;
+  const int64_t start = pad_radius.nanometers + gap.nanometers;
+  if (pad_center.x.nanometers + start < max_x)
+    spokes.push_back({{nanometers(pad_center.x.nanometers + start), pad_center.y},
+                      {nanometers(max_x), pad_center.y}, spoke_width});
+  if (pad_center.x.nanometers - start > min_x)
+    spokes.push_back({{nanometers(pad_center.x.nanometers - start), pad_center.y},
+                      {nanometers(min_x), pad_center.y}, spoke_width});
+  if (pad_center.y.nanometers + start < max_y)
+    spokes.push_back({{pad_center.x, nanometers(pad_center.y.nanometers + start)},
+                      {pad_center.x, nanometers(max_y)}, spoke_width});
+  if (pad_center.y.nanometers - start > min_y)
+    spokes.push_back({{pad_center.x, nanometers(pad_center.y.nanometers - start)},
+                      {pad_center.x, nanometers(min_y)}, spoke_width});
+  return spokes;
+}
+
 ZoneFillResult calculateZoneFill(const BoardZone& zone) {
   ZoneFillResult result;
   if (!zone.fill_enabled) {
