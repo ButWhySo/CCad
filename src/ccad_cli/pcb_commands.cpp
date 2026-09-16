@@ -27,6 +27,7 @@
 #include "ccad_core/pnp_export.hpp"
 #include "ccad_core/serialize.hpp"
 #include "ccad_core/teardrop_generator.hpp"
+#include "ccad_core/zone_fill.hpp"
 #include "ccad_core/filesystem_u8.hpp"
 #include "ccad_core/spread_footprints.hpp"
 #include <fstream>
@@ -2047,6 +2048,37 @@ int pcbCommand(const std::vector<std::string>& args) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
       }
+      return 0;
+    }
+
+    if (subcommand == "refill-zones") {
+      const std::map<std::string, std::string> options =
+          parseOptions(args, 1, {"--file", "--zone-id"});
+      ccad::Project project = loadProjectFile(requireOption(options, "--file"));
+      const ccad::Board& board = requireBoard(project);
+      const std::string requested_id = options.contains("--zone-id") ? options.at("--zone-id") : "";
+      std::ostringstream out;
+      out << "{\n  \"zones\": [\n";
+      bool first = true;
+      for (const ccad::BoardZone& zone : board.zones) {
+        if (!requested_id.empty() && zone.id != requested_id) continue;
+        const ccad::ZoneFillResult fill = ccad::calculateZoneFill(zone);
+        if (!first) out << ",\n";
+        first = false;
+        out << "    {\n      \"id\": \"" << ccad::escapeJson(zone.id)
+            << "\",\n      \"filled\": " << (fill.filled ? "true" : "false")
+            << ",\n      \"contour_count\": " << fill.contours.size()
+            << ",\n      \"area_square_nanometers\": " << fill.area_square_nanometers
+            << ",\n      \"diagnostics\": [";
+        for (std::size_t i = 0; i < fill.diagnostics.size(); ++i) {
+          if (i) out << ", ";
+          out << "\"" << ccad::escapeJson(fill.diagnostics.at(i)) << "\"";
+        }
+        out << "]\n    }";
+      }
+      if (!requested_id.empty() && first) throw std::runtime_error("unknown zone: " + requested_id);
+      out << "\n  ]\n}\n";
+      std::cout << out.str();
       return 0;
     }
 

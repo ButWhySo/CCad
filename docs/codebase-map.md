@@ -1197,3 +1197,4 @@ Sprint 468 normalizes a leading escaped dollar (`\\$`) in `resolveCrossProbePack
 Zone settings: `src/ccad_core/zone_settings.*` owns global zone defaults and now rejects non-finite or negative thermal/island values. `BoardZone.fill_enabled` remains a persisted intent flag; KiCad-equivalent refill geometry, clearances, thermals, and island removal are still deferred.
 
 Zone fill first slice: `src/ccad_core/zone_fill.*` exposes `calculateZoneFill(const BoardZone&)`, returning enabled state, outer/hole contours, net area, and diagnostics. It is deterministic geometry preparation, not yet KiCad-equivalent clearance/thermal/island filling.
+CLI `pcb refill-zones` exposes this result as JSON without mutating the project. It is the agent-facing inspection surface pending transactional refill mutation and full KiCad filler semantics.

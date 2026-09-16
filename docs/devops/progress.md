@@ -1132,6 +1132,10 @@ Extended PNS polygon obstacles with zone holes. Routes strictly inside holes are
 ## Sprint 472 progress update (2026-09-17)
 
 Added `calculateZoneFill()` to the core. It produces a deterministic fill result from enabled zone outer and hole contours, computes net contour area, preserves contour identity, and rejects malformed holes with diagnostics. Clearance knockouts, thermal reliefs, island removal, and obstacle clipping remain explicitly deferred to later filler slices. Focused tests passed 2/2; full Qt Release build completed 118/118; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
+
+## Sprint 473 progress update (2026-09-17)
+
+Exposed the first fill result through `ccad pcb refill-zones --file <path> [--zone-id <id>]`. The command loads a project without mutation, calculates deterministic contour results, and emits machine-readable JSON with fill state, contour count, area, and diagnostics. CLI regression passed; full Qt Release build completed 118/118; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
 ## Sprint 471 progress update (2026-09-17)
 
 Added finite, non-negative validation for global zone thermal spoke width, thermal gap, and minimum island area settings. Focused zone-settings test passed; Qt Release build completed 118/118; full CTest passed 90/90; official harness passed with screenshot inspection and empty stderr. KiCad `ZONE_FILLER` comparison confirms actual filled polygon storage, clearance knockouts, thermal reliefs, and island policy remain future implementation work.

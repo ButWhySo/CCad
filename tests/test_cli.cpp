@@ -1168,6 +1168,18 @@ int main() {
   require(zone_json.find("\"pad_connection\": \"thermal\"") != std::string::npos,
           "pcb add-zone writes pad connection");
 
+  const std::filesystem::path refill_zones_path = temp / "refill-zones.json";
+  require(run(quote(CCAD_BINARY) + " pcb refill-zones --file " + quote(board_project_path) +
+              " --zone-id Z1 > " + quote(refill_zones_path)) == 0,
+          "pcb refill-zones exits zero");
+  const std::string refill_zones_json = readFile(refill_zones_path);
+  require(refill_zones_json.find("\"id\": \"Z1\"") != std::string::npos,
+          "pcb refill-zones reports requested zone");
+  require(refill_zones_json.find("\"filled\": true") != std::string::npos,
+          "pcb refill-zones reports filled state");
+  require(refill_zones_json.find("\"contour_count\": 1") != std::string::npos,
+          "pcb refill-zones reports contour count");
+
   const std::string add_placement_region_command =
       quote(CCAD_BINARY) + " pcb add-placement-region --file " + quote(board_project_path) +
       " --id PR1 --kind component --x-mm 2 --y-mm 3 --width-mm 10 --height-mm 6";
