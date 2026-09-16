@@ -1197,3 +1197,7 @@ Generalized thermal-spoke hole blocking from rectangular bounds to polygon edge 
 ## Sprint 488 progress update (2026-09-17)
 
 Zone fill now has a board-aware overload that derives thermal spokes for matching-net pads, and `pcb refill-zones` reports `thermal_spoke_count` using explicit 0.5 mm gap/width defaults. Legacy zone-only API and persisted contour schema remain compatible; spokes are reported geometry, not yet persisted/exported as copper. Full Qt Ninja build completed 155/155; CTest passed 91/91; CLI+zone focused tests passed 2/2; official harness passed, screenshot inspected, stderr empty.
+
+## Sprint 489 progress update (2026-09-17)
+
+References checked: current KiCad documentation states zone connection applies to same-net pads on the zone layer, with `solid`, `thermal`, and `none` behavior. CCad board-aware refill now filters pads by zone copper layer and suppresses spokes for `direct`, `solid`, and `none` connections. Focused tests pass; full CTest rerun passed 91/91 after one transient idle orchestrator-test stall; official harness passed, screenshot inspected, stderr empty.

@@ -87,6 +87,17 @@ bool blockedByHole(const Point& start, const Point& end,
     return false;
   });
 }
+
+bool padOnZoneLayer(const BoardZone& zone, const Pad& pad) {
+  if (zone.layer_ids.empty() || pad.padstack.layer_set.empty()) return true;
+  return std::any_of(zone.layer_ids.begin(), zone.layer_ids.end(), [&](const std::string& zone_layer) {
+    return std::any_of(pad.padstack.layer_set.begin(), pad.padstack.layer_set.end(),
+                       [&](const std::string& pad_layer) {
+                         return pad_layer == zone_layer ||
+                                (pad_layer == "*.Cu" && zone_layer.ends_with(".Cu"));
+                       });
+  });
+}
 }  // namespace
 
 std::vector<ZoneThermalSpoke> buildRectangularThermalSpokes(
@@ -188,9 +199,11 @@ ZoneFillResult calculateZoneFill(const BoardZone& zone, const std::vector<Pad>& 
 ZoneFillResult calculateZoneFill(const BoardZone& zone, const std::vector<Pad>& pads,
                                  Length gap, Length spoke_width) {
   ZoneFillResult result = calculateZoneFill(zone);
-  if (!result.filled || zone.pad_connection == "direct") return result;
+  if (!result.filled || zone.pad_connection == "direct" || zone.pad_connection == "solid" ||
+      zone.pad_connection == "none")
+    return result;
   for (const Pad& pad : pads) {
-    if (pad.net_id != zone.net_id || pad.net_id.empty()) continue;
+    if (pad.net_id != zone.net_id || pad.net_id.empty() || !padOnZoneLayer(zone, pad)) continue;
     int64_t width = 0;
     for (const auto& [layer, props] : pad.padstack.copper_props) {
       (void)layer;

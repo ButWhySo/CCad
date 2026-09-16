@@ -68,5 +68,14 @@ int main() {
   const auto board_fill = ccad::calculateZoneFill(zone, std::vector<ccad::Pad>{pad});
   require(board_fill.filled && board_fill.thermal_spokes.size() == 4,
           "board zone fill reports matching-pad thermal spokes");
+  zone.layer_ids = {"F.Cu"};
+  zone.pad_connection = "thermal";
+  pad.padstack.layer_set = {"B.Cu"};
+  const auto wrong_layer_fill = ccad::calculateZoneFill(zone, std::vector<ccad::Pad>{pad});
+  require(wrong_layer_fill.thermal_spokes.empty(), "thermal spokes ignore pad on other layer");
+  pad.padstack.layer_set = {"F.Cu"};
+  zone.pad_connection = "none";
+  const auto none_fill = ccad::calculateZoneFill(zone, std::vector<ccad::Pad>{pad});
+  require(none_fill.thermal_spokes.empty(), "none pad connection suppresses thermal spokes");
   std::cout << "Zone fill tests passed!\n";
 }
