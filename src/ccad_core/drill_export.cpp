@@ -47,6 +47,14 @@ std::string exportToDrillExcellon(const Project& project) {
   }
 
   ss << "%\n";
+
+  for (const Via& via : board.vias) {
+      if (via.via_type != "through" || !via.start_layer_id.empty() || !via.end_layer_id.empty()) {
+          ss << "; CCAD_VIA id=" << via.id << " type=" << via.via_type
+             << " start=" << (via.start_layer_id.empty() ? "-" : via.start_layer_id)
+             << " stop=" << (via.end_layer_id.empty() ? "-" : via.end_layer_id) << "\n";
+      }
+  }
   
   for (const auto& [size, points] : drill_groups) {
       ss << "T" << tool_map[size] << "\n";

@@ -28,7 +28,10 @@ int main() {
       .id = "via1",
       .position = ccad::Point{.x = ccad::millimeters(12.7), .y = ccad::millimeters(25.4)},
       .diameter = ccad::millimeters(0.8),
-      .drill = ccad::millimeters(0.4)
+      .drill = ccad::millimeters(0.4),
+      .start_layer_id = "F.Cu",
+      .end_layer_id = "In1.Cu",
+      .via_type = "blind"
   });
   
   // Pad without drill (SMD) should be ignored
@@ -59,6 +62,8 @@ int main() {
   // 12.7mm = 0.5 inch -> 05000 format
   // 25.4mm = 1 inch -> 10000 format
   require(exported.find("X005000Y010000") != std::string::npos, "Output must contain coordinates for via");
+  require(exported.find("; CCAD_VIA id=via1 type=blind start=F.Cu stop=In1.Cu") != std::string::npos,
+          "Output must preserve non-through via metadata comment");
   
   // SMD pad should not be in the output
   require(exported.find("X000000Y000000") == std::string::npos, "Output must not contain SMD pad");

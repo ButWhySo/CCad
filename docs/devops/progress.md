@@ -981,3 +981,7 @@ Via selection inspector now displays Via Type, Start Layer, and End Layer beside
 ## Sprint 431 progress update (2026-09-16)
 
 DRC now validates non-through via type and layer spans, reporting invalid identical endpoints, unknown layers, and unsupported via types. Targeted DRC test passed; full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 432 progress update (2026-09-16)
+
+Excellon drill export now preserves non-through via type and layer span as standards-safe comment records while leaving tool definitions and drill coordinates unchanged. Drill export test passed; full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
