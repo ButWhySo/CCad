@@ -205,6 +205,7 @@ int main() {
   test_pin.name = "Input";
   test_pin.type = "input";
   test_pin.position = ccad::Point{ccad::nanometers(100), ccad::nanometers(200)};
+  test_pin.side = "left";
   test_sheet.pins.push_back(test_pin);
   project.schematics[0].sheets.push_back(test_sheet);
 
@@ -462,6 +463,7 @@ int main() {
   require(loaded.schematics[0].sheets[0].pins.size() == 1, "sheet pin count round trips");
   require(loaded.schematics[0].sheets[0].pins[0].id == "SP1", "sheet pin id round trips");
   require(loaded.schematics[0].sheets[0].pins[0].type == "input", "sheet pin type round trips");
+  require(loaded.schematics[0].sheets[0].pins[0].side == "left", "sheet pin side round trips");
 
   require(loaded.schematics[0].texts.size() == 1, "text count round trips");
   require(loaded.schematics[0].texts[0].id == "TXT1", "text id round trips");

@@ -1148,3 +1148,5 @@ Sprint 443 adds explicit Directive schematic-label typing and round-trippable `l
 Sprint 444 makes `board_canvas_renderer.cpp` decode valid base64 board reference images into `QGraphicsPixmapItem` objects with scale and opacity; invalid data remains visibly marked and tagged for diagnosis.
 
 Sprint 445 adds optional `SchSheetPin::side` persistence and uses it for explicit canvas direction, with legacy geometric inference when absent. `test_cli.cpp` now isolates each run in a nonce-named temporary directory.
+
+`test_serialize.cpp` covers sheet-pin side round-trip persistence.
