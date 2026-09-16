@@ -1213,3 +1213,7 @@ References checked: KiCad names the PTH-only mode `THT_THERMAL` / “thermal rel
 ## Sprint 492 progress update (2026-09-17)
 
 Persisted zone state now includes `filled_thermal_spokes`; `pcb refill-zones --apply true` saves computed spoke records, and serializer coverage verifies start/end/width round-trip. Added explicit GUI aggregate initialization required by strict `-Werror` builds. Full Qt Ninja build completed 155/155; CTest passed 91/91 with Qt runtime PATH; official harness passed, screenshot inspected, stderr empty.
+
+## Sprint 493 progress update (2026-09-17)
+
+References checked: KiCad S-expression format defines `connect_pads thru_hole_only` for PTH-only zone connections. CCad PCB export now emits this token for `pth_thermal`, with exporter regression coverage. Full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.

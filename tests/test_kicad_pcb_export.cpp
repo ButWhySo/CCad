@@ -171,6 +171,11 @@ int main() {
   require(exported.find("(net 1 \"GND\")") != std::string::npos, "Output must declare GND net");
   require(exported.find("(net 2 \"VCC\")") != std::string::npos, "Output must declare VCC net");
 
+  board.zones.front().pad_connection = "pth_thermal";
+  const std::string pth_exported = ccad::exportToKiCadPcb(ccad::Project{.boards = {board}});
+  require(pth_exported.find("(connect_pads thru_hole_only") != std::string::npos,
+          "PTH thermal zone exports KiCad through-hole-only connection");
+
   ccad::Project board_only = project;
   board_only.schematics.clear();
   const std::string board_only_exported = ccad::exportToKiCadPcb(board_only);

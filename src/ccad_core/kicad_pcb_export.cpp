@@ -336,6 +336,8 @@ std::string exportToKiCadPcb(const Project& project) {
     out << "    (connect_pads";
     if (zone.pad_connection == "solid") {
       out << " yes";
+    } else if (zone.pad_connection == "pth_thermal") {
+      out << " thru_hole_only";
     } else if (zone.pad_connection == "none") {
       out << " no";
     }

@@ -1217,3 +1217,4 @@ Board-aware spoke generation filters explicit zone/pad copper-layer overlap and 
 Per-pad `PadstackCopperLayerProps.thermal_gap`, `.thermal_spoke_width`, and `.zone_connection` now override board-aware thermal generation when layer matches. PTH-only connection policy remains deferred.
 `pth_thermal` is now a supported zone connection value in CLI validation and DRC; board-aware fill reports spokes only for plated through-hole pad types (`thru_hole`, `through_hole`, `pth`).
 `BoardZone.filled_thermal_spokes` persists applied board-aware spoke records. Serializer accepts older zones without the optional field; CLI apply writes contours and spokes together. GUI zone aggregate explicitly initializes the field for `-Werror` compatibility.
+`kicad_pcb_export.cpp` maps `pth_thermal` to KiCad `(connect_pads thru_hole_only ...)`; persisted spoke records remain CCad-side metadata because KiCad derives relief geometry during fill.
