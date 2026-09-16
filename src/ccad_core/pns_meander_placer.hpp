@@ -19,6 +19,8 @@ public:
     long double length() const;
     void setTargetLength(int length) { target_length_ = length < 0 ? 0 : length; }
     int targetLength() const { return target_length_; }
+    long double remainingLength() const;
+    bool targetReached() const;
     void finish();
 
 private:

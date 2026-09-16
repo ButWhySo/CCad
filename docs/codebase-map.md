@@ -1155,4 +1155,6 @@ Sprint 447 gives `PnsDiffPairPlacer` a first executable coupled-placement contra
 
 Sprint 448 gives `PnsMeanderPlacer` an observable polyline contract through `path()`. `start()` records origin, `meander()` appends only changed destinations and updates item, and `finish()` clears active path state. This is groundwork for future length-targeted serpentine generation.
 
+Sprint 450 adds `length()`, `remainingLength()`, and `targetReached()` to meander contract. Metrics derive from current Euclidean polyline geometry; target values clamp below zero, while actual serpentine synthesis remains future work.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.

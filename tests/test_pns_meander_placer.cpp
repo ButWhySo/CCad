@@ -18,6 +18,11 @@ int main() {
             "meander reports polyline length");
     placer.setTargetLength(100);
     require(placer.targetLength() == 100, "meander stores target length");
+    require(!placer.targetReached() && placer.remainingLength() > 71.7L,
+            "meander reports unmet target and remaining length");
+    placer.meander(110, 40);
+    require(placer.targetReached() && placer.remainingLength() == 0.0L,
+            "meander reports reached target after sufficient path");
     placer.setTargetLength(-1);
     require(placer.targetLength() == 0, "meander clamps negative target length");
     placer.finish();

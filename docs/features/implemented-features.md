@@ -4,6 +4,8 @@ This document tracks user-visible and agent-visible features that exist in the r
 
 PNS meander placement now records a deduplicated routed polyline, updates its active item to each destination, and clears state on finish. Length matching and serpentine optimization remain future work.
 
+Meander placement also reports current length, non-negative remaining target distance, and target-reached state for adaptive agent control.
+
 PNS differential-pair placement now supports distinct endpoints, configurable non-negative gap, and coupled endpoint updates during start/route. This is an endpoint-placement primitive, not yet a complete KiCad-equivalent differential-pair track router.
 
 ## Build System And DevOps

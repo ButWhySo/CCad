@@ -1051,3 +1051,7 @@ Made the PNS differential-pair placer perform minimal coupled placement instead 
 ## Sprint 448 progress update (2026-09-16)
 
 Replaced the PNS meander placer no-op with observable polyline state. Start records and places origin, meander appends changed destinations while suppressing duplicates, and finish clears active state. Focused regression passed; full gate and visual proof pending.
+
+## Sprint 450 progress update (2026-09-16)
+
+Added measurable target progress to PNS meander placement. `length()`, `remainingLength()`, and `targetReached()` expose actual polyline progress with safe target clamping. Focused and full CTest passed; official visual proof pending.

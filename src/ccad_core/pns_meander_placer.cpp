@@ -31,6 +31,15 @@ long double PnsMeanderPlacer::length() const {
     return total;
 }
 
+long double PnsMeanderPlacer::remainingLength() const {
+    const long double target = static_cast<long double>(target_length_);
+    return target > length() ? target - length() : 0.0L;
+}
+
+bool PnsMeanderPlacer::targetReached() const {
+    return target_length_ == 0 || length() >= static_cast<long double>(target_length_);
+}
+
 void PnsMeanderPlacer::finish() {
     start_item_.reset();
     path_.clear();
