@@ -1100,7 +1100,3 @@ Integrated `PnsBoardObstacleIndex` into `RouterTool::commitRouting()` as a pad/v
 ## Sprint 463 progress update (2026-09-17)
 
 Filtered PNS via obstacles by declared blind/buried layer span, preserving through-via behavior and endpoint fallback for incomplete metadata. Added regression covering a blind via excluded from B.Cu. Focused test passed, full build 86/86, CTest 89/89, and official harness passed with inspected screenshot and zero stderr.
-
-## Sprint 460 progress update (2026-09-17)
-
-Added `PnsBoardObstacleIndex`, converting board pads/vias into filtered PNS obstacles for active net/layer segment checks. Existing RouterTool remains authority for tracks/zones/arcs until richer PNS geometry adapters exist. Full build/CTest and official harness passed; screenshot inspected with empty stderr.
