@@ -40,6 +40,7 @@ class AgentPanel final : public QWidget {
     QString latest_checkpoint_id;
     int checkpoint_count = 0;
     bool replayable = false;
+    QJsonObject queue_state;
   };
 
   explicit AgentPanel(QWidget* parent = nullptr);

@@ -1001,3 +1001,7 @@ JobManager workers now catch task exceptions, report failures, decrement active-
 ## Sprint 436 progress update (2026-09-16)
 
 Implemented `AgentRunner::load_queue()` for the native queue schema. It restores pending goal/task identity, context, and tool arguments, rejects malformed roots/trailing data, and supports save/load restart continuity. Focused round-trip and malformed-input tests passed; Qt Release build completed 79/79; full Qt CTest passed 82/82; official harness screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 437 progress update (2026-09-16)
+
+AgentPanel session checkpoints now persist the local run-queue state, and session loading restores queue ID, status, current step, counts, depth, and cancelability through the existing JSON session path. GUI panel test passed; changed Qt targets rebuilt 28/28; full Qt CTest passed 82/82; official harness screenshot was ingested and visually inspected with empty stderr.

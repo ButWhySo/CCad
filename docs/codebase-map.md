@@ -1130,3 +1130,5 @@ Sprint 434 `JobManager` tracks active tasks and uses a completion condition vari
 Sprint 435 `JobManager` catches exceptions raised by background tasks, reports them to stderr, and keeps worker threads alive for subsequent tasks; active-task completion bookkeeping remains guaranteed.
 
 Sprint 436 `AgentRunner::load_queue()` restores pending goals from its own serialized JSON schema, including nested context and tool-argument values, with structural validation before enqueueing.
+
+Sprint 437 AgentPanel stores `run_queue_state` in bound session checkpoints and reapplies it during session load; provider execution remains explicitly disabled and queue state remains local metadata.

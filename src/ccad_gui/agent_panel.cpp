@@ -249,6 +249,7 @@ AgentPanel::AgentSessionMetadata metadataFromSessionObject(const QJsonObject& ob
   const QJsonArray checkpoints = object.value("checkpoints").toArray();
   metadata.checkpoint_count = checkpoints.size();
   metadata.replayable = metadata.checkpoint_count > 0;
+  metadata.queue_state = object.value("run_queue_state").toObject();
   if (!checkpoints.isEmpty() && checkpoints.last().isObject()) {
     metadata.latest_checkpoint_id =
         checkpoints.last().toObject().value("checkpoint_id").toString().trimmed();
@@ -1545,6 +1546,17 @@ void AgentPanel::applySessionMetadata(const AgentSessionMetadata& metadata, cons
   latest_checkpoint_id_ = metadata.latest_checkpoint_id;
   session_checkpoint_count_ = metadata.checkpoint_count;
   session_replayable_ = metadata.replayable;
+  if (!metadata.queue_state.isEmpty()) {
+    run_queue_id_ = metadata.queue_state.value("run_queue_id").toString(run_queue_id_);
+    run_queue_status_ = metadata.queue_state.value("run_queue_status").toString(run_queue_status_);
+    run_queue_current_step_ = metadata.queue_state.value("run_step_current").toString(run_queue_current_step_);
+    run_queue_depth_ = metadata.queue_state.value("run_queue_depth").toInt(run_queue_depth_);
+    run_queue_completed_count_ = metadata.queue_state.value("run_queue_completed_count").toInt(run_queue_completed_count_);
+    run_queue_failed_count_ = metadata.queue_state.value("run_queue_failed_count").toInt(run_queue_failed_count_);
+    run_steps_total_ = metadata.queue_state.value("run_steps_total").toInt(run_steps_total_);
+    run_queue_cancelable_ = metadata.queue_state.value("run_queue_cancelable").toBool(run_queue_cancelable_);
+    updateRunQueueLabels();
+  }
   durable_session_bound_ = true;
   session_path_input_->setText(session_file_path_);
   const QString compact_id = durable_session_id_.isEmpty() ? "local" : durable_session_id_;
@@ -1671,6 +1683,7 @@ void AgentPanel::checkpointSession() {
   object.insert("updated_at", created_at);
   object.insert("checkpoint_count", checkpoints.size());
   object.insert("checkpoints", checkpoints);
+  object.insert("run_queue_state", runQueueStateObject());
   if (!writeJsonFileObject(path, object, &error_message)) {
     status_label_->setText("Session checkpoint failed");
     result_state_label_->setText("Result Error session_checkpoint_failed");

@@ -2274,3 +2274,5 @@ Footprints can persist front- and back-courtyard polygon geometry in native JSON
 JobManager workers also isolate task failures: exceptions are reported as task failures, worker threads remain available, and later queued tasks still execute. This keeps agent-triggered background services alive when one operation fails.
 
 `AgentRunner::load_queue()` now restores saved pending goals/tasks after process restart. It preserves goal context and task arguments and rejects missing `pending_goals`, incomplete task identities, unterminated JSON, and trailing root data. Save/load round-trip and malformed-root behavior are covered by `ccad_job_manager_tests`.
+
+AgentPanel session checkpoints now include local run-queue state. Loading a bound session restores queue status, current step, counts, depth, and cancelability through existing mapped session controls; provider and external execution remain disabled by policy.
