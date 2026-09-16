@@ -1114,3 +1114,4 @@ Sprint 419 adds typed `CanvasFootprint` scene identities; Sprint 420 wires Edit 
 Sprint 421 `importSpecctraSes` carries active `(net ...)` context through nested route nodes and assigns it to created `TrackSegment` and `Via` records. SES padstack dimension resolution is deferred because current API receives session text without DSN library context.
 Sprint 423 extends `importSpecctraSes` to index route-library padstacks and derive via diameter from circular shapes. Drill remains 0.3 mm unless future ID parsing or DSN context supplies a value.
 Sprint 424 parses the KiCad Specctra drill convention `<prefix>:<drill>_mil` in SES via padstack IDs, converting mils to nanometres; IDs without this convention retain the 0.3 mm fallback.
+Sprint 425 adds optional `Via::start_layer_id` and `end_layer_id`, serialized when present; SES padstack circle layers infer the span in source order. Existing callers omit fields and retain prior through-via assumptions.

@@ -40,20 +40,26 @@ SesRouting importSpecctraSes(std::string_view source) {
   }
 
   std::unordered_map<std::string, double> via_diameters_mm;
+  std::unordered_map<std::string, std::pair<std::string, std::string>> via_layer_spans;
   std::vector<const SExpr*> library_stack = {root.get()};
   while (!library_stack.empty()) {
     const SExpr* node = library_stack.back();
     library_stack.pop_back();
     if (node->is_list && node->children.size() >= 2 && node->children[0]->value == "padstack") {
       const std::string& id = node->children[1]->value;
+      std::string first_layer;
+      std::string last_layer;
       for (const auto& child : node->children) {
         if (child->is_list && child->children.size() >= 2 && child->children[0]->value == "shape" &&
             child->children[1]->is_list && child->children[1]->children.size() >= 3 &&
             child->children[1]->children[0]->value == "circle") {
-          via_diameters_mm[id] = 2.0 * parseMm(child->children[1]->children[2]->value);
-          break;
+          if (!via_diameters_mm.contains(id)) via_diameters_mm[id] = 2.0 * parseMm(child->children[1]->children[2]->value);
+          const std::string layer = child->children[1]->children[1]->value;
+          if (first_layer.empty()) first_layer = layer;
+          last_layer = layer;
         }
       }
+      if (!first_layer.empty()) via_layer_spans[id] = {first_layer, last_layer};
     }
     for (const auto& child : node->children) library_stack.push_back(child.get());
   }
@@ -106,6 +112,10 @@ SesRouting importSpecctraSes(std::string_view source) {
         }
         via.drill = millimeters(0.3);
         if (auto drill = parseEncodedDrill(node->children[1]->value); drill.has_value()) via.drill = *drill;
+        if (auto span = via_layer_spans.find(node->children[1]->value); span != via_layer_spans.end()) {
+          via.start_layer_id = span->second.first;
+          via.end_layer_id = span->second.second;
+        }
         via.position.x = mmToLength(parseMm(node->children[2]->value));
         via.position.y = mmToLength(parseMm(node->children[3]->value));
         result.vias.push_back(via);

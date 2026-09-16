@@ -935,6 +935,10 @@ class JsonReader {
             via.diameter = nanometers(readInt64());
           } else if (key == "drill_nm") {
             via.drill = nanometers(readInt64());
+          } else if (key == "start_layer_id") {
+            via.start_layer_id = readString();
+          } else if (key == "end_layer_id") {
+            via.end_layer_id = readString();
           } else if (key == "locked") {
             via.locked = readBool();
           } else if (key == "teardrops_enabled") {
@@ -3417,6 +3421,12 @@ std::string dumpProjectJson(const Project& project) {
       out << ",\n";
       out << "        \"diameter_nm\": " << via.diameter.nanometers << ",\n";
       out << "        \"drill_nm\": " << via.drill.nanometers;
+      if (!via.start_layer_id.empty()) {
+        out << ",\n        \"start_layer_id\": \"" << escapeJson(via.start_layer_id) << "\"";
+      }
+      if (!via.end_layer_id.empty()) {
+        out << ",\n        \"end_layer_id\": \"" << escapeJson(via.end_layer_id) << "\"";
+      }
       if (via.teardrops_enabled) {
         out << ",\n        \"teardrops_enabled\": true";
       }

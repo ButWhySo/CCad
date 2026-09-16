@@ -953,3 +953,7 @@ SES importer now resolves via diameter from route-library padstack circle shapes
 ## Sprint 424 progress update (2026-09-16)
 
 SES via import now parses KiCad-style padstack IDs such as `Via_15:8_mil`, converting encoded drill size to CCad nanometres while retaining the safe fallback for generic IDs. Focused DSN test and full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 425 progress update (2026-09-16)
+
+Added typed via start/end layer IDs, JSON persistence, and SES inference from padstack circle layer extrema. This gives blind/buried via imports a representable layer span while preserving through-via behavior for F.Cu/B.Cu definitions. Focused DSN test and full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
