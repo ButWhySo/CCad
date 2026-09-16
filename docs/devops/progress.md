@@ -918,3 +918,6 @@ GUI semantic route responses now distinguish `blocked_obstacle` from `zero_lengt
 ## Sprint 411 progress update (2026-09-16)
 
 Agent route responses now include obstacle class in reason values: `blocked_obstacle_pad`, `via`, `arc`, `zone`, or `track`. Targeted tests passed; Qt Release build completed 81/81; Qt-path CTest completed 79/79; official visual harness screenshot was ingested and inspected.
+## Sprint 412 progress update (2026-09-16)
+
+Different-net track obstacle checks now include existing track half-width in clearance, preventing overlap with wide copper even when centerlines do not cross. Qt Release build completed 84/84; Qt-path CTest completed 79/79; official visual harness screenshot was ingested and inspected.

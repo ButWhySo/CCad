@@ -162,9 +162,10 @@ void RouterTool::commitRouting() {
   for (const TrackSegment& track : board_->tracks) {
     if (track.layer_id != layer_id || active_net_id_.empty() || track.net_id.empty() ||
         track.net_id == active_net_id_) continue;
+    const double track_clearance = required + static_cast<double>(track.width.nanometers) / 2'000'000.0;
     if (intersects(start, end, track.start, track.end) ||
-        distancePointToSegment(track.start, start, end) < required ||
-        distancePointToSegment(track.end, start, end) < required) {
+        distancePointToSegment(track.start, start, end) < track_clearance ||
+        distancePointToSegment(track.end, start, end) < track_clearance) {
       routing_ = false;
       last_commit_blocked_=true;
       blocked_reason_="track";

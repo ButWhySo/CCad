@@ -2250,3 +2250,6 @@ Agent-facing route responses now report `blocked_obstacle` when copper clearance
 ### Typed route obstacle feedback
 
 Agent-facing route responses identify the blocking copper class, such as `blocked_obstacle_via` or `blocked_obstacle_zone`, instead of returning only a generic obstacle failure.
+### Width-aware track obstacle clearance
+
+Route gestures now account for both candidate route width and existing different-net track width when checking proximity, reducing false-safe near-parallel routing.

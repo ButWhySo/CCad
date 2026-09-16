@@ -1101,3 +1101,6 @@ Arc collision now derives circular geometry from three points, chooses orientati
 ## Sprint 411 handover (2026-09-16)
 
 `RouterTool::blockedReason()` exposes the guard that rejected the latest gesture. `ReviewWindow::commitTrackPlacementForAutomation` preserves schema v1 and returns `blocked_obstacle_<class>` for pad, via, arc, zone, or track rejection, making retry/planning decisions actionable without exposing board secrets.
+## Sprint 412 handover (2026-09-16)
+
+Track collision margin is `board copper clearance + route half-width + existing track half-width`; centerline intersection remains an immediate rejection. This improves width-aware safety for imported/wide traces. Exact polygonal copper shape and per-net rule overrides remain future work.
