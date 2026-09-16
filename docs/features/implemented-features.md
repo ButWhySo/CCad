@@ -2263,3 +2263,7 @@ Board-zone holes are stored and restored in native JSON. A route whose endpoints
 ### CI portability and clearance units
 
 Track-arc nanometre coordinates use explicit long-double casts for strict MSVC builds, `Project` forward declarations match its struct definition, and track obstacle distances are converted to millimetres before comparison with design-rule clearance.
+
+### Typed courtyard overlap DRC
+
+Footprints can persist front- and back-courtyard polygon geometry in native JSON, and the courtyard DRC provider reports overlapping same-side courtyard polygons. Missing-definition and pad-hole semantics remain queued for a later slice.
