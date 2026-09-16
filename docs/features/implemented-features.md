@@ -2286,3 +2286,5 @@ The GUI regression suite now exercises this persistence path with a real tempora
 `DiffPairTuning::calculateCurrentSkew()` now reports measured positive/negative routed-length difference in millimetres from board track geometry. It safely returns zero when either requested net is absent; `ccad_diff_pair_tuning_tests` covers measurement and missing-net behavior.
 
 Differential-pair tuning now has a truthful mutation contract: `applyTuning()` returns failure until the board model exposes the topology and clearance data required to generate real coupled meanders, preventing silent no-op success.
+
+Schematic labels distinguish local, global, hierarchical, and directive types. JSON reads and writes `label_type` while retaining the legacy `global` field, and the schematic collector recognizes KiCad directive labels.

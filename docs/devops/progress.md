@@ -1025,3 +1025,7 @@ Replaced empty `convertSVGToLibShapes()` stub with headless parsing for common S
 ## Sprint 442 progress update (2026-09-16)
 
 Hardened unsupported `DiffPairTuning::applyTuning()` to return `false` instead of claiming a successful no-op mutation; real meander topology remains explicitly deferred. Focused regression passed; Qt build completed 81/81; full Qt CTest passed 84/84; official harness screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 443 progress update (2026-09-16)
+
+Schematic labels now support explicit Directive type across the model, KiCad-style collector, and JSON serialization while preserving legacy global boolean compatibility. Focused tests passed; Qt Release build completed 231/231; full Qt CTest passed 84/84; official harness passed with empty stderr, and its screenshot was ingested and visually inspected.

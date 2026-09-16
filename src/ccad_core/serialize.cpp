@@ -2418,6 +2418,14 @@ class JsonReader {
           else if (key == "position") label.position = readPoint();
           else if (key == "rotation_degrees") label.rotation_degrees = readDouble();
           else if (key == "global") label.type = readBool() ? LabelType::Global : LabelType::Local;
+          else if (key == "label_type") {
+            const std::string type = readString();
+            if (type == "local") label.type = LabelType::Local;
+            else if (type == "global") label.type = LabelType::Global;
+            else if (type == "hierarchical") label.type = LabelType::Hierarchical;
+            else if (type == "directive") label.type = LabelType::Directive;
+            else throw std::runtime_error("unknown label type: " + type);
+          }
           else throw std::runtime_error("unknown label key: " + key);
           if (consume('}')) break;
           expect(',');
@@ -3611,7 +3619,11 @@ std::string dumpProjectJson(const Project& project) {
     writePoint(out, 0, label.position);
     out << ",\n";
     out << "      \"rotation_degrees\": " << label.rotation_degrees << ",\n";
-    out << "      \"global\": " << (label.type == LabelType::Global ? "true" : "false") << '\n';
+    out << "      \"global\": " << (label.type == LabelType::Global ? "true" : "false") << ",\n";
+    const char* label_type = label.type == LabelType::Global ? "global" :
+                             label.type == LabelType::Hierarchical ? "hierarchical" :
+                             label.type == LabelType::Directive ? "directive" : "local";
+    out << "      \"label_type\": \"" << label_type << "\"\n";
     out << "    }" << (i + 1 == sch->labels.size() ? "" : ",") << '\n';
   }
   out << "  ],\n";

@@ -90,7 +90,7 @@ void collectType(const Schematic& sch,
       if (kicad_type == "SCH_LABEL_T" && label.type == LabelType::Local) match = true;
       if (kicad_type == "SCH_GLOBAL_LABEL_T" && label.type == LabelType::Global) match = true;
       if (kicad_type == "SCH_HIER_LABEL_T" && label.type == LabelType::Hierarchical) match = true;
-      // SCH_DIRECTIVE_LABEL_T is not implemented in LabelType yet
+      if (kicad_type == "SCH_DIRECTIVE_LABEL_T" && label.type == LabelType::Directive) match = true;
       if (match) {
         maybeAppendCandidate(primary, secondary,
                              makeCandidate("label", label.id, kicad_type, label.net_id),

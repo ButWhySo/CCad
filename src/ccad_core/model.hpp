@@ -77,7 +77,7 @@ struct SchBus {
   std::vector<std::string> net_ids;
 };
 
-enum class LabelType { Local, Global, Hierarchical };
+enum class LabelType { Local, Global, Hierarchical, Directive };
 
 struct SchLabel {
   std::string id;

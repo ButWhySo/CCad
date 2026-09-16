@@ -1142,3 +1142,5 @@ Sprint 440 `gfx_import_utils` converts common SVG primitives into `SchGraphic` l
 Sprint 441 `DiffPairTuning::calculateCurrentSkew()` computes absolute routed length difference from board TrackSegments in millimetres; pair absence returns zero and does not create a false violation.
 
 Sprint 442 `DiffPairTuning::applyTuning()` now reports unsupported meander generation as failure rather than returning success without changing board geometry.
+
+Sprint 443 adds explicit Directive schematic-label typing and round-trippable `label_type` serialization while retaining legacy `global` field compatibility; the collector recognizes `SCH_DIRECTIVE_LABEL_T`.
