@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <map>
 #include <set>
 #include <string>
 #include <utility>
@@ -1637,6 +1638,48 @@ void checkSolderMaskBridges(const Board& board, std::vector<Diagnostic>& diagnos
   }
 }
 
+void checkUnroutedPhysicalNets(const Board& board, std::vector<Diagnostic>& diagnostics) {
+  struct Node { Point point; std::size_t parent; };
+  std::map<std::string, std::vector<Node>> by_net;
+  auto add = [&](const std::string& net, const Point& point) {
+    if (!net.empty()) by_net[net].push_back({point, by_net[net].size()});
+  };
+  for (const Pad& pad : board.pads) add(pad.net_id, pad.position);
+  for (const Via& via : board.vias) add(via.net_id, via.position);
+  for (auto& [net, nodes] : by_net) {
+    const std::size_t physical_count = nodes.size();
+    if (physical_count < 2) continue;
+    auto find = [&](std::size_t value) {
+      while (nodes[value].parent != value) {
+        nodes[value].parent = nodes[nodes[value].parent].parent;
+        value = nodes[value].parent;
+      }
+      return value;
+    };
+    auto unite = [&](std::size_t left, std::size_t right) {
+      left = find(left); right = find(right);
+      if (left != right) nodes[right].parent = left;
+    };
+    for (const TrackSegment& track : board.tracks) {
+      if (track.net_id != net) continue;
+      const std::size_t start = nodes.size(); nodes.push_back({track.start, start});
+      const std::size_t end = nodes.size(); nodes.push_back({track.end, end});
+      unite(start, end);
+      for (std::size_t i = 0; i < start; ++i) {
+        if (nodes[i].point.x.nanometers == track.start.x.nanometers &&
+            nodes[i].point.y.nanometers == track.start.y.nanometers) unite(i, start);
+        if (nodes[i].point.x.nanometers == track.end.x.nanometers &&
+            nodes[i].point.y.nanometers == track.end.y.nanometers) unite(i, end);
+      }
+    }
+    std::set<std::size_t> components;
+    for (std::size_t i = 0; i < physical_count; ++i) components.insert(find(i));
+    if (components.size() > 1)
+      diagnostics.push_back(makeDiagnostic("UNROUTED_NET",
+                                           "Net has disconnected physical endpoints", net));
+  }
+}
+
 }  // namespace
 
 std::vector<Diagnostic> runDrc(const Project& project) {
@@ -1667,6 +1710,7 @@ std::vector<Diagnostic> runDrc(const Project& project) {
   checkTrackSegmentLengths(board, diagnostics);
   checkSilkClearance(board, diagnostics);
   checkSolderMaskBridges(board, diagnostics);
+  checkUnroutedPhysicalNets(board, diagnostics);
   if (!board.teardrops.empty()) {
     diagnostics.push_back(makeWarning("TEARDROP_CLEARANCE_UNVERIFIED",
         "Teardrop copper clearance and fabrication export are not yet supported; "

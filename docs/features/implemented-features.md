@@ -354,6 +354,7 @@ Current limitation:
 
 DRC command behavior:
 - `drc <path>` runs physical board checks.
+- Primary DRC reports `UNROUTED_NET` errors when same-net pad/via physical endpoints remain in disconnected exact-coordinate components; GUI diagnostics and markers consume this shared result.
 - Reports duplicate primitive IDs, unknown layers, unknown non-empty net references, geometry outside board outline, invalid dimensions, rectangular keepout violations, unconnected pads/vias/tracks, unconnected track endpoints, via drill larger than diameter, and zero-length track segments.
 - Reports `COPPER_CLEARANCE` errors when different-net pad-pad, track-track, pad-track, via-via, via-pad, or via-track copper is closer than the current fixed default `0.20 mm` clearance.
 - Allows same-net copper to touch.

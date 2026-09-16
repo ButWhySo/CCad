@@ -1042,4 +1042,8 @@ BoardText stroke_width and DesignRules min_text_thickness persist through JSON. 
 Primary `runDrc` now checks via center-to-edge distance minus via radius and emits `VIA_EDGE_CLEARANCE`; GUI diagnostics consume this normal `Diagnostic` path. Target proof used a rebuilt `ccad.exe` and `ccad_gui.exe` on a moved near-edge via, confirming JSON diagnostics and rendered board state. Pad edge diagnostics already existed in `checkPads`.
 ## Sprint 394 handover
 
-`DrcTestProviderUnrouted` groups pad/via endpoints by net, adds track endpoints, unions exact-coordinate track connections, and reports an unrouted net when physical nodes remain in multiple components. It is independently callable through `DrcEngine`; primary `runDrc` unrouted diagnostics remain a follow-up integration slice.
+`DrcTestProviderUnrouted` groups pad/via endpoints by net, adds track endpoints, unions exact-coordinate track connections, and reports an unrouted net when physical nodes remain in multiple components. Sprint 395 also wires equivalent deterministic checking into primary `runDrc`, producing `UNROUTED_NET` diagnostics consumed by CLI review and Qt diagnostics/markers. Track arcs remain a follow-up connectivity case.
+
+## Sprint 395 handover
+
+Primary DRC now calls `checkUnroutedPhysicalNets` after physical geometry checks. It uses exact nanometre endpoint equality and ignores empty-net physical items. Regression lives in `tests/test_drc.cpp`; valid fixture connectivity remains clean, while two disconnected `N1` pads produce object id `N1`. Qt diagnostics already consumes `runDrc`, so no GUI-specific adapter was required. Visual proof: `artifacts/screenshots/sprint395_unrouted_primary_proof-20260916-112440.png` and its teardrop-before companion; DRC proof: `artifacts/demos/sprint395_unrouted_primary_proof.drc.json`.

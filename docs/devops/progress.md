@@ -860,3 +860,7 @@ Wired via edge-clearance reporting into primary `runDrc`, producing `VIA_EDGE_CL
 ## Sprint 394 progress update (2026-09-16)
 
 Implemented `DrcTestProviderUnrouted` using deterministic physical-node components and exact track-endpoint unions. Disconnected same-net pads/vias now report error code 2; multi-segment connections resolve as connected. Focused test passed; full Qt build 100/100, CTest 77/77, official harness `sprint394_unrouted_proof` before/after screenshots individually inspected, stderr empty.
+
+## Sprint 395 progress update (2026-09-16)
+
+Integrated deterministic unrouted physical-net checking into primary `runDrc`. Same-net pad/via endpoints are grouped with exact-coordinate track endpoints; disconnected physical components now emit `UNROUTED_NET` errors consumed by CLI review and the Qt diagnostics/marker path. Added regression coverage in `tests/test_drc.cpp`. Full Qt build completed 74/74 and Qt-path CTest completed 77/77. Official harness `sprint395_unrouted_primary_proof` ran on rebuilt binaries; DRC artifact contains `UNROUTED_NET` for `DC_NEG` and `DC_POS`, both screenshots were visually inspected, stdout/stderr showed no GUI crash or warning. UI-map lookup confirmed `action:run_drc` and `panel:diagnostics`; safe-trigger correctly refused direct DRC execution because it requires human/kernel approval.

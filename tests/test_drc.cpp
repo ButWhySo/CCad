@@ -1202,4 +1202,22 @@ int main() {
       .diameter = ccad::millimeters(0.8), .drill = ccad::millimeters(0.4)});
   require(hasDiagnosticForObject(ccad::runDrc(close_holes), "DRILLED_HOLES_TOO_CLOSE", "V2"),
           "drc reports via holes below hole-to-hole clearance");
+
+  ccad::Project unrouted_net = boardOnlyProject();
+  unrouted_net.boards[0].pads.push_back(ccad::Pad{
+      .id = "P2",
+      .component_id = "U2",
+      .pin_name = "1",
+      .net_id = "N1",
+      .type = "smd",
+      .position = ccad::Point{.x = ccad::millimeters(30), .y = ccad::millimeters(20)},
+      .padstack = ccad::Padstack{
+          .layer_set = {"F.Cu"},
+          .copper_props = {{"top", ccad::PadstackCopperLayerProps{
+              .shape = ccad::PadstackShapeProps{
+                  .shape = ccad::PadShape::Rectangle,
+                  .size = ccad::Size{.width = ccad::millimeters(1),
+                                     .height = ccad::millimeters(1)}}}}}}});
+  require(hasDiagnosticForObject(ccad::runDrc(unrouted_net), "UNROUTED_NET", "N1"),
+          "drc reports disconnected physical endpoints for same-net pads");
 }
