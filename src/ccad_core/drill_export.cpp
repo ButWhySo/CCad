@@ -4,6 +4,7 @@
 #include <vector>
 #include <iomanip>
 #include <cmath>
+#include <stdexcept>
 
 namespace ccad {
 
@@ -15,6 +16,14 @@ std::string exportToDrillExcellon(const Project& project) {
   }
 
   const Board& board = project.boards[0];
+
+  for (const Via& via : board.vias) {
+      if (via.via_type != "through" &&
+          (via.start_layer_id.empty() || via.end_layer_id.empty() ||
+           via.start_layer_id == via.end_layer_id)) {
+          throw std::runtime_error("Cannot export via layer span: invalid non-through via " + via.id);
+      }
+  }
 
   // Excellon Format
   ss << "M48\n";

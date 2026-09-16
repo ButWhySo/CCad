@@ -68,6 +68,15 @@ int main() {
   // SMD pad should not be in the output
   require(exported.find("X000000Y000000") == std::string::npos, "Output must not contain SMD pad");
 
+  project.boards[0].vias[0].start_layer_id.clear();
+  bool rejected_invalid_span = false;
+  try {
+    (void)ccad::exportToDrillExcellon(project);
+  } catch (const std::exception& error) {
+    rejected_invalid_span = std::string(error.what()).find("via layer span") != std::string::npos;
+  }
+  require(rejected_invalid_span, "Excellon export rejects incomplete non-through via span");
+
   std::cout << "All drill export tests passed!\n";
   return 0;
 }

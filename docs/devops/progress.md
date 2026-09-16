@@ -985,3 +985,7 @@ DRC now validates non-through via type and layer spans, reporting invalid identi
 ## Sprint 432 progress update (2026-09-16)
 
 Excellon drill export now preserves non-through via type and layer span as standards-safe comment records while leaving tool definitions and drill coordinates unchanged. Drill export test passed; full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 433 progress update (2026-09-16)
+
+Excellon export now rejects non-through vias with incomplete or identical layer spans before writing manufacturing output, while retaining metadata comments for valid spans. Drill export test passed; full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
