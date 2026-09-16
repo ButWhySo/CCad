@@ -63,6 +63,17 @@ void PnsBoardObstacleIndex::rebuild(const Board& board, const std::string& activ
         node_.addItem(item);
         items_.push_back(std::move(item));
     }
+    for (const TrackArc& arc : board.track_arcs) {
+        if (arc.net_id.empty() || arc.net_id == active_net || arc.layer_id != layer_id) continue;
+        auto item = std::make_shared<PnsArcItem>();
+        item->setArc(static_cast<int>(arc.start.x.nanometers), static_cast<int>(arc.start.y.nanometers),
+                     static_cast<int>(arc.mid.x.nanometers), static_cast<int>(arc.mid.y.nanometers),
+                     static_cast<int>(arc.end.x.nanometers), static_cast<int>(arc.end.y.nanometers),
+                     static_cast<int>(std::max<std::int64_t>(0, arc.width.nanometers / 2)));
+        item->setIdentity(arc.net_id, layer_id);
+        node_.addItem(item);
+        items_.push_back(std::move(item));
+    }
 }
 
 bool PnsBoardObstacleIndex::blockedSegment(std::int64_t x1_nm, std::int64_t y1_nm,

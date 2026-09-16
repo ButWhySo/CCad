@@ -1108,3 +1108,7 @@ Added real PNS segment items with full endpoint geometry and segment-to-segment 
 ## Sprint 465 progress update (2026-09-17)
 
 Made Agent panel actions semantically targetable by assigning stable object IDs and tooltips to navigation, templates, settings, attach, marketplace, context refresh, voice, and send controls. Focused GUI test, full CTest 89/89, official harness, and screenshot inspection passed; stderr empty.
+
+## Sprint 466 progress update (2026-09-17)
+
+Added PNS arc obstacles using a typed arc item and a 16-step quadratic envelope with track-width clearance. Active-layer, different-net arcs now enter the board adapter; focused regression, full build 96/96, CTest 89/89, official harness, and screenshot inspection passed with empty stderr.

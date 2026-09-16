@@ -1183,4 +1183,6 @@ Sprint 464 adds `PnsSegmentItem` to the PNS model. `PnsIndex::querySegment()` no
 
 Sprint 465 gives Agent panel composer and header actions stable `action:*` object IDs and concise tooltips. These IDs are discoverable by the GUI map and keep mouse/agent targeting aligned.
 
+Sprint 466 adds `PnsArcItem` and arc envelope checks to `PnsIndex::querySegment()`. `PnsBoardObstacleIndex` adapts active-layer different-net `TrackArc` objects; RouterTool's existing exact arc checker remains authoritative.
+
 `test_serialize.cpp` covers sheet-pin side round-trip persistence.

@@ -1,6 +1,7 @@
 #include "pns_index.hpp"
 #include "pns_node.hpp"
 #include <algorithm>
+#include <cmath>
 
 namespace ccad {
 
@@ -28,6 +29,10 @@ static bool segmentsIntersect(int ax, int ay, int bx, int by,
     const long long cbx = bx - cx, cby = by - cy;
     return cross(abx, aby, acx, acy) * cross(abx, aby, adx, ady) <= 0 &&
            cross(cdx, cdy, cax, cay) * cross(cdx, cdy, cbx, cby) <= 0;
+}
+
+static long double arcPoint(long double a, long double m, long double b, long double t) {
+    return (1 - t) * (1 - t) * a + 2 * (1 - t) * t * m + t * t * b;
 }
 
 void PnsIndex::add(PnsItem* item) {
@@ -75,7 +80,22 @@ std::vector<PnsItem*> PnsIndex::querySegment(int x1, int y1, int x2, int y2, int
         if ((!layer_id.empty() && item->layerId() != layer_id) ||
             (!net_id.empty() && item->netId() == net_id)) continue;
         long double distance_sq = 0.0L;
-        if (const auto* segment = dynamic_cast<const PnsSegmentItem*>(item)) {
+        if (const auto* arc = dynamic_cast<const PnsArcItem*>(item)) {
+            distance_sq = 1e100L;
+            int px = arc->x1(), py = arc->y1();
+            for (int i = 1; i <= 16; ++i) {
+                const long double t = static_cast<long double>(i) / 16.0L;
+                const int qx = static_cast<int>(std::llround(arcPoint(arc->x1(), arc->xm(), arc->x2(), t)));
+                const int qy = static_cast<int>(std::llround(arcPoint(arc->y1(), arc->ym(), arc->y2(), t)));
+                if (segmentsIntersect(x1, y1, x2, y2, px, py, qx, qy)) distance_sq = 0.0L;
+                else distance_sq = std::min(distance_sq, std::min({
+                    pointSegmentDistanceSq(px, py, x1, y1, x2, y2),
+                    pointSegmentDistanceSq(qx, qy, x1, y1, x2, y2),
+                    pointSegmentDistanceSq(x1, y1, px, py, qx, qy),
+                    pointSegmentDistanceSq(x2, y2, px, py, qx, qy)}));
+                px = qx; py = qy;
+            }
+        } else if (const auto* segment = dynamic_cast<const PnsSegmentItem*>(item)) {
             if (segmentsIntersect(x1, y1, x2, y2, segment->x1(), segment->y1(), segment->x2(), segment->y2())) {
                 distance_sq = 0.0L;
             } else {

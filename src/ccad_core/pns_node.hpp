@@ -50,6 +50,19 @@ private:
     int x1_ = 0, y1_ = 0, x2_ = 0, y2_ = 0;
 };
 
+class PnsArcItem final : public PnsItem {
+public:
+    void setArc(int x1, int y1, int xm, int ym, int x2, int y2, int radius = 0) {
+        setPosition((x1 + x2) / 2, (y1 + y2) / 2, radius);
+        x1_ = x1; y1_ = y1; xm_ = xm; ym_ = ym; x2_ = x2; y2_ = y2;
+    }
+    int x1() const { return x1_; } int y1() const { return y1_; }
+    int xm() const { return xm_; } int ym() const { return ym_; }
+    int x2() const { return x2_; } int y2() const { return y2_; }
+private:
+    int x1_ = 0, y1_ = 0, xm_ = 0, ym_ = 0, x2_ = 0, y2_ = 0;
+};
+
 // Graph node for Push and Shove topology.
 class PnsNode {
 public:
