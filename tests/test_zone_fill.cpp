@@ -22,7 +22,7 @@ int main() {
   const auto cleared = ccad::calculateZoneFill(zone);
   require(cleared.filled && cleared.contours.front().at(0).x.nanometers == 1,
           "rectangular fill applies clearance inset");
-  require(cleared.area_square_nanometers == 60, "clearance fill area subtracts hole");
+  require(cleared.area_square_nanometers == 48, "clearance fill expands hole knockout");
   zone.fill_enabled = false;
   require(!ccad::calculateZoneFill(zone).filled, "disabled zone does not fill");
   zone.fill_enabled = true;

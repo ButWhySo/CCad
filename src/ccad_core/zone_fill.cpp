@@ -5,7 +5,7 @@
 
 namespace ccad {
 namespace {
-std::vector<Point> insetRectangle(const std::vector<Point>& contour, const int64_t clearance) {
+std::vector<Point> offsetRectangle(const std::vector<Point>& contour, const int64_t offset) {
   if (contour.size() != 4) return {};
   const int64_t min_x = std::min_element(contour.begin(), contour.end(),
       [](const Point& a, const Point& b) { return a.x.nanometers < b.x.nanometers; })->x.nanometers;
@@ -15,14 +15,14 @@ std::vector<Point> insetRectangle(const std::vector<Point>& contour, const int64
       [](const Point& a, const Point& b) { return a.y.nanometers < b.y.nanometers; })->y.nanometers;
   const int64_t max_y = std::max_element(contour.begin(), contour.end(),
       [](const Point& a, const Point& b) { return a.y.nanometers < b.y.nanometers; })->y.nanometers;
-  if (max_x - min_x <= 2 * clearance || max_y - min_y <= 2 * clearance) return {};
+  if (offset > 0 && (max_x - min_x <= 2 * offset || max_y - min_y <= 2 * offset)) return {};
   for (const Point& point : contour)
     if (!((point.x.nanometers == min_x || point.x.nanometers == max_x) &&
           (point.y.nanometers == min_y || point.y.nanometers == max_y))) return {};
-  return {{nanometers(min_x + clearance), nanometers(min_y + clearance)},
-          {nanometers(max_x - clearance), nanometers(min_y + clearance)},
-          {nanometers(max_x - clearance), nanometers(max_y - clearance)},
-          {nanometers(min_x + clearance), nanometers(max_y - clearance)}};
+  return {{nanometers(min_x + offset), nanometers(min_y + offset)},
+          {nanometers(max_x - offset), nanometers(min_y + offset)},
+          {nanometers(max_x - offset), nanometers(max_y - offset)},
+          {nanometers(min_x + offset), nanometers(max_y - offset)}};
 }
 
 long double signedArea(const std::vector<Point>& contour) {
@@ -49,7 +49,7 @@ ZoneFillResult calculateZoneFill(const BoardZone& zone) {
   }
   result.filled = true;
   const int64_t clearance = std::max<int64_t>(0, zone.clearance.nanometers);
-  std::vector<Point> outer = clearance == 0 ? zone.outline : insetRectangle(zone.outline, clearance);
+  std::vector<Point> outer = clearance == 0 ? zone.outline : offsetRectangle(zone.outline, clearance);
   if (outer.empty()) {
     result.filled = false;
     result.diagnostics.push_back("clearance knockout supports axis-aligned rectangles only");
@@ -65,8 +65,16 @@ ZoneFillResult calculateZoneFill(const BoardZone& zone) {
       result.diagnostics.push_back("zone hole requires at least three points");
       return result;
     }
-    result.contours.push_back(hole);
-    result.area_square_nanometers -= static_cast<int64_t>(std::llround(std::abs(signedArea(hole))));
+    std::vector<Point> fill_hole = clearance == 0 ? hole : offsetRectangle(hole, -clearance);
+    if (fill_hole.empty()) {
+      result.filled = false;
+      result.contours.clear();
+      result.area_square_nanometers = 0;
+      result.diagnostics.push_back("clearance knockout supports axis-aligned rectangular holes only");
+      return result;
+    }
+    result.contours.push_back(std::move(fill_hole));
+    result.area_square_nanometers -= static_cast<int64_t>(std::llround(std::abs(signedArea(result.contours.back()))));
   }
   if (result.area_square_nanometers < 0) result.area_square_nanometers = 0;
   return result;

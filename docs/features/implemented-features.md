@@ -2346,3 +2346,4 @@ Agent capability discovery maps `RefillZones` to this CLI surface and labels uns
 KiCad PCB export consumes committed fill contours when present, with backward-compatible outline fallback.
 PNS routing obstacle adaptation consumes committed fill contours when present, avoiding stale-outline blocking after refill application.
 Rectangular zone refill applies configured clearance as an inset before persistence/export; non-rectangular clearance is diagnosed as unsupported.
+Rectangular zone holes expand under clearance knockout, preventing over-reporting of filled copper.

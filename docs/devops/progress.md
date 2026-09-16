@@ -1158,3 +1158,7 @@ PNS board obstacle adaptation now uses the committed filled contour as zone oute
 ## Sprint 478 progress update (2026-09-17)
 
 Added clearance inset for axis-aligned rectangular zone fills. `calculateZoneFill()` now produces a true inset outer contour and net area after clearance knockout; unsupported non-rectangular clearance returns an explicit diagnostic rather than silently claiming support. Focused test passed; full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
+
+## Sprint 479 progress update (2026-09-17)
+
+Corrected rectangular hole clearance semantics: outer contour shrinks by clearance while hole contours expand by clearance, reducing filled copper correctly. Focused zone-fill test passed; full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
