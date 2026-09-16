@@ -52,38 +52,39 @@ bool pointInContour(const Point& point, const std::vector<Point>& contour) {
   return inside;
 }
 
-bool horizontalOrVerticalSpokeBlocked(const Point& start, const Point& end,
-                                      const std::vector<Point>& hole) {
-  if (hole.size() != 4) return false;
-  const auto bounds = [](const std::vector<Point>& contour, bool x_axis) {
-    auto cmp = [x_axis](const Point& a, const Point& b) {
-      return (x_axis ? a.x.nanometers : a.y.nanometers) <
-             (x_axis ? b.x.nanometers : b.y.nanometers);
-    };
-    const auto lo = std::min_element(contour.begin(), contour.end(), cmp);
-    const auto hi = std::max_element(contour.begin(), contour.end(), cmp);
-    return std::pair<int64_t, int64_t>{x_axis ? lo->x.nanometers : lo->y.nanometers,
-                                       x_axis ? hi->x.nanometers : hi->y.nanometers};
-  };
-  const auto hx = bounds(hole, true);
-  const auto hy = bounds(hole, false);
-  if (start.y.nanometers == end.y.nanometers &&
-      start.y.nanometers > hy.first && start.y.nanometers < hy.second) {
-    const auto sx = std::minmax(start.x.nanometers, end.x.nanometers);
-    return sx.second > hx.first && sx.first < hx.second;
-  }
-  if (start.x.nanometers == end.x.nanometers &&
-      start.x.nanometers > hx.first && start.x.nanometers < hx.second) {
-    const auto sy = std::minmax(start.y.nanometers, end.y.nanometers);
-    return sy.second > hy.first && sy.first < hy.second;
-  }
-  return false;
+long double cross(const Point& a, const Point& b, const Point& c) {
+  return static_cast<long double>(b.x.nanometers - a.x.nanometers) *
+             (c.y.nanometers - a.y.nanometers) -
+         static_cast<long double>(b.y.nanometers - a.y.nanometers) *
+             (c.x.nanometers - a.x.nanometers);
+}
+
+bool onSegment(const Point& a, const Point& b, const Point& p) {
+  return cross(a, b, p) == 0.0L &&
+         p.x.nanometers >= std::min(a.x.nanometers, b.x.nanometers) &&
+         p.x.nanometers <= std::max(a.x.nanometers, b.x.nanometers) &&
+         p.y.nanometers >= std::min(a.y.nanometers, b.y.nanometers) &&
+         p.y.nanometers <= std::max(a.y.nanometers, b.y.nanometers);
+}
+
+bool segmentsIntersect(const Point& a, const Point& b, const Point& c, const Point& d) {
+  const long double ab_c = cross(a, b, c);
+  const long double ab_d = cross(a, b, d);
+  const long double cd_a = cross(c, d, a);
+  const long double cd_b = cross(c, d, b);
+  if (((ab_c > 0) != (ab_d > 0)) && ((cd_a > 0) != (cd_b > 0))) return true;
+  return onSegment(a, b, c) || onSegment(a, b, d) || onSegment(c, d, a) ||
+         onSegment(c, d, b);
 }
 
 bool blockedByHole(const Point& start, const Point& end,
                   const std::vector<std::vector<Point>>& holes) {
   return std::any_of(holes.begin(), holes.end(), [&](const auto& hole) {
-    return horizontalOrVerticalSpokeBlocked(start, end, hole);
+    if (hole.size() < 3) return false;
+    if (pointInContour(start, hole) || pointInContour(end, hole)) return true;
+    for (std::size_t i = 0; i < hole.size(); ++i)
+      if (segmentsIntersect(start, end, hole[i], hole[(i + 1) % hole.size()])) return true;
+    return false;
   });
 }
 }  // namespace

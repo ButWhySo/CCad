@@ -54,5 +54,9 @@ int main() {
   const auto blocked_spokes = ccad::buildRectangularThermalSpokes(
       zone, p(5, 5), ccad::nanometers(1), ccad::nanometers(1), ccad::nanometers(1));
   require(blocked_spokes.size() == 3, "thermal spokes stop at rectangular hole");
+  zone.holes = {{p(7, 4), p(9, 5), p(7, 6)}};
+  const auto polygon_blocked_spokes = ccad::buildRectangularThermalSpokes(
+      zone, p(5, 5), ccad::nanometers(1), ccad::nanometers(1), ccad::nanometers(1));
+  require(polygon_blocked_spokes.size() == 3, "thermal spokes stop at polygon hole");
   std::cout << "Zone fill tests passed!\n";
 }

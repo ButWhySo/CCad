@@ -2354,3 +2354,4 @@ Rectangular thermal-spoke preparation now returns up to four axial spokes from t
 Thermal-spoke preparation rejects pad centers inside zone holes, avoiding false relief geometry. KiCad reference checked; pad/antipad fit and connection mode semantics remain deferred.
 Thermal-spoke preparation also blocks axial spokes crossing supported rectangular zone holes. General polygon clipping and full KiCad connection-mode behavior remain future work.
 Regression coverage confirms a hole placed on a spoke ray removes only blocked spoke geometry while preserving other directions.
+Thermal-spoke hole blocking now handles arbitrary valid polygon edges, with rectangular and triangular crossing regressions.

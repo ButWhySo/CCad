@@ -1189,3 +1189,7 @@ Thermal spokes now suppress any axial spoke whose segment crosses a supported re
 ## Sprint 486 progress update (2026-09-17)
 
 References checked: KiCad's zone-fill geometry uses explicit segment/shape intersection machinery rather than endpoint-only tests. CCad's rectangular thermal helper now rejects axial spoke segments whose interior overlaps rectangular hole bounds, with regression coverage for a hole placed directly on a spoke ray. Full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
+
+## Sprint 487 progress update (2026-09-17)
+
+Generalized thermal-spoke hole blocking from rectangular bounds to polygon edge intersection. Rectangular and triangular hole regressions pass; invalid short holes remain ignored by spoke blocking and are still diagnosed by fill calculation. Full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
