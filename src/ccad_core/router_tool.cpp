@@ -44,14 +44,35 @@ bool segmentTouchesPolygon(const Point& start, const Point& end, const std::vect
   return false;
 }
 bool segmentTouchesArc(const Point& start, const Point& end, const TrackArc& arc, double clearance) {
+  const long double ax = arc.start.x.nanometers, ay = arc.start.y.nanometers;
+  const long double bx = arc.mid.x.nanometers, by = arc.mid.y.nanometers;
+  const long double cx = arc.end.x.nanometers, cy = arc.end.y.nanometers;
+  const long double determinant = 2.0L * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+  const bool circular = std::abs(determinant) > 1e-9L;
+  long double center_x = 0.0L, center_y = 0.0L, radius = 0.0L, start_angle = 0.0L, sweep = 0.0L;
+  if (circular) {
+    center_x = ((ax * ax + ay * ay) * (by - cy) + (bx * bx + by * by) * (cy - ay) + (cx * cx + cy * cy) * (ay - by)) / determinant;
+    center_y = ((ax * ax + ay * ay) * (cx - bx) + (bx * bx + by * by) * (ax - cx) + (cx * cx + cy * cy) * (bx - ax)) / determinant;
+    radius = std::hypotl(ax - center_x, ay - center_y);
+    start_angle = std::atan2(ay - center_y, ax - center_x);
+    const long double mid_angle = std::atan2(by - center_y, bx - center_x);
+    const long double end_angle = std::atan2(cy - center_y, cx - center_x);
+    const long double two_pi = 2.0L * std::acos(-1.0L);
+    const bool ccw = cross(arc.start, arc.mid, arc.end) > 0.0L;
+    sweep = ccw ? end_angle - start_angle : start_angle - end_angle;
+    long double mid_sweep = ccw ? mid_angle - start_angle : start_angle - mid_angle;
+    while (sweep < 0.0L) sweep += two_pi;
+    while (mid_sweep < 0.0L) mid_sweep += two_pi;
+    if (mid_sweep > sweep) sweep += two_pi;
+    if (!ccw) sweep = -sweep;
+  }
   Point previous = arc.start;
   for (int step = 1; step <= 16; ++step) {
     const long double t = static_cast<long double>(step) / 16.0L;
     const long double one_minus_t = 1.0L - t;
-    const long double x = one_minus_t * one_minus_t * arc.start.x.nanometers +
-                          2.0L * one_minus_t * t * arc.mid.x.nanometers + t * t * arc.end.x.nanometers;
-    const long double y = one_minus_t * one_minus_t * arc.start.y.nanometers +
-                          2.0L * one_minus_t * t * arc.mid.y.nanometers + t * t * arc.end.y.nanometers;
+    const long double angle = circular ? start_angle + sweep * t : 0.0L;
+    const long double x = circular ? center_x + radius * std::cos(angle) : one_minus_t * one_minus_t * ax + 2.0L * one_minus_t * t * bx + t * t * cx;
+    const long double y = circular ? center_y + radius * std::sin(angle) : one_minus_t * one_minus_t * ay + 2.0L * one_minus_t * t * by + t * t * cy;
     const Point current{nanometers(static_cast<std::int64_t>(std::llround(x))),
                         nanometers(static_cast<std::int64_t>(std::llround(y)))};
     if (intersects(start, end, previous, current) || distancePointToSegment(previous, start, end) < clearance) return true;

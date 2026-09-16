@@ -1086,3 +1086,6 @@ Primary DRC now calls `checkUnroutedPhysicalNets` after physical geometry checks
 ## Sprint 406 handover (2026-09-16)
 
 `segmentTouchesArc` samples the quadratic curve from `TrackArc.start` through `mid` to `end` at 16 intervals, checks each envelope segment for intersection, and checks sampled vertices against route clearance. This catches curved-span crossings missed by endpoint-only checks. It is intentionally conservative and not yet KiCad-equivalent exact circular-arc geometry.
+## Sprint 407 handover (2026-09-16)
+
+`segmentTouchesArc` derives the circumcenter, radius, orientation, and midpoint-containing sweep from `TrackArc.start/mid/end`; it samples that circular sweep into 16 segments and checks route intersection plus sampled-point clearance. Collinear arcs use quadratic fallback. Adaptive sampling and exact analytic arc-to-segment distance remain future precision improvements.

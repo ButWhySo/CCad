@@ -903,3 +903,6 @@ RouterTool now conservatively rejects different-net `TrackArc` crossings and ver
 ## Sprint 406 progress update (2026-09-16)
 
 Improved different-net TrackArc routing rejection from two-chord testing to a 16-sample quadratic envelope, catching curved-span crossings between defining vertices while retaining width and clearance checks. Qt Release build completed 76/76; Qt-path CTest completed 79/79; official visual harness screenshot was inspected. Exact circumcircle sweep and adaptive tessellation remain future precision work.
+## Sprint 407 progress update (2026-09-16)
+
+TrackArc route-obstacle checks now sample the true three-point circumcircle sweep containing the arc midpoint, with quadratic fallback for collinear points. This removes quadratic-envelope distortion while retaining 16-segment conservative collision sampling and width/clearance checks. Qt Release build completed 76/76; Qt-path CTest completed 79/79; official visual harness screenshot was inspected.

@@ -2235,3 +2235,6 @@ Interactive and agent route gestures avoid different-net track arcs on the activ
 ### Sampled curved-copper routing safety
 
 Different-net track arcs are now checked across a 16-point curve envelope, not only at their endpoints or two coarse chords. Routes crossing or approaching the sampled curved copper are rejected on the active layer.
+### Circular arc route clearance
+
+Different-net circular track arcs are now checked using their reconstructed three-point circular sweep rather than a distorted quadratic approximation. Routes crossing sampled arc geometry or its configured clearance are rejected on the active layer.
