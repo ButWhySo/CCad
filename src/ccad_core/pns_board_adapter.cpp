@@ -83,7 +83,15 @@ void PnsBoardObstacleIndex::rebuild(const Board& board, const std::string& activ
         points.reserve(zone.outline.size());
         for (const Point& point : zone.outline)
             points.emplace_back(static_cast<int>(point.x.nanometers), static_cast<int>(point.y.nanometers));
-        item->setPolygon(std::move(points), static_cast<int>(std::max<std::int64_t>(0, zone.clearance.nanometers)));
+        std::vector<std::vector<std::pair<int, int>>> holes;
+        for (const auto& hole : zone.holes) {
+            std::vector<std::pair<int, int>> hole_points;
+            for (const Point& point : hole)
+                hole_points.emplace_back(static_cast<int>(point.x.nanometers), static_cast<int>(point.y.nanometers));
+            holes.push_back(std::move(hole_points));
+        }
+        item->setPolygon(std::move(points), std::move(holes),
+                         static_cast<int>(std::max<std::int64_t>(0, zone.clearance.nanometers)));
         item->setIdentity(zone.net_id, layer_id);
         node_.addItem(item);
         items_.push_back(std::move(item));

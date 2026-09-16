@@ -45,6 +45,10 @@ int main() {
                     {ccad::nanometers(95), ccad::nanometers(20)},
                     {ccad::nanometers(95), ccad::nanometers(80)},
                     {ccad::nanometers(85), ccad::nanometers(80)}};
+    zone.holes = {{{ccad::nanometers(88), ccad::nanometers(40)},
+                   {ccad::nanometers(92), ccad::nanometers(40)},
+                   {ccad::nanometers(92), ccad::nanometers(60)},
+                   {ccad::nanometers(88), ccad::nanometers(60)}}};
     board.zones.push_back(zone);
 
     ccad::PnsBoardObstacleIndex index;
@@ -58,6 +62,7 @@ int main() {
     require(index.blockedSegment(0, 50, 100, 50, 0), "adapter detects crossing track obstacle");
     require(index.blockedSegment(30, 50, 100, 50, 0), "adapter detects crossing arc obstacle");
     require(index.blockedSegment(86, 50, 94, 50, 0), "adapter detects route inside zone obstacle");
+    require(!index.blockedSegment(89, 45, 91, 45, 0), "adapter excludes route inside zone hole");
     require(!index.blockedSegment(0, 100, 100, 100, 0), "adapter excludes same-net pad");
     index.rebuild(board, "N1", "B.Cu");
     require(!index.blockedSegment(0, 50, 100, 50, 0), "adapter filters pad layer");

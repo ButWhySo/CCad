@@ -66,13 +66,17 @@ private:
 
 class PnsPolygonItem final : public PnsItem {
 public:
-    void setPolygon(std::vector<std::pair<int, int>> points, int radius = 0) {
+    void setPolygon(std::vector<std::pair<int, int>> points,
+                    std::vector<std::vector<std::pair<int, int>>> holes = {}, int radius = 0) {
         points_ = std::move(points);
+        holes_ = std::move(holes);
         if (!points_.empty()) setPosition(points_.front().first, points_.front().second, radius);
     }
     const std::vector<std::pair<int, int>>& points() const { return points_; }
+    const std::vector<std::vector<std::pair<int, int>>>& holes() const { return holes_; }
 private:
     std::vector<std::pair<int, int>> points_;
+    std::vector<std::vector<std::pair<int, int>>> holes_;
 };
 
 // Graph node for Push and Shove topology.

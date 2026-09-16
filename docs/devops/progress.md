@@ -1124,3 +1124,7 @@ Hardened cross-probe packet normalization against an argv-preserved backslash be
 ## Sprint 469 progress update (2026-09-17)
 
 Added typed PNS polygon obstacles for filled, active-layer, different-net zones. Segment checks detect polygon boundary crossings and routes whose endpoints lie inside the solid; zone holes remain explicitly deferred. Focused test, full build 96/96, CTest 89/89, official harness, and screenshot inspection passed with empty stderr.
+
+## Sprint 470 progress update (2026-09-17)
+
+Extended PNS polygon obstacles with zone holes. Routes strictly inside holes are excluded from solid-zone blocking, while contour boundaries remain conservative. Focused test, full build 96/96, CTest 89/89, official harness, and screenshot inspection passed with empty stderr.

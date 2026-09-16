@@ -2331,6 +2331,8 @@ CLI cross-probe integration coverage now passes packet values containing `$` saf
 
 Cross-probe packet parsing tolerates a preserved leading dollar escape, keeping `$NET` classification stable across command transports.
 
+Filled zone obstacle checks now respect zone holes: routes inside holes remain available, while zone solids and hole boundaries remain protected.
+
 PNS obstacle adaptation includes filled active-layer different-net zones, detecting route boundary crossings and routes inside zone solids.
 ## PNS spatial index
 

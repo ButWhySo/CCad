@@ -95,7 +95,13 @@ std::vector<PnsItem*> PnsIndex::querySegment(int x1, int y1, int x2, int y2, int
         if (const auto* polygon = dynamic_cast<const PnsPolygonItem*>(item)) {
             distance_sq = 1e100L;
             const auto& points = polygon->points();
-            if (points.size() >= 3 && (pointInPolygon(x1, y1, points) || pointInPolygon(x2, y2, points))) {
+            auto insideSolid = [&](int x, int y) {
+                if (!pointInPolygon(x, y, points)) return false;
+                for (const auto& hole : polygon->holes())
+                    if (pointInPolygon(x, y, hole)) return false;
+                return true;
+            };
+            if (points.size() >= 3 && (insideSolid(x1, y1) || insideSolid(x2, y2))) {
                 distance_sq = 0.0L;
             }
             for (std::size_t i = 0; i < points.size(); ++i) {

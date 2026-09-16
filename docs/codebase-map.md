@@ -1187,6 +1187,8 @@ Sprint 466 adds `PnsArcItem` and arc envelope checks to `PnsIndex::querySegment(
 
 Sprint 467 adds `shellArgument()` to the CLI integration test harness for platform-correct packet quoting. POSIX `$NET` cross-probe arguments are single-quoted with embedded-quote escaping; Windows retains double-quoted arguments.
 
+Sprint 470 extends `PnsPolygonItem` with outer and hole contours. Filled active-layer zones now exclude routes strictly inside valid zone holes while keeping hole boundaries conservative obstacles.
+
 Sprint 469 adds `PnsPolygonItem` and polygon checks to `PnsIndex::querySegment()`. The board adapter maps filled `BoardZone` outlines for active-layer different-net routing obstacles. Holes and refill/thermal semantics are not represented yet.
 
 Sprint 468 normalizes a leading escaped dollar (`\\$`) in `resolveCrossProbePacket()` before packet dispatch. This preserves packet classification if an argv transport leaves the shell escape intact.
