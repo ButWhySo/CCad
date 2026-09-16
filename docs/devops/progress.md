@@ -937,3 +937,7 @@ Added typed front/back courtyard polygon storage to `BoardFootprint`, native JSO
 ## Sprint 419 progress update (2026-09-16)
 
 Added a dedicated `CanvasFootprint` identity record and board-scene emission for footprint reference, value, layer, position, and rotation. The renderer now exposes a selectable footprint marker with canonical reference identity. Find-by-reference action wiring remains the next slice. Qt Release build completed 337/337; CTest completed 81/81; official visual harness screenshot was ingested and inspected with empty stderr.
+
+## Sprint 420 progress update (2026-09-16)
+
+Edit > Find now resolves case-insensitive footprint references against typed canvas identities, selects the matching footprint, refreshes selection state, and reports clear not-found status. Qt Release build completed 130/130; isolated CLI CTest passed; full Qt CTest completed 81/81 after rerunning transient agent-orchestrator hang; official harness completed and screenshot was visually inspected with empty stderr. Remote run 35084020399 remains older-SHA failure: exposed CLI cross-probe assertion is not reproducible on current main.
