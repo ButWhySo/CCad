@@ -16,6 +16,9 @@ public:
     bool start(std::shared_ptr<PnsItem> item, int x, int y);
     bool meander(int x, int y);
     const std::vector<std::pair<int, int>>& path() const { return path_; }
+    long double length() const;
+    void setTargetLength(int length) { target_length_ = length < 0 ? 0 : length; }
+    int targetLength() const { return target_length_; }
     void finish();
 
 private:

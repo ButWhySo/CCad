@@ -1,5 +1,6 @@
 #include "ccad_core/pns_meander_placer.hpp"
 #include "test_support.hpp"
+#include <cmath>
 
 int main() {
     auto node = std::make_shared<ccad::PnsNode>();
@@ -13,6 +14,12 @@ int main() {
     require(placer.meander(30, 40), "repeated destination remains valid");
     require(placer.path().size() == 2 && item->x() == 30 && item->y() == 40,
             "meander path deduplicates repeated point");
+    require(std::abs(placer.length() - 28.284271247461902L) < 1e-12L,
+            "meander reports polyline length");
+    placer.setTargetLength(100);
+    require(placer.targetLength() == 100, "meander stores target length");
+    placer.setTargetLength(-1);
+    require(placer.targetLength() == 0, "meander clamps negative target length");
     placer.finish();
     require(placer.path().empty() && !placer.meander(0, 0),
             "finish clears path and disables routing");
