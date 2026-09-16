@@ -1115,3 +1115,4 @@ Sprint 421 `importSpecctraSes` carries active `(net ...)` context through nested
 Sprint 423 extends `importSpecctraSes` to index route-library padstacks and derive via diameter from circular shapes. Drill remains 0.3 mm unless future ID parsing or DSN context supplies a value.
 Sprint 424 parses the KiCad Specctra drill convention `<prefix>:<drill>_mil` in SES via padstack IDs, converting mils to nanometres; IDs without this convention retain the 0.3 mm fallback.
 Sprint 425 adds optional `Via::start_layer_id` and `end_layer_id`, serialized when present; SES padstack circle layers infer the span in source order. Existing callers omit fields and retain prior through-via assumptions.
+Sprint 426 validates referenced SES via padstacks: known definitions require at least one circular shape, while absent definitions retain legacy diameter/drill fallback.

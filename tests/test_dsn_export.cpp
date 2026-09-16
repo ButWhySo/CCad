@@ -110,11 +110,21 @@ void testSesImport() {
   }
 }
 
+void testSesRejectsUnsupportedViaShape() {
+  try {
+    importSpecctraSes("(session (route (library (padstack \"bad\" (shape (rect \"F.Cu\" 0 0 1 1)))) (network (net \"N1\" (via \"bad\" 1 2)))))");
+    throw std::runtime_error("unsupported via shape was accepted");
+  } catch (const std::runtime_error& error) {
+    if (std::string(error.what()).find("no supported circle shape") == std::string::npos) throw;
+  }
+}
+
 int main() {
   try {
     testDsnExport();
     testDsnExportKeepsLargeNanometerCoordinates();
     testSesImport();
+    testSesRejectsUnsupportedViaShape();
     std::cout << "PASS dsn export and ses import\n";
     return 0;
   } catch (const std::exception& e) {

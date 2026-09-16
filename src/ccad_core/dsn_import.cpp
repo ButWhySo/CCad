@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <optional>
 
 namespace ccad {
@@ -41,12 +42,15 @@ SesRouting importSpecctraSes(std::string_view source) {
 
   std::unordered_map<std::string, double> via_diameters_mm;
   std::unordered_map<std::string, std::pair<std::string, std::string>> via_layer_spans;
+  std::unordered_set<std::string> via_padstacks;
+  std::unordered_set<std::string> via_padstacks_with_circle;
   std::vector<const SExpr*> library_stack = {root.get()};
   while (!library_stack.empty()) {
     const SExpr* node = library_stack.back();
     library_stack.pop_back();
     if (node->is_list && node->children.size() >= 2 && node->children[0]->value == "padstack") {
       const std::string& id = node->children[1]->value;
+      via_padstacks.insert(id);
       std::string first_layer;
       std::string last_layer;
       for (const auto& child : node->children) {
@@ -54,6 +58,7 @@ SesRouting importSpecctraSes(std::string_view source) {
             child->children[1]->is_list && child->children[1]->children.size() >= 3 &&
             child->children[1]->children[0]->value == "circle") {
           if (!via_diameters_mm.contains(id)) via_diameters_mm[id] = 2.0 * parseMm(child->children[1]->children[2]->value);
+          via_padstacks_with_circle.insert(id);
           const std::string layer = child->children[1]->children[1]->value;
           if (first_layer.empty()) first_layer = layer;
           last_layer = layer;
@@ -107,6 +112,10 @@ SesRouting importSpecctraSes(std::string_view source) {
         via.id = "ses_via_" + std::to_string(result.vias.size());
         via.net_id = net_id;
         via.diameter = millimeters(0.6);
+        if (via_padstacks.contains(node->children[1]->value) &&
+            !via_padstacks_with_circle.contains(node->children[1]->value)) {
+          throw std::runtime_error("SES via padstack has no supported circle shape: " + node->children[1]->value);
+        }
         if (auto it = via_diameters_mm.find(node->children[1]->value); it != via_diameters_mm.end()) {
           via.diameter = mmToLength(it->second);
         }

@@ -957,3 +957,7 @@ SES via import now parses KiCad-style padstack IDs such as `Via_15:8_mil`, conve
 ## Sprint 425 progress update (2026-09-16)
 
 Added typed via start/end layer IDs, JSON persistence, and SES inference from padstack circle layer extrema. This gives blind/buried via imports a representable layer span while preserving through-via behavior for F.Cu/B.Cu definitions. Focused DSN test and full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
+
+## Sprint 426 progress update (2026-09-16)
+
+SES via padstack validation now rejects a referenced padstack without a supported circle shape, matching KiCad’s explicit import error; missing external padstacks retain compatibility fallback. Focused DSN test and full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
