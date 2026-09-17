@@ -1634,3 +1634,6 @@ Added a visible Test Provider action beside the masked session-only key field. I
 ### Sprint 613 - make chat context usage truthful
 
 Replaced the hardcoded Agent footer context counter with a live approximate token estimate from the exact project-context payload attached to the next chat request. The value remains a client-side estimate, not provider billing telemetry.
+### Sprint 614 - hold tool results behind human approval
+
+Fixed the Qt-to-Python tool-call bridge so an approval-required mutation is not acknowledged before the human decides. The pending call remains correlated in the native card; Approve sends the authoritative tool result, while Decline/Cancel send the corresponding error.

@@ -839,3 +839,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 611: empty API-key save clears process-held provider secret; live external-provider call remains environment-dependent.
 - [x] Sprint 612: add explicit session-only Test Provider action; real network validation remains user-environment dependent.
 - [x] Sprint 613: replace hardcoded context counter with client-side estimate; provider token accounting remains unavailable until a real adapter call.
+- [x] Sprint 614: prevent premature tool-result acknowledgement before human approval; live checkpointed mutation proof remains next.
