@@ -176,8 +176,14 @@ def main():
     # Go to Configuration Tab (Index 1)
     print("Switching to Configuration tab...")
     click_list_item(ui_map, "control:categoryList", 1)
+    send_ui_action('ui.click', {'id': 'control:categoryList', 'row': 1})
     time.sleep(0.5)
     ui_map = read_ui_map()
+    typed_model = send_ui_action('ui.type_text', {
+        'id': 'control:modelInput', 'text': 'physical-ui-model-test'
+    })
+    if not typed_model.get('result', {}).get('performed'):
+        raise RuntimeError(f"semantic model typing failed: {typed_model}")
     
     config_elements = [
         "control:providerCombo", "control:modelInput", "control:sandboxCb", 
@@ -218,7 +224,6 @@ def main():
     send_ui_action('ui.click', {'id': 'control:categoryList', 'row': 4})
     time.sleep(0.5)
     ui_map = read_ui_map()
-    
     api_elements = [
         "action:testProviderBtn"
     ]

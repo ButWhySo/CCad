@@ -2562,6 +2562,8 @@ Top-level Settings controls are now addressable through `ui.target`/`ui.click` d
 
 Top-level control clicks now focus line and text editors, open combo boxes, and toggle checkboxes through the same UI-map API. The provider flow uses this surface for truthful button/list interaction; broader control-action coverage remains backlog.
 
+`ui.type_text` also addresses visible Settings dialog editors: `control:modelInput`, `control:apiKeyInput`, `control:projectNameInput`, `control:projectPathInput`, `control:followUpInput`, and `control:customInstructionsText`. Hidden duplicate widgets from inactive tabs are skipped. API keys remain transient and are never returned in responses.
+
 ## CI speed and syntax gate
 
 The CI workflow compiles agent and test Python sources before protocol tests and invokes CMake with parallel workers on all build jobs. This catches syntax regressions early and reduces idle build time without weakening CTest.

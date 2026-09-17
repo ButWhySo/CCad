@@ -6805,6 +6805,9 @@ QString ReviewWindow::uiTypeTextJson(const QString& id, const QString& text) {
                                    "control:agent_live_payload", "control:agent_goal",
                                    "control:agent_command_input",
                                    "control:agent_chat_input",
+                                   "control:apiKeyInput", "control:modelInput",
+                                   "control:projectNameInput", "control:projectPathInput",
+                                   "control:followUpInput", "control:customInstructionsText",
                                    "control:agent_provider_model",
                                    "control:agent_approval_request"};
   QJsonObject response;
@@ -6823,9 +6826,7 @@ QString ReviewWindow::uiTypeTextJson(const QString& id, const QString& text) {
     }
     const bool approval_request = trimmed_id == QStringLiteral("control:agent_approval_request");
     if ((!input->isVisible() && !approval_request) || !input->isEnabled()) {
-      response.insert("performed", false);
-      response.insert("reason", "disabled_or_hidden");
-      return jsonObjectLine(response);
+      continue;
     }
     input->setFocus(Qt::OtherFocusReason);
     input->setText(text);
@@ -6840,14 +6841,50 @@ QString ReviewWindow::uiTypeTextJson(const QString& id, const QString& text) {
     markUiMapChanged();
     return jsonObjectLine(response);
   }
+  // Settings is a modeless top-level dialog. Search all widgets, but only
+  // address the visible instance when a stale/hidden tab has duplicate IDs.
+  for (QWidget* widget : QApplication::allWidgets()) {
+    auto* input = qobject_cast<QLineEdit*>(widget);
+    if (input == nullptr || input->objectName() != trimmed_id ||
+        input->parent() == this) {
+      continue;
+    }
+    const bool approval_request = trimmed_id == QStringLiteral("control:agent_approval_request");
+    if ((!input->isVisible() && !approval_request) || !input->isEnabled()) {
+      continue;
+    }
+    input->setFocus(Qt::OtherFocusReason);
+    input->setText(text);
+    input->setCursorPosition(text.size());
+    QApplication::processEvents();
+    response.insert("performed", true);
+    response.insert("reason", "text_set");
+    response.insert("focused", input->hasFocus());
+    markUiMapChanged();
+    return jsonObjectLine(response);
+  }
   for (QTextEdit* input : findChildren<QTextEdit*>()) {
     if (input == nullptr || input->objectName() != trimmed_id) {
       continue;
     }
     if (!input->isVisible() || !input->isEnabled()) {
-      response.insert("performed", false);
-      response.insert("reason", "disabled_or_hidden");
-      return jsonObjectLine(response);
+      continue;
+    }
+    input->setFocus(Qt::OtherFocusReason);
+    input->setPlainText(text);
+    input->moveCursor(QTextCursor::End);
+    QApplication::processEvents();
+    response.insert("performed", true);
+    response.insert("reason", "text_set");
+    response.insert("focused", input->hasFocus());
+    markUiMapChanged();
+    return jsonObjectLine(response);
+  }
+  for (QWidget* widget : QApplication::allWidgets()) {
+    auto* input = qobject_cast<QTextEdit*>(widget);
+    if (input == nullptr || input->objectName() != trimmed_id ||
+        input->parent() == this || !input->isVisible() || !input->isEnabled()) {
+      continue;
     }
     input->setFocus(Qt::OtherFocusReason);
     input->setPlainText(text);
