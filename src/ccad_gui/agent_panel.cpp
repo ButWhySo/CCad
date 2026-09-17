@@ -1107,12 +1107,13 @@ void AgentPanel::renderChatChecklist() {
 
 void AgentPanel::startPythonBackend() {
   python_process_ = new QProcess(this);
-  QString python_path = "python";
-  if (QFile::exists("src/ccad_agent/venv/Scripts/python.exe")) {
+  QString python_path = qEnvironmentVariable("CCAD_AGENT_PYTHON");
+  if (python_path.isEmpty() && QFile::exists("src/ccad_agent/venv/Scripts/python.exe")) {
     python_path = "src/ccad_agent/venv/Scripts/python.exe";
-  } else if (QFile::exists("src/ccad_agent/venv/bin/python")) {
+  } else if (python_path.isEmpty() && QFile::exists("src/ccad_agent/venv/bin/python")) {
     python_path = "src/ccad_agent/venv/bin/python";
   }
+  if (python_path.isEmpty()) python_path = "python";
   python_process_->setProgram(python_path);
   python_process_->setArguments({"src/ccad_agent/orchestrator.py"});
   connect(python_process_, &QProcess::readyReadStandardOutput, this, &AgentPanel::handlePythonOutput);

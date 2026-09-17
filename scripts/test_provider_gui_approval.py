@@ -3,6 +3,7 @@
 import json
 import os
 import subprocess
+import sys
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -51,6 +52,7 @@ def main():
     threading.Thread(target=server.serve_forever, daemon=True).start()
     env = os.environ.copy()
     env.update({
+        "CCAD_AGENT_PYTHON": sys.executable,
         "CCAD_PROVIDER": "openai_compatible",
         "CCAD_OPENAI_COMPATIBLE_API_KEY": "sk-ccad-gui-stub",
         "CCAD_OPENAI_COMPATIBLE_BASE_URL": f"http://127.0.0.1:{server.server_port}/v1",
@@ -58,7 +60,7 @@ def main():
     })
     log_path = ROOT / "artifacts" / "provider-gui-approval.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    command = [os.environ.get("PYTHON", "python"), str(ROOT / "scripts" / "live_agent_route_demo.py"),
+    command = [sys.executable, str(ROOT / "scripts" / "live_agent_route_demo.py"),
                "--provider", "openai_compatible", "--mock-tool-approval-check",
                "--chat-send-check", "--hold-seconds", "1", "--delay", "0.01"]
     try:
