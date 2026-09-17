@@ -1451,3 +1451,7 @@ Agent PCB adapters now reject missing required fields with structured errors bef
 ### Sprint 556 - harden agent JSON string extraction
 
 Agent JSON-RPC string extraction now handles escaped JSON characters while preserving raw Windows path separators. Focused agent/CLI tests passed 2/2, full Qt CTest passed 91/91 in 51.01 seconds, and the official harness screenshot was inspected with empty stderr.
+
+### Sprint 557 - expose agent zone authoring
+
+Added `pcb.add-zone` agent adapter with required geometry/layer fields and optional zone settings, dispatching to native CLI authoring. Full Qt CTest passed 91/91 in 49.62 seconds; direct RPC missing-field smoke passed; official harness screenshot inspected with empty stderr.

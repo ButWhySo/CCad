@@ -119,6 +119,15 @@ std::string executeCliTool(const std::string& tool, const std::string& json) {
     } else if (tool == "pcb.drc") {
         if (const std::string error = requireFields({"file"}); !error.empty()) return error;
         add("drc"); add(required("file"));
+    } else if (tool == "pcb.add-zone") {
+        if (const std::string error = requireFields({"file", "id", "layers", "x_mm", "y_mm", "width_mm", "height_mm"}); !error.empty()) return error;
+        add("pcb"); add("add-zone");
+        appendOption("--file", "file"); appendOption("--id", "id"); appendOption("--layers", "layers");
+        appendOption("--x-mm", "x_mm"); appendOption("--y-mm", "y_mm");
+        appendOption("--width-mm", "width_mm"); appendOption("--height-mm", "height_mm");
+        appendOption("--name", "name"); appendOption("--net", "net"); appendOption("--priority", "priority");
+        appendOption("--clearance-mm", "clearance_mm"); appendOption("--min-thickness-mm", "min_thickness_mm");
+        appendOption("--pad-connection", "pad_connection");
     } else {
         return "{\"error\":\"tool_adapter_unavailable\"}";
     }
@@ -184,6 +193,11 @@ ccad::AgentOrchestrator& getOrchestrator() {
             "pcb.drc", "Run DRC", ccad::TaskRisk::ReadOnly,
             R"({"type":"object","required":["file"]})",
             [](const std::string& args) -> std::string { return executeCliTool("pcb.drc", args); }
+        });
+        g_orchestrator->register_tool({
+            "pcb.add-zone", "Add Zone", ccad::TaskRisk::LowMutation,
+            R"({"type":"object","required":["file","id","layers","x_mm","y_mm","width_mm","height_mm"]})",
+            [](const std::string& args) -> std::string { return executeCliTool("pcb.add-zone", args); }
         });
         g_orchestrator->register_tool({
             "pcb.add-via", "Add Via", ccad::TaskRisk::LowMutation,

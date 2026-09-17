@@ -1189,6 +1189,7 @@ void testAgentToolCallRpc() {
   if (result != 0) std::exit(1);
   assertContains(drc_out.str(), "\"id\": 40", "drc request preserves id");
   assertContains(drc_out.str(), "missing_parameter", "drc requires file before dispatch");
+
 }
 
 int main() {

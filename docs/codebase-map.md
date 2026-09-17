@@ -1311,3 +1311,5 @@ Sprint 554 adds pre-dispatch required-field validation to the four executable ag
 Sprint 555 routes agent `pcb.drc` through the real CLI DRC command instead of reporting only board presence.
 
 Sprint 556 hardens duplicated agent JSON string extraction for escaped values and Windows paths.
+
+Sprint 557 adds native agent `pcb.add-zone` dispatch with structured required-field validation.

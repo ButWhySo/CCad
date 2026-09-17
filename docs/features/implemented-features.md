@@ -2413,3 +2413,5 @@ Agent PCB tool adapters validate required fields before dispatch and return the 
 Agent `pcb.drc` runs the native DRC command and exposes its exit code and captured diagnostics.
 
 Agent JSON-RPC string fields preserve Windows paths and decode common escaped characters.
+
+Agent `pcb.add-zone` authors rectangular copper zones through the native CLI adapter.
