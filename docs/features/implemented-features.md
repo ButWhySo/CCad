@@ -2371,3 +2371,4 @@ The headless board context also supports file-backed load/save with round-trip c
 `project validate` is the first CLI consumer of the shared file-backed headless context.
 `pcb add-via` is now a mutation consumer; its existing geometry validation and audit trail remain intact.
 `pcb set-layer-visibility` is now a shared-context mutation consumer with its existing validation and audit behavior intact.
+`pcb set-via` is now a shared-context mutation consumer with its existing validation and audit behavior intact.
