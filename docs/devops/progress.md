@@ -1582,3 +1582,6 @@ GUI now renders Python thread_state replies as Checkpoint resumable or Checkpoin
 ### Sprint 594 - wire durable graph resume execution
 
 Added protocol-side LangGraph Command(resume=...) continuation for checkpointed threads. Explicit resume payloads and authoritative tool results now resume an interrupted graph on same thread; GUI surfaces thread_resumed status/activity. References checked: official LangGraph interrupt/resume docs. Focused verification pending.
+### Sprint 595 - convert persisted tool waits to interrupts
+
+Checkpoint-enabled mutating tools now use LangGraph interrupt payloads with deterministic correlation IDs; legacy synchronous broker waits remain when no checkpoint DB is configured. This enables graph state persistence across process restart and resume through existing `tool_result` / `agent.resume_thread` protocol. References checked: official LangGraph interrupt and human-in-the-loop docs. Focused Python syntax and diff checks passed; full gate pending.

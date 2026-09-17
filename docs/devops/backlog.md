@@ -821,3 +821,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 592: GUI Resume queries checkpoint state with explicit disabled response; interrupted graph continuation and approval restoration remain open.
 - [x] Sprint 593: GUI surfaces checkpoint resume result; actual interrupted-tool continuation and approval interrupt restoration remain open.
 - [x] Sprint 594: wire checkpointed graph resume through protocol and GUI; interrupt-producing tool adapter coverage remains open.
+- [x] Sprint 595: checkpoint-enabled mutating tools use durable LangGraph interrupts; add restart integration fixture and approval decision UI automation next.

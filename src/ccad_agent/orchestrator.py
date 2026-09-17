@@ -7,9 +7,10 @@ import threading
 import time
 import uuid
 import atexit
+import hashlib
 from typing import Annotated, TypedDict, List
 from langgraph.graph import StateGraph, END
-from langgraph.types import Command
+from langgraph.types import Command, interrupt
 from langchain_core.tools import tool
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
@@ -81,13 +82,32 @@ def new_tool_call_id(tool_name: str) -> str:
     """Create a per-invocation correlation ID; never reuse across retries."""
     return f"{tool_name}-{uuid.uuid4().hex}"
 
+def checkpoint_tool_call_id(tool_name: str, args: dict) -> str:
+    """Stable ID lets interrupted tool re-execution correlate after restart."""
+    encoded = json.dumps({"tool": tool_name, "args": args}, sort_keys=True,
+                         separators=(",", ":")).encode("utf-8")
+    return f"{tool_name}-{hashlib.sha256(encoded).hexdigest()[:24]}"
+
+def dispatch_checkpointed_tool(tool_name: str, args: dict):
+    """Pause graph until C++ client returns authoritative tool result."""
+    call_id = checkpoint_tool_call_id(tool_name, args)
+    decision = interrupt({"kind": "ccad_tool_call", "tool": tool_name,
+                          "args": args, "call_id": call_id})
+    if isinstance(decision, dict) and "error" in decision:
+        return json.dumps(decision)
+    return json.dumps(decision) if isinstance(decision, (dict, list)) else str(decision)
+
 def dispatch_client_tool(tool_name: str, args: dict, *, await_result: bool = False) -> str:
     """Send one client tool call and optionally await its authoritative result."""
-    call_id = new_tool_call_id(tool_name)
+    call_id = (checkpoint_tool_call_id(tool_name, args)
+               if checkpoint_saver is not None and broker_wait_enabled
+               else new_tool_call_id(tool_name))
     emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
         "tool": tool_name, "args": args, "call_id": call_id,
     }})
     if broker_wait_enabled and await_result:
+        if checkpoint_saver is not None:
+            return dispatch_checkpointed_tool(tool_name, args)
         return wait_for_broker_result(call_id)
     return "Action dispatched to CCad client."
 
@@ -102,22 +122,32 @@ class AgentState(TypedDict):
 @tool
 def ui_place_via(x_mm: float, y_mm: float, dry_run: bool = False):
     """Places a via on the PCB at the specified x, y coordinates (in mm)."""
-    call_id = new_tool_call_id("ui-place-via")
+    args = {"x_mm": x_mm, "y_mm": y_mm, "dry_run": dry_run}
+    call_id = (checkpoint_tool_call_id("ui.place_via", args)
+               if checkpoint_saver is not None and broker_wait_enabled
+               else new_tool_call_id("ui-place-via"))
     emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
         "tool": "ui.place_via",
-        "args": {"x_mm": x_mm, "y_mm": y_mm, "dry_run": dry_run},
+        "args": args,
         "call_id": call_id,
     }})
     if broker_wait_enabled and not dry_run:
+        if checkpoint_saver is not None:
+            return dispatch_checkpointed_tool("ui.place_via", args)
         return wait_for_broker_result(call_id)
     return "Action dispatched to CCad client."
 
 @tool
 def ui_add_track(x1: float, y1: float, x2: float, y2: float):
     """Adds a track segment between two coordinates."""
-    call_id = new_tool_call_id("ui-route-track")
-    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.route_track", "args": {"start_x_mm": x1, "start_y_mm": y1, "end_x_mm": x2, "end_y_mm": y2}, "call_id": call_id}})
+    args = {"start_x_mm": x1, "start_y_mm": y1, "end_x_mm": x2, "end_y_mm": y2}
+    call_id = (checkpoint_tool_call_id("ui.route_track", args)
+               if checkpoint_saver is not None and broker_wait_enabled
+               else new_tool_call_id("ui-route-track"))
+    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.route_track", "args": args, "call_id": call_id}})
     if broker_wait_enabled:
+        if checkpoint_saver is not None:
+            return dispatch_checkpointed_tool("ui.route_track", args)
         return wait_for_broker_result(call_id)
     return "Action dispatched to CCad client."
 
@@ -133,9 +163,14 @@ def ui_add_polygon(points: List[List[float]], layer: str):
     if len(points) >= 2:
         x1, y1 = points[0][0], points[0][1]
         x2, y2 = points[1][0], points[1][1]
-        call_id = new_tool_call_id("ui-add-zone")
-        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.add_zone", "args": {"start_x_mm": x1, "start_y_mm": y1, "end_x_mm": x2, "end_y_mm": y2, "layer": layer}, "call_id": call_id}})
+        args = {"start_x_mm": x1, "start_y_mm": y1, "end_x_mm": x2, "end_y_mm": y2, "layer": layer}
+        call_id = (checkpoint_tool_call_id("ui.add_zone", args)
+                   if checkpoint_saver is not None and broker_wait_enabled
+                   else new_tool_call_id("ui-add-zone"))
+        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.add_zone", "args": args, "layer": layer, "call_id": call_id}})
         if broker_wait_enabled:
+            if checkpoint_saver is not None:
+                return dispatch_checkpointed_tool("ui.add_zone", args)
             return wait_for_broker_result(call_id)
     return "Action dispatched to CCad client."
 
