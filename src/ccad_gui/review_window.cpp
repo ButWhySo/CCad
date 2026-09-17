@@ -5535,6 +5535,33 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
     return foundTarget(id, "control", id, list->isVisible() && !global_rect.isEmpty(),
                        list->isEnabled(), global_rect.center());
   }
+  for (QWidget* widget : QApplication::allWidgets()) {
+    if (auto* input = qobject_cast<QLineEdit*>(widget);
+        input != nullptr && input->objectName() == id && id.startsWith("control:")) {
+      const QRect global_rect = visibleWidgetGlobalRect(input);
+      return foundTarget(id, "control", id, input->isVisible() && !global_rect.isEmpty(),
+                         input->isEnabled(), global_rect.center());
+    }
+    if (auto* combo = qobject_cast<QComboBox*>(widget);
+        combo != nullptr && combo->objectName() == id && id.startsWith("control:")) {
+      const QRect global_rect = visibleWidgetGlobalRect(combo);
+      return foundTarget(id, "control", id, combo->isVisible() && !global_rect.isEmpty(),
+                         combo->isEnabled(), global_rect.center());
+    }
+    if (auto* checkbox = qobject_cast<QCheckBox*>(widget);
+        checkbox != nullptr && checkbox->objectName() == id && id.startsWith("control:")) {
+      const QRect global_rect = visibleWidgetGlobalRect(checkbox);
+      return foundTarget(id, "control", checkbox->text(),
+                         checkbox->isVisible() && !global_rect.isEmpty(), checkbox->isEnabled(),
+                         global_rect.center());
+    }
+    if (auto* text = qobject_cast<QTextEdit*>(widget);
+        text != nullptr && text->objectName() == id && id.startsWith("control:")) {
+      const QRect global_rect = visibleWidgetGlobalRect(text);
+      return foundTarget(id, "control", id, text->isVisible() && !global_rect.isEmpty(),
+                         text->isEnabled(), global_rect.center());
+    }
+  }
 
   return QString("{\"schema_version\":1,\"found\":false,\"id\":%1,"
                  "\"reason\":\"unknown_id\"}\n")

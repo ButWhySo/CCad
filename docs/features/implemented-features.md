@@ -2558,6 +2558,8 @@ Provider testing cannot remain indefinitely busy: the status shows `running...` 
 
 The live Windows UI robot rejects both `not run` and `running...` as final states, proving the timeout reaches a terminal user-visible result.
 
+Top-level Settings controls are now addressable through `ui.target`/`ui.click` discovery, including provider/model inputs, checkboxes, combos, and category lists. Agent clients can operate the visible dialog without coordinate guessing.
+
 ## CI speed and syntax gate
 
 The CI workflow compiles agent and test Python sources before protocol tests and invokes CMake with parallel workers on all build jobs. This catches syntax regressions early and reduces idle build time without weakening CTest.
