@@ -1199,7 +1199,13 @@ void AgentPanel::handlePythonOutput() {
                                            : QStringLiteral("Call ") + call_id,
                          "agent.tool_result_ack");
       } else if (obj.contains("method") && obj["method"].toString() == "config_state") {
-        if (config_state_cb_) config_state_cb_(obj["params"].toObject());
+        const QJsonObject params = obj["params"].toObject();
+        const QString configured_model = params["model"].toString().trimmed();
+        if (!configured_model.isEmpty()) {
+          provider_model_ = configured_model;
+          updateProviderControls();
+        }
+        if (config_state_cb_) config_state_cb_(params);
       } else if (obj.contains("method") && obj["method"].toString() == "provider_state") {
         const QJsonObject params = obj["params"].toObject();
         if (!params["model"].toString().trimmed().isEmpty()) {
