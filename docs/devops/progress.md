@@ -1519,3 +1519,7 @@ LangGraph remains execution backbone. Existing Langfuse callback support is reta
 ### Sprint 573 - clear stale provider adapters on reconfiguration
 
 init_provider() now clears all LangChain adapters before selecting/rebuilding provider, so removed keys or failed provider changes cannot retain stale clients. Live subprocess reset smoke passed: fake key configured then cleared, final provider_state configured=false/execution_enabled=false, sentinel absent, stderr empty. LangGraph and opt-in Langfuse/LangSmith callbacks remain intact.
+
+### Sprint 575 - wait for broker result in graph tools
+
+Real provider tool functions now emit a stable call_id, synchronously await matching C++ 	ool_result, and return broker result JSON into LangGraph ToolNode state; dry-run and mock paths remain nonblocking. Offline helper and mock-loop regressions passed; Python compile passed. This is first act?observe handoff, but approval enforcement and async cancellation/timeout remain pending.

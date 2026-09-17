@@ -14,6 +14,26 @@ import hooks
 def emit(payload: dict):
     print(json.dumps(payload), flush=True)
 
+broker_wait_enabled = False
+
+def wait_for_broker_result(call_id: str) -> str:
+    """Synchronously receive matching C++ broker result for current tool call."""
+    while True:
+        line = sys.stdin.readline()
+        if not line:
+            return json.dumps({"error": "broker_closed", "call_id": call_id})
+        try:
+            response = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if response.get("method") != "tool_result":
+            continue
+        if response.get("id", "") != call_id:
+            continue
+        if response.get("error") is not None:
+            return json.dumps({"error": response["error"], "call_id": call_id})
+        return json.dumps(response.get("result", {"error": "empty_broker_result"}))
+
 config_manager = AgentConfigManager()
 
 class AgentState(TypedDict):
@@ -30,6 +50,8 @@ def ui_place_via(x_mm: float, y_mm: float, dry_run: bool = False):
         "args": {"x_mm": x_mm, "y_mm": y_mm, "dry_run": dry_run},
         "call_id": "agent-tool-call",
     }})
+    if broker_wait_enabled and not dry_run:
+        return wait_for_broker_result("agent-tool-call")
     return "Action dispatched to CCad client."
 
 @tool
@@ -151,13 +173,14 @@ if (os.environ.get("LANGCHAIN_TRACING_V2", "").lower() == "true"
         pass
 
 def init_provider():
-    global llm, router_llm, librarian_llm
+    global llm, router_llm, librarian_llm, broker_wait_enabled
 
     # Reconfiguration must not retain a previously initialized adapter or its
     # credential-backed client after a key/provider is removed.
     llm = None
     router_llm = None
     librarian_llm = None
+    broker_wait_enabled = False
     
     provider = os.environ.get("CCAD_PROVIDER") or config_manager.get("provider", "openai")
     model_name = os.environ.get("CCAD_MODEL") or config_manager.get("model", "")
@@ -179,6 +202,7 @@ def init_provider():
             llm = ChatAnthropic(model=model_name, temperature=0)
             router_llm = llm.bind_tools(router_tools)
             librarian_llm = llm.bind_tools(librarian_tools)
+            broker_wait_enabled = True
             return True
         except ImportError:
             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Warning: langchain_anthropic not installed."}})
@@ -189,6 +213,7 @@ def init_provider():
             llm = ChatGoogleGenerativeAI(model=model_name, temperature=0)
             router_llm = llm.bind_tools(router_tools)
             librarian_llm = llm.bind_tools(librarian_tools)
+            broker_wait_enabled = True
             return True
         except ImportError:
             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Warning: langchain_google_genai not installed."}})
@@ -199,6 +224,7 @@ def init_provider():
             llm = ChatOpenAI(model=model_name, temperature=0)
             router_llm = llm.bind_tools(router_tools)
             librarian_llm = llm.bind_tools(librarian_tools)
+            broker_wait_enabled = True
             return True
         except ImportError:
             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Warning: langchain_openai not installed."}})
