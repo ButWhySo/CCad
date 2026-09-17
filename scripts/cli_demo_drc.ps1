@@ -8,7 +8,9 @@ if (Test-Path $Project) {
     Remove-Item $Project
 }
 
-Write-Output "Initializing fresh project..."
+Write-Output "=== CCad Demo: USB power board ==="
+Write-Output "User goal: build a compact rectifier/protection board, keep routing safe, prove it is ready."
+Write-Output "Stage 1/5 - Start from blank project and define board outline."
 $ProjectObject = @{
     schema_version = 2
     components = @(
@@ -78,6 +80,7 @@ $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 & $Ccad pcb set-outline --file $Project --x-mm 0 --y-mm 0 --width-mm 50 --height-mm 40
 
 # Add pads
+Write-Output "Stage 2/5 - Place input, rectifier, capacitor, and output connections."
 & $Ccad pcb add-pad --file $Project --id JAC1.1 --component JAC1 --pin 1 --net AC1 --layers "F.Cu" --x-mm 5 --y-mm 10 --width-mm 2 --height-mm 2 --type smd --shape rect
 & $Ccad pcb add-pad --file $Project --id JAC2.1 --component JAC2 --pin 1 --net AC2 --layers "F.Cu" --x-mm 5 --y-mm 30 --width-mm 2 --height-mm 2 --type smd --shape rect
 & $Ccad pcb add-pad --file $Project --id D1.A --component D1 --pin A --net AC1 --layers "F.Cu" --x-mm 15 --y-mm 10 --width-mm 1.5 --height-mm 1.5 --type smd --shape roundrect --roundrect-rratio 0.25
@@ -94,14 +97,17 @@ $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 & $Ccad pcb add-pad --file $Project --id JDC2.1 --component JDC2 --pin 1 --net DC_NEG --layers "F.Cu" --x-mm 40 --y-mm 30 --width-mm 2 --height-mm 2 --type smd --shape rect
 
 # Add tracks (INTENTIONAL DRC ERROR: D1.K to C1.1 track is not fully connected)
+Write-Output "Stage 3/5 - Route power nets; one route is intentionally incomplete to demonstrate safety checks."
 & $Ccad pcb add-track --file $Project --id TPOS.1 --net DC_POS --layer F.Cu --start-x-mm 18 --start-y-mm 10 --end-x-mm 20 --end-y-mm 10 --width-mm 0.5
 & $Ccad pcb add-track --file $Project --id TPOS.2_BAD --net DC_POS --layer F.Cu --start-x-mm 20 --start-y-mm 10 --end-x-mm 24 --end-y-mm 14 --width-mm 0.5
 
 # Run DRC
 Write-Output "--- Running DRC ---"
+Write-Output "Agent asks kernel: is this board electrically and geometrically safe?"
 & $Ccad drc $Project
 
 Write-Output "--- Fixing DRC Violations ---"
+Write-Output "Stage 4/5 - Read diagnostics, remove bad route, add valid layer transition, complete connections."
 # Remove bad track
 & $Ccad pcb remove-object --file $Project --id TPOS.2_BAD
 
@@ -125,6 +131,7 @@ Write-Output "--- Fixing DRC Violations ---"
 & $Ccad pcb add-track --file $Project --id TNEG.3 --net DC_NEG --layer B.Cu --start-x-mm 25 --start-y-mm 25 --end-x-mm 40 --end-y-mm 30 --width-mm 0.5
 
 Write-Output "--- Running DRC Again ---"
+Write-Output "Stage 5/5 - Re-check repaired board; zero errors and zero warnings means demo success."
 & $Ccad drc $Project
 
 # Screenshot using GUI

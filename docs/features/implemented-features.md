@@ -2423,3 +2423,5 @@ Agents can author placement regions and request native zone refill through `pcb.
 Agents can place schematic symbols and author wires/labels through `sch.place-symbol`, `sch.add-wire`, and `sch.add-label`.
 
 `scripts/cli_demo_drc.ps1` provides a user-facing rectifier-board story: construct board, show intentional DRC failure, repair with a valid layer transition, and prove a clean final DRC plus GUI screenshot.
+
+The demo prints plain-language stage narration so viewers can follow engineering intent and outcome without knowing CCad command names.
