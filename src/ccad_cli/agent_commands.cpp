@@ -895,8 +895,20 @@ int agentCommand(const std::vector<std::string>& args) {
       std::cout << formatSuccess(id, res) << "\n";
       std::cout.flush();
     } else if (method == "tools/list") {
-      std::string res = "{\"tools\": [{\"name\": \"ccad_execute\", \"description\": \"Execute ccad CLI commands\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"args\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}, \"required\": [\"args\"]}}]}";
+      std::string res = "{\"tools\": [{\"name\": \"ccad_execute\", \"description\": \"Execute guarded CCad CLI commands\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"args\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}, \"required\": [\"args\"]}},";
+      res += "{\"name\": \"ccad_harness_context\", \"description\": \"Read CCad agent harness contract and safety context\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}}},";
+      res += "{\"name\": \"ccad_workspace_state\", \"description\": \"Read provider-free CCad agent workspace state\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}}}]}";
       std::cout << formatSuccess(id, res) << "\n";
+      std::cout.flush();
+    } else if (method == "tools/call" && extractStringValue(line, "name") == "ccad_harness_context") {
+      const std::string result = agentHarnessContextJson();
+      std::cout << formatSuccess(id, "{\"content\":[{\"type\":\"text\",\"text\":\"" +
+                                      ccad::escapeJson(result) + "\"}],\"isError\":false}") << "\n";
+      std::cout.flush();
+    } else if (method == "tools/call" && extractStringValue(line, "name") == "ccad_workspace_state") {
+      const std::string result = agentWorkspaceStateJson();
+      std::cout << formatSuccess(id, "{\"content\":[{\"type\":\"text\",\"text\":\"" +
+                                      ccad::escapeJson(result) + "\"}],\"isError\":false}") << "\n";
       std::cout.flush();
     } else if (method == "agent.methods") {
       std::cout << formatSuccess(id, agentProtocolCatalogJson()) << "\n";
