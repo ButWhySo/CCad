@@ -1047,10 +1047,13 @@ void AgentPanel::handlePythonOutput() {
         if (config_state_cb_) config_state_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "provider_state") {
         const QJsonObject params = obj["params"].toObject();
+        const QString adapter_error = params["error"].toString();
         provider_status_ = params["configured"].toBool(false)
                                ? (params["execution_enabled"].toBool(false)
                                       ? QStringLiteral("configured_memory_only")
-                                      : QStringLiteral("credential_received_provider_unavailable"))
+                                      : (adapter_error.isEmpty()
+                                             ? QStringLiteral("credential_received_provider_unavailable")
+                                             : QStringLiteral("adapter_error_") + adapter_error))
                                : QStringLiteral("env_missing");
         updateProviderControls();
       } else if (obj.contains("method") && obj["method"].toString() == "thread_state") {
