@@ -1570,3 +1570,6 @@ Verified official LangGraph persistence guidance and installed SQLite backend. R
 ### Sprint 590 - opt-in SQLite graph persistence
 
 `CCAD_AGENT_CHECKPOINT_DB` now enables LangGraph `SqliteSaver`; startup reports redacted checkpoint state, graph compiles with saver, and default unset path preserves prior in-memory behavior. Two-process restart smoke wrote and recovered a thread state successfully. Full gate pending before merge.
+### Sprint 591 - bind GUI session to graph thread
+
+Loading a GUI agent session now sends its durable thread ID to Python through `agent.set_thread_id`; Python updates `CCAD_AGENT_THREAD_ID` and emits only redacted thread state. Focused GUI test passed, official harness screenshot inspected, stderr empty, and full gate passed. SQLite DB path remains explicit user configuration.
