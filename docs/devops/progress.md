@@ -1708,3 +1708,6 @@ Agent Settings now displays human-readable provider names while carrying stable 
 ### Sprint 641 - harden provider GUI harness timing
 
 Live GUI validation now polls app-owned state instead of relying on fixed sleeps. It waits for approval visibility and completed run state, and accepts either chat response or accepted tool acknowledgment as valid terminal output. Combined mock approval, mutation, chat, and 42 mapped interactions passed.
+### Sprint 642 - localhost provider GUI proof in CI
+
+Restored deterministic OpenAI-compatible GUI fixture using a localhost HTTP stub. It exercises real provider adapter requests, supervisor/router tool selection, native approval, via mutation, and terminal chat response without external credentials. CI now runs this fixture.
