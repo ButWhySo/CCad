@@ -1219,5 +1219,6 @@ Per-pad `PadstackCopperLayerProps.thermal_gap`, `.thermal_spoke_width`, and `.zo
 `BoardZone.filled_thermal_spokes` persists applied board-aware spoke records. Serializer accepts older zones without the optional field; CLI apply writes contours and spokes together. GUI zone aggregate explicitly initializes the field for `-Werror` compatibility.
 `kicad_pcb_export.cpp` maps `pth_thermal` to KiCad `(connect_pads thru_hole_only ...)`; persisted spoke records remain CCad-side metadata because KiCad derives relief geometry during fill.
 `kicad_pcb_export.cpp` also emits persisted axis-aligned thermal spokes as rectangular `filled_polygon` copper geometry per zone layer. Diagonal records are skipped until polygonal spoke export is defined.
+When a legacy zone has no explicit layer IDs, exporter uses its resolved primary layer (`F.Cu`) for both zone and filled geometry output.
 `canvas.*` maps persisted `BoardZone.filled_thermal_spokes` into `CanvasZone.thermal_spokes`; `board_canvas_renderer.cpp` draws visible-layer spokes as tagged `thermal_spoke` line items. `scripts/run_sprint_demo.ps1` now creates/applies a B.Cu PTH zone fixture for targeted visual proof.
 Renderer pen width comes from `CanvasLine.width_units` for thermal spokes, preserving pad/zone thermal width rather than substituting zone minimum thickness.

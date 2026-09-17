@@ -1229,3 +1229,7 @@ Corrected Qt thermal-spoke pen width: renderer now uses each persisted spoke's w
 ## Sprint 496 progress update (2026-09-17)
 
 References checked: KiCad's official board-file documentation defines `filled_polygon` as board geometry and permits repeated board sections. Export now emits each persisted axis-aligned thermal spoke as a copper `filled_polygon` rectangle on every zone layer, preserving applied refill geometry in `.kicad_pcb` output. Diagonal persisted records remain skipped and documented as unsupported. Focused exporter test passed; full build, CTest, and targeted visual harness remain the sprint gate.
+
+## Sprint 497 progress update (2026-09-17)
+
+Legacy-zone export hardening complete: zones with an empty layer list correctly resolve to `F.Cu` for both zone header and filled geometry. Regression coverage passes. Qt build completed 88/88; CTest completed 91/91 across two runs after one transient orchestrator stall; official harness passed, screenshot inspected, stderr empty.

@@ -353,7 +353,9 @@ std::string exportToKiCadPcb(const Project& project) {
     }
     out << "))\n";
     if (zone.fill_enabled) {
-      for (const std::string& layer_id : zone.layer_ids) {
+      const std::vector<std::string> export_layers =
+          zone.layer_ids.empty() ? std::vector<std::string>{primary_layer} : zone.layer_ids;
+      for (const std::string& layer_id : export_layers) {
         out << "    (filled_polygon (layer \"" << escapeKiCadString(layer_id) << "\") (pts";
         const std::vector<Point>& fill_contour = zone.filled_contours.empty()
                                                      ? zone.outline

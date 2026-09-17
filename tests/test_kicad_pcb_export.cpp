@@ -230,6 +230,11 @@ int main() {
   const std::string committed_fill_export = ccad::exportToKiCadPcb(project);
   require(committed_fill_export.find("(filled_polygon (layer \"F.Cu\") (pts (xy 3.000000 3.000000) (xy 39.000000 3.000000) (xy 39.000000 29.000000) (xy 3.000000 29.000000)))") != std::string::npos,
           "committed zone fill contour exports");
+  ccad::Project legacy_zone_project = project;
+  legacy_zone_project.boards.front().zones.front().layer_ids.clear();
+  const std::string legacy_zone_export = ccad::exportToKiCadPcb(legacy_zone_project);
+  require(legacy_zone_export.find("(filled_polygon (layer \"F.Cu\")") != std::string::npos,
+          "Legacy single-layer zone still exports filled geometry");
 
   // Keepout details
   require(exported.find("(keepout (tracks not_allowed) (vias not_allowed) (pads not_allowed) (copperareas not_allowed))") != std::string::npos, "Keepout rules match");
