@@ -1778,6 +1778,10 @@ The MCP regression now launches the bridge as a subprocess, performs `tools/list
 
 Optional provider adapter failures now show the missing LangChain module and exact `python -m pip install -r src/ccad_agent/requirements.txt` remedy in chat. No credential or endpoint data is included. Gemini and localhost provider fixtures passed; official visual screenshot was inspected and stderr was empty.
 
+### Sprint 688 - add safe key visibility toggle
+
+Agent Settings now offers a temporary Show key checkbox for verifying pasted session credentials, defaulting to masked and restoring masking on uncheck. The key remains process-memory only. GUI regression, full Qt CTest 91/91, official visual harness, screenshot inspection, and empty stderr passed.
+
 ### Sprint 683 - expose native approval status to MCP hosts
 
 Added read-only `ccad_gui_approval_status` to the GUI MCP bridge. External harnesses can now query approval-card visibility and status directly, while mutation execution and human approval remain native GUI responsibilities. Python regression and official visual harness passed; screenshot was inspected and stderr was empty.

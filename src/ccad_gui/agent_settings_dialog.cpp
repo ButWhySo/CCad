@@ -313,6 +313,15 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
   api_key_input_->setEchoMode(QLineEdit::Password);
   api_key_input_->setPlaceholderText("API key (kept in memory)");
   layout->addWidget(api_key_input_);
+  auto* reveal_key = new QCheckBox("Show key", parent_widget);
+  reveal_key->setObjectName("control:showApiKeyCb");
+  reveal_key->setToolTip("Temporarily reveal the session key on screen");
+  connect(reveal_key, &QCheckBox::toggled, this, [this](bool visible) {
+    if (api_key_input_) {
+      api_key_input_->setEchoMode(visible ? QLineEdit::Normal : QLineEdit::Password);
+    }
+  });
+  layout->addWidget(reveal_key);
   auto* test_provider = new QPushButton("Test Provider", parent_widget);
   test_provider->setObjectName("action:testProviderBtn");
   test_provider->setToolTip("Initialize the selected provider for this session without sending a prompt");

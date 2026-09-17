@@ -44,6 +44,12 @@ private slots:
     auto* api_key_input = dialog.findChild<QLineEdit*>("control:apiKeyInput");
     QVERIFY(api_key_input != nullptr);
     QCOMPARE(api_key_input->echoMode(), QLineEdit::Password);
+    auto* reveal_key = dialog.findChild<QCheckBox*>("control:showApiKeyCb");
+    QVERIFY(reveal_key != nullptr);
+    QTest::mouseClick(reveal_key, Qt::LeftButton);
+    QCOMPARE(api_key_input->echoMode(), QLineEdit::Normal);
+    QTest::mouseClick(reveal_key, Qt::LeftButton);
+    QCOMPARE(api_key_input->echoMode(), QLineEdit::Password);
     QTest::keyClicks(api_key_input, "test-secret-not-persisted");
     api_key_input->clear();
     QVERIFY(api_key_input->text().isEmpty());
