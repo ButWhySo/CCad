@@ -1530,12 +1530,12 @@ LangGraph run config now sends only non-content metadata/tags to Langfuse/LangSm
 
 ### Sprint 577 - make broker waits bounded on Windows
 
-Replaced competing stdin reads with one daemon protocol reader feeding a queue. Graph tool waits now support CCAD_BROKER_TIMEOUT_SECONDS (default 30s), return structured roker_timeout/roker_closed, and preserve unrelated inbound messages for main dispatch. Direct timeout smoke and mock /route regression passed; Python compile passed. This removes permanent pipe hangs; approval-before-execution and async run cancellation remain next.
+Replaced competing stdin reads with one daemon protocol reader feeding a queue. Graph tool waits now support `CCAD_BROKER_TIMEOUT_SECONDS` (default 30s), return structured `broker_timeout`/`broker_closed`, and preserve unrelated inbound messages for main dispatch. Direct timeout smoke and mock `/route` regression passed; Python compile passed. This removes permanent pipe hangs; approval-before-execution and async run cancellation remain next.
 
 ### Sprint 578 - enforce approval before mutation
 
-ToolBroker::check_policy now blocks every non-readonly tool when OrchestratorConfig.require_approval is true, before executor callback runs; returned error is pproval_required. Existing explicit auto-execute tests remain valid. Added focused mutation-denial coverage. Full Qt MinGW build and CTest passed 91/91 in 74.26 seconds. GUI source unchanged; no new visual harness run required.
+`ToolBroker::check_policy` now blocks every non-readonly tool when `OrchestratorConfig.require_approval` is true, before executor callback runs; returned error is `approval_required`. Existing explicit auto-execute tests remain valid. Added focused mutation-denial coverage. Full Qt MinGW build and CTest passed 91/91 in 74.26 seconds. GUI source unchanged; no new visual harness run required.
 
 ### Sprint 579 - add one-shot scoped approval
 
-Core OrchestratorConfig now carries pproved_tool_name; with equire_approval=true, only exact matching non-readonly tool may execute, while empty/different scope returns pproval_required. Added allow/deny regression coverage. Full Qt MinGW build and CTest passed 91/91 in 73.65 seconds. GUI source unchanged; existing visual baseline retained.
+Core `OrchestratorConfig` now carries `approved_tool_name`; with `require_approval=true`, only exact matching non-readonly tool may execute, while empty/different scope returns `approval_required`. Added allow/deny regression coverage. Full Qt MinGW build and CTest passed 91/91 in 73.65 seconds. GUI source unchanged; existing visual baseline retained.
