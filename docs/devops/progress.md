@@ -1523,3 +1523,7 @@ init_provider() now clears all LangChain adapters before selecting/rebuilding pr
 ### Sprint 575 - wait for broker result in graph tools
 
 Real provider tool functions now emit a stable call_id, synchronously await matching C++ 	ool_result, and return broker result JSON into LangGraph ToolNode state; dry-run and mock paths remain nonblocking. Offline helper and mock-loop regressions passed; Python compile passed. This is first act?observe handoff, but approval enforcement and async cancellation/timeout remain pending.
+
+### Sprint 576 - keep graph observability content-safe
+
+LangGraph run config now sends only non-content metadata/tags to Langfuse/LangSmith: provider label, workflow, and context-present boolean. Prompt, context text, tool arguments/results, and credentials are excluded by construction. Python compile and mock chat smoke passed; stderr empty. Broker wait timeout remains queued for a platform-safe reader refactor.
