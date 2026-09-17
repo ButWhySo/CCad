@@ -134,6 +134,24 @@ private slots:
     QVERIFY(panel.findChild<QLabel*>("status:agent_result") != nullptr);
   }
 
+  void testApprovalLaneTransitions() {
+    AgentPanel panel;
+    panel.setApprovalRequestText("Approve ui.route_track");
+    panel.requestApproval();
+    QCOMPARE(panel.pendingApprovalCount(), 1);
+    QVERIFY(panel.approvalStatusText().contains("Approval pending"));
+
+    panel.declineNextApproval();
+    QCOMPARE(panel.pendingApprovalCount(), 0);
+    QVERIFY(panel.approvalStatusText().contains("Approval declined"));
+
+    panel.setApprovalRequestText("Approve ui.place_via");
+    panel.requestApproval();
+    panel.cancelApproval();
+    QCOMPARE(panel.pendingApprovalCount(), 0);
+    QVERIFY(panel.approvalStatusText().contains("Approval canceled"));
+  }
+
   void testQueueStateCheckpointRoundTrip() {
     QTemporaryDir temp;
     QVERIFY(temp.isValid());

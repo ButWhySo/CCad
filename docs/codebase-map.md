@@ -1340,3 +1340,4 @@ Sprint 594 adds `resume_checkpointed_run()` and protocol handling for LangGraph 
 Sprint 595 adds deterministic checkpoint tool IDs and `dispatch_checkpointed_tool()` in `src/ccad_agent/orchestrator.py`; persisted tool calls now pause via LangGraph `interrupt()`.
 Sprint 596 adds `scripts/test_agent_checkpoint_restart.py`; it is the authoritative two-process proof for SQLite interrupt persistence and resume.
 Sprint 597 names AgentPanel run/result labels `status:agent_run` and `status:agent_result` for GUI-map targeting.
+Sprint 598 adds `testApprovalLaneTransitions()` to `tests/test_gui_agent_panel.cpp`, covering approval state transitions.

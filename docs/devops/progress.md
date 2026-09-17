@@ -1591,3 +1591,6 @@ Added `scripts/test_agent_checkpoint_restart.py`, a two-process fixture using SQ
 ### Sprint 597 - expose resumable status targets
 
 Named Agent run/result status labels in Qt object tree, making checkpoint resume feedback addressable by GUI-map and automation harnesses. Focused GUI verification pending.
+### Sprint 598 - test approval lane transitions
+
+Added GUI regression coverage for approval pending, decline, and cancel transitions, including pending-count reset and visible status text. Focused verification pending.

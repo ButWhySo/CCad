@@ -824,3 +824,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 595: checkpoint-enabled mutating tools use durable LangGraph interrupts; add restart integration fixture and approval decision UI automation next.
 - [x] Sprint 596: add two-process interrupt/restart/resume proof; approval UI automation and live provider contract test remain open.
 - [x] Sprint 597: expose semantic GUI targets for agent resume status; automate live approval interaction next.
+- [x] Sprint 598: regression-test approval pending/decline/cancel UI states; live provider approval round-trip remains open.
