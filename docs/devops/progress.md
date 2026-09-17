@@ -1561,3 +1561,6 @@ Added shared `dispatch_client_tool()` for unique IDs and optional broker wait; f
 ### Sprint 587 - route results through pending-call registry
 
 Added process-local pending call registry keyed by call ID. The single stdin reader routes matching tool_result directly to its waiting queue; unknown results and non-result messages remain dispatcher-visible. Waiters clean registry entries on success, error, timeout, or close. Python compile and registry smoke passed. Full gate pending before merge.
+### Sprint 588 - propagate LangGraph thread identity
+
+Agent runs now pass explicit configurable thread_id from state or CCAD_AGENT_THREAD_ID, defaulting to ccad-local, while telemetry records only presence. This creates stable session correlation without falsely claiming durable checkpoint persistence. Python compile passed; full gate pending before merge.

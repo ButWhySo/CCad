@@ -302,12 +302,15 @@ def invoke_agent_run(state):
         span.set_attribute("ccad.agent.workflow", active_workflow)
         span.set_attribute("ccad.agent.provider_ready", llm is not None)
         run_config = {"run_name": "ccad_agent_run"}
+        thread_id = state.get("thread_id") or os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
+        run_config["configurable"] = {"thread_id": thread_id}
         # Metadata is deliberately non-content: prompt, context, tool args, and
         # credentials must not be exported by observability callbacks.
         run_config["metadata"] = {
             "ccad_provider": os.environ.get("CCAD_PROVIDER", "configured"),
             "ccad_workflow": active_workflow,
             "ccad_context_present": bool(state.get("context", "")),
+            "ccad_thread_id_present": bool(thread_id),
         }
         run_config["tags"] = ["ccad", "agent", active_workflow]
         if callbacks:
