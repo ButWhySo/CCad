@@ -1265,3 +1265,5 @@ Sprint 531 migrates `pcb add-group` loading to the shared context; compatibility
 Sprint 532 migrates `pcb add-route-request` loading to the shared context; compatibility writing remains for audit continuity.
 
 Sprint 533 migrates `pcb set-route-request` loading to the shared context; compatibility writing remains for audit continuity.
+
+Sprint 534 migrates `pcb remove-route-request` loading to the shared context; compatibility writing remains for audit continuity.

@@ -1357,3 +1357,7 @@ Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` bound
 ### Sprint 533 - migrate set-route-request loading
 
 `pcb set-route-request` now loads through `HeadlessBoardContext` while preserving endpoint, layer, width, and update validation and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
+
+### Sprint 534 - migrate remove-route-request loading
+
+`pcb remove-route-request` now loads through `HeadlessBoardContext` while preserving request lookup, removal, and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
