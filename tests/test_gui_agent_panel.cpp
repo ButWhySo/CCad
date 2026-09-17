@@ -137,6 +137,9 @@ private slots:
     QVERIFY(panel.findChild<QPushButton*>("action:agent_voice") != nullptr);
     QVERIFY(panel.findChild<QLabel*>("status:agent_run") != nullptr);
     QVERIFY(panel.findChild<QLabel*>("status:agent_result") != nullptr);
+    auto* context_label = panel.findChild<QLabel*>("control:contextLabel");
+    QVERIFY(context_label != nullptr);
+    QVERIFY(context_label->text().contains("/ 128k context"));
   }
 
   void testApprovalLaneTransitions() {
