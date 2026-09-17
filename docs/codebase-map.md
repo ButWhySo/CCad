@@ -1354,3 +1354,4 @@ Sprint 608 live harness now verifies the human lane adaptively by reading the po
 Sprint 610 adds `scripts/test_provider_mock.py`, proving the real orchestrator stdin protocol reaches the LangGraph mock provider and returns a chat response without network or secrets.
 Sprint 611 fixes `AgentSettingsDialog::saveAllSettings`: blank API-key saves are forwarded to `AgentPanel::setProviderSecret`, which removes the process-held credential.
 Sprint 612 adds `action:testProviderBtn` in the API Providers settings tab; it calls `AgentPanel::setProviderSecret` for immediate adapter initialization.
+Sprint 613 stores the footer counter as `control:contextLabel` and updates it from the context string actually sent by `submitChat`.

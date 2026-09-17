@@ -2481,3 +2481,4 @@ Sprint 608 verifies the live human decision lane: the native Decline action upda
 Sprint 610 verifies the end-to-end LangGraph chat path with the mock provider; users can enable OpenAI, Anthropic, or Gemini adapters by configuring the corresponding provider and key.
 Sprint 611 ensures clearing the API-key field and saving removes the in-memory provider credential.
 Sprint 612 adds a Test Provider action for immediate selected-adapter initialization, with redacted readiness feedback and no prompt execution.
+Sprint 613 reports approximate context usage from the actual context payload sent with chat instead of a hardcoded number.

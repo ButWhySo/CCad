@@ -1631,3 +1631,6 @@ Saving Agent Settings with an empty API-key field now calls the provider-secret 
 ### Sprint 612 - add explicit provider test action
 
 Added a visible Test Provider action beside the masked session-only key field. It initializes the selected adapter immediately and reuses the existing redacted provider-state feedback; it sends no prompt and persists no key.
+### Sprint 613 - make chat context usage truthful
+
+Replaced the hardcoded Agent footer context counter with a live approximate token estimate from the exact project-context payload attached to the next chat request. The value remains a client-side estimate, not provider billing telemetry.

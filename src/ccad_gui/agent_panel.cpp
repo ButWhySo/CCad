@@ -740,9 +740,10 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   context_circle->setProperty("agentRole", "iconButton");
   context_circle->setFixedSize(24, 24);
   
-  auto* context_label = new QLabel("1.2k / 128k context", composer_container);
+  auto* context_label = new QLabel("0 / 128k context", composer_container);
   context_label->setObjectName("control:contextLabel");
   context_label->setStyleSheet("color: #8b949e; font-size: 11px;");
+  context_usage_label_ = context_label;
   
   connect(context_circle, &QPushButton::clicked, this, [this]() {
     appendChatMessage("agent", "*Refreshing AI context map...*");
@@ -1172,7 +1173,11 @@ void AgentPanel::submitChat() {
     QJsonObject params;
     params["text"] = text;
     if (context_provider_) {
-        params["context"] = QString::fromStdString(context_provider_());
+        const QString context = QString::fromStdString(context_provider_());
+        params["context"] = context;
+        if (context_usage_label_) {
+          context_usage_label_->setText(QString("%1 / 128k context").arg((context.size() + 3) / 4));
+        }
     }
     payload["params"] = params;
     python_process_->write(QJsonDocument(payload).toJson(QJsonDocument::Compact) + "\n");
