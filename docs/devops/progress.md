@@ -1305,3 +1305,7 @@ Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` bound
 ### Sprint 520 — migrate track-arc loading
 
 `pcb add-track-arc` now loads through `HeadlessBoardContext` while preserving arc geometry checks, audit, and compatibility writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
+
+### Sprint 521 — migrate refill-zones ownership
+
+`pcb refill-zones` now owns its loaded project through `HeadlessBoardContext`, including applied contour and thermal-spoke mutations. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
