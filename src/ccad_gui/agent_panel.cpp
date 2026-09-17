@@ -1053,6 +1053,23 @@ void AgentPanel::handlePythonOutput() {
                                       : QStringLiteral("credential_received_provider_unavailable"))
                                : QStringLiteral("env_missing");
         updateProviderControls();
+      } else if (obj.contains("method") && obj["method"].toString() == "thread_state") {
+        const QJsonObject params = obj["params"].toObject();
+        const bool resumable = params["resumable"].toBool(false);
+        const QString status = resumable ? QStringLiteral("Checkpoint resumable")
+                                         : QStringLiteral("Checkpoint unavailable");
+        status_label_->setText(status);
+        result_state_label_->setText("Result " + status);
+        if (resumable) {
+          addActivityEvent("session", status,
+                           "Thread " + params["thread_id"].toString() +
+                               " | checkpoint " + params["checkpoint_id"].toString(),
+                           "agent.resume_thread");
+        } else {
+          addActivityEvent("session", status,
+                           params["reason"].toString("No checkpoint backend"),
+                           "agent.resume_thread");
+        }
       } else if (obj.contains("method") && obj["method"].toString() == "marketplace_catalog") {
         if (marketplace_catalog_cb_) marketplace_catalog_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "generated_component") {

@@ -1576,3 +1576,6 @@ Loading a GUI agent session now sends its durable thread ID to Python through `a
 ### Sprint 592 - expose checkpoint resume state
 
 AgentPanel Resume now asks Python for current SQLite-backed thread state. Python reports resumable, thread, next-node, and checkpoint ID metadata, or explicit checkpoint_disabled; no stale tool is auto-executed. Full graph continuation after an interrupted tool remains open. Focused GUI test and resume-state smoke passed; full gate pending.
+### Sprint 593 - surface checkpoint resume result
+
+GUI now renders Python thread_state replies as Checkpoint resumable or Checkpoint unavailable status/activity records, including thread/checkpoint metadata or explicit disabled reason. Focused GUI test passed; official harness screenshot inspected; stderr empty. Full gate pending before merge.
