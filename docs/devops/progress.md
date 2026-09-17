@@ -1467,3 +1467,7 @@ Added native agent adapters for `pcb.add-placement-region` and `pcb.refill-zones
 ### Sprint 560 - expose schematic agent authoring
 
 Added native agent adapters for `sch.place-symbol`, `sch.add-wire`, and `sch.add-label`, with required-field schemas and optional fields mapped to existing CLI commands. Agent test passed 1/1, full Qt CTest passed 91/91 in 45.53 seconds, and official harness screenshot inspected with empty stderr.
+
+### Sprint 561 - make DRC demo user-understandable
+
+Repaired `scripts/cli_demo_drc.ps1` so its relatable rectifier-board story uses valid copper layers and real SMD-to-back-copper vias. Live run now shows intentional initial DRC failure (4 errors), then repair, then clean DRC (0 errors, 0 warnings); final GUI screenshot was inspected.
