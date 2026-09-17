@@ -2391,3 +2391,4 @@ The headless board context also supports file-backed load/save with round-trip c
 `pcb apply-route-segment` is now a shared-context mutation consumer with its existing routing geometry, request completion, and audit behavior intact.
 `pcb apply-route-polyline` is now a shared-context mutation consumer with its existing polyline geometry, request completion, and audit behavior intact.
 `pcb set-track` is now a shared-context mutation consumer with its existing track geometry, metadata, and audit behavior intact.
+`pcb add-keepout` is now a shared-context mutation consumer with its existing keepout geometry, validation, and audit behavior intact.
