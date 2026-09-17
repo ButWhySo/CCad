@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QWidget>
+#include <QHash>
 #include <QJsonObject>
 #include <QString>
 #include <QStringList>
@@ -50,6 +51,7 @@ class AgentPanel final : public QWidget {
   void setSafeActionTrigger(SafeActionTrigger trigger);
   void setLiveQueryProvider(LiveQueryProvider provider);
   void setContextProvider(ContextProvider provider);
+  void setProviderSecret(const QString& provider_id, const QString& secret);
   void setConfigStateCallback(ConfigStateCallback cb);
   void setMarketplaceCatalogCallback(MarketplaceCatalogCallback cb);
   void setComponentWizardCallback(ComponentWizardCallback cb);
@@ -268,6 +270,7 @@ class AgentPanel final : public QWidget {
   bool policy_would_execute_ = false;
   QString provider_status_ = "env_unchecked";
   bool provider_env_present_ = false;
+  QHash<QString, QString> provider_secrets_;
   QVector<ActivityEvent> activity_events_;
   QVector<EvidenceCard> evidence_cards_;
   int activity_sequence_ = 0;

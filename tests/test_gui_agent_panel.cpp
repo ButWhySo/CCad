@@ -39,6 +39,11 @@ private slots:
     QVERIFY(model_input != nullptr);
     QTest::keyClicks(model_input, "gpt-4o-test");
 
+    auto* api_key_input = dialog.findChild<QLineEdit*>("control:apiKeyInput");
+    QVERIFY(api_key_input != nullptr);
+    QCOMPARE(api_key_input->echoMode(), QLineEdit::Password);
+    QTest::keyClicks(api_key_input, "test-secret-not-persisted");
+
     auto* sandbox_cb = dialog.findChild<QCheckBox*>("control:sandboxCb");
     QVERIFY(sandbox_cb != nullptr);
     QTest::mouseClick(sandbox_cb, Qt::LeftButton);

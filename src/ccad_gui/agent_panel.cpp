@@ -1236,6 +1236,22 @@ void AgentPanel::setContextProvider(ContextProvider provider) {
     context_provider_ = std::move(provider);
 }
 
+void AgentPanel::setProviderSecret(const QString& provider_id, const QString& secret) {
+  const QString provider = provider_id.trimmed().isEmpty() ? QStringLiteral("openai") : provider_id.trimmed();
+  if (secret.isEmpty()) {
+    provider_secrets_.remove(provider);
+  } else {
+    provider_secrets_.insert(provider, secret);
+  }
+  provider_env_present_ = !secret.isEmpty() || providerEnvironmentPresent(providerSpecForId(provider));
+  provider_status_ = provider_env_present_ ? QStringLiteral("configured_memory_only")
+                                            : QStringLiteral("env_missing");
+  refreshProviderStatus();
+  addActivityEvent("provider", "Provider credential updated",
+                   provider + " | secret retained in process memory only",
+                   "agent.provider_secret");
+}
+
 void AgentPanel::setConfigStateCallback(ConfigStateCallback cb) {
     config_state_cb_ = std::move(cb);
 }
@@ -1292,6 +1308,7 @@ void AgentPanel::setCommandText(const QString& command) {
 QJsonObject AgentPanel::providerStateObject() const {
   const AgentProviderSpec spec = currentProviderSpec(provider_selector_);
   const bool env_present = providerEnvironmentPresent(spec);
+  const bool memory_present = provider_secrets_.contains(spec.id);
   QJsonArray env_vars;
   for (const QString& env_var : spec.env_vars) {
     env_vars.append(env_var);
@@ -1311,8 +1328,10 @@ QJsonObject AgentPanel::providerStateObject() const {
                   spec.env_vars.isEmpty() ? QString() : spec.env_vars.front());
   provider.insert("provider_env_vars", env_vars);
   provider.insert("provider_env_present", env_present);
-  provider.insert("provider_configured", env_present);
-  provider.insert("provider_status", env_present ? "env_present" : "env_missing");
+  provider.insert("provider_configured", env_present || memory_present);
+  provider.insert("provider_secret_present", memory_present);
+  provider.insert("provider_status", memory_present ? "configured_memory_only"
+                                                     : env_present ? "env_present" : "env_missing");
   provider.insert("provider_status_method", "agent.provider_status");
   provider.insert("provider_config_schema_method", "agent.provider_config_schema");
   provider.insert("provider_config_template_method", "agent.provider_config_template");
@@ -1329,8 +1348,10 @@ QJsonObject AgentPanel::providerStateObject() const {
 
 void AgentPanel::updateProviderControls() {
   const AgentProviderSpec spec = currentProviderSpec(provider_selector_);
-  provider_env_present_ = providerEnvironmentPresent(spec);
-  provider_status_ = provider_env_present_ ? "env_present" : "env_missing";
+  const bool memory_present = provider_secrets_.contains(spec.id);
+  provider_env_present_ = providerEnvironmentPresent(spec) || memory_present;
+  provider_status_ = memory_present ? "configured_memory_only"
+                                    : provider_env_present_ ? "env_present" : "env_missing";
 
   const QString primary_env = spec.env_vars.isEmpty() ? QString("env") : spec.env_vars.front();
   if (model_chip_label_ != nullptr) {
