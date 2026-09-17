@@ -2397,3 +2397,4 @@ The headless board context also supports file-backed load/save with round-trip c
 `pcb set-region-kind` is now a shared-context mutation consumer with its existing keepout/placement-region update and audit behavior intact.
 `pcb remove-object` is now a shared-context mutation consumer with its existing multi-type removal, modes, result, and audit behavior intact.
 `pcb move-object` is now a shared-context mutation consumer with its existing multi-type movement, geometry validation, and audit behavior intact.
+`pcb resize-object` is now a shared-context mutation consumer with its existing multi-type resizing, geometry validation, and audit behavior intact.

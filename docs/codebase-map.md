@@ -1285,3 +1285,5 @@ Sprint 541 migrates `pcb set-region-kind` loading to the shared context; compati
 Sprint 542 migrates `pcb remove-object` loading to the shared context; compatibility writing remains for audit continuity.
 
 Sprint 543 migrates `pcb move-object` loading to the shared context; compatibility writing remains for audit continuity.
+
+Sprint 544 migrates `pcb resize-object` loading to the shared context; compatibility writing remains for audit continuity.
