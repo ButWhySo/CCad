@@ -1612,3 +1612,6 @@ Added `scripts/ccad_mcp_gui_bridge.py`, a stdio MCP adapter forwarding allowlist
 ### Sprint 604 - declare MCP GUI safety metadata
 
 MCP GUI query tool now declares `readOnlyHint`, `destructiveHint:false`, and `openWorldHint:false`, allowing hosts to render correct safety affordances. Existing bridge behavior unchanged; protocol annotation smoke passed.
+### Sprint 605 - add MCP approval handoff
+
+Added `ccad_gui_request_approval`: MCP stages request text in native Agent approval card and opens it, but never accepts or executes. Human must decide in GUI. Offline test verifies exactly two calls (`ui.type_text`, `ui.click`); absent GUI returns explicit pipe error. References checked: MCP tool safety guidance and existing CCad approval contract. Visual/full verification pending.

@@ -18,8 +18,8 @@ def error(request_id, code, message):
             "error": {"code": code, "message": message}}
 
 
-def call_gui(server, method, arguments):
-    if method not in READ_ONLY_METHODS:
+def call_gui(server, method, arguments, *, allow_approval_ui=False):
+    if method not in READ_ONLY_METHODS and not (allow_approval_ui and method in {"ui.type_text", "ui.click"}):
         raise PermissionError("GUI MCP bridge permits read-only methods only")
     request = dict(arguments)
     request["method"] = method
@@ -29,6 +29,15 @@ def call_gui(server, method, arguments):
         pipe.flush()
         response = json.loads(pipe.readline().decode("utf-8"))
     return response
+
+
+def request_native_approval(server, request_text):
+    """Stage approval in native panel; never execute or accept mutation."""
+    staged = call_gui(server, "ui.type_text", {
+        "id": "control:agent_approval_request", "text": request_text}, allow_approval_ui=True)
+    opened = call_gui(server, "ui.click", {"id": "action:agent_request_approval"}, allow_approval_ui=True)
+    return {"approval_required": True, "staged": staged, "opened": opened,
+            "human_action": "Use Agent panel Accept, Decline, or Cancel."}
 
 
 def main():
@@ -53,8 +62,14 @@ def main():
                                     "openWorldHint": False},
                     "inputSchema": {"type": "object", "properties": {
                         "method": {"type": "string", "enum": sorted(READ_ONLY_METHODS)},
-                        "arguments": {"type": "object"}}, "required": ["method"]}}]}
-            elif method == "tools/call":
+                                    "arguments": {"type": "object"}}, "required": ["method"]}},
+                    {"name": "ccad_gui_request_approval",
+                     "description": "Stage native approval card; never execute mutation",
+                     "annotations": {"readOnlyHint": False, "destructiveHint": False,
+                                      "openWorldHint": False},
+                     "inputSchema": {"type": "object", "properties": {
+                         "request": {"type": "string"}}, "required": ["request"]}}]}
+            elif method == "tools/call" and request.get("params", {}).get("name") == "ccad_gui_query":
                 params = request.get("params", {})
                 if params.get("name") != "ccad_gui_query":
                     raise ValueError("unknown MCP tool")
@@ -62,6 +77,12 @@ def main():
                 result = {"content": [{"type": "text", "text": json.dumps(
                     call_gui(options.server, args.get("method", ""), args.get("arguments", {}))) }],
                           "isError": False}
+            elif method == "tools/call" and request.get("params", {}).get("name") == "ccad_gui_request_approval":
+                request_text = request.get("params", {}).get("arguments", {}).get("request", "").strip()
+                if not request_text:
+                    raise ValueError("request must be non-empty")
+                result = {"content": [{"type": "text", "text": json.dumps(
+                    request_native_approval(options.server, request_text))}], "isError": False}
             else:
                 raise ValueError("unsupported MCP method")
             print(json.dumps({"jsonrpc": "2.0", "id": request_id, "result": result}), flush=True)
