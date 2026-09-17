@@ -1337,3 +1337,7 @@ Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` bound
 ### Sprint 528 - migrate set-pad loading
 
 `pcb set-pad` now loads through `HeadlessBoardContext` while preserving pad validation, geometry, and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
+
+### Sprint 529 - migrate add-barcode loading
+
+`pcb add-barcode` now loads through `HeadlessBoardContext` while preserving barcode validation, geometry, and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
