@@ -302,6 +302,9 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
     if (provider_target_label_) {
       provider_target_label_->setText("Test target: " + provider + " / " + model);
     }
+    if (api_key_input_) {
+      api_key_input_->setPlaceholderText(provider + " key (kept in memory)");
+    }
   };
   connect(provider_combo_, &QComboBox::currentTextChanged, this, [refresh_target](const QString&) { refresh_target(); });
   connect(model_input_, &QLineEdit::textChanged, this, [refresh_target](const QString&) { refresh_target(); });
