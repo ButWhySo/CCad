@@ -2069,7 +2069,10 @@ int pcbCommand(const std::vector<std::string>& args) {
     if (subcommand == "refill-zones") {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--zone-id", "--apply"});
-      ccad::Project project = loadProjectFile(requireOption(options, "--file"));
+      const std::string file = requireOption(options, "--file");
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       const ccad::Board& board = requireBoard(project);
       const std::string requested_id = options.contains("--zone-id") ? options.at("--zone-id") : "";
       const bool apply = options.contains("--apply") && requireBoolOption(options, "--apply");
@@ -2108,8 +2111,11 @@ int pcbCommand(const std::vector<std::string>& args) {
       }
       if (!requested_id.empty() && first) throw std::runtime_error("unknown zone: " + requested_id);
       out << "\n  ]\n}\n";
-      if (apply && !writeProjectFile(requireOption(options, "--file"), project))
-        throw std::runtime_error("failed to write refilled project");
+      if (apply) {
+        context.markDirty();
+        if (!writeProjectFile(file, project))
+          throw std::runtime_error("failed to write refilled project");
+      }
       std::cout << out.str();
       return 0;
     }
