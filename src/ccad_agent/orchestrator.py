@@ -744,6 +744,9 @@ if __name__ == "__main__":
                         os.environ["OPENAI_API_KEY"] = secret
                 else:
                     os.environ.pop(env_name, None)
+                    if provider_id == "google_gemini": os.environ.pop("GOOGLE_API_KEY", None)
+                    if provider_id in ("openai_compatible", "local_model", "local_model_server"):
+                        os.environ.pop("OPENAI_API_KEY", None)
                 init_provider()
             elif method == "agent.set_provider_secret":
                 # Private IPC only. Never emit, persist, or add credential to
