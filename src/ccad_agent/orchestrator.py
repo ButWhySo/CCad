@@ -387,7 +387,31 @@ if __name__ == "__main__":
         try:
             req = json.loads(line)
             method = req.get("method")
-            if method == "human_message":
+            if method == "agent.set_provider_secret":
+                # Private IPC only. Never emit, persist, or add credential to
+                # prompts. Provider SDK reads process memory via its env var.
+                provider_id = req.get("params", {}).get("provider", "openai")
+                secret = req.get("params", {}).get("secret", "")
+                env_names = {
+                    "openai": "OPENAI_API_KEY",
+                    "anthropic": "ANTHROPIC_API_KEY",
+                    "google_gemini": "GEMINI_API_KEY",
+                    "openai_compatible": "OPENAI_API_KEY",
+                    "local_model": "OPENAI_API_KEY",
+                }
+                env_name = env_names.get(provider_id, "OPENAI_API_KEY")
+                if secret:
+                    os.environ[env_name] = secret
+                else:
+                    os.environ.pop(env_name, None)
+                init_provider()
+                emit({"jsonrpc": "2.0", "method": "provider_state", "params": {
+                    "provider": provider_id,
+                    "configured": bool(secret),
+                    "execution_enabled": llm is not None,
+                    "secret_value_visible": False,
+                }})
+            elif method == "human_message":
                 text = req.get("params", {}).get("text", "")
                 context_str = req.get("params", {}).get("context", "")
                 

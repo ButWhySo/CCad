@@ -1483,3 +1483,7 @@ Agent Settings now exposes a masked API-key field with process-memory-only seman
 ### Sprint 564 - record honest capability boundary
 
 Added `docs/research/2026-09-17-honest-status-review.md`, separating native kernel behavior, delegated KiCad evidence, local harness scaffolding, and planned provider/MCP/schematic work. This review is now roadmap source for truthful capability claims and external evaluation readiness.
+
+### Sprint 565 - hand provider credential to live agent child safely
+
+The masked session-only provider key now reaches the already-running Python orchestrator through a private JSON-RPC handoff. The child places it only in process environment, rebuilds its provider adapter, and returns redacted readiness state; the secret is never persisted, echoed, or included in context, tool, audit, or trace payloads. Python syntax, GUI build, and `gui_agent_panel` passed; official harness screenshot was inspected with empty stderr. Full CTest and provider network verification remain pending because no real credential was used.

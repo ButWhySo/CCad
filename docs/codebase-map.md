@@ -1321,3 +1321,5 @@ Sprint 559 adds native agent placement-region authoring and zone-refill dispatch
 Sprint 560 adds native agent schematic symbol, wire, and label authoring dispatch.
 
 Sprint 563 adds session-only masked provider secret state to `AgentPanel` and the settings dialog; provider execution remains disabled until runtime integration is implemented.
+
+Sprint 565 adds `agent.set_provider_secret` private IPC from `AgentPanel` to `src/ccad_agent/orchestrator.py`. The child maps provider IDs to SDK environment names, rebuilds provider state, and returns only redacted readiness metadata. Secret handoff is not provider-connectivity proof; next work is fake-transport testing, real provider request/response, approval-aware tool-loop completion, and context revision refresh.
