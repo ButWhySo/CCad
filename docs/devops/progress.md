@@ -1693,3 +1693,12 @@ The localhost provider roundtrip reached approval and via creation during invest
 ### Sprint 633 - surface broker tool acknowledgments
 
 The Agent panel now handles Python `tool_result_ack` messages, showing whether an approved tool result was accepted or rejected and recording the call ID in activity history. The offline mock approval harness and native GUI tests cover this acknowledgment; combined authenticated-provider GUI proof remains open.
+### Sprint 634 - expose truthful run telemetry
+
+The Python agent now emits non-content telemetry for running and completed chat runs, including redacted provider identity, trace ID, span ID, and explicit `token_usage`/`cost` unavailable markers. The Agent panel maps these events to semantic run/trace labels, while tool-result acknowledgments remain stable through final responses. No fabricated token or cost numbers are shown.
+### Sprint 635 - remove noisy Agent diagnostics from normal UI
+
+Visible Agent header no longer renders trace, span, queue, or run-state telemetry chips. Semantic labels remain hidden and addressable for harness diagnostics, while chat composer uses dark panel theme. Native visual proof inspected.
+### Sprint 636 - keep previews approval-free
+
+Tool calls carrying `dry_run:true` now return explicit non-mutating preview before approval policy evaluation. Approval cards therefore appear only for real project mutations.

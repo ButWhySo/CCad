@@ -857,3 +857,6 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 631: localhost OpenAI-compatible stub verifies model/base URL, tool schema, supervisor/router request path, and CCad tool-call boundary; CI wired.
 - [ ] Sprint 632 follow-up: make local provider GUI approval fixture deterministic; current provider-boundary and offline mock proofs remain green.
 - [x] Sprint 633: Agent panel surfaces tool-result acknowledgment and live provider proof asserts accepted status; richer trace/cost metrics remain open.
+- [x] Sprint 634: run/trace telemetry reaches semantic Agent labels with honest unavailable cost/token markers; external Langfuse/LangSmith export remains opt-in.
+- [x] Sprint 635: remove visible telemetry chips; retain hidden harness diagnostics and verify dark composer through native visual harness.
+- [x] Sprint 636: dry-run tool previews bypass mutation approval; full CTest 91/91 and native screenshot proof pass.

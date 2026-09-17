@@ -238,6 +238,15 @@ std::string ToolBroker::execute_tool(const std::string& name, const std::string&
     if (it == tools_.end()) {
         return "{\"error\":\"tool_not_registered\",\"tool_name\":\"" + escapeJson(name) + "\"}";
     }
+    // A preview is explicitly non-mutating. It must never be blocked behind,
+    // or accidentally displayed as, a human approval request.
+    const auto dry_run_key = args_json.find("\"dry_run\"");
+    const auto dry_run_value = dry_run_key == std::string::npos ? std::string::npos : args_json.find("true", dry_run_key);
+    const bool requested_dry_run = dry_run_key != std::string::npos && dry_run_value != std::string::npos &&
+                                   args_json.find("false", dry_run_key) == std::string::npos;
+    if (requested_dry_run) {
+        return "{\"status\":\"dry_run\",\"tool_name\":\"" + escapeJson(name) + "\",\"args\":" + args_json + "}";
+    }
     if (!check_policy(it->second, cfg)) {
         const char* error = cfg.require_approval && cfg.approved_tool_name != name
                                 ? "approval_required" : "project_mutation_disabled";

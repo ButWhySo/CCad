@@ -448,6 +448,9 @@ static void test_mutation_requires_approval() {
     assert(replay.find("\"error\":\"approval_token_consumed\"") != std::string::npos);
     const auto other = orch.execute_tool("pcb.add-track", "{}", cfg);
     assert(other.find("\"error\":\"approval_required\"") != std::string::npos);
+    const auto preview = orch.execute_tool("pcb.add-via", "{\"dry_run\":true,\"x_mm\":10}", ccad::OrchestratorConfig{});
+    assert(preview.find("\"status\":\"dry_run\"") != std::string::npos);
+    assert(preview.find("approval_required") == std::string::npos);
 }
 
 // ─── Main ───────────────────────────────────────────────────────

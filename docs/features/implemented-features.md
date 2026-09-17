@@ -2511,3 +2511,6 @@ The offline mock provider and live GUI harness prove approval and via creation. 
 ### Sprint 633: visible tool-result acknowledgment
 
 After an approved mutation, the native Agent panel displays `Tool result accepted` or `Tool result rejected`, includes the correlated call ID in activity history, and exposes the state through the semantic status label. This distinguishes approval from successful broker handoff.
+### Sprint 634: truthful run telemetry
+
+Chat runs now expose running/completed state, trace ID, span ID, provider identity, and explicit unavailable cost/token fields through the Agent panel. This is local protocol metadata; it does not claim provider billing or token accounting until an adapter supplies authoritative usage.

@@ -589,6 +589,19 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
     QPushButton[agentRole="iconButtonPrimary"]:hover {
       background-color: #7b1fa2;
     }
+    QTextEdit#control\:agent_chat_input {
+      background-color: #25262b;
+      border: 1px solid #3d3f4b;
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #f3f4f6;
+      selection-background-color: #6d28d9;
+      selection-color: #ffffff;
+    }
+    QTextEdit#control\:agent_chat_input:focus {
+      border: 1px solid #8a2be2;
+      background-color: #2a2b32;
+    }
     QPushButton[agentRole="quickReply"] {
       background-color: #25262b;
       border: 1px solid #3d3f4b;
@@ -891,12 +904,18 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
 
   auto* trace_row = new QHBoxLayout();
   trace_chip_label_ = new QLabel("Trace: Off", status_container);
+  trace_chip_label_->setObjectName("label:agent_trace");
   trace_chip_label_->setProperty("agentRole", "chip");
   session_chip_label_ = new QLabel("Session: None", status_container);
   session_chip_label_->setProperty("agentRole", "chip");
   trace_id_label_ = new QLabel("TraceID: -", status_container);
+  trace_id_label_->setObjectName("label:agent_trace_id");
   trace_id_label_->setProperty("agentRole", "chip");
   span_id_label_ = new QLabel("SpanID: -", status_container);
+  trace_id_label_->setToolTip("Detailed trace identifier (available to the harness)");
+  span_id_label_->setToolTip("Detailed span identifier (available to the harness)");
+  trace_id_label_->hide();
+  span_id_label_->hide();
   span_id_label_->setProperty("agentRole", "chip");
   
   trace_row->addWidget(trace_chip_label_);
@@ -905,9 +924,18 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   trace_row->addWidget(span_id_label_);
   trace_row->addStretch();
   status_layout->addLayout(trace_row);
+  // Trace/session identifiers are machine diagnostics, not user-facing chat UI.
+  // Keep the labels addressable for the UI map and harness, but remove the
+  // noisy chip row from the normal panel.
+  trace_row->setObjectName("layout:agent_diagnostics");
+  trace_row->setEnabled(false);
+  for (int i = 0; i < trace_row->count(); ++i) {
+    if (auto* item = trace_row->itemAt(i); item && item->widget()) item->widget()->hide();
+  }
 
   auto* exec_row = new QHBoxLayout();
   run_state_chip_label_ = new QLabel("Run: Idle", status_container);
+  run_state_chip_label_->setObjectName("label:agent_run_state");
   run_state_chip_label_->setProperty("agentRole", "chip");
   run_queue_status_label_ = new QLabel("Queue: Empty", status_container);
   run_queue_status_label_->setProperty("agentRole", "chip");
@@ -922,6 +950,12 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   exec_row->addWidget(run_queue_current_step_label_);
   exec_row->addStretch();
   status_layout->addLayout(exec_row);
+  // Queue/run chips are implementation state; detailed state remains in the
+  // activity stream and semantic UI map rather than consuming panel space.
+  exec_row->setObjectName("layout:agent_execution_diagnostics");
+  for (int i = 0; i < exec_row->count(); ++i) {
+    if (auto* item = exec_row->itemAt(i); item && item->widget()) item->widget()->hide();
+  }
 
   // Hidden labels that might still be accessed programmatically
   trace_status_label_ = new QLabel(this); trace_status_label_->hide();
