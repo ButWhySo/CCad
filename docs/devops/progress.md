@@ -1487,3 +1487,7 @@ Added `docs/research/2026-09-17-honest-status-review.md`, separating native kern
 ### Sprint 565 - hand provider credential to live agent child safely
 
 The masked session-only provider key now reaches the already-running Python orchestrator through a private JSON-RPC handoff. The child places it only in process environment, rebuilds its provider adapter, and returns redacted readiness state; the secret is never persisted, echoed, or included in context, tool, audit, or trace payloads. Python syntax, GUI build, and `gui_agent_panel` passed; official harness screenshot was inspected with empty stderr. Full CTest and provider network verification remain pending because no real credential was used.
+
+### Sprint 566 - verify provider IPC round-trip
+
+Python dependency import and live subprocess smoke passed: gent.set_provider_secret returned provider_state with configured:true, execution_enabled:true, secret_value_visible:false; sentinel secret was absent from stdout/stderr. Startup-to-response measured 9.13 seconds with no stderr. This proves credential handoff and redaction, not API authentication or useful model response; next gate must use fake transport, then an explicitly authorized real provider call.

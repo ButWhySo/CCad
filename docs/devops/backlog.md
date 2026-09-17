@@ -770,3 +770,5 @@ et_inspector_panel, and panel_selection_filter. These are the docking panels in 
 ### Sprint 565 follow-up: provider and end-to-end agent gate
 
 Implement provider-neutral request/response transport, explicit approval-aware tool loop, async queue worker, context snapshot plus revision delta, and redacted provider error handling. Add tests using a fake provider transport before any live-key test. Then validate one real human prompt through context assembly, provider response, approved CCad mutation, returned tool result, revision refresh, and DRC. Do not call the bespoke newline JSON-RPC surface MCP until a standards-compatible stdio/HTTP MCP server and external-client interoperability test exist.
+
+- [ ] Sprint 566 follow-up: reduce orchestrator cold-start latency and expose startup/provider adapter readiness separately from verified network connectivity; add timeout/error state visible in AgentPanel.
