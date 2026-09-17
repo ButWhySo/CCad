@@ -1429,3 +1429,7 @@ Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` bound
 ### Sprint 551 - batch schematic and project mutation loading
 
 Schematic symbol, wire, bus, label, power-symbol, annotation, field-autoplace, junction-fix, and project text-variable mutations now use `HeadlessBoardContext` with explicit dirty tracking. Added CLI coverage for schematic primitives and lifecycle commands. Incremental Qt MinGW build completed, full CTest passed 91/91 in 49.13 seconds, affected CLI coverage passed, and the official visual harness screenshot was inspected with empty stderr.
+
+### Sprint 552 - make CLI agent adapters truthful and executable
+
+Read-only orchestrator tools now return live project context data, while `pcb.add-via`, `pcb.add-track`, `pcb.place-footprint`, and `pcb.export` convert structured tool arguments into real CLI argv and capture exit code, stdout, and stderr. Full Qt CTest passed 91/91 in 50.34 seconds, focused agent/CLI tests passed 2/2, and the official harness screenshot was inspected with empty stderr.

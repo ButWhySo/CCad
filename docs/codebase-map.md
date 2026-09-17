@@ -1301,3 +1301,5 @@ Sprint 549 migrates `pcb add-table` project loading to the shared context; table
 Sprint 550 migrates graphics cleanup, layer mutations, design rules, outline, zone, and SES import loading to the shared context; compatibility writing remains unchanged. The current UI-map mouse sequence has no layer-toggle target, so future layer GUI work needs a dedicated mapped control target.
 
 Sprint 551 migrates schematic and project text-variable mutations to the shared context; schematic serialization and compatibility writing remain unchanged. CLI tests now cover the added schematic mutation paths.
+
+Sprint 552 makes orchestrator read tools project-backed and routes four PCB adapters through `ccad_cli::run()` with captured process results; unsupported adapters must report an explicit error rather than a false success.
