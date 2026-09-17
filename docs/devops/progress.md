@@ -1564,3 +1564,6 @@ Added process-local pending call registry keyed by call ID. The single stdin rea
 ### Sprint 588 - propagate LangGraph thread identity
 
 Agent runs now pass explicit configurable thread_id from state or CCAD_AGENT_THREAD_ID, defaulting to ccad-local, while telemetry records only presence. This creates stable session correlation without falsely claiming durable checkpoint persistence. Python compile passed; full gate pending before merge.
+### Sprint 589 - pin compatible SQLite checkpoint stack
+
+Verified official LangGraph persistence guidance and installed SQLite backend. Requirements now constrain LangGraph/core/checkpoint versions to compatible major ranges and pin `langgraph-checkpoint-sqlite==2.0.11`; import smoke passes. Checkpointer wiring remains next, pending restart/resume test.
