@@ -10,7 +10,8 @@ def main():
     calls = []
     bridge.call_gui = lambda server, method, args, **kwargs: calls.append((method, args)) or {"ok": True}
     result = bridge.request_native_approval("test", "Approve route")
-    assert result["approval_required"] is True
+    assert result["approval_required"] is False
+    assert "Native approval target unavailable" in result["human_action"]
     assert [call[0] for call in calls] == ["ui.type_text", "ui.click"]
     print("PASS MCP GUI bridge read-only policy")
 

@@ -832,3 +832,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 603: add read-only stdio MCP bridge to live GUI-map socket; approval-mediated GUI mutation tool remains future work.
 - [x] Sprint 604: declare read-only MCP GUI safety metadata; approval-mediated mutation bridge remains future work.
 - [x] Sprint 605: MCP can stage native approval card without execution; add live pipe round-trip and accepted mutation result test next.
+- [x] Sprint 606: live-pipe MCP query verified and approval staging made truthful; expose approval controls in live GUI-map next.

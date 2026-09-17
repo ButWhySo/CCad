@@ -1348,3 +1348,4 @@ Sprint 602 extends MCP `tools/list`/`tools/call` in `src/ccad_cli/agent_commands
 Sprint 603 adds Python stdio MCP GUI bridge plus `scripts/test_mcp_gui_bridge.py`; bridge reuses `ccad_live_cmd` named-pipe protocol and read-only method allowlist.
 Sprint 604 adds MCP safety annotations to `scripts/ccad_mcp_gui_bridge.py` tool discovery.
 Sprint 605 extends GUI MCP bridge with `request_native_approval()`; only approval-card staging crosses write-like UI methods, never design mutation.
+Sprint 606 updates `scripts/live_agent_route_demo.py` with MCP bridge check and child cleanup; bridge approval result is based on actual native target `performed` flags.
