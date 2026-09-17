@@ -1251,3 +1251,5 @@ Sprint 524 migrates `pcb add-graphic-line` loading to the shared context; compat
 Sprint 525 migrates `pcb add-graphic-arc` loading to the shared context; compatibility writing remains for audit continuity.
 
 Sprint 526 migrates `pcb add-target` loading to the shared context; compatibility writing remains for audit continuity.
+
+Sprint 527 migrates `pcb add-pad` loading to the shared context; compatibility writing remains for audit continuity.
