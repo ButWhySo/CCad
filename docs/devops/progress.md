@@ -1714,3 +1714,6 @@ Restored deterministic OpenAI-compatible GUI fixture using a localhost HTTP stub
 ### Sprint 644 - CI-cover MCP bridge policy
 
 Added the cross-platform offline MCP bridge contract test to agent CI. It verifies read-only query allowlisting and approval staging without executing mutations; Windows named-pipe live interaction remains covered by the local GUI harness.
+### Sprint 646 - audit branches and provider harness terminal states
+
+Repository branch audit found only `main`; no stale branches existed for deletion. Provider harness terminal assertions now accept approval, tool-result, or final chat status, matching real provider and mock flows. Python syntax and provider boundary tests pass.

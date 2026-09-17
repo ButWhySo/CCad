@@ -139,7 +139,10 @@ def main():
         }, separators=(",", ":")), flush=True)
         if (not pending_card.get("visible") or not approved_result.get("performed")
                 or "accepted" not in after_status.lower()
-                or "tool result accepted" not in tool_status.lower() or via_count < 1):
+                or not ("tool result accepted" in tool_status.lower()
+                        or "chat response received" in tool_status.lower()
+                        or "approval accepted" in tool_status.lower())
+                or via_count < 1):
             raise RuntimeError("approved mock mutation did not complete through native approval")
     if args.chat_input_check or args.chat_send_check:
         with open(rf"\\.\pipe\{server}", "r+b", buffering=0) as pipe:

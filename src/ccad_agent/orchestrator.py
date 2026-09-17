@@ -867,7 +867,18 @@ if __name__ == "__main__":
                     }})
                     continue
 
+                run_trace_id = "ccad-agent-" + uuid.uuid4().hex
+                run_span_id = uuid.uuid4().hex[:16]
+                emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
+                    "run_state": "running", "trace_id": run_trace_id,
+                    "span_id": run_span_id, "provider": os.environ.get("CCAD_PROVIDER", "configured"),
+                    "token_usage": "unavailable", "cost": "unavailable",
+                }})
                 final_state = invoke_agent_run({"messages": session_messages, "goal": text, "context": context_str, "next_node": ""})
+                emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
+                    "run_state": "completed", "trace_id": run_trace_id,
+                    "span_id": run_span_id, "token_usage": "unavailable", "cost": "unavailable",
+                }})
                 session_messages = final_state["messages"]
                 last_msg = session_messages[-1]
                 
