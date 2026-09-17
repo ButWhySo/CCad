@@ -1555,3 +1555,6 @@ Real `ui.place_via` invocations now generate UUID-backed per-call IDs and wait o
 ### Sprint 585 - await all mutating router results
 
 `ui_add_track` and `ui_add_polygon` now emit unique call IDs and await matching broker results when real broker mode is active, matching existing via behavior. Offline/mock and non-broker paths remain nonblocking. Python compile and route-demo CLI smoke passed. Full gate pending before merge.
+### Sprint 586 - authoritative footprint and schematic mutations
+
+Added shared `dispatch_client_tool()` for unique IDs and optional broker wait; footprint placement, symbol placement, schematic wire, and schematic label mutations now await authoritative client results in real broker mode. Offline/mock paths remain nonblocking. Python compile and route-demo CLI smoke passed. Full gate pending before merge.

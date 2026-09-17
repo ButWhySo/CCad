@@ -2455,3 +2455,4 @@ Canceling the same approval now returns correlated `approval_canceled` immediate
 Broker waits preserve unrelated inbound JSON-RPC messages in a deferred queue and return only the matching `tool_result`; main dispatcher processes deferred messages first.
 Real `ui.place_via` broker calls use unique per-invocation correlation IDs, so late results from prior attempts cannot satisfy a newer wait.
 Real broker mode now returns authoritative results for track and zone mutations, not optimistic dispatch text; offline/mock paths remain deterministic and nonblocking.
+Footprint and schematic mutation tools now share unique call IDs and return authoritative broker results in real-provider mode; offline/mock behavior remains deterministic.
