@@ -16,6 +16,8 @@ GitHub Actions run #238 for commit `6b4d7b0` was observed in progress; do not ca
 
 Continue from the zone-fill backlog, then address the agent-pane usability gap with a feature-specific GUI sprint. Preserve the semantic UI-map contract, write focused tests first, and use the official harness with screenshots targeted at the changed control rather than a generic startup tour.
 
+The interface inventory is maintained in `docs/agent-interface-inventory.md`; use it before adding another agent route or GUI control.
+
 ## Known limits
 
 Only horizontal and vertical persisted thermal spokes are exported as rectangles. Diagonal records are omitted. The GUI screenshot fixture proves canvas stability and persisted spoke rendering, but not KiCad parser acceptance of exported files; add parser-level evidence before claiming that stronger guarantee.
