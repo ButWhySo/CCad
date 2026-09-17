@@ -1515,3 +1515,7 @@ Python orchestrator now accepts C++ 	ool_result envelopes, correlates id to call
 ### Sprint 572 - wire LangSmith into LangGraph runs
 
 LangGraph remains execution backbone. Existing Langfuse callback support is retained; opt-in LangSmith LangChainTracer now attaches when LANGCHAIN_TRACING_V2=true and LANGCHAIN_API_KEY exist, while graph execution receives callback config so supervisor/router/librarian/ToolNode spans are captured. Default remains no exporter/network. Python syntax and mock graph baseline passed with empty stderr.
+
+### Sprint 573 - clear stale provider adapters on reconfiguration
+
+init_provider() now clears all LangChain adapters before selecting/rebuilding provider, so removed keys or failed provider changes cannot retain stale clients. Live subprocess reset smoke passed: fake key configured then cleared, final provider_state configured=false/execution_enabled=false, sentinel absent, stderr empty. LangGraph and opt-in Langfuse/LangSmith callbacks remain intact.
