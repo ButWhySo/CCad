@@ -1243,3 +1243,5 @@ Sprint 520 migrates `pcb add-track-arc` loading to the shared context; the compa
 Sprint 521 migrates `pcb refill-zones` loading and applied mutation ownership to the shared context; compatibility writing remains for audit continuity.
 
 Sprint 522 migrates `pcb add-zone` loading to the shared context; compatibility writing remains for audit continuity.
+
+Sprint 523 migrates `pcb add-text` loading to the shared context; compatibility writing remains for audit continuity.
