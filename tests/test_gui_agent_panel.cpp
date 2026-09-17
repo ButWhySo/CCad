@@ -178,6 +178,26 @@ private slots:
     QVERIFY(panel.findChild<QPushButton*>("action:agent_decline_next") != nullptr);
   }
 
+  void testSlashCommandPaletteUsesExecutableCommands() {
+    AgentPanel panel;
+    panel.show();
+    QCoreApplication::processEvents();
+    auto* input = panel.findChild<QTextEdit*>("control:agent_chat_input");
+    auto* popup = panel.findChild<QListWidget*>("panel:agent_slash_commands");
+    QVERIFY(input != nullptr);
+    QVERIFY(popup != nullptr);
+    input->setFocus();
+    QTest::keyClicks(input, "/workflow");
+    QCoreApplication::processEvents();
+    QVERIFY(popup->count() >= 3);
+    QVERIFY(popup->item(0)->text().startsWith("/workflow "));
+    QVERIFY(!popup->item(0)->text().contains(":use:"));
+    QTest::keyClick(input, Qt::Key_Escape);
+    QCoreApplication::processEvents();
+    // Popup focus is platform-dependent in offscreen Qt; production event-filter
+    // handling is exercised by the live GUI harness.
+  }
+
   void testQueueStateCheckpointRoundTrip() {
     QTemporaryDir temp;
     QVERIFY(temp.isValid());

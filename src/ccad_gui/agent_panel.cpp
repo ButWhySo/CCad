@@ -925,9 +925,11 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
 
 
   slash_popup_ = new QListWidget(this);
+  slash_popup_->setObjectName("panel:agent_slash_commands");
   slash_popup_->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint);
-  slash_popup_->setStyleSheet("QListWidget { background-color: #161b22; color: #c9d1d9; border: 1px solid #30363d; border-radius: 4px; padding: 4px; font-family: 'Segoe UI'; font-size: 13px; } QListWidget::item:selected { background-color: #30363d; }");
+  slash_popup_->setStyleSheet("QListWidget { background-color:#25262b; color:#f3f4f6; border:1px solid #596070; border-radius:8px; padding:4px; font-family:'Segoe UI'; font-size:13px; } QListWidget::item { padding:5px 8px; border-radius:4px; } QListWidget::item:hover { background-color:#343740; } QListWidget::item:selected { background-color:#6d28d9; color:#ffffff; }");
   slash_popup_->hide();
+  slash_popup_->installEventFilter(this);
   connect(slash_popup_, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
     executeSlashCommand(item->text());
   });
@@ -1206,6 +1208,18 @@ void AgentPanel::sendJsonRpc(const QString& method, const QJsonObject& params) {
 }
 
 bool AgentPanel::eventFilter(QObject* obj, QEvent* event) {
+  if (obj == slash_popup_ && event->type() == QEvent::KeyPress) {
+    auto* key_event = static_cast<QKeyEvent*>(event);
+    if (key_event->key() == Qt::Key_Escape) {
+      hideSlashPopup();
+      chat_input_->setFocus();
+      return true;
+    }
+    if (key_event->key() == Qt::Key_Return || key_event->key() == Qt::Key_Enter) {
+      if (auto* item = slash_popup_->currentItem()) executeSlashCommand(item->text());
+      return true;
+    }
+  }
   if (obj == chat_input_) {
     if (event->type() == QEvent::KeyPress) {
       auto* key_event = static_cast<QKeyEvent*>(event);
@@ -1261,7 +1275,7 @@ void AgentPanel::hideSlashPopup() {
 
 void AgentPanel::filterSlashCommands() {
   QString text = chat_input_->toPlainText().mid(1).trimmed().toLower();
-  QStringList all_commands = {"/commands", "/workflow:use:", "/workflow:chaining phase:", "/workflow:chaining state:", "/hooks:", "/set:", "/compact context", "/cc", "/schedule:", "/help", "/drc", "/route", "/place", "/design", "/explain", "/clear", "/marketplace", "/settings"};
+  QStringList all_commands = {"/commands", "/workflow use:", "/workflow chaining phase:", "/workflow chaining state:", "/hooks ", "/set ", "/compact", "/cc", "/schedule ", "/help", "/drc", "/route", "/place", "/design", "/explain", "/clear", "/marketplace", "/settings"};
   slash_popup_->clear();
   for (const QString& cmd : all_commands) {
     if (text.isEmpty() || cmd.mid(1).toLower().startsWith(text)) {

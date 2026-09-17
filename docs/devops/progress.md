@@ -1663,3 +1663,6 @@ Research note: CopilotKit Generative UI separates controlled native components, 
 ### Sprint 623 - verify contextual approval over MCP
 
 Fixed semantic approval staging after contextual hiding: MCP typing into the approval request now promotes the card before its Request action is clicked. Live MCP proof reports `pending_visible=True`, human decline performed, and `final_visible=False`.
+### Sprint 624 - repair slash command palette UX
+
+Fixed displayed slash commands whose punctuation made them non-executable, added semantic popup identity, improved dark hover/selection contrast, and handled Escape/Enter from popup focus. Full GUI and visual proof passed.
