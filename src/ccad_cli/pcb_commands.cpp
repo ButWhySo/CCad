@@ -2281,7 +2281,9 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--name", "--members"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::Board& board = requireBoard(project);
       const std::string id = requireOption(options, "--id");
       requireUniquePhysicalObjectId(board, id);
@@ -2307,6 +2309,7 @@ int pcbCommand(const std::vector<std::string>& args) {
           .name = options.contains("--name") ? options.at("--name") : "",
           .members = members,
       });
+      context.markDirty();
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
