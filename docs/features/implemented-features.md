@@ -2548,6 +2548,8 @@ If all retries fail, the chat protocol emits failed telemetry and a provider err
 
 Agent Settings shows the exact provider/model targeted by Test Provider and changes the session-only key placeholder when provider selection changes. Test Provider applies the visible provider/model to the live agent process before initializing its in-memory credential. The Agent header reports the model returned by provider state, or Auto when no model is configured. Backend stderr startup/runtime diagnostics appear as bounded redacted chat warnings.
 
+When an optional provider adapter dependency is missing, chat reports the module name and repository requirements install command. Local CCad tools remain usable; credentials and endpoint values are not shown.
+
 ## CI speed and syntax gate
 
 The CI workflow compiles agent and test Python sources before protocol tests and invokes CMake with parallel workers on all build jobs. This catches syntax regressions early and reduces idle build time without weakening CTest.

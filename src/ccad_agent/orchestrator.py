@@ -312,6 +312,13 @@ def emit_provider_failure(provider: str, error: Exception):
         "error": type(error).__name__, "secret_value_visible": False,
     }})
 
+def emit_dependency_warning(module_name: str):
+    """Give users a safe, copyable remedy when an optional adapter is absent."""
+    emit({"jsonrpc": "2.0", "method": "message", "params": {
+        "text": (f"Provider adapter unavailable: {module_name}. "
+                 "Install agent dependencies with "
+                 "python -m pip install -r src/ccad_agent/requirements.txt.")}})
+
 def emit_provider_ready(provider: str, model: str):
     """Report configured adapter readiness; do not imply network probe."""
     emit({"jsonrpc": "2.0", "method": "provider_state", "params": {
@@ -368,7 +375,7 @@ def init_provider():
             emit_provider_ready(provider, model_name)
             return True
         except ImportError:
-            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Warning: langchain_anthropic not installed."}})
+            emit_dependency_warning("langchain_anthropic")
         except Exception as error:
             emit_provider_failure(provider, error)
     if provider == "google_gemini" or os.environ.get("GEMINI_API_KEY"):
@@ -387,7 +394,7 @@ def init_provider():
             emit_provider_ready(provider, model_name)
             return True
         except ImportError:
-            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Warning: langchain_google_genai not installed."}})
+            emit_dependency_warning("langchain_google_genai")
         except Exception as error:
             emit_provider_failure(provider, error)
     if provider in ("openai", "openai_compatible", "local_model") or os.environ.get("OPENAI_API_KEY"):
@@ -412,7 +419,7 @@ def init_provider():
             emit_provider_ready(provider, model_name)
             return True
         except ImportError:
-            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Warning: langchain_openai not installed."}})
+            emit_dependency_warning("langchain_openai")
         except Exception as error:
             emit_provider_failure(provider, error)
     emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Agent provider '{provider}' unavailable. Configure its environment in Agent Settings; local CCad tools remain available."}})

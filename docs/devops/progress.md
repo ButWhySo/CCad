@@ -1774,6 +1774,10 @@ The GUI MCP bridge now returns JSON-RPC `-32601` for unknown methods/tools rathe
 
 The MCP regression now launches the bridge as a subprocess, performs `tools/list`, and asserts all three GUI tools are discoverable. This replaces source-text-only discovery evidence. Python compilation/regression and official visual harness passed; screenshot was inspected and stderr was empty.
 
+### Sprint 687 - make missing provider dependencies actionable
+
+Optional provider adapter failures now show the missing LangChain module and exact `python -m pip install -r src/ccad_agent/requirements.txt` remedy in chat. No credential or endpoint data is included. Gemini and localhost provider fixtures passed; official visual screenshot was inspected and stderr was empty.
+
 ### Sprint 683 - expose native approval status to MCP hosts
 
 Added read-only `ccad_gui_approval_status` to the GUI MCP bridge. External harnesses can now query approval-card visibility and status directly, while mutation execution and human approval remain native GUI responsibilities. Python regression and official visual harness passed; screenshot was inspected and stderr was empty.
