@@ -1385,3 +1385,7 @@ Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` bound
 ### Sprint 540 - migrate add-placement-region loading
 
 `pcb add-placement-region` now loads through `HeadlessBoardContext` while preserving placement-region geometry, validation, and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
+
+### Sprint 541 - migrate set-region-kind loading
+
+`pcb set-region-kind` now loads through `HeadlessBoardContext` while preserving keepout/placement-region updates and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
