@@ -1325,3 +1325,7 @@ Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` bound
 ### Sprint 525 — migrate graphic-arc loading
 
 `pcb add-graphic-arc` now loads through `HeadlessBoardContext` while preserving arc geometry, layer, and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
+
+### Sprint 526 — migrate add-target loading
+
+`pcb add-target` now loads through `HeadlessBoardContext` while preserving shape, layer, geometry, and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
