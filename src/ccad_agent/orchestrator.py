@@ -159,7 +159,15 @@ def init_provider():
     return False
 
 init_provider()
-            
+
+
+def invoke_agent_run(state):
+    """Invoke graph under one run span without exporting prompt contents."""
+    with tracer.start_as_current_span("agent_run") as span:
+        span.set_attribute("ccad.agent.workflow", active_workflow)
+        span.set_attribute("ccad.agent.provider_ready", llm is not None)
+        return executor.invoke(state)
+
 
 
 def get_system_prompt(role_desc: str) -> str:
@@ -473,7 +481,7 @@ if __name__ == "__main__":
                 if "post prompt" in [h.lower() for h in active_hooks]:
                     hooks.trigger_hook("post prompt", emit, text)
 
-                final_state = executor.invoke({"messages": session_messages, "goal": text, "context": context_str, "next_node": ""})
+                final_state = invoke_agent_run({"messages": session_messages, "goal": text, "context": context_str, "next_node": ""})
                 session_messages = final_state["messages"]
                 last_msg = session_messages[-1]
                 

@@ -1246,3 +1246,7 @@ CI workflow now uploads per-job CTest logs on every result and preserves the ori
 ## Sprint 502 progress update (2026-09-17)
 
 Agent fallback telemetry now keeps one process-run trace ID and increments fallback span IDs when no OpenTelemetry span is active; this preserves GUI activity correlation instead of generating unrelated random IDs per event. Python syntax and fallback-correlation smoke checks passed. Native build/CTest and visual harness remain pending for this Python-only change.
+
+## Sprint 503 progress update (2026-09-17)
+
+Agent graph execution now runs inside an explicit `agent_run` OpenTelemetry span with workflow and provider-readiness attributes, without recording prompt or context contents. Python syntax and diff checks pass; official harness remains the visual gate because the agent runtime has no direct GUI layout change.
