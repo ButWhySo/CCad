@@ -2435,3 +2435,6 @@ CCAD_PROVIDER=mock enables deterministic offline chat through the real Python or
 
 
 Agent orchestration uses LangGraph; Langfuse callbacks remain opt-in, and LangSmith LangChainTracer is opt-in through LANGCHAIN_TRACING_V2 plus LANGCHAIN_API_KEY. Graph-level callback config covers node/tool runs; no telemetry exporter activates by default.
+
+
+Real-provider ui.place_via tool path can await matching C++ broker result by call_id and feed result into LangGraph state; mock and dry-run paths stay offline/nonblocking. Timeout, cancellation, and approval-before-execution remain backlog.

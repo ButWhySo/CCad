@@ -798,3 +798,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [ ] Sprint 572 follow-up: add redaction tests for Langfuse/LangSmith callback configs, capture run IDs in AgentPanel, and verify opt-in traces against a local fake collector before external export.
 
 - [ ] Sprint 573 follow-up: add provider request timeout/retry policy and redacted failure classification; verify with local fake transport before real API call.
+
+- [ ] Sprint 575 follow-up: add broker wait timeout/cancellation and preserve unrelated inbound requests; enforce approval before waiting/executing mutation; add real provider integration test.
