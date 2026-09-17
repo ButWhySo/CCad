@@ -3,6 +3,8 @@ import uuid
 from opentelemetry import trace
 
 hook_registry = {}
+_fallback_trace_id = uuid.uuid4().hex
+_fallback_span_counter = 0
 
 def register_hook(name, callback):
     """Registers a hook callback by name."""
@@ -19,11 +21,15 @@ def trigger_hook(name, emit_func, *args, **kwargs):
 
 def get_current_trace_info():
     """Gets current trace ID and span ID for telemetry reporting."""
+    global _fallback_span_counter
     span = trace.get_current_span()
     if span and span.get_span_context().is_valid:
         ctx = span.get_span_context()
         return format(ctx.span_id, '016x'), format(ctx.trace_id, '032x')
-    return str(uuid.uuid4())[:8], str(uuid.uuid4())[:8]
+    # Keep fallback telemetry correlated when OTel has no active span. Random
+    # IDs per event made one run appear as unrelated traces to the GUI.
+    _fallback_span_counter += 1
+    return format(_fallback_span_counter, '016x'), _fallback_trace_id
 
 # --- Default Hook Actions ---
 

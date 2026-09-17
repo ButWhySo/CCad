@@ -1242,3 +1242,7 @@ Agent chat bubbles now remove internal QTextBrowser frames, document margins, an
 
 CI run #241 reproduced the known Linux-only CLI Test failure while Windows passed. The cross-probe black-box packet now uses KiCad's canonical quoted net form `$NET: "N1"` inside platform-safe shell quoting, eliminating ambiguity around packet-value parsing while retaining the literal dollar marker. Focused CLI passed 1/1; full Qt build had no work; CTest passed 91/91; official harness screenshot was inspected and stderr was empty.
 CI workflow now uploads per-job CTest logs on every result and preserves the original test exit code, making future Linux-only failures diagnosable instead of exposing only exit 8.
+
+## Sprint 502 progress update (2026-09-17)
+
+Agent fallback telemetry now keeps one process-run trace ID and increments fallback span IDs when no OpenTelemetry span is active; this preserves GUI activity correlation instead of generating unrelated random IDs per event. Python syntax and fallback-correlation smoke checks passed. Native build/CTest and visual harness remain pending for this Python-only change.
