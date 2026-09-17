@@ -2459,3 +2459,4 @@ Footprint and schematic mutation tools now share unique call IDs and return auth
 Broker protocol now has a pending-call registry: matching results wake exact tool waits, while unknown or unrelated messages remain available to the main dispatcher.
 Agent graph invocations now carry explicit thread correlation through LangGraph configurable state; no prompt, tool payload, credential, or durable checkpoint data is added to telemetry.
 Agent dependency requirements now include a compatible SQLite checkpoint package; installation is reproducible, but runtime checkpointer wiring remains explicitly pending.
+Set `CCAD_AGENT_CHECKPOINT_DB` to an explicit local SQLite path to persist LangGraph thread state across orchestrator restarts. Unset path keeps persistence disabled; no credentials are stored by this feature.

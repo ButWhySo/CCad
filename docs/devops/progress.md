@@ -1567,3 +1567,6 @@ Agent runs now pass explicit configurable thread_id from state or CCAD_AGENT_THR
 ### Sprint 589 - pin compatible SQLite checkpoint stack
 
 Verified official LangGraph persistence guidance and installed SQLite backend. Requirements now constrain LangGraph/core/checkpoint versions to compatible major ranges and pin `langgraph-checkpoint-sqlite==2.0.11`; import smoke passes. Checkpointer wiring remains next, pending restart/resume test.
+### Sprint 590 - opt-in SQLite graph persistence
+
+`CCAD_AGENT_CHECKPOINT_DB` now enables LangGraph `SqliteSaver`; startup reports redacted checkpoint state, graph compiles with saver, and default unset path preserves prior in-memory behavior. Two-process restart smoke wrote and recovered a thread state successfully. Full gate pending before merge.
