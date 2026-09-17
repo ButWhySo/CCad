@@ -1052,6 +1052,14 @@ int agentCommand(const std::vector<std::string>& args) {
     } else if (method == "agent.orchestrator_schema" || method == "agent.plan" || method == "agent.orchestrate" || method == "agent.tool_call") {
       handleOrchestratorJsonRpc(method, line, id, allow_read, allow_write);
     } else if (method == "execute" || method == "tools/call") {
+      if (method == "tools/call") {
+        const std::string tool_name = extractStringValue(line, "name");
+        if (tool_name != "ccad_execute") {
+          std::cout << formatError(id, -32601, "Tool not found: " + tool_name) << "\n";
+          std::cout.flush();
+          continue;
+        }
+      }
       std::vector<std::string> cmdArgs = extractStringArray(line, "args");
       if (cmdArgs.empty()) {
         std::cout << formatError(id, -32602, "Invalid params: args required") << "\n";

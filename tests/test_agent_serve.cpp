@@ -1222,6 +1222,24 @@ void testAgentToolCallRpc() {
 
 }
 
+void testMcpUnknownToolCannotExecute() {
+  std::istringstream in(
+      "{\"jsonrpc\":\"2.0\",\"method\":\"tools/call\",\"params\":{\"name\":\"no.such.tool\",\"arguments\":{\"args\":[\"help\"]}},\"id\":46}\n");
+  std::ostringstream out;
+  auto oldCin = std::cin.rdbuf(in.rdbuf());
+  auto oldCout = std::cout.rdbuf(out.rdbuf());
+  const int result = ccad_cli::agentCommand({"serve", "--allow-read"});
+  std::cin.rdbuf(oldCin);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) std::exit(1);
+  assertContains(out.str(), "\"id\": 46", "unknown MCP tool preserves request id");
+  assertContains(out.str(), "-32601", "unknown MCP tool is rejected");
+  if (out.str().find("Usage:") != std::string::npos) {
+    std::cerr << "FAIL unknown MCP tool does not execute CLI\n";
+    std::exit(1);
+  }
+}
+
 int main() {
   try {
     testPing();
@@ -1247,6 +1265,7 @@ int main() {
     testAgentKiCadEvidenceJsonRpc();
     testAgentServePermissionGatesReportApproval();
     testAgentToolCallRpc();
+    testMcpUnknownToolCannotExecute();
     std::cout << "PASS agent serve\n";
     return 0;
   } catch (const std::exception& e) {
