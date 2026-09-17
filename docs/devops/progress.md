@@ -1261,3 +1261,5 @@ CI run #246 still reports Linux `cli` test failure (CTest exit 8), while the Win
 CI #247 still fails `core-linux` test `cli`, while the downloaded artifact remains insufficient to identify the Linux command boundary. The diagnostic rerun was guarded by `failure()` and did not appear in the public artifact size. Both Linux jobs now always run the verbose `cli` rerun with `continue-on-error`, preserving the original CTest failure as the job result while guaranteeing the diagnostic log is uploaded for the next run.
 
 CI #248 still has no terminal result in the public view. The unquoted packet-form change did not yet produce a terminal green run, so the next diagnostic will include the complete cross-probe JSON in the assertion message rather than only the short label.
+
+The local direct CLI check confirms the parser resolves `$NET: N1` as a net packet. The CLI integration test now exercises the parser's documented escaped-leading-dollar compatibility path (`\\$NET: N1`) to avoid shell expansion differences while retaining the same net-resolution assertion.
