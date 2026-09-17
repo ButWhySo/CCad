@@ -1285,3 +1285,7 @@ Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` bound
 ### Sprint 515 — migrate project validation to headless context
 
 `project validate` now loads through `HeadlessBoardContext`, making a real CLI path share core session ownership and serializer behavior. Full Qt build completed; CTest passed 91/91 with the Qt runtime PATH; official harness passed, screenshot inspected, and stderr was empty.
+
+### Sprint 516 — migrate add-via loading to headless context
+
+`pcb add-via` now loads through `HeadlessBoardContext` while retaining existing validation, audit, and write behavior. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
