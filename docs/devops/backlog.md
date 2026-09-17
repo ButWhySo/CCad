@@ -812,3 +812,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 583: broker wait preserves unrelated inbound messages; pending-call registry and late-result/cancellation tests remain open.
 - [x] Sprint 584: unique per-invocation broker call IDs prevent retry/late-result cross-wiring; durable pending-call registry remains open.
 - [x] Sprint 585: track and zone agent tools now await correlated broker results; footprint/schematic mutation tools and durable pending-call registry remain open.
+- [x] Sprint 586: footprint and schematic mutation tools await correlated broker results; durable pending-call registry and real provider integration remain open.

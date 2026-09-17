@@ -57,6 +57,16 @@ def new_tool_call_id(tool_name: str) -> str:
     """Create a per-invocation correlation ID; never reuse across retries."""
     return f"{tool_name}-{uuid.uuid4().hex}"
 
+def dispatch_client_tool(tool_name: str, args: dict, *, await_result: bool = False) -> str:
+    """Send one client tool call and optionally await its authoritative result."""
+    call_id = new_tool_call_id(tool_name)
+    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
+        "tool": tool_name, "args": args, "call_id": call_id,
+    }})
+    if broker_wait_enabled and await_result:
+        return wait_for_broker_result(call_id)
+    return "Action dispatched to CCad client."
+
 config_manager = AgentConfigManager()
 
 class AgentState(TypedDict):
@@ -90,8 +100,7 @@ def ui_add_track(x1: float, y1: float, x2: float, y2: float):
 @tool
 def ui_place_footprint(name: str, x: float, y: float):
     """Places a footprint component."""
-    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.place_footprint", "args": {"name": name, "x": x, "y": y}}})
-    return "Action dispatched to CCad client."
+    return dispatch_client_tool("ui.place_footprint", {"name": name, "x": x, "y": y}, await_result=True)
 
 @tool
 def ui_add_polygon(points: List[List[float]], layer: str):
@@ -109,8 +118,7 @@ def ui_add_polygon(points: List[List[float]], layer: str):
 @tool
 def ui_place_symbol(name: str, x: float, y: float):
     """Places a schematic symbol on the schematic editor."""
-    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.place_symbol", "args": {"name": name, "x": x, "y": y}}})
-    return "Action dispatched to CCad client."
+    return dispatch_client_tool("ui.place_symbol", {"name": name, "x": x, "y": y}, await_result=True)
 
 @tool
 def project_review():
@@ -133,14 +141,12 @@ def ui_open_component_wizard():
 @tool
 def ui_add_wire(x1: float, y1: float, x2: float, y2: float):
     """Adds a wire segment between two coordinates on the schematic."""
-    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.add_wire", "args": {"x1": x1, "y1": y1, "x2": x2, "y2": y2}}})
-    return "Action dispatched to CCad client."
+    return dispatch_client_tool("ui.add_wire", {"x1": x1, "y1": y1, "x2": x2, "y2": y2}, await_result=True)
 
 @tool
 def ui_add_label(text: str, x: float, y: float, global_label: bool = False):
     """Adds a text label to the schematic at the specified coordinates."""
-    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.add_label", "args": {"text": text, "x": x, "y": y, "global": global_label}}})
-    return "Action dispatched to CCad client."
+    return dispatch_client_tool("ui.add_label", {"text": text, "x": x, "y": y, "global": global_label}, await_result=True)
 
 @tool
 def lib_catalog_info(component_id: str):
