@@ -1678,3 +1678,6 @@ Mutating ToolBroker calls now require both the matching tool name and a non-empt
 ### Sprint 628 - make native screenshots authoritative
 
 The single-preview harness now always attempts the native `ccad_gui --screenshot-measure` renderer first. The exact-window desktop capture remains a failure fallback only, preventing a desktop image from being accepted as a successful CCad visual proof. README and policy-test wording now match the executable workflow.
+### Sprint 629 - align BYOK provider adapters
+
+Aligned GUI provider IDs with Python adapter initialization. OpenAI-compatible and local model-server selections now construct the OpenAI-protocol adapter with their configured model/base URL and pass the session-only key through the SDK-compatible environment alias. The standard OpenAI, Anthropic, and Gemini paths remain unchanged. Python mock-provider smoke passed; authenticated network proof remains user-environment dependent.

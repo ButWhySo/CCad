@@ -853,3 +853,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 626: offline provider tool call now traverses supervisor/router, approval, and real via mutation; authenticated external-provider proof remains environment-dependent.
 - [x] Sprint 628: native screenshot rendering is authoritative; exact-window capture is fallback-only and the behavior is covered by the harness policy test.
 - [ ] Sprint 629: connect authenticated provider tool calls to the same scoped approval-token contract and prove one live request in a user-owned environment.
+- [ ] Sprint 630: add provider-adapter contract tests with a local OpenAI-compatible stub, including tool-call schema and approval handoff, without external network.

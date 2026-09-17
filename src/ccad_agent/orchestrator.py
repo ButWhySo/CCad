@@ -327,6 +327,10 @@ def init_provider():
     broker_wait_enabled = False
     
     provider = os.environ.get("CCAD_PROVIDER") or config_manager.get("provider", "openai")
+    # Keep GUI provider IDs and adapter IDs identical at the process boundary.
+    # The local-model label is a ChatOpenAI-compatible OpenAI protocol server.
+    if provider == "local_model_server":
+        provider = "local_model"
     model_name = os.environ.get("CCAD_MODEL") or config_manager.get("model", "")
 
     if provider == "mock":
@@ -367,11 +371,22 @@ def init_provider():
             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Warning: langchain_google_genai not installed."}})
         except Exception as error:
             emit_provider_failure(provider, error)
-    if provider == "openai" or os.environ.get("OPENAI_API_KEY"):
+    if provider in ("openai", "openai_compatible", "local_model") or os.environ.get("OPENAI_API_KEY"):
         try:
             from langchain_openai import ChatOpenAI
-            if not model_name: model_name = "gpt-4o"
-            llm = ChatOpenAI(model=model_name, temperature=0)
+            if provider == "openai_compatible":
+                model_name = model_name or os.environ.get("CCAD_OPENAI_COMPATIBLE_MODEL", "") or "default"
+                base_url = os.environ.get("CCAD_OPENAI_COMPATIBLE_BASE_URL", "")
+            elif provider == "local_model":
+                model_name = model_name or os.environ.get("CCAD_LOCAL_MODEL_NAME", "") or "local-model"
+                base_url = os.environ.get("CCAD_LOCAL_MODEL_BASE_URL", "http://127.0.0.1:1234/v1")
+            else:
+                model_name = model_name or "gpt-4o"
+                base_url = ""
+            kwargs = {"model": model_name, "temperature": 0}
+            if base_url:
+                kwargs["base_url"] = base_url
+            llm = ChatOpenAI(**kwargs)
             router_llm = llm.bind_tools(router_tools)
             librarian_llm = llm.bind_tools(librarian_tools)
             broker_wait_enabled = True
@@ -664,14 +679,19 @@ if __name__ == "__main__":
                     "openai": "OPENAI_API_KEY",
                     "anthropic": "ANTHROPIC_API_KEY",
                     "google_gemini": "GEMINI_API_KEY",
-                    "openai_compatible": "OPENAI_API_KEY",
-                    "local_model": "OPENAI_API_KEY",
+                    "openai_compatible": "CCAD_OPENAI_COMPATIBLE_API_KEY",
+                    "local_model": "CCAD_LOCAL_MODEL_API_KEY",
+                    "local_model_server": "CCAD_LOCAL_MODEL_API_KEY",
                 }
                 env_name = env_names.get(provider_id, "OPENAI_API_KEY")
                 if secret:
                     os.environ[env_name] = secret
+                    if provider_id in ("openai_compatible", "local_model", "local_model_server"):
+                        os.environ["OPENAI_API_KEY"] = secret
                 else:
                     os.environ.pop(env_name, None)
+                    if provider_id in ("openai_compatible", "local_model", "local_model_server"):
+                        os.environ.pop("OPENAI_API_KEY", None)
                 init_provider()
                 emit({"jsonrpc": "2.0", "method": "provider_state", "params": {
                     "provider": provider_id,

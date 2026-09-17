@@ -2496,3 +2496,6 @@ Sprint 625 adds visible `Summarize`, `Run DRC`, and `Route` quick replies that i
 ### Sprint 627: one-shot approval tokens
 
 Agent-requested project mutations are now scoped to a single approval token as well as a tool name. Replaying an accepted token returns `approval_token_consumed`; accepting a different tool still requires approval. The native panel generates and discards tokens within the approval-card lifecycle. This prevents a stale approval from authorizing a later mutation.
+### Sprint 629: BYOK provider selection handoff
+
+The Agent panel's `openai_compatible` and `local_model_server` provider IDs are now understood by the Python orchestrator. Their configured model and base URL are passed to the OpenAI-protocol adapter, and session-only keys are mirrored into the SDK's expected environment variable without being emitted or persisted. A real authenticated request still requires the user's own provider endpoint and credentials.
