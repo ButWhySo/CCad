@@ -1350,3 +1350,4 @@ Sprint 604 adds MCP safety annotations to `scripts/ccad_mcp_gui_bridge.py` tool 
 Sprint 605 extends GUI MCP bridge with `request_native_approval()`; only approval-card staging crosses write-like UI methods, never design mutation.
 Sprint 606 updates `scripts/live_agent_route_demo.py` with MCP bridge check and child cleanup; bridge approval result is based on actual native target `performed` flags.
 Sprint 607 makes the approval controls real `AgentPanel` children: `panel:agent_approval_preview`, `control:agent_approval_request`, and the request/approve/decline/cancel/clear action IDs. Existing handlers remain the sole decision path.
+Sprint 608 live harness now verifies the human lane adaptively by reading the post-decision approval label from a fresh GUI-map snapshot.
