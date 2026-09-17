@@ -1471,3 +1471,7 @@ Added native agent adapters for `sch.place-symbol`, `sch.add-wire`, and `sch.add
 ### Sprint 561 - make DRC demo user-understandable
 
 Repaired `scripts/cli_demo_drc.ps1` so its relatable rectifier-board story uses valid copper layers and real SMD-to-back-copper vias. Live run now shows intentional initial DRC failure (4 errors), then repair, then clean DRC (0 errors, 0 warnings); final GUI screenshot was inspected.
+
+### Sprint 562 - narrate the user-facing demo
+
+Added stage narration to the rectifier-board demo: user goal, board setup, component placement, intentional safety failure, diagnostic-driven repair, and final proof. Live rerun produced 4 initial errors then 0 errors/0 warnings; final GUI screenshot inspected.
