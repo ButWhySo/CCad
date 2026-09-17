@@ -2537,3 +2537,7 @@ Verification includes accepted safe inspection goals and rejected unsafe example
 ## Context revision signaling
 
 Each agent chat request emits an opaque context revision and whether it changed since the prior request. Only digest, size, and presence are reported; project context text is never emitted in this state event.
+
+## Provider retry boundary
+
+Supervisor, router, and librarian provider calls retry at most twice on raised provider errors. Tool execution is outside this retry wrapper, preventing repeated project mutations. Retry events expose only attempt count, exception type, and redaction flags.

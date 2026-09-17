@@ -874,3 +874,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 655: intake rejects prompt-injection and credential-bearing goal markers; full Qt verification pass.
 - [x] Sprint 656: revalidate hardened intake gate with official harness, screenshot inspection, and full Qt CTest 91/91.
 - [x] Sprint 657: provider chat emits opaque context revision/change state without content telemetry; boundary test and visual harness pass.
+- [x] Sprint 658: bounded redacted provider retries recover from transient HTTP failure without retrying tools; fixture and full Qt verification pass.

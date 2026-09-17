@@ -464,6 +464,23 @@ def get_system_prompt(role_desc: str) -> str:
         
     return "\n".join(parts)
 
+def invoke_provider_with_retry(client, messages, config=None):
+    """Retry transient provider failures without retrying any tool execution."""
+    retries = min(2, max(0, int(os.environ.get("CCAD_PROVIDER_RETRIES", "2"))))
+    for attempt in range(retries + 1):
+        try:
+            return client.invoke(messages, config=config or {})
+        except Exception as error:
+            if attempt >= retries:
+                raise
+            emit({"jsonrpc": "2.0", "method": "provider_retry", "params": {
+                "attempt": attempt + 1,
+                "max_retries": retries,
+                "error_type": type(error).__name__,
+                "prompt_emitted": False,
+                "secret_value_visible": False,
+            }})
+
 @trace_function("supervisor_node")
 def supervisor_node(state: AgentState):
     if "pre node" in [h.lower() for h in active_hooks]:
@@ -486,7 +503,8 @@ def supervisor_node(state: AgentState):
     system_msg = SystemMessage(content=system_text)
     
     prompt = [system_msg] + state["messages"]
-    response = llm.invoke(prompt, config={"callbacks": callbacks} if callbacks else {})
+    response = invoke_provider_with_retry(
+        llm, prompt, config={"callbacks": callbacks} if callbacks else {})
     content = response.content.strip().lower()
     
     if "router" in content:
@@ -517,7 +535,8 @@ def router_node(state: AgentState):
     
     system_msg = SystemMessage(content=system_text)
     prompt = [system_msg] + state["messages"]
-    response = router_llm.invoke(prompt, config={"callbacks": callbacks} if callbacks else {})
+    response = invoke_provider_with_retry(
+        router_llm, prompt, config={"callbacks": callbacks} if callbacks else {})
     if "post node" in [h.lower() for h in active_hooks]:
         hooks.trigger_hook("post node", emit, "router")
     return {"messages": [response]}
@@ -537,7 +556,8 @@ def librarian_node(state: AgentState):
     
     system_msg = SystemMessage(content=system_text)
     prompt = [system_msg] + state["messages"]
-    response = librarian_llm.invoke(prompt, config={"callbacks": callbacks} if callbacks else {})
+    response = invoke_provider_with_retry(
+        librarian_llm, prompt, config={"callbacks": callbacks} if callbacks else {})
     if "post node" in [h.lower() for h in active_hooks]:
         hooks.trigger_hook("post node", emit, "librarian")
     return {"messages": [response]}

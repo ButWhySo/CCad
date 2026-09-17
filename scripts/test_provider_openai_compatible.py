@@ -18,6 +18,10 @@ class Handler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0"))
         requests.append(json.loads(self.rfile.read(length)))
         body = requests[-1]
+        if len(requests) == 1:
+            self.send_response(503)
+            self.end_headers()
+            return
         system = " ".join(
             str(message.get("content", ""))
             for message in body.get("messages", [])
@@ -86,11 +90,15 @@ def main():
             lines.append(json.loads(line))
             if any(item.get("method") == "tool_call" for item in lines):
                 break
-        assert len(requests) >= 2, "supervisor and router requests were not both sent"
-        assert requests[1]["model"] == "ccad-local-stub"
+        assert len(requests) >= 3, "transient failure or router request was not retried"
+        router_request = next(
+            request for request in requests
+            if any(tool.get("function", {}).get("name") == "ui_place_via"
+                   for tool in request.get("tools", [])))
+        assert router_request["model"] == "ccad-local-stub"
         tool_names = {
             tool["function"]["name"]
-            for tool in requests[1].get("tools", [])
+            for tool in router_request.get("tools", [])
             if tool.get("type") == "function"
         }
         assert "ui_place_via" in tool_names, "router tool schema missing"

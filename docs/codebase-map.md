@@ -1382,3 +1382,5 @@ The scan covers destructive/external action markers plus common prompt-injection
 Regression coverage lives in `tests/test_agent_orchestrator.cpp::test_intake_layer` and `test_plan_blocks_risky_intent`.
 
 `src/ccad_agent/orchestrator.py::context_revision` hashes each incoming context for change detection. `human_message` emits `context_state` before command/provider handling; consumers must treat `content_emitted:false` as a redaction invariant.
+
+`invoke_provider_with_retry` wraps only LLM node calls with a maximum of two retries. `scripts/test_provider_openai_compatible.py` forces one transient 503 and verifies subsequent provider/tool-boundary recovery.

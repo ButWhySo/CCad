@@ -1744,3 +1744,6 @@ Revalidated conservative intake rejection after the injection/credential marker 
 ### Sprint 657 - expose opaque context revisions
 
 Every Python agent chat turn now emits a `context_state` event with a stable truncated SHA-256 revision, changed flag, content size, and explicit `content_emitted:false`. Provider telemetry can detect stale context without exporting project contents. Provider boundary test, official harness screenshot inspection, and Python syntax validation pass.
+### Sprint 658 - retry transient provider failures
+
+Provider node invocations now use a bounded two-retry wrapper; retries cover provider calls only, never tool execution, and emit redacted retry metadata. The local OpenAI-compatible fixture forces an initial HTTP 503, confirms recovery and tool-schema delivery, and passes with official visual harness plus full Qt CTest 91/91.
