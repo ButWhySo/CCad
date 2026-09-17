@@ -32,9 +32,24 @@ std::string extractStringValue(const std::string& json, const std::string& key) 
   while (pos < json.length() && (json[pos] == ' ' || json[pos] == '\t')) pos++;
   if (pos < json.length() && json[pos] == '"') {
     pos++;
-    auto end = json.find("\"", pos);
-    if (end != std::string::npos) {
-      return json.substr(pos, end - pos);
+    std::string value;
+    bool escaped = false;
+    for (; pos < json.length(); ++pos) {
+      const char c = json[pos];
+      if (escaped) {
+        if (c == 'n') value += '\n';
+        else if (c == 'r') value += '\r';
+        else if (c == 't') value += '\t';
+        else if (c == '"' || c == '\\' || c == '/') value += c;
+        else { value += '\\'; value += c; }
+        escaped = false;
+      } else if (c == '\\') {
+        escaped = true;
+      } else if (c == '"') {
+        return value;
+      } else {
+        value += c;
+      }
     }
   }
   return "";

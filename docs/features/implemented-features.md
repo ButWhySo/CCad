@@ -2411,3 +2411,5 @@ Agents can call registered PCB tools through `agent.tool_call`; requests expose 
 Agent PCB tool adapters validate required fields before dispatch and return the missing field as a structured error when a request is incomplete.
 
 Agent `pcb.drc` runs the native DRC command and exposes its exit code and captured diagnostics.
+
+Agent JSON-RPC string fields preserve Windows paths and decode common escaped characters.

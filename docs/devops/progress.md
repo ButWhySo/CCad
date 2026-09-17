@@ -1447,3 +1447,7 @@ Agent PCB adapters now reject missing required fields with structured errors bef
 ### Sprint 555 - make agent DRC truthful
 
 `pcb.drc` now dispatches to the real `ccad drc` command and returns captured exit code, stdout, and stderr; incomplete requests identify missing `file`. Full Qt build completed, CTest passed 91/91 in 47.04 seconds, and the official harness screenshot was inspected with empty stderr.
+
+### Sprint 556 - harden agent JSON string extraction
+
+Agent JSON-RPC string extraction now handles escaped JSON characters while preserving raw Windows path separators. Focused agent/CLI tests passed 2/2, full Qt CTest passed 91/91 in 51.01 seconds, and the official harness screenshot was inspected with empty stderr.
