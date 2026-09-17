@@ -925,7 +925,19 @@ if __name__ == "__main__":
                     "span_id": run_span_id, "provider": os.environ.get("CCAD_PROVIDER", "configured"),
                     "token_usage": "unavailable", "cost": "unavailable",
                 }})
-                final_state = invoke_agent_run({"messages": session_messages, "goal": text, "context": context_str, "next_node": ""})
+                try:
+                    final_state = invoke_agent_run({"messages": session_messages, "goal": text, "context": context_str, "next_node": ""})
+                except Exception as error:
+                    emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
+                        "run_state": "failed", "trace_id": run_trace_id,
+                        "span_id": run_span_id, "error_type": type(error).__name__,
+                        "prompt_emitted": False, "secret_value_visible": False,
+                    }})
+                    emit({"jsonrpc": "2.0", "method": "message", "params": {
+                        "text": "Provider request failed after bounded retries; no tool was executed.",
+                        "kind": "provider_error", "error_type": type(error).__name__,
+                    }})
+                    continue
                 emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
                     "run_state": "completed", "trace_id": run_trace_id,
                     "span_id": run_span_id, "token_usage": "unavailable", "cost": "unavailable",

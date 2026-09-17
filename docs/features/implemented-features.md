@@ -2541,3 +2541,5 @@ Each agent chat request emits an opaque context revision and whether it changed 
 ## Provider retry boundary
 
 Supervisor, router, and librarian provider calls retry at most twice on raised provider errors. Tool execution is outside this retry wrapper, preventing repeated project mutations. Retry events expose only attempt count, exception type, and redaction flags.
+
+If all retries fail, the chat protocol emits failed telemetry and a provider error message, then continues serving later requests. Prompts, credentials, and endpoint details remain excluded.

@@ -1747,3 +1747,6 @@ Every Python agent chat turn now emits a `context_state` event with a stable tru
 ### Sprint 658 - retry transient provider failures
 
 Provider node invocations now use a bounded two-retry wrapper; retries cover provider calls only, never tool execution, and emit redacted retry metadata. The local OpenAI-compatible fixture forces an initial HTTP 503, confirms recovery and tool-schema delivery, and passes with official visual harness plus full Qt CTest 91/91.
+### Sprint 659 - contain terminal provider failures
+
+After bounded retries, provider exceptions now produce redacted failed telemetry and a truthful chat error while keeping the orchestrator process alive; no tool executes on failure. Provider syntax/boundary tests, official harness screenshot, and full Qt CTest pass 91/91.
