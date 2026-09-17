@@ -6660,6 +6660,25 @@ QString ReviewWindow::uiTypeTextJson(const QString& id, const QString& text) {
     markUiMapChanged();
     return jsonObjectLine(response);
   }
+  for (QTextEdit* input : findChildren<QTextEdit*>()) {
+    if (input == nullptr || input->objectName() != trimmed_id) {
+      continue;
+    }
+    if (!input->isVisible() || !input->isEnabled()) {
+      response.insert("performed", false);
+      response.insert("reason", "disabled_or_hidden");
+      return jsonObjectLine(response);
+    }
+    input->setFocus(Qt::OtherFocusReason);
+    input->setPlainText(text);
+    input->moveCursor(QTextCursor::End);
+    QApplication::processEvents();
+    response.insert("performed", true);
+    response.insert("reason", "text_set");
+    response.insert("focused", input->hasFocus());
+    markUiMapChanged();
+    return jsonObjectLine(response);
+  }
   response.insert("performed", false);
   response.insert("reason", "control_not_found");
   return jsonObjectLine(response);

@@ -140,6 +140,9 @@ private slots:
     auto* context_label = panel.findChild<QLabel*>("control:contextLabel");
     QVERIFY(context_label != nullptr);
     QVERIFY(context_label->text().contains("/ 128k context"));
+    auto* chat_input = panel.findChild<QTextEdit*>("control:agent_chat_input");
+    QVERIFY(chat_input != nullptr);
+    QVERIFY(chat_input->isEnabled());
   }
 
   void testApprovalLaneTransitions() {
