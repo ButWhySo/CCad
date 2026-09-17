@@ -160,6 +160,14 @@ private slots:
     QVERIFY(panel.approvalStatusText().contains("Approval canceled"));
   }
 
+  void testApprovalControlsAreVisibleAndTargetable() {
+    AgentPanel panel;
+    QVERIFY(panel.findChild<QLineEdit*>("control:agent_approval_request") != nullptr);
+    QVERIFY(panel.findChild<QPushButton*>("action:agent_request_approval") != nullptr);
+    QVERIFY(panel.findChild<QPushButton*>("action:agent_approve_next") != nullptr);
+    QVERIFY(panel.findChild<QPushButton*>("action:agent_decline_next") != nullptr);
+  }
+
   void testQueueStateCheckpointRoundTrip() {
     QTemporaryDir temp;
     QVERIFY(temp.isValid());

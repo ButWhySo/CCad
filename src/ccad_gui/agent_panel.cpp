@@ -1066,6 +1066,7 @@ void AgentPanel::handlePythonOutput() {
         result["jsonrpc"] = "2.0";
         result["id"] = call_id.isEmpty() ? QString("agent-tool-call") : call_id;
         result["method"] = "tool_result";
+        bool awaiting_approval = false;
 
         if (orchestrator_) {
             ccad::OrchestratorConfig cfg;
@@ -1083,12 +1084,15 @@ void AgentPanel::handlePythonOutput() {
               pending_tool_call_id_ = call_id.isEmpty() ? QStringLiteral("agent-tool-call") : call_id;
               setApprovalRequestText("Agent tool: " + tool + " " + args);
               requestApproval();
+              awaiting_approval = true;
             }
         } else {
             result["error"] = QJsonObject{{"code", -32601}, {"message", "ToolBroker not initialized"}};
         }
         
-        python_process_->write(QJsonDocument(result).toJson(QJsonDocument::Compact) + "\n");
+        if (!awaiting_approval) {
+          python_process_->write(QJsonDocument(result).toJson(QJsonDocument::Compact) + "\n");
+        }
       } else if (obj.contains("method") && obj["method"].toString() == "message") {
         appendChatMessage("agent", obj["params"].toObject()["text"].toString());
       } else if (obj.contains("method") && obj["method"].toString() == "config_state") {
