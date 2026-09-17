@@ -14,6 +14,33 @@ def send(pipe, request):
     return json.loads(pipe.readline().decode("utf-8"))
 
 
+def wait_for_node(pipe, node_id, *, visible=None, timeout=20.0):
+    """Poll app-owned UI state until target node reaches expected visibility."""
+    deadline = time.monotonic() + timeout
+    last = {}
+    while time.monotonic() < deadline:
+        last = send(pipe, {"method": "ui.map_compact", "id": "wait-state", "limit": 100})
+        nodes = last.get("result", {}).get("nodes", [])
+        node = next((item for item in nodes if item.get("id") == node_id), None)
+        if node is not None and (visible is None or node.get("visible") == visible):
+            return last
+        time.sleep(0.2)
+    raise RuntimeError(f"timed out waiting for {node_id} visible={visible}: {last}")
+
+
+def wait_for_run_completion(pipe, timeout=20.0):
+    deadline = time.monotonic() + timeout
+    last = {}
+    while time.monotonic() < deadline:
+        last = send(pipe, {"method": "ui.map_compact", "id": "run-state", "limit": 100})
+        nodes = last.get("result", {}).get("nodes", [])
+        run = next((item for item in nodes if item.get("id") == "label:agent_run_state"), {})
+        if run.get("label") == "Run: completed":
+            return last
+        time.sleep(0.2)
+    raise RuntimeError(f"timed out waiting for completed run: {last}")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--delay", type=float, default=0.25)
@@ -85,13 +112,9 @@ def main():
             send(pipe, {"method": "ui.type_text", "id": "control:agent_chat_input",
                         "text": "Routing Expert: place one via using approved route."})
             send(pipe, {"method": "ui.click", "id": "action:agent_submit_chat"})
-            time.sleep(2.0)
-            pending = send(pipe, {"method": "ui.map_compact", "id": "mutation-pending",
-                                  "limit": 100})
+            pending = wait_for_node(pipe, "panel:agent_approval_preview", visible=True)
             approved = send(pipe, {"method": "ui.click", "id": "action:agent_approve_next"})
-            time.sleep(1.0)
-            after = send(pipe, {"method": "ui.map_compact", "id": "mutation-after",
-                                "limit": 100})
+            after = wait_for_node(pipe, "panel:agent_approval_preview", visible=False)
             counts = send(pipe, {"method": "project.object_counts", "id": "mutation-counts"})
         pending_result = pending.get("result", {})
         approved_result = approved.get("result", {})
@@ -127,9 +150,7 @@ def main():
                                     "limit": 100})
             if args.chat_send_check:
                 sent = send(pipe, {"method": "ui.click", "id": "action:agent_submit_chat"})
-                time.sleep(2.0)
-                response_map = send(pipe, {"method": "ui.map_compact", "id": "chat-response-state",
-                                           "limit": 100})
+                response_map = wait_for_run_completion(pipe)
         typed_result = typed.get("result", {})
         print("LIVE CHAT INPUT " + json.dumps({
             "performed": typed_result.get("performed"),

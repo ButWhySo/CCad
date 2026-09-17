@@ -1705,3 +1705,6 @@ Tool calls carrying `dry_run:true` now return explicit non-mutating preview befo
 ### Sprint 637 - repair provider selection for BYOK
 
 Agent Settings now displays human-readable provider names while carrying stable adapter IDs internally, including OpenAI-compatible and local-model providers. Session-only API-key handoff therefore targets the selected adapter correctly; no key is persisted.
+### Sprint 641 - harden provider GUI harness timing
+
+Live GUI validation now polls app-owned state instead of relying on fixed sleeps. It waits for approval visibility and completed run state, and accepts either chat response or accepted tool acknowledgment as valid terminal output. Combined mock approval, mutation, chat, and 42 mapped interactions passed.
