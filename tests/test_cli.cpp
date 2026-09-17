@@ -2359,7 +2359,7 @@ int main() {
               std::string::npos,
           "pcb cross-probe reports KiCad source file");
   require(cross_probe_json.find("\"packet_kind\": \"net\"") != std::string::npos,
-          "pcb cross-probe reports net packet kind");
+          "pcb cross-probe reports net packet kind; output: " + cross_probe_json);
   require(cross_probe_json.find("\"id\": \"P1\"") != std::string::npos,
           "pcb cross-probe resolves same-net pad target");
   require(cross_probe_json.find("\"id\": \"V1\"") != std::string::npos,
