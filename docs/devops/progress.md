@@ -1558,3 +1558,6 @@ Real `ui.place_via` invocations now generate UUID-backed per-call IDs and wait o
 ### Sprint 586 - authoritative footprint and schematic mutations
 
 Added shared `dispatch_client_tool()` for unique IDs and optional broker wait; footprint placement, symbol placement, schematic wire, and schematic label mutations now await authoritative client results in real broker mode. Offline/mock paths remain nonblocking. Python compile and route-demo CLI smoke passed. Full gate pending before merge.
+### Sprint 587 - route results through pending-call registry
+
+Added process-local pending call registry keyed by call ID. The single stdin reader routes matching tool_result directly to its waiting queue; unknown results and non-result messages remain dispatcher-visible. Waiters clean registry entries on success, error, timeout, or close. Python compile and registry smoke passed. Full gate pending before merge.

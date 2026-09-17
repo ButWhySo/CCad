@@ -21,37 +21,59 @@ def emit(payload: dict):
 broker_wait_enabled = False
 inbound_queue = None
 deferred_queue = queue.Queue()
+pending_calls = {}
+pending_calls_lock = threading.Lock()
+
+def route_protocol_line(protocol_line: str) -> bool:
+    """Route a result to its waiting call; return whether it was consumed."""
+    try:
+        response = json.loads(protocol_line)
+    except (TypeError, json.JSONDecodeError):
+        return False
+    if response.get("method") != "tool_result":
+        return False
+    call_id = response.get("id", "")
+    with pending_calls_lock:
+        result_queue = pending_calls.get(call_id)
+    if result_queue is None:
+        return False
+    result_queue.put(protocol_line)
+    return True
 
 def wait_for_broker_result(call_id: str) -> str:
     """Synchronously receive matching C++ broker result for current tool call."""
     timeout = max(1.0, float(os.environ.get("CCAD_BROKER_TIMEOUT_SECONDS", "30")))
     deadline = time.monotonic() + timeout
-    while True:
-        if inbound_queue is None:
-            line = sys.stdin.readline()
-        else:
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                return json.dumps({"error": "broker_timeout", "call_id": call_id})
+    result_queue = queue.Queue()
+    with pending_calls_lock:
+        pending_calls[call_id] = result_queue
+    try:
+        while True:
+            if inbound_queue is not None:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return json.dumps({"error": "broker_timeout", "call_id": call_id})
+                try:
+                    line = result_queue.get(timeout=remaining)
+                except queue.Empty:
+                    return json.dumps({"error": "broker_timeout", "call_id": call_id})
+            else:
+                line = sys.stdin.readline()
+            if not line:
+                return json.dumps({"error": "broker_closed", "call_id": call_id})
             try:
-                line = inbound_queue.get(timeout=remaining)
-            except queue.Empty:
-                return json.dumps({"error": "broker_timeout", "call_id": call_id})
-        if not line:
-            return json.dumps({"error": "broker_closed", "call_id": call_id})
-        try:
-            response = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if response.get("method") != "tool_result":
-            deferred_queue.put(line)
-            continue
-        if response.get("id", "") != call_id:
-            deferred_queue.put(line)
-            continue
-        if response.get("error") is not None:
-            return json.dumps({"error": response["error"], "call_id": call_id})
-        return json.dumps(response.get("result", {"error": "empty_broker_result"}))
+                response = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if response.get("method") != "tool_result" or response.get("id", "") != call_id:
+                deferred_queue.put(line)
+                continue
+            if response.get("error") is not None:
+                return json.dumps({"error": response["error"], "call_id": call_id})
+            return json.dumps(response.get("result", {"error": "empty_broker_result"}))
+    finally:
+        with pending_calls_lock:
+            pending_calls.pop(call_id, None)
 
 def new_tool_call_id(tool_name: str) -> str:
     """Create a per-invocation correlation ID; never reuse across retries."""
@@ -509,7 +531,8 @@ if __name__ == "__main__":
     inbound_queue = queue.Queue()
     def read_protocol_lines():
         for protocol_line in sys.stdin:
-            inbound_queue.put(protocol_line)
+            if not route_protocol_line(protocol_line):
+                inbound_queue.put(protocol_line)
         inbound_queue.put(None)
     threading.Thread(target=read_protocol_lines, name="ccad-agent-stdin", daemon=True).start()
 

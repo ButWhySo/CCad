@@ -2456,3 +2456,4 @@ Broker waits preserve unrelated inbound JSON-RPC messages in a deferred queue an
 Real `ui.place_via` broker calls use unique per-invocation correlation IDs, so late results from prior attempts cannot satisfy a newer wait.
 Real broker mode now returns authoritative results for track and zone mutations, not optimistic dispatch text; offline/mock paths remain deterministic and nonblocking.
 Footprint and schematic mutation tools now share unique call IDs and return authoritative broker results in real-provider mode; offline/mock behavior remains deterministic.
+Broker protocol now has a pending-call registry: matching results wake exact tool waits, while unknown or unrelated messages remain available to the main dispatcher.
