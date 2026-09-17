@@ -2467,3 +2467,4 @@ Checkpointed agent threads now expose protocol-side LangGraph resume execution t
 With `CCAD_AGENT_CHECKPOINT_DB` enabled, mutating agent tools pause as durable LangGraph interrupts and resume from correlated client results; unset DB preserves legacy local wait behavior.
 Restart-safe checkpoint behavior is covered by `scripts/test_agent_checkpoint_restart.py`, proving interrupt persistence and same-thread resume across two processes.
 Agent run and result status labels have stable GUI object names for semantic automation and visual validation.
+Approval lane regression test covers pending, decline, and cancel state transitions with visible user feedback.
