@@ -3085,7 +3085,9 @@ int pcbCommand(const std::vector<std::string>& args) {
           parseOptions(args, 1, {"--file", "--symbols", "--target-x-mm", "--target-y-mm",
                                  "--component-gap-mm", "--group-gap-mm"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::Board& board = requireBoard(project);
       const std::vector<std::string> component_ids =
           options.contains("--symbols")
@@ -3105,6 +3107,7 @@ int pcbCommand(const std::vector<std::string>& args) {
 
       const std::vector<ccad::SpreadFootprintPlacement> placements =
           ccad::spreadFootprintComponents(board, request);
+      context.markDirty();
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;

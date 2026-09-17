@@ -1291,3 +1291,5 @@ Sprint 544 migrates `pcb resize-object` loading to the shared context; compatibi
 Sprint 545 migrates `pcb place-footprint` project loading to the shared context; footprint-file loading and compatibility writing remain unchanged.
 
 Sprint 546 migrates `pcb autoplace-footprint` project loading to the shared context; footprint-file loading and compatibility writing remain unchanged.
+
+Sprint 547 migrates `pcb spread-footprints` project loading to the shared context; placement calculation and compatibility writing remain unchanged.
