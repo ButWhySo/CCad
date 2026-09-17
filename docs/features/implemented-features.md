@@ -2393,3 +2393,4 @@ The headless board context also supports file-backed load/save with round-trip c
 `pcb set-track` is now a shared-context mutation consumer with its existing track geometry, metadata, and audit behavior intact.
 `pcb add-keepout` is now a shared-context mutation consumer with its existing keepout geometry, validation, and audit behavior intact.
 `pcb update-teardrops` is now a shared-context mutation consumer with its existing teardrop settings, generation, and audit behavior intact.
+`pcb add-placement-region` is now a shared-context mutation consumer with its existing placement-region geometry, validation, and audit behavior intact.
