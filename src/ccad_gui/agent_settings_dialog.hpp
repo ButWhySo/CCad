@@ -44,6 +44,7 @@ private:
   // Config tab
   QComboBox* provider_combo_{nullptr};
   QLineEdit* model_input_{nullptr};
+  QLineEdit* api_key_input_{nullptr};
   QCheckBox* sandbox_cb_{nullptr};
   QCheckBox* approval_cb_{nullptr};
   QLineEdit* project_name_{nullptr};

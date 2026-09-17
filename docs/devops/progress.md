@@ -1475,3 +1475,7 @@ Repaired `scripts/cli_demo_drc.ps1` so its relatable rectifier-board story uses 
 ### Sprint 562 - narrate the user-facing demo
 
 Added stage narration to the rectifier-board demo: user goal, board setup, component placement, intentional safety failure, diagnostic-driven repair, and final proof. Live rerun produced 4 initial errors then 0 errors/0 warnings; final GUI screenshot inspected.
+
+### Sprint 563 - add session-only provider credential entry
+
+Agent Settings now exposes a masked API-key field with process-memory-only semantics; key value is never included in config JSON, project files, logs, or traces. GUI test verifies widget presence and password masking; full Qt CTest passed 91/91 in 54.25 seconds; official harness screenshot inspected with empty stderr. Provider network execution remains explicitly disabled pending secure provider-runtime implementation.

@@ -2425,3 +2425,5 @@ Agents can place schematic symbols and author wires/labels through `sch.place-sy
 `scripts/cli_demo_drc.ps1` provides a user-facing rectifier-board story: construct board, show intentional DRC failure, repair with a valid layer transition, and prove a clean final DRC plus GUI screenshot.
 
 The demo prints plain-language stage narration so viewers can follow engineering intent and outcome without knowing CCad command names.
+
+Agent Settings includes a masked, process-memory-only API-key field and reports `configured_memory_only`; secrets are not persisted or emitted. Network provider execution is not yet enabled.

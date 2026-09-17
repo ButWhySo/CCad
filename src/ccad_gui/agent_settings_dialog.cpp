@@ -14,6 +14,7 @@
 #include <QFormLayout>
 #include <QCheckBox>
 #include <QGroupBox>
+#include <QLineEdit>
 
 AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* parent)
     : QDialog(parent), agent_panel_(agent_panel) {
@@ -285,7 +286,12 @@ void AgentSettingsDialog::createMCPTab(QWidget* parent_widget) {
 void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
   auto* layout = new QVBoxLayout(parent_widget);
   layout->addWidget(new QLabel("<b>API & Providers</b>", parent_widget));
-  layout->addWidget(new QLabel("Configure API keys here.", parent_widget));
+  layout->addWidget(new QLabel("Enter provider key for this session only. Key is masked and never written to project files, config JSON, or logs.", parent_widget));
+  api_key_input_ = new QLineEdit(parent_widget);
+  api_key_input_->setObjectName("control:apiKeyInput");
+  api_key_input_->setEchoMode(QLineEdit::Password);
+  api_key_input_->setPlaceholderText("API key (kept in memory)");
+  layout->addWidget(api_key_input_);
   auto* btn = new QPushButton("Test Export (OTel/Langfuse)", parent_widget);
   btn->setObjectName("action:testExportBtn");
   connect(btn, &QPushButton::clicked, this, [this]() {
@@ -406,6 +412,11 @@ void AgentSettingsDialog::saveAllSettings() {
 
   if (system_prompt_) config["system_prompt"] = system_prompt_->toPlainText();
   if (dev_prompt_) config["dev_prompt"] = dev_prompt_->toPlainText();
+
+  if (agent_panel_ && api_key_input_ && !api_key_input_->text().isEmpty()) {
+    agent_panel_->setProviderSecret(provider_combo_ ? provider_combo_->currentText() : "openai",
+                                    api_key_input_->text());
+  }
 
   if (plugins_list_) {
     QJsonArray installed_plugins;

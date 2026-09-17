@@ -1319,3 +1319,5 @@ Sprint 558 adds native agent `pcb.add-keepout` dispatch with structured required
 Sprint 559 adds native agent placement-region authoring and zone-refill dispatch.
 
 Sprint 560 adds native agent schematic symbol, wire, and label authoring dispatch.
+
+Sprint 563 adds session-only masked provider secret state to `AgentPanel` and the settings dialog; provider execution remains disabled until runtime integration is implemented.
