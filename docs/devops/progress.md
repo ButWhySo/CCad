@@ -1684,3 +1684,6 @@ Aligned GUI provider IDs with Python adapter initialization. OpenAI-compatible a
 ### Sprint 630 - repair terminal compatible-key initialization
 
 Provider initialization now mirrors `CCAD_OPENAI_COMPATIBLE_API_KEY` and `CCAD_LOCAL_MODEL_API_KEY` into the SDK-compatible key before constructing the adapter, and honors provider-specific model environment variables over stale config defaults. A no-network contract check reports `openai_compatible`, model `ccad-test-model`, execution enabled, network unprobed, and secret redacted.
+### Sprint 631 - local OpenAI-compatible tool contract
+
+Added a no-network HTTP stub test that exercises the actual OpenAI-compatible LangChain adapter, verifies provider-specific model selection, inspects the submitted tool schema, returns a supervisor decision and router tool call, and confirms the call reaches CCad's JSON-RPC boundary. The test is now part of the `agent-python` CI job; it uses only localhost and a test-only key.

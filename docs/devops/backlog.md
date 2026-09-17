@@ -854,3 +854,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 628: native screenshot rendering is authoritative; exact-window capture is fallback-only and the behavior is covered by the harness policy test.
 - [ ] Sprint 629: connect authenticated provider tool calls to the same scoped approval-token contract and prove one live request in a user-owned environment.
 - [x] Sprint 630: provider initialization contract check passes with local-compatible env config, correct model, enabled adapter, and redacted state; full local stub tool-call test remains next.
+- [x] Sprint 631: localhost OpenAI-compatible stub verifies model/base URL, tool schema, supervisor/router request path, and CCad tool-call boundary; CI wired.

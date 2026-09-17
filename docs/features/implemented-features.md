@@ -2502,3 +2502,6 @@ The Agent panel's `openai_compatible` and `local_model_server` provider IDs are 
 ### Sprint 630: terminal BYOK compatibility
 
 Terminal configuration now works for OpenAI-compatible and local model providers: provider-specific keys are mirrored before adapter construction, provider-specific model variables override stale config, and readiness remains truthful without probing the network. The contract check uses a non-routable endpoint and a test-only key; it performs no API request.
+### Sprint 631: local provider tool-call contract
+
+CI now runs a localhost-only OpenAI-compatible provider test. It checks that CCad sends the selected model and registered routing tools to the adapter, receives the supervisor/router responses, and exposes the returned tool call through the agent protocol without external credentials or network access.
