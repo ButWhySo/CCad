@@ -800,3 +800,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [ ] Sprint 573 follow-up: add provider request timeout/retry policy and redacted failure classification; verify with local fake transport before real API call.
 
 - [ ] Sprint 575 follow-up: add broker wait timeout/cancellation and preserve unrelated inbound requests; enforce approval before waiting/executing mutation; add real provider integration test.
+
+- [ ] Sprint 576 follow-up: refactor Windows pipe protocol into one reader/dispatcher with bounded broker wait, cancellation, and queued inbound messages; test timeout and late result.

@@ -2438,3 +2438,6 @@ Agent orchestration uses LangGraph; Langfuse callbacks remain opt-in, and LangSm
 
 
 Real-provider ui.place_via tool path can await matching C++ broker result by call_id and feed result into LangGraph state; mock and dry-run paths stay offline/nonblocking. Timeout, cancellation, and approval-before-execution remain backlog.
+
+
+LangGraph runs attach content-safe metadata/tags to opt-in Langfuse/LangSmith callbacks; no prompt/context/tool payload or secret is placed in run metadata. Full callback redaction integration test remains backlog.
