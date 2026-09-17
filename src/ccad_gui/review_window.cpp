@@ -6629,6 +6629,7 @@ QString ReviewWindow::uiTypeTextJson(const QString& id, const QString& text) {
   const QStringList allowed_ids = {"control:agent_action_id", "control:agent_live_method",
                                    "control:agent_live_payload", "control:agent_goal",
                                    "control:agent_command_input",
+                                   "control:agent_chat_input",
                                    "control:agent_provider_model",
                                    "control:agent_approval_request"};
   QJsonObject response;

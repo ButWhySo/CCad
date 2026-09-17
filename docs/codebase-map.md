@@ -1359,3 +1359,4 @@ Sprint 614 marks approval-required `tool_call` handling as pending and suppresse
 Sprint 615 extends `scripts/test_agent_checkpoint_restart.py` with a denial branch alongside accepted resume, preserving stable thread/call correlation.
 Sprint 618 extends `ReviewWindow::uiTypeTextJson` to target `QTextEdit`, enabling live semantic typing into Agent chat.
 Sprint 616 adds the `agent-python` job in `.github/workflows/ci.yml`; it is the authoritative CI gate for Python provider/checkpoint protocol regressions.
+Sprint 619 adds `--chat-input-check` to `scripts/live_agent_route_demo.py` and allows `control:agent_chat_input` through `ReviewWindow::uiTypeTextJson`; live proof confirms text entry before route mutations.

@@ -21,6 +21,8 @@ def main():
     parser.add_argument("--reuse-project", action="store_true")
     parser.add_argument("--mcp-bridge-check", action="store_true",
                         help="query live GUI through MCP bridge and stage approval card")
+    parser.add_argument("--chat-input-check", action="store_true",
+                        help="type into live mapped agent chat editor without sending")
     args = parser.parse_args()
 
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -56,6 +58,23 @@ def main():
         raise RuntimeError("CCad GUI socket did not become ready")
 
     time.sleep(5.0)
+    if args.chat_input_check:
+        with open(rf"\\.\pipe\{server}", "r+b", buffering=0) as pipe:
+            typed = send(pipe, {"method": "ui.type_text",
+                                "id": "control:agent_chat_input",
+                                "text": "Summarize this board before changing it."})
+            fresh_map = send(pipe, {"method": "ui.map_compact", "id": "chat-input-state",
+                                    "limit": 100})
+        typed_result = typed.get("result", {})
+        print("LIVE CHAT INPUT " + json.dumps({
+            "performed": typed_result.get("performed"),
+            "reason": typed_result.get("reason"),
+            "focused": typed_result.get("focused"),
+        }, separators=(",", ":")), flush=True)
+        if not typed_result.get("performed") or typed_result.get("reason") != "text_set":
+            raise RuntimeError("live mapped agent chat input did not accept text")
+        if not fresh_map.get("result"):
+            raise RuntimeError("live GUI map unavailable after chat input")
     if args.mcp_bridge_check:
         bridge = os.path.join(root, "scripts", "ccad_mcp_gui_bridge.py")
         payload = (json.dumps({"jsonrpc": "2.0", "method": "tools/call",

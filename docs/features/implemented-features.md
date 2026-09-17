@@ -2486,3 +2486,4 @@ Sprint 614 keeps approval-required tool calls pending until a human Approve, Dec
 Sprint 615 verifies restart-safe checkpoint continuation for both accepted tool results and explicit approval denial.
 Sprint 618 enables agents to type into the native chat composer through `ui.type_text` and its semantic control ID.
 Sprint 616 adds a GitHub Actions Python agent gate for mock chat and both checkpoint decision outcomes.
+Sprint 619 adds a live harness check that types into the mapped Agent chat editor and verifies the response before exercising board controls.

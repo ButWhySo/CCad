@@ -1646,3 +1646,6 @@ Fixed `ui.type_text` to support the native Agent chat `QTextEdit` as well as lin
 ### Sprint 616 - add Python agent CI gate
 
 Added an `agent-python` GitHub Actions job that installs the pinned agent requirements and runs mock provider chat plus accepted and denied checkpoint restart fixtures. C++/Qt jobs remain unchanged; CI now covers the Python execution layer directly.
+### Sprint 619 - prove live mapped chat entry
+
+Added `--chat-input-check` to the live agent route harness. It types a realistic board question into `control:agent_chat_input`, verifies the mapped response reports `performed=true`, then continues the normal live board interaction burst. Fixed the GUI-map allow-list so the chat target reaches the QTextEdit implementation.
