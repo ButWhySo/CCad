@@ -505,6 +505,20 @@ if __name__ == "__main__":
                 if "post prompt" in [h.lower() for h in active_hooks]:
                     hooks.trigger_hook("post prompt", emit, text)
 
+                # Keep chat useful and truthful while no provider is configured.
+                # Do not enter the graph: it cannot produce an answer and older
+                # code could then index an empty message list.
+                if llm is None:
+                    emit({"jsonrpc": "2.0", "method": "message", "params": {
+                        "text": ("Local CCad agent received your request and current "
+                                 f"design context ({len(context_str)} chars). "
+                                 "Provider execution is unavailable; configure a provider "
+                                 "key or use local CCad tools."),
+                        "kind": "provider_unavailable",
+                        "context_received": bool(context_str),
+                    }})
+                    continue
+
                 final_state = invoke_agent_run({"messages": session_messages, "goal": text, "context": context_str, "next_node": ""})
                 session_messages = final_state["messages"]
                 last_msg = session_messages[-1]

@@ -1491,3 +1491,7 @@ The masked session-only provider key now reaches the already-running Python orch
 ### Sprint 566 - verify provider IPC round-trip
 
 Python dependency import and live subprocess smoke passed: gent.set_provider_secret returned provider_state with configured:true, execution_enabled:true, secret_value_visible:false; sentinel secret was absent from stdout/stderr. Startup-to-response measured 9.13 seconds with no stderr. This proves credential handoff and redaction, not API authentication or useful model response; next gate must use fake transport, then an explicitly authorized real provider call.
+
+### Sprint 567 - keep chat truthful without provider
+
+Fixed no-provider human-message path: orchestrator now acknowledges received context with redacted metadata and actionable provider guidance, then skips LangGraph invocation that cannot answer. This prevents empty-message failure and gives users useful local-agent feedback. Live subprocess smoke passed with context received, context content absent from response, and empty stderr; Python-only change, no new GUI build required.
