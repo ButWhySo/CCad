@@ -1711,3 +1711,6 @@ Live GUI validation now polls app-owned state instead of relying on fixed sleeps
 ### Sprint 642 - localhost provider GUI proof in CI
 
 Restored deterministic OpenAI-compatible GUI fixture using a localhost HTTP stub. It exercises real provider adapter requests, supervisor/router tool selection, native approval, via mutation, and terminal chat response without external credentials. Fixture passes locally on Windows/Qt; it is intentionally not in Ubuntu agent CI because the live GUI map transport is Windows-specific.
+### Sprint 644 - CI-cover MCP bridge policy
+
+Added the cross-platform offline MCP bridge contract test to agent CI. It verifies read-only query allowlisting and approval staging without executing mutations; Windows named-pipe live interaction remains covered by the local GUI harness.
