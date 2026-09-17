@@ -108,10 +108,22 @@ librarian_llm = None
 
 class MockProvider:
     """Deterministic offline provider for harness and protocol tests."""
+    def __init__(self):
+        self.tool_issued = False
+
     def bind_tools(self, _tools):
         return self
 
-    def invoke(self, _messages, config=None):
+    def invoke(self, messages, config=None):
+        prompt = "\n".join(str(getattr(message, "content", "")) for message in messages)
+        if "Routing Expert" in prompt and "via" in prompt.lower() and not self.tool_issued:
+            self.tool_issued = True
+            return AIMessage(content="", tool_calls=[{
+                "name": "ui_place_via",
+                "args": {"x_mm": 10.0, "y_mm": 10.0, "dry_run": True},
+                "id": "mock-tool-1",
+                "type": "tool_call",
+            }])
         return AIMessage(content="[mock provider] Request understood. Use approved CCad tools for design changes.")
 
 callbacks = []

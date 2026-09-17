@@ -1499,3 +1499,7 @@ Fixed no-provider human-message path: orchestrator now acknowledges received con
 ### Sprint 568 - add deterministic offline agent provider
 
 Added explicit CCAD_PROVIDER=mock provider for offline harness testing. It runs through the real LangGraph supervisor path, returns visibly labeled mock output, never uses network or secrets, and preserves supervisor AI response in graph state so chat no longer echoes the human prompt. Live subprocess smoke passed with context, labeled response, and empty stderr.
+
+### Sprint 569 - prove offline orchestration tool loop
+
+Extended mock provider to issue one deterministic ui.place_via call for /route, pass through real LangGraph ToolNode, then complete with labeled final response. Live subprocess smoke observed routing message, tool_call, final mock response, and empty stderr. This proves protocol-loop behavior only; C++ broker/project mutation remains next integration gate.
