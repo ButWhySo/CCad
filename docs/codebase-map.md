@@ -1305,3 +1305,5 @@ Sprint 551 migrates schematic and project text-variable mutations to the shared 
 Sprint 552 makes orchestrator read tools project-backed and routes four PCB adapters through `ccad_cli::run()` with captured process results; unsupported adapters must report an explicit error rather than a false success.
 
 Sprint 553 adds `agent.tool_call` JSON-RPC dispatch, approval checks, tool schemas, and robust top-level request ID parsing; nested tool arguments may safely contain an object `id`.
+
+Sprint 554 adds pre-dispatch required-field validation to the four executable agent PCB adapters, returning structured `missing_parameter` errors.

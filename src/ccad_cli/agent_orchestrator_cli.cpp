@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <memory>
 #include <vector>
+#include <initializer_list>
 
 namespace ccad_cli {
 
@@ -66,25 +67,38 @@ std::string executeCliTool(const std::string& tool, const std::string& json) {
         const std::string value = required(key);
         if (!value.empty()) { add(option); add(value); }
     };
+    const auto requireFields = [&](std::initializer_list<const char*> fields) -> std::string {
+        for (const char* field : fields) {
+            if (required(field).empty()) {
+                return std::string("{\"error\":\"missing_parameter\",\"parameter\":\"") +
+                       ccad::escapeJson(field) + "\"}";
+            }
+        }
+        return {};
+    };
 
     if (tool == "pcb.add-via") {
+        if (const std::string error = requireFields({"file", "id", "net", "x_mm", "y_mm", "diameter_mm", "drill_mm"}); !error.empty()) return error;
         add("pcb"); add("add-via");
         appendOption("--file", "file"); appendOption("--id", "id"); appendOption("--net", "net");
         appendOption("--x-mm", "x_mm"); appendOption("--y-mm", "y_mm");
         appendOption("--diameter-mm", "diameter_mm"); appendOption("--drill-mm", "drill_mm");
     } else if (tool == "pcb.add-track") {
+        if (const std::string error = requireFields({"file", "id", "net", "layer", "start_x_mm", "start_y_mm", "end_x_mm", "end_y_mm", "width_mm"}); !error.empty()) return error;
         add("pcb"); add("add-track");
         appendOption("--file", "file"); appendOption("--id", "id"); appendOption("--net", "net");
         appendOption("--layer", "layer"); appendOption("--start-x-mm", "start_x_mm");
         appendOption("--start-y-mm", "start_y_mm"); appendOption("--end-x-mm", "end_x_mm");
         appendOption("--end-y-mm", "end_y_mm"); appendOption("--width-mm", "width_mm");
     } else if (tool == "pcb.place-footprint") {
+        if (const std::string error = requireFields({"file", "footprint", "component", "at_x_mm", "at_y_mm", "layer"}); !error.empty()) return error;
         add("pcb"); add("place-footprint");
         appendOption("--file", "file"); appendOption("--footprint", "footprint");
         appendOption("--component", "component"); appendOption("--at-x-mm", "at_x_mm");
         appendOption("--at-y-mm", "at_y_mm"); appendOption("--layer", "layer");
         appendOption("--rotation-deg", "rotation_deg");
     } else if (tool == "pcb.export") {
+        if (const std::string error = requireFields({"file", "output"}); !error.empty()) return error;
         add("pcb"); add("export-kicad");
         appendOption("--file", "file"); appendOption("--output", "output");
     } else {

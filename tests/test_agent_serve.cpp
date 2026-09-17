@@ -1163,6 +1163,19 @@ void testAgentToolCallRpc() {
   assertContains(out.str(), "-32601", "unknown tool returns method error");
   assertContains(out.str(), "\"id\": 38", "nested tool id does not replace request id");
   assertContains(out.str(), "-32604", "mutation tool requires write approval");
+
+  std::istringstream write_in(
+      "{\"jsonrpc\":\"2.0\",\"method\":\"agent.tool_call\",\"params\":{\"name\":\"pcb.add-via\"},\"id\":39}\n");
+  std::ostringstream write_out;
+  oldCin = std::cin.rdbuf(write_in.rdbuf());
+  oldCout = std::cout.rdbuf(write_out.rdbuf());
+  args = {"serve", "--allow-read", "--allow-write"};
+  result = ccad_cli::agentCommand(args);
+  std::cin.rdbuf(oldCin);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) std::exit(1);
+  assertContains(write_out.str(), "\"id\": 39", "missing-parameter request preserves id");
+  assertContains(write_out.str(), "missing_parameter", "missing required tool parameter is explicit");
 }
 
 int main() {
