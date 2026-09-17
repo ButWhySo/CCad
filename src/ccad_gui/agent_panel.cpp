@@ -1609,6 +1609,9 @@ void AgentPanel::applySessionMetadata(const AgentSessionMetadata& metadata, cons
   session_file_path_ = QFileInfo(path).absoluteFilePath();
   durable_session_id_ = metadata.session_id;
   durable_thread_id_ = metadata.thread_id;
+  if (python_process_ && python_process_->state() == QProcess::Running) {
+    sendJsonRpc("agent.set_thread_id", QJsonObject{{"thread_id", durable_thread_id_}});
+  }
   latest_checkpoint_id_ = metadata.latest_checkpoint_id;
   session_checkpoint_count_ = metadata.checkpoint_count;
   session_replayable_ = metadata.replayable;

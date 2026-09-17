@@ -606,6 +606,15 @@ if __name__ == "__main__":
                     "execution_enabled": llm is not None,
                     "secret_value_visible": False,
                 }})
+            elif method == "agent.set_thread_id":
+                thread_id = req.get("params", {}).get("thread_id", "").strip()
+                if thread_id:
+                    os.environ["CCAD_AGENT_THREAD_ID"] = thread_id
+                else:
+                    os.environ.pop("CCAD_AGENT_THREAD_ID", None)
+                emit({"jsonrpc": "2.0", "method": "thread_state", "params": {
+                    "configured": bool(thread_id), "secret_value_visible": False,
+                }})
             elif method == "tool_result":
                 # Accept broker response by correlation ID without placing
                 # design payloads in transcript. Graph resume is next slice.

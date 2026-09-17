@@ -817,3 +817,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 588: propagate stable LangGraph thread identity; durable checkpointer and cross-process state persistence remain open.
 - [x] Sprint 589: pin compatible LangGraph SQLite checkpoint dependencies; compile-time/runtime checkpointer wiring and restart proof remain open.
 - [x] Sprint 590: opt-in SQLite LangGraph checkpointer wired with two-process restart proof; GUI session binding and approval interrupt resume remain open.
+- [x] Sprint 591: GUI session thread ID propagates to Python graph; checkpoint DB selection, resume UI, and approval interrupt restoration remain open.

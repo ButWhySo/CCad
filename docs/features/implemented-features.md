@@ -2460,3 +2460,4 @@ Broker protocol now has a pending-call registry: matching results wake exact too
 Agent graph invocations now carry explicit thread correlation through LangGraph configurable state; no prompt, tool payload, credential, or durable checkpoint data is added to telemetry.
 Agent dependency requirements now include a compatible SQLite checkpoint package; installation is reproducible, but runtime checkpointer wiring remains explicitly pending.
 Set `CCAD_AGENT_CHECKPOINT_DB` to an explicit local SQLite path to persist LangGraph thread state across orchestrator restarts. Unset path keeps persistence disabled; no credentials are stored by this feature.
+Loading a saved Agent session now propagates its thread ID to the Python orchestrator, aligning GUI session identity with optional SQLite LangGraph checkpoints without sending secrets.
