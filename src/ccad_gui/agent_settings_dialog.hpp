@@ -12,6 +12,7 @@ class QLineEdit;
 class QCheckBox;
 class QTextEdit;
 class QPushButton;
+class QLabel;
 class AgentPanel;
 
 class AgentSettingsDialog : public QDialog {
@@ -45,6 +46,7 @@ private:
   QComboBox* provider_combo_{nullptr};
   QLineEdit* model_input_{nullptr};
   QLineEdit* api_key_input_{nullptr};
+  QLabel* provider_target_label_{nullptr};
   QCheckBox* sandbox_cb_{nullptr};
   QCheckBox* approval_cb_{nullptr};
   QLineEdit* project_name_{nullptr};

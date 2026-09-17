@@ -50,6 +50,9 @@ private slots:
     auto* test_provider = dialog.findChild<QPushButton*>("action:testProviderBtn");
     QVERIFY(test_provider != nullptr);
     QVERIFY(!test_provider->toolTip().isEmpty());
+    auto* provider_target = dialog.findChild<QLabel*>("label:providerTestTarget");
+    QVERIFY(provider_target != nullptr);
+    QVERIFY(provider_target->text().contains("Test target:"));
 
     auto* sandbox_cb = dialog.findChild<QCheckBox*>("control:sandboxCb");
     QVERIFY(sandbox_cb != nullptr);

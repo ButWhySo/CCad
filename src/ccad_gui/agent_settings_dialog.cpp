@@ -291,6 +291,20 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
   auto* layout = new QVBoxLayout(parent_widget);
   layout->addWidget(new QLabel("<b>API & Providers</b>", parent_widget));
   layout->addWidget(new QLabel("Enter provider key for this session only. Key is masked and never written to project files, config JSON, or logs.", parent_widget));
+  provider_target_label_ = new QLabel(parent_widget);
+  provider_target_label_->setObjectName("label:providerTestTarget");
+  provider_target_label_->setProperty("agentRole", "noticeCard");
+  layout->addWidget(provider_target_label_);
+  const auto refresh_target = [this]() {
+    const QString provider = provider_combo_ ? provider_combo_->currentText() : QStringLiteral("OpenAI");
+    const QString model = model_input_ && !model_input_->text().trimmed().isEmpty()
+                              ? model_input_->text().trimmed() : QStringLiteral("Auto");
+    if (provider_target_label_) {
+      provider_target_label_->setText("Test target: " + provider + " / " + model);
+    }
+  };
+  connect(provider_combo_, &QComboBox::currentTextChanged, this, [refresh_target](const QString&) { refresh_target(); });
+  connect(model_input_, &QLineEdit::textChanged, this, [refresh_target](const QString&) { refresh_target(); });
   api_key_input_ = new QLineEdit(parent_widget);
   api_key_input_->setObjectName("control:apiKeyInput");
   api_key_input_->setEchoMode(QLineEdit::Password);
@@ -314,6 +328,7 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
     }
   });
   layout->addWidget(test_provider);
+  refresh_target();
   auto* btn = new QPushButton("Test Export (OTel/Langfuse)", parent_widget);
   btn->setObjectName("action:testExportBtn");
   connect(btn, &QPushButton::clicked, this, [this]() {
