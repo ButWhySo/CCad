@@ -1255,3 +1255,7 @@ CI #245 completed with Linux Test failures and Windows pass. Workflow now adds f
 ### Sprint 505 — harden Linux CLI cross-probe invocation
 
 CI run #246 still reports Linux `cli` test failure (CTest exit 8), while the Windows job passes. The failing assertion is `pcb cross-probe reports net packet kind`. The CLI test launched the packet through `std::system()` with nested double quotes inside a shell argument; the core cross-probe test separately covers quoted KiCad packets. The CLI integration invocation now uses the parser-supported unquoted `$NET: N1` form, avoiding POSIX shell quoting variance while preserving the same net-resolution behavior. Full CTest and the official visual harness remain mandatory before commit and push.
+
+### Sprint 506 — make Linux CLI diagnostics unconditional
+
+CI #247 still fails `core-linux` test `cli`, while the downloaded artifact remains insufficient to identify the Linux command boundary. The diagnostic rerun was guarded by `failure()` and did not appear in the public artifact size. Both Linux jobs now always run the verbose `cli` rerun with `continue-on-error`, preserving the original CTest failure as the job result while guaranteeing the diagnostic log is uploaded for the next run.
