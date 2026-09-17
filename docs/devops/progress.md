@@ -1594,3 +1594,6 @@ Named Agent run/result status labels in Qt object tree, making checkpoint resume
 ### Sprint 598 - test approval lane transitions
 
 Added GUI regression coverage for approval pending, decline, and cancel transitions, including pending-count reset and visible status text. Focused verification pending.
+### Sprint 599 - surface provider adapter failures
+
+Provider initialization exceptions now emit redacted structured `provider_state.error` metadata; AgentPanel displays adapter error classification instead of silently collapsing every failure into unavailable. Focused verification pending.

@@ -293,6 +293,13 @@ if (os.environ.get("LANGCHAIN_TRACING_V2", "").lower() == "true"
     except ImportError:
         pass
 
+def emit_provider_failure(provider: str, error: Exception):
+    """Report adapter failure without exposing key, prompt, or endpoint data."""
+    emit({"jsonrpc": "2.0", "method": "provider_state", "params": {
+        "provider": provider, "configured": True, "execution_enabled": False,
+        "error": type(error).__name__, "secret_value_visible": False,
+    }})
+
 def init_provider():
     global llm, router_llm, librarian_llm, broker_wait_enabled
 
@@ -327,6 +334,8 @@ def init_provider():
             return True
         except ImportError:
             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Warning: langchain_anthropic not installed."}})
+        except Exception as error:
+            emit_provider_failure(provider, error)
     if provider == "google_gemini" or os.environ.get("GEMINI_API_KEY"):
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
@@ -338,6 +347,8 @@ def init_provider():
             return True
         except ImportError:
             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Warning: langchain_google_genai not installed."}})
+        except Exception as error:
+            emit_provider_failure(provider, error)
     if provider == "openai" or os.environ.get("OPENAI_API_KEY"):
         try:
             from langchain_openai import ChatOpenAI
@@ -349,10 +360,8 @@ def init_provider():
             return True
         except ImportError:
             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Warning: langchain_openai not installed."}})
-        except Exception:
-            # Keep provider diagnostics out of the conversation transcript. The
-            # structured provider-status command remains the support surface.
-            pass
+        except Exception as error:
+            emit_provider_failure(provider, error)
     emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Agent provider '{provider}' unavailable. Configure its environment in Agent Settings; local CCad tools remain available."}})
     return False
 
