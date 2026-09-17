@@ -1324,3 +1324,4 @@ Sprint 563 adds session-only masked provider secret state to `AgentPanel` and th
 
 Sprint 565 adds `agent.set_provider_secret` private IPC from `AgentPanel` to `src/ccad_agent/orchestrator.py`. The child maps provider IDs to SDK environment names, rebuilds provider state, and returns only redacted readiness metadata. Secret handoff is not provider-connectivity proof; next work is fake-transport testing, real provider request/response, approval-aware tool-loop completion, and context revision refresh.
 Sprint 581 adds the GUI approval continuation in `src/ccad_gui/agent_panel.cpp`: approval-required broker calls are retained by call ID, Accept executes one exact scoped mutation and sends `tool_result`, and Decline sends `approval_denied` without leaving the Python graph blocked.
+Sprint 582 extends that continuation to Cancel: `AgentPanel::cancelApproval()` sends `approval_canceled` for the retained call ID before clearing pending approval state.

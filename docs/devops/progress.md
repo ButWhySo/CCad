@@ -1542,3 +1542,7 @@ Core `OrchestratorConfig` now carries `approved_tool_name`; with `require_approv
 ### Sprint 581 - connect GUI approval to broker continuation
 
 AgentPanel now captures an approval-required tool call, presents the real tool and arguments in the approval lane, and on acceptance replays that exact call with one-shot approved_tool_name scope before returning the correlated tool_result to the LangGraph broker. Decline returns a correlated approval_denied error immediately, preventing a 30-second wait. Focused AgentPanel test passed; full Qt MinGW build passed 117/117 and CTest passed 91/91 in 74.33 seconds. Official visual harness passed with screenshot inspection and empty stderr; the generic demo does not trigger a provider approval request, so the lane remains separately covered by code/test.
+
+### Sprint 582 - cancel approval without broker timeout
+
+Cancel now returns correlated approval_canceled to the Python broker and clears retained tool state. Reference checked: LangGraph HITL interrupts remain paused until explicit resume; CCad local IPC cannot persist a graph checkpoint yet, so explicit denial/cancel envelopes are required to unblock the current bounded wait. Focused GUI test and official visual harness passed; screenshot was inspected and stderr was empty. Full gate pending before merge.

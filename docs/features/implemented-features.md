@@ -2451,3 +2451,4 @@ Core ToolBroker enforces equire_approval before any non-readonly executor callb
 
 Core approvals support one-shot pproved_tool_name scope: exact matching mutation may execute while all other mutations remain blocked. GUI approval-token wiring remains pending.
 AgentPanel approval wiring is now connected to the broker: approval-required calls show the exact tool request, Accept executes only that scoped call and returns its correlated result, while Decline returns `approval_denied` immediately. Real-provider network execution and an external-provider integration test remain pending.
+Canceling the same approval now returns correlated `approval_canceled` immediately and clears the retained call, so the broker does not wait for its timeout.
