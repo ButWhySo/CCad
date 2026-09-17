@@ -1277,3 +1277,5 @@ Sprint 537 migrates `pcb set-track` loading to the shared context; compatibility
 Sprint 538 migrates `pcb add-keepout` loading to the shared context; compatibility writing remains for audit continuity.
 
 Sprint 539 migrates `pcb update-teardrops` loading to the shared context; compatibility writing remains for audit continuity.
+
+Sprint 540 migrates `pcb add-placement-region` loading to the shared context; compatibility writing remains for audit continuity.
