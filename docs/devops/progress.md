@@ -1443,3 +1443,7 @@ Sprint 553 completion gate: affected build succeeded, RPC tests passed 1/1, full
 ### Sprint 554 - harden agent tool argument validation
 
 Agent PCB adapters now reject missing required fields with structured errors before CLI dispatch, preventing malformed requests from reaching mutation commands. Affected Qt build completed, focused agent RPC coverage passed 1/1, full CTest passed 91/91 in 48.22 seconds, and the official visual harness screenshot was inspected with empty stderr.
+
+### Sprint 555 - make agent DRC truthful
+
+`pcb.drc` now dispatches to the real `ccad drc` command and returns captured exit code, stdout, and stderr; incomplete requests identify missing `file`. Full Qt build completed, CTest passed 91/91 in 47.04 seconds, and the official harness screenshot was inspected with empty stderr.
