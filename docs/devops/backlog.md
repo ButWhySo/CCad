@@ -829,3 +829,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 600: report successful BYOK provider readiness; authenticated live request and cost/latency trace remain open.
 - [x] Sprint 601: document current MCP stdio boundary; MCP exposure of selected GUI-map tools remains future work.
 - [x] Sprint 602: expose read-only harness/workspace context through MCP; approved GUI-map mutation bridge remains future work.
+- [x] Sprint 603: add read-only stdio MCP bridge to live GUI-map socket; approval-mediated GUI mutation tool remains future work.

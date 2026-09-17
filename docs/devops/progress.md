@@ -1606,3 +1606,6 @@ Audited MCP implementation: `ccad agent serve` supports stdio JSON-RPC initializ
 ### Sprint 602 - expose read-only context through MCP
 
 MCP stdio now lists and serves `ccad_harness_context` and `ccad_workspace_state` alongside guarded `ccad_execute`. Added protocol regression coverage; GUI mutation remains outside MCP until explicit approval bridge exists.
+### Sprint 603 - add read-only GUI MCP bridge
+
+Added `scripts/ccad_mcp_gui_bridge.py`, a stdio MCP adapter forwarding allowlisted live GUI-map read queries through existing Windows named pipe. Writes and mutating UI methods reject with explicit permission error. Offline policy test and initialize/tools-list/tools-call smoke passed; full visual/full gate pending.
