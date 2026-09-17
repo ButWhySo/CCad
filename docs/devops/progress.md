@@ -1649,3 +1649,6 @@ Added an `agent-python` GitHub Actions job that installs the pinned agent requir
 ### Sprint 619 - prove live mapped chat entry
 
 Added `--chat-input-check` to the live agent route harness. It types a realistic board question into `control:agent_chat_input`, verifies the mapped response reports `performed=true`, then continues the normal live board interaction burst. Fixed the GUI-map allow-list so the chat target reaches the QTextEdit implementation.
+### Sprint 620 - prove mapped Agent Send
+
+Extended the live route harness with `--provider mock` and `--chat-send-check`. The harness now types through the semantic chat target, clicks the real Send action, waits for the offline LangGraph provider, and continues live board actions without requiring a network key.

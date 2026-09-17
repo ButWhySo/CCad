@@ -23,6 +23,10 @@ def main():
                         help="query live GUI through MCP bridge and stage approval card")
     parser.add_argument("--chat-input-check", action="store_true",
                         help="type into live mapped agent chat editor without sending")
+    parser.add_argument("--chat-send-check", action="store_true",
+                        help="send mapped agent chat text through offline mock provider")
+    parser.add_argument("--provider", default="",
+                        help="provider override inherited by GUI backend, e.g. mock")
     args = parser.parse_args()
 
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -36,6 +40,8 @@ def main():
 
     env = os.environ.copy()
     env["PATH"] = r"C:\Qt\6.11.1\mingw_64\bin;" + env.get("PATH", "")
+    if args.provider:
+        env["CCAD_PROVIDER"] = args.provider
     if not args.reuse_project:
         os.makedirs(os.path.dirname(project), exist_ok=True)
         subprocess.run(
@@ -58,13 +64,16 @@ def main():
         raise RuntimeError("CCad GUI socket did not become ready")
 
     time.sleep(5.0)
-    if args.chat_input_check:
+    if args.chat_input_check or args.chat_send_check:
         with open(rf"\\.\pipe\{server}", "r+b", buffering=0) as pipe:
             typed = send(pipe, {"method": "ui.type_text",
                                 "id": "control:agent_chat_input",
                                 "text": "Summarize this board before changing it."})
             fresh_map = send(pipe, {"method": "ui.map_compact", "id": "chat-input-state",
                                     "limit": 100})
+            if args.chat_send_check:
+                sent = send(pipe, {"method": "ui.click", "id": "action:agent_submit_chat"})
+                time.sleep(2.0)
         typed_result = typed.get("result", {})
         print("LIVE CHAT INPUT " + json.dumps({
             "performed": typed_result.get("performed"),
@@ -75,6 +84,14 @@ def main():
             raise RuntimeError("live mapped agent chat input did not accept text")
         if not fresh_map.get("result"):
             raise RuntimeError("live GUI map unavailable after chat input")
+        if args.chat_send_check:
+            sent_result = sent.get("result", {})
+            print("LIVE CHAT SEND " + json.dumps({
+                "performed": sent_result.get("performed"),
+                "reason": sent_result.get("reason"),
+            }, separators=(",", ":")), flush=True)
+            if not sent_result.get("performed"):
+                raise RuntimeError("live mapped agent Send action did not perform")
     if args.mcp_bridge_check:
         bridge = os.path.join(root, "scripts", "ccad_mcp_gui_bridge.py")
         payload = (json.dumps({"jsonrpc": "2.0", "method": "tools/call",

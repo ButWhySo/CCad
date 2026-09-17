@@ -2487,3 +2487,4 @@ Sprint 615 verifies restart-safe checkpoint continuation for both accepted tool 
 Sprint 618 enables agents to type into the native chat composer through `ui.type_text` and its semantic control ID.
 Sprint 616 adds a GitHub Actions Python agent gate for mock chat and both checkpoint decision outcomes.
 Sprint 619 adds a live harness check that types into the mapped Agent chat editor and verifies the response before exercising board controls.
+Sprint 620 adds offline mock-provider Send verification through the real mapped chat button, enabling repeatable GUI roundtrip tests without API keys.

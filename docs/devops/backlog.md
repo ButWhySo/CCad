@@ -844,3 +844,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 618: GUI-map `ui.type_text` supports Agent chat QTextEdit; live checkpointed mutation proof remains next.
 - [x] Sprint 616: CI runs provider mock and checkpoint acceptance/denial fixtures; external-provider network test remains intentionally absent.
 - [x] Sprint 619: live harness types into Agent chat through GUI map; provider-backed send and approved mutation remain environment-dependent.
+- [x] Sprint 620: live harness sends through mock provider; visible response inspection and approval-gated mutation remain next.
