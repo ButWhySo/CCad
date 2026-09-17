@@ -1459,3 +1459,7 @@ Added `pcb.add-zone` agent adapter with required geometry/layer fields and optio
 ### Sprint 558 - expose agent keepout authoring
 
 Added `pcb.add-keepout` agent adapter with required geometry and kind fields, dispatching to native CLI authoring. Full Qt CTest passed 91/91 in 47.10 seconds; agent RPC test passed 1/1; official harness screenshot inspected with empty stderr.
+
+### Sprint 559 - expose agent region and zone refill actions
+
+Added native agent adapters for `pcb.add-placement-region` and `pcb.refill-zones`, including required-field schemas and optional refill controls. Agent test passed 1/1, full Qt CTest passed 91/91 in 46.38 seconds, and official harness screenshot inspected with empty stderr.

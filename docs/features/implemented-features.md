@@ -2417,3 +2417,5 @@ Agent JSON-RPC string fields preserve Windows paths and decode common escaped ch
 Agent `pcb.add-zone` authors rectangular copper zones through the native CLI adapter.
 
 Agent `pcb.add-keepout` authors rectangular keepouts through the native CLI adapter.
+
+Agents can author placement regions and request native zone refill through `pcb.add-placement-region` and `pcb.refill-zones`.

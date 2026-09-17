@@ -134,6 +134,16 @@ std::string executeCliTool(const std::string& tool, const std::string& json) {
         appendOption("--file", "file"); appendOption("--id", "id"); appendOption("--kind", "kind");
         appendOption("--x-mm", "x_mm"); appendOption("--y-mm", "y_mm");
         appendOption("--width-mm", "width_mm"); appendOption("--height-mm", "height_mm");
+    } else if (tool == "pcb.add-placement-region") {
+        if (const std::string error = requireFields({"file", "id", "kind", "x_mm", "y_mm", "width_mm", "height_mm"}); !error.empty()) return error;
+        add("pcb"); add("add-placement-region");
+        appendOption("--file", "file"); appendOption("--id", "id"); appendOption("--kind", "kind");
+        appendOption("--x-mm", "x_mm"); appendOption("--y-mm", "y_mm");
+        appendOption("--width-mm", "width_mm"); appendOption("--height-mm", "height_mm");
+    } else if (tool == "pcb.refill-zones") {
+        if (const std::string error = requireFields({"file"}); !error.empty()) return error;
+        add("pcb"); add("refill-zones"); appendOption("--file", "file");
+        appendOption("--zone-id", "zone_id"); appendOption("--apply", "apply");
     } else {
         return "{\"error\":\"tool_adapter_unavailable\"}";
     }
@@ -209,6 +219,16 @@ ccad::AgentOrchestrator& getOrchestrator() {
             "pcb.add-keepout", "Add Keepout", ccad::TaskRisk::LowMutation,
             R"({"type":"object","required":["file","id","kind","x_mm","y_mm","width_mm","height_mm"]})",
             [](const std::string& args) -> std::string { return executeCliTool("pcb.add-keepout", args); }
+        });
+        g_orchestrator->register_tool({
+            "pcb.add-placement-region", "Add Placement Region", ccad::TaskRisk::LowMutation,
+            R"({"type":"object","required":["file","id","kind","x_mm","y_mm","width_mm","height_mm"]})",
+            [](const std::string& args) -> std::string { return executeCliTool("pcb.add-placement-region", args); }
+        });
+        g_orchestrator->register_tool({
+            "pcb.refill-zones", "Refill Zones", ccad::TaskRisk::LowMutation,
+            R"({"type":"object","required":["file"]})",
+            [](const std::string& args) -> std::string { return executeCliTool("pcb.refill-zones", args); }
         });
         g_orchestrator->register_tool({
             "pcb.add-via", "Add Via", ccad::TaskRisk::LowMutation,
