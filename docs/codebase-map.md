@@ -1313,3 +1313,5 @@ Sprint 555 routes agent `pcb.drc` through the real CLI DRC command instead of re
 Sprint 556 hardens duplicated agent JSON string extraction for escaped values and Windows paths.
 
 Sprint 557 adds native agent `pcb.add-zone` dispatch with structured required-field validation.
+
+Sprint 558 adds native agent `pcb.add-keepout` dispatch with structured required-field validation.

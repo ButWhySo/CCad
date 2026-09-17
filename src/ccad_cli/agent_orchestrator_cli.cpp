@@ -128,6 +128,12 @@ std::string executeCliTool(const std::string& tool, const std::string& json) {
         appendOption("--name", "name"); appendOption("--net", "net"); appendOption("--priority", "priority");
         appendOption("--clearance-mm", "clearance_mm"); appendOption("--min-thickness-mm", "min_thickness_mm");
         appendOption("--pad-connection", "pad_connection");
+    } else if (tool == "pcb.add-keepout") {
+        if (const std::string error = requireFields({"file", "id", "kind", "x_mm", "y_mm", "width_mm", "height_mm"}); !error.empty()) return error;
+        add("pcb"); add("add-keepout");
+        appendOption("--file", "file"); appendOption("--id", "id"); appendOption("--kind", "kind");
+        appendOption("--x-mm", "x_mm"); appendOption("--y-mm", "y_mm");
+        appendOption("--width-mm", "width_mm"); appendOption("--height-mm", "height_mm");
     } else {
         return "{\"error\":\"tool_adapter_unavailable\"}";
     }
@@ -198,6 +204,11 @@ ccad::AgentOrchestrator& getOrchestrator() {
             "pcb.add-zone", "Add Zone", ccad::TaskRisk::LowMutation,
             R"({"type":"object","required":["file","id","layers","x_mm","y_mm","width_mm","height_mm"]})",
             [](const std::string& args) -> std::string { return executeCliTool("pcb.add-zone", args); }
+        });
+        g_orchestrator->register_tool({
+            "pcb.add-keepout", "Add Keepout", ccad::TaskRisk::LowMutation,
+            R"({"type":"object","required":["file","id","kind","x_mm","y_mm","width_mm","height_mm"]})",
+            [](const std::string& args) -> std::string { return executeCliTool("pcb.add-keepout", args); }
         });
         g_orchestrator->register_tool({
             "pcb.add-via", "Add Via", ccad::TaskRisk::LowMutation,

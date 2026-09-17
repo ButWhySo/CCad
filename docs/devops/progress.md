@@ -1455,3 +1455,7 @@ Agent JSON-RPC string extraction now handles escaped JSON characters while prese
 ### Sprint 557 - expose agent zone authoring
 
 Added `pcb.add-zone` agent adapter with required geometry/layer fields and optional zone settings, dispatching to native CLI authoring. Full Qt CTest passed 91/91 in 49.62 seconds; direct RPC missing-field smoke passed; official harness screenshot inspected with empty stderr.
+
+### Sprint 558 - expose agent keepout authoring
+
+Added `pcb.add-keepout` agent adapter with required geometry and kind fields, dispatching to native CLI authoring. Full Qt CTest passed 91/91 in 47.10 seconds; agent RPC test passed 1/1; official harness screenshot inspected with empty stderr.

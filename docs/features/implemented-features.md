@@ -2415,3 +2415,5 @@ Agent `pcb.drc` runs the native DRC command and exposes its exit code and captur
 Agent JSON-RPC string fields preserve Windows paths and decode common escaped characters.
 
 Agent `pcb.add-zone` authors rectangular copper zones through the native CLI adapter.
+
+Agent `pcb.add-keepout` authors rectangular keepouts through the native CLI adapter.
