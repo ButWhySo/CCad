@@ -2469,3 +2469,4 @@ Restart-safe checkpoint behavior is covered by `scripts/test_agent_checkpoint_re
 Agent run and result status labels have stable GUI object names for semantic automation and visual validation.
 Approval lane regression test covers pending, decline, and cancel state transitions with visible user feedback.
 Provider adapter initialization failures now surface a redacted error classification in Agent status while preserving secret non-disclosure.
+Agent Settings now updates provider readiness after successful adapter initialization, while explicitly distinguishing readiness from a network probe.

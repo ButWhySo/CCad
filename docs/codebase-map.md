@@ -1342,3 +1342,4 @@ Sprint 596 adds `scripts/test_agent_checkpoint_restart.py`; it is the authoritat
 Sprint 597 names AgentPanel run/result labels `status:agent_run` and `status:agent_result` for GUI-map targeting.
 Sprint 598 adds `testApprovalLaneTransitions()` to `tests/test_gui_agent_panel.cpp`, covering approval state transitions.
 Sprint 599 adds `emit_provider_failure()` and AgentPanel adapter-error status mapping for actionable provider setup diagnostics.
+Sprint 600 adds `emit_provider_ready()` and maps successful provider state to `configured_provider_ready` in AgentPanel.

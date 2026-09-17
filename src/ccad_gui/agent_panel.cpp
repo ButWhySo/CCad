@@ -1050,7 +1050,7 @@ void AgentPanel::handlePythonOutput() {
         const QString adapter_error = params["error"].toString();
         provider_status_ = params["configured"].toBool(false)
                                ? (params["execution_enabled"].toBool(false)
-                                      ? QStringLiteral("configured_memory_only")
+                                      ? QStringLiteral("configured_provider_ready")
                                       : (adapter_error.isEmpty()
                                              ? QStringLiteral("credential_received_provider_unavailable")
                                              : QStringLiteral("adapter_error_") + adapter_error))
