@@ -447,6 +447,17 @@ if __name__ == "__main__":
                     "execution_enabled": llm is not None,
                     "secret_value_visible": False,
                 }})
+            elif method == "tool_result":
+                # Accept broker response by correlation ID without placing
+                # design payloads in transcript. Graph resume is next slice.
+                result = req.get("result")
+                error = req.get("error")
+                emit({"jsonrpc": "2.0", "method": "tool_result_ack", "params": {
+                    "call_id": req.get("id", "agent-tool-call"),
+                    "success": error is None and result is not None,
+                    "result_present": result is not None,
+                    "error_present": error is not None,
+                }})
             elif method == "human_message":
                 text = req.get("params", {}).get("text", "")
                 context_str = req.get("params", {}).get("context", "")

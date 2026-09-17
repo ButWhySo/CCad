@@ -780,3 +780,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [ ] Sprint 569 follow-up: route mock tool_call through AgentPanel broker, return tool result to Python with request correlation, and verify approved mutation plus DRC.
 
 - [ ] Sprint 570 follow-up: consume 	ool_result in Python, correlate by call ID, resume graph only after broker response, and require approval for low-mutation tools.
+
+- [ ] Sprint 571 follow-up: retain pending run state by call_id and resume graph from tool_result instead of only acknowledging it; add approval deny/error continuation tests.

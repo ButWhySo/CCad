@@ -1507,3 +1507,7 @@ Extended mock provider to issue one deterministic ui.place_via call for /route, 
 ### Sprint 570 - correlate graph tool calls
 
 Agent tool-call payloads now carry call_id, including the real ToolNode path for ui.place_via; AgentPanel returns a matching JSON-RPC 	ool_result envelope. Live mock /route smoke passed with correlated call ID, final response, and empty stderr. Python/GUI broker continuation remains next: consume returned result in graph state and enforce approval before mutation.
+
+### Sprint 571 - acknowledge broker tool results
+
+Python orchestrator now accepts C++ 	ool_result envelopes, correlates id to call_id, and emits only redacted 	ool_result_ack metadata. Live two-message mock smoke passed with success=true, result presence, no design object ID echoed, and empty stderr. Full graph resume remains explicitly pending.
