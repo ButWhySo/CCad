@@ -1345,3 +1345,7 @@ Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` bound
 ### Sprint 530 - migrate add-dimension loading
 
 `pcb add-dimension` now loads through `HeadlessBoardContext` while preserving dimension validation, geometry, and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
+
+### Sprint 531 - migrate add-group loading
+
+`pcb add-group` now loads through `HeadlessBoardContext` while preserving member validation and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
