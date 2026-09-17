@@ -1331,3 +1331,4 @@ Sprint 585 extends broker correlation to `ui_add_track()` and `ui_add_polygon()`
 Sprint 586 adds `dispatch_client_tool()` in `src/ccad_agent/orchestrator.py` and routes footprint/symbol/wire/label mutations through it for correlated broker completion.
 Sprint 587 adds `pending_calls`, `route_protocol_line()`, and cleanup-safe `wait_for_broker_result()` routing in `src/ccad_agent/orchestrator.py`.
 Sprint 588 updates `invoke_agent_run()` in `src/ccad_agent/orchestrator.py` to pass `configurable.thread_id` from state/environment and expose only redacted presence metadata.
+Sprint 589 pins the compatible LangGraph checkpoint stack in `src/ccad_agent/requirements.txt`; SQLite persistence package is available for the next wiring sprint.

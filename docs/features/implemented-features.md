@@ -2458,3 +2458,4 @@ Real broker mode now returns authoritative results for track and zone mutations,
 Footprint and schematic mutation tools now share unique call IDs and return authoritative broker results in real-provider mode; offline/mock behavior remains deterministic.
 Broker protocol now has a pending-call registry: matching results wake exact tool waits, while unknown or unrelated messages remain available to the main dispatcher.
 Agent graph invocations now carry explicit thread correlation through LangGraph configurable state; no prompt, tool payload, credential, or durable checkpoint data is added to telemetry.
+Agent dependency requirements now include a compatible SQLite checkpoint package; installation is reproducible, but runtime checkpointer wiring remains explicitly pending.
