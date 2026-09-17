@@ -1479,3 +1479,7 @@ Added stage narration to the rectifier-board demo: user goal, board setup, compo
 ### Sprint 563 - add session-only provider credential entry
 
 Agent Settings now exposes a masked API-key field with process-memory-only semantics; key value is never included in config JSON, project files, logs, or traces. GUI test verifies widget presence and password masking; full Qt CTest passed 91/91 in 54.25 seconds; official harness screenshot inspected with empty stderr. Provider network execution remains explicitly disabled pending secure provider-runtime implementation.
+
+### Sprint 564 - record honest capability boundary
+
+Added `docs/research/2026-09-17-honest-status-review.md`, separating native kernel behavior, delegated KiCad evidence, local harness scaffolding, and planned provider/MCP/schematic work. This review is now roadmap source for truthful capability claims and external evaluation readiness.
