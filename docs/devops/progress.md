@@ -1603,3 +1603,6 @@ Successful provider adapter initialization now emits structured `provider_state`
 ### Sprint 601 - document MCP boundary truthfully
 
 Audited MCP implementation: `ccad agent serve` supports stdio JSON-RPC initialize/ping/tools-list/tools-call for guarded `ccad_execute`; GUI-map socket remains separate local JSON Lines transport. README now states this boundary explicitly.
+### Sprint 602 - expose read-only context through MCP
+
+MCP stdio now lists and serves `ccad_harness_context` and `ccad_workspace_state` alongside guarded `ccad_execute`. Added protocol regression coverage; GUI mutation remains outside MCP until explicit approval bridge exists.
