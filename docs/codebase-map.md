@@ -1338,3 +1338,4 @@ Sprint 592 adds `agent.resume_thread` handling in `src/ccad_agent/orchestrator.p
 Sprint 593 adds thread_state rendering in AgentPanel::handlePythonOutput(), exposing checkpoint resume result to status/result/activity UI.
 Sprint 594 adds `resume_checkpointed_run()` and protocol handling for LangGraph `Command(resume=...)`; `AgentPanel` renders `thread_resumed`.
 Sprint 595 adds deterministic checkpoint tool IDs and `dispatch_checkpointed_tool()` in `src/ccad_agent/orchestrator.py`; persisted tool calls now pause via LangGraph `interrupt()`.
+Sprint 596 adds `scripts/test_agent_checkpoint_restart.py`; it is the authoritative two-process proof for SQLite interrupt persistence and resume.

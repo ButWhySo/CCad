@@ -1585,3 +1585,6 @@ Added protocol-side LangGraph Command(resume=...) continuation for checkpointed 
 ### Sprint 595 - convert persisted tool waits to interrupts
 
 Checkpoint-enabled mutating tools now use LangGraph interrupt payloads with deterministic correlation IDs; legacy synchronous broker waits remain when no checkpoint DB is configured. This enables graph state persistence across process restart and resume through existing `tool_result` / `agent.resume_thread` protocol. References checked: official LangGraph interrupt and human-in-the-loop docs. Focused Python syntax and diff checks passed; full gate pending.
+### Sprint 596 - prove restart-safe interrupt resume
+
+Added `scripts/test_agent_checkpoint_restart.py`, a two-process fixture using SQLite, fake model, real CCad tool, LangGraph interrupt, and `Command(resume=...)`. First process writes checkpoint; second process reopens DB and completes same thread with authoritative ToolMessage. References checked: official LangGraph interrupt/resume docs. Fixture passed; full gate pending.

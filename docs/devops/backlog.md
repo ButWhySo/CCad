@@ -822,3 +822,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 593: GUI surfaces checkpoint resume result; actual interrupted-tool continuation and approval interrupt restoration remain open.
 - [x] Sprint 594: wire checkpointed graph resume through protocol and GUI; interrupt-producing tool adapter coverage remains open.
 - [x] Sprint 595: checkpoint-enabled mutating tools use durable LangGraph interrupts; add restart integration fixture and approval decision UI automation next.
+- [x] Sprint 596: add two-process interrupt/restart/resume proof; approval UI automation and live provider contract test remain open.
