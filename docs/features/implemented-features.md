@@ -2399,3 +2399,4 @@ The headless board context also supports file-backed load/save with round-trip c
 `pcb move-object` is now a shared-context mutation consumer with its existing multi-type movement, geometry validation, and audit behavior intact.
 `pcb resize-object` is now a shared-context mutation consumer with its existing multi-type resizing, geometry validation, and audit behavior intact.
 `pcb place-footprint` now uses the shared project context while preserving its footprint placement, validation, and audit behavior.
+`pcb autoplace-footprint` now uses the shared project context while preserving its automatic placement, validation, and audit behavior.

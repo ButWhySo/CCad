@@ -3048,7 +3048,9 @@ int pcbCommand(const std::vector<std::string>& args) {
           parseOptions(args, 1, {"--file", "--footprint", "--component", "--layer", "--grid-mm",
                                  "--rotation-deg"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::Board& board = requireBoard(project);
       const ccad::Footprint footprint = loadFootprintFile(requireOption(options, "--footprint"));
       const std::string component_id = requireOption(options, "--component");
@@ -3069,6 +3071,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       ccad::placeFootprint(project, footprint, component_id, plan.origin, placement_rotation,
                            layer_id);
 
+      context.markDirty();
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
