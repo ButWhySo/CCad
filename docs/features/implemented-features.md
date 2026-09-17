@@ -2432,3 +2432,6 @@ When the Python agent child is running, entering a provider key sends it through
 
 
 CCAD_PROVIDER=mock enables deterministic offline chat through the real Python orchestration graph for harness tests; responses are labeled mock and network-free. It is test infrastructure, not a substitute for provider connectivity.
+
+
+Agent orchestration uses LangGraph; Langfuse callbacks remain opt-in, and LangSmith LangChainTracer is opt-in through LANGCHAIN_TRACING_V2 plus LANGCHAIN_API_KEY. Graph-level callback config covers node/tool runs; no telemetry exporter activates by default.
