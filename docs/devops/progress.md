@@ -1349,3 +1349,7 @@ Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` bound
 ### Sprint 531 - migrate add-group loading
 
 `pcb add-group` now loads through `HeadlessBoardContext` while preserving member validation and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
+
+### Sprint 532 - migrate add-route-request loading
+
+`pcb add-route-request` now loads through `HeadlessBoardContext` while preserving endpoint, layer, and width validation and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.

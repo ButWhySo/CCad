@@ -2323,7 +2323,9 @@ int pcbCommand(const std::vector<std::string>& args) {
           {"--file", "--id", "--net", "--from", "--to", "--preferred-layer", "--policy",
            "--width-mm"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::Board& board = requireBoard(project);
       const std::string id = requireOption(options, "--id");
       const std::string from_object_id = requireOption(options, "--from");
@@ -2342,6 +2344,7 @@ int pcbCommand(const std::vector<std::string>& args) {
           .policy = requireOption(options, "--policy"),
           .width = requirePositiveMillimeters(options, "--width-mm"),
       });
+      context.markDirty();
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;

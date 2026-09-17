@@ -1261,3 +1261,5 @@ Sprint 529 migrates `pcb add-barcode` loading to the shared context; compatibili
 Sprint 530 migrates `pcb add-dimension` loading to the shared context; compatibility writing remains for audit continuity.
 
 Sprint 531 migrates `pcb add-group` loading to the shared context; compatibility writing remains for audit continuity.
+
+Sprint 532 migrates `pcb add-route-request` loading to the shared context; compatibility writing remains for audit continuity.
