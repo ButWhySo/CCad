@@ -152,6 +152,12 @@ if (os.environ.get("LANGCHAIN_TRACING_V2", "").lower() == "true"
 
 def init_provider():
     global llm, router_llm, librarian_llm
+
+    # Reconfiguration must not retain a previously initialized adapter or its
+    # credential-backed client after a key/provider is removed.
+    llm = None
+    router_llm = None
+    librarian_llm = None
     
     provider = os.environ.get("CCAD_PROVIDER") or config_manager.get("provider", "openai")
     model_name = os.environ.get("CCAD_MODEL") or config_manager.get("model", "")

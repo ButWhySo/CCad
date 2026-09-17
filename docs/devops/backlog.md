@@ -784,3 +784,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [ ] Sprint 571 follow-up: retain pending run state by call_id and resume graph from tool_result instead of only acknowledging it; add approval deny/error continuation tests.
 
 - [ ] Sprint 572 follow-up: add redaction tests for Langfuse/LangSmith callback configs, capture run IDs in AgentPanel, and verify opt-in traces against a local fake collector before external export.
+
+- [ ] Sprint 573 follow-up: add provider request timeout/retry policy and redacted failure classification; verify with local fake transport before real API call.
