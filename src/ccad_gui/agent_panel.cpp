@@ -1036,6 +1036,14 @@ void AgentPanel::handlePythonOutput() {
         appendChatMessage("agent", obj["params"].toObject()["text"].toString());
       } else if (obj.contains("method") && obj["method"].toString() == "config_state") {
         if (config_state_cb_) config_state_cb_(obj["params"].toObject());
+      } else if (obj.contains("method") && obj["method"].toString() == "provider_state") {
+        const QJsonObject params = obj["params"].toObject();
+        provider_status_ = params["configured"].toBool(false)
+                               ? (params["execution_enabled"].toBool(false)
+                                      ? QStringLiteral("configured_memory_only")
+                                      : QStringLiteral("credential_received_provider_unavailable"))
+                               : QStringLiteral("env_missing");
+        updateProviderControls();
       } else if (obj.contains("method") && obj["method"].toString() == "marketplace_catalog") {
         if (marketplace_catalog_cb_) marketplace_catalog_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "generated_component") {
@@ -1247,6 +1255,14 @@ void AgentPanel::setProviderSecret(const QString& provider_id, const QString& se
   provider_status_ = provider_env_present_ ? QStringLiteral("configured_memory_only")
                                             : QStringLiteral("env_missing");
   refreshProviderStatus();
+  // Secret crosses only the private child-process pipe. It is never persisted,
+  // echoed, or included in context/tool/audit payloads.
+  if (python_process_ && python_process_->state() == QProcess::Running) {
+    QJsonObject params;
+    params.insert("provider", provider);
+    params.insert("secret", secret);
+    sendJsonRpc("agent.set_provider_secret", params);
+  }
   addActivityEvent("provider", "Provider credential updated",
                    provider + " | secret retained in process memory only",
                    "agent.provider_secret");
