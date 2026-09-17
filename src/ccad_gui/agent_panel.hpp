@@ -281,6 +281,7 @@ class AgentPanel final : public QWidget {
   bool policy_dry_run_ = false;
   bool policy_would_execute_ = false;
   QString provider_status_ = "env_unchecked";
+  QString provider_model_ = "Auto";
   bool provider_env_present_ = false;
   QHash<QString, QString> provider_secrets_;
   QVector<ActivityEvent> activity_events_;

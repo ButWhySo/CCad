@@ -1202,6 +1202,9 @@ void AgentPanel::handlePythonOutput() {
         if (config_state_cb_) config_state_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "provider_state") {
         const QJsonObject params = obj["params"].toObject();
+        if (!params["model"].toString().trimmed().isEmpty()) {
+          provider_model_ = params["model"].toString().trimmed();
+        }
         const QString adapter_error = params["error"].toString();
         provider_status_ = params["configured"].toBool(false)
                                ? (params["execution_enabled"].toBool(false)
@@ -1590,7 +1593,7 @@ void AgentPanel::updateProviderControls() {
 
   const QString primary_env = spec.env_vars.isEmpty() ? QString("env") : spec.env_vars.front();
   if (model_chip_label_ != nullptr) {
-    model_chip_label_->setText("Model: " + spec.label + " off");
+    model_chip_label_->setText("Model: " + provider_model_);
   }
   if (provider_status_label_ != nullptr) {
     provider_status_label_->setText("Provider: " + spec.label + " | " + provider_status_);
