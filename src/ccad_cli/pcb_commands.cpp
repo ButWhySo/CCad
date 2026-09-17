@@ -3120,7 +3120,9 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--layer", "--data", "--x-mm", "--y-mm", "--scale", "--opacity"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::Board& board = requireBoard(project);
       
       ccad::BoardReferenceImage obj;
@@ -3132,6 +3134,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       obj.scale = requireDoubleOption(options, "--scale");
       obj.opacity = requireDoubleOption(options, "--opacity");
       board.reference_images.push_back(obj);
+      context.markDirty();
       
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
