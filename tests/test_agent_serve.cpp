@@ -1144,6 +1144,27 @@ void testAgentServePermissionGatesReportApproval() {
   assertContains(out.str(), "project_mutation", "write denial includes approval reason");
 }
 
+void testAgentToolCallRpc() {
+  std::istringstream in(
+      "{\"jsonrpc\":\"2.0\",\"method\":\"agent.tool_call\",\"params\":{\"name\":\"project.context\"},\"id\":36}\n"
+      "{\"jsonrpc\":\"2.0\",\"method\":\"agent.tool_call\",\"params\":{\"name\":\"no.such.tool\"},\"id\":37}\n"
+      "{\"jsonrpc\":\"2.0\",\"method\":\"agent.tool_call\",\"params\":{\"name\":\"pcb.add-via\",\"id\":\"nested\"},\"id\":38}\n");
+  std::ostringstream out;
+  auto oldCin = std::cin.rdbuf(in.rdbuf());
+  auto oldCout = std::cout.rdbuf(out.rdbuf());
+  std::vector<std::string> args = {"serve", "--allow-read"};
+  int result = ccad_cli::agentCommand(args);
+  std::cin.rdbuf(oldCin);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) std::exit(1);
+  assertContains(out.str(), "\"id\": 36", "tool call preserves request id");
+  assertContains(out.str(), "\"has_board\":false", "context tool returns live empty context");
+  assertContains(out.str(), "\"id\": 37", "unknown tool preserves request id");
+  assertContains(out.str(), "-32601", "unknown tool returns method error");
+  assertContains(out.str(), "\"id\": 38", "nested tool id does not replace request id");
+  assertContains(out.str(), "-32604", "mutation tool requires write approval");
+}
+
 int main() {
   try {
     testPing();
@@ -1167,6 +1188,7 @@ int main() {
     testAgentObservabilityConfigJsonRpc();
     testAgentKiCadEvidenceJsonRpc();
     testAgentServePermissionGatesReportApproval();
+    testAgentToolCallRpc();
     std::cout << "PASS agent serve\n";
     return 0;
   } catch (const std::exception& e) {

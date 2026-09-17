@@ -1437,3 +1437,5 @@ Read-only orchestrator tools now return live project context data, while `pcb.ad
 ### Sprint 553 - expose agent tool-call RPC safely
 
 Added `agent.tool_call` JSON-RPC dispatch with tool lookup, mutation approval gating, discoverable required-parameter schemas, and stable request-id extraction when nested PCB object IDs are present. A live RPC smoke call persisted a via and returned correct IDs; the affected build and agent-serve test passed, with the full Sprint 552 CTest baseline retained.
+
+Sprint 553 completion gate: affected build succeeded, RPC tests passed 1/1, full CTest passed 91/91 in 52.67 seconds, and the official visual harness screenshot was inspected with empty stderr.
