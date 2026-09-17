@@ -1231,3 +1231,5 @@ Sprint 513 adds `loadFile` and `saveFile` to `HeadlessBoardContext`. They use ex
 Sprint 515 migrates `project validate` to `HeadlessBoardContext::loadFile`; other CLI paths still use the compatibility loader until mutation transaction adapters are ready.
 
 Sprint 516 migrates `pcb add-via` loading to the shared context. The compatibility writer remains in place so transaction audit JSONL behavior is unchanged.
+
+Sprint 517 migrates `pcb set-layer-visibility` loading to the shared context; the compatibility writer remains until context-aware transaction adapters are complete.
