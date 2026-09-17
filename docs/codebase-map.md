@@ -1281,3 +1281,5 @@ Sprint 539 migrates `pcb update-teardrops` loading to the shared context; compat
 Sprint 540 migrates `pcb add-placement-region` loading to the shared context; compatibility writing remains for audit continuity.
 
 Sprint 541 migrates `pcb set-region-kind` loading to the shared context; compatibility writing remains for audit continuity.
+
+Sprint 542 migrates `pcb remove-object` loading to the shared context; compatibility writing remains for audit continuity.
