@@ -776,3 +776,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [ ] Sprint 567 follow-up: add provider-backed response test and approved tool-loop response-result continuation; local fallback is not AI completion.
 
 - [ ] Sprint 568 follow-up: make mock provider emit deterministic approved tool call, feed tool result back into graph, then assert project revision and DRC in one end-to-end harness test.
+
+- [ ] Sprint 569 follow-up: route mock tool_call through AgentPanel broker, return tool result to Python with request correlation, and verify approved mutation plus DRC.
