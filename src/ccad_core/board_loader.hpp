@@ -62,7 +62,9 @@ class HeadlessBoardContext final {
  public:
   explicit HeadlessBoardContext(BoardLoadOptions options = BoardLoadOptions{});
   void loadJson(const std::string& json, std::string source_format = "CCAD_JSON");
+  void loadFile(const std::string& path, std::string source_format = "CCAD_JSON");
   std::string saveJson() const;
+  void saveFile(const std::string& path) const;
   Project& project() noexcept { return project_; }
   const Project& project() const noexcept { return project_; }
   const BoardLoadState& state() const noexcept { return state_; }

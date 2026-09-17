@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <filesystem>
 
 namespace {
 
@@ -125,6 +126,14 @@ int main() {
   require(round_trip.name == "edited", "context saves its current project snapshot");
   context.markClean();
   require(!context.dirty(), "context can acknowledge a completed save");
+  const std::filesystem::path file =
+      std::filesystem::temp_directory_path() / "ccad-headless-context-test.json";
+  context.markDirty();
+  context.saveFile(file.string());
+  ccad::HeadlessBoardContext file_context;
+  file_context.loadFile(file.string());
+  require(file_context.project().name == "edited", "context loads a saved project file");
+  std::filesystem::remove(file);
 
   return 0;
 }
