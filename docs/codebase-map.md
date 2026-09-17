@@ -1415,4 +1415,6 @@ The timeout is scheduled for every Test Provider click, including missing panel/
 
 `tests/physical_ui_robot.py` enters a dummy API key through the semantic bridge before Test Provider, proving session-only key-field interaction without exposing key contents.
 
+`src/ccad_agent/requirements.txt` pins the Gemini adapter to `2.0.10` and bounds LangSmith below `0.3`; these constraints preserve compatibility with LangGraph 0.2 and LangChain Core 0.3. The current adapter may emit Google's legacy-SDK warning.
+
 Settings opens modelessly from `AgentPanel`, preserving UI-map/MCP request servicing. `ReviewWindow::uiTargetJsonById` and `uiClickJson` include top-level dialog widgets; QListWidget targets accept a `row` field for semantic selection. `tests/physical_ui_robot.py` is strict: unique IPC name, Qt PATH, window setup, mapped mouse attempts, semantic fallback only after no state change, targeted provider-status assertion, screenshot.

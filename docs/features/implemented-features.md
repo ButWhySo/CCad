@@ -2566,6 +2566,8 @@ Top-level control clicks now focus line and text editors, open combo boxes, and 
 
 The physical UI robot proves `control:apiKeyInput` entry with a dummy value, then runs the provider test and waits for a terminal result. Real Gemini network testing still requires a user-provided environment key.
 
+Provider requirements pin Gemini adapter `2.0.10` and bound LangSmith below `0.3`, matching the current LangGraph/Core 0.2/0.3 runtime. This avoids a resolver selecting Core 1.x. Gemini adapter migration to Google's newer SDK remains open.
+
 ## CI speed and syntax gate
 
 The CI workflow compiles agent and test Python sources before protocol tests and invokes CMake with parallel workers on all build jobs. This catches syntax regressions early and reduces idle build time without weakening CTest.

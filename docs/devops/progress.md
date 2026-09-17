@@ -1822,6 +1822,10 @@ UI-map target lookup now covers top-level dialog line edits, combo boxes, checkb
 
 The physical Windows robot now enters a dummy API key through `ui.type_text` on the visible API & Providers tab before invoking Test Provider. Live proof passed without network access or secret persistence; provider timeout reached its terminal status and the complete mapped interaction burst remained responsive.
 
+### Sprint 700 - constrain provider dependency resolution
+
+Pinned `langchain-google-genai` to `2.0.10` and bounded `langsmith` below `0.3` to remain compatible with the repository's LangGraph 0.2 and LangChain Core 0.3 stack. Requirements dry-run selected the compatible set; Python imports plus Gemini secret-redaction and OpenAI-compatible boundary tests passed. The adapter's upstream legacy Google SDK warning remains documented follow-up work.
+
 ### Sprint 683 - expose native approval status to MCP hosts
 
 Added read-only `ccad_gui_approval_status` to the GUI MCP bridge. External harnesses can now query approval-card visibility and status directly, while mutation execution and human approval remain native GUI responsibilities. Python regression and official visual harness passed; screenshot was inspected and stderr was empty.

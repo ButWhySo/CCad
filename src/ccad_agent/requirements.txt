@@ -4,9 +4,9 @@ langgraph-checkpoint>=2.1.2,<3.0.0
 langgraph-checkpoint-sqlite==2.0.11
 langchain-openai>=0.1.0,<1.0.0
 langfuse>=2.30.0
-langsmith>=0.1.0
+langsmith>=0.1.0,<0.3.0
 pydantic>=2.0.0
 langchain-anthropic>=0.1.0,<1.0.0
-langchain-google-genai>=1.0.0,<3.0.0
+langchain-google-genai==2.0.10
 aiosqlite>=0.20.0
 sqlite-vec>=0.1.6
