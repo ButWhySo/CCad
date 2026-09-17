@@ -2564,6 +2564,8 @@ Top-level control clicks now focus line and text editors, open combo boxes, and 
 
 `ui.type_text` also addresses visible Settings dialog editors: `control:modelInput`, `control:apiKeyInput`, `control:projectNameInput`, `control:projectPathInput`, `control:followUpInput`, and `control:customInstructionsText`. Hidden duplicate widgets from inactive tabs are skipped. API keys remain transient and are never returned in responses.
 
+The physical UI robot proves `control:apiKeyInput` entry with a dummy value, then runs the provider test and waits for a terminal result. Real Gemini network testing still requires a user-provided environment key.
+
 ## CI speed and syntax gate
 
 The CI workflow compiles agent and test Python sources before protocol tests and invokes CMake with parallel workers on all build jobs. This catches syntax regressions early and reduces idle build time without weakening CTest.

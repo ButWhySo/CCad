@@ -1818,6 +1818,10 @@ UI-map target lookup now covers top-level dialog line edits, combo boxes, checkb
 
 `ui.type_text` now accepts Settings model, API-key, project, follow-up, and custom-instructions control IDs. It searches visible top-level dialog widgets after main-window descendants and skips hidden duplicate controls, so MCP/UI-map clients do not receive a false success or stop at an inactive tab. Focused GUI tests passed 2/2, the physical Windows robot typed a model through the Configuration tab and completed provider timeout validation, the official visual harness screenshot was inspected with empty stderr, and the full Qt CTest gate passed 91/91. Real Gemini network proof remains user-key dependent.
 
+### Sprint 699 - prove session key entry through UI map
+
+The physical Windows robot now enters a dummy API key through `ui.type_text` on the visible API & Providers tab before invoking Test Provider. Live proof passed without network access or secret persistence; provider timeout reached its terminal status and the complete mapped interaction burst remained responsive.
+
 ### Sprint 683 - expose native approval status to MCP hosts
 
 Added read-only `ccad_gui_approval_status` to the GUI MCP bridge. External harnesses can now query approval-card visibility and status directly, while mutation execution and human approval remain native GUI responsibilities. Python regression and official visual harness passed; screenshot was inspected and stderr was empty.

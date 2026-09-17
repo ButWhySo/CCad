@@ -1413,4 +1413,6 @@ The timeout is scheduled for every Test Provider click, including missing panel/
 
 `ReviewWindow::uiTypeTextJson` accepts visible top-level Settings editors in addition to Agent-panel inputs. It searches all application widgets after local descendants and skips hidden duplicate IDs, which matters because model/API controls live on different Settings tabs.
 
+`tests/physical_ui_robot.py` enters a dummy API key through the semantic bridge before Test Provider, proving session-only key-field interaction without exposing key contents.
+
 Settings opens modelessly from `AgentPanel`, preserving UI-map/MCP request servicing. `ReviewWindow::uiTargetJsonById` and `uiClickJson` include top-level dialog widgets; QListWidget targets accept a `row` field for semantic selection. `tests/physical_ui_robot.py` is strict: unique IPC name, Qt PATH, window setup, mapped mouse attempts, semantic fallback only after no state change, targeted provider-status assertion, screenshot.

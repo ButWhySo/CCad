@@ -224,6 +224,11 @@ def main():
     send_ui_action('ui.click', {'id': 'control:categoryList', 'row': 4})
     time.sleep(0.5)
     ui_map = read_ui_map()
+    typed_key = send_ui_action('ui.type_text', {
+        'id': 'control:apiKeyInput', 'text': 'dummy-gemini-key-for-ui-test'
+    })
+    if not typed_key.get('result', {}).get('performed'):
+        raise RuntimeError(f"semantic API-key typing failed: {typed_key}")
     api_elements = [
         "action:testProviderBtn"
     ]
