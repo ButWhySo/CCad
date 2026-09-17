@@ -30,12 +30,19 @@ jobs:
         run: |
           set -o pipefail
           ctest --test-dir build --output-on-failure 2>&1 | tee ctest-core-linux.log
+      - name: Verbose CLI diagnostics
+        if: failure()
+        run: |
+          set -o pipefail
+          ctest --test-dir build -R '^cli$' --output-on-failure -V 2>&1 | tee ctest-cli-linux-verbose.log
       - name: Upload test log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ctest-core-linux
-          path: ctest-core-linux.log
+          path: |
+            ctest-core-linux.log
+            ctest-cli-linux-verbose.log
 
   gui-linux:
     runs-on: ubuntu-latest
@@ -56,12 +63,19 @@ jobs:
         run: |
           set -o pipefail
           ctest --test-dir build --output-on-failure 2>&1 | tee ctest-gui-linux.log
+      - name: Verbose CLI diagnostics
+        if: failure()
+        run: |
+          set -o pipefail
+          ctest --test-dir build -R '^cli$' --output-on-failure -V 2>&1 | tee ctest-cli-gui-linux-verbose.log
       - name: Upload test log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ctest-gui-linux
-          path: ctest-gui-linux.log
+          path: |
+            ctest-gui-linux.log
+            ctest-cli-gui-linux-verbose.log
 
   core-windows:
     runs-on: windows-latest

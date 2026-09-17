@@ -1250,3 +1250,5 @@ Agent fallback telemetry now keeps one process-run trace ID and increments fallb
 ## Sprint 503 progress update (2026-09-17)
 
 Agent graph execution now runs inside an explicit `agent_run` OpenTelemetry span with workflow and provider-readiness attributes, without recording prompt or context contents. Python syntax and diff checks pass; official harness remains the visual gate because the agent runtime has no direct GUI layout change.
+
+CI #245 completed with Linux Test failures and Windows pass. Workflow now adds failure-only verbose `cli` CTest diagnostics to Linux artifacts, so the next run captures the exact command/assertion behind exit 8.
