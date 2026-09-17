@@ -65,7 +65,7 @@ def main():
                "--chat-send-check", "--hold-seconds", "1", "--delay", "0.01"]
     try:
         with log_path.open("w", encoding="utf-8") as log:
-            result = subprocess.run(command, cwd=ROOT, env=env, stdout=log,
+            result = subprocess.run(command, cwd=ROOT / "build-qt", env=env, stdout=log,
                                     stderr=subprocess.STDOUT, timeout=120)
         output = log_path.read_text(encoding="utf-8")
         if result.returncode:

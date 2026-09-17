@@ -7,6 +7,8 @@
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QDateTime>
+#include <QCoreApplication>
+#include <QDir>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -1114,8 +1116,15 @@ void AgentPanel::startPythonBackend() {
     python_path = "src/ccad_agent/venv/bin/python";
   }
   if (python_path.isEmpty()) python_path = "python";
+  QString agent_script = qEnvironmentVariable("CCAD_AGENT_SCRIPT");
+  if (agent_script.isEmpty()) {
+    const QString beside_binary = QDir(QCoreApplication::applicationDirPath())
+                                      .absoluteFilePath("../src/ccad_agent/orchestrator.py");
+    if (QFile::exists(beside_binary)) agent_script = QDir::cleanPath(beside_binary);
+  }
+  if (agent_script.isEmpty()) agent_script = "src/ccad_agent/orchestrator.py";
   python_process_->setProgram(python_path);
-  python_process_->setArguments({"src/ccad_agent/orchestrator.py"});
+  python_process_->setArguments({agent_script});
   connect(python_process_, &QProcess::readyReadStandardOutput, this, &AgentPanel::handlePythonOutput);
   connect(python_process_, &QProcess::readyReadStandardError, this, &AgentPanel::handlePythonError);
   python_process_->start();
