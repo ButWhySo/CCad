@@ -45,7 +45,7 @@ jobs:
       - name: Configure
         run: cmake -S . -B build -DCCAD_WARNINGS_AS_ERRORS=ON -DCCAD_BUILD_GUI=OFF
       - name: Build
-        run: cmake --build build --parallel
+        run: cmake --build build --parallel 2
       - name: Test
         env:
           QT_QPA_PLATFORM: offscreen
@@ -79,7 +79,7 @@ jobs:
       - name: Configure
         run: cmake -S . -B build -DCCAD_WARNINGS_AS_ERRORS=ON -DCCAD_BUILD_GUI=ON
       - name: Build
-        run: cmake --build build --parallel
+        run: cmake --build build --parallel 2
       - name: Test
         env:
           QT_QPA_PLATFORM: offscreen
@@ -109,7 +109,7 @@ jobs:
       - name: Configure
         run: cmake -S . -B build -DCCAD_WARNINGS_AS_ERRORS=ON -DCCAD_BUILD_GUI=OFF
       - name: Build
-        run: cmake --build build --config Release --parallel
+        run: cmake --build build --config Release --parallel 2
       - name: Test
         run: |
           ctest --test-dir build --output-on-failure -C Release *> ctest-core-windows.log
