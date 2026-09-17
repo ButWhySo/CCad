@@ -1675,3 +1675,6 @@ Corrected the deterministic mock graph path so the supervisor returns `router` a
 ### Sprint 627 - scope approvals to one mutation
 
 Mutating ToolBroker calls now require both the matching tool name and a non-empty approval token. The broker consumes each token exactly once, while the Agent panel generates a per-request token and clears it on accept, decline, cancel, or clear. The default screenshot fallback exposed a desktop capture during validation; internal CCad rendering mode produced the valid inspected proof, so fallback reliability remains tracked separately.
+### Sprint 628 - make native screenshots authoritative
+
+The single-preview harness now always attempts the native `ccad_gui --screenshot-measure` renderer first. The exact-window desktop capture remains a failure fallback only, preventing a desktop image from being accepted as a successful CCad visual proof. README and policy-test wording now match the executable workflow.

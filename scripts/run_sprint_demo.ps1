@@ -350,7 +350,11 @@ Invoke-CcadDrcReport
 Invoke-PreScreenshotBeep -RootPath $Root
 Start-Sleep -Seconds 2
 
-if ($PreferInternalScreenshot) {
+# Native rendering is the authoritative proof: it cannot silently capture a
+# different desktop/window. The switch remains accepted for compatibility;
+# fallback is used only when native rendering returns a failure.
+$useInternalScreenshot = $true
+if ($useInternalScreenshot) {
   $GuiOutput = & $Gui --screenshot-measure $Project $Screenshot 2> (Join-Path $ScreenshotDir "$Name-final.stderr.log")
   $GuiOutput | Set-Content (Join-Path $ScreenshotDir "$Name-final.stdout.log")
   $GuiExitCode = $LASTEXITCODE

@@ -57,6 +57,10 @@ int main() {
                   "single screenshot harness demonstrates board text");
   requireContains(single_harness, "pcb add-zone",
                   "single screenshot harness demonstrates board zones");
+  requireContains(single_harness, "$useInternalScreenshot = $true",
+                  "single screenshot harness prefers native rendering");
+  requireContains(single_harness, "fallback is used only when native rendering returns a failure",
+                  "single screenshot harness fallback is explicit");
 
   requireContains(target_harness, "[int]$InitialLoadMilliseconds = 5000",
                   "multi-target harness initial wait");

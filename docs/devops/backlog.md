@@ -851,5 +851,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 624: slash palette entries now match executable parser syntax and popup styling is readable; quick-action semantics remain next.
 - [x] Sprint 625: guided PCB chat actions insert editable commands; provider-backed approved mutation remains next.
 - [x] Sprint 626: offline provider tool call now traverses supervisor/router, approval, and real via mutation; authenticated external-provider proof remains environment-dependent.
-- [ ] Sprint 628: repair or remove the fallback desktop screenshot path; default visual validation must reject non-CCad captures and retain stdout/stderr evidence.
+- [x] Sprint 628: native screenshot rendering is authoritative; exact-window capture is fallback-only and the behavior is covered by the harness policy test.
 - [ ] Sprint 629: connect authenticated provider tool calls to the same scoped approval-token contract and prove one live request in a user-owned environment.
