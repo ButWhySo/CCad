@@ -1726,3 +1726,6 @@ Agent requirements now include SQLite checkpoint runtime dependencies and cap pr
 ### Sprint 651 - make unplaced schematic symbols readable
 
 Schematic scene construction now applies deterministic display-only grid placement when every symbol has the default zero position. Explicit symbol coordinates and persisted project data remain unchanged. Added regression coverage for both fallback layout and coordinate preservation. Official sprint harness and targeted schematic screenshot were inspected; full Qt build and CTest pass 91/91.
+### Sprint 652 - show approval only for real mutations
+
+AgentPanel now reveals its approval card when policy classification finds a non-dry-run project mutation. Read-only and dry-run previews clear stale approval state and hide the card. Focused GUI approval tests, official harness, screenshot inspection, and full Qt CTest pass 91/91.

@@ -1775,6 +1775,14 @@ void AgentPanel::classifyCommandPolicy(const QString& command, const bool record
         "Approve command: " + trimmed_command + " | " + policy_approval_reason_;
     approval_last_decision_ = "pending";
     approval_status_label_->setText("Approval pending: " + pending_approval_request_);
+    if (approval_preview_) approval_preview_->show();
+  } else if (approval_preview_ && pending_tool_name_.isEmpty()) {
+    // Policy previews and read-only commands must not leave stale approval UI visible.
+    pending_approval_request_.clear();
+    pending_approval_token_.clear();
+    approval_last_decision_ = "none";
+    approval_status_label_->setText("No approval pending");
+    approval_preview_->hide();
   }
   if (record_activity) {
     addActivityEvent("policy", "Policy " + policy_decision_,
