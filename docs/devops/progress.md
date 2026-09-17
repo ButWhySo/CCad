@@ -1640,3 +1640,6 @@ Fixed the Qt-to-Python tool-call bridge so an approval-required mutation is not 
 ### Sprint 615 - prove checkpoint approval outcomes
 
 Extended the two-process SQLite/LangGraph fixture with a denial resume path. Restart-safe checkpoint proof now covers both authoritative success and `approval_denied` outcomes; no provider key or network is required.
+### Sprint 616 - add Python agent CI gate
+
+Added an `agent-python` GitHub Actions job that installs the pinned agent requirements and runs mock provider chat plus accepted and denied checkpoint restart fixtures. C++/Qt jobs remain unchanged; CI now covers the Python execution layer directly.

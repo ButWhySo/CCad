@@ -15,6 +15,25 @@ permissions:
   contents: read
 
 jobs:
+  agent-python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install agent dependencies
+        run: python -m pip install -r src/ccad_agent/requirements.txt
+      - name: Test provider and checkpoint protocols
+        run: |
+          python scripts/test_provider_mock.py
+          python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-accept.db
+          CCAD_RESTART_PHASE=second python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-accept.db
+          python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-deny.db
+          CCAD_RESTART_PHASE=decline python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-deny.db
+
   core-linux:
     runs-on: ubuntu-latest
     timeout-minutes: 20

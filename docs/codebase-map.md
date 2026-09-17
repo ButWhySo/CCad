@@ -1357,3 +1357,4 @@ Sprint 612 adds `action:testProviderBtn` in the API Providers settings tab; it c
 Sprint 613 stores the footer counter as `control:contextLabel` and updates it from the context string actually sent by `submitChat`.
 Sprint 614 marks approval-required `tool_call` handling as pending and suppresses the premature `tool_result`; decision handlers now own the response boundary.
 Sprint 615 extends `scripts/test_agent_checkpoint_restart.py` with a denial branch alongside accepted resume, preserving stable thread/call correlation.
+Sprint 616 adds the `agent-python` job in `.github/workflows/ci.yml`; it is the authoritative CI gate for Python provider/checkpoint protocol regressions.
