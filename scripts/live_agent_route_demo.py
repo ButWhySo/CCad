@@ -152,12 +152,24 @@ def main():
             response_nodes = response_result.get("nodes", []) if isinstance(response_result, dict) else []
             response_labels = [node.get("label", "") for node in response_nodes
                                if node.get("id") == "label:agent_result"]
+            trace_labels = [node.get("label", "") for node in response_nodes
+                            if node.get("id") == "label:agent_trace"]
+            run_labels = [node.get("label", "") for node in response_nodes
+                          if node.get("id") == "label:agent_run_state"]
             print("LIVE CHAT RESPONSE " + json.dumps({
                 "received": any("Chat response received" in label for label in response_labels),
                 "labels": response_labels,
+                "trace": trace_labels,
+                "run": run_labels,
             }, separators=(",", ":")), flush=True)
-            if not any("Chat response received" in label for label in response_labels):
-                raise RuntimeError("mock provider response was not reflected in GUI state")
+            valid_result = (any("Chat response received" in label for label in response_labels)
+                            or any("Tool result accepted" in label for label in response_labels))
+            if not valid_result:
+                raise RuntimeError("mock provider terminal result was not reflected in GUI state")
+            if not any("Trace: Active" in label for label in trace_labels):
+                raise RuntimeError("agent telemetry trace state was not reflected in GUI")
+            if not any("Run: completed" in label for label in run_labels):
+                raise RuntimeError("agent telemetry completion state was not reflected in GUI")
     if args.mcp_bridge_check:
         bridge = os.path.join(root, "scripts", "ccad_mcp_gui_bridge.py")
         payload = (json.dumps({"jsonrpc": "2.0", "method": "tools/call",
