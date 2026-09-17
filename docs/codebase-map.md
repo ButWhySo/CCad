@@ -1337,3 +1337,4 @@ Sprint 591 connects `AgentPanel::applySessionMetadata()` to Python `agent.set_th
 Sprint 592 adds `agent.resume_thread` handling in `src/ccad_agent/orchestrator.py` and invokes it from `AgentPanel::resumeRun()` for safe checkpoint-state inspection.
 Sprint 593 adds thread_state rendering in AgentPanel::handlePythonOutput(), exposing checkpoint resume result to status/result/activity UI.
 Sprint 594 adds `resume_checkpointed_run()` and protocol handling for LangGraph `Command(resume=...)`; `AgentPanel` renders `thread_resumed`.
+Sprint 595 adds deterministic checkpoint tool IDs and `dispatch_checkpointed_tool()` in `src/ccad_agent/orchestrator.py`; persisted tool calls now pause via LangGraph `interrupt()`.
