@@ -1275,3 +1275,5 @@ Sprint 536 migrates `pcb apply-route-polyline` loading to the shared context; co
 Sprint 537 migrates `pcb set-track` loading to the shared context; compatibility writing remains for audit continuity.
 
 Sprint 538 migrates `pcb add-keepout` loading to the shared context; compatibility writing remains for audit continuity.
+
+Sprint 539 migrates `pcb update-teardrops` loading to the shared context; compatibility writing remains for audit continuity.
