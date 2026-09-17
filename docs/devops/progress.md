@@ -1282,3 +1282,6 @@ Added `ccad::HeadlessBoardContext` above the serializer and board-loader seams. 
 ### Sprint 513 — add file-backed context persistence
 
 Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` boundaries, including explicit open/read/write failures. File round-trip coverage passes; command migration remains incremental.
+### Sprint 515 — migrate project validation to headless context
+
+`project validate` now loads through `HeadlessBoardContext`, making a real CLI path share core session ownership and serializer behavior. Full Qt build completed; CTest passed 91/91 with the Qt runtime PATH; official harness passed, screenshot inspected, and stderr was empty.

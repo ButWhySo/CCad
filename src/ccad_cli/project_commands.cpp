@@ -2,6 +2,7 @@
 
 #include "ccad_cli/common.hpp"
 #include "ccad_core/bom_export.hpp"
+#include "ccad_core/board_loader.hpp"
 #include "ccad_core/diff.hpp"
 #include "ccad_core/drc.hpp"
 #include "ccad_core/erc.hpp"
@@ -98,8 +99,9 @@ int validateCommand(const std::vector<std::string>& args) {
   }
 
   try {
-    const ccad::Project project = loadProjectFile(args.at(0));
-    const std::vector<ccad::Diagnostic> diagnostics = ccad::runErc(project);
+    ccad::HeadlessBoardContext context;
+    context.loadFile(args.at(0));
+    const std::vector<ccad::Diagnostic> diagnostics = ccad::runErc(context.project());
     std::cout << diagnosticsJson(diagnostics);
     return hasError(diagnostics) ? 1 : 0;
   } catch (const std::exception& error) {

@@ -1228,3 +1228,4 @@ KiCad's `HEADLESS_BOARD_CONTEXT` owns one live board/project relationship, tool 
 
 Sprint 512 adds `HeadlessBoardContext` in `board_loader.*`. It provides `loadJson`, `saveJson`, project access, loader state, and explicit dirty/clean acknowledgement. It does not yet replace CLI or GUI caches; transaction-aware mutation adapters remain required before broad adoption.
 Sprint 513 adds `loadFile` and `saveFile` to `HeadlessBoardContext`. They use explicit streams and fail loudly on I/O errors, preserving the serializer as the single format boundary.
+Sprint 515 migrates `project validate` to `HeadlessBoardContext::loadFile`; other CLI paths still use the compatibility loader until mutation transaction adapters are ready.

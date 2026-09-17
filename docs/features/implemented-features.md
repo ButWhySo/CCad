@@ -2368,3 +2368,4 @@ Agent chat bubbles use content-sized, non-scrolling message browsers so notices 
 
 Headless board context owns one loaded project snapshot, reports loader readiness, rejects save-before-load, and tracks explicit unsaved edits for future shared CLI, GUI, and agent use.
 The headless board context also supports file-backed load/save with round-trip coverage.
+`project validate` is the first CLI consumer of the shared file-backed headless context.
