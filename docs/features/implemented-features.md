@@ -2407,3 +2407,5 @@ The headless board context also supports file-backed load/save with round-trip c
 Schematic mutation commands and `project set-text-variable` now use the shared project context while preserving serialization and audit behavior; CLI coverage exercises the primary schematic primitives.
 Agent orchestrator read tools now report live project context; four PCB tool adapters dispatch through the CLI and return captured exit code, stdout, and stderr.
 Agents can call registered PCB tools through `agent.tool_call`; requests expose required fields, enforce mutation approval, and return stable JSON-RPC IDs plus real command results.
+
+Agent PCB tool adapters validate required fields before dispatch and return the missing field as a structured error when a request is incomplete.
