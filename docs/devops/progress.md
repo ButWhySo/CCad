@@ -1615,3 +1615,6 @@ MCP GUI query tool now declares `readOnlyHint`, `destructiveHint:false`, and `op
 ### Sprint 605 - add MCP approval handoff
 
 Added `ccad_gui_request_approval`: MCP stages request text in native Agent approval card and opens it, but never accepts or executes. Human must decide in GUI. Offline test verifies exactly two calls (`ui.type_text`, `ui.click`); absent GUI returns explicit pipe error. References checked: MCP tool safety guidance and existing CCad approval contract. Visual/full verification pending.
+### Sprint 606 - verify live MCP approval handoff
+
+Extended live GUI route harness with `--mcp-bridge-check`; real named-pipe run returned live `ui.map_compact` successfully, while native approval targets returned `control_not_found`/`unknown_id`. Bridge now truthfully reports `approval_required:false` when staging fails. Harness lifecycle now terminates only its launched GUI child. This exposes next UI fix: publish approval controls in live GUI-map.

@@ -36,8 +36,13 @@ def request_native_approval(server, request_text):
     staged = call_gui(server, "ui.type_text", {
         "id": "control:agent_approval_request", "text": request_text}, allow_approval_ui=True)
     opened = call_gui(server, "ui.click", {"id": "action:agent_request_approval"}, allow_approval_ui=True)
-    return {"approval_required": True, "staged": staged, "opened": opened,
-            "human_action": "Use Agent panel Accept, Decline, or Cancel."}
+    staged_ok = staged.get("result", {}).get("performed", False)
+    opened_ok = opened.get("result", {}).get("performed", False)
+    return {"approval_required": bool(staged_ok and opened_ok), "staged": staged,
+            "opened": opened,
+            "human_action": ("Use Agent panel Accept, Decline, or Cancel."
+                              if staged_ok and opened_ok else
+                              "Native approval target unavailable; inspect GUI-map.")}
 
 
 def main():

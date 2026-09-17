@@ -19,6 +19,8 @@ def main():
     parser.add_argument("--project", default=r"artifacts\demos\live-agent-blank.ccad.json")
     parser.add_argument("--hold-seconds", type=float, default=10.0)
     parser.add_argument("--reuse-project", action="store_true")
+    parser.add_argument("--mcp-bridge-check", action="store_true",
+                        help="query live GUI through MCP bridge and stage approval card")
     args = parser.parse_args()
 
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -54,6 +56,19 @@ def main():
         raise RuntimeError("CCad GUI socket did not become ready")
 
     time.sleep(5.0)
+    if args.mcp_bridge_check:
+        bridge = os.path.join(root, "scripts", "ccad_mcp_gui_bridge.py")
+        payload = (json.dumps({"jsonrpc": "2.0", "method": "tools/call",
+                               "params": {"name": "ccad_gui_query", "arguments":
+                                           {"method": "ui.map_compact", "arguments": {}}},
+                               "id": 1}) + "\n" +
+                   json.dumps({"jsonrpc": "2.0", "method": "tools/call",
+                               "params": {"name": "ccad_gui_request_approval", "arguments":
+                                           {"request": "Approve live MCP route test"}},
+                               "id": 2}) + "\n")
+        result = subprocess.run(["python", bridge, "--server", server], input=payload,
+                                text=True, capture_output=True, env=env, check=True)
+        print("MCP BRIDGE " + result.stdout.replace("\n", " "), flush=True)
     requests = [{"method": "ui.trigger_safe", "id": "action:fit"}]
     for row in range(6):
         y = 7 + row * 7
@@ -89,6 +104,12 @@ def main():
 
     print(f"Runtime burst complete. Holding GUI for {args.hold_seconds:g} seconds.", flush=True)
     time.sleep(max(0.0, args.hold_seconds))
+    process.terminate()
+    try:
+        process.wait(timeout=3.0)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=3.0)
 
 
 if __name__ == "__main__":
