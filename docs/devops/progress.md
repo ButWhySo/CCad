@@ -1397,3 +1397,7 @@ Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` bound
 ### Sprint 543 - migrate move-object loading
 
 `pcb move-object` now loads through `HeadlessBoardContext` while preserving multi-type movement, geometry validation, and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
+
+### Sprint 544 - migrate resize-object loading
+
+`pcb resize-object` now loads through `HeadlessBoardContext` while preserving multi-type resizing, geometry validation, and audit-compatible writing. Full Qt build completed, CTest passed 91/91 after timeout-120 rerun, and the official harness screenshot was inspected with empty stderr.
