@@ -2529,3 +2529,5 @@ Agent requests receive a `ccad_agent_context` version-one envelope. The complete
 ## Intake risk gate
 
 Before planning, IntakeLayer normalizes and scans the goal. Destructive or external-risk requests are recorded as a failed `intake_risk_scan_blocked` task and never reach provider or tool decomposition.
+
+The scan also rejects common instruction-override phrases and credential markers, including `ignore previous instructions`, `api_key`, `password`, and `secret`. It is a conservative boundary check, not a substitute for provider-side prompt-injection defense.

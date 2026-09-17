@@ -186,7 +186,9 @@ bool IntakeLayer::run_risk_scan(const std::string& input) {
                    [](const unsigned char character) {
                        return static_cast<char>(std::tolower(character));
                    });
-    for (const char* marker : {"delete", "overwrite", "export", "purchase", "order"}) {
+    for (const char* marker : {"delete", "overwrite", "export", "purchase", "order",
+                               "ignore previous instructions", "ignore all instructions",
+                               "api_key", "apikey", "password", "secret"}) {
         if (lowered.find(marker) != std::string::npos) return false;
     }
     return true;

@@ -1376,3 +1376,5 @@ Sprint 625 adds composer quick replies `action:agent_quick_summarize`, `action:a
 `src/ccad_core/agent_orchestrator.cpp::ContextBuilder::build_context` wraps `ProjectContext::to_json()` in the versioned `ccad_agent_context` envelope. Consumers should read the nested `project` object and honor its explicit read-only, approval, and secret-exclusion constraints.
 
 `AgentOrchestrator::plan` invokes `IntakeLayer::run_risk_scan` before subagent decomposition. A failed scan creates one auditable failed task with `intake_risk_scan_blocked`; no provider or tool task is created.
+
+The scan covers destructive/external action markers plus common prompt-injection and credential-bearing markers. It intentionally fails closed; callers must present a safe revised goal rather than retrying the blocked one unchanged.

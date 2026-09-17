@@ -1735,3 +1735,6 @@ ContextBuilder now emits a versioned `ccad_agent_context` envelope containing th
 ### Sprint 654 - enforce intake risk blocking
 
 AgentOrchestrator now honors IntakeLayer risk-scan results. Goals containing destructive or external-risk markers are converted into an auditable failed task before decomposition or provider/tool execution. Regression test, official harness, full Qt build, and CTest pass 91/91.
+### Sprint 655 - harden intake against injection and credentials
+
+IntakeLayer risk scan now rejects common prompt-injection phrases and credential-bearing markers (`api_key`, `apikey`, `password`, `secret`) in addition to destructive/external actions. Regression coverage, official harness, full Qt build, and CTest pass 91/91.
