@@ -331,6 +331,16 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
     }
   });
   layout->addWidget(test_provider);
+  auto* clear_key = new QPushButton("Clear session key", parent_widget);
+  clear_key->setObjectName("action:clearProviderKeyBtn");
+  clear_key->setToolTip("Remove selected provider key from this session and agent process");
+  connect(clear_key, &QPushButton::clicked, this, [this]() {
+    const QString provider = provider_combo_ ? provider_combo_->currentData().toString()
+                                             : QStringLiteral("openai");
+    if (agent_panel_) agent_panel_->setProviderSecret(provider, QString());
+    if (api_key_input_) api_key_input_->clear();
+  });
+  layout->addWidget(clear_key);
   refresh_target();
   auto* btn = new QPushButton("Test Export (OTel/Langfuse)", parent_widget);
   btn->setObjectName("action:testExportBtn");
