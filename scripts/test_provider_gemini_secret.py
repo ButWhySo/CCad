@@ -10,6 +10,7 @@ secret = "gemini-test-secret-not-real"
 env = os.environ.copy()
 env["CCAD_PROVIDER"] = "mock"
 env["PYTHONPATH"] = str(ROOT / "src" / "ccad_agent")
+env["CCAD_GEMINI_MODEL"] = "gemini-test-model"
 request = {"method": "agent.set_provider_secret", "params": {
     "provider": "google_gemini", "secret": secret}}
 run = subprocess.run(
@@ -20,4 +21,6 @@ assert '"provider": "google_gemini"' in run.stdout
 assert '"secret_value_visible": false' in run.stdout
 assert secret not in run.stdout
 assert secret not in run.stderr
+source = (ROOT / "src" / "ccad_agent" / "orchestrator.py").read_text()
+assert 'os.environ.get("CCAD_GEMINI_MODEL") or model_name' in source
 print("PASS Gemini BYOK secret alias and redaction")

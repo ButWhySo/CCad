@@ -344,6 +344,8 @@ def init_provider():
         model_name = os.environ.get("CCAD_OPENAI_COMPATIBLE_MODEL") or model_name
     elif provider == "local_model":
         model_name = os.environ.get("CCAD_LOCAL_MODEL_NAME") or model_name
+    elif provider == "google_gemini":
+        model_name = os.environ.get("CCAD_GEMINI_MODEL") or model_name
 
     if provider == "mock":
         llm = MockProvider()
