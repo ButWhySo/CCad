@@ -440,6 +440,11 @@ static void test_mutation_requires_approval() {
     ccad::OrchestratorConfig cfg;
     const auto result = orch.execute_tool("pcb.add-via", "{}", cfg);
     assert(result.find("\"error\":\"approval_required\"") != std::string::npos);
+    cfg.approved_tool_name = "pcb.add-via";
+    const auto approved = orch.execute_tool("pcb.add-via", "{}", cfg);
+    assert(approved.find("\"status\":\"via_added\"") != std::string::npos);
+    const auto other = orch.execute_tool("pcb.add-track", "{}", cfg);
+    assert(other.find("\"error\":\"approval_required\"") != std::string::npos);
 }
 
 // ─── Main ───────────────────────────────────────────────────────

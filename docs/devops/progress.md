@@ -1535,3 +1535,7 @@ Replaced competing stdin reads with one daemon protocol reader feeding a queue. 
 ### Sprint 578 - enforce approval before mutation
 
 ToolBroker::check_policy now blocks every non-readonly tool when OrchestratorConfig.require_approval is true, before executor callback runs; returned error is pproval_required. Existing explicit auto-execute tests remain valid. Added focused mutation-denial coverage. Full Qt MinGW build and CTest passed 91/91 in 74.26 seconds. GUI source unchanged; no new visual harness run required.
+
+### Sprint 579 - add one-shot scoped approval
+
+Core OrchestratorConfig now carries pproved_tool_name; with equire_approval=true, only exact matching non-readonly tool may execute, while empty/different scope returns pproval_required. Added allow/deny regression coverage. Full Qt MinGW build and CTest passed 91/91 in 73.65 seconds. GUI source unchanged; existing visual baseline retained.
