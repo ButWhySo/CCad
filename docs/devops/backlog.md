@@ -849,3 +849,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 622: approval card contextual visibility and scoped contrast fixed; richer quick replies and approval mutation proof remain next.
 - [x] Sprint 623: MCP approval staging adapted to contextual card visibility; approved mutation execution remains next.
 - [x] Sprint 624: slash palette entries now match executable parser syntax and popup styling is readable; quick-action semantics remain next.
+- [x] Sprint 625: guided PCB chat actions insert editable commands; provider-backed approved mutation remains next.

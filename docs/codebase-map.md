@@ -1365,3 +1365,4 @@ Sprint 621 renames the hidden result state to mapped `label:agent_result` and up
 Sprint 622 makes `panel:agent_approval_preview` contextual: hidden at idle, shown for pending request, hidden after decision/reset. Its stylesheet is scoped to approval descendants; `.ccad-secrets/` and `secrets/` are ignored credential locations.
 Sprint 623 lets `ui.type_text` promote hidden `control:agent_approval_request` into a pending approval before MCP clicks Request; live harness asserts card visibility before and after human Decline.
 Sprint 624 updates `AgentPanel::filterSlashCommands` to emit parser-compatible forms, gives popup `panel:agent_slash_commands`, and routes popup Escape/Enter through the event filter.
+Sprint 625 adds composer quick replies `action:agent_quick_summarize`, `action:agent_quick_run_drc`, and `action:agent_quick_route`; handlers only populate chat input.

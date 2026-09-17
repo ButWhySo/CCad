@@ -1666,3 +1666,6 @@ Fixed semantic approval staging after contextual hiding: MCP typing into the app
 ### Sprint 624 - repair slash command palette UX
 
 Fixed displayed slash commands whose punctuation made them non-executable, added semantic popup identity, improved dark hover/selection contrast, and handled Escape/Enter from popup focus. Full GUI and visual proof passed.
+### Sprint 625 - add guided agent quick actions
+
+Added compact `Summarize`, `Run DRC`, and `Route` suggestion buttons above the composer. Each inserts an editable slash command; no action runs until user sends it. Visual proof confirms readable spacing and dark-theme contrast.

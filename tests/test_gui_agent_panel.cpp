@@ -143,6 +143,10 @@ private slots:
     auto* chat_input = panel.findChild<QTextEdit*>("control:agent_chat_input");
     QVERIFY(chat_input != nullptr);
     QVERIFY(chat_input->isEnabled());
+    auto* summarize = panel.findChild<QPushButton*>("action:agent_quick_summarize");
+    QVERIFY(summarize != nullptr);
+    QTest::mouseClick(summarize, Qt::LeftButton);
+    QCOMPARE(chat_input->toPlainText(), QString("/explain "));
   }
 
   void testApprovalLaneTransitions() {

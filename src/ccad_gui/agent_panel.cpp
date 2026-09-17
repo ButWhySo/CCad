@@ -588,6 +588,18 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
     QPushButton[agentRole="iconButtonPrimary"]:hover {
       background-color: #7b1fa2;
     }
+    QPushButton[agentRole="quickReply"] {
+      background-color: #25262b;
+      border: 1px solid #3d3f4b;
+      border-radius: 10px;
+      color: #c4b5fd;
+      padding: 5px 9px;
+      font-size: 11px;
+    }
+    QPushButton[agentRole="quickReply"]:hover {
+      background-color: #343740;
+      border-color: #8a2be2;
+    }
     QLabel[agentRole="panelTitle"] {
       color: #ffffff;
       font-size: 16px;
@@ -695,6 +707,27 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   composer_container->setProperty("agentRole", "section");
   auto* composer_layout = new QVBoxLayout(composer_container);
   composer_layout->setContentsMargins(8, 8, 8, 8);
+
+  auto* quick_reply_layout = new QHBoxLayout();
+  quick_reply_layout->setSpacing(5);
+  const QList<QPair<QString, QString>> quick_replies = {
+      {"Summarize", "/explain "}, {"Run DRC", "/drc"}, {"Route", "/route"}};
+  for (const auto& [title, command] : quick_replies) {
+    auto* quick_reply = new QPushButton(title, composer_container);
+    quick_reply->setProperty("agentRole", "quickReply");
+    quick_reply->setObjectName("action:agent_quick_" + title.toLower().replace(" ", "_"));
+    quick_reply->setToolTip("Insert " + command.trimmed() + " command");
+    connect(quick_reply, &QPushButton::clicked, this, [this, command]() {
+      if (chat_input_) {
+        chat_input_->setPlainText(command);
+        chat_input_->setFocus();
+        chat_input_->moveCursor(QTextCursor::End);
+      }
+    });
+    quick_reply_layout->addWidget(quick_reply);
+  }
+  quick_reply_layout->addStretch();
+  composer_layout->addLayout(quick_reply_layout);
   
   chat_input_ = new QTextEdit(composer_container);
   chat_input_->setObjectName("control:agent_chat_input");
