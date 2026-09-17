@@ -1241,3 +1241,4 @@ Agent chat bubbles now remove internal QTextBrowser frames, document margins, an
 ## Sprint 500 progress update (2026-09-17)
 
 CI run #241 reproduced the known Linux-only CLI Test failure while Windows passed. The cross-probe black-box packet now uses KiCad's canonical quoted net form `$NET: "N1"` inside platform-safe shell quoting, eliminating ambiguity around packet-value parsing while retaining the literal dollar marker. Focused CLI passed 1/1; full Qt build had no work; CTest passed 91/91; official harness screenshot was inspected and stderr was empty.
+CI workflow now uploads per-job CTest logs on every result and preserves the original test exit code, making future Linux-only failures diagnosable instead of exposing only exit 8.
