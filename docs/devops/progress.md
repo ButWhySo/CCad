@@ -1309,3 +1309,7 @@ Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` bound
 ### Sprint 521 — migrate refill-zones ownership
 
 `pcb refill-zones` now owns its loaded project through `HeadlessBoardContext`, including applied contour and thermal-spoke mutations. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
+
+### Sprint 522 — migrate add-zone loading
+
+`pcb add-zone` now loads through `HeadlessBoardContext` while preserving layer, geometry, validation, and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.

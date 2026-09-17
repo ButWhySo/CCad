@@ -2375,3 +2375,4 @@ The headless board context also supports file-backed load/save with round-trip c
 `pcb add-track` is now a shared-context mutation consumer with its existing routing validation and audit behavior intact.
 `pcb add-track-arc` is now a shared-context mutation consumer with its existing arc validation and audit behavior intact.
 `pcb refill-zones` is now a shared-context mutation consumer for persisted contours and thermal spokes.
+`pcb add-zone` is now a shared-context mutation consumer with its existing geometry and audit behavior intact.

@@ -2024,7 +2024,9 @@ int pcbCommand(const std::vector<std::string>& args) {
                                  "--priority", "--clearance-mm",
                                  "--min-thickness-mm", "--pad-connection"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::Board& board = requireBoard(project);
       const std::string id = requireOption(options, "--id");
       requireUniquePhysicalObjectId(board, id);
@@ -2059,6 +2061,7 @@ int pcbCommand(const std::vector<std::string>& args) {
           .fill_enabled = true,
           .pad_connection = options.contains("--pad-connection") ? requireZonePadConnection(options) : "thermal"
       });
+      context.markDirty();
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
