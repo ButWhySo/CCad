@@ -1257,3 +1257,5 @@ Sprint 527 migrates `pcb add-pad` loading to the shared context; compatibility w
 Sprint 528 migrates `pcb set-pad` loading to the shared context; compatibility writing remains for audit continuity.
 
 Sprint 529 migrates `pcb add-barcode` loading to the shared context; compatibility writing remains for audit continuity.
+
+Sprint 530 migrates `pcb add-dimension` loading to the shared context; compatibility writing remains for audit continuity.
