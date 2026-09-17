@@ -1539,3 +1539,6 @@ Replaced competing stdin reads with one daemon protocol reader feeding a queue. 
 ### Sprint 579 - add one-shot scoped approval
 
 Core `OrchestratorConfig` now carries `approved_tool_name`; with `require_approval=true`, only exact matching non-readonly tool may execute, while empty/different scope returns `approval_required`. Added allow/deny regression coverage. Full Qt MinGW build and CTest passed 91/91 in 73.65 seconds. GUI source unchanged; existing visual baseline retained.
+### Sprint 581 - connect GUI approval to broker continuation
+
+AgentPanel now captures an approval-required tool call, presents the real tool and arguments in the approval lane, and on acceptance replays that exact call with one-shot approved_tool_name scope before returning the correlated tool_result to the LangGraph broker. Decline returns a correlated approval_denied error immediately, preventing a 30-second wait. Focused AgentPanel test passed; full Qt MinGW build passed 117/117 and CTest passed 91/91 in 74.33 seconds. Official visual harness passed with screenshot inspection and empty stderr; the generic demo does not trigger a provider approval request, so the lane remains separately covered by code/test.

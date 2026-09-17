@@ -277,6 +277,9 @@ class AgentPanel final : public QWidget {
   int evidence_sequence_ = 0;
   int trace_sequence_ = 0;
   QString pending_approval_request_;
+  QString pending_tool_name_;
+  QString pending_tool_args_;
+  QString pending_tool_call_id_;
   QString approval_last_decision_ = "none";
 
   QProcess* python_process_ = nullptr;
