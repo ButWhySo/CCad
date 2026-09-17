@@ -6,6 +6,7 @@
 #include "ccad_core/annotate.hpp"
 #include "ccad_core/autoplace_fields.hpp"
 #include "ccad_core/junction_helpers.hpp"
+#include "ccad_core/board_loader.hpp"
 #include "ccad_core/json.hpp"
 #include "ccad_core/schematic_collector.hpp"
 
@@ -28,7 +29,9 @@ int schCommand(const std::vector<std::string>& args) {
           parseOptions(args, 1, {"--file", "--symbol", "--component", "--at-x-mm", "--at-y-mm",
                                  "--rotation-deg"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       const ccad::Symbol symbol =
           ccad::loadSymbolJsonFileWithLocalInheritance(requireOption(options, "--symbol"));
       const ccad::Point origin{
@@ -39,6 +42,7 @@ int schCommand(const std::vector<std::string>& args) {
 
       ccad::placeComponent(project, symbol, requireOption(options, "--component"), origin,
                            placement_rotation);
+      context.markDirty();
 
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
@@ -51,7 +55,9 @@ int schCommand(const std::vector<std::string>& args) {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--start-x-mm", "--start-y-mm", "--end-x-mm", "--end-y-mm", "--net"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::SchWire wire{
           .id = requireOption(options, "--id"),
           .start = {ccad::millimeters(requireDoubleOption(options, "--start-x-mm")),
@@ -61,6 +67,7 @@ int schCommand(const std::vector<std::string>& args) {
           .net_id = options.contains("--net") ? options.at("--net") : ""
       };
       ccad::ensurePrimarySchematic(project).wires.push_back(wire);
+      context.markDirty();
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file\n";
         return 2;
@@ -72,7 +79,9 @@ int schCommand(const std::vector<std::string>& args) {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--start-x-mm", "--start-y-mm", "--end-x-mm", "--end-y-mm", "--bus"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::SchBus bus{
           .id = requireOption(options, "--id"),
           .start = {ccad::millimeters(requireDoubleOption(options, "--start-x-mm")),
@@ -82,6 +91,7 @@ int schCommand(const std::vector<std::string>& args) {
           .bus_id = options.contains("--bus") ? options.at("--bus") : ""
       };
       ccad::ensurePrimarySchematic(project).buses.push_back(bus);
+      context.markDirty();
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file\n";
         return 2;
@@ -93,7 +103,9 @@ int schCommand(const std::vector<std::string>& args) {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--text", "--net", "--at-x-mm", "--at-y-mm", "--rotation-deg", "--global"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::SchLabel label{
           .id = requireOption(options, "--id"),
           .text = requireOption(options, "--text"),
@@ -104,6 +116,7 @@ int schCommand(const std::vector<std::string>& args) {
           .type = options.count("--global") > 0 ? ccad::LabelType::Global : ccad::LabelType::Local
       };
       ccad::ensurePrimarySchematic(project).labels.push_back(label);
+      context.markDirty();
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file\n";
         return 2;
@@ -115,7 +128,9 @@ int schCommand(const std::vector<std::string>& args) {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--value", "--net", "--at-x-mm", "--at-y-mm", "--rotation-deg"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::SchPowerSymbol power{
           .id = requireOption(options, "--id"),
           .value = requireOption(options, "--value"),
@@ -125,6 +140,7 @@ int schCommand(const std::vector<std::string>& args) {
           .rotation_degrees = optionDoubleOrDefault(options, "--rotation-deg", 0.0)
       };
       ccad::ensurePrimarySchematic(project).power_symbols.push_back(power);
+      context.markDirty();
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file\n";
         return 2;
@@ -136,7 +152,9 @@ int schCommand(const std::vector<std::string>& args) {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--algo", "--order", "--start"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       
       ccad::AnnotateOptions annotate_opts;
       if (options.count("--algo") && options.at("--algo") == "reset") {
@@ -150,6 +168,7 @@ int schCommand(const std::vector<std::string>& args) {
       }
 
       ccad::annotateProject(project, annotate_opts);
+      context.markDirty();
 
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file\n";
@@ -162,7 +181,9 @@ int schCommand(const std::vector<std::string>& args) {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--no-collisions"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       
       ccad::AutoplaceOptions autoplace_opts;
       if (options.count("--no-collisions")) {
@@ -173,6 +194,7 @@ int schCommand(const std::vector<std::string>& args) {
       for (auto& sch : project.schematics) {
         ccad::autoplaceSchematicFields(sch, autoplace_opts);
       }
+      context.markDirty();
 
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file\n";
@@ -185,12 +207,15 @@ int schCommand(const std::vector<std::string>& args) {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
 
       // Fix junctions in all schematics
       for (auto& sch : project.schematics) {
         ccad::fixSchematicJunctions(sch);
       }
+      context.markDirty();
 
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file\n";

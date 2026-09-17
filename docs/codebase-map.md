@@ -1299,3 +1299,5 @@ Sprint 548 migrates `pcb add-reference-image` project loading to the shared cont
 Sprint 549 migrates `pcb add-table` project loading to the shared context; table handling and compatibility writing remain unchanged.
 
 Sprint 550 migrates graphics cleanup, layer mutations, design rules, outline, zone, and SES import loading to the shared context; compatibility writing remains unchanged. The current UI-map mouse sequence has no layer-toggle target, so future layer GUI work needs a dedicated mapped control target.
+
+Sprint 551 migrates schematic and project text-variable mutations to the shared context; schematic serialization and compatibility writing remain unchanged. CLI tests now cover the added schematic mutation paths.

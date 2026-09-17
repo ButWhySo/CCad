@@ -2404,3 +2404,4 @@ The headless board context also supports file-backed load/save with round-trip c
 `pcb add-reference-image` now uses the shared project context while preserving reference-image authoring and audit behavior.
 `pcb add-table` now uses the shared project context while preserving table authoring and audit behavior.
 `clean-graphics`, layer mutations, `set-rules`, `set-outline`, `add-zone`, and `import-ses` now use the shared project context while preserving authoring, validation, and audit behavior.
+Schematic mutation commands and `project set-text-variable` now use the shared project context while preserving serialization and audit behavior; CLI coverage exercises the primary schematic primitives.
