@@ -1770,6 +1770,10 @@ Added `ccad_gui_approval_status` to `tools/list`; external MCP hosts can now dis
 
 The GUI MCP bridge now returns JSON-RPC `-32601` for unknown methods/tools rather than misclassifying them as invalid parameters. Initialized notifications remain silent. Python regression and official visual harness passed; screenshot was inspected and stderr was empty.
 
+### Sprint 686 - verify MCP tool discovery end to end
+
+The MCP regression now launches the bridge as a subprocess, performs `tools/list`, and asserts all three GUI tools are discoverable. This replaces source-text-only discovery evidence. Python compilation/regression and official visual harness passed; screenshot was inspected and stderr was empty.
+
 ### Sprint 683 - expose native approval status to MCP hosts
 
 Added read-only `ccad_gui_approval_status` to the GUI MCP bridge. External harnesses can now query approval-card visibility and status directly, while mutation execution and human approval remain native GUI responsibilities. Python regression and official visual harness passed; screenshot was inspected and stderr was empty.

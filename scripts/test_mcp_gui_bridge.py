@@ -35,12 +35,16 @@ def main():
     child.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 2, "method": "ping"}) + "\n")
     child.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
                                   "params": {"name": "no.such.tool"}}) + "\n")
+    child.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 4, "method": "tools/list"}) + "\n")
     child.stdin.close()
     output = child.stdout.read().splitlines()
     child.wait(timeout=5)
     messages = [json.loads(line) for line in output]
-    assert [message["id"] for message in messages] == [1, 2, 3]
+    assert [message["id"] for message in messages] == [1, 2, 3, 4]
     assert messages[2]["error"]["code"] == -32601
+    tool_names = {tool["name"] for tool in messages[3]["result"]["tools"]}
+    assert {"ccad_gui_query", "ccad_gui_request_approval",
+            "ccad_gui_approval_status"}.issubset(tool_names)
     print("PASS MCP GUI bridge read-only policy")
 
 

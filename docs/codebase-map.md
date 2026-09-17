@@ -1398,3 +1398,5 @@ The same bridge exposes `ccad_gui_approval_status`, a filtered projection of nat
 The approval-status tool is advertised by `tools/list`, with read-only safety annotations, so MCP hosts can discover it through the normal protocol.
 
 Unknown bridge methods/tools use JSON-RPC method-not-found `-32601`; malformed arguments continue using `-32602`.
+
+`scripts/test_mcp_gui_bridge.py` performs subprocess-level MCP discovery and asserts `ccad_gui_query`, `ccad_gui_request_approval`, and `ccad_gui_approval_status` appear in `tools/list`.
