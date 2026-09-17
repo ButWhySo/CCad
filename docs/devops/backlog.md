@@ -814,3 +814,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 585: track and zone agent tools now await correlated broker results; footprint/schematic mutation tools and durable pending-call registry remain open.
 - [x] Sprint 586: footprint and schematic mutation tools await correlated broker results; durable pending-call registry and real provider integration remain open.
 - [x] Sprint 587: process-local pending-call registry routes exact tool results and cleans up terminal calls; durable cross-process persistence remains open.
+- [x] Sprint 588: propagate stable LangGraph thread identity; durable checkpointer and cross-process state persistence remain open.
