@@ -873,3 +873,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 654: IntakeLayer risk scan blocks risky goals before decomposition/provider execution; full Qt verification pass.
 - [x] Sprint 655: intake rejects prompt-injection and credential-bearing goal markers; full Qt verification pass.
 - [x] Sprint 656: revalidate hardened intake gate with official harness, screenshot inspection, and full Qt CTest 91/91.
+- [x] Sprint 657: provider chat emits opaque context revision/change state without content telemetry; boundary test and visual harness pass.

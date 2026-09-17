@@ -2533,3 +2533,7 @@ Before planning, IntakeLayer normalizes and scans the goal. Destructive or exter
 The scan also rejects common instruction-override phrases and credential markers, including `ignore previous instructions`, `api_key`, `password`, and `secret`. It is a conservative boundary check, not a substitute for provider-side prompt-injection defense.
 
 Verification includes accepted safe inspection goals and rejected unsafe examples before decomposition.
+
+## Context revision signaling
+
+Each agent chat request emits an opaque context revision and whether it changed since the prior request. Only digest, size, and presence are reported; project context text is never emitted in this state event.

@@ -21,6 +21,10 @@ import hooks
 def emit(payload: dict):
     print(json.dumps(payload), flush=True)
 
+def context_revision(context: str) -> str:
+    """Return stable opaque context identity; never expose context contents."""
+    return hashlib.sha256(context.encode("utf-8")).hexdigest()[:16]
+
 broker_wait_enabled = False
 inbound_queue = None
 deferred_queue = queue.Queue()
@@ -600,6 +604,7 @@ chaining_phase = "none"
 chaining_state = True
 active_hooks = []
 schedules = []
+last_context_revision = ""
 
 # --- Custom Workflows ---
 def handle_marketplace(text: str):
@@ -778,6 +783,16 @@ if __name__ == "__main__":
             elif method == "human_message":
                 text = req.get("params", {}).get("text", "")
                 context_str = req.get("params", {}).get("context", "")
+                current_context_revision = context_revision(context_str)
+                context_changed = current_context_revision != last_context_revision
+                last_context_revision = current_context_revision
+                emit({"jsonrpc": "2.0", "method": "context_state", "params": {
+                    "revision": current_context_revision,
+                    "changed": context_changed,
+                    "content_present": bool(context_str),
+                    "content_size": len(context_str),
+                    "content_emitted": False,
+                }})
                 
                 # Robust Command Parser
                 if text.startswith("/"):

@@ -96,6 +96,10 @@ def main():
         assert "ui_place_via" in tool_names, "router tool schema missing"
         assert any(item.get("method") == "tool_call" for item in lines), \
             "provider tool call did not reach CCad protocol"
+        context_events = [item for item in lines if item.get("method") == "context_state"]
+        assert context_events, "context revision event missing"
+        assert context_events[0]["params"]["content_emitted"] is False
+        assert len(context_events[0]["params"]["revision"]) == 16
         print("PASS local OpenAI-compatible provider tool boundary")
     finally:
         process.kill()

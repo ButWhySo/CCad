@@ -1380,3 +1380,5 @@ Sprint 625 adds composer quick replies `action:agent_quick_summarize`, `action:a
 The scan covers destructive/external action markers plus common prompt-injection and credential-bearing markers. It intentionally fails closed; callers must present a safe revised goal rather than retrying the blocked one unchanged.
 
 Regression coverage lives in `tests/test_agent_orchestrator.cpp::test_intake_layer` and `test_plan_blocks_risky_intent`.
+
+`src/ccad_agent/orchestrator.py::context_revision` hashes each incoming context for change detection. `human_message` emits `context_state` before command/provider handling; consumers must treat `content_emitted:false` as a redaction invariant.

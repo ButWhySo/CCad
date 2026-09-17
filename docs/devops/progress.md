@@ -1741,3 +1741,6 @@ IntakeLayer risk scan now rejects common prompt-injection phrases and credential
 ### Sprint 656 - verify hardened intake gate
 
 Revalidated conservative intake rejection after the injection/credential marker expansion. Normal inspection remains accepted; unsafe goals fail before planning. Official harness screenshot was inspected, and incremental Qt build plus full CTest pass 91/91.
+### Sprint 657 - expose opaque context revisions
+
+Every Python agent chat turn now emits a `context_state` event with a stable truncated SHA-256 revision, changed flag, content size, and explicit `content_emitted:false`. Provider telemetry can detect stale context without exporting project contents. Provider boundary test, official harness screenshot inspection, and Python syntax validation pass.
