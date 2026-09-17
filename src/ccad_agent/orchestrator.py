@@ -19,6 +19,7 @@ def emit(payload: dict):
 
 broker_wait_enabled = False
 inbound_queue = None
+deferred_queue = queue.Queue()
 
 def wait_for_broker_result(call_id: str) -> str:
     """Synchronously receive matching C++ broker result for current tool call."""
@@ -42,8 +43,10 @@ def wait_for_broker_result(call_id: str) -> str:
         except json.JSONDecodeError:
             continue
         if response.get("method") != "tool_result":
+            deferred_queue.put(line)
             continue
         if response.get("id", "") != call_id:
+            deferred_queue.put(line)
             continue
         if response.get("error") is not None:
             return json.dumps({"error": response["error"], "call_id": call_id})
@@ -493,7 +496,10 @@ if __name__ == "__main__":
     threading.Thread(target=read_protocol_lines, name="ccad-agent-stdin", daemon=True).start()
 
     while True:
-        line = inbound_queue.get()
+        try:
+            line = deferred_queue.get_nowait()
+        except queue.Empty:
+            line = inbound_queue.get()
         if line is None:
             break
         line = line.strip()
