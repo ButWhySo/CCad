@@ -2423,7 +2423,9 @@ int pcbCommand(const std::vector<std::string>& args) {
                                  "--start-x-mm", "--start-y-mm", "--end-x-mm",
                                  "--end-y-mm", "--complete"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::Board& board = requireBoard(project);
       const std::string request_id = requireOption(options, "--request-id");
       const std::string track_id = requireOption(options, "--track-id");
@@ -2464,6 +2466,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       if (complete_request) {
         board.route_requests.erase(request_it);
       }
+      context.markDirty();
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
