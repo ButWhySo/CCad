@@ -1681,3 +1681,6 @@ The single-preview harness now always attempts the native `ccad_gui --screenshot
 ### Sprint 629 - align BYOK provider adapters
 
 Aligned GUI provider IDs with Python adapter initialization. OpenAI-compatible and local model-server selections now construct the OpenAI-protocol adapter with their configured model/base URL and pass the session-only key through the SDK-compatible environment alias. The standard OpenAI, Anthropic, and Gemini paths remain unchanged. Python mock-provider smoke passed; authenticated network proof remains user-environment dependent.
+### Sprint 630 - repair terminal compatible-key initialization
+
+Provider initialization now mirrors `CCAD_OPENAI_COMPATIBLE_API_KEY` and `CCAD_LOCAL_MODEL_API_KEY` into the SDK-compatible key before constructing the adapter, and honors provider-specific model environment variables over stale config defaults. A no-network contract check reports `openai_compatible`, model `ccad-test-model`, execution enabled, network unprobed, and secret redacted.

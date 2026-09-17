@@ -2499,3 +2499,6 @@ Agent-requested project mutations are now scoped to a single approval token as w
 ### Sprint 629: BYOK provider selection handoff
 
 The Agent panel's `openai_compatible` and `local_model_server` provider IDs are now understood by the Python orchestrator. Their configured model and base URL are passed to the OpenAI-protocol adapter, and session-only keys are mirrored into the SDK's expected environment variable without being emitted or persisted. A real authenticated request still requires the user's own provider endpoint and credentials.
+### Sprint 630: terminal BYOK compatibility
+
+Terminal configuration now works for OpenAI-compatible and local model providers: provider-specific keys are mirrored before adapter construction, provider-specific model variables override stale config, and readiness remains truthful without probing the network. The contract check uses a non-routable endpoint and a test-only key; it performs no API request.

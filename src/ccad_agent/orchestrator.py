@@ -331,7 +331,15 @@ def init_provider():
     # The local-model label is a ChatOpenAI-compatible OpenAI protocol server.
     if provider == "local_model_server":
         provider = "local_model"
+    if provider == "openai_compatible" and os.environ.get("CCAD_OPENAI_COMPATIBLE_API_KEY"):
+        os.environ.setdefault("OPENAI_API_KEY", os.environ["CCAD_OPENAI_COMPATIBLE_API_KEY"])
+    if provider == "local_model" and os.environ.get("CCAD_LOCAL_MODEL_API_KEY"):
+        os.environ.setdefault("OPENAI_API_KEY", os.environ["CCAD_LOCAL_MODEL_API_KEY"])
     model_name = os.environ.get("CCAD_MODEL") or config_manager.get("model", "")
+    if provider == "openai_compatible":
+        model_name = os.environ.get("CCAD_OPENAI_COMPATIBLE_MODEL") or model_name
+    elif provider == "local_model":
+        model_name = os.environ.get("CCAD_LOCAL_MODEL_NAME") or model_name
 
     if provider == "mock":
         llm = MockProvider()
