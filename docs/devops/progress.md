@@ -1546,3 +1546,6 @@ AgentPanel now captures an approval-required tool call, presents the real tool a
 ### Sprint 582 - cancel approval without broker timeout
 
 Cancel now returns correlated approval_canceled to the Python broker and clears retained tool state. Reference checked: LangGraph HITL interrupts remain paused until explicit resume; CCad local IPC cannot persist a graph checkpoint yet, so explicit denial/cancel envelopes are required to unblock the current bounded wait. Focused GUI test and official visual harness passed; screenshot was inspected and stderr was empty. Full gate pending before merge.
+### Sprint 583 - preserve unrelated broker messages
+
+Broker waits now defer nonmatching protocol messages instead of dropping them; main dispatcher drains deferred messages before blocking for new input. Reference checked: LangGraph HITL resumes same workflow state through explicit external input; CCad local equivalent preserves unrelated IPC messages while awaiting correlated tool_result. Python compile and pending-call preservation smoke passed. Full gate pending before merge.

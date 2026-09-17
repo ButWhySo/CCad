@@ -809,3 +809,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [ ] Sprint 578 follow-up: connect AgentPanel accept/decline decision to a scoped approval token/config, then test allowed-after-approval and denied mutation without bypassing core policy.
 
 - [ ] Sprint 579 follow-up: AgentPanel accept creates one-shot scoped approval token; consume token on exactly one matching mutation; decline/cancel clears it.
+- [x] Sprint 583: broker wait preserves unrelated inbound messages; pending-call registry and late-result/cancellation tests remain open.
