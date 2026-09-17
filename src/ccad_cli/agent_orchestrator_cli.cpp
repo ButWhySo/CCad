@@ -101,6 +101,9 @@ std::string executeCliTool(const std::string& tool, const std::string& json) {
         if (const std::string error = requireFields({"file", "output"}); !error.empty()) return error;
         add("pcb"); add("export-kicad");
         appendOption("--file", "file"); appendOption("--output", "output");
+    } else if (tool == "pcb.drc") {
+        if (const std::string error = requireFields({"file"}); !error.empty()) return error;
+        add("drc"); add(required("file"));
     } else {
         return "{\"error\":\"tool_adapter_unavailable\"}";
     }
@@ -163,11 +166,9 @@ ccad::AgentOrchestrator& getOrchestrator() {
             }
         });
         g_orchestrator->register_tool({
-            "pcb.drc", "Run DRC", ccad::TaskRisk::ReadOnly, "{}",
-            [](const std::string& args) -> std::string {
-                const auto ctx = buildContext(extractStringValue(args, "project_path"));
-                return std::string("{\"passed\":") + (ctx.has_board ? "true" : "false") + "}";
-            }
+            "pcb.drc", "Run DRC", ccad::TaskRisk::ReadOnly,
+            R"({"type":"object","required":["file"]})",
+            [](const std::string& args) -> std::string { return executeCliTool("pcb.drc", args); }
         });
         g_orchestrator->register_tool({
             "pcb.add-via", "Add Via", ccad::TaskRisk::LowMutation,

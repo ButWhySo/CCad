@@ -1176,6 +1176,19 @@ void testAgentToolCallRpc() {
   if (result != 0) std::exit(1);
   assertContains(write_out.str(), "\"id\": 39", "missing-parameter request preserves id");
   assertContains(write_out.str(), "missing_parameter", "missing required tool parameter is explicit");
+
+  std::ostringstream drc_out;
+  std::istringstream drc_in(
+      "{\"jsonrpc\":\"2.0\",\"method\":\"agent.tool_call\",\"params\":{\"name\":\"pcb.drc\"},\"id\":40}\n");
+  oldCin = std::cin.rdbuf(drc_in.rdbuf());
+  oldCout = std::cout.rdbuf(drc_out.rdbuf());
+  args = {"serve", "--allow-read"};
+  result = ccad_cli::agentCommand(args);
+  std::cin.rdbuf(oldCin);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) std::exit(1);
+  assertContains(drc_out.str(), "\"id\": 40", "drc request preserves id");
+  assertContains(drc_out.str(), "missing_parameter", "drc requires file before dispatch");
 }
 
 int main() {
