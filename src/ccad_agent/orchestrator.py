@@ -139,6 +139,17 @@ if os.environ.get("LANGFUSE_PUBLIC_KEY") and os.environ.get("LANGFUSE_SECRET_KEY
     except ImportError:
         pass
 
+# LangSmith is opt-in and provider-owned: no credentials means no exporter,
+# no network. Passing handler at graph level captures node/tool runs too.
+if (os.environ.get("LANGCHAIN_TRACING_V2", "").lower() == "true"
+        and os.environ.get("LANGCHAIN_API_KEY")):
+    try:
+        from langchain.callbacks.tracers import LangChainTracer
+        callbacks.append(LangChainTracer(
+            project_name=os.environ.get("LANGCHAIN_PROJECT", "ccad")))
+    except ImportError:
+        pass
+
 def init_provider():
     global llm, router_llm, librarian_llm
     
@@ -200,7 +211,10 @@ def invoke_agent_run(state):
     with tracer.start_as_current_span("agent_run") as span:
         span.set_attribute("ccad.agent.workflow", active_workflow)
         span.set_attribute("ccad.agent.provider_ready", llm is not None)
-        return executor.invoke(state)
+        run_config = {"run_name": "ccad_agent_run"}
+        if callbacks:
+            run_config["callbacks"] = callbacks
+        return executor.invoke(state, config=run_config)
 
 
 

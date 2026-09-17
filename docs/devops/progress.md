@@ -1511,3 +1511,7 @@ Agent tool-call payloads now carry call_id, including the real ToolNode path for
 ### Sprint 571 - acknowledge broker tool results
 
 Python orchestrator now accepts C++ 	ool_result envelopes, correlates id to call_id, and emits only redacted 	ool_result_ack metadata. Live two-message mock smoke passed with success=true, result presence, no design object ID echoed, and empty stderr. Full graph resume remains explicitly pending.
+
+### Sprint 572 - wire LangSmith into LangGraph runs
+
+LangGraph remains execution backbone. Existing Langfuse callback support is retained; opt-in LangSmith LangChainTracer now attaches when LANGCHAIN_TRACING_V2=true and LANGCHAIN_API_KEY exist, while graph execution receives callback config so supervisor/router/librarian/ToolNode spans are captured. Default remains no exporter/network. Python syntax and mock graph baseline passed with empty stderr.

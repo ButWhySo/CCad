@@ -782,3 +782,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [ ] Sprint 570 follow-up: consume 	ool_result in Python, correlate by call ID, resume graph only after broker response, and require approval for low-mutation tools.
 
 - [ ] Sprint 571 follow-up: retain pending run state by call_id and resume graph from tool_result instead of only acknowledging it; add approval deny/error continuation tests.
+
+- [ ] Sprint 572 follow-up: add redaction tests for Langfuse/LangSmith callback configs, capture run IDs in AgentPanel, and verify opt-in traces against a local fake collector before external export.
