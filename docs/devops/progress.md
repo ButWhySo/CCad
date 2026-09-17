@@ -1271,3 +1271,7 @@ The Linux-only CLI failure persisted across quoted and escaped packet forms. The
 ### Sprint 510 — make agent intake deterministic
 
 Replaced the agent orchestration intake placeholders with whitespace normalization, keyword-based intent classification for PCB, schematic, and simulation requests, and a conservative risk scan that blocks destructive or externally consequential verbs. Added direct regression coverage; provider execution and durable worker ownership remain separate backlog work.
+
+### Sprint 511 — preserve explicit agent runner lifecycle
+
+KiCad-context research confirms lifecycle ownership matters for durable queue snapshots. The attempted lazy-start change was reverted after the existing queue restore test showed that enqueue-before-save must remain possible; callers must explicitly call `start()` after loading or when they want execution.
