@@ -335,8 +335,8 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
       QJsonObject config;
       config.insert("provider", provider);
       if (model_input_) config.insert("model", model_input_->text().trimmed());
-      agent_panel_->sendJsonRpc("agent.set_config", config);
-      agent_panel_->setProviderSecret(provider, api_key_input_->text());
+      config.insert("secret", api_key_input_->text());
+      agent_panel_->sendJsonRpc("agent.test_provider", config);
     }
   });
   layout->addWidget(test_provider);

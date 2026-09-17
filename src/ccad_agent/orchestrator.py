@@ -717,7 +717,35 @@ if __name__ == "__main__":
         try:
             req = json.loads(line)
             method = req.get("method")
-            if method == "agent.set_provider_secret":
+            if method == "agent.test_provider":
+                # Transient test: never update config_manager or write config.
+                params = req.get("params", {})
+                provider_id = params.get("provider", "openai")
+                model = params.get("model", "").strip()
+                secret = params.get("secret", "")
+                os.environ["CCAD_PROVIDER"] = provider_id
+                if model:
+                    os.environ["CCAD_MODEL"] = model
+                    model_env = {"google_gemini": "CCAD_GEMINI_MODEL",
+                                 "openai_compatible": "CCAD_OPENAI_COMPATIBLE_MODEL",
+                                 "local_model": "CCAD_LOCAL_MODEL_NAME",
+                                 "local_model_server": "CCAD_LOCAL_MODEL_NAME"}.get(provider_id)
+                    if model_env: os.environ[model_env] = model
+                env_names = {"openai": "OPENAI_API_KEY", "anthropic": "ANTHROPIC_API_KEY",
+                             "google_gemini": "GEMINI_API_KEY",
+                             "openai_compatible": "CCAD_OPENAI_COMPATIBLE_API_KEY",
+                             "local_model": "CCAD_LOCAL_MODEL_API_KEY",
+                             "local_model_server": "CCAD_LOCAL_MODEL_API_KEY"}
+                env_name = env_names.get(provider_id, "OPENAI_API_KEY")
+                if secret:
+                    os.environ[env_name] = secret
+                    if provider_id == "google_gemini": os.environ["GOOGLE_API_KEY"] = secret
+                    if provider_id in ("openai_compatible", "local_model", "local_model_server"):
+                        os.environ["OPENAI_API_KEY"] = secret
+                else:
+                    os.environ.pop(env_name, None)
+                init_provider()
+            elif method == "agent.set_provider_secret":
                 # Private IPC only. Never emit, persist, or add credential to
                 # prompts. Provider SDK reads process memory via its env var.
                 provider_id = req.get("params", {}).get("provider", "openai")

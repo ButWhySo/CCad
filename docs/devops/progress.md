@@ -1782,6 +1782,10 @@ Optional provider adapter failures now show the missing LangChain module and exa
 
 Agent Settings now offers a temporary Show key checkbox for verifying pasted session credentials, defaulting to masked and restoring masking on uncheck. The key remains process-memory only. GUI regression, full Qt CTest 91/91, official visual harness, screenshot inspection, and empty stderr passed.
 
+### Sprint 689 - make Test Provider transient
+
+Corrected Test Provider so it uses `agent.test_provider`, which applies provider/model/key only inside the running child process. It no longer calls persistent `agent.set_config`; Save remains the persistence boundary for preferences. Gemini/provider fixtures, full Qt CTest 91/91, live localhost provider approval roundtrip, official visual harness, screenshot inspection, and empty stderr passed.
+
 ### Sprint 683 - expose native approval status to MCP hosts
 
 Added read-only `ccad_gui_approval_status` to the GUI MCP bridge. External harnesses can now query approval-card visibility and status directly, while mutation execution and human approval remain native GUI responsibilities. Python regression and official visual harness passed; screenshot was inspected and stderr was empty.
