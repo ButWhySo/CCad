@@ -1625,3 +1625,6 @@ Follow-up live adaptive proof passed: MCP staged the request, native `ui.click` 
 ### Sprint 610 - prove provider-backed chat path
 
 Added a provider-free mock adapter smoke that launches the real Python orchestrator, sends a chat request with board context, and verifies the provider state plus response. The adapter path is executable when a user supplies a supported provider key; network/provider availability remains environment-dependent.
+### Sprint 611 - clear provider secrets correctly
+
+Saving Agent Settings with an empty API-key field now calls the provider-secret path, clearing the selected provider credential from the panel and Python process instead of silently retaining the old key. GUI regression coverage exercises the masked key field and clear action.

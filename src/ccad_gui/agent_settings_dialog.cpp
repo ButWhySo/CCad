@@ -413,7 +413,7 @@ void AgentSettingsDialog::saveAllSettings() {
   if (system_prompt_) config["system_prompt"] = system_prompt_->toPlainText();
   if (dev_prompt_) config["dev_prompt"] = dev_prompt_->toPlainText();
 
-  if (agent_panel_ && api_key_input_ && !api_key_input_->text().isEmpty()) {
+  if (agent_panel_ && api_key_input_) {
     agent_panel_->setProviderSecret(provider_combo_ ? provider_combo_->currentText() : "openai",
                                     api_key_input_->text());
   }

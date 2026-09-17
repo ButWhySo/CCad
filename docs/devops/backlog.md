@@ -836,3 +836,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 607: expose live approval controls and verify MCP staging; human decision roundtrip for a checkpointed mutation remains next.
 - [x] Sprint 608: verify live MCP staging plus native human Decline and authoritative GUI-map state; checkpointed mutation execution remains next.
 - [x] Sprint 610: prove provider-backed chat execution with mock adapter; live external-provider call and approved tool execution remain environment-dependent.
+- [x] Sprint 611: empty API-key save clears process-held provider secret; live external-provider call remains environment-dependent.
