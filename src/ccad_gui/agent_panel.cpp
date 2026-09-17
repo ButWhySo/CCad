@@ -679,8 +679,13 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   settings_btn->setProperty("agentRole", "iconButton");
   settings_btn->setFixedSize(24, 24);
   connect(settings_btn, &QPushButton::clicked, this, [this]() {
-    AgentSettingsDialog dialog(this);
-    dialog.exec();
+    // Keep Settings modeless: UI-map/MCP clients must continue querying the
+    // main window while its controls are visible and actionable.
+    auto* dialog = new AgentSettingsDialog(nullptr);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->show();
+    dialog->raise();
+    dialog->activateWindow();
   });
 
   auto* close_btn = new QPushButton(top_bar);
@@ -1281,6 +1286,13 @@ void AgentPanel::handlePythonError() {
   if (summary.size() > 240) summary = summary.left(237) + "...";
   appendChatMessage("agent", "Agent backend warning: " + summary);
   status_label_->setText("Agent backend warning");
+  if (provider_state_cb_) {
+    QJsonObject state;
+    state.insert("configured", true);
+    state.insert("execution_enabled", false);
+    state.insert("error", summary);
+    provider_state_cb_(state);
+  }
 }
 
 void AgentPanel::submitChat() {

@@ -1402,3 +1402,5 @@ Unknown bridge methods/tools use JSON-RPC method-not-found `-32601`; malformed a
 `scripts/test_mcp_gui_bridge.py` performs subprocess-level MCP discovery and asserts `ccad_gui_query`, `ccad_gui_request_approval`, and `ccad_gui_approval_status` appear in `tools/list`.
 
 `AgentPanel::setProviderStateCallback` lets Agent Settings render the latest transient provider-test result without exposing secrets. The status label is `label:providerTestStatus`; it is updated from provider-state JSON and remains separate from persistent configuration.
+
+Settings opens modelessly from `AgentPanel`, preserving UI-map/MCP request servicing. `ReviewWindow::uiTargetJsonById` and `uiClickJson` include top-level dialog widgets; QListWidget targets accept a `row` field for semantic selection. `tests/physical_ui_robot.py` is strict: unique IPC name, Qt PATH, window setup, mapped mouse attempts, semantic fallback only after no state change, targeted provider-status assertion, screenshot.

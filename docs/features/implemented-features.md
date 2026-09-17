@@ -2552,6 +2552,8 @@ When an optional provider adapter dependency is missing, chat reports the module
 
 Test Provider also reports its transient result directly in Agent Settings. The status is initially `not run`, becomes `ready (network not probed)` for an initialized adapter, or shows a bounded dependency/adapter error. This is session feedback only; Save remains the only way to persist provider settings.
 
+Agent Settings is modeless and remains discoverable through the live UI map. External harnesses can select its category QListWidget rows semantically, then operate provider controls without relying on approximate row coordinates. The Windows robot validates the provider-test action and captures the visible status card.
+
 ## CI speed and syntax gate
 
 The CI workflow compiles agent and test Python sources before protocol tests and invokes CMake with parallel workers on all build jobs. This catches syntax regressions early and reduces idle build time without weakening CTest.

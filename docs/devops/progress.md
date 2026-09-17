@@ -1794,6 +1794,10 @@ Transient provider tests now remove SDK alias variables when clearing Gemini, Op
 
 Agent Settings now shows `Provider test: not run`, `ready (network not probed)`, or a bounded adapter/dependency error after Test Provider. The callback is driven by native provider state, never displays credentials, and does not change the Save-only persistence boundary. Focused GUI test, full Qt CTest 91/91, localhost provider approval roundtrip, official visual harness, screenshot inspection, and empty stderr passed.
 
+### Sprint 693 - make Settings UI-map automation usable
+
+Settings now opens modelessly so the UI-map/MCP server remains responsive while its controls are visible. UI-map discovery includes top-level dialog widgets and QListWidget controls; semantic list-row selection is supported. The Windows robot launcher now uses a unique pipe, Qt runtime PATH, deterministic window placement, strict failure exits, and targeted Test Provider verification. Full Qt CTest 91/91, robot flow, official visual harness, screenshot inspection, and empty stderr passed.
+
 ### Sprint 683 - expose native approval status to MCP hosts
 
 Added read-only `ccad_gui_approval_status` to the GUI MCP bridge. External harnesses can now query approval-card visibility and status directly, while mutation execution and human approval remain native GUI responsibilities. Python regression and official visual harness passed; screenshot was inspected and stderr was empty.

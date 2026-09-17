@@ -339,6 +339,9 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
   test_provider->setObjectName("action:testProviderBtn");
   test_provider->setToolTip("Initialize the selected provider for this session without sending a prompt");
   connect(test_provider, &QPushButton::clicked, this, [this]() {
+    if (provider_status_label_) {
+      provider_status_label_->setText("Provider test: running...");
+    }
     if (agent_panel_ && api_key_input_) {
       const QString provider = provider_combo_ ? provider_combo_->currentData().toString()
                                                : QStringLiteral("openai");

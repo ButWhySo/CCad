@@ -57,9 +57,11 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
+#include <QTimer>
 #include <QLabel>
 #include <QLineEdit>
 #include <QCheckBox>
+#include <QListWidget>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QMouseEvent>
@@ -4297,6 +4299,34 @@ QString ReviewWindow::buildUiMapJson() const {
                  .arg(global_rect.center().y());
   }
 
+  QList<QListWidget*> all_lists;
+  for (QWidget* widget : QApplication::allWidgets()) {
+    if (auto* list = qobject_cast<QListWidget*>(widget)) {
+      all_lists.append(list);
+    }
+  }
+  for (const QListWidget* list : all_lists) {
+    const QString id = list->objectName();
+    if (!id.startsWith("control:")) {
+      continue;
+    }
+    const QRect global_rect = visibleWidgetGlobalRect(list);
+    const QPoint local_top_left = list->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
+    const QRect local_rect(local_top_left, list->size());
+    nodes << QString("{\"id\":%1,\"role\":\"control\",\"label\":%2,"
+                     "\"value\":%3,\"visible\":%4,\"enabled\":%5,"
+                     "\"local_rect\":%6,\"global_rect\":%7,\"target_x\":%8,\"target_y\":%9}")
+                 .arg(jsonString(id))
+                 .arg(jsonString(id))
+                 .arg(jsonString(list->currentItem() ? list->currentItem()->text() : QString()))
+                 .arg(boolJson(list->isVisible() && !global_rect.isEmpty()))
+                 .arg(boolJson(list->isEnabled()))
+                 .arg(rectJson(local_rect))
+                 .arg(rectJson(global_rect))
+                 .arg(global_rect.center().x())
+                 .arg(global_rect.center().y());
+  }
+
   auto all_widgets = findChildren<QWidget*>();
   for (QWidget* tlw : QApplication::topLevelWidgets()) {
       if (tlw != this) {
@@ -5487,6 +5517,25 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
     return *target;
   }
 
+  for (QWidget* widget : QApplication::allWidgets()) {
+    auto* button = qobject_cast<QPushButton*>(widget);
+    if (button == nullptr || button->objectName() != id || !id.startsWith("action:")) {
+      continue;
+    }
+    const QRect global_rect = visibleWidgetGlobalRect(button);
+    return foundTarget(id, "action", button->text(), button->isVisible() && !global_rect.isEmpty(),
+                       button->isEnabled(), global_rect.center());
+  }
+  for (QWidget* widget : QApplication::allWidgets()) {
+    auto* list = qobject_cast<QListWidget*>(widget);
+    if (list == nullptr || list->objectName() != id || !id.startsWith("control:")) {
+      continue;
+    }
+    const QRect global_rect = visibleWidgetGlobalRect(list);
+    return foundTarget(id, "control", id, list->isVisible() && !global_rect.isEmpty(),
+                       list->isEnabled(), global_rect.center());
+  }
+
   return QString("{\"schema_version\":1,\"found\":false,\"id\":%1,"
                  "\"reason\":\"unknown_id\"}\n")
       .arg(jsonString(id));
@@ -5666,7 +5715,8 @@ QString ReviewWindow::uiNearestCanvasObjectJson(const double x_mm, const double 
   return jsonObjectLine(response);
 }
 
-QString ReviewWindow::uiClickJson(const QString& id, const bool dry_run, const bool double_click) {
+QString ReviewWindow::uiClickJson(const QString& id, const bool dry_run, const bool double_click,
+                                  const int row) {
   const QString trimmed_id = id.trimmed();
   QJsonObject response;
   response.insert("schema_version", 1);
@@ -5730,11 +5780,53 @@ QString ReviewWindow::uiClickJson(const QString& id, const bool dry_run, const b
     return jsonObjectLine(response);
   }
 
+  for (QWidget* widget : QApplication::allWidgets()) {
+    auto* button = qobject_cast<QPushButton*>(widget);
+    if (button == nullptr || button->objectName() != trimmed_id ||
+        !trimmed_id.startsWith("action:")) {
+      continue;
+    }
+    if (!button->isVisible() || !button->isEnabled()) {
+      response.insert("performed", false);
+      response.insert("reason", "disabled_or_hidden");
+      return jsonObjectLine(response);
+    }
+    if (trimmed_id == "action:settingsBtn") {
+      QTimer::singleShot(0, button, [button]() { button->click(); });
+    } else {
+      button->click();
+      QApplication::processEvents();
+    }
+    response.insert("performed", true);
+    response.insert("reason", "top_level_button_clicked");
+    markUiMapChanged();
+    return jsonObjectLine(response);
+  }
+
   if (trimmed_id.startsWith("tab:") || trimmed_id.startsWith("action:")) {
     return triggerSafeUiActionJson(trimmed_id);
   }
 
   if (trimmed_id.startsWith("control:")) {
+    const int requested_row = row;
+    for (QWidget* widget : QApplication::allWidgets()) {
+      auto* list = qobject_cast<QListWidget*>(widget);
+      if (list == nullptr || list->objectName() != trimmed_id) {
+        continue;
+      }
+      if (requested_row < 0 || requested_row >= list->count()) {
+        response.insert("performed", false);
+        response.insert("reason", "row_required_or_out_of_range");
+        return jsonObjectLine(response);
+      }
+      list->setCurrentRow(requested_row);
+      QApplication::processEvents();
+      response.insert("performed", true);
+      response.insert("reason", "list_row_selected");
+      response.insert("row", requested_row);
+      markUiMapChanged({trimmed_id}, {"control"});
+      return jsonObjectLine(response);
+    }
     for (QCheckBox* checkbox : findChildren<QCheckBox*>()) {
       if (checkbox == nullptr || checkbox->objectName() != trimmed_id) {
         continue;
@@ -7480,7 +7572,8 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
     }
     const bool dry_run = object->value("dry_run").toBool(false);
     return agentQueryResponse(trimmed_method, true, {},
-                              uiClickJson(id, dry_run, trimmed_method == "ui.double_click"));
+                              uiClickJson(id, dry_run, trimmed_method == "ui.double_click",
+                                          object->value("row").toInt(-1)));
   }
   if (trimmed_method == "ui.type_text") {
     const std::optional<QJsonObject> object = requireObject();
