@@ -373,6 +373,11 @@ def init_provider():
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
             if not model_name: model_name = "gemini-1.5-pro-latest"
+            # The UI/API uses the provider-neutral GEMINI_API_KEY name; the
+            # LangChain Google adapter reads GOOGLE_API_KEY.
+            google_api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+            if google_api_key:
+                os.environ["GOOGLE_API_KEY"] = google_api_key
             llm = ChatGoogleGenerativeAI(model=model_name, temperature=0)
             router_llm = llm.bind_tools(router_tools)
             librarian_llm = llm.bind_tools(librarian_tools)
@@ -719,10 +724,14 @@ if __name__ == "__main__":
                 env_name = env_names.get(provider_id, "OPENAI_API_KEY")
                 if secret:
                     os.environ[env_name] = secret
+                    if provider_id == "google_gemini":
+                        os.environ["GOOGLE_API_KEY"] = secret
                     if provider_id in ("openai_compatible", "local_model", "local_model_server"):
                         os.environ["OPENAI_API_KEY"] = secret
                 else:
                     os.environ.pop(env_name, None)
+                    if provider_id == "google_gemini":
+                        os.environ.pop("GOOGLE_API_KEY", None)
                     if provider_id in ("openai_compatible", "local_model", "local_model_server"):
                         os.environ.pop("OPENAI_API_KEY", None)
                 init_provider()
