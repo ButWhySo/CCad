@@ -62,6 +62,10 @@ private slots:
     auto* provider_status = dialog.findChild<QLabel*>("label:providerTestStatus");
     QVERIFY(provider_status != nullptr);
     QVERIFY(provider_status->text().contains("not run"));
+    QTest::mouseClick(test_provider, Qt::LeftButton);
+    QTest::qWait(5200);
+    QVERIFY(!provider_status->text().contains("not run"));
+    QVERIFY(!provider_status->text().contains("running"));
     auto* clear_key = dialog.findChild<QPushButton*>("action:clearProviderKeyBtn");
     QVERIFY(clear_key != nullptr);
     QVERIFY(!clear_key->toolTip().isEmpty());

@@ -2554,6 +2554,8 @@ Test Provider also reports its transient result directly in Agent Settings. The 
 
 Agent Settings is modeless and remains discoverable through the live UI map. External harnesses can select its category QListWidget rows semantically, then operate provider controls without relying on approximate row coordinates. The Windows robot validates the provider-test action and captures the visible status card.
 
+Provider testing cannot remain indefinitely busy: the status shows `running...` immediately and changes to `no response` after five seconds if no provider-state or backend result arrives. Successful or failed provider-state messages retain precedence.
+
 ## CI speed and syntax gate
 
 The CI workflow compiles agent and test Python sources before protocol tests and invokes CMake with parallel workers on all build jobs. This catches syntax regressions early and reduces idle build time without weakening CTest.

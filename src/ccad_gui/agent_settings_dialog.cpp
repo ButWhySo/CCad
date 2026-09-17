@@ -15,6 +15,8 @@
 #include <QCheckBox>
 #include <QGroupBox>
 #include <QLineEdit>
+#include <QPointer>
+#include <QTimer>
 
 AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* parent)
     : QDialog(parent), agent_panel_(agent_panel) {
@@ -353,6 +355,13 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
       if (model_input_) config.insert("model", model_input_->text().trimmed());
       config.insert("secret", api_key_input_->text());
       agent_panel_->sendJsonRpc("agent.test_provider", config);
+      QPointer<AgentSettingsDialog> dialog_guard(this);
+      QTimer::singleShot(5000, this, [dialog_guard]() {
+        if (dialog_guard && dialog_guard->provider_status_label_ &&
+            dialog_guard->provider_status_label_->text() == "Provider test: running...") {
+          dialog_guard->provider_status_label_->setText("Provider test: no response");
+        }
+      });
     }
   });
   layout->addWidget(test_provider);

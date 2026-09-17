@@ -1798,6 +1798,10 @@ Agent Settings now shows `Provider test: not run`, `ready (network not probed)`,
 
 Settings now opens modelessly so the UI-map/MCP server remains responsive while its controls are visible. UI-map discovery includes top-level dialog widgets and QListWidget controls; semantic list-row selection is supported. The Windows robot launcher now uses a unique pipe, Qt runtime PATH, deterministic window placement, strict failure exits, and targeted Test Provider verification. Full Qt CTest 91/91, robot flow, official visual harness, screenshot inspection, and empty stderr passed.
 
+### Sprint 694 - bound provider test waiting state
+
+Test Provider now enters a visible running state and falls back to `no response` after five seconds when backend/provider state never arrives. A live provider-state callback still overrides this with ready or bounded error feedback. Regression test, full Qt CTest 91/91, official visual harness, screenshot inspection, and empty stderr passed.
+
 ### Sprint 683 - expose native approval status to MCP hosts
 
 Added read-only `ccad_gui_approval_status` to the GUI MCP bridge. External harnesses can now query approval-card visibility and status directly, while mutation execution and human approval remain native GUI responsibilities. Python regression and official visual harness passed; screenshot was inspected and stderr was empty.
