@@ -1552,3 +1552,6 @@ Broker waits now defer nonmatching protocol messages instead of dropping them; m
 ### Sprint 584 - unique broker call IDs
 
 Real `ui.place_via` invocations now generate UUID-backed per-call IDs and wait on that exact ID; retries cannot reuse the prior correlation key. References checked: LangGraph tool-call IDs identify tool messages and resume state; CCad mirrors this correlation at local IPC boundary. Python compile and uniqueness smoke passed. Full gate pending before merge.
+### Sprint 585 - await all mutating router results
+
+`ui_add_track` and `ui_add_polygon` now emit unique call IDs and await matching broker results when real broker mode is active, matching existing via behavior. Offline/mock and non-broker paths remain nonblocking. Python compile and route-demo CLI smoke passed. Full gate pending before merge.

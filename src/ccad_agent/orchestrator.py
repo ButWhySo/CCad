@@ -81,7 +81,10 @@ def ui_place_via(x_mm: float, y_mm: float, dry_run: bool = False):
 @tool
 def ui_add_track(x1: float, y1: float, x2: float, y2: float):
     """Adds a track segment between two coordinates."""
-    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.route_track", "args": {"start_x_mm": x1, "start_y_mm": y1, "end_x_mm": x2, "end_y_mm": y2}}})
+    call_id = new_tool_call_id("ui-route-track")
+    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.route_track", "args": {"start_x_mm": x1, "start_y_mm": y1, "end_x_mm": x2, "end_y_mm": y2}, "call_id": call_id}})
+    if broker_wait_enabled:
+        return wait_for_broker_result(call_id)
     return "Action dispatched to CCad client."
 
 @tool
@@ -97,7 +100,10 @@ def ui_add_polygon(points: List[List[float]], layer: str):
     if len(points) >= 2:
         x1, y1 = points[0][0], points[0][1]
         x2, y2 = points[1][0], points[1][1]
-        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.add_zone", "args": {"start_x_mm": x1, "start_y_mm": y1, "end_x_mm": x2, "end_y_mm": y2, "layer": layer}}})
+        call_id = new_tool_call_id("ui-add-zone")
+        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.add_zone", "args": {"start_x_mm": x1, "start_y_mm": y1, "end_x_mm": x2, "end_y_mm": y2, "layer": layer}, "call_id": call_id}})
+        if broker_wait_enabled:
+            return wait_for_broker_result(call_id)
     return "Action dispatched to CCad client."
 
 @tool
