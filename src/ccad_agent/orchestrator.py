@@ -263,11 +263,19 @@ class MockProvider:
 
     def invoke(self, messages, config=None):
         prompt = "\n".join(str(getattr(message, "content", "")) for message in messages)
-        if "Routing Expert" in prompt and "via" in prompt.lower() and not self.tool_issued:
+        # The supervisor must return a routing decision; only the routing
+        # expert may emit the tool call.  Keeping these two responses distinct
+        # makes the offline harness exercise the same graph edges as a real
+        # provider instead of accidentally terminating at the supervisor.
+        if "supervisor managing" in prompt.lower():
+            return AIMessage(content="router")
+        if ("PCB Routing Expert" in prompt and "via" in prompt.lower()
+                and not self.tool_issued):
             self.tool_issued = True
+            dry_run = os.environ.get("CCAD_MOCK_MUTATION", "").lower() != "1"
             return AIMessage(content="", tool_calls=[{
                 "name": "ui_place_via",
-                "args": {"x_mm": 10.0, "y_mm": 10.0, "dry_run": True},
+                "args": {"x_mm": 10.0, "y_mm": 10.0, "dry_run": dry_run},
                 "id": "mock-tool-1",
                 "type": "tool_call",
             }])

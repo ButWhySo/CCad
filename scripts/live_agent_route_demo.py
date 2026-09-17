@@ -27,6 +27,8 @@ def main():
                         help="send mapped agent chat text through offline mock provider")
     parser.add_argument("--provider", default="",
                         help="provider override inherited by GUI backend, e.g. mock")
+    parser.add_argument("--mock-tool-approval-check", action="store_true",
+                        help="request one offline non-dry-run via and approve it")
     args = parser.parse_args()
 
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -42,6 +44,8 @@ def main():
     env["PATH"] = r"C:\Qt\6.11.1\mingw_64\bin;" + env.get("PATH", "")
     if args.provider:
         env["CCAD_PROVIDER"] = args.provider
+    if args.mock_tool_approval_check:
+        env["CCAD_MOCK_MUTATION"] = "1"
     if not args.reuse_project:
         os.makedirs(os.path.dirname(project), exist_ok=True)
         subprocess.run(
@@ -64,6 +68,40 @@ def main():
         raise RuntimeError("CCad GUI socket did not become ready")
 
     time.sleep(5.0)
+    if args.mock_tool_approval_check:
+        with open(rf"\\.\pipe\{server}", "r+b", buffering=0) as pipe:
+            send(pipe, {"method": "ui.type_text", "id": "control:agent_chat_input",
+                        "text": "Routing Expert: place one via using approved route."})
+            send(pipe, {"method": "ui.click", "id": "action:agent_submit_chat"})
+            time.sleep(2.0)
+            pending = send(pipe, {"method": "ui.map_compact", "id": "mutation-pending",
+                                  "limit": 100})
+            approved = send(pipe, {"method": "ui.click", "id": "action:agent_approve_next"})
+            time.sleep(1.0)
+            after = send(pipe, {"method": "ui.map_compact", "id": "mutation-after",
+                                "limit": 100})
+            counts = send(pipe, {"method": "project.object_counts", "id": "mutation-counts"})
+        pending_result = pending.get("result", {})
+        approved_result = approved.get("result", {})
+        after_result = after.get("result", {})
+        counts_result = counts.get("result", {})
+        pending_nodes = pending_result.get("nodes", []) if isinstance(pending_result, dict) else []
+        after_nodes = after_result.get("nodes", []) if isinstance(after_result, dict) else []
+        pending_card = next((node for node in pending_nodes
+                             if node.get("id") == "panel:agent_approval_preview"), {})
+        after_status = next((node.get("label", "") for node in after_nodes
+                             if node.get("id") == "label:agent_approval_status"), "")
+        via_count = counts_result.get("via_count", counts_result.get("vias", 0)) \
+            if isinstance(counts_result, dict) else 0
+        print("LIVE APPROVED MUTATION " + json.dumps({
+            "pending_visible": pending_card.get("visible", False),
+            "approve_performed": approved_result.get("performed", False),
+            "status": after_status,
+            "via_count": via_count,
+        }, separators=(",", ":")), flush=True)
+        if (not pending_card.get("visible") or not approved_result.get("performed")
+                or "accepted" not in after_status.lower() or via_count < 1):
+            raise RuntimeError("approved mock mutation did not complete through native approval")
     if args.chat_input_check or args.chat_send_check:
         with open(rf"\\.\pipe\{server}", "r+b", buffering=0) as pipe:
             typed = send(pipe, {"method": "ui.type_text",

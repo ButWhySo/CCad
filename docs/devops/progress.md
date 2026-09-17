@@ -1669,3 +1669,6 @@ Fixed displayed slash commands whose punctuation made them non-executable, added
 ### Sprint 625 - add guided agent quick actions
 
 Added compact `Summarize`, `Run DRC`, and `Route` suggestion buttons above the composer. Each inserts an editable slash command; no action runs until user sends it. Visual proof confirms readable spacing and dark-theme contrast.
+### Sprint 626 - prove approved provider tool mutation
+
+Corrected the deterministic mock graph path so the supervisor returns `router` and the routing expert emits the `ui_place_via` tool call. The live harness now requests the mutation through chat, observes the contextual approval card, clicks the native Approve action, and queries `project.object_counts` to verify that a via was actually created. Proof passed with `pending_visible=true`, accepted status, and `via_count=1`; no API key or network was used.
