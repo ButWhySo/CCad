@@ -2403,3 +2403,4 @@ The headless board context also supports file-backed load/save with round-trip c
 `pcb spread-footprints` now uses the shared project context while preserving multi-component movement, gap handling, result reporting, and audit behavior.
 `pcb add-reference-image` now uses the shared project context while preserving reference-image authoring and audit behavior.
 `pcb add-table` now uses the shared project context while preserving table authoring and audit behavior.
+`clean-graphics`, layer mutations, `set-rules`, `set-outline`, `add-zone`, and `import-ses` now use the shared project context while preserving authoring, validation, and audit behavior.
