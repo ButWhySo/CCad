@@ -1579,3 +1579,6 @@ AgentPanel Resume now asks Python for current SQLite-backed thread state. Python
 ### Sprint 593 - surface checkpoint resume result
 
 GUI now renders Python thread_state replies as Checkpoint resumable or Checkpoint unavailable status/activity records, including thread/checkpoint metadata or explicit disabled reason. Focused GUI test passed; official harness screenshot inspected; stderr empty. Full gate pending before merge.
+### Sprint 594 - wire durable graph resume execution
+
+Added protocol-side LangGraph Command(resume=...) continuation for checkpointed threads. Explicit resume payloads and authoritative tool results now resume an interrupted graph on same thread; GUI surfaces thread_resumed status/activity. References checked: official LangGraph interrupt/resume docs. Focused verification pending.

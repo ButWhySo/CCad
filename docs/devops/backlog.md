@@ -820,3 +820,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 591: GUI session thread ID propagates to Python graph; checkpoint DB selection, resume UI, and approval interrupt restoration remain open.
 - [x] Sprint 592: GUI Resume queries checkpoint state with explicit disabled response; interrupted graph continuation and approval restoration remain open.
 - [x] Sprint 593: GUI surfaces checkpoint resume result; actual interrupted-tool continuation and approval interrupt restoration remain open.
+- [x] Sprint 594: wire checkpointed graph resume through protocol and GUI; interrupt-producing tool adapter coverage remains open.

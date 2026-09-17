@@ -9,6 +9,7 @@ import uuid
 import atexit
 from typing import Annotated, TypedDict, List
 from langgraph.graph import StateGraph, END
+from langgraph.types import Command
 from langchain_core.tools import tool
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
@@ -498,6 +499,15 @@ def create_orchestrator():
         return graph_builder.compile(checkpointer=checkpoint_saver)
     return graph_builder.compile()
 
+def resume_checkpointed_run(thread_id: str, resume_value):
+    """Resume an interrupted graph using same durable thread identity."""
+    if checkpoint_saver is None:
+        return None
+    return executor.invoke(
+        Command(resume=resume_value),
+        config={"configurable": {"thread_id": thread_id}},
+    )
+
 session_messages = []
 active_workflow = "default"
 chaining_phase = "none"
@@ -623,13 +633,22 @@ if __name__ == "__main__":
                     }})
                 else:
                     snapshot = executor.get_state({"configurable": {"thread_id": thread_id}})
+                    resume_value = req.get("params", {}).get("resume")
+                    if resume_value is not None and snapshot.next:
+                        resumed = resume_checkpointed_run(thread_id, resume_value)
+                        emit({"jsonrpc": "2.0", "method": "thread_resumed", "params": {
+                            "thread_id": thread_id,
+                            "next": list(executor.get_state({"configurable": {"thread_id": thread_id}}).next),
+                            "message_count": len(resumed.get("messages", [])) if isinstance(resumed, dict) else 0,
+                        }})
+                        snapshot = executor.get_state({"configurable": {"thread_id": thread_id}})
                     emit({"jsonrpc": "2.0", "method": "thread_state", "params": {
                         "resumable": bool(snapshot.values), "thread_id": thread_id,
                         "next": list(snapshot.next), "checkpoint_id": snapshot.config.get("configurable", {}).get("checkpoint_id", ""),
                     }})
             elif method == "tool_result":
-                # Accept broker response by correlation ID without placing
-                # design payloads in transcript. Graph resume is next slice.
+                # Accept broker response by correlation ID. If graph is paused
+                # at an interrupt, feed authoritative result into same thread.
                 result = req.get("result")
                 error = req.get("error")
                 emit({"jsonrpc": "2.0", "method": "tool_result_ack", "params": {
@@ -638,6 +657,17 @@ if __name__ == "__main__":
                     "result_present": result is not None,
                     "error_present": error is not None,
                 }})
+                if checkpoint_saver is not None:
+                    thread_id = os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
+                    snapshot = executor.get_state({"configurable": {"thread_id": thread_id}})
+                    if snapshot.next:
+                        resume_value = {"error": error} if error is not None else result
+                        resumed = resume_checkpointed_run(thread_id, resume_value)
+                        emit({"jsonrpc": "2.0", "method": "thread_resumed", "params": {
+                            "thread_id": thread_id,
+                            "call_id": req.get("id", ""),
+                            "message_count": len(resumed.get("messages", [])) if isinstance(resumed, dict) else 0,
+                        }})
             elif method == "human_message":
                 text = req.get("params", {}).get("text", "")
                 context_str = req.get("params", {}).get("context", "")
