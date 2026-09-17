@@ -78,20 +78,20 @@ $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 & $Ccad pcb set-outline --file $Project --x-mm 0 --y-mm 0 --width-mm 50 --height-mm 40
 
 # Add pads
-& $Ccad pcb add-pad --file $Project --id JAC1.1 --component JAC1 --pin 1 --net AC1 --layers "F.Cu,F.Paste,F.Mask" --x-mm 5 --y-mm 10 --width-mm 2 --height-mm 2 --type smd --shape rect
-& $Ccad pcb add-pad --file $Project --id JAC2.1 --component JAC2 --pin 1 --net AC2 --layers "F.Cu,F.Paste,F.Mask" --x-mm 5 --y-mm 30 --width-mm 2 --height-mm 2 --type smd --shape rect
-& $Ccad pcb add-pad --file $Project --id D1.A --component D1 --pin A --net AC1 --layers "F.Cu,F.Paste,F.Mask" --x-mm 15 --y-mm 10 --width-mm 1.5 --height-mm 1.5 --type smd --shape roundrect --roundrect-rratio 0.25
-& $Ccad pcb add-pad --file $Project --id D1.K --component D1 --pin K --net DC_POS --layers "F.Cu,F.Paste,F.Mask" --x-mm 18 --y-mm 10 --width-mm 1.5 --height-mm 1.5 --type smd --shape roundrect --roundrect-rratio 0.25
-& $Ccad pcb add-pad --file $Project --id D2.A --component D2 --pin A --net AC2 --layers "F.Cu,F.Paste,F.Mask" --x-mm 15 --y-mm 30 --width-mm 1.5 --height-mm 1.5 --type smd --shape roundrect --roundrect-rratio 0.25
-& $Ccad pcb add-pad --file $Project --id D2.K --component D2 --pin K --net DC_POS --layers "F.Cu,F.Paste,F.Mask" --x-mm 18 --y-mm 30 --width-mm 1.5 --height-mm 1.5 --type smd --shape roundrect --roundrect-rratio 0.25
-& $Ccad pcb add-pad --file $Project --id D3.A --component D3 --pin A --net DC_NEG --layers "F.Cu,F.Paste,F.Mask" --x-mm 15 --y-mm 15 --width-mm 1.5 --height-mm 1.5 --type smd --shape roundrect --roundrect-rratio 0.25
-& $Ccad pcb add-pad --file $Project --id D3.K --component D3 --pin K --net AC1 --layers "F.Cu,F.Paste,F.Mask" --x-mm 18 --y-mm 15 --width-mm 1.5 --height-mm 1.5 --type smd --shape roundrect --roundrect-rratio 0.25
-& $Ccad pcb add-pad --file $Project --id D4.A --component D4 --pin A --net DC_NEG --layers "F.Cu,F.Paste,F.Mask" --x-mm 15 --y-mm 25 --width-mm 1.5 --height-mm 1.5 --type smd --shape roundrect --roundrect-rratio 0.25
-& $Ccad pcb add-pad --file $Project --id D4.K --component D4 --pin K --net AC2 --layers "F.Cu,F.Paste,F.Mask" --x-mm 18 --y-mm 25 --width-mm 1.5 --height-mm 1.5 --type smd --shape roundrect --roundrect-rratio 0.25
+& $Ccad pcb add-pad --file $Project --id JAC1.1 --component JAC1 --pin 1 --net AC1 --layers "F.Cu" --x-mm 5 --y-mm 10 --width-mm 2 --height-mm 2 --type smd --shape rect
+& $Ccad pcb add-pad --file $Project --id JAC2.1 --component JAC2 --pin 1 --net AC2 --layers "F.Cu" --x-mm 5 --y-mm 30 --width-mm 2 --height-mm 2 --type smd --shape rect
+& $Ccad pcb add-pad --file $Project --id D1.A --component D1 --pin A --net AC1 --layers "F.Cu" --x-mm 15 --y-mm 10 --width-mm 1.5 --height-mm 1.5 --type smd --shape roundrect --roundrect-rratio 0.25
+& $Ccad pcb add-pad --file $Project --id D1.K --component D1 --pin K --net DC_POS --layers "F.Cu" --x-mm 18 --y-mm 10 --width-mm 1.5 --height-mm 1.5 --type smd --shape roundrect --roundrect-rratio 0.25
+& $Ccad pcb add-pad --file $Project --id D2.A --component D2 --pin A --net AC2 --layers "F.Cu" --x-mm 15 --y-mm 30 --width-mm 1.5 --height-mm 1.5 --type smd --shape roundrect --roundrect-rratio 0.25
+& $Ccad pcb add-pad --file $Project --id D2.K --component D2 --pin K --net DC_POS --layers "F.Cu" --x-mm 18 --y-mm 30 --width-mm 1.5 --height-mm 1.5 --type smd --shape roundrect --roundrect-rratio 0.25
+& $Ccad pcb add-pad --file $Project --id D3.A --component D3 --pin A --net DC_NEG --layers "F.Cu" --x-mm 15 --y-mm 15 --width-mm 1.5 --height-mm 1.5 --type smd --shape roundrect --roundrect-rratio 0.25
+& $Ccad pcb add-pad --file $Project --id D3.K --component D3 --pin K --net AC1 --layers "F.Cu" --x-mm 18 --y-mm 15 --width-mm 1.5 --height-mm 1.5 --type smd --shape roundrect --roundrect-rratio 0.25
+& $Ccad pcb add-pad --file $Project --id D4.A --component D4 --pin A --net DC_NEG --layers "F.Cu" --x-mm 15 --y-mm 25 --width-mm 1.5 --height-mm 1.5 --type smd --shape roundrect --roundrect-rratio 0.25
+& $Ccad pcb add-pad --file $Project --id D4.K --component D4 --pin K --net AC2 --layers "F.Cu" --x-mm 18 --y-mm 25 --width-mm 1.5 --height-mm 1.5 --type smd --shape roundrect --roundrect-rratio 0.25
 & $Ccad pcb add-pad --file $Project --id C1.1 --component C1 --pin 1 --net DC_POS --layers "*.Cu,*.Mask" --x-mm 25 --y-mm 15 --width-mm 2 --height-mm 2 --type thru_hole --shape circle --drill-mm 1.0
 & $Ccad pcb add-pad --file $Project --id C1.2 --component C1 --pin 2 --net DC_NEG --layers "*.Cu,*.Mask" --x-mm 25 --y-mm 25 --width-mm 2 --height-mm 2 --type thru_hole --shape circle --drill-mm 1.0
-& $Ccad pcb add-pad --file $Project --id JDC1.1 --component JDC1 --pin 1 --net DC_POS --layers "F.Cu,F.Paste,F.Mask" --x-mm 40 --y-mm 10 --width-mm 2 --height-mm 2 --type smd --shape rect
-& $Ccad pcb add-pad --file $Project --id JDC2.1 --component JDC2 --pin 1 --net DC_NEG --layers "F.Cu,F.Paste,F.Mask" --x-mm 40 --y-mm 30 --width-mm 2 --height-mm 2 --type smd --shape rect
+& $Ccad pcb add-pad --file $Project --id JDC1.1 --component JDC1 --pin 1 --net DC_POS --layers "F.Cu" --x-mm 40 --y-mm 10 --width-mm 2 --height-mm 2 --type smd --shape rect
+& $Ccad pcb add-pad --file $Project --id JDC2.1 --component JDC2 --pin 1 --net DC_NEG --layers "F.Cu" --x-mm 40 --y-mm 30 --width-mm 2 --height-mm 2 --type smd --shape rect
 
 # Add tracks (INTENTIONAL DRC ERROR: D1.K to C1.1 track is not fully connected)
 & $Ccad pcb add-track --file $Project --id TPOS.1 --net DC_POS --layer F.Cu --start-x-mm 18 --start-y-mm 10 --end-x-mm 20 --end-y-mm 10 --width-mm 0.5
@@ -115,9 +115,14 @@ Write-Output "--- Fixing DRC Violations ---"
 & $Ccad pcb add-track --file $Project --id TAC2.1 --net AC2 --layer F.Cu --start-x-mm 5 --start-y-mm 30 --end-x-mm 15 --end-y-mm 30 --width-mm 0.5
 & $Ccad pcb add-track --file $Project --id TAC2.2 --net AC2 --layer F.Cu --start-x-mm 15 --start-y-mm 30 --end-x-mm 18 --end-y-mm 25 --width-mm 0.5
 
-& $Ccad pcb add-track --file $Project --id TNEG.1 --net DC_NEG --layer F.Cu --start-x-mm 15 --start-y-mm 15 --end-x-mm 25 --end-y-mm 25 --width-mm 0.5
-& $Ccad pcb add-track --file $Project --id TNEG.2 --net DC_NEG --layer F.Cu --start-x-mm 15 --start-y-mm 25 --end-x-mm 25 --end-y-mm 25 --width-mm 0.5
-& $Ccad pcb add-track --file $Project --id TNEG.3 --net DC_NEG --layer F.Cu --start-x-mm 25 --start-y-mm 25 --end-x-mm 40 --end-y-mm 30 --width-mm 0.5
+# Transition DC negative from SMD front pads to back copper with real vias.
+& $Ccad pcb add-via --file $Project --id VNEG.1 --net DC_NEG --x-mm 15 --y-mm 15 --diameter-mm 1.2 --drill-mm 0.6
+& $Ccad pcb add-via --file $Project --id VNEG.2 --net DC_NEG --x-mm 15 --y-mm 25 --diameter-mm 1.2 --drill-mm 0.6
+& $Ccad pcb add-via --file $Project --id VNEG.3 --net DC_NEG --x-mm 40 --y-mm 30 --diameter-mm 1.2 --drill-mm 0.6
+
+& $Ccad pcb add-track --file $Project --id TNEG.1 --net DC_NEG --layer B.Cu --start-x-mm 15 --start-y-mm 15 --end-x-mm 25 --end-y-mm 25 --width-mm 0.5
+& $Ccad pcb add-track --file $Project --id TNEG.2 --net DC_NEG --layer B.Cu --start-x-mm 15 --start-y-mm 25 --end-x-mm 25 --end-y-mm 25 --width-mm 0.5
+& $Ccad pcb add-track --file $Project --id TNEG.3 --net DC_NEG --layer B.Cu --start-x-mm 25 --start-y-mm 25 --end-x-mm 40 --end-y-mm 30 --width-mm 0.5
 
 Write-Output "--- Running DRC Again ---"
 & $Ccad drc $Project
