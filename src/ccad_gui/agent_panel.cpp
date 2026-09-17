@@ -1029,6 +1029,13 @@ void AgentPanel::handlePythonOutput() {
             } else {
                 result["result"] = QString::fromStdString(res_str);
             }
+            if (QString::fromStdString(res_str).contains("\"error\":\"approval_required\"")) {
+              pending_tool_name_ = tool;
+              pending_tool_args_ = args;
+              pending_tool_call_id_ = call_id.isEmpty() ? QStringLiteral("agent-tool-call") : call_id;
+              setApprovalRequestText("Agent tool: " + tool + " " + args);
+              requestApproval();
+            }
         } else {
             result["error"] = QJsonObject{{"code", -32601}, {"message", "ToolBroker not initialized"}};
         }
@@ -2117,6 +2124,28 @@ void AgentPanel::approveNextApproval() {
     return;
   }
   const QString request = pending_approval_request_;
+  if (!pending_tool_name_.isEmpty() && orchestrator_) {
+    ccad::OrchestratorConfig cfg;
+    cfg.approved_tool_name = pending_tool_name_.toStdString();
+    const std::string approved = orchestrator_->execute_tool(
+        pending_tool_name_.toStdString(), pending_tool_args_.toStdString(), cfg);
+    QJsonObject result{{"jsonrpc", "2.0"}, {"method", "tool_result"},
+                       {"id", pending_tool_call_id_}};
+    QJsonParseError error;
+    const QJsonDocument document = QJsonDocument::fromJson(
+        QString::fromStdString(approved).toUtf8(), &error);
+    if (error.error == QJsonParseError::NoError && document.isObject()) {
+      result.insert("result", document.object());
+    } else {
+      result.insert("result", QString::fromStdString(approved));
+    }
+    if (python_process_) {
+      python_process_->write(QJsonDocument(result).toJson(QJsonDocument::Compact) + "\n");
+    }
+    pending_tool_name_.clear();
+    pending_tool_args_.clear();
+    pending_tool_call_id_.clear();
+  }
   pending_approval_request_.clear();
   approval_last_decision_ = "accept";
   approval_status_label_->setText("Approval accepted: " + request);
@@ -2135,6 +2164,17 @@ void AgentPanel::declineNextApproval() {
     return;
   }
   const QString request = pending_approval_request_;
+  if (!pending_tool_call_id_.isEmpty() && python_process_) {
+    const QJsonObject result{
+        {"jsonrpc", "2.0"},
+        {"method", "tool_result"},
+        {"id", pending_tool_call_id_},
+        {"error", QJsonObject{{"code", -32001}, {"message", "approval_denied"}}}};
+    python_process_->write(QJsonDocument(result).toJson(QJsonDocument::Compact) + "\n");
+  }
+  pending_tool_name_.clear();
+  pending_tool_args_.clear();
+  pending_tool_call_id_.clear();
   pending_approval_request_.clear();
   approval_last_decision_ = "decline";
   approval_status_label_->setText("Approval declined: " + request);
