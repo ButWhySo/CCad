@@ -1295,3 +1295,5 @@ Sprint 546 migrates `pcb autoplace-footprint` project loading to the shared cont
 Sprint 547 migrates `pcb spread-footprints` project loading to the shared context; placement calculation and compatibility writing remain unchanged.
 
 Sprint 548 migrates `pcb add-reference-image` project loading to the shared context; reference-image data handling and compatibility writing remain unchanged.
+
+Sprint 549 migrates `pcb add-table` project loading to the shared context; table handling and compatibility writing remain unchanged.
