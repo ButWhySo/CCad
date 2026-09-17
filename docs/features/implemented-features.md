@@ -2447,3 +2447,6 @@ Agent protocol uses one queue-backed stdin reader; broker waits are bounded by C
 
 
 Core ToolBroker enforces equire_approval before any non-readonly executor callback; default mutation request returns pproval_required. Explicit auto-execute mode remains available for controlled tests.
+
+
+Core approvals support one-shot pproved_tool_name scope: exact matching mutation may execute while all other mutations remain blocked. GUI approval-token wiring remains pending.
