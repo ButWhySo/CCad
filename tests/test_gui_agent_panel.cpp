@@ -130,6 +130,8 @@ private slots:
     QVERIFY(panel.findChild<QPushButton*>("action:agent_marketplace") != nullptr);
     QVERIFY(panel.findChild<QPushButton*>("action:agent_context_refresh") != nullptr);
     QVERIFY(panel.findChild<QPushButton*>("action:agent_voice") != nullptr);
+    QVERIFY(panel.findChild<QLabel*>("status:agent_run") != nullptr);
+    QVERIFY(panel.findChild<QLabel*>("status:agent_result") != nullptr);
   }
 
   void testQueueStateCheckpointRoundTrip() {

@@ -849,10 +849,10 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   provider_execution_status_label_ = new QLabel(this); provider_execution_status_label_->hide();
   project_label_ = new QLabel(this); project_label_->hide();
   epoch_label_ = new QLabel(this); epoch_label_->hide();
-  status_label_ = new QLabel(this); status_label_->hide();
+  status_label_ = new QLabel(this); status_label_->setObjectName("status:agent_run"); status_label_->hide();
   workspace_label_ = new QLabel(this); workspace_label_->hide();
   diagnostics_label_ = new QLabel(this); diagnostics_label_->hide();
-  result_state_label_ = new QLabel(this); result_state_label_->hide();
+  result_state_label_ = new QLabel(this); result_state_label_->setObjectName("status:agent_result"); result_state_label_->hide();
   task_state_label_ = new QLabel(this); task_state_label_->hide();
   evidence_label_ = new QLabel(this); evidence_label_->hide();
   approval_status_label_ = new QLabel(this); approval_status_label_->hide();
