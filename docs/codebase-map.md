@@ -1309,3 +1309,5 @@ Sprint 553 adds `agent.tool_call` JSON-RPC dispatch, approval checks, tool schem
 Sprint 554 adds pre-dispatch required-field validation to the four executable agent PCB adapters, returning structured `missing_parameter` errors.
 
 Sprint 555 routes agent `pcb.drc` through the real CLI DRC command instead of reporting only board presence.
+
+Sprint 556 hardens duplicated agent JSON string extraction for escaped values and Windows paths.
