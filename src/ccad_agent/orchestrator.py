@@ -25,7 +25,11 @@ class AgentState(TypedDict):
 @tool
 def ui_place_via(x_mm: float, y_mm: float, dry_run: bool = False):
     """Places a via on the PCB at the specified x, y coordinates (in mm)."""
-    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.place_via", "args": {"x_mm": x_mm, "y_mm": y_mm, "dry_run": dry_run}}})
+    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
+        "tool": "ui.place_via",
+        "args": {"x_mm": x_mm, "y_mm": y_mm, "dry_run": dry_run},
+        "call_id": "agent-tool-call",
+    }})
     return "Action dispatched to CCad client."
 
 @tool
@@ -561,7 +565,10 @@ if __name__ == "__main__":
                         args = tcall.get("args", {})
                         if "pre tool call" in [h.lower() for h in active_hooks]:
                             hooks.trigger_hook("pre tool call", emit, tool_name)
-                        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": tool_name, "args": args}})
+                        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
+                            "tool": tool_name, "args": args,
+                            "call_id": tcall.get("id", "") or "agent-tool-call",
+                        }})
                         if "post tool call" in [h.lower() for h in active_hooks]:
                             hooks.trigger_hook("post tool call", emit, tool_name)
                 elif "<TOOL>" in last_msg.content:

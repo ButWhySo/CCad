@@ -1012,10 +1012,12 @@ void AgentPanel::handlePythonOutput() {
         QJsonObject params = obj["params"].toObject();
         QString tool = params["tool"].toString();
         QString args = QJsonDocument(params["args"].toObject()).toJson(QJsonDocument::Compact);
+        const QString call_id = params["call_id"].toString();
         appendChatMessage("agent", "<TOOL>" + tool + " " + args);
         QJsonObject result;
         result["jsonrpc"] = "2.0";
-        if (obj.contains("id")) result["id"] = obj["id"];
+        result["id"] = call_id.isEmpty() ? QString("agent-tool-call") : call_id;
+        result["method"] = "tool_result";
 
         if (orchestrator_) {
             ccad::OrchestratorConfig cfg;

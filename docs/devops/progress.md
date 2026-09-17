@@ -1503,3 +1503,7 @@ Added explicit CCAD_PROVIDER=mock provider for offline harness testing. It runs 
 ### Sprint 569 - prove offline orchestration tool loop
 
 Extended mock provider to issue one deterministic ui.place_via call for /route, pass through real LangGraph ToolNode, then complete with labeled final response. Live subprocess smoke observed routing message, tool_call, final mock response, and empty stderr. This proves protocol-loop behavior only; C++ broker/project mutation remains next integration gate.
+
+### Sprint 570 - correlate graph tool calls
+
+Agent tool-call payloads now carry call_id, including the real ToolNode path for ui.place_via; AgentPanel returns a matching JSON-RPC 	ool_result envelope. Live mock /route smoke passed with correlated call ID, final response, and empty stderr. Python/GUI broker continuation remains next: consume returned result in graph state and enforce approval before mutation.
