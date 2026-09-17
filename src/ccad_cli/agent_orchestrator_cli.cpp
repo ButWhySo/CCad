@@ -156,19 +156,23 @@ ccad::AgentOrchestrator& getOrchestrator() {
             }
         });
         g_orchestrator->register_tool({
-            "pcb.add-via", "Add Via", ccad::TaskRisk::LowMutation, "{}",
+            "pcb.add-via", "Add Via", ccad::TaskRisk::LowMutation,
+            R"({"type":"object","required":["file","id","net","x_mm","y_mm","diameter_mm","drill_mm"]})",
             [](const std::string& args) -> std::string { return executeCliTool("pcb.add-via", args); }
         });
         g_orchestrator->register_tool({
-            "pcb.add-track", "Add Track", ccad::TaskRisk::LowMutation, "{}",
+            "pcb.add-track", "Add Track", ccad::TaskRisk::LowMutation,
+            R"({"type":"object","required":["file","id","net","layer","start_x_mm","start_y_mm","end_x_mm","end_y_mm","width_mm"]})",
             [](const std::string& args) -> std::string { return executeCliTool("pcb.add-track", args); }
         });
         g_orchestrator->register_tool({
-            "pcb.place-footprint", "Place SchSymbol", ccad::TaskRisk::LowMutation, "{}",
+            "pcb.place-footprint", "Place Footprint", ccad::TaskRisk::LowMutation,
+            R"({"type":"object","required":["file","footprint","component","at_x_mm","at_y_mm","layer"]})",
             [](const std::string& args) -> std::string { return executeCliTool("pcb.place-footprint", args); }
         });
         g_orchestrator->register_tool({
-            "pcb.export", "Export Data", ccad::TaskRisk::External, "{}",
+            "pcb.export", "Export KiCad Board", ccad::TaskRisk::External,
+            R"({"type":"object","required":["file","output"]})",
             [](const std::string& args) -> std::string { return executeCliTool("pcb.export", args); }
         });
         g_orchestrator->register_tool({
@@ -276,6 +280,21 @@ bool handleOrchestratorJsonRpc(const std::string& method,
                 auto exec = orch.orchestrate(goal, context);
                 std::cout << formatSuccess(id, orch.goal_status_json(exec)) << "\n";
             }
+        }
+        std::cout.flush();
+        return true;
+    }
+    if (method == "agent.tool_call") {
+        const std::string tool_name = extractStringValue(line, "name");
+        const auto tool = orch.get_tool(tool_name);
+        if (!tool) {
+            std::cout << formatError(id, -32601, "Unknown orchestrator tool: " + tool_name) << "\n";
+        } else if ((tool->default_risk != ccad::TaskRisk::ReadOnly) && !allow_write) {
+            std::cout << formatError(id, -32604, "Approval required: tool mutates or exports project") << "\n";
+        } else {
+            ccad::OrchestratorConfig cfg = orch.get_config();
+            cfg.require_approval = false;
+            std::cout << formatSuccess(id, orch.execute_tool(tool_name, line, cfg)) << "\n";
         }
         std::cout.flush();
         return true;
