@@ -1237,3 +1237,5 @@ Sprint 517 migrates `pcb set-layer-visibility` loading to the shared context; th
 Sprint 518 migrates `pcb set-via` loading to the shared context; the compatibility writer remains to preserve transaction audit JSONL behavior.
 
 Sprint 519 migrates `pcb add-track` loading to the shared context; the compatibility writer remains to preserve transaction audit JSONL behavior.
+
+Sprint 520 migrates `pcb add-track-arc` loading to the shared context; the compatibility writer remains to preserve transaction audit JSONL behavior.

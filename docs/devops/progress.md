@@ -1301,3 +1301,7 @@ Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` bound
 ### Sprint 519 — migrate add-track loading
 
 `pcb add-track` now loads through `HeadlessBoardContext` while preserving routing geometry checks, audit, and compatibility writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
+
+### Sprint 520 — migrate track-arc loading
+
+`pcb add-track-arc` now loads through `HeadlessBoardContext` while preserving arc geometry checks, audit, and compatibility writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
