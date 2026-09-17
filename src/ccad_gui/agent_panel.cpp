@@ -776,6 +776,55 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   actions_layout->addWidget(send_btn);
 
   composer_layout->addLayout(actions_layout);
+
+  auto* approval_card = new QFrame(this);
+  approval_card->setObjectName("panel:agent_approval_preview");
+  approval_card->setProperty("agentRole", "approvalCard");
+  approval_card->setStyleSheet("QFrame[agentRole=approvalCard] { background:#25262b; border:1px solid #604080; border-radius:8px; } QLabel { color:#d1d5db; } QPushButton { padding:4px 8px; }");
+  auto* approval_layout = new QVBoxLayout(approval_card);
+  approval_layout->setContentsMargins(8, 6, 8, 6);
+  approval_layout->setSpacing(4);
+  auto* approval_header = new QHBoxLayout();
+  auto* approval_title = new QLabel("Approval", approval_card);
+  approval_title->setObjectName("label:agent_approval_preview_summary");
+  approval_title->setStyleSheet("font-weight:600; color:#f0d9ff;");
+  approval_status_label_ = new QLabel("No approval pending", approval_card);
+  approval_status_label_->setObjectName("label:agent_approval_status");
+  approval_header->addWidget(approval_title);
+  approval_header->addWidget(approval_status_label_, 1);
+  approval_layout->addLayout(approval_header);
+  approval_summary_label_ = new QLabel("Human approval is required before project changes.", approval_card);
+  approval_summary_label_->setObjectName("label:agent_approval_preview_delta");
+  approval_summary_label_->setWordWrap(true);
+  approval_layout->addWidget(approval_summary_label_);
+  approval_request_input_ = new QLineEdit(approval_card);
+  approval_request_input_->setObjectName("control:agent_approval_request");
+  approval_request_input_->setPlaceholderText("Describe the change needing approval...");
+  approval_layout->addWidget(approval_request_input_);
+  auto* approval_actions = new QHBoxLayout();
+  approval_request_button_ = new QPushButton("Request", approval_card);
+  approval_request_button_->setObjectName("action:agent_request_approval");
+  approval_accept_button_ = new QPushButton("Approve", approval_card);
+  approval_accept_button_->setObjectName("action:agent_approve_next");
+  approval_decline_button_ = new QPushButton("Decline", approval_card);
+  approval_decline_button_->setObjectName("action:agent_decline_next");
+  approval_cancel_button_ = new QPushButton("Cancel", approval_card);
+  approval_cancel_button_->setObjectName("action:agent_cancel_approval");
+  approval_clear_button_ = new QPushButton("Clear", approval_card);
+  approval_clear_button_->setObjectName("action:agent_clear_approvals");
+  approval_actions->addWidget(approval_request_button_);
+  approval_actions->addWidget(approval_accept_button_);
+  approval_actions->addWidget(approval_decline_button_);
+  approval_actions->addWidget(approval_cancel_button_);
+  approval_actions->addWidget(approval_clear_button_);
+  approval_layout->addLayout(approval_actions);
+  connect(approval_request_button_, &QPushButton::clicked, this, &AgentPanel::requestApproval);
+  connect(approval_accept_button_, &QPushButton::clicked, this, &AgentPanel::approveNextApproval);
+  connect(approval_decline_button_, &QPushButton::clicked, this, &AgentPanel::declineNextApproval);
+  connect(approval_cancel_button_, &QPushButton::clicked, this, &AgentPanel::cancelApproval);
+  connect(approval_clear_button_, &QPushButton::clicked, this, &AgentPanel::clearApprovals);
+  approval_preview_ = approval_card;
+  main_layout->addWidget(approval_card);
   main_layout->addWidget(composer_container);
 
   // --- STATUS HEADER ---
@@ -855,7 +904,6 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   result_state_label_ = new QLabel(this); result_state_label_->setObjectName("status:agent_result"); result_state_label_->hide();
   task_state_label_ = new QLabel(this); task_state_label_->hide();
   evidence_label_ = new QLabel(this); evidence_label_->hide();
-  approval_status_label_ = new QLabel(this); approval_status_label_->hide();
   
   action_id_input_ = new QLineEdit(this); action_id_input_->hide();
   session_path_input_ = new QLineEdit(this); session_path_input_->hide();
@@ -865,7 +913,6 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   live_payload_input_ = new QLineEdit(this); live_payload_input_->hide();
   goal_input_ = new QLineEdit(this); goal_input_->hide();
   command_input_ = new QLineEdit(this); command_input_->hide();
-  approval_request_input_ = new QLineEdit(this); approval_request_input_->hide();
   policy_dry_run_checkbox_ = new QCheckBox(this); policy_dry_run_checkbox_->hide();
   output_ = new QPlainTextEdit(this); output_->hide();
 

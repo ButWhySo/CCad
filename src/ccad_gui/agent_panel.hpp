@@ -12,6 +12,8 @@
 
 #include "ccad_core/agent_orchestrator.hpp"
 class QLabel;
+class QFrame;
+class QPushButton;
 class QCheckBox;
 class QComboBox;
 class QLineEdit;
@@ -219,6 +221,14 @@ class AgentPanel final : public QWidget {
   QLabel* task_state_label_ = nullptr;
   QLabel* evidence_label_ = nullptr;
   QLabel* approval_status_label_ = nullptr;
+  QFrame* approval_preview_ = nullptr;
+  QLabel* approval_summary_label_ = nullptr;
+  QLabel* approval_delta_label_ = nullptr;
+  QPushButton* approval_request_button_ = nullptr;
+  QPushButton* approval_accept_button_ = nullptr;
+  QPushButton* approval_decline_button_ = nullptr;
+  QPushButton* approval_cancel_button_ = nullptr;
+  QPushButton* approval_clear_button_ = nullptr;
 
   QLineEdit* action_id_input_ = nullptr;
   QLineEdit* session_path_input_ = nullptr;
