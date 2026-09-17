@@ -1336,3 +1336,4 @@ Sprint 590 adds opt-in `init_checkpointer()` and SQLite-backed graph compilation
 Sprint 591 connects `AgentPanel::applySessionMetadata()` to Python `agent.set_thread_id`, aligning GUI durable thread identity with LangGraph checkpoint configuration.
 Sprint 592 adds `agent.resume_thread` handling in `src/ccad_agent/orchestrator.py` and invokes it from `AgentPanel::resumeRun()` for safe checkpoint-state inspection.
 Sprint 593 adds thread_state rendering in AgentPanel::handlePythonOutput(), exposing checkpoint resume result to status/result/activity UI.
+Sprint 594 adds `resume_checkpointed_run()` and protocol handling for LangGraph `Command(resume=...)`; `AgentPanel` renders `thread_resumed`.

@@ -1070,6 +1070,17 @@ void AgentPanel::handlePythonOutput() {
                            params["reason"].toString("No checkpoint backend"),
                            "agent.resume_thread");
         }
+      } else if (obj.contains("method") && obj["method"].toString() == "thread_resumed") {
+        const QJsonObject params = obj["params"].toObject();
+        const QString thread_id = params["thread_id"].toString();
+        const QString call_id = params["call_id"].toString();
+        const QString detail = QStringLiteral("Thread %1 resumed%2")
+                                   .arg(thread_id.isEmpty() ? QStringLiteral("ccad-local") : thread_id,
+                                        call_id.isEmpty() ? QString() : QStringLiteral(" | call ") + call_id);
+        status_label_->setText("Run resumed");
+        result_state_label_->setText("Result resumed");
+        addActivityEvent("session", "Checkpoint run resumed", detail,
+                         "agent.resume_thread");
       } else if (obj.contains("method") && obj["method"].toString() == "marketplace_catalog") {
         if (marketplace_catalog_cb_) marketplace_catalog_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "generated_component") {
