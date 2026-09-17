@@ -841,3 +841,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 613: replace hardcoded context counter with client-side estimate; provider token accounting remains unavailable until a real adapter call.
 - [x] Sprint 614: prevent premature tool-result acknowledgement before human approval; live checkpointed mutation proof remains next.
 - [x] Sprint 615: checkpoint restart fixture proves accepted and denied outcomes; full GUI-to-checkpoint mutation integration remains next.
+- [x] Sprint 616: CI runs provider mock and checkpoint acceptance/denial fixtures; external-provider network test remains intentionally absent.

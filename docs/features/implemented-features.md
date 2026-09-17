@@ -2484,3 +2484,4 @@ Sprint 612 adds a Test Provider action for immediate selected-adapter initializa
 Sprint 613 reports approximate context usage from the actual context payload sent with chat instead of a hardcoded number.
 Sprint 614 keeps approval-required tool calls pending until a human Approve, Decline, or Cancel decision returns the authoritative result to the orchestrator.
 Sprint 615 verifies restart-safe checkpoint continuation for both accepted tool results and explicit approval denial.
+Sprint 616 adds a GitHub Actions Python agent gate for mock chat and both checkpoint decision outcomes.
