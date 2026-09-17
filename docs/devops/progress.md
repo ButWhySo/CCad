@@ -1573,3 +1573,6 @@ Verified official LangGraph persistence guidance and installed SQLite backend. R
 ### Sprint 591 - bind GUI session to graph thread
 
 Loading a GUI agent session now sends its durable thread ID to Python through `agent.set_thread_id`; Python updates `CCAD_AGENT_THREAD_ID` and emits only redacted thread state. Focused GUI test passed, official harness screenshot inspected, stderr empty, and full gate passed. SQLite DB path remains explicit user configuration.
+### Sprint 592 - expose checkpoint resume state
+
+AgentPanel Resume now asks Python for current SQLite-backed thread state. Python reports resumable, thread, next-node, and checkpoint ID metadata, or explicit checkpoint_disabled; no stale tool is auto-executed. Full graph continuation after an interrupted tool remains open. Focused GUI test and resume-state smoke passed; full gate pending.

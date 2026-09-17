@@ -1334,3 +1334,4 @@ Sprint 588 updates `invoke_agent_run()` in `src/ccad_agent/orchestrator.py` to p
 Sprint 589 pins the compatible LangGraph checkpoint stack in `src/ccad_agent/requirements.txt`; SQLite persistence package is available for the next wiring sprint.
 Sprint 590 adds opt-in `init_checkpointer()` and SQLite-backed graph compilation in `src/ccad_agent/orchestrator.py`; `CCAD_AGENT_CHECKPOINT_DB` controls activation.
 Sprint 591 connects `AgentPanel::applySessionMetadata()` to Python `agent.set_thread_id`, aligning GUI durable thread identity with LangGraph checkpoint configuration.
+Sprint 592 adds `agent.resume_thread` handling in `src/ccad_agent/orchestrator.py` and invokes it from `AgentPanel::resumeRun()` for safe checkpoint-state inspection.

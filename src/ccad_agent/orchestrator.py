@@ -615,6 +615,18 @@ if __name__ == "__main__":
                 emit({"jsonrpc": "2.0", "method": "thread_state", "params": {
                     "configured": bool(thread_id), "secret_value_visible": False,
                 }})
+            elif method == "agent.resume_thread":
+                thread_id = os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
+                if checkpoint_saver is None:
+                    emit({"jsonrpc": "2.0", "method": "thread_state", "params": {
+                        "resumable": False, "reason": "checkpoint_disabled",
+                    }})
+                else:
+                    snapshot = executor.get_state({"configurable": {"thread_id": thread_id}})
+                    emit({"jsonrpc": "2.0", "method": "thread_state", "params": {
+                        "resumable": bool(snapshot.values), "thread_id": thread_id,
+                        "next": list(snapshot.next), "checkpoint_id": snapshot.config.get("configurable", {}).get("checkpoint_id", ""),
+                    }})
             elif method == "tool_result":
                 # Accept broker response by correlation ID without placing
                 # design payloads in transcript. Graph resume is next slice.

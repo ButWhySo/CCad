@@ -1894,6 +1894,9 @@ void AgentPanel::pauseRun() {
 }
 
 void AgentPanel::resumeRun() {
+  if (python_process_ && python_process_->state() == QProcess::Running) {
+    sendJsonRpc("agent.resume_thread", QJsonObject());
+  }
   updateRunState("running", "Run resumed", "Local run state resumed; durable runner binding is pending.");
 }
 

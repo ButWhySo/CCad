@@ -2461,3 +2461,4 @@ Agent graph invocations now carry explicit thread correlation through LangGraph 
 Agent dependency requirements now include a compatible SQLite checkpoint package; installation is reproducible, but runtime checkpointer wiring remains explicitly pending.
 Set `CCAD_AGENT_CHECKPOINT_DB` to an explicit local SQLite path to persist LangGraph thread state across orchestrator restarts. Unset path keeps persistence disabled; no credentials are stored by this feature.
 Loading a saved Agent session now propagates its thread ID to the Python orchestrator, aligning GUI session identity with optional SQLite LangGraph checkpoints without sending secrets.
+Resume control now queries SQLite-backed LangGraph thread state and reports whether recovery is available; it does not silently replay stale mutations.
