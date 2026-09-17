@@ -5,6 +5,7 @@
 #include "ccad_core/third_party/qrcodegen/qrcodegen.hpp"
 
 #include <cmath>
+#include <algorithm>
 #include <map>
 #include <optional>
 #include <string>
@@ -489,7 +490,18 @@ CanvasScene buildSchematicScene(const Schematic& schematic) {
     };
   };
 
-  for (const SchSymbol& comp : schematic.symbols) {
+  const bool needs_display_layout = schematic.symbols.size() > 1 &&
+      std::all_of(schematic.symbols.begin(), schematic.symbols.end(), [](const SchSymbol& comp) {
+        return comp.position.x.nanometers == 0 && comp.position.y.nanometers == 0;
+      });
+  for (std::size_t comp_index = 0; comp_index < schematic.symbols.size(); ++comp_index) {
+    SchSymbol comp = schematic.symbols[comp_index];
+    if (needs_display_layout) {
+      constexpr double column_spacing = 25.0;
+      constexpr double row_spacing = 18.0;
+      comp.position = {millimeters(15.0 + (comp_index % 4) * column_spacing),
+                       millimeters(15.0 + (comp_index / 4) * row_spacing)};
+    }
     CanvasComponent cc;
     cc.id = comp.id;
     cc.part = comp.lib_id;

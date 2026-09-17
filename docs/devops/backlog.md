@@ -867,3 +867,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 646: branch audit confirms no stale branches; provider harness terminal-state variants validated.
 - [x] Sprint 648: checkpointed tool-result resume rejects mismatched call IDs before graph continuation.
 - [x] Sprint 649: checkpoint dependency/runtime versions aligned; interrupt, resume, and denial fixtures pass.
+- [x] Sprint 651: separate all-zero-position schematic symbols for readable review rendering; preserve explicit positions; full Qt CTest and visual proof pass.

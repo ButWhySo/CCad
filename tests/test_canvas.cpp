@@ -270,5 +270,28 @@ int main() {
   require(std::abs(scene.targets.at(0).y_units - 25.0) < 1e-6, "canvas target y");
   require(std::abs(scene.targets.at(0).size_units - 3.0) < 1e-6, "canvas target size");
   require(std::abs(scene.targets.at(0).line_width_units - 0.5) < 1e-6, "canvas target line width");
+
+  ccad::Schematic zero_position_schematic;
+  zero_position_schematic.symbols = {
+      ccad::SchSymbol{.id = "U1", .lib_id = "Device:R"},
+      ccad::SchSymbol{.id = "U2", .lib_id = "Device:C"},
+  };
+  const ccad::CanvasScene laid_out_scene =
+      ccad::buildSchematicScene(zero_position_schematic);
+  require(laid_out_scene.symbols.size() == 2,
+          "schematic scene retains zero-position symbols");
+  require(laid_out_scene.symbols.at(0).x_units != laid_out_scene.symbols.at(1).x_units ||
+              laid_out_scene.symbols.at(0).y_units != laid_out_scene.symbols.at(1).y_units,
+          "schematic scene separates unplaced symbols for display");
+
+  ccad::Schematic positioned_schematic;
+  positioned_schematic.symbols = {
+      ccad::SchSymbol{.id = "U3", .lib_id = "Device:R", .position = ccad::Point{
+          ccad::millimeters(42.0), ccad::millimeters(17.0)}}};
+  const ccad::CanvasScene positioned_scene =
+      ccad::buildSchematicScene(positioned_schematic);
+  require(positioned_scene.symbols.at(0).x_units == 42.0 &&
+              positioned_scene.symbols.at(0).y_units == 17.0,
+          "schematic scene preserves explicit symbol position");
 }
 

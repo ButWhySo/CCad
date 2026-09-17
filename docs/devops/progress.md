@@ -1723,3 +1723,6 @@ Checkpoint resume now compares incoming `tool_result.id` against the interrupted
 ### Sprint 649 - align checkpoint dependencies
 
 Agent requirements now include SQLite checkpoint runtime dependencies and cap provider adapters below incompatible major versions. Local checkpoint proofs pass after installing the tested LangGraph 0.2 generation.
+### Sprint 651 - make unplaced schematic symbols readable
+
+Schematic scene construction now applies deterministic display-only grid placement when every symbol has the default zero position. Explicit symbol coordinates and persisted project data remain unchanged. Added regression coverage for both fallback layout and coordinate preservation. Official sprint harness and targeted schematic screenshot were inspected; full Qt build and CTest pass 91/91.

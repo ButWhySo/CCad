@@ -1369,3 +1369,6 @@ Sprint 625 adds composer quick replies `action:agent_quick_summarize`, `action:a
 ## Sprint 627 handover: scoped mutation approval
 
 `ToolBroker::execute_tool` in `src/ccad_core/agent_orchestrator.cpp` requires `OrchestratorConfig.approved_tool_name` plus `approved_tool_token` for mutating tools. Tokens are stored as consumed in the broker and cannot be replayed. `AgentPanel` creates a UUID token when a Python tool call requires approval, passes it only on Approve, and clears pending token state on every terminal decision. Existing read-only tools remain unaffected. Regression coverage is in `tests/test_agent_orchestrator.cpp`.
+# Current UI note
+
+`src/ccad_core/canvas.cpp::buildSchematicScene` keeps schematic model data immutable while applying a deterministic four-column display grid when all symbols retain default zero coordinates. This prevents imported/demo symbols from visually stacking; explicit coordinates remain authoritative.
