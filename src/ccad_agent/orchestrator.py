@@ -752,6 +752,22 @@ if __name__ == "__main__":
                     thread_id = os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
                     snapshot = executor.get_state({"configurable": {"thread_id": thread_id}})
                     if snapshot.next:
+                        expected_call_id = ""
+                        for checkpoint_task in snapshot.tasks:
+                            for checkpoint_interrupt in getattr(checkpoint_task, "interrupts", ()):
+                                value = getattr(checkpoint_interrupt, "value", {})
+                                if isinstance(value, dict) and value.get("call_id"):
+                                    expected_call_id = value["call_id"]
+                                    break
+                            if expected_call_id:
+                                break
+                        received_call_id = req.get("id", "")
+                        if expected_call_id and received_call_id != expected_call_id:
+                            emit({"jsonrpc": "2.0", "method": "tool_result_ignored", "params": {
+                                "call_id": received_call_id, "expected_call_id": expected_call_id,
+                                "reason": "call_id_mismatch",
+                            }})
+                            continue
                         resume_value = {"error": error} if error is not None else result
                         resumed = resume_checkpointed_run(thread_id, resume_value)
                         emit({"jsonrpc": "2.0", "method": "thread_resumed", "params": {

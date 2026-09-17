@@ -1717,3 +1717,9 @@ Added the cross-platform offline MCP bridge contract test to agent CI. It verifi
 ### Sprint 646 - audit branches and provider harness terminal states
 
 Repository branch audit found only `main`; no stale branches existed for deletion. Provider harness terminal assertions now accept approval, tool-result, or final chat status, matching real provider and mock flows. Python syntax and provider boundary tests pass.
+### Sprint 648 - correlate checkpointed tool results
+
+Checkpoint resume now compares incoming `tool_result.id` against the interrupted tool call ID. Late or unrelated results are acknowledged as ignored and cannot resume the wrong graph state.
+### Sprint 649 - align checkpoint dependencies
+
+Agent requirements now include SQLite checkpoint runtime dependencies and cap provider adapters below incompatible major versions. Local checkpoint proofs pass after installing the tested LangGraph 0.2 generation.

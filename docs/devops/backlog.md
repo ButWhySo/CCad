@@ -865,3 +865,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 642: localhost OpenAI-compatible provider GUI fixture proves provider-to-approval-to-mutation flow locally; CI wiring deferred until native Windows GUI runner exists.
 - [x] Sprint 644: MCP bridge read-only policy contract runs in cross-platform agent CI; live Windows GUI pipe remains local-only.
 - [x] Sprint 646: branch audit confirms no stale branches; provider harness terminal-state variants validated.
+- [x] Sprint 648: checkpointed tool-result resume rejects mismatched call IDs before graph continuation.
+- [x] Sprint 649: checkpoint dependency/runtime versions aligned; interrupt, resume, and denial fixtures pass.
