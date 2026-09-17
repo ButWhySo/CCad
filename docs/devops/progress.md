@@ -1790,6 +1790,10 @@ Corrected Test Provider so it uses `agent.test_provider`, which applies provider
 
 Transient provider tests now remove SDK alias variables when clearing Gemini, OpenAI-compatible, or local credentials. This prevents a cleared key from remaining usable through a second environment name. Gemini redaction and localhost provider fixtures passed; official visual screenshot was inspected and stderr was empty.
 
+### Sprint 692 - show transient provider-test result
+
+Agent Settings now shows `Provider test: not run`, `ready (network not probed)`, or a bounded adapter/dependency error after Test Provider. The callback is driven by native provider state, never displays credentials, and does not change the Save-only persistence boundary. Focused GUI test, full Qt CTest 91/91, localhost provider approval roundtrip, official visual harness, screenshot inspection, and empty stderr passed.
+
 ### Sprint 683 - expose native approval status to MCP hosts
 
 Added read-only `ccad_gui_approval_status` to the GUI MCP bridge. External harnesses can now query approval-card visibility and status directly, while mutation execution and human approval remain native GUI responsibilities. Python regression and official visual harness passed; screenshot was inspected and stderr was empty.

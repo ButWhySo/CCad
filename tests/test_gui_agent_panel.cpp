@@ -59,6 +59,9 @@ private slots:
     auto* provider_target = dialog.findChild<QLabel*>("label:providerTestTarget");
     QVERIFY(provider_target != nullptr);
     QVERIFY(provider_target->text().contains("Test target:"));
+    auto* provider_status = dialog.findChild<QLabel*>("label:providerTestStatus");
+    QVERIFY(provider_status != nullptr);
+    QVERIFY(provider_status->text().contains("not run"));
     auto* clear_key = dialog.findChild<QPushButton*>("action:clearProviderKeyBtn");
     QVERIFY(clear_key != nullptr);
     QVERIFY(!clear_key->toolTip().isEmpty());

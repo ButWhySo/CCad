@@ -1220,6 +1220,7 @@ void AgentPanel::handlePythonOutput() {
                                              : QStringLiteral("adapter_error_") + adapter_error))
                                : QStringLiteral("env_missing");
         updateProviderControls();
+        if (provider_state_cb_) provider_state_cb_(params);
       } else if (obj.contains("method") && obj["method"].toString() == "thread_state") {
         const QJsonObject params = obj["params"].toObject();
         const bool resumable = params["resumable"].toBool(false);
@@ -2465,6 +2466,10 @@ void AgentPanel::clearApprovals() {
   addActivityEvent("approval", "Approvals cleared", "Approval lane reset",
                    "agent.approval");
   if (approval_preview_) approval_preview_->hide();
+}
+
+void AgentPanel::setProviderStateCallback(ProviderStateCallback cb) {
+    provider_state_cb_ = std::move(cb);
 }
 
 QString AgentPanel::projectText() const {

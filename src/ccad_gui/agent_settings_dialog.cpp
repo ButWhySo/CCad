@@ -91,6 +91,15 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
       agent_panel_->setConfigStateCallback([this](const QJsonObject& config) {
           this->applyConfigState(config);
       });
+      agent_panel_->setProviderStateCallback([this](const QJsonObject& state) {
+          if (!provider_status_label_) return;
+          const bool ready = state["execution_enabled"].toBool(false);
+          const QString error = state["error"].toString();
+          provider_status_label_->setText(
+              ready ? "Provider test: ready (network not probed)"
+                    : (error.isEmpty() ? "Provider test: unavailable"
+                                       : "Provider test: " + error));
+      });
       agent_panel_->setMarketplaceCatalogCallback([this](const QJsonObject& catalog) {
           this->applyMarketplaceCatalog(catalog);
       });
@@ -295,6 +304,10 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
   provider_target_label_->setObjectName("label:providerTestTarget");
   provider_target_label_->setProperty("agentRole", "noticeCard");
   layout->addWidget(provider_target_label_);
+  provider_status_label_ = new QLabel("Provider test: not run", parent_widget);
+  provider_status_label_->setObjectName("label:providerTestStatus");
+  provider_status_label_->setProperty("agentRole", "noticeCard");
+  layout->addWidget(provider_status_label_);
   const auto refresh_target = [this]() {
     const QString provider = provider_combo_ ? provider_combo_->currentText() : QStringLiteral("OpenAI");
     const QString model = model_input_ && !model_input_->text().trimmed().isEmpty()

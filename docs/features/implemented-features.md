@@ -2550,6 +2550,8 @@ Agent Settings shows the exact provider/model targeted by Test Provider and chan
 
 When an optional provider adapter dependency is missing, chat reports the module name and repository requirements install command. Local CCad tools remain usable; credentials and endpoint values are not shown.
 
+Test Provider also reports its transient result directly in Agent Settings. The status is initially `not run`, becomes `ready (network not probed)` for an initialized adapter, or shows a bounded dependency/adapter error. This is session feedback only; Save remains the only way to persist provider settings.
+
 ## CI speed and syntax gate
 
 The CI workflow compiles agent and test Python sources before protocol tests and invokes CMake with parallel workers on all build jobs. This catches syntax regressions early and reduces idle build time without weakening CTest.

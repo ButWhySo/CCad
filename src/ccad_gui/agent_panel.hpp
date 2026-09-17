@@ -32,6 +32,7 @@ class AgentPanel final : public QWidget {
   using LiveQueryProvider = std::function<QString(const QString&, const QString&)>;
   using ContextProvider = std::function<std::string()>;
   using ConfigStateCallback = std::function<void(const QJsonObject&)>;
+  using ProviderStateCallback = std::function<void(const QJsonObject&)>;
   using MarketplaceCatalogCallback = std::function<void(const QJsonObject&)>;
   using ComponentWizardCallback = std::function<void(const QJsonObject&)>;
 
@@ -55,6 +56,7 @@ class AgentPanel final : public QWidget {
   void setContextProvider(ContextProvider provider);
   void setProviderSecret(const QString& provider_id, const QString& secret);
   void setConfigStateCallback(ConfigStateCallback cb);
+  void setProviderStateCallback(ProviderStateCallback cb);
   void setMarketplaceCatalogCallback(MarketplaceCatalogCallback cb);
   void setComponentWizardCallback(ComponentWizardCallback cb);
   void setProjectContext(const QString& project_label, int ui_map_epoch);
@@ -300,6 +302,7 @@ class AgentPanel final : public QWidget {
   std::unique_ptr<ccad::AgentOrchestrator> orchestrator_;
   ContextProvider context_provider_;
   ConfigStateCallback config_state_cb_;
+  ProviderStateCallback provider_state_cb_;
   MarketplaceCatalogCallback marketplace_catalog_cb_;
   ComponentWizardCallback component_wizard_cb_;
 };
