@@ -1327,3 +1327,4 @@ Sprint 581 adds the GUI approval continuation in `src/ccad_gui/agent_panel.cpp`:
 Sprint 582 extends that continuation to Cancel: `AgentPanel::cancelApproval()` sends `approval_canceled` for the retained call ID before clearing pending approval state.
 Sprint 583 updates `src/ccad_agent/orchestrator.py` broker waits to defer unrelated inbound messages and let main protocol dispatcher process them after correlated result arrives.
 Sprint 584 adds `new_tool_call_id()` in `src/ccad_agent/orchestrator.py`; `ui_place_via()` emits and waits on a unique UUID-backed correlation ID.
+Sprint 585 extends broker correlation to `ui_add_track()` and `ui_add_polygon()` in `src/ccad_agent/orchestrator.py`; both await matching `tool_result` when broker mode is enabled.

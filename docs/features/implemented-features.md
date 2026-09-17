@@ -2454,3 +2454,4 @@ AgentPanel approval wiring is now connected to the broker: approval-required cal
 Canceling the same approval now returns correlated `approval_canceled` immediately and clears the retained call, so the broker does not wait for its timeout.
 Broker waits preserve unrelated inbound JSON-RPC messages in a deferred queue and return only the matching `tool_result`; main dispatcher processes deferred messages first.
 Real `ui.place_via` broker calls use unique per-invocation correlation IDs, so late results from prior attempts cannot satisfy a newer wait.
+Real broker mode now returns authoritative results for track and zone mutations, not optimistic dispatch text; offline/mock paths remain deterministic and nonblocking.
