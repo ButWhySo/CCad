@@ -1262,8 +1262,15 @@ void AgentPanel::handlePythonOutput() {
 
 void AgentPanel::handlePythonError() {
   if (!python_process_) return;
-  QByteArray error = python_process_->readAllStandardError();
-  // Optional: log to output
+  const QString error = QString::fromLocal8Bit(python_process_->readAllStandardError()).trimmed();
+  if (error.isEmpty()) return;
+
+  // Surface actionable startup/provider diagnostics without exposing credentials.
+  QString summary = error.split(QRegularExpression("[\\r\\n]+"), Qt::SkipEmptyParts).value(0).trimmed();
+  summary.replace(QRegularExpression("(?i)(api[_ -]?key|token|secret)\\s*[:=]\\s*\\S+"), "\\1=[redacted]");
+  if (summary.size() > 240) summary = summary.left(237) + "...";
+  appendChatMessage("agent", "Agent backend warning: " + summary);
+  status_label_->setText("Agent backend warning");
 }
 
 void AgentPanel::submitChat() {
