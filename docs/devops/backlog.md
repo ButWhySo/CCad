@@ -7,6 +7,18 @@ This file is the single local backlog for scattered CCad feature requests. Sprin
 This ledger is the current single checklist for scattered user-reported GUI, KiCad compatibility, and agent-harness work. Check an item only after code review, focused tests, KiCad/reference comparison where relevant, and visual validation when the behavior is visible.
 
 - [x] Sprint 157: read-only native UI map export through `ccad_gui --dump-ui-map`, with target validation against live Qt hit-testing.
+
+## Demo-deadline orchestration gate
+
+- [ ] Intake guardrails: normalize intent and reject prompt-injection/secret-bearing tool requests.
+- [ ] Context fabric: canonical project snapshot, revision delta, pinned constraints, token budget, and compaction policy.
+- [ ] Provider runtime: real provider-neutral request/response transport with timeout, retry, and truthful connectivity state.
+- [ ] LangGraph run loop: pending run state survives tool calls; broker result resumes same run by `call_id`.
+- [ ] Approval authority: one pre-side-effect policy gate; denial/error paths stop or re-plan without mutation.
+- [ ] Verification: intent-conditioned DRC/ERC/build/visual checks; result becomes signoff evidence before commit/export.
+- [ ] Observability: Langfuse/LangSmith redaction tests, run ID display, cost/token/latency fields only when provider reports them.
+- [ ] External harness: standards-compatible MCP stdio/HTTP server and interoperability test; bespoke JSON-RPC is not MCP.
+- [ ] Product UI: usable schematic editor, complete core PCB edit loop, professional chat/activity presentation.
 - [x] Sprint 158: selective `ui.target` queries by semantic ID and PCB board point, including high-DPI physical pixel fields.
 - [x] Sprint 159: safe direct UI action triggers for non-destructive view/navigation actions, with unsafe actions explicitly refused.
 - [x] Sprint 160: CI fix for KiCad symbol importer shadow warnings and missing local `.tmp` include, verified by focused symbol-import test.
