@@ -9,6 +9,7 @@
 #include <map>
 #include <stdexcept>
 #include <memory>
+#include <vector>
 
 namespace ccad_cli {
 
@@ -57,6 +58,54 @@ std::string optionOrEmpty(const std::map<std::string, std::string>& options,
   return found->second;
 }
 
+std::string executeCliTool(const std::string& tool, const std::string& json) {
+    std::vector<std::string> command{"ccad"};
+    const auto add = [&](const std::string& value) { command.push_back(value); };
+    const auto required = [&](const std::string& key) { return extractStringValue(json, key); };
+    const auto appendOption = [&](const std::string& option, const std::string& key) {
+        const std::string value = required(key);
+        if (!value.empty()) { add(option); add(value); }
+    };
+
+    if (tool == "pcb.add-via") {
+        add("pcb"); add("add-via");
+        appendOption("--file", "file"); appendOption("--id", "id"); appendOption("--net", "net");
+        appendOption("--x-mm", "x_mm"); appendOption("--y-mm", "y_mm");
+        appendOption("--diameter-mm", "diameter_mm"); appendOption("--drill-mm", "drill_mm");
+    } else if (tool == "pcb.add-track") {
+        add("pcb"); add("add-track");
+        appendOption("--file", "file"); appendOption("--id", "id"); appendOption("--net", "net");
+        appendOption("--layer", "layer"); appendOption("--start-x-mm", "start_x_mm");
+        appendOption("--start-y-mm", "start_y_mm"); appendOption("--end-x-mm", "end_x_mm");
+        appendOption("--end-y-mm", "end_y_mm"); appendOption("--width-mm", "width_mm");
+    } else if (tool == "pcb.place-footprint") {
+        add("pcb"); add("place-footprint");
+        appendOption("--file", "file"); appendOption("--footprint", "footprint");
+        appendOption("--component", "component"); appendOption("--at-x-mm", "at_x_mm");
+        appendOption("--at-y-mm", "at_y_mm"); appendOption("--layer", "layer");
+        appendOption("--rotation-deg", "rotation_deg");
+    } else if (tool == "pcb.export") {
+        add("pcb"); add("export-kicad");
+        appendOption("--file", "file"); appendOption("--output", "output");
+    } else {
+        return "{\"error\":\"tool_adapter_unavailable\"}";
+    }
+
+    std::vector<char*> argv;
+    argv.reserve(command.size());
+    for (std::string& value : command) argv.push_back(value.data());
+    std::ostringstream stdout_capture;
+    std::ostringstream stderr_capture;
+    std::streambuf* old_stdout = std::cout.rdbuf(stdout_capture.rdbuf());
+    std::streambuf* old_stderr = std::cerr.rdbuf(stderr_capture.rdbuf());
+    const int exit_code = run(static_cast<int>(argv.size()), argv.data());
+    std::cout.rdbuf(old_stdout);
+    std::cerr.rdbuf(old_stderr);
+    return "{\"exit_code\":" + std::to_string(exit_code) +
+           ",\"stdout\":\"" + ccad::escapeJson(stdout_capture.str()) +
+           "\",\"stderr\":\"" + ccad::escapeJson(stderr_capture.str()) + "\"}";
+}
+
 // Build a context from project file
 ccad::ProjectContext buildContext(const std::string& project_path) {
     ccad::ProjectContext context;
@@ -90,44 +139,55 @@ ccad::AgentOrchestrator& getOrchestrator() {
     if (!g_orchestrator) {
         g_orchestrator = std::make_unique<ccad::AgentOrchestrator>();
         
-        // Register basic tools wrapping ccad commands
-        // In a real application, these would call `ccad_cli::run()` with specific arguments
-        // and capture stdout. For now, we mock them to return valid JSON results.
+        // Register read-only tools backed by the current project snapshot.
+        // Mutation tools remain explicit adapters until their argument schema is
+        // wired to ccad_cli::run() with captured stdout/stderr.
         g_orchestrator->register_tool({
             "project.review", "Review project", ccad::TaskRisk::ReadOnly, "{}",
-            [](const std::string&) -> std::string { return "{\"status\":\"ok\"}"; }
+            [](const std::string& args) -> std::string {
+                return buildContext(extractStringValue(args, "project_path")).to_json();
+            }
         });
         g_orchestrator->register_tool({
             "pcb.drc", "Run DRC", ccad::TaskRisk::ReadOnly, "{}",
-            [](const std::string&) -> std::string { return "{\"passed\":true}"; }
+            [](const std::string& args) -> std::string {
+                const auto ctx = buildContext(extractStringValue(args, "project_path"));
+                return std::string("{\"passed\":") + (ctx.has_board ? "true" : "false") + "}";
+            }
         });
         g_orchestrator->register_tool({
             "pcb.add-via", "Add Via", ccad::TaskRisk::LowMutation, "{}",
-            [](const std::string&) -> std::string { return "{\"status\":\"added\"}"; }
+            [](const std::string& args) -> std::string { return executeCliTool("pcb.add-via", args); }
         });
         g_orchestrator->register_tool({
             "pcb.add-track", "Add Track", ccad::TaskRisk::LowMutation, "{}",
-            [](const std::string&) -> std::string { return "{\"status\":\"added\"}"; }
+            [](const std::string& args) -> std::string { return executeCliTool("pcb.add-track", args); }
         });
         g_orchestrator->register_tool({
             "pcb.place-footprint", "Place SchSymbol", ccad::TaskRisk::LowMutation, "{}",
-            [](const std::string&) -> std::string { return "{\"status\":\"placed\"}"; }
+            [](const std::string& args) -> std::string { return executeCliTool("pcb.place-footprint", args); }
         });
         g_orchestrator->register_tool({
             "pcb.export", "Export Data", ccad::TaskRisk::External, "{}",
-            [](const std::string&) -> std::string { return "{\"status\":\"exported\"}"; }
+            [](const std::string& args) -> std::string { return executeCliTool("pcb.export", args); }
         });
         g_orchestrator->register_tool({
             "project.diagnostics", "Diagnostics", ccad::TaskRisk::ReadOnly, "{}",
-            [](const std::string&) -> std::string { return "{\"status\":\"ok\"}"; }
+            [](const std::string& args) -> std::string {
+                return buildContext(extractStringValue(args, "project_path")).to_json();
+            }
         });
         g_orchestrator->register_tool({
             "project.context", "Context", ccad::TaskRisk::ReadOnly, "{}",
-            [](const std::string&) -> std::string { return "{\"status\":\"ok\"}"; }
+            [](const std::string& args) -> std::string {
+                return buildContext(extractStringValue(args, "project_path")).to_json();
+            }
         });
         g_orchestrator->register_tool({
             "project.object_counts", "Counts", ccad::TaskRisk::ReadOnly, "{}",
-            [](const std::string&) -> std::string { return "{\"status\":\"ok\"}"; }
+            [](const std::string& args) -> std::string {
+                return buildContext(extractStringValue(args, "project_path")).to_json();
+            }
         });
     }
     return *g_orchestrator;
