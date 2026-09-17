@@ -1222,3 +1222,6 @@ Per-pad `PadstackCopperLayerProps.thermal_gap`, `.thermal_spoke_width`, and `.zo
 When a legacy zone has no explicit layer IDs, exporter uses its resolved primary layer (`F.Cu`) for both zone and filled geometry output.
 `canvas.*` maps persisted `BoardZone.filled_thermal_spokes` into `CanvasZone.thermal_spokes`; `board_canvas_renderer.cpp` draws visible-layer spokes as tagged `thermal_spoke` line items. `scripts/run_sprint_demo.ps1` now creates/applies a B.Cu PTH zone fixture for targeted visual proof.
 Renderer pen width comes from `CanvasLine.width_units` for thermal spokes, preserving pad/zone thermal width rather than substituting zone minimum thickness.
+### Sprint 511 handoff: KiCad headless board context parity
+
+KiCad's `HEADLESS_BOARD_CONTEXT` owns one live board/project relationship, tool manager, current filename, and save or copy-save operations; `API_HANDLER_PCB` consumes that shared context for read, mutation, and export handlers. CCad still reloads projects per CLI command. The next implementation must introduce a narrow reusable CCad board-session context consumed by CLI, GUI, and agent tools, with explicit ownership, save semantics, and transaction boundaries; do not duplicate GUI state or import KiCad UI code.
