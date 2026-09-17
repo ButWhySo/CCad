@@ -1396,3 +1396,5 @@ The `human_message` provider invocation boundary catches terminal exceptions aft
 The same bridge exposes `ccad_gui_approval_status`, a filtered projection of native approval visibility/status for external harnesses. It does not approve, decline, or execute changes.
 
 The approval-status tool is advertised by `tools/list`, with read-only safety annotations, so MCP hosts can discover it through the normal protocol.
+
+Unknown bridge methods/tools use JSON-RPC method-not-found `-32601`; malformed arguments continue using `-32602`.

@@ -116,10 +116,12 @@ def main():
                 result = {"content": [{"type": "text", "text": json.dumps(
                     request_native_approval(options.server, request_text))}], "isError": False}
             else:
-                raise ValueError("unsupported MCP method")
+                raise LookupError("unsupported MCP method")
             print(json.dumps({"jsonrpc": "2.0", "id": request_id, "result": result}), flush=True)
         except PermissionError as exc:
             print(json.dumps(error(request.get("id"), -32001, str(exc))), flush=True)
+        except LookupError as exc:
+            print(json.dumps(error(request.get("id"), -32601, str(exc))), flush=True)
         except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
             print(json.dumps(error(request.get("id"), -32602, str(exc))), flush=True)
 
