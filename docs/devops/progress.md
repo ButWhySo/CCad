@@ -1810,6 +1810,10 @@ Corrected robot polling so `running...` is not accepted as terminal. Live UI-map
 
 UI-map target lookup now covers top-level dialog line edits, combo boxes, checkboxes, text edits, and lists, not only main-window descendants. This gives agent/MCP clients truthful coordinates and visibility for provider and model controls. Focused UI-map/Agent tests, strict robot flow, screenshot inspection, and full Qt CTest 91/91 passed.
 
+### Sprint 697 - add semantic top-level control activation
+
+`ui.click` now handles top-level Settings checkboxes, combo boxes, line edits, and text edits in addition to buttons and list rows. Focused UI-map tests, strict live provider flow, screenshot inspection, and full Qt CTest 91/91 passed. Complex semantic control activation remains subject to further dedicated coverage.
+
 ### Sprint 683 - expose native approval status to MCP hosts
 
 Added read-only `ccad_gui_approval_status` to the GUI MCP bridge. External harnesses can now query approval-card visibility and status directly, while mutation execution and human approval remain native GUI responsibilities. Python regression and official visual harness passed; screenshot was inspected and stderr was empty.

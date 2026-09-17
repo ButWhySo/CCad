@@ -2560,6 +2560,8 @@ The live Windows UI robot rejects both `not run` and `running...` as final state
 
 Top-level Settings controls are now addressable through `ui.target`/`ui.click` discovery, including provider/model inputs, checkboxes, combos, and category lists. Agent clients can operate the visible dialog without coordinate guessing.
 
+Top-level control clicks now focus line and text editors, open combo boxes, and toggle checkboxes through the same UI-map API. The provider flow uses this surface for truthful button/list interaction; broader control-action coverage remains backlog.
+
 ## CI speed and syntax gate
 
 The CI workflow compiles agent and test Python sources before protocol tests and invokes CMake with parallel workers on all build jobs. This catches syntax regressions early and reduces idle build time without weakening CTest.

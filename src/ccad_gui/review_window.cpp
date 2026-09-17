@@ -5854,6 +5854,62 @@ QString ReviewWindow::uiClickJson(const QString& id, const bool dry_run, const b
       markUiMapChanged({trimmed_id}, {"control"});
       return jsonObjectLine(response);
     }
+    for (QWidget* widget : QApplication::allWidgets()) {
+      if (auto* checkbox = qobject_cast<QCheckBox*>(widget);
+          checkbox != nullptr && checkbox->objectName() == trimmed_id) {
+        if (!checkbox->isVisible() || !checkbox->isEnabled()) {
+          response.insert("performed", false);
+          response.insert("reason", "disabled_or_hidden");
+          return jsonObjectLine(response);
+        }
+        checkbox->click();
+        QApplication::processEvents();
+        response.insert("performed", true);
+        response.insert("reason", "checkbox_toggled");
+        response.insert("checked", checkbox->isChecked());
+        markUiMapChanged({trimmed_id}, {"control"});
+        return jsonObjectLine(response);
+      }
+      if (auto* combo = qobject_cast<QComboBox*>(widget);
+          combo != nullptr && combo->objectName() == trimmed_id) {
+        if (!combo->isVisible() || !combo->isEnabled()) {
+          response.insert("performed", false);
+          response.insert("reason", "disabled_or_hidden");
+          return jsonObjectLine(response);
+        }
+        combo->setFocus(Qt::OtherFocusReason);
+        combo->showPopup();
+        response.insert("performed", true);
+        response.insert("reason", "combo_focused_and_opened");
+        markUiMapChanged({trimmed_id}, {"control"});
+        return jsonObjectLine(response);
+      }
+      if (auto* line_edit = qobject_cast<QLineEdit*>(widget);
+          line_edit != nullptr && line_edit->objectName() == trimmed_id) {
+        if (!line_edit->isVisible() || !line_edit->isEnabled()) {
+          response.insert("performed", false);
+          response.insert("reason", "disabled_or_hidden");
+          return jsonObjectLine(response);
+        }
+        line_edit->setFocus(Qt::OtherFocusReason);
+        line_edit->selectAll();
+        response.insert("performed", true);
+        response.insert("reason", "line_edit_focused");
+        return jsonObjectLine(response);
+      }
+      if (auto* text_edit = qobject_cast<QTextEdit*>(widget);
+          text_edit != nullptr && text_edit->objectName() == trimmed_id) {
+        if (!text_edit->isVisible() || !text_edit->isEnabled()) {
+          response.insert("performed", false);
+          response.insert("reason", "disabled_or_hidden");
+          return jsonObjectLine(response);
+        }
+        text_edit->setFocus(Qt::OtherFocusReason);
+        response.insert("performed", true);
+        response.insert("reason", "text_edit_focused");
+        return jsonObjectLine(response);
+      }
+    }
     for (QCheckBox* checkbox : findChildren<QCheckBox*>()) {
       if (checkbox == nullptr || checkbox->objectName() != trimmed_id) {
         continue;

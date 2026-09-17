@@ -1409,4 +1409,6 @@ The timeout is scheduled for every Test Provider click, including missing panel/
 
 `ReviewWindow::uiTargetJsonById` scans `QApplication::allWidgets()` for top-level Settings controls and reports their visibility, enabled state, and physical target. `uiClickJson` supports semantic QListWidget row selection and top-level button activation.
 
+`uiClickJson` also supports top-level `QCheckBox`, `QComboBox`, `QLineEdit`, and `QTextEdit` activation, returning explicit action reasons such as `checkbox_toggled`, `combo_focused_and_opened`, and `line_edit_focused`.
+
 Settings opens modelessly from `AgentPanel`, preserving UI-map/MCP request servicing. `ReviewWindow::uiTargetJsonById` and `uiClickJson` include top-level dialog widgets; QListWidget targets accept a `row` field for semantic selection. `tests/physical_ui_robot.py` is strict: unique IPC name, Qt PATH, window setup, mapped mouse attempts, semantic fallback only after no state change, targeted provider-status assertion, screenshot.
