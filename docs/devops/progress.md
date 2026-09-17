@@ -1588,3 +1588,6 @@ Checkpoint-enabled mutating tools now use LangGraph interrupt payloads with dete
 ### Sprint 596 - prove restart-safe interrupt resume
 
 Added `scripts/test_agent_checkpoint_restart.py`, a two-process fixture using SQLite, fake model, real CCad tool, LangGraph interrupt, and `Command(resume=...)`. First process writes checkpoint; second process reopens DB and completes same thread with authoritative ToolMessage. References checked: official LangGraph interrupt/resume docs. Fixture passed; full gate pending.
+### Sprint 597 - expose resumable status targets
+
+Named Agent run/result status labels in Qt object tree, making checkpoint resume feedback addressable by GUI-map and automation harnesses. Focused GUI verification pending.
