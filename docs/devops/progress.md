@@ -1628,3 +1628,6 @@ Added a provider-free mock adapter smoke that launches the real Python orchestra
 ### Sprint 611 - clear provider secrets correctly
 
 Saving Agent Settings with an empty API-key field now calls the provider-secret path, clearing the selected provider credential from the panel and Python process instead of silently retaining the old key. GUI regression coverage exercises the masked key field and clear action.
+### Sprint 612 - add explicit provider test action
+
+Added a visible Test Provider action beside the masked session-only key field. It initializes the selected adapter immediately and reuses the existing redacted provider-state feedback; it sends no prompt and persists no key.

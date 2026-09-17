@@ -45,6 +45,9 @@ private slots:
     QTest::keyClicks(api_key_input, "test-secret-not-persisted");
     api_key_input->clear();
     QVERIFY(api_key_input->text().isEmpty());
+    auto* test_provider = dialog.findChild<QPushButton*>("action:testProviderBtn");
+    QVERIFY(test_provider != nullptr);
+    QVERIFY(!test_provider->toolTip().isEmpty());
 
     auto* sandbox_cb = dialog.findChild<QCheckBox*>("control:sandboxCb");
     QVERIFY(sandbox_cb != nullptr);
