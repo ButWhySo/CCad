@@ -1531,3 +1531,7 @@ LangGraph run config now sends only non-content metadata/tags to Langfuse/LangSm
 ### Sprint 577 - make broker waits bounded on Windows
 
 Replaced competing stdin reads with one daemon protocol reader feeding a queue. Graph tool waits now support CCAD_BROKER_TIMEOUT_SECONDS (default 30s), return structured roker_timeout/roker_closed, and preserve unrelated inbound messages for main dispatch. Direct timeout smoke and mock /route regression passed; Python compile passed. This removes permanent pipe hangs; approval-before-execution and async run cancellation remain next.
+
+### Sprint 578 - enforce approval before mutation
+
+ToolBroker::check_policy now blocks every non-readonly tool when OrchestratorConfig.require_approval is true, before executor callback runs; returned error is pproval_required. Existing explicit auto-execute tests remain valid. Added focused mutation-denial coverage. Full Qt MinGW build and CTest passed 91/91 in 74.26 seconds. GUI source unchanged; no new visual harness run required.

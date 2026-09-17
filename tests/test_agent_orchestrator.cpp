@@ -434,6 +434,14 @@ static void test_intake_layer() {
     assert(intake.run_risk_scan("delete the old project") == false);
 }
 
+static void test_mutation_requires_approval() {
+    ccad::AgentOrchestrator orch;
+    register_mock_tools(orch);
+    ccad::OrchestratorConfig cfg;
+    const auto result = orch.execute_tool("pcb.add-via", "{}", cfg);
+    assert(result.find("\"error\":\"approval_required\"") != std::string::npos);
+}
+
 // ─── Main ───────────────────────────────────────────────────────
 int main() {
     std::cout << "Agent Orchestrator Tests\n";
@@ -454,6 +462,7 @@ int main() {
     test_unregistered_tool_dispatch();
     test_project_context_json();
     test_intake_layer();
+    test_mutation_requires_approval();
 
     std::cout << "\nAll 14 orchestrator tests passed!\n";
     return 0;

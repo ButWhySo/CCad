@@ -224,6 +224,9 @@ bool ToolBroker::check_policy(const OrchestratorTool& tool, const OrchestratorCo
     if (!cfg.project_mutation_enabled && tool.default_risk != TaskRisk::ReadOnly) {
         return false;
     }
+    if (cfg.require_approval && tool.default_risk != TaskRisk::ReadOnly) {
+        return false;
+    }
     return true;
 }
 
@@ -233,7 +236,8 @@ std::string ToolBroker::execute_tool(const std::string& name, const std::string&
         return "{\"error\":\"tool_not_registered\",\"tool_name\":\"" + escapeJson(name) + "\"}";
     }
     if (!check_policy(it->second, cfg)) {
-        return "{\"error\":\"project_mutation_disabled\",\"tool_name\":\"" + escapeJson(name) + "\"}";
+        const char* error = cfg.require_approval ? "approval_required" : "project_mutation_disabled";
+        return std::string("{\"error\":\"") + error + "\",\"tool_name\":\"" + escapeJson(name) + "\"}";
     }
     return it->second.execute(args_json);
 }
