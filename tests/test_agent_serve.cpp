@@ -1166,7 +1166,9 @@ void testAgentToolCallRpc() {
 
   std::istringstream write_in(
       "{\"jsonrpc\":\"2.0\",\"method\":\"agent.tool_call\",\"params\":{\"name\":\"pcb.add-via\"},\"id\":39}\n"
-      "{\"jsonrpc\":\"2.0\",\"method\":\"agent.tool_call\",\"params\":{\"name\":\"pcb.add-keepout\"},\"id\":40}\n");
+      "{\"jsonrpc\":\"2.0\",\"method\":\"agent.tool_call\",\"params\":{\"name\":\"pcb.add-keepout\"},\"id\":40}\n"
+      "{\"jsonrpc\":\"2.0\",\"method\":\"agent.tool_call\",\"params\":{\"name\":\"pcb.add-placement-region\"},\"id\":41}\n"
+      "{\"jsonrpc\":\"2.0\",\"method\":\"agent.tool_call\",\"params\":{\"name\":\"pcb.refill-zones\"},\"id\":42}\n");
   std::ostringstream write_out;
   oldCin = std::cin.rdbuf(write_in.rdbuf());
   oldCout = std::cout.rdbuf(write_out.rdbuf());
@@ -1178,6 +1180,8 @@ void testAgentToolCallRpc() {
   assertContains(write_out.str(), "\"id\": 39", "missing-parameter request preserves id");
   assertContains(write_out.str(), "missing_parameter", "missing required tool parameter is explicit");
   assertContains(write_out.str(), "\"id\": 40", "keepout request preserves id");
+  assertContains(write_out.str(), "\"id\": 41", "placement request preserves id");
+  assertContains(write_out.str(), "\"id\": 42", "refill request preserves id");
 
   std::ostringstream drc_out;
   std::istringstream drc_in(

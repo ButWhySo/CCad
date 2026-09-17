@@ -1315,3 +1315,5 @@ Sprint 556 hardens duplicated agent JSON string extraction for escaped values an
 Sprint 557 adds native agent `pcb.add-zone` dispatch with structured required-field validation.
 
 Sprint 558 adds native agent `pcb.add-keepout` dispatch with structured required-field validation.
+
+Sprint 559 adds native agent placement-region authoring and zone-refill dispatch.
