@@ -1269,3 +1269,5 @@ Sprint 533 migrates `pcb set-route-request` loading to the shared context; compa
 Sprint 534 migrates `pcb remove-route-request` loading to the shared context; compatibility writing remains for audit continuity.
 
 Sprint 535 migrates `pcb apply-route-segment` loading to the shared context; compatibility writing remains for audit continuity.
+
+Sprint 536 migrates `pcb apply-route-polyline` loading to the shared context; compatibility writing remains for audit continuity.
