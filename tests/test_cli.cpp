@@ -256,6 +256,35 @@ int main() {
           "sch place-symbol preserves pin lead length");
   require(run(place_symbol_command) != 0, "sch place-symbol rejects duplicate component id");
 
+  require(run(quote(CCAD_BINARY) + " sch add-wire --file " + quote(schematic_project_path) +
+              " --id W1 --start-x-mm 1 --start-y-mm 2 --end-x-mm 3 --end-y-mm 4 --net N1") == 0,
+          "sch add-wire exits zero");
+  require(run(quote(CCAD_BINARY) + " sch add-bus --file " + quote(schematic_project_path) +
+              " --id B1 --start-x-mm 2 --start-y-mm 3 --end-x-mm 4 --end-y-mm 5 --bus BUS1") == 0,
+          "sch add-bus exits zero");
+  require(run(quote(CCAD_BINARY) + " sch add-label --file " + quote(schematic_project_path) +
+              " --id L1 --text DATA --at-x-mm 5 --at-y-mm 6 --net N1") == 0,
+          "sch add-label exits zero");
+  require(run(quote(CCAD_BINARY) + " sch add-power --file " + quote(schematic_project_path) +
+              " --id PWR1 --value VCC --at-x-mm 7 --at-y-mm 8 --net VCC") == 0,
+          "sch add-power exits zero");
+  const std::string schematic_mutations = readFile(schematic_project_path);
+  require(schematic_mutations.find("\"id\": \"W1\"") != std::string::npos,
+          "sch add-wire writes wire id");
+  require(schematic_mutations.find("\"id\": \"B1\"") != std::string::npos,
+          "sch add-bus writes bus id");
+  require(schematic_mutations.find("\"id\": \"L1\"") != std::string::npos,
+          "sch add-label writes label id");
+  require(schematic_mutations.find("\"id\": \"PWR1\"") != std::string::npos,
+          "sch add-power writes power symbol id");
+  require(run(quote(CCAD_BINARY) + " sch annotate --file " + quote(schematic_project_path) +
+              " --algo sequential --order y --start 1") == 0,
+          "sch annotate exits zero");
+  require(run(quote(CCAD_BINARY) + " sch autoplace --file " + quote(schematic_project_path)) == 0,
+          "sch autoplace exits zero");
+  require(run(quote(CCAD_BINARY) + " sch fix-junctions --file " + quote(schematic_project_path)) == 0,
+          "sch fix-junctions exits zero");
+
   const std::filesystem::path board_project_path = temp / "board.ccad.json";
   const std::string board_init_command = quote(CCAD_BINARY) +
                                          " init --name board --width-mm 42 --height-mm 28 --out " +

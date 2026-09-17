@@ -1425,3 +1425,7 @@ Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` bound
 ### Sprint 550 - batch layer and board mutation loading
 
 `clean-graphics`, layer add/remove/update/visibility, `set-rules`, `set-outline`, `add-zone`, and `import-ses` now load through `HeadlessBoardContext` and mark successful mutations dirty while preserving validation and compatibility writing. Full Qt MinGW build completed, full CTest passed 91/91 in 58.37 seconds, and the official harness plus UI-map target sequence completed with empty stderr; layer-specific visual proof remains limited because the existing target sequence does not expose a layer-toggle target.
+
+### Sprint 551 - batch schematic and project mutation loading
+
+Schematic symbol, wire, bus, label, power-symbol, annotation, field-autoplace, junction-fix, and project text-variable mutations now use `HeadlessBoardContext` with explicit dirty tracking. Added CLI coverage for schematic primitives and lifecycle commands. Incremental Qt MinGW build completed, full CTest passed 91/91 in 49.13 seconds, affected CLI coverage passed, and the official visual harness screenshot was inspected with empty stderr.

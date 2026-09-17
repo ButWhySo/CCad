@@ -1,6 +1,7 @@
 #include "ccad_cli/project_commands.hpp"
 
 #include "ccad_cli/common.hpp"
+#include "ccad_core/board_loader.hpp"
 #include "ccad_core/bom_export.hpp"
 #include "ccad_core/board_loader.hpp"
 #include "ccad_core/diff.hpp"
@@ -205,8 +206,11 @@ int setTextVariableCommand(const std::vector<std::string>& args) {
     throw std::runtime_error("--key must not be empty");
   }
 
-  ccad::Project project = loadProjectFile(file);
+  ccad::HeadlessBoardContext context;
+  context.loadFile(file);
+  ccad::Project& project = context.project();
   project.text_variables[key] = value;
+  context.markDirty();
   if (!writeProjectFile(file, project)) {
     throw std::runtime_error("failed to write project file: " + file);
   }
