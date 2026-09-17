@@ -301,8 +301,16 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
   test_provider->setToolTip("Initialize the selected provider for this session without sending a prompt");
   connect(test_provider, &QPushButton::clicked, this, [this]() {
     if (agent_panel_ && api_key_input_) {
-      agent_panel_->setProviderSecret(provider_combo_ ? provider_combo_->currentData().toString() : "openai",
-                                      api_key_input_->text());
+      const QString provider = provider_combo_ ? provider_combo_->currentData().toString()
+                                               : QStringLiteral("openai");
+      // Test the exact selection currently visible in Settings. This updates
+      // the live child process only; the Save action remains the persistence
+      // boundary for non-secret preferences.
+      QJsonObject config;
+      config.insert("provider", provider);
+      if (model_input_) config.insert("model", model_input_->text().trimmed());
+      agent_panel_->sendJsonRpc("agent.set_config", config);
+      agent_panel_->setProviderSecret(provider, api_key_input_->text());
     }
   });
   layout->addWidget(test_provider);
