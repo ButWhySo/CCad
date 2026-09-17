@@ -1405,4 +1405,6 @@ Unknown bridge methods/tools use JSON-RPC method-not-found `-32601`; malformed a
 
 `AgentSettingsDialog` bounds a Test Provider request with a five-second `QTimer`; `QPointer` prevents the timeout callback from touching a closed dialog. Provider-state callbacks can replace the timeout text with authoritative adapter state.
 
+The timeout is scheduled for every Test Provider click, including missing panel/key cases; live UI-map automation confirmed `Provider test: no response` after the bound.
+
 Settings opens modelessly from `AgentPanel`, preserving UI-map/MCP request servicing. `ReviewWindow::uiTargetJsonById` and `uiClickJson` include top-level dialog widgets; QListWidget targets accept a `row` field for semantic selection. `tests/physical_ui_robot.py` is strict: unique IPC name, Qt PATH, window setup, mapped mouse attempts, semantic fallback only after no state change, targeted provider-status assertion, screenshot.

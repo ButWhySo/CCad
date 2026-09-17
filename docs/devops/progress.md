@@ -1802,6 +1802,10 @@ Settings now opens modelessly so the UI-map/MCP server remains responsive while 
 
 Test Provider now enters a visible running state and falls back to `no response` after five seconds when backend/provider state never arrives. A live provider-state callback still overrides this with ready or bounded error feedback. Regression test, full Qt CTest 91/91, official visual harness, screenshot inspection, and empty stderr passed.
 
+### Sprint 695 - verify terminal provider timeout in live harness
+
+Corrected robot polling so `running...` is not accepted as terminal. Live UI-map provider action now reaches `Provider test: no response` after the five-second bound when no backend result exists. Screenshot and full Qt CTest 91/91 passed.
+
 ### Sprint 683 - expose native approval status to MCP hosts
 
 Added read-only `ccad_gui_approval_status` to the GUI MCP bridge. External harnesses can now query approval-card visibility and status directly, while mutation execution and human approval remain native GUI responsibilities. Python regression and official visual harness passed; screenshot was inspected and stderr was empty.

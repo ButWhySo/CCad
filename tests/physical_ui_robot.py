@@ -231,13 +231,15 @@ def main():
         time.sleep(0.5)
         ui_map = read_ui_map()
         status_nodes = [n for n in ui_map.get('nodes', []) if n.get('id') == 'label:providerTestStatus']
-        if status_nodes and "not run" not in status_nodes[0].get('label', '').lower():
+        if status_nodes and all(token not in status_nodes[0].get('label', '').lower()
+                                for token in ("not run", "running")):
             break
     if not status_nodes:
         raise RuntimeError("Provider test status label missing after Test Provider")
     print("Provider status node:", status_nodes[0].get('label'))
-    if "not run" in status_nodes[0].get('label', '').lower():
-        raise RuntimeError("Test Provider did not update provider status")
+    status_text = status_nodes[0].get('label', '').lower()
+    if "not run" in status_text or "running" in status_text:
+        raise RuntimeError("Test Provider did not reach terminal provider status")
     pyautogui.screenshot("artifacts/screenshots/physical-ui-provider-status.png")
 
     # Go to Plugins Tab (Index 5)

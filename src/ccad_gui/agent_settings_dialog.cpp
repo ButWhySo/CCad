@@ -355,14 +355,14 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
       if (model_input_) config.insert("model", model_input_->text().trimmed());
       config.insert("secret", api_key_input_->text());
       agent_panel_->sendJsonRpc("agent.test_provider", config);
-      QPointer<AgentSettingsDialog> dialog_guard(this);
-      QTimer::singleShot(5000, this, [dialog_guard]() {
-        if (dialog_guard && dialog_guard->provider_status_label_ &&
-            dialog_guard->provider_status_label_->text() == "Provider test: running...") {
-          dialog_guard->provider_status_label_->setText("Provider test: no response");
-        }
-      });
     }
+    QPointer<AgentSettingsDialog> dialog_guard(this);
+    QTimer::singleShot(5000, this, [dialog_guard]() {
+      if (dialog_guard && dialog_guard->provider_status_label_ &&
+          dialog_guard->provider_status_label_->text() == "Provider test: running...") {
+        dialog_guard->provider_status_label_->setText("Provider test: no response");
+      }
+    });
   });
   layout->addWidget(test_provider);
   auto* clear_key = new QPushButton("Clear session key", parent_widget);
