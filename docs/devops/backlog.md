@@ -862,4 +862,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 636: dry-run tool previews bypass mutation approval; full CTest 91/91 and native screenshot proof pass.
 - [x] Sprint 637: provider settings use stable adapter IDs and expose compatible/local providers; GUI settings test 9/9 and native harness proof pass.
 - [x] Sprint 641: deterministic live harness waits on approval/run state and proves combined mock provider chat-to-mutation flow.
-- [x] Sprint 642: localhost OpenAI-compatible provider GUI fixture proves provider-to-approval-to-mutation flow and is wired into CI.
+- [x] Sprint 642: localhost OpenAI-compatible provider GUI fixture proves provider-to-approval-to-mutation flow locally; CI wiring deferred until native Windows GUI runner exists.

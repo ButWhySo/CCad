@@ -30,7 +30,6 @@ jobs:
         run: |
           python scripts/test_provider_mock.py
           python scripts/test_provider_openai_compatible.py
-          python scripts/test_provider_gui_approval.py
           python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-accept.db
           CCAD_RESTART_PHASE=second python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-accept.db
           python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-deny.db
