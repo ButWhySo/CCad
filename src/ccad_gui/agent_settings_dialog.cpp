@@ -292,6 +292,16 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
   api_key_input_->setEchoMode(QLineEdit::Password);
   api_key_input_->setPlaceholderText("API key (kept in memory)");
   layout->addWidget(api_key_input_);
+  auto* test_provider = new QPushButton("Test Provider", parent_widget);
+  test_provider->setObjectName("action:testProviderBtn");
+  test_provider->setToolTip("Initialize the selected provider for this session without sending a prompt");
+  connect(test_provider, &QPushButton::clicked, this, [this]() {
+    if (agent_panel_ && api_key_input_) {
+      agent_panel_->setProviderSecret(provider_combo_ ? provider_combo_->currentText() : "openai",
+                                      api_key_input_->text());
+    }
+  });
+  layout->addWidget(test_provider);
   auto* btn = new QPushButton("Test Export (OTel/Langfuse)", parent_widget);
   btn->setObjectName("action:testExportBtn");
   connect(btn, &QPushButton::clicked, this, [this]() {

@@ -1353,3 +1353,4 @@ Sprint 607 makes the approval controls real `AgentPanel` children: `panel:agent_
 Sprint 608 live harness now verifies the human lane adaptively by reading the post-decision approval label from a fresh GUI-map snapshot.
 Sprint 610 adds `scripts/test_provider_mock.py`, proving the real orchestrator stdin protocol reaches the LangGraph mock provider and returns a chat response without network or secrets.
 Sprint 611 fixes `AgentSettingsDialog::saveAllSettings`: blank API-key saves are forwarded to `AgentPanel::setProviderSecret`, which removes the process-held credential.
+Sprint 612 adds `action:testProviderBtn` in the API Providers settings tab; it calls `AgentPanel::setProviderSecret` for immediate adapter initialization.
