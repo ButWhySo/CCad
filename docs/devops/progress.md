@@ -1413,3 +1413,7 @@ Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` bound
 ### Sprint 547 - migrate spread-footprints loading
 
 `pcb spread-footprints` now loads the project through `HeadlessBoardContext` while preserving multi-component movement, gap handling, result reporting, and audit-compatible writing. Full Qt build completed, CTest passed 91/91 in 52.06 seconds, and the official harness screenshot was inspected with empty stderr.
+
+### Sprint 548 - migrate add-reference-image loading
+
+`pcb add-reference-image` now loads the project through `HeadlessBoardContext` while preserving reference-image authoring and audit-compatible writing. Full Qt build completed, CTest passed 91/91 in 47.38 seconds, and the official harness screenshot was inspected with empty stderr.
