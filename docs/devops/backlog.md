@@ -804,6 +804,7 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [ ] Sprint 576 follow-up: refactor Windows pipe protocol into one reader/dispatcher with bounded broker wait, cancellation, and queued inbound messages; test timeout and late result.
 
 - [ ] Sprint 577 follow-up: add cancellation token and pending-call registry; test late result, unrelated request preservation, approval denial, and broker crash.
+- [x] Sprint 582: approval Cancel now returns correlated `approval_canceled`; durable LangGraph checkpoint/resume and cancellation tokens remain open.
 
 - [ ] Sprint 578 follow-up: connect AgentPanel accept/decline decision to a scoped approval token/config, then test allowed-after-approval and denied mutation without bypassing core policy.
 

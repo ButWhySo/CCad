@@ -2193,6 +2193,17 @@ void AgentPanel::cancelApproval() {
     return;
   }
   const QString request = pending_approval_request_;
+  if (!pending_tool_call_id_.isEmpty() && python_process_) {
+    const QJsonObject result{
+        {"jsonrpc", "2.0"},
+        {"method", "tool_result"},
+        {"id", pending_tool_call_id_},
+        {"error", QJsonObject{{"code", -32800}, {"message", "approval_canceled"}}}};
+    python_process_->write(QJsonDocument(result).toJson(QJsonDocument::Compact) + "\n");
+  }
+  pending_tool_name_.clear();
+  pending_tool_args_.clear();
+  pending_tool_call_id_.clear();
   pending_approval_request_.clear();
   approval_last_decision_ = "cancel";
   approval_status_label_->setText("Approval canceled: " + request);
