@@ -840,3 +840,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 612: add explicit session-only Test Provider action; real network validation remains user-environment dependent.
 - [x] Sprint 613: replace hardcoded context counter with client-side estimate; provider token accounting remains unavailable until a real adapter call.
 - [x] Sprint 614: prevent premature tool-result acknowledgement before human approval; live checkpointed mutation proof remains next.
+- [x] Sprint 615: checkpoint restart fixture proves accepted and denied outcomes; full GUI-to-checkpoint mutation integration remains next.
