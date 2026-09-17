@@ -1386,3 +1386,5 @@ Regression coverage lives in `tests/test_agent_orchestrator.cpp::test_intake_lay
 `invoke_provider_with_retry` wraps only LLM node calls with a maximum of two retries. `scripts/test_provider_openai_compatible.py` forces one transient 503 and verifies subsequent provider/tool-boundary recovery.
 
 The `human_message` provider invocation boundary catches terminal exceptions after retry, emits redacted failure state, and continues the request loop; no tool dispatch occurs on that path.
+
+`.github/workflows/ci.yml` owns cross-platform gates. Agent Python syntax runs before protocol fixtures; Linux/Windows CMake builds use `--parallel`; CTest remains the authoritative behavior gate.

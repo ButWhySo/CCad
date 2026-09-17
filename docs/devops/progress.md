@@ -1750,3 +1750,6 @@ Provider node invocations now use a bounded two-retry wrapper; retries cover pro
 ### Sprint 659 - contain terminal provider failures
 
 After bounded retries, provider exceptions now produce redacted failed telemetry and a truthful chat error while keeping the orchestrator process alive; no tool executes on failure. Provider syntax/boundary tests, official harness screenshot, and full Qt CTest pass 91/91.
+### Sprint 660 - harden and speed CI workflow
+
+CI now compiles Python agent/test sources before protocol tests and uses parallel CMake builds on Linux and Windows. YAML parsing, equivalent local Python compilation, and focused harness/orchestrator/runner tests pass; current full Qt CTest remains 91/91.
