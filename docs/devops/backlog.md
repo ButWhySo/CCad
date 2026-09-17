@@ -827,3 +827,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 598: regression-test approval pending/decline/cancel UI states; live provider approval round-trip remains open.
 - [x] Sprint 599: surface redacted provider adapter initialization failures; live network/provider round-trip remains open.
 - [x] Sprint 600: report successful BYOK provider readiness; authenticated live request and cost/latency trace remain open.
+- [x] Sprint 601: document current MCP stdio boundary; MCP exposure of selected GUI-map tools remains future work.
