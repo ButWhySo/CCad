@@ -1317,3 +1317,5 @@ Sprint 557 adds native agent `pcb.add-zone` dispatch with structured required-fi
 Sprint 558 adds native agent `pcb.add-keepout` dispatch with structured required-field validation.
 
 Sprint 559 adds native agent placement-region authoring and zone-refill dispatch.
+
+Sprint 560 adds native agent schematic symbol, wire, and label authoring dispatch.

@@ -1168,7 +1168,10 @@ void testAgentToolCallRpc() {
       "{\"jsonrpc\":\"2.0\",\"method\":\"agent.tool_call\",\"params\":{\"name\":\"pcb.add-via\"},\"id\":39}\n"
       "{\"jsonrpc\":\"2.0\",\"method\":\"agent.tool_call\",\"params\":{\"name\":\"pcb.add-keepout\"},\"id\":40}\n"
       "{\"jsonrpc\":\"2.0\",\"method\":\"agent.tool_call\",\"params\":{\"name\":\"pcb.add-placement-region\"},\"id\":41}\n"
-      "{\"jsonrpc\":\"2.0\",\"method\":\"agent.tool_call\",\"params\":{\"name\":\"pcb.refill-zones\"},\"id\":42}\n");
+      "{\"jsonrpc\":\"2.0\",\"method\":\"agent.tool_call\",\"params\":{\"name\":\"pcb.refill-zones\"},\"id\":42}\n"
+      "{\"jsonrpc\":\"2.0\",\"method\":\"agent.tool_call\",\"params\":{\"name\":\"sch.place-symbol\"},\"id\":43}\n"
+      "{\"jsonrpc\":\"2.0\",\"method\":\"agent.tool_call\",\"params\":{\"name\":\"sch.add-wire\"},\"id\":44}\n"
+      "{\"jsonrpc\":\"2.0\",\"method\":\"agent.tool_call\",\"params\":{\"name\":\"sch.add-label\"},\"id\":45}\n");
   std::ostringstream write_out;
   oldCin = std::cin.rdbuf(write_in.rdbuf());
   oldCout = std::cout.rdbuf(write_out.rdbuf());
@@ -1182,6 +1185,9 @@ void testAgentToolCallRpc() {
   assertContains(write_out.str(), "\"id\": 40", "keepout request preserves id");
   assertContains(write_out.str(), "\"id\": 41", "placement request preserves id");
   assertContains(write_out.str(), "\"id\": 42", "refill request preserves id");
+  assertContains(write_out.str(), "\"id\": 43", "symbol request preserves id");
+  assertContains(write_out.str(), "\"id\": 44", "wire request preserves id");
+  assertContains(write_out.str(), "\"id\": 45", "label request preserves id");
 
   std::ostringstream drc_out;
   std::istringstream drc_in(

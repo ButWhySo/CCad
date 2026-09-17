@@ -144,6 +144,22 @@ std::string executeCliTool(const std::string& tool, const std::string& json) {
         if (const std::string error = requireFields({"file"}); !error.empty()) return error;
         add("pcb"); add("refill-zones"); appendOption("--file", "file");
         appendOption("--zone-id", "zone_id"); appendOption("--apply", "apply");
+    } else if (tool == "sch.place-symbol") {
+        if (const std::string error = requireFields({"file", "symbol", "component", "at_x_mm", "at_y_mm"}); !error.empty()) return error;
+        add("sch"); add("place-symbol"); appendOption("--file", "file"); appendOption("--symbol", "symbol");
+        appendOption("--component", "component"); appendOption("--at-x-mm", "at_x_mm"); appendOption("--at-y-mm", "at_y_mm");
+        appendOption("--rotation-deg", "rotation_deg");
+    } else if (tool == "sch.add-wire") {
+        if (const std::string error = requireFields({"file", "id", "start_x_mm", "start_y_mm", "end_x_mm", "end_y_mm"}); !error.empty()) return error;
+        add("sch"); add("add-wire"); appendOption("--file", "file"); appendOption("--id", "id");
+        appendOption("--start-x-mm", "start_x_mm"); appendOption("--start-y-mm", "start_y_mm");
+        appendOption("--end-x-mm", "end_x_mm"); appendOption("--end-y-mm", "end_y_mm"); appendOption("--net", "net");
+    } else if (tool == "sch.add-label") {
+        if (const std::string error = requireFields({"file", "id", "text", "at_x_mm", "at_y_mm"}); !error.empty()) return error;
+        add("sch"); add("add-label"); appendOption("--file", "file"); appendOption("--id", "id");
+        appendOption("--text", "text"); appendOption("--at-x-mm", "at_x_mm"); appendOption("--at-y-mm", "at_y_mm");
+        appendOption("--net", "net"); appendOption("--rotation-deg", "rotation_deg");
+        if (extractStringValue(json, "global") == "true") add("--global");
     } else {
         return "{\"error\":\"tool_adapter_unavailable\"}";
     }
@@ -229,6 +245,21 @@ ccad::AgentOrchestrator& getOrchestrator() {
             "pcb.refill-zones", "Refill Zones", ccad::TaskRisk::LowMutation,
             R"({"type":"object","required":["file"]})",
             [](const std::string& args) -> std::string { return executeCliTool("pcb.refill-zones", args); }
+        });
+        g_orchestrator->register_tool({
+            "sch.place-symbol", "Place Schematic Symbol", ccad::TaskRisk::LowMutation,
+            R"({"type":"object","required":["file","symbol","component","at_x_mm","at_y_mm"]})",
+            [](const std::string& args) -> std::string { return executeCliTool("sch.place-symbol", args); }
+        });
+        g_orchestrator->register_tool({
+            "sch.add-wire", "Add Schematic Wire", ccad::TaskRisk::LowMutation,
+            R"({"type":"object","required":["file","id","start_x_mm","start_y_mm","end_x_mm","end_y_mm"]})",
+            [](const std::string& args) -> std::string { return executeCliTool("sch.add-wire", args); }
+        });
+        g_orchestrator->register_tool({
+            "sch.add-label", "Add Schematic Label", ccad::TaskRisk::LowMutation,
+            R"({"type":"object","required":["file","id","text","at_x_mm","at_y_mm"]})",
+            [](const std::string& args) -> std::string { return executeCliTool("sch.add-label", args); }
         });
         g_orchestrator->register_tool({
             "pcb.add-via", "Add Via", ccad::TaskRisk::LowMutation,

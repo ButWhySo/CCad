@@ -2419,3 +2419,5 @@ Agent `pcb.add-zone` authors rectangular copper zones through the native CLI ada
 Agent `pcb.add-keepout` authors rectangular keepouts through the native CLI adapter.
 
 Agents can author placement regions and request native zone refill through `pcb.add-placement-region` and `pcb.refill-zones`.
+
+Agents can place schematic symbols and author wires/labels through `sch.place-symbol`, `sch.add-wire`, and `sch.add-label`.
