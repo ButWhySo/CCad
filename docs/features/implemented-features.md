@@ -2378,3 +2378,4 @@ The headless board context also supports file-backed load/save with round-trip c
 `pcb add-zone` is now a shared-context mutation consumer with its existing geometry and audit behavior intact.
 `pcb add-text` is now a shared-context mutation consumer with its existing geometry and audit behavior intact.
 `pcb add-graphic-line` is now a shared-context mutation consumer with its existing geometry and audit behavior intact.
+`pcb add-graphic-arc` is now a shared-context mutation consumer with its existing arc geometry and audit behavior intact.
