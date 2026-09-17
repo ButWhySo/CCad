@@ -6,6 +6,7 @@ import queue
 import threading
 import time
 import uuid
+import atexit
 from typing import Annotated, TypedDict, List
 from langgraph.graph import StateGraph, END
 from langchain_core.tools import tool
@@ -189,6 +190,32 @@ general_tools = [ui_screenshot, ui_open_component_wizard]
 llm = None
 router_llm = None
 librarian_llm = None
+checkpoint_saver = None
+checkpoint_context = None
+
+def init_checkpointer():
+    """Enable durable LangGraph checkpoints only when an explicit DB path is set."""
+    global checkpoint_saver, checkpoint_context
+    db_path = os.environ.get("CCAD_AGENT_CHECKPOINT_DB", "").strip()
+    if not db_path:
+        return False
+    try:
+        from langgraph.checkpoint.sqlite import SqliteSaver
+        checkpoint_context = SqliteSaver.from_conn_string(db_path)
+        checkpoint_saver = checkpoint_context.__enter__()
+        checkpoint_saver.setup()
+        atexit.register(lambda: checkpoint_context.__exit__(None, None, None))
+        emit({"jsonrpc": "2.0", "method": "checkpoint_state", "params": {
+            "enabled": True, "backend": "sqlite", "path_visible": True,
+        }})
+        return True
+    except (ImportError, OSError, RuntimeError) as error:
+        checkpoint_saver = None
+        checkpoint_context = None
+        emit({"jsonrpc": "2.0", "method": "checkpoint_state", "params": {
+            "enabled": False, "backend": "sqlite", "error": type(error).__name__,
+        }})
+        return False
 
 class MockProvider:
     """Deterministic offline provider for harness and protocol tests."""
@@ -467,6 +494,8 @@ def create_orchestrator():
     
     graph_builder.add_edge("execute_tool", "supervisor")
 
+    if checkpoint_saver is not None:
+        return graph_builder.compile(checkpointer=checkpoint_saver)
     return graph_builder.compile()
 
 session_messages = []
@@ -528,6 +557,7 @@ if __name__ == "__main__":
     except ImportError:
         pass
 
+    init_checkpointer()
     executor = create_orchestrator()
     emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Python Multi-Agent Orchestrator ready."}})
     
