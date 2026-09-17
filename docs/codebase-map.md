@@ -1388,3 +1388,5 @@ Regression coverage lives in `tests/test_agent_orchestrator.cpp::test_intake_lay
 The `human_message` provider invocation boundary catches terminal exceptions after retry, emits redacted failure state, and continues the request loop; no tool dispatch occurs on that path.
 
 `.github/workflows/ci.yml` owns cross-platform gates. Agent Python syntax runs before protocol fixtures; Linux/Windows CMake builds use `--parallel`; CTest remains the authoritative behavior gate.
+
+`src/ccad_gui/agent_settings_dialog.cpp` owns provider setup UX. Its Test Provider action sends the visible provider/model via `agent.set_config`, then sends the key through `AgentPanel::setProviderSecret`; keys remain process-memory only. `AgentPanel::handlePythonError` surfaces bounded redacted stderr diagnostics. Provider-state model names feed `provider_model_` and the visible model chip.

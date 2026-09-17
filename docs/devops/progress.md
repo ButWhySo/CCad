@@ -1753,3 +1753,7 @@ After bounded retries, provider exceptions now produce redacted failed telemetry
 ### Sprint 660 - harden and speed CI workflow
 
 CI now compiles Python agent/test sources before protocol tests and uses parallel CMake builds on Linux and Windows. YAML parsing, equivalent local Python compilation, and focused harness/orchestrator/runner tests pass; current full Qt CTest remains 91/91.
+
+### Sprint 673 - 678 - provider UX and diagnostics
+
+AgentPanel surfaces bounded, redacted Python backend diagnostics instead of discarding stderr. Agent Settings Test Provider applies the visible provider/model to the live child process before sending the session-only credential, displays the exact test target, and updates the key placeholder for the selected provider. The Agent model chip reflects provider-reported model with Auto fallback. Focused GUI tests, official visual harnesses, screenshot inspection, empty stderr, and full Qt CTest 91/91 passed for these sprints.

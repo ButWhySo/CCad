@@ -2544,6 +2544,10 @@ Supervisor, router, and librarian provider calls retry at most twice on raised p
 
 If all retries fail, the chat protocol emits failed telemetry and a provider error message, then continues serving later requests. Prompts, credentials, and endpoint details remain excluded.
 
+## Provider setup feedback
+
+Agent Settings shows the exact provider/model targeted by Test Provider and changes the session-only key placeholder when provider selection changes. Test Provider applies the visible provider/model to the live agent process before initializing its in-memory credential. The Agent header reports the model returned by provider state, or Auto when no model is configured. Backend stderr startup/runtime diagnostics appear as bounded redacted chat warnings.
+
 ## CI speed and syntax gate
 
 The CI workflow compiles agent and test Python sources before protocol tests and invokes CMake with parallel workers on all build jobs. This catches syntax regressions early and reduces idle build time without weakening CTest.
