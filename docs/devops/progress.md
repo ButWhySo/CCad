@@ -1729,3 +1729,6 @@ Schematic scene construction now applies deterministic display-only grid placeme
 ### Sprint 652 - show approval only for real mutations
 
 AgentPanel now reveals its approval card when policy classification finds a non-dry-run project mutation. Read-only and dry-run previews clear stale approval state and hide the card. Focused GUI approval tests, official harness, screenshot inspection, and full Qt CTest pass 91/91.
+### Sprint 653 - establish versioned agent context envelope
+
+ContextBuilder now emits a versioned `ccad_agent_context` envelope containing the complete project snapshot and explicit constraints: read-only by default, approval for mutations, and secret values excluded. Existing snapshot fields remain nested under `project`; focused orchestrator/GUI tests, official visual harness, full Qt build, and CTest pass 91/91.

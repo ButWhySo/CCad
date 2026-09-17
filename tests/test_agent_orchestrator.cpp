@@ -424,6 +424,21 @@ static void test_project_context_json() {
     std::cout << "PASS\n";
 }
 
+static void test_context_builder_envelope() {
+    std::cout << "  test_context_builder_envelope... ";
+
+    const auto ctx = make_test_context();
+    const auto json = ccad::ContextBuilder().build_context(ctx);
+    assert(json.find("\"schema_version\":1") != std::string::npos);
+    assert(json.find("\"context_kind\":\"ccad_agent_context\"") != std::string::npos);
+    assert(json.find("\"project\":{\"project_id\":\"test-project\"") != std::string::npos);
+    assert(json.find("\"read_only_by_default\":true") != std::string::npos);
+    assert(json.find("\"approval_required_for_mutation\":true") != std::string::npos);
+    assert(json.find("\"secret_values_excluded\":true") != std::string::npos);
+
+    std::cout << "PASS\n";
+}
+
 static void test_intake_layer() {
     ccad::IntakeLayer intake;
     assert(intake.normalize_request("  route\n  the   PCB  ") == "route the PCB");
@@ -472,6 +487,7 @@ int main() {
     test_goal_json();
     test_unregistered_tool_dispatch();
     test_project_context_json();
+    test_context_builder_envelope();
     test_intake_layer();
     test_mutation_requires_approval();
 

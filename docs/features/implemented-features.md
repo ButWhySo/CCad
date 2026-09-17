@@ -2521,3 +2521,7 @@ When a schematic contains multiple symbols with no persisted coordinates, the re
 ## Contextual approval card
 
 The Agent panel keeps approval UI hidden while idle, during read-only commands, and during dry-run previews. It appears when a real project-mutating command is classified and remains available until accepted, declined, canceled, or cleared.
+
+## Versioned agent context
+
+Agent requests receive a `ccad_agent_context` version-one envelope. The complete project snapshot is under `project`, while `constraints` explicitly states mutation approval and secret exclusion rules. This gives providers stable context semantics without exposing secrets.

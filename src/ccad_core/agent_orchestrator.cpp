@@ -201,7 +201,18 @@ void ContextBuilder::load_stable_prompts() {}
 void ContextBuilder::load_project_memory() {}
 void ContextBuilder::load_repo_map() {}
 std::string ContextBuilder::build_context(const ProjectContext& base_ctx) {
-    return base_ctx.to_json();
+    // Keep context machine-readable and bounded at its boundary. The project
+    // snapshot remains intact; envelope metadata tells providers how to treat
+    // it without pretending that memory or repo-map data was loaded.
+    std::ostringstream out;
+    out << "{\"schema_version\":1"
+        << ",\"context_kind\":\"ccad_agent_context\""
+        << ",\"project\":" << base_ctx.to_json()
+        << ",\"constraints\":{\"read_only_by_default\":true"
+        << ",\"approval_required_for_mutation\":true"
+        << ",\"secret_values_excluded\":true}"
+        << "}";
+    return out.str();
 }
 
 // ─── ToolBroker ─────────────────────────────────────────────────

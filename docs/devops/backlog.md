@@ -869,3 +869,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 649: checkpoint dependency/runtime versions aligned; interrupt, resume, and denial fixtures pass.
 - [x] Sprint 651: separate all-zero-position schematic symbols for readable review rendering; preserve explicit positions; full Qt CTest and visual proof pass.
 - [x] Sprint 652: approval card appears only for real mutating commands; read-only/dry-run policy clears stale card; full Qt CTest and visual proof pass.
+- [x] Sprint 653: ContextBuilder emits versioned project envelope with explicit mutation/secret constraints; focused and full Qt verification pass.
