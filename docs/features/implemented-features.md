@@ -2386,3 +2386,4 @@ The headless board context also supports file-backed load/save with round-trip c
 `pcb add-dimension` is now a shared-context mutation consumer with its existing dimension validation, geometry, and audit behavior intact.
 `pcb add-group` is now a shared-context mutation consumer with its existing member validation and audit behavior intact.
 `pcb add-route-request` is now a shared-context mutation consumer with its existing endpoint, layer, width, and audit behavior intact.
+`pcb set-route-request` is now a shared-context mutation consumer with its existing endpoint, layer, width, update, and audit behavior intact.
