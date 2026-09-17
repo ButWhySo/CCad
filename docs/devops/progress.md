@@ -1732,3 +1732,6 @@ AgentPanel now reveals its approval card when policy classification finds a non-
 ### Sprint 653 - establish versioned agent context envelope
 
 ContextBuilder now emits a versioned `ccad_agent_context` envelope containing the complete project snapshot and explicit constraints: read-only by default, approval for mutations, and secret values excluded. Existing snapshot fields remain nested under `project`; focused orchestrator/GUI tests, official visual harness, full Qt build, and CTest pass 91/91.
+### Sprint 654 - enforce intake risk blocking
+
+AgentOrchestrator now honors IntakeLayer risk-scan results. Goals containing destructive or external-risk markers are converted into an auditable failed task before decomposition or provider/tool execution. Regression test, official harness, full Qt build, and CTest pass 91/91.

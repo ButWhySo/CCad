@@ -449,6 +449,20 @@ static void test_intake_layer() {
     assert(intake.run_risk_scan("delete the old project") == false);
 }
 
+static void test_plan_blocks_risky_intent() {
+    std::cout << "  test_plan_blocks_risky_intent... ";
+
+    ccad::AgentOrchestrator orch;
+    const auto goal = orch.plan("delete the old project", make_test_context());
+    assert(goal.status == ccad::GoalStatus::Failed);
+    assert(goal.total_count == 1);
+    assert(goal.tasks.size() == 1);
+    assert(goal.tasks.front().status == ccad::TaskStatus::Failed);
+    assert(goal.tasks.front().error_message == "intake_risk_scan_blocked");
+
+    std::cout << "PASS\n";
+}
+
 static void test_mutation_requires_approval() {
     ccad::AgentOrchestrator orch;
     register_mock_tools(orch);
@@ -489,6 +503,7 @@ int main() {
     test_project_context_json();
     test_context_builder_envelope();
     test_intake_layer();
+    test_plan_blocks_risky_intent();
     test_mutation_requires_approval();
 
     std::cout << "\nAll 14 orchestrator tests passed!\n";

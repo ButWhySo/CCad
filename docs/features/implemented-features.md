@@ -2525,3 +2525,7 @@ The Agent panel keeps approval UI hidden while idle, during read-only commands, 
 ## Versioned agent context
 
 Agent requests receive a `ccad_agent_context` version-one envelope. The complete project snapshot is under `project`, while `constraints` explicitly states mutation approval and secret exclusion rules. This gives providers stable context semantics without exposing secrets.
+
+## Intake risk gate
+
+Before planning, IntakeLayer normalizes and scans the goal. Destructive or external-risk requests are recorded as a failed `intake_risk_scan_blocked` task and never reach provider or tool decomposition.

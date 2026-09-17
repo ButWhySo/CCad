@@ -1374,3 +1374,5 @@ Sprint 625 adds composer quick replies `action:agent_quick_summarize`, `action:a
 `src/ccad_core/canvas.cpp::buildSchematicScene` keeps schematic model data immutable while applying a deterministic four-column display grid when all symbols retain default zero coordinates. This prevents imported/demo symbols from visually stacking; explicit coordinates remain authoritative.
 
 `src/ccad_core/agent_orchestrator.cpp::ContextBuilder::build_context` wraps `ProjectContext::to_json()` in the versioned `ccad_agent_context` envelope. Consumers should read the nested `project` object and honor its explicit read-only, approval, and secret-exclusion constraints.
+
+`AgentOrchestrator::plan` invokes `IntakeLayer::run_risk_scan` before subagent decomposition. A failed scan creates one auditable failed task with `intake_risk_scan_blocked`; no provider or tool task is created.

@@ -346,12 +346,26 @@ AgentGoal AgentOrchestrator::plan(const std::string& goal_description, const Pro
     AgentGoal goal;
     goal.id = make_goal_id();
     goal.description = intake_.normalize_request(goal_description);
-    intake_.run_risk_scan(goal.description);
     intake_.start_session(goal.description);
     
     goal.context_json = context_builder_.build_context(context);
     goal.status = GoalStatus::Planning;
     goal.created_at = now_iso();
+
+    if (!intake_.run_risk_scan(goal.description)) {
+        AgentTask blocked;
+        blocked.id = make_task_id(goal.id, 0);
+        blocked.description = "Intake risk scan blocked goal before planning";
+        blocked.status = TaskStatus::Failed;
+        blocked.risk = TaskRisk::External;
+        blocked.error_message = "intake_risk_scan_blocked";
+        blocked.created_at = now_iso();
+        goal.tasks.push_back(blocked);
+        goal.total_count = 1;
+        goal.failed_count = 1;
+        goal.status = GoalStatus::Failed;
+        return goal;
+    }
 
     // Use the first subagent for decomposition (EDAAgent)
     if (!available_subagents_.empty()) {
