@@ -1329,3 +1329,4 @@ Sprint 583 updates `src/ccad_agent/orchestrator.py` broker waits to defer unrela
 Sprint 584 adds `new_tool_call_id()` in `src/ccad_agent/orchestrator.py`; `ui_place_via()` emits and waits on a unique UUID-backed correlation ID.
 Sprint 585 extends broker correlation to `ui_add_track()` and `ui_add_polygon()` in `src/ccad_agent/orchestrator.py`; both await matching `tool_result` when broker mode is enabled.
 Sprint 586 adds `dispatch_client_tool()` in `src/ccad_agent/orchestrator.py` and routes footprint/symbol/wire/label mutations through it for correlated broker completion.
+Sprint 587 adds `pending_calls`, `route_protocol_line()`, and cleanup-safe `wait_for_broker_result()` routing in `src/ccad_agent/orchestrator.py`.
