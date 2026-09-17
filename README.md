@@ -26,6 +26,20 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - CLI agent local sessions: `ccad agent session-schema`, `ccad agent session-new`, `ccad agent session-state`, `ccad agent checkpoint-add`, and `ccad agent replay` create, inspect, checkpoint, and replay provider-free local Agent session files, with read-only `agent.session_schema`, `agent.session_state`, and `agent.replay_manifest` JSON-RPC routes.
 - CLI agent policy gates: `ccad agent policy-schema`, `ccad agent policy-check`, and `ccad agent dry-run` classify command risk, read/write permission needs, approval-required state, and dry-run decisions before execution, with matching `agent.policy_schema` and `agent.policy_check` JSON-RPC routes.
 - CLI agent provider configuration: `ccad agent provider-config-schema`, `ccad agent provider-config-template`, and `ccad agent provider-status` expose BYOK/BYOT env-var metadata, no-secret templates, and presence-only readiness checks, with matching `agent.provider_config_schema`, `agent.provider_config_template`, and `agent.provider_status` JSON-RPC routes.
+
+## Gemini BYOK quickstart
+
+Set credentials only in the PowerShell process that launches CCad. Replace the model with any model supported by your Google account; `gemini-2.5-flash` is a fast smoke-test choice.
+
+```powershell
+$env:GEMINI_API_KEY = "PASTE_KEY_HERE"
+$env:CCAD_GEMINI_MODEL = "gemini-2.5-flash"
+.\build\ccad.exe agent provider-status
+$env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
+.\build-qt\ccad_gui.exe
+```
+
+In Agent Settings, choose `Google Gemini`, confirm model, paste key, and press `Test Provider`. Test Provider uses the key transiently; Save persists preferences only, never the secret. Do not put keys in project JSON, `.env`, logs, screenshots, or Git. Remove temporary values with `Remove-Item Env:GEMINI_API_KEY,Env:GOOGLE_API_KEY,Env:CCAD_GEMINI_MODEL`.
 - CLI agent observability configuration: `ccad agent trace-export-schema`, `ccad agent trace-export-template`, `ccad agent trace-redaction-policy`, and `ccad agent trace-export-dry-run` expose disabled-by-default OpenTelemetry/Langfuse trace-export metadata, redaction policy, and no-network dry-run status, with matching `agent.trace_export_schema`, `agent.trace_export_template`, `agent.trace_redaction_policy`, and `agent.trace_export_dry_run` JSON-RPC routes.
 - CLI agent KiCad evidence integration: `ccad agent kicad-evidence-schema`, `ccad agent kicad-evidence-plan`, `ccad agent kicad-evidence-dry-run`, and guarded `ccad agent kicad-evidence-run --execute` expose structured `kicad-cli` DRC/ERC/export command plans, readiness checks, artifact manifests, JSON-RPC routes, tool-guide discovery, and policy-gated execution for local KiCad evidence.
 - Native Agent pane visual refinement: the right-side Agent pane now reports `visual_style:"agent_reference_panel_v4"` and `workspace_layout_version:4`, with targetable status rail, command composer, plan deck, evidence lane, and approval lane subregions while preserving the existing local-only controls and UI-map IDs.
