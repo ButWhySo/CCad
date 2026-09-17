@@ -1317,3 +1317,7 @@ Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` bound
 ### Sprint 523 — migrate add-text loading
 
 `pcb add-text` now loads through `HeadlessBoardContext` while preserving layer, geometry, validation, and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
+
+### Sprint 524 — migrate graphic-line loading
+
+`pcb add-graphic-line` now loads through `HeadlessBoardContext` while preserving layer, zero-length, geometry, and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.

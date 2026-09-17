@@ -1245,3 +1245,5 @@ Sprint 521 migrates `pcb refill-zones` loading and applied mutation ownership to
 Sprint 522 migrates `pcb add-zone` loading to the shared context; compatibility writing remains for audit continuity.
 
 Sprint 523 migrates `pcb add-text` loading to the shared context; compatibility writing remains for audit continuity.
+
+Sprint 524 migrates `pcb add-graphic-line` loading to the shared context; compatibility writing remains for audit continuity.
