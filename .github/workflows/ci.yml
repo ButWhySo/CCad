@@ -53,7 +53,7 @@ jobs:
           set -o pipefail
           ctest --test-dir build --output-on-failure 2>&1 | tee ctest-core-linux.log
       - name: Verbose CLI diagnostics
-        if: always()
+        if: failure()
         continue-on-error: true
         run: |
           set -o pipefail
@@ -87,7 +87,7 @@ jobs:
           set -o pipefail
           ctest --test-dir build --output-on-failure 2>&1 | tee ctest-gui-linux.log
       - name: Verbose CLI diagnostics
-        if: always()
+        if: failure()
         continue-on-error: true
         run: |
           set -o pipefail
