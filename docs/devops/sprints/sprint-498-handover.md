@@ -18,6 +18,8 @@ Continue from the zone-fill backlog, then address the agent-pane usability gap w
 
 The interface inventory is maintained in `docs/agent-interface-inventory.md`; use it before adding another agent route or GUI control.
 
+Sprint 499 improved chat-bubble layout and verified it with the official harness screenshot `artifacts/screenshots/sprint499_chat_bubble_layout-20260917-054203.png`; the next UI sprint should target a specific remaining interaction, not generic styling.
+
 ## Known limits
 
 Only horizontal and vertical persisted thermal spokes are exported as rectangles. Diagonal records are omitted. The GUI screenshot fixture proves canvas stability and persisted spoke rendering, but not KiCad parser acceptance of exported files; add parser-level evidence before claiming that stronger guarantee.

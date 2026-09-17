@@ -2364,3 +2364,4 @@ KiCad PCB export preserves PTH-only zone connection semantics with `connect_pads
 Qt canvas renders persisted thermal spoke records on visible zone layers, and official demo fixture visibly exercises the path with an applied B.Cu PTH pad.
 Qt thermal-spoke rendering preserves persisted spoke width visually.
 KiCad PCB export now preserves persisted horizontal/vertical thermal spokes as rectangular filled copper polygons; diagonal spoke records remain unsupported and are omitted.
+Agent chat bubbles use content-sized, non-scrolling message browsers so notices and responses render without nested scrollbar artifacts or excess internal padding.

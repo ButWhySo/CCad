@@ -939,7 +939,11 @@ void AgentPanel::appendChatMessage(const QString& role, const QString& text) {
       browser->setOpenExternalLinks(true);
       browser->setMarkdown(text);
       browser->setStyleSheet("background-color: transparent; border: none;");
+      browser->setFrameShape(QFrame::NoFrame);
+      browser->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+      browser->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
       browser->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+      browser->document()->setDocumentMargin(0.0);
       browser->document()->setTextWidth(-1);
       
       // Keep background transparent so bubble color shows

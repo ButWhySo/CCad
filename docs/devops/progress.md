@@ -1233,3 +1233,7 @@ References checked: KiCad's official board-file documentation defines `filled_po
 ## Sprint 497 progress update (2026-09-17)
 
 Legacy-zone export hardening complete: zones with an empty layer list correctly resolve to `F.Cu` for both zone header and filled geometry. Regression coverage passes. Qt build completed 88/88; CTest completed 91/91 across two runs after one transient orchestrator stall; official harness passed, screenshot inspected, stderr empty.
+
+## Sprint 499 progress update (2026-09-17)
+
+Agent chat bubbles now remove internal QTextBrowser frames, document margins, and nested scrollbars so provider notices and long messages size to content without excess blank space. Focused GUI build completed 9/9; `gui_agent_panel` and `gui_ui_map` passed 2/2; official harness screenshot was inspected and final stderr was empty; full Qt CTest passed 91/91.
