@@ -1702,3 +1702,6 @@ Visible Agent header no longer renders trace, span, queue, or run-state telemetr
 ### Sprint 636 - keep previews approval-free
 
 Tool calls carrying `dry_run:true` now return explicit non-mutating preview before approval policy evaluation. Approval cards therefore appear only for real project mutations.
+### Sprint 637 - repair provider selection for BYOK
+
+Agent Settings now displays human-readable provider names while carrying stable adapter IDs internally, including OpenAI-compatible and local-model providers. Session-only API-key handoff therefore targets the selected adapter correctly; no key is persisted.

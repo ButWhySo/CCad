@@ -33,6 +33,8 @@ private slots:
     // 1. General Tab
     auto* provider_combo = dialog.findChild<QComboBox*>("control:providerCombo");
     QVERIFY(provider_combo != nullptr);
+    QVERIFY(provider_combo->findData("openai_compatible") >= 0);
+    QVERIFY(provider_combo->findData("local_model") >= 0);
     QTest::keyClick(provider_combo, Qt::Key_Down);
 
     auto* model_input = dialog.findChild<QLineEdit*>("control:modelInput");

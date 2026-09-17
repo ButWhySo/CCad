@@ -183,7 +183,11 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
 
   provider_combo_ = new QComboBox(parent_widget);
   provider_combo_->setObjectName("control:providerCombo");
-  provider_combo_->addItems({"openai", "anthropic", "google_gemini"});
+  provider_combo_->addItem("OpenAI", "openai");
+  provider_combo_->addItem("Anthropic", "anthropic");
+  provider_combo_->addItem("Google Gemini", "google_gemini");
+  provider_combo_->addItem("OpenAI-compatible", "openai_compatible");
+  provider_combo_->addItem("Local model server", "local_model");
   form->addRow("Provider:", provider_combo_);
 
   model_input_ = new QLineEdit(parent_widget);
@@ -297,7 +301,7 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
   test_provider->setToolTip("Initialize the selected provider for this session without sending a prompt");
   connect(test_provider, &QPushButton::clicked, this, [this]() {
     if (agent_panel_ && api_key_input_) {
-      agent_panel_->setProviderSecret(provider_combo_ ? provider_combo_->currentText() : "openai",
+      agent_panel_->setProviderSecret(provider_combo_ ? provider_combo_->currentData().toString() : "openai",
                                       api_key_input_->text());
     }
   });
@@ -424,7 +428,7 @@ void AgentSettingsDialog::saveAllSettings() {
   if (dev_prompt_) config["dev_prompt"] = dev_prompt_->toPlainText();
 
   if (agent_panel_ && api_key_input_) {
-    agent_panel_->setProviderSecret(provider_combo_ ? provider_combo_->currentText() : "openai",
+    agent_panel_->setProviderSecret(provider_combo_ ? provider_combo_->currentData().toString() : "openai",
                                     api_key_input_->text());
   }
 

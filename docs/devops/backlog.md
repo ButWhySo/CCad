@@ -860,3 +860,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 634: run/trace telemetry reaches semantic Agent labels with honest unavailable cost/token markers; external Langfuse/LangSmith export remains opt-in.
 - [x] Sprint 635: remove visible telemetry chips; retain hidden harness diagnostics and verify dark composer through native visual harness.
 - [x] Sprint 636: dry-run tool previews bypass mutation approval; full CTest 91/91 and native screenshot proof pass.
+- [x] Sprint 637: provider settings use stable adapter IDs and expose compatible/local providers; GUI settings test 9/9 and native harness proof pass.
