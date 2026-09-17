@@ -1303,3 +1303,5 @@ Sprint 550 migrates graphics cleanup, layer mutations, design rules, outline, zo
 Sprint 551 migrates schematic and project text-variable mutations to the shared context; schematic serialization and compatibility writing remain unchanged. CLI tests now cover the added schematic mutation paths.
 
 Sprint 552 makes orchestrator read tools project-backed and routes four PCB adapters through `ccad_cli::run()` with captured process results; unsupported adapters must report an explicit error rather than a false success.
+
+Sprint 553 adds `agent.tool_call` JSON-RPC dispatch, approval checks, tool schemas, and robust top-level request ID parsing; nested tool arguments may safely contain an object `id`.

@@ -58,6 +58,20 @@ std::string extractRawValue(const std::string& json, const std::string& key) {
   return "";
 }
 
+std::string extractRequestId(const std::string& json) {
+  const std::string search = "\"id\":";
+  const auto found = json.rfind(search);
+  if (found == std::string::npos) return "";
+  std::size_t pos = found + search.size();
+  while (pos < json.size() && (json[pos] == ' ' || json[pos] == '\t')) ++pos;
+  if (pos < json.size() && json[pos] == '"') {
+    const auto end = json.find('"', pos + 1);
+    return end == std::string::npos ? "" : json.substr(pos, end - pos + 1);
+  }
+  const auto end = json.find_first_of(",}", pos);
+  return json.substr(pos, end == std::string::npos ? std::string::npos : end - pos);
+}
+
 std::vector<std::string> extractStringArray(const std::string& json, const std::string& key) {
   std::vector<std::string> result;
   std::string search = "\"" + key + "\":";
@@ -855,7 +869,7 @@ int agentCommand(const std::vector<std::string>& args) {
       continue;
     }
 
-    std::string id = extractRawValue(line, "id");
+    std::string id = extractRequestId(line);
     std::string method = extractStringValue(line, "method");
 
     if (method == "ping") {
@@ -1008,7 +1022,7 @@ int agentCommand(const std::vector<std::string>& args) {
       }
       std::cout << formatSuccess(id, agentToolGuideJson(method_name)) << "\n";
       std::cout.flush();
-    } else if (method == "agent.orchestrator_schema" || method == "agent.plan" || method == "agent.orchestrate") {
+    } else if (method == "agent.orchestrator_schema" || method == "agent.plan" || method == "agent.orchestrate" || method == "agent.tool_call") {
       handleOrchestratorJsonRpc(method, line, id, allow_read, allow_write);
     } else if (method == "execute" || method == "tools/call") {
       std::vector<std::string> cmdArgs = extractStringArray(line, "args");
