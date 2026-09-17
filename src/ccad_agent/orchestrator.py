@@ -300,6 +300,14 @@ def emit_provider_failure(provider: str, error: Exception):
         "error": type(error).__name__, "secret_value_visible": False,
     }})
 
+def emit_provider_ready(provider: str, model: str):
+    """Report configured adapter readiness; do not imply network probe."""
+    emit({"jsonrpc": "2.0", "method": "provider_state", "params": {
+        "provider": provider, "model": model, "configured": True,
+        "execution_enabled": True, "network_access": "not_probed",
+        "secret_value_visible": False,
+    }})
+
 def init_provider():
     global llm, router_llm, librarian_llm, broker_wait_enabled
 
@@ -331,6 +339,7 @@ def init_provider():
             router_llm = llm.bind_tools(router_tools)
             librarian_llm = llm.bind_tools(librarian_tools)
             broker_wait_enabled = True
+            emit_provider_ready(provider, model_name)
             return True
         except ImportError:
             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Warning: langchain_anthropic not installed."}})
@@ -344,6 +353,7 @@ def init_provider():
             router_llm = llm.bind_tools(router_tools)
             librarian_llm = llm.bind_tools(librarian_tools)
             broker_wait_enabled = True
+            emit_provider_ready(provider, model_name)
             return True
         except ImportError:
             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Warning: langchain_google_genai not installed."}})
@@ -357,6 +367,7 @@ def init_provider():
             router_llm = llm.bind_tools(router_tools)
             librarian_llm = llm.bind_tools(librarian_tools)
             broker_wait_enabled = True
+            emit_provider_ready(provider, model_name)
             return True
         except ImportError:
             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Warning: langchain_openai not installed."}})

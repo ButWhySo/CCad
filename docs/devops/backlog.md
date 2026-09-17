@@ -826,3 +826,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 597: expose semantic GUI targets for agent resume status; automate live approval interaction next.
 - [x] Sprint 598: regression-test approval pending/decline/cancel UI states; live provider approval round-trip remains open.
 - [x] Sprint 599: surface redacted provider adapter initialization failures; live network/provider round-trip remains open.
+- [x] Sprint 600: report successful BYOK provider readiness; authenticated live request and cost/latency trace remain open.

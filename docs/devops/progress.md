@@ -1597,3 +1597,6 @@ Added GUI regression coverage for approval pending, decline, and cancel transiti
 ### Sprint 599 - surface provider adapter failures
 
 Provider initialization exceptions now emit redacted structured `provider_state.error` metadata; AgentPanel displays adapter error classification instead of silently collapsing every failure into unavailable. Focused verification pending.
+### Sprint 600 - report successful BYOK readiness
+
+Successful provider adapter initialization now emits structured `provider_state` with model, execution readiness, and explicit `network_access: not_probed`; GUI maps this to `configured_provider_ready`. Fake-key OpenAI initialization smoke passed without network request or secret echo. Focused verification pending.
