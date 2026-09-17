@@ -1343,3 +1343,4 @@ Sprint 597 names AgentPanel run/result labels `status:agent_run` and `status:age
 Sprint 598 adds `testApprovalLaneTransitions()` to `tests/test_gui_agent_panel.cpp`, covering approval state transitions.
 Sprint 599 adds `emit_provider_failure()` and AgentPanel adapter-error status mapping for actionable provider setup diagnostics.
 Sprint 600 adds `emit_provider_ready()` and maps successful provider state to `configured_provider_ready` in AgentPanel.
+Sprint 601 records MCP boundary: `src/ccad_cli/agent_commands.cpp` handles stdio MCP subset, while `src/ccad_gui/ui_map_server.cpp` remains local GUI-map JSON Lines.

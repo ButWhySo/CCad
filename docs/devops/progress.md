@@ -1600,3 +1600,6 @@ Provider initialization exceptions now emit redacted structured `provider_state.
 ### Sprint 600 - report successful BYOK readiness
 
 Successful provider adapter initialization now emits structured `provider_state` with model, execution readiness, and explicit `network_access: not_probed`; GUI maps this to `configured_provider_ready`. Fake-key OpenAI initialization smoke passed without network request or secret echo. Focused verification pending.
+### Sprint 601 - document MCP boundary truthfully
+
+Audited MCP implementation: `ccad agent serve` supports stdio JSON-RPC initialize/ping/tools-list/tools-call for guarded `ccad_execute`; GUI-map socket remains separate local JSON Lines transport. README now states this boundary explicitly.
