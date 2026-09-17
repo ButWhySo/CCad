@@ -1263,3 +1263,7 @@ CI #247 still fails `core-linux` test `cli`, while the downloaded artifact remai
 CI #248 still has no terminal result in the public view. The unquoted packet-form change did not yet produce a terminal green run, so the next diagnostic will include the complete cross-probe JSON in the assertion message rather than only the short label.
 
 The local direct CLI check confirms the parser resolves `$NET: N1` as a net packet. The CLI integration test now exercises the parser's documented escaped-leading-dollar compatibility path (`\\$NET: N1`) to avoid shell expansion differences while retaining the same net-resolution assertion.
+
+### Sprint 509 — remove POSIX whitespace boundary from cross-probe regression
+
+The Linux-only CLI failure persisted across quoted and escaped packet forms. The black-box invocation now passes the shell-safe escaped packet `\\$NET:N1`, a single token with no whitespace boundary; the existing cross-probe parser already supports the unquoted value form and retains KiCad's quoted form coverage in the core test. This isolates the regression from POSIX command tokenization while preserving net-target assertions.
