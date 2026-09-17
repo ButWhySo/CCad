@@ -1287,3 +1287,5 @@ Sprint 542 migrates `pcb remove-object` loading to the shared context; compatibi
 Sprint 543 migrates `pcb move-object` loading to the shared context; compatibility writing remains for audit continuity.
 
 Sprint 544 migrates `pcb resize-object` loading to the shared context; compatibility writing remains for audit continuity.
+
+Sprint 545 migrates `pcb place-footprint` project loading to the shared context; footprint-file loading and compatibility writing remain unchanged.
