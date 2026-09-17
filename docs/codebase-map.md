@@ -1361,3 +1361,5 @@ Sprint 618 extends `ReviewWindow::uiTypeTextJson` to target `QTextEdit`, enablin
 Sprint 616 adds the `agent-python` job in `.github/workflows/ci.yml`; it is the authoritative CI gate for Python provider/checkpoint protocol regressions.
 Sprint 619 adds `--chat-input-check` to `scripts/live_agent_route_demo.py` and allows `control:agent_chat_input` through `ReviewWindow::uiTypeTextJson`; live proof confirms text entry before route mutations.
 Sprint 620 adds `--provider mock` and `--chat-send-check` to the live harness; Send is exercised through `action:agent_submit_chat` and the backend receives the message offline.
+Sprint 621 renames the hidden result state to mapped `label:agent_result` and updates it on `message`; live Send proof asserts `Result Chat response received`.
+Sprint 622 makes `panel:agent_approval_preview` contextual: hidden at idle, shown for pending request, hidden after decision/reset. Its stylesheet is scoped to approval descendants; `.ccad-secrets/` and `secrets/` are ignored credential locations.

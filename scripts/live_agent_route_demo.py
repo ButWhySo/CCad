@@ -74,6 +74,8 @@ def main():
             if args.chat_send_check:
                 sent = send(pipe, {"method": "ui.click", "id": "action:agent_submit_chat"})
                 time.sleep(2.0)
+                response_map = send(pipe, {"method": "ui.map_compact", "id": "chat-response-state",
+                                           "limit": 100})
         typed_result = typed.get("result", {})
         print("LIVE CHAT INPUT " + json.dumps({
             "performed": typed_result.get("performed"),
@@ -92,6 +94,16 @@ def main():
             }, separators=(",", ":")), flush=True)
             if not sent_result.get("performed"):
                 raise RuntimeError("live mapped agent Send action did not perform")
+            response_result = response_map.get("result", {})
+            response_nodes = response_result.get("nodes", []) if isinstance(response_result, dict) else []
+            response_labels = [node.get("label", "") for node in response_nodes
+                               if node.get("id") == "label:agent_result"]
+            print("LIVE CHAT RESPONSE " + json.dumps({
+                "received": any("Chat response received" in label for label in response_labels),
+                "labels": response_labels,
+            }, separators=(",", ":")), flush=True)
+            if not any("Chat response received" in label for label in response_labels):
+                raise RuntimeError("mock provider response was not reflected in GUI state")
     if args.mcp_bridge_check:
         bridge = os.path.join(root, "scripts", "ccad_mcp_gui_bridge.py")
         payload = (json.dumps({"jsonrpc": "2.0", "method": "tools/call",

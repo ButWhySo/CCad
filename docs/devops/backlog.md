@@ -845,3 +845,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 616: CI runs provider mock and checkpoint acceptance/denial fixtures; external-provider network test remains intentionally absent.
 - [x] Sprint 619: live harness types into Agent chat through GUI map; provider-backed send and approved mutation remain environment-dependent.
 - [x] Sprint 620: live harness sends through mock provider; visible response inspection and approval-gated mutation remain next.
+- [x] Sprint 621: GUI map exposes confirmed chat response state; approval-gated provider tool mutation remains next.
+- [x] Sprint 622: approval card contextual visibility and scoped contrast fixed; richer quick replies and approval mutation proof remain next.

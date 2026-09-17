@@ -781,7 +781,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   auto* approval_card = new QFrame(this);
   approval_card->setObjectName("panel:agent_approval_preview");
   approval_card->setProperty("agentRole", "approvalCard");
-  approval_card->setStyleSheet("QFrame[agentRole=approvalCard] { background:#25262b; border:1px solid #604080; border-radius:8px; } QLabel { color:#d1d5db; } QPushButton { padding:4px 8px; }");
+  approval_card->setStyleSheet("QFrame[agentRole=approvalCard] { background-color:#25262b; color:#d1d5db; border:1px solid #604080; border-radius:8px; } QFrame[agentRole=approvalCard] QLabel { color:#d1d5db; background:transparent; } QFrame[agentRole=approvalCard] QLineEdit { background-color:#1e1e1e; color:#f3f4f6; border:1px solid #4b5563; border-radius:4px; padding:4px; } QFrame[agentRole=approvalCard] QPushButton { background-color:#343740; color:#f3f4f6; border:1px solid #596070; border-radius:4px; padding:4px 8px; } QFrame[agentRole=approvalCard] QPushButton:hover { background-color:#454b5a; } ");
   auto* approval_layout = new QVBoxLayout(approval_card);
   approval_layout->setContentsMargins(8, 6, 8, 6);
   approval_layout->setSpacing(4);
@@ -825,6 +825,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   connect(approval_cancel_button_, &QPushButton::clicked, this, &AgentPanel::cancelApproval);
   connect(approval_clear_button_, &QPushButton::clicked, this, &AgentPanel::clearApprovals);
   approval_preview_ = approval_card;
+  approval_card->hide();
   main_layout->addWidget(approval_card);
   main_layout->addWidget(composer_container);
 
@@ -902,7 +903,9 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   status_label_ = new QLabel(this); status_label_->setObjectName("status:agent_run"); status_label_->hide();
   workspace_label_ = new QLabel(this); workspace_label_->hide();
   diagnostics_label_ = new QLabel(this); diagnostics_label_->hide();
-  result_state_label_ = new QLabel(this); result_state_label_->setObjectName("status:agent_result"); result_state_label_->hide();
+  result_state_label_ = new QLabel(this);
+  result_state_label_->setObjectName("label:agent_result");
+  result_state_label_->hide();
   task_state_label_ = new QLabel(this); task_state_label_->hide();
   evidence_label_ = new QLabel(this); evidence_label_->hide();
   
@@ -1094,7 +1097,11 @@ void AgentPanel::handlePythonOutput() {
           python_process_->write(QJsonDocument(result).toJson(QJsonDocument::Compact) + "\n");
         }
       } else if (obj.contains("method") && obj["method"].toString() == "message") {
-        appendChatMessage("agent", obj["params"].toObject()["text"].toString());
+        const QString message = obj["params"].toObject()["text"].toString();
+        appendChatMessage("agent", message);
+        if (result_state_label_) {
+          result_state_label_->setText("Result Chat response received");
+        }
       } else if (obj.contains("method") && obj["method"].toString() == "config_state") {
         if (config_state_cb_) config_state_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "provider_state") {
@@ -2160,8 +2167,10 @@ void AgentPanel::requestApproval() {
     result_state_label_->setText("Result Approval required");
     addActivityEvent("error", "Approval request required",
                      "Approval lane returned to idle", "agent.approval");
+    if (approval_preview_) approval_preview_->hide();
     return;
   }
+  if (approval_preview_) approval_preview_->show();
   pending_approval_request_ = trimmed_request;
   approval_last_decision_ = "pending";
   approval_status_label_->setText("Approval pending: " + pending_approval_request_);
@@ -2245,6 +2254,7 @@ void AgentPanel::approveNextApproval() {
   status_label_->setText("Approval accepted");
   result_state_label_->setText("Result Approval accepted");
   addActivityEvent("approval", "Approval accepted", request, "agent.approval");
+  if (approval_preview_) approval_preview_->hide();
 }
 
 void AgentPanel::declineNextApproval() {
@@ -2274,6 +2284,7 @@ void AgentPanel::declineNextApproval() {
   status_label_->setText("Approval declined");
   result_state_label_->setText("Result Approval declined");
   addActivityEvent("approval", "Approval declined", request, "agent.approval");
+  if (approval_preview_) approval_preview_->hide();
 }
 
 void AgentPanel::cancelApproval() {
@@ -2303,6 +2314,7 @@ void AgentPanel::cancelApproval() {
   status_label_->setText("Approval canceled");
   result_state_label_->setText("Result Approval canceled");
   addActivityEvent("approval", "Approval canceled", request, "agent.approval");
+  if (approval_preview_) approval_preview_->hide();
 }
 
 void AgentPanel::clearApprovals() {
@@ -2314,6 +2326,7 @@ void AgentPanel::clearApprovals() {
   result_state_label_->setText("Result Approvals cleared");
   addActivityEvent("approval", "Approvals cleared", "Approval lane reset",
                    "agent.approval");
+  if (approval_preview_) approval_preview_->hide();
 }
 
 QString AgentPanel::projectText() const {

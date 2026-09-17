@@ -136,7 +136,7 @@ private slots:
     QVERIFY(panel.findChild<QPushButton*>("action:agent_context_refresh") != nullptr);
     QVERIFY(panel.findChild<QPushButton*>("action:agent_voice") != nullptr);
     QVERIFY(panel.findChild<QLabel*>("status:agent_run") != nullptr);
-    QVERIFY(panel.findChild<QLabel*>("status:agent_result") != nullptr);
+    QVERIFY(panel.findChild<QLabel*>("label:agent_result") != nullptr);
     auto* context_label = panel.findChild<QLabel*>("control:contextLabel");
     QVERIFY(context_label != nullptr);
     QVERIFY(context_label->text().contains("/ 128k context"));
@@ -147,14 +147,21 @@ private slots:
 
   void testApprovalLaneTransitions() {
     AgentPanel panel;
+    auto* approval_card = panel.findChild<QFrame*>("panel:agent_approval_preview");
+    QVERIFY(approval_card != nullptr);
+    QVERIFY(!approval_card->isVisible());
+    panel.show();
+    QCoreApplication::processEvents();
     panel.setApprovalRequestText("Approve ui.route_track");
     panel.requestApproval();
     QCOMPARE(panel.pendingApprovalCount(), 1);
     QVERIFY(panel.approvalStatusText().contains("Approval pending"));
+    QVERIFY(approval_card->isVisible());
 
     panel.declineNextApproval();
     QCOMPARE(panel.pendingApprovalCount(), 0);
     QVERIFY(panel.approvalStatusText().contains("Approval declined"));
+    QVERIFY(!approval_card->isVisible());
 
     panel.setApprovalRequestText("Approve ui.place_via");
     panel.requestApproval();

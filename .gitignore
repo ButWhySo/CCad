@@ -94,6 +94,9 @@ desktop.ini
 .env
 .env.*
 !.env.example
+# Local BYOK credentials; never commit or bundle.
+.ccad-secrets/
+secrets/
 *.pem
 *.key
 *.p12

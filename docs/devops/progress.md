@@ -1652,3 +1652,11 @@ Added `--chat-input-check` to the live agent route harness. It types a realistic
 ### Sprint 620 - prove mapped Agent Send
 
 Extended the live route harness with `--provider mock` and `--chat-send-check`. The harness now types through the semantic chat target, clicks the real Send action, waits for the offline LangGraph provider, and continues live board actions without requiring a network key.
+### Sprint 621 - expose chat response state
+
+Agent responses now update semantic `label:agent_result` to `Result Chat response received`. The live Send harness reads that mapped state after clicking Send, proving backend-to-GUI response delivery rather than only button activation.
+### Sprint 622 - contextual approval card and chat contrast
+
+Approval UI now stays hidden while idle and appears only when a non-empty change request is pending; it hides after accept, decline, cancel, or clear. Card controls use scoped dark-theme colors for readable text, fields, borders, and hover states. Added ignored `.ccad-secrets/` and `secrets/` locations for local credentials; GUI Settings remains session-only key storage.
+
+Research note: CopilotKit Generative UI separates controlled native components, declarative JSON surfaces, and open-ended MCP Apps; Sendbird guidance reinforces concise history, quick actions, clear status, bottom composer, and limited high-contrast palette. CCad adopts controlled typed Qt cards, not arbitrary agent HTML/iframes.
