@@ -2,6 +2,9 @@ import sys
 import json
 import operator
 import os
+import queue
+import threading
+import time
 from typing import Annotated, TypedDict, List
 from langgraph.graph import StateGraph, END
 from langchain_core.tools import tool
@@ -15,11 +18,23 @@ def emit(payload: dict):
     print(json.dumps(payload), flush=True)
 
 broker_wait_enabled = False
+inbound_queue = None
 
 def wait_for_broker_result(call_id: str) -> str:
     """Synchronously receive matching C++ broker result for current tool call."""
+    timeout = max(1.0, float(os.environ.get("CCAD_BROKER_TIMEOUT_SECONDS", "30")))
+    deadline = time.monotonic() + timeout
     while True:
-        line = sys.stdin.readline()
+        if inbound_queue is None:
+            line = sys.stdin.readline()
+        else:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return json.dumps({"error": "broker_timeout", "call_id": call_id})
+            try:
+                line = inbound_queue.get(timeout=remaining)
+            except queue.Empty:
+                return json.dumps({"error": "broker_timeout", "call_id": call_id})
         if not line:
             return json.dumps({"error": "broker_closed", "call_id": call_id})
         try:
@@ -470,7 +485,17 @@ if __name__ == "__main__":
     executor = create_orchestrator()
     emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Python Multi-Agent Orchestrator ready."}})
     
-    for line in sys.stdin:
+    inbound_queue = queue.Queue()
+    def read_protocol_lines():
+        for protocol_line in sys.stdin:
+            inbound_queue.put(protocol_line)
+        inbound_queue.put(None)
+    threading.Thread(target=read_protocol_lines, name="ccad-agent-stdin", daemon=True).start()
+
+    while True:
+        line = inbound_queue.get()
+        if line is None:
+            break
         line = line.strip()
         if not line:
             continue

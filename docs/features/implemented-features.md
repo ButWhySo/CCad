@@ -2441,3 +2441,6 @@ Real-provider ui.place_via tool path can await matching C++ broker result by cal
 
 
 LangGraph runs attach content-safe metadata/tags to opt-in Langfuse/LangSmith callbacks; no prompt/context/tool payload or secret is placed in run metadata. Full callback redaction integration test remains backlog.
+
+
+Agent protocol uses one queue-backed stdin reader; broker waits are bounded by CCAD_BROKER_TIMEOUT_SECONDS and return structured timeout/closed errors instead of hanging indefinitely.

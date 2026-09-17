@@ -1527,3 +1527,7 @@ Real provider tool functions now emit a stable call_id, synchronously await matc
 ### Sprint 576 - keep graph observability content-safe
 
 LangGraph run config now sends only non-content metadata/tags to Langfuse/LangSmith: provider label, workflow, and context-present boolean. Prompt, context text, tool arguments/results, and credentials are excluded by construction. Python compile and mock chat smoke passed; stderr empty. Broker wait timeout remains queued for a platform-safe reader refactor.
+
+### Sprint 577 - make broker waits bounded on Windows
+
+Replaced competing stdin reads with one daemon protocol reader feeding a queue. Graph tool waits now support CCAD_BROKER_TIMEOUT_SECONDS (default 30s), return structured roker_timeout/roker_closed, and preserve unrelated inbound messages for main dispatch. Direct timeout smoke and mock /route regression passed; Python compile passed. This removes permanent pipe hangs; approval-before-execution and async run cancellation remain next.
