@@ -2474,3 +2474,4 @@ MCP support is a guarded stdio subset centered on `ccad_execute`; GUI-map method
 External MCP hosts can read harness capability/safety context and provider-free workspace state through `ccad_harness_context` and `ccad_workspace_state`.
 External MCP hosts can query a running GUI through `scripts/ccad_mcp_gui_bridge.py`; bridge exposes live read-only UI/project context and rejects GUI mutations.
 GUI MCP tool metadata declares read-only, non-destructive, closed-world behavior for safer host presentation.
+MCP clients can stage a native approval card with `ccad_gui_request_approval`; acceptance remains human-controlled in Agent panel.
