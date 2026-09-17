@@ -847,3 +847,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 620: live harness sends through mock provider; visible response inspection and approval-gated mutation remain next.
 - [x] Sprint 621: GUI map exposes confirmed chat response state; approval-gated provider tool mutation remains next.
 - [x] Sprint 622: approval card contextual visibility and scoped contrast fixed; richer quick replies and approval mutation proof remain next.
+- [x] Sprint 623: MCP approval staging adapted to contextual card visibility; approved mutation execution remains next.

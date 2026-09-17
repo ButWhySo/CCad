@@ -1660,3 +1660,6 @@ Agent responses now update semantic `label:agent_result` to `Result Chat respons
 Approval UI now stays hidden while idle and appears only when a non-empty change request is pending; it hides after accept, decline, cancel, or clear. Card controls use scoped dark-theme colors for readable text, fields, borders, and hover states. Added ignored `.ccad-secrets/` and `secrets/` locations for local credentials; GUI Settings remains session-only key storage.
 
 Research note: CopilotKit Generative UI separates controlled native components, declarative JSON surfaces, and open-ended MCP Apps; Sendbird guidance reinforces concise history, quick actions, clear status, bottom composer, and limited high-contrast palette. CCad adopts controlled typed Qt cards, not arbitrary agent HTML/iframes.
+### Sprint 623 - verify contextual approval over MCP
+
+Fixed semantic approval staging after contextual hiding: MCP typing into the approval request now promotes the card before its Request action is clicked. Live MCP proof reports `pending_visible=True`, human decline performed, and `final_visible=False`.

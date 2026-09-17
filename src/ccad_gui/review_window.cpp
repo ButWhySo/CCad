@@ -6646,7 +6646,8 @@ QString ReviewWindow::uiTypeTextJson(const QString& id, const QString& text) {
     if (input == nullptr || input->objectName() != trimmed_id) {
       continue;
     }
-    if (!input->isVisible() || !input->isEnabled()) {
+    const bool approval_request = trimmed_id == QStringLiteral("control:agent_approval_request");
+    if ((!input->isVisible() && !approval_request) || !input->isEnabled()) {
       response.insert("performed", false);
       response.insert("reason", "disabled_or_hidden");
       return jsonObjectLine(response);
@@ -6655,6 +6656,9 @@ QString ReviewWindow::uiTypeTextJson(const QString& id, const QString& text) {
     input->setText(text);
     input->setCursorPosition(text.size());
     QApplication::processEvents();
+    if (approval_request && agent_panel_ != nullptr) {
+      agent_panel_->requestApproval();
+    }
     response.insert("performed", true);
     response.insert("reason", "text_set");
     response.insert("focused", input->hasFocus());

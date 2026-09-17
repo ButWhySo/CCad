@@ -2490,3 +2490,4 @@ Sprint 619 adds a live harness check that types into the mapped Agent chat edito
 Sprint 620 adds offline mock-provider Send verification through the real mapped chat button, enabling repeatable GUI roundtrip tests without API keys.
 Sprint 621 exposes `label:agent_result` after backend chat responses; live harness verifies response delivery through a fresh GUI-map snapshot.
 Sprint 622 hides approval UI until a change request exists, restores readable dark-card controls, and reserves ignored local secret directories for developer-run provider testing.
+Sprint 623 makes MCP approval staging reveal the contextual card before Request, and verifies pending-visible/declined-hidden state through the live GUI map.
