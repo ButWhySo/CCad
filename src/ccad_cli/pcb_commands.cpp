@@ -936,13 +936,16 @@ int pcbCommand(const std::vector<std::string>& args) {
       bool delete_redundant = !options.contains("--delete-redundant") || options.at("--delete-redundant") != "false";
       bool merge_pads = !options.contains("--merge-pads") || options.at("--merge-pads") != "false";
 
-      ccad::Project project = loadProjectFile(file);
-      ccad::Board& board = const_cast<ccad::Board&>(requireBoard(project));
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
+      ccad::Board& board = requireBoard(project);
       
       ccad::GraphicsCleaner cleaner(board);
       auto actions = cleaner.cleanupBoard(dry_run, merge_rects, delete_redundant, merge_pads);
       
       if (!dry_run) {
+        context.markDirty();
         if (!writeProjectFile(file, project)) {
           std::cerr << "failed to write project file: " << file << '\n';
           return 2;
@@ -1008,7 +1011,9 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--name", "--kind", "--visible"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::Board& board = requireBoard(project);
       const std::string id = requireOption(options, "--id");
       const std::string name = requireOption(options, "--name");
@@ -1020,6 +1025,7 @@ int pcbCommand(const std::vector<std::string>& args) {
           .kind = kind,
           .visible = parseVisibleOption(options),
       });
+      context.markDirty();
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
@@ -1030,9 +1036,12 @@ int pcbCommand(const std::vector<std::string>& args) {
     if (subcommand == "add-standard-layers") {
       const std::map<std::string, std::string> options = parseOptions(args, 1, {"--file"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::Board& board = requireBoard(project);
       ccad::appendMissingStandardKiCadPcbLayers(board);
+      context.markDirty();
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
@@ -1044,7 +1053,9 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id", "--name", "--kind", "--visible"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::Board& board = requireBoard(project);
       const std::string id = requireOption(options, "--id");
       const std::string name = requireOption(options, "--name");
@@ -1066,6 +1077,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       if (!updated) {
         throw std::runtime_error("unknown layer: " + id);
       }
+      context.markDirty();
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
@@ -1432,7 +1444,9 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--id"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::Board& board = requireBoard(project);
       const std::string id = requireOption(options, "--id");
       requireLayerUnused(board, id);
@@ -1447,6 +1461,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       if (!removed) {
         throw std::runtime_error("unknown layer: " + id);
       }
+      context.markDirty();
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
@@ -1502,7 +1517,9 @@ int pcbCommand(const std::vector<std::string>& args) {
                                  "--cover-vias-back", "--plug-vias-front", "--plug-vias-back",
                                  "--cap-vias", "--fill-vias"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::Board& board = requireBoard(project);
       ccad::DesignRules rules = board.design_rules;
       rules.copper_clearance = requirePositiveMillimeters(options, "--copper-clearance-mm");
@@ -1552,6 +1569,7 @@ int pcbCommand(const std::vector<std::string>& args) {
       setOptionalBool(options, "--cap-vias", rules.cap_vias);
       setOptionalBool(options, "--fill-vias", rules.fill_vias);
       board.design_rules = rules;
+      context.markDirty();
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
@@ -1563,7 +1581,9 @@ int pcbCommand(const std::vector<std::string>& args) {
       const std::map<std::string, std::string> options =
           parseOptions(args, 1, {"--file", "--x-mm", "--y-mm", "--width-mm", "--height-mm"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::Board& board = requireBoard(project);
       const ccad::Rect previous_outline = board.outline;
       board.outline = ccad::Rect{
@@ -1578,6 +1598,7 @@ int pcbCommand(const std::vector<std::string>& args) {
         board.outline = previous_outline;
         throw;
       }
+      context.markDirty();
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
@@ -2669,7 +2690,9 @@ int pcbCommand(const std::vector<std::string>& args) {
            "--width-mm", "--height-mm", "--priority", "--clearance-mm", "--min-thickness-mm",
            "--pad-connection"});
       const std::string file = requireOption(options, "--file");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::Board& board = requireBoard(project);
       const std::string id = requireOption(options, "--id");
       requireUniquePhysicalObjectId(board, id);
@@ -2721,6 +2744,7 @@ int pcbCommand(const std::vector<std::string>& args) {
           .fill_enabled = true,
           .pad_connection = requireZonePadConnection(options),
       });
+      context.markDirty();
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
         return 2;
@@ -2971,7 +2995,9 @@ int pcbCommand(const std::vector<std::string>& args) {
           parseOptions(args, 1, {"--file", "--input"});
       const std::string file = requireOption(options, "--file");
       const std::string input = requireOption(options, "--input");
-      ccad::Project project = loadProjectFile(file);
+      ccad::HeadlessBoardContext context;
+      context.loadFile(file);
+      ccad::Project& project = context.project();
       ccad::Board& board = requireBoard(project);
       
       std::ifstream in(ccad::u8ToPath(input));
@@ -2992,6 +3018,7 @@ int pcbCommand(const std::vector<std::string>& args) {
         via.id += "_" + std::to_string(board.vias.size());
         board.vias.push_back(via);
       }
+      context.markDirty();
       
       if (!writeProjectFile(file, project)) {
         std::cerr << "failed to write project file: " << file << '\n';
