@@ -1621,3 +1621,4 @@ Extended live GUI route harness with `--mcp-bridge-check`; real named-pipe run r
 ### Sprint 607 - expose native approval controls to live MCP
 
 Added a visible Agent approval card with request, approve, decline, cancel, and clear controls. The live GUI map now exposes real approval targets; the MCP bridge can stage/open the card, while human decision remains separate. Focused tests, live bridge staging, visual harness, and full CTest pass.
+Follow-up live adaptive proof passed: MCP staged the request, native `ui.click` performed Decline, and a fresh GUI-map snapshot reported `Approval declined`.

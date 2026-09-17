@@ -69,6 +69,24 @@ def main():
         result = subprocess.run(["python", bridge, "--server", server], input=payload,
                                 text=True, capture_output=True, env=env, check=True)
         print("MCP BRIDGE " + result.stdout.replace("\n", " "), flush=True)
+        # The bridge may stage only; simulate the explicitly human GUI decision
+        # through the same mapped action, then read authoritative approval state.
+        with open(rf"\\.\pipe\{server}", "r+b", buffering=0) as pipe:
+            decision = send(pipe, {"method": "ui.click",
+                                   "id": "action:agent_decline_next"})
+            state = send(pipe, {"method": "ui.map_compact", "id": "approval-state",
+                                "limit": 100})
+        decision_result = decision.get("result", {})
+        state_result = state.get("result", {})
+        if "nodes" not in state_result and isinstance(state_result.get("result"), dict):
+            state_result = state_result["result"]
+        status_labels = [node.get("label", "") for node in state_result.get("nodes", [])
+                         if node.get("id") == "label:agent_approval_status"]
+        status_label = status_labels[0] if status_labels else ""
+        print(f"LIVE HUMAN DECISION declined performed={decision_result.get('performed')}", flush=True)
+        print("LIVE APPROVAL STATE " + json.dumps({"status": status_label}, separators=(",", ":")), flush=True)
+        if not decision_result.get("performed") or "declined" not in status_label.lower():
+            raise RuntimeError("live human approval decision was not reflected in authoritative state")
     requests = [{"method": "ui.trigger_safe", "id": "action:fit"}]
     for row in range(6):
         y = 7 + row * 7
