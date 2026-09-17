@@ -2367,3 +2367,4 @@ KiCad PCB export now preserves persisted horizontal/vertical thermal spokes as r
 Agent chat bubbles use content-sized, non-scrolling message browsers so notices and responses render without nested scrollbar artifacts or excess internal padding.
 
 Headless board context owns one loaded project snapshot, reports loader readiness, rejects save-before-load, and tracks explicit unsaved edits for future shared CLI, GUI, and agent use.
+The headless board context also supports file-backed load/save with round-trip coverage.

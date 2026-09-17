@@ -1279,3 +1279,6 @@ KiCad-context research confirms lifecycle ownership matters for durable queue sn
 ### Sprint 512 — add reusable headless board context
 
 Added `ccad::HeadlessBoardContext` above the serializer and board-loader seams. It owns one loaded project snapshot, exposes loader readiness, rejects save-before-load, and tracks explicit dirty/clean state. CLI and GUI integration remains the next bounded step; existing callers are unchanged. Focused board-loader test passed 1/1, the full Qt build linked 91 targets, and the CLI test passed 1/1.
+### Sprint 513 — add file-backed context persistence
+
+Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` boundaries, including explicit open/read/write failures. File round-trip coverage passes; command migration remains incremental.

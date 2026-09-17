@@ -3,6 +3,8 @@
 #include <set>
 #include <stdexcept>
 #include <utility>
+#include <fstream>
+#include <sstream>
 
 namespace ccad {
 namespace {
@@ -113,11 +115,33 @@ void HeadlessBoardContext::loadJson(const std::string& json, std::string source_
   dirty_ = false;
 }
 
+void HeadlessBoardContext::loadFile(const std::string& path, std::string source_format) {
+  std::ifstream input(path, std::ios::binary);
+  if (!input) {
+    throw std::runtime_error("cannot open project file: " + path);
+  }
+  std::ostringstream contents;
+  contents << input.rdbuf();
+  loadJson(contents.str(), std::move(source_format));
+}
+
 std::string HeadlessBoardContext::saveJson() const {
   if (!loaded()) {
     throw std::logic_error("cannot save an unloaded board context");
   }
   return dumpProjectJson(project_);
+}
+
+void HeadlessBoardContext::saveFile(const std::string& path) const {
+  const std::string json = saveJson();
+  std::ofstream output(path, std::ios::binary | std::ios::trunc);
+  if (!output) {
+    throw std::runtime_error("cannot write project file: " + path);
+  }
+  output << json;
+  if (!output) {
+    throw std::runtime_error("cannot finish writing project file: " + path);
+  }
 }
 
 }  // namespace ccad
