@@ -1377,3 +1377,7 @@ Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` bound
 ### Sprint 538 - migrate add-keepout loading
 
 `pcb add-keepout` now loads through `HeadlessBoardContext` while preserving keepout geometry, validation, and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
+
+### Sprint 539 - migrate update-teardrops loading
+
+`pcb update-teardrops` now loads through `HeadlessBoardContext` while preserving teardrop settings, generation, and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
