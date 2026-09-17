@@ -1252,3 +1252,6 @@ Agent fallback telemetry now keeps one process-run trace ID and increments fallb
 Agent graph execution now runs inside an explicit `agent_run` OpenTelemetry span with workflow and provider-readiness attributes, without recording prompt or context contents. Python syntax and diff checks pass; official harness remains the visual gate because the agent runtime has no direct GUI layout change.
 
 CI #245 completed with Linux Test failures and Windows pass. Workflow now adds failure-only verbose `cli` CTest diagnostics to Linux artifacts, so the next run captures the exact command/assertion behind exit 8.
+### Sprint 505 — harden Linux CLI cross-probe invocation
+
+CI run #246 still reports Linux `cli` test failure (CTest exit 8), while the Windows job passes. The failing assertion is `pcb cross-probe reports net packet kind`. The CLI test launched the packet through `std::system()` with nested double quotes inside a shell argument; the core cross-probe test separately covers quoted KiCad packets. The CLI integration invocation now uses the parser-supported unquoted `$NET: N1` form, avoiding POSIX shell quoting variance while preserving the same net-resolution behavior. Full CTest and the official visual harness remain mandatory before commit and push.
