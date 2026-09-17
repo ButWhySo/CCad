@@ -1267,3 +1267,7 @@ The local direct CLI check confirms the parser resolves `$NET: N1` as a net pack
 ### Sprint 509 — remove POSIX whitespace boundary from cross-probe regression
 
 The Linux-only CLI failure persisted across quoted and escaped packet forms. The black-box invocation now passes the shell-safe escaped packet `\\$NET:N1`, a single token with no whitespace boundary; the existing cross-probe parser already supports the unquoted value form and retains KiCad's quoted form coverage in the core test. This isolates the regression from POSIX command tokenization while preserving net-target assertions.
+
+### Sprint 510 — make agent intake deterministic
+
+Replaced the agent orchestration intake placeholders with whitespace normalization, keyword-based intent classification for PCB, schematic, and simulation requests, and a conservative risk scan that blocks destructive or externally consequential verbs. Added direct regression coverage; provider execution and durable worker ownership remain separate backlog work.
