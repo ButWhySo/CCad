@@ -1392,3 +1392,5 @@ The `human_message` provider invocation boundary catches terminal exceptions aft
 `src/ccad_gui/agent_settings_dialog.cpp` owns provider setup UX. Its Test Provider action sends the visible provider/model via `agent.set_config`, then sends the key through `AgentPanel::setProviderSecret`; keys remain process-memory only. `AgentPanel::handlePythonError` surfaces bounded redacted stderr diagnostics. Provider-state model names feed `provider_model_` and the visible model chip.
 
 `scripts/ccad_mcp_gui_bridge.py` is the external MCP stdio adapter for read-only GUI-map queries and native approval staging. It accepts the standard `notifications/initialized` handshake without replying, as required for JSON-RPC notifications; mutation execution remains outside this bridge.
+
+The same bridge exposes `ccad_gui_approval_status`, a filtered projection of native approval visibility/status for external harnesses. It does not approve, decline, or execute changes.

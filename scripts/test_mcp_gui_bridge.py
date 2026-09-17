@@ -17,6 +17,14 @@ def main():
     assert result["approval_required"] is False
     assert "Native approval target unavailable" in result["human_action"]
     assert [call[0] for call in calls] == ["ui.type_text", "ui.click"]
+    bridge.call_gui = lambda *args, **kwargs: {"result": {"nodes": [
+        {"id": "panel:agent_approval_preview", "visible": True},
+        {"id": "label:agent_approval_status", "text": "Approval pending"},
+        {"id": "unrelated", "text": "omit"}]}}
+    status = bridge.approval_status("test")
+    assert status["visible"] is True
+    assert status["status"] == "Approval pending"
+    assert "unrelated" not in status["nodes"]
     bridge_path = Path(__file__).with_name("ccad_mcp_gui_bridge.py")
     child = subprocess.Popen([sys.executable, str(bridge_path)], stdin=subprocess.PIPE,
                              stdout=subprocess.PIPE, text=True)

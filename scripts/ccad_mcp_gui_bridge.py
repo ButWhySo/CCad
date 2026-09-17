@@ -45,6 +45,19 @@ def request_native_approval(server, request_text):
                               "Native approval target unavailable; inspect GUI-map.")}
 
 
+def approval_status(server):
+    """Return only the native approval lane state needed by an external host."""
+    snapshot = call_gui(server, "ui.map_compact", {"limit": 100})
+    nodes = snapshot.get("result", {}).get("nodes", [])
+    selected = {node.get("id"): node for node in nodes
+                if node.get("id") in {"panel:agent_approval_preview",
+                                       "label:agent_approval_status"}}
+    card = selected.get("panel:agent_approval_preview", {})
+    label = selected.get("label:agent_approval_status", {})
+    return {"visible": card.get("visible", False),
+            "status": label.get("text", ""), "nodes": selected}
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--server", default="ccad_live_cmd")
@@ -76,8 +89,11 @@ def main():
                      "description": "Stage native approval card; never execute mutation",
                      "annotations": {"readOnlyHint": False, "destructiveHint": False,
                                       "openWorldHint": False},
-                     "inputSchema": {"type": "object", "properties": {
+                    "inputSchema": {"type": "object", "properties": {
                          "request": {"type": "string"}}, "required": ["request"]}}]}
+            elif method == "tools/call" and request.get("params", {}).get("name") == "ccad_gui_approval_status":
+                result = {"content": [{"type": "text", "text": json.dumps(
+                    approval_status(options.server))}], "isError": False}
             elif method == "tools/call" and request.get("params", {}).get("name") == "ccad_gui_query":
                 params = request.get("params", {})
                 if params.get("name") != "ccad_gui_query":
