@@ -2453,3 +2453,4 @@ Core approvals support one-shot pproved_tool_name scope: exact matching mutatio
 AgentPanel approval wiring is now connected to the broker: approval-required calls show the exact tool request, Accept executes only that scoped call and returns its correlated result, while Decline returns `approval_denied` immediately. Real-provider network execution and an external-provider integration test remain pending.
 Canceling the same approval now returns correlated `approval_canceled` immediately and clears the retained call, so the broker does not wait for its timeout.
 Broker waits preserve unrelated inbound JSON-RPC messages in a deferred queue and return only the matching `tool_result`; main dispatcher processes deferred messages first.
+Real `ui.place_via` broker calls use unique per-invocation correlation IDs, so late results from prior attempts cannot satisfy a newer wait.

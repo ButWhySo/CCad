@@ -1326,3 +1326,4 @@ Sprint 565 adds `agent.set_provider_secret` private IPC from `AgentPanel` to `sr
 Sprint 581 adds the GUI approval continuation in `src/ccad_gui/agent_panel.cpp`: approval-required broker calls are retained by call ID, Accept executes one exact scoped mutation and sends `tool_result`, and Decline sends `approval_denied` without leaving the Python graph blocked.
 Sprint 582 extends that continuation to Cancel: `AgentPanel::cancelApproval()` sends `approval_canceled` for the retained call ID before clearing pending approval state.
 Sprint 583 updates `src/ccad_agent/orchestrator.py` broker waits to defer unrelated inbound messages and let main protocol dispatcher process them after correlated result arrives.
+Sprint 584 adds `new_tool_call_id()` in `src/ccad_agent/orchestrator.py`; `ui_place_via()` emits and waits on a unique UUID-backed correlation ID.

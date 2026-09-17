@@ -1549,3 +1549,6 @@ Cancel now returns correlated approval_canceled to the Python broker and clears 
 ### Sprint 583 - preserve unrelated broker messages
 
 Broker waits now defer nonmatching protocol messages instead of dropping them; main dispatcher drains deferred messages before blocking for new input. Reference checked: LangGraph HITL resumes same workflow state through explicit external input; CCad local equivalent preserves unrelated IPC messages while awaiting correlated tool_result. Python compile and pending-call preservation smoke passed. Full gate pending before merge.
+### Sprint 584 - unique broker call IDs
+
+Real `ui.place_via` invocations now generate UUID-backed per-call IDs and wait on that exact ID; retries cannot reuse the prior correlation key. References checked: LangGraph tool-call IDs identify tool messages and resume state; CCad mirrors this correlation at local IPC boundary. Python compile and uniqueness smoke passed. Full gate pending before merge.

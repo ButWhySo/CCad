@@ -5,6 +5,7 @@ import os
 import queue
 import threading
 import time
+import uuid
 from typing import Annotated, TypedDict, List
 from langgraph.graph import StateGraph, END
 from langchain_core.tools import tool
@@ -52,6 +53,10 @@ def wait_for_broker_result(call_id: str) -> str:
             return json.dumps({"error": response["error"], "call_id": call_id})
         return json.dumps(response.get("result", {"error": "empty_broker_result"}))
 
+def new_tool_call_id(tool_name: str) -> str:
+    """Create a per-invocation correlation ID; never reuse across retries."""
+    return f"{tool_name}-{uuid.uuid4().hex}"
+
 config_manager = AgentConfigManager()
 
 class AgentState(TypedDict):
@@ -63,13 +68,14 @@ class AgentState(TypedDict):
 @tool
 def ui_place_via(x_mm: float, y_mm: float, dry_run: bool = False):
     """Places a via on the PCB at the specified x, y coordinates (in mm)."""
+    call_id = new_tool_call_id("ui-place-via")
     emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
         "tool": "ui.place_via",
         "args": {"x_mm": x_mm, "y_mm": y_mm, "dry_run": dry_run},
-        "call_id": "agent-tool-call",
+        "call_id": call_id,
     }})
     if broker_wait_enabled and not dry_run:
-        return wait_for_broker_result("agent-tool-call")
+        return wait_for_broker_result(call_id)
     return "Action dispatched to CCad client."
 
 @tool

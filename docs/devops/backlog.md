@@ -810,3 +810,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 
 - [ ] Sprint 579 follow-up: AgentPanel accept creates one-shot scoped approval token; consume token on exactly one matching mutation; decline/cancel clears it.
 - [x] Sprint 583: broker wait preserves unrelated inbound messages; pending-call registry and late-result/cancellation tests remain open.
+- [x] Sprint 584: unique per-invocation broker call IDs prevent retry/late-result cross-wiring; durable pending-call registry remains open.
