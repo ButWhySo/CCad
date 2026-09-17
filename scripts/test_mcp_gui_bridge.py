@@ -11,6 +11,8 @@ def main():
     assert "project.drc" in bridge.READ_ONLY_METHODS
     assert "ui.click" not in bridge.READ_ONLY_METHODS
     assert "ui.route_track" not in bridge.READ_ONLY_METHODS
+    bridge_source = Path(__file__).with_name("ccad_mcp_gui_bridge.py").read_text(encoding="utf-8")
+    assert '"name": "ccad_gui_approval_status"' in bridge_source
     calls = []
     bridge.call_gui = lambda server, method, args, **kwargs: calls.append((method, args)) or {"ok": True}
     result = bridge.request_native_approval("test", "Approve route")

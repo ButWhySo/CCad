@@ -1394,3 +1394,5 @@ The `human_message` provider invocation boundary catches terminal exceptions aft
 `scripts/ccad_mcp_gui_bridge.py` is the external MCP stdio adapter for read-only GUI-map queries and native approval staging. It accepts the standard `notifications/initialized` handshake without replying, as required for JSON-RPC notifications; mutation execution remains outside this bridge.
 
 The same bridge exposes `ccad_gui_approval_status`, a filtered projection of native approval visibility/status for external harnesses. It does not approve, decline, or execute changes.
+
+The approval-status tool is advertised by `tools/list`, with read-only safety annotations, so MCP hosts can discover it through the normal protocol.

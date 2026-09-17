@@ -1760,6 +1760,14 @@ The GUI MCP stdio bridge accepts `notifications/initialized` silently, matching 
 
 ### Sprint 683 - expose native approval status to MCP hosts
 
+Added read-only `ccad_gui_approval_status` projection so external harnesses can observe native approval-card visibility/status without receiving mutation authority. MCP regression and official visual harness passed; screenshot was inspected and stderr was empty.
+
+### Sprint 684 - publish approval status in MCP discovery
+
+Added `ccad_gui_approval_status` to `tools/list`; external MCP hosts can now discover the safe approval-state tool instead of relying on undocumented callable behavior. Python syntax/regression and official visual harness passed; screenshot was inspected and stderr was empty.
+
+### Sprint 683 - expose native approval status to MCP hosts
+
 Added read-only `ccad_gui_approval_status` to the GUI MCP bridge. External harnesses can now query approval-card visibility and status directly, while mutation execution and human approval remain native GUI responsibilities. Python regression and official visual harness passed; screenshot was inspected and stderr was empty.
 
 ### Sprint 673 - 678 - provider UX and diagnostics

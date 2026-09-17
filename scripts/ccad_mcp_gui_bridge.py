@@ -78,19 +78,26 @@ def main():
             elif method == "ping":
                 result = {}
             elif method == "tools/list":
-                result = {"tools": [{"name": "ccad_gui_query",
-                    "description": "Read live CCad GUI-map state; read-only allowlist",
-                    "annotations": {"readOnlyHint": True, "destructiveHint": False,
-                                    "openWorldHint": False},
-                    "inputSchema": {"type": "object", "properties": {
-                        "method": {"type": "string", "enum": sorted(READ_ONLY_METHODS)},
-                                    "arguments": {"type": "object"}}, "required": ["method"]}},
+                result = {"tools": [
+                    {"name": "ccad_gui_query",
+                     "description": "Read live CCad GUI-map state; read-only allowlist",
+                     "annotations": {"readOnlyHint": True, "destructiveHint": False,
+                                      "openWorldHint": False},
+                     "inputSchema": {"type": "object", "properties": {
+                         "method": {"type": "string", "enum": sorted(READ_ONLY_METHODS)},
+                         "arguments": {"type": "object"}}, "required": ["method"]}},
                     {"name": "ccad_gui_request_approval",
                      "description": "Stage native approval card; never execute mutation",
                      "annotations": {"readOnlyHint": False, "destructiveHint": False,
                                       "openWorldHint": False},
-                    "inputSchema": {"type": "object", "properties": {
-                         "request": {"type": "string"}}, "required": ["request"]}}]}
+                     "inputSchema": {"type": "object", "properties": {
+                         "request": {"type": "string"}}, "required": ["request"]}},
+                    {"name": "ccad_gui_approval_status",
+                     "description": "Read native approval-card visibility and status",
+                     "annotations": {"readOnlyHint": True, "destructiveHint": False,
+                                      "openWorldHint": False},
+                     "inputSchema": {"type": "object", "properties": {}}}
+                ]}
             elif method == "tools/call" and request.get("params", {}).get("name") == "ccad_gui_approval_status":
                 result = {"content": [{"type": "text", "text": json.dumps(
                     approval_status(options.server))}], "isError": False}
