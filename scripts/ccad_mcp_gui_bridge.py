@@ -49,6 +49,8 @@ def main():
             elif method == "tools/list":
                 result = {"tools": [{"name": "ccad_gui_query",
                     "description": "Read live CCad GUI-map state; read-only allowlist",
+                    "annotations": {"readOnlyHint": True, "destructiveHint": False,
+                                    "openWorldHint": False},
                     "inputSchema": {"type": "object", "properties": {
                         "method": {"type": "string", "enum": sorted(READ_ONLY_METHODS)},
                         "arguments": {"type": "object"}}, "required": ["method"]}}]}

@@ -1609,3 +1609,6 @@ MCP stdio now lists and serves `ccad_harness_context` and `ccad_workspace_state`
 ### Sprint 603 - add read-only GUI MCP bridge
 
 Added `scripts/ccad_mcp_gui_bridge.py`, a stdio MCP adapter forwarding allowlisted live GUI-map read queries through existing Windows named pipe. Writes and mutating UI methods reject with explicit permission error. Offline policy test and initialize/tools-list/tools-call smoke passed; full visual/full gate pending.
+### Sprint 604 - declare MCP GUI safety metadata
+
+MCP GUI query tool now declares `readOnlyHint`, `destructiveHint:false`, and `openWorldHint:false`, allowing hosts to render correct safety affordances. Existing bridge behavior unchanged; protocol annotation smoke passed.

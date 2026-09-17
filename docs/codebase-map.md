@@ -1346,3 +1346,4 @@ Sprint 600 adds `emit_provider_ready()` and maps successful provider state to `c
 Sprint 601 records MCP boundary: `src/ccad_cli/agent_commands.cpp` handles stdio MCP subset, while `src/ccad_gui/ui_map_server.cpp` remains local GUI-map JSON Lines.
 Sprint 602 extends MCP `tools/list`/`tools/call` in `src/ccad_cli/agent_commands.cpp` with read-only harness and workspace context tools.
 Sprint 603 adds Python stdio MCP GUI bridge plus `scripts/test_mcp_gui_bridge.py`; bridge reuses `ccad_live_cmd` named-pipe protocol and read-only method allowlist.
+Sprint 604 adds MCP safety annotations to `scripts/ccad_mcp_gui_bridge.py` tool discovery.
