@@ -2476,3 +2476,4 @@ External MCP hosts can query a running GUI through `scripts/ccad_mcp_gui_bridge.
 GUI MCP tool metadata declares read-only, non-destructive, closed-world behavior for safer host presentation.
 MCP clients can stage a native approval card with `ccad_gui_request_approval`; acceptance remains human-controlled in Agent panel.
 Live MCP bridge verification now checks real GUI pipe and reports native approval staging failure instead of claiming success; route harness cleans up its own GUI process.
+Sprint 607 adds a visible Agent approval card with GUI-map-addressable request and human decision controls. MCP may stage the card but cannot accept it.

@@ -1618,3 +1618,6 @@ Added `ccad_gui_request_approval`: MCP stages request text in native Agent appro
 ### Sprint 606 - verify live MCP approval handoff
 
 Extended live GUI route harness with `--mcp-bridge-check`; real named-pipe run returned live `ui.map_compact` successfully, while native approval targets returned `control_not_found`/`unknown_id`. Bridge now truthfully reports `approval_required:false` when staging fails. Harness lifecycle now terminates only its launched GUI child. This exposes next UI fix: publish approval controls in live GUI-map.
+### Sprint 607 - expose native approval controls to live MCP
+
+Added a visible Agent approval card with request, approve, decline, cancel, and clear controls. The live GUI map now exposes real approval targets; the MCP bridge can stage/open the card, while human decision remains separate. Focused tests, live bridge staging, visual harness, and full CTest pass.

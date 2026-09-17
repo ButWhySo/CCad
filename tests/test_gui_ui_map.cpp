@@ -71,6 +71,13 @@ int main(int argc, char** argv) {
   if (!board_map.contains("\"schema_version\"")) {
     return 5;
   }
+  if (!board_map.contains("action:agent_request_approval") ||
+      !board_map.contains("action:agent_approve_next") ||
+      !board_map.contains("action:agent_decline_next") ||
+      !board_map.contains("action:agent_cancel_approval") ||
+      !board_map.contains("control:agent_approval_request")) {
+    return 6;
+  }
 
   window.show();
   QTimer::singleShot(7000, &app, &QCoreApplication::quit);
