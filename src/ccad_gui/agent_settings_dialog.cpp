@@ -353,7 +353,14 @@ void AgentSettingsDialog::loadCurrentSettings() {
 
 void AgentSettingsDialog::applyConfigState(const QJsonObject& config) {
     if (provider_combo_ && config.contains("provider")) {
-        provider_combo_->setCurrentText(config["provider"].toString());
+        const QString provider_id = config["provider"].toString();
+        const int index = provider_combo_->findData(provider_id);
+        if (index >= 0) {
+            provider_combo_->setCurrentIndex(index);
+        } else {
+            // Backward compatibility for configs written before IDs existed.
+            provider_combo_->setCurrentText(provider_id);
+        }
     }
     if (model_input_ && config.contains("model")) {
         model_input_->setText(config["model"].toString());
@@ -402,7 +409,7 @@ void AgentSettingsDialog::applyMarketplaceCatalog(const QJsonObject& catalog) {
 void AgentSettingsDialog::saveAllSettings() {
   QJsonObject config;
 
-  if (provider_combo_) config["provider"] = provider_combo_->currentText();
+  if (provider_combo_) config["provider"] = provider_combo_->currentData().toString();
   if (model_input_) config["model"] = model_input_->text();
   if (sandbox_cb_) config["sandbox_mode"] = sandbox_cb_->isChecked();
   if (approval_cb_) config["approval_policy"] = approval_cb_->isChecked();
