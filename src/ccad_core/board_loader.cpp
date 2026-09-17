@@ -1,6 +1,8 @@
 #include "ccad_core/board_loader.hpp"
 
 #include <set>
+#include <stdexcept>
+#include <utility>
 
 namespace ccad {
 namespace {
@@ -97,6 +99,25 @@ BoardLoadState summarizeLoadedBoard(const Project& project, const BoardLoadOptio
   };
 
   return state;
+}
+
+HeadlessBoardContext::HeadlessBoardContext(BoardLoadOptions options) : options_(std::move(options)) {
+  state_.source_format = options_.source_format;
+  state_.initialize_after_load = options_.initialize_after_load;
+}
+
+void HeadlessBoardContext::loadJson(const std::string& json, std::string source_format) {
+  project_ = loadProjectJson(json);
+  options_.source_format = std::move(source_format);
+  state_ = summarizeLoadedBoard(project_, options_);
+  dirty_ = false;
+}
+
+std::string HeadlessBoardContext::saveJson() const {
+  if (!loaded()) {
+    throw std::logic_error("cannot save an unloaded board context");
+  }
+  return dumpProjectJson(project_);
 }
 
 }  // namespace ccad

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ccad_core/model.hpp"
+#include "ccad_core/serialize.hpp"
 
 #include <cstddef>
 #include <string>
@@ -56,5 +57,25 @@ struct BoardLoadState {
 
 BoardLoadState summarizeLoadedBoard(const Project& project,
                                     const BoardLoadOptions& options = BoardLoadOptions{});
+
+class HeadlessBoardContext final {
+ public:
+  explicit HeadlessBoardContext(BoardLoadOptions options = BoardLoadOptions{});
+  void loadJson(const std::string& json, std::string source_format = "CCAD_JSON");
+  std::string saveJson() const;
+  Project& project() noexcept { return project_; }
+  const Project& project() const noexcept { return project_; }
+  const BoardLoadState& state() const noexcept { return state_; }
+  bool loaded() const noexcept { return state_.loaded; }
+  bool dirty() const noexcept { return dirty_; }
+  void markClean() noexcept { dirty_ = false; }
+  void markDirty() noexcept { dirty_ = true; }
+
+ private:
+  BoardLoadOptions options_;
+  Project project_;
+  BoardLoadState state_;
+  bool dirty_ = false;
+};
 
 }  // namespace ccad

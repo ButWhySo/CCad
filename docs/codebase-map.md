@@ -1225,3 +1225,5 @@ Renderer pen width comes from `CanvasLine.width_units` for thermal spokes, prese
 ### Sprint 511 handoff: KiCad headless board context parity
 
 KiCad's `HEADLESS_BOARD_CONTEXT` owns one live board/project relationship, tool manager, current filename, and save or copy-save operations; `API_HANDLER_PCB` consumes that shared context for read, mutation, and export handlers. CCad still reloads projects per CLI command. The next implementation must introduce a narrow reusable CCad board-session context consumed by CLI, GUI, and agent tools, with explicit ownership, save semantics, and transaction boundaries; do not duplicate GUI state or import KiCad UI code.
+
+Sprint 512 adds `HeadlessBoardContext` in `board_loader.*`. It provides `loadJson`, `saveJson`, project access, loader state, and explicit dirty/clean acknowledgement. It does not yet replace CLI or GUI caches; transaction-aware mutation adapters remain required before broad adoption.
