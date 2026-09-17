@@ -5,7 +5,7 @@ import os
 from typing import Annotated, TypedDict, List
 from langgraph.graph import StateGraph, END
 from langchain_core.tools import tool
-from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
 from config import AgentConfigManager
 from telemetry import trace_function, tracer
@@ -106,6 +106,14 @@ llm = None
 router_llm = None
 librarian_llm = None
 
+class MockProvider:
+    """Deterministic offline provider for harness and protocol tests."""
+    def bind_tools(self, _tools):
+        return self
+
+    def invoke(self, _messages, config=None):
+        return AIMessage(content="[mock provider] Request understood. Use approved CCad tools for design changes.")
+
 callbacks = []
 if os.environ.get("LANGFUSE_PUBLIC_KEY") and os.environ.get("LANGFUSE_SECRET_KEY"):
     try:
@@ -120,6 +128,16 @@ def init_provider():
     
     provider = os.environ.get("CCAD_PROVIDER") or config_manager.get("provider", "openai")
     model_name = os.environ.get("CCAD_MODEL") or config_manager.get("model", "")
+
+    if provider == "mock":
+        llm = MockProvider()
+        router_llm = llm
+        librarian_llm = llm
+        emit({"jsonrpc": "2.0", "method": "provider_state", "params": {
+            "provider": "mock", "configured": True, "execution_enabled": True,
+            "network_access": False, "secret_value_visible": False,
+        }})
+        return True
     
     if provider == "anthropic" or os.environ.get("ANTHROPIC_API_KEY"):
         try:
@@ -231,7 +249,9 @@ def supervisor_node(state: AgentState):
     if "post node" in [h.lower() for h in active_hooks]:
         hooks.trigger_hook("post node", emit, f"supervisor -> {next_node}")
         
-    return {"next_node": next_node}
+    # Preserve supervisor response so caller can present actual agent output;
+    # previously only routing decision survived and chat echoed the user turn.
+    return {"next_node": next_node, "messages": [response]}
 
 @trace_function("router_node")
 def router_node(state: AgentState):

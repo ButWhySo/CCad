@@ -2429,3 +2429,6 @@ The demo prints plain-language stage narration so viewers can follow engineering
 Agent Settings includes a masked, process-memory-only API-key field and reports `configured_memory_only`; secrets are not persisted or emitted. Network provider execution is not yet enabled.
 
 When the Python agent child is running, entering a provider key sends it through private IPC as `agent.set_provider_secret`; the child stores it only in process environment and emits only redacted provider readiness. This is credential plumbing, not proof of successful provider connectivity; network execution still requires a real provider runtime test.
+
+
+CCAD_PROVIDER=mock enables deterministic offline chat through the real Python orchestration graph for harness tests; responses are labeled mock and network-free. It is test infrastructure, not a substitute for provider connectivity.

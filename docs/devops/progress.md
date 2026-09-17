@@ -1495,3 +1495,7 @@ Python dependency import and live subprocess smoke passed: gent.set_provider_se
 ### Sprint 567 - keep chat truthful without provider
 
 Fixed no-provider human-message path: orchestrator now acknowledges received context with redacted metadata and actionable provider guidance, then skips LangGraph invocation that cannot answer. This prevents empty-message failure and gives users useful local-agent feedback. Live subprocess smoke passed with context received, context content absent from response, and empty stderr; Python-only change, no new GUI build required.
+
+### Sprint 568 - add deterministic offline agent provider
+
+Added explicit CCAD_PROVIDER=mock provider for offline harness testing. It runs through the real LangGraph supervisor path, returns visibly labeled mock output, never uses network or secrets, and preserves supervisor AI response in graph state so chat no longer echoes the human prompt. Live subprocess smoke passed with context, labeled response, and empty stderr.

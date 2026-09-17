@@ -774,3 +774,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [ ] Sprint 566 follow-up: reduce orchestrator cold-start latency and expose startup/provider adapter readiness separately from verified network connectivity; add timeout/error state visible in AgentPanel.
 
 - [ ] Sprint 567 follow-up: add provider-backed response test and approved tool-loop response-result continuation; local fallback is not AI completion.
+
+- [ ] Sprint 568 follow-up: make mock provider emit deterministic approved tool call, feed tool result back into graph, then assert project revision and DRC in one end-to-end harness test.
