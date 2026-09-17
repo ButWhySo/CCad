@@ -108,5 +108,23 @@ int main() {
   require(!raw.connectivity_ready,
           "raw load state reports connectivity unavailable without initialization");
 
+  ccad::HeadlessBoardContext context;
+  bool save_before_load_threw = false;
+  try {
+    (void)context.saveJson();
+  } catch (const std::logic_error&) {
+    save_before_load_threw = true;
+  }
+  require(save_before_load_threw, "context rejects saving before load");
+  context.loadJson(ccad::dumpProjectJson(project));
+  require(context.loaded() && !context.dirty(), "context loads a clean project snapshot");
+  context.project().name = "edited";
+  context.markDirty();
+  require(context.dirty(), "context exposes unsaved edits");
+  const ccad::Project round_trip = ccad::loadProjectJson(context.saveJson());
+  require(round_trip.name == "edited", "context saves its current project snapshot");
+  context.markClean();
+  require(!context.dirty(), "context can acknowledge a completed save");
+
   return 0;
 }

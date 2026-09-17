@@ -1275,3 +1275,7 @@ Replaced the agent orchestration intake placeholders with whitespace normalizati
 ### Sprint 511 — preserve explicit agent runner lifecycle
 
 KiCad-context research confirms lifecycle ownership matters for durable queue snapshots. The attempted lazy-start change was reverted after the existing queue restore test showed that enqueue-before-save must remain possible; callers must explicitly call `start()` after loading or when they want execution.
+
+### Sprint 512 — add reusable headless board context
+
+Added `ccad::HeadlessBoardContext` above the serializer and board-loader seams. It owns one loaded project snapshot, exposes loader readiness, rejects save-before-load, and tracks explicit dirty/clean state. CLI and GUI integration remains the next bounded step; existing callers are unchanged. Focused board-loader test passed 1/1, the full Qt build linked 91 targets, and the CLI test passed 1/1.
