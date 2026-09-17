@@ -5,6 +5,7 @@
 #include "agent_runner.hpp"
 #include "ccad_core/json.hpp"
 #include <algorithm>
+#include <cctype>
 #include <chrono>
 #include <iomanip>
 #include <regex>
@@ -144,14 +145,48 @@ std::string OrchestratorConfig::to_json() const {
 
 // ─── IntakeLayer ────────────────────────────────────────────────
 std::string IntakeLayer::normalize_request(const std::string& input) {
-    return input;
+    std::string normalized;
+    normalized.reserve(input.size());
+    bool pending_space = false;
+    for (const unsigned char character : input) {
+        if (std::isspace(character)) {
+            pending_space = !normalized.empty();
+            continue;
+        }
+        if (pending_space) normalized.push_back(' ');
+        normalized.push_back(static_cast<char>(character));
+        pending_space = false;
+    }
+    return normalized;
 }
 
-std::string IntakeLayer::classify_intent(const std::string& /*input*/) {
+std::string IntakeLayer::classify_intent(const std::string& input) {
+    std::string lowered = input;
+    std::transform(lowered.begin(), lowered.end(), lowered.begin(),
+                   [](const unsigned char character) {
+                       return static_cast<char>(std::tolower(character));
+                   });
+    if (lowered.find("drc") != std::string::npos ||
+        lowered.find("pcb") != std::string::npos ||
+        lowered.find("route") != std::string::npos ||
+        lowered.find("footprint") != std::string::npos) return "PCB";
+    if (lowered.find("schematic") != std::string::npos ||
+        lowered.find("symbol") != std::string::npos ||
+        lowered.find("erc") != std::string::npos) return "Schematic";
+    if (lowered.find("simulation") != std::string::npos ||
+        lowered.find("spice") != std::string::npos) return "Simulation";
     return "EDA";
 }
 
-bool IntakeLayer::run_risk_scan(const std::string& /*input*/) {
+bool IntakeLayer::run_risk_scan(const std::string& input) {
+    std::string lowered = input;
+    std::transform(lowered.begin(), lowered.end(), lowered.begin(),
+                   [](const unsigned char character) {
+                       return static_cast<char>(std::tolower(character));
+                   });
+    for (const char* marker : {"delete", "overwrite", "export", "purchase", "order"}) {
+        if (lowered.find(marker) != std::string::npos) return false;
+    }
     return true;
 }
 

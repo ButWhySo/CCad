@@ -424,6 +424,16 @@ static void test_project_context_json() {
     std::cout << "PASS\n";
 }
 
+static void test_intake_layer() {
+    ccad::IntakeLayer intake;
+    assert(intake.normalize_request("  route\n  the   PCB  ") == "route the PCB");
+    assert(intake.classify_intent("run DRC on the board") == "PCB");
+    assert(intake.classify_intent("check schematic ERC") == "Schematic");
+    assert(intake.classify_intent("run SPICE simulation") == "Simulation");
+    assert(intake.run_risk_scan("inspect board") == true);
+    assert(intake.run_risk_scan("delete the old project") == false);
+}
+
 // ─── Main ───────────────────────────────────────────────────────
 int main() {
     std::cout << "Agent Orchestrator Tests\n";
@@ -443,6 +453,7 @@ int main() {
     test_goal_json();
     test_unregistered_tool_dispatch();
     test_project_context_json();
+    test_intake_layer();
 
     std::cout << "\nAll 14 orchestrator tests passed!\n";
     return 0;
