@@ -441,8 +441,11 @@ static void test_mutation_requires_approval() {
     const auto result = orch.execute_tool("pcb.add-via", "{}", cfg);
     assert(result.find("\"error\":\"approval_required\"") != std::string::npos);
     cfg.approved_tool_name = "pcb.add-via";
+    cfg.approved_tool_token = "test-token-1";
     const auto approved = orch.execute_tool("pcb.add-via", "{}", cfg);
     assert(approved.find("\"status\":\"via_added\"") != std::string::npos);
+    const auto replay = orch.execute_tool("pcb.add-via", "{}", cfg);
+    assert(replay.find("\"error\":\"approval_token_consumed\"") != std::string::npos);
     const auto other = orch.execute_tool("pcb.add-track", "{}", cfg);
     assert(other.find("\"error\":\"approval_required\"") != std::string::npos);
 }

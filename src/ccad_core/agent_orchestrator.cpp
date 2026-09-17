@@ -139,7 +139,8 @@ std::string OrchestratorConfig::to_json() const {
         << "\"max_retry_count\":" << max_retry_count << ","
         << "\"provider_execution_enabled\":" << (provider_execution_enabled ? "true" : "false") << ","
         << "\"project_mutation_enabled\":" << (project_mutation_enabled ? "true" : "false") << ","
-        << "\"approved_tool_name\":\"" << escapeJson(approved_tool_name) << "\""
+        << "\"approved_tool_name\":\"" << escapeJson(approved_tool_name) << "\"," 
+        << "\"approved_tool_token_present\":" << (!approved_tool_token.empty() ? "true" : "false")
         << "}";
     return out.str();
 }
@@ -226,7 +227,7 @@ bool ToolBroker::check_policy(const OrchestratorTool& tool, const OrchestratorCo
         return false;
     }
     if (cfg.require_approval && tool.default_risk != TaskRisk::ReadOnly &&
-        cfg.approved_tool_name != tool.name) {
+        (cfg.approved_tool_name != tool.name || cfg.approved_tool_token.empty())) {
         return false;
     }
     return true;
@@ -241,6 +242,13 @@ std::string ToolBroker::execute_tool(const std::string& name, const std::string&
         const char* error = cfg.require_approval && cfg.approved_tool_name != name
                                 ? "approval_required" : "project_mutation_disabled";
         return std::string("{\"error\":\"") + error + "\",\"tool_name\":\"" + escapeJson(name) + "\"}";
+    }
+    if (cfg.require_approval && it->second.default_risk != TaskRisk::ReadOnly) {
+        std::lock_guard<std::mutex> lock(approval_mutex_);
+        if (!consumed_approval_tokens_.insert(cfg.approved_tool_token).second) {
+            return "{\"error\":\"approval_token_consumed\",\"tool_name\":\"" +
+                   escapeJson(name) + "\"}";
+        }
     }
     return it->second.execute(args_json);
 }

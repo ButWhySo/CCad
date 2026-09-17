@@ -31,6 +31,7 @@
 #include <QListWidget>
 #include <QKeyEvent>
 #include <QTimer>
+#include <QUuid>
 #include <QPoint>
 #include <QPixmap>
 
@@ -1120,6 +1121,7 @@ void AgentPanel::handlePythonOutput() {
               pending_tool_name_ = tool;
               pending_tool_args_ = args;
               pending_tool_call_id_ = call_id.isEmpty() ? QStringLiteral("agent-tool-call") : call_id;
+              pending_approval_token_ = QUuid::createUuid().toString(QUuid::WithoutBraces);
               setApprovalRequestText("Agent tool: " + tool + " " + args);
               requestApproval();
               awaiting_approval = true;
@@ -2276,6 +2278,7 @@ void AgentPanel::approveNextApproval() {
   if (!pending_tool_name_.isEmpty() && orchestrator_) {
     ccad::OrchestratorConfig cfg;
     cfg.approved_tool_name = pending_tool_name_.toStdString();
+    cfg.approved_tool_token = pending_approval_token_.toStdString();
     const std::string approved = orchestrator_->execute_tool(
         pending_tool_name_.toStdString(), pending_tool_args_.toStdString(), cfg);
     QJsonObject result{{"jsonrpc", "2.0"}, {"method", "tool_result"},
@@ -2294,6 +2297,7 @@ void AgentPanel::approveNextApproval() {
     pending_tool_name_.clear();
     pending_tool_args_.clear();
     pending_tool_call_id_.clear();
+    pending_approval_token_.clear();
   }
   pending_approval_request_.clear();
   approval_last_decision_ = "accept";
@@ -2325,6 +2329,7 @@ void AgentPanel::declineNextApproval() {
   pending_tool_name_.clear();
   pending_tool_args_.clear();
   pending_tool_call_id_.clear();
+  pending_approval_token_.clear();
   pending_approval_request_.clear();
   approval_last_decision_ = "decline";
   approval_status_label_->setText("Approval declined: " + request);
@@ -2355,6 +2360,7 @@ void AgentPanel::cancelApproval() {
   pending_tool_name_.clear();
   pending_tool_args_.clear();
   pending_tool_call_id_.clear();
+  pending_approval_token_.clear();
   pending_approval_request_.clear();
   approval_last_decision_ = "cancel";
   approval_status_label_->setText("Approval canceled: " + request);
@@ -2366,6 +2372,7 @@ void AgentPanel::cancelApproval() {
 
 void AgentPanel::clearApprovals() {
   pending_approval_request_.clear();
+  pending_approval_token_.clear();
   approval_request_input_->clear();
   approval_last_decision_ = "none";
   approval_status_label_->setText("Approvals 0 pending");

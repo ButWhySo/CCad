@@ -1672,3 +1672,6 @@ Added compact `Summarize`, `Run DRC`, and `Route` suggestion buttons above the c
 ### Sprint 626 - prove approved provider tool mutation
 
 Corrected the deterministic mock graph path so the supervisor returns `router` and the routing expert emits the `ui_place_via` tool call. The live harness now requests the mutation through chat, observes the contextual approval card, clicks the native Approve action, and queries `project.object_counts` to verify that a via was actually created. Proof passed with `pending_visible=true`, accepted status, and `via_count=1`; no API key or network was used.
+### Sprint 627 - scope approvals to one mutation
+
+Mutating ToolBroker calls now require both the matching tool name and a non-empty approval token. The broker consumes each token exactly once, while the Agent panel generates a per-request token and clears it on accept, decline, cancel, or clear. The default screenshot fallback exposed a desktop capture during validation; internal CCad rendering mode produced the valid inspected proof, so fallback reliability remains tracked separately.

@@ -1366,3 +1366,6 @@ Sprint 622 makes `panel:agent_approval_preview` contextual: hidden at idle, show
 Sprint 623 lets `ui.type_text` promote hidden `control:agent_approval_request` into a pending approval before MCP clicks Request; live harness asserts card visibility before and after human Decline.
 Sprint 624 updates `AgentPanel::filterSlashCommands` to emit parser-compatible forms, gives popup `panel:agent_slash_commands`, and routes popup Escape/Enter through the event filter.
 Sprint 625 adds composer quick replies `action:agent_quick_summarize`, `action:agent_quick_run_drc`, and `action:agent_quick_route`; handlers only populate chat input.
+## Sprint 627 handover: scoped mutation approval
+
+`ToolBroker::execute_tool` in `src/ccad_core/agent_orchestrator.cpp` requires `OrchestratorConfig.approved_tool_name` plus `approved_tool_token` for mutating tools. Tokens are stored as consumed in the broker and cannot be replayed. `AgentPanel` creates a UUID token when a Python tool call requires approval, passes it only on Approve, and clears pending token state on every terminal decision. Existing read-only tools remain unaffected. Regression coverage is in `tests/test_agent_orchestrator.cpp`.

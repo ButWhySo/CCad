@@ -2493,3 +2493,6 @@ Sprint 622 hides approval UI until a change request exists, restores readable da
 Sprint 623 makes MCP approval staging reveal the contextual card before Request, and verifies pending-visible/declined-hidden state through the live GUI map.
 Sprint 624 gives slash suggestions executable `/workflow`, `/hooks`, `/set`, and `/schedule` forms, semantic popup mapping, and dark hover/selection styling.
 Sprint 625 adds visible `Summarize`, `Run DRC`, and `Route` quick replies that insert editable commands without automatic side effects.
+### Sprint 627: one-shot approval tokens
+
+Agent-requested project mutations are now scoped to a single approval token as well as a tool name. Replaying an accepted token returns `approval_token_consumed`; accepting a different tool still requires approval. The native panel generates and discards tokens within the approval-card lifecycle. This prevents a stale approval from authorizing a later mutation.

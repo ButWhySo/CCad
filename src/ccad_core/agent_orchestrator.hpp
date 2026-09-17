@@ -7,6 +7,8 @@
 #include <chrono>
 #include <functional>
 #include <optional>
+#include <set>
+#include <mutex>
 #include <map>
 
 namespace ccad {
@@ -119,8 +121,10 @@ struct OrchestratorConfig {
     int max_retry_count = 2;
     bool provider_execution_enabled = false;
     bool project_mutation_enabled = true;
-    // One-shot approval scope. Empty means no mutation is approved.
+    // Approval scope. A token is mandatory for mutating execution and is
+    // consumed by ToolBroker after one matching call.
     std::string approved_tool_name;
+    std::string approved_tool_token;
 
     std::string to_json() const;
 };
@@ -163,6 +167,8 @@ public:
 
 private:
     std::map<std::string, OrchestratorTool> tools_;
+    std::set<std::string> consumed_approval_tokens_;
+    mutable std::mutex approval_mutex_;
 };
 
 class Subagent {
