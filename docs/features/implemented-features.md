@@ -2505,6 +2505,9 @@ Terminal configuration now works for OpenAI-compatible and local model providers
 ### Sprint 631: local provider tool-call contract
 
 CI now runs a localhost-only OpenAI-compatible provider test. It checks that CCad sends the selected model and registered routing tools to the adapter, receives the supervisor/router responses, and exposes the returned tool call through the agent protocol without external credentials or network access.
-### Sprint 632: provider-to-GUI approval proof
+### Sprint 632: provider-to-GUI approval status
 
-The agent CI suite includes a local OpenAI-compatible provider integration that exercises the complete provider-to-GUI path: provider response, semantic chat submission, contextual approval, human Approve, persisted via creation, and final assistant completion. The test uses a loopback HTTP server and never contacts a remote service.
+The offline mock provider and live GUI harness prove approval and via creation. A separate localhost provider-boundary test proves adapter tool schemas. A deterministic combined provider-to-GUI fixture remains open because the current embedded-process test can race before provider startup.
+### Sprint 633: visible tool-result acknowledgment
+
+After an approved mutation, the native Agent panel displays `Tool result accepted` or `Tool result rejected`, includes the correlated call ID in activity history, and exposes the state through the semantic status label. This distinguishes approval from successful broker handoff.

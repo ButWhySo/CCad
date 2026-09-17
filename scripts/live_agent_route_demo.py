@@ -1,6 +1,7 @@
 """Drive CCad's persistent GUI through its live UI-map command socket."""
 
 import argparse
+import atexit
 import json
 import os
 import subprocess
@@ -18,6 +19,8 @@ def main():
     parser.add_argument("--delay", type=float, default=0.25)
     parser.add_argument("--project", default=r"artifacts\demos\live-agent-blank.ccad.json")
     parser.add_argument("--hold-seconds", type=float, default=10.0)
+    parser.add_argument("--agent-start-wait", type=float, default=5.0,
+                        help="seconds to allow the embedded agent process to start")
     parser.add_argument("--reuse-project", action="store_true")
     parser.add_argument("--mcp-bridge-check", action="store_true",
                         help="query live GUI through MCP bridge and stage approval card")
@@ -57,6 +60,15 @@ def main():
         subprocess.run([ccad, "pcb", "add-standard-layers", "--file", project],
                        check=True, env=env)
     process = subprocess.Popen([gui, "--serve-ui-map", project, server, ready], env=env)
+    def cleanup_gui():
+        if process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=3.0)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=3.0)
+    atexit.register(cleanup_gui)
     for _ in range(100):
         if os.path.exists(ready):
             break
@@ -67,7 +79,7 @@ def main():
         process.kill()
         raise RuntimeError("CCad GUI socket did not become ready")
 
-    time.sleep(5.0)
+    time.sleep(max(0.0, args.agent_start_wait))
     if args.mock_tool_approval_check:
         with open(rf"\\.\pipe\{server}", "r+b", buffering=0) as pipe:
             send(pipe, {"method": "ui.type_text", "id": "control:agent_chat_input",
@@ -91,16 +103,20 @@ def main():
                              if node.get("id") == "panel:agent_approval_preview"), {})
         after_status = next((node.get("label", "") for node in after_nodes
                              if node.get("id") == "label:agent_approval_status"), "")
+        tool_status = next((node.get("label", "") for node in after_nodes
+                            if node.get("id") == "label:agent_result"), "")
         via_count = counts_result.get("via_count", counts_result.get("vias", 0)) \
             if isinstance(counts_result, dict) else 0
         print("LIVE APPROVED MUTATION " + json.dumps({
             "pending_visible": pending_card.get("visible", False),
             "approve_performed": approved_result.get("performed", False),
             "status": after_status,
+            "tool_status": tool_status,
             "via_count": via_count,
         }, separators=(",", ":")), flush=True)
         if (not pending_card.get("visible") or not approved_result.get("performed")
-                or "accepted" not in after_status.lower() or via_count < 1):
+                or "accepted" not in after_status.lower()
+                or "tool result accepted" not in tool_status.lower() or via_count < 1):
             raise RuntimeError("approved mock mutation did not complete through native approval")
     if args.chat_input_check or args.chat_send_check:
         with open(rf"\\.\pipe\{server}", "r+b", buffering=0) as pipe:
@@ -221,12 +237,7 @@ def main():
 
     print(f"Runtime burst complete. Holding GUI for {args.hold_seconds:g} seconds.", flush=True)
     time.sleep(max(0.0, args.hold_seconds))
-    process.terminate()
-    try:
-        process.wait(timeout=3.0)
-    except subprocess.TimeoutExpired:
-        process.kill()
-        process.wait(timeout=3.0)
+    cleanup_gui()
 
 
 if __name__ == "__main__":

@@ -855,4 +855,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [ ] Sprint 629: connect authenticated provider tool calls to the same scoped approval-token contract and prove one live request in a user-owned environment.
 - [x] Sprint 630: provider initialization contract check passes with local-compatible env config, correct model, enabled adapter, and redacted state; full local stub tool-call test remains next.
 - [x] Sprint 631: localhost OpenAI-compatible stub verifies model/base URL, tool schema, supervisor/router request path, and CCad tool-call boundary; CI wired.
-- [x] Sprint 632: localhost provider returns one real tool call through CCad GUI approval, via mutation, and final response; no-network proof passes.
+- [ ] Sprint 632 follow-up: make local provider GUI approval fixture deterministic; current provider-boundary and offline mock proofs remain green.
+- [x] Sprint 633: Agent panel surfaces tool-result acknowledgment and live provider proof asserts accepted status; richer trace/cost metrics remain open.

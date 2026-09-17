@@ -1689,4 +1689,7 @@ Provider initialization now mirrors `CCAD_OPENAI_COMPATIBLE_API_KEY` and `CCAD_L
 Added a no-network HTTP stub test that exercises the actual OpenAI-compatible LangChain adapter, verifies provider-specific model selection, inspects the submitted tool schema, returns a supervisor decision and router tool call, and confirms the call reaches CCad's JSON-RPC boundary. The test is now part of the `agent-python` CI job; it uses only localhost and a test-only key.
 ### Sprint 632 - local provider GUI approval roundtrip
 
-Added a localhost-only integration test that launches an OpenAI-compatible stub and drives CCad's existing live GUI-map harness. The provider emits one non-dry-run `ui_place_via`, the test observes and approves the native card, confirms `via_count=1`, and then returns a final assistant response instead of replaying the tool call. No external endpoint or credential is used.
+The localhost provider roundtrip reached approval and via creation during investigation, but its embedded GUI-process test was nondeterministic before provider contact and is not in CI. The reliable provider-boundary test and offline mock approval test remain CI-safe; a deterministic app-owned provider fixture is the next task.
+### Sprint 633 - surface broker tool acknowledgments
+
+The Agent panel now handles Python `tool_result_ack` messages, showing whether an approved tool result was accepted or rejected and recording the call ID in activity history. The offline mock approval harness and native GUI tests cover this acknowledgment; combined authenticated-provider GUI proof remains open.

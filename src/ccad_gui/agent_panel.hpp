@@ -259,6 +259,7 @@ class AgentPanel final : public QWidget {
   bool run_queue_cancelable_ = true;
   QString trace_id_;
   QString span_id_;
+  bool tool_result_ack_visible_ = false;
   QString trace_status_ = "local_off";
   QString trace_export_status_ = "export_disabled";
   QString session_file_path_;

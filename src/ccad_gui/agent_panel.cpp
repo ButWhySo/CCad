@@ -1137,8 +1137,23 @@ void AgentPanel::handlePythonOutput() {
         const QString message = obj["params"].toObject()["text"].toString();
         appendChatMessage("agent", message);
         if (result_state_label_) {
-          result_state_label_->setText("Result Chat response received");
+          if (!tool_result_ack_visible_) {
+            result_state_label_->setText("Result Chat response received");
+          }
         }
+      } else if (obj.contains("method") && obj["method"].toString() == "tool_result_ack") {
+        const QJsonObject params = obj["params"].toObject();
+        const bool success = params["success"].toBool(false);
+        tool_result_ack_visible_ = true;
+        const QString call_id = params["call_id"].toString();
+        const QString state = success ? QStringLiteral("Tool result accepted")
+                                      : QStringLiteral("Tool result rejected");
+        status_label_->setText(state);
+        result_state_label_->setText("Result " + state);
+        addActivityEvent(success ? "tool" : "error", state,
+                         call_id.isEmpty() ? QStringLiteral("Broker acknowledgment received")
+                                           : QStringLiteral("Call ") + call_id,
+                         "agent.tool_result_ack");
       } else if (obj.contains("method") && obj["method"].toString() == "config_state") {
         if (config_state_cb_) config_state_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "provider_state") {
@@ -1210,6 +1225,7 @@ void AgentPanel::handlePythonError() {
 void AgentPanel::submitChat() {
   QString text = chat_input_->toPlainText().trimmed();
   if (text.isEmpty()) return;
+  tool_result_ack_visible_ = false;
   
   appendChatMessage("user", text);
   chat_input_->clear();
