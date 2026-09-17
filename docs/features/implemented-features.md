@@ -2373,3 +2373,4 @@ The headless board context also supports file-backed load/save with round-trip c
 `pcb set-layer-visibility` is now a shared-context mutation consumer with its existing validation and audit behavior intact.
 `pcb set-via` is now a shared-context mutation consumer with its existing validation and audit behavior intact.
 `pcb add-track` is now a shared-context mutation consumer with its existing routing validation and audit behavior intact.
+`pcb add-track-arc` is now a shared-context mutation consumer with its existing arc validation and audit behavior intact.
