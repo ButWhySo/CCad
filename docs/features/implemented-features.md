@@ -2478,3 +2478,4 @@ MCP clients can stage a native approval card with `ccad_gui_request_approval`; a
 Live MCP bridge verification now checks real GUI pipe and reports native approval staging failure instead of claiming success; route harness cleans up its own GUI process.
 Sprint 607 adds a visible Agent approval card with GUI-map-addressable request and human decision controls. MCP may stage the card but cannot accept it.
 Sprint 608 verifies the live human decision lane: the native Decline action updates the approval status exposed by the GUI map.
+Sprint 610 verifies the end-to-end LangGraph chat path with the mock provider; users can enable OpenAI, Anthropic, or Gemini adapters by configuring the corresponding provider and key.

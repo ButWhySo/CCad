@@ -1351,3 +1351,4 @@ Sprint 605 extends GUI MCP bridge with `request_native_approval()`; only approva
 Sprint 606 updates `scripts/live_agent_route_demo.py` with MCP bridge check and child cleanup; bridge approval result is based on actual native target `performed` flags.
 Sprint 607 makes the approval controls real `AgentPanel` children: `panel:agent_approval_preview`, `control:agent_approval_request`, and the request/approve/decline/cancel/clear action IDs. Existing handlers remain the sole decision path.
 Sprint 608 live harness now verifies the human lane adaptively by reading the post-decision approval label from a fresh GUI-map snapshot.
+Sprint 610 adds `scripts/test_provider_mock.py`, proving the real orchestrator stdin protocol reaches the LangGraph mock provider and returns a chat response without network or secrets.
