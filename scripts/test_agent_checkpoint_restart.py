@@ -58,13 +58,22 @@ def main():
         assert interrupts, snapshot
         assert interrupts[0].value["kind"] == "ccad_tool_call"
         print("PASS interrupt checkpoint written")
-    else:
+    elif phase == "second":
         state = ccad.executor.invoke(Command(resume={"status": "track_added"}), config=thread)
         assert not ccad.executor.get_state(thread).next
         tool_messages = [message for message in state["messages"]
                          if message.__class__.__name__ == "ToolMessage"]
         assert tool_messages and json.loads(tool_messages[-1].content) == {"status": "track_added"}
         print("PASS restart resume completed")
+    else:
+        state = ccad.executor.invoke(Command(resume={"error": {"code": -32001,
+                                                                  "message": "approval_denied"}}), config=thread)
+        assert not ccad.executor.get_state(thread).next
+        tool_messages = [message for message in state["messages"]
+                         if message.__class__.__name__ == "ToolMessage"]
+        assert tool_messages and json.loads(tool_messages[-1].content) == {
+            "error": {"code": -32001, "message": "approval_denied"}}
+        print("PASS restart denial completed")
 
 
 if __name__ == "__main__":

@@ -1637,3 +1637,6 @@ Replaced the hardcoded Agent footer context counter with a live approximate toke
 ### Sprint 614 - hold tool results behind human approval
 
 Fixed the Qt-to-Python tool-call bridge so an approval-required mutation is not acknowledged before the human decides. The pending call remains correlated in the native card; Approve sends the authoritative tool result, while Decline/Cancel send the corresponding error.
+### Sprint 615 - prove checkpoint approval outcomes
+
+Extended the two-process SQLite/LangGraph fixture with a denial resume path. Restart-safe checkpoint proof now covers both authoritative success and `approval_denied` outcomes; no provider key or network is required.
