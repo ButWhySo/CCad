@@ -196,7 +196,7 @@ def orchestrator_method_catalog():
             {"name": "human_message", "read_only": False, "provider_call": True,
              "preflight": "intake_guard",
              "responses": ["intake_state", "context_state", "provider_state",
-                           "message", "tool_call"],
+                           "backend_state", "message", "tool_call"],
              "response_contracts": {
                  "intake_state": {"fields": [
                      "accepted", "category", "secret_value_visible"]},
@@ -204,6 +204,9 @@ def orchestrator_method_catalog():
                      "provider", "model", "configured", "execution_enabled",
                      "network_access", "error", "error_category",
                      "secret_value_visible"]},
+                 "backend_state": {"fields": [
+                     "runtime", "ready", "provider_initialized",
+                     "network_access", "secret_value_visible"]},
                  "tool_call": {"fields": [
                      "tool", "args", "call_id"]},
                  "context_state": {"fields": [

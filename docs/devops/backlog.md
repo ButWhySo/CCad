@@ -1047,3 +1047,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   or provider request.
 - [x] Sprint 858: synchronize intake guardrail contract with response-list
   discovery; no GUI or provider request.
+- [x] Sprint 859: advertise backend-state response schema; no GUI or provider
+  request.

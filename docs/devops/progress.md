@@ -2333,6 +2333,10 @@ Sprint 858 synchronizes the intake guardrail subprocess contract with the
 expanded response list; the full offline gate caught and fixed this stale
 assertion. GUI verification remains paused.
 
+Sprint 859 publishes backend_state response discovery, covering runtime
+readiness, provider initialization, network-probe status, and redaction.
+GUI verification remains paused.
+
 Sprint 837 adds explicit Cerebras model-catalog response from the documented
 curated snapshot and enables Settings Refresh for Cerebras. OpenRouter remains
 the only network-fetched catalog; Cerebras refresh is quota-safe and offline.

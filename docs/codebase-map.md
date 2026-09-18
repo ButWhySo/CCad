@@ -1689,3 +1689,6 @@ matching its published response contract and runtime emission paths.
 Sprint 858 handover: `test_agent_intake_guard_contract.py` asserts the updated
 response-list prefix including provider_state, preserving guardrail coverage
 after discovery expansion.
+
+Sprint 859 handover: `human_message` discovery now advertises backend_state
+and its readiness/redaction fields, matching runtime backend_state events.
