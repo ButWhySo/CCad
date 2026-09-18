@@ -21,7 +21,6 @@ class QPlainTextEdit;
 class QTextEdit;
 class QTextBrowser;
 class QVBoxLayout;
-class QScrollArea;
 class QProcess;
 class QProgressBar;
 class QListWidget;
@@ -196,8 +195,6 @@ class AgentPanel final : public QWidget {
   void executeSlashCommand(const QString& cmd);
 
   // Chat UI Elements
-  QVBoxLayout* chat_history_layout_ = nullptr;
-  QScrollArea* chat_scroll_area_ = nullptr;
   QTextBrowser* chat_stream_ = nullptr;
   QTextEdit* chat_input_ = nullptr;
   QListWidget* slash_popup_ = nullptr;

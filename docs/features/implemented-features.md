@@ -2648,3 +2648,5 @@ remains selectable and visible.
 Activity events now appear inline in that same transcript, while their structured
 records remain available to agents through workspace state. No per-event chat
 checklist widgets are created.
+The stream is directly hosted in the Agent layout; an obsolete nested scroll
+area/container was removed, preventing double scrollbars and wrapper gaps.

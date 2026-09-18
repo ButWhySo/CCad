@@ -22,6 +22,8 @@ assert 'agentRole="chatBubbleUser"' not in review
 assert 'agentRole="toolCard"' not in review
 assert 'chat_history_layout_->addWidget(bubble);' not in panel
 assert 'appendChatMessage("agent", activity_text);' in panel
+assert 'chat_scroll_area_' not in panel
+assert 'chat_history_layout_' not in panel
 assert "cursor.insertText(prefix +" in panel
 assert "setTextInteractionFlags(Qt::TextSelectableByMouse" in panel
 assert "repo_src + \"/ccad_agent/venv/Scripts/python.exe\"" in panel

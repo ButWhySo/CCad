@@ -2285,3 +2285,8 @@ selectable transcript; GUI verification remains paused.
 Sprint 802 moves activity events into the same selectable chat stream and makes
 the legacy checklist renderer side-effect free. Machine-readable activity state
 remains available through workspace state; GUI verification remains paused.
+
+Sprint 803 removes the redundant outer chat scroll area and container. The
+single QTextBrowser now owns scrolling directly inside the Agent layout, avoiding
+double-scroll behavior and empty wrapper geometry; GUI verification remains
+paused.

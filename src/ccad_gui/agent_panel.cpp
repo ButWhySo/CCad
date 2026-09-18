@@ -30,7 +30,6 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include <QSaveFile>
-#include <QScrollArea>
 #include <QSize>
 #include <QSizePolicy>
 #include <QStyle>
@@ -528,13 +527,6 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
       color: #e3e3e3;
       font-family: "Inter", "Segoe UI", sans-serif;
     }
-    QScrollArea#agentScrollArea {
-      background-color: transparent;
-      border: none;
-    }
-    QWidget#agentScrollContainer {
-      background-color: transparent;
-    }
     QFrame[agentRole="section"] {
       background-color: transparent;
     }
@@ -732,19 +724,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   main_layout->addWidget(top_bar);
 
   // --- CHAT HISTORY ---
-  chat_scroll_area_ = new QScrollArea(this);
-  chat_scroll_area_->setObjectName("agentScrollArea");
-  chat_scroll_area_->setWidgetResizable(true);
-  chat_scroll_area_->viewport()->setAutoFillBackground(false);
-  chat_scroll_area_->viewport()->setStyleSheet("background-color: transparent;");
-  auto* chat_container = new QWidget();
-  chat_container->setObjectName("agentScrollContainer");
-  chat_container->setStyleSheet("background-color: transparent;");
-  chat_history_layout_ = new QVBoxLayout(chat_container);
-  chat_history_layout_->setContentsMargins(8, 6, 8, 6);
-  chat_history_layout_->setSpacing(0);
-  chat_history_layout_->setAlignment(Qt::AlignTop);
-  chat_stream_ = new QTextBrowser(chat_container);
+  chat_stream_ = new QTextBrowser(this);
   chat_stream_->setObjectName("control:agent_chat_stream");
   chat_stream_->setOpenExternalLinks(true);
   chat_stream_->setReadOnly(true);
@@ -756,10 +736,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
                                         Qt::LinksAccessibleByMouse);
   chat_stream_->setPlaceholderText("Conversation will appear here.");
   chat_stream_->setStyleSheet("QTextBrowser { background: transparent; border: none; }");
-  chat_history_layout_->addWidget(chat_stream_);
-  chat_scroll_area_->setWidget(chat_container);
-  
-  main_layout->addWidget(chat_scroll_area_, 1);
+  chat_stream_->setContentsMargins(8, 6, 8, 6);
+  main_layout->addWidget(chat_stream_, 1);
 
   // --- COMPOSER ---
   auto* composer_container = new QFrame(this);

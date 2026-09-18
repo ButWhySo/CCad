@@ -959,3 +959,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   deduplicating only repeated backend warning notices; GUI remains paused.
 - [x] Sprint 802: move activity events into single chat stream and remove
   per-event checklist widget boxes; GUI verification remains paused.
+- [x] Sprint 803: remove redundant outer chat scroll wrapper and make the single
+  QTextBrowser own scrolling; GUI verification remains paused.

@@ -1599,3 +1599,7 @@ because their text repeats.
 Sprint 802 handover: `addActivityEvent` appends concise activity text to the
 single chat stream; `renderChatChecklist` no longer creates widgets. Activity
 events remain serialized by `workspaceStateJson`.
+
+Sprint 803 handover: `chat_stream_` is direct child of AgentPanel's main layout;
+legacy `QScrollArea`, container, and history layout members are removed. The
+QTextBrowser owns selectable transcript scrolling.
