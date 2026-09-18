@@ -2555,3 +2555,7 @@ Headless-only batch: capped retained per-thread opaque context revisions at 128 
 ### Sprint 868 — provider-unavailable message metadata
 
 Headless-only batch: provider-unavailable message events now carry stable `kind`, `category`, and `secret_value_visible:false` fields, matching the agent message contract without exposing exception text or credentials. Added a no-network contract assertion; GUI/API/build validation remains paused.
+
+### Sprint 869 — context clear lifecycle
+
+Headless-only batch: `/clear` now removes the current thread’s opaque context revision alongside chat history, so the next context is reported as initial rather than chained to deleted state. Subprocess context contract covers the reset; GUI/API/build validation remains paused.

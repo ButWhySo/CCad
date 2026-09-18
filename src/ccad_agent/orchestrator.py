@@ -1443,6 +1443,7 @@ if __name__ == "__main__":
                         # Fall through to graph execution
                     elif cmd_base == "/clear":
                         session_messages = []
+                        context_revisions.pop(context_thread_id, None)
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Chat history and context cleared."}})
                         continue
                     elif cmd_base == "/settings":

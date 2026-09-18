@@ -1713,3 +1713,5 @@ Sprint 866 handover: `scripts/test_agent_context_contract.py` now sends a real `
 Sprint 867 handover: `context_revisions` retains at most 128 thread IDs and evicts the oldest inactive entry after a new revision is recorded. `scripts/test_context_revision_bound_contract.py` locks this metadata-only bound.
 
 Sprint 868 handover: provider initialization failure messages include `kind=provider_unavailable`, `category=provider_unavailable`, and `secret_value_visible=false`; exception text remains excluded. `scripts/test_provider_failure_event.py` locks the redacted metadata contract.
+
+Sprint 869 handover: `/clear` removes the current thread’s entry from `context_revisions`; `scripts/test_agent_context_contract.py` exercises the real subprocess clear-then-query reset.

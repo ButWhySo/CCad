@@ -30,6 +30,9 @@ requests.append({"method": "agent.context_state", "params": {}})
 requests.extend({"method": "human_message", "params": {
     "text": "summarize", "context": context}}
     for context in ("board A", "board B", "board B"))
+requests.append({"method": "human_message", "params": {
+    "text": "/clear", "context": "board B"}})
+requests.append({"method": "agent.context_state", "params": {}})
 payload = "\n".join(json.dumps(request) for request in requests) + "\n"
 run = subprocess.run([sys.executable, str(SOURCE)], input=payload, text=True,
                      capture_output=True, env=env, check=True)
@@ -64,14 +67,14 @@ assert "call_id" in tool_fields
 assert "name" not in tool_fields
 assert "approval_required" not in tool_fields
 assert "side_effect" not in tool_fields
-context_snapshot = next(item for item in lines
-                        if item.get("method") == "context_state_snapshot")
-assert context_snapshot["params"]["thread_id"] == "ccad-local"
-assert context_snapshot["params"]["revision"] == ""
-assert context_snapshot["params"]["content_emitted"] is False
-assert context_snapshot["params"]["secret_value_visible"] is False
+snapshots = [item for item in lines if item.get("method") == "context_state_snapshot"]
+assert snapshots[0]["params"]["thread_id"] == "ccad-local"
+assert snapshots[0]["params"]["revision"] == ""
+assert snapshots[-1]["params"]["revision"] == ""
+assert snapshots[-1]["params"]["content_emitted"] is False
+assert snapshots[-1]["params"]["secret_value_visible"] is False
 events = [item for item in lines if item.get("method") == "context_state"]
-assert len(events) == 3
+assert len(events) == 4
 assert events[0]["params"]["previous_revision"] == ""
 assert events[0]["params"]["change_kind"] == "initial"
 assert events[1]["params"]["previous_revision"] == events[0]["params"]["revision"]
