@@ -2402,3 +2402,6 @@ catalog discovery without bespoke JSON-RPC access.
 Sprint 830 aligns Python GUI MCP bridge with native MCP handling: every
 `notifications/*` message is consumed silently, preserving stdio framing on
 both transports.
+
+Sprint 831 hardens Python GUI MCP request parsing: non-string JSON-RPC method
+values now return `-32602` instead of crashing the stdio child.

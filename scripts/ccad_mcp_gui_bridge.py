@@ -68,6 +68,8 @@ def main():
             request = json.loads(line)
             request_id = request.get("id")
             method = request.get("method", "")
+            if not isinstance(method, str):
+                raise ValueError("method must be a string")
             if method == "initialize":
                 result = {"protocolVersion": "2024-11-05", "capabilities": {"tools": {}},
                           "serverInfo": {"name": "ccad-gui-bridge", "version": "1.0.0"}}
