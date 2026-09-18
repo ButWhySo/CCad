@@ -2231,3 +2231,8 @@ Physical GUI verification remains paused by user request.
 Sprint 790 publishes these combo selectors in `ui.click` and
 `ui.double_click` method schemas, so external harnesses can discover and use
 stable provider/model IDs without reading implementation details.
+
+Sprint 791 makes Settings' Test Provider path terminal: missing credentials or
+adapter failure now emits redacted `provider_state` instead of leaving the UI
+to time out as if no response arrived. No provider request is made by this
+fallback.

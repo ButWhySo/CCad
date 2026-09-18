@@ -935,3 +935,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   physical provider/model harness; GUI verification remains user-paused.
 - [x] Sprint 790: publish semantic combo selectors in UI input schemas; GUI
   verification remains user-paused.
+- [x] Sprint 791: return redacted terminal provider state for Test Provider
+  missing-key/adapter failures; GUI verification remains user-paused.

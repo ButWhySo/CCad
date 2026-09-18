@@ -28,4 +28,5 @@ test_start = source.index('method == "agent.test_provider"')
 secret_start = source.index('method == "agent.set_provider_secret"')
 assert "config_manager.update" not in source[test_start:secret_start]
 assert 'os.environ.pop("GOOGLE_API_KEY", None)' in source[test_start:secret_start]
+assert 'error": "provider_unavailable" if secret else "missing_api_key"' in source[test_start:secret_start]
 print("PASS Gemini BYOK secret alias and redaction")

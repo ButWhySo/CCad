@@ -988,7 +988,19 @@ if __name__ == "__main__":
                     if provider_id == "google_gemini": os.environ.pop("GOOGLE_API_KEY", None)
                     if provider_id in ("openai_compatible", "openrouter", "local_model", "local_model_server", "cerebras"):
                         os.environ.pop("OPENAI_API_KEY", None)
-                init_provider()
+                provider_ready = init_provider()
+                if not provider_ready:
+                    # Settings' Test Provider needs a terminal state even when
+                    # no key/adapter exists; otherwise GUI waits for its
+                    # timeout and reports a misleading "no response".
+                    emit({"jsonrpc": "2.0", "method": "provider_state", "params": {
+                        "provider": provider_id,
+                        "model": model,
+                        "configured": bool(secret),
+                        "execution_enabled": False,
+                        "error": "provider_unavailable" if secret else "missing_api_key",
+                        "secret_value_visible": False,
+                    }})
             elif method == "agent.set_provider_secret":
                 # Private IPC only. Never emit, persist, or add credential to
                 # prompts. Provider SDK reads process memory via its env var.

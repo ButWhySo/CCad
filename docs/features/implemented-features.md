@@ -2611,3 +2611,7 @@ selectors so catalog ordering may change safely.
 The discoverable `ui.click` and `ui.double_click` schemas document `row`,
 `value`, and `text` selection fields, keeping external agent harnesses aligned
 with the runtime protocol.
+
+Settings Test Provider now returns a terminal redacted provider state when a
+key is absent or adapter initialization fails, so the UI reports the cause
+without waiting for its fallback timeout or exposing credential data.

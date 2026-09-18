@@ -1554,3 +1554,7 @@ prefer provider/model IDs over positional rows.
 
 Sprint 790 handover: `agent.methods` now advertises semantic combo selector
 fields for both click methods; `row` remains compatibility behavior.
+
+Sprint 791 handover: `agent.test_provider` emits `provider_state` with
+`missing_api_key` or `provider_unavailable` when initialization returns false;
+the response contains no key or endpoint detail.
