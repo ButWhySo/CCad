@@ -2411,3 +2411,9 @@ remaining bridge crash path for list/string/null request payloads.
 
 Sprint 833 validates MCP `params` root type before dispatch, preventing
 malformed list/scalar params from reaching tool routing.
+
+Sprint 834 adds `scripts/run_agent_contract_gate.ps1`, which resolves the
+bundled agent venv explicitly and runs the offline Python contract suite while
+excluding GUI, visual, live-provider, and real-provider tests. This prevents a
+bare system Python from producing false `langgraph` failures. The gate passed
+29/29; GUI verification remains paused.
