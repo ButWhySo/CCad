@@ -36,7 +36,8 @@ The current Anthropic model overview documents API IDs
 
 The OpenAI model catalog is the source of truth for OpenAI IDs. CCad's
 presets are limited to text-capable IDs used by the chat/tool adapter:
-`gpt-5.1`, `gpt-5`, `gpt-5-mini`, `gpt-4.1`, and `gpt-4.1-mini`. The UI does
+`gpt-5.1`, `gpt-5`, `gpt-5-mini`, `gpt-4.1`, and `gpt-4.1-mini`. Runtime
+default is `gpt-5.1`. The UI does
 not claim that image, audio, moderation, or deprecated models are compatible
 with this text/tool path.
 

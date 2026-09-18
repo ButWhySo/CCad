@@ -486,7 +486,7 @@ def init_provider():
     if provider == "anthropic":
         try:
             from langchain_anthropic import ChatAnthropic
-            if not model_name: model_name = "claude-3-opus-20240229"
+            if not model_name: model_name = "claude-opus-5"
             llm = ChatAnthropic(model=model_name, temperature=0)
             router_llm = llm.bind_tools(router_tools)
             librarian_llm = llm.bind_tools(librarian_tools)
@@ -500,7 +500,7 @@ def init_provider():
     if provider == "google_gemini":
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
-            if not model_name: model_name = "gemini-1.5-pro-latest"
+            if not model_name: model_name = "gemini-3.8-flash"
             # The UI/API uses the provider-neutral GEMINI_API_KEY name; the
             # LangChain Google adapter reads GOOGLE_API_KEY.
             google_api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
@@ -531,7 +531,7 @@ def init_provider():
                 model_name = model_name or os.environ.get("CCAD_LOCAL_MODEL_NAME", "") or "local-model"
                 base_url = os.environ.get("CCAD_LOCAL_MODEL_BASE_URL", "http://127.0.0.1:1234/v1")
             else:
-                model_name = model_name or "gpt-4o"
+                model_name = model_name or "gpt-5.1"
                 base_url = ""
             kwargs = {"model": model_name, "temperature": 0,
                       "timeout": provider_timeout_seconds()}
@@ -1308,7 +1308,7 @@ if __name__ == "__main__":
                 emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Agent configuration saved successfully."}})
                 if "provider" in config_data or "model" in config_data:
                     os.environ["CCAD_PROVIDER"] = config_data.get("provider", "openai")
-                    os.environ["CCAD_MODEL"] = config_data.get("model", "gpt-4o")
+                    os.environ["CCAD_MODEL"] = config_data.get("model", "gpt-5.1")
                     init_provider()
             elif method == "agent.get_config":
                 emit({"jsonrpc": "2.0", "method": "config_state", "params": config_manager.config})

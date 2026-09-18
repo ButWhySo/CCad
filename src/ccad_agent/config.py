@@ -33,7 +33,7 @@ class AgentConfigManager:
             "autosave": True,
             "restore_session": True,
             "provider": "openai",
-            "model": "gpt-4o",
+            "model": "gpt-5.1",
             "sandbox_mode": True,
             "approval_policy": True,
             "project_name": "sprint-demo",

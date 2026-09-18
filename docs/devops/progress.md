@@ -2133,6 +2133,11 @@ payloads. Runtime messages classify authentication, model ID, quota/rate-limit,
 timeout, dependency, and generic availability failures; a no-network contract
 covers the classification path. GUI validation remains paused.
 
+Sprint 768 removes remaining stale runtime defaults: Anthropic now defaults to
+`claude-opus-5`, Gemini to `gemini-3.8-flash`, and OpenAI to `gpt-5.1`, matching
+current Settings presets and compatibility docs. A no-network default-model
+contract prevents silent fallback to retired IDs.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.
