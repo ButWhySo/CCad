@@ -889,7 +889,7 @@ int agentCommand(const std::vector<std::string>& args) {
 
     // MCP notifications have no request id and require no response. Keeping
     // them off stdout preserves strict stdio framing for real MCP clients.
-    if (method == "notifications/initialized") {
+    if (method.rfind("notifications/", 0) == 0) {
       continue;
     } else if (method == "ping") {
       std::cout << formatSuccess(id, "\"pong\"") << "\n";

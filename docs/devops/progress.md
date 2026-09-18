@@ -2379,3 +2379,7 @@ actual contributors exactly.
 Sprint 824 fixes native CLI MCP stdio framing: `notifications/initialized` is
 now consumed silently per JSON-RPC/MCP semantics, with a C++ regression test
 proving following requests remain parseable. GUI verification remains paused.
+
+Sprint 825 generalizes native MCP notification handling to every
+`notifications/*` method, including future lifecycle notifications; all stay
+off stdout. GUI verification remains paused.

@@ -1225,6 +1225,7 @@ void testAgentToolCallRpc() {
 void testMCPInitializedNotificationIsSilent() {
   std::istringstream in(
       "{\"jsonrpc\": \"2.0\", \"method\": \"notifications/initialized\"}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"notifications/cancelled\", \"params\": {}}\n"
       "{\"jsonrpc\": \"2.0\", \"method\": \"ping\", \"id\": 31}\n");
   std::ostringstream out;
   auto oldCin = std::cin.rdbuf(in.rdbuf());
