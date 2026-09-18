@@ -2603,3 +2603,7 @@ which verifies provider, model, and metric grid values across an orchestrator re
 Windows Settings key reveal uses the current account name with `LogonUserW` and
 clears temporary password buffers. The physical UI robot selects Cerebras using
 the current provider catalog order; live GUI verification remains user-paused.
+
+UI-map `ui.click` accepts exact combo `value` or visible `text` selectors in
+addition to row selection. Provider/model harnesses should use these stable
+selectors so catalog ordering may change safely.

@@ -5758,7 +5758,8 @@ QString ReviewWindow::uiNearestCanvasObjectJson(const double x_mm, const double 
 }
 
 QString ReviewWindow::uiClickJson(const QString& id, const bool dry_run, const bool double_click,
-                                  const int row) {
+                                  const int row, const QString& requested_value,
+                                  const QString& requested_text) {
   const QString trimmed_id = id.trimmed();
   QJsonObject response;
   response.insert("schema_version", 1);
@@ -5912,6 +5913,35 @@ QString ReviewWindow::uiClickJson(const QString& id, const bool dry_run, const b
         if (!combo->isVisible() || !combo->isEnabled()) {
           response.insert("performed", false);
           response.insert("reason", "disabled_or_hidden");
+          return jsonObjectLine(response);
+        }
+        if (!requested_value.isEmpty() || !requested_text.isEmpty()) {
+          int selected = -1;
+          for (int index = 0; index < combo->count(); ++index) {
+            const bool value_matches = requested_value.isEmpty() ||
+                                       combo->itemData(index).toString() == requested_value;
+            const bool text_matches = requested_text.isEmpty() ||
+                                      combo->itemText(index) == requested_text;
+            if (value_matches && text_matches) {
+              selected = index;
+              break;
+            }
+          }
+          if (selected < 0) {
+            response.insert("performed", false);
+            response.insert("reason", "combo_selection_not_found");
+            response.insert("value", requested_value);
+            response.insert("text", requested_text);
+            return jsonObjectLine(response);
+          }
+          combo->setCurrentIndex(selected);
+          QApplication::processEvents();
+          response.insert("performed", true);
+          response.insert("reason", "combo_selection_selected");
+          response.insert("row", selected);
+          response.insert("value", combo->currentData().toString());
+          response.insert("current_text", combo->currentText());
+          markUiMapChanged({trimmed_id}, {"control"});
           return jsonObjectLine(response);
         }
         if (requested_row >= 0) {
@@ -7748,7 +7778,9 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
     const bool dry_run = object->value("dry_run").toBool(false);
     return agentQueryResponse(trimmed_method, true, {},
                               uiClickJson(id, dry_run, trimmed_method == "ui.double_click",
-                                          object->value("row").toInt(-1)));
+                                          object->value("row").toInt(-1),
+                                          object->value("value").toString(),
+                                          object->value("text").toString()));
   }
   if (trimmed_method == "ui.type_text") {
     const std::optional<QJsonObject> object = requireObject();

@@ -931,3 +931,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 788: repair Windows password-dialog compilation and synchronize the
   physical GUI harness with the current Cerebras provider row; GUI verification
   paused again by user request after targeted execution.
+- [x] Sprint 789: add value/text-based UI-map combo selection and update the
+  physical provider/model harness; GUI verification remains user-paused.

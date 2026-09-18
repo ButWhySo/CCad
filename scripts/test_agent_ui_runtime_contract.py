@@ -7,6 +7,7 @@ root = Path(__file__).parents[1]
 panel = (root / "src" / "ccad_gui" / "agent_panel.cpp").read_text(encoding="utf-8")
 header = (root / "src" / "ccad_gui" / "agent_panel.hpp").read_text(encoding="utf-8")
 settings = (root / "src" / "ccad_gui" / "agent_settings_dialog.cpp").read_text(encoding="utf-8")
+review = (root / "src" / "ccad_gui" / "review_window.cpp").read_text(encoding="utf-8")
 
 assert "QTextBrowser* chat_stream_" in header
 assert 'setObjectName("control:agent_chat_stream")' in panel
@@ -26,4 +27,7 @@ assert 'applyModelCatalog' in settings
 assert 'catalog["ok"].toBool(false)' in settings
 assert 'catalog["models"].toArray()' in settings
 assert 'refresh_models->setEnabled(provider_combo_->currentData().toString() == "openrouter")' in settings
+assert 'combo_selection_selected' in review
+assert 'object->value("value").toString()' in review
+assert 'object->value("text").toString()' in review
 print("PASS agent UI/provider runtime source contract; no GUI launched")

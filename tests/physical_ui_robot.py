@@ -232,13 +232,14 @@ def main():
 
     # Exercise provider-aware model switching with real keyboard selection.
     print("Selecting Cerebras provider and its documented model")
-    # Current catalog order: OpenAI, Anthropic, Gemini, OpenAI-compatible,
-    # OpenRouter, Cerebras. Keep this assertion beside selection so stale
-    # harness assumptions fail with the observed provider name.
-    provider_state = send_ui_action('ui.click', {'id': 'control:providerCombo', 'row': 5}).get('result', {})
+    provider_state = send_ui_action('ui.click', {
+        'id': 'control:providerCombo', 'value': 'cerebras'
+    }).get('result', {})
     if provider_state.get('current_text') != "Cerebras":
         raise RuntimeError(f"Cerebras provider selection was not visible: {provider_state}")
-    model_state = send_ui_action('ui.click', {'id': 'control:modelCombo', 'row': 0}).get('result', {})
+    model_state = send_ui_action('ui.click', {
+        'id': 'control:modelCombo', 'value': 'gpt-oss-120b'
+    }).get('result', {})
     if model_state.get('current_text') != "gpt-oss-120b":
         raise RuntimeError(f"Cerebras model selection was not visible: {model_state}")
     pyautogui.press('escape')

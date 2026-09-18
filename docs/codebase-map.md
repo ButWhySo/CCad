@@ -1547,3 +1547,7 @@ Sprint 788 handover: `src/ccad_gui/agent_settings_dialog.cpp` requires the
 Windows `UNLEN` and corrected Qt `QInputDialog::getText` signature for the
 password-reveal path. `tests/physical_ui_robot.py` must select Cerebras at
 current provider row 5; do not infer provider rows from older screenshots.
+
+Sprint 789 handover: `ReviewWindow::uiClickJson` supports exact combo item
+`value`/`text` matching before legacy row matching. External harnesses should
+prefer provider/model IDs over positional rows.

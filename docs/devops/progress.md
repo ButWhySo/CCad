@@ -2223,3 +2223,7 @@ Sprint 788 fixes the Windows Qt password-dialog compile contract and synchronize
 the physical UI robot with the current Cerebras provider catalog order. GUI
 verification was resumed briefly, exposed the stale row assumption, then paused
 again by explicit user request; no provider network call was made.
+
+Sprint 789 makes UI-map combo selection semantic: callers may select by exact
+item data or visible text, avoiding brittle provider/model row assumptions.
+Physical GUI verification remains paused by user request.
