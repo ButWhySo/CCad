@@ -882,7 +882,7 @@ chaining_phase = "none"
 chaining_state = True
 active_hooks = []
 schedules = []
-last_context_revision = ""
+context_revisions = {}
 
 def bound_session_history(messages):
     """Keep interactive history bounded before it becomes provider input."""
@@ -1296,14 +1296,15 @@ if __name__ == "__main__":
                         "secret_value_visible": False,
                     }})
                     continue
-                previous_context_revision = last_context_revision
+                context_thread_id = os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
+                previous_context_revision = context_revisions.get(context_thread_id, "")
                 current_context_revision = context_revision(context_str)
                 context_changed = current_context_revision != previous_context_revision
                 context_change_kind = (
                     "initial" if not previous_context_revision else
                     ("changed" if context_changed else "unchanged")
                 )
-                last_context_revision = current_context_revision
+                context_revisions[context_thread_id] = current_context_revision
                 emit({"jsonrpc": "2.0", "method": "context_state", "params": {
                     "revision": current_context_revision,
                     "previous_revision": previous_context_revision,

@@ -2535,3 +2535,7 @@ Headless-only batch: delayed `tool_result_ack` until a pending broker call or ma
 ### Sprint 863 — pending-call count correctness
 
 Headless-only batch: pending-call recovery metadata now counts the union of process-local and checkpoint IDs, preventing one correlated call from appearing twice. Added an offline contract test; GUI/API/build validation remains paused.
+
+### Sprint 864 — thread-scoped context revisions
+
+Headless-only batch: context revision chaining is now isolated by `CCAD_AGENT_THREAD_ID`, preventing one chat thread’s previous revision from being reported for another thread. Added an offline contract test; GUI/API/build validation remains paused.
