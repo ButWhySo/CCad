@@ -91,6 +91,8 @@ class AgentPanel final : public QWidget {
   void declineNextApproval();
   void cancelApproval();
   void clearApprovals();
+  void showProposal(const QString& summary, const QStringList& changes);
+  void clearProposal();
 
   QString projectText() const;
   QString epochText() const;
@@ -110,6 +112,7 @@ class AgentPanel final : public QWidget {
   QString approvalRequestText() const;
   QString approvalStatusText() const;
   int pendingApprovalCount() const;
+  bool proposalVisible() const;
   QString outputText() const;
   QString workspaceStateJson() const;
 
@@ -225,6 +228,12 @@ class AgentPanel final : public QWidget {
   QLabel* approval_status_label_ = nullptr;
   QLabel* context_usage_label_ = nullptr;
   QFrame* approval_preview_ = nullptr;
+  QFrame* proposal_card_ = nullptr;
+  QLabel* proposal_summary_label_ = nullptr;
+  QListWidget* proposal_changes_list_ = nullptr;
+  QPushButton* proposal_approve_button_ = nullptr;
+  QPushButton* proposal_revise_button_ = nullptr;
+  QPushButton* proposal_reject_button_ = nullptr;
   QLabel* approval_summary_label_ = nullptr;
   QLabel* approval_delta_label_ = nullptr;
   QPushButton* approval_request_button_ = nullptr;
