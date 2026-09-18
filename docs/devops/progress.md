@@ -2307,3 +2307,7 @@ Sprint 807 bridges `backend_state` into AgentPanel workspace state as separate
 `backend_ready` and `backend_provider_initialized` fields. Harnesses can inspect
 runtime liveness through the native panel without telemetry UI; GUI verification
 remains paused.
+
+Backend readiness now has a mock-provider subprocess contract proving emitted
+JSON fields, redaction, and no-network behavior; GUI verification remains
+paused.

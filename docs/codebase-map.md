@@ -1617,3 +1617,7 @@ adapter construction separately; no network or secret values are involved.
 Sprint 807 handover: AgentPanel consumes `backend_state` and publishes
 `backend_ready` plus `backend_provider_initialized` in workspace state. These
 are machine-readable only; no status-chip UI was added.
+
+Sprint 808 handover: `scripts/test_backend_state_contract.py` launches only the
+mock provider, asserts backend readiness fields and secret/network policy, then
+exits without external requests.

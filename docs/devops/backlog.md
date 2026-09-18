@@ -969,3 +969,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   adapter readiness for harnesses; GUI verification remains paused.
 - [x] Sprint 807: bridge backend/provider readiness into native Agent workspace
   state without visible telemetry chips; GUI verification remains paused.
+- [x] Sprint 808: add subprocess proof for backend readiness payload and
+  no-network redaction; GUI verification remains paused.

@@ -2654,3 +2654,5 @@ The Python orchestrator also emits separate `backend_state` readiness, so
 harnesses can distinguish a live local runtime from provider adapter readiness.
 Native Agent workspace state now carries that distinction as `backend_ready`
 and `backend_provider_initialized`, without exposing telemetry chips or secrets.
+`test_backend_state_contract.py` proves the startup JSON event through a mock
+subprocess without network access.
