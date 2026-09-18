@@ -1015,3 +1015,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   no GUI or provider request.
 - [x] Sprint 842: synchronize OpenRouter catalog contract with provider enum;
   no GUI or network execution.
+- [x] Sprint 843: align the Cerebras adapter contract test with the current
+  production default; no GUI or provider request.

@@ -2265,6 +2265,10 @@ closing the remaining lambda-captures-`this` lifetime hole. Headless contract
 proof covers both the callback reset and control guard; GUI verification remains
 paused.
 
+Sprint 843 aligns the no-network Cerebras adapter contract with the current
+official production default (`gpt-oss-120b`), preventing a stale deprecated
+Qwen model from re-entering tests. GUI verification remains paused.
+
 Sprint 837 adds explicit Cerebras model-catalog response from the documented
 curated snapshot and enables Settings Refresh for Cerebras. OpenRouter remains
 the only network-fetched catalog; Cerebras refresh is quota-safe and offline.

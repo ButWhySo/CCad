@@ -1624,3 +1624,8 @@ exits without external requests.
 
 Sprint 809 handover: `.github/workflows/ci.yml` runs backend readiness contract
 after provider-default contract; no provider key or network access required.
+
+Sprint 843 handover: `scripts/test_cerebras_adapter_contract.py` uses the
+current official Cerebras production fallback, `gpt-oss-120b`, matching the
+runtime, UI presets, and provider documentation. The adapter contract remains
+initialization-only and sends no provider request.
