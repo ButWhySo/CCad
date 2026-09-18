@@ -2318,3 +2318,8 @@ provider test now drives `/route`, proves a native `ui.place_via` tool call,
 and requires a completed run plus terminal response. This is headless proof
 of supervisor-to-router-to-tool-node execution, not GUI verification or a
 claim of durable broker resume. GUI verification remains paused.
+
+Sprint 811 fixes checkpoint broker routing to honor per-result `thread_id`,
+validate pending interrupt existence, normalize correlation IDs, and report
+late/unknown results as ignored instead of attempting an unsafe resume. GUI
+verification remains paused.

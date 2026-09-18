@@ -11,4 +11,6 @@ assert 'elif method == "agent.pending_calls":' in text
 assert '"pending_calls_state"' in text
 assert '"secret_value_visible": False' in text
 assert '"checkpoint_call_ids"' in text
+assert 'tool_result_params.get("thread_id")' in text
+assert '"no_pending_checkpoint"' in text
 print("PASS opaque pending-call recovery contract; no network")
