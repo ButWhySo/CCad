@@ -2405,3 +2405,6 @@ both transports.
 
 Sprint 831 hardens Python GUI MCP request parsing: non-string JSON-RPC method
 values now return `-32602` instead of crashing the stdio child.
+
+Sprint 832 also rejects non-object JSON roots before field access, closing the
+remaining bridge crash path for list/string/null request payloads.

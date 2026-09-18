@@ -18,6 +18,10 @@ def error(request_id, code, message):
             "error": {"code": code, "message": message}}
 
 
+def request_id_or_none(request):
+    return request.get("id") if isinstance(request, dict) else None
+
+
 def call_gui(server, method, arguments, *, allow_approval_ui=False):
     if method not in READ_ONLY_METHODS and not (allow_approval_ui and method in {"ui.type_text", "ui.click"}):
         raise PermissionError("GUI MCP bridge permits read-only methods only")
@@ -66,6 +70,8 @@ def main():
         request = {}
         try:
             request = json.loads(line)
+            if not isinstance(request, dict):
+                raise ValueError("request must be an object")
             request_id = request.get("id")
             method = request.get("method", "")
             if not isinstance(method, str):
@@ -121,11 +127,11 @@ def main():
                 raise LookupError("unsupported MCP method")
             print(json.dumps({"jsonrpc": "2.0", "id": request_id, "result": result}), flush=True)
         except PermissionError as exc:
-            print(json.dumps(error(request.get("id"), -32001, str(exc))), flush=True)
+            print(json.dumps(error(request_id_or_none(request), -32001, str(exc))), flush=True)
         except LookupError as exc:
-            print(json.dumps(error(request.get("id"), -32601, str(exc))), flush=True)
+            print(json.dumps(error(request_id_or_none(request), -32601, str(exc))), flush=True)
         except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
-            print(json.dumps(error(request.get("id"), -32602, str(exc))), flush=True)
+            print(json.dumps(error(request_id_or_none(request), -32602, str(exc))), flush=True)
 
 
 if __name__ == "__main__":
