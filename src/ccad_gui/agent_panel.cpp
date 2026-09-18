@@ -1217,7 +1217,13 @@ AgentPanel::~AgentPanel() {
 void AgentPanel::appendChatMessage(const QString& role, const QString& text) {
   // Backend startup can emit identical dependency/provider warnings more than
   // once. Keep stream readable; do not add consecutive duplicate entries.
-  if (role == last_chat_role_ && text == last_chat_text_) return;
+  // Collapse repeated backend warnings, but never hide repeated user prompts
+  // or genuine assistant responses from the selectable transcript.
+  const bool duplicate_backend_notice =
+      role == "agent" && last_chat_role_ == role && last_chat_text_ == text &&
+      (text.startsWith("Agent backend warning:") ||
+       text.startsWith("Agent provider ") || text.startsWith("Provider "));
+  if (duplicate_backend_notice) return;
   last_chat_role_ = role;
   last_chat_text_ = text;
   if (!chat_stream_) return;

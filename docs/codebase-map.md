@@ -1591,3 +1591,7 @@ only checklist presentation retains the transparent agent-role style.
 
 Sprint 800 handover: ReviewWindow global stylesheet no longer contains legacy
 chat bubble/tool selectors; the single-stream contract covers panel and window.
+
+Sprint 801 handover: `appendChatMessage` deduplicates only repeated provider or
+backend warning notices. User prompts and assistant responses are never hidden
+because their text repeats.

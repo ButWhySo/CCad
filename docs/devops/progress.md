@@ -2277,3 +2277,7 @@ another chat renderer; GUI verification remains paused.
 Sprint 800 removes duplicate dead bubble/tool CSS from the review-window global
 stylesheet too. UI source contracts now cover both AgentPanel and ReviewWindow;
 GUI verification remains paused.
+
+Sprint 801 narrows chat deduplication to repeated backend/provider warning text.
+Repeated user prompts and real assistant responses remain visible in the single
+selectable transcript; GUI verification remains paused.

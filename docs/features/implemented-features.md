@@ -2643,3 +2643,5 @@ Unused user/tool bubble CSS is also removed; checklist styling remains separate
 from the conversation stream by design.
 ReviewWindow's duplicate legacy selectors are removed as well, preventing global
 stylesheet drift from reintroducing the old boxed-message visual language.
+Transcript deduplication is warning-specific; repeated user and assistant text
+remains selectable and visible.

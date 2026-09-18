@@ -15,6 +15,8 @@ assert 'if (!chat_stream_) return;' in panel
 assert 'chat_history_layout_->addWidget(container);' not in panel
 assert 'agentRole="toolCard"' not in panel
 assert 'agentRole="chatBubbleUser"' not in panel
+assert 'duplicate_backend_notice' in panel
+assert 'role == "agent"' in panel
 review = (root / "src" / "ccad_gui" / "review_window.cpp").read_text(encoding="utf-8")
 assert 'agentRole="chatBubbleUser"' not in review
 assert 'agentRole="toolCard"' not in review
