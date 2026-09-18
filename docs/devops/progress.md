@@ -2571,3 +2571,7 @@ Headless-only batch: mutating `tool_call` events now expose `approval_required`;
 ### Sprint 872 — durable approval metadata
 
 Headless-only batch: checkpointed LangGraph tool interrupts now preserve `approval_required:true`, so restart/resume cannot lose the side-effect approval boundary. Added an offline contract; GUI/API/build validation remains paused.
+
+### Sprint 873 — durable approval proof
+
+Headless-only batch: checkpoint restart fixture now inspects the actual interrupt payload and proves `approval_required:true` survives checkpoint creation. GUI/API/build validation remains paused.
