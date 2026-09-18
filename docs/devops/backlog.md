@@ -897,3 +897,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 751: add update-by-ID to complete local memory CRUD.
 - [x] Sprint 752: distinguish provider tool approval wait from completed telemetry state; no GUI/network run.
 - [x] Sprint 753: emit approval telemetry at the mutating-tool broker boundary before waiting for client result; headless provider proof remains quota-safe and GUI validation stays paused.
+- [x] Sprint 754: revalidate accepted and denied durable LangGraph checkpoint resumes with fresh SQLite fixtures; GUI and external-provider execution remain paused.

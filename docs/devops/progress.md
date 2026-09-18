@@ -2079,6 +2079,11 @@ behind the final provider response. This was verified with syntax, the
 no-network approval contract, the localhost OpenAI-compatible boundary, and
 the recursion contract. GUI validation remains paused by request.
 
+Sprint 754 revalidated durable LangGraph approval state headlessly: a fresh
+SQLite checkpoint resumes an accepted tool result and separately resumes an
+approval denial. Temporary databases were removed; no GUI or external
+provider call was used.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.
