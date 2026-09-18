@@ -2011,6 +2011,12 @@ ReviewWindow::ReviewWindow() {
   diagnostics_ = new DiagnosticsPanel(this);
   transaction_timeline_ = new TransactionTimelinePanel(this);
   agent_panel_ = new AgentPanel();
+  agent_panel_->setGridSettingsCallback([this](const double spacing_mm, const bool visible) {
+    if (auto* board_view = dynamic_cast<BoardCanvasView*>(canvas_view_)) {
+      board_view->setGridSpacingMm(spacing_mm);
+      board_view->setGridVisible(visible);
+    }
+  });
   agent_panel_->setUiMapProvider([this]() { return uiMapJson(); });
   agent_panel_->setSafeActionTrigger(
       [this](const QString& id) { return triggerSafeUiActionJson(id); });
@@ -5881,6 +5887,8 @@ QString ReviewWindow::uiClickJson(const QString& id, const bool dry_run, const b
         combo->showPopup();
         response.insert("performed", true);
         response.insert("reason", "combo_focused_and_opened");
+        response.insert("value", combo->currentData().toString());
+        response.insert("current_text", combo->currentText());
         markUiMapChanged({trimmed_id}, {"control"});
         return jsonObjectLine(response);
       }

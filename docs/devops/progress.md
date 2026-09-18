@@ -1936,3 +1936,14 @@ revision instructions. Sending the revision builds a `/revise` request in the
 chat composer; it does not mutate the project or clear the pending proposal.
 Focused GUI test, official visual harness, screenshot inspection, empty
 stderr, and full Qt CTest 91/91 passed.
+### Sprint 716 - bridge metric grid settings into the live canvas
+
+Connected Agent Settings' metric grid selector to the active PCB canvas. Selecting
+0.5, 1.0, 2.5, 5.0, 10.0 mm or Hidden now updates canvas spacing/visibility through
+the ReviewWindow callback; no board-file mutation is performed. Extended the physical
+UI robot to select 2.5 mm with keyboard input, verify the selected combo value through
+the UI-map response, exercise General settings, test provider status, save, and close.
+The combo click response now exposes `value` and `current_text`, allowing harnesses to
+prove selection rather than infer it from coordinates. Focused GUI tests passed 3/3,
+full Qt CTest passed 91/91, the official visual harness rendered a board screenshot,
+and all four physical settings screenshots were inspected with empty relevant stderr.

@@ -1386,6 +1386,16 @@ void AgentPanel::handlePythonOutput() {
           updateProviderControls();
         }
         if (config_state_cb_) config_state_cb_(params);
+        if (grid_settings_cb_ && params.contains("grid")) {
+          const QString grid = params["grid"].toString().trimmed();
+          const bool visible = grid.compare("Hidden", Qt::CaseInsensitive) != 0;
+          QString numeric = grid;
+          numeric.remove("mm", Qt::CaseInsensitive);
+          bool ok = false;
+          const double spacing_mm = numeric.trimmed().toDouble(&ok);
+          if (visible && ok && spacing_mm > 0.0) grid_settings_cb_(spacing_mm, true);
+          else if (!visible) grid_settings_cb_(1.0, false);
+        }
       } else if (obj.contains("method") && obj["method"].toString() == "provider_state") {
         const QJsonObject params = obj["params"].toObject();
         if (!params["model"].toString().trimmed().isEmpty()) {
@@ -1694,6 +1704,10 @@ void AgentPanel::setMarketplaceCatalogCallback(MarketplaceCatalogCallback cb) {
 
 void AgentPanel::setComponentWizardCallback(ComponentWizardCallback cb) {
   component_wizard_cb_ = std::move(cb);
+}
+
+void AgentPanel::setGridSettingsCallback(GridSettingsCallback cb) {
+  grid_settings_cb_ = std::move(cb);
 }
 
 void AgentPanel::setProjectContext(const QString& project_label, const int ui_map_epoch) {

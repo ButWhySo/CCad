@@ -1422,3 +1422,10 @@ The timeout is scheduled for every Test Provider click, including missing panel/
 `LibraryBrowserDialog::loadComponents` and `filterComponents` publish loaded-count, path, missing-cache, and zero-match status through the existing detail label, keeping catalog failures visible in the native dialog.
 
 Settings opens modelessly from `AgentPanel`, preserving UI-map/MCP request servicing. `ReviewWindow::uiTargetJsonById` and `uiClickJson` include top-level dialog widgets; QListWidget targets accept a `row` field for semantic selection. `tests/physical_ui_robot.py` is strict: unique IPC name, Qt PATH, window setup, mapped mouse attempts, semantic fallback only after no state change, targeted provider-status assertion, screenshot.
+### Sprint 716 live grid/settings bridge
+
+`ReviewWindow` owns the settings-to-canvas boundary. `AgentPanel` emits parsed
+metric grid preferences through `GridSettingsCallback`; `ReviewWindow` applies
+them only to `BoardCanvasView`, preserving the kernel/project as source of truth.
+`ReviewWindow::uiClickJson()` returns combo `value` and `current_text`, so semantic
+UI clients can verify keyboard/dropdown selection without coordinate inference.

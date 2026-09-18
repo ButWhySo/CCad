@@ -194,6 +194,36 @@ def main():
     for el in config_elements:
         click_element(ui_map, el)
         time.sleep(0.1)
+
+    # Return to General before exercising the metric grid selector.
+    click_list_item(ui_map, "control:categoryList", 0)
+    send_ui_action('ui.click', {'id': 'control:categoryList', 'row': 0})
+    time.sleep(0.5)
+    ui_map = read_ui_map()
+
+    # Exercise the metric grid selector as a real user: choose 2.5 mm,
+    # verify the visible selection, and capture proof before leaving Settings.
+    print("Selecting metric canvas grid: 2.5 mm")
+    opened_grid = send_ui_action('ui.click', {'id': 'control:gridCombo'})
+    if not opened_grid.get('result', {}).get('performed'):
+        raise RuntimeError(f"semantic grid combo open failed: {opened_grid}")
+    pyautogui.press("home")
+    pyautogui.press("down", presses=2, interval=0.1)
+    pyautogui.press("enter")
+    time.sleep(0.5)
+    grid_state = send_ui_action('ui.click', {'id': 'control:gridCombo'}).get('result', {})
+    if grid_state.get('current_text') != "2.5 mm":
+        raise RuntimeError(f"Metric grid selection was not visible: {grid_state}")
+    pyautogui.screenshot("artifacts/screenshots/physical-ui-metric-grid.png")
+
+    # Exercise remaining General controls, not only the new grid selector.
+    general_elements = [
+        "control:themeCombo", "control:autosaveCb", "control:restoreSessionCb"
+    ]
+    for el in general_elements:
+        click_element(ui_map, el)
+        time.sleep(0.2)
+    pyautogui.screenshot("artifacts/screenshots/physical-ui-general-settings.png")
         
     # Go to Personalisation Tab (Index 2)
     print("Switching to Personalisation tab...")

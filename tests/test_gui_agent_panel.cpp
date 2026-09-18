@@ -206,6 +206,7 @@ private slots:
     QCOMPARE(models->currentText(), QString("gpt-5.1"));
   }
 
+
   void testApprovalLaneTransitions() {
     AgentPanel panel;
     auto* approval_card = panel.findChild<QFrame*>("panel:agent_approval_preview");
