@@ -2165,6 +2165,8 @@ to README, including custom model IDs and quota-safe cleanup.
 Sprint 775 adds explicit OpenRouter model refresh through `agent.list_models`.
 No startup fetch occurs; bounded request, redacted failures, and compact model
 metadata preserve quota and secret boundaries. A no-network contract covers it.
+Malformed timeout configuration and non-object catalog responses are now safe
+redacted failures rather than orchestrator crashes.
 
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with

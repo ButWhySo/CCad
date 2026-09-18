@@ -8,4 +8,6 @@ assert '"https://openrouter.ai/api/v1/models"' in source
 assert 'method == "agent.list_models"' in source
 assert '"network_access": "explicit_refresh"' in source
 assert "urllib.request.urlopen(request, timeout=timeout)" in source
+assert "invalid_catalog_shape" in source
+assert "except ValueError:" in source
 print("PASS explicit OpenRouter catalog refresh contract; no network")

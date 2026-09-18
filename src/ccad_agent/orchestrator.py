@@ -33,10 +33,16 @@ def fetch_openrouter_models():
         "https://openrouter.ai/api/v1/models",
         headers={"Authorization": f"Bearer {key}", "Accept": "application/json"},
     )
-    timeout = min(20, max(2, int(os.environ.get("CCAD_MODEL_CATALOG_TIMEOUT_SECONDS", "8"))))
+    try:
+        timeout_value = int(os.environ.get("CCAD_MODEL_CATALOG_TIMEOUT_SECONDS", "8"))
+    except ValueError:
+        timeout_value = 8
+    timeout = min(20, max(2, timeout_value))
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             payload = json.loads(response.read().decode("utf-8"))
+        if not isinstance(payload, dict):
+            return {"ok": False, "error": "invalid_catalog_shape", "models": [], "network_access": "explicit_refresh"}
         models = []
         for item in payload.get("data", []):
             if not isinstance(item, dict) or not item.get("id"):

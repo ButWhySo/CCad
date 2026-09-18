@@ -916,3 +916,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 773: add OpenRouter first-class provider wiring with custom model IDs and quota-safe no-network contract.
 - [x] Sprint 774: document OpenRouter BYOK launch, custom model IDs, and quota-safe environment cleanup.
 - [x] Sprint 775: add explicit bounded OpenRouter model catalog refresh with redacted metadata/failures and no-network contract.
+- [x] Sprint 776: harden catalog refresh against malformed timeout environment and invalid JSON shape.
