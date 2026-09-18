@@ -1871,3 +1871,12 @@ before/after proposal card or revision form yet. Next implementation slice is
 to add a typed proposal model and native card before adding PCB/schematic diff
 rendering, so agent suggestions remain reviewable and cannot be mistaken for
 already-applied changes.
+
+### Sprint 708 - add native proposal review card
+
+Added a hidden-by-default typed proposal card to AgentPanel. It renders a
+summary and change list, supports Revise by seeding the chat composer,
+Reject by clearing the proposal, and Approve by handing the proposal to the
+existing approval gate. No project mutation occurs directly from the card.
+Focused GUI test, official visual harness, screenshot inspection, empty
+stderr, and full Qt CTest 91/91 passed.

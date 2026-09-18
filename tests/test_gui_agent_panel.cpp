@@ -222,6 +222,25 @@ private slots:
     QVERIFY(panel.findChild<QPushButton*>("action:agent_decline_next") != nullptr);
   }
 
+  void testProposalReviewCardTransitions() {
+    AgentPanel panel;
+    auto* card = panel.findChild<QFrame*>("card:agent_proposal");
+    QVERIFY(card != nullptr);
+    QVERIFY(!panel.proposalVisible());
+    panel.show();
+    panel.showProposal("Improve GND routing near U3", {"Reroute track T19", "Add via V17", "Preserve U3 placement"});
+    QVERIFY(panel.proposalVisible());
+    QCOMPARE(panel.findChild<QListWidget*>("list:agent_proposal_changes")->count(), 3);
+    auto* revise = panel.findChild<QPushButton*>("action:agent_proposal_revise");
+    QVERIFY(revise != nullptr);
+    QTest::mouseClick(revise, Qt::LeftButton);
+    QCOMPARE(panel.findChild<QTextEdit*>("control:agent_chat_input")->toPlainText(), QString("/revise "));
+    auto* reject = panel.findChild<QPushButton*>("action:agent_proposal_reject");
+    QVERIFY(reject != nullptr);
+    QTest::mouseClick(reject, Qt::LeftButton);
+    QVERIFY(!panel.proposalVisible());
+  }
+
   void testSlashCommandPaletteUsesExecutableCommands() {
     AgentPanel panel;
     panel.show();

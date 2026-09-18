@@ -3,6 +3,7 @@
 #include "ccad_core/agent_policy.hpp"
 
 #include <QByteArray>
+#include <QAbstractItemView>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QHBoxLayout>
@@ -598,6 +599,14 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
     QPushButton[agentRole="iconButtonPrimary"]:hover {
       background-color: #7b1fa2;
     }
+    QFrame[agentRole="proposalCard"] {
+      background-color: #202c3d;
+      border: 1px solid #41658f;
+      border-left: 3px solid #3b82f6;
+      border-radius: 9px;
+      margin: 6px 4px;
+      padding: 8px 10px;
+    }
     QTextEdit#control\:agent_chat_input {
       background-color: #25262b;
       border: 1px solid #3d3f4b;
@@ -852,6 +861,65 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   actions_layout->addWidget(send_btn);
 
   composer_layout->addLayout(actions_layout);
+
+  auto* proposal_card = new QFrame(this);
+  proposal_card->setObjectName("card:agent_proposal");
+  proposal_card->setProperty("agentRole", "proposalCard");
+  auto* proposal_layout = new QVBoxLayout(proposal_card);
+  proposal_layout->setContentsMargins(9, 7, 9, 7);
+  proposal_layout->setSpacing(5);
+  auto* proposal_header = new QHBoxLayout();
+  auto* proposal_title = new QLabel("Proposed changes", proposal_card);
+  proposal_title->setObjectName("label:agent_proposal_title");
+  proposal_title->setStyleSheet("font-weight:600; color:#dbeafe;");
+  proposal_header->addWidget(proposal_title);
+  proposal_header->addStretch();
+  auto* proposal_badge = new QLabel("Review required", proposal_card);
+  proposal_badge->setObjectName("label:agent_proposal_badge");
+  proposal_badge->setStyleSheet("color:#93c5fd; font-size:11px;");
+  proposal_header->addWidget(proposal_badge);
+  proposal_layout->addLayout(proposal_header);
+  proposal_summary_label_ = new QLabel(proposal_card);
+  proposal_summary_label_->setObjectName("label:agent_proposal_summary");
+  proposal_summary_label_->setWordWrap(true);
+  proposal_layout->addWidget(proposal_summary_label_);
+  proposal_changes_list_ = new QListWidget(proposal_card);
+  proposal_changes_list_->setObjectName("list:agent_proposal_changes");
+  proposal_changes_list_->setSelectionMode(QAbstractItemView::NoSelection);
+  proposal_changes_list_->setMaximumHeight(110);
+  proposal_layout->addWidget(proposal_changes_list_);
+  auto* proposal_actions = new QHBoxLayout();
+  proposal_revise_button_ = new QPushButton("Revise", proposal_card);
+  proposal_revise_button_->setObjectName("action:agent_proposal_revise");
+  proposal_reject_button_ = new QPushButton("Reject", proposal_card);
+  proposal_reject_button_->setObjectName("action:agent_proposal_reject");
+  proposal_approve_button_ = new QPushButton("Approve changes", proposal_card);
+  proposal_approve_button_->setObjectName("action:agent_proposal_approve");
+  proposal_approve_button_->setProperty("agentRole", "iconButtonPrimary");
+  proposal_actions->addWidget(proposal_revise_button_);
+  proposal_actions->addWidget(proposal_reject_button_);
+  proposal_actions->addWidget(proposal_approve_button_);
+  proposal_layout->addLayout(proposal_actions);
+  proposal_card_ = proposal_card;
+  proposal_card_->hide();
+  connect(proposal_revise_button_, &QPushButton::clicked, this, [this]() {
+    if (chat_input_) {
+      chat_input_->setPlainText("/revise ");
+      chat_input_->setFocus();
+    }
+    addActivityEvent("proposal", "Revision requested", "Proposal remains unchanged", "agent.proposal");
+  });
+  connect(proposal_reject_button_, &QPushButton::clicked, this, [this]() {
+    addActivityEvent("proposal", "Proposal rejected", proposal_summary_label_->text(), "agent.proposal");
+    clearProposal();
+  });
+  connect(proposal_approve_button_, &QPushButton::clicked, this, [this]() {
+    setApprovalRequestText("Approve proposed changes: " + proposal_summary_label_->text());
+    requestApproval();
+    addActivityEvent("proposal", "Approval requested", proposal_summary_label_->text(), "agent.proposal");
+    clearProposal();
+  });
+  main_layout->addWidget(proposal_card);
 
   auto* approval_card = new QFrame(this);
   approval_card->setObjectName("panel:agent_approval_preview");
@@ -2501,6 +2569,23 @@ void AgentPanel::clearApprovals() {
   if (approval_preview_) approval_preview_->hide();
 }
 
+void AgentPanel::showProposal(const QString& summary, const QStringList& changes) {
+  if (!proposal_card_ || !proposal_summary_label_ || !proposal_changes_list_) return;
+  proposal_summary_label_->setText(summary.trimmed().isEmpty() ? "Agent proposed project changes." : summary.trimmed());
+  proposal_changes_list_->clear();
+  for (const QString& change : changes) {
+    if (!change.trimmed().isEmpty()) proposal_changes_list_->addItem(change.trimmed());
+  }
+  proposal_card_->show();
+  addActivityEvent("proposal", "Proposal ready", proposal_summary_label_->text(), "agent.proposal");
+}
+
+void AgentPanel::clearProposal() {
+  if (proposal_card_) proposal_card_->hide();
+  if (proposal_changes_list_) proposal_changes_list_->clear();
+  if (proposal_summary_label_) proposal_summary_label_->clear();
+}
+
 void AgentPanel::setProviderStateCallback(ProviderStateCallback cb) {
     provider_state_cb_ = std::move(cb);
 }
@@ -2575,6 +2660,10 @@ QString AgentPanel::approvalStatusText() const {
 
 int AgentPanel::pendingApprovalCount() const {
   return pending_approval_request_.trimmed().isEmpty() ? 0 : 1;
+}
+
+bool AgentPanel::proposalVisible() const {
+  return proposal_card_ != nullptr && proposal_card_->isVisible();
 }
 
 QString AgentPanel::outputText() const {
