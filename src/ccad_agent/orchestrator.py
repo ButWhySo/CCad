@@ -408,7 +408,9 @@ def init_provider():
                 model_name = model_name or os.environ.get("CCAD_OPENAI_COMPATIBLE_MODEL", "") or "default"
                 base_url = os.environ.get("CCAD_OPENAI_COMPATIBLE_BASE_URL", "")
             elif provider == "cerebras":
-                model_name = model_name or "llama-4-scout-17b-16e-instruct"
+                # Keep backend fallback aligned with Settings' quota-conscious
+                # Cerebras preset. Explicit CCAD_CEREBRAS_MODEL still wins.
+                model_name = model_name or "qwen-3-32b"
                 base_url = "https://api.cerebras.ai/v1"
             elif provider == "local_model":
                 model_name = model_name or os.environ.get("CCAD_LOCAL_MODEL_NAME", "") or "local-model"
