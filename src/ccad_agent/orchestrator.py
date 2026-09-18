@@ -572,7 +572,7 @@ def init_provider():
             elif provider == "cerebras":
                 # Keep backend fallback aligned with Settings' quota-conscious
                 # Cerebras preset. Explicit CCAD_CEREBRAS_MODEL still wins.
-                model_name = model_name or "qwen-3.8-27b"
+                model_name = model_name or "qwen-3-235b-a22b-instruct-2507"
                 base_url = "https://api.cerebras.ai/v1"
             elif provider == "local_model":
                 model_name = model_name or os.environ.get("CCAD_LOCAL_MODEL_NAME", "") or "local-model"

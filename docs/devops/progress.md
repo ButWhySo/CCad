@@ -2186,6 +2186,10 @@ so external harnesses can call the explicit refresh with a stable schema.
 The CI agent-python gate now includes the model-selector boundary contract,
 keeping delimiter-preserving `/set` parsing protected on every checkout.
 
+Sprint 782 reconciles the Cerebras preset/default with its official catalog:
+`qwen-3-235b-a22b-instruct-2507` is the preview Qwen ID and `gpt-oss-120b`
+remains the production preset. The previously used `qwen-3.8-27b` ID is removed.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.

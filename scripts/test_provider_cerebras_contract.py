@@ -8,7 +8,7 @@ source = (ROOT / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="u
 
 assert 'provider == "cerebras"' in source
 assert 'base_url = "https://api.cerebras.ai/v1"' in source
-assert 'model_name = model_name or "qwen-3.8-27b"' in source
+assert 'model_name = model_name or "qwen-3-235b-a22b-instruct-2507"' in source
 assert 'os.environ.get("CCAD_CEREBRAS_MODEL") or model_name' in source
 assert '"cerebras": "CEREBRAS_API_KEY"' in source
 assert '"cerebras": "CCAD_CEREBRAS_MODEL"' in source
