@@ -1855,3 +1855,19 @@ Added read-only `ccad_gui_approval_status` to the GUI MCP bridge. External harne
 ### Sprint 673 - 678 - provider UX and diagnostics
 
 AgentPanel surfaces bounded, redacted Python backend diagnostics instead of discarding stderr. Agent Settings Test Provider applies the visible provider/model to the live child process before sending the session-only credential, displays the exact test target, and updates the key placeholder for the selected provider. The Agent model chip reflects provider-reported model with Auto fallback. Focused GUI tests, official visual harnesses, screenshot inspection, empty stderr, and full Qt CTest 91/91 passed for these sprints.
+### Sprint 706 - add collapsible agent dock control
+
+Added a native collapse action to the Agent panel header. It hides the Agent
+dock while preserving the existing View menu reopen path. Approval remains
+contextual and hidden until a real mutation requires human approval. Focused
+GUI test, official visual harness, screenshot inspection, empty stderr, and
+full Qt CTest 91/91 passed; pushed as `ec9ee75`.
+
+### Sprint 707 - proposal review parity audit
+
+Audited the requested proposal/revision flow against the current code. The
+repository has approval and transaction primitives, but no user-facing
+before/after proposal card or revision form yet. Next implementation slice is
+to add a typed proposal model and native card before adding PCB/schematic diff
+rendering, so agent suggestions remain reviewable and cannot be mistaken for
+already-applied changes.
