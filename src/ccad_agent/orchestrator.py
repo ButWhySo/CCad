@@ -682,15 +682,19 @@ def bound_context_text(context):
     """Cap provider-bound project context while preserving truncation signal."""
     if not isinstance(context, str):
         context = str(context or "")
-    try:
-        limit = int(os.environ.get("CCAD_AGENT_CONTEXT_LIMIT", "32768"))
-    except ValueError:
-        limit = 32768
-    limit = min(131072, max(4096, limit))
+    limit = agent_context_limit()
     if len(context) <= limit:
         return context
     marker = "\n[CCAD context truncated for provider safety]\n"
     return context[:max(0, limit - len(marker))] + marker
+
+def agent_context_limit():
+    """Return clamped provider-bound context budget in characters."""
+    try:
+        limit = int(os.environ.get("CCAD_AGENT_CONTEXT_LIMIT", "32768"))
+    except ValueError:
+        limit = 32768
+    return min(131072, max(4096, limit))
 
 # --- Custom Workflows ---
 def handle_marketplace(text: str):
@@ -920,6 +924,7 @@ if __name__ == "__main__":
                     "content_present": bool(context_str),
                     "content_size": len(context_str),
                     "original_content_size": len(raw_context),
+                    "context_limit": agent_context_limit(),
                     "truncated": context_truncated,
                     "content_emitted": False,
                 }})
