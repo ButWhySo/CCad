@@ -1419,4 +1419,6 @@ The timeout is scheduled for every Test Provider click, including missing panel/
 
 `LibraryBrowserDialog::resolveDefaultCacheRoot` makes chooser startup independent of launch cwd. Resolution order is explicit environment override, cwd, executable directory, then executable parents; `tests/test_gui_footprint_placement.cpp` covers the override path.
 
+`LibraryBrowserDialog::loadComponents` and `filterComponents` publish loaded-count, path, missing-cache, and zero-match status through the existing detail label, keeping catalog failures visible in the native dialog.
+
 Settings opens modelessly from `AgentPanel`, preserving UI-map/MCP request servicing. `ReviewWindow::uiTargetJsonById` and `uiClickJson` include top-level dialog widgets; QListWidget targets accept a `row` field for semantic selection. `tests/physical_ui_robot.py` is strict: unique IPC name, Qt PATH, window setup, mapped mouse attempts, semantic fallback only after no state change, targeted provider-status assertion, screenshot.

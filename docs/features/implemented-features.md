@@ -2570,6 +2570,8 @@ Provider requirements pin Gemini adapter `2.0.10` and bound LangSmith below `0.3
 
 The native Choose Footprint/Choose Symbol dialogs resolve local library roots from `CCAD_LIBRARY_CACHE`, current working directory, executable directory, and parent directories. Set `CCAD_LIBRARY_CACHE` for an explicit catalog location. The repository's local ignored `library-cache` contains converted footprints, symbols, and `catalog.json`; it is not committed as product source.
 
+Chooser status text shows how many local items loaded and the resolved cache path. A search with no matches gives an explicit clear-search message; a missing cache gives the exact environment-variable remedy.
+
 ## CI speed and syntax gate
 
 The CI workflow compiles agent and test Python sources before protocol tests and invokes CMake with parallel workers on all build jobs. This catches syntax regressions early and reduces idle build time without weakening CTest.

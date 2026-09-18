@@ -16,6 +16,7 @@
 #include <QGraphicsPathItem>
 #include <QDir>
 #include <QFile>
+#include <QLabel>
 
 #include <fstream>
 #include <iostream>
@@ -130,6 +131,14 @@ class TestGuiFootprintPlacement : public QObject {
     QCOMPARE(tree->topLevelItemCount(), 1);
     QCOMPARE(tree->topLevelItem(0)->text(0), QString("OnePad"));
     QVERIFY(!tree->topLevelItem(0)->text(1).contains("pads"));
+
+    auto* search = dialog.findChild<QLineEdit*>();
+    QVERIFY(search != nullptr);
+    search->setText("no-such-part");
+    auto* detail = dialog.findChild<QLabel*>();
+    QVERIFY(detail != nullptr);
+    QVERIFY(detail->text().contains("No matching parts"));
+    search->clear();
 
     tree->setCurrentItem(tree->topLevelItem(0));
     QApplication::processEvents();

@@ -405,7 +405,9 @@ void LibraryBrowserDialog::loadComponents() {
   QDir dir(dir_path);
   
   if (!dir.exists()) {
-    QMessageBox::warning(this, "Library Cache", "Library cache directory not found: " + dir_path);
+    detail_label_->setText("No local library cache found at " + dir_path +
+                           ". Set CCAD_LIBRARY_CACHE to a catalog root, then reopen this chooser.");
+    preview_status_label_->setText("No parts available.");
     return;
   }
 
@@ -456,15 +458,27 @@ void LibraryBrowserDialog::loadComponents() {
     item->setData(0, Qt::UserRole + 4, description);
     item->setData(0, Qt::UserRole + 5, QString());
   }
+  detail_label_->setText(QString("%1 %2 loaded from %3. Select an item to view details.")
+                             .arg(component_list_->topLevelItemCount())
+                             .arg(type_ == LibraryType::Footprint ? "footprints" : "symbols")
+                             .arg(QDir::toNativeSeparators(QDir(dir_path).absolutePath())));
 }
 
 void LibraryBrowserDialog::filterComponents(const QString& text) {
+  int visible_count = 0;
   for (int i = 0; i < component_list_->topLevelItemCount(); ++i) {
     QTreeWidgetItem* item = component_list_->topLevelItem(i);
     const QString haystack = item->text(0) + " " + item->text(1) + " " + item->text(2) + " " +
                              item->data(0, Qt::UserRole + 2).toString() + " " +
                              item->data(0, Qt::UserRole + 5).toString();
-    item->setHidden(!haystack.contains(text, Qt::CaseInsensitive));
+    const bool visible = haystack.contains(text, Qt::CaseInsensitive);
+    item->setHidden(!visible);
+    visible_count += visible ? 1 : 0;
+  }
+  if (visible_count == 0 && !text.trimmed().isEmpty()) {
+    detail_label_->setText("No matching parts. Clear search or search by footprint/symbol name.");
+  } else if (!text.trimmed().isEmpty()) {
+    detail_label_->setText(QString("%1 matching parts. Select an item to view details.").arg(visible_count));
   }
 }
 

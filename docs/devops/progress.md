@@ -1830,6 +1830,10 @@ Pinned `langchain-google-genai` to `2.0.10` and bounded `langsmith` below `0.3` 
 
 The footprint/symbol chooser now resolves its default cache through `CCAD_LIBRARY_CACHE`, the current working directory, the executable directory, and its parent directories. Launching from `build-qt`, VS Code, or a shortcut therefore finds the ignored local `library-cache` instead of showing an empty chooser. A regression test proves the environment override and a real footprint row; focused GUI CTest passed, the official visual harness screenshot was inspected, and stderr was empty.
 
+### Sprint 702 - explain catalog and search state
+
+Chooser status now reports loaded item count and resolved cache path, explains missing-cache setup, and reports zero-match searches with a clear-search instruction instead of leaving a blank list. Regression coverage passed with the official visual harness screenshot inspected and stderr empty.
+
 ### Sprint 683 - expose native approval status to MCP hosts
 
 Added read-only `ccad_gui_approval_status` to the GUI MCP bridge. External harnesses can now query approval-card visibility and status directly, while mutation execution and human approval remain native GUI responsibilities. Python regression and official visual harness passed; screenshot was inspected and stderr was empty.
