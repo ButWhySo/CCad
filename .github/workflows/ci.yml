@@ -31,6 +31,9 @@ jobs:
           python -m py_compile src/ccad_agent/*.py scripts/test_*.py
           python scripts/test_provider_mock.py
           python scripts/test_provider_gemini_secret.py
+          python scripts/test_agent_loop_contract.py
+          python scripts/test_agent_context_contract.py
+          python scripts/test_agent_context_size_contract.py
           python scripts/test_agent_config_persistence.py
           python scripts/test_mcp_gui_bridge.py
           python scripts/test_provider_openai_compatible.py

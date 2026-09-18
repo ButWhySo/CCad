@@ -1488,3 +1488,7 @@ keys set while selected local adapter reaches tool loop.
 # Sprint 724 settings/security override
 
 `AgentSettingsDialog` stores provider keys in Windows Credential Manager under `CCad/provider/<provider>`; project/config/log files never contain plaintext keys. `Show key` requires Windows credential validation. Cerebras uses the OpenAI-compatible endpoint `https://api.cerebras.ai/v1`; provider/model selection is explicit. `AgentPanel` renders normal chat entries as one compact stream; tool/notice cards remain distinct for actionable status.
+
+`.github/workflows/ci.yml` runs loop, history, and project-context boundary
+contracts in `agent-python`; these tests are provider-free and make no live API
+calls.

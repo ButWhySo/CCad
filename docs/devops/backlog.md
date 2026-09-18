@@ -880,3 +880,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 725: bound LangGraph agent tool-loop recursion to protect provider quota; GUI validation paused by explicit user instruction.
 - [x] Sprint 726: bound interactive agent history to limit context/token growth; durable memory compaction remains future work.
 - [x] Sprint 727: bound incoming project-context size and mark truncation; semantic context compaction remains future work.
+- [x] Sprint 728: wire agent context/loop contracts into CI Python gate; authenticated provider and GUI validation remain separate.
