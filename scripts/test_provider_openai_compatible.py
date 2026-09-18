@@ -66,6 +66,9 @@ def main():
     env = os.environ.copy()
     env.update({
         "CCAD_PROVIDER": "openai_compatible",
+        # Unrelated credentials must not override explicit provider choice.
+        "ANTHROPIC_API_KEY": "wrong-provider-anthropic-key",
+        "GEMINI_API_KEY": "wrong-provider-gemini-key",
         "CCAD_OPENAI_COMPATIBLE_API_KEY": "sk-ccad-local-stub",
         "CCAD_OPENAI_COMPATIBLE_BASE_URL": f"http://127.0.0.1:{server.server_port}/v1",
         "CCAD_OPENAI_COMPATIBLE_MODEL": "ccad-local-stub",

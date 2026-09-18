@@ -368,7 +368,7 @@ def init_provider():
         }})
         return True
     
-    if provider == "anthropic" or os.environ.get("ANTHROPIC_API_KEY"):
+    if provider == "anthropic":
         try:
             from langchain_anthropic import ChatAnthropic
             if not model_name: model_name = "claude-3-opus-20240229"
@@ -382,7 +382,7 @@ def init_provider():
             emit_dependency_warning("langchain_anthropic")
         except Exception as error:
             emit_provider_failure(provider, error)
-    if provider == "google_gemini" or os.environ.get("GEMINI_API_KEY"):
+    if provider == "google_gemini":
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
             if not model_name: model_name = "gemini-1.5-pro-latest"
@@ -401,7 +401,7 @@ def init_provider():
             emit_dependency_warning("langchain_google_genai")
         except Exception as error:
             emit_provider_failure(provider, error)
-    if provider in ("openai", "openai_compatible", "local_model", "cerebras") or os.environ.get("OPENAI_API_KEY"):
+    if provider in ("openai", "openai_compatible", "local_model", "cerebras"):
         try:
             from langchain_openai import ChatOpenAI
             if provider == "openai_compatible":

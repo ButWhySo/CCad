@@ -1461,3 +1461,10 @@ passes 91/91 tests and the official demo screenshot was inspected. Remote Linux
 failure remains unresolved until authenticated annotations or a working Linux
 runtime exposes the failing assertion; Windows-local results are not Linux proof.
 # Current handover override: Sprint 721, Phase 3/5. See `docs/devops/progress.md` and the Sprint 721 section below for authoritative current state; older embedded header text is historical.
+# Sprint 722 provider-selection invariant
+
+`src/ccad_agent/orchestrator.py::init_provider` branches strictly on configured
+provider. Unrelated `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, or `OPENAI_API_KEY`
+presence must not replace provider selected through Agent Settings.
+`scripts/test_provider_openai_compatible.py` proves this with unrelated dummy
+keys set while selected local adapter reaches tool loop.

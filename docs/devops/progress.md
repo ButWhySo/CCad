@@ -1998,3 +1998,12 @@ the exact failing Linux test is therefore not claimed or guessed. Docker Linux
 reproduction is also unavailable because the local Docker engine is stopped.
 Next action is authenticated CI annotation/artifact retrieval, followed by a
 real Linux failure fix and a complete rerun before claiming a green gate.
+
+### Sprint 722 - honor explicit provider selection
+
+Fixed Python provider initialization so unrelated environment credentials no
+longer override the provider selected in Agent Settings. Added regression
+coverage with Anthropic and Gemini dummy keys present while selecting the
+OpenAI-compatible local test server. Mock chat, Gemini secret redaction, and
+OpenAI-compatible tool-loop tests pass locally. Provider-dependent runtime
+tests remain CI-backed when this workspace lacks the corresponding service.
