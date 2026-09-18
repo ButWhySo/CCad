@@ -1707,3 +1707,5 @@ Sprint 863 handover: `pending_call_snapshot()` now reports a unique union count 
 Sprint 864 handover: `context_revisions` is keyed by `CCAD_AGENT_THREAD_ID`; context events now compare against the prior revision for the same thread only. `scripts/test_context_revision_scope_contract.py` locks this no-network boundary.
 
 Sprint 865 handover: `agent.context_state` exposes `context_state_snapshot` with thread ID, opaque revision, and redaction flags only; it never emits context content. `scripts/test_agent_context_state_method.py` locks the discovery and redaction contract.
+
+Sprint 866 handover: `scripts/test_agent_context_contract.py` now sends a real `agent.context_state` request to the bundled orchestrator subprocess and validates the emitted JSON snapshot before exercising human-message context revisions.

@@ -2543,3 +2543,7 @@ Headless-only batch: context revision chaining is now isolated by `CCAD_AGENT_TH
 ### Sprint 865 — opaque context-state query
 
 Headless-only batch: added read-only `agent.context_state`, returning only thread ID, opaque revision, and redaction flags. Context content is never returned. Added an offline contract; GUI/API/build validation remains paused.
+
+### Sprint 866 — context-state round-trip proof
+
+Headless-only batch: extended the bundled subprocess contract to call `agent.context_state` and verify its real JSON response, default thread identity, empty initial revision, and redaction flags. GUI/API/build validation remains paused.

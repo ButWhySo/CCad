@@ -26,6 +26,7 @@ env = os.environ.copy()
 env.update({"CCAD_PROVIDER": "mock", "PYTHONNOUSERSITE": "1",
             "PYTHONPATH": str(SOURCE.parent)})
 requests = [{"method": "agent.methods", "params": {}}]
+requests.append({"method": "agent.context_state", "params": {}})
 requests.extend({"method": "human_message", "params": {
     "text": "summarize", "context": context}}
     for context in ("board A", "board B", "board B"))
@@ -63,6 +64,12 @@ assert "call_id" in tool_fields
 assert "name" not in tool_fields
 assert "approval_required" not in tool_fields
 assert "side_effect" not in tool_fields
+context_snapshot = next(item for item in lines
+                        if item.get("method") == "context_state_snapshot")
+assert context_snapshot["params"]["thread_id"] == "ccad-local"
+assert context_snapshot["params"]["revision"] == ""
+assert context_snapshot["params"]["content_emitted"] is False
+assert context_snapshot["params"]["secret_value_visible"] is False
 events = [item for item in lines if item.get("method") == "context_state"]
 assert len(events) == 3
 assert events[0]["params"]["previous_revision"] == ""
