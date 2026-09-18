@@ -112,6 +112,7 @@ def main():
         assert context_events[0]["params"]["content_emitted"] is False
         assert len(context_events[0]["params"]["revision"]) == 16
         assert context_events[0]["params"]["original_content_size"] >= context_events[0]["params"]["content_size"]
+        assert context_events[0]["params"]["context_limit"] >= context_events[0]["params"]["content_size"]
         assert context_events[0]["params"]["truncated"] is False
         print("PASS local OpenAI-compatible provider tool boundary")
     finally:
