@@ -1566,3 +1566,6 @@ canvas startup, while secrets stay outside project config.
 Sprint 793 handover: `scripts/test_agent_config_persistence.py` verifies nested
 memory/personalisation plus security flags across independent orchestrator
 processes, not only provider/model/grid scalars.
+
+Sprint 794 handover: `AgentSettingsDialog` initializes the model line edit
+read-only and toggles editability only for endpoint-backed provider IDs.

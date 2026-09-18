@@ -941,3 +941,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   message; GUI verification remains user-paused.
 - [x] Sprint 793: extend restart persistence proof across security, memory, and
   personalisation settings; GUI verification remains user-paused.
+- [x] Sprint 794: make curated model selectors read-only while preserving custom
+  IDs for endpoint-backed providers; GUI verification remains user-paused.

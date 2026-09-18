@@ -380,6 +380,9 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
   model_combo_->setInsertPolicy(QComboBox::NoInsert);
   model_input_ = model_combo_->lineEdit();
   model_input_->setObjectName("control:modelInput");
+  // Curated providers start as strict dropdowns. Endpoint-backed providers
+  // become editable only when provider selection changes below.
+  model_input_->setReadOnly(true);
   model_input_->setPlaceholderText("Choose a model or type a custom model ID");
   model_combo_->addItems(modelsForProvider(provider_combo_->currentData().toString()));
   form->addRow("Model:", model_combo_);

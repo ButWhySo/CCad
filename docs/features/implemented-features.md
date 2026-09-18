@@ -2623,3 +2623,6 @@ preferences through one config message; no second grid-only write can overwrite
 the saved state during dialog dismissal.
 The no-GUI persistence contract also checks security, memory, chat-mode,
 context-usage, and personality values after restart.
+
+Curated provider model selectors are read-only by default; OpenAI-compatible,
+OpenRouter, and local-model providers explicitly enable custom model IDs.

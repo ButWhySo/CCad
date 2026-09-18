@@ -2246,3 +2246,7 @@ queued grid-only overwrites during dialog close.
 
 Persistence proof now covers sandbox/approval flags, STM/LTM/episodic memory,
 and personalisation fields across a fresh orchestrator process.
+
+Sprint 794 makes model input strict by default for curated providers. Editable
+custom IDs remain enabled only for endpoint-backed providers, preventing typed
+text from concatenating with curated dropdown values.
