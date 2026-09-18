@@ -2337,6 +2337,10 @@ Sprint 859 publishes backend_state response discovery, covering runtime
 readiness, provider initialization, network-probe status, and redaction.
 GUI verification remains paused.
 
+Sprint 860 publishes the message response contract, documenting text plus
+optional kind/category/redaction metadata for external harness consumers.
+GUI verification remains paused.
+
 Sprint 837 adds explicit Cerebras model-catalog response from the documented
 curated snapshot and enables Settings Refresh for Cerebras. OpenRouter remains
 the only network-fetched catalog; Cerebras refresh is quota-safe and offline.

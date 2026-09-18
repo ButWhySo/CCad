@@ -52,6 +52,8 @@ assert "error_category" in provider_fields
 assert "execution_ready" not in provider_fields
 assert "backend_state" in human_contract["response_contracts"]
 assert "ready" in human_contract["response_contracts"]["backend_state"]["fields"]
+assert "message" in human_contract["response_contracts"]
+assert "text" in human_contract["response_contracts"]["message"]["fields"]
 assert "tool_call" in human_contract["response_contracts"]
 tool_fields = human_contract["response_contracts"]["tool_call"]["fields"]
 assert "tool" in tool_fields

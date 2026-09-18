@@ -1692,3 +1692,6 @@ after discovery expansion.
 
 Sprint 859 handover: `human_message` discovery now advertises backend_state
 and its readiness/redaction fields, matching runtime backend_state events.
+
+Sprint 860 handover: method discovery now documents message text and optional
+classification/redaction fields, matching the native event stream.

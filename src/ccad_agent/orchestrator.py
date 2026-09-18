@@ -207,6 +207,8 @@ def orchestrator_method_catalog():
                  "backend_state": {"fields": [
                      "runtime", "ready", "provider_initialized",
                      "network_access", "secret_value_visible"]},
+                 "message": {"fields": [
+                     "text", "kind", "category", "secret_value_visible"]},
                  "tool_call": {"fields": [
                      "tool", "args", "call_id"]},
                  "context_state": {"fields": [
