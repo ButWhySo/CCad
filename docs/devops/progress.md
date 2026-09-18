@@ -2017,3 +2017,7 @@ Per-run LangGraph recursion limit prevents unbounded supervisor, specialist, and
 tool cycles. `CCAD_AGENT_RECURSION_LIMIT` defaults 12, clamped 4..32. No-network
 contract test added. GUI validation paused by user; no GUI build, CTest, harness,
 or screenshot run performed.
+
+History guard added: interactive agent messages are capped by
+`CCAD_AGENT_HISTORY_LIMIT` (default 24, clamp 4..64) before provider input and
+after graph output. No GUI validation run.

@@ -669,6 +669,15 @@ active_hooks = []
 schedules = []
 last_context_revision = ""
 
+def bound_session_history(messages):
+    """Keep interactive history bounded before it becomes provider input."""
+    try:
+        limit = int(os.environ.get("CCAD_AGENT_HISTORY_LIMIT", "24"))
+    except ValueError:
+        limit = 24
+    limit = min(64, max(4, limit))
+    return messages[-limit:]
+
 # --- Custom Workflows ---
 def handle_marketplace(text: str):
     parts = text.split(" ")
@@ -981,6 +990,7 @@ if __name__ == "__main__":
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Unknown command: {cmd_base}"}})
                         continue
 
+                session_messages = bound_session_history(session_messages)
                 session_messages.append(HumanMessage(content=text))
                 if "post prompt" in [h.lower() for h in active_hooks]:
                     hooks.trigger_hook("post prompt", emit, text)
@@ -1023,7 +1033,7 @@ if __name__ == "__main__":
                     "run_state": "completed", "trace_id": run_trace_id,
                     "span_id": run_span_id, "token_usage": "unavailable", "cost": "unavailable",
                 }})
-                session_messages = final_state["messages"]
+                session_messages = bound_session_history(final_state["messages"])
                 last_msg = session_messages[-1]
                 
                 if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:

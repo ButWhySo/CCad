@@ -1468,6 +1468,11 @@ runtime exposes the failing assertion; Windows-local results are not Linux proof
 4..32, default 12. This bounds supervisor -> specialist -> tool cycles without
 provider retries or content telemetry. `scripts/test_agent_loop_contract.py`
 checks contract without LangGraph import or network.
+
+Interactive history is also bounded by `bound_session_history()`. The
+`CCAD_AGENT_HISTORY_LIMIT` setting defaults to 24 and clamps to 4..64 before
+provider input and after graph output; project files and durable checkpoints
+remain untouched.
 # Current handover override: Sprint 721, Phase 3/5. See `docs/devops/progress.md` and the Sprint 721 section below for authoritative current state; older embedded header text is historical.
 # Sprint 722 provider-selection invariant
 
