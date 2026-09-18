@@ -1967,6 +1967,11 @@ metric grid values survive. CI now runs it after installing the pinned agent
 requirements. Local syntax validation passes; this workspace lacks `langgraph`, so
 the dependency-backed runtime result is intentionally delegated to CI.
 
+The first CI run exposed a Linux-only CLI regression in the cross-probe test: the
+packet literal was written as `\\$NET`, which Linux preserved inside a single-quoted
+argument while Windows masked. The test now supplies the identical `$NET: "N1"`
+literal to both shells; the focused Windows CLI test passes.
+
 ### Sprint 717 - harden live Settings interaction
 
 Fixed the live Settings dialog construction so Save no longer dereferences a missing

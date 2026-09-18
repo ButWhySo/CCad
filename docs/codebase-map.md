@@ -1448,3 +1448,7 @@ capture currently fails intermittently before its final Save assertion.
 check: it uses an isolated APPDATA directory and two orchestrator processes, avoiding
 desktop capture and proving the JSON config handoff directly. CI installs the agent
 requirements before running it.
+
+Cross-probe CLI tests use one shell-neutral packet literal. Do not add a shell escape
+backslash to `$NET`; Linux single-quoted arguments preserve it and change packet-kind
+classification.

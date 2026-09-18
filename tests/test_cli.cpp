@@ -2380,8 +2380,9 @@ int main() {
           "pcb outline-polygon reports chained bounding box height");
 
   const std::filesystem::path cross_probe_path = temp / "cross-probe.json";
+  const std::string cross_probe_packet = "$NET: \"N1\"";
   require(run(quote(CCAD_BINARY) + " pcb cross-probe --file " + quote(board_project_path) +
-              " --packet " + shellArgument("\\$NET: \"N1\"") + " > " + quote(cross_probe_path)) == 0,
+              " --packet " + shellArgument(cross_probe_packet) + " > " + quote(cross_probe_path)) == 0,
           "pcb cross-probe exits zero");
   const std::string cross_probe_json = readFile(cross_probe_path);
   require(cross_probe_json.find("\"kicad_source\": \"pcbnew/cross-probing.cpp\"") !=
