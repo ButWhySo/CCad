@@ -14,7 +14,11 @@ def run_agent(appdata, requests):
     env = os.environ.copy()
     env["APPDATA"] = str(appdata)
     env["CCAD_PROVIDER"] = "mock"
-    env["PYTHONPATH"] = str(ROOT / "src" / "ccad_agent")
+    # On Windows, APPDATA also controls Python's user-site location. Keep
+    # isolated config storage without hiding the installed agent dependencies.
+    python_paths = [str(ROOT / "src" / "ccad_agent")]
+    python_paths.extend(path for path in sys.path if path and "site-packages" in path.lower())
+    env["PYTHONPATH"] = os.pathsep.join(dict.fromkeys(python_paths))
     result = subprocess.run(
         [sys.executable, str(ORCHESTRATOR)],
         input="".join(json.dumps(request) + "\n" for request in requests),
