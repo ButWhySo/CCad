@@ -29,7 +29,7 @@ class AgentConfigManager:
     def _default_config(self) -> Dict[str, Any]:
         return {
             "theme": "Dark",
-            "grid": "Fine",
+            "grid": "0.5 mm",
             "autosave": True,
             "restore_session": True,
             "provider": "openai",

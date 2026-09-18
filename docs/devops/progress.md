@@ -1889,6 +1889,22 @@ not yet applied; they establish the review contract before real before/after
 canvas rendering is connected. Focused GUI test, official visual harness,
 screenshot inspection, empty stderr, and full Qt CTest 91/91 passed.
 
+### Sprint 712 - snapshot real context in proposal details
+
+Proposal details now capture the current project context at proposal creation
+and show it as the authoritative Before state. After remains explicitly
+pending until approval and execution; no geometry is fabricated. Focused GUI
+test, official visual harness, screenshot inspection, empty stderr, and full
+Qt CTest 91/91 passed.
+
+### Sprint 713 - use metric canvas grid presets
+
+Replaced generic Fine/Coarse grid labels with metric spacing presets: 0.5,
+1.0, 2.5, 5.0, and 10.0 mm, plus Hidden. The setting remains independent of
+display units and is persisted through the agent configuration. Focused agent
+tests, official visual harness, screenshot inspection, empty stderr, and full
+Qt CTest 91/91 passed.
+
 ### Sprint 709 - bridge mutation tools into proposal review
 
 Approval-required mutation tool calls now populate the proposal card with the

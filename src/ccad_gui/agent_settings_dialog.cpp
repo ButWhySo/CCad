@@ -223,8 +223,9 @@ void AgentSettingsDialog::createGeneralTab(QWidget* parent_widget) {
   form->addRow("Theme:", theme_combo_);
   grid_combo_ = new QComboBox(parent_widget);
   grid_combo_->setObjectName("control:gridCombo");
-  grid_combo_->addItems({"Fine", "Coarse", "Hidden"});
-  form->addRow("Canvas grid:", grid_combo_);
+  grid_combo_->addItems({"0.5 mm", "1.0 mm", "2.5 mm", "5.0 mm", "10.0 mm", "Hidden"});
+  grid_combo_->setToolTip("Metric grid spacing, independent of display units");
+  form->addRow("Canvas grid spacing:", grid_combo_);
   autosave_cb_ = new QCheckBox("Save project changes automatically", parent_widget);
   autosave_cb_->setObjectName("control:autosaveCb");
   form->addRow("Editing:", autosave_cb_);

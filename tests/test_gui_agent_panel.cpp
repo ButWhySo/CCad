@@ -54,6 +54,9 @@ private slots:
     QVERIFY(theme_combo != nullptr);
     auto* grid_combo = dialog.findChild<QComboBox*>("control:gridCombo");
     QVERIFY(grid_combo != nullptr);
+    QVERIFY(grid_combo->findText("0.5 mm") >= 0);
+    QVERIFY(grid_combo->findText("5.0 mm") >= 0);
+    QVERIFY(grid_combo->findText("Hidden") >= 0);
     QVERIFY(dialog.findChild<QCheckBox*>("control:autosaveCb") != nullptr);
     QVERIFY(dialog.findChild<QCheckBox*>("control:restoreSessionCb") != nullptr);
 

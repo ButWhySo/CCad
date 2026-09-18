@@ -969,8 +969,13 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
       page->setPlainText(text);
       tabs->addTab(page, name);
     };
-    add_page("PCB diff", "Before (current)\n\nNo project change applied.\n\nAfter (proposed)\n\nPreview is represented by the pending agent change set.");
-    add_page("Schematic diff", "No schematic change applied.\n\nThe agent proposal is still pending review.");
+    const QString before = proposal_before_snapshot_.isEmpty()
+                               ? "Project context was not available at proposal time."
+                               : proposal_before_snapshot_;
+    add_page("PCB diff", "BEFORE (current project context)\n\n" + before +
+             "\n\nAFTER (proposed)\n\nPending proposal; no geometry has been applied.");
+    add_page("Schematic diff", "BEFORE (current project context)\n\n" + before +
+             "\n\nAFTER (proposed)\n\nNo schematic change has been applied.");
     add_page("Change list", proposal_summary_label_->text() + "\n\n" +
                                   [&]() {
                                     QStringList rows;
@@ -2653,6 +2658,7 @@ void AgentPanel::clearApprovals() {
 void AgentPanel::showProposal(const QString& summary, const QStringList& changes) {
   if (!proposal_card_ || !proposal_summary_label_ || !proposal_changes_list_) return;
   proposal_summary_label_->setText(summary.trimmed().isEmpty() ? "Agent proposed project changes." : summary.trimmed());
+  proposal_before_snapshot_ = context_provider_ ? QString::fromStdString(context_provider_()) : QString();
   proposal_changes_list_->clear();
   for (const QString& change : changes) {
     if (!change.trimmed().isEmpty()) proposal_changes_list_->addItem(change.trimmed());
@@ -2665,6 +2671,7 @@ void AgentPanel::clearProposal() {
   if (proposal_card_) proposal_card_->hide();
   if (proposal_changes_list_) proposal_changes_list_->clear();
   if (proposal_summary_label_) proposal_summary_label_->clear();
+  proposal_before_snapshot_.clear();
   if (auto* revision = findChild<QFrame*>("panel:agent_proposal_revision")) revision->hide();
   if (proposal_revise_button_) proposal_revise_button_->show();
   if (proposal_preserve_placement_) proposal_preserve_placement_->setChecked(false);
