@@ -996,6 +996,6 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   no-network redaction; GUI verification remains paused.
 - [x] Sprint 809: wire backend readiness subprocess proof into CI agent gate;
   GUI verification remains paused.
-- [x] Sprint 834: add bundled-venv offline agent contract runner; headless MCP
-  bridge coverage included, GUI/live-provider tests excluded, user
-  pause/quota boundaries active.
+- [x] Sprint 834: add bundled-venv offline agent contract runner plus static
+  exclusion contract; headless MCP bridge included, GUI/live-provider tests
+  excluded, user pause/quota boundaries active.
