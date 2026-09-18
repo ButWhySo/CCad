@@ -2641,3 +2641,5 @@ assistant, and tool text. The former per-message bubble fallback is removed, so
 normal and degraded rendering cannot diverge into separate message boxes.
 Unused user/tool bubble CSS is also removed; checklist styling remains separate
 from the conversation stream by design.
+ReviewWindow's duplicate legacy selectors are removed as well, preventing global
+stylesheet drift from reintroducing the old boxed-message visual language.

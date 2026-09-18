@@ -2273,3 +2273,7 @@ verification remains paused.
 Sprint 799 removes now-dead per-message user/tool bubble styles, preserving only
 the transparent checklist presentation. This prevents stale CSS from implying
 another chat renderer; GUI verification remains paused.
+
+Sprint 800 removes duplicate dead bubble/tool CSS from the review-window global
+stylesheet too. UI source contracts now cover both AgentPanel and ReviewWindow;
+GUI verification remains paused.

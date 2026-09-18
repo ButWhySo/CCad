@@ -15,6 +15,9 @@ assert 'if (!chat_stream_) return;' in panel
 assert 'chat_history_layout_->addWidget(container);' not in panel
 assert 'agentRole="toolCard"' not in panel
 assert 'agentRole="chatBubbleUser"' not in panel
+review = (root / "src" / "ccad_gui" / "review_window.cpp").read_text(encoding="utf-8")
+assert 'agentRole="chatBubbleUser"' not in review
+assert 'agentRole="toolCard"' not in review
 assert "cursor.insertText(prefix +" in panel
 assert "setTextInteractionFlags(Qt::TextSelectableByMouse" in panel
 assert "repo_src + \"/ccad_agent/venv/Scripts/python.exe\"" in panel

@@ -3652,38 +3652,6 @@ void ReviewWindow::applyStyle() {
       background: #1f6feb;
       color: #ffffff;
     }
-    QFrame[agentRole="chatBubbleUser"] {
-      background: #21262d;
-      border: 1px solid #30363d;
-      border-radius: 8px;
-      margin-left: 32px;
-      margin-right: 8px;
-    }
-    QFrame[agentRole="chatBubbleAgent"] {
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 8px;
-      margin-right: 32px;
-      margin-left: 8px;
-    }
-    QFrame[agentRole="noticeCard"] {
-      background: #2b2417;
-      border: 1px solid #8b6f35;
-      border-left: 3px solid #d29922;
-      border-radius: 7px;
-      margin: 5px 24px 5px 8px;
-    }
-    QFrame[agentRole="toolCard"] {
-      background: #0d1117;
-      border: 1px solid #30363d;
-      border-radius: 6px;
-      margin: 4px 32px 4px 8px;
-    }
-    QLabel[agentRole="toolTitle"] {
-      color: #8b949e;
-      font-family: monospace;
-      font-size: 11px;
-    }
     QFrame[agentRole="chip"] {
       background: #21262d;
       border: 1px solid #30363d;

@@ -1588,3 +1588,6 @@ drops safely; obsolete bubble construction is removed.
 
 Sprint 799 handover: dead `chatBubbleUser` and `toolCard` style rules are gone;
 only checklist presentation retains the transparent agent-role style.
+
+Sprint 800 handover: ReviewWindow global stylesheet no longer contains legacy
+chat bubble/tool selectors; the single-stream contract covers panel and window.

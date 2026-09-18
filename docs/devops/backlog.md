@@ -953,3 +953,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   one selectable Agent stream; GUI verification remains paused.
 - [x] Sprint 799: remove dead per-message user/tool bubble CSS after single
   stream migration; GUI verification remains paused.
+- [x] Sprint 800: remove duplicate dead bubble/tool CSS from review-window
+  stylesheet and cover both UI sources; GUI verification remains paused.
