@@ -327,6 +327,14 @@ def emit_provider_ready(provider: str, model: str):
         "secret_value_visible": False,
     }})
 
+def provider_timeout_seconds():
+    """Return bounded provider request timeout in seconds."""
+    try:
+        value = int(os.environ.get("CCAD_PROVIDER_TIMEOUT_SECONDS", "60"))
+    except ValueError:
+        value = 60
+    return min(120, max(1, value))
+
 def init_provider():
     global llm, router_llm, librarian_llm, broker_wait_enabled
 
@@ -418,7 +426,8 @@ def init_provider():
             else:
                 model_name = model_name or "gpt-4o"
                 base_url = ""
-            kwargs = {"model": model_name, "temperature": 0}
+            kwargs = {"model": model_name, "temperature": 0,
+                      "timeout": provider_timeout_seconds()}
             if base_url:
                 kwargs["base_url"] = base_url
             llm = ChatOpenAI(**kwargs)

@@ -2032,6 +2032,10 @@ project context.
 Context-state also reports active `context_limit`; this is metadata only and
 emits no project content or secret.
 
+Provider adapters now receive bounded request timeout:
+`CCAD_PROVIDER_TIMEOUT_SECONDS` defaults 60 seconds and clamps 1..120. No live
+provider call made.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.

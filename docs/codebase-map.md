@@ -1498,6 +1498,10 @@ The context-state JSON-RPC event reports `content_size`, opaque
 It also reports active `context_limit`, allowing callers to distinguish budget
 from content size without receiving project data.
 
+OpenAI-compatible provider adapters use `provider_timeout_seconds()`;
+`CCAD_PROVIDER_TIMEOUT_SECONDS` clamps request timeout to 1..120 seconds,
+default 60.
+
 `RouterTool::commitRouting()` rebuilds `PnsBoardObstacleIndex` for future
 acceleration, but exact pad/via/track/zone/arc checks own rejection decisions;
 the broad PNS candidate query must not reject routes by itself.
