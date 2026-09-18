@@ -2591,3 +2591,7 @@ Headless-only approval slice: added one deterministic `tool_approval_decision()`
 ### Sprint 877 — approval reason metadata
 
 Headless-only approval slice: live tool calls and durable interrupts now carry `approval_reason` (`project_mutation` or `dry_run`) beside the boolean decision, enabling truthful approval UI without parsing arguments. Added offline contract coverage; GUI/API/build validation remains paused.
+
+### Sprint 878 — approval discovery parity
+
+Headless-only contract fix: `agent.methods` now advertises `approval_reason` alongside `approval_required`, matching live tool-call payloads. GUI/API/build validation remains paused.

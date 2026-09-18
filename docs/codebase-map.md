@@ -1731,3 +1731,5 @@ Sprint 875 handover: `run_agent_contract_gate.ps1 -IncludeCheckpointRestart` now
 Sprint 876 handover: `tool_approval_decision()` is the single deterministic source for UI mutation/dry-run approval metadata; `scripts/test_tool_approval_policy_contract.py` locks its use in via/track/zone/client dispatch paths.
 
 Sprint 877 handover: tool-call and checkpoint interrupt payloads include `approval_reason` alongside `approval_required`; reason is deterministic and non-content (`project_mutation` or `dry_run`).
+
+Sprint 878 handover: `human_message.response_contracts.tool_call.fields` now advertises `approval_reason`, matching emitted live payloads.

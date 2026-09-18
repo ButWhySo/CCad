@@ -214,7 +214,8 @@ def orchestrator_method_catalog():
                  "message": {"fields": [
                      "text", "kind", "category", "secret_value_visible"]},
                 "tool_call": {"fields": [
-                    "tool", "args", "call_id", "approval_required"]},
+                    "tool", "args", "call_id", "approval_required",
+                    "approval_reason"]},
                  "tool_canceled": {"fields": [
                      "call_id", "reason"]},
                  "context_state": {"fields": [
