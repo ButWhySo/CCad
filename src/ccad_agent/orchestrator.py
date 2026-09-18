@@ -1061,7 +1061,10 @@ if __name__ == "__main__":
                 else:
                     emit({"jsonrpc": "2.0", "method": "provider_models",
                           "params": {"provider": provider_id, "ok": False,
-                                      "error": "catalog_not_implemented", "models": []}})
+                                      "error": "catalog_not_implemented",
+                                      "error_detail": "explicit model refresh is not implemented for this provider",
+                                      "network_access": "explicit_refresh",
+                                      "models": []}})
             elif method == "agent.pending_calls":
                 thread_id = req.get("params", {}).get("thread_id", "")
                 emit({"jsonrpc": "2.0", "method": "pending_calls_state", "params":

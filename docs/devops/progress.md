@@ -2172,6 +2172,10 @@ Sprint 777 makes `agent.list_models` discoverable through the child-process
 method catalog as read-only metadata with `network_access: explicit_refresh`.
 Discovery itself remains offline; only an explicit request can refresh models.
 
+Sprint 778 makes unsupported-provider catalog responses explicit and honest:
+they return a stable `catalog_not_implemented` error detail, empty models, and
+the same explicit-refresh boundary instead of looking like a network failure.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.
