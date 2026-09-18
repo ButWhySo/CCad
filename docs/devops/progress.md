@@ -2084,6 +2084,11 @@ SQLite checkpoint resumes an accepted tool result and separately resumes an
 approval denial. Temporary databases were removed; no GUI or external
 provider call was used.
 
+Sprint 755 adds headless broker cancellation: `agent.cancel_tool` injects a
+correlated cancellation error into the waiting call, while unknown or late
+results are reported as ignored. The contract is CI-wired; GUI validation and
+external provider execution remain paused.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.

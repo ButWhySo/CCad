@@ -953,8 +953,16 @@ if __name__ == "__main__":
                 # at an interrupt, feed authoritative result into same thread.
                 result = req.get("result")
                 error = req.get("error")
+                call_id = req.get("id", "agent-tool-call")
+                with pending_calls_lock:
+                    pending_result_queue = pending_calls.get(call_id)
+                if checkpoint_saver is None and pending_result_queue is None:
+                    emit({"jsonrpc": "2.0", "method": "tool_result_ignored", "params": {
+                        "call_id": call_id, "reason": "unknown_or_late_call",
+                    }})
+                    continue
                 emit({"jsonrpc": "2.0", "method": "tool_result_ack", "params": {
-                    "call_id": req.get("id", "agent-tool-call"),
+                    "call_id": call_id,
                     "success": error is None and result is not None,
                     "result_present": result is not None,
                     "error_present": error is not None,
@@ -986,6 +994,23 @@ if __name__ == "__main__":
                             "call_id": req.get("id", ""),
                             "message_count": len(resumed.get("messages", [])) if isinstance(resumed, dict) else 0,
                         }})
+            elif method == "agent.cancel_tool":
+                call_id = req.get("params", {}).get("call_id", "")
+                reason = req.get("params", {}).get("reason", "canceled_by_user")
+                with pending_calls_lock:
+                    pending_result_queue = pending_calls.get(call_id)
+                if pending_result_queue is None:
+                    emit({"jsonrpc": "2.0", "method": "tool_cancel_ignored", "params": {
+                        "call_id": call_id, "reason": "unknown_or_late_call",
+                    }})
+                    continue
+                pending_result_queue.put(json.dumps({
+                    "jsonrpc": "2.0", "method": "tool_result", "id": call_id,
+                    "error": {"code": -32800, "message": str(reason)},
+                }))
+                emit({"jsonrpc": "2.0", "method": "tool_canceled", "params": {
+                    "call_id": call_id, "reason": str(reason),
+                }})
             elif method == "human_message":
                 text = req.get("params", {}).get("text", "")
                 raw_context = req.get("params", {}).get("context", "")

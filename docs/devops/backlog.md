@@ -898,3 +898,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 752: distinguish provider tool approval wait from completed telemetry state; no GUI/network run.
 - [x] Sprint 753: emit approval telemetry at the mutating-tool broker boundary before waiting for client result; headless provider proof remains quota-safe and GUI validation stays paused.
 - [x] Sprint 754: revalidate accepted and denied durable LangGraph checkpoint resumes with fresh SQLite fixtures; GUI and external-provider execution remain paused.
+- [x] Sprint 755: add correlated headless broker cancellation and explicit late-result rejection; GUI and external-provider execution remain paused.
