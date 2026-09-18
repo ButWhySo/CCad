@@ -2293,3 +2293,7 @@ paused.
 
 Sprint 804 removes the unused Qt size-policy include left behind by the deleted
 bubble renderer; no runtime behavior changes. GUI verification remains paused.
+
+Sprint 805 removes the duplicate mid-file `QTextBrowser` include after chat
+renderer consolidation; no runtime behavior changes. GUI verification remains
+paused.

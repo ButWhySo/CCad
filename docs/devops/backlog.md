@@ -963,3 +963,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   QTextBrowser own scrolling; GUI verification remains paused.
 - [x] Sprint 804: remove stale include left by chat renderer cleanup; GUI
   verification remains paused.
+- [x] Sprint 805: remove duplicate QTextBrowser include after stream
+  consolidation; GUI verification remains paused.

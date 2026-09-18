@@ -1606,3 +1606,6 @@ QTextBrowser owns selectable transcript scrolling.
 
 Sprint 804 handover: AgentPanel no longer includes unused `QSizePolicy` after
 legacy bubble renderer removal.
+
+Sprint 805 handover: AgentPanel keeps one top-level `QTextBrowser` include;
+duplicate mid-file include removed after single-stream consolidation.

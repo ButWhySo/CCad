@@ -1189,8 +1189,6 @@ AgentPanel::~AgentPanel() {
   }
 }
 
-#include <QTextBrowser>
-
 void AgentPanel::appendChatMessage(const QString& role, const QString& text) {
   // Backend startup can emit identical dependency/provider warnings more than
   // once. Keep stream readable; do not add consecutive duplicate entries.
