@@ -2,6 +2,7 @@ import sys
 import json
 import operator
 import os
+import re
 import queue
 import threading
 import time
@@ -860,6 +861,25 @@ def bound_context_text(context):
     marker = "\n[CCAD context truncated for provider safety]\n"
     return context[:max(0, limit - len(marker))] + marker
 
+_INTAKE_RULES = (
+    ("prompt_injection", re.compile(
+        r"(?:ignore|disregard|override)\s+(?:all\s+)?(?:previous|prior|system|developer)\s+instructions"
+        r"|reveal\s+(?:your|the)\s+system\s+prompt", re.IGNORECASE)),
+    ("secret_bearing", re.compile(
+        r"(?:api[_-]?key|secret|password|access[_-]?token)\s*[:=]\s*\S+"
+        r"|\bsk-[A-Za-z0-9_-]{12,}\b", re.IGNORECASE)),
+)
+
+def scan_intake(*values):
+    """Reject known prompt-injection or inline-secret input patterns."""
+    combined = "\n".join(str(value or "") for value in values)
+    for category, pattern in _INTAKE_RULES:
+        if pattern.search(combined):
+            return {"accepted": False, "category": category,
+                    "secret_value_visible": False}
+    return {"accepted": True, "category": "none",
+            "secret_value_visible": False}
+
 def agent_context_limit():
     """Return clamped provider-bound context budget in characters."""
     try:
@@ -1208,6 +1228,15 @@ if __name__ == "__main__":
                     raw_context = (raw_context + "\n\n" + memory_context).strip()
                 context_str = bound_context_text(raw_context)
                 context_truncated = len(context_str) < len(raw_context)
+                intake = scan_intake(text, raw_context)
+                emit({"jsonrpc": "2.0", "method": "intake_state", "params": intake})
+                if not intake["accepted"]:
+                    emit({"jsonrpc": "2.0", "method": "message", "params": {
+                        "text": "Request blocked by CCad intake guardrail; remove instruction injection or inline secret and retry.",
+                        "kind": "intake_blocked", "category": intake["category"],
+                        "secret_value_visible": False,
+                    }})
+                    continue
                 current_context_revision = context_revision(context_str)
                 context_changed = current_context_revision != last_context_revision
                 last_context_revision = current_context_revision

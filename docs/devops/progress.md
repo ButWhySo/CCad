@@ -2338,3 +2338,8 @@ Sprint 814 adds executable checkpoint cancellation proof: a first process
 writes an interrupt checkpoint, a second process resumes it with `-32800`, and
 the resulting `ToolMessage` carries the structured cancellation error. No
 provider request is required.
+
+Sprint 815 wires Python orchestrator intake guardrails before context/provider
+execution. Known instruction-injection and inline-secret patterns are blocked
+with category-only, secret-safe JSON state; safe prompts continue normally.
+GUI verification remains paused.
