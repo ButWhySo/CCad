@@ -206,7 +206,9 @@ def main():
     ui_map = read_ui_map()
     # Known-provider models are strict dropdowns. Switch to endpoint-backed
     # provider before exercising free-form model typing.
-    custom_provider = send_ui_action('ui.click', {'id': 'control:providerCombo', 'row': 3})
+    custom_provider = send_ui_action('ui.click', {
+        'id': 'control:providerCombo', 'value': 'openai_compatible'
+    })
     if custom_provider.get('result', {}).get('current_text') != "OpenAI-compatible":
         raise RuntimeError(f"custom provider selection was not visible: {custom_provider}")
     typed_model = send_ui_action('ui.type_text', {
