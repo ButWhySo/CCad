@@ -25,4 +25,5 @@ assert 'setModelCatalogCallback' in settings
 assert 'applyModelCatalog' in settings
 assert 'catalog["ok"].toBool(false)' in settings
 assert 'catalog["models"].toArray()' in settings
+assert 'refresh_models->setEnabled(provider_combo_->currentData().toString() == "openrouter")' in settings
 print("PASS agent UI/provider runtime source contract; no GUI launched")

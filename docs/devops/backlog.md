@@ -927,3 +927,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 784: restore officially documented Gemini 2.5 text presets.
 - [x] Sprint 785: connect explicit model catalog refresh to Settings dropdown.
 - [x] Sprint 786: exercise model catalog protocol branches without network access.
+- [x] Sprint 787: scope Settings model refresh action to supported dynamic catalogs.

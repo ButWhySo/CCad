@@ -386,6 +386,7 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
   auto* refresh_models = new QPushButton("Refresh models", parent_widget);
   refresh_models->setObjectName("action:refreshModelCatalog");
   refresh_models->setToolTip("Explicitly fetch the selected provider model catalog; never runs automatically");
+  refresh_models->setEnabled(provider_combo_->currentData().toString() == "openrouter");
   connect(refresh_models, &QPushButton::clicked, this, [this]() {
     if (!agent_panel_ || !provider_combo_) return;
     agent_panel_->sendJsonRpc("agent.list_models", QJsonObject{
@@ -437,7 +438,7 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
   layout->addLayout(form);
   layout->addStretch();
 
-  connect(provider_combo_, &QComboBox::currentIndexChanged, this, [this]() {
+  connect(provider_combo_, &QComboBox::currentIndexChanged, this, [this, refresh_models]() {
     if (!model_combo_ || !provider_combo_) return;
     const QString current = model_input_ ? model_input_->text().trimmed() : QString();
     const bool current_was_provider_preset = model_combo_->findText(current) >= 0;
@@ -445,6 +446,7 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
     model_combo_->blockSignals(true);
     model_combo_->clear();
     const QStringList models = modelsForProvider(provider_combo_->currentData().toString());
+    if (refresh_models) refresh_models->setEnabled(provider_combo_->currentData().toString() == "openrouter");
     model_combo_->addItems(models);
     const bool custom_model_provider = provider_combo_->currentData().toString() == "openai_compatible" ||
                                         provider_combo_->currentData().toString() == "openrouter" ||

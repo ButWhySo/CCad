@@ -2208,6 +2208,10 @@ provider catalog responses; the fixture performs no external request.
 README now lists the live-socket `agent.list_models` request and its explicit
 refresh/key boundary for external harness authors.
 
+Sprint 787 disables the Settings refresh action for providers without a
+dynamic catalog implementation, leaving curated presets available and avoiding
+a misleading “latest models” affordance.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.
