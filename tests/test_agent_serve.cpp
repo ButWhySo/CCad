@@ -111,7 +111,8 @@ void testMCPReadOnlyContextTools() {
   std::istringstream in(
       "{\"jsonrpc\":\"2.0\",\"method\":\"tools/list\",\"id\":6}\n"
       "{\"jsonrpc\":\"2.0\",\"method\":\"tools/call\",\"params\":{\"name\":\"ccad_harness_context\",\"arguments\":{}},\"id\":7}\n"
-      "{\"jsonrpc\":\"2.0\",\"method\":\"tools/call\",\"params\":{\"name\":\"ccad_workspace_state\",\"arguments\":{}},\"id\":8}\n");
+      "{\"jsonrpc\":\"2.0\",\"method\":\"tools/call\",\"params\":{\"name\":\"ccad_workspace_state\",\"arguments\":{}},\"id\":8}\n"
+      "{\"jsonrpc\":\"2.0\",\"method\":\"tools/call\",\"params\":{\"name\":\"ccad_agent_methods\",\"arguments\":{}},\"id\":9}\n");
   std::ostringstream out;
   auto oldCin = std::cin.rdbuf(in.rdbuf());
   auto oldCout = std::cout.rdbuf(out.rdbuf());
@@ -121,8 +122,10 @@ void testMCPReadOnlyContextTools() {
   if (result != 0) std::exit(1);
   assertContains(out.str(), "ccad_harness_context", "MCP lists harness context tool");
   assertContains(out.str(), "ccad_workspace_state", "MCP lists workspace state tool");
+  assertContains(out.str(), "ccad_agent_methods", "MCP lists agent methods tool");
   assertContains(out.str(), "ccad_headless_cli_agent_surface", "MCP returns harness context");
   assertContains(out.str(), "ccad_agent_workspace_state", "MCP returns workspace state");
+  assertContains(out.str(), "schema_version", "MCP returns agent method catalog");
 }
 
 void testAgentMethodsCommand() {

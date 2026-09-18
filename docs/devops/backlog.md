@@ -25,6 +25,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [x] Sprint 826: context events expose previous hash revision for redacted delta tracking.
 - [x] Sprint 827: subprocess contract proves previous context revision chaining across messages.
 - [x] Sprint 828: native MCP tools/list exposes read-only/destructive/open-world hints.
+- [x] Sprint 829: native MCP exposes agent method catalog as read-only tool.
 - [ ] Context fabric: canonical project snapshot, revision delta, pinned constraints, token budget, and compaction policy. Partial: C++ revision/pins and Python bounded compaction shipped; semantic delta/RAG remains.
 - [ ] Provider runtime: real provider-neutral request/response transport with timeout, retry, and truthful connectivity state.
 - [ ] LangGraph run loop: pending run state survives tool calls; broker result resumes same run by `call_id`. Sprint 811 fixes thread-scoped result routing and stale-result rejection; protocol-level live broker proof remains open.

@@ -901,7 +901,8 @@ int agentCommand(const std::vector<std::string>& args) {
     } else if (method == "tools/list") {
       std::string res = "{\"tools\": [{\"name\": \"ccad_execute\", \"description\": \"Execute guarded CCad CLI commands\", \"annotations\": {\"readOnlyHint\": false, \"destructiveHint\": true, \"openWorldHint\": false}, \"inputSchema\": {\"type\": \"object\", \"properties\": {\"args\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}, \"required\": [\"args\"]}},";
       res += "{\"name\": \"ccad_harness_context\", \"description\": \"Read CCad agent harness contract and safety context\", \"annotations\": {\"readOnlyHint\": true, \"destructiveHint\": false, \"openWorldHint\": false}, \"inputSchema\": {\"type\": \"object\", \"properties\": {}}},";
-      res += "{\"name\": \"ccad_workspace_state\", \"description\": \"Read provider-free CCad agent workspace state\", \"annotations\": {\"readOnlyHint\": true, \"destructiveHint\": false, \"openWorldHint\": false}, \"inputSchema\": {\"type\": \"object\", \"properties\": {}}}]}";
+      res += "{\"name\": \"ccad_workspace_state\", \"description\": \"Read provider-free CCad agent workspace state\", \"annotations\": {\"readOnlyHint\": true, \"destructiveHint\": false, \"openWorldHint\": false}, \"inputSchema\": {\"type\": \"object\", \"properties\": {}}},";
+      res += "{\"name\": \"ccad_agent_methods\", \"description\": \"Read CCad agent JSON-RPC method catalog and safety metadata\", \"annotations\": {\"readOnlyHint\": true, \"destructiveHint\": false, \"openWorldHint\": false}, \"inputSchema\": {\"type\": \"object\", \"properties\": {}}}]}";
       std::cout << formatSuccess(id, res) << "\n";
       std::cout.flush();
     } else if (method == "tools/call" && extractStringValue(line, "name") == "ccad_harness_context") {
@@ -911,6 +912,11 @@ int agentCommand(const std::vector<std::string>& args) {
       std::cout.flush();
     } else if (method == "tools/call" && extractStringValue(line, "name") == "ccad_workspace_state") {
       const std::string result = agentWorkspaceStateJson();
+      std::cout << formatSuccess(id, "{\"content\":[{\"type\":\"text\",\"text\":\"" +
+                                      ccad::escapeJson(result) + "\"}],\"isError\":false}") << "\n";
+      std::cout.flush();
+    } else if (method == "tools/call" && extractStringValue(line, "name") == "ccad_agent_methods") {
+      const std::string result = agentProtocolCatalogJson();
       std::cout << formatSuccess(id, "{\"content\":[{\"type\":\"text\",\"text\":\"" +
                                       ccad::escapeJson(result) + "\"}],\"isError\":false}") << "\n";
       std::cout.flush();

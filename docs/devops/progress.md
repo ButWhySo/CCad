@@ -2394,3 +2394,7 @@ off stdout. GUI verification remains paused.
 Sprint 828 adds MCP tool annotations to native CLI `tools/list`: command
 execution is marked potentially destructive, while harness/workspace tools are
 read-only and closed-world.
+
+Sprint 829 exposes read-only `ccad_agent_methods` through native MCP
+`tools/list` and `tools/call`, giving external hosts direct method/safety
+catalog discovery without bespoke JSON-RPC access.
