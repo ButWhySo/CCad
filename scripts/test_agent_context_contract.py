@@ -46,8 +46,9 @@ human_contract = next(item for item in methods["methods"]
 pending_contract = next(item for item in methods["methods"]
                         if item["name"] == "agent.pending_calls")
 assert pending_contract["response"]["method"] == "pending_calls_state"
-assert "approval_required" in pending_contract["response"]["fields"]
-assert "approval_reason" in pending_contract["response"]["fields"]
+for field in ("process_call_ids", "checkpoint_call_ids", "count", "approval_required",
+              "approval_reason", "secret_value_visible"):
+    assert field in pending_contract["response"]["fields"]
 assert "context_state" in human_contract["response_contracts"]
 assert "provider_state" in human_contract["responses"]
 assert "backend_state" in human_contract["responses"]

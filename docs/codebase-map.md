@@ -1741,3 +1741,5 @@ Sprint 880 handover: `scripts/test_agent_context_contract.py` now queries real `
 Sprint 881 handover: `scripts/test_agent_checkpoint_restart.py` validates durable pending snapshot approval fields before accept/denial/cancel resume branches.
 
 Sprint 882 handover: `scripts/test_agent_context_contract.py` validates `agent.pending_calls` response method/fields from real `agent.methods` discovery, including approval status/reason.
+
+Sprint 883 handover: the same subprocess contract now covers every `pending_calls_state` discovery field, preserving the opaque-ID and secret-redaction boundary.

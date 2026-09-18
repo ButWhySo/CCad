@@ -2611,3 +2611,7 @@ Headless-only proof: checkpoint restart fixture now validates nonempty pending-c
 ### Sprint 882 — pending discovery round-trip parity
 
 Headless-only proof: subprocess contract now verifies `agent.pending_calls` discovery advertises its actual `pending_calls_state` approval fields. GUI/API/build validation remains paused.
+
+### Sprint 883 — pending discovery schema completeness
+
+Headless-only proof: the subprocess contract now checks every redacted `pending_calls_state` discovery field, including process/checkpoint IDs, count, approval metadata, and secret visibility. GUI/API/build validation remains paused.
