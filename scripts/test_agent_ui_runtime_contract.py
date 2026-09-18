@@ -44,7 +44,8 @@ assert 'setModelCatalogCallback' in settings
 assert 'applyModelCatalog' in settings
 assert 'catalog["ok"].toBool(false)' in settings
 assert 'catalog["models"].toArray()' in settings
-assert 'refresh_models->setEnabled(provider_combo_->currentData().toString() == "openrouter")' in settings
+assert 'provider_combo_->currentData().toString() == "openrouter" ||' in settings
+assert 'provider_combo_->currentData().toString() == "cerebras"' in settings
 assert 'model_input_->setReadOnly(true)' in settings
 assert 'model_input_->setReadOnly(!custom_model_provider)' in settings
 assert settings.count('sendJsonRpc("agent.set_config", config)') == 1
