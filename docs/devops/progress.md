@@ -2142,6 +2142,10 @@ Sprint 769 synchronizes GUI model tests and Gemini quickstart text with the
 current preset catalog, removing retired Gemini 2.5 choices and stale GUI
 expectations. No GUI execution was performed.
 
+Sprint 770 hardens all CI checkout steps with explicit clean working trees and
+`submodules: false`. CCad has no supported submodules; this prevents stale or
+phantom submodule paths from poisoning post-job cleanup.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.

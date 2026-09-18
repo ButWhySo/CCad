@@ -20,6 +20,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
+        with:
+          clean: true
+          submodules: false
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -57,6 +60,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
+        with:
+          clean: true
+          submodules: false
       - name: Configure
         run: cmake -S . -B build -DCCAD_WARNINGS_AS_ERRORS=ON -DCCAD_BUILD_GUI=OFF
       - name: Build
@@ -111,6 +117,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
+        with:
+          clean: true
+          submodules: false
       - name: Install Qt
         run: |
           sudo apt-get update
@@ -169,6 +178,9 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
+        with:
+          clean: true
+          submodules: false
       - name: Configure
         run: cmake -S . -B build -DCCAD_WARNINGS_AS_ERRORS=ON -DCCAD_BUILD_GUI=OFF
       - name: Build
