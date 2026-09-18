@@ -59,6 +59,16 @@ jobs:
         run: |
           set -o pipefail
           ctest --test-dir build -R '^cli$' --output-on-failure -V 2>&1 | tee ctest-cli-linux-verbose.log
+      - name: Publish Linux CLI diagnostics
+        if: failure()
+        continue-on-error: true
+        run: |
+          echo '## Linux CLI diagnostics' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f ctest-cli-linux-verbose.log ]; then
+            echo '```text' >> "$GITHUB_STEP_SUMMARY"
+            tail -n 160 ctest-cli-linux-verbose.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Upload test log
         if: always()
         uses: actions/upload-artifact@v4
@@ -93,6 +103,16 @@ jobs:
         run: |
           set -o pipefail
           ctest --test-dir build -R '^cli$' --output-on-failure -V 2>&1 | tee ctest-cli-gui-linux-verbose.log
+      - name: Publish Linux GUI CLI diagnostics
+        if: failure()
+        continue-on-error: true
+        run: |
+          echo '## Linux GUI CLI diagnostics' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f ctest-cli-gui-linux-verbose.log ]; then
+            echo '```text' >> "$GITHUB_STEP_SUMMARY"
+            tail -n 160 ctest-cli-gui-linux-verbose.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Upload test log
         if: always()
         uses: actions/upload-artifact@v4
