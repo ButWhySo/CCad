@@ -2283,6 +2283,10 @@ Sprint 846 strengthens that proof: the context contract subprocess now queries
 runtime `agent.methods` and verifies the published response fields before
 checking the three transition events. GUI verification remains paused.
 
+Sprint 847 publishes the intake guardrail response contract beside the context
+contract, including acceptance, category, and secret-redaction metadata. GUI
+verification remains paused.
+
 Sprint 837 adds explicit Cerebras model-catalog response from the documented
 curated snapshot and enables Settings Refresh for Cerebras. OpenRouter remains
 the only network-fetched catalog; Cerebras refresh is quota-safe and offline.

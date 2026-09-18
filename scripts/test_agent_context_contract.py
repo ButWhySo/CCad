@@ -19,7 +19,8 @@ assert 'local_project_memory' in text
 assert 'request_context_present = bool(raw_context.strip())' in text
 assert '"previous_revision": previous_context_revision' in text
 assert '"change_kind": context_change_kind' in text
-assert '"response_contracts": {"context_state": {"fields": [' in text
+assert '"response_contracts": {' in text
+assert '"intake_state": {"fields": [' in text
 
 env = os.environ.copy()
 env.update({"CCAD_PROVIDER": "mock", "PYTHONNOUSERSITE": "1",
@@ -39,6 +40,8 @@ human_contract = next(item for item in methods["methods"]
                       if item["name"] == "human_message")
 assert "context_state" in human_contract["response_contracts"]
 assert "change_kind" in human_contract["response_contracts"]["context_state"]["fields"]
+assert "intake_state" in human_contract["response_contracts"]
+assert "accepted" in human_contract["response_contracts"]["intake_state"]["fields"]
 events = [item for item in lines if item.get("method") == "context_state"]
 assert len(events) == 3
 assert events[0]["params"]["previous_revision"] == ""

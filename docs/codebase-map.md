@@ -1643,3 +1643,7 @@ remains unchanged.
 Sprint 846 handover: the context subprocess contract requests `agent.methods`
 and validates the live returned `human_message.response_contracts` before
 asserting initial/changed/unchanged events.
+
+Sprint 847 handover: method discovery now documents `intake_state` fields
+(`accepted`, `category`, `secret_value_visible`) alongside `context_state`,
+giving external harnesses a stable guardrail response contract.

@@ -1023,3 +1023,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   discovery; no GUI or provider request.
 - [x] Sprint 846: verify context-state method discovery at runtime, not only
   through source inspection; no GUI or provider request.
+- [x] Sprint 847: publish intake-state response fields through method
+  discovery; no GUI or provider request.
