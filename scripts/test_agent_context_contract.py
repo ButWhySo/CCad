@@ -13,4 +13,5 @@ assert 'session_messages = bound_session_history(final_state["messages"])' in te
 assert 'memory_content_emitted' in text
 assert 'local_project_memory' in text
 assert 'request_context_present = bool(raw_context.strip())' in text
+assert '"previous_revision": previous_context_revision' in text
 print("PASS agent context history boundary contract; no network")
