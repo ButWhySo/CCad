@@ -1666,3 +1666,7 @@ Sprint 851 handover: `provider_state` discovery uses the emitted
 Sprint 852 handover: ordinary `tool_call` response discovery now lists only
 the emitted `tool`, `args`, and `call_id`; approval/side-effect policy remains
 on tool metadata and approval decision messages.
+
+Sprint 853 handover: `scripts/test_provider_mock.py` parses the real mock
+subprocess stream and asserts exact tool-call keys, tool identity, args, and
+call ID rather than relying on substring presence.

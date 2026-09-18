@@ -2308,6 +2308,10 @@ Sprint 852 narrows the tool-call response contract to the actual emitted
 documented on tool metadata and approval responses. GUI verification remains
 paused.
 
+Sprint 853 upgrades the mock provider end-to-end proof from substring checks
+to parsed wire events, asserting the exact tool-call key set and correlation
+payload. GUI verification remains paused.
+
 Sprint 837 adds explicit Cerebras model-catalog response from the documented
 curated snapshot and enables Settings Refresh for Cerebras. OpenRouter remains
 the only network-fetched catalog; Cerebras refresh is quota-safe and offline.

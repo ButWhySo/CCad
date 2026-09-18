@@ -1035,3 +1035,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   keys; no GUI or provider request.
 - [x] Sprint 852: align tool-call response fields with actual emitted payload;
   no GUI or provider request.
+- [x] Sprint 853: parse mock tool-call wire events and assert exact payload
+  shape; no GUI or provider request.

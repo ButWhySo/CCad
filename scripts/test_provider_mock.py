@@ -14,9 +14,16 @@ request = {"method": "human_message", "params": {
 run = subprocess.run(
     [sys.executable, str(ROOT / "src" / "ccad_agent" / "orchestrator.py")],
     input=json.dumps(request) + "\n", text=True, capture_output=True, env=env, check=True)
-assert '"provider": "mock"' in run.stdout
-assert '"method": "tool_call"' in run.stdout
-assert '"tool": "ui.place_via"' in run.stdout
-assert '"run_state": "completed"' in run.stdout
+events = [json.loads(line) for line in run.stdout.splitlines()
+          if line.strip().startswith("{")]
+tool_events = [event for event in events if event.get("method") == "tool_call"]
+assert tool_events
+tool_params = tool_events[0]["params"]
+assert tool_params["tool"] == "ui.place_via"
+assert set(tool_params) == {"tool", "args", "call_id"}
+assert any(event.get("method") == "provider_state"
+           and event["params"].get("provider") == "mock" for event in events)
+assert any(event.get("params", {}).get("run_state") == "completed"
+           for event in events)
 assert "[mock provider] Request understood" in run.stdout
 print("PASS mock provider chat and tool-loop execution")
