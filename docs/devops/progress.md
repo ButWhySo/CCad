@@ -2021,3 +2021,6 @@ or screenshot run performed.
 History guard added: interactive agent messages are capped by
 `CCAD_AGENT_HISTORY_LIMIT` (default 24, clamp 4..64) before provider input and
 after graph output. No GUI validation run.
+
+Project-context guard added: `CCAD_AGENT_CONTEXT_LIMIT` defaults to 32768
+characters, clamps 4096..131072, and marks truncation before provider use.

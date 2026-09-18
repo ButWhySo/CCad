@@ -678,6 +678,18 @@ def bound_session_history(messages):
     limit = min(64, max(4, limit))
     return messages[-limit:]
 
+def bound_context_text(context):
+    """Cap provider-bound project context while preserving truncation signal."""
+    try:
+        limit = int(os.environ.get("CCAD_AGENT_CONTEXT_LIMIT", "32768"))
+    except ValueError:
+        limit = 32768
+    limit = min(131072, max(4096, limit))
+    if len(context) <= limit:
+        return context
+    marker = "\n[CCAD context truncated for provider safety]\n"
+    return context[:max(0, limit - len(marker))] + marker
+
 # --- Custom Workflows ---
 def handle_marketplace(text: str):
     parts = text.split(" ")
@@ -892,7 +904,7 @@ if __name__ == "__main__":
                         }})
             elif method == "human_message":
                 text = req.get("params", {}).get("text", "")
-                context_str = req.get("params", {}).get("context", "")
+                context_str = bound_context_text(req.get("params", {}).get("context", ""))
                 current_context_revision = context_revision(context_str)
                 context_changed = current_context_revision != last_context_revision
                 last_context_revision = current_context_revision

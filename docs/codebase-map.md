@@ -1473,6 +1473,10 @@ Interactive history is also bounded by `bound_session_history()`. The
 `CCAD_AGENT_HISTORY_LIMIT` setting defaults to 24 and clamps to 4..64 before
 provider input and after graph output; project files and durable checkpoints
 remain untouched.
+
+Incoming project context is bounded by `bound_context_text()`. The
+`CCAD_AGENT_CONTEXT_LIMIT` setting defaults to 32768 characters and clamps to
+4096..131072; oversized input carries an explicit truncation marker.
 # Current handover override: Sprint 721, Phase 3/5. See `docs/devops/progress.md` and the Sprint 721 section below for authoritative current state; older embedded header text is historical.
 # Sprint 722 provider-selection invariant
 
