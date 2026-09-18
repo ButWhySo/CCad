@@ -8,6 +8,8 @@ import time
 import uuid
 import atexit
 import hashlib
+import urllib.request
+import urllib.error
 from typing import Annotated, TypedDict, List
 from langgraph.graph import StateGraph, END
 from langgraph.types import Command, interrupt
@@ -21,6 +23,32 @@ from memory_store import MemoryStore
 
 def emit(payload: dict):
     print(json.dumps(payload), flush=True)
+
+def fetch_openrouter_models():
+    """Explicit, bounded OpenRouter catalog refresh; never called at startup."""
+    key = os.environ.get("OPENROUTER_API_KEY", "")
+    if not key:
+        return {"ok": False, "error": "missing_api_key", "models": []}
+    request = urllib.request.Request(
+        "https://openrouter.ai/api/v1/models",
+        headers={"Authorization": f"Bearer {key}", "Accept": "application/json"},
+    )
+    timeout = min(20, max(2, int(os.environ.get("CCAD_MODEL_CATALOG_TIMEOUT_SECONDS", "8"))))
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        models = []
+        for item in payload.get("data", []):
+            if not isinstance(item, dict) or not item.get("id"):
+                continue
+            models.append({
+                "id": item["id"], "name": item.get("name", item["id"]),
+                "context_length": item.get("context_length"),
+                "architecture": item.get("architecture", {}),
+            })
+        return {"ok": True, "models": models, "count": len(models), "network_access": "explicit_refresh"}
+    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
+        return {"ok": False, "error": type(error).__name__, "models": [], "network_access": "explicit_refresh"}
 
 def context_revision(context: str) -> str:
     """Return stable opaque context identity; never expose context contents."""
@@ -1017,6 +1045,15 @@ if __name__ == "__main__":
             elif method == "agent.methods":
                 emit({"jsonrpc": "2.0", "method": "agent_methods",
                       "params": orchestrator_method_catalog()})
+            elif method == "agent.list_models":
+                provider_id = req.get("params", {}).get("provider", "openrouter")
+                if provider_id == "openrouter":
+                    emit({"jsonrpc": "2.0", "method": "provider_models",
+                          "params": {"provider": provider_id, **fetch_openrouter_models()}})
+                else:
+                    emit({"jsonrpc": "2.0", "method": "provider_models",
+                          "params": {"provider": provider_id, "ok": False,
+                                      "error": "catalog_not_implemented", "models": []}})
             elif method == "agent.pending_calls":
                 thread_id = req.get("params", {}).get("thread_id", "")
                 emit({"jsonrpc": "2.0", "method": "pending_calls_state", "params":

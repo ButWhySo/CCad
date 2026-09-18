@@ -53,6 +53,7 @@ jobs:
           python scripts/test_provider_default_models_contract.py
           python scripts/test_provider_retry_behavior.py
           python scripts/test_openrouter_provider_contract.py
+          python scripts/test_openrouter_catalog_contract.py
           python scripts/test_agent_ui_runtime_contract.py
           python scripts/test_ci_checkout_contract.py
           python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-accept.db

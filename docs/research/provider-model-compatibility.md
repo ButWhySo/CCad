@@ -67,3 +67,9 @@ catalog is intentionally not hardcoded because OpenRouter exposes a dynamic
 and capabilities. CCad does not fetch that catalog during startup or tests.
 
 Official reference: [OpenRouter model API](https://openrouter.ai/docs/api/api-reference/models/get-models).
+
+CCad exposes this catalog only through explicit `agent.list_models` with
+`provider: "openrouter"`. Response retains model ID, display name, context
+length, and architecture metadata; keys, prices, prompts, and raw response
+payload are not returned. Missing keys and HTTP/URL/timeout/JSON failures are
+redacted categories, not raw exception text.
