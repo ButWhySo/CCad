@@ -56,14 +56,17 @@ class MemoryStore:
         content = str(content or "").strip()
         if not content or len(content) > 8000:
             raise ValueError("memory content must contain 1..8000 characters")
-        if SECRET_MARKERS.search(content):
+        title = str(title or "").strip()[:200]
+        scope = str(scope or "project").strip()[:100]
+        clean_tags = [str(tag).strip()[:60] for tag in (tags or []) if str(tag).strip()][:20]
+        if any(SECRET_MARKERS.search(value) for value in (content, title, scope, *clean_tags)):
             raise ValueError("memory content appears to contain a secret")
         entry = {
             "id": "mem-" + uuid.uuid4().hex,
-            "title": str(title or "").strip()[:200],
+            "title": title,
             "content": content,
-            "scope": str(scope or "project").strip()[:100],
-            "tags": [str(tag).strip()[:60] for tag in (tags or []) if str(tag).strip()][:20],
+            "scope": scope,
+            "tags": clean_tags,
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
         entries = self._read()

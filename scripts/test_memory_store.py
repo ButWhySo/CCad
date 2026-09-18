@@ -22,6 +22,13 @@ with tempfile.TemporaryDirectory() as temp:
         assert "secret" in str(error)
     else:
         raise AssertionError("secret-looking memory was accepted")
+    for kwargs in ({"title": "api_key: hidden"}, {"tags": ["token: hidden"]}):
+        try:
+            store.add("safe content", **kwargs)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("secret-looking memory metadata was accepted")
 
 with tempfile.TemporaryDirectory() as temp:
     os.environ["APPDATA"] = temp
