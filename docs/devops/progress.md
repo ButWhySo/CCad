@@ -2291,6 +2291,10 @@ Sprint 848 publishes the provider-state response contract through the same
 method discovery path, covering readiness, network probe status, safe error
 classification, and secret redaction. GUI verification remains paused.
 
+Sprint 849 publishes the minimal tool-call response contract, including
+correlation ID, approval, side-effect, name, and argument fields. GUI
+verification remains paused.
+
 Sprint 837 adds explicit Cerebras model-catalog response from the documented
 curated snapshot and enables Settings Refresh for Cerebras. OpenRouter remains
 the only network-fetched catalog; Cerebras refresh is quota-safe and offline.

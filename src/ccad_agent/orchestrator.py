@@ -203,6 +203,9 @@ def orchestrator_method_catalog():
                      "provider", "model", "configured", "execution_ready",
                      "network_access", "error", "error_category",
                      "secret_value_visible"]},
+                 "tool_call": {"fields": [
+                     "name", "args", "call_id", "approval_required",
+                     "side_effect"]},
                  "context_state": {"fields": [
                      "revision", "previous_revision", "changed", "change_kind",
                      "content_present", "content_size", "original_content_size",

@@ -1027,3 +1027,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   discovery; no GUI or provider request.
 - [x] Sprint 848: publish provider-state response fields through method
   discovery; no GUI or provider request.
+- [x] Sprint 849: publish tool-call response fields through method discovery;
+  no GUI or provider request.

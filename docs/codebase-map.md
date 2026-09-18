@@ -1651,3 +1651,7 @@ giving external harnesses a stable guardrail response contract.
 Sprint 848 handover: `human_message.response_contracts.provider_state` now
 documents readiness, network-access, error-classification, and redaction
 fields emitted by provider initialization paths.
+
+Sprint 849 handover: method discovery now documents the minimal `tool_call`
+response shape, preserving opaque correlation and approval metadata for
+external harnesses without exposing provider secrets.
