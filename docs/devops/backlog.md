@@ -890,3 +890,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 740: add deterministic C++ context revision plus pinned constraints and compaction metadata; GUI validation remains paused.
 - [x] Sprint 741: add local memory CRUD and explicit `/memory` commands with secret rejection; no provider/GUI execution.
 - [x] Sprint 743: inject enabled project STM memories through the bounded context gate; cap eight entries/1000 chars; GUI paused.
+- [x] Sprint 745: ignore local memory/session files so custom-path private notes cannot enter commits.

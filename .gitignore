@@ -97,6 +97,9 @@ desktop.ini
 # Local BYOK credentials; never commit or bundle.
 .ccad-secrets/
 secrets/
+# User-owned local agent memory/session state; may contain private project notes.
+agent_memory.json
+*.ccad-agent-session.json
 *.pem
 *.key
 *.p12

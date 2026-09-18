@@ -2053,6 +2053,8 @@ delete/clear commands. Memory is not automatically sent to providers.
 Sprint 743 wires only enabled short-term project memories into the bounded
 provider context: newest eight entries, each capped at 1000 characters, then
 the normal context budget applies. Memory remains locally user-managed.
+Repository ignores custom-path `agent_memory.json` and session files to prevent
+private local notes entering commits.
 
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
