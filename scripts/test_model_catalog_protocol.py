@@ -18,6 +18,8 @@ result = subprocess.run(
            + json.dumps({"method": "agent.list_models", "params": {"provider": "openrouter"}})
            + "\n"
            + json.dumps({"method": "agent.list_models", "params": {"provider": "cerebras"}})
+           + "\n"
+           + json.dumps({"method": "agent.list_models", "params": {"provider": "unknown"}})
            + "\n"),
     text=True,
     capture_output=True,
@@ -35,6 +37,7 @@ assert catalog_method["network_access_by_provider"] == {"openrouter": "explicit_
 catalogs = [item["params"] for item in responses if item.get("method") == "provider_models"]
 openrouter = next(item for item in catalogs if item["provider"] == "openrouter")
 cerebras = next(item for item in catalogs if item["provider"] == "cerebras")
+unknown = next(item for item in catalogs if item["provider"] == "unknown")
 assert openrouter["ok"] is False
 assert openrouter["error"] == "missing_api_key"
 assert "OPENROUTER_API_KEY" not in json.dumps(openrouter)
@@ -42,4 +45,6 @@ assert cerebras["ok"] is True
 assert cerebras["network_access"] == "none"
 assert cerebras["source"] == "official_curated_snapshot"
 assert {item["id"] for item in cerebras["models"]} == {"gpt-oss-120b", "llama3.1-8b", "zai-glm-4.7"}
+assert unknown["ok"] is False
+assert unknown["error"] == "unsupported_provider"
 print("PASS model catalog protocol branches; no network")

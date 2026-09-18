@@ -1007,3 +1007,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   catalog refresh; OpenRouter remains network-fetched only.
 - [x] Sprint 838: publish provider-specific model-catalog network capabilities
   for external harnesses; no GUI or provider request.
+- [x] Sprint 839: clarify unsupported model-catalog provider error and cover
+  unknown-provider response; no GUI or provider request.
