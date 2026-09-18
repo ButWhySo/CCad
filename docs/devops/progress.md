@@ -2110,6 +2110,10 @@ venv, including memory/context limits, approval/cancellation, Cerebras setup,
 and accepted/denied SQLite restart. All passed; temporary checkpoint files
 were removed. GUI validation remains paused.
 
+Sprint 763 documents the Cerebras BYOK launch path, including bundled-venv
+installation, `CEREBRAS_API_KEY`, `CCAD_CEREBRAS_MODEL`, and provider
+selection. No secret is committed or sent during the documented smoke setup.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.

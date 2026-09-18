@@ -41,6 +41,27 @@ $env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
 
 In Agent Settings, choose `Google Gemini`, confirm model, paste key, and press `Test Provider`. Test Provider uses the key transiently; Save persists preferences only, never the secret. Do not put keys in project JSON, `.env`, logs, screenshots, or Git. Remove temporary values with `Remove-Item Env:GEMINI_API_KEY,Env:GOOGLE_API_KEY,Env:CCAD_GEMINI_MODEL`.
 
+## Cerebras BYOK quickstart
+
+Install the bundled agent environment once, then launch the application with
+the same environment. The current adapter uses Cerebras' OpenAI-compatible
+endpoint and defaults to `qwen-3-32b`.
+
+```powershell
+& src/ccad_agent/venv/Scripts/python.exe -m pip install -r src/ccad_agent/requirements.txt
+$env:CEREBRAS_API_KEY = "PASTE_KEY_HERE"
+$env:CCAD_CEREBRAS_MODEL = "qwen-3-32b"
+$env:CCAD_PROVIDER = "cerebras"
+$env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
+.\build-qt\ccad_gui.exe
+```
+
+In Agent Settings choose `Cerebras`, select `qwen-3-32b`, enter the session
+key, and press `Test Provider`. The GUI launches the checked-in venv by
+absolute path and disables user-site packages, preventing stale global
+LangChain versions from breaking the adapter. Remove the session variables
+afterward with `Remove-Item Env:CEREBRAS_API_KEY,Env:CCAD_CEREBRAS_MODEL,Env:CCAD_PROVIDER`.
+
 Provider safety limits are process-local and optional: `CCAD_PROVIDER_RETRIES`
 caps transient retries at 0..2, `CCAD_AGENT_RECURSION_LIMIT` caps graph cycles
 at 4..32 (default 12), `CCAD_AGENT_HISTORY_LIMIT` caps retained messages at

@@ -903,3 +903,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 758: repair pinned provider dependencies, absolute venv discovery, single-stream selectable chat, and current-account key reveal semantics; GUI runtime validation remains paused.
 - [x] Sprint 760: add CI smoke coverage for Cerebras OpenAI-compatible adapter initialization without network or quota use.
 - [x] Sprint 761: rerun the full agent-python contract subset inside the bundled venv, including checkpoint accept/deny restart proof.
+- [x] Sprint 763: document the quota-safe Cerebras BYOK setup and bundled-venv launch path.
