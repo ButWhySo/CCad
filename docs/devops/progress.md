@@ -2150,6 +2150,10 @@ Sprint 771 adds executable fake-client proof for provider retry policy:
 transient failures retry within cap, while quota/rate-limit failures stop on
 first attempt. No provider SDK, network, GUI, or credential is involved.
 
+Sprint 772 wires provider error/default/retry contracts and CI checkout
+contract into the GitHub agent gate, preventing these safety regressions from
+remaining local-only.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.

@@ -49,7 +49,11 @@ jobs:
           python scripts/test_mcp_gui_bridge.py
           python scripts/test_provider_openai_compatible.py
           python scripts/test_cerebras_adapter_contract.py
+          python scripts/test_provider_error_classification.py
+          python scripts/test_provider_default_models_contract.py
+          python scripts/test_provider_retry_behavior.py
           python scripts/test_agent_ui_runtime_contract.py
+          python scripts/test_ci_checkout_contract.py
           python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-accept.db
           CCAD_RESTART_PHASE=second python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-accept.db
           python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-deny.db
