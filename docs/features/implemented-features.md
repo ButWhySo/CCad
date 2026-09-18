@@ -2656,3 +2656,7 @@ Native Agent workspace state now carries that distinction as `backend_ready`
 and `backend_provider_initialized`, without exposing telemetry chips or secrets.
 `test_backend_state_contract.py` proves the startup JSON event through a mock
 subprocess without network access.
+Python intake guardrails now emit redacted `intake_state` and block known
+prompt-injection or inline-secret requests before provider/tool execution.
+`test_agent_intake_guard_contract.py` proves safe acceptance, category-only
+blocking, no tool call, and no secret echo without network access.

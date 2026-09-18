@@ -34,7 +34,7 @@ Rule:
 ### `src/ccad_gui/agent_panel.hpp/cpp`: 
 Manages the agent workflow panel. It initializes the JSON-RPC C++ `AgentOrchestrator` instance and launches `src/ccad_agent/orchestrator.py` via `QProcess`, connecting the Qt UI (a modern Copilot-style interface with chat bubbles and cards) to the agent tool logic.
 
-- `src/ccad_agent/orchestrator.py`: Python process containing the LangGraph orchestration. Implements a `Supervisor` pattern delegating to a `RouterAgent` and a `LibrarianAgent`. Initializes multi-provider models (Anthropic, Gemini, OpenAI) and OpenTelemetry/Langfuse callbacks via environment variables. Uses `sys.stdin` and `sys.stdout` for communication via a strict JSON-RPC protocol.
+- `src/ccad_agent/orchestrator.py`: Python process containing the LangGraph orchestration. Implements a `Supervisor` pattern delegating to a `RouterAgent` and a `LibrarianAgent`. Initializes multi-provider models (Anthropic, Gemini, OpenAI) and OpenTelemetry/Langfuse callbacks via environment variables. Uses `sys.stdin` and `sys.stdout` for communication via a strict JSON-RPC protocol. `scan_intake()` blocks known prompt-injection and inline-secret patterns before provider/tool execution, emitting only redacted category metadata; provenance-aware document scanning remains future work.
 - `src/ccad_gui/agent_panel.hpp/.cpp`: Implements the premium, right-side chat interface dock. Layout closely mirrors the Copilot Chat UI paradigm (light grey history, dark grey user bubbles flush right, inline agent markdown, and dark grey icon-based composer). Binds the bottom tool buttons to trigger Marketplace dialogs, insert `/` templates, and send JSON-RPC provider configuration events.
 
 ### `src/ccad_agent/agent_serve.cpp`: 

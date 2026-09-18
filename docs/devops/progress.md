@@ -2343,3 +2343,7 @@ Sprint 815 wires Python orchestrator intake guardrails before context/provider
 execution. Known instruction-injection and inline-secret patterns are blocked
 with category-only, secret-safe JSON state; safe prompts continue normally.
 GUI verification remains paused.
+
+Sprint 816 adds the intake contract to CI and updates feature/codebase
+handover docs in the same change set. Future work remains for provenance-aware
+external-document scanning and semantic injection detection.
