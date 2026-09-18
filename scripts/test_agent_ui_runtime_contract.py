@@ -1,0 +1,20 @@
+"""No-GUI source contract for chat stream and provider runtime fixes."""
+
+from pathlib import Path
+
+
+root = Path(__file__).parents[1]
+panel = (root / "src" / "ccad_gui" / "agent_panel.cpp").read_text(encoding="utf-8")
+header = (root / "src" / "ccad_gui" / "agent_panel.hpp").read_text(encoding="utf-8")
+settings = (root / "src" / "ccad_gui" / "agent_settings_dialog.cpp").read_text(encoding="utf-8")
+
+assert "QTextBrowser* chat_stream_" in header
+assert 'setObjectName("control:agent_chat_stream")' in panel
+assert "cursor.insertText(prefix +" in panel
+assert "setTextInteractionFlags(Qt::TextSelectableByMouse" in panel
+assert "repo_src + \"/ccad_agent/venv/Scripts/python.exe\"" in panel
+assert 'agent_env.insert("PYTHONNOUSERSITE", "1")' in panel
+assert "LogonUserW(" in settings
+assert "Windows password for '%1'" in settings
+assert "CredUIPromptForCredentialsW" not in settings
+print("PASS agent UI/provider runtime source contract; no GUI launched")
