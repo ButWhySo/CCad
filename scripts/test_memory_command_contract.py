@@ -9,5 +9,7 @@ assert "memory_store = MemoryStore()" in text
 assert 'cmd_base == "/memory"' in text
 assert 'memory_store.add(memory_args[4:].strip())' in text
 assert 'memory_store.delete(memory_args[7:].strip())' in text
-assert 'memory_store.clear()' in text
+assert 'memory_args == "clear all"' in text
+assert 'memory_args.startswith("clear scope:")' in text
+assert 'Bare clear does nothing.' in text
 print("PASS local memory command boundary; no network")

@@ -981,7 +981,7 @@ if __name__ == "__main__":
                     cmd_args = cmd_parts[1] if len(cmd_parts) > 1 else ""
                     
                     if cmd_base == "/commands":
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|add <text>|delete <id>|clear`\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`"}})
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|add <text>|delete <id>|clear all|clear scope:<name>`\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`"}})
                         continue
                     elif cmd_base == "/memory":
                         memory_args = cmd_args.strip()
@@ -993,10 +993,13 @@ if __name__ == "__main__":
                         elif memory_args.startswith("delete "):
                             removed = memory_store.delete(memory_args[7:].strip())
                             emit({"jsonrpc": "2.0", "method": "memory_deleted", "params": {"removed": removed}})
-                        elif memory_args == "clear":
+                        elif memory_args == "clear all":
                             emit({"jsonrpc": "2.0", "method": "memory_cleared", "params": {"removed": memory_store.clear()}})
+                        elif memory_args.startswith("clear scope:"):
+                            scope = memory_args[len("clear scope:"):].strip()
+                            emit({"jsonrpc": "2.0", "method": "memory_cleared", "params": {"scope": scope, "removed": memory_store.clear(scope)}})
                         else:
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Memory: use `/memory list|add <text>|delete <id>|clear`."}})
+                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Memory: use `/memory list|add <text>|delete <id>|clear all|clear scope:<name>`. Bare clear does nothing."}})
                         continue
                     elif cmd_base == "/marketplace":
                         handle_marketplace(text)

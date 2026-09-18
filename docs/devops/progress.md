@@ -2056,6 +2056,9 @@ the normal context budget applies. Memory remains locally user-managed.
 Repository ignores custom-path `agent_memory.json` and session files to prevent
 private local notes entering commits.
 
+Sprint 746 makes memory deletion explicit: bare `/memory clear` is a no-op;
+`clear all` or `clear scope:<name>` is required.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.
