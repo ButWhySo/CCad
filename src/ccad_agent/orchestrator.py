@@ -237,14 +237,22 @@ def dispatch_checkpointed_tool(tool_name: str, args: dict):
         return json.dumps(decision)
     return json.dumps(decision) if isinstance(decision, (dict, list)) else str(decision)
 
+def tool_approval_decision(tool_name: str, args: dict):
+    """Return one deterministic approval decision for a client tool call."""
+    dry_run = bool(args.get("dry_run", False))
+    required = tool_name.startswith("ui.") and not dry_run
+    return {"required": required,
+            "reason": "dry_run" if dry_run else "project_mutation"}
+
 def dispatch_client_tool(tool_name: str, args: dict, *, await_result: bool = False) -> str:
     """Send one client tool call and optionally await its authoritative result."""
     call_id = (checkpoint_tool_call_id(tool_name, args)
                if checkpoint_saver is not None and broker_wait_enabled
                else new_tool_call_id(tool_name))
+    approval = tool_approval_decision(tool_name, args)
     emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
         "tool": tool_name, "args": args, "call_id": call_id,
-        "approval_required": bool(await_result and not args.get("dry_run", False)),
+        "approval_required": bool(await_result and approval["required"]),
     }})
     if broker_wait_enabled and await_result:
         emit_tool_approval_state()
@@ -307,7 +315,7 @@ def ui_place_via(x_mm: float, y_mm: float, dry_run: bool = False):
         "tool": "ui.place_via",
         "args": args,
         "call_id": call_id,
-        "approval_required": not dry_run,
+        "approval_required": tool_approval_decision("ui.place_via", args)["required"],
     }})
     if broker_wait_enabled and not dry_run:
         emit_tool_approval_state()
@@ -325,7 +333,7 @@ def ui_add_track(x1: float, y1: float, x2: float, y2: float):
                else new_tool_call_id("ui-route-track"))
     emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
         "tool": "ui.route_track", "args": args, "call_id": call_id,
-        "approval_required": True,
+        "approval_required": tool_approval_decision("ui.route_track", args)["required"],
     }})
     if broker_wait_enabled:
         emit_tool_approval_state()
@@ -352,7 +360,8 @@ def ui_add_polygon(points: List[List[float]], layer: str):
                    else new_tool_call_id("ui-add-zone"))
         emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
             "tool": "ui.add_zone", "args": args, "layer": layer,
-            "call_id": call_id, "approval_required": True,
+            "call_id": call_id,
+            "approval_required": tool_approval_decision("ui.add_zone", args)["required"],
         }})
         if broker_wait_enabled:
             emit_tool_approval_state()

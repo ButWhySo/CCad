@@ -1727,3 +1727,5 @@ Sprint 873 handover: `scripts/test_agent_checkpoint_restart.py` now validates th
 Sprint 874 handover: fresh DB runs of `test_agent_checkpoint_restart.py` passed first/accept, first/denial, and first/cancel branches; no provider/network or GUI was used.
 
 Sprint 875 handover: `run_agent_contract_gate.ps1 -IncludeCheckpointRestart` now owns DB creation, phase sequencing, and cleanup for accept/denial/cancel. `scripts/test_checkpoint_gate_runner_contract.py` locks the runner shape.
+
+Sprint 876 handover: `tool_approval_decision()` is the single deterministic source for UI mutation/dry-run approval metadata; `scripts/test_tool_approval_policy_contract.py` locks its use in via/track/zone/client dispatch paths.

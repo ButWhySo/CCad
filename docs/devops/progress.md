@@ -2583,3 +2583,7 @@ Fresh-DB headless proof complete for checkpoint creation plus accept, denial, an
 ### Sprint 875 — checkpoint gate runner
 
 Headless harness fix: `run_agent_contract_gate.ps1 -IncludeCheckpointRestart` now runs accept, denial, and cancellation with fresh temporary SQLite DBs instead of invoking the multi-phase fixture without its required argument. Added an offline runner contract; GUI/API/build validation remains paused.
+
+### Sprint 876 — centralized approval decision
+
+Headless-only approval slice: added one deterministic `tool_approval_decision()` policy used by client tool events; UI mutations require approval, explicit dry-runs do not. Added an offline contract; full policy/interrupt ownership remains the next run-loop batch.
