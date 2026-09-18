@@ -2146,6 +2146,10 @@ Sprint 770 hardens all CI checkout steps with explicit clean working trees and
 `submodules: false`. CCad has no supported submodules; this prevents stale or
 phantom submodule paths from poisoning post-job cleanup.
 
+Sprint 771 adds executable fake-client proof for provider retry policy:
+transient failures retry within cap, while quota/rate-limit failures stop on
+first attempt. No provider SDK, network, GUI, or credential is involved.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.

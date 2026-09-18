@@ -911,3 +911,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 768: remove stale Anthropic, Gemini, and OpenAI runtime fallback IDs; enforce current defaults with no-network contract coverage.
 - [x] Sprint 769: synchronize GUI preset tests and Gemini quickstart with current documented IDs; remove retired Gemini 2.5 presets.
 - [x] Sprint 770: explicitly disable submodules and enable clean checkout in every CI job to prevent stale submodule cleanup failures.
+- [x] Sprint 771: add fake-client execution proof for bounded transient retries and immediate quota/rate-limit stop.
