@@ -949,3 +949,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   controls; GUI verification remains user-paused.
 - [x] Sprint 797: clear model-catalog callback during Settings teardown to stop
   late responses invoking a destroyed dialog; GUI verification remains paused.
+- [x] Sprint 798: remove obsolete per-message chat bubble fallback and enforce
+  one selectable Agent stream; GUI verification remains paused.

@@ -2264,3 +2264,8 @@ Sprint 797 clears the model-catalog callback in `AgentSettingsDialog` teardown,
 closing the remaining lambda-captures-`this` lifetime hole. Headless contract
 proof covers both the callback reset and control guard; GUI verification remains
 paused.
+
+Sprint 798 removes the obsolete per-message bubble fallback from the Agent
+panel. All chat messages now use the single selectable `QTextBrowser` stream;
+the source contract rejects reintroduction of the second rendering path. GUI
+verification remains paused.

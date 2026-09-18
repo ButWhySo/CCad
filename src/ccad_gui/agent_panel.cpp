@@ -1239,70 +1239,15 @@ void AgentPanel::appendChatMessage(const QString& role, const QString& text) {
   if (role == last_chat_role_ && text == last_chat_text_) return;
   last_chat_role_ = role;
   last_chat_text_ = text;
-  if (chat_stream_) {
-    QTextCursor cursor = chat_stream_->textCursor();
-    cursor.movePosition(QTextCursor::End);
-    if (!chat_stream_->toPlainText().isEmpty()) cursor.insertText("\n\n");
-    const QString prefix = role == "user" ? QStringLiteral("You\n")
-                                         : QStringLiteral("CCad Agent\n");
-    cursor.insertText(prefix + (text.startsWith("<TOOL>") ? text.mid(6) : text));
-    chat_stream_->setTextCursor(cursor);
-    chat_stream_->ensureCursorVisible();
-    return;
-  }
-  auto* container = new QWidget();
-  auto* container_layout = new QHBoxLayout(container);
-  container_layout->setContentsMargins(0, 4, 0, 4);
-
-  auto* bubble = new QFrame(container);
-  const bool notice = text.startsWith("Agent provider ") || text.startsWith("Provider ");
-  bubble->setProperty("agentRole", notice ? "noticeCard" : (role == "agent" ? "chatBubbleAgent" : "chatBubbleUser"));
-  auto* layout = new QVBoxLayout(bubble);
-  layout->setContentsMargins(4, 4, 4, 4);
-  
-  if (text.startsWith("<TOOL>")) {
-      QString tool_text = text.mid(6);
-      bubble->setProperty("agentRole", "toolCard");
-      auto* header_layout = new QHBoxLayout();
-      auto* icon = new QLabel("</>", bubble);
-      icon->setProperty("agentRole", "toolTitle");
-      auto* title = new QLabel(tool_text, bubble);
-      title->setProperty("agentRole", "toolTitle");
-      header_layout->addWidget(icon);
-      header_layout->addWidget(title);
-      header_layout->addStretch();
-      layout->addLayout(header_layout);
-  } else {
-      auto* browser = new QTextBrowser(bubble);
-      browser->setOpenExternalLinks(true);
-      browser->setMarkdown(text);
-      browser->setStyleSheet("background-color: transparent; border: none;");
-      browser->setFrameShape(QFrame::NoFrame);
-      browser->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-      browser->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-      browser->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
-      browser->document()->setDocumentMargin(0.0);
-      browser->document()->setTextWidth(-1);
-      
-      // Keep background transparent so bubble color shows
-      browser->viewport()->setAutoFillBackground(false);
-
-      browser->document()->adjustSize();
-      int docHeight = browser->document()->size().height() + 10;
-      browser->setMinimumHeight(docHeight);
-      browser->setMaximumHeight(docHeight);
-      layout->addWidget(browser);
-  }
-  
-  if (role == "user") {
-      container_layout->addStretch();
-      container_layout->addWidget(bubble, 3);
-  } else {
-      container_layout->addWidget(bubble, 3);
-      container_layout->addStretch();
-  }
-
-  chat_history_layout_->addWidget(container);
+  if (!chat_stream_) return;
+  QTextCursor cursor = chat_stream_->textCursor();
+  cursor.movePosition(QTextCursor::End);
+  if (!chat_stream_->toPlainText().isEmpty()) cursor.insertText("\n\n");
+  const QString prefix = role == "user" ? QStringLiteral("You\n")
+                                       : QStringLiteral("CCad Agent\n");
+  cursor.insertText(prefix + (text.startsWith("<TOOL>") ? text.mid(6) : text));
+  chat_stream_->setTextCursor(cursor);
+  chat_stream_->ensureCursorVisible();
 }
 
 void AgentPanel::renderChatChecklist() {

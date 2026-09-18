@@ -11,6 +11,8 @@ review = (root / "src" / "ccad_gui" / "review_window.cpp").read_text(encoding="u
 
 assert "QTextBrowser* chat_stream_" in header
 assert 'setObjectName("control:agent_chat_stream")' in panel
+assert 'if (!chat_stream_) return;' in panel
+assert 'chat_history_layout_->addWidget(container);' not in panel
 assert "cursor.insertText(prefix +" in panel
 assert "setTextInteractionFlags(Qt::TextSelectableByMouse" in panel
 assert "repo_src + \"/ccad_agent/venv/Scripts/python.exe\"" in panel

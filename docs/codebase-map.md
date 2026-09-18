@@ -1581,3 +1581,7 @@ late provider-model response from dereferencing a torn-down control.
 Sprint 797 handover: Settings destructor clears `model_catalog_cb_` alongside
 other dialog callbacks; AgentPanel can no longer invoke a destroyed dialog via
 the catalog response path.
+
+Sprint 798 handover: `AgentPanel::appendChatMessage` writes exclusively to
+`control:agent_chat_stream`, one selectable QTextBrowser. Null stream state now
+drops safely; obsolete bubble construction is removed.
