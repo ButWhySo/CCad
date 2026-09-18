@@ -167,6 +167,9 @@ private slots:
     AgentPanel panel;
     auto* send = panel.findChild<QPushButton*>("action:agent_submit_chat");
     QVERIFY(send != nullptr);
+    auto* collapse = panel.findChild<QPushButton*>("action:agent_collapse");
+    QVERIFY(collapse != nullptr);
+    QVERIFY(!collapse->toolTip().isEmpty());
     QVERIFY(!send->toolTip().isEmpty());
     QVERIFY(panel.findChild<QPushButton*>("action:agent_attach") != nullptr);
     QVERIFY(panel.findChild<QPushButton*>("action:agent_marketplace") != nullptr);

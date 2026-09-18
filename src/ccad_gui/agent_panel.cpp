@@ -7,6 +7,7 @@
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QDateTime>
+#include <QDockWidget>
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
@@ -704,12 +705,26 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
     this->hide();
   });
 
+  auto* collapse_btn = new QPushButton("−", top_bar);
+  collapse_btn->setObjectName("action:agent_collapse");
+  collapse_btn->setToolTip("Collapse Agent dock");
+  collapse_btn->setProperty("agentRole", "iconButton");
+  collapse_btn->setFixedSize(24, 24);
+  connect(collapse_btn, &QPushButton::clicked, this, [this]() {
+    if (auto* dock = window()->findChild<QDockWidget*>("dock:agent")) {
+      dock->hide();
+    } else {
+      hide();
+    }
+  });
+
   top_layout->addWidget(back_btn);
   top_layout->addStretch();
   top_layout->addWidget(title);
   top_layout->addStretch();
   top_layout->addWidget(templates_btn);
   top_layout->addWidget(settings_btn);
+  top_layout->addWidget(collapse_btn);
   top_layout->addWidget(close_btn);
 
   main_layout->addWidget(top_bar);
