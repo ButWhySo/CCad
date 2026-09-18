@@ -2390,3 +2390,7 @@ proving following requests remain parseable. GUI verification remains paused.
 Sprint 825 generalizes native MCP notification handling to every
 `notifications/*` method, including future lifecycle notifications; all stay
 off stdout. GUI verification remains paused.
+
+Sprint 828 adds MCP tool annotations to native CLI `tools/list`: command
+execution is marked potentially destructive, while harness/workspace tools are
+read-only and closed-world.

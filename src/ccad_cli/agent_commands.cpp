@@ -899,9 +899,9 @@ int agentCommand(const std::vector<std::string>& args) {
       std::cout << formatSuccess(id, res) << "\n";
       std::cout.flush();
     } else if (method == "tools/list") {
-      std::string res = "{\"tools\": [{\"name\": \"ccad_execute\", \"description\": \"Execute guarded CCad CLI commands\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"args\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}, \"required\": [\"args\"]}},";
-      res += "{\"name\": \"ccad_harness_context\", \"description\": \"Read CCad agent harness contract and safety context\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}}},";
-      res += "{\"name\": \"ccad_workspace_state\", \"description\": \"Read provider-free CCad agent workspace state\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}}}]}";
+      std::string res = "{\"tools\": [{\"name\": \"ccad_execute\", \"description\": \"Execute guarded CCad CLI commands\", \"annotations\": {\"readOnlyHint\": false, \"destructiveHint\": true, \"openWorldHint\": false}, \"inputSchema\": {\"type\": \"object\", \"properties\": {\"args\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}, \"required\": [\"args\"]}},";
+      res += "{\"name\": \"ccad_harness_context\", \"description\": \"Read CCad agent harness contract and safety context\", \"annotations\": {\"readOnlyHint\": true, \"destructiveHint\": false, \"openWorldHint\": false}, \"inputSchema\": {\"type\": \"object\", \"properties\": {}}},";
+      res += "{\"name\": \"ccad_workspace_state\", \"description\": \"Read provider-free CCad agent workspace state\", \"annotations\": {\"readOnlyHint\": true, \"destructiveHint\": false, \"openWorldHint\": false}, \"inputSchema\": {\"type\": \"object\", \"properties\": {}}}]}";
       std::cout << formatSuccess(id, res) << "\n";
       std::cout.flush();
     } else if (method == "tools/call" && extractStringValue(line, "name") == "ccad_harness_context") {

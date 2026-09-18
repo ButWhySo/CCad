@@ -88,6 +88,8 @@ void testMCPToolsList() {
   std::cout.rdbuf(oldCout);
   if (result != 0) std::exit(1);
   assertContains(out.str(), "\"name\": \"ccad_execute\"", "has ccad_execute tool");
+  assertContains(out.str(), "\"readOnlyHint\": false", "execute tool declares write capability");
+  assertContains(out.str(), "\"readOnlyHint\": true", "read tools declare read-only capability");
 }
 
 void testMCPToolsCall() {
