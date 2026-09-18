@@ -1495,3 +1495,7 @@ calls.
 
 The context-state JSON-RPC event reports `content_size`, opaque
 `original_content_size`, and `truncated`; it never emits context text.
+
+`RouterTool::commitRouting()` rebuilds `PnsBoardObstacleIndex` for future
+acceleration, but exact pad/via/track/zone/arc checks own rejection decisions;
+the broad PNS candidate query must not reject routes by itself.
