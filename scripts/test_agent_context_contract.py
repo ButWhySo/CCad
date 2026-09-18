@@ -39,6 +39,7 @@ methods = next(item["params"] for item in lines
 human_contract = next(item for item in methods["methods"]
                       if item["name"] == "human_message")
 assert "context_state" in human_contract["response_contracts"]
+assert "provider_state" in human_contract["responses"]
 assert "change_kind" in human_contract["response_contracts"]["context_state"]["fields"]
 assert "intake_state" in human_contract["response_contracts"]
 assert "accepted" in human_contract["response_contracts"]["intake_state"]["fields"]

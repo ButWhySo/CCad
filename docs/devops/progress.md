@@ -2325,6 +2325,14 @@ Sprint 856 adds a no-network runtime fixture that captures the emitted
 provider_state JSON, proves authentication classification, and proves an API
 key-like value is absent from the event. GUI verification remains paused.
 
+Sprint 857 adds provider_state to the advertised human_message response list,
+closing the discovery gap between the emitted provider event and its schema.
+GUI verification remains paused.
+
+Sprint 858 synchronizes the intake guardrail subprocess contract with the
+expanded response list; the full offline gate caught and fixed this stale
+assertion. GUI verification remains paused.
+
 Sprint 837 adds explicit Cerebras model-catalog response from the documented
 curated snapshot and enables Settings Refresh for Cerebras. OpenRouter remains
 the only network-fetched catalog; Cerebras refresh is quota-safe and offline.

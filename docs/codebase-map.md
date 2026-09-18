@@ -1682,3 +1682,10 @@ while retry diagnostics remain intact.
 Sprint 856 handover: `scripts/test_provider_failure_event.py` invokes the
 redacted failure emitter with a local fake 401 error, parses its JSON, and
 proves authentication classification plus secret absence without network.
+
+Sprint 857 handover: `human_message.responses` now includes `provider_state`,
+matching its published response contract and runtime emission paths.
+
+Sprint 858 handover: `test_agent_intake_guard_contract.py` asserts the updated
+response-list prefix including provider_state, preserving guardrail coverage
+after discovery expansion.

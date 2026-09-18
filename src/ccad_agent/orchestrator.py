@@ -195,7 +195,8 @@ def orchestrator_method_catalog():
              "approval_required": True, "side_effect": "client_authorized_result"},
             {"name": "human_message", "read_only": False, "provider_call": True,
              "preflight": "intake_guard",
-             "responses": ["intake_state", "context_state", "message", "tool_call"],
+             "responses": ["intake_state", "context_state", "provider_state",
+                           "message", "tool_call"],
              "response_contracts": {
                  "intake_state": {"fields": [
                      "accepted", "category", "secret_value_visible"]},

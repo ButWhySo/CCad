@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = (ROOT / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
 assert '"preflight": "intake_guard"' in SOURCE
-assert '"intake_state", "context_state", "message", "tool_call"' in SOURCE
+assert '"intake_state", "context_state", "provider_state"' in SOURCE
 env = os.environ.copy()
 env.update({"CCAD_PROVIDER": "mock", "PYTHONNOUSERSITE": "1",
             "PYTHONPATH": str(ROOT / "src" / "ccad_agent")})

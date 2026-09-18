@@ -1043,3 +1043,7 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   GUI or provider request.
 - [x] Sprint 856: capture a runtime provider failure event and prove
   classification/redaction; no GUI or provider request.
+- [x] Sprint 857: advertise provider_state in human_message responses; no GUI
+  or provider request.
+- [x] Sprint 858: synchronize intake guardrail contract with response-list
+  discovery; no GUI or provider request.
