@@ -1019,3 +1019,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   production default; no GUI or provider request.
 - [x] Sprint 844: expose initial/changed/unchanged context transition kind
   alongside the existing opaque revision; no GUI or provider request.
+- [x] Sprint 845: publish context-state response fields through method
+  discovery; no GUI or provider request.

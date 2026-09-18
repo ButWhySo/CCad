@@ -2274,6 +2274,11 @@ labels each event `initial`, `changed`, or `unchanged` while preserving the
 existing revision and boolean fields. Subprocess coverage proves all three
 states without emitting context contents. GUI verification remains paused.
 
+Sprint 845 publishes the `context_state` field contract in `human_message`
+method discovery, so external harnesses can consume transition and redaction
+metadata without reverse-engineering emitted events. GUI verification remains
+paused.
+
 Sprint 837 adds explicit Cerebras model-catalog response from the documented
 curated snapshot and enables Settings Refresh for Cerebras. OpenRouter remains
 the only network-fetched catalog; Cerebras refresh is quota-safe and offline.

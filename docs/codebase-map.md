@@ -1634,3 +1634,8 @@ Sprint 844 handover: Python `context_state` retains opaque revision chaining
 and adds `change_kind` (`initial`, `changed`, `unchanged`) for downstream
 harnesses. The transition label contains no context text and is covered by a
 three-message subprocess contract.
+
+Sprint 845 handover: `orchestrator_method_catalog()` now documents the
+`context_state` response fields under `human_message.response_contracts`,
+including redaction and transition metadata; the legacy response-method list
+remains unchanged.

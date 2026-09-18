@@ -19,6 +19,7 @@ assert 'local_project_memory' in text
 assert 'request_context_present = bool(raw_context.strip())' in text
 assert '"previous_revision": previous_context_revision' in text
 assert '"change_kind": context_change_kind' in text
+assert '"response_contracts": {"context_state": {"fields": [' in text
 
 env = os.environ.copy()
 env.update({"CCAD_PROVIDER": "mock", "PYTHONNOUSERSITE": "1",

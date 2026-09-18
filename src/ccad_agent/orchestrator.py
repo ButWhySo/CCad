@@ -196,6 +196,11 @@ def orchestrator_method_catalog():
             {"name": "human_message", "read_only": False, "provider_call": True,
              "preflight": "intake_guard",
              "responses": ["intake_state", "context_state", "message", "tool_call"],
+             "response_contracts": {"context_state": {"fields": [
+                 "revision", "previous_revision", "changed", "change_kind",
+                 "content_present", "content_size", "original_content_size",
+                 "context_limit", "truncated", "content_emitted", "sources",
+                 "memory_content_emitted"]}},
              "secret_value_visible": False},
         ],
         "secret_value_visible": False,
