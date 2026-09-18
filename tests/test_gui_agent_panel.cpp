@@ -207,7 +207,7 @@ private slots:
     QVERIFY(models->findText("qwen-3-235b-a22b-instruct-2507") >= 0);
     models->setEditText("claude-opus-5gpt-5.1-test");
     provider->setCurrentIndex(provider->findData("anthropic"));
-    QCOMPARE(models->currentText(), QString("claude-fable-5-1"));
+    QCOMPARE(models->currentText(), QString("claude-opus-5"));
     provider->setCurrentIndex(provider->findData("openai"));
     QCOMPARE(models->currentText(), QString("gpt-5.1"));
   }

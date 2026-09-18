@@ -11,12 +11,15 @@ readme = (root / "README.md").read_text(encoding="utf-8")
 official_qwen = "qwen-3-235b-a22b-instruct-2507"
 production_model = "gpt-oss-120b"
 stale_model = "qwen-3.8-27b"
+stale_anthropic_model = "claude-fable-5-1"
 gemini_25_text = ("gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro")
 
 for document in (settings, compat, readme):
     assert official_qwen in document
     assert production_model in document
     assert stale_model not in document
+assert stale_anthropic_model not in settings
+assert stale_anthropic_model not in compat
 assert official_qwen in orchestrator
 for model in gemini_25_text:
     assert model in settings

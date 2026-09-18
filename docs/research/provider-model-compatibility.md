@@ -31,7 +31,7 @@ ID.
 
 The current Anthropic model overview documents API IDs; CCad presents a
 curated subset:
-`claude-fable-5-1`, `claude-opus-5`, `claude-sonnet-5`, and
+`claude-opus-5`, `claude-sonnet-5`, and
 `claude-haiku-4-5-20251001`. CCad passes the selected ID to
 `ChatAnthropic`; it does not concatenate provider labels into model IDs.
 

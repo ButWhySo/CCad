@@ -2250,3 +2250,8 @@ and personalisation fields across a fresh orchestrator process.
 Sprint 794 makes model input strict by default for curated providers. Editable
 custom IDs remain enabled only for endpoint-backed providers, preventing typed
 text from concatenating with curated dropdown values.
+
+Sprint 795 aligns the Anthropic GUI preset order with the runtime default
+(`claude-opus-5`) and removes the stale `claude-fable-5-1` entry. The matching
+GUI contract expectation was updated; this was a headless consistency fix only
+while GUI verification remains paused.

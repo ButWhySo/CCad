@@ -943,3 +943,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   personalisation settings; GUI verification remains user-paused.
 - [x] Sprint 794: make curated model selectors read-only while preserving custom
   IDs for endpoint-backed providers; GUI verification remains user-paused.
+- [x] Sprint 795: align Anthropic GUI preset ordering with runtime default and
+  remove stale `claude-fable-5-1`; GUI verification remains user-paused.
