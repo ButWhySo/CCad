@@ -2101,6 +2101,10 @@ Windows reveal prompt now names the current account and validates that account
 password without requesting a domain. GUI runtime verification remains
 paused by explicit request.
 
+Sprint 760 adds a no-network Cerebras adapter smoke test to CI. It constructs
+the selected `qwen-3-32b` OpenAI-compatible client, verifies endpoint/model,
+and sends no request or credential.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.
