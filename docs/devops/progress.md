@@ -1834,6 +1834,10 @@ The footprint/symbol chooser now resolves its default cache through `CCAD_LIBRAR
 
 Chooser status now reports loaded item count and resolved cache path, explains missing-cache setup, and reports zero-match searches with a clear-search instruction instead of leaving a blank list. Regression coverage passed with the official visual harness screenshot inspected and stderr empty.
 
+### Sprint 703 - harden POSIX cross-probe CLI regression
+
+The Linux CI CLI test was still vulnerable to shell expansion of the KiCad-style `$NET` packet while Windows passed. The regression now sends an explicitly escaped leading dollar through the test shell; the parser already accepts this compatibility form and removes the transport escape before classification. The focused Windows CLI test passed; the full CI run remains the final cross-platform proof.
+
 ### Sprint 683 - expose native approval status to MCP hosts
 
 Added read-only `ccad_gui_approval_status` to the GUI MCP bridge. External harnesses can now query approval-card visibility and status directly, while mutation execution and human approval remain native GUI responsibilities. Python regression and official visual harness passed; screenshot was inspected and stderr was empty.
