@@ -231,7 +231,8 @@ def dispatch_checkpointed_tool(tool_name: str, args: dict):
     """Pause graph until C++ client returns authoritative tool result."""
     call_id = checkpoint_tool_call_id(tool_name, args)
     decision = interrupt({"kind": "ccad_tool_call", "tool": tool_name,
-                          "args": args, "call_id": call_id})
+                          "args": args, "call_id": call_id,
+                          "approval_required": True})
     if isinstance(decision, dict) and "error" in decision:
         return json.dumps(decision)
     return json.dumps(decision) if isinstance(decision, (dict, list)) else str(decision)

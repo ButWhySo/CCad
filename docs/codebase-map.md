@@ -1719,3 +1719,5 @@ Sprint 869 handover: `/clear` removes the current thread’s entry from `context
 Sprint 870 handover: `init_provider()` carries `classify_provider_error()` output into its redacted terminal message; provider state and message now agree on authentication, quota, timeout, dependency, model, or unavailable category.
 
 Sprint 871 handover: mutating tool-call payloads include `approval_required`; `ui.place_via` derives it from `dry_run`, while route/zone and awaited client mutations require approval. `scripts/test_tool_approval_metadata_contract.py` locks discovery/payload alignment.
+
+Sprint 872 handover: `dispatch_checkpointed_tool()` stores `approval_required:true` in the LangGraph interrupt value, preserving the side-effect boundary across restart/resume. `scripts/test_checkpoint_approval_contract.py` locks the no-network contract.

@@ -2567,3 +2567,7 @@ Headless-only batch: provider initialization now carries the classified failure 
 ### Sprint 871 — explicit tool approval metadata
 
 Headless-only batch: mutating `tool_call` events now expose `approval_required`; dry-run via placement is explicitly false, while route/zone and awaited mutations are true. Discovery fields match emitted payloads. Added an offline contract; GUI/API/build validation remains paused.
+
+### Sprint 872 — durable approval metadata
+
+Headless-only batch: checkpointed LangGraph tool interrupts now preserve `approval_required:true`, so restart/resume cannot lose the side-effect approval boundary. Added an offline contract; GUI/API/build validation remains paused.

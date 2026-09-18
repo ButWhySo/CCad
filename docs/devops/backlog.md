@@ -43,6 +43,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [x] Sprint 869: reset current-thread context revision when `/clear` removes chat history and context.
 - [x] Sprint 870: propagate classified provider failure category into the safe user-facing message event.
 - [x] Sprint 871: expose explicit approval-required metadata on mutating tool-call events, including dry-run behavior.
+- [x] Sprint 872: preserve approval-required metadata inside durable checkpoint interrupts across resume.
 - [x] Sprint 812: canonicalize malformed JSON-RPC tool correlation IDs before pending-call lookup; invalid IDs now fail safely.
 - [x] Sprint 813: checkpointed tool cancellation resumes matching thread with structured cancellation error; stale cancellation remains rejected.
 - [x] Sprint 814: two-process checkpoint test proves cancellation result survives process restart.
