@@ -184,7 +184,8 @@ def orchestrator_method_catalog():
              "network_access": "provider_specific",
              "network_access_by_provider": {"openrouter": "explicit_refresh", "cerebras": "none"},
              "providers": ["openrouter", "cerebras"],
-             "params": {"provider": {"type": "string", "default": "openrouter"}},
+             "params": {"provider": {"type": "string", "enum": ["openrouter", "cerebras"],
+                                        "default": "openrouter"}},
              "response": {"method": "provider_models", "fields": [
                  "provider", "ok", "error", "error_detail", "models",
                  "count", "network_access"]}},

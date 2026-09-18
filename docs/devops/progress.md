@@ -2276,6 +2276,9 @@ external harnesses from inferring network use from a shared top-level flag.
 Sprint 839 renames unknown model-catalog failure to `unsupported_provider`,
 making harness diagnostics truthful; unknown-provider regression is headless.
 
+Sprint 841 publishes the supported provider enum in `agent.list_models` schema,
+so external agents can select catalogs without guessing.
+
 Sprint 840 updates the OpenRouter catalog source contract for the renamed
 unknown-provider diagnostic; no behavior or network path changed.
 
