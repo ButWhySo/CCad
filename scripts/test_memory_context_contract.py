@@ -8,5 +8,6 @@ assert "def local_memory_context():" in text
 assert 'memory_config.get("stm", True)' in text
 assert 'memory_store.list(scope="project")[-8:]' in text
 assert "entry.get('content', '')[:1000]" in text
+assert "entry.get('id', 'unknown')" in text
 assert "raw_context = (raw_context +" in text
 print("PASS opt-in bounded local memory context contract; no network")

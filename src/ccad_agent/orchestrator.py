@@ -129,7 +129,7 @@ def local_memory_context():
         return ""
     lines = ["[CCAD pinned local memory]"]
     for entry in entries:
-        lines.append(f"- {entry.get('title') or 'memory'}: {entry.get('content', '')[:1000]}")
+        lines.append(f"- [{entry.get('id', 'unknown')}] {entry.get('title') or 'memory'}: {entry.get('content', '')[:1000]}")
     return "\n".join(lines)
 
 class AgentState(TypedDict):
