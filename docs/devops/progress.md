@@ -2105,6 +2105,11 @@ Sprint 760 adds a no-network Cerebras adapter smoke test to CI. It constructs
 the selected `qwen-3-32b` OpenAI-compatible client, verifies endpoint/model,
 and sends no request or credential.
 
+Sprint 761 reruns the complete agent-python contract subset inside the bundled
+venv, including memory/context limits, approval/cancellation, Cerebras setup,
+and accepted/denied SQLite restart. All passed; temporary checkpoint files
+were removed. GUI validation remains paused.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.
