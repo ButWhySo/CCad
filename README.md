@@ -45,21 +45,21 @@ In Agent Settings, choose `Google Gemini`, confirm model, paste key, and press `
 
 Install the bundled agent environment once, then launch the application with
 the same environment. The current adapter uses Cerebras' OpenAI-compatible
-endpoint and defaults to the official preview model
-`qwen-3-235b-a22b-instruct-2507`. `gpt-oss-120b` is also available as a
-production model. Cerebras marks older Qwen IDs as unavailable; confirm model
-availability against its current catalog before making a live request.
+endpoint and defaults to the official production model `gpt-oss-120b`.
+`llama3.1-8b` is also production; `zai-glm-4.7` is preview. Cerebras marks
+`qwen-3-235b-a22b-instruct-2507` deprecated, so use it only as an explicit
+custom ID if the account still serves it.
 
 ```powershell
 & src/ccad_agent/venv/Scripts/python.exe -m pip install -r src/ccad_agent/requirements.txt
 $env:CEREBRAS_API_KEY = "PASTE_KEY_HERE"
-$env:CCAD_CEREBRAS_MODEL = "qwen-3-235b-a22b-instruct-2507"
+$env:CCAD_CEREBRAS_MODEL = "gpt-oss-120b"
 $env:CCAD_PROVIDER = "cerebras"
 $env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
 .\build-qt\ccad_gui.exe
 ```
 
-In Agent Settings choose `Cerebras`, select `qwen-3-235b-a22b-instruct-2507`, enter the session
+In Agent Settings choose `Cerebras`, select `gpt-oss-120b`, enter the session
 key, and press `Test Provider`. The GUI launches the checked-in venv by
 absolute path and disables user-site packages, preventing stale global
 LangChain versions from breaking the adapter. Remove the session variables

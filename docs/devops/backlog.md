@@ -1001,3 +1001,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   excluded, user pause/quota boundaries active.
 - [x] Sprint 835: wire offline gate exclusion contract into CI; no GUI or live
   provider execution added.
+- [x] Sprint 836: reconcile Cerebras runtime/UI presets with current public
+  catalog and remove deprecated Qwen default; no network or GUI execution.

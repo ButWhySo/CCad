@@ -574,9 +574,10 @@ def init_provider():
                 model_name = model_name or "openrouter/auto"
                 base_url = "https://openrouter.ai/api/v1"
             elif provider == "cerebras":
-                # Keep backend fallback aligned with Settings' quota-conscious
-                # Cerebras preset. Explicit CCAD_CEREBRAS_MODEL still wins.
-                model_name = model_name or "qwen-3-235b-a22b-instruct-2507"
+                # Keep backend fallback on a current Cerebras production model.
+                # Explicit CCAD_CEREBRAS_MODEL still wins; custom IDs remain
+                # available for preview/dedicated endpoints.
+                model_name = model_name or "gpt-oss-120b"
                 base_url = "https://api.cerebras.ai/v1"
             elif provider == "local_model":
                 model_name = model_name or os.environ.get("CCAD_LOCAL_MODEL_NAME", "") or "local-model"

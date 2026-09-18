@@ -49,7 +49,7 @@ QStringList modelsForProvider(const QString& provider) {
     return {"openrouter/auto", "Custom model (type below)"};
   }
   if (provider == "cerebras") {
-    return {"qwen-3-235b-a22b-instruct-2507", "gpt-oss-120b"};
+    return {"gpt-oss-120b", "llama3.1-8b", "zai-glm-4.7"};
   }
   return {"local-model", "Custom model (type below)"};
 }

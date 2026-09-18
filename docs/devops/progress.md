@@ -2270,6 +2270,11 @@ workflow changes are checked for GUI/live-provider exclusion rather than only
 being trusted from local PowerShell execution. No GUI or provider request is
 introduced.
 
+Sprint 836 reconciles Cerebras presets with its current public model catalog:
+production fallback is now `gpt-oss-120b`, UI also exposes `llama3.1-8b` and
+preview `zai-glm-4.7`, while custom IDs remain supported. Deprecated Qwen is no
+longer the default. No provider request or GUI verification performed.
+
 Sprint 798 removes the obsolete per-message bubble fallback from the Agent
 panel. All chat messages now use the single selectable `QTextBrowser` stream;
 the source contract rejects reintroduction of the second rendering path. GUI
