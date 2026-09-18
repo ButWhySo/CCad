@@ -906,7 +906,11 @@ if __name__ == "__main__":
                         }})
             elif method == "human_message":
                 text = req.get("params", {}).get("text", "")
-                context_str = bound_context_text(req.get("params", {}).get("context", ""))
+                raw_context = req.get("params", {}).get("context", "")
+                if not isinstance(raw_context, str):
+                    raw_context = str(raw_context or "")
+                context_str = bound_context_text(raw_context)
+                context_truncated = len(context_str) < len(raw_context)
                 current_context_revision = context_revision(context_str)
                 context_changed = current_context_revision != last_context_revision
                 last_context_revision = current_context_revision
@@ -915,6 +919,8 @@ if __name__ == "__main__":
                     "changed": context_changed,
                     "content_present": bool(context_str),
                     "content_size": len(context_str),
+                    "original_content_size": len(raw_context),
+                    "truncated": context_truncated,
                     "content_emitted": False,
                 }})
                 

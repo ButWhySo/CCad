@@ -881,3 +881,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 726: bound interactive agent history to limit context/token growth; durable memory compaction remains future work.
 - [x] Sprint 727: bound incoming project-context size and mark truncation; semantic context compaction remains future work.
 - [x] Sprint 728: wire agent context/loop contracts into CI Python gate; authenticated provider and GUI validation remain separate.
+- [x] Sprint 730: report project-context truncation state without emitting content; active semantic compaction remains next.

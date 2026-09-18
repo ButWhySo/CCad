@@ -11,4 +11,6 @@ assert 'def bound_context_text(context):' in text
 assert 'if not isinstance(context, str):' in text
 assert 'CCAD context truncated for provider safety' in text
 assert 'context_str = bound_context_text(' in text
+assert '"original_content_size": len(raw_context)' in text
+assert '"truncated": context_truncated' in text
 print("PASS agent project-context size boundary contract; no network")

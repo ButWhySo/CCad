@@ -2025,5 +2025,9 @@ after graph output. No GUI validation run.
 Project-context guard added: `CCAD_AGENT_CONTEXT_LIMIT` defaults to 32768
 characters, clamps 4096..131072, and marks truncation before provider use.
 
+Context-state protocol now reports opaque original size and a boolean
+`truncated` flag, so agents can request compaction instead of assuming full
+project context.
+
 CI agent-python gate now executes loop, history, and project-context boundary
 contracts explicitly; syntax-only discovery is no longer sole coverage.

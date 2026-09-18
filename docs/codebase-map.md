@@ -1492,3 +1492,6 @@ keys set while selected local adapter reaches tool loop.
 `.github/workflows/ci.yml` runs loop, history, and project-context boundary
 contracts in `agent-python`; these tests are provider-free and make no live API
 calls.
+
+The context-state JSON-RPC event reports `content_size`, opaque
+`original_content_size`, and `truncated`; it never emits context text.
