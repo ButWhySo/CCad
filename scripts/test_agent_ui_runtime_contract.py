@@ -20,6 +20,8 @@ assert 'role == "agent"' in panel
 review = (root / "src" / "ccad_gui" / "review_window.cpp").read_text(encoding="utf-8")
 assert 'agentRole="chatBubbleUser"' not in review
 assert 'agentRole="toolCard"' not in review
+assert 'chat_history_layout_->addWidget(bubble);' not in panel
+assert 'appendChatMessage("agent", activity_text);' in panel
 assert "cursor.insertText(prefix +" in panel
 assert "setTextInteractionFlags(Qt::TextSelectableByMouse" in panel
 assert "repo_src + \"/ccad_agent/venv/Scripts/python.exe\"" in panel

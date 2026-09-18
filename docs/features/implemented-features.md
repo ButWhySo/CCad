@@ -2645,3 +2645,6 @@ ReviewWindow's duplicate legacy selectors are removed as well, preventing global
 stylesheet drift from reintroducing the old boxed-message visual language.
 Transcript deduplication is warning-specific; repeated user and assistant text
 remains selectable and visible.
+Activity events now appear inline in that same transcript, while their structured
+records remain available to agents through workspace state. No per-event chat
+checklist widgets are created.

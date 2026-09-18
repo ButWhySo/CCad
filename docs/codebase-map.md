@@ -1595,3 +1595,7 @@ chat bubble/tool selectors; the single-stream contract covers panel and window.
 Sprint 801 handover: `appendChatMessage` deduplicates only repeated provider or
 backend warning notices. User prompts and assistant responses are never hidden
 because their text repeats.
+
+Sprint 802 handover: `addActivityEvent` appends concise activity text to the
+single chat stream; `renderChatChecklist` no longer creates widgets. Activity
+events remain serialized by `workspaceStateJson`.

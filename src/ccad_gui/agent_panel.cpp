@@ -1238,20 +1238,9 @@ void AgentPanel::appendChatMessage(const QString& role, const QString& text) {
 }
 
 void AgentPanel::renderChatChecklist() {
-  // Renders activity events as a checklist inline.
-  if (activity_events_.isEmpty()) return;
-  auto* bubble = new QFrame();
-  bubble->setProperty("agentRole", "chatBubbleAgent");
-  auto* layout = new QVBoxLayout(bubble);
-  layout->setContentsMargins(8, 8, 8, 8);
-  
-  for (const auto& ev : activity_events_) {
-    auto* cb = new QCheckBox(ev.title, bubble);
-    cb->setChecked(true);
-    cb->setEnabled(false);
-    layout->addWidget(cb);
-  }
-  chat_history_layout_->addWidget(bubble);
+  // Activity events are represented in the same selectable transcript as
+  // messages. Keep this compatibility hook side-effect free; workspaceStateJson
+  // remains the machine-readable activity surface.
 }
 
 void AgentPanel::startPythonBackend() {
@@ -2407,6 +2396,9 @@ void AgentPanel::addActivityEvent(const QString& kind,
   while (activity_events_.size() > 8) {
     activity_events_.removeFirst();
   }
+  QString activity_text = QStringLiteral("✓ ") + event.title;
+  if (!event.detail.isEmpty()) activity_text += " — " + event.detail;
+  appendChatMessage("agent", activity_text);
   renderActivityEvents();
 }
 

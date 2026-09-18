@@ -957,3 +957,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   stylesheet and cover both UI sources; GUI verification remains paused.
 - [x] Sprint 801: preserve repeated user prompts/assistant responses while
   deduplicating only repeated backend warning notices; GUI remains paused.
+- [x] Sprint 802: move activity events into single chat stream and remove
+  per-event checklist widget boxes; GUI verification remains paused.

@@ -2281,3 +2281,7 @@ GUI verification remains paused.
 Sprint 801 narrows chat deduplication to repeated backend/provider warning text.
 Repeated user prompts and real assistant responses remain visible in the single
 selectable transcript; GUI verification remains paused.
+
+Sprint 802 moves activity events into the same selectable chat stream and makes
+the legacy checklist renderer side-effect free. Machine-readable activity state
+remains available through workspace state; GUI verification remains paused.
