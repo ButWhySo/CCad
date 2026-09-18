@@ -2265,6 +2265,11 @@ closing the remaining lambda-captures-`this` lifetime hole. Headless contract
 proof covers both the callback reset and control guard; GUI verification remains
 paused.
 
+Sprint 835 wires the offline gate selector contract into CI, so future
+workflow changes are checked for GUI/live-provider exclusion rather than only
+being trusted from local PowerShell execution. No GUI or provider request is
+introduced.
+
 Sprint 798 removes the obsolete per-message bubble fallback from the Agent
 panel. All chat messages now use the single selectable `QTextBrowser` stream;
 the source contract rejects reintroduction of the second rendering path. GUI

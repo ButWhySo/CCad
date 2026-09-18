@@ -999,3 +999,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 834: add bundled-venv offline agent contract runner plus static
   exclusion contract; headless MCP bridge included, GUI/live-provider tests
   excluded, user pause/quota boundaries active.
+- [x] Sprint 835: wire offline gate exclusion contract into CI; no GUI or live
+  provider execution added.
