@@ -971,3 +971,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   state without visible telemetry chips; GUI verification remains paused.
 - [x] Sprint 808: add subprocess proof for backend readiness payload and
   no-network redaction; GUI verification remains paused.
+- [x] Sprint 809: wire backend readiness subprocess proof into CI agent gate;
+  GUI verification remains paused.

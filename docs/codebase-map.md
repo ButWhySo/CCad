@@ -1621,3 +1621,6 @@ are machine-readable only; no status-chip UI was added.
 Sprint 808 handover: `scripts/test_backend_state_contract.py` launches only the
 mock provider, asserts backend readiness fields and secret/network policy, then
 exits without external requests.
+
+Sprint 809 handover: `.github/workflows/ci.yml` runs backend readiness contract
+after provider-default contract; no provider key or network access required.

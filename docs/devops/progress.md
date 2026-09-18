@@ -2311,3 +2311,4 @@ remains paused.
 Backend readiness now has a mock-provider subprocess contract proving emitted
 JSON fields, redaction, and no-network behavior; GUI verification remains
 paused.
+CI agent gate now executes this contract explicitly.
