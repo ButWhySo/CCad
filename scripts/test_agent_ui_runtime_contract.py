@@ -16,5 +16,6 @@ assert "repo_src + \"/ccad_agent/venv/Scripts/python.exe\"" in panel
 assert 'agent_env.insert("PYTHONNOUSERSITE", "1")' in panel
 assert "LogonUserW(" in settings
 assert "Windows password for '%1'" in settings
+assert "password.fill(QChar(u'\\0'))" in settings
 assert "CredUIPromptForCredentialsW" not in settings
 print("PASS agent UI/provider runtime source contract; no GUI launched")

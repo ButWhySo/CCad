@@ -2118,6 +2118,9 @@ Sprint 764 adds a no-GUI source contract for the single selectable chat
 transcript, absolute bundled-venv activation, user-account password reveal,
 and removal of the domain-oriented credential dialog.
 
+Sprint 765 hardens that reveal path with correct Windows username-buffer sizing
+and explicit in-memory password clearing after `LogonUserW` validation.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.

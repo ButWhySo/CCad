@@ -76,7 +76,7 @@ QString modelDetailsForProvider(const QString& provider) {
 bool authorizeSecretReveal(QWidget* parent) {
 #ifdef Q_OS_WIN
   wchar_t user[UNLEN + 1] = {};
-  DWORD user_size = UNLEN;
+  DWORD user_size = UNLEN + 1;
   if (!GetUserNameW(user, &user_size)) {
     return false;
   }
@@ -95,6 +95,7 @@ bool authorizeSecretReveal(QWidget* parent) {
       LOGON32_PROVIDER_DEFAULT, &token);
   SecureZeroMemory(const_cast<wchar_t*>(password_wide.data()),
                    password_wide.size() * sizeof(wchar_t));
+  password.fill(QChar(u'\0'));
   if (token) CloseHandle(token);
   return valid == TRUE;
 #else
