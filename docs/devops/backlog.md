@@ -907,3 +907,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 764: add no-GUI regression coverage for selectable chat stream, venv activation, and current-account password reveal.
 - [x] Sprint 765: harden Windows current-account password validation and clear the temporary password buffer.
 - [x] Sprint 766: reconcile provider/model presets with first-party catalogs and remove the stale Cerebras `qwen-3-32b` fallback; update compatibility docs and no-network contracts in the same change.
+- [x] Sprint 767: classify provider failures into actionable safe categories while preserving quota and secret protections; add no-network contract coverage.

@@ -2128,6 +2128,11 @@ Gemini preset IDs were also aligned with their current documentation. The
 compatibility record and contract tests were updated in the same change.
 No provider request or GUI validation was run; GUI validation remains paused.
 
+Sprint 767 makes provider failures actionable without leaking provider error
+payloads. Runtime messages classify authentication, model ID, quota/rate-limit,
+timeout, dependency, and generic availability failures; a no-network contract
+covers the classification path. GUI validation remains paused.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.

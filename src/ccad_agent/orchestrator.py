@@ -403,6 +403,22 @@ def emit_provider_failure(provider: str, error: Exception):
         "error": type(error).__name__, "secret_value_visible": False,
     }})
 
+def classify_provider_error(error: Exception):
+    """Return safe, actionable category; never include secret-bearing text."""
+    status = getattr(error, "status_code", None)
+    text = str(error).lower()
+    if status in (401, 403) or any(marker in text for marker in ("unauthorized", "invalid api key", "authentication")):
+        return "authentication"
+    if status == 404 or any(marker in text for marker in ("model not found", "does not exist", "unknown model")):
+        return "model_not_found"
+    if status in (402, 429) or any(marker in text for marker in ("rate limit", "quota", "too many requests", "insufficient credits")):
+        return "quota_or_rate_limit"
+    if isinstance(error, (TimeoutError,)) or "timeout" in text:
+        return "timeout"
+    if isinstance(error, (ImportError, ModuleNotFoundError)):
+        return "dependency"
+    return "provider_unavailable"
+
 def emit_dependency_warning(module_name: str):
     """Give users a safe, copyable remedy when an optional adapter is absent."""
     emit({"jsonrpc": "2.0", "method": "message", "params": {
@@ -1232,8 +1248,11 @@ if __name__ == "__main__":
                         "prompt_emitted": False, "secret_value_visible": False,
                     }})
                     emit({"jsonrpc": "2.0", "method": "message", "params": {
-                        "text": "Provider request failed after bounded retries; no tool was executed.",
+                        "text": ("Provider request failed after bounded retries; no tool was executed. "
+                                 f"Cause: {classify_provider_error(error)}. "
+                                 "Check provider, model ID, key, quota, or network settings."),
                         "kind": "provider_error", "error_type": type(error).__name__,
+                        "cause": classify_provider_error(error),
                     }})
                     continue
                 session_messages = bound_session_history(final_state["messages"])

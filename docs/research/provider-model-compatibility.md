@@ -46,7 +46,10 @@ Provider configuration is not a provider health check. CCad's no-network
 contract tests only validate adapter construction, endpoint, key alias, and
 model propagation. A real request is opt-in and must be initiated by the user.
 The orchestrator must not retry authentication, quota, or rate-limit failures;
-those errors are surfaced as provider failures without another request.
+those errors are surfaced as provider failures without another request. Runtime
+messages now classify failures as authentication, model-not-found,
+quota/rate-limit, timeout, dependency, or provider-unavailable, without
+including exception text that could contain a key or request payload.
 
 Official references: [Cerebras model catalog](https://inference-docs.cerebras.ai/models/overview),
 [Gemini models](https://ai.google.dev/gemini-api/docs/models),
