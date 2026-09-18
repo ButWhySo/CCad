@@ -1573,3 +1573,7 @@ read-only and toggles editability only for endpoint-backed provider IDs.
 Sprint 795 handover: Anthropic curated model list now begins with runtime
 default `claude-opus-5`; stale `claude-fable-5-1` is removed from GUI and its
 regression expectation. No GUI launch or provider request performed.
+
+Sprint 796 handover: `AgentSettingsDialog::applyModelCatalog` checks both
+provider and model combo lifetime before reading callback state, preventing a
+late provider-model response from dereferencing a torn-down control.

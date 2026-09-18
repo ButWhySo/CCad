@@ -22,6 +22,7 @@ assert "CredUIPromptForCredentialsW" not in settings
 assert 'sendJsonRpc("agent.list_models"' in settings
 assert 'action:refreshModelCatalog' in settings
 assert 'provider_models' in panel
+assert 'if (!model_combo_ || !provider_combo_' in settings
 assert 'setModelCatalogCallback' in settings
 assert 'applyModelCatalog' in settings
 assert 'catalog["ok"].toBool(false)' in settings

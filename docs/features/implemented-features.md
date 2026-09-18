@@ -2630,3 +2630,6 @@ OpenRouter, and local-model providers explicitly enable custom model IDs.
 The Anthropic curated selector now starts with the same `claude-opus-5` preset
 used by the provider runtime default. Stale `claude-fable-5-1` selection is no
 longer offered.
+
+Model-catalog callbacks are lifetime-safe: responses arriving during Settings
+dialog teardown are ignored when either provider or model control is absent.

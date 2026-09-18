@@ -945,3 +945,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   IDs for endpoint-backed providers; GUI verification remains user-paused.
 - [x] Sprint 795: align Anthropic GUI preset ordering with runtime default and
   remove stale `claude-fable-5-1`; GUI verification remains user-paused.
+- [x] Sprint 796: guard model-catalog callback against torn-down provider/model
+  controls; GUI verification remains user-paused.

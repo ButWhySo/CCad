@@ -2255,3 +2255,7 @@ Sprint 795 aligns the Anthropic GUI preset order with the runtime default
 (`claude-opus-5`) and removes the stale `claude-fable-5-1` entry. The matching
 GUI contract expectation was updated; this was a headless consistency fix only
 while GUI verification remains paused.
+
+Sprint 796 hardens model-catalog response handling: Settings now safely ignores
+catalog callbacks if either model or provider combo has already been destroyed.
+The source contract covers this lifetime guard; GUI verification remains paused.

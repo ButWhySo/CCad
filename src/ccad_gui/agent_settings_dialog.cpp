@@ -769,7 +769,7 @@ void AgentSettingsDialog::applyMarketplaceCatalog(const QJsonObject& catalog) {
 }
 
 void AgentSettingsDialog::applyModelCatalog(const QJsonObject& catalog) {
-    if (!model_combo_ || catalog["provider"].toString() !=
+    if (!model_combo_ || !provider_combo_ || catalog["provider"].toString() !=
         provider_combo_->currentData().toString()) return;
     if (!catalog["ok"].toBool(false)) {
         if (model_details_) model_details_->setText(
