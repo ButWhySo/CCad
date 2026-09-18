@@ -2039,6 +2039,7 @@ provider call made.
 Local `/cc`/`/compact` now performs truthful deterministic history compaction:
 recent turns stay intact, older turns become opaque count/size metadata, and no
 provider request is made. GUI validation remains paused by explicit user order.
+CI agent gate now executes both compaction and provider-timeout contracts.
 
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
