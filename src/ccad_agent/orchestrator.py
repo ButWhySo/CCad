@@ -1179,12 +1179,6 @@ if __name__ == "__main__":
                         "call_id": call_id, "reason": "unknown_or_late_call",
                     }})
                     continue
-                emit({"jsonrpc": "2.0", "method": "tool_result_ack", "params": {
-                    "call_id": call_id,
-                    "success": error is None and result is not None,
-                    "result_present": result is not None,
-                    "error_present": error is not None,
-                }})
                 if checkpoint_saver is not None:
                     snapshot = executor.get_state({"configurable": {"thread_id": thread_id}})
                     expected_call_id = ""
@@ -1210,6 +1204,12 @@ if __name__ == "__main__":
                             "reason": "call_id_mismatch",
                         }})
                         continue
+                    emit({"jsonrpc": "2.0", "method": "tool_result_ack", "params": {
+                        "call_id": call_id,
+                        "success": error is None and result is not None,
+                        "result_present": result is not None,
+                        "error_present": error is not None,
+                    }})
                     resume_value = {"error": error} if error is not None else result
                     resumed = resume_checkpointed_run(thread_id, resume_value)
                     emit({"jsonrpc": "2.0", "method": "thread_resumed", "params": {
@@ -1217,6 +1217,17 @@ if __name__ == "__main__":
                         "call_id": received_call_id,
                         "message_count": len(resumed.get("messages", [])) if isinstance(resumed, dict) else 0,
                     }})
+                else:
+                    emit({"jsonrpc": "2.0", "method": "tool_result_ack", "params": {
+                        "call_id": call_id,
+                        "success": error is None and result is not None,
+                        "result_present": result is not None,
+                        "error_present": error is not None,
+                    }})
+                    pending_result_queue.put(json.dumps({
+                        "jsonrpc": "2.0", "method": "tool_result", "id": call_id,
+                        "result": result, "error": error,
+                    }))
             elif method == "agent.cancel_tool":
                 cancel_params = req.get("params", {})
                 if not isinstance(cancel_params, dict):

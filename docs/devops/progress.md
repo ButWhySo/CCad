@@ -2528,3 +2528,6 @@ excluding GUI, visual, live-provider, and real-provider tests. This prevents a
 bare system Python from producing false `langgraph` failures. The headless MCP
 bridge and runner contracts are included; the gate passed 31/31. GUI verification remains
 paused.
+### Sprint 862 — tool-result acknowledgement ordering
+
+Headless-only batch: delayed `tool_result_ack` until a pending broker call or matching durable checkpoint/call ID is verified. Unknown, late, and mismatched results remain ignored without a false success acknowledgement. Added an offline source contract; GUI/API/build validation remains paused by user instruction.

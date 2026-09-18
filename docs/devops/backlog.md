@@ -33,6 +33,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [ ] Context fabric: canonical project snapshot, revision delta, pinned constraints, token budget, and compaction policy. Partial: C++ revision/pins and Python bounded compaction shipped; semantic delta/RAG remains.
 - [ ] Provider runtime: real provider-neutral request/response transport with timeout, retry, and truthful connectivity state.
 - [ ] LangGraph run loop: pending run state survives tool calls; broker result resumes same run by `call_id`. Sprint 811 fixes thread-scoped result routing and stale-result rejection; protocol-level live broker proof remains open.
+- [x] Sprint 862: delay `tool_result_ack` until pending-call or durable checkpoint/call correlation validation; unknown, late, and mismatched results cannot emit false acknowledgement.
 - [x] Sprint 812: canonicalize malformed JSON-RPC tool correlation IDs before pending-call lookup; invalid IDs now fail safely.
 - [x] Sprint 813: checkpointed tool cancellation resumes matching thread with structured cancellation error; stale cancellation remains rejected.
 - [x] Sprint 814: two-process checkpoint test proves cancellation result survives process restart.

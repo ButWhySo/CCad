@@ -1698,3 +1698,6 @@ classification/redaction fields, matching the native event stream.
 
 Sprint 861 handover: discovery now advertises tool_canceled correlation and
 reason fields, matching cancellation paths in the Python dispatcher.
+### Sprint 862 handover — broker acknowledgement ordering
+
+`src/ccad_agent/orchestrator.py` now emits `tool_result_ack` only after a process-local pending call is found or a durable checkpoint exposes the same `call_id`; checkpoint mismatch/no-pending paths emit only `tool_result_ignored`. `scripts/test_tool_result_ack_order.py` locks this no-network ordering contract. GUI, live provider, and build gates were intentionally not run.
