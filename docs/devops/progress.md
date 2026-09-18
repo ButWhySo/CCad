@@ -2559,3 +2559,7 @@ Headless-only batch: provider-unavailable message events now carry stable `kind`
 ### Sprint 869 — context clear lifecycle
 
 Headless-only batch: `/clear` now removes the current thread’s opaque context revision alongside chat history, so the next context is reported as initial rather than chained to deleted state. Subprocess context contract covers the reset; GUI/API/build validation remains paused.
+
+### Sprint 870 — truthful provider failure category
+
+Headless-only batch: provider initialization now carries the classified failure category into the user-facing redacted message, preventing authentication/quota/model errors from being rendered as generic unavailability. No exception text or secret is exposed; GUI/API/build validation remains paused.

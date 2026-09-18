@@ -529,6 +529,7 @@ def provider_timeout_seconds():
 
 def init_provider():
     global llm, router_llm, librarian_llm, broker_wait_enabled
+    failure_category = "provider_unavailable"
 
     # Reconfiguration must not retain a previously initialized adapter or its
     # credential-backed client after a key/provider is removed.
@@ -585,6 +586,7 @@ def init_provider():
         except ImportError:
             emit_dependency_warning("langchain_anthropic")
         except Exception as error:
+            failure_category = classify_provider_error(error)
             emit_provider_failure(provider, error)
     if provider == "google_gemini":
         try:
@@ -642,7 +644,7 @@ def init_provider():
             emit_provider_failure(provider, error)
     emit({"jsonrpc": "2.0", "method": "message", "params": {
         "text": f"Agent provider '{provider}' unavailable. Configure its environment in Agent Settings; local CCad tools remain available.",
-        "kind": "provider_unavailable", "category": "provider_unavailable",
+        "kind": "provider_error", "category": failure_category,
         "secret_value_visible": False,
     }})
     return False

@@ -26,7 +26,8 @@ assert params["secret_value_visible"] is False
 assert all("sk-secret-must-not-leak" not in json.dumps(item)
            for item in captured)
 source = (ROOT / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
-assert '"kind": "provider_unavailable"' in source
-assert '"category": "provider_unavailable"' in source
+assert '"kind": "provider_error"' in source
+assert 'failure_category = classify_provider_error(error)' in source
+assert '"category": failure_category' in source
 assert '"secret_value_visible": False' in source
 print("PASS provider failure event is classified and redacted; no network")

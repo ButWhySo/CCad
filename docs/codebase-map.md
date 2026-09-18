@@ -1715,3 +1715,5 @@ Sprint 867 handover: `context_revisions` retains at most 128 thread IDs and evic
 Sprint 868 handover: provider initialization failure messages include `kind=provider_unavailable`, `category=provider_unavailable`, and `secret_value_visible=false`; exception text remains excluded. `scripts/test_provider_failure_event.py` locks the redacted metadata contract.
 
 Sprint 869 handover: `/clear` removes the current thread’s entry from `context_revisions`; `scripts/test_agent_context_contract.py` exercises the real subprocess clear-then-query reset.
+
+Sprint 870 handover: `init_provider()` carries `classify_provider_error()` output into its redacted terminal message; provider state and message now agree on authentication, quota, timeout, dependency, model, or unavailable category.
