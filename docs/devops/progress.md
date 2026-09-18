@@ -1880,3 +1880,12 @@ Reject by clearing the proposal, and Approve by handing the proposal to the
 existing approval gate. No project mutation occurs directly from the card.
 Focused GUI test, official visual harness, screenshot inspection, empty
 stderr, and full Qt CTest 91/91 passed.
+
+### Sprint 709 - bridge mutation tools into proposal review
+
+Approval-required mutation tool calls now populate the proposal card with the
+tool, arguments, and explicit no-change-until-approved wording before the
+existing approval continuation runs. The generic demo does not invoke a
+provider mutation, so deterministic GUI state tests cover the card lifecycle;
+the official visual harness, inspected screenshot, empty stderr, and full Qt
+CTest 91/91 passed.

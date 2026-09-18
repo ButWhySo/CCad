@@ -1260,6 +1260,10 @@ void AgentPanel::handlePythonOutput() {
               pending_tool_args_ = args;
               pending_tool_call_id_ = call_id.isEmpty() ? QStringLiteral("agent-tool-call") : call_id;
               pending_approval_token_ = QUuid::createUuid().toString(QUuid::WithoutBraces);
+              showProposal(
+                  "Agent proposes " + tool,
+                  {"Tool: " + tool, "Arguments: " + args,
+                   "No project change is applied until you approve."});
               setApprovalRequestText("Agent tool: " + tool + " " + args);
               requestApproval();
               awaiting_approval = true;
