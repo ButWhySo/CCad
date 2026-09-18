@@ -1051,3 +1051,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   request.
 - [x] Sprint 860: advertise message response schema; no GUI or provider
   request.
+- [x] Sprint 861: advertise tool-canceled response schema; no GUI or provider
+  request.

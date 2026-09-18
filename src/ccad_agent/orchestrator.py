@@ -196,7 +196,8 @@ def orchestrator_method_catalog():
             {"name": "human_message", "read_only": False, "provider_call": True,
              "preflight": "intake_guard",
              "responses": ["intake_state", "context_state", "provider_state",
-                           "backend_state", "message", "tool_call"],
+                           "backend_state", "message", "tool_call",
+                           "tool_canceled"],
              "response_contracts": {
                  "intake_state": {"fields": [
                      "accepted", "category", "secret_value_visible"]},
@@ -211,6 +212,8 @@ def orchestrator_method_catalog():
                      "text", "kind", "category", "secret_value_visible"]},
                  "tool_call": {"fields": [
                      "tool", "args", "call_id"]},
+                 "tool_canceled": {"fields": [
+                     "call_id", "reason"]},
                  "context_state": {"fields": [
                      "revision", "previous_revision", "changed", "change_kind",
                      "content_present", "content_size", "original_content_size",

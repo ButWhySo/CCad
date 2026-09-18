@@ -2341,6 +2341,10 @@ Sprint 860 publishes the message response contract, documenting text plus
 optional kind/category/redaction metadata for external harness consumers.
 GUI verification remains paused.
 
+Sprint 861 publishes the cancellation response contract for tool_canceled
+events, including correlation ID and safe cancellation reason. GUI
+verification remains paused.
+
 Sprint 837 adds explicit Cerebras model-catalog response from the documented
 curated snapshot and enables Settings Refresh for Cerebras. OpenRouter remains
 the only network-fetched catalog; Cerebras refresh is quota-safe and offline.

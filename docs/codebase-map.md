@@ -1695,3 +1695,6 @@ and its readiness/redaction fields, matching runtime backend_state events.
 
 Sprint 860 handover: method discovery now documents message text and optional
 classification/redaction fields, matching the native event stream.
+
+Sprint 861 handover: discovery now advertises tool_canceled correlation and
+reason fields, matching cancellation paths in the Python dispatcher.
