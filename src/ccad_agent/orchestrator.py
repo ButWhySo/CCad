@@ -1228,6 +1228,7 @@ if __name__ == "__main__":
                 if not isinstance(raw_context, str):
                     raw_context = str(raw_context or "")
                 memory_context = local_memory_context()
+                memory_context_present = bool(memory_context)
                 if memory_context:
                     raw_context = (raw_context + "\n\n" + memory_context).strip()
                 context_str = bound_context_text(raw_context)
@@ -1253,6 +1254,9 @@ if __name__ == "__main__":
                     "context_limit": agent_context_limit(),
                     "truncated": context_truncated,
                     "content_emitted": False,
+                    "sources": ["request_context"] +
+                               (["local_project_memory"] if memory_context_present else []),
+                    "memory_content_emitted": False,
                 }})
                 
                 # Robust Command Parser

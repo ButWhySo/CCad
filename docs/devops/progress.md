@@ -2367,3 +2367,7 @@ silently exiting success.
 
 Sprint 821 exposes intake preflight and response event names in `agent.methods`,
 so external harnesses can discover guard behavior without reading source.
+
+Sprint 822 enriches redacted `context_state` with source labels and an
+explicit `memory_content_emitted=false` invariant. Harnesses can distinguish
+request context from local project memory without receiving memory text.
