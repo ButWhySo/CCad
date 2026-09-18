@@ -883,3 +883,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 728: wire agent context/loop contracts into CI Python gate; authenticated provider and GUI validation remain separate.
 - [x] Sprint 730: report project-context truncation state without emitting content; active semantic compaction remains next.
 - [x] Sprint 732: stop broad PNS candidate rejection from falsely blocking clear routes; exact geometry remains authoritative.
+- [x] Sprint 736: expose active context budget beside truncation metadata; no content leakage.

@@ -1495,6 +1495,8 @@ calls.
 
 The context-state JSON-RPC event reports `content_size`, opaque
 `original_content_size`, and `truncated`; it never emits context text.
+It also reports active `context_limit`, allowing callers to distinguish budget
+from content size without receiving project data.
 
 `RouterTool::commitRouting()` rebuilds `PnsBoardObstacleIndex` for future
 acceleration, but exact pad/via/track/zone/arc checks own rejection decisions;

@@ -2029,6 +2029,9 @@ Context-state protocol now reports opaque original size and a boolean
 `truncated` flag, so agents can request compaction instead of assuming full
 project context.
 
+Context-state also reports active `context_limit`; this is metadata only and
+emits no project content or secret.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.
