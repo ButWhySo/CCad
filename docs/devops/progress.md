@@ -2193,6 +2193,9 @@ remains the production preset. The previously used `qwen-3.8-27b` ID is removed.
 Sprint 783 adds a no-network consistency contract covering Cerebras runtime,
 GUI presets, README, and compatibility documentation, and wires it into CI.
 
+Sprint 784 restores the documented Gemini 2.5 text presets alongside the
+Gemini 3 curated choices; the runtime default remains `gemini-3.8-flash`.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.

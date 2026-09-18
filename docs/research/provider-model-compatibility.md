@@ -20,10 +20,12 @@ network request during configuration or contract tests, preserving user quota.
 The Gemini model page currently documents a larger catalog; CCad presents a
 curated subset of stable text choices
 `gemini-3.8-flash`, `gemini-3.7-flash`, `gemini-3.6-flash`, and
-`gemini-3.5-flash`, plus preview `gemini-3.1-pro-preview`. CCad maps
-`GEMINI_API_KEY` to the Google adapter's `GOOGLE_API_KEY` environment and
-passes the selected model ID unchanged. Preview and legacy IDs must not be
-silently substituted for a selected stable ID.
+`gemini-3.5-flash`, plus preview `gemini-3.1-pro-preview`, and the documented
+Gemini 2.5 text models `gemini-2.5-flash`, `gemini-2.5-flash-lite`, and
+`gemini-2.5-pro`. CCad maps `GEMINI_API_KEY` to the Google adapter's
+`GOOGLE_API_KEY` environment and passes the selected model ID unchanged.
+Preview and legacy IDs must not be silently substituted for a selected stable
+ID.
 
 ## Anthropic Claude
 

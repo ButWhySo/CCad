@@ -924,3 +924,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 781: wire model-selector boundary regression into the CI agent gate.
 - [x] Sprint 782: reconcile Cerebras model presets with the official supported-model catalog.
 - [x] Sprint 783: gate provider catalog/runtime/documentation consistency in CI.
+- [x] Sprint 784: restore officially documented Gemini 2.5 text presets.
