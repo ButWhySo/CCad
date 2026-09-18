@@ -1227,6 +1227,7 @@ if __name__ == "__main__":
                 raw_context = req.get("params", {}).get("context", "")
                 if not isinstance(raw_context, str):
                     raw_context = str(raw_context or "")
+                request_context_present = bool(raw_context.strip())
                 memory_context = local_memory_context()
                 memory_context_present = bool(memory_context)
                 if memory_context:
@@ -1254,7 +1255,7 @@ if __name__ == "__main__":
                     "context_limit": agent_context_limit(),
                     "truncated": context_truncated,
                     "content_emitted": False,
-                    "sources": ["request_context"] +
+                    "sources": (["request_context"] if request_context_present else []) +
                                (["local_project_memory"] if memory_context_present else []),
                     "memory_content_emitted": False,
                 }})

@@ -2371,3 +2371,7 @@ so external harnesses can discover guard behavior without reading source.
 Sprint 822 enriches redacted `context_state` with source labels and an
 explicit `memory_content_emitted=false` invariant. Harnesses can distinguish
 request context from local project memory without receiving memory text.
+
+Sprint 823 corrects empty-context provenance: `request_context` appears only
+when caller supplied non-whitespace context; source metadata now reflects
+actual contributors exactly.

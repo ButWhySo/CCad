@@ -12,4 +12,5 @@ assert 'min(64, max(4, limit))' in text
 assert 'session_messages = bound_session_history(final_state["messages"])' in text
 assert 'memory_content_emitted' in text
 assert 'local_project_memory' in text
+assert 'request_context_present = bool(raw_context.strip())' in text
 print("PASS agent context history boundary contract; no network")
