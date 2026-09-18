@@ -937,3 +937,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   verification remains user-paused.
 - [x] Sprint 791: return redacted terminal provider state for Test Provider
   missing-key/adapter failures; GUI verification remains user-paused.
+- [x] Sprint 792: make Settings save preferences through one atomic config
+  message; GUI verification remains user-paused.

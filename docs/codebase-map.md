@@ -1558,3 +1558,7 @@ fields for both click methods; `row` remains compatibility behavior.
 Sprint 791 handover: `agent.test_provider` emits `provider_state` with
 `missing_api_key` or `provider_unavailable` when initialization returns false;
 the response contains no key or endpoint detail.
+
+Sprint 792 handover: `AgentSettingsDialog::saveAllSettings` sends exactly one
+`agent.set_config` payload. Grid also remains mirrored to local `QSettings` for
+canvas startup, while secrets stay outside project config.

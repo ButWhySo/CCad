@@ -27,6 +27,8 @@ assert 'applyModelCatalog' in settings
 assert 'catalog["ok"].toBool(false)' in settings
 assert 'catalog["models"].toArray()' in settings
 assert 'refresh_models->setEnabled(provider_combo_->currentData().toString() == "openrouter")' in settings
+assert settings.count('sendJsonRpc("agent.set_config", config)') == 1
+assert 'QJsonObject{{"grid", grid_combo_->currentText()}}' not in settings
 assert 'combo_selection_selected' in review
 assert 'object->value("value").toString()' in review
 assert 'object->value("text").toString()' in review

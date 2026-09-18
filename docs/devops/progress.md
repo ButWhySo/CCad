@@ -2239,3 +2239,7 @@ fallback.
 
 Bundled-venv subprocess proof now exercises missing-key terminal output with an
 unsupported provider fixture; secret and stderr redaction remain asserted.
+
+Sprint 792 removes duplicate Settings config writes. Provider, model, grid, and
+other preferences now travel in one atomic `agent.set_config` message, avoiding
+queued grid-only overwrites during dialog close.

@@ -856,11 +856,5 @@ void AgentSettingsDialog::saveAllSettings() {
   }
 
   agent_panel_->sendJsonRpc("agent.set_config", config);
-  // Keep the canvas preference durable even if an older config response is
-  // still queued on the bridge while the dialog is being dismissed.
-  if (grid_combo_) {
-    agent_panel_->sendJsonRpc("agent.set_config",
-                              QJsonObject{{"grid", grid_combo_->currentText()}});
-  }
   accept();
 }

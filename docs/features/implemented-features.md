@@ -2617,3 +2617,7 @@ key is absent or adapter initialization fails, so the UI reports the cause
 without waiting for its fallback timeout or exposing credential data.
 Bundled-venv subprocess coverage exercises this no-key terminal state without
 making a provider request.
+
+Settings saves provider, model, metric grid, security, memory, and personalisation
+preferences through one config message; no second grid-only write can overwrite
+the saved state during dialog dismissal.
