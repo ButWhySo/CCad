@@ -1959,6 +1959,14 @@ Focused GUI tests and full Qt CTest passed 91/91; the official visual harness pa
 and its screenshot was inspected. The physical robot still has an intermittent Windows
 screen-grab backend failure before completing the Save persistence proof.
 
+### Sprint 720 - backend config persistence coverage
+
+Added `scripts/test_agent_config_persistence.py` to run `agent.set_config`, start a
+fresh orchestrator process, call `agent.get_config`, and assert provider, model, and
+metric grid values survive. CI now runs it after installing the pinned agent
+requirements. Local syntax validation passes; this workspace lacks `langgraph`, so
+the dependency-backed runtime result is intentionally delegated to CI.
+
 ### Sprint 717 - harden live Settings interaction
 
 Fixed the live Settings dialog construction so Save no longer dereferences a missing

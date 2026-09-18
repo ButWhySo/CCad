@@ -2596,3 +2596,6 @@ replaced by the active provider's valid preset on load or provider switch, while
 custom model IDs remain supported. The UI bridge can operate Save buttons in top-level
 modeless Settings dialogs. Full visual harness proof is current; physical Save/reopen
 persistence proof remains pending the intermittent Windows screenshot capture issue.
+
+Backend persistence is covered independently by `scripts/test_agent_config_persistence.py`,
+which verifies provider, model, and metric grid values across an orchestrator restart.

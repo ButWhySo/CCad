@@ -1443,3 +1443,8 @@ Anthropic preset followed by a stale test suffix. The behavior is covered by the
 provider-switch regression test. `ui.target`/`ui.click` now also search recursively
 through top-level modeless dialogs, although the Windows physical robot's screenshot
 capture currently fails intermittently before its final Save assertion.
+
+`scripts/test_agent_config_persistence.py` is the authoritative non-GUI persistence
+check: it uses an isolated APPDATA directory and two orchestrator processes, avoiding
+desktop capture and proving the JSON config handoff directly. CI installs the agent
+requirements before running it.
