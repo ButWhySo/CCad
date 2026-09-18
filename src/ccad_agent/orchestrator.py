@@ -1152,13 +1152,43 @@ if __name__ == "__main__":
                         "message_count": len(resumed.get("messages", [])) if isinstance(resumed, dict) else 0,
                     }})
             elif method == "agent.cancel_tool":
-                call_id = req.get("params", {}).get("call_id", "")
-                reason = req.get("params", {}).get("reason", "canceled_by_user")
+                cancel_params = req.get("params", {})
+                if not isinstance(cancel_params, dict):
+                    cancel_params = {}
+                raw_call_id = cancel_params.get("call_id", "")
+                call_id = raw_call_id if isinstance(raw_call_id, str) else str(raw_call_id)
+                reason = str(cancel_params.get("reason", "canceled_by_user"))
+                thread_id = str(cancel_params.get("thread_id") or
+                                os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local"))
                 with pending_calls_lock:
                     pending_result_queue = pending_calls.get(call_id)
                 if pending_result_queue is None:
+                    if checkpoint_saver is not None:
+                        snapshot = executor.get_state({"configurable": {"thread_id": thread_id}})
+                        expected_call_id = ""
+                        for checkpoint_task in snapshot.tasks:
+                            for checkpoint_interrupt in getattr(checkpoint_task, "interrupts", ()):
+                                value = getattr(checkpoint_interrupt, "value", {})
+                                if isinstance(value, dict) and value.get("call_id"):
+                                    expected_call_id = str(value["call_id"])
+                                    break
+                            if expected_call_id:
+                                break
+                        if snapshot.next and expected_call_id == call_id:
+                            resumed = resume_checkpointed_run(
+                                thread_id, {"error": {"code": -32800, "message": reason}})
+                            emit({"jsonrpc": "2.0", "method": "tool_canceled", "params": {
+                                "call_id": call_id, "thread_id": thread_id, "reason": reason,
+                            }})
+                            emit({"jsonrpc": "2.0", "method": "thread_resumed", "params": {
+                                "thread_id": thread_id, "call_id": call_id,
+                                "message_count": len(resumed.get("messages", []))
+                                if isinstance(resumed, dict) else 0,
+                            }})
+                            continue
                     emit({"jsonrpc": "2.0", "method": "tool_cancel_ignored", "params": {
-                        "call_id": call_id, "reason": "unknown_or_late_call",
+                        "call_id": call_id, "thread_id": thread_id,
+                        "reason": "unknown_or_late_call",
                     }})
                     continue
                 pending_result_queue.put(json.dumps({

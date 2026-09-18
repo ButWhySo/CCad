@@ -9,4 +9,6 @@ assert '"tool_canceled"' in text
 assert '"tool_cancel_ignored"' in text
 assert '"unknown_or_late_call"' in text
 assert 'pending_result_queue.put(json.dumps({' in text
+assert 'cancel_params.get("thread_id")' in text
+assert 'resume_checkpointed_run' in text
 print("PASS broker cancellation and late-result contract; no network")

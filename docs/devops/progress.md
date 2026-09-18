@@ -2328,3 +2328,8 @@ Sprint 811 fixes checkpoint broker routing to honor per-result `thread_id`,
 validate pending interrupt existence, normalize correlation IDs, and report
 late/unknown results as ignored instead of attempting an unsafe resume. GUI
 verification remains paused.
+
+Sprint 813 extends cancellation into checkpointed runs. A matching
+thread-scoped `agent.cancel_tool` now resumes the interrupted graph with a
+structured cancellation error; unknown or late cancellation remains ignored.
+GUI verification remains paused.
