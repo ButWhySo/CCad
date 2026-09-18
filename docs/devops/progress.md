@@ -2265,6 +2265,10 @@ closing the remaining lambda-captures-`this` lifetime hole. Headless contract
 proof covers both the callback reset and control guard; GUI verification remains
 paused.
 
+Sprint 837 adds explicit Cerebras model-catalog response from the documented
+curated snapshot and enables Settings Refresh for Cerebras. OpenRouter remains
+the only network-fetched catalog; Cerebras refresh is quota-safe and offline.
+
 Sprint 835 wires the offline gate selector contract into CI, so future
 workflow changes are checked for GUI/live-provider exclusion rather than only
 being trusted from local PowerShell execution. No GUI or provider request is

@@ -1003,3 +1003,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   provider execution added.
 - [x] Sprint 836: reconcile Cerebras runtime/UI presets with current public
   catalog and remove deprecated Qwen default; no network or GUI execution.
+- [x] Sprint 837: expose quota-safe Cerebras model snapshot through explicit
+  catalog refresh; OpenRouter remains network-fetched only.

@@ -57,6 +57,16 @@ def fetch_openrouter_models():
     except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
         return {"ok": False, "error": type(error).__name__, "models": [], "network_access": "explicit_refresh"}
 
+def cerebras_model_snapshot():
+    """Return current documented public presets without a network call."""
+    models = [
+        {"id": "gpt-oss-120b", "display_name": "OpenAI GPT OSS 120B", "tier": "production"},
+        {"id": "llama3.1-8b", "display_name": "Llama 3.1 8B", "tier": "production"},
+        {"id": "zai-glm-4.7", "display_name": "Z.ai GLM 4.7", "tier": "preview"},
+    ]
+    return {"ok": True, "models": models, "count": len(models),
+            "network_access": "none", "source": "official_curated_snapshot"}
+
 def context_revision(context: str) -> str:
     """Return stable opaque context identity; never expose context contents."""
     return hashlib.sha256(context.encode("utf-8")).hexdigest()[:16]
@@ -171,7 +181,7 @@ def orchestrator_method_catalog():
             {"name": "agent.methods", "read_only": True},
             {"name": "agent.pending_calls", "read_only": True, "secrets": False},
             {"name": "agent.list_models", "read_only": True,
-             "network_access": "explicit_refresh", "providers": ["openrouter"],
+             "network_access": "explicit_refresh", "providers": ["openrouter", "cerebras"],
              "params": {"provider": {"type": "string", "default": "openrouter"}},
              "response": {"method": "provider_models", "fields": [
                  "provider", "ok", "error", "error_detail", "models",
@@ -1108,6 +1118,9 @@ if __name__ == "__main__":
                 if provider_id == "openrouter":
                     emit({"jsonrpc": "2.0", "method": "provider_models",
                           "params": {"provider": provider_id, **fetch_openrouter_models()}})
+                elif provider_id == "cerebras":
+                    emit({"jsonrpc": "2.0", "method": "provider_models",
+                          "params": {"provider": provider_id, **cerebras_model_snapshot()}})
                 else:
                     emit({"jsonrpc": "2.0", "method": "provider_models",
                           "params": {"provider": provider_id, "ok": False,
