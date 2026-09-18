@@ -914,3 +914,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 771: add fake-client execution proof for bounded transient retries and immediate quota/rate-limit stop.
 - [x] Sprint 772: wire provider safety and clean-checkout contracts into CI agent gate.
 - [x] Sprint 773: add OpenRouter first-class provider wiring with custom model IDs and quota-safe no-network contract.
+- [x] Sprint 774: document OpenRouter BYOK launch, custom model IDs, and quota-safe environment cleanup.

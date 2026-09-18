@@ -64,6 +64,26 @@ absolute path and disables user-site packages, preventing stale global
 LangChain versions from breaking the adapter. Remove the session variables
 afterward with `Remove-Item Env:CEREBRAS_API_KEY,Env:CCAD_CEREBRAS_MODEL,Env:CCAD_PROVIDER`.
 
+## OpenRouter BYOK quickstart
+
+OpenRouter uses its official OpenAI-compatible endpoint. Its model catalog is
+dynamic; use `openrouter/auto` or enter an exact current model ID from
+[OpenRouter's model catalog](https://openrouter.ai/models).
+
+```powershell
+& src/ccad_agent/venv/Scripts/python.exe -m pip install -r src/ccad_agent/requirements.txt
+$env:OPENROUTER_API_KEY = "PASTE_KEY_HERE"
+$env:CCAD_OPENROUTER_MODEL = "openrouter/auto"
+$env:CCAD_PROVIDER = "openrouter"
+$env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
+.\build-qt\ccad_gui.exe
+```
+
+In Agent Settings choose `OpenRouter`, select or type model ID, enter session
+key, and press `Test Provider`. Startup and contract tests do not fetch the
+catalog or consume quota. Clear temporary values afterward with
+`Remove-Item Env:OPENROUTER_API_KEY,Env:CCAD_OPENROUTER_MODEL,Env:CCAD_PROVIDER`.
+
 Provider safety limits are process-local and optional: `CCAD_PROVIDER_RETRIES`
 caps transient retries at 0..2, `CCAD_AGENT_RECURSION_LIMIT` caps graph cycles
 at 4..32 (default 12), `CCAD_AGENT_HISTORY_LIMIT` caps retained messages at

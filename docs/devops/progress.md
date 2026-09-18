@@ -2159,6 +2159,9 @@ OpenAI-compatible endpoint, key, and `openrouter/auto` default. Custom model
 IDs remain supported; dynamic catalog fetching is deferred to explicit user
 refresh, so startup and tests consume no quota.
 
+Sprint 774 adds OpenRouter BYOK launch quickstart and dynamic-catalog guidance
+to README, including custom model IDs and quota-safe cleanup.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.
