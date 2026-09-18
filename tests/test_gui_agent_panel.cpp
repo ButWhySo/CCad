@@ -231,6 +231,9 @@ private slots:
     panel.showProposal("Improve GND routing near U3", {"Reroute track T19", "Add via V17", "Preserve U3 placement"});
     QVERIFY(panel.proposalVisible());
     QCOMPARE(panel.findChild<QListWidget*>("list:agent_proposal_changes")->count(), 3);
+    auto* details = panel.findChild<QPushButton*>("action:agent_proposal_details");
+    QVERIFY(details != nullptr);
+    QVERIFY(!details->toolTip().isEmpty() || details->text() == "View details");
     auto* revise = panel.findChild<QPushButton*>("action:agent_proposal_revise");
     QVERIFY(revise != nullptr);
     QTest::mouseClick(revise, Qt::LeftButton);

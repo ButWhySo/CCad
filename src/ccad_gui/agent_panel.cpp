@@ -8,6 +8,8 @@
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QDateTime>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QDockWidget>
 #include <QCoreApplication>
 #include <QDir>
@@ -31,6 +33,8 @@
 #include <QSize>
 #include <QSizePolicy>
 #include <QStyle>
+#include <QTabWidget>
+#include <QTextBrowser>
 #include <QVBoxLayout>
 #include <QListWidget>
 #include <QKeyEvent>
@@ -888,6 +892,9 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   proposal_changes_list_->setSelectionMode(QAbstractItemView::NoSelection);
   proposal_changes_list_->setMaximumHeight(110);
   proposal_layout->addWidget(proposal_changes_list_);
+  proposal_details_button_ = new QPushButton("View details", proposal_card);
+  proposal_details_button_->setObjectName("action:agent_proposal_details");
+  proposal_layout->addWidget(proposal_details_button_, 0, Qt::AlignLeft);
   auto* revision_group = new QFrame(proposal_card);
   revision_group->setObjectName("panel:agent_proposal_revision");
   auto* revision_layout = new QVBoxLayout(revision_group);
@@ -948,6 +955,36 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
       chat_input_->setFocus();
     }
     addActivityEvent("proposal", "Revision submitted", constraints.join("; "), "agent.proposal");
+  });
+  connect(proposal_details_button_, &QPushButton::clicked, this, [this]() {
+    auto* dialog = new QDialog(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->setWindowTitle("Proposed Change Review");
+    dialog->resize(720, 480);
+    auto* layout = new QVBoxLayout(dialog);
+    auto* tabs = new QTabWidget(dialog);
+    auto add_page = [tabs](const QString& name, const QString& text) {
+      auto* page = new QTextBrowser(tabs);
+      page->setObjectName("view:proposal_" + name.toLower().replace(" ", "_"));
+      page->setPlainText(text);
+      tabs->addTab(page, name);
+    };
+    add_page("PCB diff", "Before (current)\n\nNo project change applied.\n\nAfter (proposed)\n\nPreview is represented by the pending agent change set.");
+    add_page("Schematic diff", "No schematic change applied.\n\nThe agent proposal is still pending review.");
+    add_page("Change list", proposal_summary_label_->text() + "\n\n" +
+                                  [&]() {
+                                    QStringList rows;
+                                    for (int i = 0; i < proposal_changes_list_->count(); ++i)
+                                      rows << "• " + proposal_changes_list_->item(i)->text();
+                                    return rows.join("\n");
+                                  }());
+    layout->addWidget(tabs);
+    auto* close = new QDialogButtonBox(QDialogButtonBox::Close, dialog);
+    connect(close, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
+    layout->addWidget(close);
+    dialog->show();
+    dialog->raise();
+    dialog->activateWindow();
   });
   connect(proposal_reject_button_, &QPushButton::clicked, this, [this]() {
     addActivityEvent("proposal", "Proposal rejected", proposal_summary_label_->text(), "agent.proposal");

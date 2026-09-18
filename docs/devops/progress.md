@@ -1881,6 +1881,14 @@ existing approval gate. No project mutation occurs directly from the card.
 Focused GUI test, official visual harness, screenshot inspection, empty
 stderr, and full Qt CTest 91/91 passed.
 
+### Sprint 711 - add proposal review details tabs
+
+Added a native `View details` dialog to proposals with PCB diff, schematic
+diff, and change-list tabs. The current tabs clearly state when geometry is
+not yet applied; they establish the review contract before real before/after
+canvas rendering is connected. Focused GUI test, official visual harness,
+screenshot inspection, empty stderr, and full Qt CTest 91/91 passed.
+
 ### Sprint 709 - bridge mutation tools into proposal review
 
 Approval-required mutation tool calls now populate the proposal card with the

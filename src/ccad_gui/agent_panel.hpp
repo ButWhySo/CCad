@@ -239,6 +239,7 @@ class AgentPanel final : public QWidget {
   QCheckBox* proposal_avoid_area_ = nullptr;
   QTextEdit* proposal_revision_input_ = nullptr;
   QPushButton* proposal_submit_revision_button_ = nullptr;
+  QPushButton* proposal_details_button_ = nullptr;
   QLabel* approval_summary_label_ = nullptr;
   QLabel* approval_delta_label_ = nullptr;
   QPushButton* approval_request_button_ = nullptr;
