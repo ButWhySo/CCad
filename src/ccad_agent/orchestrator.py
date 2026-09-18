@@ -1102,7 +1102,8 @@ if __name__ == "__main__":
                 tool_result_params = req.get("params", {})
                 if not isinstance(tool_result_params, dict):
                     tool_result_params = {}
-                call_id = req.get("id") or tool_result_params.get("call_id", "agent-tool-call")
+                raw_call_id = req.get("id") or tool_result_params.get("call_id", "agent-tool-call")
+                call_id = raw_call_id if isinstance(raw_call_id, str) else str(raw_call_id)
                 thread_id = str(tool_result_params.get("thread_id") or
                                 os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local"))
                 with pending_calls_lock:

@@ -14,6 +14,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [ ] Context fabric: canonical project snapshot, revision delta, pinned constraints, token budget, and compaction policy. Partial: C++ revision/pins and Python bounded compaction shipped; semantic delta/RAG remains.
 - [ ] Provider runtime: real provider-neutral request/response transport with timeout, retry, and truthful connectivity state.
 - [ ] LangGraph run loop: pending run state survives tool calls; broker result resumes same run by `call_id`. Sprint 811 fixes thread-scoped result routing and stale-result rejection; protocol-level live broker proof remains open.
+- [x] Sprint 812: canonicalize malformed JSON-RPC tool correlation IDs before pending-call lookup; invalid IDs now fail safely.
 - [x] Sprint 810: mock-provider headless contract proves supervisor-to-router-to-tool-node execution and terminal completion; durable broker resume remains open.
 - [ ] Approval authority: one pre-side-effect policy gate; denial/error paths stop or re-plan without mutation.
 - [ ] Verification: intent-conditioned DRC/ERC/build/visual checks; result becomes signoff evidence before commit/export.

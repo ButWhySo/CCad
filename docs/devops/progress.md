@@ -2270,6 +2270,11 @@ panel. All chat messages now use the single selectable `QTextBrowser` stream;
 the source contract rejects reintroduction of the second rendering path. GUI
 verification remains paused.
 
+Sprint 812 canonicalizes JSON-RPC tool correlation IDs before pending-call
+lookup. Malformed list/object IDs no longer reach an unhashable dictionary
+lookup; they are safely treated as opaque string IDs and rejected unless
+matching an active call. GUI verification remains paused.
+
 Sprint 799 removes now-dead per-message user/tool bubble styles, preserving only
 the transparent checklist presentation. This prevents stale CSS from implying
 another chat renderer; GUI verification remains paused.
