@@ -201,7 +201,7 @@ def orchestrator_method_catalog():
                      "accepted", "category", "secret_value_visible"]},
                  "provider_state": {"fields": [
                      "provider", "model", "configured", "execution_enabled",
-                     "network_access", "error",
+                     "network_access", "error", "error_category",
                      "secret_value_visible"]},
                  "tool_call": {"fields": [
                      "tool", "args", "call_id"]},
@@ -471,7 +471,9 @@ def emit_provider_failure(provider: str, error: Exception):
     """Report adapter failure without exposing key, prompt, or endpoint data."""
     emit({"jsonrpc": "2.0", "method": "provider_state", "params": {
         "provider": provider, "configured": True, "execution_enabled": False,
-        "error": type(error).__name__, "secret_value_visible": False,
+        "error": type(error).__name__,
+        "error_category": classify_provider_error(error),
+        "secret_value_visible": False,
     }})
 
 def classify_provider_error(error: Exception):

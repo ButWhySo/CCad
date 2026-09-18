@@ -46,6 +46,7 @@ assert "provider_state" in human_contract["response_contracts"]
 provider_fields = human_contract["response_contracts"]["provider_state"]["fields"]
 assert "execution_enabled" in provider_fields
 assert "error" in provider_fields
+assert "error_category" in provider_fields
 assert "execution_ready" not in provider_fields
 assert "tool_call" in human_contract["response_contracts"]
 tool_fields = human_contract["response_contracts"]["tool_call"]["fields"]

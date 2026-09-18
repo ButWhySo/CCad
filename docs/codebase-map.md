@@ -1670,3 +1670,7 @@ on tool metadata and approval decision messages.
 Sprint 853 handover: `scripts/test_provider_mock.py` parses the real mock
 subprocess stream and asserts exact tool-call keys, tool identity, args, and
 call ID rather than relying on substring presence.
+
+Sprint 854 handover: provider failure events now include the redacted
+`error_category` returned by `classify_provider_error()`, while preserving the
+exception type and secret-safe boundary.

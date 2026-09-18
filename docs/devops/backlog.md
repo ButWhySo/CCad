@@ -1037,3 +1037,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   no GUI or provider request.
 - [x] Sprint 853: parse mock tool-call wire events and assert exact payload
   shape; no GUI or provider request.
+- [x] Sprint 854: emit actionable redacted provider error categories; no GUI
+  or provider request.
