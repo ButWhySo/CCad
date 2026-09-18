@@ -6,6 +6,7 @@ source = (Path(__file__).resolve().parents[1] / "src" / "ccad_agent" / "orchestr
 assert "def fetch_openrouter_models():" in source
 assert '"https://openrouter.ai/api/v1/models"' in source
 assert 'method == "agent.list_models"' in source
+assert '"name": "agent.list_models"' in source
 assert '"network_access": "explicit_refresh"' in source
 assert "urllib.request.urlopen(request, timeout=timeout)" in source
 assert "invalid_catalog_shape" in source
