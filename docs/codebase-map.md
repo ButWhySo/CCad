@@ -1396,6 +1396,10 @@ adds only the newest eight `project` entries, truncates each to 1000 characters,
 and passes the combined context through the normal context budget before any
 provider call. Disable STM to prevent injection.
 
+Provider tool-call telemetry in `orchestrator.py` reports
+`awaiting_tool_approval` when the final provider message contains structured
+or legacy tool syntax; it reports `completed` only for ordinary text replies.
+
 `AgentOrchestrator::plan` invokes `IntakeLayer::run_risk_scan` before subagent decomposition. A failed scan creates one auditable failed task with `intake_risk_scan_blocked`; no provider or tool task is created.
 
 The scan covers destructive/external action markers plus common prompt-injection and credential-bearing markers. It intentionally fails closed; callers must present a safe revised goal rather than retrying the blocked one unchanged.

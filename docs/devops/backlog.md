@@ -895,3 +895,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 749: expose scope/title prefixes on memory add so scoped CRUD is usable.
 - [x] Sprint 750: add scoped memory listing and synchronize command help surfaces.
 - [x] Sprint 751: add update-by-ID to complete local memory CRUD.
+- [x] Sprint 752: distinguish provider tool approval wait from completed telemetry state; no GUI/network run.

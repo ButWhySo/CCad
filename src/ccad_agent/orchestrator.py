@@ -1147,12 +1147,15 @@ if __name__ == "__main__":
                         "kind": "provider_error", "error_type": type(error).__name__,
                     }})
                     continue
-                emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
-                    "run_state": "completed", "trace_id": run_trace_id,
-                    "span_id": run_span_id, "token_usage": "unavailable", "cost": "unavailable",
-                }})
                 session_messages = bound_session_history(final_state["messages"])
                 last_msg = session_messages[-1]
+                has_tool_calls = bool(getattr(last_msg, "tool_calls", None))
+                has_legacy_tool = "<TOOL>" in str(getattr(last_msg, "content", ""))
+                emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
+                    "run_state": "awaiting_tool_approval" if (has_tool_calls or has_legacy_tool) else "completed",
+                    "trace_id": run_trace_id, "span_id": run_span_id,
+                    "token_usage": "unavailable", "cost": "unavailable",
+                }})
                 
                 if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
                     for tcall in last_msg.tool_calls:
