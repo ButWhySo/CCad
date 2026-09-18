@@ -923,3 +923,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 780: publish discoverable parameter and response schema for model refresh.
 - [x] Sprint 781: wire model-selector boundary regression into the CI agent gate.
 - [x] Sprint 782: reconcile Cerebras model presets with the official supported-model catalog.
+- [x] Sprint 783: gate provider catalog/runtime/documentation consistency in CI.

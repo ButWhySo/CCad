@@ -2190,6 +2190,9 @@ Sprint 782 reconciles the Cerebras preset/default with its official catalog:
 `qwen-3-235b-a22b-instruct-2507` is the preview Qwen ID and `gpt-oss-120b`
 remains the production preset. The previously used `qwen-3.8-27b` ID is removed.
 
+Sprint 783 adds a no-network consistency contract covering Cerebras runtime,
+GUI presets, README, and compatibility documentation, and wires it into CI.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.

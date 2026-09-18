@@ -51,6 +51,7 @@ jobs:
           python scripts/test_cerebras_adapter_contract.py
           python scripts/test_provider_error_classification.py
           python scripts/test_provider_default_models_contract.py
+          python scripts/test_provider_catalog_documentation_contract.py
           python scripts/test_provider_retry_behavior.py
           python scripts/test_openrouter_provider_contract.py
           python scripts/test_openrouter_catalog_contract.py
