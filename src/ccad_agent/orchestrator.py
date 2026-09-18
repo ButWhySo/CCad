@@ -200,8 +200,8 @@ def orchestrator_method_catalog():
                  "intake_state": {"fields": [
                      "accepted", "category", "secret_value_visible"]},
                  "provider_state": {"fields": [
-                     "provider", "model", "configured", "execution_ready",
-                     "network_access", "error", "error_category",
+                     "provider", "model", "configured", "execution_enabled",
+                     "network_access", "error",
                      "secret_value_visible"]},
                  "tool_call": {"fields": [
                      "tool", "args", "call_id", "approval_required",

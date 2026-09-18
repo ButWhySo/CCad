@@ -1659,3 +1659,6 @@ external harnesses without exposing provider secrets.
 Sprint 850 handover: `tool_call` discovery uses the emitted `tool` key,
 matching Python-to-client wire events; the contract test rejects the stale
 `name` field.
+
+Sprint 851 handover: `provider_state` discovery uses the emitted
+`execution_enabled` and `error` keys; contract tests reject stale aliases.

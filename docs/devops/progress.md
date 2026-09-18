@@ -2299,6 +2299,10 @@ Sprint 850 corrects that contract to use the actual wire key `tool` (not
 `name`) emitted by the orchestrator, preventing external harness lookup
 failures. GUI verification remains paused.
 
+Sprint 851 corrects provider-state discovery to match emitted keys
+`execution_enabled` and `error`; stale `execution_ready`/`error_category`
+names are rejected by contract tests. GUI verification remains paused.
+
 Sprint 837 adds explicit Cerebras model-catalog response from the documented
 curated snapshot and enables Settings Refresh for Cerebras. OpenRouter remains
 the only network-fetched catalog; Cerebras refresh is quota-safe and offline.

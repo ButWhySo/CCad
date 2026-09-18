@@ -43,7 +43,10 @@ assert "change_kind" in human_contract["response_contracts"]["context_state"]["f
 assert "intake_state" in human_contract["response_contracts"]
 assert "accepted" in human_contract["response_contracts"]["intake_state"]["fields"]
 assert "provider_state" in human_contract["response_contracts"]
-assert "execution_ready" in human_contract["response_contracts"]["provider_state"]["fields"]
+provider_fields = human_contract["response_contracts"]["provider_state"]["fields"]
+assert "execution_enabled" in provider_fields
+assert "error" in provider_fields
+assert "execution_ready" not in provider_fields
 assert "tool_call" in human_contract["response_contracts"]
 tool_fields = human_contract["response_contracts"]["tool_call"]["fields"]
 assert "tool" in tool_fields
