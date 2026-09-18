@@ -155,6 +155,25 @@ class TestGuiFootprintPlacement : public QObject {
     QCOMPARE(QString::fromStdString(selection->path), footprint.fileName());
   }
 
+  void testDefaultLibraryRootHonorsEnvironmentOverride() {
+    QTemporaryDir temp_dir;
+    QVERIFY(temp_dir.isValid());
+    QDir root(temp_dir.path());
+    QVERIFY(root.mkpath("footprints/Env.pretty"));
+    QFile footprint(root.filePath("footprints/Env.pretty/EnvPart.json"));
+    QVERIFY(footprint.open(QIODevice::WriteOnly | QIODevice::Text));
+    footprint.write(R"({"name":"EnvPart","pads":[]})");
+    footprint.close();
+
+    qputenv("CCAD_LIBRARY_CACHE", temp_dir.path().toUtf8());
+    LibraryBrowserDialog dialog(LibraryType::Footprint);
+    qunsetenv("CCAD_LIBRARY_CACHE");
+    auto* tree = dialog.findChild<QTreeWidget*>();
+    QVERIFY(tree != nullptr);
+    QCOMPARE(tree->topLevelItemCount(), 1);
+    QCOMPARE(tree->topLevelItem(0)->text(0), QString("EnvPart"));
+  }
+
   void testLibraryChooserPreviewUsesDistinctMaskAndPasteColors() {
     QTemporaryDir temp_dir;
     QVERIFY(temp_dir.isValid());

@@ -1417,4 +1417,6 @@ The timeout is scheduled for every Test Provider click, including missing panel/
 
 `src/ccad_agent/requirements.txt` pins the Gemini adapter to `2.0.10` and bounds LangSmith below `0.3`; these constraints preserve compatibility with LangGraph 0.2 and LangChain Core 0.3. The current adapter may emit Google's legacy-SDK warning.
 
+`LibraryBrowserDialog::resolveDefaultCacheRoot` makes chooser startup independent of launch cwd. Resolution order is explicit environment override, cwd, executable directory, then executable parents; `tests/test_gui_footprint_placement.cpp` covers the override path.
+
 Settings opens modelessly from `AgentPanel`, preserving UI-map/MCP request servicing. `ReviewWindow::uiTargetJsonById` and `uiClickJson` include top-level dialog widgets; QListWidget targets accept a `row` field for semantic selection. `tests/physical_ui_robot.py` is strict: unique IPC name, Qt PATH, window setup, mapped mouse attempts, semantic fallback only after no state change, targeted provider-status assertion, screenshot.

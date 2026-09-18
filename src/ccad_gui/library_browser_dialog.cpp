@@ -7,6 +7,7 @@
 
 #include <QDir>
 #include <QDirIterator>
+#include <QCoreApplication>
 #include <QFileInfo>
 #include <QMessageBox>
 #include <QDialogButtonBox>
@@ -27,6 +28,24 @@
 #include <sstream>
 
 namespace {
+
+QString resolveDefaultCacheRoot() {
+  const QString configured = qEnvironmentVariable("CCAD_LIBRARY_CACHE").trimmed();
+  QStringList candidates;
+  if (!configured.isEmpty()) candidates.push_back(configured);
+  candidates.push_back(QDir::current().filePath("library-cache"));
+
+  const QDir app_dir(QCoreApplication::applicationDirPath());
+  candidates.push_back(app_dir.filePath("library-cache"));
+  candidates.push_back(app_dir.filePath("../library-cache"));
+  candidates.push_back(app_dir.filePath("../../library-cache"));
+
+  for (const QString& candidate : candidates) {
+    const QString absolute = QDir(candidate).absolutePath();
+    if (QDir(absolute).exists()) return QDir::cleanPath(absolute);
+  }
+  return QDir::current().filePath("library-cache");
+}
 
 std::string readCacheFile(const QString& path) {
   std::ifstream input(path.toStdString());
@@ -311,7 +330,7 @@ void renderSymbolPreview(QGraphicsScene& scene, const ccad::Symbol& symbol) {
 }  // namespace
 
 LibraryBrowserDialog::LibraryBrowserDialog(LibraryType type, QWidget* parent)
-    : LibraryBrowserDialog(type, QStringLiteral("library-cache"), parent) {}
+    : LibraryBrowserDialog(type, resolveDefaultCacheRoot(), parent) {}
 
 LibraryBrowserDialog::LibraryBrowserDialog(LibraryType type, const QString& cache_root, QWidget* parent)
     : QDialog(parent), type_(type), cache_root_(cache_root) {

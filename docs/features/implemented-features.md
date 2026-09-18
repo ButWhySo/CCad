@@ -2568,6 +2568,8 @@ The physical UI robot proves `control:apiKeyInput` entry with a dummy value, the
 
 Provider requirements pin Gemini adapter `2.0.10` and bound LangSmith below `0.3`, matching the current LangGraph/Core 0.2/0.3 runtime. This avoids a resolver selecting Core 1.x. Gemini adapter migration to Google's newer SDK remains open.
 
+The native Choose Footprint/Choose Symbol dialogs resolve local library roots from `CCAD_LIBRARY_CACHE`, current working directory, executable directory, and parent directories. Set `CCAD_LIBRARY_CACHE` for an explicit catalog location. The repository's local ignored `library-cache` contains converted footprints, symbols, and `catalog.json`; it is not committed as product source.
+
 ## CI speed and syntax gate
 
 The CI workflow compiles agent and test Python sources before protocol tests and invokes CMake with parallel workers on all build jobs. This catches syntax regressions early and reduces idle build time without weakening CTest.

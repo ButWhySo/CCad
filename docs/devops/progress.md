@@ -1826,6 +1826,10 @@ The physical Windows robot now enters a dummy API key through `ui.type_text` on 
 
 Pinned `langchain-google-genai` to `2.0.10` and bounded `langsmith` below `0.3` to remain compatible with the repository's LangGraph 0.2 and LangChain Core 0.3 stack. Requirements dry-run selected the compatible set; Python imports plus Gemini secret-redaction and OpenAI-compatible boundary tests passed. The adapter's upstream legacy Google SDK warning remains documented follow-up work.
 
+### Sprint 701 - make local catalog discoverable from GUI launch
+
+The footprint/symbol chooser now resolves its default cache through `CCAD_LIBRARY_CACHE`, the current working directory, the executable directory, and its parent directories. Launching from `build-qt`, VS Code, or a shortcut therefore finds the ignored local `library-cache` instead of showing an empty chooser. A regression test proves the environment override and a real footprint row; focused GUI CTest passed, the official visual harness screenshot was inspected, and stderr was empty.
+
 ### Sprint 683 - expose native approval status to MCP hosts
 
 Added read-only `ccad_gui_approval_status` to the GUI MCP bridge. External harnesses can now query approval-card visibility and status directly, while mutation execution and human approval remain native GUI responsibilities. Python regression and official visual harness passed; screenshot was inspected and stderr was empty.
