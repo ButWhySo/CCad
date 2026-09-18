@@ -181,7 +181,9 @@ def orchestrator_method_catalog():
             {"name": "agent.methods", "read_only": True},
             {"name": "agent.pending_calls", "read_only": True, "secrets": False},
             {"name": "agent.list_models", "read_only": True,
-             "network_access": "explicit_refresh", "providers": ["openrouter", "cerebras"],
+             "network_access": "provider_specific",
+             "network_access_by_provider": {"openrouter": "explicit_refresh", "cerebras": "none"},
+             "providers": ["openrouter", "cerebras"],
              "params": {"provider": {"type": "string", "default": "openrouter"}},
              "response": {"method": "provider_models", "fields": [
                  "provider", "ok", "error", "error_detail", "models",

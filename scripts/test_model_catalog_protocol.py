@@ -13,7 +13,9 @@ env["CCAD_PROVIDER"] = "mock"
 env["PYTHONNOUSERSITE"] = "1"
 result = subprocess.run(
     [sys.executable, str(root / "src" / "ccad_agent" / "orchestrator.py")],
-    input=(json.dumps({"method": "agent.list_models", "params": {"provider": "openrouter"}})
+    input=(json.dumps({"method": "agent.methods", "params": {}})
+           + "\n"
+           + json.dumps({"method": "agent.list_models", "params": {"provider": "openrouter"}})
            + "\n"
            + json.dumps({"method": "agent.list_models", "params": {"provider": "cerebras"}})
            + "\n"),
@@ -26,6 +28,10 @@ result = subprocess.run(
 assert result.returncode == 0, result.stderr
 responses = [json.loads(line) for line in result.stdout.splitlines()
              if line.strip().startswith("{")]
+methods = next(item["params"] for item in responses if item.get("method") == "agent_methods")
+catalog_method = next(item for item in methods["methods"] if item["name"] == "agent.list_models")
+assert catalog_method["network_access"] == "provider_specific"
+assert catalog_method["network_access_by_provider"] == {"openrouter": "explicit_refresh", "cerebras": "none"}
 catalogs = [item["params"] for item in responses if item.get("method") == "provider_models"]
 openrouter = next(item for item in catalogs if item["provider"] == "openrouter")
 cerebras = next(item for item in catalogs if item["provider"] == "cerebras")

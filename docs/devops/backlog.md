@@ -1005,3 +1005,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   catalog and remove deprecated Qwen default; no network or GUI execution.
 - [x] Sprint 837: expose quota-safe Cerebras model snapshot through explicit
   catalog refresh; OpenRouter remains network-fetched only.
+- [x] Sprint 838: publish provider-specific model-catalog network capabilities
+  for external harnesses; no GUI or provider request.

@@ -75,7 +75,9 @@ Official reference: [OpenRouter model API](https://openrouter.ai/docs/api/api-re
 
 CCad exposes this catalog through explicit `agent.list_models` with
 `provider: "openrouter"`; OpenRouter remains the only network-fetched catalog.
-Cerebras uses a quota-safe curated official snapshot. Response retains model ID, display name, context
+Cerebras uses a quota-safe curated official snapshot. Method discovery reports
+provider-specific network capability so external harnesses know Cerebras refresh
+is offline. Response retains model ID, display name, context
 length, and architecture metadata; keys, prices, prompts, and raw response
 payload are not returned. Missing keys and HTTP/URL/timeout/JSON failures are
 redacted categories, not raw exception text.
