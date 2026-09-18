@@ -239,6 +239,9 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
       agent_panel_->setMarketplaceCatalogCallback([this](const QJsonObject& catalog) {
           this->applyMarketplaceCatalog(catalog);
       });
+      agent_panel_->setModelCatalogCallback([this](const QJsonObject& catalog) {
+          this->applyModelCatalog(catalog);
+      });
   }
 
   loadCurrentSettings();
@@ -380,6 +383,15 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
   model_input_->setPlaceholderText("Choose a model or type a custom model ID");
   model_combo_->addItems(modelsForProvider(provider_combo_->currentData().toString()));
   form->addRow("Model:", model_combo_);
+  auto* refresh_models = new QPushButton("Refresh models", parent_widget);
+  refresh_models->setObjectName("action:refreshModelCatalog");
+  refresh_models->setToolTip("Explicitly fetch the selected provider model catalog; never runs automatically");
+  connect(refresh_models, &QPushButton::clicked, this, [this]() {
+    if (!agent_panel_ || !provider_combo_) return;
+    agent_panel_->sendJsonRpc("agent.list_models", QJsonObject{
+        {"provider", provider_combo_->currentData().toString()}});
+  });
+  form->addRow(QString(), refresh_models);
   model_details_ = new QLabel(parent_widget);
   model_details_->setObjectName("label:modelDetails");
   model_details_->setWordWrap(true);
@@ -749,6 +761,32 @@ void AgentSettingsDialog::applyMarketplaceCatalog(const QJsonObject& catalog) {
             item->setData(Qt::UserRole, w["id"].toString());
         }
     }
+}
+
+void AgentSettingsDialog::applyModelCatalog(const QJsonObject& catalog) {
+    if (!model_combo_ || catalog["provider"].toString() !=
+        provider_combo_->currentData().toString()) return;
+    if (!catalog["ok"].toBool(false)) {
+        if (model_details_) model_details_->setText(
+            "Model refresh unavailable: " + catalog["error"].toString());
+        return;
+    }
+    const QJsonArray rows = catalog["models"].toArray();
+    QString current = model_input_ ? model_input_->text().trimmed() : QString();
+    QStringList ids;
+    for (const QJsonValue& row : rows) {
+        const QString id = row.toObject()["id"].toString().trimmed();
+        if (!id.isEmpty()) ids << id;
+    }
+    if (ids.isEmpty()) return;
+    model_combo_->blockSignals(true);
+    model_combo_->clear();
+    model_combo_->addItems(ids);
+    const int match = model_combo_->findText(current);
+    model_combo_->setCurrentIndex(match >= 0 ? match : 0);
+    model_combo_->blockSignals(false);
+    if (model_details_) model_details_->setText(
+        QString("Refreshed %1 models from %2").arg(ids.size()).arg(catalog["provider"].toString()));
 }
 
 void AgentSettingsDialog::saveAllSettings() {

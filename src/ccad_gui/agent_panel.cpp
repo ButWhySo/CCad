@@ -1489,6 +1489,8 @@ void AgentPanel::handlePythonOutput() {
                          "agent.resume_thread");
       } else if (obj.contains("method") && obj["method"].toString() == "marketplace_catalog") {
         if (marketplace_catalog_cb_) marketplace_catalog_cb_(obj["params"].toObject());
+      } else if (obj.contains("method") && obj["method"].toString() == "provider_models") {
+        if (model_catalog_cb_) model_catalog_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "generated_component") {
         if (component_wizard_cb_) component_wizard_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "telemetry") {
@@ -1748,6 +1750,10 @@ void AgentPanel::setConfigStateCallback(ConfigStateCallback cb) {
 
 void AgentPanel::setMarketplaceCatalogCallback(MarketplaceCatalogCallback cb) {
   marketplace_catalog_cb_ = std::move(cb);
+}
+
+void AgentPanel::setModelCatalogCallback(ModelCatalogCallback cb) {
+  model_catalog_cb_ = std::move(cb);
 }
 
 void AgentPanel::setComponentWizardCallback(ComponentWizardCallback cb) {

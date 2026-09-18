@@ -80,9 +80,10 @@ $env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
 .\build-qt\ccad_gui.exe
 ```
 
-In Agent Settings choose `OpenRouter`, select or type model ID, enter session
-key, and press `Test Provider`. Startup and contract tests do not fetch the
-catalog or consume quota. Clear temporary values afterward with
+In Agent Settings choose `OpenRouter`, enter the session key, and press
+`Refresh models` when you explicitly want the current catalog in the model
+dropdown; then select a model and press `Test Provider`. Startup and contract
+tests do not fetch the catalog or consume quota. Clear temporary values afterward with
 `Remove-Item Env:OPENROUTER_API_KEY,Env:CCAD_OPENROUTER_MODEL,Env:CCAD_PROVIDER`.
 
 Provider safety limits are process-local and optional: `CCAD_PROVIDER_RETRIES`

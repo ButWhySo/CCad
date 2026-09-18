@@ -38,6 +38,7 @@ private:
 
   void applyConfigState(const QJsonObject& config);
   void applyMarketplaceCatalog(const QJsonObject& catalog);
+  void applyModelCatalog(const QJsonObject& catalog);
 
   AgentPanel* agent_panel_;
   QListWidget* category_list_;

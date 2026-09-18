@@ -2196,6 +2196,12 @@ GUI presets, README, and compatibility documentation, and wires it into CI.
 Sprint 784 restores the documented Gemini 2.5 text presets alongside the
 Gemini 3 curated choices; the runtime default remains `gemini-3.8-flash`.
 
+Sprint 785 connects Settings' explicit Refresh models action to
+`agent.list_models` and the AgentPanel `provider_models` callback. Catalogs are
+still never fetched at startup; returned IDs replace only the active combo.
+
+README now documents this explicit Settings refresh path and its quota boundary.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.

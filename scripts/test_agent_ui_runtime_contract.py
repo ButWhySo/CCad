@@ -18,4 +18,11 @@ assert "LogonUserW(" in settings
 assert "Windows password for '%1'" in settings
 assert "password.fill(QChar(u'\\0'))" in settings
 assert "CredUIPromptForCredentialsW" not in settings
+assert 'sendJsonRpc("agent.list_models"' in settings
+assert 'action:refreshModelCatalog' in settings
+assert 'provider_models' in panel
+assert 'setModelCatalogCallback' in settings
+assert 'applyModelCatalog' in settings
+assert 'catalog["ok"].toBool(false)' in settings
+assert 'catalog["models"].toArray()' in settings
 print("PASS agent UI/provider runtime source contract; no GUI launched")
