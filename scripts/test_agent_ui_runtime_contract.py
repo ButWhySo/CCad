@@ -30,4 +30,6 @@ assert 'refresh_models->setEnabled(provider_combo_->currentData().toString() == 
 assert 'combo_selection_selected' in review
 assert 'object->value("value").toString()' in review
 assert 'object->value("text").toString()' in review
+assert 'Optional exact combo item data value.' in review
+assert 'Optional exact combo visible text.' in review
 print("PASS agent UI/provider runtime source contract; no GUI launched")

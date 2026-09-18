@@ -2227,3 +2227,7 @@ again by explicit user request; no provider network call was made.
 Sprint 789 makes UI-map combo selection semantic: callers may select by exact
 item data or visible text, avoiding brittle provider/model row assumptions.
 Physical GUI verification remains paused by user request.
+
+Sprint 790 publishes these combo selectors in `ui.click` and
+`ui.double_click` method schemas, so external harnesses can discover and use
+stable provider/model IDs without reading implementation details.

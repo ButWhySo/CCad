@@ -933,3 +933,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   paused again by user request after targeted execution.
 - [x] Sprint 789: add value/text-based UI-map combo selection and update the
   physical provider/model harness; GUI verification remains user-paused.
+- [x] Sprint 790: publish semantic combo selectors in UI input schemas; GUI
+  verification remains user-paused.

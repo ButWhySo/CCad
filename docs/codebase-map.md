@@ -1551,3 +1551,6 @@ current provider row 5; do not infer provider rows from older screenshots.
 Sprint 789 handover: `ReviewWindow::uiClickJson` supports exact combo item
 `value`/`text` matching before legacy row matching. External harnesses should
 prefer provider/model IDs over positional rows.
+
+Sprint 790 handover: `agent.methods` now advertises semantic combo selector
+fields for both click methods; `row` remains compatibility behavior.

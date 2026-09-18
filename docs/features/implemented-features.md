@@ -2607,3 +2607,7 @@ the current provider catalog order; live GUI verification remains user-paused.
 UI-map `ui.click` accepts exact combo `value` or visible `text` selectors in
 addition to row selection. Provider/model harnesses should use these stable
 selectors so catalog ordering may change safely.
+
+The discoverable `ui.click` and `ui.double_click` schemas document `row`,
+`value`, and `text` selection fields, keeping external agent harnesses aligned
+with the runtime protocol.

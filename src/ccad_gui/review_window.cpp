@@ -704,16 +704,22 @@ QJsonArray agentMethodCatalogArray() {
                           QJsonObject{{"dry_run", true}}));
 
   append(agentMethodEntry("ui.click", "input", "Click UI Node",
-                          "Click an allowlisted UI-map target by id.",
+                          "Click an allowlisted UI-map target by id; combo controls may select by row, exact item value, or visible text.",
                           false, true, false, false, true,
                           schemaObject(QJsonObject{{"id", schemaProperty("string", "Target UI-map node id.")},
+                                                   {"row", schemaProperty("integer", "Optional combo/list row index.")},
+                                                   {"value", schemaProperty("string", "Optional exact combo item data value.")},
+                                                   {"text", schemaProperty("string", "Optional exact combo visible text.")},
                                                    {"dry_run", dryRunProperty()}}, {"id"}),
                           "Target, dry-run flag, and action result.",
                           QJsonObject{{"id", "action:zoom_in"}, {"dry_run", true}}));
   append(agentMethodEntry("ui.double_click", "input", "Double Click UI Node",
-                          "Double-click an allowlisted UI-map target by id.",
+                          "Double-click an allowlisted UI-map target by id; combo controls may select by row, exact item value, or visible text.",
                           false, true, false, false, true,
                           schemaObject(QJsonObject{{"id", schemaProperty("string", "Target UI-map node id.")},
+                                                   {"row", schemaProperty("integer", "Optional combo/list row index.")},
+                                                   {"value", schemaProperty("string", "Optional exact combo item data value.")},
+                                                   {"text", schemaProperty("string", "Optional exact combo visible text.")},
                                                    {"dry_run", dryRunProperty()}}, {"id"}),
                           "Target, dry-run flag, and action result.",
                           QJsonObject{{"id", "menu:file"}, {"dry_run", true}}));
