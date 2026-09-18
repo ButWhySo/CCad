@@ -170,7 +170,11 @@ def orchestrator_method_catalog():
             {"name": "agent.methods", "read_only": True},
             {"name": "agent.pending_calls", "read_only": True, "secrets": False},
             {"name": "agent.list_models", "read_only": True,
-             "network_access": "explicit_refresh", "providers": ["openrouter"]},
+             "network_access": "explicit_refresh", "providers": ["openrouter"],
+             "params": {"provider": {"type": "string", "default": "openrouter"}},
+             "response": {"method": "provider_models", "fields": [
+                 "provider", "ok", "error", "error_detail", "models",
+                 "count", "network_access"]}},
             {"name": "agent.cancel_tool", "read_only": False,
              "approval_required": False, "side_effect": "cancel_wait_only"},
             {"name": "tool_result", "read_only": False,

@@ -2180,6 +2180,9 @@ Sprint 779 fixes `/set provider:model` parsing to split only at the first
 delimiter, preserving any later colons in custom model IDs. Empty provider or
 model values are rejected without reinitializing the adapter.
 
+Sprint 780 publishes parameter and response metadata for `agent.list_models`,
+so external harnesses can call the explicit refresh with a stable schema.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.

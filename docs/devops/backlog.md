@@ -920,3 +920,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 777: expose explicit model refresh in the discoverable agent method catalog.
 - [x] Sprint 778: make unsupported-provider model catalog capability responses explicit and quota-safe.
 - [x] Sprint 779: preserve delimiter-containing custom model IDs in `/set` parsing.
+- [x] Sprint 780: publish discoverable parameter and response schema for model refresh.
