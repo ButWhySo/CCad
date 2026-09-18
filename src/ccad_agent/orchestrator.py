@@ -119,6 +119,19 @@ def dispatch_client_tool(tool_name: str, args: dict, *, await_result: bool = Fal
 config_manager = AgentConfigManager()
 memory_store = MemoryStore()
 
+def local_memory_context():
+    """Return bounded project memories for explicit short-term context use."""
+    memory_config = config_manager.get("memory", {})
+    if not memory_config.get("stm", True):
+        return ""
+    entries = memory_store.list(scope="project")[-8:]
+    if not entries:
+        return ""
+    lines = ["[CCAD pinned local memory]"]
+    for entry in entries:
+        lines.append(f"- {entry.get('title') or 'memory'}: {entry.get('content', '')[:1000]}")
+    return "\n".join(lines)
+
 class AgentState(TypedDict):
     messages: Annotated[List[BaseMessage], operator.add]
     goal: str
@@ -942,6 +955,9 @@ if __name__ == "__main__":
                 raw_context = req.get("params", {}).get("context", "")
                 if not isinstance(raw_context, str):
                     raw_context = str(raw_context or "")
+                memory_context = local_memory_context()
+                if memory_context:
+                    raw_context = (raw_context + "\n\n" + memory_context).strip()
                 context_str = bound_context_text(raw_context)
                 context_truncated = len(context_str) < len(raw_context)
                 current_context_revision = context_revision(context_str)

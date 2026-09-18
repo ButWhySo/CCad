@@ -1390,7 +1390,11 @@ detection only, not a secret-hiding primitive.
 `%APPDATA%/CCad/agent_memory.json` (or `CCAD_AGENT_MEMORY_PATH`). It supports
 bounded add/list/delete/clear, atomic replacement, scope/tags, and rejects
 credential-looking content. Orchestrator `/memory` commands are explicit;
-memory is never provider input by default.
+memory enters provider context only when `memory.stm` is enabled.
+When config `memory.stm` is enabled, `orchestrator.py::local_memory_context`
+adds only the newest eight `project` entries, truncates each to 1000 characters,
+and passes the combined context through the normal context budget before any
+provider call. Disable STM to prevent injection.
 
 `AgentOrchestrator::plan` invokes `IntakeLayer::run_risk_scan` before subagent decomposition. A failed scan creates one auditable failed task with `intake_risk_scan_blocked`; no provider or tool task is created.
 

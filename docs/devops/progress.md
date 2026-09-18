@@ -2050,6 +2050,10 @@ Sprint 741 adds local JSON memory CRUD with bounded entries, scope/tags,
 atomic replacement, secret-looking content rejection, and `/memory` list/add/
 delete/clear commands. Memory is not automatically sent to providers.
 
+Sprint 743 wires only enabled short-term project memories into the bounded
+provider context: newest eight entries, each capped at 1000 characters, then
+the normal context budget applies. Memory remains locally user-managed.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.
