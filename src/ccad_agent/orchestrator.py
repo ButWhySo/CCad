@@ -144,6 +144,15 @@ def parse_memory_add_args(arguments):
             title = value.strip()
     return " ".join(tokens).strip(), title, scope
 
+def parse_memory_update_args(arguments):
+    """Parse memory ID plus optional metadata for an update command."""
+    tokens = arguments.split()
+    if not tokens:
+        return "", "", "project", ""
+    entry_id = tokens.pop(0)
+    content, title, scope = parse_memory_add_args(" ".join(tokens))
+    return entry_id, content, scope, title
+
 class AgentState(TypedDict):
     messages: Annotated[List[BaseMessage], operator.add]
     goal: str
@@ -993,7 +1002,7 @@ if __name__ == "__main__":
                     cmd_args = cmd_parts[1] if len(cmd_parts) > 1 else ""
                     
                     if cmd_base == "/commands":
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|list scope:x|add [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`"}})
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|list scope:x|add [scope:x] [title:y] <text>|update <id> [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`"}})
                         continue
                     elif cmd_base == "/memory":
                         memory_args = cmd_args.strip()
@@ -1009,13 +1018,17 @@ if __name__ == "__main__":
                         elif memory_args.startswith("delete "):
                             removed = memory_store.delete(memory_args[7:].strip())
                             emit({"jsonrpc": "2.0", "method": "memory_deleted", "params": {"removed": removed}})
+                        elif memory_args.startswith("update "):
+                            entry_id, content, scope, title = parse_memory_update_args(memory_args[7:].strip())
+                            entry = memory_store.update(entry_id, content, title=title, scope=scope)
+                            emit({"jsonrpc": "2.0", "method": "memory_updated", "params": {"id": entry_id, "updated": entry is not None}})
                         elif memory_args == "clear all":
                             emit({"jsonrpc": "2.0", "method": "memory_cleared", "params": {"removed": memory_store.clear()}})
                         elif memory_args.startswith("clear scope:"):
                             scope = memory_args[len("clear scope:"):].strip()
                             emit({"jsonrpc": "2.0", "method": "memory_cleared", "params": {"scope": scope, "removed": memory_store.clear(scope)}})
                         else:
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Memory: use `/memory list|list scope:x|add [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`. Bare clear does nothing."}})
+                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Memory: use `/memory list|list scope:x|add [scope:x] [title:y] <text>|update <id> [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`. Bare clear does nothing."}})
                         continue
                     elif cmd_base == "/marketplace":
                         handle_marketplace(text)
@@ -1089,7 +1102,7 @@ if __name__ == "__main__":
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Opening agent settings panel..."}})
                         continue
                     elif cmd_base == "/help":
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|list scope:x|add [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`\n- `/route`\n- `/drc`\n- `/place`\n- `/design`\n- `/explain`\n- `/clear`\n- `/settings`"}})
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|list scope:x|add [scope:x] [title:y] <text>|update <id> [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`\n- `/route`\n- `/drc`\n- `/place`\n- `/design`\n- `/explain`\n- `/clear`\n- `/settings`"}})
                         continue
                     else:
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Unknown command: {cmd_base}"}})

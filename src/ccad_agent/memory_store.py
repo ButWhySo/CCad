@@ -53,6 +53,14 @@ class MemoryStore:
                 os.unlink(name)
 
     def add(self, content, *, title="", scope="project", tags=None):
+        entry = self._normalise_entry(content, title=title, scope=scope, tags=tags)
+        entries = self._read()
+        entries.append(entry)
+        self._write(entries)
+        return entry
+
+    @staticmethod
+    def _normalise_entry(content, *, title="", scope="project", tags=None):
         content = str(content or "").strip()
         if not content or len(content) > 8000:
             raise ValueError("memory content must contain 1..8000 characters")
@@ -69,10 +77,19 @@ class MemoryStore:
             "tags": clean_tags,
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
-        entries = self._read()
-        entries.append(entry)
-        self._write(entries)
         return entry
+
+    def update(self, entry_id, content, *, title="", scope="project", tags=None):
+        entries = self._read()
+        for index, current in enumerate(entries):
+            if current.get("id") == entry_id:
+                replacement = self._normalise_entry(content, title=title, scope=scope, tags=tags)
+                replacement["id"] = entry_id
+                replacement["created_at"] = current.get("created_at", replacement["created_at"])
+                entries[index] = replacement
+                self._write(entries)
+                return replacement
+        return None
 
     def list(self, scope=None):
         entries = self._read()

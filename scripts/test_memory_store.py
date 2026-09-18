@@ -14,6 +14,9 @@ with tempfile.TemporaryDirectory() as temp:
     item = store.add("Use 0.25 mm minimum track width", title="routing", tags=["pcb"])
     assert store.list()[0]["id"] == item["id"]
     assert store.list(scope="other") == []
+    updated = store.update(item["id"], "Use 0.30 mm minimum track width", title="updated")
+    assert updated["id"] == item["id"]
+    assert store.list()[0]["content"].startswith("Use 0.30")
     assert store.delete(item["id"]) is True
     assert store.list() == []
     try:

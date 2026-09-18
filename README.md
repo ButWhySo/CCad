@@ -52,7 +52,7 @@ limits never store keys and never make network calls by themselves. `/cc` and
 turns become opaque count/size metadata, and no provider quota is consumed.
 Agent memory is local JSON at `%APPDATA%/CCad/agent_memory.json` (override with
 `CCAD_AGENT_MEMORY_PATH`). Use `/memory list`, `/memory list scope:x`, `/memory add <text>`,
-`/memory delete <id>`, `/memory clear all`, or `/memory clear scope:<name>`;
+`/memory update <id> <text>`, `/memory delete <id>`, `/memory clear all`, or `/memory clear scope:<name>`;
 `memory.stm` controls bounded project-memory injection into provider context;
 `add` accepts optional leading `scope:x` and `title:y` flags.
 - CLI agent observability configuration: `ccad agent trace-export-schema`, `ccad agent trace-export-template`, `ccad agent trace-redaction-policy`, and `ccad agent trace-export-dry-run` expose disabled-by-default OpenTelemetry/Langfuse trace-export metadata, redaction policy, and no-network dry-run status, with matching `agent.trace_export_schema`, `agent.trace_export_template`, `agent.trace_redaction_policy`, and `agent.trace_export_dry_run` JSON-RPC routes.

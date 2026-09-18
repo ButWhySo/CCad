@@ -2065,6 +2065,9 @@ Sprint 749 completes memory command scoping: `/memory add` accepts optional
 Sprint 750 adds scoped listing via `/memory list scope:<name>` and keeps all
 memory help surfaces aligned.
 
+Sprint 751 completes memory CRUD with explicit update-by-ID, preserving entry
+identity and creation time while revalidating metadata/content.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.
