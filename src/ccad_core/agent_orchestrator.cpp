@@ -198,6 +198,18 @@ RunRecord IntakeLayer::start_session(const std::string& /*input*/) {
     return {"run_001", "user", "workspace", "main"};
 }
 
+std::string project_context_revision(std::string_view serialized_context) {
+    // Deterministic FNV-1a; change detection only, not a security primitive.
+    std::uint64_t hash = 1469598103934665603ULL;
+    for (const unsigned char byte : serialized_context) {
+        hash ^= byte;
+        hash *= 1099511628211ULL;
+    }
+    std::ostringstream out;
+    out << std::hex << std::setw(16) << std::setfill('0') << hash;
+    return out.str();
+}
+
 // ─── ContextBuilder ─────────────────────────────────────────────
 void ContextBuilder::load_stable_prompts() {}
 void ContextBuilder::load_project_memory() {}
@@ -206,13 +218,18 @@ std::string ContextBuilder::build_context(const ProjectContext& base_ctx) {
     // Keep context machine-readable and bounded at its boundary. The project
     // snapshot remains intact; envelope metadata tells providers how to treat
     // it without pretending that memory or repo-map data was loaded.
+    const auto project_json = base_ctx.to_json();
     std::ostringstream out;
     out << "{\"schema_version\":1"
         << ",\"context_kind\":\"ccad_agent_context\""
-        << ",\"project\":" << base_ctx.to_json()
+        << ",\"revision\":\"" << project_context_revision(project_json) << "\""
+        << ",\"project\":" << project_json
         << ",\"constraints\":{\"read_only_by_default\":true"
         << ",\"approval_required_for_mutation\":true"
-        << ",\"secret_values_excluded\":true}"
+        << ",\"secret_values_excluded\":true"
+        << ",\"pinned\":[\"project_snapshot\",\"mutation_policy\"]}"
+        << ",\"compaction\":{\"supported\":true"
+        << ",\"policy\":\"preserve_revision_and_pinned_constraints\"}"
         << "}";
     return out.str();
 }

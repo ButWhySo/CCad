@@ -2041,6 +2041,11 @@ recent turns stay intact, older turns become opaque count/size metadata, and no
 provider request is made. GUI validation remains paused by explicit user order.
 CI agent gate now executes both compaction and provider-timeout contracts.
 
+Sprint 740 adds deterministic C++ project-context revision metadata, pinned
+snapshot/mutation constraints, and explicit compaction policy to the core
+context envelope. Revision changes when serialized project state changes; no
+provider or GUI is involved.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.

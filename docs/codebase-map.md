@@ -1380,6 +1380,12 @@ Sprint 625 adds composer quick replies `action:agent_quick_summarize`, `action:a
 objects and replaces older content with opaque count/character metadata; it
 must not call a provider or emit older chat/project content.
 
+`ccad::project_context_revision` in `src/ccad_core/agent_orchestrator.hpp/.cpp`
+returns a deterministic opaque FNV-1a revision for serialized project context.
+`ContextBuilder::build_context` emits this revision, pinned snapshot/mutation
+constraints, and a truthful compaction-policy marker; revision is change
+detection only, not a secret-hiding primitive.
+
 `AgentOrchestrator::plan` invokes `IntakeLayer::run_risk_scan` before subagent decomposition. A failed scan creates one auditable failed task with `intake_risk_scan_blocked`; no provider or tool task is created.
 
 The scan covers destructive/external action markers plus common prompt-injection and credential-bearing markers. It intentionally fails closed; callers must present a safe revised goal rather than retrying the blocked one unchanged.

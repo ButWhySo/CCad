@@ -431,10 +431,16 @@ static void test_context_builder_envelope() {
     const auto json = ccad::ContextBuilder().build_context(ctx);
     assert(json.find("\"schema_version\":1") != std::string::npos);
     assert(json.find("\"context_kind\":\"ccad_agent_context\"") != std::string::npos);
+    assert(json.find("\"revision\":\"") != std::string::npos);
     assert(json.find("\"project\":{\"project_id\":\"test-project\"") != std::string::npos);
     assert(json.find("\"read_only_by_default\":true") != std::string::npos);
     assert(json.find("\"approval_required_for_mutation\":true") != std::string::npos);
     assert(json.find("\"secret_values_excluded\":true") != std::string::npos);
+    assert(json.find("\"pinned\":[\"project_snapshot\",\"mutation_policy\"]") != std::string::npos);
+    assert(json.find("\"policy\":\"preserve_revision_and_pinned_constraints\"") != std::string::npos);
+    auto changed = ctx;
+    changed.active_net = "GND";
+    assert(ccad::project_context_revision(ctx.to_json()) != ccad::project_context_revision(changed.to_json()));
 
     std::cout << "PASS\n";
 }

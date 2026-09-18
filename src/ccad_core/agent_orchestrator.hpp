@@ -10,6 +10,7 @@
 #include <set>
 #include <mutex>
 #include <map>
+#include <string_view>
 
 namespace ccad {
 
@@ -111,6 +112,9 @@ struct ProjectContext {
 
     std::string to_json() const;
 };
+
+// Stable opaque identity for serialized project context.
+std::string project_context_revision(std::string_view serialized_context);
 
 // ─── Orchestrator Configuration ─────────────────────────────────
 struct OrchestratorConfig {

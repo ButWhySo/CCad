@@ -887,3 +887,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 737: add bounded provider request timeout; live connectivity remains user-environment dependent.
 - [x] Sprint 738: make `/cc`/`/compact` truthful local history compaction without provider quota use; GUI validation remains paused.
 - [x] Sprint 739: wire compaction and timeout contracts into agent CI gate; no GUI/provider network execution.
+- [x] Sprint 740: add deterministic C++ context revision plus pinned constraints and compaction metadata; GUI validation remains paused.
