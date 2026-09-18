@@ -952,6 +952,10 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_ui_map_mouse_target_demo.
 
 The script plays the docs beep, waits two seconds, launches the GUI target-sequence mode, lets the window settle for five seconds, moves the cursor to semantic targets such as Select, Measure, Save, File, the properties/DRC panel, and the Agent tab, waits about 800 ms per target before screenshots, saves marked PNGs, resizes the window, repeats the same targets, and writes a JSON report.
 
+For an explicit model refresh, send `{"method":"agent.list_models","params":{"provider":"openrouter"}}`.
+This requires the provider key already held by the agent process; it is never
+performed automatically and other providers report unsupported catalog status.
+
 Run the live UI-map local socket server:
 
 ```cmd

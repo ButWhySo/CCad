@@ -926,3 +926,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 783: gate provider catalog/runtime/documentation consistency in CI.
 - [x] Sprint 784: restore officially documented Gemini 2.5 text presets.
 - [x] Sprint 785: connect explicit model catalog refresh to Settings dropdown.
+- [x] Sprint 786: exercise model catalog protocol branches without network access.

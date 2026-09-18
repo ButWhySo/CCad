@@ -2202,6 +2202,12 @@ still never fetched at startup; returned IDs replace only the active combo.
 
 README now documents this explicit Settings refresh path and its quota boundary.
 
+Sprint 786 adds child-process protocol proof for missing-key and unsupported
+provider catalog responses; the fixture performs no external request.
+
+README now lists the live-socket `agent.list_models` request and its explicit
+refresh/key boundary for external harness authors.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.
