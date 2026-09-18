@@ -2539,3 +2539,7 @@ Headless-only batch: pending-call recovery metadata now counts the union of proc
 ### Sprint 864 — thread-scoped context revisions
 
 Headless-only batch: context revision chaining is now isolated by `CCAD_AGENT_THREAD_ID`, preventing one chat thread’s previous revision from being reported for another thread. Added an offline contract test; GUI/API/build validation remains paused.
+
+### Sprint 865 — opaque context-state query
+
+Headless-only batch: added read-only `agent.context_state`, returning only thread ID, opaque revision, and redaction flags. Context content is never returned. Added an offline contract; GUI/API/build validation remains paused.

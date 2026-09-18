@@ -1705,3 +1705,5 @@ reason fields, matching cancellation paths in the Python dispatcher.
 Sprint 863 handover: `pending_call_snapshot()` now reports a unique union count across process-local and checkpoint call IDs, while preserving each opaque ID list. `scripts/test_pending_call_count_contract.py` locks the no-network contract.
 
 Sprint 864 handover: `context_revisions` is keyed by `CCAD_AGENT_THREAD_ID`; context events now compare against the prior revision for the same thread only. `scripts/test_context_revision_scope_contract.py` locks this no-network boundary.
+
+Sprint 865 handover: `agent.context_state` exposes `context_state_snapshot` with thread ID, opaque revision, and redaction flags only; it never emits context content. `scripts/test_agent_context_state_method.py` locks the discovery and redaction contract.

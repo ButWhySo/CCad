@@ -179,6 +179,9 @@ def orchestrator_method_catalog():
         "schema_version": 1,
         "methods": [
             {"name": "agent.methods", "read_only": True},
+            {"name": "agent.context_state", "read_only": True, "secrets": False,
+             "response": {"method": "context_state_snapshot", "fields": [
+                 "thread_id", "revision", "content_emitted", "secret_value_visible"]}},
             {"name": "agent.pending_calls", "read_only": True, "secrets": False},
             {"name": "agent.list_models", "read_only": True,
              "network_access": "provider_specific",
@@ -1160,6 +1163,16 @@ if __name__ == "__main__":
                 thread_id = req.get("params", {}).get("thread_id", "")
                 emit({"jsonrpc": "2.0", "method": "pending_calls_state", "params":
                       pending_call_snapshot(str(thread_id))})
+            elif method == "agent.context_state":
+                requested_thread = req.get("params", {}).get("thread_id", "")
+                thread_id = str(requested_thread or
+                                os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local"))
+                emit({"jsonrpc": "2.0", "method": "context_state_snapshot", "params": {
+                    "thread_id": thread_id,
+                    "revision": context_revisions.get(thread_id, ""),
+                    "content_emitted": False,
+                    "secret_value_visible": False,
+                }})
             elif method == "tool_result":
                 # Accept broker response by correlation ID. If graph is paused
                 # at an interrupt, feed authoritative result into same thread.
