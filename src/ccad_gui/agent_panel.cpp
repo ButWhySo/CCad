@@ -888,6 +888,34 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   proposal_changes_list_->setSelectionMode(QAbstractItemView::NoSelection);
   proposal_changes_list_->setMaximumHeight(110);
   proposal_layout->addWidget(proposal_changes_list_);
+  auto* revision_group = new QFrame(proposal_card);
+  revision_group->setObjectName("panel:agent_proposal_revision");
+  auto* revision_layout = new QVBoxLayout(revision_group);
+  revision_layout->setContentsMargins(0, 3, 0, 0);
+  auto* revision_title = new QLabel("Revision constraints", revision_group);
+  revision_title->setStyleSheet("font-weight:600; color:#bfdbfe;");
+  revision_layout->addWidget(revision_title);
+  auto* revision_checks = new QHBoxLayout();
+  proposal_preserve_placement_ = new QCheckBox("Preserve placement", revision_group);
+  proposal_preserve_placement_->setObjectName("control:proposal_preserve_placement");
+  proposal_fewer_vias_ = new QCheckBox("Use fewer vias", revision_group);
+  proposal_fewer_vias_->setObjectName("control:proposal_fewer_vias");
+  proposal_avoid_area_ = new QCheckBox("Avoid selected area", revision_group);
+  proposal_avoid_area_->setObjectName("control:proposal_avoid_area");
+  revision_checks->addWidget(proposal_preserve_placement_);
+  revision_checks->addWidget(proposal_fewer_vias_);
+  revision_checks->addWidget(proposal_avoid_area_);
+  revision_layout->addLayout(revision_checks);
+  proposal_revision_input_ = new QTextEdit(revision_group);
+  proposal_revision_input_->setObjectName("control:proposal_revision_input");
+  proposal_revision_input_->setPlaceholderText("Tell the agent how to revise this proposal...");
+  proposal_revision_input_->setFixedHeight(48);
+  revision_layout->addWidget(proposal_revision_input_);
+  proposal_submit_revision_button_ = new QPushButton("Send for revision", revision_group);
+  proposal_submit_revision_button_->setObjectName("action:agent_proposal_submit_revision");
+  revision_layout->addWidget(proposal_submit_revision_button_, 0, Qt::AlignRight);
+  revision_group->hide();
+  proposal_layout->addWidget(revision_group);
   auto* proposal_actions = new QHBoxLayout();
   proposal_revise_button_ = new QPushButton("Revise", proposal_card);
   proposal_revise_button_->setObjectName("action:agent_proposal_revise");
@@ -903,11 +931,23 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   proposal_card_ = proposal_card;
   proposal_card_->hide();
   connect(proposal_revise_button_, &QPushButton::clicked, this, [this]() {
+    if (auto* revision = findChild<QFrame*>("panel:agent_proposal_revision")) revision->show();
+    proposal_revise_button_->hide();
+    if (proposal_revision_input_) proposal_revision_input_->setFocus();
+    addActivityEvent("proposal", "Revision editor opened", "Proposal remains unchanged", "agent.proposal");
+  });
+  connect(proposal_submit_revision_button_, &QPushButton::clicked, this, [this]() {
+    QStringList constraints;
+    if (proposal_preserve_placement_->isChecked()) constraints << "preserve placement";
+    if (proposal_fewer_vias_->isChecked()) constraints << "use fewer vias";
+    if (proposal_avoid_area_->isChecked()) constraints << "avoid selected area";
+    const QString instructions = proposal_revision_input_->toPlainText().trimmed();
+    if (!instructions.isEmpty()) constraints << instructions;
     if (chat_input_) {
-      chat_input_->setPlainText("/revise ");
+      chat_input_->setPlainText("/revise " + constraints.join("; "));
       chat_input_->setFocus();
     }
-    addActivityEvent("proposal", "Revision requested", "Proposal remains unchanged", "agent.proposal");
+    addActivityEvent("proposal", "Revision submitted", constraints.join("; "), "agent.proposal");
   });
   connect(proposal_reject_button_, &QPushButton::clicked, this, [this]() {
     addActivityEvent("proposal", "Proposal rejected", proposal_summary_label_->text(), "agent.proposal");
@@ -2588,6 +2628,12 @@ void AgentPanel::clearProposal() {
   if (proposal_card_) proposal_card_->hide();
   if (proposal_changes_list_) proposal_changes_list_->clear();
   if (proposal_summary_label_) proposal_summary_label_->clear();
+  if (auto* revision = findChild<QFrame*>("panel:agent_proposal_revision")) revision->hide();
+  if (proposal_revise_button_) proposal_revise_button_->show();
+  if (proposal_preserve_placement_) proposal_preserve_placement_->setChecked(false);
+  if (proposal_fewer_vias_) proposal_fewer_vias_->setChecked(false);
+  if (proposal_avoid_area_) proposal_avoid_area_->setChecked(false);
+  if (proposal_revision_input_) proposal_revision_input_->clear();
 }
 
 void AgentPanel::setProviderStateCallback(ProviderStateCallback cb) {

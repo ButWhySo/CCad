@@ -1889,3 +1889,12 @@ existing approval continuation runs. The generic demo does not invoke a
 provider mutation, so deterministic GUI state tests cover the card lifecycle;
 the official visual harness, inspected screenshot, empty stderr, and full Qt
 CTest 91/91 passed.
+
+### Sprint 710 - add proposal revision constraints
+
+Extended the proposal card with structured revision constraints for preserving
+placement, reducing vias, and avoiding the selected area, plus free-form
+revision instructions. Sending the revision builds a `/revise` request in the
+chat composer; it does not mutate the project or clear the pending proposal.
+Focused GUI test, official visual harness, screenshot inspection, empty
+stderr, and full Qt CTest 91/91 passed.

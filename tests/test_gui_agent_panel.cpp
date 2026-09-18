@@ -234,7 +234,17 @@ private slots:
     auto* revise = panel.findChild<QPushButton*>("action:agent_proposal_revise");
     QVERIFY(revise != nullptr);
     QTest::mouseClick(revise, Qt::LeftButton);
-    QCOMPARE(panel.findChild<QTextEdit*>("control:agent_chat_input")->toPlainText(), QString("/revise "));
+    auto* preserve = panel.findChild<QCheckBox*>("control:proposal_preserve_placement");
+    QVERIFY(preserve != nullptr);
+    QTest::mouseClick(preserve, Qt::LeftButton);
+    auto* instructions = panel.findChild<QTextEdit*>("control:proposal_revision_input");
+    QVERIFY(instructions != nullptr);
+    instructions->setPlainText("Keep the original route near U3.");
+    auto* submit_revision = panel.findChild<QPushButton*>("action:agent_proposal_submit_revision");
+    QVERIFY(submit_revision != nullptr);
+    QTest::mouseClick(submit_revision, Qt::LeftButton);
+    QVERIFY(panel.findChild<QTextEdit*>("control:agent_chat_input")->toPlainText().contains("preserve placement"));
+    QVERIFY(panel.findChild<QTextEdit*>("control:agent_chat_input")->toPlainText().contains("Keep the original route"));
     auto* reject = panel.findChild<QPushButton*>("action:agent_proposal_reject");
     QVERIFY(reject != nullptr);
     QTest::mouseClick(reject, Qt::LeftButton);
