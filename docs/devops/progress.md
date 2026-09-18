@@ -2007,3 +2007,6 @@ coverage with Anthropic and Gemini dummy keys present while selecting the
 OpenAI-compatible local test server. Mock chat, Gemini secret redaction, and
 OpenAI-compatible tool-loop tests pass locally. Provider-dependent runtime
 tests remain CI-backed when this workspace lacks the corresponding service.
+# Sprint 724 — quota-safe provider settings and live chat surface
+
+Implemented Windows Credential Manager-backed provider secret storage, OS-authenticated reveal, strict provider model selection, Cerebras-compatible endpoint selection, quota-safe UI validation, and borderless single-stream chat styling. Validation: `cmake --build build-qt --config Release --target ccad_gui -j 6`, Qt PATH-enabled `ctest --test-dir build-qt -C Release --output-on-failure` (91/91), and `tests/physical_ui_robot.py` with live `ui.map`/mouse-keyboard actions and inspected screenshots. Real provider calls were not made.

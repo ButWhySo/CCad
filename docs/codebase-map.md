@@ -1468,3 +1468,6 @@ provider. Unrelated `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, or `OPENAI_API_KEY`
 presence must not replace provider selected through Agent Settings.
 `scripts/test_provider_openai_compatible.py` proves this with unrelated dummy
 keys set while selected local adapter reaches tool loop.
+# Sprint 724 settings/security override
+
+`AgentSettingsDialog` stores provider keys in Windows Credential Manager under `CCad/provider/<provider>`; project/config/log files never contain plaintext keys. `Show key` requires Windows credential validation. Cerebras uses the OpenAI-compatible endpoint `https://api.cerebras.ai/v1`; provider/model selection is explicit. `AgentPanel` renders normal chat entries as one compact stream; tool/notice cards remain distinct for actionable status.

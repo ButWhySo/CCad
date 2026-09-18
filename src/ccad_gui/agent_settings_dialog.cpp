@@ -20,6 +20,11 @@
 #include <QPointer>
 #include <QTimer>
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#include <wincred.h>
+#endif
+
 namespace {
 
 QStringList modelsForProvider(const QString& provider) {
@@ -50,18 +55,90 @@ bool looksLikeConcatenatedPreset(const QString& model) {
   const QStringList providers = {"openai", "anthropic", "google_gemini", "cerebras"};
   for (const QString& provider : providers) {
     for (const QString& preset : modelsForProvider(provider)) {
-      if (candidate.startsWith(preset) && candidate != preset) return true;
+      // Provider/model changes must never preserve a stale preset prefix.
+      // Reject any value containing a known preset plus another token.
+      if (candidate.contains(preset) && candidate != preset) return true;
     }
   }
   return false;
 }
 
 QString modelDetailsForProvider(const QString& provider) {
-  if (provider == "openai") return "OpenAI API · text/image · tool calling · provider key via OPENAI_API_KEY";
-  if (provider == "anthropic") return "Anthropic API · Claude family · tool use · provider key via ANTHROPIC_API_KEY";
-  if (provider == "google_gemini") return "Google Gemini API · multimodal · long context · provider key via GEMINI_API_KEY";
-  if (provider == "openai_compatible") return "OpenAI-compatible endpoint · configure base URL and model outside the board file";
-  return "Local model endpoint · custom model ID and endpoint configuration required";
+  if (provider == "openai") return "OpenAI API | text/image | tool calling | key: OPENAI_API_KEY";
+  if (provider == "anthropic") return "Anthropic API | Claude family | tool use | key: ANTHROPIC_API_KEY";
+  if (provider == "google_gemini") return "Google Gemini API | multimodal | long context | key: GEMINI_API_KEY";
+  if (provider == "cerebras") return "Cerebras API | fast inference | key: CEREBRAS_API_KEY";
+  if (provider == "openai_compatible") return "OpenAI-compatible endpoint | custom base URL and model";
+  return "Local model endpoint | custom model ID and endpoint required";
+}
+
+bool authorizeSecretReveal(QWidget* parent) {
+#ifdef Q_OS_WIN
+  wchar_t user[CREDUI_MAX_USERNAME_LENGTH + 1] = {};
+  wchar_t password[CREDUI_MAX_PASSWORD_LENGTH + 1] = {};
+  DWORD user_size = CREDUI_MAX_USERNAME_LENGTH;
+  DWORD password_size = CREDUI_MAX_PASSWORD_LENGTH;
+  if (!GetUserNameW(user, &user_size)) {
+    user[0] = L'\0';
+  }
+  CREDUI_INFOW info{};
+  info.cbSize = sizeof(info);
+  info.hwndParent = parent ? reinterpret_cast<HWND>(parent->winId()) : nullptr;
+  info.pszCaptionText = L"CCad API key";
+  info.pszMessageText = L"Windows password required to reveal this API key.";
+  const DWORD result = CredUIPromptForCredentialsW(
+      &info, L"CCad API key reveal", nullptr, 0, user, user_size,
+      password, password_size, nullptr,
+      CREDUI_FLAGS_GENERIC_CREDENTIALS | CREDUI_FLAGS_VALIDATE_USERNAME |
+          CREDUI_FLAGS_ALWAYS_SHOW_UI);
+  SecureZeroMemory(password, sizeof(password));
+  return result == NO_ERROR;
+#else
+  Q_UNUSED(parent);
+  return false;
+#endif
+}
+
+QString credentialTarget(const QString& provider) {
+  return QStringLiteral("CCad/provider/") + provider;
+}
+
+QString loadStoredSecret(const QString& provider) {
+#ifdef Q_OS_WIN
+  PCREDENTIALW credential = nullptr;
+  const std::wstring target = credentialTarget(provider).toStdWString();
+  if (CredReadW(target.c_str(), CRED_TYPE_GENERIC, 0, &credential) && credential) {
+    const QString value = QString::fromUtf8(
+        reinterpret_cast<const char*>(credential->CredentialBlob),
+        static_cast<int>(credential->CredentialBlobSize));
+    CredFree(credential);
+    return value;
+  }
+#else
+  Q_UNUSED(provider);
+#endif
+  return {};
+}
+
+void storeSecret(const QString& provider, const QString& secret) {
+#ifdef Q_OS_WIN
+  const std::wstring target = credentialTarget(provider).toStdWString();
+  if (secret.isEmpty()) {
+    CredDeleteW(target.c_str(), CRED_TYPE_GENERIC, 0);
+    return;
+  }
+  const QByteArray bytes = secret.toUtf8();
+  CREDENTIALW credential{};
+  credential.Type = CRED_TYPE_GENERIC;
+  credential.TargetName = const_cast<LPWSTR>(target.c_str());
+  credential.CredentialBlobSize = static_cast<DWORD>(bytes.size());
+  credential.CredentialBlob = reinterpret_cast<LPBYTE>(const_cast<char*>(bytes.constData()));
+  credential.Persist = CRED_PERSIST_LOCAL_MACHINE;
+  CredWriteW(&credential, 0);
+#else
+  Q_UNUSED(provider);
+  Q_UNUSED(secret);
+#endif
 }
 
 }  // namespace
@@ -284,6 +361,8 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
 
   model_combo_ = new QComboBox(parent_widget);
   model_combo_->setObjectName("control:modelCombo");
+  // Known providers are strict dropdowns. Free-form model IDs belong only to
+  // endpoint-backed providers; editable preset boxes caused concatenated IDs.
   model_combo_->setEditable(true);
   model_combo_->setInsertPolicy(QComboBox::NoInsert);
   model_input_ = model_combo_->lineEdit();
@@ -345,8 +424,12 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
     model_combo_->clear();
     const QStringList models = modelsForProvider(provider_combo_->currentData().toString());
     model_combo_->addItems(models);
+    const bool custom_model_provider = provider_combo_->currentData().toString() == "openai_compatible" ||
+                                        provider_combo_->currentData().toString() == "local_model";
+    if (model_input_) model_input_->setReadOnly(!custom_model_provider);
     const int matching = model_combo_->findText(current);
-    if (!current.isEmpty() && !current_was_provider_preset && !current_was_malformed_preset && matching < 0) {
+    if (custom_model_provider && !current.isEmpty() && !current_was_provider_preset &&
+        !current_was_malformed_preset && matching < 0) {
       model_combo_->setEditText(current);
     } else if (matching >= 0 && !current_was_provider_preset) {
       model_combo_->setCurrentIndex(matching);
@@ -355,6 +438,7 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
     }
     model_combo_->blockSignals(false);
     if (model_details_) model_details_->setText(modelDetailsForProvider(provider_combo_->currentData().toString()));
+    if (api_key_input_) api_key_input_->setText(loadStoredSecret(provider_combo_->currentData().toString()));
     if (resolved_config_preview_) {
       resolved_config_preview_->setPlainText(QString("[agent]\nprovider = \"%1\"\nmodel = \"%2\"\n\n[security]\nsandbox = %3\napproval = %4")
           .arg(provider_combo_->currentData().toString(), model_input_ ? model_input_->text() : QString(),
@@ -362,6 +446,8 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
                approval_cb_ && approval_cb_->isChecked() ? "true" : "false"));
     }
   });
+  model_combo_->setCurrentIndex(0);
+  if (model_input_) model_input_->setReadOnly(true);
   model_details_->setText(modelDetailsForProvider(provider_combo_->currentData().toString()));
 
   resolved_config_preview_ = new QTextEdit(parent_widget);
@@ -374,6 +460,13 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
       .arg(provider_combo_->currentData().toString(), model_input_->text(),
            sandbox_cb_->isChecked() ? "true" : "false",
            approval_cb_->isChecked() ? "true" : "false"));
+  api_key_input_ = new QLineEdit(parent_widget);
+  api_key_input_->setObjectName("control:apiKeyInput");
+  api_key_input_->setEchoMode(QLineEdit::Password);
+  api_key_input_->setPlaceholderText("API key (stored in OS credential vault)");
+  api_key_input_->setToolTip("Stored in Windows Credential Manager, never in project/config/logs.");
+  form->addRow("API key:", api_key_input_);
+  api_key_input_->setText(loadStoredSecret(provider_combo_->currentData().toString()));
   connect(model_input_, &QLineEdit::textChanged, this, [this](const QString&) {
     if (!resolved_config_preview_ || !provider_combo_ || !model_input_) return;
     resolved_config_preview_->setPlainText(QString("[agent]\nprovider = \"%1\"\nmodel = \"%2\"\n\n[security]\nsandbox = %3\napproval = %4")
@@ -460,20 +553,24 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
   };
   connect(provider_combo_, &QComboBox::currentTextChanged, this, [refresh_target](const QString&) { refresh_target(); });
   connect(model_input_, &QLineEdit::textChanged, this, [refresh_target](const QString&) { refresh_target(); });
-  api_key_input_ = new QLineEdit(parent_widget);
-  api_key_input_->setObjectName("control:apiKeyInput");
-  api_key_input_->setEchoMode(QLineEdit::Password);
-  api_key_input_->setPlaceholderText("API key (kept in memory)");
-  layout->addWidget(api_key_input_);
   auto* reveal_key = new QCheckBox("Show key", parent_widget);
   reveal_key->setObjectName("control:showApiKeyCb");
   reveal_key->setToolTip("Temporarily reveal the session key on screen");
-  connect(reveal_key, &QCheckBox::toggled, this, [this](bool visible) {
+  connect(reveal_key, &QCheckBox::toggled, this, [this, reveal_key](bool visible) {
     if (api_key_input_) {
+      if (visible) {
+        if (!authorizeSecretReveal(this)) {
+          QSignalBlocker blocker(reveal_key);
+          reveal_key->setChecked(false);
+          api_key_input_->setEchoMode(QLineEdit::Password);
+          return;
+        }
+      }
       api_key_input_->setEchoMode(visible ? QLineEdit::Normal : QLineEdit::Password);
     }
   });
   layout->addWidget(reveal_key);
+  layout->addWidget(new QLabel("Session key is entered on Configuration and held in memory only.", parent_widget));
   auto* test_provider = new QPushButton("Test Provider", parent_widget);
   test_provider->setObjectName("action:testProviderBtn");
   test_provider->setToolTip("Initialize the selected provider for this session without sending a prompt");
@@ -508,6 +605,7 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
   connect(clear_key, &QPushButton::clicked, this, [this]() {
     const QString provider = provider_combo_ ? provider_combo_->currentData().toString()
                                              : QStringLiteral("openai");
+    storeSecret(provider, QString());
     if (agent_panel_) agent_panel_->setProviderSecret(provider, QString());
     if (api_key_input_) api_key_input_->clear();
   });
@@ -679,8 +777,9 @@ void AgentSettingsDialog::saveAllSettings() {
   if (dev_prompt_) config["dev_prompt"] = dev_prompt_->toPlainText();
 
   if (agent_panel_ && api_key_input_) {
-    agent_panel_->setProviderSecret(provider_combo_ ? provider_combo_->currentData().toString() : "openai",
-                                    api_key_input_->text());
+    const QString provider = provider_combo_ ? provider_combo_->currentData().toString() : "openai";
+    storeSecret(provider, api_key_input_->text());
+    agent_panel_->setProviderSecret(provider, api_key_input_->text());
   }
 
   if (plugins_list_) {

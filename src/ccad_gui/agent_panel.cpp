@@ -533,10 +533,10 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
     }
     QFrame[agentRole="chatBubbleAgent"] {
       background-color: transparent;
-      border-left: 3px solid #8a2be2;
-      border-radius: 6px;
-      margin: 6px 4px;
-      padding: 10px 14px;
+      border: none;
+      border-radius: 0;
+      margin: 3px 4px;
+      padding: 2px 0;
     }
     QFrame[agentRole="noticeCard"] {
       background-color: #2b2417;
@@ -547,10 +547,11 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
       padding: 6px 10px;
     }
     QFrame[agentRole="chatBubbleUser"] {
-      background-color: #2d2f36;
-      border-radius: 14px;
-      margin: 6px 4px;
-      padding: 10px 14px;
+      background-color: transparent;
+      border: none;
+      border-radius: 0;
+      margin: 3px 4px;
+      padding: 2px 0;
     }
     QTextBrowser {
       background-color: transparent;
@@ -752,6 +753,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   chat_container->setObjectName("agentScrollContainer");
   chat_container->setStyleSheet("background-color: transparent;");
   chat_history_layout_ = new QVBoxLayout(chat_container);
+  chat_history_layout_->setContentsMargins(8, 6, 8, 6);
+  chat_history_layout_->setSpacing(0);
   chat_history_layout_->setAlignment(Qt::AlignTop);
   chat_scroll_area_->setWidget(chat_container);
   
