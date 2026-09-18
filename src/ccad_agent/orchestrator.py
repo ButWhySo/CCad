@@ -454,6 +454,14 @@ def invoke_agent_run(state):
             "ccad_thread_id_present": bool(thread_id),
         }
         run_config["tags"] = ["ccad", "agent", active_workflow]
+        # Bound supervisor -> specialist -> tool cycles.  This is a safety
+        # limit, not a provider retry: a malformed tool call must not consume
+        # quota forever while chaining is enabled.
+        try:
+            recursion_limit = int(os.environ.get("CCAD_AGENT_RECURSION_LIMIT", "12"))
+        except ValueError:
+            recursion_limit = 12
+        run_config["recursion_limit"] = min(32, max(4, recursion_limit))
         if callbacks:
             run_config["callbacks"] = callbacks
         return executor.invoke(state, config=run_config)
