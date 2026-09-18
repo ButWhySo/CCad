@@ -199,6 +199,10 @@ def orchestrator_method_catalog():
              "response_contracts": {
                  "intake_state": {"fields": [
                      "accepted", "category", "secret_value_visible"]},
+                 "provider_state": {"fields": [
+                     "provider", "model", "configured", "execution_ready",
+                     "network_access", "error", "error_category",
+                     "secret_value_visible"]},
                  "context_state": {"fields": [
                      "revision", "previous_revision", "changed", "change_kind",
                      "content_present", "content_size", "original_content_size",

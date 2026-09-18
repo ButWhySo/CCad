@@ -1647,3 +1647,7 @@ asserting initial/changed/unchanged events.
 Sprint 847 handover: method discovery now documents `intake_state` fields
 (`accepted`, `category`, `secret_value_visible`) alongside `context_state`,
 giving external harnesses a stable guardrail response contract.
+
+Sprint 848 handover: `human_message.response_contracts.provider_state` now
+documents readiness, network-access, error-classification, and redaction
+fields emitted by provider initialization paths.

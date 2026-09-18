@@ -1025,3 +1025,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   through source inspection; no GUI or provider request.
 - [x] Sprint 847: publish intake-state response fields through method
   discovery; no GUI or provider request.
+- [x] Sprint 848: publish provider-state response fields through method
+  discovery; no GUI or provider request.

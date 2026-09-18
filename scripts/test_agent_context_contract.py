@@ -42,6 +42,8 @@ assert "context_state" in human_contract["response_contracts"]
 assert "change_kind" in human_contract["response_contracts"]["context_state"]["fields"]
 assert "intake_state" in human_contract["response_contracts"]
 assert "accepted" in human_contract["response_contracts"]["intake_state"]["fields"]
+assert "provider_state" in human_contract["response_contracts"]
+assert "execution_ready" in human_contract["response_contracts"]["provider_state"]["fields"]
 events = [item for item in lines if item.get("method") == "context_state"]
 assert len(events) == 3
 assert events[0]["params"]["previous_revision"] == ""
