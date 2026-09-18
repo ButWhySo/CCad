@@ -1013,3 +1013,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   unsupported-provider diagnostic; no GUI or network execution.
 - [x] Sprint 841: publish model-catalog provider enum for harness discovery;
   no GUI or provider request.
+- [x] Sprint 842: synchronize OpenRouter catalog contract with provider enum;
+  no GUI or network execution.
