@@ -947,3 +947,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   remove stale `claude-fable-5-1`; GUI verification remains user-paused.
 - [x] Sprint 796: guard model-catalog callback against torn-down provider/model
   controls; GUI verification remains user-paused.
+- [x] Sprint 797: clear model-catalog callback during Settings teardown to stop
+  late responses invoking a destroyed dialog; GUI verification remains paused.

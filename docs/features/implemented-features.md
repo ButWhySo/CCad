@@ -2633,3 +2633,5 @@ longer offered.
 
 Model-catalog callbacks are lifetime-safe: responses arriving during Settings
 dialog teardown are ignored when either provider or model control is absent.
+Settings teardown also unregisters the model-catalog callback, preventing a
+late response from calling a lambda that captured the destroyed dialog.

@@ -2259,3 +2259,8 @@ while GUI verification remains paused.
 Sprint 796 hardens model-catalog response handling: Settings now safely ignores
 catalog callbacks if either model or provider combo has already been destroyed.
 The source contract covers this lifetime guard; GUI verification remains paused.
+
+Sprint 797 clears the model-catalog callback in `AgentSettingsDialog` teardown,
+closing the remaining lambda-captures-`this` lifetime hole. Headless contract
+proof covers both the callback reset and control guard; GUI verification remains
+paused.

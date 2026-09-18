@@ -1577,3 +1577,7 @@ regression expectation. No GUI launch or provider request performed.
 Sprint 796 handover: `AgentSettingsDialog::applyModelCatalog` checks both
 provider and model combo lifetime before reading callback state, preventing a
 late provider-model response from dereferencing a torn-down control.
+
+Sprint 797 handover: Settings destructor clears `model_catalog_cb_` alongside
+other dialog callbacks; AgentPanel can no longer invoke a destroyed dialog via
+the catalog response path.

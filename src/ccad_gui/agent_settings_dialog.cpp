@@ -254,6 +254,7 @@ AgentSettingsDialog::~AgentSettingsDialog() {
     agent_panel_->setConfigStateCallback({});
     agent_panel_->setProviderStateCallback({});
     agent_panel_->setMarketplaceCatalogCallback({});
+    agent_panel_->setModelCatalogCallback({});
   }
 }
 
