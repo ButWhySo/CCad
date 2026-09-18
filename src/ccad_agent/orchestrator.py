@@ -489,12 +489,24 @@ def get_system_prompt(role_desc: str) -> str:
 
 def invoke_provider_with_retry(client, messages, config=None):
     """Retry transient provider failures without retrying any tool execution."""
-    retries = min(2, max(0, int(os.environ.get("CCAD_PROVIDER_RETRIES", "2"))))
+    try:
+        retries = min(2, max(0, int(os.environ.get("CCAD_PROVIDER_RETRIES", "2"))))
+    except ValueError:
+        retries = 2
+
+    def quota_or_rate_limited(error):
+        status = getattr(error, "status_code", None)
+        text = str(error).lower()
+        return status in (402, 403, 429) or any(
+            marker in text for marker in ("rate limit", "quota", "too many requests", "insufficient credits")
+        )
+
     for attempt in range(retries + 1):
         try:
             return client.invoke(messages, config=config or {})
         except Exception as error:
-            if attempt >= retries:
+            # Never multiply quota/credit failures. Surface immediately.
+            if attempt >= retries or quota_or_rate_limited(error):
                 raise
             emit({"jsonrpc": "2.0", "method": "provider_retry", "params": {
                 "attempt": attempt + 1,
