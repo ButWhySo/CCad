@@ -1585,3 +1585,6 @@ the catalog response path.
 Sprint 798 handover: `AgentPanel::appendChatMessage` writes exclusively to
 `control:agent_chat_stream`, one selectable QTextBrowser. Null stream state now
 drops safely; obsolete bubble construction is removed.
+
+Sprint 799 handover: dead `chatBubbleUser` and `toolCard` style rules are gone;
+only checklist presentation retains the transparent agent-role style.

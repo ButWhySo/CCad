@@ -951,3 +951,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   late responses invoking a destroyed dialog; GUI verification remains paused.
 - [x] Sprint 798: remove obsolete per-message chat bubble fallback and enforce
   one selectable Agent stream; GUI verification remains paused.
+- [x] Sprint 799: remove dead per-message user/tool bubble CSS after single
+  stream migration; GUI verification remains paused.

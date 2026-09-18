@@ -2639,3 +2639,5 @@ late response from calling a lambda that captured the destroyed dialog.
 Agent chat uses one selectable, continuous QTextBrowser stream for user,
 assistant, and tool text. The former per-message bubble fallback is removed, so
 normal and degraded rendering cannot diverge into separate message boxes.
+Unused user/tool bubble CSS is also removed; checklist styling remains separate
+from the conversation stream by design.

@@ -553,13 +553,6 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
       margin: 5px 4px;
       padding: 6px 10px;
     }
-    QFrame[agentRole="chatBubbleUser"] {
-      background-color: transparent;
-      border: none;
-      border-radius: 0;
-      margin: 3px 4px;
-      padding: 2px 0;
-    }
     QTextBrowser {
       background-color: transparent;
       color: #e3e3e3;
@@ -567,18 +560,6 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
       font-family: "Inter", "Segoe UI", sans-serif;
       font-size: 14px;
       line-height: 1.5;
-    }
-    QFrame[agentRole="toolCard"] {
-      background-color: #25262b;
-      border: 1px solid #3d3f4b;
-      border-radius: 10px;
-      padding: 10px 14px;
-      margin: 4px 2px;
-    }
-    QLabel[agentRole="toolTitle"] {
-      color: #a5b4fc;
-      font-family: "JetBrains Mono", "Consolas", monospace;
-      font-size: 12px;
     }
     QTextEdit#chatInput {
       background-color: #25262b;

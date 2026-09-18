@@ -2269,3 +2269,7 @@ Sprint 798 removes the obsolete per-message bubble fallback from the Agent
 panel. All chat messages now use the single selectable `QTextBrowser` stream;
 the source contract rejects reintroduction of the second rendering path. GUI
 verification remains paused.
+
+Sprint 799 removes now-dead per-message user/tool bubble styles, preserving only
+the transparent checklist presentation. This prevents stale CSS from implying
+another chat renderer; GUI verification remains paused.
