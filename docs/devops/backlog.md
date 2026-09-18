@@ -14,6 +14,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [ ] Context fabric: canonical project snapshot, revision delta, pinned constraints, token budget, and compaction policy. Partial: C++ revision/pins and Python bounded compaction shipped; semantic delta/RAG remains.
 - [ ] Provider runtime: real provider-neutral request/response transport with timeout, retry, and truthful connectivity state.
 - [ ] LangGraph run loop: pending run state survives tool calls; broker result resumes same run by `call_id`.
+- [x] Sprint 810: mock-provider headless contract proves supervisor-to-router-to-tool-node execution and terminal completion; durable broker resume remains open.
 - [ ] Approval authority: one pre-side-effect policy gate; denial/error paths stop or re-plan without mutation.
 - [ ] Verification: intent-conditioned DRC/ERC/build/visual checks; result becomes signoff evidence before commit/export.
 - [ ] Observability: Langfuse/LangSmith redaction tests, run ID display, cost/token/latency fields only when provider reports them.

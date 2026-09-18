@@ -2312,3 +2312,9 @@ Backend readiness now has a mock-provider subprocess contract proving emitted
 JSON fields, redaction, and no-network behavior; GUI verification remains
 paused.
 CI agent gate now executes this contract explicitly.
+
+Sprint 810 strengthens the provider-free orchestration contract: the mock
+provider test now drives `/route`, proves a native `ui.place_via` tool call,
+and requires a completed run plus terminal response. This is headless proof
+of supervisor-to-router-to-tool-node execution, not GUI verification or a
+claim of durable broker resume. GUI verification remains paused.
