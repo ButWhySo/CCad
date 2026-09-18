@@ -40,6 +40,13 @@ $env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
 ```
 
 In Agent Settings, choose `Google Gemini`, confirm model, paste key, and press `Test Provider`. Test Provider uses the key transiently; Save persists preferences only, never the secret. Do not put keys in project JSON, `.env`, logs, screenshots, or Git. Remove temporary values with `Remove-Item Env:GEMINI_API_KEY,Env:GOOGLE_API_KEY,Env:CCAD_GEMINI_MODEL`.
+
+Provider safety limits are process-local and optional: `CCAD_PROVIDER_RETRIES`
+caps transient retries at 0..2, `CCAD_AGENT_RECURSION_LIMIT` caps graph cycles
+at 4..32 (default 12), `CCAD_AGENT_HISTORY_LIMIT` caps retained messages at
+4..64 (default 24), and `CCAD_AGENT_CONTEXT_LIMIT` caps provider-bound project
+context at 4096..131072 characters (default 32768). These limits never store
+keys and never make network calls by themselves.
 - CLI agent observability configuration: `ccad agent trace-export-schema`, `ccad agent trace-export-template`, `ccad agent trace-redaction-policy`, and `ccad agent trace-export-dry-run` expose disabled-by-default OpenTelemetry/Langfuse trace-export metadata, redaction policy, and no-network dry-run status, with matching `agent.trace_export_schema`, `agent.trace_export_template`, `agent.trace_redaction_policy`, and `agent.trace_export_dry_run` JSON-RPC routes.
 - CLI agent KiCad evidence integration: `ccad agent kicad-evidence-schema`, `ccad agent kicad-evidence-plan`, `ccad agent kicad-evidence-dry-run`, and guarded `ccad agent kicad-evidence-run --execute` expose structured `kicad-cli` DRC/ERC/export command plans, readiness checks, artifact manifests, JSON-RPC routes, tool-guide discovery, and policy-gated execution for local KiCad evidence.
 - Native Agent pane visual refinement: the right-side Agent pane now reports `visual_style:"agent_reference_panel_v4"` and `workspace_layout_version:4`, with targetable status rail, command composer, plan deck, evidence lane, and approval lane subregions while preserving the existing local-only controls and UI-map IDs.
