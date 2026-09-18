@@ -1536,3 +1536,9 @@ default 60.
 `RouterTool::commitRouting()` rebuilds `PnsBoardObstacleIndex` for future
 acceleration, but exact pad/via/track/zone/arc checks own rejection decisions;
 the broad PNS candidate query must not reject routes by itself.
+
+Sprint 762 protocol note: Python `agent.pending_calls` exposes opaque process
+and checkpoint call IDs only; `agent.cancel_tool` injects a correlated
+cancellation error, and late `tool_result` messages are ignored. These are
+headless child-process methods, not GUI actions; callers must still use the
+native approval token path before any mutating CCad tool executes.
