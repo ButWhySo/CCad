@@ -1542,3 +1542,8 @@ and checkpoint call IDs only; `agent.cancel_tool` injects a correlated
 cancellation error, and late `tool_result` messages are ignored. These are
 headless child-process methods, not GUI actions; callers must still use the
 native approval token path before any mutating CCad tool executes.
+
+Sprint 788 handover: `src/ccad_gui/agent_settings_dialog.cpp` requires the
+Windows `UNLEN` and corrected Qt `QInputDialog::getText` signature for the
+password-reveal path. `tests/physical_ui_robot.py` must select Cerebras at
+current provider row 5; do not infer provider rows from older screenshots.

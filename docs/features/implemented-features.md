@@ -2599,3 +2599,7 @@ persistence proof remains pending the intermittent Windows screenshot capture is
 
 Backend persistence is covered independently by `scripts/test_agent_config_persistence.py`,
 which verifies provider, model, and metric grid values across an orchestrator restart.
+
+Windows Settings key reveal uses the current account name with `LogonUserW` and
+clears temporary password buffers. The physical UI robot selects Cerebras using
+the current provider catalog order; live GUI verification remains user-paused.

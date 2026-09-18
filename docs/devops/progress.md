@@ -2218,3 +2218,8 @@ MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.
 
 CI agent-python gate now executes loop, history, and project-context boundary
 contracts explicitly; syntax-only discovery is no longer sole coverage.
+
+Sprint 788 fixes the Windows Qt password-dialog compile contract and synchronizes
+the physical UI robot with the current Cerebras provider catalog order. GUI
+verification was resumed briefly, exposed the stale row assumption, then paused
+again by explicit user request; no provider network call was made.

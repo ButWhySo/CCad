@@ -23,6 +23,7 @@
 
 #ifdef Q_OS_WIN
 #include <windows.h>
+#include <lmcons.h>
 #include <wincred.h>
 #endif
 
@@ -86,18 +87,17 @@ bool authorizeSecretReveal(QWidget* parent) {
   }
   bool accepted = false;
   const QString account = QString::fromWCharArray(user);
-  const QString password = QInputDialog::getText(
+  QString password = QInputDialog::getText(
       parent, QStringLiteral("CCad API key"),
       QStringLiteral("Enter the Windows password for '%1' to reveal this key:").arg(account),
-      QLineEdit::Password, QString(), nullptr, Qt::WindowFlags(),
-      &accepted);
+      QLineEdit::Password, QString(), &accepted, Qt::WindowFlags(), Qt::ImhNone);
   if (!accepted || password.isEmpty()) return false;
   HANDLE token = nullptr;
-  const std::wstring password_wide = password.toStdWString();
+  std::wstring password_wide = password.toStdWString();
   const BOOL valid = LogonUserW(
       user, nullptr, password_wide.c_str(), LOGON32_LOGON_INTERACTIVE,
       LOGON32_PROVIDER_DEFAULT, &token);
-  SecureZeroMemory(const_cast<wchar_t*>(password_wide.data()),
+  SecureZeroMemory(password_wide.data(),
                    password_wide.size() * sizeof(wchar_t));
   password.fill(QChar(u'\0'));
   if (token) CloseHandle(token);

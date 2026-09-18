@@ -928,3 +928,6 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 785: connect explicit model catalog refresh to Settings dropdown.
 - [x] Sprint 786: exercise model catalog protocol branches without network access.
 - [x] Sprint 787: scope Settings model refresh action to supported dynamic catalogs.
+- [x] Sprint 788: repair Windows password-dialog compilation and synchronize the
+  physical GUI harness with the current Cerebras provider row; GUI verification
+  paused again by user request after targeted execution.
