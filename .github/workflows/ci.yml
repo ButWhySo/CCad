@@ -53,7 +53,15 @@ jobs:
           QT_QPA_PLATFORM: offscreen
         run: |
           set -o pipefail
+          set +e
           ctest --test-dir build --output-on-failure 2>&1 | tee ctest-core-linux.log
+          test_exit=${PIPESTATUS[0]}
+          if [ "$test_exit" -ne 0 ]; then
+            grep -E '^[[:space:]]*[0-9]+ - .* \(Failed\)' ctest-core-linux.log | while IFS= read -r failed_test; do
+              echo "::error title=Linux CTest failed test::$failed_test"
+            done
+          fi
+          exit "$test_exit"
       - name: Verbose CLI diagnostics
         if: always()
         continue-on-error: true
@@ -103,7 +111,15 @@ jobs:
           QT_QPA_PLATFORM: offscreen
         run: |
           set -o pipefail
+          set +e
           ctest --test-dir build --output-on-failure 2>&1 | tee ctest-gui-linux.log
+          test_exit=${PIPESTATUS[0]}
+          if [ "$test_exit" -ne 0 ]; then
+            grep -E '^[[:space:]]*[0-9]+ - .* \(Failed\)' ctest-gui-linux.log | while IFS= read -r failed_test; do
+              echo "::error title=Linux GUI CTest failed test::$failed_test"
+            done
+          fi
+          exit "$test_exit"
       - name: Verbose CLI diagnostics
         if: always()
         continue-on-error: true
