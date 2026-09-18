@@ -756,6 +756,19 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   chat_history_layout_->setContentsMargins(8, 6, 8, 6);
   chat_history_layout_->setSpacing(0);
   chat_history_layout_->setAlignment(Qt::AlignTop);
+  chat_stream_ = new QTextBrowser(chat_container);
+  chat_stream_->setObjectName("control:agent_chat_stream");
+  chat_stream_->setOpenExternalLinks(true);
+  chat_stream_->setReadOnly(true);
+  chat_stream_->setFrameShape(QFrame::NoFrame);
+  chat_stream_->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  chat_stream_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  chat_stream_->setTextInteractionFlags(Qt::TextSelectableByMouse |
+                                        Qt::TextSelectableByKeyboard |
+                                        Qt::LinksAccessibleByMouse);
+  chat_stream_->setPlaceholderText("Conversation will appear here.");
+  chat_stream_->setStyleSheet("QTextBrowser { background: transparent; border: none; }");
+  chat_history_layout_->addWidget(chat_stream_);
   chat_scroll_area_->setWidget(chat_container);
   
   main_layout->addWidget(chat_scroll_area_, 1);
@@ -1214,6 +1227,22 @@ AgentPanel::~AgentPanel() {
 #include <QTextBrowser>
 
 void AgentPanel::appendChatMessage(const QString& role, const QString& text) {
+  // Backend startup can emit identical dependency/provider warnings more than
+  // once. Keep stream readable; do not add consecutive duplicate entries.
+  if (role == last_chat_role_ && text == last_chat_text_) return;
+  last_chat_role_ = role;
+  last_chat_text_ = text;
+  if (chat_stream_) {
+    QTextCursor cursor = chat_stream_->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    if (!chat_stream_->toPlainText().isEmpty()) cursor.insertText("\n\n");
+    const QString prefix = role == "user" ? QStringLiteral("You\n")
+                                         : QStringLiteral("CCad Agent\n");
+    cursor.insertText(prefix + (text.startsWith("<TOOL>") ? text.mid(6) : text));
+    chat_stream_->setTextCursor(cursor);
+    chat_stream_->ensureCursorVisible();
+    return;
+  }
   auto* container = new QWidget();
   auto* container_layout = new QHBoxLayout(container);
   container_layout->setContentsMargins(0, 4, 0, 4);
@@ -1288,17 +1317,22 @@ void AgentPanel::renderChatChecklist() {
 
 void AgentPanel::startPythonBackend() {
   python_process_ = new QProcess(this);
+  const QDir app_dir(QCoreApplication::applicationDirPath());
+  const QString repo_src = QDir::cleanPath(app_dir.absoluteFilePath("../src"));
   QString python_path = qEnvironmentVariable("CCAD_AGENT_PYTHON");
-  if (python_path.isEmpty() && QFile::exists("src/ccad_agent/venv/Scripts/python.exe")) {
-    python_path = "src/ccad_agent/venv/Scripts/python.exe";
+  if (python_path.isEmpty() && QFile::exists(repo_src + "/ccad_agent/venv/Scripts/python.exe")) {
+    python_path = repo_src + "/ccad_agent/venv/Scripts/python.exe";
+  } else if (python_path.isEmpty() && QFile::exists(repo_src + "/ccad_agent/venv/bin/python")) {
+    python_path = repo_src + "/ccad_agent/venv/bin/python";
+  } else if (python_path.isEmpty() && QFile::exists("src/ccad_agent/venv/Scripts/python.exe")) {
+    python_path = QDir::cleanPath("src/ccad_agent/venv/Scripts/python.exe");
   } else if (python_path.isEmpty() && QFile::exists("src/ccad_agent/venv/bin/python")) {
-    python_path = "src/ccad_agent/venv/bin/python";
+    python_path = QDir::cleanPath("src/ccad_agent/venv/bin/python");
   }
   if (python_path.isEmpty()) python_path = "python";
   QString agent_script = qEnvironmentVariable("CCAD_AGENT_SCRIPT");
   if (agent_script.isEmpty()) {
-    const QString beside_binary = QDir(QCoreApplication::applicationDirPath())
-                                      .absoluteFilePath("../src/ccad_agent/orchestrator.py");
+    const QString beside_binary = repo_src + "/ccad_agent/orchestrator.py";
     if (QFile::exists(beside_binary)) agent_script = QDir::cleanPath(beside_binary);
   }
   if (agent_script.isEmpty()) agent_script = "src/ccad_agent/orchestrator.py";

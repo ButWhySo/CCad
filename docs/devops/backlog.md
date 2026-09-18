@@ -900,3 +900,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 754: revalidate accepted and denied durable LangGraph checkpoint resumes with fresh SQLite fixtures; GUI and external-provider execution remain paused.
 - [x] Sprint 755: add correlated headless broker cancellation and explicit late-result rejection; GUI and external-provider execution remain paused.
 - [x] Sprint 756: expose opaque `agent.pending_calls` recovery metadata for process/checkpoint state without tool arguments or secrets.
+- [x] Sprint 758: repair pinned provider dependencies, absolute venv discovery, single-stream selectable chat, and current-account key reveal semantics; GUI runtime validation remains paused.

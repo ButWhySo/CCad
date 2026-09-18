@@ -2093,6 +2093,14 @@ Sprint 756 adds read-only `agent.pending_calls` recovery metadata. It reports
 opaque process and checkpoint call IDs, count, and secret visibility only;
 tool arguments and credentials never cross the protocol.
 
+Sprint 758 repairs the provider runtime and chat surface: the bundled agent
+venv uses a compatible pinned LangChain adapter set, the GUI resolves that
+venv from the executable location, Cerebras remains OpenAI-compatible with its
+selected model, and chat messages append to one selectable transcript. The
+Windows reveal prompt now names the current account and validates that account
+password without requesting a domain. GUI runtime verification remains
+paused by explicit request.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.

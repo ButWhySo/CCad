@@ -19,6 +19,7 @@ class QComboBox;
 class QLineEdit;
 class QPlainTextEdit;
 class QTextEdit;
+class QTextBrowser;
 class QVBoxLayout;
 class QScrollArea;
 class QProcess;
@@ -195,6 +196,7 @@ class AgentPanel final : public QWidget {
   // Chat UI Elements
   QVBoxLayout* chat_history_layout_ = nullptr;
   QScrollArea* chat_scroll_area_ = nullptr;
+  QTextBrowser* chat_stream_ = nullptr;
   QTextEdit* chat_input_ = nullptr;
   QListWidget* slash_popup_ = nullptr;
 
@@ -306,6 +308,8 @@ class AgentPanel final : public QWidget {
   QHash<QString, QString> provider_secrets_;
   QVector<ActivityEvent> activity_events_;
   QVector<EvidenceCard> evidence_cards_;
+  QString last_chat_role_;
+  QString last_chat_text_;
   int activity_sequence_ = 0;
   int evidence_sequence_ = 0;
   int trace_sequence_ = 0;

@@ -19,6 +19,7 @@
 #include <QLineEdit>
 #include <QPointer>
 #include <QTimer>
+#include <QInputDialog>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -74,25 +75,28 @@ QString modelDetailsForProvider(const QString& provider) {
 
 bool authorizeSecretReveal(QWidget* parent) {
 #ifdef Q_OS_WIN
-  wchar_t user[CREDUI_MAX_USERNAME_LENGTH + 1] = {};
-  wchar_t password[CREDUI_MAX_PASSWORD_LENGTH + 1] = {};
-  DWORD user_size = CREDUI_MAX_USERNAME_LENGTH;
-  DWORD password_size = CREDUI_MAX_PASSWORD_LENGTH;
+  wchar_t user[UNLEN + 1] = {};
+  DWORD user_size = UNLEN;
   if (!GetUserNameW(user, &user_size)) {
-    user[0] = L'\0';
+    return false;
   }
-  CREDUI_INFOW info{};
-  info.cbSize = sizeof(info);
-  info.hwndParent = parent ? reinterpret_cast<HWND>(parent->winId()) : nullptr;
-  info.pszCaptionText = L"CCad API key";
-  info.pszMessageText = L"Windows password required to reveal this API key.";
-  const DWORD result = CredUIPromptForCredentialsW(
-      &info, L"CCad API key reveal", nullptr, 0, user, user_size,
-      password, password_size, nullptr,
-      CREDUI_FLAGS_GENERIC_CREDENTIALS | CREDUI_FLAGS_VALIDATE_USERNAME |
-          CREDUI_FLAGS_ALWAYS_SHOW_UI);
-  SecureZeroMemory(password, sizeof(password));
-  return result == NO_ERROR;
+  bool accepted = false;
+  const QString account = QString::fromWCharArray(user);
+  const QString password = QInputDialog::getText(
+      parent, QStringLiteral("CCad API key"),
+      QStringLiteral("Enter the Windows password for '%1' to reveal this key:").arg(account),
+      QLineEdit::Password, QString(), nullptr, Qt::WindowFlags(),
+      &accepted);
+  if (!accepted || password.isEmpty()) return false;
+  HANDLE token = nullptr;
+  const std::wstring password_wide = password.toStdWString();
+  const BOOL valid = LogonUserW(
+      user, nullptr, password_wide.c_str(), LOGON32_LOGON_INTERACTIVE,
+      LOGON32_PROVIDER_DEFAULT, &token);
+  SecureZeroMemory(const_cast<wchar_t*>(password_wide.data()),
+                   password_wide.size() * sizeof(wchar_t));
+  if (token) CloseHandle(token);
+  return valid == TRUE;
 #else
   Q_UNUSED(parent);
   return false;

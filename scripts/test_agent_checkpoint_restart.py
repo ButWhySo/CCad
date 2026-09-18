@@ -57,6 +57,9 @@ def main():
         interrupts = [item for task in snapshot.tasks for item in task.interrupts]
         assert interrupts, snapshot
         assert interrupts[0].value["kind"] == "ccad_tool_call"
+        pending = ccad.pending_call_snapshot("restart-proof")
+        assert pending["checkpoint_call_ids"] == [interrupts[0].value["call_id"]], pending
+        assert pending["secret_value_visible"] is False
         print("PASS interrupt checkpoint written")
     elif phase == "second":
         state = ccad.executor.invoke(Command(resume={"status": "track_added"}), config=thread)
