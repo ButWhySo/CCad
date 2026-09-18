@@ -2607,3 +2607,7 @@ Headless-only proof: the real orchestrator subprocess now queries `agent.pending
 ### Sprint 881 — durable pending approval proof
 
 Headless-only proof: checkpoint restart fixture now validates nonempty pending-call recovery metadata (`approval_required:true`, `project_mutation`) at the durable interrupt boundary. GUI/API/build validation remains paused.
+
+### Sprint 882 — pending discovery round-trip parity
+
+Headless-only proof: subprocess contract now verifies `agent.pending_calls` discovery advertises its actual `pending_calls_state` approval fields. GUI/API/build validation remains paused.

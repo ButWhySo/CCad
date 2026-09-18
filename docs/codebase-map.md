@@ -1739,3 +1739,5 @@ Sprint 879 handover: `pending_call_snapshot()` and `agent.pending_calls` discove
 Sprint 880 handover: `scripts/test_agent_context_contract.py` now queries real `pending_calls_state` and validates empty recovery metadata before context tests.
 
 Sprint 881 handover: `scripts/test_agent_checkpoint_restart.py` validates durable pending snapshot approval fields before accept/denial/cancel resume branches.
+
+Sprint 882 handover: `scripts/test_agent_context_contract.py` validates `agent.pending_calls` response method/fields from real `agent.methods` discovery, including approval status/reason.
