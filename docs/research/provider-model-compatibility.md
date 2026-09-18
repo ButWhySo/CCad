@@ -56,3 +56,14 @@ Official references: [Cerebras model catalog](https://inference-docs.cerebras.ai
 [Gemini models](https://ai.google.dev/gemini-api/docs/models),
 [Anthropic models](https://platform.claude.com/docs/en/models/overview), and
 [OpenAI models](https://developers.openai.com/api/docs/models/all).
+
+## OpenRouter
+
+OpenRouter is a first-class OpenAI-compatible provider option. CCad uses
+`https://openrouter.ai/api/v1`, `OPENROUTER_API_KEY`, and defaults to
+`openrouter/auto`; users may type any current OpenRouter model ID. The model
+catalog is intentionally not hardcoded because OpenRouter exposes a dynamic
+`GET /api/v1/models` catalog with changing providers, pricing, context limits,
+and capabilities. CCad does not fetch that catalog during startup or tests.
+
+Official reference: [OpenRouter model API](https://openrouter.ai/docs/api/api-reference/models/get-models).

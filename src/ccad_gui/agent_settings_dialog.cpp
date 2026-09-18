@@ -43,6 +43,9 @@ QStringList modelsForProvider(const QString& provider) {
   if (provider == "openai_compatible") {
     return {"Custom model (type below)"};
   }
+  if (provider == "openrouter") {
+    return {"openrouter/auto", "Custom model (type below)"};
+  }
   if (provider == "cerebras") {
     return {"qwen-3.8-27b", "gpt-oss-120b"};
   }
@@ -69,6 +72,7 @@ QString modelDetailsForProvider(const QString& provider) {
   if (provider == "google_gemini") return "Google Gemini API | multimodal | long context | key: GEMINI_API_KEY";
   if (provider == "cerebras") return "Cerebras API | fast inference | key: CEREBRAS_API_KEY";
   if (provider == "openai_compatible") return "OpenAI-compatible endpoint | custom base URL and model";
+  if (provider == "openrouter") return "OpenRouter API | dynamic model catalog | key: OPENROUTER_API_KEY";
   return "Local model endpoint | custom model ID and endpoint required";
 }
 
@@ -359,6 +363,7 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
   provider_combo_->addItem("Anthropic", "anthropic");
   provider_combo_->addItem("Google Gemini", "google_gemini");
   provider_combo_->addItem("OpenAI-compatible", "openai_compatible");
+  provider_combo_->addItem("OpenRouter", "openrouter");
   provider_combo_->addItem("Cerebras", "cerebras");
   provider_combo_->addItem("Local model server", "local_model");
   form->addRow("Provider:", provider_combo_);
@@ -429,6 +434,7 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
     const QStringList models = modelsForProvider(provider_combo_->currentData().toString());
     model_combo_->addItems(models);
     const bool custom_model_provider = provider_combo_->currentData().toString() == "openai_compatible" ||
+                                        provider_combo_->currentData().toString() == "openrouter" ||
                                         provider_combo_->currentData().toString() == "local_model";
     if (model_input_) model_input_->setReadOnly(!custom_model_provider);
     const int matching = model_combo_->findText(current);

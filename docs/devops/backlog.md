@@ -913,3 +913,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 770: explicitly disable submodules and enable clean checkout in every CI job to prevent stale submodule cleanup failures.
 - [x] Sprint 771: add fake-client execution proof for bounded transient retries and immediate quota/rate-limit stop.
 - [x] Sprint 772: wire provider safety and clean-checkout contracts into CI agent gate.
+- [x] Sprint 773: add OpenRouter first-class provider wiring with custom model IDs and quota-safe no-network contract.
