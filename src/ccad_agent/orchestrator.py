@@ -1195,12 +1195,12 @@ if __name__ == "__main__":
                         handle_marketplace(text)
                         continue
                     elif cmd_base == "/set":
-                        parts = cmd_args.split(":")
-                        if len(parts) >= 2:
-                            os.environ["CCAD_PROVIDER"] = parts[0].strip()
-                            os.environ["CCAD_MODEL"] = parts[1].strip()
+                        provider_name, separator, model_name = cmd_args.partition(":")
+                        if separator and provider_name.strip() and model_name.strip():
+                            os.environ["CCAD_PROVIDER"] = provider_name.strip()
+                            os.environ["CCAD_MODEL"] = model_name.strip()
                             init_provider()
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Model set to {parts[0]}:{parts[1]}"}})
+                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Model set to {provider_name.strip()}:{model_name.strip()}"}})
                         continue
                     elif cmd_base in ["/cc", "/compact"]:
                         before = len(session_messages)

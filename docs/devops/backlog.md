@@ -919,3 +919,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 776: harden catalog refresh against malformed timeout environment and invalid JSON shape.
 - [x] Sprint 777: expose explicit model refresh in the discoverable agent method catalog.
 - [x] Sprint 778: make unsupported-provider model catalog capability responses explicit and quota-safe.
+- [x] Sprint 779: preserve delimiter-containing custom model IDs in `/set` parsing.
