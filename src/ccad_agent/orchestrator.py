@@ -1263,11 +1263,16 @@ if __name__ == "__main__":
                 previous_context_revision = last_context_revision
                 current_context_revision = context_revision(context_str)
                 context_changed = current_context_revision != previous_context_revision
+                context_change_kind = (
+                    "initial" if not previous_context_revision else
+                    ("changed" if context_changed else "unchanged")
+                )
                 last_context_revision = current_context_revision
                 emit({"jsonrpc": "2.0", "method": "context_state", "params": {
                     "revision": current_context_revision,
                     "previous_revision": previous_context_revision,
                     "changed": context_changed,
+                    "change_kind": context_change_kind,
                     "content_present": bool(context_str),
                     "content_size": len(context_str),
                     "original_content_size": len(raw_context),

@@ -1017,3 +1017,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   no GUI or network execution.
 - [x] Sprint 843: align the Cerebras adapter contract test with the current
   production default; no GUI or provider request.
+- [x] Sprint 844: expose initial/changed/unchanged context transition kind
+  alongside the existing opaque revision; no GUI or provider request.

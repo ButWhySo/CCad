@@ -2269,6 +2269,11 @@ Sprint 843 aligns the no-network Cerebras adapter contract with the current
 official production default (`gpt-oss-120b`), preventing a stale deprecated
 Qwen model from re-entering tests. GUI verification remains paused.
 
+Sprint 844 adds redacted context transition semantics: `context_state` now
+labels each event `initial`, `changed`, or `unchanged` while preserving the
+existing revision and boolean fields. Subprocess coverage proves all three
+states without emitting context contents. GUI verification remains paused.
+
 Sprint 837 adds explicit Cerebras model-catalog response from the documented
 curated snapshot and enables Settings Refresh for Cerebras. OpenRouter remains
 the only network-fetched catalog; Cerebras refresh is quota-safe and offline.

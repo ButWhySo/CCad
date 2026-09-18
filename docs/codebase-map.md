@@ -1629,3 +1629,8 @@ Sprint 843 handover: `scripts/test_cerebras_adapter_contract.py` uses the
 current official Cerebras production fallback, `gpt-oss-120b`, matching the
 runtime, UI presets, and provider documentation. The adapter contract remains
 initialization-only and sends no provider request.
+
+Sprint 844 handover: Python `context_state` retains opaque revision chaining
+and adds `change_kind` (`initial`, `changed`, `unchanged`) for downstream
+harnesses. The transition label contains no context text and is covered by a
+three-message subprocess contract.
