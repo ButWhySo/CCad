@@ -52,6 +52,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [x] Sprint 878: align tool-call discovery schema with emitted approval reason metadata.
 - [x] Sprint 879: expose redacted approval status/reason in pending-call recovery snapshots.
 - [x] Sprint 880: prove pending-call approval metadata through the real offline subprocess boundary.
+- [x] Sprint 881: prove nonempty pending approval metadata at the durable checkpoint boundary.
 - [x] Sprint 812: canonicalize malformed JSON-RPC tool correlation IDs before pending-call lookup; invalid IDs now fail safely.
 - [x] Sprint 813: checkpointed tool cancellation resumes matching thread with structured cancellation error; stale cancellation remains rejected.
 - [x] Sprint 814: two-process checkpoint test proves cancellation result survives process restart.

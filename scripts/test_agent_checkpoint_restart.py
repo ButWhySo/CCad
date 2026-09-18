@@ -60,6 +60,8 @@ def main():
         assert interrupts[0].value["approval_required"] is True
         pending = ccad.pending_call_snapshot("restart-proof")
         assert pending["checkpoint_call_ids"] == [interrupts[0].value["call_id"]], pending
+        assert pending["approval_required"] is True
+        assert pending["approval_reason"] == "project_mutation"
         assert pending["secret_value_visible"] is False
         print("PASS interrupt checkpoint written")
     elif phase == "second":

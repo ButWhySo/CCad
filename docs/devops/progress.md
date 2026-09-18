@@ -2603,3 +2603,7 @@ Headless-only harness slice: `agent.pending_calls` now returns redacted approval
 ### Sprint 880 — pending snapshot round-trip proof
 
 Headless-only proof: the real orchestrator subprocess now queries `agent.pending_calls` and verifies empty-state count, approval false, and empty reason. GUI/API/build validation remains paused.
+
+### Sprint 881 — durable pending approval proof
+
+Headless-only proof: checkpoint restart fixture now validates nonempty pending-call recovery metadata (`approval_required:true`, `project_mutation`) at the durable interrupt boundary. GUI/API/build validation remains paused.
