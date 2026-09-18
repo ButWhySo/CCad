@@ -1735,3 +1735,5 @@ Sprint 877 handover: tool-call and checkpoint interrupt payloads include `approv
 Sprint 878 handover: `human_message.response_contracts.tool_call.fields` now advertises `approval_reason`, matching emitted live payloads.
 
 Sprint 879 handover: `pending_call_snapshot()` and `agent.pending_calls` discovery now expose only opaque IDs plus `approval_required` and `approval_reason`; no tool args or secrets are returned.
+
+Sprint 880 handover: `scripts/test_agent_context_contract.py` now queries real `pending_calls_state` and validates empty recovery metadata before context tests.

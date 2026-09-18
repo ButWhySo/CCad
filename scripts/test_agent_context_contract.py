@@ -27,6 +27,7 @@ env.update({"CCAD_PROVIDER": "mock", "PYTHONNOUSERSITE": "1",
             "PYTHONPATH": str(SOURCE.parent)})
 requests = [{"method": "agent.methods", "params": {}}]
 requests.append({"method": "agent.context_state", "params": {}})
+requests.append({"method": "agent.pending_calls", "params": {}})
 requests.extend({"method": "human_message", "params": {
     "text": "summarize", "context": context}}
     for context in ("board A", "board B", "board B"))
@@ -73,6 +74,11 @@ assert snapshots[0]["params"]["revision"] == ""
 assert snapshots[-1]["params"]["revision"] == ""
 assert snapshots[-1]["params"]["content_emitted"] is False
 assert snapshots[-1]["params"]["secret_value_visible"] is False
+pending_snapshot = next(item for item in lines
+                        if item.get("method") == "pending_calls_state")
+assert pending_snapshot["params"]["count"] == 0
+assert pending_snapshot["params"]["approval_required"] is False
+assert pending_snapshot["params"]["approval_reason"] == ""
 events = [item for item in lines if item.get("method") == "context_state"]
 assert len(events) == 4
 assert events[0]["params"]["previous_revision"] == ""

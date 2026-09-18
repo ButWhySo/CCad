@@ -2599,3 +2599,7 @@ Headless-only contract fix: `agent.methods` now advertises `approval_reason` alo
 ### Sprint 879 — pending approval snapshot
 
 Headless-only harness slice: `agent.pending_calls` now returns redacted approval-required/reason metadata alongside opaque process/checkpoint IDs, allowing approval UI to recover state after restart. Added offline contract; GUI/API/build validation remains paused.
+
+### Sprint 880 — pending snapshot round-trip proof
+
+Headless-only proof: the real orchestrator subprocess now queries `agent.pending_calls` and verifies empty-state count, approval false, and empty reason. GUI/API/build validation remains paused.
