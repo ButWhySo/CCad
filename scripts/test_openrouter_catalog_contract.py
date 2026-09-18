@@ -13,6 +13,7 @@ assert '"response": {"method": "provider_models"' in source
 assert "urllib.request.urlopen(request, timeout=timeout)" in source
 assert "invalid_catalog_shape" in source
 assert "except ValueError:" in source
-assert '"error_detail": "explicit model refresh is not implemented for this provider"' in source
+assert '"error": "unsupported_provider"' in source
+assert '"error_detail": "model catalog is unavailable for this provider"' in source
 assert '"network_access": "explicit_refresh"' in source
 print("PASS explicit OpenRouter catalog refresh contract; no network")

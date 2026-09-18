@@ -2276,6 +2276,9 @@ external harnesses from inferring network use from a shared top-level flag.
 Sprint 839 renames unknown model-catalog failure to `unsupported_provider`,
 making harness diagnostics truthful; unknown-provider regression is headless.
 
+Sprint 840 updates the OpenRouter catalog source contract for the renamed
+unknown-provider diagnostic; no behavior or network path changed.
+
 Sprint 835 wires the offline gate selector contract into CI, so future
 workflow changes are checked for GUI/live-provider exclusion rather than only
 being trusted from local PowerShell execution. No GUI or provider request is

@@ -1009,3 +1009,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   for external harnesses; no GUI or provider request.
 - [x] Sprint 839: clarify unsupported model-catalog provider error and cover
   unknown-provider response; no GUI or provider request.
+- [x] Sprint 840: synchronize stale OpenRouter catalog contract with the
+  unsupported-provider diagnostic; no GUI or network execution.
