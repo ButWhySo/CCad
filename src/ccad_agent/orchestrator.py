@@ -886,6 +886,7 @@ chaining_state = True
 active_hooks = []
 schedules = []
 context_revisions = {}
+CONTEXT_REVISION_THREAD_LIMIT = 128
 
 def bound_session_history(messages):
     """Keep interactive history bounded before it becomes provider input."""
@@ -1318,6 +1319,10 @@ if __name__ == "__main__":
                     ("changed" if context_changed else "unchanged")
                 )
                 context_revisions[context_thread_id] = current_context_revision
+                if len(context_revisions) > CONTEXT_REVISION_THREAD_LIMIT:
+                    oldest_thread_id = next(iter(context_revisions))
+                    if oldest_thread_id != context_thread_id:
+                        context_revisions.pop(oldest_thread_id, None)
                 emit({"jsonrpc": "2.0", "method": "context_state", "params": {
                     "revision": current_context_revision,
                     "previous_revision": previous_context_revision,

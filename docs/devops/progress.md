@@ -2547,3 +2547,7 @@ Headless-only batch: added read-only `agent.context_state`, returning only threa
 ### Sprint 866 — context-state round-trip proof
 
 Headless-only batch: extended the bundled subprocess contract to call `agent.context_state` and verify its real JSON response, default thread identity, empty initial revision, and redaction flags. GUI/API/build validation remains paused.
+
+### Sprint 867 — bounded context revision metadata
+
+Headless-only batch: capped retained per-thread opaque context revisions at 128 entries and evicted the oldest inactive entry. Active context remains available; project content is never retained by this map. Added an offline contract; GUI/API/build validation remains paused.

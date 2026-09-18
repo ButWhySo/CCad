@@ -1709,3 +1709,5 @@ Sprint 864 handover: `context_revisions` is keyed by `CCAD_AGENT_THREAD_ID`; con
 Sprint 865 handover: `agent.context_state` exposes `context_state_snapshot` with thread ID, opaque revision, and redaction flags only; it never emits context content. `scripts/test_agent_context_state_method.py` locks the discovery and redaction contract.
 
 Sprint 866 handover: `scripts/test_agent_context_contract.py` now sends a real `agent.context_state` request to the bundled orchestrator subprocess and validates the emitted JSON snapshot before exercising human-message context revisions.
+
+Sprint 867 handover: `context_revisions` retains at most 128 thread IDs and evicts the oldest inactive entry after a new revision is recorded. `scripts/test_context_revision_bound_contract.py` locks this metadata-only bound.

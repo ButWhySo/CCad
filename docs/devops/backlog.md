@@ -38,6 +38,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [x] Sprint 864: scope context revision chaining by agent thread so cross-thread context deltas remain truthful.
 - [x] Sprint 865: expose read-only opaque `agent.context_state` for harness inspection without context-content disclosure.
 - [x] Sprint 866: prove `agent.context_state` through the real offline orchestrator subprocess, not source inspection alone.
+- [x] Sprint 867: bound retained per-thread context revision metadata to prevent unbounded harness memory growth.
 - [x] Sprint 812: canonicalize malformed JSON-RPC tool correlation IDs before pending-call lookup; invalid IDs now fail safely.
 - [x] Sprint 813: checkpointed tool cancellation resumes matching thread with structured cancellation error; stale cancellation remains rejected.
 - [x] Sprint 814: two-process checkpoint test proves cancellation result survives process restart.
