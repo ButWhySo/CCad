@@ -2347,3 +2347,16 @@ GUI verification remains paused.
 Sprint 816 adds the intake contract to CI and updates feature/codebase
 handover docs in the same change set. Future work remains for provenance-aware
 external-document scanning and semantic injection detection.
+
+Sprint 817 fixes CI checkpoint sequencing: accept, denial, and cancellation
+now each run a first-process checkpoint phase followed by the matching
+cross-process resume phase. Previously denial DB setup ran without an explicit
+first-phase label; cancellation was absent from CI.
+
+Local replay also found inherited `CCAD_RESTART_PHASE` could contaminate setup.
+Sprint 818 makes every CI checkpoint fixture explicitly select `first` before
+its matching resume phase; GUI verification remains paused.
+
+Sprint 819 closes a CI false-green: workflow now uses supported `denial`
+phase name, and checkpoint harness rejects unknown phase names instead of
+silently exiting success.

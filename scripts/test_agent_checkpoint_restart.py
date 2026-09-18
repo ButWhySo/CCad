@@ -86,6 +86,8 @@ def main():
         assert tool_messages and json.loads(tool_messages[-1].content) == {
             "error": {"code": -32800, "message": "canceled_by_user"}}
         print("PASS restart cancellation completed")
+    else:
+        raise SystemExit(f"unknown CCAD_RESTART_PHASE: {phase}")
 
 
 if __name__ == "__main__":

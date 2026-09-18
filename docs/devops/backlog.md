@@ -13,6 +13,9 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [ ] Intake guardrails: normalize intent and reject prompt-injection/secret-bearing tool requests.
 - [x] Sprint 815: Python provider boundary blocks known prompt-injection and inline-secret input, with no secret echo; broader document provenance scanning remains open.
 - [x] Sprint 816: CI executes intake guard contract; feature and codebase handover expose its exact boundary.
+- [x] Sprint 817: CI runs checkpoint accept, denial, and cancellation restart phases explicitly.
+- [x] Sprint 818: CI checkpoint setup phases explicitly reset to `first`, preventing inherited phase-variable contamination.
+- [x] Sprint 819: checkpoint CI uses supported denial phase; unknown harness phases now fail loudly.
 - [ ] Context fabric: canonical project snapshot, revision delta, pinned constraints, token budget, and compaction policy. Partial: C++ revision/pins and Python bounded compaction shipped; semantic delta/RAG remains.
 - [ ] Provider runtime: real provider-neutral request/response transport with timeout, retry, and truthful connectivity state.
 - [ ] LangGraph run loop: pending run state survives tool calls; broker result resumes same run by `call_id`. Sprint 811 fixes thread-scoped result routing and stale-result rejection; protocol-level live broker proof remains open.

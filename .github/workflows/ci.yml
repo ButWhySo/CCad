@@ -61,10 +61,12 @@ jobs:
           python scripts/test_model_selector_boundary_contract.py
           python scripts/test_agent_ui_runtime_contract.py
           python scripts/test_ci_checkout_contract.py
-          python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-accept.db
+          CCAD_RESTART_PHASE=first python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-accept.db
           CCAD_RESTART_PHASE=second python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-accept.db
-          python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-deny.db
-          CCAD_RESTART_PHASE=decline python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-deny.db
+          CCAD_RESTART_PHASE=first python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-deny.db
+          CCAD_RESTART_PHASE=denial python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-deny.db
+          CCAD_RESTART_PHASE=first python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-cancel.db
+          CCAD_RESTART_PHASE=cancel python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-cancel.db
 
   core-linux:
     runs-on: ubuntu-latest
