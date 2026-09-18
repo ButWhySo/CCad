@@ -2575,3 +2575,7 @@ Headless-only batch: checkpointed LangGraph tool interrupts now preserve `approv
 ### Sprint 873 — durable approval proof
 
 Headless-only batch: checkpoint restart fixture now inspects the actual interrupt payload and proves `approval_required:true` survives checkpoint creation. GUI/API/build validation remains paused.
+
+### Sprint 874 — checkpoint approval decision branches
+
+Fresh-DB headless proof complete for checkpoint creation plus accept, denial, and cancellation resume branches; each retained the approval-bearing interrupt and completed its expected terminal path. GUI/API/build validation remains paused.

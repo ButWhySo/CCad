@@ -1723,3 +1723,5 @@ Sprint 871 handover: mutating tool-call payloads include `approval_required`; `u
 Sprint 872 handover: `dispatch_checkpointed_tool()` stores `approval_required:true` in the LangGraph interrupt value, preserving the side-effect boundary across restart/resume. `scripts/test_checkpoint_approval_contract.py` locks the no-network contract.
 
 Sprint 873 handover: `scripts/test_agent_checkpoint_restart.py` now validates the actual first-process interrupt payload contains `approval_required:true`; run with `-IncludeCheckpointRestart` for restart proof.
+
+Sprint 874 handover: fresh DB runs of `test_agent_checkpoint_restart.py` passed first/accept, first/denial, and first/cancel branches; no provider/network or GUI was used.
