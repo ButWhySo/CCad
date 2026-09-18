@@ -16,6 +16,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [ ] LangGraph run loop: pending run state survives tool calls; broker result resumes same run by `call_id`. Sprint 811 fixes thread-scoped result routing and stale-result rejection; protocol-level live broker proof remains open.
 - [x] Sprint 812: canonicalize malformed JSON-RPC tool correlation IDs before pending-call lookup; invalid IDs now fail safely.
 - [x] Sprint 813: checkpointed tool cancellation resumes matching thread with structured cancellation error; stale cancellation remains rejected.
+- [x] Sprint 814: two-process checkpoint test proves cancellation result survives process restart.
 - [x] Sprint 810: mock-provider headless contract proves supervisor-to-router-to-tool-node execution and terminal completion; durable broker resume remains open.
 - [ ] Approval authority: one pre-side-effect policy gate; denial/error paths stop or re-plan without mutation.
 - [ ] Verification: intent-conditioned DRC/ERC/build/visual checks; result becomes signoff evidence before commit/export.

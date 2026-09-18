@@ -68,7 +68,7 @@ def main():
                          if message.__class__.__name__ == "ToolMessage"]
         assert tool_messages and json.loads(tool_messages[-1].content) == {"status": "track_added"}
         print("PASS restart resume completed")
-    else:
+    elif phase == "denial":
         state = ccad.executor.invoke(Command(resume={"error": {"code": -32001,
                                                                   "message": "approval_denied"}}), config=thread)
         assert not ccad.executor.get_state(thread).next
@@ -77,6 +77,15 @@ def main():
         assert tool_messages and json.loads(tool_messages[-1].content) == {
             "error": {"code": -32001, "message": "approval_denied"}}
         print("PASS restart denial completed")
+    elif phase == "cancel":
+        state = ccad.executor.invoke(Command(resume={"error": {
+            "code": -32800, "message": "canceled_by_user"}}), config=thread)
+        assert not ccad.executor.get_state(thread).next
+        tool_messages = [message for message in state["messages"]
+                         if message.__class__.__name__ == "ToolMessage"]
+        assert tool_messages and json.loads(tool_messages[-1].content) == {
+            "error": {"code": -32800, "message": "canceled_by_user"}}
+        print("PASS restart cancellation completed")
 
 
 if __name__ == "__main__":

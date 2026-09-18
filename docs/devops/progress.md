@@ -2333,3 +2333,8 @@ Sprint 813 extends cancellation into checkpointed runs. A matching
 thread-scoped `agent.cancel_tool` now resumes the interrupted graph with a
 structured cancellation error; unknown or late cancellation remains ignored.
 GUI verification remains paused.
+
+Sprint 814 adds executable checkpoint cancellation proof: a first process
+writes an interrupt checkpoint, a second process resumes it with `-32800`, and
+the resulting `ToolMessage` carries the structured cancellation error. No
+provider request is required.
