@@ -11,7 +11,7 @@ if (-not (Test-Path -LiteralPath $python)) {
 
 # Deliberately exclude GUI/visual/live-provider tests. This gate is offline and
 # quota-safe; visual validation remains a separate user-authorized phase.
-$excluded = @("gui", "visual", "screenshot", "provider_real", "live")
+$excluded = @("test_gui_", "_gui_", "visual", "screenshot", "provider_real", "live")
 $tests = Get-ChildItem -LiteralPath (Join-Path $root "scripts") -Filter "test_*.py" |
     Where-Object {
         $testName = $_.Name.ToLowerInvariant()
