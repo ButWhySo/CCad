@@ -24,14 +24,22 @@ assert '"response_contracts": {"context_state": {"fields": [' in text
 env = os.environ.copy()
 env.update({"CCAD_PROVIDER": "mock", "PYTHONNOUSERSITE": "1",
             "PYTHONPATH": str(SOURCE.parent)})
-payload = "\n".join(json.dumps({"method": "human_message", "params": {
-    "text": "summarize", "context": context}})
-    for context in ("board A", "board B", "board B")) + "\n"
+requests = [{"method": "agent.methods", "params": {}}]
+requests.extend({"method": "human_message", "params": {
+    "text": "summarize", "context": context}}
+    for context in ("board A", "board B", "board B"))
+payload = "\n".join(json.dumps(request) for request in requests) + "\n"
 run = subprocess.run([sys.executable, str(SOURCE)], input=payload, text=True,
                      capture_output=True, env=env, check=True)
-events = [json.loads(line) for line in run.stdout.splitlines()
-          if line.strip().startswith("{") and
-          '"method": "context_state"' in line]
+lines = [json.loads(line) for line in run.stdout.splitlines()
+         if line.strip().startswith("{")]
+methods = next(item["params"] for item in lines
+               if item.get("method") == "agent_methods")
+human_contract = next(item for item in methods["methods"]
+                      if item["name"] == "human_message")
+assert "context_state" in human_contract["response_contracts"]
+assert "change_kind" in human_contract["response_contracts"]["context_state"]["fields"]
+events = [item for item in lines if item.get("method") == "context_state"]
 assert len(events) == 3
 assert events[0]["params"]["previous_revision"] == ""
 assert events[0]["params"]["change_kind"] == "initial"

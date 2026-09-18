@@ -1021,3 +1021,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   alongside the existing opaque revision; no GUI or provider request.
 - [x] Sprint 845: publish context-state response fields through method
   discovery; no GUI or provider request.
+- [x] Sprint 846: verify context-state method discovery at runtime, not only
+  through source inspection; no GUI or provider request.

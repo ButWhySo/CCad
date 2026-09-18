@@ -1639,3 +1639,7 @@ Sprint 845 handover: `orchestrator_method_catalog()` now documents the
 `context_state` response fields under `human_message.response_contracts`,
 including redaction and transition metadata; the legacy response-method list
 remains unchanged.
+
+Sprint 846 handover: the context subprocess contract requests `agent.methods`
+and validates the live returned `human_message.response_contracts` before
+asserting initial/changed/unchanged events.
