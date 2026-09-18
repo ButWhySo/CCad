@@ -44,6 +44,7 @@ private:
 
   // Config tab
   QComboBox* provider_combo_{nullptr};
+  QComboBox* model_combo_{nullptr};
   QLineEdit* model_input_{nullptr};
   QLineEdit* api_key_input_{nullptr};
   QLabel* provider_target_label_{nullptr};
@@ -57,6 +58,12 @@ private:
   QCheckBox* ltm_cb_{nullptr};
   QCheckBox* episodic_cb_{nullptr};
   QComboBox* hooks_combo_{nullptr};
+
+  // General settings
+  QComboBox* theme_combo_{nullptr};
+  QComboBox* grid_combo_{nullptr};
+  QCheckBox* autosave_cb_{nullptr};
+  QCheckBox* restore_session_cb_{nullptr};
 
   // Personalisation tab
   QLineEdit* follow_up_{nullptr};

@@ -2575,3 +2575,6 @@ Chooser status text shows how many local items loaded and the resolved cache pat
 ## CI speed and syntax gate
 
 The CI workflow compiles agent and test Python sources before protocol tests and invokes CMake with parallel workers on all build jobs. This catches syntax regressions early and reduces idle build time without weakening CTest.
+### Agent Settings model and general preferences
+
+Agent Settings exposes provider-aware editable model choices, including current OpenAI, Anthropic, and Gemini families plus custom entries for compatible/local endpoints. General Settings exposes theme, canvas grid, autosave, and session restoration preferences. Saved configuration is reloaded into the dialog across project, memory, personalisation, and general fields. Provider/API secrets remain session-only and are never persisted.

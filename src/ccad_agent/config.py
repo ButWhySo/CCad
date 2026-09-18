@@ -28,6 +28,10 @@ class AgentConfigManager:
 
     def _default_config(self) -> Dict[str, Any]:
         return {
+            "theme": "Dark",
+            "grid": "Fine",
+            "autosave": True,
+            "restore_session": True,
             "provider": "openai",
             "model": "gpt-4o",
             "sandbox_mode": True,

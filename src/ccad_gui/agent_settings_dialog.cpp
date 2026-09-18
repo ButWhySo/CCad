@@ -18,6 +18,29 @@
 #include <QPointer>
 #include <QTimer>
 
+namespace {
+
+QStringList modelsForProvider(const QString& provider) {
+  if (provider == "openai") {
+    return {"gpt-5.1", "gpt-5", "gpt-5-mini", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano"};
+  }
+  if (provider == "anthropic") {
+    return {"claude-opus-4-1", "claude-sonnet-4", "claude-3-7-sonnet-latest",
+            "claude-3-5-haiku-latest"};
+  }
+  if (provider == "google_gemini") {
+    return {"gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash",
+            "gemini-3.5-flash", "gemini-3.1-pro-preview", "gemini-2.5-flash",
+            "gemini-2.5-pro"};
+  }
+  if (provider == "openai_compatible") {
+    return {"Custom model (type below)"};
+  }
+  return {"local-model", "Custom model (type below)"};
+}
+
+}  // namespace
+
 AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* parent)
     : QDialog(parent), agent_panel_(agent_panel) {
   setWindowTitle("Agent Settings");
@@ -182,7 +205,23 @@ void AgentSettingsDialog::setupUi() {
 void AgentSettingsDialog::createGeneralTab(QWidget* parent_widget) {
   auto* layout = new QVBoxLayout(parent_widget);
   layout->addWidget(new QLabel("<b>General Settings</b>", parent_widget));
-  layout->addWidget(new QLabel("General workspace settings.", parent_widget));
+  auto* form = new QFormLayout();
+  theme_combo_ = new QComboBox(parent_widget);
+  theme_combo_->setObjectName("control:themeCombo");
+  theme_combo_->addItems({"Dark", "Light", "System"});
+  form->addRow("Theme:", theme_combo_);
+  grid_combo_ = new QComboBox(parent_widget);
+  grid_combo_->setObjectName("control:gridCombo");
+  grid_combo_->addItems({"Fine", "Coarse", "Hidden"});
+  form->addRow("Canvas grid:", grid_combo_);
+  autosave_cb_ = new QCheckBox("Save project changes automatically", parent_widget);
+  autosave_cb_->setObjectName("control:autosaveCb");
+  form->addRow("Editing:", autosave_cb_);
+  restore_session_cb_ = new QCheckBox("Restore the last project and chat session", parent_widget);
+  restore_session_cb_->setObjectName("control:restoreSessionCb");
+  form->addRow("Startup:", restore_session_cb_);
+  layout->addLayout(form);
+  layout->addWidget(new QLabel("These preferences are stored in the per-user CCad agent configuration, not in the board file.", parent_widget));
   layout->addStretch();
 }
 
@@ -201,10 +240,15 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
   provider_combo_->addItem("Local model server", "local_model");
   form->addRow("Provider:", provider_combo_);
 
-  model_input_ = new QLineEdit(parent_widget);
+  model_combo_ = new QComboBox(parent_widget);
+  model_combo_->setObjectName("control:modelCombo");
+  model_combo_->setEditable(true);
+  model_combo_->setInsertPolicy(QComboBox::NoInsert);
+  model_input_ = model_combo_->lineEdit();
   model_input_->setObjectName("control:modelInput");
-  model_input_->setPlaceholderText("Current model selected");
-  form->addRow("Model:", model_input_);
+  model_input_->setPlaceholderText("Choose a model or type a custom model ID");
+  model_combo_->addItems(modelsForProvider(provider_combo_->currentData().toString()));
+  form->addRow("Model:", model_combo_);
 
   sandbox_cb_ = new QCheckBox("Sandbox Mode", parent_widget);
   sandbox_cb_->setObjectName("control:sandboxCb");
@@ -244,6 +288,18 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
 
   layout->addLayout(form);
   layout->addStretch();
+
+  connect(provider_combo_, &QComboBox::currentIndexChanged, this, [this]() {
+    if (!model_combo_ || !provider_combo_) return;
+    const QString current = model_input_ ? model_input_->text().trimmed() : QString();
+    model_combo_->blockSignals(true);
+    model_combo_->clear();
+    model_combo_->addItems(modelsForProvider(provider_combo_->currentData().toString()));
+    const int matching = model_combo_->findText(current);
+    if (!current.isEmpty() && matching < 0) model_combo_->setEditText(current);
+    else if (matching >= 0) model_combo_->setCurrentIndex(matching);
+    model_combo_->blockSignals(false);
+  });
 }
 
 void AgentSettingsDialog::createPersonalisationTab(QWidget* parent_widget) {
@@ -447,6 +503,23 @@ void AgentSettingsDialog::applyConfigState(const QJsonObject& config) {
     if (dev_prompt_ && config.contains("dev_prompt")) {
         dev_prompt_->setPlainText(config["dev_prompt"].toString());
     }
+    if (theme_combo_ && config.contains("theme")) theme_combo_->setCurrentText(config["theme"].toString());
+    if (grid_combo_ && config.contains("grid")) grid_combo_->setCurrentText(config["grid"].toString());
+    if (autosave_cb_ && config.contains("autosave")) autosave_cb_->setChecked(config["autosave"].toBool());
+    if (restore_session_cb_ && config.contains("restore_session")) restore_session_cb_->setChecked(config["restore_session"].toBool());
+    if (project_name_ && config.contains("project_name")) project_name_->setText(config["project_name"].toString());
+    if (project_path_ && config.contains("project_path")) project_path_->setText(config["project_path"].toString());
+    if (trust_level_ && config.contains("trust_level")) trust_level_->setCurrentText(config["trust_level"].toString());
+    const QJsonObject memory = config.value("memory").toObject();
+    if (stm_cb_ && memory.contains("stm")) stm_cb_->setChecked(memory["stm"].toBool());
+    if (ltm_cb_ && memory.contains("ltm")) ltm_cb_->setChecked(memory["ltm"].toBool());
+    if (episodic_cb_ && memory.contains("episodic")) episodic_cb_->setChecked(memory["episodic"].toBool());
+    const QJsonObject personalisation = config.value("personalisation").toObject();
+    if (follow_up_ && personalisation.contains("follow_up")) follow_up_->setText(personalisation["follow_up"].toString());
+    if (context_window_ && personalisation.contains("show_context_usage")) context_window_->setChecked(personalisation["show_context_usage"].toBool());
+    if (inline_detached_ && personalisation.contains("chat_mode")) inline_detached_->setCurrentText(personalisation["chat_mode"].toString());
+    if (agent_personality_ && personalisation.contains("agent_personality")) agent_personality_->setCurrentText(personalisation["agent_personality"].toString());
+    if (custom_instructions_ && personalisation.contains("custom_instructions")) custom_instructions_->setPlainText(personalisation["custom_instructions"].toString());
 }
 
 void AgentSettingsDialog::applyMarketplaceCatalog(const QJsonObject& catalog) {
@@ -481,6 +554,10 @@ void AgentSettingsDialog::saveAllSettings() {
 
   if (provider_combo_) config["provider"] = provider_combo_->currentData().toString();
   if (model_input_) config["model"] = model_input_->text();
+  if (theme_combo_) config["theme"] = theme_combo_->currentText();
+  if (grid_combo_) config["grid"] = grid_combo_->currentText();
+  if (autosave_cb_) config["autosave"] = autosave_cb_->isChecked();
+  if (restore_session_cb_) config["restore_session"] = restore_session_cb_->isChecked();
   if (sandbox_cb_) config["sandbox_mode"] = sandbox_cb_->isChecked();
   if (approval_cb_) config["approval_policy"] = approval_cb_->isChecked();
   if (project_name_) config["project_name"] = project_name_->text();

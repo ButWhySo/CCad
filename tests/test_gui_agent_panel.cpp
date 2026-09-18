@@ -39,7 +39,18 @@ private slots:
 
     auto* model_input = dialog.findChild<QLineEdit*>("control:modelInput");
     QVERIFY(model_input != nullptr);
+    auto* model_combo = dialog.findChild<QComboBox*>("control:modelCombo");
+    QVERIFY(model_combo != nullptr);
+    QVERIFY(model_combo->isEditable());
+    QVERIFY(model_combo->count() > 0);
     QTest::keyClicks(model_input, "gpt-4o-test");
+
+    auto* theme_combo = dialog.findChild<QComboBox*>("control:themeCombo");
+    QVERIFY(theme_combo != nullptr);
+    auto* grid_combo = dialog.findChild<QComboBox*>("control:gridCombo");
+    QVERIFY(grid_combo != nullptr);
+    QVERIFY(dialog.findChild<QCheckBox*>("control:autosaveCb") != nullptr);
+    QVERIFY(dialog.findChild<QCheckBox*>("control:restoreSessionCb") != nullptr);
 
     auto* api_key_input = dialog.findChild<QLineEdit*>("control:apiKeyInput");
     QVERIFY(api_key_input != nullptr);
