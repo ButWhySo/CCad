@@ -1603,3 +1603,6 @@ events remain serialized by `workspaceStateJson`.
 Sprint 803 handover: `chat_stream_` is direct child of AgentPanel's main layout;
 legacy `QScrollArea`, container, and history layout members are removed. The
 QTextBrowser owns selectable transcript scrolling.
+
+Sprint 804 handover: AgentPanel no longer includes unused `QSizePolicy` after
+legacy bubble renderer removal.

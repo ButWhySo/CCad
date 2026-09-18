@@ -2290,3 +2290,6 @@ Sprint 803 removes the redundant outer chat scroll area and container. The
 single QTextBrowser now owns scrolling directly inside the Agent layout, avoiding
 double-scroll behavior and empty wrapper geometry; GUI verification remains
 paused.
+
+Sprint 804 removes the unused Qt size-policy include left behind by the deleted
+bubble renderer; no runtime behavior changes. GUI verification remains paused.

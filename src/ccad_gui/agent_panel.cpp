@@ -31,7 +31,6 @@
 #include <QPushButton>
 #include <QSaveFile>
 #include <QSize>
-#include <QSizePolicy>
 #include <QStyle>
 #include <QTabWidget>
 #include <QTextBrowser>

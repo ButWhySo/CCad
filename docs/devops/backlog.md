@@ -961,3 +961,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   per-event checklist widget boxes; GUI verification remains paused.
 - [x] Sprint 803: remove redundant outer chat scroll wrapper and make the single
   QTextBrowser own scrolling; GUI verification remains paused.
+- [x] Sprint 804: remove stale include left by chat renderer cleanup; GUI
+  verification remains paused.
