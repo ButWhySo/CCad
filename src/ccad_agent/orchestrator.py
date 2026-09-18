@@ -232,7 +232,8 @@ def dispatch_checkpointed_tool(tool_name: str, args: dict):
     call_id = checkpoint_tool_call_id(tool_name, args)
     decision = interrupt({"kind": "ccad_tool_call", "tool": tool_name,
                           "args": args, "call_id": call_id,
-                          "approval_required": True})
+                          "approval_required": True,
+                          "approval_reason": "project_mutation"})
     if isinstance(decision, dict) and "error" in decision:
         return json.dumps(decision)
     return json.dumps(decision) if isinstance(decision, (dict, list)) else str(decision)
@@ -253,6 +254,7 @@ def dispatch_client_tool(tool_name: str, args: dict, *, await_result: bool = Fal
     emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
         "tool": tool_name, "args": args, "call_id": call_id,
         "approval_required": bool(await_result and approval["required"]),
+        "approval_reason": approval["reason"],
     }})
     if broker_wait_enabled and await_result:
         emit_tool_approval_state()
@@ -316,6 +318,7 @@ def ui_place_via(x_mm: float, y_mm: float, dry_run: bool = False):
         "args": args,
         "call_id": call_id,
         "approval_required": tool_approval_decision("ui.place_via", args)["required"],
+        "approval_reason": tool_approval_decision("ui.place_via", args)["reason"],
     }})
     if broker_wait_enabled and not dry_run:
         emit_tool_approval_state()
@@ -334,6 +337,7 @@ def ui_add_track(x1: float, y1: float, x2: float, y2: float):
     emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
         "tool": "ui.route_track", "args": args, "call_id": call_id,
         "approval_required": tool_approval_decision("ui.route_track", args)["required"],
+        "approval_reason": tool_approval_decision("ui.route_track", args)["reason"],
     }})
     if broker_wait_enabled:
         emit_tool_approval_state()
@@ -362,6 +366,7 @@ def ui_add_polygon(points: List[List[float]], layer: str):
             "tool": "ui.add_zone", "args": args, "layer": layer,
             "call_id": call_id,
             "approval_required": tool_approval_decision("ui.add_zone", args)["required"],
+            "approval_reason": tool_approval_decision("ui.add_zone", args)["reason"],
         }})
         if broker_wait_enabled:
             emit_tool_approval_state()
