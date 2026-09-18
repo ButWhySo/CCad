@@ -705,6 +705,24 @@ def agent_context_limit():
         limit = 32768
     return min(131072, max(4096, limit))
 
+def compact_session_history(messages):
+    """Compact chat history without sending content to any provider.
+
+    Keep recent turns intact; replace older turns with opaque, local metadata.
+    This bounds prompt growth while avoiding a misleading provider-generated
+    summary or leakage of project/chat content in the compaction event.
+    """
+    if len(messages) <= 4:
+        return messages
+    recent = messages[-4:]
+    older = messages[:-4]
+    chars = sum(len(str(getattr(item, "content", "") or "")) for item in older)
+    summary = SystemMessage(content=(
+        "[CCAD local context summary] older_messages="
+        f"{len(older)}; older_chars={chars}; details omitted."
+    ))
+    return [summary, *recent]
+
 # --- Custom Workflows ---
 def handle_marketplace(text: str):
     parts = text.split(" ")
@@ -959,8 +977,9 @@ if __name__ == "__main__":
                             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Model set to {parts[0]}:{parts[1]}"}})
                         continue
                     elif cmd_base in ["/cc", "/compact"]:
-                        session_messages = session_messages[-2:] if len(session_messages) > 2 else session_messages
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Context compacted. Pruned older tool results and summarized session state."}})
+                        before = len(session_messages)
+                        session_messages = compact_session_history(session_messages)
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Context compacted locally: {before} messages -> {len(session_messages)}; recent turns preserved."}})
                         continue
                     elif cmd_base == "/workflow":
                         if cmd_args.startswith("use:"):

@@ -885,3 +885,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 732: stop broad PNS candidate rejection from falsely blocking clear routes; exact geometry remains authoritative.
 - [x] Sprint 736: expose active context budget beside truncation metadata; no content leakage.
 - [x] Sprint 737: add bounded provider request timeout; live connectivity remains user-environment dependent.
+- [x] Sprint 738: make `/cc`/`/compact` truthful local history compaction without provider quota use; GUI validation remains paused.

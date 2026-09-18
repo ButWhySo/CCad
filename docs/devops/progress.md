@@ -2036,6 +2036,10 @@ Provider adapters now receive bounded request timeout:
 `CCAD_PROVIDER_TIMEOUT_SECONDS` defaults 60 seconds and clamps 1..120. No live
 provider call made.
 
+Local `/cc`/`/compact` now performs truthful deterministic history compaction:
+recent turns stay intact, older turns become opaque count/size metadata, and no
+provider request is made. GUI validation remains paused by explicit user order.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.
