@@ -5,7 +5,7 @@ import os
 from langchain_openai import ChatOpenAI
 
 
-model = os.environ.get("CCAD_CEREBRAS_MODEL", "qwen-3-32b")
+model = os.environ.get("CCAD_CEREBRAS_MODEL", "qwen-3.8-27b")
 adapter = ChatOpenAI(
     model=model,
     base_url="https://api.cerebras.ai/v1",

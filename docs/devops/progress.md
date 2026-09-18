@@ -2102,8 +2102,8 @@ password without requesting a domain. GUI runtime verification remains
 paused by explicit request.
 
 Sprint 760 adds a no-network Cerebras adapter smoke test to CI. It constructs
-the selected `qwen-3-32b` OpenAI-compatible client, verifies endpoint/model,
-and sends no request or credential.
+the selected OpenAI-compatible client, verifies endpoint/model, and sends no
+request or credential.
 
 Sprint 761 reruns the complete agent-python contract subset inside the bundled
 venv, including memory/context limits, approval/cancellation, Cerebras setup,
@@ -2120,6 +2120,13 @@ and removal of the domain-oriented credential dialog.
 
 Sprint 765 hardens that reveal path with correct Windows username-buffer sizing
 and explicit in-memory password clearing after `LogonUserW` validation.
+
+Sprint 766 reconciles provider presets with first-party model catalogs. The
+Cerebras default is now `qwen-3.8-27b`, with `gpt-oss-120b` retained; stale
+choices and the stale Python fallback were removed. OpenAI, Anthropic, and
+Gemini preset IDs were also aligned with their current documentation. The
+compatibility record and contract tests were updated in the same change.
+No provider request or GUI validation was run; GUI validation remains paused.
 
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with

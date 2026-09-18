@@ -30,11 +30,11 @@ namespace {
 
 QStringList modelsForProvider(const QString& provider) {
   if (provider == "openai") {
-    return {"gpt-5.1", "gpt-5", "gpt-5-mini", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano"};
+    return {"gpt-5.1", "gpt-5", "gpt-5-mini", "gpt-4.1", "gpt-4.1-mini"};
   }
   if (provider == "anthropic") {
-    return {"claude-opus-4-1", "claude-sonnet-4", "claude-3-7-sonnet-latest",
-            "claude-3-5-haiku-latest"};
+    return {"claude-fable-5-1", "claude-opus-5", "claude-sonnet-5",
+            "claude-haiku-4-5-20251001"};
   }
   if (provider == "google_gemini") {
     return {"gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash",
@@ -45,7 +45,7 @@ QStringList modelsForProvider(const QString& provider) {
     return {"Custom model (type below)"};
   }
   if (provider == "cerebras") {
-    return {"gpt-oss-120b", "llama3.1-8b", "qwen-3-32b", "zai-glm-4.7"};
+    return {"qwen-3.8-27b", "gpt-oss-120b"};
   }
   return {"local-model", "Custom model (type below)"};
 }

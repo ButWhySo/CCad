@@ -128,6 +128,22 @@ def pending_call_snapshot(thread_id: str = ""):
         "secret_value_visible": False,
     }
 
+def orchestrator_method_catalog():
+    """Describe only the child-process JSON-RPC controls and their safety."""
+    return {
+        "schema_version": 1,
+        "methods": [
+            {"name": "agent.methods", "read_only": True},
+            {"name": "agent.pending_calls", "read_only": True, "secrets": False},
+            {"name": "agent.cancel_tool", "read_only": False,
+             "approval_required": False, "side_effect": "cancel_wait_only"},
+            {"name": "tool_result", "read_only": False,
+             "approval_required": True, "side_effect": "client_authorized_result"},
+            {"name": "human_message", "read_only": False, "provider_call": True},
+        ],
+        "secret_value_visible": False,
+    }
+
 def dispatch_checkpointed_tool(tool_name: str, args: dict):
     """Pause graph until C++ client returns authoritative tool result."""
     call_id = checkpoint_tool_call_id(tool_name, args)
@@ -493,7 +509,7 @@ def init_provider():
             elif provider == "cerebras":
                 # Keep backend fallback aligned with Settings' quota-conscious
                 # Cerebras preset. Explicit CCAD_CEREBRAS_MODEL still wins.
-                model_name = model_name or "qwen-3-32b"
+                model_name = model_name or "qwen-3.8-27b"
                 base_url = "https://api.cerebras.ai/v1"
             elif provider == "local_model":
                 model_name = model_name or os.environ.get("CCAD_LOCAL_MODEL_NAME", "") or "local-model"
@@ -972,6 +988,9 @@ if __name__ == "__main__":
                         "resumable": bool(snapshot.values), "thread_id": thread_id,
                         "next": list(snapshot.next), "checkpoint_id": snapshot.config.get("configurable", {}).get("checkpoint_id", ""),
                     }})
+            elif method == "agent.methods":
+                emit({"jsonrpc": "2.0", "method": "agent_methods",
+                      "params": orchestrator_method_catalog()})
             elif method == "agent.pending_calls":
                 thread_id = req.get("params", {}).get("thread_id", "")
                 emit({"jsonrpc": "2.0", "method": "pending_calls_state", "params":
