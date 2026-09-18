@@ -36,6 +36,8 @@ jobs:
           python scripts/test_agent_context_size_contract.py
           python scripts/test_agent_compaction_contract.py
           python scripts/test_provider_timeout_contract.py
+          python scripts/test_memory_store.py
+          python scripts/test_memory_command_contract.py
           python scripts/test_agent_config_persistence.py
           python scripts/test_mcp_gui_bridge.py
           python scripts/test_provider_openai_compatible.py

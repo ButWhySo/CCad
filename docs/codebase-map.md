@@ -1386,6 +1386,12 @@ returns a deterministic opaque FNV-1a revision for serialized project context.
 constraints, and a truthful compaction-policy marker; revision is change
 detection only, not a secret-hiding primitive.
 
+`src/ccad_agent/memory_store.py` owns local user memory at
+`%APPDATA%/CCad/agent_memory.json` (or `CCAD_AGENT_MEMORY_PATH`). It supports
+bounded add/list/delete/clear, atomic replacement, scope/tags, and rejects
+credential-looking content. Orchestrator `/memory` commands are explicit;
+memory is never provider input by default.
+
 `AgentOrchestrator::plan` invokes `IntakeLayer::run_risk_scan` before subagent decomposition. A failed scan creates one auditable failed task with `intake_risk_scan_blocked`; no provider or tool task is created.
 
 The scan covers destructive/external action markers plus common prompt-injection and credential-bearing markers. It intentionally fails closed; callers must present a safe revised goal rather than retrying the blocked one unchanged.

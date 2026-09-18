@@ -2046,6 +2046,10 @@ snapshot/mutation constraints, and explicit compaction policy to the core
 context envelope. Revision changes when serialized project state changes; no
 provider or GUI is involved.
 
+Sprint 741 adds local JSON memory CRUD with bounded entries, scope/tags,
+atomic replacement, secret-looking content rejection, and `/memory` list/add/
+delete/clear commands. Memory is not automatically sent to providers.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.

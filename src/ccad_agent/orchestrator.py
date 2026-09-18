@@ -17,6 +17,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 from config import AgentConfigManager
 from telemetry import trace_function, tracer
 import hooks
+from memory_store import MemoryStore
 
 def emit(payload: dict):
     print(json.dumps(payload), flush=True)
@@ -116,6 +117,7 @@ def dispatch_client_tool(tool_name: str, args: dict, *, await_result: bool = Fal
     return "Action dispatched to CCad client."
 
 config_manager = AgentConfigManager()
+memory_store = MemoryStore()
 
 class AgentState(TypedDict):
     messages: Annotated[List[BaseMessage], operator.add]
@@ -963,7 +965,22 @@ if __name__ == "__main__":
                     cmd_args = cmd_parts[1] if len(cmd_parts) > 1 else ""
                     
                     if cmd_base == "/commands":
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`"}})
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|add <text>|delete <id>|clear`\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`"}})
+                        continue
+                    elif cmd_base == "/memory":
+                        memory_args = cmd_args.strip()
+                        if memory_args == "list":
+                            emit({"jsonrpc": "2.0", "method": "memory_state", "params": {"entries": memory_store.list()}})
+                        elif memory_args.startswith("add "):
+                            entry = memory_store.add(memory_args[4:].strip())
+                            emit({"jsonrpc": "2.0", "method": "memory_added", "params": {"id": entry["id"], "scope": entry["scope"]}})
+                        elif memory_args.startswith("delete "):
+                            removed = memory_store.delete(memory_args[7:].strip())
+                            emit({"jsonrpc": "2.0", "method": "memory_deleted", "params": {"removed": removed}})
+                        elif memory_args == "clear":
+                            emit({"jsonrpc": "2.0", "method": "memory_cleared", "params": {"removed": memory_store.clear()}})
+                        else:
+                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Memory: use `/memory list|add <text>|delete <id>|clear`."}})
                         continue
                     elif cmd_base == "/marketplace":
                         handle_marketplace(text)
