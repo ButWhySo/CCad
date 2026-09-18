@@ -2551,3 +2551,7 @@ Headless-only batch: extended the bundled subprocess contract to call `agent.con
 ### Sprint 867 — bounded context revision metadata
 
 Headless-only batch: capped retained per-thread opaque context revisions at 128 entries and evicted the oldest inactive entry. Active context remains available; project content is never retained by this map. Added an offline contract; GUI/API/build validation remains paused.
+
+### Sprint 868 — provider-unavailable message metadata
+
+Headless-only batch: provider-unavailable message events now carry stable `kind`, `category`, and `secret_value_visible:false` fields, matching the agent message contract without exposing exception text or credentials. Added a no-network contract assertion; GUI/API/build validation remains paused.

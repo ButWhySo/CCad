@@ -640,7 +640,11 @@ def init_provider():
             emit_dependency_warning("langchain_openai")
         except Exception as error:
             emit_provider_failure(provider, error)
-    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Agent provider '{provider}' unavailable. Configure its environment in Agent Settings; local CCad tools remain available."}})
+    emit({"jsonrpc": "2.0", "method": "message", "params": {
+        "text": f"Agent provider '{provider}' unavailable. Configure its environment in Agent Settings; local CCad tools remain available.",
+        "kind": "provider_unavailable", "category": "provider_unavailable",
+        "secret_value_visible": False,
+    }})
     return False
 
 provider_initialized = init_provider()
