@@ -83,6 +83,12 @@ class BoardCanvasView final : public QGraphicsView {
     grid_visible_ = visible;
     viewport()->update();
   }
+  double gridSpacingMm() const { return grid_spacing_mm_; }
+  void setGridSpacingMm(const double spacing_mm) {
+    if (spacing_mm <= 0.0 || grid_spacing_mm_ == spacing_mm) return;
+    grid_spacing_mm_ = spacing_mm;
+    viewport()->update();
+  }
   bool crosshairVisible() const { return crosshair_visible_; }
   void setCrosshairVisible(const bool visible) {
     if (crosshair_visible_ == visible) {
@@ -98,7 +104,7 @@ class BoardCanvasView final : public QGraphicsView {
     if (!grid_visible_ || painter == nullptr) {
       return;
     }
-    constexpr double grid_step = 10.0;
+    const double grid_step = grid_spacing_mm_ * 10.0;
     QPen grid_pen(QColor("#20304a"));
     grid_pen.setCosmetic(true);
     painter->setPen(grid_pen);
@@ -445,6 +451,7 @@ class BoardCanvasView final : public QGraphicsView {
   bool panning_ = false;
   bool space_pan_mode_ = false;
   bool grid_visible_ = true;
+  double grid_spacing_mm_ = 1.0;
   bool crosshair_visible_ = false;
   QPoint pan_last_pos_;
   std::optional<QPointF> last_cursor_scene_pos_;

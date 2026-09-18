@@ -192,6 +192,20 @@ private slots:
     QCOMPARE(chat_input->toPlainText(), QString("/explain "));
   }
 
+  void testModelPresetSwitch() {
+    AgentPanel panel;
+    AgentSettingsDialog dialog(&panel);
+    auto* provider = dialog.findChild<QComboBox*>("control:providerCombo");
+    auto* models = dialog.findChild<QComboBox*>("control:modelCombo");
+    QVERIFY(provider != nullptr);
+    QVERIFY(models != nullptr);
+    provider->setCurrentIndex(provider->findData("cerebras"));
+    QCOMPARE(models->currentText(), QString("gpt-oss-120b"));
+    QVERIFY(models->findText("zai-glm-4.7") >= 0);
+    provider->setCurrentIndex(provider->findData("openai"));
+    QCOMPARE(models->currentText(), QString("gpt-5.1"));
+  }
+
   void testApprovalLaneTransitions() {
     AgentPanel panel;
     auto* approval_card = panel.findChild<QFrame*>("panel:agent_approval_preview");

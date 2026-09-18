@@ -310,12 +310,19 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
   connect(provider_combo_, &QComboBox::currentIndexChanged, this, [this]() {
     if (!model_combo_ || !provider_combo_) return;
     const QString current = model_input_ ? model_input_->text().trimmed() : QString();
+    const bool current_was_provider_preset = model_combo_->findText(current) >= 0;
     model_combo_->blockSignals(true);
     model_combo_->clear();
-    model_combo_->addItems(modelsForProvider(provider_combo_->currentData().toString()));
+    const QStringList models = modelsForProvider(provider_combo_->currentData().toString());
+    model_combo_->addItems(models);
     const int matching = model_combo_->findText(current);
-    if (!current.isEmpty() && matching < 0) model_combo_->setEditText(current);
-    else if (matching >= 0) model_combo_->setCurrentIndex(matching);
+    if (!current.isEmpty() && !current_was_provider_preset && matching < 0) {
+      model_combo_->setEditText(current);
+    } else if (matching >= 0 && !current_was_provider_preset) {
+      model_combo_->setCurrentIndex(matching);
+    } else if (!models.isEmpty()) {
+      model_combo_->setCurrentIndex(0);
+    }
     model_combo_->blockSignals(false);
     if (model_details_) model_details_->setText(modelDetailsForProvider(provider_combo_->currentData().toString()));
     if (resolved_config_preview_) {

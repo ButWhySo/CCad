@@ -39,6 +39,9 @@ int main(int argc, char** argv) {
 
   BoardCanvasView view(&scene);
   require(view.gridVisible(), "grid starts visible like KiCad edit canvases");
+  require(view.gridSpacingMm() == 1.0, "grid starts at one metric millimeter");
+  view.setGridSpacingMm(2.5);
+  require(view.gridSpacingMm() == 2.5, "grid accepts metric spacing");
   view.setGridVisible(false);
   require(!view.gridVisible(), "grid visibility can be disabled by toolbar action");
   view.setGridVisible(true);

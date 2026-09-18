@@ -1905,6 +1905,20 @@ display units and is persisted through the agent configuration. Focused agent
 tests, official visual harness, screenshot inspection, empty stderr, and full
 Qt CTest 91/91 passed.
 
+### Sprint 714 - add metric grid spacing to canvas API
+
+Added `BoardCanvasView::setGridSpacingMm()` and regression coverage; the
+canvas now computes its background grid from metric millimeters rather than a
+hard-coded step. Settings-to-view propagation remains the next wiring slice.
+
+### Sprint 715 - fix provider model dropdown switching
+
+Provider changes now repopulate the model dropdown correctly: a known preset
+from the old provider selects the new provider's first documented model, while
+a genuinely custom model remains editable. Added isolated provider-switch
+regression coverage. Full Qt CTest 91/91 and official visual validation
+passed; screenshot inspected and stderr empty.
+
 ### Sprint 709 - bridge mutation tools into proposal review
 
 Approval-required mutation tool calls now populate the proposal card with the
