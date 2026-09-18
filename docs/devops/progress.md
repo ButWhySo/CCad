@@ -2531,3 +2531,7 @@ paused.
 ### Sprint 862 — tool-result acknowledgement ordering
 
 Headless-only batch: delayed `tool_result_ack` until a pending broker call or matching durable checkpoint/call ID is verified. Unknown, late, and mismatched results remain ignored without a false success acknowledgement. Added an offline source contract; GUI/API/build validation remains paused by user instruction.
+
+### Sprint 863 — pending-call count correctness
+
+Headless-only batch: pending-call recovery metadata now counts the union of process-local and checkpoint IDs, preventing one correlated call from appearing twice. Added an offline contract test; GUI/API/build validation remains paused.

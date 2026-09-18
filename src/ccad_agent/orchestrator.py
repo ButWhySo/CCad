@@ -169,7 +169,7 @@ def pending_call_snapshot(thread_id: str = ""):
     return {
         "process_call_ids": process_calls,
         "checkpoint_call_ids": sorted(set(checkpoint_calls)),
-        "count": len(process_calls) + len(set(checkpoint_calls)),
+        "count": len(set(process_calls).union(checkpoint_calls)),
         "secret_value_visible": False,
     }
 
