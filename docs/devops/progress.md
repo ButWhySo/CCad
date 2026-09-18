@@ -2010,3 +2010,10 @@ tests remain CI-backed when this workspace lacks the corresponding service.
 # Sprint 724 — quota-safe provider settings and live chat surface
 
 Implemented Windows Credential Manager-backed provider secret storage, OS-authenticated reveal, strict provider model selection, Cerebras-compatible endpoint selection, quota-safe UI validation, and borderless single-stream chat styling. Validation: `cmake --build build-qt --config Release --target ccad_gui -j 6`, Qt PATH-enabled `ctest --test-dir build-qt -C Release --output-on-failure` (91/91), and `tests/physical_ui_robot.py` with live `ui.map`/mouse-keyboard actions and inspected screenshots. Real provider calls were not made.
+
+### Sprint 725 - bound agent tool-loop quota use
+
+Per-run LangGraph recursion limit prevents unbounded supervisor, specialist, and
+tool cycles. `CCAD_AGENT_RECURSION_LIMIT` defaults 12, clamped 4..32. No-network
+contract test added. GUI validation paused by user; no GUI build, CTest, harness,
+or screenshot run performed.

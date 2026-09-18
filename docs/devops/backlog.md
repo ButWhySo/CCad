@@ -877,3 +877,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 658: bounded redacted provider retries recover from transient HTTP failure without retrying tools; fixture and full Qt verification pass.
 - [x] Sprint 659: terminal provider errors stay inside chat protocol with redacted failure state; no tool execution; full Qt verification pass.
 - [x] Sprint 660: CI Python syntax gate added and CMake builds parallelized across platforms; workflow YAML and focused tests verified.
+- [x] Sprint 725: bound LangGraph agent tool-loop recursion to protect provider quota; GUI validation paused by explicit user instruction.
