@@ -2,6 +2,7 @@
 
 import tempfile
 import sys
+import os
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src" / "ccad_agent"))
@@ -21,4 +22,9 @@ with tempfile.TemporaryDirectory() as temp:
         assert "secret" in str(error)
     else:
         raise AssertionError("secret-looking memory was accepted")
+
+with tempfile.TemporaryDirectory() as temp:
+    os.environ["APPDATA"] = temp
+    os.environ.pop("CCAD_AGENT_MEMORY_PATH", None)
+    assert MemoryStore().path == Path(temp) / "CCad" / "agent_memory.json"
 print("PASS local memory store CRUD and secret rejection; no network")

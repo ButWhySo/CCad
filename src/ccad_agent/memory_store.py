@@ -22,8 +22,9 @@ def memory_path() -> Path:
     configured = os.environ.get("CCAD_AGENT_MEMORY_PATH", "").strip()
     if configured:
         return Path(configured)
-    root = os.environ.get("APPDATA") or str(Path.home() / ".ccad")
-    return Path(root) / "CCad" / "agent_memory.json"
+    app_data = os.environ.get("APPDATA")
+    root = Path(app_data) / "CCad" if app_data else Path.home() / ".ccad"
+    return root / "agent_memory.json"
 
 
 class MemoryStore:
