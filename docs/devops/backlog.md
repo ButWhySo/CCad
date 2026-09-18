@@ -892,3 +892,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 743: inject enabled project STM memories through the bounded context gate; cap eight entries/1000 chars; GUI paused.
 - [x] Sprint 745: ignore local memory/session files so custom-path private notes cannot enter commits.
 - [x] Sprint 746: require explicit scope/all for memory clearing; bare clear is safe no-op.
+- [x] Sprint 749: expose scope/title prefixes on memory add so scoped CRUD is usable.

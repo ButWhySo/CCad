@@ -53,7 +53,8 @@ turns become opaque count/size metadata, and no provider quota is consumed.
 Agent memory is local JSON at `%APPDATA%/CCad/agent_memory.json` (override with
 `CCAD_AGENT_MEMORY_PATH`). Use `/memory list`, `/memory add <text>`,
 `/memory delete <id>`, `/memory clear all`, or `/memory clear scope:<name>`;
-`memory.stm` controls bounded project-memory injection into provider context.
+`memory.stm` controls bounded project-memory injection into provider context;
+`add` accepts optional leading `scope:x` and `title:y` flags.
 - CLI agent observability configuration: `ccad agent trace-export-schema`, `ccad agent trace-export-template`, `ccad agent trace-redaction-policy`, and `ccad agent trace-export-dry-run` expose disabled-by-default OpenTelemetry/Langfuse trace-export metadata, redaction policy, and no-network dry-run status, with matching `agent.trace_export_schema`, `agent.trace_export_template`, `agent.trace_redaction_policy`, and `agent.trace_export_dry_run` JSON-RPC routes.
 - CLI agent KiCad evidence integration: `ccad agent kicad-evidence-schema`, `ccad agent kicad-evidence-plan`, `ccad agent kicad-evidence-dry-run`, and guarded `ccad agent kicad-evidence-run --execute` expose structured `kicad-cli` DRC/ERC/export command plans, readiness checks, artifact manifests, JSON-RPC routes, tool-guide discovery, and policy-gated execution for local KiCad evidence.
 - Native Agent pane visual refinement: the right-side Agent pane now reports `visual_style:"agent_reference_panel_v4"` and `workspace_layout_version:4`, with targetable status rail, command composer, plan deck, evidence lane, and approval lane subregions while preserving the existing local-only controls and UI-map IDs.

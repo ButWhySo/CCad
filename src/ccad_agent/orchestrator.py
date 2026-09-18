@@ -132,6 +132,18 @@ def local_memory_context():
         lines.append(f"- [{entry.get('id', 'unknown')}] {entry.get('title') or 'memory'}: {entry.get('content', '')[:1000]}")
     return "\n".join(lines)
 
+def parse_memory_add_args(arguments):
+    """Parse optional leading scope/title flags from a memory add command."""
+    tokens = arguments.split()
+    scope, title = "project", ""
+    while tokens and (tokens[0].startswith("scope:") or tokens[0].startswith("title:")):
+        key, value = tokens.pop(0).split(":", 1)
+        if key == "scope":
+            scope = value.strip() or "project"
+        else:
+            title = value.strip()
+    return " ".join(tokens).strip(), title, scope
+
 class AgentState(TypedDict):
     messages: Annotated[List[BaseMessage], operator.add]
     goal: str
@@ -981,14 +993,15 @@ if __name__ == "__main__":
                     cmd_args = cmd_parts[1] if len(cmd_parts) > 1 else ""
                     
                     if cmd_base == "/commands":
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|add <text>|delete <id>|clear all|clear scope:<name>`\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`"}})
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|add [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`"}})
                         continue
                     elif cmd_base == "/memory":
                         memory_args = cmd_args.strip()
                         if memory_args == "list":
                             emit({"jsonrpc": "2.0", "method": "memory_state", "params": {"entries": memory_store.list()}})
                         elif memory_args.startswith("add "):
-                            entry = memory_store.add(memory_args[4:].strip())
+                            content, title, scope = parse_memory_add_args(memory_args[4:].strip())
+                            entry = memory_store.add(content, title=title, scope=scope)
                             emit({"jsonrpc": "2.0", "method": "memory_added", "params": {"id": entry["id"], "scope": entry["scope"]}})
                         elif memory_args.startswith("delete "):
                             removed = memory_store.delete(memory_args[7:].strip())
@@ -999,7 +1012,7 @@ if __name__ == "__main__":
                             scope = memory_args[len("clear scope:"):].strip()
                             emit({"jsonrpc": "2.0", "method": "memory_cleared", "params": {"scope": scope, "removed": memory_store.clear(scope)}})
                         else:
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Memory: use `/memory list|add <text>|delete <id>|clear all|clear scope:<name>`. Bare clear does nothing."}})
+                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Memory: use `/memory list|add [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`. Bare clear does nothing."}})
                         continue
                     elif cmd_base == "/marketplace":
                         handle_marketplace(text)

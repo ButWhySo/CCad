@@ -2059,6 +2059,9 @@ private local notes entering commits.
 Sprint 746 makes memory deletion explicit: bare `/memory clear` is a no-op;
 `clear all` or `clear scope:<name>` is required.
 
+Sprint 749 completes memory command scoping: `/memory add` accepts optional
+`scope:x` and `title:y` prefixes, enabling targeted memory management.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.
