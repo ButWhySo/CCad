@@ -39,6 +39,14 @@ QStringList modelsForProvider(const QString& provider) {
   return {"local-model", "Custom model (type below)"};
 }
 
+QString modelDetailsForProvider(const QString& provider) {
+  if (provider == "openai") return "OpenAI API · text/image · tool calling · provider key via OPENAI_API_KEY";
+  if (provider == "anthropic") return "Anthropic API · Claude family · tool use · provider key via ANTHROPIC_API_KEY";
+  if (provider == "google_gemini") return "Google Gemini API · multimodal · long context · provider key via GEMINI_API_KEY";
+  if (provider == "openai_compatible") return "OpenAI-compatible endpoint · configure base URL and model outside the board file";
+  return "Local model endpoint · custom model ID and endpoint configuration required";
+}
+
 }  // namespace
 
 AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* parent)
@@ -249,6 +257,11 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
   model_input_->setPlaceholderText("Choose a model or type a custom model ID");
   model_combo_->addItems(modelsForProvider(provider_combo_->currentData().toString()));
   form->addRow("Model:", model_combo_);
+  model_details_ = new QLabel(parent_widget);
+  model_details_->setObjectName("label:modelDetails");
+  model_details_->setWordWrap(true);
+  model_details_->setStyleSheet("color: #8b949e; padding: 2px 0 6px 0;");
+  form->addRow("Details:", model_details_);
 
   sandbox_cb_ = new QCheckBox("Sandbox Mode", parent_widget);
   sandbox_cb_->setObjectName("control:sandboxCb");
@@ -299,6 +312,32 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
     if (!current.isEmpty() && matching < 0) model_combo_->setEditText(current);
     else if (matching >= 0) model_combo_->setCurrentIndex(matching);
     model_combo_->blockSignals(false);
+    if (model_details_) model_details_->setText(modelDetailsForProvider(provider_combo_->currentData().toString()));
+    if (resolved_config_preview_) {
+      resolved_config_preview_->setPlainText(QString("[agent]\nprovider = \"%1\"\nmodel = \"%2\"\n\n[security]\nsandbox = %3\napproval = %4")
+          .arg(provider_combo_->currentData().toString(), model_input_ ? model_input_->text() : QString(),
+               sandbox_cb_ && sandbox_cb_->isChecked() ? "true" : "false",
+               approval_cb_ && approval_cb_->isChecked() ? "true" : "false"));
+    }
+  });
+  model_details_->setText(modelDetailsForProvider(provider_combo_->currentData().toString()));
+
+  resolved_config_preview_ = new QTextEdit(parent_widget);
+  resolved_config_preview_->setObjectName("control:resolvedConfigPreview");
+  resolved_config_preview_->setReadOnly(true);
+  resolved_config_preview_->setMaximumHeight(120);
+  resolved_config_preview_->setPlaceholderText("Resolved configuration preview");
+  form->addRow("Resolved config:", resolved_config_preview_);
+  resolved_config_preview_->setPlainText(QString("[agent]\nprovider = \"%1\"\nmodel = \"%2\"\n\n[security]\nsandbox = %3\napproval = %4")
+      .arg(provider_combo_->currentData().toString(), model_input_->text(),
+           sandbox_cb_->isChecked() ? "true" : "false",
+           approval_cb_->isChecked() ? "true" : "false"));
+  connect(model_input_, &QLineEdit::textChanged, this, [this](const QString&) {
+    if (!resolved_config_preview_ || !provider_combo_ || !model_input_) return;
+    resolved_config_preview_->setPlainText(QString("[agent]\nprovider = \"%1\"\nmodel = \"%2\"\n\n[security]\nsandbox = %3\napproval = %4")
+        .arg(provider_combo_->currentData().toString(), model_input_->text(),
+             sandbox_cb_ && sandbox_cb_->isChecked() ? "true" : "false",
+             approval_cb_ && approval_cb_->isChecked() ? "true" : "false"));
   });
 }
 

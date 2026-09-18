@@ -43,6 +43,11 @@ private slots:
     QVERIFY(model_combo != nullptr);
     QVERIFY(model_combo->isEditable());
     QVERIFY(model_combo->count() > 0);
+    QVERIFY(dialog.findChild<QLabel*>("label:modelDetails") != nullptr);
+    auto* config_preview = dialog.findChild<QTextEdit*>("control:resolvedConfigPreview");
+    QVERIFY(config_preview != nullptr);
+    QVERIFY(config_preview->isReadOnly());
+    QVERIFY(config_preview->toPlainText().contains("[agent]"));
     QTest::keyClicks(model_input, "gpt-4o-test");
 
     auto* theme_combo = dialog.findChild<QComboBox*>("control:themeCombo");

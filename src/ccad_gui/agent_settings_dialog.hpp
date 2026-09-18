@@ -46,6 +46,8 @@ private:
   QComboBox* provider_combo_{nullptr};
   QComboBox* model_combo_{nullptr};
   QLineEdit* model_input_{nullptr};
+  QLabel* model_details_{nullptr};
+  QTextEdit* resolved_config_preview_{nullptr};
   QLineEdit* api_key_input_{nullptr};
   QLabel* provider_target_label_{nullptr};
   QLabel* provider_status_label_{nullptr};

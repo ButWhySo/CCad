@@ -1842,6 +1842,8 @@ The Linux CI CLI test was still vulnerable to shell expansion of the KiCad-style
 
 Configuration now offers an editable model dropdown whose choices change with the selected provider, while compatible and local providers retain a custom model entry path. General Settings now contains theme, grid, autosave, and session-restore controls instead of an empty placeholder. The settings load path now restores project, memory, personalisation, and general values, and the agent defaults include the new general preferences. GUI test coverage, Python syntax validation, the official visual harness, and the physical UI robot passed; screenshots were inspected and harness stderr was empty.
 
+The same settings slice now shows provider capability details and a read-only resolved configuration preview, making the active provider/model/security selection understandable before saving.
+
 ### Sprint 683 - expose native approval status to MCP hosts
 
 Added read-only `ccad_gui_approval_status` to the GUI MCP bridge. External harnesses can now query approval-card visibility and status directly, while mutation execution and human approval remain native GUI responsibilities. Python regression and official visual harness passed; screenshot was inspected and stderr was empty.
