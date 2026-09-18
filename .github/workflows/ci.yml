@@ -55,15 +55,21 @@ jobs:
           set -o pipefail
           ctest --test-dir build --output-on-failure 2>&1 | tee ctest-core-linux.log
       - name: Verbose CLI diagnostics
-        if: failure()
+        if: always()
         continue-on-error: true
         run: |
           set -o pipefail
           ctest --test-dir build -R '^cli$' --output-on-failure -V 2>&1 | tee ctest-cli-linux-verbose.log
       - name: Publish Linux CLI diagnostics
-        if: failure()
+        if: always()
         continue-on-error: true
         run: |
+          echo '## Linux CTest diagnostics' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f ctest-core-linux.log ]; then
+            echo '```text' >> "$GITHUB_STEP_SUMMARY"
+            tail -n 220 ctest-core-linux.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
           echo '## Linux CLI diagnostics' >> "$GITHUB_STEP_SUMMARY"
           if [ -f ctest-cli-linux-verbose.log ]; then
             echo '```text' >> "$GITHUB_STEP_SUMMARY"
@@ -99,15 +105,21 @@ jobs:
           set -o pipefail
           ctest --test-dir build --output-on-failure 2>&1 | tee ctest-gui-linux.log
       - name: Verbose CLI diagnostics
-        if: failure()
+        if: always()
         continue-on-error: true
         run: |
           set -o pipefail
           ctest --test-dir build -R '^cli$' --output-on-failure -V 2>&1 | tee ctest-cli-gui-linux-verbose.log
       - name: Publish Linux GUI CLI diagnostics
-        if: failure()
+        if: always()
         continue-on-error: true
         run: |
+          echo '## Linux GUI CTest diagnostics' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f ctest-gui-linux.log ]; then
+            echo '```text' >> "$GITHUB_STEP_SUMMARY"
+            tail -n 220 ctest-gui-linux.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
           echo '## Linux GUI CLI diagnostics' >> "$GITHUB_STEP_SUMMARY"
           if [ -f ctest-cli-gui-linux-verbose.log ]; then
             echo '```text' >> "$GITHUB_STEP_SUMMARY"
