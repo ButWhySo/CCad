@@ -2302,3 +2302,8 @@ Sprint 806 emits explicit `backend_state` after Python orchestrator startup,
 separate from provider adapter `provider_state`. Harnesses can distinguish live
 runtime from unavailable/missing-key provider without network probing; GUI
 verification remains paused.
+
+Sprint 807 bridges `backend_state` into AgentPanel workspace state as separate
+`backend_ready` and `backend_provider_initialized` fields. Harnesses can inspect
+runtime liveness through the native panel without telemetry UI; GUI verification
+remains paused.

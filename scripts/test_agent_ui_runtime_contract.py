@@ -21,6 +21,8 @@ review = (root / "src" / "ccad_gui" / "review_window.cpp").read_text(encoding="u
 assert 'agentRole="chatBubbleUser"' not in review
 assert 'agentRole="toolCard"' not in review
 assert '"method": "backend_state"' in (root / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
+assert 'backend_provider_initialized_' in panel
+assert '"backend_ready"' in panel
 assert 'chat_history_layout_->addWidget(bubble);' not in panel
 assert 'appendChatMessage("agent", activity_text);' in panel
 assert 'chat_scroll_area_' not in panel

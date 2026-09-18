@@ -1613,3 +1613,7 @@ duplicate mid-file include removed after single-stream consolidation.
 Sprint 806 handover: orchestrator emits `backend_state` after initial provider
 setup. `ready` means Python runtime is alive; `provider_initialized` reports
 adapter construction separately; no network or secret values are involved.
+
+Sprint 807 handover: AgentPanel consumes `backend_state` and publishes
+`backend_ready` plus `backend_provider_initialized` in workspace state. These
+are machine-readable only; no status-chip UI was added.

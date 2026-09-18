@@ -1340,6 +1340,10 @@ void AgentPanel::handlePythonOutput() {
           if (visible && ok && spacing_mm > 0.0) grid_settings_cb_(spacing_mm, true);
           else if (!visible) grid_settings_cb_(1.0, false);
         }
+      } else if (obj.contains("method") && obj["method"].toString() == "backend_state") {
+        const QJsonObject params = obj["params"].toObject();
+        backend_ready_ = params["ready"].toBool(false);
+        backend_provider_initialized_ = params["provider_initialized"].toBool(false);
       } else if (obj.contains("method") && obj["method"].toString() == "provider_state") {
         const QJsonObject params = obj["params"].toObject();
         if (!params["model"].toString().trimmed().isEmpty()) {
@@ -2876,6 +2880,8 @@ QString AgentPanel::workspaceStateJson() const {
   response.insert("workspace", workspaceText());
   response.insert("diagnostics", diagnosticsText());
   response.insert("status", statusText());
+  response.insert("backend_ready", backend_ready_);
+  response.insert("backend_provider_initialized", backend_provider_initialized_);
   response.insert("result_state", resultStateText());
   response.insert("action_id", actionIdText());
   response.insert("live_method", liveMethodText());

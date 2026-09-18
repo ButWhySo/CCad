@@ -967,3 +967,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   consolidation; GUI verification remains paused.
 - [x] Sprint 806: expose separate Python backend readiness from provider
   adapter readiness for harnesses; GUI verification remains paused.
+- [x] Sprint 807: bridge backend/provider readiness into native Agent workspace
+  state without visible telemetry chips; GUI verification remains paused.

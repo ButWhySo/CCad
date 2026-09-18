@@ -278,6 +278,8 @@ class AgentPanel final : public QWidget {
   int run_queue_failed_count_ = 0;
   int run_steps_total_ = 3;
   bool run_queue_cancelable_ = true;
+  bool backend_ready_ = false;
+  bool backend_provider_initialized_ = false;
   QString trace_id_;
   QString span_id_;
   bool tool_result_ack_visible_ = false;

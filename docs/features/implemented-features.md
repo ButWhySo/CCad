@@ -2652,3 +2652,5 @@ The stream is directly hosted in the Agent layout; an obsolete nested scroll
 area/container was removed, preventing double scrollbars and wrapper gaps.
 The Python orchestrator also emits separate `backend_state` readiness, so
 harnesses can distinguish a live local runtime from provider adapter readiness.
+Native Agent workspace state now carries that distinction as `backend_ready`
+and `backend_provider_initialized`, without exposing telemetry chips or secrets.
