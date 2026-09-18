@@ -2379,6 +2379,10 @@ actual contributors exactly.
 Sprint 826 adds hash-only `previous_revision` to `context_state`, allowing
 harnesses to chain context changes without receiving context contents.
 
+Sprint 827 adds two-message subprocess proof that the second context event
+references the first revision hash; context delta chaining is now runtime
+tested without network or provider credentials.
+
 Sprint 824 fixes native CLI MCP stdio framing: `notifications/initialized` is
 now consumed silently per JSON-RPC/MCP semantics, with a C++ regression test
 proving following requests remain parseable. GUI verification remains paused.
