@@ -2236,3 +2236,6 @@ Sprint 791 makes Settings' Test Provider path terminal: missing credentials or
 adapter failure now emits redacted `provider_state` instead of leaving the UI
 to time out as if no response arrived. No provider request is made by this
 fallback.
+
+Bundled-venv subprocess proof now exercises missing-key terminal output with an
+unsupported provider fixture; secret and stderr redaction remain asserted.

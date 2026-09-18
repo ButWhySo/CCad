@@ -21,6 +21,17 @@ assert '"provider": "google_gemini"' in run.stdout
 assert '"secret_value_visible": false' in run.stdout
 assert secret not in run.stdout
 assert secret not in run.stderr
+
+terminal = subprocess.run(
+    [sys.executable, str(ROOT / "src" / "ccad_agent" / "orchestrator.py")],
+    input=json.dumps({"method": "agent.test_provider", "params": {
+        "provider": "unsupported_test_provider", "model": "test-model",
+        "secret": ""}}) + "\n", text=True, capture_output=True, env=env,
+    timeout=20, check=True)
+assert '"method": "provider_state"' in terminal.stdout
+assert '"error": "missing_api_key"' in terminal.stdout
+assert secret not in terminal.stdout
+assert secret not in terminal.stderr
 source = (ROOT / "src" / "ccad_agent" / "orchestrator.py").read_text()
 assert 'os.environ.get("CCAD_GEMINI_MODEL") or model_name' in source
 assert 'method == "agent.test_provider"' in source
