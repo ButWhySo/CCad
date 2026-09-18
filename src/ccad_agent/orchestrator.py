@@ -680,6 +680,8 @@ def bound_session_history(messages):
 
 def bound_context_text(context):
     """Cap provider-bound project context while preserving truncation signal."""
+    if not isinstance(context, str):
+        context = str(context or "")
     try:
         limit = int(os.environ.get("CCAD_AGENT_CONTEXT_LIMIT", "32768"))
     except ValueError:
