@@ -2072,6 +2072,13 @@ Sprint 752 fixes provider-run state truth: tool-call responses now report
 `awaiting_tool_approval` until client approval/result, rather than falsely
 reporting `completed` before mutation review.
 
+Sprint 753 moves that state emission to the mutating-tool boundary itself.
+The Python runner now announces `awaiting_tool_approval` immediately before
+waiting for the client result, so a live broker cannot hide the approval state
+behind the final provider response. This was verified with syntax, the
+no-network approval contract, the localhost OpenAI-compatible boundary, and
+the recursion contract. GUI validation remains paused by request.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.

@@ -27,6 +27,8 @@ def context_revision(context: str) -> str:
     return hashlib.sha256(context.encode("utf-8")).hexdigest()[:16]
 
 broker_wait_enabled = False
+current_run_trace_id = ""
+current_run_span_id = ""
 inbound_queue = None
 deferred_queue = queue.Queue()
 pending_calls = {}
@@ -87,6 +89,15 @@ def new_tool_call_id(tool_name: str) -> str:
     """Create a per-invocation correlation ID; never reuse across retries."""
     return f"{tool_name}-{uuid.uuid4().hex}"
 
+def emit_tool_approval_state():
+    """Publish approval before a mutating tool blocks on the client result."""
+    if not current_run_trace_id:
+        return
+    emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
+        "run_state": "awaiting_tool_approval", "trace_id": current_run_trace_id,
+        "span_id": current_run_span_id, "token_usage": "unavailable", "cost": "unavailable",
+    }})
+
 def checkpoint_tool_call_id(tool_name: str, args: dict) -> str:
     """Stable ID lets interrupted tool re-execution correlate after restart."""
     encoded = json.dumps({"tool": tool_name, "args": args}, sort_keys=True,
@@ -111,6 +122,7 @@ def dispatch_client_tool(tool_name: str, args: dict, *, await_result: bool = Fal
         "tool": tool_name, "args": args, "call_id": call_id,
     }})
     if broker_wait_enabled and await_result:
+        emit_tool_approval_state()
         if checkpoint_saver is not None:
             return dispatch_checkpointed_tool(tool_name, args)
         return wait_for_broker_result(call_id)
@@ -172,6 +184,7 @@ def ui_place_via(x_mm: float, y_mm: float, dry_run: bool = False):
         "call_id": call_id,
     }})
     if broker_wait_enabled and not dry_run:
+        emit_tool_approval_state()
         if checkpoint_saver is not None:
             return dispatch_checkpointed_tool("ui.place_via", args)
         return wait_for_broker_result(call_id)
@@ -186,6 +199,7 @@ def ui_add_track(x1: float, y1: float, x2: float, y2: float):
                else new_tool_call_id("ui-route-track"))
     emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.route_track", "args": args, "call_id": call_id}})
     if broker_wait_enabled:
+        emit_tool_approval_state()
         if checkpoint_saver is not None:
             return dispatch_checkpointed_tool("ui.route_track", args)
         return wait_for_broker_result(call_id)
@@ -209,6 +223,7 @@ def ui_add_polygon(points: List[List[float]], layer: str):
                    else new_tool_call_id("ui-add-zone"))
         emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.add_zone", "args": args, "layer": layer, "call_id": call_id}})
         if broker_wait_enabled:
+            emit_tool_approval_state()
             if checkpoint_saver is not None:
                 return dispatch_checkpointed_tool("ui.add_zone", args)
             return wait_for_broker_result(call_id)
@@ -1129,6 +1144,8 @@ if __name__ == "__main__":
 
                 run_trace_id = "ccad-agent-" + uuid.uuid4().hex
                 run_span_id = uuid.uuid4().hex[:16]
+                current_run_trace_id = run_trace_id
+                current_run_span_id = run_span_id
                 emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
                     "run_state": "running", "trace_id": run_trace_id,
                     "span_id": run_span_id, "provider": os.environ.get("CCAD_PROVIDER", "configured"),

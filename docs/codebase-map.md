@@ -375,6 +375,12 @@ The Agent pane session strip now exposes functional icon `QPushButton` controls 
 
 The first supported provider families are `openai`, `openai_compatible`, `anthropic`, `google_gemini`, and `local_model_server`. `google_gemini` carries the current key-restriction warning and 2026-06-19 unrestricted-key cutoff from Google documentation. Sprint 197 is headless metadata only; Sprint 205 adds GUI provider-readiness controls and UI-map targeting. Provider execution, routing, and secret-value handling still require a later runner sprint with explicit approvals and audit rules.
 
+Sprint 753 adds truthful live approval timing to `src/ccad_agent/orchestrator.py`:
+`emit_tool_approval_state()` is called immediately before a broker-waiting
+mutating tool blocks for the client result. This is separate from the final
+run-state calculation, which remains a fallback for returned tool calls. The
+contract test must cover the helper and its mutating-tool call sites.
+
 ## Sprint 198 Agent Observability Configuration Addendum
 
 `src/ccad_cli/agent_observability_config.hpp/.cpp` owns the headless trace-export configuration contract. It returns five JSON surfaces: `agentObservabilityConfigJson()`, `agentTraceExportSchemaJson()`, `agentTraceExportTemplateJson()`, `agentTraceRedactionPolicyJson()`, and `agentTraceExportDryRunJson()`. The schema tracks OpenTelemetry GenAI and Langfuse-ready metadata, the template is disabled by default, the redaction policy refuses prompt/tool/screenshot/design-file export by default, and the dry run reports only env-var presence with `headers_value:"redacted"`. It must never emit OTLP header values, call network APIs, export telemetry, read project files, or enable tracing without an explicit future runner.
