@@ -597,7 +597,16 @@ def init_provider():
     emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Agent provider '{provider}' unavailable. Configure its environment in Agent Settings; local CCad tools remain available."}})
     return False
 
-init_provider()
+provider_initialized = init_provider()
+# Runtime readiness is independent from provider readiness. Harnesses can now
+# distinguish "Python agent process is alive" from "selected API adapter works".
+emit({"jsonrpc": "2.0", "method": "backend_state", "params": {
+    "runtime": "python",
+    "ready": True,
+    "provider_initialized": bool(provider_initialized),
+    "network_access": "not_probed",
+    "secret_value_visible": False,
+}})
 
 
 def invoke_agent_run(state):

@@ -2297,3 +2297,8 @@ bubble renderer; no runtime behavior changes. GUI verification remains paused.
 Sprint 805 removes the duplicate mid-file `QTextBrowser` include after chat
 renderer consolidation; no runtime behavior changes. GUI verification remains
 paused.
+
+Sprint 806 emits explicit `backend_state` after Python orchestrator startup,
+separate from provider adapter `provider_state`. Harnesses can distinguish live
+runtime from unavailable/missing-key provider without network probing; GUI
+verification remains paused.

@@ -1609,3 +1609,7 @@ legacy bubble renderer removal.
 
 Sprint 805 handover: AgentPanel keeps one top-level `QTextBrowser` include;
 duplicate mid-file include removed after single-stream consolidation.
+
+Sprint 806 handover: orchestrator emits `backend_state` after initial provider
+setup. `ready` means Python runtime is alive; `provider_initialized` reports
+adapter construction separately; no network or secret values are involved.
