@@ -1662,3 +1662,7 @@ matching Python-to-client wire events; the contract test rejects the stale
 
 Sprint 851 handover: `provider_state` discovery uses the emitted
 `execution_enabled` and `error` keys; contract tests reject stale aliases.
+
+Sprint 852 handover: ordinary `tool_call` response discovery now lists only
+the emitted `tool`, `args`, and `call_id`; approval/side-effect policy remains
+on tool metadata and approval decision messages.

@@ -204,8 +204,7 @@ def orchestrator_method_catalog():
                      "network_access", "error",
                      "secret_value_visible"]},
                  "tool_call": {"fields": [
-                     "tool", "args", "call_id", "approval_required",
-                     "side_effect"]},
+                     "tool", "args", "call_id"]},
                  "context_state": {"fields": [
                      "revision", "previous_revision", "changed", "change_kind",
                      "content_present", "content_size", "original_content_size",

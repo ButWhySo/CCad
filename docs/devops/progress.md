@@ -2303,6 +2303,11 @@ Sprint 851 corrects provider-state discovery to match emitted keys
 `execution_enabled` and `error`; stale `execution_ready`/`error_category`
 names are rejected by contract tests. GUI verification remains paused.
 
+Sprint 852 narrows the tool-call response contract to the actual emitted
+`tool`, `args`, and `call_id` keys; approval and side-effect policy remains
+documented on tool metadata and approval responses. GUI verification remains
+paused.
+
 Sprint 837 adds explicit Cerebras model-catalog response from the documented
 curated snapshot and enables Settings Refresh for Cerebras. OpenRouter remains
 the only network-fetched catalog; Cerebras refresh is quota-safe and offline.

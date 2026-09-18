@@ -1033,3 +1033,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   field; no GUI or provider request.
 - [x] Sprint 851: align provider-state discovery with emitted readiness/error
   keys; no GUI or provider request.
+- [x] Sprint 852: align tool-call response fields with actual emitted payload;
+  no GUI or provider request.
