@@ -2408,3 +2408,6 @@ values now return `-32602` instead of crashing the stdio child.
 
 Sprint 832 also rejects non-object JSON roots before field access, closing the
 remaining bridge crash path for list/string/null request payloads.
+
+Sprint 833 validates MCP `params` root type before dispatch, preventing
+malformed list/scalar params from reaching tool routing.

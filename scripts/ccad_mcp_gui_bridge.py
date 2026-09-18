@@ -76,6 +76,8 @@ def main():
             method = request.get("method", "")
             if not isinstance(method, str):
                 raise ValueError("method must be a string")
+            if "params" in request and not isinstance(request["params"], dict):
+                raise ValueError("params must be an object")
             if method == "initialize":
                 result = {"protocolVersion": "2024-11-05", "capabilities": {"tools": {}},
                           "serverInfo": {"name": "ccad-gui-bridge", "version": "1.0.0"}}
