@@ -204,10 +204,10 @@ private slots:
     QVERIFY(models != nullptr);
     provider->setCurrentIndex(provider->findData("cerebras"));
     QCOMPARE(models->currentText(), QString("gpt-oss-120b"));
-    QVERIFY(models->findText("zai-glm-4.7") >= 0);
-    models->setEditText("claude-opus-4-1gpt-4o-test");
+    QVERIFY(models->findText("qwen-3.8-27b") >= 0);
+    models->setEditText("claude-opus-5gpt-5.1-test");
     provider->setCurrentIndex(provider->findData("anthropic"));
-    QCOMPARE(models->currentText(), QString("claude-opus-4-1"));
+    QCOMPARE(models->currentText(), QString("claude-fable-5-1"));
     provider->setCurrentIndex(provider->findData("openai"));
     QCOMPARE(models->currentText(), QString("gpt-5.1"));
   }

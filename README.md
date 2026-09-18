@@ -29,11 +29,11 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 
 ## Gemini BYOK quickstart
 
-Set credentials only in the PowerShell process that launches CCad. Replace the model with any model supported by your Google account; `gemini-2.5-flash` is a fast smoke-test choice.
+Set credentials only in the PowerShell process that launches CCad. Replace the model with any model supported by your Google account; `gemini-3.8-flash` is the current fast smoke-test choice.
 
 ```powershell
 $env:GEMINI_API_KEY = "PASTE_KEY_HERE"
-$env:CCAD_GEMINI_MODEL = "gemini-2.5-flash"
+$env:CCAD_GEMINI_MODEL = "gemini-3.8-flash"
 .\build\ccad.exe agent provider-status
 $env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
 .\build-qt\ccad_gui.exe

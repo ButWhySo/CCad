@@ -909,3 +909,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 766: reconcile provider/model presets with first-party catalogs and remove the stale Cerebras `qwen-3-32b` fallback; update compatibility docs and no-network contracts in the same change.
 - [x] Sprint 767: classify provider failures into actionable safe categories while preserving quota and secret protections; add no-network contract coverage.
 - [x] Sprint 768: remove stale Anthropic, Gemini, and OpenAI runtime fallback IDs; enforce current defaults with no-network contract coverage.
+- [x] Sprint 769: synchronize GUI preset tests and Gemini quickstart with current documented IDs; remove retired Gemini 2.5 presets.
