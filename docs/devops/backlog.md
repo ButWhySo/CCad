@@ -46,6 +46,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [x] Sprint 872: preserve approval-required metadata inside durable checkpoint interrupts across resume.
 - [x] Sprint 873: assert approval-required metadata in the real checkpoint restart fixture.
 - [x] Sprint 874: fresh-DB proof covers checkpoint approval accept, denial, and cancellation branches.
+- [x] Sprint 875: make optional checkpoint gate execute all decision branches with fresh temporary DBs.
 - [x] Sprint 812: canonicalize malformed JSON-RPC tool correlation IDs before pending-call lookup; invalid IDs now fail safely.
 - [x] Sprint 813: checkpointed tool cancellation resumes matching thread with structured cancellation error; stale cancellation remains rejected.
 - [x] Sprint 814: two-process checkpoint test proves cancellation result survives process restart.

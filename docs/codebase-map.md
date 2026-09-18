@@ -1725,3 +1725,5 @@ Sprint 872 handover: `dispatch_checkpointed_tool()` stores `approval_required:tr
 Sprint 873 handover: `scripts/test_agent_checkpoint_restart.py` now validates the actual first-process interrupt payload contains `approval_required:true`; run with `-IncludeCheckpointRestart` for restart proof.
 
 Sprint 874 handover: fresh DB runs of `test_agent_checkpoint_restart.py` passed first/accept, first/denial, and first/cancel branches; no provider/network or GUI was used.
+
+Sprint 875 handover: `run_agent_contract_gate.ps1 -IncludeCheckpointRestart` now owns DB creation, phase sequencing, and cleanup for accept/denial/cancel. `scripts/test_checkpoint_gate_runner_contract.py` locks the runner shape.

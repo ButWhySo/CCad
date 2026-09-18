@@ -2579,3 +2579,7 @@ Headless-only batch: checkpoint restart fixture now inspects the actual interrup
 ### Sprint 874 — checkpoint approval decision branches
 
 Fresh-DB headless proof complete for checkpoint creation plus accept, denial, and cancellation resume branches; each retained the approval-bearing interrupt and completed its expected terminal path. GUI/API/build validation remains paused.
+
+### Sprint 875 — checkpoint gate runner
+
+Headless harness fix: `run_agent_contract_gate.ps1 -IncludeCheckpointRestart` now runs accept, denial, and cancellation with fresh temporary SQLite DBs instead of invoking the multi-phase fixture without its required argument. Added an offline runner contract; GUI/API/build validation remains paused.

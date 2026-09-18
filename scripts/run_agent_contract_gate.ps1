@@ -20,6 +20,10 @@ $tests = Get-ChildItem -LiteralPath (Join-Path $root "scripts") -Filter "test_*.
     }
 if (-not $IncludeCheckpointRestart) {
     $tests = $tests | Where-Object { $_.Name -ne "test_agent_checkpoint_restart.py" }
+} else {
+    # This fixture is multi-phase and needs an explicit durable DB per branch;
+    # do not feed it through the ordinary one-argument test loop.
+    $tests = $tests | Where-Object { $_.Name -ne "test_agent_checkpoint_restart.py" }
 }
 
 $failed = @()
@@ -29,5 +33,23 @@ foreach ($test in $tests) {
 }
 if ($failed.Count -gt 0) {
     throw "Agent contract gate failed: $($failed -join ', ')"
+}
+if ($IncludeCheckpointRestart) {
+    $checkpointTest = Join-Path $root "scripts\test_agent_checkpoint_restart.py"
+    foreach ($decision in @("second", "denial", "cancel")) {
+        $checkpointDb = Join-Path $env:TEMP ("ccad-checkpoint-" + [guid]::NewGuid().ToString("N") + ".sqlite")
+        try {
+            $env:CCAD_RESTART_PHASE = "first"
+            & $python $checkpointTest $checkpointDb
+            if ($LASTEXITCODE -ne 0) { throw "checkpoint first phase failed ($decision)" }
+            $env:CCAD_RESTART_PHASE = $decision
+            & $python $checkpointTest $checkpointDb
+            if ($LASTEXITCODE -ne 0) { throw "checkpoint $decision phase failed" }
+        } finally {
+            Remove-Item -LiteralPath $checkpointDb -Force -ErrorAction SilentlyContinue
+            Remove-Item Env:CCAD_RESTART_PHASE -ErrorAction SilentlyContinue
+        }
+    }
+    Write-Output "PASS checkpoint restart branches: accept, denial, cancel"
 }
 Write-Output "PASS bundled-venv offline agent gate: $($tests.Count) scripts"
