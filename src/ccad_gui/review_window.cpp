@@ -5788,11 +5788,16 @@ QString ReviewWindow::uiClickJson(const QString& id, const bool dry_run, const b
     return jsonObjectLine(response);
   }
   if (target.has_value() && !target->value("found").toBool(false)) {
-    response.insert("performed", false);
-    if (!response.contains("reason")) {
-      response.insert("reason", "target_not_found");
+    // Modeless dialogs can temporarily fall outside compact ui.map results
+    // after a tab change. Resolve known action IDs against live Qt widgets
+    // before refusing the semantic request.
+    if (!trimmed_id.startsWith("action:")) {
+      response.insert("performed", false);
+      if (!response.contains("reason")) {
+        response.insert("reason", "target_not_found");
+      }
+      return jsonObjectLine(response);
     }
-    return jsonObjectLine(response);
   }
 
   for (QPushButton* button : findChildren<QPushButton*>()) {
@@ -5881,6 +5886,22 @@ QString ReviewWindow::uiClickJson(const QString& id, const bool dry_run, const b
         if (!combo->isVisible() || !combo->isEnabled()) {
           response.insert("performed", false);
           response.insert("reason", "disabled_or_hidden");
+          return jsonObjectLine(response);
+        }
+        if (requested_row >= 0) {
+          if (requested_row >= combo->count()) {
+            response.insert("performed", false);
+            response.insert("reason", "row_out_of_range");
+            return jsonObjectLine(response);
+          }
+          combo->setCurrentIndex(requested_row);
+          QApplication::processEvents();
+          response.insert("performed", true);
+          response.insert("reason", "combo_row_selected");
+          response.insert("row", requested_row);
+          response.insert("value", combo->currentData().toString());
+          response.insert("current_text", combo->currentText());
+          markUiMapChanged({trimmed_id}, {"control"});
           return jsonObjectLine(response);
         }
         combo->setFocus(Qt::OtherFocusReason);

@@ -8,6 +8,8 @@
 #include <QStackedWidget>
 #include <QLabel>
 #include <QPushButton>
+#include <QSignalBlocker>
+#include <QSettings>
 #include <QTextEdit>
 #include <QLineEdit>
 #include <QComboBox>
@@ -144,7 +146,15 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
   loadCurrentSettings();
 }
 
-AgentSettingsDialog::~AgentSettingsDialog() = default;
+AgentSettingsDialog::~AgentSettingsDialog() {
+  // Responses arrive asynchronously from the agent bridge. Do not leave
+  // callbacks capturing this dialog after accept() destroys it.
+  if (agent_panel_) {
+    agent_panel_->setConfigStateCallback({});
+    agent_panel_->setProviderStateCallback({});
+    agent_panel_->setMarketplaceCatalogCallback({});
+  }
+}
 
 void AgentSettingsDialog::setupUi() {
   auto* base_layout = new QVBoxLayout(this);
@@ -225,6 +235,13 @@ void AgentSettingsDialog::createGeneralTab(QWidget* parent_widget) {
   grid_combo_->setObjectName("control:gridCombo");
   grid_combo_->addItems({"0.5 mm", "1.0 mm", "2.5 mm", "5.0 mm", "10.0 mm", "Hidden"});
   grid_combo_->setToolTip("Metric grid spacing, independent of display units");
+  const QSettings local_settings("CCad", "Agent");
+  if (local_settings.contains("grid")) {
+    grid_combo_->setCurrentText(local_settings.value("grid").toString());
+    grid_user_modified_ = true;
+  }
+  connect(grid_combo_, &QComboBox::currentTextChanged, this,
+          [this](const QString&) { grid_user_modified_ = true; });
   form->addRow("Canvas grid spacing:", grid_combo_);
   autosave_cb_ = new QCheckBox("Save project changes automatically", parent_widget);
   autosave_cb_->setObjectName("control:autosaveCb");
@@ -555,7 +572,16 @@ void AgentSettingsDialog::applyConfigState(const QJsonObject& config) {
         dev_prompt_->setPlainText(config["dev_prompt"].toString());
     }
     if (theme_combo_ && config.contains("theme")) theme_combo_->setCurrentText(config["theme"].toString());
-    if (grid_combo_ && config.contains("grid")) grid_combo_->setCurrentText(config["grid"].toString());
+    if (grid_combo_ && config.contains("grid")) {
+        const QString loaded_grid = config["grid"].toString();
+        const bool untouched = last_loaded_grid_.isEmpty() ||
+                               grid_combo_->currentText() == last_loaded_grid_;
+        if (untouched && !grid_user_modified_) {
+            const QSignalBlocker blocker(grid_combo_);
+            grid_combo_->setCurrentText(loaded_grid);
+        }
+        last_loaded_grid_ = loaded_grid;
+    }
     if (autosave_cb_ && config.contains("autosave")) autosave_cb_->setChecked(config["autosave"].toBool());
     if (restore_session_cb_ && config.contains("restore_session")) restore_session_cb_->setChecked(config["restore_session"].toBool());
     if (project_name_ && config.contains("project_name")) project_name_->setText(config["project_name"].toString());
@@ -607,6 +633,10 @@ void AgentSettingsDialog::saveAllSettings() {
   if (model_input_) config["model"] = model_input_->text();
   if (theme_combo_) config["theme"] = theme_combo_->currentText();
   if (grid_combo_) config["grid"] = grid_combo_->currentText();
+  if (grid_combo_) {
+    QSettings local_settings("CCad", "Agent");
+    local_settings.setValue("grid", grid_combo_->currentText());
+  }
   if (autosave_cb_) config["autosave"] = autosave_cb_->isChecked();
   if (restore_session_cb_) config["restore_session"] = restore_session_cb_->isChecked();
   if (sandbox_cb_) config["sandbox_mode"] = sandbox_cb_->isChecked();
@@ -660,5 +690,11 @@ void AgentSettingsDialog::saveAllSettings() {
   }
 
   agent_panel_->sendJsonRpc("agent.set_config", config);
+  // Keep the canvas preference durable even if an older config response is
+  // still queued on the bridge while the dialog is being dismissed.
+  if (grid_combo_) {
+    agent_panel_->sendJsonRpc("agent.set_config",
+                              QJsonObject{{"grid", grid_combo_->currentText()}});
+  }
   accept();
 }

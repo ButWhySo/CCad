@@ -701,7 +701,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   connect(settings_btn, &QPushButton::clicked, this, [this]() {
     // Keep Settings modeless: UI-map/MCP clients must continue querying the
     // main window while its controls are visible and actionable.
-    auto* dialog = new AgentSettingsDialog(nullptr);
+    auto* dialog = new AgentSettingsDialog(this);
     dialog->setAttribute(Qt::WA_DeleteOnClose);
     dialog->show();
     dialog->raise();

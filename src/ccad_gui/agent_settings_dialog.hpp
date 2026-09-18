@@ -3,6 +3,7 @@
 #include <QDialog>
 #include <QJsonObject>
 #include <QWidget>
+#include <QString>
 
 class QListWidget;
 class QStackedWidget;
@@ -66,6 +67,8 @@ private:
   QComboBox* grid_combo_{nullptr};
   QCheckBox* autosave_cb_{nullptr};
   QCheckBox* restore_session_cb_{nullptr};
+  bool grid_user_modified_{false};
+  QString last_loaded_grid_;
 
   // Personalisation tab
   QLineEdit* follow_up_{nullptr};

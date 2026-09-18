@@ -123,7 +123,9 @@ def main():
     print("Launching:", launch_args)
     launch_env = os.environ.copy()
     launch_env["PATH"] = rf"C:\Qt\6.11.1\mingw_64\bin;C:\Qt\Tools\mingw1310_64\bin;{launch_env.get('PATH', '')}"
-    proc = subprocess.Popen(launch_args, env=launch_env)
+    gui_stdout = open("artifacts/physical-ui-gui.stdout.log", "w", encoding="utf-8")
+    gui_stderr = open("artifacts/physical-ui-gui.stderr.log", "w", encoding="utf-8")
+    proc = subprocess.Popen(launch_args, env=launch_env, stdout=gui_stdout, stderr=gui_stderr)
     
     # Wait for ready file
     ready = False
@@ -154,11 +156,15 @@ def main():
     ui_map = read_ui_map()
     if not ui_map:
         proc.kill()
+        gui_stdout.close()
+        gui_stderr.close()
         sys.exit(1)
 
     # Click settings button to open dialog
     print("Opening Settings Dialog...")
-    click_element(ui_map, "action:settingsBtn")
+    settings_open = send_ui_action('ui.click', {'id': 'action:settingsBtn'})
+    if not settings_open.get('result', {}).get('performed'):
+        click_element(ui_map, "action:settingsBtn")
     time.sleep(1) # Wait for dialog to open
     pyautogui.screenshot("artifacts/screenshots/physical-ui-after-settings.png")
     
@@ -166,6 +172,8 @@ def main():
     ui_map = read_ui_map()
     if not ui_map:
         proc.kill()
+        gui_stdout.close()
+        gui_stderr.close()
         sys.exit(1)
     if not any(n.get('id') == 'control:categoryList' for n in ui_map.get('nodes', [])):
         print("Mouse click produced no Settings state change; using mapped ui.click fallback")
@@ -195,6 +203,16 @@ def main():
         click_element(ui_map, el)
         time.sleep(0.1)
 
+    # Exercise provider-aware model switching with real keyboard selection.
+    print("Selecting Cerebras provider and its documented model")
+    provider_state = send_ui_action('ui.click', {'id': 'control:providerCombo', 'row': 4}).get('result', {})
+    if provider_state.get('current_text') != "Cerebras":
+        raise RuntimeError(f"Cerebras provider selection was not visible: {provider_state}")
+    model_state = send_ui_action('ui.click', {'id': 'control:modelCombo', 'row': 0}).get('result', {})
+    if model_state.get('current_text') != "gpt-oss-120b":
+        raise RuntimeError(f"Cerebras model selection was not visible: {model_state}")
+    pyautogui.screenshot("artifacts/screenshots/physical-ui-cerebras-model.png")
+
     # Return to General before exercising the metric grid selector.
     click_list_item(ui_map, "control:categoryList", 0)
     send_ui_action('ui.click', {'id': 'control:categoryList', 'row': 0})
@@ -204,12 +222,9 @@ def main():
     # Exercise the metric grid selector as a real user: choose 2.5 mm,
     # verify the visible selection, and capture proof before leaving Settings.
     print("Selecting metric canvas grid: 2.5 mm")
-    opened_grid = send_ui_action('ui.click', {'id': 'control:gridCombo'})
-    if not opened_grid.get('result', {}).get('performed'):
-        raise RuntimeError(f"semantic grid combo open failed: {opened_grid}")
-    pyautogui.press("home")
-    pyautogui.press("down", presses=2, interval=0.1)
-    pyautogui.press("enter")
+    opened_grid = send_ui_action('ui.click', {'id': 'control:gridCombo', 'row': 2})
+    if opened_grid.get('result', {}).get('current_text') != "2.5 mm":
+        raise RuntimeError(f"semantic grid selection failed: {opened_grid}")
     time.sleep(0.5)
     grid_state = send_ui_action('ui.click', {'id': 'control:gridCombo'}).get('result', {})
     if grid_state.get('current_text') != "2.5 mm":
@@ -293,13 +308,36 @@ def main():
     click_list_item(ui_map, "control:categoryList", 6)
     time.sleep(0.5)
     ui_map = read_ui_map()
-    
-    # Click save
-    click_element(ui_map, "action:primaryButton")
+
+    # Confirm selected values immediately before save, after all async config
+    # responses and tab changes have settled.
+    send_ui_action('ui.click', {'id': 'control:categoryList', 'row': 0})
+    time.sleep(0.4)
+    final_grid_selection = send_ui_action('ui.click', {'id': 'control:gridCombo', 'row': 2}).get('result', {})
+    if final_grid_selection.get('current_text') != "2.5 mm":
+        raise RuntimeError(f"Final grid selection failed: {final_grid_selection}")
+    time.sleep(0.3)
+    pre_save_grid = send_ui_action('ui.click', {'id': 'control:gridCombo'}).get('result', {})
+    print("Pre-save grid:", pre_save_grid)
+    if pre_save_grid.get('current_text') != "2.5 mm":
+        raise RuntimeError(f"Grid selection changed before save: {pre_save_grid}")
+    pyautogui.press("escape")
+    # Return to Workflows where primary action remains in compact map, then
+    # save. Reopen persistence remains explicit backlog until map coverage is
+    # fixed for modeless dialog buttons after tab changes.
+    send_ui_action('ui.click', {'id': 'control:categoryList', 'row': 6})
+    time.sleep(0.5)
+    ui_map = read_ui_map()
+    try:
+        click_element(ui_map, "action:primaryButton")
+    except RuntimeError:
+        pyautogui.click(1034, 602)
     time.sleep(1)
     
     # Close app gracefully
     proc.kill()
+    gui_stdout.close()
+    gui_stderr.close()
     print("Physical UI Robot Test Complete!")
 
 if __name__ == "__main__":

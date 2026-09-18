@@ -1947,3 +1947,16 @@ The combo click response now exposes `value` and `current_text`, allowing harnes
 prove selection rather than infer it from coordinates. Focused GUI tests passed 3/3,
 full Qt CTest passed 91/91, the official visual harness rendered a board screenshot,
 and all four physical settings screenshots were inspected with empty relevant stderr.
+
+### Sprint 717 - harden live Settings interaction
+
+Fixed the live Settings dialog construction so Save no longer dereferences a missing
+AgentPanel, and cleared dialog callbacks on destruction to prevent late provider or
+catalog responses targeting deleted widgets. Semantic combo actions now accept a row
+and return the selected text, which physically verified Cerebras plus `gpt-oss-120b`
+and the 2.5 mm grid. The physical robot also exercised General, Personalisation, MCP,
+API/provider, Plugins, and Workflows with captured stdout/stderr; the official harness
+rendered and was visually inspected. The compact UI map still loses the modeless
+dialog's primary Save action after some tab changes, so the robot documents and uses
+a bounded coordinate fallback. Reopen persistence of the grid choice is not yet
+proven and remains the next bug; the current dialog can still reload 1.0 mm.

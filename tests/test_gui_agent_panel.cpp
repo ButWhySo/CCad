@@ -153,6 +153,8 @@ private slots:
     // Save
     QTest::mouseClick(save_btn, Qt::LeftButton);
     QVERIFY(dialog.isHidden());
+    // Async config/catalog responses must not call the destroyed dialog.
+    QTest::qWait(750);
   }
 
   void testMarketplaceInteractions() {

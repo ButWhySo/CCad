@@ -1429,3 +1429,11 @@ metric grid preferences through `GridSettingsCallback`; `ReviewWindow` applies
 them only to `BoardCanvasView`, preserving the kernel/project as source of truth.
 `ReviewWindow::uiClickJson()` returns combo `value` and `current_text`, so semantic
 UI clients can verify keyboard/dropdown selection without coordinate inference.
+
+`AgentSettingsDialog` is constructed with its owning `AgentPanel`; Save therefore
+has a valid live callback target. Its destructor clears panel callbacks, and grid
+selection tracking avoids stale asynchronous config responses overwriting a user
+selection. The physical robot verifies provider/model/grid selection and all Settings
+tabs. A remaining limitation is that the compact UI map can omit the modeless dialog's
+primary Save action after tab changes; the robot has a bounded coordinate fallback,
+and grid persistence across reopen is still unproven.

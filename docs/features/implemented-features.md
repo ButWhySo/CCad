@@ -2582,3 +2582,11 @@ The CI workflow compiles agent and test Python sources before protocol tests and
 ### Agent Settings model and general preferences
 
 Agent Settings exposes provider-aware editable model choices, including current OpenAI, Anthropic, and Gemini families plus custom entries for compatible/local endpoints. General Settings exposes theme, canvas grid, autosave, and session restoration preferences. Saved configuration is reloaded into the dialog across project, memory, personalisation, and general fields. Provider/API secrets remain session-only and are never persisted.
+
+The physical Settings harness now selects Cerebras and its `gpt-oss-120b` model by
+semantic row, selects a metric grid, enters a session-only dummy key, and reaches the
+provider-test terminal state. Save no longer crashes the live modeless dialog because
+the dialog receives its owning AgentPanel and unregisters callbacks on close. Reopen
+verification of the selected grid is deliberately not claimed yet; the Save action's
+compact UI-map coverage after tab switching and the resulting persistence path remain
+backlog items.
