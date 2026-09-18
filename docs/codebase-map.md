@@ -1452,3 +1452,11 @@ requirements before running it.
 Cross-probe CLI tests use one shell-neutral packet literal. Do not add a shell escape
 backslash to `$NET`; Linux single-quoted arguments preserve it and change packet-kind
 classification.
+
+### Sprint 721 CI evidence boundary
+
+`.github/workflows/ci.yml` always publishes Linux CTest and verbose CLI logs, and
+annotates each parsed failed test through GitHub Actions. Local Qt build-qt currently
+passes 91/91 tests and the official demo screenshot was inspected. Remote Linux
+failure remains unresolved until authenticated annotations or a working Linux
+runtime exposes the failing assertion; Windows-local results are not Linux proof.

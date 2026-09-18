@@ -1984,3 +1984,17 @@ rendered and was visually inspected. The compact UI map still loses the modeless
 dialog's primary Save action after some tab changes, so the robot documents and uses
 a bounded coordinate fallback. Reopen persistence of the grid choice is not yet
 proven and remains the next bug; the current dialog can still reload 1.0 mm.
+
+### Sprint 721 - CI diagnostics and current verification boundary
+
+Hardened Linux CI diagnostics so core and GUI jobs always publish aggregate
+CTest tails, verbose CLI output, and individual failed-test annotations while
+preserving the original CTest exit code. Local Qt verification remains green:
+91/91 CTest tests pass, including the 43-second CLI test, and the official
+visual harness produced an inspected PCB/agent screenshot with empty current
+harness stdout/stderr. Remote Linux jobs from the diagnostic run still fail,
+but public unauthenticated GitHub access cannot currently retrieve their logs;
+the exact failing Linux test is therefore not claimed or guessed. Docker Linux
+reproduction is also unavailable because the local Docker engine is stopped.
+Next action is authenticated CI annotation/artifact retrieval, followed by a
+real Linux failure fix and a complete rerun before claiming a green gate.
