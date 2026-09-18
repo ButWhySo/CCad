@@ -1678,3 +1678,7 @@ exception type and secret-safe boundary.
 Sprint 855 handover: provider classification contract directly asserts the
 provider_state emission path, preventing future removal of error_category
 while retry diagnostics remain intact.
+
+Sprint 856 handover: `scripts/test_provider_failure_event.py` invokes the
+redacted failure emitter with a local fake 401 error, parses its JSON, and
+proves authentication classification plus secret absence without network.

@@ -2321,6 +2321,10 @@ Sprint 855 extends the provider failure contract assertion to cover the actual
 provider_state error_category emission, not only downstream retry messages.
 GUI verification remains paused.
 
+Sprint 856 adds a no-network runtime fixture that captures the emitted
+provider_state JSON, proves authentication classification, and proves an API
+key-like value is absent from the event. GUI verification remains paused.
+
 Sprint 837 adds explicit Cerebras model-catalog response from the documented
 curated snapshot and enables Settings Refresh for Cerebras. OpenRouter remains
 the only network-fetched catalog; Cerebras refresh is quota-safe and offline.

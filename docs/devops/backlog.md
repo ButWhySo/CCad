@@ -1041,3 +1041,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   or provider request.
 - [x] Sprint 855: guard provider_state error-category emission directly; no
   GUI or provider request.
+- [x] Sprint 856: capture a runtime provider failure event and prove
+  classification/redaction; no GUI or provider request.
