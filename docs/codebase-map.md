@@ -1562,3 +1562,7 @@ the response contains no key or endpoint detail.
 Sprint 792 handover: `AgentSettingsDialog::saveAllSettings` sends exactly one
 `agent.set_config` payload. Grid also remains mirrored to local `QSettings` for
 canvas startup, while secrets stay outside project config.
+
+Sprint 793 handover: `scripts/test_agent_config_persistence.py` verifies nested
+memory/personalisation plus security flags across independent orchestrator
+processes, not only provider/model/grid scalars.

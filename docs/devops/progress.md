@@ -2243,3 +2243,6 @@ unsupported provider fixture; secret and stderr redaction remain asserted.
 Sprint 792 removes duplicate Settings config writes. Provider, model, grid, and
 other preferences now travel in one atomic `agent.set_config` message, avoiding
 queued grid-only overwrites during dialog close.
+
+Persistence proof now covers sandbox/approval flags, STM/LTM/episodic memory,
+and personalisation fields across a fresh orchestrator process.

@@ -40,11 +40,22 @@ def run_agent(appdata, requests):
 with tempfile.TemporaryDirectory() as temp:
     appdata = Path(temp)
     run_agent(appdata, [{"method": "agent.set_config", "params": {
-        "provider": "cerebras", "model": "gpt-oss-120b", "grid": "2.5 mm"}}])
+        "provider": "cerebras", "model": "gpt-oss-120b", "grid": "2.5 mm",
+        "sandbox_mode": True, "approval_policy": False,
+        "memory": {"stm": True, "ltm": False, "episodic": True},
+        "personalisation": {"chat_mode": "Detached",
+                             "show_context_usage": True,
+                             "agent_personality": "CCad Engineering Assistant"}}}])
     responses = run_agent(appdata, [{"method": "agent.get_config", "params": {}}])
     config = next(item["params"] for item in responses
                   if item.get("method") == "config_state")
     assert config["provider"] == "cerebras"
     assert config["model"] == "gpt-oss-120b"
     assert config["grid"] == "2.5 mm"
+    assert config["sandbox_mode"] is True
+    assert config["approval_policy"] is False
+    assert config["memory"] == {"stm": True, "ltm": False, "episodic": True}
+    assert config["personalisation"]["chat_mode"] == "Detached"
+    assert config["personalisation"]["show_context_usage"] is True
+    assert config["personalisation"]["agent_personality"] == "CCad Engineering Assistant"
 print("PASS agent config persists across orchestrator restart")

@@ -2621,3 +2621,5 @@ making a provider request.
 Settings saves provider, model, metric grid, security, memory, and personalisation
 preferences through one config message; no second grid-only write can overwrite
 the saved state during dialog dismissal.
+The no-GUI persistence contract also checks security, memory, chat-mode,
+context-usage, and personality values after restart.

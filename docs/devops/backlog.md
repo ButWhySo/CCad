@@ -939,3 +939,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   missing-key/adapter failures; GUI verification remains user-paused.
 - [x] Sprint 792: make Settings save preferences through one atomic config
   message; GUI verification remains user-paused.
+- [x] Sprint 793: extend restart persistence proof across security, memory, and
+  personalisation settings; GUI verification remains user-paused.
