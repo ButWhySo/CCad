@@ -1029,3 +1029,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   discovery; no GUI or provider request.
 - [x] Sprint 849: publish tool-call response fields through method discovery;
   no GUI or provider request.
+- [x] Sprint 850: align tool-call discovery with the actual emitted `tool`
+  field; no GUI or provider request.

@@ -1655,3 +1655,7 @@ fields emitted by provider initialization paths.
 Sprint 849 handover: method discovery now documents the minimal `tool_call`
 response shape, preserving opaque correlation and approval metadata for
 external harnesses without exposing provider secrets.
+
+Sprint 850 handover: `tool_call` discovery uses the emitted `tool` key,
+matching Python-to-client wire events; the contract test rejects the stale
+`name` field.
