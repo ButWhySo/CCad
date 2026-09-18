@@ -15,7 +15,8 @@ $excluded = @("test_gui_", "_gui_", "visual", "screenshot", "provider_real", "li
 $tests = Get-ChildItem -LiteralPath (Join-Path $root "scripts") -Filter "test_*.py" |
     Where-Object {
         $testName = $_.Name.ToLowerInvariant()
-        -not ($excluded | Where-Object { $testName.Contains($_) })
+        ($testName -eq "test_mcp_gui_bridge.py") -or
+            (-not ($excluded | Where-Object { $testName.Contains($_) }))
     }
 if (-not $IncludeCheckpointRestart) {
     $tests = $tests | Where-Object { $_.Name -ne "test_agent_checkpoint_restart.py" }
