@@ -344,11 +344,15 @@ def init_provider():
         provider = "local_model"
     if provider == "openai_compatible" and os.environ.get("CCAD_OPENAI_COMPATIBLE_API_KEY"):
         os.environ.setdefault("OPENAI_API_KEY", os.environ["CCAD_OPENAI_COMPATIBLE_API_KEY"])
+    if provider == "cerebras" and os.environ.get("CEREBRAS_API_KEY"):
+        os.environ.setdefault("OPENAI_API_KEY", os.environ["CEREBRAS_API_KEY"])
     if provider == "local_model" and os.environ.get("CCAD_LOCAL_MODEL_API_KEY"):
         os.environ.setdefault("OPENAI_API_KEY", os.environ["CCAD_LOCAL_MODEL_API_KEY"])
     model_name = os.environ.get("CCAD_MODEL") or config_manager.get("model", "")
     if provider == "openai_compatible":
         model_name = os.environ.get("CCAD_OPENAI_COMPATIBLE_MODEL") or model_name
+    elif provider == "cerebras":
+        model_name = os.environ.get("CCAD_CEREBRAS_MODEL") or model_name
     elif provider == "local_model":
         model_name = os.environ.get("CCAD_LOCAL_MODEL_NAME") or model_name
     elif provider == "google_gemini":
@@ -397,12 +401,15 @@ def init_provider():
             emit_dependency_warning("langchain_google_genai")
         except Exception as error:
             emit_provider_failure(provider, error)
-    if provider in ("openai", "openai_compatible", "local_model") or os.environ.get("OPENAI_API_KEY"):
+    if provider in ("openai", "openai_compatible", "local_model", "cerebras") or os.environ.get("OPENAI_API_KEY"):
         try:
             from langchain_openai import ChatOpenAI
             if provider == "openai_compatible":
                 model_name = model_name or os.environ.get("CCAD_OPENAI_COMPATIBLE_MODEL", "") or "default"
                 base_url = os.environ.get("CCAD_OPENAI_COMPATIBLE_BASE_URL", "")
+            elif provider == "cerebras":
+                model_name = model_name or "llama-4-scout-17b-16e-instruct"
+                base_url = "https://api.cerebras.ai/v1"
             elif provider == "local_model":
                 model_name = model_name or os.environ.get("CCAD_LOCAL_MODEL_NAME", "") or "local-model"
                 base_url = os.environ.get("CCAD_LOCAL_MODEL_BASE_URL", "http://127.0.0.1:1234/v1")
@@ -728,24 +735,26 @@ if __name__ == "__main__":
                     os.environ["CCAD_MODEL"] = model
                     model_env = {"google_gemini": "CCAD_GEMINI_MODEL",
                                  "openai_compatible": "CCAD_OPENAI_COMPATIBLE_MODEL",
+                                 "cerebras": "CCAD_CEREBRAS_MODEL",
                                  "local_model": "CCAD_LOCAL_MODEL_NAME",
                                  "local_model_server": "CCAD_LOCAL_MODEL_NAME"}.get(provider_id)
                     if model_env: os.environ[model_env] = model
                 env_names = {"openai": "OPENAI_API_KEY", "anthropic": "ANTHROPIC_API_KEY",
                              "google_gemini": "GEMINI_API_KEY",
                              "openai_compatible": "CCAD_OPENAI_COMPATIBLE_API_KEY",
+                             "cerebras": "CEREBRAS_API_KEY",
                              "local_model": "CCAD_LOCAL_MODEL_API_KEY",
                              "local_model_server": "CCAD_LOCAL_MODEL_API_KEY"}
                 env_name = env_names.get(provider_id, "OPENAI_API_KEY")
                 if secret:
                     os.environ[env_name] = secret
                     if provider_id == "google_gemini": os.environ["GOOGLE_API_KEY"] = secret
-                    if provider_id in ("openai_compatible", "local_model", "local_model_server"):
+                    if provider_id in ("openai_compatible", "local_model", "local_model_server", "cerebras"):
                         os.environ["OPENAI_API_KEY"] = secret
                 else:
                     os.environ.pop(env_name, None)
                     if provider_id == "google_gemini": os.environ.pop("GOOGLE_API_KEY", None)
-                    if provider_id in ("openai_compatible", "local_model", "local_model_server"):
+                    if provider_id in ("openai_compatible", "local_model", "local_model_server", "cerebras"):
                         os.environ.pop("OPENAI_API_KEY", None)
                 init_provider()
             elif method == "agent.set_provider_secret":
@@ -758,6 +767,7 @@ if __name__ == "__main__":
                     "anthropic": "ANTHROPIC_API_KEY",
                     "google_gemini": "GEMINI_API_KEY",
                     "openai_compatible": "CCAD_OPENAI_COMPATIBLE_API_KEY",
+                    "cerebras": "CEREBRAS_API_KEY",
                     "local_model": "CCAD_LOCAL_MODEL_API_KEY",
                     "local_model_server": "CCAD_LOCAL_MODEL_API_KEY",
                 }
@@ -766,13 +776,13 @@ if __name__ == "__main__":
                     os.environ[env_name] = secret
                     if provider_id == "google_gemini":
                         os.environ["GOOGLE_API_KEY"] = secret
-                    if provider_id in ("openai_compatible", "local_model", "local_model_server"):
+                    if provider_id in ("openai_compatible", "local_model", "local_model_server", "cerebras"):
                         os.environ["OPENAI_API_KEY"] = secret
                 else:
                     os.environ.pop(env_name, None)
                     if provider_id == "google_gemini":
                         os.environ.pop("GOOGLE_API_KEY", None)
-                    if provider_id in ("openai_compatible", "local_model", "local_model_server"):
+                    if provider_id in ("openai_compatible", "local_model", "local_model_server", "cerebras"):
                         os.environ.pop("OPENAI_API_KEY", None)
                 init_provider()
                 emit({"jsonrpc": "2.0", "method": "provider_state", "params": {

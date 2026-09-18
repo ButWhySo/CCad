@@ -36,6 +36,9 @@ QStringList modelsForProvider(const QString& provider) {
   if (provider == "openai_compatible") {
     return {"Custom model (type below)"};
   }
+  if (provider == "cerebras") {
+    return {"gpt-oss-120b", "llama3.1-8b", "qwen-3-32b", "zai-glm-4.7"};
+  }
   return {"local-model", "Custom model (type below)"};
 }
 
@@ -245,6 +248,7 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
   provider_combo_->addItem("Anthropic", "anthropic");
   provider_combo_->addItem("Google Gemini", "google_gemini");
   provider_combo_->addItem("OpenAI-compatible", "openai_compatible");
+  provider_combo_->addItem("Cerebras", "cerebras");
   provider_combo_->addItem("Local model server", "local_model");
   form->addRow("Provider:", provider_combo_);
 

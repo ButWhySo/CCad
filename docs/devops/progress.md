@@ -1844,6 +1844,10 @@ Configuration now offers an editable model dropdown whose choices change with th
 
 The same settings slice now shows provider capability details and a read-only resolved configuration preview, making the active provider/model/security selection understandable before saving.
 
+### Sprint 705 - add executable Cerebras and OpenRouter compatibility
+
+Cerebras is now a real provider path, not a label: the GUI and CLI schemas expose its credential/model variables, the Python orchestrator uses the official OpenAI-compatible base URL and binds CCad tools, and the transient provider test path handles its session-only key. The settings model list includes compatible Cerebras model IDs. OpenRouter compatibility rules were documented around its live models endpoint, author/model slugs, standard chat-completions format, and tool-support requirement. Focused provider/GUI tests passed; the official visual harness screenshot was inspected and stderr was empty. Full gate remains required before merge.
+
 ### Sprint 683 - expose native approval status to MCP hosts
 
 Added read-only `ccad_gui_approval_status` to the GUI MCP bridge. External harnesses can now query approval-card visibility and status directly, while mutation execution and human approval remain native GUI responsibilities. Python regression and official visual harness passed; screenshot was inspected and stderr was empty.
