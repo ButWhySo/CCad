@@ -26,6 +26,7 @@
 #include <QLineEdit>
 #include <QPlainTextEdit>
 #include <QProcess>
+#include <QProcessEnvironment>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QSaveFile>
@@ -1338,6 +1339,10 @@ void AgentPanel::startPythonBackend() {
   if (agent_script.isEmpty()) agent_script = "src/ccad_agent/orchestrator.py";
   python_process_->setProgram(python_path);
   python_process_->setArguments({agent_script});
+  QProcessEnvironment agent_env = QProcessEnvironment::systemEnvironment();
+  agent_env.insert("PYTHONNOUSERSITE", "1");
+  agent_env.insert("VIRTUAL_ENV", QDir::cleanPath(repo_src + "/ccad_agent/venv"));
+  python_process_->setProcessEnvironment(agent_env);
   connect(python_process_, &QProcess::readyReadStandardOutput, this, &AgentPanel::handlePythonOutput);
   connect(python_process_, &QProcess::readyReadStandardError, this, &AgentPanel::handlePythonError);
   python_process_->start();
