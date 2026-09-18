@@ -2183,6 +2183,9 @@ model values are rejected without reinitializing the adapter.
 Sprint 780 publishes parameter and response metadata for `agent.list_models`,
 so external harnesses can call the explicit refresh with a stable schema.
 
+The CI agent-python gate now includes the model-selector boundary contract,
+keeping delimiter-preserving `/set` parsing protected on every checkout.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.
