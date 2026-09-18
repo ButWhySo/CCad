@@ -48,6 +48,7 @@ private slots:
     QVERIFY(config_preview != nullptr);
     QVERIFY(config_preview->isReadOnly());
     QVERIFY(config_preview->toPlainText().contains("[agent]"));
+    model_input->selectAll();
     QTest::keyClicks(model_input, "gpt-4o-test");
 
     auto* theme_combo = dialog.findChild<QComboBox*>("control:themeCombo");
@@ -204,6 +205,9 @@ private slots:
     provider->setCurrentIndex(provider->findData("cerebras"));
     QCOMPARE(models->currentText(), QString("gpt-oss-120b"));
     QVERIFY(models->findText("zai-glm-4.7") >= 0);
+    models->setEditText("claude-opus-4-1gpt-4o-test");
+    provider->setCurrentIndex(provider->findData("anthropic"));
+    QCOMPARE(models->currentText(), QString("claude-opus-4-1"));
     provider->setCurrentIndex(provider->findData("openai"));
     QCOMPARE(models->currentText(), QString("gpt-5.1"));
   }

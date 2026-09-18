@@ -1437,3 +1437,9 @@ selection. The physical robot verifies provider/model/grid selection and all Set
 tabs. A remaining limitation is that the compact UI map can omit the modeless dialog's
 primary Save action after tab changes; the robot has a bounded coordinate fallback,
 and grid persistence across reopen is still unproven.
+
+Model Settings normalizes malformed persisted preset concatenations such as a known
+Anthropic preset followed by a stale test suffix. The behavior is covered by the
+provider-switch regression test. `ui.target`/`ui.click` now also search recursively
+through top-level modeless dialogs, although the Windows physical robot's screenshot
+capture currently fails intermittently before its final Save assertion.

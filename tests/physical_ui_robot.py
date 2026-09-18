@@ -6,6 +6,11 @@ import subprocess
 import pyautogui
 import ctypes
 
+# The harness intentionally drives a maximized desktop window. Windows can
+# leave the cursor at (0, 0) between launches; mapped semantic targets are
+# already clamped below, so PyAutoGUI's global corner abort is not useful here.
+pyautogui.FAILSAFE = False
+
 PIPE_PATH = rf'\\.\pipe\ccad_agent_pipe_{os.getpid()}'
 user32 = ctypes.windll.user32
 user32.SetWindowPos.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_uint]
@@ -40,7 +45,9 @@ def mapped_point(ui_map, x, y):
     sy = pyautogui.size().height / height
     left = rect.get('x', 0) if rect else 0
     top = rect.get('y', 0) if rect else 0
-    return max(0, min(pyautogui.size().width - 1, round((x - left) * sx))), max(0, min(pyautogui.size().height - 1, round((y - top) * sy)))
+    mapped_x = max(20, min(pyautogui.size().width - 20, round((x - left) * sx)))
+    mapped_y = max(20, min(pyautogui.size().height - 20, round((y - top) * sy)))
+    return mapped_x, mapped_y
 
 def read_ui_map():
     pipe_path = PIPE_PATH
@@ -82,7 +89,7 @@ def click_element(ui_map, target_id):
 def type_text(ui_map, target_id, text):
     if click_element(ui_map, target_id):
         time.sleep(0.1)
-        # First clear it maybe? Or just type
+        pyautogui.hotkey('ctrl', 'a')
         pyautogui.write(text, interval=0.02)
         return True
     return False
@@ -211,6 +218,8 @@ def main():
     model_state = send_ui_action('ui.click', {'id': 'control:modelCombo', 'row': 0}).get('result', {})
     if model_state.get('current_text') != "gpt-oss-120b":
         raise RuntimeError(f"Cerebras model selection was not visible: {model_state}")
+    pyautogui.press('escape')
+    time.sleep(0.2)
     pyautogui.screenshot("artifacts/screenshots/physical-ui-cerebras-model.png")
 
     # Return to General before exercising the metric grid selector.
@@ -229,6 +238,8 @@ def main():
     grid_state = send_ui_action('ui.click', {'id': 'control:gridCombo'}).get('result', {})
     if grid_state.get('current_text') != "2.5 mm":
         raise RuntimeError(f"Metric grid selection was not visible: {grid_state}")
+    pyautogui.press('escape')
+    time.sleep(0.2)
     pyautogui.screenshot("artifacts/screenshots/physical-ui-metric-grid.png")
 
     # Exercise remaining General controls, not only the new grid selector.
@@ -322,17 +333,28 @@ def main():
     if pre_save_grid.get('current_text') != "2.5 mm":
         raise RuntimeError(f"Grid selection changed before save: {pre_save_grid}")
     pyautogui.press("escape")
-    # Return to Workflows where primary action remains in compact map, then
-    # save. Reopen persistence remains explicit backlog until map coverage is
-    # fixed for modeless dialog buttons after tab changes.
+    # Return to Workflows, then resolve the live modeless dialog button directly
+    # before falling back to the bounded physical click. Compact map snapshots
+    # can omit top-level dialog actions after a tab change.
     send_ui_action('ui.click', {'id': 'control:categoryList', 'row': 6})
     time.sleep(0.5)
     ui_map = read_ui_map()
     try:
-        click_element(ui_map, "action:primaryButton")
+        save_result = send_ui_action('ui.click', {'id': 'action:primaryButton'})
+        print("Save result:", save_result)
+        if not save_result.get('result', {}).get('performed', False):
+            raise RuntimeError("live semantic save action not performed")
     except RuntimeError:
         pyautogui.click(1034, 602)
     time.sleep(1)
+
+    config_path = os.path.join(os.environ.get('APPDATA', ''), 'CCad', 'agent_config.json')
+    if os.path.exists(config_path):
+        with open(config_path, 'r', encoding='utf-8') as config_file:
+            saved_config = json.load(config_file)
+        print("Persisted grid:", saved_config.get('grid'))
+        if saved_config.get('grid') != '2.5 mm':
+            raise RuntimeError(f"grid persistence failed: {saved_config.get('grid')}")
     
     # Close app gracefully
     proc.kill()

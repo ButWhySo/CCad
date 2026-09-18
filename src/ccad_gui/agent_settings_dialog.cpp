@@ -44,6 +44,18 @@ QStringList modelsForProvider(const QString& provider) {
   return {"local-model", "Custom model (type below)"};
 }
 
+bool looksLikeConcatenatedPreset(const QString& model) {
+  const QString candidate = model.trimmed();
+  if (candidate.isEmpty()) return false;
+  const QStringList providers = {"openai", "anthropic", "google_gemini", "cerebras"};
+  for (const QString& provider : providers) {
+    for (const QString& preset : modelsForProvider(provider)) {
+      if (candidate.startsWith(preset) && candidate != preset) return true;
+    }
+  }
+  return false;
+}
+
 QString modelDetailsForProvider(const QString& provider) {
   if (provider == "openai") return "OpenAI API · text/image · tool calling · provider key via OPENAI_API_KEY";
   if (provider == "anthropic") return "Anthropic API · Claude family · tool use · provider key via ANTHROPIC_API_KEY";
@@ -328,12 +340,13 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
     if (!model_combo_ || !provider_combo_) return;
     const QString current = model_input_ ? model_input_->text().trimmed() : QString();
     const bool current_was_provider_preset = model_combo_->findText(current) >= 0;
+    const bool current_was_malformed_preset = looksLikeConcatenatedPreset(current);
     model_combo_->blockSignals(true);
     model_combo_->clear();
     const QStringList models = modelsForProvider(provider_combo_->currentData().toString());
     model_combo_->addItems(models);
     const int matching = model_combo_->findText(current);
-    if (!current.isEmpty() && !current_was_provider_preset && matching < 0) {
+    if (!current.isEmpty() && !current_was_provider_preset && !current_was_malformed_preset && matching < 0) {
       model_combo_->setEditText(current);
     } else if (matching >= 0 && !current_was_provider_preset) {
       model_combo_->setCurrentIndex(matching);
@@ -557,7 +570,10 @@ void AgentSettingsDialog::applyConfigState(const QJsonObject& config) {
         }
     }
     if (model_input_ && config.contains("model")) {
-        model_input_->setText(config["model"].toString());
+        const QString loaded_model = config["model"].toString().trimmed();
+        model_input_->setText(looksLikeConcatenatedPreset(loaded_model)
+                                  ? model_combo_->currentText()
+                                  : loaded_model);
     }
     if (sandbox_cb_ && config.contains("sandbox_mode")) {
         sandbox_cb_->setChecked(config["sandbox_mode"].toBool());

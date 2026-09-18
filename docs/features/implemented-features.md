@@ -2590,3 +2590,9 @@ the dialog receives its owning AgentPanel and unregisters callbacks on close. Re
 verification of the selected grid is deliberately not claimed yet; the Save action's
 compact UI-map coverage after tab switching and the resulting persistence path remain
 backlog items.
+
+Malformed editable model values are guarded: known preset-plus-suffix values are
+replaced by the active provider's valid preset on load or provider switch, while
+custom model IDs remain supported. The UI bridge can operate Save buttons in top-level
+modeless Settings dialogs. Full visual harness proof is current; physical Save/reopen
+persistence proof remains pending the intermittent Windows screenshot capture issue.

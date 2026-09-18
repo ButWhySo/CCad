@@ -5532,6 +5532,15 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
     return foundTarget(id, "action", button->text(), button->isVisible() && !global_rect.isEmpty(),
                        button->isEnabled(), global_rect.center());
   }
+  for (QWidget* top_level : QApplication::topLevelWidgets()) {
+    for (QPushButton* button : top_level->findChildren<QPushButton*>(QString(), Qt::FindChildrenRecursively)) {
+      if (button->objectName() != id || !id.startsWith("action:")) continue;
+      const QRect global_rect = visibleWidgetGlobalRect(button);
+      return foundTarget(id, "action", button->text(),
+                         button->isVisible() && !global_rect.isEmpty(),
+                         button->isEnabled(), global_rect.center());
+    }
+  }
   for (QWidget* widget : QApplication::allWidgets()) {
     auto* list = qobject_cast<QListWidget*>(widget);
     if (list == nullptr || list->objectName() != id || !id.startsWith("control:")) {
@@ -5839,6 +5848,23 @@ QString ReviewWindow::uiClickJson(const QString& id, const bool dry_run, const b
     response.insert("reason", "top_level_button_clicked");
     markUiMapChanged();
     return jsonObjectLine(response);
+  }
+
+  for (QWidget* top_level : QApplication::topLevelWidgets()) {
+    for (QPushButton* button : top_level->findChildren<QPushButton*>(QString(), Qt::FindChildrenRecursively)) {
+      if (button->objectName() != trimmed_id || !trimmed_id.startsWith("action:")) continue;
+      if (!button->isVisible() || !button->isEnabled()) {
+        response.insert("performed", false);
+        response.insert("reason", "disabled_or_hidden");
+        return jsonObjectLine(response);
+      }
+      button->click();
+      QApplication::processEvents();
+      response.insert("performed", true);
+      response.insert("reason", "top_level_dialog_button_clicked");
+      markUiMapChanged();
+      return jsonObjectLine(response);
+    }
   }
 
   if (trimmed_id.startsWith("tab:") || trimmed_id.startsWith("action:")) {

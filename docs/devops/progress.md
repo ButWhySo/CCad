@@ -1948,6 +1948,17 @@ prove selection rather than infer it from coordinates. Focused GUI tests passed 
 full Qt CTest passed 91/91, the official visual harness rendered a board screenshot,
 and all four physical settings screenshots were inspected with empty relevant stderr.
 
+### Sprint 718 - prevent malformed model IDs
+
+Editable model entry now replaces the existing value in the physical harness and the
+model regression test selects existing text before typing. Settings also normalizes a
+persisted value that is visibly a known preset followed by extra concatenated text,
+restoring the provider's valid preset while preserving genuinely custom IDs. Live
+top-level modeless dialog buttons are discoverable and clickable through the UI bridge.
+Focused GUI tests and full Qt CTest passed 91/91; the official visual harness passed
+and its screenshot was inspected. The physical robot still has an intermittent Windows
+screen-grab backend failure before completing the Save persistence proof.
+
 ### Sprint 717 - harden live Settings interaction
 
 Fixed the live Settings dialog construction so Save no longer dereferences a missing
