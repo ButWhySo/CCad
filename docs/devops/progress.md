@@ -2364,3 +2364,6 @@ and logs; GUI verification remains paused.
 Sprint 819 closes a CI false-green: workflow now uses supported `denial`
 phase name, and checkpoint harness rejects unknown phase names instead of
 silently exiting success.
+
+Sprint 821 exposes intake preflight and response event names in `agent.methods`,
+so external harnesses can discover guard behavior without reading source.

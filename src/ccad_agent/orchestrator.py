@@ -180,7 +180,10 @@ def orchestrator_method_catalog():
              "approval_required": False, "side_effect": "cancel_wait_only"},
             {"name": "tool_result", "read_only": False,
              "approval_required": True, "side_effect": "client_authorized_result"},
-            {"name": "human_message", "read_only": False, "provider_call": True},
+            {"name": "human_message", "read_only": False, "provider_call": True,
+             "preflight": "intake_guard",
+             "responses": ["intake_state", "context_state", "message", "tool_call"],
+             "secret_value_visible": False},
         ],
         "secret_value_visible": False,
     }
