@@ -2595,3 +2595,7 @@ Headless-only approval slice: live tool calls and durable interrupts now carry `
 ### Sprint 878 — approval discovery parity
 
 Headless-only contract fix: `agent.methods` now advertises `approval_reason` alongside `approval_required`, matching live tool-call payloads. GUI/API/build validation remains paused.
+
+### Sprint 879 — pending approval snapshot
+
+Headless-only harness slice: `agent.pending_calls` now returns redacted approval-required/reason metadata alongside opaque process/checkpoint IDs, allowing approval UI to recover state after restart. Added offline contract; GUI/API/build validation remains paused.

@@ -170,6 +170,8 @@ def pending_call_snapshot(thread_id: str = ""):
         "process_call_ids": process_calls,
         "checkpoint_call_ids": sorted(set(checkpoint_calls)),
         "count": len(set(process_calls).union(checkpoint_calls)),
+        "approval_required": bool(process_calls or checkpoint_calls),
+        "approval_reason": "project_mutation" if (process_calls or checkpoint_calls) else "",
         "secret_value_visible": False,
     }
 
@@ -182,7 +184,10 @@ def orchestrator_method_catalog():
             {"name": "agent.context_state", "read_only": True, "secrets": False,
              "response": {"method": "context_state_snapshot", "fields": [
                  "thread_id", "revision", "content_emitted", "secret_value_visible"]}},
-            {"name": "agent.pending_calls", "read_only": True, "secrets": False},
+            {"name": "agent.pending_calls", "read_only": True, "secrets": False,
+             "response": {"method": "pending_calls_state", "fields": [
+                 "process_call_ids", "checkpoint_call_ids", "count",
+                 "approval_required", "approval_reason", "secret_value_visible"]}},
             {"name": "agent.list_models", "read_only": True,
              "network_access": "provider_specific",
              "network_access_by_provider": {"openrouter": "explicit_refresh", "cerebras": "none"},

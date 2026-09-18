@@ -1733,3 +1733,5 @@ Sprint 876 handover: `tool_approval_decision()` is the single deterministic sour
 Sprint 877 handover: tool-call and checkpoint interrupt payloads include `approval_reason` alongside `approval_required`; reason is deterministic and non-content (`project_mutation` or `dry_run`).
 
 Sprint 878 handover: `human_message.response_contracts.tool_call.fields` now advertises `approval_reason`, matching emitted live payloads.
+
+Sprint 879 handover: `pending_call_snapshot()` and `agent.pending_calls` discovery now expose only opaque IDs plus `approval_required` and `approval_reason`; no tool args or secrets are returned.
