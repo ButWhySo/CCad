@@ -37,4 +37,10 @@ state = next(item["params"] for item in secret if item.get("method") == "intake_
 assert state == {"accepted": False, "category": "secret_bearing",
                  "secret_value_visible": False}
 assert "sk-ccad-example-secret" not in json.dumps(secret)
+for provider_key in ("csk-ccad-example-secret", "AIzaCcAdExampleSecretKey123456"):
+    blocked_key = run("inspect board", provider_key)
+    state = next(item["params"] for item in blocked_key
+                 if item.get("method") == "intake_state")
+    assert state["accepted"] is False and state["category"] == "secret_bearing"
+    assert provider_key not in json.dumps(blocked_key)
 print("PASS Python intake guardrail blocks injection and inline secrets; no network")

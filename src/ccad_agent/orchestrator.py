@@ -867,7 +867,8 @@ _INTAKE_RULES = (
         r"|reveal\s+(?:your|the)\s+system\s+prompt", re.IGNORECASE)),
     ("secret_bearing", re.compile(
         r"(?:api[_-]?key|secret|password|access[_-]?token)\s*[:=]\s*\S+"
-        r"|\bsk-[A-Za-z0-9_-]{12,}\b", re.IGNORECASE)),
+        r"|\b(?:sk|csk|gsk|xai|sk-or)-[A-Za-z0-9_-]{12,}\b"
+        r"|\bAIza[A-Za-z0-9_-]{20,}\b", re.IGNORECASE)),
 )
 
 def scan_intake(*values):

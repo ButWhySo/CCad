@@ -2357,6 +2357,10 @@ Local replay also found inherited `CCAD_RESTART_PHASE` could contaminate setup.
 Sprint 818 makes every CI checkpoint fixture explicitly select `first` before
 its matching resume phase; GUI verification remains paused.
 
+Sprint 820 expands secret-pattern coverage for Cerebras, Gemini, OpenRouter,
+xAI, and common OpenAI-style prefixes. Values remain absent from emitted state
+and logs; GUI verification remains paused.
+
 Sprint 819 closes a CI false-green: workflow now uses supported `denial`
 phase name, and checkpoint harness rejects unknown phase names instead of
 silently exiting success.
