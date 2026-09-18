@@ -7,6 +7,8 @@ text = (Path(__file__).parents[1] / "src" / "ccad_agent" / "orchestrator.py").re
 assert "from memory_store import MemoryStore" in text
 assert "def parse_memory_add_args(arguments):" in text
 assert "parse_memory_add_args(memory_args[4:].strip())" in text
+assert 'memory_args.startswith("list scope:")' in text
+assert 'memory_store.list(scope=scope)' in text
 assert "memory_store = MemoryStore()" in text
 assert 'cmd_base == "/memory"' in text
 assert 'memory_store.add(content, title=title, scope=scope)' in text

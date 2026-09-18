@@ -2062,6 +2062,9 @@ Sprint 746 makes memory deletion explicit: bare `/memory clear` is a no-op;
 Sprint 749 completes memory command scoping: `/memory add` accepts optional
 `scope:x` and `title:y` prefixes, enabling targeted memory management.
 
+Sprint 750 adds scoped listing via `/memory list scope:<name>` and keeps all
+memory help surfaces aligned.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.
