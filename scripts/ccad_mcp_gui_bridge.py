@@ -71,9 +71,9 @@ def main():
             if method == "initialize":
                 result = {"protocolVersion": "2024-11-05", "capabilities": {"tools": {}},
                           "serverInfo": {"name": "ccad-gui-bridge", "version": "1.0.0"}}
-            elif method == "notifications/initialized":
-                # MCP notifications have no response. Accept the standard
-                # post-initialize handshake without polluting client streams.
+            elif method.startswith("notifications/"):
+                # MCP notifications have no response. Keep every lifecycle
+                # notification off stdout to preserve stdio framing.
                 continue
             elif method == "ping":
                 result = {}

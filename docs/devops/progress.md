@@ -2398,3 +2398,7 @@ read-only and closed-world.
 Sprint 829 exposes read-only `ccad_agent_methods` through native MCP
 `tools/list` and `tools/call`, giving external hosts direct method/safety
 catalog discovery without bespoke JSON-RPC access.
+
+Sprint 830 aligns Python GUI MCP bridge with native MCP handling: every
+`notifications/*` message is consumed silently, preserving stdio framing on
+both transports.

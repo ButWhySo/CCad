@@ -32,6 +32,8 @@ def main():
                              stdout=subprocess.PIPE, text=True)
     child.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize"}) + "\n")
     child.stdin.write(json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}) + "\n")
+    child.stdin.write(json.dumps({"jsonrpc": "2.0", "method": "notifications/cancelled",
+                                  "params": {}}) + "\n")
     child.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 2, "method": "ping"}) + "\n")
     child.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
                                   "params": {"name": "no.such.tool"}}) + "\n")
