@@ -1717,3 +1717,5 @@ Sprint 868 handover: provider initialization failure messages include `kind=prov
 Sprint 869 handover: `/clear` removes the current thread’s entry from `context_revisions`; `scripts/test_agent_context_contract.py` exercises the real subprocess clear-then-query reset.
 
 Sprint 870 handover: `init_provider()` carries `classify_provider_error()` output into its redacted terminal message; provider state and message now agree on authentication, quota, timeout, dependency, model, or unavailable category.
+
+Sprint 871 handover: mutating tool-call payloads include `approval_required`; `ui.place_via` derives it from `dry_run`, while route/zone and awaited client mutations require approval. `scripts/test_tool_approval_metadata_contract.py` locks discovery/payload alignment.

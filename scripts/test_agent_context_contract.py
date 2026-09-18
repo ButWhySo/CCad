@@ -65,7 +65,7 @@ tool_fields = human_contract["response_contracts"]["tool_call"]["fields"]
 assert "tool" in tool_fields
 assert "call_id" in tool_fields
 assert "name" not in tool_fields
-assert "approval_required" not in tool_fields
+assert "approval_required" in tool_fields
 assert "side_effect" not in tool_fields
 snapshots = [item for item in lines if item.get("method") == "context_state_snapshot"]
 assert snapshots[0]["params"]["thread_id"] == "ccad-local"

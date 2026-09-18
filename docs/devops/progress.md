@@ -2563,3 +2563,7 @@ Headless-only batch: `/clear` now removes the current thread’s opaque context 
 ### Sprint 870 — truthful provider failure category
 
 Headless-only batch: provider initialization now carries the classified failure category into the user-facing redacted message, preventing authentication/quota/model errors from being rendered as generic unavailability. No exception text or secret is exposed; GUI/API/build validation remains paused.
+
+### Sprint 871 — explicit tool approval metadata
+
+Headless-only batch: mutating `tool_call` events now expose `approval_required`; dry-run via placement is explicitly false, while route/zone and awaited mutations are true. Discovery fields match emitted payloads. Added an offline contract; GUI/API/build validation remains paused.

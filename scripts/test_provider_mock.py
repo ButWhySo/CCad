@@ -20,7 +20,9 @@ tool_events = [event for event in events if event.get("method") == "tool_call"]
 assert tool_events
 tool_params = tool_events[0]["params"]
 assert tool_params["tool"] == "ui.place_via"
-assert set(tool_params) == {"tool", "args", "call_id"}
+assert set(tool_params) == {"tool", "args", "call_id", "approval_required"}
+assert tool_params["approval_required"] is False
+assert tool_params["args"]["dry_run"] is True
 assert any(event.get("method") == "provider_state"
            and event["params"].get("provider") == "mock" for event in events)
 assert any(event.get("params", {}).get("run_state") == "completed"

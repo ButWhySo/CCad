@@ -213,8 +213,8 @@ def orchestrator_method_catalog():
                      "network_access", "secret_value_visible"]},
                  "message": {"fields": [
                      "text", "kind", "category", "secret_value_visible"]},
-                 "tool_call": {"fields": [
-                     "tool", "args", "call_id"]},
+                "tool_call": {"fields": [
+                    "tool", "args", "call_id", "approval_required"]},
                  "tool_canceled": {"fields": [
                      "call_id", "reason"]},
                  "context_state": {"fields": [
@@ -243,6 +243,7 @@ def dispatch_client_tool(tool_name: str, args: dict, *, await_result: bool = Fal
                else new_tool_call_id(tool_name))
     emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
         "tool": tool_name, "args": args, "call_id": call_id,
+        "approval_required": bool(await_result and not args.get("dry_run", False)),
     }})
     if broker_wait_enabled and await_result:
         emit_tool_approval_state()
@@ -305,6 +306,7 @@ def ui_place_via(x_mm: float, y_mm: float, dry_run: bool = False):
         "tool": "ui.place_via",
         "args": args,
         "call_id": call_id,
+        "approval_required": not dry_run,
     }})
     if broker_wait_enabled and not dry_run:
         emit_tool_approval_state()
@@ -320,7 +322,10 @@ def ui_add_track(x1: float, y1: float, x2: float, y2: float):
     call_id = (checkpoint_tool_call_id("ui.route_track", args)
                if checkpoint_saver is not None and broker_wait_enabled
                else new_tool_call_id("ui-route-track"))
-    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.route_track", "args": args, "call_id": call_id}})
+    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
+        "tool": "ui.route_track", "args": args, "call_id": call_id,
+        "approval_required": True,
+    }})
     if broker_wait_enabled:
         emit_tool_approval_state()
         if checkpoint_saver is not None:
@@ -344,7 +349,10 @@ def ui_add_polygon(points: List[List[float]], layer: str):
         call_id = (checkpoint_tool_call_id("ui.add_zone", args)
                    if checkpoint_saver is not None and broker_wait_enabled
                    else new_tool_call_id("ui-add-zone"))
-        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.add_zone", "args": args, "layer": layer, "call_id": call_id}})
+        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
+            "tool": "ui.add_zone", "args": args, "layer": layer,
+            "call_id": call_id, "approval_required": True,
+        }})
         if broker_wait_enabled:
             emit_tool_approval_state()
             if checkpoint_saver is not None:
