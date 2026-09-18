@@ -38,6 +38,7 @@ jobs:
           python scripts/test_provider_timeout_contract.py
           python scripts/test_provider_approval_state_contract.py
           python scripts/test_agent_broker_cancellation_contract.py
+          python scripts/test_agent_pending_calls_contract.py
           python scripts/test_memory_store.py
           python scripts/test_memory_command_contract.py
           python scripts/test_memory_context_contract.py

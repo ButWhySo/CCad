@@ -104,6 +104,30 @@ def checkpoint_tool_call_id(tool_name: str, args: dict) -> str:
                          separators=(",", ":")).encode("utf-8")
     return f"{tool_name}-{hashlib.sha256(encoded).hexdigest()[:24]}"
 
+def pending_call_snapshot(thread_id: str = ""):
+    """Return opaque pending-call metadata without tool arguments or secrets."""
+    with pending_calls_lock:
+        process_calls = sorted(pending_calls.keys())
+    checkpoint_calls = []
+    if checkpoint_saver is not None and executor is not None:
+        try:
+            snapshot = executor.get_state({"configurable": {
+                "thread_id": thread_id or os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
+            }})
+            for task in snapshot.tasks:
+                for pending_interrupt in getattr(task, "interrupts", ()):
+                    value = getattr(pending_interrupt, "value", {})
+                    if isinstance(value, dict) and value.get("call_id"):
+                        checkpoint_calls.append(str(value["call_id"]))
+        except Exception:
+            checkpoint_calls = []
+    return {
+        "process_call_ids": process_calls,
+        "checkpoint_call_ids": sorted(set(checkpoint_calls)),
+        "count": len(process_calls) + len(set(checkpoint_calls)),
+        "secret_value_visible": False,
+    }
+
 def dispatch_checkpointed_tool(tool_name: str, args: dict):
     """Pause graph until C++ client returns authoritative tool result."""
     call_id = checkpoint_tool_call_id(tool_name, args)
@@ -948,6 +972,10 @@ if __name__ == "__main__":
                         "resumable": bool(snapshot.values), "thread_id": thread_id,
                         "next": list(snapshot.next), "checkpoint_id": snapshot.config.get("configurable", {}).get("checkpoint_id", ""),
                     }})
+            elif method == "agent.pending_calls":
+                thread_id = req.get("params", {}).get("thread_id", "")
+                emit({"jsonrpc": "2.0", "method": "pending_calls_state", "params":
+                      pending_call_snapshot(str(thread_id))})
             elif method == "tool_result":
                 # Accept broker response by correlation ID. If graph is paused
                 # at an interrupt, feed authoritative result into same thread.

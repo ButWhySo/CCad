@@ -2089,6 +2089,10 @@ correlated cancellation error into the waiting call, while unknown or late
 results are reported as ignored. The contract is CI-wired; GUI validation and
 external provider execution remain paused.
 
+Sprint 756 adds read-only `agent.pending_calls` recovery metadata. It reports
+opaque process and checkpoint call IDs, count, and secret visibility only;
+tool arguments and credentials never cross the protocol.
+
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
 MinGW runtime PATH and CTest pass 75/75; GUI validation remains paused.
