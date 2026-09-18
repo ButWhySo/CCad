@@ -2375,3 +2375,7 @@ request context from local project memory without receiving memory text.
 Sprint 823 corrects empty-context provenance: `request_context` appears only
 when caller supplied non-whitespace context; source metadata now reflects
 actual contributors exactly.
+
+Sprint 824 fixes native CLI MCP stdio framing: `notifications/initialized` is
+now consumed silently per JSON-RPC/MCP semantics, with a C++ regression test
+proving following requests remain parseable. GUI verification remains paused.

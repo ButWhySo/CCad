@@ -2660,3 +2660,6 @@ Python intake guardrails now emit redacted `intake_state` and block known
 prompt-injection or inline-secret requests before provider/tool execution.
 `test_agent_intake_guard_contract.py` proves safe acceptance, category-only
 blocking, no tool call, and no secret echo without network access.
+Native CLI MCP stdio consumes `notifications/initialized` without emitting an
+error response, preserving standard notification framing for following
+requests.

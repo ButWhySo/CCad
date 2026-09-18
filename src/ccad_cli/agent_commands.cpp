@@ -887,7 +887,11 @@ int agentCommand(const std::vector<std::string>& args) {
     std::string id = extractRequestId(line);
     std::string method = extractStringValue(line, "method");
 
-    if (method == "ping") {
+    // MCP notifications have no request id and require no response. Keeping
+    // them off stdout preserves strict stdio framing for real MCP clients.
+    if (method == "notifications/initialized") {
+      continue;
+    } else if (method == "ping") {
       std::cout << formatSuccess(id, "\"pong\"") << "\n";
       std::cout.flush();
     } else if (method == "initialize") {

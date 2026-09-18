@@ -1222,6 +1222,21 @@ void testAgentToolCallRpc() {
 
 }
 
+void testMCPInitializedNotificationIsSilent() {
+  std::istringstream in(
+      "{\"jsonrpc\": \"2.0\", \"method\": \"notifications/initialized\"}\n"
+      "{\"jsonrpc\": \"2.0\", \"method\": \"ping\", \"id\": 31}\n");
+  std::ostringstream out;
+  auto oldCin = std::cin.rdbuf(in.rdbuf());
+  auto oldCout = std::cout.rdbuf(out.rdbuf());
+  const int result = ccad_cli::agentCommand({"serve", "--allow-read"});
+  std::cin.rdbuf(oldCin);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) std::exit(1);
+  assertContains(out.str(), "\"id\": 31", "notification emits no response but ping does");
+  if (out.str().find("unsupported MCP method") != std::string::npos) std::exit(1);
+}
+
 void testMcpUnknownToolCannotExecute() {
   std::istringstream in(
       "{\"jsonrpc\":\"2.0\",\"method\":\"tools/call\",\"params\":{\"name\":\"no.such.tool\",\"arguments\":{\"args\":[\"help\"]}},\"id\":46}\n");
@@ -1245,6 +1260,7 @@ int main() {
     testPing();
     testExecute();
     testMCPInitialize();
+    testMCPInitializedNotificationIsSilent();
     testMCPToolsList();
     testMCPToolsCall();
     testMCPReadOnlyContextTools();

@@ -20,6 +20,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [x] Sprint 821: agent method catalog documents intake preflight and redacted response events.
 - [x] Sprint 822: context state reports redacted source provenance and forbids memory content emission.
 - [x] Sprint 823: context source labels omit empty request context, preventing false provenance.
+- [x] Sprint 824: native CLI MCP consumes initialized notification without stdout response; framing regression covered in C++.
 - [ ] Context fabric: canonical project snapshot, revision delta, pinned constraints, token budget, and compaction policy. Partial: C++ revision/pins and Python bounded compaction shipped; semantic delta/RAG remains.
 - [ ] Provider runtime: real provider-neutral request/response transport with timeout, retry, and truthful connectivity state.
 - [ ] LangGraph run loop: pending run state survives tool calls; broker result resumes same run by `call_id`. Sprint 811 fixes thread-scoped result routing and stale-result rejection; protocol-level live broker proof remains open.
