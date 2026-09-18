@@ -1039,3 +1039,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   shape; no GUI or provider request.
 - [x] Sprint 854: emit actionable redacted provider error categories; no GUI
   or provider request.
+- [x] Sprint 855: guard provider_state error-category emission directly; no
+  GUI or provider request.

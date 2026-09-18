@@ -2317,6 +2317,10 @@ provider_state failure events as error_category, making authentication,
 quota, timeout, dependency, and unavailable failures actionable to harnesses.
 GUI verification remains paused.
 
+Sprint 855 extends the provider failure contract assertion to cover the actual
+provider_state error_category emission, not only downstream retry messages.
+GUI verification remains paused.
+
 Sprint 837 adds explicit Cerebras model-catalog response from the documented
 curated snapshot and enables Settings Refresh for Cerebras. OpenRouter remains
 the only network-fetched catalog; Cerebras refresh is quota-safe and offline.

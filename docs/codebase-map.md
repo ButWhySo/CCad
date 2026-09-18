@@ -1674,3 +1674,7 @@ call ID rather than relying on substring presence.
 Sprint 854 handover: provider failure events now include the redacted
 `error_category` returned by `classify_provider_error()`, while preserving the
 exception type and secret-safe boundary.
+
+Sprint 855 handover: provider classification contract directly asserts the
+provider_state emission path, preventing future removal of error_category
+while retry diagnostics remain intact.
