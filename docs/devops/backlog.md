@@ -1124,3 +1124,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 931: advertise provider-ID normalization in model-catalog discovery.
 - [x] Sprint 932: reject non-string model-catalog provider parameters explicitly.
 - [x] Sprint 933: label static OpenAI/Anthropic/Gemini model presets as non-live.
+- [x] Sprint 934: label Cerebras model list as official curated snapshot.
