@@ -93,6 +93,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [x] Sprint 921: add Cerebras' documented LangGraph integration header to provider requests and cover it without a live call.
 - [x] Sprint 923: apply documented Cerebras reasoning-effort defaults and session override validation at runtime without a live request.
 - [x] Sprint 924: isolate and restore the Cerebras reasoning override during transient provider probes.
+- [x] Sprint 925: prove LangChain accepts Cerebras integration headers and reasoning parameters without network access.
 - [ ] Product UI: usable schematic editor, complete core PCB edit loop, professional chat/activity presentation.
 - [x] Sprint 158: selective `ui.target` queries by semantic ID and PCB board point, including high-DPI physical pixel fields.
 - [x] Sprint 159: safe direct UI action triggers for non-destructive view/navigation actions, with unsafe actions explicitly refused.
