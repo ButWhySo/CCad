@@ -73,8 +73,12 @@ def cerebras_model_snapshot():
     an explicit credentialed operation and is never performed at startup.
     """
     models = [
-        {"id": "gpt-oss-120b", "display_name": "OpenAI GPT OSS 120B", "tier": "production"},
-        {"id": "qwen-3.8-27b", "display_name": "Qwen 3.8 27B", "tier": "production"},
+        {"id": "gpt-oss-120b", "display_name": "OpenAI GPT OSS 120B", "tier": "production",
+         "context_window_free": 65000, "context_window_paid": 131000,
+         "speed_tokens_per_second": 3000},
+        {"id": "qwen-3.8-27b", "display_name": "Qwen 3.8 27B", "tier": "production",
+         "context_window_free": 64000, "context_window_paid": 128000,
+         "speed_tokens_per_second": 1850},
     ]
     return {"ok": True, "models": models, "count": len(models),
             "network_access": "none", "source": "official_curated_snapshot",

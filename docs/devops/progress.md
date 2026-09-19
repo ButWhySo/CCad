@@ -2732,3 +2732,5 @@ The same MCP boundary now advertises and serves read-only `ccad://harness-contex
 Initialization now advertises the resources capability, so standards-compliant clients can discover the read-only resource surface.
 
 The subprocess proof also confirms undeclared resource URIs are rejected with JSON-RPC invalid-params.
+
+Cerebras' offline catalog now carries documented free/paid context limits and public speed estimates for the model-selection UI.
