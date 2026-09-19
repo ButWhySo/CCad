@@ -65,8 +65,38 @@ class AgentConfigManager:
             print(f"Error saving config: {e}")
 
     def update(self, key: str, value: Any):
+        if key == "mcp_servers":
+            value = self._normalize_mcp_servers(value)
         self.config[key] = value
         self.save()
+
+    @staticmethod
+    def _normalize_mcp_servers(value: Any) -> List[Dict[str, Any]]:
+        """Keep persisted MCP entries typed and launchable, without starting them."""
+        if not isinstance(value, list):
+            return []
+        normalized = []
+        for entry in value:
+            if not isinstance(entry, dict):
+                continue
+            name = str(entry.get("name", "")).strip()
+            command = str(entry.get("command", "")).strip()
+            if not name or not command:
+                continue
+            args = entry.get("args", [])
+            if isinstance(args, str):
+                args = args.split()
+            if not isinstance(args, list):
+                args = []
+            args = [str(arg) for arg in args]
+            try:
+                port = max(0, int(entry.get("port", 0)))
+            except (TypeError, ValueError):
+                port = 0
+            normalized.append({"name": name, "command": command,
+                               "args": args, "port": port,
+                               "enabled": bool(entry.get("enabled", True))})
+        return normalized
 
     def get(self, key: str, default: Any = None) -> Any:
         return self.config.get(key, default)

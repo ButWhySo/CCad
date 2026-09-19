@@ -2803,3 +2803,12 @@ test passed, the Qt Release GUI rebuilt after stopping the old executable, and
 focused GUI tests passed 3 of 3. Live mouse/keyboard validation remains
 pending because the native GUI connector did not expose an app surface in this
 run.
+
+### Sprint 933 - normalize persisted MCP entries
+
+The agent config boundary now validates `mcp_servers` entries before writing
+them: incomplete rows are dropped, arguments become string arrays, ports become
+non-negative integers, and enabled state is explicit. This is persistence-only;
+MCP processes are not started from Agent Settings. The no-network normalization
+contract passed; GUI live interaction remains pending while the native GUI
+connector exposes no app surface.
