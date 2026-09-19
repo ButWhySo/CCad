@@ -169,6 +169,36 @@ private slots:
     dialog.accept();
   }
 
+  void testProviderSwitchDoesNotConcatenateModelPresets() {
+    AgentPanel panel;
+    AgentSettingsDialog dialog(&panel);
+
+    auto* providers = dialog.findChild<QComboBox*>("control:providerCombo");
+    auto* models = dialog.findChild<QComboBox*>("control:modelCombo");
+    auto* model_input = dialog.findChild<QLineEdit*>("control:modelInput");
+    QVERIFY(providers != nullptr);
+    QVERIFY(models != nullptr);
+    QVERIFY(model_input != nullptr);
+
+    const int cerebras = providers->findData("cerebras");
+    const int openrouter = providers->findData("openrouter");
+    QVERIFY(cerebras >= 0);
+    QVERIFY(openrouter >= 0);
+
+    providers->setCurrentIndex(cerebras);
+    QCoreApplication::processEvents();
+    QCOMPARE(model_input->text(), QString("gpt-oss-120b"));
+    QVERIFY(!model_input->text().contains("openrouter/"));
+
+    // Simulate stale editable text from an older build, then change provider.
+    model_input->setReadOnly(false);
+    model_input->setText("openrouter/anthropic/claude-3.5-sonnetgpt-oss-120b");
+    providers->setCurrentIndex(openrouter);
+    QCoreApplication::processEvents();
+    QVERIFY(!model_input->text().contains("gpt-oss-120b"));
+    QVERIFY(!model_input->text().contains("claude-3.5-sonnetgpt-oss-120b"));
+  }
+
   void testChatActionsAreTargetable() {
     AgentPanel panel;
     auto* send = panel.findChild<QPushButton*>("action:agent_submit_chat");

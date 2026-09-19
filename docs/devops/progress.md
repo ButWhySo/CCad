@@ -2746,3 +2746,7 @@ Cerebras runtime requests now select a documented reasoning effort per model, wi
 Transient provider probes now snapshot and restore that reasoning override with the rest of the provider environment.
 
 The adapter contract now instantiates LangChain with the production header and reasoning parameter, still without sending a request.
+
+### Sprint 926 - model selector concatenation regression proof
+
+Added Qt regression coverage for provider/model switching: stale model text from a previous provider cannot be concatenated into the next provider's selection. GUI execution remains intentionally paused; test is queued for the next authorized GUI validation batch.

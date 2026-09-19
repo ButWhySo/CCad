@@ -1116,3 +1116,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 911: prove track/zone dry-run fields reach provider tool schemas.
 - [x] Sprint 912: guard approval pane visibility so idle chat has no approval card.
 - [x] Sprint 913: expose dry-run preview for footprint and schematic-symbol placement.
+- [x] Sprint 926: add provider/model selector concatenation regression coverage; GUI execution deferred until authorized.
