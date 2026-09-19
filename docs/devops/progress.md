@@ -2736,3 +2736,5 @@ The subprocess proof also confirms undeclared resource URIs are rejected with JS
 Cerebras' offline catalog now carries documented free/paid context limits and public speed estimates for the model-selection UI.
 
 The agent method catalog now explicitly describes those per-model metadata fields for external harness consumers.
+
+Cerebras LangGraph requests now include the provider-recommended integration header while retaining the OpenAI-compatible endpoint.

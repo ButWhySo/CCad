@@ -773,6 +773,10 @@ def init_provider():
                       "timeout": provider_timeout_seconds()}
             if base_url:
                 kwargs["base_url"] = base_url
+            if provider == "cerebras":
+                kwargs["default_headers"] = {
+                    "X-Cerebras-3rd-Party-Integration": "langgraph"
+                }
             provider_keys = {
                 "openai": "OPENAI_API_KEY",
                 "openai_compatible": "CCAD_OPENAI_COMPATIBLE_API_KEY",

@@ -89,6 +89,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [x] Sprint 918: reject undeclared native MCP resource URIs and cover the boundary in the external-client proof.
 - [x] Sprint 919: expose official Cerebras context-window and speed metadata in the offline model catalog with no network refresh.
 - [x] Sprint 920: publish per-model catalog metadata fields in agent method discovery so harnesses need not infer the schema.
+- [x] Sprint 921: add Cerebras' documented LangGraph integration header to provider requests and cover it without a live call.
 - [ ] Product UI: usable schematic editor, complete core PCB edit loop, professional chat/activity presentation.
 - [x] Sprint 158: selective `ui.target` queries by semantic ID and PCB board point, including high-DPI physical pixel fields.
 - [x] Sprint 159: safe direct UI action triggers for non-destructive view/navigation actions, with unsafe actions explicitly refused.
