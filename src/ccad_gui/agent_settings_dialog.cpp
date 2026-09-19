@@ -491,13 +491,6 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
       .arg(provider_combo_->currentData().toString(), model_input_->text(),
            sandbox_cb_->isChecked() ? "true" : "false",
            approval_cb_->isChecked() ? "true" : "false"));
-  api_key_input_ = new QLineEdit(parent_widget);
-  api_key_input_->setObjectName("control:apiKeyInput");
-  api_key_input_->setEchoMode(QLineEdit::Password);
-  api_key_input_->setPlaceholderText("API key (stored in OS credential vault)");
-  api_key_input_->setToolTip("Stored in Windows Credential Manager, never in project/config/logs.");
-  form->addRow("API key:", api_key_input_);
-  api_key_input_->setText(loadStoredSecret(provider_combo_->currentData().toString()));
   connect(model_input_, &QLineEdit::textChanged, this, [this](const QString&) {
     if (!resolved_config_preview_ || !provider_combo_ || !model_input_) return;
     resolved_config_preview_->setPlainText(QString("[agent]\nprovider = \"%1\"\nmodel = \"%2\"\n\n[security]\nsandbox = %3\napproval = %4")
@@ -563,6 +556,13 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
   auto* layout = new QVBoxLayout(parent_widget);
   layout->addWidget(new QLabel("<b>API & Providers</b>", parent_widget));
   layout->addWidget(new QLabel("Enter provider key for this session only. Key is masked and never written to project files, config JSON, or logs.", parent_widget));
+  api_key_input_ = new QLineEdit(parent_widget);
+  api_key_input_->setObjectName("control:apiKeyInput");
+  api_key_input_->setEchoMode(QLineEdit::Password);
+  api_key_input_->setPlaceholderText("API key (stored in OS credential vault)");
+  api_key_input_->setToolTip("Stored in Windows Credential Manager, never in project/config/logs.");
+  api_key_input_->setText(loadStoredSecret(provider_combo_->currentData().toString()));
+  layout->addWidget(api_key_input_);
   provider_target_label_ = new QLabel(parent_widget);
   provider_target_label_->setObjectName("label:providerTestTarget");
   provider_target_label_->setProperty("agentRole", "noticeCard");
@@ -601,7 +601,7 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
     }
   });
   layout->addWidget(reveal_key);
-  layout->addWidget(new QLabel("Session key is entered on Configuration and held in memory only.", parent_widget));
+  layout->addWidget(new QLabel("Session key is held in memory and stored only in the OS credential vault.", parent_widget));
   auto* test_provider = new QPushButton("Test Provider", parent_widget);
   test_provider->setObjectName("action:testProviderBtn");
   test_provider->setToolTip("Initialize the selected provider for this session without sending a prompt");

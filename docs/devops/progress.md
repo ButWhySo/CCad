@@ -2782,3 +2782,7 @@ Missing provider keys now produce a clear not-configured message instead of the 
 Live GUI validation then reproduced the startup path with Cerebras selected and no key: LangChain raised `OpenAIError`, which was previously classified incorrectly. The adapter now classifies that case as `missing_api_key`, reports `configured:false`, and the rebuilt settings path exposes the current Cerebras dropdown entries `gpt-oss-120b` and `qwen-3.8-27b`.
 
 Settings restore now rejects stale non-custom model IDs and falls back to the first current provider model, preventing old catalog values from reappearing in the selector.
+
+API key entry now lives in the API & Providers tab beside Show key, Test Provider, and Clear session key; Configuration retains provider/model selection only.
+
+Its explanatory copy now matches actual behavior: session value stays in memory, persistent value stays in the operating-system credential vault.

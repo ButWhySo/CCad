@@ -2675,3 +2675,8 @@ Qt GUI.
 
 Settings restore also rejects stale non-custom model IDs and selects the first
 current provider model, preventing obsolete catalog values from reappearing.
+
+API key entry is colocated with provider testing and clearing in API & Providers;
+Configuration no longer hides credential input on an unrelated tab.
+The page explains that the active value is held in memory while persistent
+storage uses the operating-system credential vault.
