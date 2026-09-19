@@ -239,6 +239,10 @@ def orchestrator_method_catalog():
                  "provider", "model", "configured", "execution_enabled",
                  "network_access", "error", "error_category",
                  "secret_value_visible"]}},
+            {"name": "agent.get_marketplace_catalog", "read_only": True,
+             "network_access": "none", "secrets": False,
+             "response": {"method": "marketplace_catalog", "fields": [
+                 "plugins", "workflows"]}},
             {"name": "agent.cancel_tool", "read_only": False,
              "approval_required": False, "side_effect": "cancel_wait_only"},
             {"name": "tool_result", "read_only": False,

@@ -76,6 +76,10 @@ probe_contract = next(item for item in methods["methods"]
 assert probe_contract["secrets"] is True
 assert probe_contract["params"]["secret"]["secret"] is True
 assert "backend_state" in probe_contract["responses"]
+market_contract = next(item for item in methods["methods"]
+                       if item["name"] == "agent.get_marketplace_catalog")
+assert market_contract["read_only"] is True
+assert market_contract["response"]["fields"] == ["plugins", "workflows"]
 for field in ("thread_id", "process_call_ids", "checkpoint_call_ids", "count", "approval_required",
               "approval_reason", "secret_value_visible"):
     assert field in pending_contract["response"]["fields"]

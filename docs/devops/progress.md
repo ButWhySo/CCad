@@ -2659,3 +2659,7 @@ Headless-only security contract: `agent.methods` now declares `agent.set_provide
 ### Sprint 894 — transient provider probe discovery
 
 Headless-only security contract: `agent.methods` now publishes the transient `agent.test_provider` input and redacted provider/backend/message response set, including secret metadata. GUI/API/build validation remains paused.
+
+### Sprint 895 — marketplace discovery parity
+
+Headless-only contract fix: `agent.methods` now publishes the read-only local marketplace catalog response (`plugins`, `workflows`). GUI/API/build validation remains paused.

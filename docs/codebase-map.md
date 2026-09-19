@@ -1765,3 +1765,5 @@ Sprint 892 handover: `agent.resume_thread` now includes a `thread_resumed` respo
 Sprint 893 handover: discovery now includes security-critical `agent.set_provider_secret` with secret-bearing input metadata, approval requirement, and redacted provider-state response.
 
 Sprint 894 handover: discovery now includes transient `agent.test_provider` with secret-safe probe inputs and provider/backend/message response declarations.
+
+Sprint 895 handover: discovery now includes read-only `agent.get_marketplace_catalog` with local `marketplace_catalog.plugins` and `.workflows` response fields.
