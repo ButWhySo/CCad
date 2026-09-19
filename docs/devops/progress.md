@@ -2676,6 +2676,10 @@ Headless-only contract fix: `agent.methods` now publishes `agent.set_config` as 
 
 Headless-only security fix: `agent.set_config` now rejects API-key, secret, token, password, and credential-like keys before persistence, while retaining a redacted success/error message. GUI/API/build validation remains paused.
 
+### Sprint 901 — recursive config secret sanitization
+
+Headless-only security fix: config secret rejection now recursively sanitizes nested objects and lists, blocking paths such as `provider.api_key` before persistence. GUI/API/build validation remains paused.
+
 ### Sprint 898 — component generator discovery parity
 
 Headless-only contract fix: `agent.methods` now publishes `agent.generate_component` inputs and generated-component response fields, without making a provider call during validation. GUI/API/build validation remains paused.

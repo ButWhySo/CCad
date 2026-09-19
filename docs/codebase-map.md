@@ -1777,3 +1777,5 @@ Sprint 898 handover: discovery now includes provider-backed `agent.generate_comp
 Sprint 899 handover: `scripts/test_agent_method_catalog_parity.py` prevents runtime `agent.*` controls from disappearing from discovery; only legacy `agent.test_export` telemetry is intentionally exempt.
 
 Sprint 900 handover: `agent.set_config` rejects secret-like key names before `AgentConfigManager.update`, preserving memory-only provider credentials and redacting its response.
+
+Sprint 901 handover: `sanitize_persisted_config` recursively removes secret-like keys from nested dictionaries/lists before config persistence.

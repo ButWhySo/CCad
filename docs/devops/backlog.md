@@ -72,6 +72,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [x] Sprint 898: publish component-generator discovery schema.
 - [x] Sprint 899: guard runtime agent-method discovery parity.
 - [x] Sprint 900: reject secret-like fields from persisted agent configuration.
+- [x] Sprint 901: recursively sanitize nested persisted config secrets.
 - [x] Sprint 812: canonicalize malformed JSON-RPC tool correlation IDs before pending-call lookup; invalid IDs now fail safely.
 - [x] Sprint 813: checkpointed tool cancellation resumes matching thread with structured cancellation error; stale cancellation remains rejected.
 - [x] Sprint 814: two-process checkpoint test proves cancellation result survives process restart.

@@ -299,6 +299,24 @@ def orchestrator_method_catalog():
         "secret_value_visible": False,
     }
 
+def sanitize_persisted_config(value, secret_key_fragments, rejected_keys, path=""):
+    """Remove secret-like keys before any config value reaches disk."""
+    if isinstance(value, dict):
+        clean = {}
+        for key, child in value.items():
+            key_text = str(key)
+            full_key = f"{path}.{key_text}" if path else key_text
+            if any(fragment in key_text.lower() for fragment in secret_key_fragments):
+                rejected_keys.append(full_key)
+                continue
+            clean[key] = sanitize_persisted_config(child, secret_key_fragments,
+                                                    rejected_keys, full_key)
+        return clean
+    if isinstance(value, list):
+        return [sanitize_persisted_config(item, secret_key_fragments,
+                                           rejected_keys, path) for item in value]
+    return value
+
 def dispatch_checkpointed_tool(tool_name: str, args: dict):
     """Pause graph until C++ client returns authoritative tool result."""
     call_id = checkpoint_tool_call_id(tool_name, args)
@@ -1656,10 +1674,9 @@ if __name__ == "__main__":
                 rejected_secret_keys = []
                 secret_key_fragments = ("api_key", "apikey", "secret", "token",
                                         "password", "credential")
-                for k, v in config_data.items():
-                    if any(fragment in str(k).lower() for fragment in secret_key_fragments):
-                        rejected_secret_keys.append(str(k))
-                        continue
+                clean_config = sanitize_persisted_config(
+                    config_data, secret_key_fragments, rejected_secret_keys)
+                for k, v in clean_config.items():
                     config_manager.update(k, v)
                 text = ("Agent configuration saved successfully." if not rejected_secret_keys
                         else "Agent configuration saved; secret fields were rejected.")
