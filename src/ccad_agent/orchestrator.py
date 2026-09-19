@@ -9,9 +9,19 @@ import time
 import uuid
 import atexit
 import hashlib
+import warnings
 import urllib.request
 import urllib.error
 from typing import Annotated, TypedDict, List
+# langgraph-checkpoint currently emits this known pending-deprecation warning
+# during import; it is third-party noise, not an agent failure. Keep all other
+# warnings visible and do not suppress provider/runtime errors.
+warnings.filterwarnings(
+    "ignore",
+    message=r"The default value of `allowed_objects` will change.*",
+    category=Warning,
+    module=r"langgraph\.checkpoint\.base",
+)
 from langgraph.graph import StateGraph, END
 from langgraph.types import Command, interrupt
 from langchain_core.tools import tool

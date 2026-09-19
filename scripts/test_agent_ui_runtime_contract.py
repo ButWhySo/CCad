@@ -38,6 +38,8 @@ assert "CredUIPromptForCredentialsW" not in settings
 assert 'sendJsonRpc("agent.list_models"' in settings
 assert 'action:refreshModelCatalog' in settings
 assert 'provider_models' in panel
+assert 'allowed_objects' in (root / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
+assert 'warnings.filterwarnings' in (root / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
 assert 'curated presets (not live)' in settings
 assert 'official curated snapshot (not live)' in settings
 assert 'if (!model_combo_ || !provider_combo_' in settings
