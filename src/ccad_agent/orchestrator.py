@@ -1169,6 +1169,14 @@ if __name__ == "__main__":
                 provider_id = params.get("provider", "openai")
                 model = params.get("model", "").strip()
                 secret = params.get("secret", "")
+                test_env_names = ("CCAD_PROVIDER", "CCAD_MODEL", "CCAD_GEMINI_MODEL",
+                                  "CCAD_OPENROUTER_MODEL", "CCAD_CEREBRAS_MODEL",
+                                  "CCAD_OPENAI_COMPATIBLE_MODEL", "CCAD_LOCAL_MODEL_NAME",
+                                  "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY",
+                                  "GOOGLE_API_KEY", "OPENROUTER_API_KEY", "CEREBRAS_API_KEY",
+                                  "CCAD_OPENAI_COMPATIBLE_API_KEY", "CCAD_LOCAL_MODEL_API_KEY")
+                saved_test_env = {name: os.environ.get(name) for name in test_env_names}
+                saved_session_provider_env = set(session_provider_env)
                 os.environ["CCAD_PROVIDER"] = provider_id
                 if model:
                     os.environ["CCAD_MODEL"] = model
@@ -1204,6 +1212,14 @@ if __name__ == "__main__":
                         "error": "provider_unavailable" if secret else "missing_api_key",
                         "secret_value_visible": False,
                     }})
+                clear_session_provider_env()
+                for name, value in saved_test_env.items():
+                    if value is None:
+                        os.environ.pop(name, None)
+                    else:
+                        os.environ[name] = value
+                session_provider_env.update(saved_session_provider_env)
+                init_provider()
             elif method == "agent.set_provider_secret":
                 # Private IPC only. Never emit, persist, or add credential to
                 # prompts. Provider SDK reads process memory via its env var.

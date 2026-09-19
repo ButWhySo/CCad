@@ -2694,3 +2694,6 @@ Headless-only guard: added a no-network regression test requiring every runtime 
 ### Sprint 903 - provider key isolation
 
 Headless-only security fix: provider adapters now receive provider-specific session keys directly; settings-created aliases are tracked and cleared, preventing stale credentials crossing provider switches. Added no-network regression proof. GUI/API/build validation remains paused.
+### Sprint 904 - transient provider probe isolation
+
+Headless-only correctness fix: `agent.test_provider` now restores active provider/model/session credentials and reinitializes the prior adapter after probing. Added no-network runtime proof. GUI/API/build validation remains paused.
