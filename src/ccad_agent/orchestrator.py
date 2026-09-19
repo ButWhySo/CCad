@@ -253,6 +253,14 @@ def orchestrator_method_catalog():
              "params": {"config": {"type": "object", "optional": False}},
              "response": {"method": "message", "fields": [
                  "text", "secret_value_visible"]}},
+            {"name": "agent.generate_component", "read_only": False,
+             "provider_call": True, "secrets": False,
+             "params": {"prompt": {"type": "string"},
+                         "type": {"type": "string", "optional": True},
+                         "package": {"type": "string", "optional": True}},
+             "responses": ["generated_component", "message"],
+             "response": {"method": "generated_component", "fields": [
+                 "pins", "name"]}},
             {"name": "agent.cancel_tool", "read_only": False,
              "approval_required": False, "side_effect": "cancel_wait_only"},
             {"name": "tool_result", "read_only": False,

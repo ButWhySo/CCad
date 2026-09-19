@@ -1771,3 +1771,5 @@ Sprint 895 handover: discovery now includes read-only `agent.get_marketplace_cat
 Sprint 896 handover: discovery now includes read-only `agent.get_config` with the persisted non-secret configuration field schema returned by `config_state`.
 
 Sprint 897 handover: discovery now includes `agent.set_config` object input and redacted message response, aligned with runtime config persistence.
+
+Sprint 898 handover: discovery now includes provider-backed `agent.generate_component` prompt/type/package inputs and `generated_component` pins/name response contract.

@@ -89,6 +89,11 @@ set_config_contract = next(item for item in methods["methods"]
                            if item["name"] == "agent.set_config")
 assert set_config_contract["params"]["config"]["type"] == "object"
 assert "secret_value_visible" in set_config_contract["response"]["fields"]
+component_contract = next(item for item in methods["methods"]
+                          if item["name"] == "agent.generate_component")
+assert component_contract["params"]["prompt"]["type"] == "string"
+assert "generated_component" in component_contract["responses"]
+assert component_contract["response"]["fields"] == ["pins", "name"]
 for field in ("thread_id", "process_call_ids", "checkpoint_call_ids", "count", "approval_required",
               "approval_reason", "secret_value_visible"):
     assert field in pending_contract["response"]["fields"]

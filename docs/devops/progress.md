@@ -2671,3 +2671,7 @@ Headless-only contract fix: `agent.methods` now publishes read-only `agent.get_c
 ### Sprint 897 — config mutation discovery parity
 
 Headless-only contract fix: `agent.methods` now publishes `agent.set_config` as an object-input control with a redacted success-message response. GUI/API/build validation remains paused.
+
+### Sprint 898 — component generator discovery parity
+
+Headless-only contract fix: `agent.methods` now publishes `agent.generate_component` inputs and generated-component response fields, without making a provider call during validation. GUI/API/build validation remains paused.
