@@ -2838,3 +2838,6 @@ connector exposes no app surface.
 
 The MCP Settings page now queries `agent.mcp_status` and displays runtime,
 server count, and process-execution policy from the backend response.
+
+Fixed the initial Settings-open ordering so the MCP status request is sent only
+after its callback is registered; the first render no longer loses the status.

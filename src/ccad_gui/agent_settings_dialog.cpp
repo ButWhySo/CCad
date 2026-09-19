@@ -593,7 +593,6 @@ void AgentSettingsDialog::createMCPTab(QWidget* parent_widget) {
   buttons->addWidget(remove);
   buttons->addStretch();
   layout->addLayout(buttons);
-  if (agent_panel_) agent_panel_->sendJsonRpc("agent.mcp_status", QJsonObject());
   connect(add, &QPushButton::clicked, this, [this]() {
     const int row = mcp_servers_table_->rowCount();
     mcp_servers_table_->insertRow(row);
@@ -742,6 +741,7 @@ void AgentSettingsDialog::loadCurrentSettings() {
   if (agent_panel_) {
       agent_panel_->sendJsonRpc("agent.get_config", QJsonObject());
       agent_panel_->sendJsonRpc("agent.get_marketplace_catalog", QJsonObject());
+      agent_panel_->sendJsonRpc("agent.mcp_status", QJsonObject());
   }
 }
 

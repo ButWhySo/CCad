@@ -55,6 +55,7 @@ assert 'Saving does not connect or launch a server' in settings
 assert 'label:mcpRuntimeStatus' in settings
 assert 'agent.mcp_status' in settings
 assert 'setMcpStatusCallback' in settings
+assert 'agent_panel_->sendJsonRpc("agent.mcp_status", QJsonObject());' in settings
 assert 'setModelCatalogCallback' in settings
 assert 'applyModelCatalog' in settings
 assert 'catalog["ok"].toBool(false)' in settings
