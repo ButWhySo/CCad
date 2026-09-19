@@ -2754,3 +2754,7 @@ Added Qt regression coverage for provider/model switching: stale model text from
 ### Sprint 927 - explicit native core test gate
 
 Added an allow-list CTest runner for native kernel/CLI tests. It invokes each approved test by exact name, preventing broad regex from accidentally entering GUI, visual, or provider tests. GUI validation remains paused.
+
+### Sprint 928 - fast-gate documentation
+
+README now exposes the explicit native gate and states its rebuild boundary, reducing accidental full builds and accidental GUI execution during headless work.

@@ -389,6 +389,17 @@ When to run:
 - Before every commit that claims working code.
 - Before merging a sprint branch to `main`.
 
+While GUI validation is paused, use the explicit native-only fast gate instead
+of a broad CTest filter. It runs 35 exact kernel/CLI test names and excludes
+GUI, visual, and live-provider tests:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_native_core_gate.ps1
+```
+
+This gate does not rebuild targets; rebuild only after source changes require
+fresh binaries.
+
 For agents or shells using `cmd.exe`, keep the Qt runtime path in the same one-line command:
 
 ```cmd
