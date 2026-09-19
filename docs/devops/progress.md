@@ -2709,3 +2709,6 @@ Headless contract improvement: live OpenRouter model-catalog responses now ident
 ### Sprint 909 - track dry-run approval parity
 
 Headless approval fix: track placement now accepts `dry_run`, includes it in the tool payload, and skips broker waiting for preview-only calls. Added contract proof. GUI validation remains paused.
+### Sprint 910 - zone dry-run approval parity
+
+Headless approval fix: polygon/zone placement now accepts `dry_run`, carries it in the tool payload, and skips approval wait for preview-only calls. Contract proof and handover updated. GUI validation remains paused.

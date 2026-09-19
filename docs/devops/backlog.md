@@ -1100,3 +1100,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 906: expose model-catalog provenance to agent consumers.
 - [x] Sprint 907: expose OpenRouter catalog provenance and endpoint in agent responses.
 - [x] Sprint 909: make track tool dry-run behavior match approval policy.
+- [x] Sprint 910: make polygon/zone tool dry-run behavior match approval policy.

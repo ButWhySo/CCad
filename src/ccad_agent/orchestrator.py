@@ -457,13 +457,14 @@ def ui_place_footprint(name: str, x: float, y: float):
     return dispatch_client_tool("ui.place_footprint", {"name": name, "x": x, "y": y}, await_result=True)
 
 @tool
-def ui_add_polygon(points: List[List[float]], layer: str):
+def ui_add_polygon(points: List[List[float]], layer: str, dry_run: bool = False):
     """Adds a polygon pour on a specific layer."""
     # Assuming the first two points map to start and end for rectangular zones for parity
     if len(points) >= 2:
         x1, y1 = points[0][0], points[0][1]
         x2, y2 = points[1][0], points[1][1]
-        args = {"start_x_mm": x1, "start_y_mm": y1, "end_x_mm": x2, "end_y_mm": y2, "layer": layer}
+        args = {"start_x_mm": x1, "start_y_mm": y1, "end_x_mm": x2, "end_y_mm": y2,
+                "layer": layer, "dry_run": dry_run}
         call_id = (checkpoint_tool_call_id("ui.add_zone", args)
                    if checkpoint_saver is not None and broker_wait_enabled
                    else new_tool_call_id("ui-add-zone"))
@@ -473,7 +474,7 @@ def ui_add_polygon(points: List[List[float]], layer: str):
             "approval_required": tool_approval_decision("ui.add_zone", args)["required"],
             "approval_reason": tool_approval_decision("ui.add_zone", args)["reason"],
         }})
-        if broker_wait_enabled:
+        if broker_wait_enabled and not dry_run:
             emit_tool_approval_state()
             if checkpoint_saver is not None:
                 return dispatch_checkpointed_tool("ui.add_zone", args)

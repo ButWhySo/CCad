@@ -1787,3 +1787,4 @@ Sprint 905 handover: Cerebras catalog snapshot and settings presets now list `gp
 Sprint 906 handover: `agent.list_models` Cerebras response includes `source`, `source_kind`, and `source_url`; snapshot remains offline and quota-safe.
 Sprint 907 handover: `agent.list_models` OpenRouter responses expose `source_kind=provider_api` and `source_url`; explicit refresh remains bounded and opt-in.
 Sprint 909 handover: `ui_add_track` now carries optional `dry_run`; preview calls do not block on approval/broker execution, while real mutations retain approval flow.
+Sprint 910 handover: `ui_add_polygon` now carries optional `dry_run`; zone previews do not block on approval/broker execution, while live zone mutations retain approval flow.
