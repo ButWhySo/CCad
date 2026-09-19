@@ -432,9 +432,10 @@ def ui_place_via(x_mm: float, y_mm: float, dry_run: bool = False):
     return "Action dispatched to CCad client."
 
 @tool
-def ui_add_track(x1: float, y1: float, x2: float, y2: float):
+def ui_add_track(x1: float, y1: float, x2: float, y2: float, dry_run: bool = False):
     """Adds a track segment between two coordinates."""
-    args = {"start_x_mm": x1, "start_y_mm": y1, "end_x_mm": x2, "end_y_mm": y2}
+    args = {"start_x_mm": x1, "start_y_mm": y1, "end_x_mm": x2, "end_y_mm": y2,
+            "dry_run": dry_run}
     call_id = (checkpoint_tool_call_id("ui.route_track", args)
                if checkpoint_saver is not None and broker_wait_enabled
                else new_tool_call_id("ui-route-track"))
@@ -443,7 +444,7 @@ def ui_add_track(x1: float, y1: float, x2: float, y2: float):
         "approval_required": tool_approval_decision("ui.route_track", args)["required"],
         "approval_reason": tool_approval_decision("ui.route_track", args)["reason"],
     }})
-    if broker_wait_enabled:
+    if broker_wait_enabled and not dry_run:
         emit_tool_approval_state()
         if checkpoint_saver is not None:
             return dispatch_checkpointed_tool("ui.route_track", args)

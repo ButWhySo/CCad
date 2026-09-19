@@ -2706,3 +2706,6 @@ Headless contract improvement: Cerebras model-catalog responses now expose first
 ### Sprint 907 - OpenRouter catalog provenance
 
 Headless contract improvement: live OpenRouter model-catalog responses now identify provider API source and endpoint, including missing-key/error responses. Method discovery advertises provenance fields. No refresh occurs without explicit request and key.
+### Sprint 909 - track dry-run approval parity
+
+Headless approval fix: track placement now accepts `dry_run`, includes it in the tool payload, and skips broker waiting for preview-only calls. Added contract proof. GUI validation remains paused.

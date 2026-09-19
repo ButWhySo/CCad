@@ -1786,3 +1786,4 @@ Sprint 904 handover: transient provider probes snapshot relevant environment sta
 Sprint 905 handover: Cerebras catalog snapshot and settings presets now list `gpt-oss-120b` and `qwen-3.8-27b`; source provenance is documented. Live catalog refresh remains explicit and credentialed, never startup behavior.
 Sprint 906 handover: `agent.list_models` Cerebras response includes `source`, `source_kind`, and `source_url`; snapshot remains offline and quota-safe.
 Sprint 907 handover: `agent.list_models` OpenRouter responses expose `source_kind=provider_api` and `source_url`; explicit refresh remains bounded and opt-in.
+Sprint 909 handover: `ui_add_track` now carries optional `dry_run`; preview calls do not block on approval/broker execution, while real mutations retain approval flow.
