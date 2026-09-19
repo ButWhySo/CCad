@@ -16,6 +16,7 @@ assert 'chat_history_layout_->addWidget(container);' not in panel
 assert 'agentRole="toolCard"' not in panel
 assert 'agentRole="chatBubbleUser"' not in panel
 assert 'duplicate_backend_notice' in panel
+assert 'collapse_btn->setText(QString::fromUtf8("\\xE2\\x88\\x92"));' in panel
 assert 'role == "agent"' in panel
 review = (root / "src" / "ccad_gui" / "review_window.cpp").read_text(encoding="utf-8")
 assert 'agentRole="chatBubbleUser"' not in review

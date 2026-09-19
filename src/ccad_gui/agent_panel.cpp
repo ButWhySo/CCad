@@ -700,6 +700,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
 
   auto* collapse_btn = new QPushButton("−", top_bar);
   collapse_btn->setObjectName("action:agent_collapse");
+  collapse_btn->setText(QString::fromUtf8("\xE2\x88\x92"));
   collapse_btn->setToolTip("Collapse Agent dock");
   collapse_btn->setProperty("agentRole", "iconButton");
   collapse_btn->setFixedSize(24, 24);
