@@ -2675,3 +2675,7 @@ Headless-only contract fix: `agent.methods` now publishes `agent.set_config` as 
 ### Sprint 898 — component generator discovery parity
 
 Headless-only contract fix: `agent.methods` now publishes `agent.generate_component` inputs and generated-component response fields, without making a provider call during validation. GUI/API/build validation remains paused.
+
+### Sprint 899 — runtime/catalog parity guard
+
+Headless-only guard: added a no-network regression test requiring every runtime `agent.*` control to appear in method discovery, with only the intentionally hidden legacy telemetry export exempted. GUI/API/build validation remains paused.

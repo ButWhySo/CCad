@@ -1773,3 +1773,5 @@ Sprint 896 handover: discovery now includes read-only `agent.get_config` with th
 Sprint 897 handover: discovery now includes `agent.set_config` object input and redacted message response, aligned with runtime config persistence.
 
 Sprint 898 handover: discovery now includes provider-backed `agent.generate_component` prompt/type/package inputs and `generated_component` pins/name response contract.
+
+Sprint 899 handover: `scripts/test_agent_method_catalog_parity.py` prevents runtime `agent.*` controls from disappearing from discovery; only legacy `agent.test_export` telemetry is intentionally exempt.
