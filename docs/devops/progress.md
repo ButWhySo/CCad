@@ -2811,6 +2811,9 @@ servers while explicitly stating that the MCP runtime is not started and no
 process execution is enabled. This gives external harnesses an honest boundary
 until a supervised MCP process manager is implemented.
 
+The MCP status regression now also proves a valid configured entry survives a
+`set_config` to `mcp_status` round-trip while incomplete entries are removed.
+
 The MCP Settings page now repeats this boundary in the UI: saving a row does
 not connect or launch a server; runtime state is reported separately.
 
