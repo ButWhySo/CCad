@@ -2722,3 +2722,9 @@ making a network request or changing credentials.
 Pad JSON loading accepts the canonical `drill_nm` field emitted by CCad's own
 serializer and restores it into the padstack drill geometry. This preserves
 through-hole pad drill data across a save/load cycle.
+
+Provider model refresh now matches the Settings label: Cerebras uses its
+authenticated `/v1/models` endpoint only after an explicit Refresh models
+action, while startup continues using the first-party snapshot. Missing keys,
+HTTP failures, malformed catalogs, and timeouts return redacted provider
+catalog errors without exposing credentials or response bodies.

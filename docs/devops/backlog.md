@@ -1128,3 +1128,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 935: suppress known LangGraph checkpoint import warning narrowly.
 - [x] Sprint 938: restore canonical `drill_nm` pad fields during project JSON
   loading; serializer round-trip and official GUI harness verified.
+- [x] Sprint 939: make explicit Cerebras model refresh use the authenticated
+  provider catalog instead of returning a static snapshot.

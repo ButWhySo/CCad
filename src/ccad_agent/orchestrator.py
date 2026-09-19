@@ -74,6 +74,44 @@ def fetch_openrouter_models():
                 "network_access": "explicit_refresh", "source_url": source_url,
                 "source_kind": "provider_api"}
 
+def fetch_cerebras_models():
+    """Explicit, bounded Cerebras catalog refresh; never called at startup."""
+    source_url = "https://api.cerebras.ai/v1/models"
+    key = os.environ.get("CEREBRAS_API_KEY", "")
+    if not key:
+        return {"ok": False, "error": "missing_api_key", "models": [],
+                "network_access": "explicit_refresh", "source_url": source_url,
+                "source_kind": "provider_api"}
+    request = urllib.request.Request(
+        source_url,
+        headers={"Authorization": f"Bearer {key}", "Accept": "application/json"},
+    )
+    try:
+        timeout_value = int(os.environ.get("CCAD_MODEL_CATALOG_TIMEOUT_SECONDS", "8"))
+    except ValueError:
+        timeout_value = 8
+    timeout = min(20, max(2, timeout_value))
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        if not isinstance(payload, dict):
+            return {"ok": False, "error": "invalid_catalog_shape", "models": [],
+                    "network_access": "explicit_refresh", "source_url": source_url,
+                    "source_kind": "provider_api"}
+        models = []
+        for item in payload.get("data", []):
+            if not isinstance(item, dict) or not item.get("id"):
+                continue
+            models.append({"id": item["id"], "display_name": item.get("name", item["id"]),
+                           "owned_by": item.get("owned_by")})
+        return {"ok": True, "models": models, "count": len(models),
+                "network_access": "explicit_refresh", "source_url": source_url,
+                "source_kind": "provider_api"}
+    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
+        return {"ok": False, "error": type(error).__name__, "models": [],
+                "network_access": "explicit_refresh", "source_url": source_url,
+                "source_kind": "provider_api"}
+
 def cerebras_model_snapshot():
     """Return documented public presets without a network call.
 
@@ -230,7 +268,7 @@ def orchestrator_method_catalog():
                  "approval_required", "approval_reason", "secret_value_visible"]}},
             {"name": "agent.list_models", "read_only": True,
              "network_access": "provider_specific",
-             "network_access_by_provider": {"openrouter": "explicit_refresh", "cerebras": "none"},
+             "network_access_by_provider": {"openrouter": "explicit_refresh", "cerebras": "explicit_refresh"},
              "provider_normalization": "trim_lowercase",
              "providers": ["openrouter", "cerebras"],
              "params": {"provider": {"type": "string", "enum": ["openrouter", "cerebras"],
@@ -1365,7 +1403,7 @@ if __name__ == "__main__":
                           "params": {"provider": provider_id, **fetch_openrouter_models()}})
                 elif provider_id == "cerebras":
                     emit({"jsonrpc": "2.0", "method": "provider_models",
-                          "params": {"provider": provider_id, **cerebras_model_snapshot()}})
+                          "params": {"provider": provider_id, **fetch_cerebras_models()}})
                 else:
                     emit({"jsonrpc": "2.0", "method": "provider_models",
                           "params": {"provider": provider_id, "ok": False,

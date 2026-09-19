@@ -2879,3 +2879,12 @@ intent and the approval requirement without starting external processes.
 The project loader now accepts the canonical `drill_nm` pad field already
 emitted by CCad's serializer. A serialization regression proves a 0.5 mm pad
 drill survives save/load, preserving through-hole geometry for GUI demo boards.
+
+### Sprint 939 - make Cerebras model refresh truthful
+
+The Settings Refresh models action now performs an explicit authenticated
+Cerebras `/v1/models` request instead of returning the offline snapshot while
+claiming to refresh. Startup remains quota-safe and snapshot-backed. Missing
+keys and provider/catalog failures remain redacted. System Python was aligned
+to the pinned agent requirements; CCad still launches its isolated bundled venv
+to avoid unrelated global-package conflicts.

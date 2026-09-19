@@ -71,11 +71,12 @@ and capabilities. CCad does not fetch that catalog during startup or tests.
 
 Official reference: [OpenRouter model API](https://openrouter.ai/docs/api/api-reference/models/get-models).
 
-CCad exposes this catalog through explicit `agent.list_models` with
-`provider: "openrouter"`; OpenRouter remains the only network-fetched catalog.
-Cerebras uses a quota-safe curated official snapshot. Method discovery reports
-provider-specific network capability so external harnesses know Cerebras refresh
-is offline. Response retains model ID, display name, context
+CCad exposes catalogs through explicit `agent.list_models` with
+`provider: "openrouter"` or `provider: "cerebras"`. Both are explicit,
+credentialed refreshes; neither runs at startup. Cerebras keeps a documented
+snapshot for the initial dropdown, then fetches `https://api.cerebras.ai/v1/models`
+when the user presses Refresh models. Method discovery reports this provider
+specific network capability. Response retains model ID, display name, context
 length, and architecture metadata; keys, prices, prompts, and raw response
 payload are not returned. Missing keys and HTTP/URL/timeout/JSON failures are
 redacted categories, not raw exception text.

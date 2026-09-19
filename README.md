@@ -66,6 +66,9 @@ LangChain versions from breaking the adapter. Remove the session variables
 afterward with `Remove-Item Env:CEREBRAS_API_KEY,Env:CCAD_CEREBRAS_MODEL,Env:CCAD_CEREBRAS_REASONING_EFFORT,Env:CCAD_PROVIDER`.
 `CCAD_CEREBRAS_REASONING_EFFORT` is session-only; Qwen defaults to `none` to
 avoid unnecessary reasoning-token usage, while invalid values fall back safely.
+Use `Refresh models` after entering the session key to explicitly fetch
+Cerebras' current `/v1/models` catalog. Startup keeps the documented snapshot
+and never makes a network request; refresh is the only catalog network path.
 
 ## OpenRouter BYOK quickstart
 
@@ -82,10 +85,10 @@ $env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
 .\build-qt\ccad_gui.exe
 ```
 
-In Agent Settings choose `OpenRouter`, enter the session key, and press
-`Refresh models` when you explicitly want the current catalog in the model
-dropdown; then select a model and press `Test Provider`. Startup and contract
-tests do not fetch the catalog or consume quota. Clear temporary values afterward with
+In Agent Settings choose `OpenRouter` or `Cerebras`, enter the session key, and
+press `Refresh models` when you explicitly want the current catalog in the
+model dropdown; then select a model and press `Test Provider`. Startup and
+contract tests do not fetch catalogs or consume quota. Clear temporary values afterward with
 `Remove-Item Env:OPENROUTER_API_KEY,Env:CCAD_OPENROUTER_MODEL,Env:CCAD_PROVIDER`.
 
 Provider safety limits are process-local and optional: `CCAD_PROVIDER_RETRIES`

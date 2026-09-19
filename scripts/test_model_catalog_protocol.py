@@ -9,6 +9,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[1]
 env = os.environ.copy()
 env.pop("OPENROUTER_API_KEY", None)
+env.pop("CEREBRAS_API_KEY", None)
 env["CCAD_PROVIDER"] = "mock"
 env["PYTHONNOUSERSITE"] = "1"
 result = subprocess.run(
@@ -37,7 +38,7 @@ responses = [json.loads(line) for line in result.stdout.splitlines()
 methods = next(item["params"] for item in responses if item.get("method") == "agent_methods")
 catalog_method = next(item for item in methods["methods"] if item["name"] == "agent.list_models")
 assert catalog_method["network_access"] == "provider_specific"
-assert catalog_method["network_access_by_provider"] == {"openrouter": "explicit_refresh", "cerebras": "none"}
+assert catalog_method["network_access_by_provider"] == {"openrouter": "explicit_refresh", "cerebras": "explicit_refresh"}
 assert catalog_method["provider_normalization"] == "trim_lowercase"
 assert catalog_method["params"]["provider"]["enum"] == ["openrouter", "cerebras"]
 assert {"source", "source_kind", "source_url"}.issubset(catalog_method["response"]["fields"])
@@ -57,16 +58,12 @@ assert openrouter["error"] == "missing_api_key"
 assert openrouter["source_kind"] == "provider_api"
 assert openrouter["source_url"] == "https://openrouter.ai/api/v1/models"
 assert "OPENROUTER_API_KEY" not in json.dumps(openrouter)
-assert cerebras["ok"] is True
-assert cerebras["network_access"] == "none"
-assert cerebras["source"] == "official_curated_snapshot"
-assert cerebras["source_kind"] == "first_party_documentation"
-assert cerebras["source_url"] == "https://inference-docs.cerebras.ai/models/overview"
-assert {item["id"] for item in cerebras["models"]} == {"gpt-oss-120b", "qwen-3.8-27b"}
-metadata = {item["id"]: item for item in cerebras["models"]}
-assert metadata["gpt-oss-120b"]["context_window_paid"] == 131000
-assert metadata["qwen-3.8-27b"]["speed_tokens_per_second"] == 1850
-assert metadata["qwen-3.8-27b"]["reasoning_effort"] == ["none", "low", "medium", "high"]
+assert cerebras["ok"] is False
+assert cerebras["error"] == "missing_api_key"
+assert cerebras["network_access"] == "explicit_refresh"
+assert cerebras["source_kind"] == "provider_api"
+assert cerebras["source_url"] == "https://api.cerebras.ai/v1/models"
+assert "CEREBRAS_API_KEY" not in json.dumps(cerebras)
 assert len(canonical_cerebras) == 2
 assert unknown["ok"] is False
 assert unknown["error"] == "unsupported_provider"
