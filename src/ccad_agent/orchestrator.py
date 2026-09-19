@@ -225,7 +225,9 @@ def orchestrator_method_catalog():
                                         "default": "openrouter"}},
              "response": {"method": "provider_models", "fields": [
                  "provider", "ok", "error", "error_detail", "models",
-                 "count", "network_access", "source", "source_kind", "source_url"]}},
+                 "count", "network_access", "source", "source_kind", "source_url"],
+                 "model_fields": ["id", "display_name", "tier", "context_window_free",
+                                  "context_window_paid", "speed_tokens_per_second"]}},
             {"name": "agent.set_thread_id", "read_only": False,
              "secrets": False,
              "params": {"thread_id": {"type": "string", "optional": False,

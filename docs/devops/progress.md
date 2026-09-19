@@ -2734,3 +2734,5 @@ Initialization now advertises the resources capability, so standards-compliant c
 The subprocess proof also confirms undeclared resource URIs are rejected with JSON-RPC invalid-params.
 
 Cerebras' offline catalog now carries documented free/paid context limits and public speed estimates for the model-selection UI.
+
+The agent method catalog now explicitly describes those per-model metadata fields for external harness consumers.
