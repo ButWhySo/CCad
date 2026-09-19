@@ -2688,6 +2688,10 @@ runtime. The Settings page also states this boundary directly to users.
 The MCP section queries the same status method and displays the current runtime,
 configured-server count, and process-execution policy.
 
+External harnesses can query read-only `agent.mcp_plan` to inspect normalized
+server commands and the explicit approval boundary. It never launches a
+process; supervised MCP execution remains a separate runtime feature.
+
 Provider test failures now retain their structured backend category in the
 Settings page and translate it into actionable text, distinguishing missing or
 rejected keys, quota limits, missing models, timeouts, and missing dependencies.

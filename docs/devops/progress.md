@@ -2870,3 +2870,6 @@ configured state, and secret redaction independently of the Gemini alias test.
 
 Added GUI model-selector coverage for exact Cerebras Qwen selection and stale
 model removal when switching providers.
+
+Added read-only `agent.mcp_plan`: harnesses can inspect normalized MCP launch
+intent and the approval requirement without starting external processes.

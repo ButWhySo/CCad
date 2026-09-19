@@ -58,6 +58,7 @@ assert 'mcp_list->addItem("Server: chrome-devtools' not in settings
 assert 'Saving does not connect or launch a server' in settings
 assert 'label:mcpRuntimeStatus' in settings
 assert 'agent.mcp_status' in settings
+assert 'agent.mcp_plan' in (root / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
 assert 'setMcpStatusCallback' in settings
 assert 'agent_panel_->sendJsonRpc("agent.mcp_status", QJsonObject());' in settings
 for target in ("action:settingsBtn", "control:providerCombo", "control:modelCombo",

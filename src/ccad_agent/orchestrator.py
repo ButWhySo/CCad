@@ -285,6 +285,9 @@ def orchestrator_method_catalog():
             {"name": "agent.mcp_status", "read_only": True, "network_access": "none",
              "secrets": False, "response": {"method": "mcp_status", "fields": [
                  "servers", "configured", "runtime", "process_execution"]}},
+            {"name": "agent.mcp_plan", "read_only": True, "network_access": "none",
+             "secrets": False, "response": {"method": "mcp_plan", "fields": [
+                 "servers", "launch_allowed", "reason"]}},
             {"name": "agent.set_config", "read_only": False, "secrets": False,
              "params": {"config": {"type": "object", "optional": False}},
              "response": {"method": "message", "fields": [
@@ -1785,6 +1788,12 @@ if __name__ == "__main__":
                 emit({"jsonrpc": "2.0", "method": "mcp_status", "params": {
                     "servers": servers, "configured": bool(servers),
                     "runtime": "not_started", "process_execution": False}})
+            elif method == "agent.mcp_plan":
+                servers = config_manager._normalize_mcp_servers(
+                    config_manager.get("mcp_servers", []))
+                emit({"jsonrpc": "2.0", "method": "mcp_plan", "params": {
+                    "servers": servers, "launch_allowed": False,
+                    "reason": "MCP process execution requires supervised runtime and explicit approval"}})
             elif method == "agent.generate_component":
                 prompt = req.get("params", {}).get("prompt", "")
                 ctype = req.get("params", {}).get("type", "footprint")
