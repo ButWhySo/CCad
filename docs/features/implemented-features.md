@@ -2680,3 +2680,11 @@ API key entry is colocated with provider testing and clearing in API & Providers
 Configuration no longer hides credential input on an unrelated tab.
 The page explains that the active value is held in memory while persistent
 storage uses the operating-system credential vault.
+
+### MCP server settings
+
+Agent Settings now exposes the persisted `mcp_servers` configuration as an
+editable table rather than displaying fabricated placeholder servers. Users
+can add or remove entries and edit name, command, whitespace-separated
+arguments, port, and enabled state. Empty rows are ignored on save, arguments
+are serialized as a JSON array, and values are restored from `agent.get_config`.

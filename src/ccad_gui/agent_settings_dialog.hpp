@@ -6,6 +6,7 @@
 #include <QString>
 
 class QListWidget;
+class QTableWidget;
 class QStackedWidget;
 class QVBoxLayout;
 class QComboBox;
@@ -85,6 +86,7 @@ private:
 
   // Plugins tab
   QListWidget* plugins_list_{nullptr};
+  QTableWidget* mcp_servers_table_{nullptr};
 
   // Bottom buttons
   QPushButton* save_btn_{nullptr};

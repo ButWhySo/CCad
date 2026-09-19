@@ -45,6 +45,12 @@ assert 'curated presets (not live)' in settings
 assert 'official curated snapshot (not live)' in settings
 assert 'if (!model_combo_ || !provider_combo_' in settings
 assert 'agent_panel_->setModelCatalogCallback({});' in settings
+assert 'control:mcpServersTable' in settings
+assert 'action:addMcpServerBtn' in settings
+assert 'action:removeMcpServerBtn' in settings
+assert 'config["mcp_servers"] = servers;' in settings
+assert 'mcp_servers_table_->setRowCount(0);' in settings
+assert 'mcp_list->addItem("Server: chrome-devtools' not in settings
 assert 'setModelCatalogCallback' in settings
 assert 'applyModelCatalog' in settings
 assert 'catalog["ok"].toBool(false)' in settings

@@ -2792,3 +2792,14 @@ Its explanatory copy now matches actual behavior: session value stays in memory,
 GUI agent-panel regression coverage now asserts the current Cerebras snapshot model `qwen-3.8-27b`, removing its obsolete pre-catalog expectation.
 
 The unattended agent-panel test no longer clicks Show key, because that control correctly opens the real Windows account-password prompt; masked-state coverage stays automated and reveal behavior remains live-GUI-only.
+
+### Sprint 932 - replace MCP settings placeholders with persisted editor
+
+Agent Settings MCP now edits the existing `mcp_servers` configuration contract
+with a real table and Add server/Remove selected actions. Name, command,
+arguments, port, and enabled state round-trip through `agent.get_config` and
+`agent.set_config`; no server is launched by this UI slice. The source contract
+test passed, the Qt Release GUI rebuilt after stopping the old executable, and
+focused GUI tests passed 3 of 3. Live mouse/keyboard validation remains
+pending because the native GUI connector did not expose an app surface in this
+run.

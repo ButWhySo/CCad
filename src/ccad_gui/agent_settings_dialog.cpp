@@ -20,6 +20,9 @@
 #include <QPointer>
 #include <QTimer>
 #include <QInputDialog>
+#include <QRegularExpression>
+#include <QTableWidget>
+#include <QHeaderView>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -544,12 +547,41 @@ void AgentSettingsDialog::createPersonalisationTab(QWidget* parent_widget) {
 
 void AgentSettingsDialog::createMCPTab(QWidget* parent_widget) {
   auto* layout = new QVBoxLayout(parent_widget);
-  layout->addWidget(new QLabel("<b>MCP Servers</b>", parent_widget));
-
-  auto* mcp_list = new QListWidget(parent_widget);
-  mcp_list->addItem("Server: chrome-devtools\nPath: ...\nArgs: ...\nPorts: ...");
-  mcp_list->addItem("Server: filesystem\nPath: ...\nArgs: ...\nPorts: ...");
-  layout->addWidget(mcp_list);
+  layout->addWidget(new QLabel("<b>MCP Servers</b><br>Configure local stdio servers used by the agent. Changes are saved with the rest of Agent Settings.", parent_widget));
+  mcp_servers_table_ = new QTableWidget(parent_widget);
+  mcp_servers_table_->setObjectName("control:mcpServersTable");
+  mcp_servers_table_->setColumnCount(5);
+  mcp_servers_table_->setHorizontalHeaderLabels({"Name", "Command", "Arguments", "Port", "Enabled"});
+  mcp_servers_table_->horizontalHeader()->setStretchLastSection(true);
+  mcp_servers_table_->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+  mcp_servers_table_->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+  mcp_servers_table_->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
+  mcp_servers_table_->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+  mcp_servers_table_->setSelectionBehavior(QAbstractItemView::SelectRows);
+  layout->addWidget(mcp_servers_table_);
+  auto* buttons = new QHBoxLayout();
+  auto* add = new QPushButton("Add server", parent_widget);
+  add->setObjectName("action:addMcpServerBtn");
+  auto* remove = new QPushButton("Remove selected", parent_widget);
+  remove->setObjectName("action:removeMcpServerBtn");
+  buttons->addWidget(add);
+  buttons->addWidget(remove);
+  buttons->addStretch();
+  layout->addLayout(buttons);
+  connect(add, &QPushButton::clicked, this, [this]() {
+    const int row = mcp_servers_table_->rowCount();
+    mcp_servers_table_->insertRow(row);
+    for (int col = 0; col < 4; ++col)
+      mcp_servers_table_->setItem(row, col, new QTableWidgetItem(col == 3 ? QStringLiteral("0") : QString()));
+    auto* enabled = new QTableWidgetItem();
+    enabled->setCheckState(Qt::Checked);
+    mcp_servers_table_->setItem(row, 4, enabled);
+    mcp_servers_table_->setCurrentCell(row, 0);
+  });
+  connect(remove, &QPushButton::clicked, this, [this]() {
+    const int row = mcp_servers_table_->currentRow();
+    if (row >= 0) mcp_servers_table_->removeRow(row);
+  });
 }
 
 void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
@@ -751,6 +783,30 @@ void AgentSettingsDialog::applyConfigState(const QJsonObject& config) {
     if (inline_detached_ && personalisation.contains("chat_mode")) inline_detached_->setCurrentText(personalisation["chat_mode"].toString());
     if (agent_personality_ && personalisation.contains("agent_personality")) agent_personality_->setCurrentText(personalisation["agent_personality"].toString());
     if (custom_instructions_ && personalisation.contains("custom_instructions")) custom_instructions_->setPlainText(personalisation["custom_instructions"].toString());
+    if (mcp_servers_table_ && config.contains("mcp_servers")) {
+        const QJsonArray servers = config["mcp_servers"].toArray();
+        mcp_servers_table_->setRowCount(0);
+        for (const QJsonValue& value : servers) {
+            const QJsonObject server = value.toObject();
+            const int row = mcp_servers_table_->rowCount();
+            mcp_servers_table_->insertRow(row);
+            mcp_servers_table_->setItem(row, 0, new QTableWidgetItem(server["name"].toString()));
+            mcp_servers_table_->setItem(row, 1, new QTableWidgetItem(server["command"].toString()));
+            QString args_text;
+            if (server["args"].isArray()) {
+                QStringList args;
+                for (const QJsonValue& arg : server["args"].toArray()) args << arg.toString();
+                args_text = args.join(' ');
+            } else {
+                args_text = server["args"].toString();
+            }
+            mcp_servers_table_->setItem(row, 2, new QTableWidgetItem(args_text));
+            mcp_servers_table_->setItem(row, 3, new QTableWidgetItem(QString::number(server["port"].toInt(0))));
+            auto* enabled = new QTableWidgetItem();
+            enabled->setCheckState(server.value("enabled").toBool(true) ? Qt::Checked : Qt::Unchecked);
+            mcp_servers_table_->setItem(row, 4, enabled);
+        }
+    }
 }
 
 void AgentSettingsDialog::applyMarketplaceCatalog(const QJsonObject& catalog) {
@@ -841,6 +897,33 @@ void AgentSettingsDialog::saveAllSettings() {
 
   if (system_prompt_) config["system_prompt"] = system_prompt_->toPlainText();
   if (dev_prompt_) config["dev_prompt"] = dev_prompt_->toPlainText();
+
+  if (mcp_servers_table_) {
+    QJsonArray servers;
+    for (int row = 0; row < mcp_servers_table_->rowCount(); ++row) {
+      auto textAt = [this, row](int column) {
+        const auto* item = mcp_servers_table_->item(row, column);
+        return item ? item->text().trimmed() : QString();
+      };
+      const QString name = textAt(0);
+      const QString command = textAt(1);
+      if (name.isEmpty() || command.isEmpty()) continue;
+      QJsonObject server;
+      server["name"] = name;
+      server["command"] = command;
+      QJsonArray args;
+      const QStringList arg_tokens = textAt(2).split(QRegularExpression(QStringLiteral("\\s+")), Qt::SkipEmptyParts);
+      for (const QString& token : arg_tokens) args.append(token);
+      server["args"] = args;
+      bool port_ok = false;
+      const int port = textAt(3).toInt(&port_ok);
+      server["port"] = port_ok && port >= 0 ? port : 0;
+      const auto* enabled = mcp_servers_table_->item(row, 4);
+      server["enabled"] = enabled && enabled->checkState() == Qt::Checked;
+      servers.append(server);
+    }
+    config["mcp_servers"] = servers;
+  }
 
   if (agent_panel_ && api_key_input_) {
     const QString provider = provider_combo_ ? provider_combo_->currentData().toString() : "openai";
