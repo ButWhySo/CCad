@@ -2786,3 +2786,5 @@ Settings restore now rejects stale non-custom model IDs and falls back to the fi
 API key entry now lives in the API & Providers tab beside Show key, Test Provider, and Clear session key; Configuration retains provider/model selection only.
 
 Its explanatory copy now matches actual behavior: session value stays in memory, persistent value stays in the operating-system credential vault.
+
+GUI agent-panel regression coverage now asserts the current Cerebras snapshot model `qwen-3.8-27b`, removing its obsolete pre-catalog expectation.

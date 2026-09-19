@@ -234,7 +234,7 @@ private slots:
     QVERIFY(models != nullptr);
     provider->setCurrentIndex(provider->findData("cerebras"));
     QCOMPARE(models->currentText(), QString("gpt-oss-120b"));
-    QVERIFY(models->findText("qwen-3-235b-a22b-instruct-2507") >= 0);
+    QVERIFY(models->findText("qwen-3.8-27b") >= 0);
     models->setEditText("claude-opus-5gpt-5.1-test");
     provider->setCurrentIndex(provider->findData("anthropic"));
     QCOMPARE(models->currentText(), QString("claude-opus-5"));
