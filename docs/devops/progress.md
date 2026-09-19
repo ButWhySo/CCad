@@ -2750,3 +2750,7 @@ The adapter contract now instantiates LangChain with the production header and r
 ### Sprint 926 - model selector concatenation regression proof
 
 Added Qt regression coverage for provider/model switching: stale model text from a previous provider cannot be concatenated into the next provider's selection. GUI execution remains intentionally paused; test is queued for the next authorized GUI validation batch.
+
+### Sprint 927 - explicit native core test gate
+
+Added an allow-list CTest runner for native kernel/CLI tests. It invokes each approved test by exact name, preventing broad regex from accidentally entering GUI, visual, or provider tests. GUI validation remains paused.

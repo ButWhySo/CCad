@@ -1117,3 +1117,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 912: guard approval pane visibility so idle chat has no approval card.
 - [x] Sprint 913: expose dry-run preview for footprint and schematic-symbol placement.
 - [x] Sprint 926: add provider/model selector concatenation regression coverage; GUI execution deferred until authorized.
+- [x] Sprint 927: add explicit native core CTest allow-list; prevent accidental GUI test execution.
