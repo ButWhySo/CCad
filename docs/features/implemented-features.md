@@ -2702,6 +2702,10 @@ are serialized as a JSON array, and values are restored from `agent.get_config`.
 The Python config boundary normalizes entries, drops incomplete rows, clamps
 invalid ports to zero, and never launches a server while settings are saved.
 
+`scripts/test_provider_cerebras_secret.py` verifies Cerebras API-key injection
+through the private child-process session path, with configured state exposed
+but the key value redacted and no provider request sent.
+
 The official UI-map target sequence now opens the modeless Agent Settings dialog
 and verifies provider, model, masked API-key, and MCP table controls after the
 dialog appears. This extends visual validation beyond the dock itself without

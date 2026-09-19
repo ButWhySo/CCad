@@ -2864,3 +2864,6 @@ underlying PCB window.
 
 Settings target passes now select Configuration, API & Providers, or MCP before
 capture, making each provider/key/server target visibly actionable.
+
+Added a Cerebras-specific no-network BYOK regression proving session injection,
+configured state, and secret redaction independently of the Gemini alias test.
