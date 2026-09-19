@@ -49,6 +49,8 @@ assert human_contract["params"]["thread_id"]["optional"] is True
 assert human_contract["params"]["thread_id"]["type"] == "string"
 pending_contract = next(item for item in methods["methods"]
                         if item["name"] == "agent.pending_calls")
+assert pending_contract["params"]["thread_id"]["optional"] is True
+assert pending_contract["params"]["thread_id"]["type"] == "string"
 assert pending_contract["response"]["method"] == "pending_calls_state"
 for field in ("thread_id", "process_call_ids", "checkpoint_call_ids", "count", "approval_required",
               "approval_reason", "secret_value_visible"):

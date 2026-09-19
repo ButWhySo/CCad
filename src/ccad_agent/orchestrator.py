@@ -192,6 +192,8 @@ def orchestrator_method_catalog():
              "response": {"method": "context_state_snapshot", "fields": [
                  "thread_id", "revision", "content_emitted", "secret_value_visible"]}},
             {"name": "agent.pending_calls", "read_only": True, "secrets": False,
+             "params": {"thread_id": {"type": "string", "optional": True,
+                                         "description": "Opaque session identity"}},
              "response": {"method": "pending_calls_state", "fields": [
                 "thread_id", "process_call_ids", "checkpoint_call_ids", "count",
                  "approval_required", "approval_reason", "secret_value_visible"]}},
