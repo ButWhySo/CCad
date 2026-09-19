@@ -1767,3 +1767,5 @@ Sprint 893 handover: discovery now includes security-critical `agent.set_provide
 Sprint 894 handover: discovery now includes transient `agent.test_provider` with secret-safe probe inputs and provider/backend/message response declarations.
 
 Sprint 895 handover: discovery now includes read-only `agent.get_marketplace_catalog` with local `marketplace_catalog.plugins` and `.workflows` response fields.
+
+Sprint 896 handover: discovery now includes read-only `agent.get_config` with the persisted non-secret configuration field schema returned by `config_state`.

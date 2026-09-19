@@ -80,6 +80,11 @@ market_contract = next(item for item in methods["methods"]
                        if item["name"] == "agent.get_marketplace_catalog")
 assert market_contract["read_only"] is True
 assert market_contract["response"]["fields"] == ["plugins", "workflows"]
+config_contract = next(item for item in methods["methods"]
+                       if item["name"] == "agent.get_config")
+assert config_contract["read_only"] is True
+assert "provider" in config_contract["response"]["fields"]
+assert "mcp_servers" in config_contract["response"]["fields"]
 for field in ("thread_id", "process_call_ids", "checkpoint_call_ids", "count", "approval_required",
               "approval_reason", "secret_value_visible"):
     assert field in pending_contract["response"]["fields"]

@@ -243,6 +243,12 @@ def orchestrator_method_catalog():
              "network_access": "none", "secrets": False,
              "response": {"method": "marketplace_catalog", "fields": [
                  "plugins", "workflows"]}},
+            {"name": "agent.get_config", "read_only": True, "secrets": False,
+             "response": {"method": "config_state", "fields": [
+                 "theme", "grid", "autosave", "restore_session", "provider", "model",
+                 "sandbox_mode", "approval_policy", "project_name", "project_path",
+                 "trust_level", "memory", "hooks", "personalisation", "mcp_servers",
+                 "plugins", "workflows"]}},
             {"name": "agent.cancel_tool", "read_only": False,
              "approval_required": False, "side_effect": "cancel_wait_only"},
             {"name": "tool_result", "read_only": False,

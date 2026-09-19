@@ -2663,3 +2663,7 @@ Headless-only security contract: `agent.methods` now publishes the transient `ag
 ### Sprint 895 — marketplace discovery parity
 
 Headless-only contract fix: `agent.methods` now publishes the read-only local marketplace catalog response (`plugins`, `workflows`). GUI/API/build validation remains paused.
+
+### Sprint 896 — persisted config discovery parity
+
+Headless-only contract fix: `agent.methods` now publishes read-only `agent.get_config` and its persisted non-secret settings fields, including provider/model, memory, personalisation, MCP, plugins, and workflows. GUI/API/build validation remains paused.
