@@ -36,6 +36,7 @@ methods = next(item["params"] for item in responses if item.get("method") == "ag
 catalog_method = next(item for item in methods["methods"] if item["name"] == "agent.list_models")
 assert catalog_method["network_access"] == "provider_specific"
 assert catalog_method["network_access_by_provider"] == {"openrouter": "explicit_refresh", "cerebras": "none"}
+assert catalog_method["provider_normalization"] == "trim_lowercase"
 assert catalog_method["params"]["provider"]["enum"] == ["openrouter", "cerebras"]
 assert {"source", "source_kind", "source_url"}.issubset(catalog_method["response"]["fields"])
 assert {"context_window_free", "context_window_paid", "speed_tokens_per_second"}.issubset(

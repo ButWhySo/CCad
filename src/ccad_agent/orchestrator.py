@@ -222,6 +222,7 @@ def orchestrator_method_catalog():
             {"name": "agent.list_models", "read_only": True,
              "network_access": "provider_specific",
              "network_access_by_provider": {"openrouter": "explicit_refresh", "cerebras": "none"},
+             "provider_normalization": "trim_lowercase",
              "providers": ["openrouter", "cerebras"],
              "params": {"provider": {"type": "string", "enum": ["openrouter", "cerebras"],
                                         "default": "openrouter"}},
