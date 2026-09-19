@@ -208,6 +208,18 @@ def orchestrator_method_catalog():
              "response": {"method": "provider_models", "fields": [
                  "provider", "ok", "error", "error_detail", "models",
                  "count", "network_access"]}},
+            {"name": "agent.set_thread_id", "read_only": False,
+             "secrets": False,
+             "params": {"thread_id": {"type": "string", "optional": False,
+                                         "description": "Opaque session identity"}},
+             "response": {"method": "thread_state", "fields": [
+                 "configured", "secret_value_visible"]}},
+            {"name": "agent.resume_thread", "read_only": False,
+             "secrets": False,
+             "params": {"resume": {"type": "object", "optional": False}},
+             "responses": ["thread_state", "thread_resumed"],
+             "response": {"method": "thread_state", "fields": [
+                 "resumable", "reason", "thread_id", "next", "checkpoint_id"]}},
             {"name": "agent.cancel_tool", "read_only": False,
              "approval_required": False, "side_effect": "cancel_wait_only"},
             {"name": "tool_result", "read_only": False,

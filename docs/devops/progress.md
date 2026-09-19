@@ -2639,3 +2639,7 @@ Headless-only contract fix: `agent.methods` now advertises optional opaque `agen
 ### Sprint 889 — context query session binding
 
 Headless-only contract fix: `agent.methods` now advertises optional opaque `agent.context_state.thread_id`, matching its runtime session query. GUI/API/build validation remains paused.
+
+### Sprint 890 — thread control discovery parity
+
+Headless-only contract fix: `agent.methods` now publishes the existing `agent.set_thread_id` and `agent.resume_thread` controls, including safe parameter and `thread_state` response schemas. GUI/API/build validation remains paused.

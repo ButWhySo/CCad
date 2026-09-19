@@ -56,6 +56,14 @@ context_contract = next(item for item in methods["methods"]
                         if item["name"] == "agent.context_state")
 assert context_contract["params"]["thread_id"]["optional"] is True
 assert context_contract["params"]["thread_id"]["type"] == "string"
+set_thread_contract = next(item for item in methods["methods"]
+                           if item["name"] == "agent.set_thread_id")
+assert set_thread_contract["params"]["thread_id"]["optional"] is False
+resume_contract = next(item for item in methods["methods"]
+                       if item["name"] == "agent.resume_thread")
+assert resume_contract["params"]["resume"]["type"] == "object"
+assert "thread_resumed" in resume_contract["responses"]
+assert "checkpoint_id" in resume_contract["response"]["fields"]
 for field in ("thread_id", "process_call_ids", "checkpoint_call_ids", "count", "approval_required",
               "approval_reason", "secret_value_visible"):
     assert field in pending_contract["response"]["fields"]
