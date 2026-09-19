@@ -2724,3 +2724,5 @@ Headless approval improvement: footprint and schematic-symbol placement tools no
 ### Sprint 914 - MCP legacy protocol negotiation
 
 Headless interoperability fix: the stdio MCP server now negotiates supported legacy protocol versions (`2024-11-05`, `2025-03-26`, and `2025-06-18`) and rejects unknown versions with a JSON-RPC invalid-params error. Added C++ coverage for both branches; GUI and live provider validation remain paused.
+
+Added a provider-free subprocess interoperability proof that simulates an external MCP client, verifies notification silence, negotiated version, and the four advertised native tools.
