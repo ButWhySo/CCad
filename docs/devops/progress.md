@@ -2635,3 +2635,7 @@ Headless-only contract fix: `pending_calls_state` now returns the queried opaque
 ### Sprint 888 — pending query session binding
 
 Headless-only contract fix: `agent.methods` now advertises optional opaque `agent.pending_calls.thread_id`, matching the runtime query and response identity. GUI/API/build validation remains paused.
+
+### Sprint 889 — context query session binding
+
+Headless-only contract fix: `agent.methods` now advertises optional opaque `agent.context_state.thread_id`, matching its runtime session query. GUI/API/build validation remains paused.

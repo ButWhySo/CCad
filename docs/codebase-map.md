@@ -1753,3 +1753,5 @@ Sprint 886 handover: `orchestrator_method_catalog()` declares optional opaque `h
 Sprint 887 handover: `pending_calls_state.thread_id` identifies the queried session while retaining opaque call IDs and secret redaction; context subprocess coverage asserts the default session identity.
 
 Sprint 888 handover: `agent.pending_calls` discovery declares optional opaque `thread_id`, completing request/response session-binding metadata for external harnesses.
+
+Sprint 889 handover: `agent.context_state` discovery now declares optional opaque `thread_id`, aligned with the runtime context snapshot query and contract test.

@@ -60,6 +60,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [x] Sprint 886: advertise optional human-message thread binding in method discovery.
 - [x] Sprint 887: include queried thread identity in pending-call recovery state.
 - [x] Sprint 888: advertise optional pending-call query thread binding.
+- [x] Sprint 889: advertise optional context-state query thread binding.
 - [x] Sprint 812: canonicalize malformed JSON-RPC tool correlation IDs before pending-call lookup; invalid IDs now fail safely.
 - [x] Sprint 813: checkpointed tool cancellation resumes matching thread with structured cancellation error; stale cancellation remains rejected.
 - [x] Sprint 814: two-process checkpoint test proves cancellation result survives process restart.
