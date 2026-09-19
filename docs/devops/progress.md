@@ -2721,3 +2721,6 @@ Headless source contract: approval pane starts hidden and is shown only through 
 ### Sprint 913 - placement dry-run schema parity
 
 Headless approval improvement: footprint and schematic-symbol placement tools now expose `dry_run` and pass it through client dispatch, enabling non-blocking previews while live placement remains approval-gated.
+### Sprint 914 - MCP legacy protocol negotiation
+
+Headless interoperability fix: the stdio MCP server now negotiates supported legacy protocol versions (`2024-11-05`, `2025-03-26`, and `2025-06-18`) and rejects unknown versions with a JSON-RPC invalid-params error. Added C++ coverage for both branches; GUI and live provider validation remain paused.

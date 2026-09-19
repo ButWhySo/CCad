@@ -82,6 +82,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [ ] Verification: intent-conditioned DRC/ERC/build/visual checks; result becomes signoff evidence before commit/export.
 - [ ] Observability: Langfuse/LangSmith redaction tests, run ID display, cost/token/latency fields only when provider reports them.
 - [ ] External harness: standards-compatible MCP stdio/HTTP server and interoperability test; bespoke JSON-RPC is not MCP.
+- [x] Sprint 914: stdio MCP legacy initialize negotiation accepts published versions through `2025-06-18` and rejects unknown versions; HTTP transport and external-client interoperability remain open.
 - [ ] Product UI: usable schematic editor, complete core PCB edit loop, professional chat/activity presentation.
 - [x] Sprint 158: selective `ui.target` queries by semantic ID and PCB board point, including high-DPI physical pixel fields.
 - [x] Sprint 159: safe direct UI action triggers for non-destructive view/navigation actions, with unsafe actions explicitly refused.

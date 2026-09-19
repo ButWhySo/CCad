@@ -77,6 +77,22 @@ void testMCPInitialize() {
   assertContains(out.str(), "\"protocolVersion\":", "has protocolVersion");
 }
 
+void testMCPInitializeNegotiatesVersion() {
+  std::istringstream in(
+      "{\"jsonrpc\":\"2.0\",\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-06-18\"},\"id\":30}\n"
+      "{\"jsonrpc\":\"2.0\",\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2099-01-01\"},\"id\":31}\n");
+  std::ostringstream out;
+  auto oldCin = std::cin.rdbuf(in.rdbuf());
+  auto oldCout = std::cout.rdbuf(out.rdbuf());
+  std::vector<std::string> args = {"serve", "--allow-read"};
+  int result = ccad_cli::agentCommand(args);
+  std::cin.rdbuf(oldCin);
+  std::cout.rdbuf(oldCout);
+  if (result != 0) std::exit(1);
+  assertContains(out.str(), "\"protocolVersion\": \"2025-06-18\"", "negotiates supported version");
+  assertContains(out.str(), "Unsupported MCP protocol version", "rejects unsupported version");
+}
+
 void testMCPToolsList() {
   std::istringstream in("{\"jsonrpc\": \"2.0\", \"method\": \"tools/list\", \"id\": 4}\n");
   std::ostringstream out;
@@ -1266,6 +1282,7 @@ int main() {
     testPing();
     testExecute();
     testMCPInitialize();
+    testMCPInitializeNegotiatesVersion();
     testMCPInitializedNotificationIsSilent();
     testMCPToolsList();
     testMCPToolsCall();

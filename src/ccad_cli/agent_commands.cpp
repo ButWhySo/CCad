@@ -895,8 +895,22 @@ int agentCommand(const std::vector<std::string>& args) {
       std::cout << formatSuccess(id, "\"pong\"") << "\n";
       std::cout.flush();
     } else if (method == "initialize") {
-      std::string res = "{\"protocolVersion\": \"2024-11-05\", \"capabilities\": {\"tools\": {}}, \"serverInfo\": {\"name\": \"ccad\", \"version\": \"1.0.0\"}}";
-      std::cout << formatSuccess(id, res) << "\n";
+      // Negotiate the legacy MCP protocol family. Keep the newest version
+      // supported by this line-oriented server, while accepting older clients.
+      const std::string requested_version = extractStringValue(line, "protocolVersion");
+      const bool supported = requested_version.empty() ||
+                             requested_version == "2024-11-05" ||
+                             requested_version == "2025-03-26" ||
+                             requested_version == "2025-06-18";
+      if (!supported) {
+        std::cout << formatError(id, -32602, "Unsupported MCP protocol version") << "\n";
+      } else {
+        const std::string negotiated = requested_version.empty() ? "2025-06-18" : requested_version;
+        std::string res = "{\"protocolVersion\": \"" + negotiated +
+                          "\", \"capabilities\": {\"tools\": {}}, \"serverInfo\": {\"name\": \"ccad\", \"version\": \"1.0.0\"}}";
+        std::cout << formatSuccess(id, res) << "\n";
+      }
+      
       std::cout.flush();
     } else if (method == "tools/list") {
       std::string res = "{\"tools\": [{\"name\": \"ccad_execute\", \"description\": \"Execute guarded CCad CLI commands\", \"annotations\": {\"readOnlyHint\": false, \"destructiveHint\": true, \"openWorldHint\": false}, \"inputSchema\": {\"type\": \"object\", \"properties\": {\"args\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}, \"required\": [\"args\"]}},";
