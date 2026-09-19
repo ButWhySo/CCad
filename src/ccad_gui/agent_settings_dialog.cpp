@@ -668,6 +668,30 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
   });
   layout->addWidget(reveal_key);
   layout->addWidget(new QLabel("Session key is held in memory and stored only in the OS credential vault.", parent_widget));
+  auto* set_key = new QPushButton("Set key", parent_widget);
+  set_key->setObjectName("action:setProviderKeyBtn");
+  set_key->setToolTip("Store this provider key in Windows Credential Manager and activate the selected provider and model");
+  connect(set_key, &QPushButton::clicked, this, [this]() {
+    if (!api_key_input_ || !agent_panel_) return;
+    const QString secret = api_key_input_->text();
+    if (secret.isEmpty()) {
+      if (provider_status_label_) provider_status_label_->setText("Provider key is required");
+      return;
+    }
+    const QString provider = provider_combo_ ? provider_combo_->currentData().toString()
+                                             : QStringLiteral("openai");
+    const QString model = model_input_ ? model_input_->text().trimmed() : QString();
+    storeSecret(provider, secret);
+    // Provider and model are safe preferences; the key travels only through
+    // the private secret IPC and Windows Credential Manager.
+    agent_panel_->sendJsonRpc("agent.set_config", QJsonObject{
+        {"provider", provider}, {"model", model}});
+    agent_panel_->setProviderSecret(provider, secret);
+    if (provider_status_label_) {
+      provider_status_label_->setText("Key saved; selected provider is active");
+    }
+  });
+  layout->addWidget(set_key);
   auto* test_provider = new QPushButton("Validate Provider Setup", parent_widget);
   test_provider->setObjectName("action:testProviderBtn");
   test_provider->setToolTip("Initializes the selected provider without sending a request or consuming quota");

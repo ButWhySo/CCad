@@ -2913,3 +2913,11 @@ Controlled response tests now cover OpenAI, Anthropic, Gemini, OpenRouter, and
 Cerebras model catalogs. They verify API-specific authentication headers,
 Gemini model-ID normalization, filtering of non-generative Gemini entries, and
 safe `invalid_catalog_shape` failures without using a provider key or network.
+
+### Sprint 942 - make key activation explicit
+
+Agent Settings now provides `Set key`, matching the intended provider setup
+flow. The action stores the selected provider key in the OS vault, updates the
+selected provider/model configuration, and passes the secret only through the
+private running-agent channel. It removes the misleading requirement to close
+the dialog with Save Preferences before a newly entered key can be used.

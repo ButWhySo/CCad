@@ -2756,3 +2756,9 @@ Catalog parsers reject malformed provider payloads as `invalid_catalog_shape`
 instead of propagating an internal parsing exception. Controlled local-response
 tests verify the normalized model IDs and authentication headers for every
 first-party Refresh models integration.
+
+The API & Providers page now has an explicit `Set key` action. It stores the
+selected provider key in Windows Credential Manager, sends that key only over
+the private child-process IPC, and activates the selected provider and model in
+the running agent. It does not write a key to project files, agent JSON, or
+logs.

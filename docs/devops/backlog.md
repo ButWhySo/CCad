@@ -1142,3 +1142,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   unknown OpenAI-compatible and local endpoints.
 - [x] Validate every first-party catalog parser against controlled provider-shaped
   responses, including its authentication header and malformed payload handling.
+- [x] Add an explicit Set key action that persists the selected provider key
+  safely and activates the selected provider/model without requiring dialog close.

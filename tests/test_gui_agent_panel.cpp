@@ -104,6 +104,10 @@ private slots:
     auto* test_provider = dialog.findChild<QPushButton*>("action:testProviderBtn");
     QVERIFY(test_provider != nullptr);
     QVERIFY(!test_provider->toolTip().isEmpty());
+    auto* set_provider_key = dialog.findChild<QPushButton*>("action:setProviderKeyBtn");
+    QVERIFY(set_provider_key != nullptr);
+    QCOMPARE(set_provider_key->text(), QStringLiteral("Set key"));
+    QVERIFY(!set_provider_key->toolTip().isEmpty());
     auto* provider_target = dialog.findChild<QLabel*>("label:providerTestTarget");
     QVERIFY(provider_target != nullptr);
     QVERIFY(provider_target->text().contains("Test target:"));
