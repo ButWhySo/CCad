@@ -2758,3 +2758,5 @@ Added an allow-list CTest runner for native kernel/CLI tests. It invokes each ap
 ### Sprint 928 - fast-gate documentation
 
 README now exposes the explicit native gate and states its rebuild boundary, reducing accidental full builds and accidental GUI execution during headless work.
+
+The gate now self-checks its allow-list and refuses GUI, visual, provider, or agent-prefixed test names before invoking CTest.

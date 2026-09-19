@@ -16,6 +16,13 @@ $names = @(
   "pns_board_adapter", "router_pns_adapter"
 )
 
+$forbidden = $names | Where-Object {
+  $_ -match '^(gui_|visual_|provider_|agent_)'
+}
+if ($forbidden) {
+  throw "native gate allow-list contains forbidden test(s): $($forbidden -join ', ')"
+}
+
 foreach ($name in $names) {
   & ctest --test-dir $build --output-on-failure -R "^$([regex]::Escape($name))$"
   if ($LASTEXITCODE -ne 0) { throw "native core test failed: $name" }
