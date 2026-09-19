@@ -77,6 +77,7 @@ current_run_span_id = ""
 inbound_queue = None
 deferred_queue = queue.Queue()
 pending_calls = {}
+pending_call_threads = {}
 pending_calls_lock = threading.Lock()
 
 def route_protocol_line(protocol_line: str) -> bool:
@@ -100,8 +101,10 @@ def wait_for_broker_result(call_id: str) -> str:
     timeout = max(1.0, float(os.environ.get("CCAD_BROKER_TIMEOUT_SECONDS", "30")))
     deadline = time.monotonic() + timeout
     result_queue = queue.Queue()
+    thread_id = os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
     with pending_calls_lock:
         pending_calls[call_id] = result_queue
+        pending_call_threads[call_id] = thread_id
     try:
         while True:
             if inbound_queue is not None:
@@ -129,6 +132,7 @@ def wait_for_broker_result(call_id: str) -> str:
     finally:
         with pending_calls_lock:
             pending_calls.pop(call_id, None)
+            pending_call_threads.pop(call_id, None)
 
 def new_tool_call_id(tool_name: str) -> str:
     """Create a per-invocation correlation ID; never reuse across retries."""
@@ -151,13 +155,15 @@ def checkpoint_tool_call_id(tool_name: str, args: dict) -> str:
 
 def pending_call_snapshot(thread_id: str = ""):
     """Return opaque pending-call metadata without tool arguments or secrets."""
+    requested_thread = thread_id or os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
     with pending_calls_lock:
-        process_calls = sorted(pending_calls.keys())
+        process_calls = sorted(call_id for call_id in pending_calls
+                               if pending_call_threads.get(call_id) == requested_thread)
     checkpoint_calls = []
     if checkpoint_saver is not None and executor is not None:
         try:
             snapshot = executor.get_state({"configurable": {
-                "thread_id": thread_id or os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
+                "thread_id": requested_thread
             }})
             for task in snapshot.tasks:
                 for pending_interrupt in getattr(task, "interrupts", ()):

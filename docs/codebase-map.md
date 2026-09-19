@@ -1743,3 +1743,5 @@ Sprint 881 handover: `scripts/test_agent_checkpoint_restart.py` validates durabl
 Sprint 882 handover: `scripts/test_agent_context_contract.py` validates `agent.pending_calls` response method/fields from real `agent.methods` discovery, including approval status/reason.
 
 Sprint 883 handover: the same subprocess contract now covers every `pending_calls_state` discovery field, preserving the opaque-ID and secret-redaction boundary.
+
+Sprint 884 handover: `pending_call_threads` records the originating thread for each live process-broker wait; `pending_call_snapshot(thread_id)` now reports only matching process calls, with an isolated contract in `scripts/test_pending_call_thread_scope.py`.

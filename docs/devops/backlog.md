@@ -55,6 +55,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [x] Sprint 881: prove nonempty pending approval metadata at the durable checkpoint boundary.
 - [x] Sprint 882: prove pending-call approval fields in both runtime response and method discovery.
 - [x] Sprint 883: prove the complete redacted pending-call discovery schema.
+- [x] Sprint 884: scope process-broker pending-call recovery by agent thread.
 - [x] Sprint 812: canonicalize malformed JSON-RPC tool correlation IDs before pending-call lookup; invalid IDs now fail safely.
 - [x] Sprint 813: checkpointed tool cancellation resumes matching thread with structured cancellation error; stale cancellation remains rejected.
 - [x] Sprint 814: two-process checkpoint test proves cancellation result survives process restart.

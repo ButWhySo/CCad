@@ -2615,3 +2615,7 @@ Headless-only proof: subprocess contract now verifies `agent.pending_calls` disc
 ### Sprint 883 — pending discovery schema completeness
 
 Headless-only proof: the subprocess contract now checks every redacted `pending_calls_state` discovery field, including process/checkpoint IDs, count, approval metadata, and secret visibility. GUI/API/build validation remains paused.
+
+### Sprint 884 — thread-scoped process pending calls
+
+Headless-only fix: process-broker pending calls now carry their originating agent thread ID, and recovery snapshots exclude calls belonging to other threads. Added an isolated two-thread contract test. GUI/API/build validation remains paused.
