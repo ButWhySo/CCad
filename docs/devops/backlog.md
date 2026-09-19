@@ -1102,3 +1102,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 909: make track tool dry-run behavior match approval policy.
 - [x] Sprint 910: make polygon/zone tool dry-run behavior match approval policy.
 - [x] Sprint 911: prove track/zone dry-run fields reach provider tool schemas.
+- [x] Sprint 912: guard approval pane visibility so idle chat has no approval card.

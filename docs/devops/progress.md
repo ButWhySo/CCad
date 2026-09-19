@@ -2715,3 +2715,6 @@ Headless approval fix: polygon/zone placement now accepts `dry_run`, carries it 
 ### Sprint 911 - provider tool schema proof
 
 Headless contract proof: track and zone tools now expose `dry_run` in the provider-facing LangChain schemas, not merely in internal dispatch code. GUI validation remains paused.
+### Sprint 912 - approval pane visibility guard
+
+Headless source contract: approval pane starts hidden and is shown only through pending-change approval paths; clear/accept/decline/policy-idle paths hide it. No GUI launch while visual validation is paused.
