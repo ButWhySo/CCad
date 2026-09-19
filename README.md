@@ -53,6 +53,7 @@ limits follow Cerebras' live documentation.
 & src/ccad_agent/venv/Scripts/python.exe -m pip install -r src/ccad_agent/requirements.txt
 $env:CEREBRAS_API_KEY = "PASTE_KEY_HERE"
 $env:CCAD_CEREBRAS_MODEL = "gpt-oss-120b"
+$env:CCAD_CEREBRAS_REASONING_EFFORT = "medium" # qwen-3.8-27b also accepts none
 $env:CCAD_PROVIDER = "cerebras"
 $env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
 .\build-qt\ccad_gui.exe
@@ -63,6 +64,8 @@ key, and press `Test Provider`. The GUI launches the checked-in venv by
 absolute path and disables user-site packages, preventing stale global
 LangChain versions from breaking the adapter. Remove the session variables
 afterward with `Remove-Item Env:CEREBRAS_API_KEY,Env:CCAD_CEREBRAS_MODEL,Env:CCAD_PROVIDER`.
+`CCAD_CEREBRAS_REASONING_EFFORT` is session-only; Qwen defaults to `none` to
+avoid unnecessary reasoning-token usage, while invalid values fall back safely.
 
 ## OpenRouter BYOK quickstart
 
