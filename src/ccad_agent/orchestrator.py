@@ -780,6 +780,15 @@ def init_provider():
                 kwargs["default_headers"] = {
                     "X-Cerebras-3rd-Party-Integration": "langgraph"
                 }
+                effort_options = {
+                    "gpt-oss-120b": {"low", "medium", "high"},
+                    "qwen-3.8-27b": {"none", "low", "medium", "high"},
+                }
+                requested_effort = os.environ.get("CCAD_CEREBRAS_REASONING_EFFORT", "").strip().lower()
+                default_effort = "none" if model_name == "qwen-3.8-27b" else "medium"
+                if requested_effort not in effort_options.get(model_name, set()):
+                    requested_effort = default_effort
+                kwargs["reasoning_effort"] = requested_effort
             provider_keys = {
                 "openai": "OPENAI_API_KEY",
                 "openai_compatible": "CCAD_OPENAI_COMPATIBLE_API_KEY",
