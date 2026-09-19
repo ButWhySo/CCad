@@ -29,8 +29,10 @@ requests = [{"method": "agent.methods", "params": {}}]
 requests.append({"method": "agent.context_state", "params": {}})
 requests.append({"method": "agent.pending_calls", "params": {}})
 requests.extend({"method": "human_message", "params": {
-    "text": "summarize", "context": context}}
-    for context in ("board A", "board B", "board B"))
+    "text": "summarize", "context": context, "thread_id": thread_id}}
+    for context, thread_id in (("board A", "thread-a"),
+                               ("board B", "thread-b"),
+                               ("board B", "thread-b")))
 requests.append({"method": "human_message", "params": {
     "text": "/clear", "context": "board B"}})
 requests.append({"method": "agent.context_state", "params": {}})
@@ -53,6 +55,7 @@ assert "context_state" in human_contract["response_contracts"]
 assert "provider_state" in human_contract["responses"]
 assert "backend_state" in human_contract["responses"]
 assert "change_kind" in human_contract["response_contracts"]["context_state"]["fields"]
+assert "thread_id" in human_contract["response_contracts"]["context_state"]["fields"]
 assert "intake_state" in human_contract["response_contracts"]
 assert "accepted" in human_contract["response_contracts"]["intake_state"]["fields"]
 assert "provider_state" in human_contract["response_contracts"]
@@ -89,7 +92,11 @@ events = [item for item in lines if item.get("method") == "context_state"]
 assert len(events) == 4
 assert events[0]["params"]["previous_revision"] == ""
 assert events[0]["params"]["change_kind"] == "initial"
-assert events[1]["params"]["previous_revision"] == events[0]["params"]["revision"]
-assert events[1]["params"]["change_kind"] == "changed"
+assert events[0]["params"]["thread_id"] == "thread-a"
+assert events[1]["params"]["previous_revision"] == ""
+assert events[1]["params"]["change_kind"] == "initial"
+assert events[1]["params"]["thread_id"] == "thread-b"
+assert events[2]["params"]["previous_revision"] == events[1]["params"]["revision"]
 assert events[2]["params"]["change_kind"] == "unchanged"
+assert events[2]["params"]["thread_id"] == "thread-b"
 print("PASS agent context history boundary contract; no network")

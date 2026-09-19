@@ -2619,3 +2619,7 @@ Headless-only proof: the subprocess contract now checks every redacted `pending_
 ### Sprint 884 — thread-scoped process pending calls
 
 Headless-only fix: process-broker pending calls now carry their originating agent thread ID, and recovery snapshots exclude calls belonging to other threads. Added an isolated two-thread contract test. GUI/API/build validation remains paused.
+
+### Sprint 885 — request thread propagation
+
+Headless-only fix: `human_message.thread_id` now drives context revisions, process-wait ownership, graph configuration, and emitted context-state metadata. The runtime contract covers two threads and their changed/unchanged transitions. GUI/API/build validation remains paused.

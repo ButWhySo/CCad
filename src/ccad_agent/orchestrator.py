@@ -230,7 +230,7 @@ def orchestrator_method_catalog():
                  "tool_canceled": {"fields": [
                      "call_id", "reason"]},
                  "context_state": {"fields": [
-                     "revision", "previous_revision", "changed", "change_kind",
+                     "thread_id", "revision", "previous_revision", "changed", "change_kind",
                      "content_present", "content_size", "original_content_size",
                      "context_limit", "truncated", "content_emitted", "sources",
                      "memory_content_emitted"]}},
@@ -1331,8 +1331,12 @@ if __name__ == "__main__":
                     "call_id": call_id, "reason": str(reason),
                 }})
             elif method == "human_message":
-                text = req.get("params", {}).get("text", "")
-                raw_context = req.get("params", {}).get("context", "")
+                params = req.get("params", {})
+                text = params.get("text", "")
+                raw_context = params.get("context", "")
+                requested_thread = str(params.get("thread_id") or
+                                       os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local"))
+                os.environ["CCAD_AGENT_THREAD_ID"] = requested_thread
                 if not isinstance(raw_context, str):
                     raw_context = str(raw_context or "")
                 request_context_present = bool(raw_context.strip())
@@ -1351,7 +1355,7 @@ if __name__ == "__main__":
                         "secret_value_visible": False,
                     }})
                     continue
-                context_thread_id = os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
+                context_thread_id = requested_thread
                 previous_context_revision = context_revisions.get(context_thread_id, "")
                 current_context_revision = context_revision(context_str)
                 context_changed = current_context_revision != previous_context_revision
@@ -1365,6 +1369,7 @@ if __name__ == "__main__":
                     if oldest_thread_id != context_thread_id:
                         context_revisions.pop(oldest_thread_id, None)
                 emit({"jsonrpc": "2.0", "method": "context_state", "params": {
+                    "thread_id": context_thread_id,
                     "revision": current_context_revision,
                     "previous_revision": previous_context_revision,
                     "changed": context_changed,
@@ -1523,7 +1528,9 @@ if __name__ == "__main__":
                     "token_usage": "unavailable", "cost": "unavailable",
                 }})
                 try:
-                    final_state = invoke_agent_run({"messages": session_messages, "goal": text, "context": context_str, "next_node": ""})
+                    final_state = invoke_agent_run({"messages": session_messages, "goal": text,
+                                                    "context": context_str, "next_node": "",
+                                                    "thread_id": context_thread_id})
                 except Exception as error:
                     emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
                         "run_state": "failed", "trace_id": run_trace_id,
