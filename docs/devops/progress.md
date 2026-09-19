@@ -2667,3 +2667,7 @@ Headless-only contract fix: `agent.methods` now publishes the read-only local ma
 ### Sprint 896 — persisted config discovery parity
 
 Headless-only contract fix: `agent.methods` now publishes read-only `agent.get_config` and its persisted non-secret settings fields, including provider/model, memory, personalisation, MCP, plugins, and workflows. GUI/API/build validation remains paused.
+
+### Sprint 897 — config mutation discovery parity
+
+Headless-only contract fix: `agent.methods` now publishes `agent.set_config` as an object-input control with a redacted success-message response. GUI/API/build validation remains paused.

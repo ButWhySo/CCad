@@ -249,6 +249,10 @@ def orchestrator_method_catalog():
                  "sandbox_mode", "approval_policy", "project_name", "project_path",
                  "trust_level", "memory", "hooks", "personalisation", "mcp_servers",
                  "plugins", "workflows"]}},
+            {"name": "agent.set_config", "read_only": False, "secrets": False,
+             "params": {"config": {"type": "object", "optional": False}},
+             "response": {"method": "message", "fields": [
+                 "text", "secret_value_visible"]}},
             {"name": "agent.cancel_tool", "read_only": False,
              "approval_required": False, "side_effect": "cancel_wait_only"},
             {"name": "tool_result", "read_only": False,
