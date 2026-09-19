@@ -84,6 +84,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [ ] External harness: standards-compatible MCP stdio/HTTP server and interoperability test; bespoke JSON-RPC is not MCP.
 - [x] Sprint 914: stdio MCP legacy initialize negotiation accepts published versions through `2025-06-18` and rejects unknown versions; HTTP transport and external-client interoperability remain open.
 - [x] Sprint 915: native subprocess MCP stdio interoperability proof covers initialize, silent initialized notification, and tools/list without network access.
+- [x] Sprint 916: expose read-only harness-context and workspace-state resources through native MCP stdio, with subprocess read/list coverage.
 - [ ] Product UI: usable schematic editor, complete core PCB edit loop, professional chat/activity presentation.
 - [x] Sprint 158: selective `ui.target` queries by semantic ID and PCB board point, including high-DPI physical pixel fields.
 - [x] Sprint 159: safe direct UI action triggers for non-destructive view/navigation actions, with unsafe actions explicitly refused.

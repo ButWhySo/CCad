@@ -919,6 +919,27 @@ int agentCommand(const std::vector<std::string>& args) {
       res += "{\"name\": \"ccad_agent_methods\", \"description\": \"Read CCad agent JSON-RPC method catalog and safety metadata\", \"annotations\": {\"readOnlyHint\": true, \"destructiveHint\": false, \"openWorldHint\": false}, \"inputSchema\": {\"type\": \"object\", \"properties\": {}}}]}";
       std::cout << formatSuccess(id, res) << "\n";
       std::cout.flush();
+    } else if (method == "resources/list") {
+      const std::string res = "{\"resources\":["
+                              "{\"uri\":\"ccad://harness-context\",\"name\":\"CCad harness context\",\"description\":\"Read-only CCad agent harness contract\",\"mimeType\":\"application/json\"},"
+                              "{\"uri\":\"ccad://workspace-state\",\"name\":\"CCad workspace state\",\"description\":\"Read-only provider-free workspace state\",\"mimeType\":\"application/json\"}]}";
+      std::cout << formatSuccess(id, res) << "\n";
+      std::cout.flush();
+    } else if (method == "resources/read") {
+      const std::string uri = extractStringValue(line, "uri");
+      std::string resource;
+      if (uri == "ccad://harness-context") resource = agentHarnessContextJson();
+      else if (uri == "ccad://workspace-state") resource = agentWorkspaceStateJson();
+      else {
+        std::cout << formatError(id, -32602, "Unknown CCad resource URI") << "\n";
+        std::cout.flush();
+        continue;
+      }
+      const std::string res = "{\"contents\":[{\"uri\":\"" + ccad::escapeJson(uri) +
+                              "\",\"mimeType\":\"application/json\",\"text\":\"" +
+                              ccad::escapeJson(resource) + "\"}]}";
+      std::cout << formatSuccess(id, res) << "\n";
+      std::cout.flush();
     } else if (method == "tools/call" && extractStringValue(line, "name") == "ccad_harness_context") {
       const std::string result = agentHarnessContextJson();
       std::cout << formatSuccess(id, "{\"content\":[{\"type\":\"text\",\"text\":\"" +
