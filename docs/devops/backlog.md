@@ -1098,3 +1098,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 904: restore active adapter after transient provider probe.
 - [x] Sprint 905: refresh Cerebras model presets from first-party public catalog docs.
 - [x] Sprint 906: expose model-catalog provenance to agent consumers.
+- [x] Sprint 907: expose OpenRouter catalog provenance and endpoint in agent responses.

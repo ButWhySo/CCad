@@ -1785,3 +1785,4 @@ Sprint 903 handover: `orchestrator.py` tracks settings-created credential enviro
 Sprint 904 handover: transient provider probes snapshot relevant environment state, run isolated initialization, then restore provider/model/key state and active adapter. `scripts/test_provider_probe_isolation.py` proves mock session remains usable after Cerebras probe; no network.
 Sprint 905 handover: Cerebras catalog snapshot and settings presets now list `gpt-oss-120b` and `qwen-3.8-27b`; source provenance is documented. Live catalog refresh remains explicit and credentialed, never startup behavior.
 Sprint 906 handover: `agent.list_models` Cerebras response includes `source`, `source_kind`, and `source_url`; snapshot remains offline and quota-safe.
+Sprint 907 handover: `agent.list_models` OpenRouter responses expose `source_kind=provider_api` and `source_url`; explicit refresh remains bounded and opt-in.

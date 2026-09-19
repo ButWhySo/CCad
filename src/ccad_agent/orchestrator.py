@@ -27,9 +27,11 @@ def emit(payload: dict):
 
 def fetch_openrouter_models():
     """Explicit, bounded OpenRouter catalog refresh; never called at startup."""
+    source_url = "https://openrouter.ai/api/v1/models"
     key = os.environ.get("OPENROUTER_API_KEY", "")
     if not key:
-        return {"ok": False, "error": "missing_api_key", "models": []}
+        return {"ok": False, "error": "missing_api_key", "models": [],
+                "source_url": source_url, "source_kind": "provider_api"}
     request = urllib.request.Request(
         "https://openrouter.ai/api/v1/models",
         headers={"Authorization": f"Bearer {key}", "Accept": "application/json"},
@@ -43,7 +45,9 @@ def fetch_openrouter_models():
         with urllib.request.urlopen(request, timeout=timeout) as response:
             payload = json.loads(response.read().decode("utf-8"))
         if not isinstance(payload, dict):
-            return {"ok": False, "error": "invalid_catalog_shape", "models": [], "network_access": "explicit_refresh"}
+            return {"ok": False, "error": "invalid_catalog_shape", "models": [],
+                    "network_access": "explicit_refresh", "source_url": source_url,
+                    "source_kind": "provider_api"}
         models = []
         for item in payload.get("data", []):
             if not isinstance(item, dict) or not item.get("id"):
@@ -53,9 +57,13 @@ def fetch_openrouter_models():
                 "context_length": item.get("context_length"),
                 "architecture": item.get("architecture", {}),
             })
-        return {"ok": True, "models": models, "count": len(models), "network_access": "explicit_refresh"}
+        return {"ok": True, "models": models, "count": len(models),
+                "network_access": "explicit_refresh", "source_url": source_url,
+                "source_kind": "provider_api"}
     except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
-        return {"ok": False, "error": type(error).__name__, "models": [], "network_access": "explicit_refresh"}
+        return {"ok": False, "error": type(error).__name__, "models": [],
+                "network_access": "explicit_refresh", "source_url": source_url,
+                "source_kind": "provider_api"}
 
 def cerebras_model_snapshot():
     """Return documented public presets without a network call.
@@ -213,7 +221,7 @@ def orchestrator_method_catalog():
                                         "default": "openrouter"}},
              "response": {"method": "provider_models", "fields": [
                  "provider", "ok", "error", "error_detail", "models",
-                 "count", "network_access"]}},
+                 "count", "network_access", "source", "source_kind", "source_url"]}},
             {"name": "agent.set_thread_id", "read_only": False,
              "secrets": False,
              "params": {"thread_id": {"type": "string", "optional": False,

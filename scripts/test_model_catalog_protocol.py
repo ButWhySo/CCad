@@ -35,12 +35,15 @@ catalog_method = next(item for item in methods["methods"] if item["name"] == "ag
 assert catalog_method["network_access"] == "provider_specific"
 assert catalog_method["network_access_by_provider"] == {"openrouter": "explicit_refresh", "cerebras": "none"}
 assert catalog_method["params"]["provider"]["enum"] == ["openrouter", "cerebras"]
+assert {"source", "source_kind", "source_url"}.issubset(catalog_method["response"]["fields"])
 catalogs = [item["params"] for item in responses if item.get("method") == "provider_models"]
 openrouter = next(item for item in catalogs if item["provider"] == "openrouter")
 cerebras = next(item for item in catalogs if item["provider"] == "cerebras")
 unknown = next(item for item in catalogs if item["provider"] == "unknown")
 assert openrouter["ok"] is False
 assert openrouter["error"] == "missing_api_key"
+assert openrouter["source_kind"] == "provider_api"
+assert openrouter["source_url"] == "https://openrouter.ai/api/v1/models"
 assert "OPENROUTER_API_KEY" not in json.dumps(openrouter)
 assert cerebras["ok"] is True
 assert cerebras["network_access"] == "none"

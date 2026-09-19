@@ -2703,3 +2703,6 @@ Headless/source-only provider catalog refresh: aligned Cerebras presets with cur
 ### Sprint 906 - catalog provenance response
 
 Headless contract improvement: Cerebras model-catalog responses now expose first-party source URL and source kind, allowing UI/harness consumers to distinguish curated offline data from live refresh. No network call added.
+### Sprint 907 - OpenRouter catalog provenance
+
+Headless contract improvement: live OpenRouter model-catalog responses now identify provider API source and endpoint, including missing-key/error responses. Method discovery advertises provenance fields. No refresh occurs without explicit request and key.
