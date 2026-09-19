@@ -10,6 +10,7 @@ assert 'provider == "cerebras"' in source
 assert 'base_url = "https://api.cerebras.ai/v1"' in source
 assert '"X-Cerebras-3rd-Party-Integration": "langgraph"' in source
 assert 'CCAD_CEREBRAS_REASONING_EFFORT' in source
+assert '"CCAD_CEREBRAS_REASONING_EFFORT"' in source[source.index("test_env_names"):source.index("saved_test_env")]
 assert '"qwen-3.8-27b": {"none", "low", "medium", "high"}' in source
 assert 'model_name = model_name or "gpt-oss-120b"' in source
 assert 'os.environ.get("CCAD_CEREBRAS_MODEL") or model_name' in source

@@ -2742,3 +2742,5 @@ The catalog also records each public Cerebras model's documented reasoning-effor
 Cerebras LangGraph requests now include the provider-recommended integration header while retaining the OpenAI-compatible endpoint.
 
 Cerebras runtime requests now select a documented reasoning effort per model, with an optional session-only override and safe fallback for invalid values.
+
+Transient provider probes now snapshot and restore that reasoning override with the rest of the provider environment.

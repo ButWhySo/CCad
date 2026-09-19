@@ -1211,6 +1211,7 @@ if __name__ == "__main__":
                 secret = params.get("secret", "")
                 test_env_names = ("CCAD_PROVIDER", "CCAD_MODEL", "CCAD_GEMINI_MODEL",
                                   "CCAD_OPENROUTER_MODEL", "CCAD_CEREBRAS_MODEL",
+                                  "CCAD_CEREBRAS_REASONING_EFFORT",
                                   "CCAD_OPENAI_COMPATIBLE_MODEL", "CCAD_LOCAL_MODEL_NAME",
                                   "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY",
                                   "GOOGLE_API_KEY", "OPENROUTER_API_KEY", "CEREBRAS_API_KEY",
