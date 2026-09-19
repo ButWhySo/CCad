@@ -69,9 +69,9 @@ bool looksLikeConcatenatedPreset(const QString& model) {
 }
 
 QString modelDetailsForProvider(const QString& provider) {
-  if (provider == "openai") return "OpenAI API | text/image | tool calling | key: OPENAI_API_KEY";
-  if (provider == "anthropic") return "Anthropic API | Claude family | tool use | key: ANTHROPIC_API_KEY";
-  if (provider == "google_gemini") return "Google Gemini API | multimodal | long context | key: GEMINI_API_KEY";
+  if (provider == "openai") return "OpenAI API | curated presets (not live) | text/image | tool calling | key: OPENAI_API_KEY";
+  if (provider == "anthropic") return "Anthropic API | curated presets (not live) | Claude family | tool use | key: ANTHROPIC_API_KEY";
+  if (provider == "google_gemini") return "Google Gemini API | curated presets (not live) | multimodal | long context | key: GEMINI_API_KEY";
   if (provider == "cerebras") return "Cerebras API | fast inference | key: CEREBRAS_API_KEY";
   if (provider == "openai_compatible") return "OpenAI-compatible endpoint | custom base URL and model";
   if (provider == "openrouter") return "OpenRouter API | dynamic model catalog | key: OPENROUTER_API_KEY";

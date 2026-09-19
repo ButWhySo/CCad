@@ -38,6 +38,7 @@ assert "CredUIPromptForCredentialsW" not in settings
 assert 'sendJsonRpc("agent.list_models"' in settings
 assert 'action:refreshModelCatalog' in settings
 assert 'provider_models' in panel
+assert 'curated presets (not live)' in settings
 assert 'if (!model_combo_ || !provider_combo_' in settings
 assert 'agent_panel_->setModelCatalogCallback({});' in settings
 assert 'setModelCatalogCallback' in settings

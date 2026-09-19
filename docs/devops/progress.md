@@ -2768,3 +2768,5 @@ Model-catalog requests now trim and case-fold provider IDs before dispatch, so U
 The method-discovery contract now advertises this normalization explicitly to external harnesses.
 
 Invalid non-string model-catalog provider values now return structured `invalid_params` instead of being coerced into misleading provider IDs.
+
+Static OpenAI, Anthropic, and Gemini preset descriptions now explicitly say they are curated and not live, preventing the settings UI from implying “latest” data where no refresh endpoint exists yet.
