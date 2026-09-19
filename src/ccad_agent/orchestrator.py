@@ -209,6 +209,8 @@ def orchestrator_method_catalog():
              "approval_required": True, "side_effect": "client_authorized_result"},
             {"name": "human_message", "read_only": False, "provider_call": True,
              "preflight": "intake_guard",
+             "params": {"thread_id": {"type": "string", "optional": True,
+                                         "description": "Opaque session identity"}},
              "responses": ["intake_state", "context_state", "provider_state",
                            "backend_state", "message", "tool_call",
                            "tool_canceled"],

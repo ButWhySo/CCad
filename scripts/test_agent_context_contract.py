@@ -45,6 +45,8 @@ methods = next(item["params"] for item in lines
                if item.get("method") == "agent_methods")
 human_contract = next(item for item in methods["methods"]
                       if item["name"] == "human_message")
+assert human_contract["params"]["thread_id"]["optional"] is True
+assert human_contract["params"]["thread_id"]["type"] == "string"
 pending_contract = next(item for item in methods["methods"]
                         if item["name"] == "agent.pending_calls")
 assert pending_contract["response"]["method"] == "pending_calls_state"

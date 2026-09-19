@@ -2623,3 +2623,7 @@ Headless-only fix: process-broker pending calls now carry their originating agen
 ### Sprint 885 — request thread propagation
 
 Headless-only fix: `human_message.thread_id` now drives context revisions, process-wait ownership, graph configuration, and emitted context-state metadata. The runtime contract covers two threads and their changed/unchanged transitions. GUI/API/build validation remains paused.
+
+### Sprint 886 — advertise session binding parameter
+
+Headless-only contract fix: `agent.methods` now declares optional opaque `human_message.thread_id`, matching runtime propagation and allowing external harnesses to bind conversations deliberately. GUI/API/build validation remains paused.

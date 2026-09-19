@@ -1747,3 +1747,5 @@ Sprint 883 handover: the same subprocess contract now covers every `pending_call
 Sprint 884 handover: `pending_call_threads` records the originating thread for each live process-broker wait; `pending_call_snapshot(thread_id)` now reports only matching process calls, with an isolated contract in `scripts/test_pending_call_thread_scope.py`.
 
 Sprint 885 handover: `human_message.params.thread_id` is propagated into `CCAD_AGENT_THREAD_ID`, context revision state, `context_state.thread_id`, and `invoke_agent_run` graph configuration; `scripts/test_agent_context_contract.py` proves two-thread transitions.
+
+Sprint 886 handover: `orchestrator_method_catalog()` declares optional opaque `human_message.thread_id`; runtime contract asserts discovery matches execution.
