@@ -66,10 +66,10 @@ private slots:
     QCOMPARE(api_key_input->echoMode(), QLineEdit::Password);
     auto* reveal_key = dialog.findChild<QCheckBox*>("control:showApiKeyCb");
     QVERIFY(reveal_key != nullptr);
-    QTest::mouseClick(reveal_key, Qt::LeftButton);
-    QCOMPARE(api_key_input->echoMode(), QLineEdit::Normal);
-    QTest::mouseClick(reveal_key, Qt::LeftButton);
-    QCOMPARE(api_key_input->echoMode(), QLineEdit::Password);
+    QVERIFY(!reveal_key->toolTip().isEmpty());
+    // Do not click Show key here: production behavior intentionally opens the
+    // Windows account-password prompt. Exercise that security boundary in the
+    // live GUI harness, not in unattended Qt unit tests.
     QTest::keyClicks(api_key_input, "test-secret-not-persisted");
     api_key_input->clear();
     QVERIFY(api_key_input->text().isEmpty());

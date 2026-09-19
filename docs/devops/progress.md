@@ -2788,3 +2788,5 @@ API key entry now lives in the API & Providers tab beside Show key, Test Provide
 Its explanatory copy now matches actual behavior: session value stays in memory, persistent value stays in the operating-system credential vault.
 
 GUI agent-panel regression coverage now asserts the current Cerebras snapshot model `qwen-3.8-27b`, removing its obsolete pre-catalog expectation.
+
+The unattended agent-panel test no longer clicks Show key, because that control correctly opens the real Windows account-password prompt; masked-state coverage stays automated and reveal behavior remains live-GUI-only.
