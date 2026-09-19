@@ -1120,3 +1120,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Sprint 927: add explicit native core CTest allow-list; prevent accidental GUI test execution.
 - [x] Sprint 928: document fast native gate and rebuild boundary.
 - [x] Sprint 929: self-check native gate allow-list against GUI/provider test prefixes.
+- [x] Sprint 930: canonicalize provider IDs for model-catalog requests.

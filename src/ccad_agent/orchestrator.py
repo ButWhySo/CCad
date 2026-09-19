@@ -1323,7 +1323,7 @@ if __name__ == "__main__":
                 emit({"jsonrpc": "2.0", "method": "agent_methods",
                       "params": orchestrator_method_catalog()})
             elif method == "agent.list_models":
-                provider_id = req.get("params", {}).get("provider", "openrouter")
+                provider_id = str(req.get("params", {}).get("provider", "openrouter")).strip().lower()
                 if provider_id == "openrouter":
                     emit({"jsonrpc": "2.0", "method": "provider_models",
                           "params": {"provider": provider_id, **fetch_openrouter_models()}})

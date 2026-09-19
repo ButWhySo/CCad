@@ -2760,3 +2760,7 @@ Added an allow-list CTest runner for native kernel/CLI tests. It invokes each ap
 README now exposes the explicit native gate and states its rebuild boundary, reducing accidental full builds and accidental GUI execution during headless work.
 
 The gate now self-checks its allow-list and refuses GUI, visual, provider, or agent-prefixed test names before invoking CTest.
+
+### Sprint 930 - canonical provider catalog requests
+
+Model-catalog requests now trim and case-fold provider IDs before dispatch, so UI and external harness values such as `  CereBras  ` resolve to the official Cerebras catalog. Offline subprocess coverage proves canonicalization without network access.
