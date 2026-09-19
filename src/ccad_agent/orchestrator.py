@@ -519,6 +519,18 @@ router_llm = None
 librarian_llm = None
 checkpoint_saver = None
 checkpoint_context = None
+session_provider_env = set()
+
+def set_session_provider_env(name, value):
+    """Set provider credential only for this process and track its alias."""
+    os.environ[name] = value
+    session_provider_env.add(name)
+
+def clear_session_provider_env():
+    """Remove credential aliases created by the in-process settings flow."""
+    for name in tuple(session_provider_env):
+        os.environ.pop(name, None)
+    session_provider_env.clear()
 
 def init_checkpointer():
     """Enable durable LangGraph checkpoints only when an explicit DB path is set."""
@@ -656,14 +668,6 @@ def init_provider():
     # The local-model label is a ChatOpenAI-compatible OpenAI protocol server.
     if provider == "local_model_server":
         provider = "local_model"
-    if provider == "openai_compatible" and os.environ.get("CCAD_OPENAI_COMPATIBLE_API_KEY"):
-        os.environ.setdefault("OPENAI_API_KEY", os.environ["CCAD_OPENAI_COMPATIBLE_API_KEY"])
-    if provider == "openrouter" and os.environ.get("OPENROUTER_API_KEY"):
-        os.environ.setdefault("OPENAI_API_KEY", os.environ["OPENROUTER_API_KEY"])
-    if provider == "cerebras" and os.environ.get("CEREBRAS_API_KEY"):
-        os.environ.setdefault("OPENAI_API_KEY", os.environ["CEREBRAS_API_KEY"])
-    if provider == "local_model" and os.environ.get("CCAD_LOCAL_MODEL_API_KEY"):
-        os.environ.setdefault("OPENAI_API_KEY", os.environ["CCAD_LOCAL_MODEL_API_KEY"])
     model_name = os.environ.get("CCAD_MODEL") or config_manager.get("model", "")
     if provider == "openai_compatible":
         model_name = os.environ.get("CCAD_OPENAI_COMPATIBLE_MODEL") or model_name
@@ -745,6 +749,16 @@ def init_provider():
                       "timeout": provider_timeout_seconds()}
             if base_url:
                 kwargs["base_url"] = base_url
+            provider_keys = {
+                "openai": "OPENAI_API_KEY",
+                "openai_compatible": "CCAD_OPENAI_COMPATIBLE_API_KEY",
+                "openrouter": "OPENROUTER_API_KEY",
+                "cerebras": "CEREBRAS_API_KEY",
+                "local_model": "CCAD_LOCAL_MODEL_API_KEY",
+            }
+            api_key_name = provider_keys.get(provider)
+            if api_key_name and os.environ.get(api_key_name):
+                kwargs["api_key"] = os.environ[api_key_name]
             llm = ChatOpenAI(**kwargs)
             router_llm = llm.bind_tools(router_tools)
             librarian_llm = llm.bind_tools(librarian_tools)
@@ -1173,16 +1187,10 @@ if __name__ == "__main__":
                              "local_model": "CCAD_LOCAL_MODEL_API_KEY",
                              "local_model_server": "CCAD_LOCAL_MODEL_API_KEY"}
                 env_name = env_names.get(provider_id, "OPENAI_API_KEY")
+                clear_session_provider_env()
                 if secret:
-                    os.environ[env_name] = secret
-                    if provider_id == "google_gemini": os.environ["GOOGLE_API_KEY"] = secret
-                    if provider_id in ("openai_compatible", "openrouter", "local_model", "local_model_server", "cerebras"):
-                        os.environ["OPENAI_API_KEY"] = secret
-                else:
-                    os.environ.pop(env_name, None)
-                    if provider_id == "google_gemini": os.environ.pop("GOOGLE_API_KEY", None)
-                    if provider_id in ("openai_compatible", "openrouter", "local_model", "local_model_server", "cerebras"):
-                        os.environ.pop("OPENAI_API_KEY", None)
+                    set_session_provider_env(env_name, secret)
+                    if provider_id == "google_gemini": set_session_provider_env("GOOGLE_API_KEY", secret)
                 provider_ready = init_provider()
                 if not provider_ready:
                     # Settings' Test Provider needs a terminal state even when
@@ -1212,18 +1220,11 @@ if __name__ == "__main__":
                     "local_model_server": "CCAD_LOCAL_MODEL_API_KEY",
                 }
                 env_name = env_names.get(provider_id, "OPENAI_API_KEY")
+                clear_session_provider_env()
                 if secret:
-                    os.environ[env_name] = secret
+                    set_session_provider_env(env_name, secret)
                     if provider_id == "google_gemini":
-                        os.environ["GOOGLE_API_KEY"] = secret
-                    if provider_id in ("openai_compatible", "openrouter", "local_model", "local_model_server", "cerebras"):
-                        os.environ["OPENAI_API_KEY"] = secret
-                else:
-                    os.environ.pop(env_name, None)
-                    if provider_id == "google_gemini":
-                        os.environ.pop("GOOGLE_API_KEY", None)
-                    if provider_id in ("openai_compatible", "openrouter", "local_model", "local_model_server", "cerebras"):
-                        os.environ.pop("OPENAI_API_KEY", None)
+                        set_session_provider_env("GOOGLE_API_KEY", secret)
                 init_provider()
                 emit({"jsonrpc": "2.0", "method": "provider_state", "params": {
                     "provider": provider_id,

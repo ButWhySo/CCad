@@ -1781,3 +1781,4 @@ Sprint 900 handover: `agent.set_config` rejects secret-like key names before `Ag
 Sprint 901 handover: `sanitize_persisted_config` recursively removes secret-like keys from nested dictionaries/lists before config persistence.
 
 Sprint 902 handover: `scripts/test_config_secret_sanitizer.py` proves nested dictionary/list removal and opaque rejected paths without network access.
+Sprint 903 handover: `orchestrator.py` tracks settings-created credential environment variables, clears them on provider changes, and passes provider-specific keys directly to `ChatOpenAI`. `scripts/test_provider_key_isolation.py` proves no cross-provider alias remains; test is offline and does not consume quota.

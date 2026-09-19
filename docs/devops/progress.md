@@ -2691,3 +2691,6 @@ Headless-only contract fix: `agent.methods` now publishes `agent.generate_compon
 ### Sprint 899 — runtime/catalog parity guard
 
 Headless-only guard: added a no-network regression test requiring every runtime `agent.*` control to appear in method discovery, with only the intentionally hidden legacy telemetry export exempted. GUI/API/build validation remains paused.
+### Sprint 903 - provider key isolation
+
+Headless-only security fix: provider adapters now receive provider-specific session keys directly; settings-created aliases are tracked and cleared, preventing stale credentials crossing provider switches. Added no-network regression proof. GUI/API/build validation remains paused.

@@ -1094,3 +1094,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   request.
 - [x] Sprint 861: advertise tool-canceled response schema; no GUI or provider
   request.
+- [x] Sprint 903: isolate session provider keys and prove provider-switch cleanup without network calls.
