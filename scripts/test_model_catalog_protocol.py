@@ -45,6 +45,8 @@ assert "OPENROUTER_API_KEY" not in json.dumps(openrouter)
 assert cerebras["ok"] is True
 assert cerebras["network_access"] == "none"
 assert cerebras["source"] == "official_curated_snapshot"
+assert cerebras["source_kind"] == "first_party_documentation"
+assert cerebras["source_url"] == "https://inference-docs.cerebras.ai/models/overview"
 assert {item["id"] for item in cerebras["models"]} == {"gpt-oss-120b", "qwen-3.8-27b"}
 assert unknown["ok"] is False
 assert unknown["error"] == "unsupported_provider"

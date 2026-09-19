@@ -69,7 +69,9 @@ def cerebras_model_snapshot():
         {"id": "qwen-3.8-27b", "display_name": "Qwen 3.8 27B", "tier": "production"},
     ]
     return {"ok": True, "models": models, "count": len(models),
-            "network_access": "none", "source": "official_curated_snapshot"}
+            "network_access": "none", "source": "official_curated_snapshot",
+            "source_url": "https://inference-docs.cerebras.ai/models/overview",
+            "source_kind": "first_party_documentation"}
 
 def context_revision(context: str) -> str:
     """Return stable opaque context identity; never expose context contents."""

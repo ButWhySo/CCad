@@ -2700,3 +2700,6 @@ Headless-only correctness fix: `agent.test_provider` now restores active provide
 ### Sprint 905 - refresh Cerebras public presets
 
 Headless/source-only provider catalog refresh: aligned Cerebras presets with current first-party documentation, replacing stale Llama/Z.ai entries with `qwen-3.8-27b`. Updated GUI preset source, README, compatibility record, and no-network contracts. GUI validation and live provider calls remain paused.
+### Sprint 906 - catalog provenance response
+
+Headless contract improvement: Cerebras model-catalog responses now expose first-party source URL and source kind, allowing UI/harness consumers to distinguish curated offline data from live refresh. No network call added.
