@@ -50,7 +50,7 @@ assert human_contract["params"]["thread_id"]["type"] == "string"
 pending_contract = next(item for item in methods["methods"]
                         if item["name"] == "agent.pending_calls")
 assert pending_contract["response"]["method"] == "pending_calls_state"
-for field in ("process_call_ids", "checkpoint_call_ids", "count", "approval_required",
+for field in ("thread_id", "process_call_ids", "checkpoint_call_ids", "count", "approval_required",
               "approval_reason", "secret_value_visible"):
     assert field in pending_contract["response"]["fields"]
 assert "context_state" in human_contract["response_contracts"]
@@ -88,6 +88,7 @@ assert snapshots[-1]["params"]["secret_value_visible"] is False
 pending_snapshot = next(item for item in lines
                         if item.get("method") == "pending_calls_state")
 assert pending_snapshot["params"]["count"] == 0
+assert pending_snapshot["params"]["thread_id"] == "ccad-local"
 assert pending_snapshot["params"]["approval_required"] is False
 assert pending_snapshot["params"]["approval_reason"] == ""
 events = [item for item in lines if item.get("method") == "context_state"]

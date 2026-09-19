@@ -2627,3 +2627,7 @@ Headless-only fix: `human_message.thread_id` now drives context revisions, proce
 ### Sprint 886 — advertise session binding parameter
 
 Headless-only contract fix: `agent.methods` now declares optional opaque `human_message.thread_id`, matching runtime propagation and allowing external harnesses to bind conversations deliberately. GUI/API/build validation remains paused.
+
+### Sprint 887 — pending snapshot session identity
+
+Headless-only contract fix: `pending_calls_state` now returns the queried opaque `thread_id`, making approval recovery unambiguous for multi-session harness clients. GUI/API/build validation remains paused.

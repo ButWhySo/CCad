@@ -1749,3 +1749,5 @@ Sprint 884 handover: `pending_call_threads` records the originating thread for e
 Sprint 885 handover: `human_message.params.thread_id` is propagated into `CCAD_AGENT_THREAD_ID`, context revision state, `context_state.thread_id`, and `invoke_agent_run` graph configuration; `scripts/test_agent_context_contract.py` proves two-thread transitions.
 
 Sprint 886 handover: `orchestrator_method_catalog()` declares optional opaque `human_message.thread_id`; runtime contract asserts discovery matches execution.
+
+Sprint 887 handover: `pending_calls_state.thread_id` identifies the queried session while retaining opaque call IDs and secret redaction; context subprocess coverage asserts the default session identity.

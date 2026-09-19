@@ -173,6 +173,7 @@ def pending_call_snapshot(thread_id: str = ""):
         except Exception:
             checkpoint_calls = []
     return {
+        "thread_id": requested_thread,
         "process_call_ids": process_calls,
         "checkpoint_call_ids": sorted(set(checkpoint_calls)),
         "count": len(set(process_calls).union(checkpoint_calls)),
@@ -192,7 +193,7 @@ def orchestrator_method_catalog():
                  "thread_id", "revision", "content_emitted", "secret_value_visible"]}},
             {"name": "agent.pending_calls", "read_only": True, "secrets": False,
              "response": {"method": "pending_calls_state", "fields": [
-                 "process_call_ids", "checkpoint_call_ids", "count",
+                "thread_id", "process_call_ids", "checkpoint_call_ids", "count",
                  "approval_required", "approval_reason", "secret_value_visible"]}},
             {"name": "agent.list_models", "read_only": True,
              "network_access": "provider_specific",
