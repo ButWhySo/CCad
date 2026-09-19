@@ -80,9 +80,13 @@ assert 'api_key_input_ = new QLineEdit(parent_widget);' in settings
 assert 'layout->addWidget(api_key_input_);' in settings
 assert 'Session key is held in memory and stored only in the OS credential vault.' in settings
 assert 'action:setProviderKeyBtn' in settings
-assert 'Key saved; selected provider is active' in settings
+assert 'Key saved; selected provider is ready' in settings
 assert 'agent_panel_->setProviderSecret(provider, secret);' in settings
 assert 'agent_panel_->sendJsonRpc("agent.set_config", QJsonObject{' in settings
+assert 'setProviderSecretResultCallback' in header
+assert 'provider_secret_result_cb_' in header
+assert '"provider_secret_result"' in panel
+assert 'setProviderSecretResultCallback' in settings
 assert 'Validate Provider Setup' in settings
 assert 'without sending a request or consuming quota' in settings
 assert 'setProviderTestResultCallback' in header

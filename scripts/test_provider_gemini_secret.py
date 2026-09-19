@@ -17,8 +17,12 @@ run = subprocess.run(
     [sys.executable, str(ROOT / "src" / "ccad_agent" / "orchestrator.py")],
     input=json.dumps(request) + "\n", text=True, capture_output=True, env=env,
     timeout=20, check=True)
-assert '"provider": "google_gemini"' in run.stdout
-assert '"secret_value_visible": false' in run.stdout
+events = [json.loads(line) for line in run.stdout.splitlines() if line.startswith("{")]
+secret_result = next(item["params"] for item in events
+                     if item.get("method") == "provider_secret_result")
+assert secret_result["provider"] == "google_gemini"
+assert secret_result["secret_value_visible"] is False
+assert secret_result["network_access"] == "not_probed"
 assert secret not in run.stdout
 assert secret not in run.stderr
 

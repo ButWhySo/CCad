@@ -2763,6 +2763,11 @@ the private child-process IPC, and activates the selected provider and model in
 the running agent. It does not write a key to project files, agent JSON, or
 logs.
 
+`Set key` reports a dedicated terminal activation result after the child process
+has attempted adapter initialization. The Settings status no longer claims a
+provider is active optimistically; it distinguishes a ready adapter from a
+missing dependency or other local setup failure without exposing the key.
+
 The Python orchestration module no longer initializes a provider merely because
 a test or external harness imports it. Provider initialization and the backend
 ready event occur only when the agent process is launched.

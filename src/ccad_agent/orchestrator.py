@@ -401,8 +401,9 @@ def orchestrator_method_catalog():
              "secrets": True, "approval_required": True,
              "params": {"provider": {"type": "string"},
                          "secret": {"type": "string", "secret": True}},
-             "response": {"method": "provider_state", "fields": [
+             "response": {"method": "provider_secret_result", "fields": [
                  "provider", "configured", "execution_enabled",
+                 "error", "error_category", "network_access",
                  "secret_value_visible"]}},
             {"name": "agent.test_provider", "read_only": False,
             "secrets": True, "side_effect": "transient_provider_probe",
@@ -1468,11 +1469,17 @@ if __name__ == "__main__":
                     set_session_provider_env(env_name, secret)
                     if provider_id == "google_gemini":
                         set_session_provider_env("GOOGLE_API_KEY", secret)
-                init_provider()
-                emit({"jsonrpc": "2.0", "method": "provider_state", "params": {
+                provider_ready = init_provider()
+                # Complete the selected key operation with a dedicated event.
+                # Ambient provider_state traffic is not reliable Settings UI
+                # feedback because set_config may have emitted an earlier state.
+                emit({"jsonrpc": "2.0", "method": "provider_secret_result", "params": {
                     "provider": provider_id,
                     "configured": bool(secret),
-                    "execution_enabled": llm is not None,
+                    "execution_enabled": provider_ready,
+                    "network_access": "not_probed",
+                    "error": "" if provider_ready else ("provider_unavailable" if secret else "missing_api_key"),
+                    "error_category": "" if provider_ready else ("provider_unavailable" if secret else "missing_api_key"),
                     "secret_value_visible": False,
                 }})
             elif method == "agent.set_thread_id":

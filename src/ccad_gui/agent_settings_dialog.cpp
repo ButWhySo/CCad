@@ -256,6 +256,14 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
               ready ? "Provider validation: ready (network not probed)"
                     : "Provider validation: " + explanation);
       });
+      agent_panel_->setProviderSecretResultCallback([this](const QJsonObject& state) {
+          if (!provider_status_label_) return;
+          const bool ready = state["execution_enabled"].toBool(false);
+          provider_status_label_->setText(
+              ready ? "Key saved; selected provider is ready"
+                    : "Key saved, but provider setup failed: " +
+                          state["error_category"].toString("provider_unavailable"));
+      });
       agent_panel_->setMarketplaceCatalogCallback([this](const QJsonObject& catalog) {
           this->applyMarketplaceCatalog(catalog);
       });
@@ -284,6 +292,7 @@ AgentSettingsDialog::~AgentSettingsDialog() {
     agent_panel_->setConfigStateCallback({});
     agent_panel_->setProviderStateCallback({});
     agent_panel_->setProviderTestResultCallback({});
+    agent_panel_->setProviderSecretResultCallback({});
     agent_panel_->setMarketplaceCatalogCallback({});
     agent_panel_->setModelCatalogCallback({});
     agent_panel_->setMcpStatusCallback({});
@@ -687,9 +696,7 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
     agent_panel_->sendJsonRpc("agent.set_config", QJsonObject{
         {"provider", provider}, {"model", model}});
     agent_panel_->setProviderSecret(provider, secret);
-    if (provider_status_label_) {
-      provider_status_label_->setText("Key saved; selected provider is active");
-    }
+    if (provider_status_label_) provider_status_label_->setText("Saving key and activating provider...");
   });
   layout->addWidget(set_key);
   auto* test_provider = new QPushButton("Validate Provider Setup", parent_widget);

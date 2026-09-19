@@ -34,6 +34,7 @@ class AgentPanel final : public QWidget {
   using ConfigStateCallback = std::function<void(const QJsonObject&)>;
   using ProviderStateCallback = std::function<void(const QJsonObject&)>;
   using ProviderTestResultCallback = std::function<void(const QJsonObject&)>;
+  using ProviderSecretResultCallback = std::function<void(const QJsonObject&)>;
   using MarketplaceCatalogCallback = std::function<void(const QJsonObject&)>;
   using ModelCatalogCallback = std::function<void(const QJsonObject&)>;
   using McpStatusCallback = std::function<void(const QJsonObject&)>;
@@ -62,6 +63,7 @@ class AgentPanel final : public QWidget {
   void setConfigStateCallback(ConfigStateCallback cb);
   void setProviderStateCallback(ProviderStateCallback cb);
   void setProviderTestResultCallback(ProviderTestResultCallback cb);
+  void setProviderSecretResultCallback(ProviderSecretResultCallback cb);
   void setMarketplaceCatalogCallback(MarketplaceCatalogCallback cb);
   void setModelCatalogCallback(ModelCatalogCallback cb);
   void setMcpStatusCallback(McpStatusCallback cb);
@@ -331,6 +333,7 @@ class AgentPanel final : public QWidget {
   ConfigStateCallback config_state_cb_;
   ProviderStateCallback provider_state_cb_;
   ProviderTestResultCallback provider_test_result_cb_;
+  ProviderSecretResultCallback provider_secret_result_cb_;
   MarketplaceCatalogCallback marketplace_catalog_cb_;
   ModelCatalogCallback model_catalog_cb_;
   McpStatusCallback mcp_status_cb_;

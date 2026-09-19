@@ -2922,6 +2922,10 @@ selected provider/model configuration, and passes the secret only through the
 private running-agent channel. It removes the misleading requirement to close
 the dialog with Save Preferences before a newly entered key can be used.
 
+The Set key flow now waits for a dedicated child-process result before reporting
+provider readiness, eliminating optimistic success text when an adapter cannot
+actually initialize.
+
 ### Sprint 943 - isolate agent process startup
 
 Importing the Python orchestration module no longer creates an adapter or emits
