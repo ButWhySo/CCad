@@ -54,6 +54,7 @@ private:
   QLineEdit* api_key_input_{nullptr};
   QLabel* provider_target_label_{nullptr};
   QLabel* provider_status_label_{nullptr};
+  QLabel* mcp_runtime_status_label_{nullptr};
   QCheckBox* sandbox_cb_{nullptr};
   QCheckBox* approval_cb_{nullptr};
   QLineEdit* project_name_{nullptr};

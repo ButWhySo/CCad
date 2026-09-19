@@ -52,6 +52,9 @@ assert 'config["mcp_servers"] = servers;' in settings
 assert 'mcp_servers_table_->setRowCount(0);' in settings
 assert 'mcp_list->addItem("Server: chrome-devtools' not in settings
 assert 'Saving does not connect or launch a server' in settings
+assert 'label:mcpRuntimeStatus' in settings
+assert 'agent.mcp_status' in settings
+assert 'setMcpStatusCallback' in settings
 assert 'setModelCatalogCallback' in settings
 assert 'applyModelCatalog' in settings
 assert 'catalog["ok"].toBool(false)' in settings

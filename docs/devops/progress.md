@@ -2833,3 +2833,8 @@ non-negative integers, and enabled state is explicit. This is persistence-only;
 MCP processes are not started from Agent Settings. The no-network normalization
 contract passed; GUI live interaction remains pending while the native GUI
 connector exposes no app surface.
+
+### Sprint 936 - surface MCP runtime status in Settings
+
+The MCP Settings page now queries `agent.mcp_status` and displays runtime,
+server count, and process-execution policy from the backend response.

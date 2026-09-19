@@ -2685,6 +2685,8 @@ The read-only `agent.mcp_status` method exposes normalized MCP entries and
 explicitly reports `runtime: "not_started"` and `process_execution: false`.
 Harnesses can therefore distinguish saved configuration from a connected MCP
 runtime. The Settings page also states this boundary directly to users.
+The MCP section queries the same status method and displays the current runtime,
+configured-server count, and process-execution policy.
 
 Provider test failures now retain their structured backend category in the
 Settings page and translate it into actionable text, distinguishing missing or

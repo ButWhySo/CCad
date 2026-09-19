@@ -1360,6 +1360,8 @@ void AgentPanel::handlePythonOutput() {
                                : QStringLiteral("env_missing");
         updateProviderControls();
         if (provider_state_cb_) provider_state_cb_(params);
+      } else if (obj.contains("method") && obj["method"].toString() == "mcp_status") {
+        if (mcp_status_cb_) mcp_status_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "thread_state") {
         const QJsonObject params = obj["params"].toObject();
         const bool resumable = params["resumable"].toBool(false);
@@ -1655,6 +1657,10 @@ void AgentPanel::setMarketplaceCatalogCallback(MarketplaceCatalogCallback cb) {
 
 void AgentPanel::setModelCatalogCallback(ModelCatalogCallback cb) {
   model_catalog_cb_ = std::move(cb);
+}
+
+void AgentPanel::setMcpStatusCallback(McpStatusCallback cb) {
+  mcp_status_cb_ = std::move(cb);
 }
 
 void AgentPanel::setComponentWizardCallback(ComponentWizardCallback cb) {

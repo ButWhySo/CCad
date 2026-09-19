@@ -256,6 +256,16 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
       agent_panel_->setModelCatalogCallback([this](const QJsonObject& catalog) {
           this->applyModelCatalog(catalog);
       });
+      agent_panel_->setMcpStatusCallback([this](const QJsonObject& status) {
+          if (!mcp_runtime_status_label_) return;
+          const QString runtime = status["runtime"].toString("unknown");
+          const bool process_execution = status["process_execution"].toBool(false);
+          mcp_runtime_status_label_->setText(
+              QString("Runtime: %1 | %2 server(s) | process execution %3")
+                  .arg(runtime)
+                  .arg(status["servers"].toArray().size())
+                  .arg(process_execution ? "enabled" : "disabled"));
+      });
   }
 
   loadCurrentSettings();
@@ -269,6 +279,7 @@ AgentSettingsDialog::~AgentSettingsDialog() {
     agent_panel_->setProviderStateCallback({});
     agent_panel_->setMarketplaceCatalogCallback({});
     agent_panel_->setModelCatalogCallback({});
+    agent_panel_->setMcpStatusCallback({});
   }
 }
 
@@ -559,6 +570,9 @@ void AgentSettingsDialog::createPersonalisationTab(QWidget* parent_widget) {
 void AgentSettingsDialog::createMCPTab(QWidget* parent_widget) {
   auto* layout = new QVBoxLayout(parent_widget);
   layout->addWidget(new QLabel("<b>MCP Servers</b><br>Configure local stdio servers used by the agent. Changes are saved with the rest of Agent Settings.<br><i>Saving does not connect or launch a server; runtime status is reported separately.</i>", parent_widget));
+  mcp_runtime_status_label_ = new QLabel("Runtime: checking...", parent_widget);
+  mcp_runtime_status_label_->setObjectName("label:mcpRuntimeStatus");
+  layout->addWidget(mcp_runtime_status_label_);
   mcp_servers_table_ = new QTableWidget(parent_widget);
   mcp_servers_table_->setObjectName("control:mcpServersTable");
   mcp_servers_table_->setColumnCount(5);
@@ -579,6 +593,7 @@ void AgentSettingsDialog::createMCPTab(QWidget* parent_widget) {
   buttons->addWidget(remove);
   buttons->addStretch();
   layout->addLayout(buttons);
+  if (agent_panel_) agent_panel_->sendJsonRpc("agent.mcp_status", QJsonObject());
   connect(add, &QPushButton::clicked, this, [this]() {
     const int row = mcp_servers_table_->rowCount();
     mcp_servers_table_->insertRow(row);
