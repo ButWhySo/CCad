@@ -2845,3 +2845,22 @@ after its callback is registered; the first render no longer loses the status.
 The GUI regression suite now opens Settings and physically clicks Add server and
 Remove selected, verifying the MCP table and runtime-status label are real
 controls rather than source-only contracts.
+
+### Sprint 937 - extend UI-map validation into Agent Settings
+
+The official Qt UI-map target sequence now opens modeless Agent Settings and
+checks provider/model/API-key/MCP controls after the dialog is visible. The
+sequence remains quota-safe and does not save or reveal credentials.
+
+The UI-map resolver now searches modeless top-level dialogs, allowing those
+Settings controls to be found by stable IDs rather than coordinate guesses.
+
+Automation Settings activation is synchronous, so the modeless dialog exists
+before the next UI-map query; this prevents false missing-target reports.
+
+Target screenshots now grab the top-level window containing the target, so
+Settings screenshots visibly prove dialog layout instead of showing only the
+underlying PCB window.
+
+Settings target passes now select Configuration, API & Providers, or MCP before
+capture, making each provider/key/server target visibly actionable.

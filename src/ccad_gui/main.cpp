@@ -10,6 +10,7 @@
 #include <QFile>
 #include <QPainter>
 #include <QPixmap>
+#include <QListWidget>
 #include <QThread>
 #include <QTimer>
 
@@ -423,11 +424,14 @@ int main(int argc, char** argv) {
                                       "action:cursor_shape", "action:show_ratsnest",
                                       "action:net_highlight", "action:contrast_mode",
                                       "tab:agent", "control:agent_chat_input",
-                                      "action:agent_submit_chat"};
+                                      "action:agent_submit_chat", "action:settingsBtn",
+                                      "control:providerCombo", "control:modelCombo",
+                                      "control:apiKeyInput", "control:mcpServersTable",
+                                      "action:addMcpServerBtn", "action:removeMcpServerBtn"};
       const QStringList trigger_before_capture_ids = {
           "action:grid",          "action:polar_coord",   "action:unit_inch",
           "action:cursor_shape",  "action:show_ratsnest", "action:net_highlight",
-          "action:contrast_mode", "tab:agent"};
+          "action:contrast_mode", "tab:agent", "action:settingsBtn"};
       const QStringList click_before_capture_ids = {"action:agent_footer_trigger_drc",
                                                     "action:agent_pin_evidence"};
       const auto runPass = [window, &entries, &output_dir, &name, &target_ids,
@@ -439,6 +443,32 @@ int main(int argc, char** argv) {
           if (trigger_before_capture_ids.contains(id)) {
             window->triggerSafeUiActionJson(id);
             QApplication::processEvents();
+            // Settings opens through a queued callback so the modeless dialog
+            // can finish constructing before its child controls are queried.
+            if (id == "action:settingsBtn") {
+              QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
+              QApplication::processEvents();
+            }
+          }
+          if (id == "control:providerCombo" || id == "control:modelCombo" ||
+              id == "control:apiKeyInput" || id == "control:mcpServersTable" ||
+              id == "action:addMcpServerBtn" || id == "action:removeMcpServerBtn") {
+            const int category = id == "control:mcpServersTable" ||
+                                         id == "action:addMcpServerBtn" ||
+                                         id == "action:removeMcpServerBtn"
+                                     ? 3
+                                     : (id == "control:apiKeyInput" ? 4 : 1);
+            for (QWidget* top_level : QApplication::topLevelWidgets()) {
+              auto* categories = top_level->findChild<QListWidget*>("control:categoryList");
+              if (categories == nullptr || !top_level->isVisible()) {
+                continue;
+              }
+              categories->setCurrentRow(category);
+              QApplication::processEvents();
+              QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
+              QApplication::processEvents();
+              break;
+            }
           }
           if (click_before_capture_ids.contains(id)) {
             const QString payload = QString("{\"id\":%1}").arg(jsonStringLocal(id));
@@ -461,11 +491,21 @@ int main(int argc, char** argv) {
             const std::filesystem::path path =
                 output_dir / (name + "-" + pass_name + "-" + slug + ".png").toStdString();
             screenshot_path = QString::fromStdString(path.string());
-            QPixmap screenshot = window->grab();
+            QWidget* capture_window = window;
+            for (QWidget* top_level : QApplication::topLevelWidgets()) {
+              if (top_level == window || !top_level->isVisible()) {
+                continue;
+              }
+              if (top_level->frameGeometry().contains(QPoint(*x, *y))) {
+                capture_window = top_level;
+                break;
+              }
+            }
+            QPixmap screenshot = capture_window->grab();
             QPainter painter(&screenshot);
             painter.setRenderHint(QPainter::Antialiasing, true);
             painter.setPen(QPen(QColor("#ff00cc"), 3));
-            const QPoint local_target = window->mapFromGlobal(QPoint(*x, *y));
+            const QPoint local_target = capture_window->mapFromGlobal(QPoint(*x, *y));
             painter.drawEllipse(local_target, 10, 10);
             painter.drawLine(local_target.x() - 16, local_target.y(), local_target.x() + 16,
                              local_target.y());

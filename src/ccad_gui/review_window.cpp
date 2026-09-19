@@ -5343,6 +5343,38 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
                        widget->isEnabled(), global_rect.center());
   }
 
+  // Agent Settings is modeless and therefore a separate top-level window.
+  // Include its named controls in the same UI-map namespace so external
+  // harnesses can discover and operate dialog controls after opening it.
+  for (QWidget* top_level : QApplication::topLevelWidgets()) {
+    if (top_level == this) {
+      continue;
+    }
+    for (QWidget* widget : top_level->findChildren<QWidget*>()) {
+      if (widget->objectName() != id ||
+          !(id.startsWith("action:") || id.startsWith("control:"))) {
+        continue;
+      }
+      ensureWidgetVisibleInAncestorScrollAreas(widget);
+      const QRect clipped_rect = clippedWidgetGlobalRect(widget);
+      const QRect global_rect = clipped_rect.isEmpty()
+                                    ? QRect(widget->mapToGlobal(QPoint(0, 0)), widget->size())
+                                    : clipped_rect;
+      const QString role = id.startsWith("action:") ? "action" : "control";
+      QString label = widget->accessibleName().isEmpty() ? id : widget->accessibleName();
+      if (label == id) {
+        if (const auto* button = qobject_cast<const QPushButton*>(widget)) {
+          label = button->text();
+        } else if (const auto* checkbox = qobject_cast<const QCheckBox*>(widget)) {
+          label = checkbox->text();
+        }
+      }
+      return foundTarget(id, role, label,
+                         widget->isVisible() && !clipped_rect.isEmpty(),
+                         widget->isEnabled(), global_rect.center());
+    }
+  }
+
   if (id == "control:active_pcb_layer" && active_layer_selector_ != nullptr) {
     const QRect global_rect(active_layer_selector_->mapToGlobal(QPoint(0, 0)),
                             active_layer_selector_->size());
@@ -5814,7 +5846,11 @@ QString ReviewWindow::uiClickJson(const QString& id, const bool dry_run, const b
       return jsonObjectLine(response);
     }
     if (trimmed_id == "action:settingsBtn") {
-      QTimer::singleShot(0, button, [button]() { button->click(); });
+      // Automation callers need dialog creation completed before querying its
+      // top-level controls; synchronous click is safe in this already-running
+      // UI action boundary and avoids a lost queued callback.
+      button->click();
+      QApplication::processEvents();
     } else {
       button->click();
       QApplication::processEvents();
@@ -8062,6 +8098,21 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
   }
   if (unsafe_action_ids.contains(id)) {
     return result(id, false, "unsafe_action_requires_human_or_kernel_tool");
+  }
+  if (id == "action:settingsBtn") {
+    for (QPushButton* button : findChildren<QPushButton*>()) {
+      if (button->objectName() != id) {
+        continue;
+      }
+      if (!button->isEnabled() || !button->isVisible()) {
+        return result(id, false, "disabled_or_hidden");
+      }
+      button->click();
+      QApplication::processEvents();
+      markUiMapChanged();
+      return result(id, true, "settings_opened");
+    }
+    return result(id, false, "settings_button_unavailable");
   }
   if (!safe_action_ids.contains(id)) {
     return result(id, false, "unknown_or_not_allowlisted");

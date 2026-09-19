@@ -8,6 +8,7 @@ panel = (root / "src" / "ccad_gui" / "agent_panel.cpp").read_text(encoding="utf-
 header = (root / "src" / "ccad_gui" / "agent_panel.hpp").read_text(encoding="utf-8")
 settings = (root / "src" / "ccad_gui" / "agent_settings_dialog.cpp").read_text(encoding="utf-8")
 review = (root / "src" / "ccad_gui" / "review_window.cpp").read_text(encoding="utf-8")
+main = (root / "src" / "ccad_gui" / "main.cpp").read_text(encoding="utf-8")
 
 assert "QTextBrowser* chat_stream_" in header
 assert 'setObjectName("control:agent_chat_stream")' in panel
@@ -48,6 +49,9 @@ assert 'agent_panel_->setModelCatalogCallback({});' in settings
 assert 'control:mcpServersTable' in settings
 assert 'action:addMcpServerBtn' in settings
 assert 'action:removeMcpServerBtn' in settings
+assert 'Agent Settings is modeless and therefore a separate top-level window.' in review
+assert 'QWidget* capture_window = window;' in (root / "src" / "ccad_gui" / "main.cpp").read_text(encoding="utf-8")
+assert 'control:categoryList' in (root / "src" / "ccad_gui" / "main.cpp").read_text(encoding="utf-8")
 assert 'config["mcp_servers"] = servers;' in settings
 assert 'mcp_servers_table_->setRowCount(0);' in settings
 assert 'mcp_list->addItem("Server: chrome-devtools' not in settings
@@ -56,6 +60,10 @@ assert 'label:mcpRuntimeStatus' in settings
 assert 'agent.mcp_status' in settings
 assert 'setMcpStatusCallback' in settings
 assert 'agent_panel_->sendJsonRpc("agent.mcp_status", QJsonObject());' in settings
+for target in ("action:settingsBtn", "control:providerCombo", "control:modelCombo",
+               "control:apiKeyInput", "control:mcpServersTable",
+               "action:addMcpServerBtn", "action:removeMcpServerBtn"):
+    assert target in main
 assert 'setModelCatalogCallback' in settings
 assert 'applyModelCatalog' in settings
 assert 'catalog["ok"].toBool(false)' in settings
