@@ -234,10 +234,21 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
           if (!provider_status_label_) return;
           const bool ready = state["execution_enabled"].toBool(false);
           const QString error = state["error"].toString();
+          const QString category = state["error_category"].toString();
+          const QHash<QString, QString> guidance = {
+              {"missing_api_key", "API key is missing"},
+              {"authentication", "API key was rejected"},
+              {"quota_or_rate_limit", "provider quota or rate limit reached"},
+              {"model_not_found", "selected model was not found"},
+              {"timeout", "provider request timed out"},
+              {"dependency", "provider dependency is missing"},
+              {"provider_unavailable", "provider is unavailable"},
+          };
+          const QString explanation = guidance.value(
+              category, error.isEmpty() ? QStringLiteral("provider is unavailable") : error);
           provider_status_label_->setText(
               ready ? "Provider test: ready (network not probed)"
-                    : (error.isEmpty() ? "Provider test: unavailable"
-                                       : "Provider test: " + error));
+                    : "Provider test: " + explanation);
       });
       agent_panel_->setMarketplaceCatalogCallback([this](const QJsonObject& catalog) {
           this->applyMarketplaceCatalog(catalog);

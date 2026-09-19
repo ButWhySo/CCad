@@ -64,6 +64,9 @@ assert 'model_combo_->setCurrentIndex(0)' in settings
 assert 'api_key_input_ = new QLineEdit(parent_widget);' in settings
 assert 'layout->addWidget(api_key_input_);' in settings
 assert 'Session key is held in memory and stored only in the OS credential vault.' in settings
+assert 'quota or rate limit reached' in settings
+assert 'selected model was not found' in settings
+assert 'API key was rejected' in settings
 assert settings.count('sendJsonRpc("agent.set_config", config)') == 1
 assert 'QJsonObject{{"grid", grid_combo_->currentText()}}' not in settings
 assert 'combo_selection_selected' in review

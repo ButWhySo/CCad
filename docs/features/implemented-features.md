@@ -2681,6 +2681,10 @@ Configuration no longer hides credential input on an unrelated tab.
 The page explains that the active value is held in memory while persistent
 storage uses the operating-system credential vault.
 
+Provider test failures now retain their structured backend category in the
+Settings page and translate it into actionable text, distinguishing missing or
+rejected keys, quota limits, missing models, timeouts, and missing dependencies.
+
 ### MCP server settings
 
 Agent Settings now exposes the persisted `mcp_servers` configuration as an

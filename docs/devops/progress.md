@@ -2804,6 +2804,14 @@ focused GUI tests passed 3 of 3. Live mouse/keyboard validation remains
 pending because the native GUI connector did not expose an app surface in this
 run.
 
+### Sprint 934 - surface actionable provider failure categories
+
+Agent Settings now maps the orchestrator's structured provider error categories
+to user-facing guidance: missing or rejected API keys, quota/rate limits,
+unknown models, timeouts, and missing dependencies are no longer shown as a
+generic unavailable state. Verification remains offline and does not consume
+provider quota.
+
 ### Sprint 933 - normalize persisted MCP entries
 
 The agent config boundary now validates `mcp_servers` entries before writing
