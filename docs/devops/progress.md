@@ -2841,3 +2841,7 @@ server count, and process-execution policy from the backend response.
 
 Fixed the initial Settings-open ordering so the MCP status request is sent only
 after its callback is registered; the first render no longer loses the status.
+
+The GUI regression suite now opens Settings and physically clicks Add server and
+Remove selected, verifying the MCP table and runtime-status label are real
+controls rather than source-only contracts.

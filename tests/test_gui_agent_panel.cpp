@@ -11,6 +11,7 @@
 #include <QJsonObject>
 #include <QTemporaryDir>
 #include <QLabel>
+#include <QTableWidget>
 
 #include "ccad_gui/agent_settings_dialog.hpp"
 #include "ccad_gui/agent_marketplace_dialog.hpp"
@@ -29,6 +30,17 @@ private slots:
 
     auto* save_btn = dialog.findChild<QPushButton*>("action:primaryButton");
     QVERIFY(save_btn != nullptr);
+    auto* mcp_table = dialog.findChild<QTableWidget*>("control:mcpServersTable");
+    QVERIFY(mcp_table != nullptr);
+    QVERIFY(dialog.findChild<QLabel*>("label:mcpRuntimeStatus") != nullptr);
+    auto* add_mcp = dialog.findChild<QPushButton*>("action:addMcpServerBtn");
+    auto* remove_mcp = dialog.findChild<QPushButton*>("action:removeMcpServerBtn");
+    QVERIFY(add_mcp != nullptr);
+    QVERIFY(remove_mcp != nullptr);
+    QTest::mouseClick(add_mcp, Qt::LeftButton);
+    QCOMPARE(mcp_table->rowCount(), 1);
+    QTest::mouseClick(remove_mcp, Qt::LeftButton);
+    QCOMPARE(mcp_table->rowCount(), 0);
 
     // 1. General Tab
     auto* provider_combo = dialog.findChild<QComboBox*>("control:providerCombo");
