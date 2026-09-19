@@ -2706,6 +2706,10 @@ invalid ports to zero, and never launches a server while settings are saved.
 through the private child-process session path, with configured state exposed
 but the key value redacted and no provider request sent.
 
+The Qt Agent Settings regression selects Cerebras and Qwen, then switches to
+Gemini, proving model IDs remain exact and stale provider text is not carried
+into the next dropdown selection.
+
 The official UI-map target sequence now opens the modeless Agent Settings dialog
 and verifies provider, model, masked API-key, and MCP table controls after the
 dialog appears. This extends visual validation beyond the dock itself without

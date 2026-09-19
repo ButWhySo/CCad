@@ -2867,3 +2867,6 @@ capture, making each provider/key/server target visibly actionable.
 
 Added a Cerebras-specific no-network BYOK regression proving session injection,
 configured state, and secret redaction independently of the Gemini alias test.
+
+Added GUI model-selector coverage for exact Cerebras Qwen selection and stale
+model removal when switching providers.

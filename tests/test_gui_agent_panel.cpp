@@ -55,6 +55,22 @@ private slots:
     QVERIFY(model_combo != nullptr);
     QVERIFY(model_combo->isEditable());
     QVERIFY(model_combo->count() > 0);
+
+    // Provider/model selection must carry one exact model ID at a time.
+    const int cerebras_index = provider_combo->findData("cerebras");
+    QVERIFY(cerebras_index >= 0);
+    provider_combo->setCurrentIndex(cerebras_index);
+    QCoreApplication::processEvents();
+    QCOMPARE(model_combo->findText("gpt-oss-120b") >= 0, true);
+    QCOMPARE(model_combo->findText("qwen-3.8-27b") >= 0, true);
+    model_combo->setCurrentText("qwen-3.8-27b");
+    QCOMPARE(model_combo->currentText(), QString("qwen-3.8-27b"));
+    const int gemini_index = provider_combo->findData("google_gemini");
+    QVERIFY(gemini_index >= 0);
+    provider_combo->setCurrentIndex(gemini_index);
+    QCoreApplication::processEvents();
+    QVERIFY(!model_combo->currentText().contains("qwen-3.8-27b"));
+
     QVERIFY(dialog.findChild<QLabel*>("label:modelDetails") != nullptr);
     auto* config_preview = dialog.findChild<QTextEdit*>("control:resolvedConfigPreview");
     QVERIFY(config_preview != nullptr);
