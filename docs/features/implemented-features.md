@@ -2692,6 +2692,20 @@ External harnesses can query read-only `agent.mcp_plan` to inspect normalized
 server commands and the explicit approval boundary. It never launches a
 process; supervised MCP execution remains a separate runtime feature.
 
+Provider validation is selection-scoped. `agent.test_provider` restores the
+active adapter first and then emits one `provider_test_result` event for the
+provider selected in Settings. The dialog therefore cannot mistake the restored
+provider's ambient status for the validation result. This action initializes an
+adapter only and reports `network_access: "not_probed"`; it never sends a prompt
+or spends provider quota.
+
+`Refresh models` is also explicit and credentialed for OpenAI, Anthropic,
+Google Gemini, OpenRouter, and Cerebras. CCad uses each provider's documented
+model-list API and does not fetch a catalog on application startup, while
+opening Settings, or when sending an agent prompt. Endpoint-backed local and
+generic OpenAI-compatible servers remain manual because CCad cannot discover
+their authentication or model-list contract safely.
+
 Provider test failures now retain their structured backend category in the
 Settings page and translate it into actionable text, distinguishing missing or
 rejected keys, quota limits, missing models, timeouts, and missing dependencies.
@@ -2728,3 +2742,12 @@ authenticated `/v1/models` endpoint only after an explicit Refresh models
 action, while startup continues using the first-party snapshot. Missing keys,
 HTTP failures, malformed catalogs, and timeouts return redacted provider
 catalog errors without exposing credentials or response bodies.
+
+The Cerebras settings hint now states this exact split: an offline startup
+snapshot keeps opening Settings quota-safe, while the explicit Refresh models
+button fetches the current authenticated catalog. It no longer describes the
+provider catalog as permanently offline.
+
+Provider-details text now reserves enough wrapped height in the compact native
+Settings dialog, so its key and refresh guidance remains readable instead of
+being vertically clipped.

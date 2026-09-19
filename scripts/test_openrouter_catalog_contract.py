@@ -8,7 +8,7 @@ assert '"https://openrouter.ai/api/v1/models"' in source
 assert 'method == "agent.list_models"' in source
 assert '"name": "agent.list_models"' in source
 assert '"network_access": "explicit_refresh"' in source
-assert '"params": {"provider": {"type": "string", "enum": ["openrouter", "cerebras"],' in source
+assert '"params": {"provider": {"type": "string", "enum": ["openai", "anthropic", "google_gemini", "openrouter", "cerebras"],' in source
 assert '"response": {"method": "provider_models"' in source
 assert "urllib.request.urlopen(request, timeout=timeout)" in source
 assert "invalid_catalog_shape" in source

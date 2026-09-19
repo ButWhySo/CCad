@@ -42,8 +42,9 @@ assert 'action:refreshModelCatalog' in settings
 assert 'provider_models' in panel
 assert 'allowed_objects' in (root / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
 assert 'warnings.filterwarnings' in (root / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
-assert 'curated presets (not live)' in settings
-assert 'official curated snapshot (not live)' in settings
+assert 'startup presets; Refresh models fetches your catalog' in settings
+assert 'model_details_->setMinimumHeight(42);' in settings
+assert 'startup snapshot; Refresh models fetches current catalog' in settings
 assert 'if (!model_combo_ || !provider_combo_' in settings
 assert 'agent_panel_->setModelCatalogCallback({});' in settings
 assert 'control:mcpServersTable' in settings
@@ -69,8 +70,8 @@ assert 'setModelCatalogCallback' in settings
 assert 'applyModelCatalog' in settings
 assert 'catalog["ok"].toBool(false)' in settings
 assert 'catalog["models"].toArray()' in settings
-assert 'provider_combo_->currentData().toString() == "openrouter" ||' in settings
-assert 'provider_combo_->currentData().toString() == "cerebras"' in settings
+assert 'provider_combo_->currentData().toString() != "openai_compatible" &&' in settings
+assert 'provider_combo_->currentData().toString() != "local_model"' in settings
 assert 'model_input_->setReadOnly(true)' in settings
 assert 'model_input_->setReadOnly(!custom_model_provider)' in settings
 assert '(!custom_model_provider && matching < 0)' in settings
@@ -78,6 +79,15 @@ assert 'model_combo_->setCurrentIndex(0)' in settings
 assert 'api_key_input_ = new QLineEdit(parent_widget);' in settings
 assert 'layout->addWidget(api_key_input_);' in settings
 assert 'Session key is held in memory and stored only in the OS credential vault.' in settings
+assert 'Validate Provider Setup' in settings
+assert 'without sending a request or consuming quota' in settings
+assert 'setProviderTestResultCallback' in header
+assert 'provider_test_result_cb_' in header
+assert '"provider_test_result"' in panel
+assert 'setProviderTestResultCallback' in settings
+orchestrator = (root / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
+assert '"provider_test_result"' in orchestrator
+assert '"network_access": "not_probed"' in orchestrator
 assert 'quota or rate limit reached' in settings
 assert 'selected model was not found' in settings
 assert 'API key was rejected' in settings

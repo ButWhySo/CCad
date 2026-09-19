@@ -2888,3 +2888,21 @@ claiming to refresh. Startup remains quota-safe and snapshot-backed. Missing
 keys and provider/catalog failures remain redacted. System Python was aligned
 to the pinned agent requirements; CCad still launches its isolated bundled venv
 to avoid unrelated global-package conflicts.
+
+The native Settings hint was corrected in the same sprint so the visible UI
+matches the backend contract: the initial list is a snapshot and Refresh models
+is a separate, explicit authenticated request.
+
+### Sprint 940 - make provider validation results deterministic
+
+Settings validation now receives a dedicated terminal `provider_test_result`
+after the transient key is cleared and the active adapter is restored. This
+prevents the selected provider's result from being overwritten by ambient
+`provider_state` traffic. Validation remains no-network and no-quota; a future
+explicit connection probe is intentionally a separate user action.
+
+The model Refresh action now covers the documented OpenAI, Anthropic, Gemini,
+OpenRouter, and Cerebras catalog APIs. Each request remains user initiated,
+bounded, and key-redacted; generic/custom endpoints are intentionally manual.
+The browser-audited transport, dependency, model-refresh, and quota boundaries
+are recorded in `docs/research/2026-09-19-provider-integration-audit.md`.

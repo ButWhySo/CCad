@@ -1130,3 +1130,13 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   loading; serializer round-trip and official GUI harness verified.
 - [x] Sprint 939: make explicit Cerebras model refresh use the authenticated
   provider catalog instead of returning a static snapshot.
+- [x] Sprint 939: align the native Cerebras settings hint with the explicit
+  refresh behavior so users are not told the live catalog is offline.
+- [x] Sprint 940: emit a provider-specific terminal validation result so a
+  restored background adapter cannot overwrite Settings feedback.
+- [ ] Add a separate explicitly confirmed, budget-capped live connection probe.
+  It must not change `Validate Provider Setup`, which intentionally makes no
+  network request and consumes no quota.
+- [x] Extend explicit model refresh beyond OpenRouter/Cerebras to the documented
+  OpenAI, Anthropic, and Gemini catalog APIs; retain manual model entry for
+  unknown OpenAI-compatible and local endpoints.

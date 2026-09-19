@@ -39,7 +39,7 @@ $env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
 .\build-qt\ccad_gui.exe
 ```
 
-In Agent Settings, choose `Google Gemini`, confirm model, paste key, and press `Test Provider`. Test Provider uses the key transiently; Save persists preferences only, never the secret. Do not put keys in project JSON, `.env`, logs, screenshots, or Git. Remove temporary values with `Remove-Item Env:GEMINI_API_KEY,Env:GOOGLE_API_KEY,Env:CCAD_GEMINI_MODEL`.
+In Agent Settings, choose `Google Gemini`, confirm model, paste key, and press `Validate Provider Setup`. Validation initializes the selected adapter with the key transiently but intentionally sends no provider request and consumes no quota. Save persists preferences only, never the secret. Do not put keys in project JSON, `.env`, logs, screenshots, or Git. Remove temporary values with `Remove-Item Env:GEMINI_API_KEY,Env:GOOGLE_API_KEY,Env:CCAD_GEMINI_MODEL`.
 
 ## Cerebras BYOK quickstart
 
@@ -60,7 +60,7 @@ $env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
 ```
 
 In Agent Settings choose `Cerebras`, select `gpt-oss-120b`, enter the session
-key, and press `Test Provider`. The GUI launches the checked-in venv by
+key, and press `Validate Provider Setup`. The GUI launches the checked-in venv by
 absolute path and disables user-site packages, preventing stale global
 LangChain versions from breaking the adapter. Remove the session variables
 afterward with `Remove-Item Env:CEREBRAS_API_KEY,Env:CCAD_CEREBRAS_MODEL,Env:CCAD_CEREBRAS_REASONING_EFFORT,Env:CCAD_PROVIDER`.
@@ -85,10 +85,11 @@ $env:PATH = "C:\Qt\6.11.1\mingw_64\bin;$env:PATH"
 .\build-qt\ccad_gui.exe
 ```
 
-In Agent Settings choose `OpenRouter` or `Cerebras`, enter the session key, and
-press `Refresh models` when you explicitly want the current catalog in the
-model dropdown; then select a model and press `Test Provider`. Startup and
-contract tests do not fetch catalogs or consume quota. Clear temporary values afterward with
+In Agent Settings choose any first-party provider, enter the session key, and
+press `Refresh models` when you explicitly want the current account catalog in
+the model dropdown; then select a model and press `Validate Provider Setup`.
+OpenAI, Anthropic, Gemini, OpenRouter, and Cerebras refresh only on this
+explicit action. Startup and contract tests do not fetch catalogs or consume quota. Clear temporary values afterward with
 `Remove-Item Env:OPENROUTER_API_KEY,Env:CCAD_OPENROUTER_MODEL,Env:CCAD_PROVIDER`.
 
 Provider safety limits are process-local and optional: `CCAD_PROVIDER_RETRIES`

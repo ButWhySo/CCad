@@ -112,6 +112,96 @@ def fetch_cerebras_models():
                 "network_access": "explicit_refresh", "source_url": source_url,
                 "source_kind": "provider_api"}
 
+def catalog_timeout_seconds():
+    """Return a bounded timeout shared by explicit catalog requests."""
+    try:
+        timeout_value = int(os.environ.get("CCAD_MODEL_CATALOG_TIMEOUT_SECONDS", "8"))
+    except ValueError:
+        timeout_value = 8
+    return min(20, max(2, timeout_value))
+
+def fetch_openai_models():
+    """Explicit OpenAI `/v1/models` refresh; never called at startup."""
+    source_url = "https://api.openai.com/v1/models"
+    key = os.environ.get("OPENAI_API_KEY", "")
+    if not key:
+        return {"ok": False, "error": "missing_api_key", "models": [],
+                "network_access": "explicit_refresh", "source_url": source_url,
+                "source_kind": "provider_api"}
+    request = urllib.request.Request(source_url, headers={
+        "Authorization": f"Bearer {key}", "Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(request, timeout=catalog_timeout_seconds()) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        models = [{"id": item["id"], "display_name": item.get("id"),
+                   "owned_by": item.get("owned_by")}
+                  for item in payload.get("data", [])
+                  if isinstance(item, dict) and isinstance(item.get("id"), str)]
+        return {"ok": True, "models": models, "count": len(models),
+                "network_access": "explicit_refresh", "source_url": source_url,
+                "source_kind": "provider_api"}
+    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
+        return {"ok": False, "error": type(error).__name__, "models": [],
+                "network_access": "explicit_refresh", "source_url": source_url,
+                "source_kind": "provider_api"}
+
+def fetch_anthropic_models():
+    """Explicit Anthropic `/v1/models` refresh; never called at startup."""
+    source_url = "https://api.anthropic.com/v1/models"
+    key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not key:
+        return {"ok": False, "error": "missing_api_key", "models": [],
+                "network_access": "explicit_refresh", "source_url": source_url,
+                "source_kind": "provider_api"}
+    request = urllib.request.Request(source_url, headers={
+        "x-api-key": key, "anthropic-version": "2023-06-01", "Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(request, timeout=catalog_timeout_seconds()) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        models = [{"id": item["id"], "display_name": item.get("display_name", item["id"]),
+                   "created_at": item.get("created_at")}
+                  for item in payload.get("data", [])
+                  if isinstance(item, dict) and isinstance(item.get("id"), str)]
+        return {"ok": True, "models": models, "count": len(models),
+                "network_access": "explicit_refresh", "source_url": source_url,
+                "source_kind": "provider_api"}
+    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
+        return {"ok": False, "error": type(error).__name__, "models": [],
+                "network_access": "explicit_refresh", "source_url": source_url,
+                "source_kind": "provider_api"}
+
+def fetch_gemini_models():
+    """Explicit Gemini `models.list` refresh; never called at startup."""
+    source_url = "https://generativelanguage.googleapis.com/v1beta/models"
+    key = os.environ.get("GEMINI_API_KEY", "") or os.environ.get("GOOGLE_API_KEY", "")
+    if not key:
+        return {"ok": False, "error": "missing_api_key", "models": [],
+                "network_access": "explicit_refresh", "source_url": source_url,
+                "source_kind": "provider_api"}
+    request = urllib.request.Request(source_url, headers={
+        "x-goog-api-key": key, "Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(request, timeout=catalog_timeout_seconds()) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        models = []
+        for item in payload.get("models", []):
+            if not isinstance(item, dict) or not isinstance(item.get("name"), str):
+                continue
+            methods = item.get("supportedGenerationMethods", [])
+            if methods and "generateContent" not in methods:
+                continue
+            model_id = item["name"].removeprefix("models/")
+            models.append({"id": model_id,
+                           "display_name": item.get("displayName", model_id),
+                           "context_length": item.get("inputTokenLimit")})
+        return {"ok": True, "models": models, "count": len(models),
+                "network_access": "explicit_refresh", "source_url": source_url,
+                "source_kind": "provider_api"}
+    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
+        return {"ok": False, "error": type(error).__name__, "models": [],
+                "network_access": "explicit_refresh", "source_url": source_url,
+                "source_kind": "provider_api"}
+
 def cerebras_model_snapshot():
     """Return documented public presets without a network call.
 
@@ -268,11 +358,13 @@ def orchestrator_method_catalog():
                  "approval_required", "approval_reason", "secret_value_visible"]}},
             {"name": "agent.list_models", "read_only": True,
              "network_access": "provider_specific",
-             "network_access_by_provider": {"openrouter": "explicit_refresh", "cerebras": "explicit_refresh"},
+             "network_access_by_provider": {"openai": "explicit_refresh", "anthropic": "explicit_refresh",
+                                              "google_gemini": "explicit_refresh", "openrouter": "explicit_refresh",
+                                              "cerebras": "explicit_refresh"},
              "provider_normalization": "trim_lowercase",
-             "providers": ["openrouter", "cerebras"],
-             "params": {"provider": {"type": "string", "enum": ["openrouter", "cerebras"],
-                                        "default": "openrouter"}},
+             "providers": ["openai", "anthropic", "google_gemini", "openrouter", "cerebras"],
+             "params": {"provider": {"type": "string", "enum": ["openai", "anthropic", "google_gemini", "openrouter", "cerebras"],
+                                        "default": "openai"}},
              "response": {"method": "provider_models", "fields": [
                  "provider", "ok", "error", "error_detail", "models",
                  "count", "network_access", "source", "source_kind", "source_url"],
@@ -301,12 +393,12 @@ def orchestrator_method_catalog():
                  "provider", "configured", "execution_enabled",
                  "secret_value_visible"]}},
             {"name": "agent.test_provider", "read_only": False,
-             "secrets": True, "side_effect": "transient_provider_probe",
+            "secrets": True, "side_effect": "transient_provider_probe",
              "params": {"provider": {"type": "string"},
                          "model": {"type": "string", "optional": True},
                          "secret": {"type": "string", "optional": True, "secret": True}},
-             "responses": ["provider_state", "backend_state", "message"],
-             "response": {"method": "provider_state", "fields": [
+             "responses": ["provider_test_result", "provider_state", "backend_state", "message"],
+             "response": {"method": "provider_test_result", "fields": [
                  "provider", "model", "configured", "execution_enabled",
                  "network_access", "error", "error_category",
                  "secret_value_visible"]}},
@@ -1307,18 +1399,14 @@ if __name__ == "__main__":
                     set_session_provider_env(env_name, secret)
                     if provider_id == "google_gemini": set_session_provider_env("GOOGLE_API_KEY", secret)
                 provider_ready = init_provider()
-                if not provider_ready:
-                    # Settings' Test Provider needs a terminal state even when
-                    # no key/adapter exists; otherwise GUI waits for its
-                    # timeout and reports a misleading "no response".
-                    emit({"jsonrpc": "2.0", "method": "provider_state", "params": {
-                        "provider": provider_id,
-                        "model": model,
-                        "configured": bool(secret),
-                        "execution_enabled": False,
-                        "error": "provider_unavailable" if secret else "missing_api_key",
-                        "secret_value_visible": False,
-                    }})
+                # `init_provider` can emit ambient provider_state events for the
+                # temporary selection.  The GUI must not use those to decide a
+                # settings validation result because restoring the active
+                # provider emits another ambient state afterwards.
+                test_error = "" if provider_ready else (
+                    "provider_unavailable" if secret else "missing_api_key")
+                test_category = "" if provider_ready else (
+                    "provider_unavailable" if secret else "missing_api_key")
                 clear_session_provider_env()
                 for name, value in saved_test_env.items():
                     if value is None:
@@ -1327,6 +1415,19 @@ if __name__ == "__main__":
                         os.environ[name] = value
                 session_provider_env.update(saved_session_provider_env)
                 init_provider()
+                # Emit exactly one terminal, selection-scoped result after the
+                # active provider has been restored.  This is adapter setup
+                # validation only: it intentionally makes no provider request.
+                emit({"jsonrpc": "2.0", "method": "provider_test_result", "params": {
+                    "provider": provider_id,
+                    "model": model,
+                    "configured": bool(secret),
+                    "execution_enabled": provider_ready,
+                    "network_access": "not_probed",
+                    "error": test_error,
+                    "error_category": test_category,
+                    "secret_value_visible": False,
+                }})
             elif method == "agent.set_provider_secret":
                 # Private IPC only. Never emit, persist, or add credential to
                 # prompts. Provider SDK reads process memory via its env var.
@@ -1398,7 +1499,16 @@ if __name__ == "__main__":
                                       "network_access": "none", "models": []}})
                     continue
                 provider_id = raw_provider.strip().lower()
-                if provider_id == "openrouter":
+                if provider_id == "openai":
+                    emit({"jsonrpc": "2.0", "method": "provider_models",
+                          "params": {"provider": provider_id, **fetch_openai_models()}})
+                elif provider_id == "anthropic":
+                    emit({"jsonrpc": "2.0", "method": "provider_models",
+                          "params": {"provider": provider_id, **fetch_anthropic_models()}})
+                elif provider_id == "google_gemini":
+                    emit({"jsonrpc": "2.0", "method": "provider_models",
+                          "params": {"provider": provider_id, **fetch_gemini_models()}})
+                elif provider_id == "openrouter":
                     emit({"jsonrpc": "2.0", "method": "provider_models",
                           "params": {"provider": provider_id, **fetch_openrouter_models()}})
                 elif provider_id == "cerebras":

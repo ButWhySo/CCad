@@ -8,6 +8,7 @@
 #include <QStackedWidget>
 #include <QLabel>
 #include <QPushButton>
+#include <QSizePolicy>
 #include <QSignalBlocker>
 #include <QSettings>
 #include <QTextEdit>
@@ -72,10 +73,10 @@ bool looksLikeConcatenatedPreset(const QString& model) {
 }
 
 QString modelDetailsForProvider(const QString& provider) {
-  if (provider == "openai") return "OpenAI API | curated presets (not live) | text/image | tool calling | key: OPENAI_API_KEY";
-  if (provider == "anthropic") return "Anthropic API | curated presets (not live) | Claude family | tool use | key: ANTHROPIC_API_KEY";
-  if (provider == "google_gemini") return "Google Gemini API | curated presets (not live) | multimodal | long context | key: GEMINI_API_KEY";
-  if (provider == "cerebras") return "Cerebras API | official curated snapshot (not live) | fast inference | key: CEREBRAS_API_KEY";
+  if (provider == "openai") return "OpenAI API | startup presets; Refresh models fetches your catalog | text/image | tool calling | key: OPENAI_API_KEY";
+  if (provider == "anthropic") return "Anthropic API | startup presets; Refresh models fetches your catalog | Claude family | tool use | key: ANTHROPIC_API_KEY";
+  if (provider == "google_gemini") return "Google Gemini API | startup presets; Refresh models fetches your catalog | multimodal | long context | key: GEMINI_API_KEY";
+  if (provider == "cerebras") return "Cerebras API | startup snapshot; Refresh models fetches current catalog | fast inference | key: CEREBRAS_API_KEY";
   if (provider == "openai_compatible") return "OpenAI-compatible endpoint | custom base URL and model";
   if (provider == "openrouter") return "OpenRouter API | dynamic model catalog | key: OPENROUTER_API_KEY";
   return "Local model endpoint | custom model ID and endpoint required";
@@ -231,6 +232,11 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
           this->applyConfigState(config);
       });
       agent_panel_->setProviderStateCallback([this](const QJsonObject& state) {
+          // Ambient backend state may describe the restored active provider.
+          // It is deliberately not used to complete a selected-provider check.
+          Q_UNUSED(state);
+      });
+      agent_panel_->setProviderTestResultCallback([this](const QJsonObject& state) {
           if (!provider_status_label_) return;
           const bool ready = state["execution_enabled"].toBool(false);
           const QString error = state["error"].toString();
@@ -247,8 +253,8 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
           const QString explanation = guidance.value(
               category, error.isEmpty() ? QStringLiteral("provider is unavailable") : error);
           provider_status_label_->setText(
-              ready ? "Provider test: ready (network not probed)"
-                    : "Provider test: " + explanation);
+              ready ? "Provider validation: ready (network not probed)"
+                    : "Provider validation: " + explanation);
       });
       agent_panel_->setMarketplaceCatalogCallback([this](const QJsonObject& catalog) {
           this->applyMarketplaceCatalog(catalog);
@@ -277,6 +283,7 @@ AgentSettingsDialog::~AgentSettingsDialog() {
   if (agent_panel_) {
     agent_panel_->setConfigStateCallback({});
     agent_panel_->setProviderStateCallback({});
+    agent_panel_->setProviderTestResultCallback({});
     agent_panel_->setMarketplaceCatalogCallback({});
     agent_panel_->setModelCatalogCallback({});
     agent_panel_->setMcpStatusCallback({});
@@ -415,8 +422,8 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
   auto* refresh_models = new QPushButton("Refresh models", parent_widget);
   refresh_models->setObjectName("action:refreshModelCatalog");
   refresh_models->setToolTip("Explicitly fetch the selected provider model catalog; never runs automatically");
-  refresh_models->setEnabled(provider_combo_->currentData().toString() == "openrouter" ||
-                             provider_combo_->currentData().toString() == "cerebras");
+  refresh_models->setEnabled(provider_combo_->currentData().toString() != "openai_compatible" &&
+                             provider_combo_->currentData().toString() != "local_model");
   connect(refresh_models, &QPushButton::clicked, this, [this]() {
     if (!agent_panel_ || !provider_combo_) return;
     agent_panel_->sendJsonRpc("agent.list_models", QJsonObject{
@@ -426,6 +433,8 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
   model_details_ = new QLabel(parent_widget);
   model_details_->setObjectName("label:modelDetails");
   model_details_->setWordWrap(true);
+  model_details_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
+  model_details_->setMinimumHeight(42);
   model_details_->setStyleSheet("color: #8b949e; padding: 2px 0 6px 0;");
   form->addRow("Details:", model_details_);
 
@@ -476,8 +485,8 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
     model_combo_->blockSignals(true);
     model_combo_->clear();
     const QStringList models = modelsForProvider(provider_combo_->currentData().toString());
-    if (refresh_models) refresh_models->setEnabled(provider_combo_->currentData().toString() == "openrouter" ||
-                                                    provider_combo_->currentData().toString() == "cerebras");
+    if (refresh_models) refresh_models->setEnabled(provider_combo_->currentData().toString() != "openai_compatible" &&
+                                                    provider_combo_->currentData().toString() != "local_model");
     model_combo_->addItems(models);
     const bool custom_model_provider = provider_combo_->currentData().toString() == "openai_compatible" ||
                                         provider_combo_->currentData().toString() == "openrouter" ||
@@ -624,7 +633,7 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
   provider_target_label_->setObjectName("label:providerTestTarget");
   provider_target_label_->setProperty("agentRole", "noticeCard");
   layout->addWidget(provider_target_label_);
-  provider_status_label_ = new QLabel("Provider test: not run", parent_widget);
+  provider_status_label_ = new QLabel("Provider validation: not run", parent_widget);
   provider_status_label_->setObjectName("label:providerTestStatus");
   provider_status_label_->setProperty("agentRole", "noticeCard");
   layout->addWidget(provider_status_label_);
@@ -659,12 +668,12 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
   });
   layout->addWidget(reveal_key);
   layout->addWidget(new QLabel("Session key is held in memory and stored only in the OS credential vault.", parent_widget));
-  auto* test_provider = new QPushButton("Test Provider", parent_widget);
+  auto* test_provider = new QPushButton("Validate Provider Setup", parent_widget);
   test_provider->setObjectName("action:testProviderBtn");
-  test_provider->setToolTip("Initialize the selected provider for this session without sending a prompt");
+  test_provider->setToolTip("Initializes the selected provider without sending a request or consuming quota");
   connect(test_provider, &QPushButton::clicked, this, [this]() {
     if (provider_status_label_) {
-      provider_status_label_->setText("Provider test: running...");
+      provider_status_label_->setText("Provider validation: running...");
     }
     if (agent_panel_ && api_key_input_) {
       const QString provider = provider_combo_ ? provider_combo_->currentData().toString()
@@ -681,8 +690,8 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
     QPointer<AgentSettingsDialog> dialog_guard(this);
     QTimer::singleShot(5000, this, [dialog_guard]() {
       if (dialog_guard && dialog_guard->provider_status_label_ &&
-          dialog_guard->provider_status_label_->text() == "Provider test: running...") {
-        dialog_guard->provider_status_label_->setText("Provider test: no response");
+          dialog_guard->provider_status_label_->text() == "Provider validation: running...") {
+        dialog_guard->provider_status_label_->setText("Provider validation: no response");
       }
     });
   });

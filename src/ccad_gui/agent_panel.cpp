@@ -1360,6 +1360,8 @@ void AgentPanel::handlePythonOutput() {
                                : QStringLiteral("env_missing");
         updateProviderControls();
         if (provider_state_cb_) provider_state_cb_(params);
+      } else if (obj.contains("method") && obj["method"].toString() == "provider_test_result") {
+        if (provider_test_result_cb_) provider_test_result_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "mcp_status") {
         if (mcp_status_cb_) mcp_status_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "thread_state") {
@@ -2660,6 +2662,10 @@ void AgentPanel::clearProposal() {
 
 void AgentPanel::setProviderStateCallback(ProviderStateCallback cb) {
     provider_state_cb_ = std::move(cb);
+}
+
+void AgentPanel::setProviderTestResultCallback(ProviderTestResultCallback cb) {
+    provider_test_result_cb_ = std::move(cb);
 }
 
 QString AgentPanel::projectText() const {
