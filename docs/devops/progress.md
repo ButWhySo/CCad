@@ -2712,3 +2712,6 @@ Headless approval fix: track placement now accepts `dry_run`, includes it in the
 ### Sprint 910 - zone dry-run approval parity
 
 Headless approval fix: polygon/zone placement now accepts `dry_run`, carries it in the tool payload, and skips approval wait for preview-only calls. Contract proof and handover updated. GUI validation remains paused.
+### Sprint 911 - provider tool schema proof
+
+Headless contract proof: track and zone tools now expose `dry_run` in the provider-facing LangChain schemas, not merely in internal dispatch code. GUI validation remains paused.

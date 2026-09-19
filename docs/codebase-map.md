@@ -1788,3 +1788,4 @@ Sprint 906 handover: `agent.list_models` Cerebras response includes `source`, `s
 Sprint 907 handover: `agent.list_models` OpenRouter responses expose `source_kind=provider_api` and `source_url`; explicit refresh remains bounded and opt-in.
 Sprint 909 handover: `ui_add_track` now carries optional `dry_run`; preview calls do not block on approval/broker execution, while real mutations retain approval flow.
 Sprint 910 handover: `ui_add_polygon` now carries optional `dry_run`; zone previews do not block on approval/broker execution, while live zone mutations retain approval flow.
+Sprint 911 handover: `scripts/test_tool_schema_dry_run.py` inspects provider-facing tool schemas and proves `dry_run` is available for track and zone tools; no network.
