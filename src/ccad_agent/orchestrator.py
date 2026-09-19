@@ -222,6 +222,13 @@ def orchestrator_method_catalog():
                   "resumable", "reason", "thread_id", "next", "checkpoint_id"]},
              "response_contracts": {"thread_resumed": {"fields": [
                  "thread_id", "next", "message_count"]}}},
+            {"name": "agent.set_provider_secret", "read_only": False,
+             "secrets": True, "approval_required": True,
+             "params": {"provider": {"type": "string"},
+                         "secret": {"type": "string", "secret": True}},
+             "response": {"method": "provider_state", "fields": [
+                 "provider", "configured", "execution_enabled",
+                 "secret_value_visible"]}},
             {"name": "agent.cancel_tool", "read_only": False,
              "approval_required": False, "side_effect": "cancel_wait_only"},
             {"name": "tool_result", "read_only": False,

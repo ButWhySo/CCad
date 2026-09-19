@@ -64,6 +64,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [x] Sprint 890: publish thread set/resume controls in agent method discovery.
 - [x] Sprint 891: align optional resume query schema with runtime behavior.
 - [x] Sprint 892: publish the thread-resumed event response schema.
+- [x] Sprint 893: publish redacted provider-secret control schema.
 - [x] Sprint 812: canonicalize malformed JSON-RPC tool correlation IDs before pending-call lookup; invalid IDs now fail safely.
 - [x] Sprint 813: checkpointed tool cancellation resumes matching thread with structured cancellation error; stale cancellation remains rejected.
 - [x] Sprint 814: two-process checkpoint test proves cancellation result survives process restart.
