@@ -89,6 +89,8 @@ set_config_contract = next(item for item in methods["methods"]
                            if item["name"] == "agent.set_config")
 assert set_config_contract["params"]["config"]["type"] == "object"
 assert "secret_value_visible" in set_config_contract["response"]["fields"]
+assert "secret_key_fragments" in text
+assert "rejected_secret_keys" in text
 component_contract = next(item for item in methods["methods"]
                           if item["name"] == "agent.generate_component")
 assert component_contract["params"]["prompt"]["type"] == "string"

@@ -2672,6 +2672,10 @@ Headless-only contract fix: `agent.methods` now publishes read-only `agent.get_c
 
 Headless-only contract fix: `agent.methods` now publishes `agent.set_config` as an object-input control with a redacted success-message response. GUI/API/build validation remains paused.
 
+### Sprint 900 — persisted config secret rejection
+
+Headless-only security fix: `agent.set_config` now rejects API-key, secret, token, password, and credential-like keys before persistence, while retaining a redacted success/error message. GUI/API/build validation remains paused.
+
 ### Sprint 898 — component generator discovery parity
 
 Headless-only contract fix: `agent.methods` now publishes `agent.generate_component` inputs and generated-component response fields, without making a provider call during validation. GUI/API/build validation remains paused.

@@ -1653,9 +1653,18 @@ if __name__ == "__main__":
                 emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "OTel span processors flushed successfully."}})
             elif method == "agent.set_config":
                 config_data = req.get("params", {})
+                rejected_secret_keys = []
+                secret_key_fragments = ("api_key", "apikey", "secret", "token",
+                                        "password", "credential")
                 for k, v in config_data.items():
+                    if any(fragment in str(k).lower() for fragment in secret_key_fragments):
+                        rejected_secret_keys.append(str(k))
+                        continue
                     config_manager.update(k, v)
-                emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Agent configuration saved successfully."}})
+                text = ("Agent configuration saved successfully." if not rejected_secret_keys
+                        else "Agent configuration saved; secret fields were rejected.")
+                emit({"jsonrpc": "2.0", "method": "message", "params": {
+                    "text": text, "secret_value_visible": False}})
                 if "provider" in config_data or "model" in config_data:
                     os.environ["CCAD_PROVIDER"] = config_data.get("provider", "openai")
                     os.environ["CCAD_MODEL"] = config_data.get("model", "gpt-5.1")
