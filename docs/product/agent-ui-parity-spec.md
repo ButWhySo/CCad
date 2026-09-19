@@ -30,10 +30,9 @@ Provider entries are executable only when their adapter, endpoint, credential en
 
 Cerebras uses `CEREBRAS_API_KEY`, model override `CCAD_CEREBRAS_MODEL`, base URL `https://api.cerebras.ai/v1`, and the OpenAI-compatible chat interface. The adapter must preserve CCad's bound tool schemas and report a clear unavailable/dependency error when a selected model cannot accept tool calls. Model names shown in the UI must be documented against the provider's current model/API documentation; names alone do not prove compatibility.
 
-The current native Cerebras presets are a conservative documented set:
-`gpt-oss-120b`, `llama3.1-8b`, `qwen-3-32b`, and `zai-glm-4.7`. Cerebras
-documents multi-turn, parallel, and strict tool calling, but capabilities can
-vary by model and API version. This is therefore not an exhaustive catalogue;
-the next catalogue slice must query the provider's model endpoint and filter
+The current native Cerebras presets are the first-party public entries
+`gpt-oss-120b` and `qwen-3.8-27b`, as documented at
+`https://inference-docs.cerebras.ai/models/overview`. This is not an
+exhaustive catalogue; live model listing remains explicit and must filter
 entries by current text-output and tool-calling metadata, removing stale IDs
 rather than silently presenting them as usable.
