@@ -39,6 +39,7 @@ assert {"source", "source_kind", "source_url"}.issubset(catalog_method["response
 assert {"context_window_free", "context_window_paid", "speed_tokens_per_second"}.issubset(
     catalog_method["response"]["model_fields"]
 )
+assert "reasoning_effort" in catalog_method["response"]["model_fields"]
 catalogs = [item["params"] for item in responses if item.get("method") == "provider_models"]
 openrouter = next(item for item in catalogs if item["provider"] == "openrouter")
 cerebras = next(item for item in catalogs if item["provider"] == "cerebras")
@@ -57,6 +58,7 @@ assert {item["id"] for item in cerebras["models"]} == {"gpt-oss-120b", "qwen-3.8
 metadata = {item["id"]: item for item in cerebras["models"]}
 assert metadata["gpt-oss-120b"]["context_window_paid"] == 131000
 assert metadata["qwen-3.8-27b"]["speed_tokens_per_second"] == 1850
+assert metadata["qwen-3.8-27b"]["reasoning_effort"] == ["none", "low", "medium", "high"]
 assert unknown["ok"] is False
 assert unknown["error"] == "unsupported_provider"
 print("PASS model catalog protocol branches; no network")

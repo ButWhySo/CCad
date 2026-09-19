@@ -2737,4 +2737,6 @@ Cerebras' offline catalog now carries documented free/paid context limits and pu
 
 The agent method catalog now explicitly describes those per-model metadata fields for external harness consumers.
 
+The catalog also records each public Cerebras model's documented reasoning-effort choices.
+
 Cerebras LangGraph requests now include the provider-recommended integration header while retaining the OpenAI-compatible endpoint.
