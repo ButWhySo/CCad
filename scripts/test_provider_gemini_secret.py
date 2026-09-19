@@ -28,8 +28,13 @@ terminal = subprocess.run(
         "provider": "unsupported_test_provider", "model": "test-model",
         "secret": ""}}) + "\n", text=True, capture_output=True, env=env,
     timeout=20, check=True)
-assert '"method": "provider_state"' in terminal.stdout
-assert '"error": "missing_api_key"' in terminal.stdout
+terminal_events = [json.loads(line) for line in terminal.stdout.splitlines()
+                   if line.startswith("{")]
+terminal_result = next(item["params"] for item in terminal_events
+                       if item.get("method") == "provider_test_result")
+assert terminal_result["error"] == "missing_api_key"
+assert terminal_result["error_category"] == "missing_api_key"
+assert terminal_result["network_access"] == "not_probed"
 assert secret not in terminal.stdout
 assert secret not in terminal.stderr
 source = (ROOT / "src" / "ccad_agent" / "orchestrator.py").read_text()
@@ -40,7 +45,8 @@ secret_start = source.index('method == "agent.set_provider_secret"')
 assert "config_manager.update" not in source[test_start:secret_start]
 assert 'clear_session_provider_env()' in source[test_start:secret_start]
 assert 'set_session_provider_env("GOOGLE_API_KEY", secret)' in source[test_start:secret_start]
-assert 'error": "provider_unavailable" if secret else "missing_api_key"' in source[test_start:secret_start]
+assert '"method": "provider_test_result"' in source[test_start:secret_start]
+assert '"error_category": test_category' in source[test_start:secret_start]
 assert 'failure_category == "missing_api_key"' in source
 assert 'is not configured. ' in source
 print("PASS Gemini BYOK secret alias and redaction")

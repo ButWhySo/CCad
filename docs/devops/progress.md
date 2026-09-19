@@ -2928,3 +2928,7 @@ Importing the Python orchestration module no longer creates an adapter or emits
 provider IPC. Only the launched agent process initializes its selected provider,
 which keeps tests and external harness discovery free of accidental provider
 state changes.
+
+The full offline agent-contract gate also exposed and corrected a stale Gemini
+credential assertion so it now verifies the dedicated terminal provider
+validation event instead of the replaced ambient provider-state fallback.
