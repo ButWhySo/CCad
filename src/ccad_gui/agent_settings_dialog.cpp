@@ -558,7 +558,7 @@ void AgentSettingsDialog::createPersonalisationTab(QWidget* parent_widget) {
 
 void AgentSettingsDialog::createMCPTab(QWidget* parent_widget) {
   auto* layout = new QVBoxLayout(parent_widget);
-  layout->addWidget(new QLabel("<b>MCP Servers</b><br>Configure local stdio servers used by the agent. Changes are saved with the rest of Agent Settings.", parent_widget));
+  layout->addWidget(new QLabel("<b>MCP Servers</b><br>Configure local stdio servers used by the agent. Changes are saved with the rest of Agent Settings.<br><i>Saving does not connect or launch a server; runtime status is reported separately.</i>", parent_widget));
   mcp_servers_table_ = new QTableWidget(parent_widget);
   mcp_servers_table_->setObjectName("control:mcpServersTable");
   mcp_servers_table_->setColumnCount(5);

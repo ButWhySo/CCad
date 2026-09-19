@@ -2811,6 +2811,9 @@ servers while explicitly stating that the MCP runtime is not started and no
 process execution is enabled. This gives external harnesses an honest boundary
 until a supervised MCP process manager is implemented.
 
+The MCP Settings page now repeats this boundary in the UI: saving a row does
+not connect or launch a server; runtime state is reported separately.
+
 ### Sprint 934 - surface actionable provider failure categories
 
 Agent Settings now maps the orchestrator's structured provider error categories

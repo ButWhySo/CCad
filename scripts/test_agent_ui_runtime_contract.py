@@ -51,6 +51,7 @@ assert 'action:removeMcpServerBtn' in settings
 assert 'config["mcp_servers"] = servers;' in settings
 assert 'mcp_servers_table_->setRowCount(0);' in settings
 assert 'mcp_list->addItem("Server: chrome-devtools' not in settings
+assert 'Saving does not connect or launch a server' in settings
 assert 'setModelCatalogCallback' in settings
 assert 'applyModelCatalog' in settings
 assert 'catalog["ok"].toBool(false)' in settings
