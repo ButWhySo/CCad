@@ -2681,6 +2681,11 @@ Configuration no longer hides credential input on an unrelated tab.
 The page explains that the active value is held in memory while persistent
 storage uses the operating-system credential vault.
 
+The read-only `agent.mcp_status` method exposes normalized MCP entries and
+explicitly reports `runtime: "not_started"` and `process_execution: false`.
+Harnesses can therefore distinguish saved configuration from a connected MCP
+runtime.
+
 Provider test failures now retain their structured backend category in the
 Settings page and translate it into actionable text, distinguishing missing or
 rejected keys, quota limits, missing models, timeouts, and missing dependencies.

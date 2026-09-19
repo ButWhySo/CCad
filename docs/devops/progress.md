@@ -2804,6 +2804,13 @@ focused GUI tests passed 3 of 3. Live mouse/keyboard validation remains
 pending because the native GUI connector did not expose an app surface in this
 run.
 
+### Sprint 935 - expose truthful MCP runtime status
+
+Added read-only `agent.mcp_status` discovery. It reports normalized configured
+servers while explicitly stating that the MCP runtime is not started and no
+process execution is enabled. This gives external harnesses an honest boundary
+until a supervised MCP process manager is implemented.
+
 ### Sprint 934 - surface actionable provider failure categories
 
 Agent Settings now maps the orchestrator's structured provider error categories

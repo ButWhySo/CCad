@@ -282,6 +282,9 @@ def orchestrator_method_catalog():
                  "sandbox_mode", "approval_policy", "project_name", "project_path",
                  "trust_level", "memory", "hooks", "personalisation", "mcp_servers",
                  "plugins", "workflows"]}},
+            {"name": "agent.mcp_status", "read_only": True, "network_access": "none",
+             "secrets": False, "response": {"method": "mcp_status", "fields": [
+                 "servers", "configured", "runtime", "process_execution"]}},
             {"name": "agent.set_config", "read_only": False, "secrets": False,
              "params": {"config": {"type": "object", "optional": False}},
              "response": {"method": "message", "fields": [
@@ -1776,6 +1779,12 @@ if __name__ == "__main__":
                     init_provider()
             elif method == "agent.get_config":
                 emit({"jsonrpc": "2.0", "method": "config_state", "params": config_manager.config})
+            elif method == "agent.mcp_status":
+                servers = config_manager._normalize_mcp_servers(
+                    config_manager.get("mcp_servers", []))
+                emit({"jsonrpc": "2.0", "method": "mcp_status", "params": {
+                    "servers": servers, "configured": bool(servers),
+                    "runtime": "not_started", "process_execution": False}})
             elif method == "agent.generate_component":
                 prompt = req.get("params", {}).get("prompt", "")
                 ctype = req.get("params", {}).get("type", "footprint")
