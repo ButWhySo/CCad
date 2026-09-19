@@ -21,6 +21,7 @@ def main() -> int:
         {"jsonrpc": "2.0", "method": "tools/list", "id": 2},
         {"jsonrpc": "2.0", "method": "resources/list", "id": 3},
         {"jsonrpc": "2.0", "method": "resources/read", "params": {"uri": "ccad://harness-context"}, "id": 4},
+        {"jsonrpc": "2.0", "method": "resources/read", "params": {"uri": "ccad://unknown"}, "id": 5},
     ]
     payload = "\n".join(json.dumps(item) for item in requests) + "\n"
     env = os.environ.copy()
@@ -40,8 +41,8 @@ def main() -> int:
     if completed.returncode != 0:
         raise SystemExit(f"MCP subprocess failed: {completed.returncode}\n{completed.stderr}")
     lines = [json.loads(line) for line in completed.stdout.splitlines() if line.strip()]
-    if len(lines) != 4:
-        raise SystemExit(f"expected four responses (notification silent), got {len(lines)}: {completed.stdout!r}")
+    if len(lines) != 5:
+        raise SystemExit(f"expected five responses (notification silent), got {len(lines)}: {completed.stdout!r}")
     if lines[0]["result"]["protocolVersion"] != "2025-06-18":
         raise SystemExit("initialize did not negotiate 2025-06-18")
     if "resources" not in lines[0]["result"]["capabilities"]:
@@ -55,6 +56,8 @@ def main() -> int:
         raise SystemExit("required CCad resources were not advertised")
     if lines[3]["result"]["contents"][0]["uri"] != "ccad://harness-context":
         raise SystemExit("resource read returned the wrong URI")
+    if lines[4]["error"]["code"] != -32602:
+        raise SystemExit("unknown resource URI did not return invalid params")
     print("PASS native MCP stdio external-client interoperability; no network")
     return 0
 

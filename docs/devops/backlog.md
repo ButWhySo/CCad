@@ -86,6 +86,7 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [x] Sprint 915: native subprocess MCP stdio interoperability proof covers initialize, silent initialized notification, and tools/list without network access.
 - [x] Sprint 916: expose read-only harness-context and workspace-state resources through native MCP stdio, with subprocess read/list coverage.
 - [x] Sprint 917: advertise the native MCP resources capability during initialize and assert discovery in the subprocess client proof.
+- [x] Sprint 918: reject undeclared native MCP resource URIs and cover the boundary in the external-client proof.
 - [ ] Product UI: usable schematic editor, complete core PCB edit loop, professional chat/activity presentation.
 - [x] Sprint 158: selective `ui.target` queries by semantic ID and PCB board point, including high-DPI physical pixel fields.
 - [x] Sprint 159: safe direct UI action triggers for non-destructive view/navigation actions, with unsafe actions explicitly refused.

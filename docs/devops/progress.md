@@ -2730,3 +2730,5 @@ Added a provider-free subprocess interoperability proof that simulates an extern
 The same MCP boundary now advertises and serves read-only `ccad://harness-context` and `ccad://workspace-state` resources.
 
 Initialization now advertises the resources capability, so standards-compliant clients can discover the read-only resource surface.
+
+The subprocess proof also confirms undeclared resource URIs are rejected with JSON-RPC invalid-params.
