@@ -700,9 +700,18 @@ void AgentSettingsDialog::applyConfigState(const QJsonObject& config) {
     }
     if (model_input_ && config.contains("model")) {
         const QString loaded_model = config["model"].toString().trimmed();
-        model_input_->setText(looksLikeConcatenatedPreset(loaded_model)
-                                  ? model_combo_->currentText()
-                                  : loaded_model);
+        const QString provider = provider_combo_ ? provider_combo_->currentData().toString() : QString();
+        const bool custom_model_provider = provider == "openai_compatible" ||
+                                           provider == "openrouter" ||
+                                           provider == "local_model";
+        const int matching = model_combo_ ? model_combo_->findText(loaded_model) : -1;
+        if (looksLikeConcatenatedPreset(loaded_model) ||
+            (!custom_model_provider && matching < 0)) {
+            if (model_combo_ && model_combo_->count() > 0)
+                model_combo_->setCurrentIndex(0);
+        } else {
+            model_input_->setText(loaded_model);
+        }
     }
     if (sandbox_cb_ && config.contains("sandbox_mode")) {
         sandbox_cb_->setChecked(config["sandbox_mode"].toBool());

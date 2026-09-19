@@ -52,6 +52,8 @@ assert 'provider_combo_->currentData().toString() == "openrouter" ||' in setting
 assert 'provider_combo_->currentData().toString() == "cerebras"' in settings
 assert 'model_input_->setReadOnly(true)' in settings
 assert 'model_input_->setReadOnly(!custom_model_provider)' in settings
+assert '(!custom_model_provider && matching < 0)' in settings
+assert 'model_combo_->setCurrentIndex(0)' in settings
 assert settings.count('sendJsonRpc("agent.set_config", config)') == 1
 assert 'QJsonObject{{"grid", grid_combo_->currentText()}}' not in settings
 assert 'combo_selection_selected' in review

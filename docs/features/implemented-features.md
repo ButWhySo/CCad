@@ -2672,3 +2672,6 @@ The Cerebras startup path also recognizes LangChain's missing-key
 initialization error, reports it as `missing_api_key`, and keeps the provider
 dropdown aligned with the official curated model snapshot after rebuilding the
 Qt GUI.
+
+Settings restore also rejects stale non-custom model IDs and selects the first
+current provider model, preventing obsolete catalog values from reappearing.
