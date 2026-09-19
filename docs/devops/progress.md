@@ -2655,3 +2655,7 @@ Headless-only contract fix: method discovery now describes the emitted `thread_r
 ### Sprint 893 — provider secret control discovery
 
 Headless-only security contract: `agent.methods` now declares `agent.set_provider_secret` as secret-bearing and approval-required, with secret input redaction metadata and a non-secret provider-state response. GUI/API/build validation remains paused.
+
+### Sprint 894 — transient provider probe discovery
+
+Headless-only security contract: `agent.methods` now publishes the transient `agent.test_provider` input and redacted provider/backend/message response set, including secret metadata. GUI/API/build validation remains paused.

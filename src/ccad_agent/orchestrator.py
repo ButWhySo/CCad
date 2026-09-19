@@ -229,6 +229,16 @@ def orchestrator_method_catalog():
              "response": {"method": "provider_state", "fields": [
                  "provider", "configured", "execution_enabled",
                  "secret_value_visible"]}},
+            {"name": "agent.test_provider", "read_only": False,
+             "secrets": True, "side_effect": "transient_provider_probe",
+             "params": {"provider": {"type": "string"},
+                         "model": {"type": "string", "optional": True},
+                         "secret": {"type": "string", "optional": True, "secret": True}},
+             "responses": ["provider_state", "backend_state", "message"],
+             "response": {"method": "provider_state", "fields": [
+                 "provider", "model", "configured", "execution_enabled",
+                 "network_access", "error", "error_category",
+                 "secret_value_visible"]}},
             {"name": "agent.cancel_tool", "read_only": False,
              "approval_required": False, "side_effect": "cancel_wait_only"},
             {"name": "tool_result", "read_only": False,

@@ -1763,3 +1763,5 @@ Sprint 891 handover: `agent.resume_thread.resume` discovery is optional because 
 Sprint 892 handover: `agent.resume_thread` now includes a `thread_resumed` response contract matching runtime fields `thread_id`, `next`, and `message_count`.
 
 Sprint 893 handover: discovery now includes security-critical `agent.set_provider_secret` with secret-bearing input metadata, approval requirement, and redacted provider-state response.
+
+Sprint 894 handover: discovery now includes transient `agent.test_provider` with secret-safe probe inputs and provider/backend/message response declarations.

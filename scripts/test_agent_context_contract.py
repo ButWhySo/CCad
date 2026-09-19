@@ -71,6 +71,11 @@ secret_contract = next(item for item in methods["methods"]
 assert secret_contract["secrets"] is True
 assert secret_contract["params"]["secret"]["secret"] is True
 assert "secret_value_visible" in secret_contract["response"]["fields"]
+probe_contract = next(item for item in methods["methods"]
+                      if item["name"] == "agent.test_provider")
+assert probe_contract["secrets"] is True
+assert probe_contract["params"]["secret"]["secret"] is True
+assert "backend_state" in probe_contract["responses"]
 for field in ("thread_id", "process_call_ids", "checkpoint_call_ids", "count", "approval_required",
               "approval_reason", "secret_value_visible"):
     assert field in pending_contract["response"]["fields"]
