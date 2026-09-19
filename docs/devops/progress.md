@@ -2778,3 +2778,5 @@ The known LangGraph checkpoint `allowed_objects` import deprecation is now filte
 ### Sprint 931 - provider readiness message accuracy
 
 Missing provider keys now produce a clear not-configured message instead of the misleading provider-unavailable warning. Actual adapter failures retain the unavailable message and error category. Offline regression coverage verifies both paths; GUI/provider network validation remains paused unless explicitly authorized.
+
+Live GUI validation then reproduced the startup path with Cerebras selected and no key: LangChain raised `OpenAIError`, which was previously classified incorrectly. The adapter now classifies that case as `missing_api_key`, reports `configured:false`, and the rebuilt settings path exposes the current Cerebras dropdown entries `gpt-oss-120b` and `qwen-3.8-27b`.

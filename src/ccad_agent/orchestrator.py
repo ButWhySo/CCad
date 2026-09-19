@@ -13,19 +13,18 @@ import warnings
 import urllib.request
 import urllib.error
 from typing import Annotated, TypedDict, List
+from langchain_core.tools import tool
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 # langgraph-checkpoint currently emits this known pending-deprecation warning
-# during import; it is third-party noise, not an agent failure. Keep all other
-# warnings visible and do not suppress provider/runtime errors.
+# during import; install filter after langchain_core imports, which may reset
+# warning filters. Keep all other warnings visible.
 warnings.filterwarnings(
     "ignore",
     message=r"The default value of `allowed_objects` will change.*",
     category=Warning,
-    module=r"langgraph\.checkpoint\.base",
 )
 from langgraph.graph import StateGraph, END
 from langgraph.types import Command, interrupt
-from langchain_core.tools import tool
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
 from config import AgentConfigManager
 from telemetry import trace_function, tracer
@@ -644,17 +643,23 @@ if (os.environ.get("LANGCHAIN_TRACING_V2", "").lower() == "true"
 
 def emit_provider_failure(provider: str, error: Exception):
     """Report adapter failure without exposing key, prompt, or endpoint data."""
+    category = classify_provider_error(error)
     emit({"jsonrpc": "2.0", "method": "provider_state", "params": {
-        "provider": provider, "configured": True, "execution_enabled": False,
+        "provider": provider, "configured": category != "missing_api_key",
         "error": type(error).__name__,
-        "error_category": classify_provider_error(error),
+        "error_category": category, "execution_enabled": False,
         "secret_value_visible": False,
     }})
+    return category
 
 def classify_provider_error(error: Exception):
     """Return safe, actionable category; never include secret-bearing text."""
     status = getattr(error, "status_code", None)
     text = str(error).lower()
+    if any(marker in text for marker in ("api_key", "api key", "apikey")) and any(
+        marker in text for marker in ("required", "must be set", "not provided", "missing", "none")
+    ):
+        return "missing_api_key"
     if status in (401, 403) or any(marker in text for marker in ("unauthorized", "invalid api key", "authentication")):
         return "authentication"
     if status == 404 or any(marker in text for marker in ("model not found", "does not exist", "unknown model")):
@@ -742,7 +747,7 @@ def init_provider():
             emit_dependency_warning("langchain_anthropic")
         except Exception as error:
             failure_category = classify_provider_error(error)
-            emit_provider_failure(provider, error)
+            failure_category = emit_provider_failure(provider, error)
     if provider == "google_gemini":
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
@@ -761,7 +766,7 @@ def init_provider():
         except ImportError:
             emit_dependency_warning("langchain_google_genai")
         except Exception as error:
-            emit_provider_failure(provider, error)
+            failure_category = emit_provider_failure(provider, error)
     if provider in ("openai", "openai_compatible", "openrouter", "local_model", "cerebras"):
         try:
             from langchain_openai import ChatOpenAI
@@ -819,7 +824,7 @@ def init_provider():
         except ImportError:
             emit_dependency_warning("langchain_openai")
         except Exception as error:
-            emit_provider_failure(provider, error)
+            failure_category = emit_provider_failure(provider, error)
     if failure_category == "missing_api_key":
         provider_message = (f"Agent provider '{provider}' is not configured. "
                             f"Add its API key in Agent Settings; local CCad tools remain available.")

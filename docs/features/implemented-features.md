@@ -2667,3 +2667,8 @@ requests.
 Provider readiness messages distinguish a missing API key from an adapter
 failure, so Agent Settings gives an actionable configuration message without
 claiming that a configured provider is broken.
+
+The Cerebras startup path also recognizes LangChain's missing-key
+initialization error, reports it as `missing_api_key`, and keeps the provider
+dropdown aligned with the official curated model snapshot after rebuilding the
+Qt GUI.
