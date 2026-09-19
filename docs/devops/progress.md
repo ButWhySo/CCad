@@ -2774,3 +2774,7 @@ Static OpenAI, Anthropic, and Gemini preset descriptions now explicitly say they
 Cerebras settings now identify its model list as an official curated snapshot, matching the no-network catalog contract.
 
 The known LangGraph checkpoint `allowed_objects` import deprecation is now filtered narrowly at orchestrator startup; provider errors remain visible and classified.
+
+### Sprint 931 - provider readiness message accuracy
+
+Missing provider keys now produce a clear not-configured message instead of the misleading provider-unavailable warning. Actual adapter failures retain the unavailable message and error category. Offline regression coverage verifies both paths; GUI/provider network validation remains paused unless explicitly authorized.

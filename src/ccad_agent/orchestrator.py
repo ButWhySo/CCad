@@ -820,8 +820,14 @@ def init_provider():
             emit_dependency_warning("langchain_openai")
         except Exception as error:
             emit_provider_failure(provider, error)
+    if failure_category == "missing_api_key":
+        provider_message = (f"Agent provider '{provider}' is not configured. "
+                            f"Add its API key in Agent Settings; local CCad tools remain available.")
+    else:
+        provider_message = (f"Agent provider '{provider}' unavailable. "
+                            "Configure its environment in Agent Settings; local CCad tools remain available.")
     emit({"jsonrpc": "2.0", "method": "message", "params": {
-        "text": f"Agent provider '{provider}' unavailable. Configure its environment in Agent Settings; local CCad tools remain available.",
+        "text": provider_message,
         "kind": "provider_error", "category": failure_category,
         "secret_value_visible": False,
     }})

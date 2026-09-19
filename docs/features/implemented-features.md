@@ -2663,3 +2663,7 @@ blocking, no tool call, and no secret echo without network access.
 Native CLI MCP stdio consumes `notifications/initialized` without emitting an
 error response, preserving standard notification framing for following
 requests.
+
+Provider readiness messages distinguish a missing API key from an adapter
+failure, so Agent Settings gives an actionable configuration message without
+claiming that a configured provider is broken.

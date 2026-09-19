@@ -41,4 +41,6 @@ assert "config_manager.update" not in source[test_start:secret_start]
 assert 'clear_session_provider_env()' in source[test_start:secret_start]
 assert 'set_session_provider_env("GOOGLE_API_KEY", secret)' in source[test_start:secret_start]
 assert 'error": "provider_unavailable" if secret else "missing_api_key"' in source[test_start:secret_start]
+assert 'failure_category == "missing_api_key"' in source
+assert 'is not configured. ' in source
 print("PASS Gemini BYOK secret alias and redaction")
