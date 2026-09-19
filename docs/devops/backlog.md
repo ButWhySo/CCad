@@ -1144,3 +1144,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   responses, including its authentication header and malformed payload handling.
 - [x] Add an explicit Set key action that persists the selected provider key
   safely and activates the selected provider/model without requiring dialog close.
+- [x] Prevent module import from initializing a provider or emitting backend IPC;
+  initialize the adapter only in the launched agent process.

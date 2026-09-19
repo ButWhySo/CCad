@@ -92,6 +92,8 @@ assert 'setProviderTestResultCallback' in settings
 orchestrator = (root / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
 assert '"provider_test_result"' in orchestrator
 assert '"network_access": "not_probed"' in orchestrator
+assert 'def initialize_agent_process():' in orchestrator
+assert 'if __name__ == "__main__":\n    initialize_agent_process()' in orchestrator
 assert 'quota or rate limit reached' in settings
 assert 'selected model was not found' in settings
 assert 'API key was rejected' in settings

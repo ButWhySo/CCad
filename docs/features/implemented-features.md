@@ -2762,3 +2762,7 @@ selected provider key in Windows Credential Manager, sends that key only over
 the private child-process IPC, and activates the selected provider and model in
 the running agent. It does not write a key to project files, agent JSON, or
 logs.
+
+The Python orchestration module no longer initializes a provider merely because
+a test or external harness imports it. Provider initialization and the backend
+ready event occur only when the agent process is launched.

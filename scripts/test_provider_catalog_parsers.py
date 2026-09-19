@@ -14,6 +14,7 @@ spec = importlib.util.spec_from_file_location("ccad_orchestrator_catalog", ROOT 
 orchestrator = importlib.util.module_from_spec(spec)
 assert spec.loader is not None
 spec.loader.exec_module(orchestrator)
+assert orchestrator.provider_initialized is False
 
 
 class Response:

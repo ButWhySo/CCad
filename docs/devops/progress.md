@@ -2921,3 +2921,10 @@ flow. The action stores the selected provider key in the OS vault, updates the
 selected provider/model configuration, and passes the secret only through the
 private running-agent channel. It removes the misleading requirement to close
 the dialog with Save Preferences before a newly entered key can be used.
+
+### Sprint 943 - isolate agent process startup
+
+Importing the Python orchestration module no longer creates an adapter or emits
+provider IPC. Only the launched agent process initializes its selected provider,
+which keeps tests and external harness discovery free of accidental provider
+state changes.
