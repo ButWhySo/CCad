@@ -218,8 +218,10 @@ def orchestrator_method_catalog():
              "secrets": False,
              "params": {"resume": {"type": "object", "optional": True}},
              "responses": ["thread_state", "thread_resumed"],
-             "response": {"method": "thread_state", "fields": [
-                 "resumable", "reason", "thread_id", "next", "checkpoint_id"]}},
+              "response": {"method": "thread_state", "fields": [
+                  "resumable", "reason", "thread_id", "next", "checkpoint_id"]},
+             "response_contracts": {"thread_resumed": {"fields": [
+                 "thread_id", "next", "message_count"]}}},
             {"name": "agent.cancel_tool", "read_only": False,
              "approval_required": False, "side_effect": "cancel_wait_only"},
             {"name": "tool_result", "read_only": False,

@@ -2647,3 +2647,7 @@ Headless-only contract fix: `agent.methods` now publishes the existing `agent.se
 ### Sprint 891 — resume query schema parity
 
 Headless-only contract fix: `agent.resume_thread.resume` is now advertised optional, matching the runtime's read-only resume-state query when no resume value is supplied. GUI/API/build validation remains paused.
+
+### Sprint 892 — resume event response contract
+
+Headless-only contract fix: method discovery now describes the emitted `thread_resumed` event, including thread identity, remaining nodes, and message count. GUI/API/build validation remains paused.

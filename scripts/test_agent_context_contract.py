@@ -65,6 +65,7 @@ assert resume_contract["params"]["resume"]["type"] == "object"
 assert resume_contract["params"]["resume"]["optional"] is True
 assert "thread_resumed" in resume_contract["responses"]
 assert "checkpoint_id" in resume_contract["response"]["fields"]
+assert "message_count" in resume_contract["response_contracts"]["thread_resumed"]["fields"]
 for field in ("thread_id", "process_call_ids", "checkpoint_call_ids", "count", "approval_required",
               "approval_reason", "secret_value_visible"):
     assert field in pending_contract["response"]["fields"]
