@@ -44,6 +44,8 @@ def main() -> int:
         raise SystemExit(f"expected four responses (notification silent), got {len(lines)}: {completed.stdout!r}")
     if lines[0]["result"]["protocolVersion"] != "2025-06-18":
         raise SystemExit("initialize did not negotiate 2025-06-18")
+    if "resources" not in lines[0]["result"]["capabilities"]:
+        raise SystemExit("initialize did not advertise MCP resources")
     tool_names = {tool["name"] for tool in lines[1]["result"]["tools"]}
     required = {"ccad_execute", "ccad_harness_context", "ccad_workspace_state", "ccad_agent_methods"}
     if not required.issubset(tool_names):

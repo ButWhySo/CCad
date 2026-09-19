@@ -2728,3 +2728,5 @@ Headless interoperability fix: the stdio MCP server now negotiates supported leg
 Added a provider-free subprocess interoperability proof that simulates an external MCP client, verifies notification silence, negotiated version, and the four advertised native tools.
 
 The same MCP boundary now advertises and serves read-only `ccad://harness-context` and `ccad://workspace-state` resources.
+
+Initialization now advertises the resources capability, so standards-compliant clients can discover the read-only resource surface.

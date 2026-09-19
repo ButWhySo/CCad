@@ -907,7 +907,7 @@ int agentCommand(const std::vector<std::string>& args) {
       } else {
         const std::string negotiated = requested_version.empty() ? "2025-06-18" : requested_version;
         std::string res = "{\"protocolVersion\": \"" + negotiated +
-                          "\", \"capabilities\": {\"tools\": {}}, \"serverInfo\": {\"name\": \"ccad\", \"version\": \"1.0.0\"}}";
+                          "\", \"capabilities\": {\"tools\": {}, \"resources\": {}}, \"serverInfo\": {\"name\": \"ccad\", \"version\": \"1.0.0\"}}";
         std::cout << formatSuccess(id, res) << "\n";
       }
       
