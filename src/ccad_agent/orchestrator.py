@@ -452,9 +452,10 @@ def ui_add_track(x1: float, y1: float, x2: float, y2: float, dry_run: bool = Fal
     return "Action dispatched to CCad client."
 
 @tool
-def ui_place_footprint(name: str, x: float, y: float):
+def ui_place_footprint(name: str, x: float, y: float, dry_run: bool = False):
     """Places a footprint component."""
-    return dispatch_client_tool("ui.place_footprint", {"name": name, "x": x, "y": y}, await_result=True)
+    return dispatch_client_tool("ui.place_footprint", {
+        "name": name, "x": x, "y": y, "dry_run": dry_run}, await_result=True)
 
 @tool
 def ui_add_polygon(points: List[List[float]], layer: str, dry_run: bool = False):
@@ -482,9 +483,10 @@ def ui_add_polygon(points: List[List[float]], layer: str, dry_run: bool = False)
     return "Action dispatched to CCad client."
 
 @tool
-def ui_place_symbol(name: str, x: float, y: float):
+def ui_place_symbol(name: str, x: float, y: float, dry_run: bool = False):
     """Places a schematic symbol on the schematic editor."""
-    return dispatch_client_tool("ui.place_symbol", {"name": name, "x": x, "y": y}, await_result=True)
+    return dispatch_client_tool("ui.place_symbol", {
+        "name": name, "x": x, "y": y, "dry_run": dry_run}, await_result=True)
 
 @tool
 def project_review():

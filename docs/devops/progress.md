@@ -2718,3 +2718,6 @@ Headless contract proof: track and zone tools now expose `dry_run` in the provid
 ### Sprint 912 - approval pane visibility guard
 
 Headless source contract: approval pane starts hidden and is shown only through pending-change approval paths; clear/accept/decline/policy-idle paths hide it. No GUI launch while visual validation is paused.
+### Sprint 913 - placement dry-run schema parity
+
+Headless approval improvement: footprint and schematic-symbol placement tools now expose `dry_run` and pass it through client dispatch, enabling non-blocking previews while live placement remains approval-gated.

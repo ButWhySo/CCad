@@ -1790,3 +1790,4 @@ Sprint 909 handover: `ui_add_track` now carries optional `dry_run`; preview call
 Sprint 910 handover: `ui_add_polygon` now carries optional `dry_run`; zone previews do not block on approval/broker execution, while live zone mutations retain approval flow.
 Sprint 911 handover: `scripts/test_tool_schema_dry_run.py` inspects provider-facing tool schemas and proves `dry_run` is available for track and zone tools; no network.
 Sprint 912 handover: `AgentPanel` approval preview is hidden at construction and only shown for approval-required tool/policy requests; idle/read-only/finished paths hide it. Static contract covers this until GUI validation resumes.
+Sprint 913 handover: `ui_place_footprint` and `ui_place_symbol` carry optional `dry_run`; provider schemas expose it and client dispatch suppresses broker wait for previews.
