@@ -2697,3 +2697,6 @@ Headless-only security fix: provider adapters now receive provider-specific sess
 ### Sprint 904 - transient provider probe isolation
 
 Headless-only correctness fix: `agent.test_provider` now restores active provider/model/session credentials and reinitializes the prior adapter after probing. Added no-network runtime proof. GUI/API/build validation remains paused.
+### Sprint 905 - refresh Cerebras public presets
+
+Headless/source-only provider catalog refresh: aligned Cerebras presets with current first-party documentation, replacing stale Llama/Z.ai entries with `qwen-3.8-27b`. Updated GUI preset source, README, compatibility record, and no-network contracts. GUI validation and live provider calls remain paused.

@@ -9,9 +9,9 @@ compat = (root / "docs" / "research" / "provider-model-compatibility.md").read_t
 readme = (root / "README.md").read_text(encoding="utf-8")
 
 production_model = "gpt-oss-120b"
-small_production_model = "llama3.1-8b"
-preview_model = "zai-glm-4.7"
-stale_model = "qwen-3.8-27b"
+small_production_model = "qwen-3.8-27b"
+stale_model = "llama3.1-8b"
+stale_preview_model = "zai-glm-4.7"
 stale_anthropic_model = "claude-fable-5-1"
 gemini_25_text = ("gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro")
 
@@ -19,9 +19,8 @@ for document in (settings, compat, readme):
     assert production_model in document
     assert stale_model not in document
 assert small_production_model in settings
-assert preview_model in settings
-assert "qwen-3-235b-a22b-instruct-2507" in compat
-assert "deprecated" in compat
+assert small_production_model in settings
+assert "current public model catalog" in compat
 assert stale_anthropic_model not in settings
 assert stale_anthropic_model not in compat
 assert production_model in orchestrator
@@ -30,4 +29,5 @@ for model in gemini_25_text:
     assert model in compat
 for document in (settings, orchestrator, compat, readme):
     assert stale_model not in document
+    assert stale_preview_model not in document
 print("PASS provider catalog/runtime/docs consistency; no network")

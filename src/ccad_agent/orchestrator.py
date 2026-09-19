@@ -58,11 +58,15 @@ def fetch_openrouter_models():
         return {"ok": False, "error": type(error).__name__, "models": [], "network_access": "explicit_refresh"}
 
 def cerebras_model_snapshot():
-    """Return current documented public presets without a network call."""
+    """Return documented public presets without a network call.
+
+    Source: https://inference-docs.cerebras.ai/models/overview
+    Refresh this snapshot when provider docs change; live model listing remains
+    an explicit credentialed operation and is never performed at startup.
+    """
     models = [
         {"id": "gpt-oss-120b", "display_name": "OpenAI GPT OSS 120B", "tier": "production"},
-        {"id": "llama3.1-8b", "display_name": "Llama 3.1 8B", "tier": "production"},
-        {"id": "zai-glm-4.7", "display_name": "Z.ai GLM 4.7", "tier": "preview"},
+        {"id": "qwen-3.8-27b", "display_name": "Qwen 3.8 27B", "tier": "production"},
     ]
     return {"ok": True, "models": models, "count": len(models),
             "network_access": "none", "source": "official_curated_snapshot"}

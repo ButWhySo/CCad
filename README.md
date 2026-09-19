@@ -46,9 +46,8 @@ In Agent Settings, choose `Google Gemini`, confirm model, paste key, and press `
 Install the bundled agent environment once, then launch the application with
 the same environment. The current adapter uses Cerebras' OpenAI-compatible
 endpoint and defaults to the official production model `gpt-oss-120b`.
-`llama3.1-8b` is also production; `zai-glm-4.7` is preview. Cerebras marks
-`qwen-3-235b-a22b-instruct-2507` deprecated, so use it only as an explicit
-custom ID if the account still serves it.
+The current public catalog also exposes `qwen-3.8-27b`; model availability and
+limits follow Cerebras' live documentation.
 
 ```powershell
 & src/ccad_agent/venv/Scripts/python.exe -m pip install -r src/ccad_agent/requirements.txt

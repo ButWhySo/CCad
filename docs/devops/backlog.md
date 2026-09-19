@@ -1096,3 +1096,4 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   request.
 - [x] Sprint 903: isolate session provider keys and prove provider-switch cleanup without network calls.
 - [x] Sprint 904: restore active adapter after transient provider probe.
+- [x] Sprint 905: refresh Cerebras model presets from first-party public catalog docs.

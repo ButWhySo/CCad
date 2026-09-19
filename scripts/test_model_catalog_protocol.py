@@ -45,7 +45,7 @@ assert "OPENROUTER_API_KEY" not in json.dumps(openrouter)
 assert cerebras["ok"] is True
 assert cerebras["network_access"] == "none"
 assert cerebras["source"] == "official_curated_snapshot"
-assert {item["id"] for item in cerebras["models"]} == {"gpt-oss-120b", "llama3.1-8b", "zai-glm-4.7"}
+assert {item["id"] for item in cerebras["models"]} == {"gpt-oss-120b", "qwen-3.8-27b"}
 assert unknown["ok"] is False
 assert unknown["error"] == "unsupported_provider"
 print("PASS model catalog protocol branches; no network")

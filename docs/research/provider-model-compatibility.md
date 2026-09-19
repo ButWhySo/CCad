@@ -8,11 +8,9 @@ OpenAI-compatible endpoints.
 
 ## Cerebras
 
-Cerebras' public model catalog currently lists production `gpt-oss-120b` and
-`llama3.1-8b`, plus preview `zai-glm-4.7`. The previously used
-`qwen-3-235b-a22b-instruct-2507` is marked deprecated in current documentation;
-it remains usable only as an explicit custom ID while the provider still serves
-it. CCad uses the OpenAI-compatible endpoint `https://api.cerebras.ai/v1`, the
+Cerebras' current public model catalog lists production `gpt-oss-120b` and
+`qwen-3.8-27b`; availability and limits follow provider documentation. CCad
+uses the OpenAI-compatible endpoint `https://api.cerebras.ai/v1`, the
 `CEREBRAS_API_KEY` credential, and `CCAD_CEREBRAS_MODEL` for an explicit
 override. The adapter performs no network request during configuration or
 contract tests, preserving user quota.
