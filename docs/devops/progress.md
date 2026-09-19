@@ -2906,3 +2906,10 @@ OpenRouter, and Cerebras catalog APIs. Each request remains user initiated,
 bounded, and key-redacted; generic/custom endpoints are intentionally manual.
 The browser-audited transport, dependency, model-refresh, and quota boundaries
 are recorded in `docs/research/2026-09-19-provider-integration-audit.md`.
+
+### Sprint 941 - prove provider catalog response handling
+
+Controlled response tests now cover OpenAI, Anthropic, Gemini, OpenRouter, and
+Cerebras model catalogs. They verify API-specific authentication headers,
+Gemini model-ID normalization, filtering of non-generative Gemini entries, and
+safe `invalid_catalog_shape` failures without using a provider key or network.

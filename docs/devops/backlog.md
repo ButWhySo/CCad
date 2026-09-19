@@ -1140,3 +1140,5 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [x] Extend explicit model refresh beyond OpenRouter/Cerebras to the documented
   OpenAI, Anthropic, and Gemini catalog APIs; retain manual model entry for
   unknown OpenAI-compatible and local endpoints.
+- [x] Validate every first-party catalog parser against controlled provider-shaped
+  responses, including its authentication header and malformed payload handling.

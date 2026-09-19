@@ -133,6 +133,10 @@ def fetch_openai_models():
     try:
         with urllib.request.urlopen(request, timeout=catalog_timeout_seconds()) as response:
             payload = json.loads(response.read().decode("utf-8"))
+        if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
+            return {"ok": False, "error": "invalid_catalog_shape", "models": [],
+                    "network_access": "explicit_refresh", "source_url": source_url,
+                    "source_kind": "provider_api"}
         models = [{"id": item["id"], "display_name": item.get("id"),
                    "owned_by": item.get("owned_by")}
                   for item in payload.get("data", [])
@@ -158,6 +162,10 @@ def fetch_anthropic_models():
     try:
         with urllib.request.urlopen(request, timeout=catalog_timeout_seconds()) as response:
             payload = json.loads(response.read().decode("utf-8"))
+        if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
+            return {"ok": False, "error": "invalid_catalog_shape", "models": [],
+                    "network_access": "explicit_refresh", "source_url": source_url,
+                    "source_kind": "provider_api"}
         models = [{"id": item["id"], "display_name": item.get("display_name", item["id"]),
                    "created_at": item.get("created_at")}
                   for item in payload.get("data", [])
@@ -183,6 +191,10 @@ def fetch_gemini_models():
     try:
         with urllib.request.urlopen(request, timeout=catalog_timeout_seconds()) as response:
             payload = json.loads(response.read().decode("utf-8"))
+        if not isinstance(payload, dict) or not isinstance(payload.get("models"), list):
+            return {"ok": False, "error": "invalid_catalog_shape", "models": [],
+                    "network_access": "explicit_refresh", "source_url": source_url,
+                    "source_kind": "provider_api"}
         models = []
         for item in payload.get("models", []):
             if not isinstance(item, dict) or not isinstance(item.get("name"), str):

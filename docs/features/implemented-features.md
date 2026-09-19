@@ -2751,3 +2751,8 @@ provider catalog as permanently offline.
 Provider-details text now reserves enough wrapped height in the compact native
 Settings dialog, so its key and refresh guidance remains readable instead of
 being vertically clipped.
+
+Catalog parsers reject malformed provider payloads as `invalid_catalog_shape`
+instead of propagating an internal parsing exception. Controlled local-response
+tests verify the normalized model IDs and authentication headers for every
+first-party Refresh models integration.

@@ -17,5 +17,6 @@ for provider, (function, endpoint, key) in contracts.items():
 assert '"anthropic-version": "2023-06-01"' in source
 assert '"x-goog-api-key": key' in source
 assert '"generateContent"' in source
+assert '"error": "invalid_catalog_shape"' in source
 assert "never called at startup" in source
 print("PASS OpenAI, Anthropic, and Gemini catalog contracts; no network")
