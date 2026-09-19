@@ -90,7 +90,8 @@ int main() {
                          .rotation_degrees = 90.0,
                          .padstack = ccad::Padstack{
                             .layer_set = {"F.Cu"},
-                            .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(1.0)}, .roundrect_rratio = 0.25}}}}
+                            .copper_props = {{"top", ccad::PadstackCopperLayerProps{.shape = ccad::PadstackShapeProps{.size = ccad::Size{.width = ccad::millimeters(1.5), .height = ccad::millimeters(1.0)}, .roundrect_rratio = 0.25}}}},
+                            .drill = ccad::PadstackDrillProps{.size = ccad::Size{.width = ccad::millimeters(0.5), .height = ccad::millimeters(0.5)}}
                          }}},
       .vias = {ccad::Via{.id = "V1",
                          .net_id = "N_3V3",
@@ -394,6 +395,8 @@ int main() {
   require(loaded.boards[0].pads.at(0).rotation_degrees == 90.0, "pad rotation round trips");
   require(!loaded.boards[0].pads.at(0).padstack.copper_props.empty() && loaded.boards[0].pads.at(0).padstack.copper_props.begin()->second.shape.roundrect_rratio > 0, "pad roundrect ratio round trips");
   require(loaded.boards[0].pads.at(0).padstack.copper_props.begin()->second.shape.roundrect_rratio == 0.25, "pad roundrect ratio value round trips");
+  require(loaded.boards[0].pads.at(0).padstack.drill.size.width.nanometers == 500000,
+          "pad drill round trips from drill_nm");
   require(loaded.boards[0].vias.size() == 1, "board vias round trip");
   require(loaded.boards[0].vias.at(0).drill.nanometers == 400000, "via drill round trips");
   require(loaded.boards[0].tracks.size() == 1, "board tracks round trip");

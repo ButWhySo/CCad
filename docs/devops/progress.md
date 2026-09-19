@@ -2873,3 +2873,9 @@ model removal when switching providers.
 
 Added read-only `agent.mcp_plan`: harnesses can inspect normalized MCP launch
 intent and the approval requirement without starting external processes.
+
+### Sprint 938 - restore serialized pad drill geometry
+
+The project loader now accepts the canonical `drill_nm` pad field already
+emitted by CCad's serializer. A serialization regression proves a 0.5 mm pad
+drill survives save/load, preserving through-hole geometry for GUI demo boards.

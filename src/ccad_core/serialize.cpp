@@ -767,6 +767,9 @@ class JsonReader {
             readSize();
           } else if (key == "drill") {
             readDouble();
+          } else if (key == "drill_nm") {
+            const auto drill = nanometers(readInt64());
+            pad.padstack.drill.size = Size{.width = drill, .height = drill};
           } else if (key == "drill_shape") {
             readString();
           } else if (key == "drill_size") {

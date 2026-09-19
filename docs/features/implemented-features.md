@@ -2718,3 +2718,7 @@ The official UI-map target sequence now opens the modeless Agent Settings dialog
 and verifies provider, model, masked API-key, and MCP table controls after the
 dialog appears. This extends visual validation beyond the dock itself without
 making a network request or changing credentials.
+
+Pad JSON loading accepts the canonical `drill_nm` field emitted by CCad's own
+serializer and restores it into the padstack drill geometry. This preserves
+through-hole pad drill data across a save/load cycle.
