@@ -216,7 +216,7 @@ def orchestrator_method_catalog():
                  "configured", "secret_value_visible"]}},
             {"name": "agent.resume_thread", "read_only": False,
              "secrets": False,
-             "params": {"resume": {"type": "object", "optional": False}},
+             "params": {"resume": {"type": "object", "optional": True}},
              "responses": ["thread_state", "thread_resumed"],
              "response": {"method": "thread_state", "fields": [
                  "resumable", "reason", "thread_id", "next", "checkpoint_id"]}},

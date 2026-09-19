@@ -2643,3 +2643,7 @@ Headless-only contract fix: `agent.methods` now advertises optional opaque `agen
 ### Sprint 890 — thread control discovery parity
 
 Headless-only contract fix: `agent.methods` now publishes the existing `agent.set_thread_id` and `agent.resume_thread` controls, including safe parameter and `thread_state` response schemas. GUI/API/build validation remains paused.
+
+### Sprint 891 — resume query schema parity
+
+Headless-only contract fix: `agent.resume_thread.resume` is now advertised optional, matching the runtime's read-only resume-state query when no resume value is supplied. GUI/API/build validation remains paused.

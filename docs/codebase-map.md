@@ -1757,3 +1757,5 @@ Sprint 888 handover: `agent.pending_calls` discovery declares optional opaque `t
 Sprint 889 handover: `agent.context_state` discovery now declares optional opaque `thread_id`, aligned with the runtime context snapshot query and contract test.
 
 Sprint 890 handover: method discovery now includes runtime `agent.set_thread_id` and `agent.resume_thread` controls with redacted `thread_state` schemas; subprocess contract asserts both.
+
+Sprint 891 handover: `agent.resume_thread.resume` discovery is optional because the runtime supports querying resumability without resuming.
