@@ -2766,3 +2766,5 @@ The gate now self-checks its allow-list and refuses GUI, visual, provider, or ag
 Model-catalog requests now trim and case-fold provider IDs before dispatch, so UI and external harness values such as `  CereBras  ` resolve to the official Cerebras catalog. Offline subprocess coverage proves canonicalization without network access.
 
 The method-discovery contract now advertises this normalization explicitly to external harnesses.
+
+Invalid non-string model-catalog provider values now return structured `invalid_params` instead of being coerced into misleading provider IDs.

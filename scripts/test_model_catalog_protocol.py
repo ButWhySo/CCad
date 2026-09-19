@@ -21,6 +21,8 @@ result = subprocess.run(
            + "\n"
            + json.dumps({"method": "agent.list_models", "params": {"provider": "  CereBras  "}})
            + "\n"
+           + json.dumps({"method": "agent.list_models", "params": {"provider": 42}})
+           + "\n"
            + json.dumps({"method": "agent.list_models", "params": {"provider": "unknown"}})
            + "\n"),
     text=True,
@@ -49,6 +51,7 @@ cerebras = next(item for item in catalogs if item["provider"] == "cerebras")
 canonical_cerebras = [item for item in catalogs
                       if item["provider"] == "cerebras"]
 unknown = next(item for item in catalogs if item["provider"] == "unknown")
+invalid = next(item for item in catalogs if item.get("error") == "invalid_params")
 assert openrouter["ok"] is False
 assert openrouter["error"] == "missing_api_key"
 assert openrouter["source_kind"] == "provider_api"
@@ -67,4 +70,5 @@ assert metadata["qwen-3.8-27b"]["reasoning_effort"] == ["none", "low", "medium",
 assert len(canonical_cerebras) == 2
 assert unknown["ok"] is False
 assert unknown["error"] == "unsupported_provider"
+assert invalid["error_detail"] == "provider must be a string"
 print("PASS model catalog protocol branches; no network")
