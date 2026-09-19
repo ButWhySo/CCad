@@ -63,7 +63,7 @@ In Agent Settings choose `Cerebras`, select `gpt-oss-120b`, enter the session
 key, and press `Test Provider`. The GUI launches the checked-in venv by
 absolute path and disables user-site packages, preventing stale global
 LangChain versions from breaking the adapter. Remove the session variables
-afterward with `Remove-Item Env:CEREBRAS_API_KEY,Env:CCAD_CEREBRAS_MODEL,Env:CCAD_PROVIDER`.
+afterward with `Remove-Item Env:CEREBRAS_API_KEY,Env:CCAD_CEREBRAS_MODEL,Env:CCAD_CEREBRAS_REASONING_EFFORT,Env:CCAD_PROVIDER`.
 `CCAD_CEREBRAS_REASONING_EFFORT` is session-only; Qwen defaults to `none` to
 avoid unnecessary reasoning-token usage, while invalid values fall back safely.
 
