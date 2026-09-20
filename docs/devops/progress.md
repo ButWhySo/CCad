@@ -3006,7 +3006,7 @@ gate, secret scan, documentation review, commit, and push are finished.
 ### Sprint 949 - native catalog tools
 
 Native catalog transport, generated tools, ToolNode rebuild, and scoped UI-map
-proof complete. Real provider tool-call proof remains pending.
+ proof complete. Gemini live read-only tool-call proof complete.
 
 Full Qt Release build and CTest gate pass: 91/91 in 158.16 seconds. The
 runner callback/executor handoff is synchronized so captured-output execution

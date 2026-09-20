@@ -14,11 +14,11 @@ Update this file in the same commit as each implementation slice.
 - [x] Native method ID and authoritative broker-result preservation.
 - [x] Catalog IPC contract, focused CTest, and scoped UI-map validation.
 - [x] Qt Release build and full CTest gate (91/91).
-- [ ] Bounded real-provider catalog tool call and broker result.
+- [x] Bounded real-provider catalog tool call and broker result.
 
 ## Provider, context, and memory
 
-- [ ] Restore persisted provider, model, and OS-vault credential before first chat turn. Sprint 947 restores the visible provider/model before Python startup; an end-to-end first live chat turn is still required.
+- [x] Restore persisted provider, model, and OS-vault credential before first chat turn.
 - [ ] Verify every provider/model integration against official documentation and classify failures safely.
 - [ ] Build bounded context from project, PCB, schematic, selection, coordinates, layers, nets, rules, libraries, tool state, conversation, and memories.
 - [ ] Report safe metadata for the exact context package sent on each turn.
@@ -35,7 +35,7 @@ Update this file in the same commit as each implementation slice.
 - [ ] Add screenshot/evidence capture with viewport, layer, and selection metadata.
 - [ ] Add UI-map inspection and mapped-action tools; never fixed-coordinate scripts for normal operation.
 - [ ] Add exact PCB/schematic state inspection and typed placement/edit transactions with units, snap, net, geometry, rules, and validation.
-- [ ] Let models compose real tools dynamically; real-provider tool-call and native result proof pending.
+- [x] Let models compose real tools dynamically.
 
 ## Safety and approvals
 
@@ -76,7 +76,7 @@ Update this file in the same commit as each implementation slice.
 - [ ] Write contract tests before behavior changes.
 - [x] Build Qt and run targeted/full CTest.
 - [x] Run scoped UI-map/mouse-keyboard validation; inspect screenshots and logs.
-- [ ] Run bounded real provider tests.
+- [x] Run bounded real provider tests.
 - [ ] Run redacted repository and staged-diff secret scans before every commit.
 - [ ] Update architecture, feature, CLI, methodology, provider, memory, tracing, autorouter, backlog, and progress docs in the same commit.
 - [ ] Commit only verified source/tests/docs; never keys, vault data, local config, logs, screenshots, generated boards, or unrelated user files.
