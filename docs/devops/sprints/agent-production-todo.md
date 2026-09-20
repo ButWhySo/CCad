@@ -30,6 +30,11 @@ stderr; its Agent screenshot was visually inspected. Python still exposes a
 fixed LangChain tool list, so model-facing dynamic composition remains
 unchecked until that side uses this registry too.
 
+**Next slice, not started.** Replace the Python fixed lists only together with
+validated catalog transport, `StructuredTool` construction from native input
+schemas, the existing broker call-id/approval path, ToolNode rebuild, and a
+real provider tool-call proof. A sender-only IPC change is not retained.
+
 ## Provider, context, and memory
 
 - [ ] Restore persisted provider, model, and OS-vault credential before first chat turn. Sprint 947 restores the visible provider/model before Python startup; an end-to-end first live chat turn is still required.
