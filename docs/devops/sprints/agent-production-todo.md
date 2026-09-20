@@ -10,14 +10,14 @@ Every implementation slice must update this file in the same commit. A task
 stays unchecked when any part of its stated end-to-end evidence is missing;
 partial work is recorded here rather than represented as completion.
 
-**2026-09-20, Sprint 947 — in progress.** The native no-executor path now
+**2026-09-20, Sprint 947 — committed and pushed as `d1917eb`.** The native no-executor path now
 fails truthfully with `task_executor_unavailable`, and the Agent panel restores
 the persisted provider/model before backend startup. The offline contract gate
 passed 57 scripts. The explicit Qt runtime completed all 91 CTest cases in
 runtime-safe intervals; the official UI-map target harness visually confirmed
 the restored model header and reachable Agent Settings controls. The remaining
-Sprint 947 gate is a staged-diff secret scan plus commit/push. Provider-first-
-turn activation, complete context, dynamic tools, memory lifecycle, tracing,
+Sprint 947 passed its staged-diff secret scan and was pushed after the gates.
+Provider-first-turn activation, complete context, dynamic tools, memory lifecycle, tracing,
 and real mutation proof remain unchecked because their full stated criteria are
 not yet met.
 
