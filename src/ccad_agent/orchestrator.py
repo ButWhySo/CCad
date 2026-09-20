@@ -801,20 +801,32 @@ def emit_provider_failure(provider: str, error: Exception):
     }})
     return category
 
+def provider_http_status(error: Exception):
+    """Extract a numeric HTTP status from common SDK wrappers without text."""
+    for candidate in (error, getattr(error, "response", None)):
+        status = getattr(candidate, "status_code", None)
+        if isinstance(status, int) and 100 <= status <= 599:
+            return status
+    return None
+
 def classify_provider_error(error: Exception):
     """Return safe, actionable category; never include secret-bearing text."""
-    status = getattr(error, "status_code", None)
+    status = provider_http_status(error)
     text = str(error).lower()
     if any(marker in text for marker in ("api_key", "api key", "apikey")) and any(
         marker in text for marker in ("required", "must be set", "not provided", "missing", "none")
     ):
         return "missing_api_key"
-    if status in (401, 403) or any(marker in text for marker in ("unauthorized", "invalid api key", "authentication")):
+    if status == 401 or any(marker in text for marker in ("unauthorized", "invalid api key", "authentication")):
         return "authentication"
+    if status == 403 or any(marker in text for marker in ("forbidden", "permission denied", "not permitted")):
+        return "permission_denied"
     if status == 404 or any(marker in text for marker in ("model not found", "does not exist", "unknown model")):
         return "model_not_found"
-    if status in (402, 429) or any(marker in text for marker in ("rate limit", "quota", "too many requests", "insufficient credits")):
-        return "quota_or_rate_limit"
+    if status == 402 or any(marker in text for marker in ("insufficient credits", "insufficient balance", "billing quota")):
+        return "quota_exhausted"
+    if status == 429 or any(marker in text for marker in ("rate limit", "too many requests", "requests per minute")):
+        return "rate_limited"
     if isinstance(error, (TimeoutError,)) or "timeout" in text:
         return "timeout"
     if isinstance(error, (ImportError, ModuleNotFoundError)):
@@ -1071,11 +1083,10 @@ def invoke_provider_with_retry(client, messages, config=None):
         retries = 2
 
     def quota_or_rate_limited(error):
-        status = getattr(error, "status_code", None)
-        text = str(error).lower()
-        return status in (402, 403, 429) or any(
-            marker in text for marker in ("rate limit", "quota", "too many requests", "insufficient credits")
-        )
+        return classify_provider_error(error) in {
+            "quota_exhausted", "rate_limited", "authentication",
+            "permission_denied", "model_not_found",
+        }
 
     for attempt in range(retries + 1):
         try:
@@ -1884,11 +1895,13 @@ if __name__ == "__main__":
                         "prompt_emitted": False, "secret_value_visible": False,
                     }})
                     emit({"jsonrpc": "2.0", "method": "message", "params": {
-                        "text": ("Provider request failed after bounded retries; no tool was executed. "
-                                 f"Cause: {classify_provider_error(error)}. "
-                                 "Check provider, model ID, key, quota, or network settings."),
+                        "text": ("Provider request stopped; no tool was executed. "
+                                 f"Cause: {classify_provider_error(error)}"
+                                 + (f" (HTTP {provider_http_status(error)})" if provider_http_status(error) else "")
+                                 + ". Check the matching provider setting; no automatic retry was sent."),
                         "kind": "provider_error", "error_type": type(error).__name__,
                         "cause": classify_provider_error(error),
+                        "http_status": provider_http_status(error),
                     }})
                     continue
                 session_messages = bound_session_history(final_state["messages"])

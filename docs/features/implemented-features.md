@@ -2710,6 +2710,18 @@ Provider test failures now retain their structured backend category in the
 Settings page and translate it into actionable text, distinguishing missing or
 rejected keys, quota limits, missing models, timeouts, and missing dependencies.
 
+Live chat failures now preserve a narrower safe cause: authentication,
+permission denial, missing model, exhausted credit, rate limiting, timeout,
+dependency, or generic availability. If a provider SDK exposes an HTTP status,
+only that status is shown; response bodies, prompt data, endpoints, and keys
+remain hidden. These terminal failures do not receive automatic retries.
+
+The Agent panel's internal provider-status selector is populated with every
+supported provider and switches before a session secret causes an activity
+entry. A Cerebras key therefore reports Cerebras local status rather than the
+previous hidden OpenAI default. `gui_agent_panel` covers this selection path
+without a provider request.
+
 ### MCP server settings
 
 Agent Settings now exposes the persisted `mcp_servers` configuration as an

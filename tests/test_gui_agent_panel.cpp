@@ -274,6 +274,16 @@ private slots:
     QCOMPARE(models->currentText(), QString("gpt-5.1"));
   }
 
+  void testProviderSecretSelectsStatusProvider() {
+    AgentPanel panel;
+    auto* provider_state = panel.findChild<QComboBox*>("control:providerStateSelector");
+    QVERIFY(provider_state != nullptr);
+    QVERIFY(provider_state->findData("cerebras") >= 0);
+
+    panel.setProviderSecret("cerebras", "test-key-not-networked");
+    QCOMPARE(provider_state->currentData().toString(), QString("cerebras"));
+  }
+
 
   void testApprovalLaneTransitions() {
     AgentPanel panel;

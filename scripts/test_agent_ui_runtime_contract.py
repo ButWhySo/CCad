@@ -87,6 +87,9 @@ assert 'setProviderSecretResultCallback' in header
 assert 'provider_secret_result_cb_' in header
 assert '"provider_secret_result"' in panel
 assert 'setProviderSecretResultCallback' in settings
+assert 'provider_selector_->addItem(spec.label, spec.id);' in panel
+assert 'provider_selector_->findData(provider)' in panel
+assert 'control:providerStateSelector' in panel
 assert 'Validate Provider Setup' in settings
 assert 'without sending a request or consuming quota' in settings
 assert 'setProviderTestResultCallback' in header

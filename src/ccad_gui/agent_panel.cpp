@@ -1139,8 +1139,16 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   
   action_id_input_ = new QLineEdit(this); action_id_input_->hide();
   session_path_input_ = new QLineEdit(this); session_path_input_->hide();
-  provider_selector_ = new QComboBox(this); provider_selector_->hide();
-  provider_model_input_ = new QLineEdit(this); provider_model_input_->hide();
+  provider_selector_ = new QComboBox(this);
+  provider_selector_->setObjectName("control:providerStateSelector");
+  for (const AgentProviderSpec& spec : agentProviderSpecs()) {
+    provider_selector_->addItem(spec.label, spec.id);
+  }
+  provider_selector_->hide();
+  provider_model_input_ = new QLineEdit(this);
+  provider_model_input_->setObjectName("control:providerStateModel");
+  provider_model_input_->setText(provider_model_);
+  provider_model_input_->hide();
   live_method_input_ = new QLineEdit(this); live_method_input_->hide();
   live_payload_input_ = new QLineEdit(this); live_payload_input_->hide();
   goal_input_ = new QLineEdit(this); goal_input_->hide();
@@ -1629,6 +1637,12 @@ void AgentPanel::setContextProvider(ContextProvider provider) {
 
 void AgentPanel::setProviderSecret(const QString& provider_id, const QString& secret) {
   const QString provider = provider_id.trimmed().isEmpty() ? QStringLiteral("openai") : provider_id.trimmed();
+  // The hidden provider control backs local status snapshots. Keep it aligned
+  // with Settings before emitting any visible status/activity event.
+  if (provider_selector_ != nullptr) {
+    const int index = provider_selector_->findData(provider);
+    if (index >= 0) provider_selector_->setCurrentIndex(index);
+  }
   if (secret.isEmpty()) {
     provider_secrets_.remove(provider);
   } else {

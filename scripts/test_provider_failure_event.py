@@ -13,6 +13,10 @@ class AuthenticationError(RuntimeError):
     status_code = 401
 
 
+class RateLimitError(RuntimeError):
+    status_code = 429
+
+
 captured = []
 orchestrator.emit = captured.append
 orchestrator.emit_provider_failure(
@@ -30,4 +34,9 @@ assert '"kind": "provider_error"' in source
 assert 'failure_category = classify_provider_error(error)' in source
 assert '"category": failure_category' in source
 assert '"secret_value_visible": False' in source
+
+captured.clear()
+orchestrator.emit_provider_failure("cerebras", RateLimitError("not exposing details"))
+assert captured[0]["params"]["error_category"] == "rate_limited"
+assert orchestrator.provider_http_status(RateLimitError("safe")) == 429
 print("PASS provider failure event is classified and redacted; no network")

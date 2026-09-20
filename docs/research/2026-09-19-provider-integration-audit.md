@@ -70,3 +70,19 @@ An independent local OpenAI-compatible HTTP stub exercised the live GUI to
 LangGraph to approval-gate to tool-result round trip without contacting an
 external provider. A future real connection probe must remain a separate,
 explicitly confirmed, budget-capped action.
+
+## Failure reporting and selected-provider identity
+
+Provider request failures are classified without returning provider response
+bodies, prompts, endpoint details, or credentials. The runtime separates
+authentication rejection, permission denial, missing model IDs, exhausted
+credit, rate limiting, timeouts, missing dependencies, and generic provider
+availability. When an SDK safely exposes an HTTP status, only that numeric
+status accompanies the category. Terminal categories do not automatically
+retry, preventing accidental extra quota use.
+
+The native panel's local provider-status snapshot is selection-scoped. When
+Settings saves a Cerebras key, its hidden provider backing control moves to
+Cerebras before any activity event is emitted. The transcript can no longer
+claim that OpenAI was refreshed merely because it was the panel's uninitialised
+default selection.

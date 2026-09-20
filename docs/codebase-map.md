@@ -1791,3 +1791,11 @@ Sprint 910 handover: `ui_add_polygon` now carries optional `dry_run`; zone previ
 Sprint 911 handover: `scripts/test_tool_schema_dry_run.py` inspects provider-facing tool schemas and proves `dry_run` is available for track and zone tools; no network.
 Sprint 912 handover: `AgentPanel` approval preview is hidden at construction and only shown for approval-required tool/policy requests; idle/read-only/finished paths hide it. Static contract covers this until GUI validation resumes.
 Sprint 913 handover: `ui_place_footprint` and `ui_place_symbol` carry optional `dry_run`; provider schemas expose it and client dispatch suppresses broker wait for previews.
+
+Sprint 944 handover: `orchestrator.py` now exposes safe numeric HTTP status and
+separate provider failure categories for authentication, permission denial,
+missing model, exhausted credit, and rate limiting; terminal categories never
+retry. `AgentPanel::setProviderSecret()` selects the corresponding internal
+provider item before it emits its local status snapshot, preventing stale
+OpenAI labels after a Cerebras key action. `gui_agent_panel` covers selector
+identity without provider traffic.

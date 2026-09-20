@@ -2936,3 +2936,13 @@ state changes.
 The full offline agent-contract gate also exposed and corrected a stale Gemini
 credential assertion so it now verifies the dedicated terminal provider
 validation event instead of the replaced ambient provider-state fallback.
+
+### Sprint 944 - make live provider failures truthful
+
+Provider failures now distinguish authentication, permission, missing-model,
+credit-exhaustion, and rate-limit outcomes instead of collapsing them into one
+quota/rate-limit label. The chat reports a safe HTTP status when the SDK
+provides one and confirms that no automatic retry was sent. The local Settings
+status snapshot now selects the chosen provider before it creates activity
+text, preventing a Cerebras key action from incorrectly reporting an OpenAI
+status refresh. No external provider request was made during this repair.
