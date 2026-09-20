@@ -73,7 +73,9 @@ assert request.get_header("Authorization") == "Bearer router-test"
 cerebras, request = invoke(orchestrator.fetch_cerebras_models, "CEREBRAS_API_KEY", "cerebras-test", {
     "data": [{"id": "qwen-3.8-27b", "owned_by": "cerebras"}]})
 assert cerebras["ok"] and cerebras["models"][0]["id"] == "qwen-3.8-27b"
-assert request.get_header("Authorization") == "Bearer cerebras-test"
+assert request.full_url == "https://api.cerebras.ai/public/v1/models"
+assert request.get_header("Authorization") is None
+assert request.get_header("User-agent") == "CCad/1.0 (+https://github.com/ButWhySo/CCad)"
 
 for function, key_name in ((orchestrator.fetch_openai_models, "OPENAI_API_KEY"),
                            (orchestrator.fetch_anthropic_models, "ANTHROPIC_API_KEY"),

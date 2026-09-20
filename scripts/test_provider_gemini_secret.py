@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 secret = "gemini-test-secret-not-real"
 env = os.environ.copy()
-env["CCAD_PROVIDER"] = "mock"
+env["CCAD_AGENT_DEFER_PROVIDER_INIT"] = "1"
 env["PYTHONPATH"] = str(ROOT / "src" / "ccad_agent")
 env["CCAD_GEMINI_MODEL"] = "gemini-test-model"
 request = {"method": "agent.set_provider_secret", "params": {
@@ -43,8 +43,8 @@ assert secret not in terminal.stdout
 assert secret not in terminal.stderr
 source = (ROOT / "src" / "ccad_agent" / "orchestrator.py").read_text()
 assert 'os.environ.get("CCAD_GEMINI_MODEL") or model_name' in source
-assert 'method == "agent.test_provider"' in source
-test_start = source.index('method == "agent.test_provider"')
+assert 'method in ("agent.test_provider", "agent.test_provider_connection")' in source
+test_start = source.index('method in ("agent.test_provider", "agent.test_provider_connection")')
 secret_start = source.index('method == "agent.set_provider_secret"')
 assert "config_manager.update" not in source[test_start:secret_start]
 assert 'clear_session_provider_env()' in source[test_start:secret_start]

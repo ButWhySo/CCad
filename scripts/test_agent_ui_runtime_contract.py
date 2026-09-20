@@ -78,7 +78,7 @@ assert '(!custom_model_provider && matching < 0)' in settings
 assert 'model_combo_->setCurrentIndex(0)' in settings
 assert 'api_key_input_ = new QLineEdit(parent_widget);' in settings
 assert 'layout->addWidget(api_key_input_);' in settings
-assert 'Session key is held in memory and stored only in the OS credential vault.' in settings
+assert 'Key is restored from Windows Credential Manager for this provider when CCad starts.' in settings
 assert 'action:setProviderKeyBtn' in settings
 assert 'Key saved; selected provider is ready' in settings
 assert 'agent_panel_->setProviderSecret(provider, secret);' in settings
@@ -90,18 +90,30 @@ assert 'setProviderSecretResultCallback' in settings
 assert 'provider_selector_->addItem(spec.label, spec.id);' in panel
 assert 'provider_selector_->findData(provider)' in panel
 assert 'control:providerStateSelector' in panel
-assert 'Validate Provider Setup' in settings
-assert 'without sending a request or consuming quota' in settings
+assert 'Validate local setup (no network)' in settings
+assert 'it does not validate the key or network' in settings
 assert 'setProviderTestResultCallback' in header
 assert 'provider_test_result_cb_' in header
 assert '"provider_test_result"' in panel
 assert 'setProviderTestResultCallback' in settings
+assert 'setProviderConnectionResultCallback' in header
+assert 'provider_connection_result_cb_' in header
+assert '"provider_connection_result"' in panel
+assert 'Test live connection (uses quota)' in settings
+assert 'agent.test_provider_connection' in settings
+assert 'payment, credits, or project billing is required' in settings
 orchestrator = (root / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
+assert 'https://api.cerebras.ai/public/v1/models' in orchestrator
+assert 'CCad/1.0 (+https://github.com/ButWhySo/CCad)' in orchestrator
+assert 'connection_attempted = True' in orchestrator
+assert '"request_count": 1 if connection_attempted else 0' in orchestrator
+assert 'return "payment_required"' in orchestrator
 assert '"provider_test_result"' in orchestrator
 assert '"network_access": "not_probed"' in orchestrator
 assert 'def initialize_agent_process():' in orchestrator
 assert 'if __name__ == "__main__":\n    initialize_agent_process()' in orchestrator
-assert 'quota or rate limit reached' in settings
+assert 'provider payment, credits, or project billing is required' in settings
+assert 'provider rate limit reached' in settings
 assert 'selected model was not found' in settings
 assert 'API key was rejected' in settings
 assert settings.count('sendJsonRpc("agent.set_config", config)') == 1
@@ -111,4 +123,10 @@ assert 'object->value("value").toString()' in review
 assert 'object->value("text").toString()' in review
 assert 'Optional exact combo item data value.' in review
 assert 'Optional exact combo visible text.' in review
+assert 'CCAD_AGENT_DEFER_PROVIDER_INIT' in panel
+assert 'storedProviderSecret(configured_provider)' in panel
+assert 'openrouter/free' in settings
+assert 'provider_combo_->addItem("Ollama (local)", "ollama")' in settings
+assert 'fetch_ollama_models' in orchestrator
+assert '"ollama": "explicit_local_refresh"' in orchestrator
 print("PASS agent UI/provider runtime source contract; no GUI launched")

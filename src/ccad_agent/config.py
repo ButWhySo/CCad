@@ -21,10 +21,33 @@ class AgentConfigManager:
         if self.config_path.exists():
             try:
                 with open(self.config_path, "r", encoding="utf-8") as f:
-                    return json.load(f)
+                    config = json.load(f)
+                if not isinstance(config, dict):
+                    raise ValueError("configuration root must be an object")
+                # Older unattended GUI tests appended their own literal input
+                # to the persisted project fields.  Repair only those exact
+                # known test values; never rewrite a real project name/path.
+                repaired = self._repair_known_test_contamination(config)
+                if repaired:
+                    with open(self.config_path, "w", encoding="utf-8") as f:
+                        json.dump(config, f, indent=4)
+                return config
             except Exception as e:
                 print(f"Error loading config: {e}")
         return self._default_config()
+
+    @staticmethod
+    def _repair_known_test_contamination(config: Dict[str, Any]) -> bool:
+        repaired = False
+        project_name = config.get("project_name")
+        if isinstance(project_name, str) and project_name and set(project_name.split("test_proj")) == {""}:
+            config["project_name"] = "sprint-demo"
+            repaired = True
+        project_path = config.get("project_path")
+        if isinstance(project_path, str) and project_path and set(project_path.split("/tmp/test")) == {""}:
+            config["project_path"] = ""
+            repaired = True
+        return repaired
 
     def _default_config(self) -> Dict[str, Any]:
         return {

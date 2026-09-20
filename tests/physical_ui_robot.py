@@ -5,6 +5,7 @@ import json
 import subprocess
 import pyautogui
 import ctypes
+import argparse
 
 # The harness intentionally drives a maximized desktop window. Windows can
 # leave the cursor at (0, 0) between launches; mapped semantic targets are
@@ -122,6 +123,84 @@ def capture(path, hwnd):
     focus_window(hwnd)
     pyautogui.screenshot(path)
 
+def live_provider_main(provider_override="", model_override=""):
+    """Real credential-vault to provider proof; no dummy key or local substitute."""
+    print("Starting LIVE provider harness: one real connection request only.")
+    demo_file = r"f:\CCad\artifacts\demos\sprint-demo.ccad.json"
+    gui_exe = r"f:\CCad\build-qt\ccad_gui.exe"
+    if os.path.exists("ui_ready.txt"):
+        os.remove("ui_ready.txt")
+    launch_env = os.environ.copy()
+    launch_env["PATH"] = rf"C:\Qt\6.11.1\mingw_64\bin;C:\Qt\Tools\mingw1310_64\bin;{launch_env.get('PATH', '')}"
+    stdout_path = "artifacts/live-provider-gui.stdout.log"
+    stderr_path = "artifacts/live-provider-gui.stderr.log"
+    with open(stdout_path, "w", encoding="utf-8") as gui_stdout, open(stderr_path, "w", encoding="utf-8") as gui_stderr:
+        proc = subprocess.Popen(
+            [gui_exe, "--serve-ui-map", demo_file, PIPE_PATH.split("\\")[-1], "ui_ready.txt"],
+            env=launch_env, stdout=gui_stdout, stderr=gui_stderr)
+        try:
+            for _ in range(120):
+                if os.path.exists("ui_ready.txt"):
+                    break
+                time.sleep(0.2)
+            else:
+                raise RuntimeError("UI map server did not start")
+            time.sleep(2)
+            hwnd = window_for_pid(proc.pid)
+            if hwnd:
+                user32.ShowWindow(hwnd, 3)
+                user32.SetForegroundWindow(hwnd)
+            ui_map = read_ui_map()
+            if not ui_map:
+                raise RuntimeError("UI map unavailable")
+            opened = send_ui_action("ui.click", {"id": "action:settingsBtn"})
+            if not opened.get("result", {}).get("performed"):
+                raise RuntimeError("Agent Settings did not open")
+            time.sleep(1)
+            send_ui_action("ui.click", {"id": "control:categoryList", "row": 1})
+            if provider_override:
+                provider_result = send_ui_action(
+                    "ui.click", {"id": "control:providerCombo", "value": provider_override})
+                if not provider_result.get("result", {}).get("performed"):
+                    raise RuntimeError(f"provider selection was not applied: {provider_result}")
+            if model_override:
+                model = send_ui_action(
+                    "ui.click", {"id": "control:modelCombo", "text": model_override})
+                if model.get("result", {}).get("current_text") != model_override:
+                    raise RuntimeError(f"model selection was not applied: {model}")
+            send_ui_action("ui.click", {"id": "control:categoryList", "row": 4})
+            time.sleep(0.5)
+            # This button performs exactly one real request. It reads the masked
+            # credential in the live Settings control; this harness never reads
+            # or logs that value.
+            result = send_ui_action("ui.click", {"id": "action:testProviderConnectionBtn"})
+            if not result.get("result", {}).get("performed"):
+                raise RuntimeError(f"Live connection action was not performed: {result}")
+            status_text = ""
+            for _ in range(150):
+                time.sleep(0.2)
+                current_map = read_ui_map() or {}
+                status_node = next((node for node in current_map.get("nodes", [])
+                                    if node.get("id") == "label:providerTestStatus"), {})
+                # UI-map labels are represented as `label`; editable controls
+                # use `text`/`value`.  Accept all three without assuming the
+                # widget type, otherwise a completed live probe looks blank.
+                status_text = str(status_node.get("text") or status_node.get("value") or
+                                  status_node.get("label") or "")
+                # "sending one request" is progress, not a result.  Do not
+                # terminate the GUI (and thereby abort the request) until the
+                # Settings dialog has received a real terminal callback.
+                if (status_text.startswith("Live connection: success") or
+                        status_text.startswith("Live connection failed:")):
+                    break
+            capture("artifacts/screenshots/live-provider-connection.png", hwnd)
+            print("Live provider status:", status_text)
+            if not status_text.startswith("Live connection: success"):
+                raise RuntimeError(f"Live provider connection failed: {status_text or 'no terminal status'}")
+        finally:
+            proc.kill()
+    print("PASS live provider connection; exactly one external request; no tool executed")
+
 def main():
     print("Starting CCad GUI with UiMapServer...")
     demo_file = r"f:\CCad\artifacts\demos\sprint-demo.ccad.json"
@@ -217,7 +296,7 @@ def main():
     if not typed_model.get('result', {}).get('performed'):
         raise RuntimeError(f"semantic model typing failed: {typed_model}")
     typed_key = send_ui_action('ui.type_text', {
-        'id': 'control:apiKeyInput', 'text': 'dummy-gemini-key-for-ui-test'
+        'id': 'control:apiKeyInput', 'text': 'ui-credential-fixture'
     })
     if not typed_key.get('result', {}).get('performed'):
         raise RuntimeError(f"semantic API-key typing failed on Configuration: {typed_key}")
@@ -373,7 +452,18 @@ def main():
 
 if __name__ == "__main__":
     try:
-        main()
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--live-provider", action="store_true",
+                            help="make one real provider request using the selected OS-vault credential")
+        parser.add_argument("--provider", default="",
+                            help="optional provider ID; otherwise use the persisted selection")
+        parser.add_argument("--model", default="",
+                            help="optional exact model ID; otherwise use the persisted selection")
+        args = parser.parse_args()
+        if args.live_provider:
+            live_provider_main(args.provider, args.model)
+        else:
+            main()
     except Exception as exc:
         print(f"Physical UI Robot Test FAILED: {exc}")
         sys.exit(1)

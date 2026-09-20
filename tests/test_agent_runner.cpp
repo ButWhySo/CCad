@@ -2,6 +2,7 @@
 #include <iostream>
 #include "ccad_core/agent_runner.hpp"
 #include <chrono>
+#include <future>
 #include <thread>
 
 using namespace ccad;
@@ -18,10 +19,20 @@ static void test_starts_and_stops() {
 static void test_processes_goal() {
     std::cout << "  test_processes_goal... ";
     AgentRunner runner;
-    bool progress_called = false;
+    std::promise<AgentGoal> completed_goal;
+    auto completed = completed_goal.get_future();
     
-    runner.set_progress_callback([&](const AgentGoal&) {
-        progress_called = true;
+    runner.set_progress_callback([&](const AgentGoal& goal) {
+        if (goal.status == GoalStatus::Completed) {
+            try { completed_goal.set_value(goal); } catch (...) {}
+        }
+    });
+    runner.set_task_executor([](AgentGoal&, const std::string& task_id) {
+        AgentTask task;
+        task.id = task_id;
+        task.status = TaskStatus::Completed;
+        task.result_json = "{\"status\":\"executed_by_test_executor\"}";
+        return task;
     });
 
     runner.start();
@@ -36,10 +47,34 @@ static void test_processes_goal() {
 
     runner.enqueue_goal(goal);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(800));
-    
+    const AgentGoal completed_result = completed.get();
     runner.stop();
-    assert(progress_called == true);
+    assert(completed_result.completed_count == 1);
+    assert(completed_result.tasks.front().result_json == "{\"status\":\"executed_by_test_executor\"}");
+    std::cout << "PASS\n";
+}
+
+static void test_rejects_goal_without_executor() {
+    std::cout << "  test_rejects_goal_without_executor... ";
+    AgentRunner runner;
+    std::promise<AgentGoal> failed_goal;
+    auto failed = failed_goal.get_future();
+    runner.set_progress_callback([&](const AgentGoal& goal) {
+        if (goal.status == GoalStatus::Failed) {
+            try { failed_goal.set_value(goal); } catch (...) {}
+        }
+    });
+    runner.start();
+    AgentGoal goal;
+    goal.id = "missing-executor";
+    goal.tasks.push_back(AgentTask{.id = "read-only-task", .risk = TaskRisk::ReadOnly});
+    goal.total_count = 1;
+    runner.enqueue_goal(goal);
+    const AgentGoal result = failed.get();
+    runner.stop();
+    assert(result.failed_count == 1);
+    assert(result.tasks.front().status == TaskStatus::Failed);
+    assert(result.tasks.front().error_message == "task_executor_unavailable");
     std::cout << "PASS\n";
 }
 
@@ -47,6 +82,7 @@ int main() {
     std::cout << "Agent Runner Tests\n========================\n";
     test_starts_and_stops();
     test_processes_goal();
+    test_rejects_goal_without_executor();
     std::cout << "\nAll runner tests passed!\n";
     return 0;
 }

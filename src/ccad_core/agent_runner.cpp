@@ -240,46 +240,14 @@ void AgentRunner::execution_loop() {
                     current_goal.completed_count++;
                 }
             } else {
-                // Check for approvals (Sprint 250 feature)
-                if (task.risk != TaskRisk::ReadOnly) {
-                    // If an approval is required, the task should block. 
-                    // For now, we simulate an approval gate.
-                    task.status = TaskStatus::Blocked;
-                    task.error_message = "approval_required";
-                    if (on_progress_) on_progress_(current_goal);
-                    
-                    // Break or pause depending on whether we want to wait for user interaction
-                    // For this MVP execution thread, we will skip it if it's blocked.
-                    continue; 
-                }
-
-                int retries = 0;
-                int max_retries = 2;
-                bool success = false;
-                
-                while (retries <= max_retries && !success && running_) {
-                    // Mock execution delay
-                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-                    
-                    // In a real execution, we'd invoke the ToolBroker here.
-                    success = true; // Assume success for mock
-                    
-                    if (success) {
-                        task.status = TaskStatus::Completed;
-                    } else {
-                        task.status = TaskStatus::Failed;
-                        task.error_message = "Execution failed, retry " + std::to_string(retries);
-                        retries++;
-                    }
-                }
-
-                if (!success) {
-                    // Write rollback record here
-                    task.error_message += " | Rollback required.";
-                    current_goal.failed_count++;
-                } else {
-                    current_goal.completed_count++;
-                }
+                // A queued task has no executable meaning without the real
+                // orchestrator-owned executor.  Never manufacture a success,
+                // sleep, retry, or approval state here: callers must install
+                // the executor that owns policy, tools, transactions, and
+                // evidence before starting a runner.
+                task.status = TaskStatus::Failed;
+                task.error_message = "task_executor_unavailable";
+                current_goal.failed_count++;
             }
             
             if (on_progress_) {

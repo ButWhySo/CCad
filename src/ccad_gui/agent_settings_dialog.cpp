@@ -21,6 +21,7 @@
 #include <QPointer>
 #include <QTimer>
 #include <QInputDialog>
+#include <QMessageBox>
 #include <QRegularExpression>
 #include <QTableWidget>
 #include <QHeaderView>
@@ -50,10 +51,13 @@ QStringList modelsForProvider(const QString& provider) {
     return {"Custom model (type below)"};
   }
   if (provider == "openrouter") {
-    return {"openrouter/auto", "Custom model (type below)"};
+    return {"openrouter/free", "openrouter/auto", "Custom model (type below)"};
   }
   if (provider == "cerebras") {
     return {"gpt-oss-120b", "qwen-3.8-27b"};
+  }
+  if (provider == "ollama") {
+    return {"qwen3", "Custom model (type below)"};
   }
   return {"local-model", "Custom model (type below)"};
 }
@@ -79,6 +83,7 @@ QString modelDetailsForProvider(const QString& provider) {
   if (provider == "cerebras") return "Cerebras API | startup snapshot; Refresh models fetches current catalog | fast inference | key: CEREBRAS_API_KEY";
   if (provider == "openai_compatible") return "OpenAI-compatible endpoint | custom base URL and model";
   if (provider == "openrouter") return "OpenRouter API | dynamic model catalog | key: OPENROUTER_API_KEY";
+  if (provider == "ollama") return "Ollama local API | installed models from localhost:11434 | no API key by default | tool calling depends on selected model";
   return "Local model endpoint | custom model ID and endpoint required";
 }
 
@@ -133,24 +138,26 @@ QString loadStoredSecret(const QString& provider) {
   return {};
 }
 
-void storeSecret(const QString& provider, const QString& secret) {
+bool storeSecret(const QString& provider, const QString& secret) {
 #ifdef Q_OS_WIN
   const std::wstring target = credentialTarget(provider).toStdWString();
   if (secret.isEmpty()) {
-    CredDeleteW(target.c_str(), CRED_TYPE_GENERIC, 0);
-    return;
+    return CredDeleteW(target.c_str(), CRED_TYPE_GENERIC, 0) != FALSE ||
+           GetLastError() == ERROR_NOT_FOUND;
   }
   const QByteArray bytes = secret.toUtf8();
+  if (bytes.size() > CRED_MAX_CREDENTIAL_BLOB_SIZE) return false;
   CREDENTIALW credential{};
   credential.Type = CRED_TYPE_GENERIC;
   credential.TargetName = const_cast<LPWSTR>(target.c_str());
   credential.CredentialBlobSize = static_cast<DWORD>(bytes.size());
   credential.CredentialBlob = reinterpret_cast<LPBYTE>(const_cast<char*>(bytes.constData()));
   credential.Persist = CRED_PERSIST_LOCAL_MACHINE;
-  CredWriteW(&credential, 0);
+  return CredWriteW(&credential, 0) != FALSE;
 #else
   Q_UNUSED(provider);
   Q_UNUSED(secret);
+  return false;
 #endif
 }
 
@@ -244,7 +251,9 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
           const QHash<QString, QString> guidance = {
               {"missing_api_key", "API key is missing"},
               {"authentication", "API key was rejected"},
-              {"quota_or_rate_limit", "provider quota or rate limit reached"},
+              {"payment_required", "provider payment, credits, or project billing is required"},
+              {"rate_limited", "provider rate limit reached"},
+              {"permission_denied", "provider denied this account or model"},
               {"model_not_found", "selected model was not found"},
               {"timeout", "provider request timed out"},
               {"dependency", "provider dependency is missing"},
@@ -255,6 +264,28 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
           provider_status_label_->setText(
               ready ? "Provider validation: ready (network not probed)"
                     : "Provider validation: " + explanation);
+      });
+      agent_panel_->setProviderConnectionResultCallback([this](const QJsonObject& state) {
+          if (!provider_status_label_) return;
+          if (state["connected"].toBool(false)) {
+            const QString preview = state["response_preview"].toString().left(180);
+            provider_status_label_->setText("Live connection: success — " + preview);
+            return;
+          }
+          const QString category = state["error_category"].toString("provider_unavailable");
+          const QHash<QString, QString> guidance = {
+              {"payment_required", "payment, credits, or project billing is required"},
+              {"rate_limited", "provider rate limit reached; wait before retrying"},
+              {"authentication", "API key was rejected"},
+              {"permission_denied", "account or project cannot use this model"},
+              {"model_not_found", "selected model was not found"},
+              {"timeout", "provider request timed out"},
+              {"missing_api_key", "API key is missing"},
+          };
+          QString detail = guidance.value(category, category);
+          const int http_status = state["http_status"].toInt(0);
+          if (http_status > 0) detail += " (HTTP " + QString::number(http_status) + ")";
+          provider_status_label_->setText("Live connection failed: " + detail);
       });
       agent_panel_->setProviderSecretResultCallback([this](const QJsonObject& state) {
           if (!provider_status_label_) return;
@@ -292,6 +323,7 @@ AgentSettingsDialog::~AgentSettingsDialog() {
     agent_panel_->setConfigStateCallback({});
     agent_panel_->setProviderStateCallback({});
     agent_panel_->setProviderTestResultCallback({});
+    agent_panel_->setProviderConnectionResultCallback({});
     agent_panel_->setProviderSecretResultCallback({});
     agent_panel_->setMarketplaceCatalogCallback({});
     agent_panel_->setModelCatalogCallback({});
@@ -411,6 +443,7 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
   provider_combo_->addItem("OpenAI-compatible", "openai_compatible");
   provider_combo_->addItem("OpenRouter", "openrouter");
   provider_combo_->addItem("Cerebras", "cerebras");
+  provider_combo_->addItem("Ollama (local)", "ollama");
   provider_combo_->addItem("Local model server", "local_model");
   form->addRow("Provider:", provider_combo_);
 
@@ -499,6 +532,7 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
     model_combo_->addItems(models);
     const bool custom_model_provider = provider_combo_->currentData().toString() == "openai_compatible" ||
                                         provider_combo_->currentData().toString() == "openrouter" ||
+                                        provider_combo_->currentData().toString() == "ollama" ||
                                         provider_combo_->currentData().toString() == "local_model";
     if (model_input_) model_input_->setReadOnly(!custom_model_provider);
     const int matching = model_combo_->findText(current);
@@ -630,7 +664,7 @@ void AgentSettingsDialog::createMCPTab(QWidget* parent_widget) {
 void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
   auto* layout = new QVBoxLayout(parent_widget);
   layout->addWidget(new QLabel("<b>API & Providers</b>", parent_widget));
-  layout->addWidget(new QLabel("Enter provider key for this session only. Key is masked and never written to project files, config JSON, or logs.", parent_widget));
+  layout->addWidget(new QLabel("Provider keys persist in Windows Credential Manager. They are masked and never written to project files, config JSON, or logs.", parent_widget));
   api_key_input_ = new QLineEdit(parent_widget);
   api_key_input_->setObjectName("control:apiKeyInput");
   api_key_input_->setEchoMode(QLineEdit::Password);
@@ -654,7 +688,11 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
       provider_target_label_->setText("Test target: " + provider + " / " + model);
     }
     if (api_key_input_) {
-      api_key_input_->setPlaceholderText(provider + " key (kept in memory)");
+      const QString provider_id = provider_combo_ ? provider_combo_->currentData().toString()
+                                                    : QString();
+      api_key_input_->setPlaceholderText(provider_id == QStringLiteral("ollama")
+          ? QStringLiteral("No API key required for default localhost")
+          : QStringLiteral("API key (stored in Windows Credential Manager)"));
     }
   };
   connect(provider_combo_, &QComboBox::currentTextChanged, this, [refresh_target](const QString&) { refresh_target(); });
@@ -676,7 +714,7 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
     }
   });
   layout->addWidget(reveal_key);
-  layout->addWidget(new QLabel("Session key is held in memory and stored only in the OS credential vault.", parent_widget));
+  layout->addWidget(new QLabel("Key is restored from Windows Credential Manager for this provider when CCad starts.", parent_widget));
   auto* set_key = new QPushButton("Set key", parent_widget);
   set_key->setObjectName("action:setProviderKeyBtn");
   set_key->setToolTip("Store this provider key in Windows Credential Manager and activate the selected provider and model");
@@ -690,7 +728,12 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
     const QString provider = provider_combo_ ? provider_combo_->currentData().toString()
                                              : QStringLiteral("openai");
     const QString model = model_input_ ? model_input_->text().trimmed() : QString();
-    storeSecret(provider, secret);
+    if (!storeSecret(provider, secret)) {
+      if (provider_status_label_) {
+        provider_status_label_->setText("Windows Credential Manager rejected this key; it was not activated.");
+      }
+      return;
+    }
     // Provider and model are safe preferences; the key travels only through
     // the private secret IPC and Windows Credential Manager.
     agent_panel_->sendJsonRpc("agent.set_config", QJsonObject{
@@ -699,9 +742,9 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
     if (provider_status_label_) provider_status_label_->setText("Saving key and activating provider...");
   });
   layout->addWidget(set_key);
-  auto* test_provider = new QPushButton("Validate Provider Setup", parent_widget);
+  auto* test_provider = new QPushButton("Validate local setup (no network)", parent_widget);
   test_provider->setObjectName("action:testProviderBtn");
-  test_provider->setToolTip("Initializes the selected provider without sending a request or consuming quota");
+  test_provider->setToolTip("Checks local adapter setup only; it does not validate the key or network");
   connect(test_provider, &QPushButton::clicked, this, [this]() {
     if (provider_status_label_) {
       provider_status_label_->setText("Provider validation: running...");
@@ -727,13 +770,31 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
     });
   });
   layout->addWidget(test_provider);
-  auto* clear_key = new QPushButton("Clear session key", parent_widget);
+  auto* test_connection = new QPushButton("Test live connection (uses quota)", parent_widget);
+  test_connection->setObjectName("action:testProviderConnectionBtn");
+  test_connection->setToolTip("Sends exactly one minimal provider request, does not execute tools, and never retries");
+  connect(test_connection, &QPushButton::clicked, this, [this]() {
+    if (!agent_panel_ || !api_key_input_) return;
+    if (provider_status_label_) provider_status_label_->setText("Live connection: sending one request...");
+    const QString provider = provider_combo_ ? provider_combo_->currentData().toString()
+                                             : QStringLiteral("openai");
+    QJsonObject config;
+    config.insert("provider", provider);
+    if (model_input_) config.insert("model", model_input_->text().trimmed());
+    config.insert("secret", api_key_input_->text());
+    agent_panel_->sendJsonRpc("agent.test_provider_connection", config);
+  });
+  layout->addWidget(test_connection);
+  auto* clear_key = new QPushButton("Remove saved key", parent_widget);
   clear_key->setObjectName("action:clearProviderKeyBtn");
-  clear_key->setToolTip("Remove selected provider key from this session and agent process");
+  clear_key->setToolTip("Remove selected provider key from Windows Credential Manager and this agent process");
   connect(clear_key, &QPushButton::clicked, this, [this]() {
     const QString provider = provider_combo_ ? provider_combo_->currentData().toString()
                                              : QStringLiteral("openai");
-    storeSecret(provider, QString());
+    if (!storeSecret(provider, QString())) {
+      if (provider_status_label_) provider_status_label_->setText("Could not remove key from Windows Credential Manager.");
+      return;
+    }
     if (agent_panel_) agent_panel_->setProviderSecret(provider, QString());
     if (api_key_input_) api_key_input_->clear();
   });
@@ -800,7 +861,7 @@ void AgentSettingsDialog::applyConfigState(const QJsonObject& config) {
         const QString loaded_model = config["model"].toString().trimmed();
         const QString provider = provider_combo_ ? provider_combo_->currentData().toString() : QString();
         const bool custom_model_provider = provider == "openai_compatible" ||
-                                           provider == "openrouter" ||
+                                           provider == "openrouter" || provider == "ollama" ||
                                            provider == "local_model";
         const int matching = model_combo_ ? model_combo_->findText(loaded_model) : -1;
         if (looksLikeConcatenatedPreset(loaded_model) ||
@@ -991,9 +1052,13 @@ void AgentSettingsDialog::saveAllSettings() {
     config["mcp_servers"] = servers;
   }
 
-  if (agent_panel_ && api_key_input_) {
+  if (agent_panel_ && api_key_input_ && !api_key_input_->text().isEmpty()) {
     const QString provider = provider_combo_ ? provider_combo_->currentData().toString() : "openai";
-    storeSecret(provider, api_key_input_->text());
+    if (!storeSecret(provider, api_key_input_->text())) {
+      QMessageBox::critical(this, "Agent Settings",
+                            "Windows Credential Manager rejected this key. Settings were not saved.");
+      return;
+    }
     agent_panel_->setProviderSecret(provider, api_key_input_->text());
   }
 

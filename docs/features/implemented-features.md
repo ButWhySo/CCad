@@ -2699,22 +2699,31 @@ provider's ambient status for the validation result. This action initializes an
 adapter only and reports `network_access: "not_probed"`; it never sends a prompt
 or spends provider quota.
 
-`Refresh models` is also explicit and credentialed for OpenAI, Anthropic,
-Google Gemini, OpenRouter, and Cerebras. CCad uses each provider's documented
-model-list API and does not fetch a catalog on application startup, while
-opening Settings, or when sending an agent prompt. Endpoint-backed local and
-generic OpenAI-compatible servers remain manual because CCad cannot discover
-their authentication or model-list contract safely.
+`Refresh models` is explicit for every supported hosted provider and does not
+run on application startup, while opening Settings, or when sending an agent
+prompt. OpenAI, Anthropic, Google Gemini, and OpenRouter use their documented
+credentialed model-list APIs. Cerebras uses its documented public
+`/public/v1/models` catalog, so discovery works without reading the saved
+inference key or spending inference quota. Endpoint-backed local and generic
+OpenAI-compatible servers remain manual because CCad cannot discover their
+authentication or model-list contract safely.
+
+Anthropic and Gemini refreshes now follow each provider's pagination contract,
+with a defensive finite page cap and repeated-cursor stop. A user therefore
+receives the complete model catalog allowed by their key rather than a silent
+first-page subset. This work remains refresh-only; it never performs inference.
 
 Provider test failures now retain their structured backend category in the
 Settings page and translate it into actionable text, distinguishing missing or
 rejected keys, quota limits, missing models, timeouts, and missing dependencies.
 
 Live chat failures now preserve a narrower safe cause: authentication,
-permission denial, missing model, exhausted credit, rate limiting, timeout,
-dependency, or generic availability. If a provider SDK exposes an HTTP status,
-only that status is shown; response bodies, prompt data, endpoints, and keys
-remain hidden. These terminal failures do not receive automatic retries.
+permission denial, missing model, payment/billing required, rate limiting,
+timeout, dependency, or generic availability. HTTP 402 is always classified as
+payment/billing required rather than rate limiting or consumed quota. If a
+provider SDK exposes an HTTP status, only that status is shown; response
+bodies, prompt data, endpoints, and keys remain hidden. These terminal
+failures do not receive automatic retries.
 
 The Agent panel's internal provider-status selector is populated with every
 supported provider and switches before a session secret causes an activity
@@ -2749,11 +2758,12 @@ Pad JSON loading accepts the canonical `drill_nm` field emitted by CCad's own
 serializer and restores it into the padstack drill geometry. This preserves
 through-hole pad drill data across a save/load cycle.
 
-Provider model refresh now matches the Settings label: Cerebras uses its
-authenticated `/v1/models` endpoint only after an explicit Refresh models
-action, while startup continues using the first-party snapshot. Missing keys,
-HTTP failures, malformed catalogs, and timeouts return redacted provider
-catalog errors without exposing credentials or response bodies.
+Provider model refresh now matches the Settings label: Cerebras uses its public
+`/public/v1/models` endpoint only after an explicit Refresh models action,
+while startup continues using the first-party snapshot. The public catalog does
+not need the saved inference key. HTTP failures, malformed catalogs, and
+timeouts return redacted provider catalog errors without exposing credentials
+or response bodies.
 
 The Cerebras settings hint now states this exact split: an offline startup
 snapshot keeps opening Settings quota-safe, while the explicit Refresh models
@@ -2783,3 +2793,17 @@ missing dependency or other local setup failure without exposing the key.
 The Python orchestration module no longer initializes a provider merely because
 a test or external harness imports it. Provider initialization and the backend
 ready event occur only when the agent process is launched.
+
+Agent provider credentials can also be managed without exposing them to command
+history: `ccad agent credential status <provider>`, `set <provider>`, and
+`remove <provider>`. On Windows these commands use the same Credential Manager
+entry as Agent Settings (`CCad/provider/<provider>`). `set` reads the value from
+an invisible interactive prompt, `status` reports only whether an entry exists,
+and `remove` deletes that entry. No key is accepted on a command line, emitted
+in JSON, written to project configuration, or recorded in logs.
+
+The Settings live-provider check is deliberately a separate quota-bearing
+operation. It makes one minimal request, does not retry or run tools, restores
+the active adapter afterwards, and displays either a redacted success preview
+or a safe terminal failure category. The physical GUI harness waits for that
+terminal callback rather than aborting the request while it is still sending.

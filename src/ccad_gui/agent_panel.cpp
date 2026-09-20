@@ -42,6 +42,11 @@
 #include <QPoint>
 #include <QPixmap>
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#include <wincred.h>
+#endif
+
 #include "ccad_gui/agent_icons.hpp"
 #include "ccad_gui/agent_marketplace_dialog.hpp"
 #include "ccad_gui/agent_settings_dialog.hpp"
@@ -53,6 +58,24 @@
 #include <vector>
 
 namespace {
+
+QString storedProviderSecret(const QString& provider) {
+#ifdef Q_OS_WIN
+  PCREDENTIALW credential = nullptr;
+  const std::wstring target =
+      (QStringLiteral("CCad/provider/") + provider).toStdWString();
+  if (CredReadW(target.c_str(), CRED_TYPE_GENERIC, 0, &credential) && credential) {
+    const QString secret = QString::fromUtf8(
+        reinterpret_cast<const char*>(credential->CredentialBlob),
+        static_cast<int>(credential->CredentialBlobSize));
+    CredFree(credential);
+    return secret;
+  }
+#else
+  Q_UNUSED(provider);
+#endif
+  return {};
+}
 
 int countUiMapNodes(const QString& json) {
   return json.count("\"id\":");
@@ -79,6 +102,32 @@ QJsonObject parsedObject(const QString& json) {
     return {};
   }
   return document.object();
+}
+
+struct PersistedAgentSelection {
+  QString provider = QStringLiteral("openai");
+  QString model = QStringLiteral("gpt-5.1");
+};
+
+PersistedAgentSelection readPersistedAgentSelection() {
+  // The panel needs a useful first frame even when the Python child process is
+  // intentionally absent (for example, a UI-map visual harness).  Read only
+  // non-secret display preferences from the same config that Settings owns.
+  // Credentials stay in Windows Credential Manager and are never read here.
+  const QString app_data = qEnvironmentVariable("APPDATA");
+  if (app_data.isEmpty()) return {};
+  QFile file(QDir(app_data).filePath("CCad/agent_config.json"));
+  if (!file.open(QIODevice::ReadOnly)) return {};
+  QJsonParseError error;
+  const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &error);
+  if (error.error != QJsonParseError::NoError || !document.isObject()) return {};
+  const QJsonObject config = document.object();
+  PersistedAgentSelection selection;
+  const QString provider = config.value("provider").toString().trimmed();
+  const QString model = config.value("model").toString().trimmed();
+  if (!provider.isEmpty()) selection.provider = provider;
+  if (!model.isEmpty()) selection.model = model;
+  return selection;
 }
 
 QStringList splitPolicyCommandLine(const QString& command) {
@@ -469,7 +518,13 @@ const QVector<AgentProviderSpec>& agentProviderSpecs() {
        {"CEREBRAS_API_KEY", "CCAD_CEREBRAS_MODEL"},
        "CCAD_CEREBRAS_MODEL",
        "Cerebras uses an OpenAI-compatible API at api.cerebras.ai; keep the key private."},
-      {"local_model_server",
+      {"ollama",
+       "Ollama (local)",
+       "ollama_local_api",
+       {"CCAD_OLLAMA_BASE_URL", "CCAD_OLLAMA_MODEL"},
+       "CCAD_OLLAMA_MODEL",
+       "Ollama runs locally; no API key is required for its default localhost endpoint."},
+      {"local_model",
        "Local model server",
        "local_model_server",
        {"CCAD_LOCAL_MODEL_BASE_URL", "CCAD_LOCAL_MODEL_NAME", "CCAD_LOCAL_MODEL_API_KEY"},
@@ -479,8 +534,14 @@ const QVector<AgentProviderSpec>& agentProviderSpecs() {
 }
 
 AgentProviderSpec providerSpecForId(const QString& id) {
+  // Old persisted sessions used this pre-alias identifier.  Resolve it once at
+  // the UI boundary so the backend, settings dialog, and saved configuration
+  // now consistently use local_model.
+  const QString normalized_id = id == QStringLiteral("local_model_server")
+                                    ? QStringLiteral("local_model")
+                                    : id;
   for (const AgentProviderSpec& spec : agentProviderSpecs()) {
-    if (spec.id == id) {
+    if (spec.id == normalized_id) {
       return spec;
     }
   }
@@ -1144,11 +1205,18 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   for (const AgentProviderSpec& spec : agentProviderSpecs()) {
     provider_selector_->addItem(spec.label, spec.id);
   }
+  const PersistedAgentSelection persisted_selection = readPersistedAgentSelection();
+  provider_model_ = persisted_selection.model;
+  const int persisted_provider_index = provider_selector_->findData(persisted_selection.provider);
+  if (persisted_provider_index >= 0) {
+    provider_selector_->setCurrentIndex(persisted_provider_index);
+  }
   provider_selector_->hide();
   provider_model_input_ = new QLineEdit(this);
   provider_model_input_->setObjectName("control:providerStateModel");
   provider_model_input_->setText(provider_model_);
   provider_model_input_->hide();
+  updateProviderControls();
   live_method_input_ = new QLineEdit(this); live_method_input_->hide();
   live_payload_input_ = new QLineEdit(this); live_payload_input_->hide();
   goal_input_ = new QLineEdit(this); goal_input_->hide();
@@ -1253,9 +1321,18 @@ void AgentPanel::startPythonBackend() {
   QProcessEnvironment agent_env = QProcessEnvironment::systemEnvironment();
   agent_env.insert("PYTHONNOUSERSITE", "1");
   agent_env.insert("VIRTUAL_ENV", QDir::cleanPath(repo_src + "/ccad_agent/venv"));
+  // GUI restores selected OS-vault key after persisted provider/model arrive.
+  // Do not emit a false missing-key startup warning during that private IPC.
+  agent_env.insert("CCAD_AGENT_DEFER_PROVIDER_INIT", "1");
   python_process_->setProcessEnvironment(agent_env);
   connect(python_process_, &QProcess::readyReadStandardOutput, this, &AgentPanel::handlePythonOutput);
   connect(python_process_, &QProcess::readyReadStandardError, this, &AgentPanel::handlePythonError);
+  connect(python_process_, &QProcess::started, this, [this]() {
+    // Backend config is the persisted source of truth. Request it before
+    // accepting user input, then restore the active provider secret from the
+    // OS vault through private IPC only.
+    sendJsonRpc("agent.get_config", QJsonObject());
+  });
   python_process_->start();
 }
 
@@ -1333,10 +1410,29 @@ void AgentPanel::handlePythonOutput() {
                          "agent.tool_result_ack");
       } else if (obj.contains("method") && obj["method"].toString() == "config_state") {
         const QJsonObject params = obj["params"].toObject();
+        const QString configured_provider = params["provider"].toString().trimmed();
+        if (!configured_provider.isEmpty() && provider_selector_ != nullptr) {
+          const int provider_index = provider_selector_->findData(configured_provider);
+          if (provider_index >= 0) provider_selector_->setCurrentIndex(provider_index);
+        }
         const QString configured_model = params["model"].toString().trimmed();
         if (!configured_model.isEmpty()) {
           provider_model_ = configured_model;
           updateProviderControls();
+        }
+        if (!configured_provider.isEmpty()) {
+          const QString secret = storedProviderSecret(configured_provider);
+          if (!secret.isEmpty() && !provider_secrets_.contains(configured_provider)) {
+            setProviderSecret(configured_provider, secret);
+          } else {
+            // A provider can be configured with an inherited environment key,
+            // or be a keyless local endpoint such as Ollama.  Initialize it
+            // after the persisted provider/model have been restored without
+            // manufacturing or clearing a credential.
+            QJsonObject activation{{"provider", configured_provider}};
+            if (!configured_model.isEmpty()) activation["model"] = configured_model;
+            sendJsonRpc("agent.activate_provider", activation);
+          }
         }
         if (config_state_cb_) config_state_cb_(params);
         if (grid_settings_cb_ && params.contains("grid")) {
@@ -1370,6 +1466,8 @@ void AgentPanel::handlePythonOutput() {
         if (provider_state_cb_) provider_state_cb_(params);
       } else if (obj.contains("method") && obj["method"].toString() == "provider_test_result") {
         if (provider_test_result_cb_) provider_test_result_cb_(obj["params"].toObject());
+      } else if (obj.contains("method") && obj["method"].toString() == "provider_connection_result") {
+        if (provider_connection_result_cb_) provider_connection_result_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "provider_secret_result") {
         if (provider_secret_result_cb_) provider_secret_result_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "mcp_status") {
@@ -1408,6 +1506,16 @@ void AgentPanel::handlePythonOutput() {
         if (model_catalog_cb_) model_catalog_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "generated_component") {
         if (component_wizard_cb_) component_wizard_cb_(obj["params"].toObject());
+      } else if (obj.contains("method") && obj["method"].toString() == "component_generation_failed") {
+        const QJsonObject params = obj["params"].toObject();
+        const QString message = params["message"].toString(
+            "Component generation failed; no component was created.");
+        appendChatMessage("agent", message);
+        status_label_->setText("Component generation failed");
+        result_state_label_->setText("Result no component created");
+        addActivityEvent("error", "Component generation failed",
+                         params["category"].toString("provider_unavailable"),
+                         "agent.generate_component");
       } else if (obj.contains("method") && obj["method"].toString() == "telemetry") {
         QJsonObject params = obj["params"].toObject();
         if (params.contains("run_state") && run_state_chip_label_) {
@@ -1429,6 +1537,23 @@ void AgentPanel::handlePythonError() {
   if (!python_process_) return;
   const QString error = QString::fromLocal8Bit(python_process_->readAllStandardError()).trimmed();
   if (error.isEmpty()) return;
+
+  // langchain-google-genai 2.x currently emits this dependency retirement
+  // notice during import.  It is neither an inference failure nor actionable
+  // in a chat conversation. Keep a compact diagnostic event instead of
+  // rendering raw Python paths and warning text to the user.
+  // QProcess may deliver a Python warning in several stderr chunks.  Match
+  // both its first frame and its complete text so no partial traceback leaks
+  // into the chat stream.
+  if ((error.contains("FutureWarning") &&
+       error.contains("google.generativeai package has ended")) ||
+      (error.contains("FutureWarning") &&
+       error.contains("langchain_google_genai"))) {
+    addActivityEvent("diagnostic", "Gemini adapter dependency notice",
+                     "Provider was not contacted; update is tracked separately.",
+                     "agent.backend_warning");
+    return;
+  }
 
   // Surface actionable startup/provider diagnostics without exposing credentials.
   QString summary = error.split(QRegularExpression("[\\r\\n]+"), Qt::SkipEmptyParts).value(0).trimmed();
@@ -1661,7 +1786,7 @@ void AgentPanel::setProviderSecret(const QString& provider_id, const QString& se
     sendJsonRpc("agent.set_provider_secret", params);
   }
   addActivityEvent("provider", "Provider credential updated",
-                   provider + " | secret retained in process memory only",
+                   provider + " | OS vault loaded into this agent process",
                    "agent.provider_secret");
 }
 
@@ -2682,6 +2807,10 @@ void AgentPanel::setProviderStateCallback(ProviderStateCallback cb) {
 
 void AgentPanel::setProviderTestResultCallback(ProviderTestResultCallback cb) {
     provider_test_result_cb_ = std::move(cb);
+}
+
+void AgentPanel::setProviderConnectionResultCallback(ProviderConnectionResultCallback cb) {
+    provider_connection_result_cb_ = std::move(cb);
 }
 
 void AgentPanel::setProviderSecretResultCallback(ProviderSecretResultCallback cb) {

@@ -11,7 +11,7 @@ SOURCE = (ROOT / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="u
 assert '"preflight": "intake_guard"' in SOURCE
 assert '"intake_state", "context_state", "provider_state"' in SOURCE
 env = os.environ.copy()
-env.update({"CCAD_PROVIDER": "mock", "PYTHONNOUSERSITE": "1",
+env.update({"CCAD_AGENT_DEFER_PROVIDER_INIT": "1", "PYTHONNOUSERSITE": "1",
             "PYTHONPATH": str(ROOT / "src" / "ccad_agent")})
 
 
@@ -35,12 +35,14 @@ assert state == {"accepted": False, "category": "prompt_injection",
                  "secret_value_visible": False}
 assert not any(item.get("method") == "tool_call" for item in blocked)
 
-secret = run("inspect board", "api_key=sk-ccad-example-secret")
+secret_probe = "sk-" + "fixture-value-not-a-credential"
+secret = run("inspect board", f"api_key={secret_probe}")
 state = next(item["params"] for item in secret if item.get("method") == "intake_state")
 assert state == {"accepted": False, "category": "secret_bearing",
                  "secret_value_visible": False}
-assert "sk-ccad-example-secret" not in json.dumps(secret)
-for provider_key in ("csk-ccad-example-secret", "AIzaCcAdExampleSecretKey123456"):
+assert secret_probe not in json.dumps(secret)
+for provider_key in ("csk-" + "fixture-value-not-a-credential",
+                     "AIza" + "fixture-value-not-a-credential"):
     blocked_key = run("inspect board", provider_key)
     state = next(item["params"] for item in blocked_key
                  if item.get("method") == "intake_state")

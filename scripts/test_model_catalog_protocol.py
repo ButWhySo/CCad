@@ -14,7 +14,7 @@ env.pop("OPENAI_API_KEY", None)
 env.pop("ANTHROPIC_API_KEY", None)
 env.pop("GEMINI_API_KEY", None)
 env.pop("GOOGLE_API_KEY", None)
-env["CCAD_PROVIDER"] = "mock"
+env["CCAD_AGENT_DEFER_PROVIDER_INIT"] = "1"
 env["PYTHONNOUSERSITE"] = "1"
 result = subprocess.run(
     [sys.executable, str(root / "src" / "ccad_agent" / "orchestrator.py")],
@@ -51,10 +51,10 @@ assert catalog_method["network_access"] == "provider_specific"
 assert catalog_method["network_access_by_provider"] == {
     "openai": "explicit_refresh", "anthropic": "explicit_refresh",
     "google_gemini": "explicit_refresh", "openrouter": "explicit_refresh",
-    "cerebras": "explicit_refresh"}
+    "cerebras": "explicit_refresh", "ollama": "explicit_local_refresh"}
 assert catalog_method["provider_normalization"] == "trim_lowercase"
 assert catalog_method["params"]["provider"]["enum"] == [
-    "openai", "anthropic", "google_gemini", "openrouter", "cerebras"]
+    "openai", "anthropic", "google_gemini", "openrouter", "cerebras", "ollama"]
 assert {"source", "source_kind", "source_url"}.issubset(catalog_method["response"]["fields"])
 assert {"context_window_free", "context_window_paid", "speed_tokens_per_second"}.issubset(
     catalog_method["response"]["model_fields"]
@@ -85,11 +85,9 @@ for catalog, key_name, source_url in (
     assert catalog["source_kind"] == "provider_api"
     assert catalog["source_url"] == source_url
     assert key_name not in json.dumps(catalog)
-assert cerebras["ok"] is False
-assert cerebras["error"] == "missing_api_key"
 assert cerebras["network_access"] == "explicit_refresh"
 assert cerebras["source_kind"] == "provider_api"
-assert cerebras["source_url"] == "https://api.cerebras.ai/v1/models"
+assert cerebras["source_url"] == "https://api.cerebras.ai/public/v1/models"
 assert "CEREBRAS_API_KEY" not in json.dumps(cerebras)
 assert len(canonical_cerebras) == 2
 assert unknown["ok"] is False

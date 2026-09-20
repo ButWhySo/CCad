@@ -12,6 +12,7 @@ import hashlib
 import warnings
 import urllib.request
 import urllib.error
+import urllib.parse
 from typing import Annotated, TypedDict, List
 from langchain_core.tools import tool
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
@@ -22,6 +23,19 @@ warnings.filterwarnings(
     "ignore",
     message=r"The default value of `allowed_objects` will change.*",
     category=Warning,
+)
+# langchain-google-genai currently imports Google's legacy caching module,
+# which emits a dependency FutureWarning to stderr. It neither describes a
+# failed provider request nor needs user action, so do not leak it into chat.
+warnings.filterwarnings(
+    "ignore",
+    category=FutureWarning,
+    module=r"langchain_google_genai\\.chat_models",
+)
+warnings.filterwarnings(
+    "ignore",
+    message=r"All support for the `google\.generativeai` package has ended\..*",
+    category=FutureWarning,
 )
 from langgraph.graph import StateGraph, END
 from langgraph.types import Command, interrupt
@@ -75,17 +89,20 @@ def fetch_openrouter_models():
                 "source_kind": "provider_api"}
 
 def fetch_cerebras_models():
-    """Explicit, bounded Cerebras catalog refresh; never called at startup."""
-    source_url = "https://api.cerebras.ai/v1/models"
-    key = os.environ.get("CEREBRAS_API_KEY", "")
-    if not key:
-        return {"ok": False, "error": "missing_api_key", "models": [],
-                "network_access": "explicit_refresh", "source_url": source_url,
-                "source_kind": "provider_api"}
-    request = urllib.request.Request(
-        source_url,
-        headers={"Authorization": f"Bearer {key}", "Accept": "application/json"},
-    )
+    """Explicit, bounded public Cerebras catalog refresh; never at startup.
+
+    Cerebras documents this endpoint as public.  It deliberately does not use
+    the saved inference credential, so model discovery remains available while
+    a project is awaiting billing activation and cannot spend inference quota.
+    """
+    source_url = "https://api.cerebras.ai/public/v1/models"
+    request = urllib.request.Request(source_url, headers={
+        "Accept": "application/json",
+        # Cerebras fronts the public catalog with Cloudflare, which rejects
+        # Python's anonymous default user agent even though this endpoint is
+        # intentionally unauthenticated.
+        "User-Agent": "CCad/1.0 (+https://github.com/ButWhySo/CCad)",
+    })
     try:
         timeout_value = int(os.environ.get("CCAD_MODEL_CATALOG_TIMEOUT_SECONDS", "8"))
     except ValueError:
@@ -103,7 +120,9 @@ def fetch_cerebras_models():
             if not isinstance(item, dict) or not item.get("id"):
                 continue
             models.append({"id": item["id"], "display_name": item.get("name", item["id"]),
-                           "owned_by": item.get("owned_by")})
+                           "owned_by": item.get("owned_by"),
+                           "context_length": item.get("context_length"),
+                           "capabilities": item.get("capabilities", {})})
         return {"ok": True, "models": models, "count": len(models),
                 "network_access": "explicit_refresh", "source_url": source_url,
                 "source_kind": "provider_api"}
@@ -111,6 +130,38 @@ def fetch_cerebras_models():
         return {"ok": False, "error": type(error).__name__, "models": [],
                 "network_access": "explicit_refresh", "source_url": source_url,
                 "source_kind": "provider_api"}
+
+def fetch_ollama_models():
+    """Explicit local Ollama inventory; never starts, pulls, or changes Ollama."""
+    base_url = os.environ.get("CCAD_OLLAMA_BASE_URL", "http://127.0.0.1:11434/v1")
+    base_url = base_url.rstrip("/")
+    if base_url.endswith("/v1"):
+        base_url = base_url[:-3]
+    source_url = base_url + "/api/tags"
+    request = urllib.request.Request(source_url, headers={"Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(request, timeout=catalog_timeout_seconds()) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        if not isinstance(payload, dict) or not isinstance(payload.get("models"), list):
+            return {"ok": False, "error": "invalid_catalog_shape", "models": [],
+                    "network_access": "explicit_local_refresh", "source_url": source_url,
+                    "source_kind": "local_provider_api"}
+        models = []
+        for item in payload["models"]:
+            if not isinstance(item, dict):
+                continue
+            model_id = item.get("model") or item.get("name")
+            if not isinstance(model_id, str) or not model_id:
+                continue
+            models.append({"id": model_id, "display_name": item.get("name", model_id),
+                           "details": item.get("details", {}), "size": item.get("size")})
+        return {"ok": True, "models": models, "count": len(models),
+                "network_access": "explicit_local_refresh", "source_url": source_url,
+                "source_kind": "local_provider_api"}
+    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
+        return {"ok": False, "error": type(error).__name__, "models": [],
+                "network_access": "explicit_local_refresh", "source_url": source_url,
+                "source_kind": "local_provider_api"}
 
 def catalog_timeout_seconds():
     """Return a bounded timeout shared by explicit catalog requests."""
@@ -157,19 +208,34 @@ def fetch_anthropic_models():
         return {"ok": False, "error": "missing_api_key", "models": [],
                 "network_access": "explicit_refresh", "source_url": source_url,
                 "source_kind": "provider_api"}
-    request = urllib.request.Request(source_url, headers={
-        "x-api-key": key, "anthropic-version": "2023-06-01", "Accept": "application/json"})
     try:
-        with urllib.request.urlopen(request, timeout=catalog_timeout_seconds()) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-        if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
-            return {"ok": False, "error": "invalid_catalog_shape", "models": [],
-                    "network_access": "explicit_refresh", "source_url": source_url,
-                    "source_kind": "provider_api"}
-        models = [{"id": item["id"], "display_name": item.get("display_name", item["id"]),
-                   "created_at": item.get("created_at")}
-                  for item in payload.get("data", [])
-                  if isinstance(item, dict) and isinstance(item.get("id"), str)]
+        models, after_id = [], ""
+        # Anthropic returns at most 1,000 entries per page and pages with the
+        # opaque final model id. Cap continuation defensively in case a server
+        # repeats a cursor; normal accounts complete in the first request.
+        for _ in range(20):
+            query = {"limit": "1000"}
+            if after_id: query["after_id"] = after_id
+            request = urllib.request.Request(
+                source_url + "?" + urllib.parse.urlencode(query), headers={
+                    "x-api-key": key, "anthropic-version": "2023-06-01",
+                    "Accept": "application/json"})
+            with urllib.request.urlopen(request, timeout=catalog_timeout_seconds()) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+            if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
+                return {"ok": False, "error": "invalid_catalog_shape", "models": [],
+                        "network_access": "explicit_refresh", "source_url": source_url,
+                        "source_kind": "provider_api"}
+            models.extend({"id": item["id"],
+                           "display_name": item.get("display_name", item["id"]),
+                           "created_at": item.get("created_at"),
+                           "capabilities": item.get("capabilities", {})}
+                          for item in payload["data"]
+                          if isinstance(item, dict) and isinstance(item.get("id"), str))
+            next_after = payload.get("last_id", "")
+            if not payload.get("has_more") or not isinstance(next_after, str) or not next_after or next_after == after_id:
+                break
+            after_id = next_after
         return {"ok": True, "models": models, "count": len(models),
                 "network_access": "explicit_refresh", "source_url": source_url,
                 "source_kind": "provider_api"}
@@ -186,26 +252,38 @@ def fetch_gemini_models():
         return {"ok": False, "error": "missing_api_key", "models": [],
                 "network_access": "explicit_refresh", "source_url": source_url,
                 "source_kind": "provider_api"}
-    request = urllib.request.Request(source_url, headers={
-        "x-goog-api-key": key, "Accept": "application/json"})
     try:
-        with urllib.request.urlopen(request, timeout=catalog_timeout_seconds()) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-        if not isinstance(payload, dict) or not isinstance(payload.get("models"), list):
-            return {"ok": False, "error": "invalid_catalog_shape", "models": [],
-                    "network_access": "explicit_refresh", "source_url": source_url,
-                    "source_kind": "provider_api"}
         models = []
-        for item in payload.get("models", []):
-            if not isinstance(item, dict) or not isinstance(item.get("name"), str):
-                continue
-            methods = item.get("supportedGenerationMethods", [])
-            if methods and "generateContent" not in methods:
-                continue
-            model_id = item["name"].removeprefix("models/")
-            models.append({"id": model_id,
-                           "display_name": item.get("displayName", model_id),
-                           "context_length": item.get("inputTokenLimit")})
+        page_token = ""
+        # The Gemini REST catalog is paginated.  Preserve every model the
+        # current key can use rather than silently offering only page one.
+        for _ in range(20):
+            query = {"pageSize": "1000"}
+            if page_token: query["pageToken"] = page_token
+            request = urllib.request.Request(
+                source_url + "?" + urllib.parse.urlencode(query), headers={
+                    "x-goog-api-key": key, "Accept": "application/json"})
+            with urllib.request.urlopen(request, timeout=catalog_timeout_seconds()) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+            if not isinstance(payload, dict) or not isinstance(payload.get("models"), list):
+                return {"ok": False, "error": "invalid_catalog_shape", "models": [],
+                        "network_access": "explicit_refresh", "source_url": source_url,
+                        "source_kind": "provider_api"}
+            for item in payload["models"]:
+                if not isinstance(item, dict) or not isinstance(item.get("name"), str):
+                    continue
+                methods = item.get("supportedGenerationMethods", [])
+                if methods and "generateContent" not in methods:
+                    continue
+                model_id = item["name"].removeprefix("models/")
+                models.append({"id": model_id,
+                               "display_name": item.get("displayName", model_id),
+                               "context_length": item.get("inputTokenLimit"),
+                               "supported_generation_methods": methods})
+            next_token = payload.get("nextPageToken", "")
+            if not isinstance(next_token, str) or not next_token or next_token == page_token:
+                break
+            page_token = next_token
         return {"ok": True, "models": models, "count": len(models),
                 "network_access": "explicit_refresh", "source_url": source_url,
                 "source_kind": "provider_api"}
@@ -219,7 +297,7 @@ def cerebras_model_snapshot():
 
     Source: https://inference-docs.cerebras.ai/models/overview
     Refresh this snapshot when provider docs change; live model listing remains
-    an explicit credentialed operation and is never performed at startup.
+    an explicit public operation and is never performed at startup.
     """
     models = [
         {"id": "gpt-oss-120b", "display_name": "OpenAI GPT OSS 120B", "tier": "production",
@@ -372,10 +450,10 @@ def orchestrator_method_catalog():
              "network_access": "provider_specific",
              "network_access_by_provider": {"openai": "explicit_refresh", "anthropic": "explicit_refresh",
                                               "google_gemini": "explicit_refresh", "openrouter": "explicit_refresh",
-                                              "cerebras": "explicit_refresh"},
+                                              "cerebras": "explicit_refresh", "ollama": "explicit_local_refresh"},
              "provider_normalization": "trim_lowercase",
-             "providers": ["openai", "anthropic", "google_gemini", "openrouter", "cerebras"],
-             "params": {"provider": {"type": "string", "enum": ["openai", "anthropic", "google_gemini", "openrouter", "cerebras"],
+             "providers": ["openai", "anthropic", "google_gemini", "openrouter", "cerebras", "ollama"],
+             "params": {"provider": {"type": "string", "enum": ["openai", "anthropic", "google_gemini", "openrouter", "cerebras", "ollama"],
                                         "default": "openai"}},
              "response": {"method": "provider_models", "fields": [
                  "provider", "ok", "error", "error_detail", "models",
@@ -415,6 +493,16 @@ def orchestrator_method_catalog():
                  "provider", "model", "configured", "execution_enabled",
                  "network_access", "error", "error_category",
                  "secret_value_visible"]}},
+            {"name": "agent.test_provider_connection", "read_only": False,
+             "secrets": True, "approval_required": True,
+             "side_effect": "one_live_provider_request",
+             "params": {"provider": {"type": "string"},
+                        "model": {"type": "string", "optional": True},
+                        "secret": {"type": "string", "optional": True, "secret": True}},
+             "response": {"method": "provider_connection_result", "fields": [
+                 "provider", "model", "connected", "response_preview",
+                 "error_category", "http_status", "network_access",
+                 "tool_executed", "request_count", "secret_value_visible"]}},
             {"name": "agent.get_marketplace_catalog", "read_only": True,
              "network_access": "none", "secrets": False,
              "response": {"method": "marketplace_catalog", "fields": [
@@ -435,14 +523,22 @@ def orchestrator_method_catalog():
              "params": {"config": {"type": "object", "optional": False}},
              "response": {"method": "message", "fields": [
                  "text", "secret_value_visible"]}},
+            {"name": "agent.activate_provider", "read_only": False,
+             "network_access": "adapter_initialization_only", "secrets": False,
+             "params": {"provider": {"type": "string"},
+                        "model": {"type": "string", "optional": True}},
+             "response": {"method": "provider_activation_result", "fields": [
+                 "provider", "model", "initialized", "secret_value_visible"]}},
             {"name": "agent.generate_component", "read_only": False,
              "provider_call": True, "secrets": False,
              "params": {"prompt": {"type": "string"},
                          "type": {"type": "string", "optional": True},
                          "package": {"type": "string", "optional": True}},
-             "responses": ["generated_component", "message"],
+             "responses": ["generated_component", "component_generation_failed", "message"],
              "response": {"method": "generated_component", "fields": [
-                 "pins", "name"]}},
+                 "pins", "name"]},
+             "response_contracts": {"component_generation_failed": {"fields": [
+                 "category", "message"]}}},
             {"name": "agent.cancel_tool", "read_only": False,
              "approval_required": False, "side_effect": "cancel_wait_only"},
             {"name": "tool_result", "read_only": False,
@@ -742,34 +838,6 @@ def init_checkpointer():
         }})
         return False
 
-class MockProvider:
-    """Deterministic offline provider for harness and protocol tests."""
-    def __init__(self):
-        self.tool_issued = False
-
-    def bind_tools(self, _tools):
-        return self
-
-    def invoke(self, messages, config=None):
-        prompt = "\n".join(str(getattr(message, "content", "")) for message in messages)
-        # The supervisor must return a routing decision; only the routing
-        # expert may emit the tool call.  Keeping these two responses distinct
-        # makes the offline harness exercise the same graph edges as a real
-        # provider instead of accidentally terminating at the supervisor.
-        if "supervisor managing" in prompt.lower():
-            return AIMessage(content="router")
-        if ("PCB Routing Expert" in prompt and "via" in prompt.lower()
-                and not self.tool_issued):
-            self.tool_issued = True
-            dry_run = os.environ.get("CCAD_MOCK_MUTATION", "").lower() != "1"
-            return AIMessage(content="", tool_calls=[{
-                "name": "ui_place_via",
-                "args": {"x_mm": 10.0, "y_mm": 10.0, "dry_run": dry_run},
-                "id": "mock-tool-1",
-                "type": "tool_call",
-            }])
-        return AIMessage(content="[mock provider] Request understood. Use approved CCad tools for design changes.")
-
 callbacks = []
 if os.environ.get("LANGFUSE_PUBLIC_KEY") and os.environ.get("LANGFUSE_SECRET_KEY"):
     try:
@@ -823,8 +891,11 @@ def classify_provider_error(error: Exception):
         return "permission_denied"
     if status == 404 or any(marker in text for marker in ("model not found", "does not exist", "unknown model")):
         return "model_not_found"
-    if status == 402 or any(marker in text for marker in ("insufficient credits", "insufficient balance", "billing quota")):
-        return "quota_exhausted"
+    # HTTP 402 is a billing/payment state, not a rate limit.  Keeping it
+    # distinct avoids telling a new-key user that they have "used up" quota
+    # when the account/project has not been activated or funded.
+    if status == 402 or any(marker in text for marker in ("insufficient credits", "insufficient balance", "billing quota", "payment required")):
+        return "payment_required"
     if status == 429 or any(marker in text for marker in ("rate limit", "too many requests", "requests per minute")):
         return "rate_limited"
     if isinstance(error, (TimeoutError,)) or "timeout" in text:
@@ -881,26 +952,18 @@ def init_provider():
         model_name = os.environ.get("CCAD_CEREBRAS_MODEL") or model_name
     elif provider == "local_model":
         model_name = os.environ.get("CCAD_LOCAL_MODEL_NAME") or model_name
+    elif provider == "ollama":
+        model_name = os.environ.get("CCAD_OLLAMA_MODEL") or model_name
     elif provider == "google_gemini":
         model_name = os.environ.get("CCAD_GEMINI_MODEL") or model_name
 
-    if provider == "mock":
-        llm = MockProvider()
-        router_llm = llm
-        librarian_llm = llm
-        emit({"jsonrpc": "2.0", "method": "provider_state", "params": {
-            "provider": "mock", "configured": True, "execution_enabled": True,
-            "network_access": False, "secret_value_visible": False,
-        }})
-        return True
-    
     if provider == "anthropic":
         try:
             from langchain_anthropic import ChatAnthropic
             if not model_name: model_name = "claude-opus-5"
             llm = ChatAnthropic(model=model_name, temperature=0)
-            router_llm = llm.bind_tools(router_tools)
-            librarian_llm = llm.bind_tools(librarian_tools)
+            router_llm = llm.bind_tools(router_tools + librarian_tools + general_tools)
+            librarian_llm = router_llm
             broker_wait_enabled = True
             emit_provider_ready(provider, model_name)
             return True
@@ -911,7 +974,16 @@ def init_provider():
             failure_category = emit_provider_failure(provider, error)
     if provider == "google_gemini":
         try:
-            from langchain_google_genai import ChatGoogleGenerativeAI
+            # This dependency currently imports the retired
+            # google.generativeai cache module. Scope suppression to that
+            # import only; genuine runtime/provider warnings remain visible.
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message=r"All support for the `google\.generativeai` package has ended\.",
+                    category=FutureWarning,
+                )
+                from langchain_google_genai import ChatGoogleGenerativeAI
             if not model_name: model_name = "gemini-3.8-flash"
             # The UI/API uses the provider-neutral GEMINI_API_KEY name; the
             # LangChain Google adapter reads GOOGLE_API_KEY.
@@ -919,8 +991,8 @@ def init_provider():
             if google_api_key:
                 os.environ["GOOGLE_API_KEY"] = google_api_key
             llm = ChatGoogleGenerativeAI(model=model_name, temperature=0)
-            router_llm = llm.bind_tools(router_tools)
-            librarian_llm = llm.bind_tools(librarian_tools)
+            router_llm = llm.bind_tools(router_tools + librarian_tools + general_tools)
+            librarian_llm = router_llm
             broker_wait_enabled = True
             emit_provider_ready(provider, model_name)
             return True
@@ -928,14 +1000,14 @@ def init_provider():
             emit_dependency_warning("langchain_google_genai")
         except Exception as error:
             failure_category = emit_provider_failure(provider, error)
-    if provider in ("openai", "openai_compatible", "openrouter", "local_model", "cerebras"):
+    if provider in ("openai", "openai_compatible", "openrouter", "local_model", "cerebras", "ollama"):
         try:
             from langchain_openai import ChatOpenAI
             if provider == "openai_compatible":
                 model_name = model_name or os.environ.get("CCAD_OPENAI_COMPATIBLE_MODEL", "") or "default"
                 base_url = os.environ.get("CCAD_OPENAI_COMPATIBLE_BASE_URL", "")
             elif provider == "openrouter":
-                model_name = model_name or "openrouter/auto"
+                model_name = model_name or "openrouter/free"
                 base_url = "https://openrouter.ai/api/v1"
             elif provider == "cerebras":
                 # Keep backend fallback on a current Cerebras production model.
@@ -946,6 +1018,9 @@ def init_provider():
             elif provider == "local_model":
                 model_name = model_name or os.environ.get("CCAD_LOCAL_MODEL_NAME", "") or "local-model"
                 base_url = os.environ.get("CCAD_LOCAL_MODEL_BASE_URL", "http://127.0.0.1:1234/v1")
+            elif provider == "ollama":
+                model_name = model_name or "qwen3"
+                base_url = os.environ.get("CCAD_OLLAMA_BASE_URL", "http://127.0.0.1:11434/v1")
             else:
                 model_name = model_name or "gpt-5.1"
                 base_url = ""
@@ -972,13 +1047,18 @@ def init_provider():
                 "openrouter": "OPENROUTER_API_KEY",
                 "cerebras": "CEREBRAS_API_KEY",
                 "local_model": "CCAD_LOCAL_MODEL_API_KEY",
+                "ollama": "CCAD_OLLAMA_API_KEY",
             }
             api_key_name = provider_keys.get(provider)
             if api_key_name and os.environ.get(api_key_name):
                 kwargs["api_key"] = os.environ[api_key_name]
+            elif provider == "ollama":
+                # Ollama's OpenAI-compatible localhost endpoint ignores the
+                # bearer token, but langchain-openai requires a nonempty value.
+                kwargs["api_key"] = "ollama"
             llm = ChatOpenAI(**kwargs)
-            router_llm = llm.bind_tools(router_tools)
-            librarian_llm = llm.bind_tools(librarian_tools)
+            router_llm = llm.bind_tools(router_tools + librarian_tools + general_tools)
+            librarian_llm = router_llm
             broker_wait_enabled = True
             emit_provider_ready(provider, model_name)
             return True
@@ -1004,7 +1084,9 @@ provider_initialized = False
 def initialize_agent_process():
     """Initialize provider state only for a launched orchestration process."""
     global provider_initialized
-    provider_initialized = init_provider()
+    provider_initialized = False
+    if os.environ.get("CCAD_AGENT_DEFER_PROVIDER_INIT", "").lower() not in {"1", "true", "yes"}:
+        provider_initialized = init_provider()
     # Runtime readiness is independent from provider readiness. Harnesses can
     # distinguish "Python agent process is alive" from "selected API adapter
     # works" without making module import perform provider initialization.
@@ -1078,14 +1160,14 @@ def get_system_prompt(role_desc: str) -> str:
 def invoke_provider_with_retry(client, messages, config=None):
     """Retry transient provider failures without retrying any tool execution."""
     try:
-        retries = min(2, max(0, int(os.environ.get("CCAD_PROVIDER_RETRIES", "2"))))
+        retries = min(2, max(0, int(os.environ.get("CCAD_PROVIDER_RETRIES", "0"))))
     except ValueError:
-        retries = 2
+        retries = 0
 
     def quota_or_rate_limited(error):
         return classify_provider_error(error) in {
             "quota_exhausted", "rate_limited", "authentication",
-            "permission_denied", "model_not_found",
+            "permission_denied", "model_not_found", "payment_required",
         }
 
     for attempt in range(retries + 1):
@@ -1103,6 +1185,17 @@ def invoke_provider_with_retry(client, messages, config=None):
                 "secret_value_visible": False,
             }})
 
+def provider_connection_probe(client):
+    """Make exactly one explicit live request; never retry or call tools."""
+    response = client.invoke([HumanMessage(content=(
+        "Reply with exactly CCAD_CONNECTION_OK. Do not call tools."))])
+    content = getattr(response, "content", "")
+    if isinstance(content, list):
+        content = " ".join(
+            str(block.get("text", "")) if isinstance(block, dict) else str(block)
+            for block in content)
+    return re.sub(r"\s+", " ", str(content)).strip()[:240]
+
 @trace_function("supervisor_node")
 def supervisor_node(state: AgentState):
     if "pre node" in [h.lower() for h in active_hooks]:
@@ -1113,34 +1206,16 @@ def supervisor_node(state: AgentState):
     elif active_workflow == "placement_pass":
         return {"next_node": "librarian"}
 
-    if not llm:
-        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Error: Supervisor LLM not initialized. Please configure a provider."}})
-        return {"next_node": "END"}
-        
-    context_str = state.get("context", "")
-    role_desc = "a supervisor managing a PCB routing expert and a component librarian expert."
-    system_text = get_system_prompt(role_desc)
-    system_text += f"\nCurrent Context: {context_str}\nBased on the user's request, decide who should act next. Respond ONLY with 'router', 'librarian', or 'FINISH'."
-    
-    system_msg = SystemMessage(content=system_text)
-    
-    prompt = [system_msg] + state["messages"]
-    response = invoke_provider_with_retry(
-        llm, prompt, config={"callbacks": callbacks} if callbacks else {})
-    content = response.content.strip().lower()
-    
-    if "router" in content:
-        next_node = "router"
-    elif "librarian" in content:
-        next_node = "librarian"
-    else:
-        next_node = "FINISH"
+    # Internal classifier calls doubled normal-chat cost and could leak a
+    # literal FINISH token. One primary agent owns chat and all approved tools.
+    next_node = "router"
     if "post node" in [h.lower() for h in active_hooks]:
         hooks.trigger_hook("post node", emit, f"supervisor -> {next_node}")
         
-    # Preserve supervisor response so caller can present actual agent output;
-    # previously only routing decision survived and chat echoed the user turn.
-    return {"next_node": next_node, "messages": [response]}
+    # This is an internal classifier response, never a chat answer. Returning
+    # it leaked literal FINISH/router/librarian into the user transcript when
+    # chaining ended after the supervisor.
+    return {"next_node": next_node}
 
 @trace_function("router_node")
 def router_node(state: AgentState):
@@ -1188,9 +1263,6 @@ from langgraph.prebuilt import ToolNode
 execute_tool_node = ToolNode(router_tools + librarian_tools + general_tools)
 
 def should_route(state: AgentState):
-    if not chaining_state:
-        return END
-
     next_node = state.get("next_node", "FINISH")
     if next_node == "router":
         return "router"
@@ -1392,19 +1464,22 @@ if __name__ == "__main__":
         try:
             req = json.loads(line)
             method = req.get("method")
-            if method == "agent.test_provider":
-                # Transient test: never update config_manager or write config.
+            if method in ("agent.test_provider", "agent.test_provider_connection"):
+                # Transient tests: never update config_manager or write config.
                 params = req.get("params", {})
                 provider_id = params.get("provider", "openai")
                 model = params.get("model", "").strip()
                 secret = params.get("secret", "")
+                connection_requested = method == "agent.test_provider_connection"
                 test_env_names = ("CCAD_PROVIDER", "CCAD_MODEL", "CCAD_GEMINI_MODEL",
                                   "CCAD_OPENROUTER_MODEL", "CCAD_CEREBRAS_MODEL",
                                   "CCAD_CEREBRAS_REASONING_EFFORT",
                                   "CCAD_OPENAI_COMPATIBLE_MODEL", "CCAD_LOCAL_MODEL_NAME",
+                                  "CCAD_OLLAMA_MODEL", "CCAD_OLLAMA_BASE_URL",
                                   "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY",
                                   "GOOGLE_API_KEY", "OPENROUTER_API_KEY", "CEREBRAS_API_KEY",
-                                  "CCAD_OPENAI_COMPATIBLE_API_KEY", "CCAD_LOCAL_MODEL_API_KEY")
+                                  "CCAD_OPENAI_COMPATIBLE_API_KEY", "CCAD_LOCAL_MODEL_API_KEY",
+                                  "CCAD_OLLAMA_API_KEY")
                 saved_test_env = {name: os.environ.get(name) for name in test_env_names}
                 saved_session_provider_env = set(session_provider_env)
                 os.environ["CCAD_PROVIDER"] = provider_id
@@ -1415,6 +1490,7 @@ if __name__ == "__main__":
                                  "openrouter": "CCAD_OPENROUTER_MODEL",
                                  "cerebras": "CCAD_CEREBRAS_MODEL",
                                  "local_model": "CCAD_LOCAL_MODEL_NAME",
+                                 "ollama": "CCAD_OLLAMA_MODEL",
                                  "local_model_server": "CCAD_LOCAL_MODEL_NAME"}.get(provider_id)
                     if model_env: os.environ[model_env] = model
                 env_names = {"openai": "OPENAI_API_KEY", "anthropic": "ANTHROPIC_API_KEY",
@@ -1423,6 +1499,7 @@ if __name__ == "__main__":
                              "openrouter": "OPENROUTER_API_KEY",
                              "cerebras": "CEREBRAS_API_KEY",
                              "local_model": "CCAD_LOCAL_MODEL_API_KEY",
+                             "ollama": "CCAD_OLLAMA_API_KEY",
                              "local_model_server": "CCAD_LOCAL_MODEL_API_KEY"}
                 env_name = env_names.get(provider_id, "OPENAI_API_KEY")
                 clear_session_provider_env()
@@ -1438,6 +1515,20 @@ if __name__ == "__main__":
                     "provider_unavailable" if secret else "missing_api_key")
                 test_category = "" if provider_ready else (
                     "provider_unavailable" if secret else "missing_api_key")
+                connection_preview = ""
+                connection_category = test_category
+                connection_status = None
+                connection_attempted = False
+                if connection_requested and provider_ready and llm is not None:
+                    try:
+                        # This is deliberately not invoke_provider_with_retry:
+                        # user clicked an explicit quota-spending connection test.
+                        connection_attempted = True
+                        connection_preview = provider_connection_probe(llm)
+                        connection_category = ""
+                    except Exception as error:
+                        connection_category = classify_provider_error(error)
+                        connection_status = provider_http_status(error)
                 clear_session_provider_env()
                 for name, value in saved_test_env.items():
                     if value is None:
@@ -1446,19 +1537,31 @@ if __name__ == "__main__":
                         os.environ[name] = value
                 session_provider_env.update(saved_session_provider_env)
                 init_provider()
-                # Emit exactly one terminal, selection-scoped result after the
-                # active provider has been restored.  This is adapter setup
-                # validation only: it intentionally makes no provider request.
-                emit({"jsonrpc": "2.0", "method": "provider_test_result", "params": {
-                    "provider": provider_id,
-                    "model": model,
-                    "configured": bool(secret),
-                    "execution_enabled": provider_ready,
-                    "network_access": "not_probed",
-                    "error": test_error,
-                    "error_category": test_category,
-                    "secret_value_visible": False,
-                }})
+                if connection_requested:
+                    emit({"jsonrpc": "2.0", "method": "provider_connection_result", "params": {
+                        "provider": provider_id,
+                        "model": model,
+                        "connected": provider_ready and not connection_category,
+                        "response_preview": connection_preview,
+                        "error_category": connection_category,
+                        "http_status": connection_status,
+                        "network_access": "explicit_one_request",
+                        "tool_executed": False,
+                        "request_count": 1 if connection_attempted else 0,
+                        "secret_value_visible": False,
+                    }})
+                else:
+                    # This adapter-only validation intentionally sends no request.
+                    emit({"jsonrpc": "2.0", "method": "provider_test_result", "params": {
+                        "provider": provider_id,
+                        "model": model,
+                        "configured": bool(secret),
+                        "execution_enabled": provider_ready,
+                        "network_access": "not_probed",
+                        "error": test_error,
+                        "error_category": test_category,
+                        "secret_value_visible": False,
+                    }})
             elif method == "agent.set_provider_secret":
                 # Private IPC only. Never emit, persist, or add credential to
                 # prompts. Provider SDK reads process memory via its env var.
@@ -1472,6 +1575,7 @@ if __name__ == "__main__":
                     "openrouter": "OPENROUTER_API_KEY",
                     "cerebras": "CEREBRAS_API_KEY",
                     "local_model": "CCAD_LOCAL_MODEL_API_KEY",
+                    "ollama": "CCAD_OLLAMA_API_KEY",
                     "local_model_server": "CCAD_LOCAL_MODEL_API_KEY",
                 }
                 env_name = env_names.get(provider_id, "OPENAI_API_KEY")
@@ -1551,6 +1655,9 @@ if __name__ == "__main__":
                 elif provider_id == "cerebras":
                     emit({"jsonrpc": "2.0", "method": "provider_models",
                           "params": {"provider": provider_id, **fetch_cerebras_models()}})
+                elif provider_id == "ollama":
+                    emit({"jsonrpc": "2.0", "method": "provider_models",
+                          "params": {"provider": provider_id, **fetch_ollama_models()}})
                 else:
                     emit({"jsonrpc": "2.0", "method": "provider_models",
                           "params": {"provider": provider_id, "ok": False,
@@ -1969,6 +2076,18 @@ if __name__ == "__main__":
                     init_provider()
             elif method == "agent.get_config":
                 emit({"jsonrpc": "2.0", "method": "config_state", "params": config_manager.config})
+            elif method == "agent.activate_provider":
+                params = req.get("params", {})
+                provider_id = params.get("provider") or config_manager.get("provider", "openai")
+                model = params.get("model") or config_manager.get("model", "")
+                os.environ["CCAD_PROVIDER"] = provider_id
+                if model:
+                    os.environ["CCAD_MODEL"] = model
+                provider_ready = init_provider()
+                emit({"jsonrpc": "2.0", "method": "provider_activation_result", "params": {
+                    "provider": provider_id, "model": model, "initialized": provider_ready,
+                    "secret_value_visible": False,
+                }})
             elif method == "agent.mcp_status":
                 servers = config_manager._normalize_mcp_servers(
                     config_manager.get("mcp_servers", []))
@@ -2002,14 +2121,17 @@ if __name__ == "__main__":
                         resp_text = resp_text[:-3]
                     parsed = json.loads(resp_text)
                     pins = parsed.get("pins", [])
-                except Exception as e:
-                    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Error generating component via LLM: {e}. Falling back to default."}})
-                    pins = [
-                        {"pin": "1", "name": "VCC", "type": "Power"},
-                        {"pin": "2", "name": "GND", "type": "Power"},
-                        {"pin": "3", "name": "IN", "type": "Input"},
-                        {"pin": "4", "name": "OUT", "type": "Output"},
-                    ]
+                    if not isinstance(pins, list) or not pins:
+                        raise ValueError("provider returned no component pins")
+                except Exception as error:
+                    # A failed generation must never become plausible-looking,
+                    # invented electronic data.  The UI retains the prompt so
+                    # the user can correct it or retry after fixing the cause.
+                    emit({"jsonrpc": "2.0", "method": "component_generation_failed", "params": {
+                        "category": classify_provider_error(error),
+                        "message": "Component generation failed; no component was created.",
+                    }})
+                    continue
 
                 emit({"jsonrpc": "2.0", "method": "generated_component", "params": {"pins": pins, "name": "AI_" + pkg}})
             elif method == "agent.get_marketplace_catalog":

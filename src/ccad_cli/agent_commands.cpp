@@ -788,6 +788,9 @@ int agentCommand(const std::vector<std::string>& args) {
 
   if (args[0] != "serve") {
     try {
+      if (args[0] == "credential") {
+        return agentProviderCredentialCommand(std::vector<std::string>(args.begin() + 1, args.end()));
+      }
       if (args[0] == "orchestrate" || args[0] == "plan" || args[0] == "orchestrator-schema") {
         return agentOrchestratorCommand(args);
       }

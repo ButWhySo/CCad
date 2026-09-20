@@ -19,4 +19,6 @@ assert '"x-goog-api-key": key' in source
 assert '"generateContent"' in source
 assert '"error": "invalid_catalog_shape"' in source
 assert "never called at startup" in source
+assert "https://api.cerebras.ai/public/v1/models" in source
+assert '"User-Agent": "CCad/1.0 (+https://github.com/ButWhySo/CCad)"' in source
 print("PASS OpenAI, Anthropic, and Gemini catalog contracts; no network")

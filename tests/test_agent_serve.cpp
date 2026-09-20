@@ -299,6 +299,8 @@ void testAgentProviderConfigCommands() {
                    "provider config schema documents Gemini env var");
     assertContains(out.str(), "\"GOOGLE_API_KEY\"",
                    "provider config schema documents Google Gemini alias env var");
+    assertContains(out.str(), "\"id\":\"ollama\"",
+                   "provider config schema documents Ollama");
     assertContains(out.str(), "\"project_file_secret_storage\":false",
                    "provider config schema refuses project-file secrets");
     assertContains(out.str(), "\"secret_value_policy\":\"never_emit_secret_values\"",
@@ -344,6 +346,8 @@ void testAgentProviderConfigCommands() {
                    "provider status reports status kind");
     assertContains(out.str(), "\"env_value_redaction\":\"presence_only\"",
                    "provider status reports presence only");
+    assertContains(out.str(), "\"vault_present\"",
+                   "provider status reports vault presence without a value");
     assertContains(out.str(), "\"provider_configured\"",
                    "provider status reports aggregate configuration");
     assertContains(out.str(), "\"secret_values_present\":false",

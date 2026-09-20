@@ -23,7 +23,7 @@ assert '"response_contracts": {' in text
 assert '"intake_state": {"fields": [' in text
 
 env = os.environ.copy()
-env.update({"CCAD_PROVIDER": "mock", "PYTHONNOUSERSITE": "1",
+env.update({"CCAD_AGENT_DEFER_PROVIDER_INIT": "1", "PYTHONNOUSERSITE": "1",
             "PYTHONPATH": str(SOURCE.parent)})
 requests = [{"method": "agent.methods", "params": {}}]
 requests.append({"method": "agent.context_state", "params": {}})
@@ -97,7 +97,9 @@ component_contract = next(item for item in methods["methods"]
                           if item["name"] == "agent.generate_component")
 assert component_contract["params"]["prompt"]["type"] == "string"
 assert "generated_component" in component_contract["responses"]
+assert "component_generation_failed" in component_contract["responses"]
 assert component_contract["response"]["fields"] == ["pins", "name"]
+assert component_contract["response_contracts"]["component_generation_failed"]["fields"] == ["category", "message"]
 for field in ("thread_id", "process_call_ids", "checkpoint_call_ids", "count", "approval_required",
               "approval_reason", "secret_value_visible"):
     assert field in pending_contract["response"]["fields"]

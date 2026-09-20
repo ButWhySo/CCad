@@ -1,9 +1,16 @@
 #include "agent_provider_config.hpp"
 
 #include <cstdlib>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
+
+#ifdef _WIN32
+#include <windows.h>
+#include <wincred.h>
+#include <conio.h>
+#endif
 
 namespace ccad_cli {
 namespace {
@@ -70,7 +77,14 @@ const std::vector<ProviderSpec>& providerSpecs() {
         {"CCAD_GEMINI_MODEL", "preferred model override"}},
        {"Restrict keys to the Gemini API where possible.",
         "Unrestricted Gemini traffic keys are being discontinued on 2026-06-19."}},
-      {"local_model_server",
+      {"ollama",
+       "Ollama (local)",
+       "ollama_local_api",
+       {{"CCAD_OLLAMA_BASE_URL", "Ollama OpenAI-compatible base URL"},
+        {"CCAD_OLLAMA_MODEL", "preferred installed Ollama model"}},
+       {"Default endpoint is localhost and does not require an API key.",
+        "Refresh installed models only on explicit user request."}},
+      {"local_model",
        "Local model server",
        "local_model_server",
        {{"CCAD_LOCAL_MODEL_BASE_URL", "local model server base URL"},
@@ -84,6 +98,31 @@ const std::vector<ProviderSpec>& providerSpecs() {
 bool envPresent(const std::string& name) {
   const char* value = std::getenv(name.c_str());
   return value != nullptr && value[0] != '\0';
+}
+
+bool vaultPresent(const std::string& provider) {
+#ifdef _WIN32
+  const std::string target = "CCad/provider/" + provider;
+  const std::wstring target_w(target.begin(), target.end());
+  PCREDENTIALW credential = nullptr;
+  const BOOL found = CredReadW(target_w.c_str(), CRED_TYPE_GENERIC, 0, &credential);
+  if (credential != nullptr) CredFree(credential);
+  return found != FALSE;
+#else
+  (void)provider;
+  return false;
+#endif
+}
+
+bool knownProvider(const std::string& id) {
+  for (const ProviderSpec& spec : providerSpecs()) {
+    if (spec.id == id) return true;
+  }
+  return false;
+}
+
+std::string credentialTarget(const std::string& provider) {
+  return "CCad/provider/" + provider;
 }
 
 void appendEscaped(std::ostringstream& out, const std::string& value) {
@@ -145,7 +184,7 @@ void appendEnvVarNames(std::ostringstream& out, const std::vector<EnvVarSpec>& v
 }
 
 bool appendProviderStatus(std::ostringstream& out, const ProviderSpec& provider) {
-  bool configured = false;
+  bool configured = vaultPresent(provider.id);
   out << "{\"id\":";
   appendEscaped(out, provider.id);
   out << ",\"label\":";
@@ -162,7 +201,8 @@ bool appendProviderStatus(std::ostringstream& out, const ProviderSpec& provider)
     out << ",\"present\":" << (present ? "true" : "false")
         << ",\"value\":\"redacted\"}";
   }
-  out << "],\"configured\":" << (configured ? "true" : "false") << "}";
+  out << "],\"vault_present\":" << (vaultPresent(provider.id) ? "true" : "false")
+      << ",\"configured\":" << (configured ? "true" : "false") << "}";
   return configured;
 }
 
@@ -257,6 +297,56 @@ std::string agentProviderStatusJson() {
       << "\"network_probe_performed\":false,"
       << "\"next_method\":\"agent.provider_config_template\"}";
   return out.str();
+}
+
+int agentProviderCredentialCommand(const std::vector<std::string>& args) {
+  if (args.size() != 2 || (args[0] != "status" && args[0] != "set" && args[0] != "remove") ||
+      !knownProvider(args[1])) {
+    std::cerr << "Usage: ccad agent credential <status|set|remove> <provider>\n";
+    return 2;
+  }
+#ifndef _WIN32
+  std::cerr << "Credential Manager integration is currently supported on Windows only.\n";
+  return 3;
+#else
+  const std::string provider = args[1];
+  const std::string target = credentialTarget(provider);
+  const std::wstring target_w(target.begin(), target.end());
+  if (args[0] == "status") {
+    PCREDENTIALW credential = nullptr;
+    const BOOL found = CredReadW(target_w.c_str(), CRED_TYPE_GENERIC, 0, &credential);
+    if (credential != nullptr) CredFree(credential);
+    std::cout << "{\"provider\":\"" << provider << "\",\"stored\":"
+              << (found ? "true" : "false") << ",\"secret_value_visible\":false}\n";
+    return found || GetLastError() == ERROR_NOT_FOUND ? 0 : 4;
+  }
+  if (args[0] == "remove") {
+    const BOOL removed = CredDeleteW(target_w.c_str(), CRED_TYPE_GENERIC, 0);
+    const DWORD error = removed ? ERROR_SUCCESS : GetLastError();
+    if (!removed && error != ERROR_NOT_FOUND) return 4;
+    std::cout << "{\"provider\":\"" << provider
+              << "\",\"removed\":true,\"secret_value_visible\":false}\n";
+    return 0;
+  }
+  std::cerr << "Enter " << provider << " API key (input hidden): ";
+  std::string secret;
+  for (int ch = _getwch(); ch != '\r' && ch != '\n'; ch = _getwch()) {
+    if (ch == '\b') { if (!secret.empty()) secret.pop_back(); }
+    else if (ch >= 32 && ch <= 126) secret.push_back(static_cast<char>(ch));
+  }
+  std::cerr << "\n";
+  if (secret.empty() || secret.size() > CRED_MAX_CREDENTIAL_BLOB_SIZE) return 2;
+  CREDENTIALW credential{};
+  credential.Type = CRED_TYPE_GENERIC;
+  credential.TargetName = const_cast<wchar_t*>(target_w.c_str());
+  credential.CredentialBlobSize = static_cast<DWORD>(secret.size());
+  credential.CredentialBlob = reinterpret_cast<LPBYTE>(secret.data());
+  credential.Persist = CRED_PERSIST_LOCAL_MACHINE;
+  if (!CredWriteW(&credential, 0)) return 4;
+  std::cout << "{\"provider\":\"" << provider
+            << "\",\"stored\":true,\"secret_value_visible\":false}\n";
+  return 0;
+#endif
 }
 
 }  // namespace ccad_cli

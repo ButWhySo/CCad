@@ -32,7 +32,7 @@ jobs:
       - name: Test provider and checkpoint protocols
         run: |
           python -m py_compile src/ccad_agent/*.py scripts/test_*.py
-          python scripts/test_provider_mock.py
+          python scripts/test_provider_unconfigured.py
           python scripts/test_provider_gemini_secret.py
           python scripts/test_agent_loop_contract.py
           python scripts/test_agent_context_contract.py

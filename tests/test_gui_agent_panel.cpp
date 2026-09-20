@@ -10,6 +10,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QTemporaryDir>
+#include <QDir>
 #include <QLabel>
 #include <QTableWidget>
 
@@ -20,7 +21,33 @@
 class TestGuiAgentPanel : public QObject {
   Q_OBJECT
 
+ private:
+  QTemporaryDir test_appdata_;
+
 private slots:
+  void initTestCase() {
+    QVERIFY2(test_appdata_.isValid(), "temporary APPDATA directory must exist");
+    qputenv("APPDATA", test_appdata_.path().toUtf8());
+  }
+
+  void cleanupTestCase() { qunsetenv("APPDATA"); }
+
+  void testPanelReadsPersistedProviderModelBeforeBackendStartup() {
+    const QString config_dir = QDir(test_appdata_.path()).filePath("CCad");
+    QVERIFY(QDir().mkpath(config_dir));
+    QFile config(QDir(config_dir).filePath("agent_config.json"));
+    QVERIFY(config.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    config.write(QJsonDocument(QJsonObject{{"provider", "cerebras"},
+                                           {"model", "qwen-3.8-27b"}})
+                     .toJson(QJsonDocument::Compact));
+    config.close();
+
+    AgentPanel panel;
+    const QJsonObject workspace = QJsonDocument::fromJson(panel.workspaceStateJson().toUtf8()).object();
+    QCOMPARE(workspace.value("model_label").toString(), QString("Model: qwen-3.8-27b"));
+    QCOMPARE(workspace.value("provider_id").toString(), QString("cerebras"));
+  }
+
   void testSettingsDialogInteractions() {
     AgentPanel panel;
     AgentSettingsDialog dialog(&panel);
@@ -47,6 +74,7 @@ private slots:
     QVERIFY(provider_combo != nullptr);
     QVERIFY(provider_combo->findData("openai_compatible") >= 0);
     QVERIFY(provider_combo->findData("local_model") >= 0);
+    QVERIFY(provider_combo->findData("ollama") >= 0);
     QTest::keyClick(provider_combo, Qt::Key_Down);
 
     auto* model_input = dialog.findChild<QLineEdit*>("control:modelInput");
@@ -70,6 +98,17 @@ private slots:
     provider_combo->setCurrentIndex(gemini_index);
     QCoreApplication::processEvents();
     QVERIFY(!model_combo->currentText().contains("qwen-3.8-27b"));
+    const int ollama_index = provider_combo->findData("ollama");
+    QVERIFY(ollama_index >= 0);
+    provider_combo->setCurrentIndex(ollama_index);
+    QCoreApplication::processEvents();
+    QVERIFY(model_combo->findText("qwen3") >= 0);
+    QVERIFY(!model_input->isReadOnly());
+    const int openrouter_index = provider_combo->findData("openrouter");
+    QVERIFY(openrouter_index >= 0);
+    provider_combo->setCurrentIndex(openrouter_index);
+    QCoreApplication::processEvents();
+    QVERIFY(model_combo->findText("openrouter/free") >= 0);
 
     QVERIFY(dialog.findChild<QLabel*>("label:modelDetails") != nullptr);
     auto* config_preview = dialog.findChild<QTextEdit*>("control:resolvedConfigPreview");
@@ -103,7 +142,15 @@ private slots:
     QVERIFY(api_key_input->text().isEmpty());
     auto* test_provider = dialog.findChild<QPushButton*>("action:testProviderBtn");
     QVERIFY(test_provider != nullptr);
+    QCOMPARE(test_provider->text(), QStringLiteral("Validate local setup (no network)"));
     QVERIFY(!test_provider->toolTip().isEmpty());
+    // The explicit live probe is deliberately not clicked by this unit test:
+    // it sends a billable, real provider request.  The desktop live-provider
+    // harness owns that end-to-end verification with an OS-vault credential.
+    auto* test_connection = dialog.findChild<QPushButton*>("action:testProviderConnectionBtn");
+    QVERIFY(test_connection != nullptr);
+    QCOMPARE(test_connection->text(), QStringLiteral("Test live connection (uses quota)"));
+    QVERIFY(test_connection->toolTip().contains("exactly one"));
     auto* set_provider_key = dialog.findChild<QPushButton*>("action:setProviderKeyBtn");
     QVERIFY(set_provider_key != nullptr);
     QCOMPARE(set_provider_key->text(), QStringLiteral("Set key"));
@@ -120,6 +167,7 @@ private slots:
     QVERIFY(!provider_status->text().contains("running"));
     auto* clear_key = dialog.findChild<QPushButton*>("action:clearProviderKeyBtn");
     QVERIFY(clear_key != nullptr);
+    QCOMPARE(clear_key->text(), QStringLiteral("Remove saved key"));
     QVERIFY(!clear_key->toolTip().isEmpty());
 
     auto* sandbox_cb = dialog.findChild<QCheckBox*>("control:sandboxCb");
@@ -132,11 +180,15 @@ private slots:
 
     auto* project_name = dialog.findChild<QLineEdit*>("control:projectNameInput");
     QVERIFY(project_name != nullptr);
+    project_name->selectAll();
     QTest::keyClicks(project_name, "test_proj");
+    QCOMPARE(project_name->text(), QString("test_proj"));
 
     auto* project_path = dialog.findChild<QLineEdit*>("control:projectPathInput");
     QVERIFY(project_path != nullptr);
+    project_path->selectAll();
     QTest::keyClicks(project_path, "/tmp/test");
+    QCOMPARE(project_path->text(), QString("/tmp/test"));
 
     auto* trust_level = dialog.findChild<QComboBox*>("control:trustLevelCombo");
     QVERIFY(trust_level != nullptr);

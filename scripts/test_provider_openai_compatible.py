@@ -18,10 +18,6 @@ class Handler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0"))
         requests.append(json.loads(self.rfile.read(length)))
         body = requests[-1]
-        if len(requests) == 1:
-            self.send_response(503)
-            self.end_headers()
-            return
         system = " ".join(
             str(message.get("content", ""))
             for message in body.get("messages", [])
@@ -93,7 +89,9 @@ def main():
             lines.append(json.loads(line))
             if any(item.get("method") == "tool_call" for item in lines):
                 break
-        assert len(requests) >= 3, "transient failure or router request was not retried"
+        # Normal chat has bounded retries disabled by default: a failed first
+        # request must never silently spend additional provider quota.
+        assert len(requests) == 1, "normal provider chat must not retry automatically"
         router_request = next(
             request for request in requests
             if any(tool.get("function", {}).get("name") == "ui_place_via"

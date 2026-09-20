@@ -6,9 +6,9 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 351
-- Branch: `main`
-- Phase 9 sprint budget: Sprints 226 through 254 for deterministic KiCad PCB editor source-walk parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, and autorouter integration. Sprint 226 root file walk is completely audited.
+- Sprint: 947
+- Branch: `sprint-947-agent-tool-context`
+- Phase 9 sprint budget: originally Sprints 226 through 254; the active programme has continued through Sprint 947 for deterministic KiCad PCB editor parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, autorouter integration, and the production agent surface. Sprint 226 root file walk is completely audited.
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 covered the bounded runtime and EDA evidence expansion through Sprint 225. Phase 9 is the bounded KiCad parity execution phase.
 
@@ -2946,3 +2946,59 @@ provides one and confirms that no automatic retry was sent. The local Settings
 status snapshot now selects the chosen provider before it creates activity
 text, preventing a Cerebras key action from incorrectly reporting an OpenAI
 status refresh. No external provider request was made during this repair.
+
+### Sprint 945 - correct Cerebras billing and catalog contracts
+
+An observed real Cerebras HTTP 402 is now classified as `payment_required`, not
+as exhausted quota or rate limiting. The explicit live connection action makes
+at most one provider request, never retries, never executes tools, and reports
+an accurate request count. Its Settings result gives safe actionable guidance
+without showing response bodies or credentials.
+
+Cerebras model refresh now uses the documented unauthenticated
+`https://api.cerebras.ai/public/v1/models` endpoint. It includes an explicit
+CCad user agent for the Cloudflare-protected public endpoint and was live
+verified to return `gpt-oss-120b` and `qwen-3.8-27b` without using an inference
+credential or inference quota. Full GUI replacement and visual proof remain
+pending while a user-owned `ccad_gui.exe` process holds the build output.
+
+Anthropic and Gemini catalog fetches now page through their official list APIs
+instead of silently returning only the first response page. The pagination has
+an explicit finite cap and detects a repeated cursor/token. Parser regression
+checks remain separate from the live public Cerebras catalog proof.
+
+### Sprint 946 - remove fabricated agent outcomes and restore provider state
+
+The Python orchestration runtime no longer contains an offline mock provider,
+and component generation no longer invents default VCC/GND/IN/OUT pins after a
+provider failure. Failed generation emits a terminal no-component-created event
+with a safe category, so fabricated electronic data cannot enter a project.
+
+Agent startup now restores the persisted provider/model before it initializes
+the adapter. A saved Windows Credential Manager secret crosses only the private
+GUI-to-child-process channel; keyless Ollama and inherited environment
+credentials use explicit activation without creating or clearing a key.
+
+Qt Settings tests now isolate APPDATA, preventing synthetic test text from
+touching the user's preferences. The config loader repairs only the exact old
+test-contamination values. UI-map traversal of the modeless Settings dialog
+now uses global coordinates, eliminating QWidget parent-hierarchy warnings.
+
+The corrected physical live-provider harness was then run once against the
+persisted provider selection. It reached `Live connection: success` with the
+safe `CCAD_CONNECTION_OK` preview; no tool executed and no retry was sent. The
+captured screen is `artifacts/screenshots/live-provider-connection.png`.
+
+### Sprint 947 - truthful agent execution and persisted startup selection
+
+The native runner now fails a request with `task_executor_unavailable` when no
+real executor is installed; it no longer fabricates a successful result, waits,
+or creates an approval artifact. The persisted provider and model are loaded
+into the Agent panel before asynchronous Python backend startup, so a saved
+selection is visible immediately rather than a misleading `Model: Auto`.
+
+The offline agent contract gate passes all 57 checks. Native CTest is being
+completed under the explicit Qt MinGW runtime and the official UI-map target
+harness has visually confirmed the restored model header and reachable Agent
+Settings controls. This sprint remains in progress until the complete native
+gate, secret scan, documentation review, commit, and push are finished.

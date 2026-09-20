@@ -10,7 +10,7 @@ import tempfile
 root = Path(__file__).parents[1]
 source = root / "src" / "ccad_agent" / "orchestrator.py"
 env = os.environ.copy()
-env.update({"CCAD_PROVIDER": "mock", "PYTHONNOUSERSITE": "1",
+env.update({"CCAD_AGENT_DEFER_PROVIDER_INIT": "1", "PYTHONNOUSERSITE": "1",
             "PYTHONPATH": str(source.parent)})
 with tempfile.TemporaryDirectory(prefix="ccad-mcp-status-") as appdata:
     env["APPDATA"] = appdata

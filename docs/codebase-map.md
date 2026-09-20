@@ -1783,7 +1783,7 @@ Sprint 901 handover: `sanitize_persisted_config` recursively removes secret-like
 Sprint 902 handover: `scripts/test_config_secret_sanitizer.py` proves nested dictionary/list removal and opaque rejected paths without network access.
 Sprint 903 handover: `orchestrator.py` tracks settings-created credential environment variables, clears them on provider changes, and passes provider-specific keys directly to `ChatOpenAI`. `scripts/test_provider_key_isolation.py` proves no cross-provider alias remains; test is offline and does not consume quota.
 Sprint 904 handover: transient provider probes snapshot relevant environment state, run isolated initialization, then restore provider/model/key state and active adapter. `scripts/test_provider_probe_isolation.py` proves mock session remains usable after Cerebras probe; no network.
-Sprint 905 handover: Cerebras catalog snapshot and settings presets now list `gpt-oss-120b` and `qwen-3.8-27b`; source provenance is documented. Live catalog refresh remains explicit and credentialed, never startup behavior.
+Sprint 905 handover: Cerebras catalog snapshot and settings presets now list `gpt-oss-120b` and `qwen-3.8-27b`; source provenance is documented. Live catalog refresh remains explicit and never runs during startup.
 Sprint 906 handover: `agent.list_models` Cerebras response includes `source`, `source_kind`, and `source_url`; snapshot remains offline and quota-safe.
 Sprint 907 handover: `agent.list_models` OpenRouter responses expose `source_kind=provider_api` and `source_url`; explicit refresh remains bounded and opt-in.
 Sprint 909 handover: `ui_add_track` now carries optional `dry_run`; preview calls do not block on approval/broker execution, while real mutations retain approval flow.
@@ -1799,3 +1799,28 @@ retry. `AgentPanel::setProviderSecret()` selects the corresponding internal
 provider item before it emits its local status snapshot, preventing stale
 OpenAI labels after a Cerebras key action. `gui_agent_panel` covers selector
 identity without provider traffic.
+
+Sprint 945 handover: `agent.test_provider_connection` is an explicit one-shot
+live connection action. It bypasses the normal retry helper, forbids tool
+execution, records a request only after `invoke`, restores the active adapter,
+and emits a redacted terminal result. HTTP 402 maps to `payment_required` and
+is never described as a rate limit. `fetch_cerebras_models()` uses Cerebras'
+public `https://api.cerebras.ai/public/v1/models` endpoint with a named CCad
+user agent; it does not read an inference key and returns its live catalog only
+after an explicit Settings refresh.
+
+The Anthropic and Gemini catalog functions now consume the documented
+pagination cursor/token until completion, with a finite defensive cap and
+repeated-cursor protection. This keeps the Settings dropdown synchronized with
+the full account-visible catalog rather than its first page.
+
+Sprint 946 handover: runtime mock responses and fabricated component pins have
+been removed. Failed component generation returns a safe no-component-created
+event instead of authoring guessed data. Provider/model startup restoration now
+loads only non-secret persisted preferences, then retrieves an optional secret
+from Windows Credential Manager through private GUI-child IPC. The native CLI
+offers `ccad agent credential status|set|remove <provider>` using that same OS
+vault; it never accepts a key as an argument or returns one. The live-provider
+Settings probe is one request, no retry, no tools, and its GUI harness waits for
+the actual terminal callback. Modeless dialog UI-map coordinates now resolve
+through global positions, avoiding parent-hierarchy warnings.

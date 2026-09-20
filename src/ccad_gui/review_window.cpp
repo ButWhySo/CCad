@@ -253,6 +253,14 @@ QRect visibleWidgetGlobalRect(const QWidget* widget) {
   return QRect(widget->mapToGlobal(QPoint(0, 0)), widget->size());
 }
 
+QPoint rootRelativeTopLeft(const QWidget* root, const QWidget* widget) {
+  // Settings is a modeless top-level dialog, not a descendant of the review
+  // window. QWidget::mapTo(root) warns and returns unusable coordinates for
+  // that legitimate case. Derive this diagnostic rectangle from global
+  // coordinates, which works for embedded docks and dialogs alike.
+  return widget->mapToGlobal(QPoint(0, 0)) - root->mapToGlobal(QPoint(0, 0));
+}
+
 void ensureWidgetVisibleInAncestorScrollAreas(const QWidget* widget) {
   if (widget == nullptr) {
     return;
@@ -4114,7 +4122,7 @@ QString ReviewWindow::buildUiMapJson() const {
     if (widget == nullptr) {
       return;
     }
-    const QPoint local_top_left = widget->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
+    const QPoint local_top_left = rootRelativeTopLeft(root, widget);
     const QRect local_rect(local_top_left, widget->size());
     const QRect global_rect(widget->mapToGlobal(QPoint(0, 0)), widget->size());
     const QString dock_json =
@@ -4144,7 +4152,7 @@ QString ReviewWindow::buildUiMapJson() const {
     if (action == nullptr) {
       continue;
     }
-    const QPoint local_top_left = button->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
+    const QPoint local_top_left = rootRelativeTopLeft(root, button);
     const QRect local_rect(local_top_left, button->size());
     const QRect global_rect(button->mapToGlobal(QPoint(0, 0)), button->size());
     nodes << QString("{\"id\":%1,\"role\":\"action\",\"label\":%2,"
@@ -4172,7 +4180,7 @@ QString ReviewWindow::buildUiMapJson() const {
     if (!id.startsWith("action:")) {
       continue;
     }
-    const QPoint local_top_left = button->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
+    const QPoint local_top_left = rootRelativeTopLeft(root, button);
     const QRect local_rect(local_top_left, button->size());
     const QRect global_rect = visibleWidgetGlobalRect(button);
     const QRect clipped_rect = clippedWidgetGlobalRect(button);
@@ -4202,7 +4210,7 @@ QString ReviewWindow::buildUiMapJson() const {
     if (!id.startsWith("control:")) {
       continue;
     }
-    const QPoint local_top_left = input->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
+    const QPoint local_top_left = rootRelativeTopLeft(root, input);
     const QRect local_rect(local_top_left, input->size());
     const QRect global_rect(input->mapToGlobal(QPoint(0, 0)), input->size());
     const QString label = input->accessibleName().isEmpty() ? id : input->accessibleName();
@@ -4225,7 +4233,7 @@ QString ReviewWindow::buildUiMapJson() const {
     if (!id.startsWith("control:")) {
       continue;
     }
-    const QPoint local_top_left = combo->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
+    const QPoint local_top_left = rootRelativeTopLeft(root, combo);
     const QRect local_rect(local_top_left, combo->size());
     const QRect global_rect = visibleWidgetGlobalRect(combo);
     const QString label = combo->accessibleName().isEmpty() ? id : combo->accessibleName();
@@ -4259,7 +4267,7 @@ QString ReviewWindow::buildUiMapJson() const {
     if (!id.startsWith("control:")) {
       continue;
     }
-    const QPoint local_top_left = checkbox->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
+    const QPoint local_top_left = rootRelativeTopLeft(root, checkbox);
     const QRect local_rect(local_top_left, checkbox->size());
     const QRect global_rect = visibleWidgetGlobalRect(checkbox);
     const QString label = checkbox->accessibleName().isEmpty() ? checkbox->text()
@@ -4291,7 +4299,7 @@ QString ReviewWindow::buildUiMapJson() const {
       continue;
     }
     const QRect global_rect = visibleWidgetGlobalRect(list);
-    const QPoint local_top_left = list->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
+    const QPoint local_top_left = rootRelativeTopLeft(root, list);
     const QRect local_rect(local_top_left, list->size());
     nodes << QString("{\"id\":%1,\"role\":\"control\",\"label\":%2,"
                      "\"value\":%3,\"visible\":%4,\"enabled\":%5,"
@@ -4321,7 +4329,7 @@ QString ReviewWindow::buildUiMapJson() const {
     if (!supported_prefix) {
       continue;
     }
-    const QPoint local_top_left = widget->mapTo(const_cast<QWidget*>(root), QPoint(0, 0));
+    const QPoint local_top_left = rootRelativeTopLeft(root, widget);
     const QRect local_rect(local_top_left, widget->size());
     const QRect global_rect = visibleWidgetGlobalRect(widget);
     const QString role = id.left(id.indexOf(':'));

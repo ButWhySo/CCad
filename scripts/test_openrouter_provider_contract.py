@@ -10,10 +10,10 @@ cli = (root / "src" / "ccad_cli" / "agent_provider_config.cpp").read_text(encodi
 
 assert 'provider == "openrouter"' in source
 assert 'base_url = "https://openrouter.ai/api/v1"' in source
-assert 'model_name = model_name or "openrouter/auto"' in source
+assert 'model_name = model_name or "openrouter/free"' in source
 assert '"openrouter": "OPENROUTER_API_KEY"' in source
 assert '"OpenRouter", "openrouter"' in gui
-assert '"openrouter/auto"' in gui
+assert '"openrouter/free"' in gui
 assert '"OPENROUTER_API_KEY"' in panel
 assert '"openrouter_api"' in cli
 print("PASS OpenRouter endpoint/key/model contract; no network")

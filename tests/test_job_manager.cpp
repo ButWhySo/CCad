@@ -47,6 +47,20 @@ int main() {
   ccad::AgentRunner restored;
   std::promise<ccad::AgentGoal> restored_goal;
   auto restored_future = restored_goal.get_future();
+  restored.set_task_executor([](ccad::AgentGoal& goal, const std::string& task_id) {
+    for (auto& task : goal.tasks) {
+      if (task.id == task_id) {
+        task.status = ccad::TaskStatus::Completed;
+        task.result_json = "{\"status\":\"executed_by_test_executor\"}";
+        return task;
+      }
+    }
+    ccad::AgentTask missing;
+    missing.id = task_id;
+    missing.status = ccad::TaskStatus::Failed;
+    missing.error_message = "test_task_not_found";
+    return missing;
+  });
   restored.set_progress_callback([&](const ccad::AgentGoal& goal) {
     if (goal.status == ccad::GoalStatus::Completed) restored_goal.set_value(goal);
   });

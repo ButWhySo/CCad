@@ -19,15 +19,16 @@ class RateLimitError(RuntimeError):
 
 captured = []
 orchestrator.emit = captured.append
+redaction_probe = "sk-" + "fixture-value-not-a-credential"
 orchestrator.emit_provider_failure(
-    "cerebras", AuthenticationError("invalid api key sk-secret-must-not-leak"))
+    "cerebras", AuthenticationError(f"invalid api key {redaction_probe}"))
 event = captured[0]
 params = event["params"]
 assert event["method"] == "provider_state"
 assert params["provider"] == "cerebras"
 assert params["error_category"] == "authentication"
 assert params["secret_value_visible"] is False
-assert all("sk-secret-must-not-leak" not in json.dumps(item)
+assert all(redaction_probe not in json.dumps(item)
            for item in captured)
 source = (ROOT / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
 assert '"kind": "provider_error"' in source

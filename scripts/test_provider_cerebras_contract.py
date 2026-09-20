@@ -17,5 +17,6 @@ assert 'os.environ.get("CCAD_CEREBRAS_MODEL") or model_name' in source
 assert '"cerebras": "CEREBRAS_API_KEY"' in source
 assert '"cerebras": "CCAD_CEREBRAS_MODEL"' in source
 assert 'Never multiply quota/credit failures' in source
-assert 'status in (402, 403, 429)' in source
+assert 'if status == 402 or any(marker in text for marker in' in source
+assert 'if status == 429 or any(marker in text for marker in' in source
 print("PASS Cerebras endpoint, key alias, and production fallback contract; no network")

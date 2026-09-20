@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 secret = "cerebras-test-secret-not-real"
 env = os.environ.copy()
-env["CCAD_PROVIDER"] = "mock"
+env["CCAD_AGENT_DEFER_PROVIDER_INIT"] = "1"
 env["PYTHONPATH"] = str(ROOT / "src" / "ccad_agent")
 env["CCAD_CEREBRAS_MODEL"] = "qwen-3.8-27b"
 request = {"method": "agent.set_provider_secret", "params": {

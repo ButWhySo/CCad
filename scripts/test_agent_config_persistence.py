@@ -13,7 +13,7 @@ ORCHESTRATOR = ROOT / "src" / "ccad_agent" / "orchestrator.py"
 def run_agent(appdata, requests):
     env = os.environ.copy()
     env["APPDATA"] = str(appdata)
-    env["CCAD_PROVIDER"] = "mock"
+    env["CCAD_AGENT_DEFER_PROVIDER_INIT"] = "1"
     # On Windows, APPDATA also controls Python's user-site location. Keep
     # isolated config storage without hiding the installed agent dependencies.
     python_paths = [str(ROOT / "src" / "ccad_agent")]
@@ -58,4 +58,17 @@ with tempfile.TemporaryDirectory() as temp:
     assert config["personalisation"]["chat_mode"] == "Detached"
     assert config["personalisation"]["show_context_usage"] is True
     assert config["personalisation"]["agent_personality"] == "CCad Engineering Assistant"
+
+    # Regression: old unattended Qt tests used keyClicks without selecting
+    # existing text and polluted only these literal synthetic values.
+    config_path = appdata / "CCad" / "agent_config.json"
+    contaminated = json.loads(config_path.read_text(encoding="utf-8"))
+    contaminated["project_name"] = "test_projtest_projtest_proj"
+    contaminated["project_path"] = "/tmp/test/tmp/test/tmp/test"
+    config_path.write_text(json.dumps(contaminated), encoding="utf-8")
+    repaired_responses = run_agent(appdata, [{"method": "agent.get_config", "params": {}}])
+    repaired = next(item["params"] for item in repaired_responses
+                    if item.get("method") == "config_state")
+    assert repaired["project_name"] == "sprint-demo"
+    assert repaired["project_path"] == ""
 print("PASS agent config persists across orchestrator restart")
