@@ -21,6 +21,15 @@ Provider-first-turn activation, complete context, dynamic tools, memory lifecycl
 and real mutation proof remain unchecked because their full stated criteria are
 not yet met.
 
+**2026-09-20, Sprint 948 — in progress.** AgentPanel now reads the live native
+`agent.methods` catalog and registers every catalog entry with its published
+description, JSON input schema, and read-only/mutation policy. This removes the
+second hand-maintained C++ method list. The Qt panel test passed and the
+official target harness reported every initial/resized target found with empty
+stderr; its Agent screenshot was visually inspected. Python still exposes a
+fixed LangChain tool list, so model-facing dynamic composition remains
+unchecked until that side uses this registry too.
+
 ## Provider, context, and memory
 
 - [ ] Restore persisted provider, model, and OS-vault credential before first chat turn. Sprint 947 restores the visible provider/model before Python startup; an end-to-end first live chat turn is still required.
@@ -40,7 +49,7 @@ not yet met.
 - [ ] Add screenshot/evidence capture with viewport, layer, and selection metadata.
 - [ ] Add UI-map inspection and mapped-action tools; never fixed-coordinate scripts for normal operation.
 - [ ] Add exact PCB/schematic state inspection and typed placement/edit transactions with units, snap, net, geometry, rules, and validation.
-- [ ] Let models compose real tools dynamically; remove fixed workflow execution paths.
+- [ ] Let models compose real tools dynamically; remove fixed workflow execution paths. Sprint 948 removes the fixed C++ registration list; Python LangChain binding remains to be made catalog-driven.
 
 ## Safety and approvals
 

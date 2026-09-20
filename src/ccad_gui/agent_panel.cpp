@@ -1708,51 +1708,30 @@ void AgentPanel::setSafeActionTrigger(SafeActionTrigger trigger) {
 
 void AgentPanel::setLiveQueryProvider(LiveQueryProvider provider) {
   live_query_provider_ = std::move(provider);
-  
-  if (orchestrator_ && live_query_provider_) {
-      auto register_ui_tool = [this](const std::string& name, ccad::TaskRisk risk) {
-          orchestrator_->register_tool({
-              name, "UI Map Tool", risk, "{}",
-              [this, name](const std::string& args) -> std::string {
-                  if (live_query_provider_) {
-                      return live_query_provider_(QString::fromStdString(name), QString::fromStdString(args)).toStdString();
-                  }
-                  return "{\"error\":\"no provider\"}";
-              }
-          });
-      };
-      
-      register_ui_tool("ui.place_via", ccad::TaskRisk::LowMutation);
-      register_ui_tool("ui.add_track", ccad::TaskRisk::LowMutation);
-      register_ui_tool("ui.route_track", ccad::TaskRisk::LowMutation);
-      register_ui_tool("ui.add_polygon", ccad::TaskRisk::LowMutation);
-      register_ui_tool("ui.add_zone", ccad::TaskRisk::LowMutation);
-      register_ui_tool("ui.place_footprint", ccad::TaskRisk::LowMutation);
-      register_ui_tool("lib.catalog_info", ccad::TaskRisk::ReadOnly);
-      register_ui_tool("lib.catalog_search", ccad::TaskRisk::ReadOnly);
-      register_ui_tool("ui.place_symbol", ccad::TaskRisk::LowMutation);
-      register_ui_tool("ui.add_wire", ccad::TaskRisk::LowMutation);
-      register_ui_tool("ui.add_label", ccad::TaskRisk::LowMutation);
-      register_ui_tool("ui.add_keepout", ccad::TaskRisk::LowMutation);
-      register_ui_tool("ui.draw_graphic", ccad::TaskRisk::LowMutation);
-      register_ui_tool("ui.place_text", ccad::TaskRisk::LowMutation);
-      register_ui_tool("ui.delete_object", ccad::TaskRisk::LowMutation);
-      register_ui_tool("ui.trigger_safe", ccad::TaskRisk::LowMutation);
-      register_ui_tool("ui.click", ccad::TaskRisk::LowMutation);
-      register_ui_tool("ui.double_click", ccad::TaskRisk::LowMutation);
-      register_ui_tool("ui.type_text", ccad::TaskRisk::LowMutation);
-      register_ui_tool("ui.key", ccad::TaskRisk::LowMutation);
-      register_ui_tool("ui.select_canvas_object", ccad::TaskRisk::ReadOnly);
-      register_ui_tool("ui.get_selection", ccad::TaskRisk::ReadOnly);
-      register_ui_tool("ui.active_layer", ccad::TaskRisk::ReadOnly);
-      register_ui_tool("ui.set_active_layer", ccad::TaskRisk::ReadOnly);
-      register_ui_tool("ui.active_net", ccad::TaskRisk::ReadOnly);
-      register_ui_tool("ui.set_active_net", ccad::TaskRisk::ReadOnly);
-      register_ui_tool("project.review", ccad::TaskRisk::ReadOnly);
-      register_ui_tool("action.drc", ccad::TaskRisk::ReadOnly);
-      register_ui_tool("action.route", ccad::TaskRisk::LowMutation);
-      register_ui_tool("action.place", ccad::TaskRisk::LowMutation);
-      register_ui_tool("ui.open_component_wizard", ccad::TaskRisk::ReadOnly);
+  if (!orchestrator_ || !live_query_provider_) return;
+
+  QJsonParseError error;
+  const QJsonDocument response = QJsonDocument::fromJson(
+      live_query_provider_(QStringLiteral("agent.methods"), QStringLiteral("{}")).toUtf8(), &error);
+  if (error.error != QJsonParseError::NoError || !response.isObject()) return;
+  QJsonObject catalog = response.object();
+  if (catalog.value("result").isObject()) catalog = catalog.value("result").toObject();
+  const QJsonArray methods = catalog.value("methods").toArray();
+  for (const QJsonValue& value : methods) {
+    if (!value.isObject()) continue;
+    const QJsonObject entry = value.toObject();
+    const QString method = entry.value("method").toString().trimmed();
+    if (method.isEmpty()) continue;
+    const bool read_only = entry.value("read_only").toBool(false);
+    const ccad::TaskRisk risk = read_only ? ccad::TaskRisk::ReadOnly : ccad::TaskRisk::LowMutation;
+    const QByteArray schema = QJsonDocument(entry.value("inputSchema").toObject()).toJson(QJsonDocument::Compact);
+    const std::string name = method.toStdString();
+    orchestrator_->register_tool({name, entry.value("description").toString().toStdString(), risk,
+                                  schema.toStdString(), [this, name](const std::string& args) {
+      return live_query_provider_
+                 ? live_query_provider_(QString::fromStdString(name), QString::fromStdString(args)).toStdString()
+                 : std::string("{\"error\":\"live_query_unavailable\"}");
+    }});
   }
 }
 
