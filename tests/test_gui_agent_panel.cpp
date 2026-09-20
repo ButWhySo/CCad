@@ -46,6 +46,8 @@ private slots:
     const QJsonObject workspace = QJsonDocument::fromJson(panel.workspaceStateJson().toUtf8()).object();
     QCOMPARE(workspace.value("model_label").toString(), QString("Model: qwen-3.8-27b"));
     QCOMPARE(workspace.value("provider_id").toString(), QString("cerebras"));
+    QVERIFY(!workspace.value("native_tool_catalog_installed").toBool());
+    QCOMPARE(workspace.value("native_tool_catalog_method_count").toInt(), 0);
   }
 
   void testSettingsDialogInteractions() {

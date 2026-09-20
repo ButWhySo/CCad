@@ -2,6 +2,7 @@
 
 #include <QWidget>
 #include <QHash>
+#include <QJsonArray>
 #include <QJsonObject>
 #include <QString>
 #include <QStringList>
@@ -288,6 +289,9 @@ class AgentPanel final : public QWidget {
   bool run_queue_cancelable_ = true;
   bool backend_ready_ = false;
   bool backend_provider_initialized_ = false;
+  bool native_tool_catalog_sent_ = false;
+  bool backend_config_requested_ = false;
+  QJsonArray native_tool_catalog_;
   QString trace_id_;
   QString span_id_;
   bool tool_result_ack_visible_ = false;

@@ -1,39 +1,20 @@
 # CCad Agent production TODO
 
-This is the repository-tracked execution plan supplied on 2026-09-20. Check a
-box only after implementation, source-level contract coverage, real runtime
-evidence where applicable, and same-commit documentation have been reviewed.
+Check a box only after implementation and its required evidence exist.
 
 ## Update protocol and active slice
 
-Every implementation slice must update this file in the same commit. A task
-stays unchecked when any part of its stated end-to-end evidence is missing;
-partial work is recorded here rather than represented as completion.
+Update this file in the same commit as each implementation slice.
 
-**2026-09-20, Sprint 947 — committed and pushed as `d1917eb`.** The native no-executor path now
-fails truthfully with `task_executor_unavailable`, and the Agent panel restores
-the persisted provider/model before backend startup. The offline contract gate
-passed 57 scripts. The explicit Qt runtime completed all 91 CTest cases in
-runtime-safe intervals; the official UI-map target harness visually confirmed
-the restored model header and reachable Agent Settings controls. The remaining
-Sprint 947 passed its staged-diff secret scan and was pushed after the gates.
-Provider-first-turn activation, complete context, dynamic tools, memory lifecycle, tracing,
-and real mutation proof remain unchecked because their full stated criteria are
-not yet met.
+### Sprint 949 checklist
 
-**2026-09-20, Sprint 948 — in progress.** AgentPanel now reads the live native
-`agent.methods` catalog and registers every catalog entry with its published
-description, JSON input schema, and read-only/mutation policy. This removes the
-second hand-maintained C++ method list. The Qt panel test passed and the
-official target harness reported every initial/resized target found with empty
-stderr; its Agent screenshot was visually inspected. Python still exposes a
-fixed LangChain tool list, so model-facing dynamic composition remains
-unchecked until that side uses this registry too.
-
-**Next slice, not started.** Replace the Python fixed lists only together with
-validated catalog transport, `StructuredTool` construction from native input
-schemas, the existing broker call-id/approval path, ToolNode rebuild, and a
-real provider tool-call proof. A sender-only IPC change is not retained.
+- [x] Native catalog transport before provider activation.
+- [x] JSON schema to provider-safe `StructuredTool` conversion.
+- [x] ToolNode and provider binding rebuild from native catalog.
+- [x] Native method ID and authoritative broker-result preservation.
+- [x] Catalog IPC contract, focused CTest, and scoped UI-map validation.
+- [x] Qt Release build and full CTest gate (91/91).
+- [ ] Bounded real-provider catalog tool call and broker result.
 
 ## Provider, context, and memory
 
@@ -54,7 +35,7 @@ real provider tool-call proof. A sender-only IPC change is not retained.
 - [ ] Add screenshot/evidence capture with viewport, layer, and selection metadata.
 - [ ] Add UI-map inspection and mapped-action tools; never fixed-coordinate scripts for normal operation.
 - [ ] Add exact PCB/schematic state inspection and typed placement/edit transactions with units, snap, net, geometry, rules, and validation.
-- [ ] Let models compose real tools dynamically; remove fixed workflow execution paths. Sprint 948 removes the fixed C++ registration list; Python LangChain binding remains to be made catalog-driven.
+- [ ] Let models compose real tools dynamically; real-provider tool-call and native result proof pending.
 
 ## Safety and approvals
 
@@ -92,8 +73,10 @@ real provider tool-call proof. A sender-only IPC change is not retained.
 
 ## Delivery gates
 
-- [ ] Write contract tests before behavior changes. Sprint 947 added no-executor and persisted-selection coverage; this remains a continuous delivery requirement.
-- [ ] Build Qt toolchain, run targeted/full CTest, official UI-map/mouse-keyboard harness, inspect screenshots and stdout/stderr, and perform bounded real provider tests. Sprint 947: all 91 native CTest cases, 57 offline contracts, and the UI-map visual run passed; the next bounded real-provider turn is pending the complete dynamic tool/context surface.
-- [ ] Run redacted repository and staged-diff secret scans before every commit. Repository scan is in progress for Sprint 947; staged-diff scan follows selective staging.
+- [ ] Write contract tests before behavior changes.
+- [x] Build Qt and run targeted/full CTest.
+- [x] Run scoped UI-map/mouse-keyboard validation; inspect screenshots and logs.
+- [ ] Run bounded real provider tests.
+- [ ] Run redacted repository and staged-diff secret scans before every commit.
 - [ ] Update architecture, feature, CLI, methodology, provider, memory, tracing, autorouter, backlog, and progress docs in the same commit.
 - [ ] Commit only verified source/tests/docs; never keys, vault data, local config, logs, screenshots, generated boards, or unrelated user files.

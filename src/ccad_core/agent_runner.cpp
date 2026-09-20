@@ -164,10 +164,12 @@ void AgentRunner::enqueue_goal(const AgentGoal& goal) {
 }
 
 void AgentRunner::set_progress_callback(ProgressCallback cb) {
+    std::lock_guard<std::mutex> lock(execution_mutex_);
     on_progress_ = cb;
 }
 
 void AgentRunner::set_task_executor(TaskExecutor ex) {
+    std::lock_guard<std::mutex> lock(execution_mutex_);
     task_executor_ = ex;
 }
 
@@ -232,8 +234,15 @@ void AgentRunner::execution_loop() {
         for (auto& task : current_goal.tasks) {
             if (!running_) break;
             
-            if (task_executor_) {
-                task = task_executor_(current_goal, task.id);
+            TaskExecutor executor;
+            ProgressCallback progress;
+            {
+                std::lock_guard<std::mutex> lock(execution_mutex_);
+                executor = task_executor_;
+                progress = on_progress_;
+            }
+            if (executor) {
+                task = executor(current_goal, task.id);
                 if (task.status == TaskStatus::Failed) {
                     current_goal.failed_count++;
                 } else if (task.status == TaskStatus::Completed) {
@@ -250,8 +259,8 @@ void AgentRunner::execution_loop() {
                 current_goal.failed_count++;
             }
             
-            if (on_progress_) {
-                on_progress_(current_goal);
+            if (progress) {
+                progress(current_goal);
             }
         }
         if (current_goal.failed_count > 0 || current_goal.tasks.empty()) {
@@ -259,8 +268,13 @@ void AgentRunner::execution_loop() {
         } else {
             current_goal.status = GoalStatus::Completed;
         }
-        if (on_progress_) {
-            on_progress_(current_goal);
+        ProgressCallback progress;
+        {
+            std::lock_guard<std::mutex> lock(execution_mutex_);
+            progress = on_progress_;
+        }
+        if (progress) {
+            progress(current_goal);
         }
     }
 }

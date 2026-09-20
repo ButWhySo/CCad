@@ -418,6 +418,11 @@ int main(int argc, char** argv) {
     QTimer::singleShot(initial_wait_ms, window,
                        [window, output_dir, name, initial_wait_ms, per_target_wait_ms]() {
       QStringList entries;
+      const QString catalog_startup = window->runAgentUiQueryJson("agent.workspace_state", "{}");
+      const bool catalog_startup_verified =
+          catalog_startup.contains("\"backend_ready\":true") &&
+          catalog_startup.contains("\"native_tool_catalog_installed\":true") &&
+          !catalog_startup.contains("\"native_tool_catalog_method_count\":0");
       const QStringList target_ids = {"action:cursor", "action:measurement", "action:save",
                                       "menu:file", "panel:properties", "action:grid",
                                       "action:polar_coord", "action:unit_inch",
@@ -537,10 +542,13 @@ int main(int argc, char** argv) {
       std::ofstream output(output_path, std::ios::binary);
       const QString report =
           QString("{\"schema_version\":1,\"name\":%1,\"initial_wait_ms\":%2,"
-                  "\"per_target_wait_ms\":%3,\"entries\":[%4]}\n")
+                 "\"per_target_wait_ms\":%3,\"catalog_startup_verified\":%4,"
+                 "\"catalog_startup\":%5,\"entries\":[%6]}\n")
               .arg(jsonStringLocal(name))
               .arg(initial_wait_ms)
               .arg(per_target_wait_ms)
+              .arg(catalog_startup_verified ? "true" : "false")
+              .arg(jsonStringLocal(catalog_startup))
               .arg(entries.join(','));
       const QByteArray bytes = report.toUtf8();
       output.write(bytes.constData(), bytes.size());

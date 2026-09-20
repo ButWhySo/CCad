@@ -43,6 +43,10 @@ private:
     
     std::thread worker_thread_;
     mutable std::mutex queue_mutex_;
+    // Protect callback/executor replacement while the worker takes a local
+    // copy.  Callbacks run outside this lock so they may safely interact with
+    // application state without blocking future runner configuration.
+    mutable std::mutex execution_mutex_;
     std::condition_variable cv_;
     std::atomic<bool> running_{false};
     

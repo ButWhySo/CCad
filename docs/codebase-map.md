@@ -1824,3 +1824,7 @@ vault; it never accepts a key as an argument or returns one. The live-provider
 Settings probe is one request, no retry, no tools, and its GUI harness waits for
 the actual terminal callback. Modeless dialog UI-map coordinates now resolve
 through global positions, avoiding parent-hierarchy warnings.
+
+Sprint 949 handover: AgentPanel sends `agent.methods` before provider activation;
+Python validates schemas, builds provider-safe tools, and dispatches original
+native IDs through ToolBroker. Real provider tool-call proof remains pending.

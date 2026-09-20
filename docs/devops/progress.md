@@ -6,7 +6,7 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 947
+- Sprint: 949
 - Branch: `sprint-947-agent-tool-context`
 - Phase 9 sprint budget: originally Sprints 226 through 254; the active programme has continued through Sprint 947 for deterministic KiCad PCB editor parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, autorouter integration, and the production agent surface. Sprint 226 root file walk is completely audited.
 
@@ -3002,3 +3002,12 @@ completed under the explicit Qt MinGW runtime and the official UI-map target
 harness has visually confirmed the restored model header and reachable Agent
 Settings controls. This sprint remains in progress until the complete native
 gate, secret scan, documentation review, commit, and push are finished.
+
+### Sprint 949 - native catalog tools
+
+Native catalog transport, generated tools, ToolNode rebuild, and scoped UI-map
+proof complete. Real provider tool-call proof remains pending.
+
+Full Qt Release build and CTest gate pass: 91/91 in 158.16 seconds. The
+runner callback/executor handoff is synchronized so captured-output execution
+does not hang the suite.

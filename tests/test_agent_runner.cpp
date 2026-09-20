@@ -47,6 +47,11 @@ static void test_processes_goal() {
 
     runner.enqueue_goal(goal);
 
+    // A production runner must never leave the caller waiting forever when a
+    // worker, callback, or scheduler regression prevents terminal progress.
+    // Keep the assertion tied to the real callback, but bound the test so the
+    // full CTest gate reports a failure instead of hanging indefinitely.
+    assert(completed.wait_for(std::chrono::seconds(5)) == std::future_status::ready);
     const AgentGoal completed_result = completed.get();
     runner.stop();
     assert(completed_result.completed_count == 1);
@@ -70,6 +75,7 @@ static void test_rejects_goal_without_executor() {
     goal.tasks.push_back(AgentTask{.id = "read-only-task", .risk = TaskRisk::ReadOnly});
     goal.total_count = 1;
     runner.enqueue_goal(goal);
+    assert(failed.wait_for(std::chrono::seconds(5)) == std::future_status::ready);
     const AgentGoal result = failed.get();
     runner.stop();
     assert(result.failed_count == 1);

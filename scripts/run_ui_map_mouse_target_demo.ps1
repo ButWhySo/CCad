@@ -4,7 +4,8 @@ param(
   [string]$ProjectPath,
   [string]$Name = "ui-map-mouse-targets",
   [int]$InitialLoadMilliseconds = 5000,
-  [int]$PerTargetMilliseconds = 800
+  [int]$PerTargetMilliseconds = 800,
+  [switch]$RequireNativeToolCatalog
 )
 
 $ErrorActionPreference = "Stop"
@@ -64,6 +65,12 @@ if ($process.ExitCode -ne 0) {
 }
 
 $Report = Join-Path $ScreenshotDir "$Name-target-sequence.json"
+if ($RequireNativeToolCatalog) {
+  $reportData = Get-Content -Raw $Report | ConvertFrom-Json
+  if (-not $reportData.catalog_startup_verified) {
+    throw "Native agent tool catalog was not installed before persisted provider activation. Report: $Report"
+  }
+}
 Write-Output "Report: $Report"
 Write-Output "Stdout: $stdoutLog"
 Write-Output "Stderr: $stderrLog"

@@ -13,8 +13,9 @@ import warnings
 import urllib.request
 import urllib.error
 import urllib.parse
-from typing import Annotated, TypedDict, List
-from langchain_core.tools import tool
+from typing import Annotated, Any, Dict, List, Literal, TypedDict
+from langchain_core.tools import StructuredTool, tool
+from pydantic import Field, create_model
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 # langgraph-checkpoint currently emits this known pending-deprecation warning
 # during import; install filter after langchain_core imports, which may reset
@@ -513,6 +514,12 @@ def orchestrator_method_catalog():
                  "sandbox_mode", "approval_policy", "project_name", "project_path",
                  "trust_level", "memory", "hooks", "personalisation", "mcp_servers",
                  "plugins", "workflows"]}},
+            {"name": "agent.set_tool_catalog", "read_only": False,
+             "secrets": False, "side_effect": "runtime_tool_registration",
+             "params": {"catalog": {"type": "array", "optional": False}},
+             "response": {"method": "tool_catalog_state", "fields": [
+                 "accepted", "method_count", "tool_count", "error",
+                 "secret_value_visible"]}},
             {"name": "agent.mcp_status", "read_only": True, "network_access": "none",
              "secrets": False, "response": {"method": "mcp_status", "fields": [
                  "servers", "configured", "runtime", "process_execution"]}},
@@ -625,7 +632,8 @@ def dispatch_client_tool(tool_name: str, args: dict, *, await_result: bool = Fal
         "approval_reason": approval["reason"],
     }})
     if broker_wait_enabled and await_result:
-        emit_tool_approval_state()
+        if approval["required"]:
+            emit_tool_approval_state()
         if checkpoint_saver is not None:
             return dispatch_checkpointed_tool(tool_name, args)
         return wait_for_broker_result(call_id)
@@ -792,9 +800,110 @@ def lib_catalog_search(query: str):
     emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "lib.catalog_search", "args": {"query": query}}})
     return "Action dispatched to CCad client."
 
-router_tools = [ui_place_via, ui_add_track, ui_add_polygon]
-librarian_tools = [ui_place_footprint, ui_place_symbol, project_review, ui_add_wire, ui_add_label, lib_catalog_info, lib_catalog_search]
-general_tools = [ui_screenshot, ui_open_component_wizard]
+def tool_provider_name(method_name: str) -> str:
+    """Create a provider-compatible stable name without losing native identity."""
+    return "ccad_" + re.sub(r"[^A-Za-z0-9_-]", "_", method_name)
+
+
+def json_schema_annotation(schema: dict):
+    """Map CCad's JSON Schema subset to the pydantic types LangChain exports."""
+    if not isinstance(schema, dict):
+        return Any
+    enum = schema.get("enum")
+    if isinstance(enum, list) and enum and all(isinstance(value, str) for value in enum):
+        return Literal[tuple(enum)]
+    schema_type = schema.get("type")
+    if schema_type == "string":
+        return str
+    if schema_type == "integer":
+        return int
+    if schema_type == "number":
+        return float
+    if schema_type == "boolean":
+        return bool
+    if schema_type == "array":
+        return List[json_schema_annotation(schema.get("items", {}))]
+    if schema_type == "object":
+        return Dict[str, Any]
+    return Any
+
+
+def validate_native_tool_catalog(catalog: object) -> List[dict]:
+    """Accept only the typed native method catalog forwarded by the GUI."""
+    if not isinstance(catalog, list) or not catalog:
+        raise ValueError("catalog must be a non-empty method array")
+    accepted, seen_methods, seen_provider_names = [], set(), set()
+    for entry in catalog:
+        if not isinstance(entry, dict):
+            raise ValueError("catalog entries must be objects")
+        method = entry.get("method")
+        description = entry.get("description")
+        schema = entry.get("inputSchema")
+        if (not isinstance(method, str) or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_.-]{0,95}", method)
+                or not isinstance(description, str) or not description.strip()
+                or not isinstance(schema, dict) or schema.get("type") != "object"):
+            raise ValueError("catalog entry has invalid method, description, or inputSchema")
+        provider_name = tool_provider_name(method)
+        if method in seen_methods or provider_name in seen_provider_names:
+            raise ValueError("catalog contains duplicate method identity")
+        seen_methods.add(method)
+        seen_provider_names.add(provider_name)
+        accepted.append({"method": method, "description": description.strip(),
+                         "inputSchema": schema,
+                         "read_only": bool(entry.get("read_only", False))})
+    return accepted
+
+
+def build_native_tools(catalog: List[dict]) -> List[StructuredTool]:
+    """Build real LangChain tools that call the authoritative C++ ToolBroker."""
+    tools = []
+    for entry in catalog:
+        schema = entry["inputSchema"]
+        required = set(schema.get("required", [])) if isinstance(schema.get("required", []), list) else set()
+        properties = schema.get("properties", {})
+        if not isinstance(properties, dict):
+            raise ValueError("catalog inputSchema.properties must be an object")
+        fields = {}
+        for key, property_schema in properties.items():
+            if not isinstance(key, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
+                raise ValueError("catalog property name is not provider-safe")
+            if not isinstance(property_schema, dict):
+                raise ValueError("catalog property schema must be an object")
+            default = ... if key in required else property_schema.get("default", None)
+            fields[key] = (json_schema_annotation(property_schema),
+                           Field(default, description=str(property_schema.get("description", ""))))
+        args_schema = create_model("CCad_" + tool_provider_name(entry["method"]).replace("-", "_"),
+                                   **fields)
+        method = entry["method"]
+        read_only = entry["read_only"]
+
+        def invoke_native_tool(_method=method, _read_only=read_only, **kwargs):
+            return dispatch_client_tool(_method, kwargs, await_result=True)
+
+        tools.append(StructuredTool.from_function(
+            invoke_native_tool, name=tool_provider_name(method),
+            description=f"CCad native method `{method}`. {entry['description']}",
+            args_schema=args_schema))
+    return tools
+
+
+native_tool_catalog: List[dict] = []
+agent_tools: List[StructuredTool] = []
+
+
+def install_native_tool_catalog(catalog: object) -> dict:
+    """Install the GUI's current native catalog and rebuild live graph bindings."""
+    global native_tool_catalog, agent_tools, router_llm, librarian_llm, execute_tool_node, executor
+    native_tool_catalog = validate_native_tool_catalog(catalog)
+    agent_tools = build_native_tools(native_tool_catalog)
+    if llm is not None:
+        router_llm = llm.bind_tools(agent_tools)
+        librarian_llm = router_llm
+    execute_tool_node = ToolNode(agent_tools)
+    if executor is not None:
+        executor = create_orchestrator()
+    return {"accepted": True, "method_count": len(native_tool_catalog),
+            "tool_count": len(agent_tools), "secret_value_visible": False}
 
 llm = None
 router_llm = None
@@ -802,6 +911,7 @@ librarian_llm = None
 checkpoint_saver = None
 checkpoint_context = None
 session_provider_env = set()
+executor = None
 
 def set_session_provider_env(name, value):
     """Set provider credential only for this process and track its alias."""
@@ -962,7 +1072,7 @@ def init_provider():
             from langchain_anthropic import ChatAnthropic
             if not model_name: model_name = "claude-opus-5"
             llm = ChatAnthropic(model=model_name, temperature=0)
-            router_llm = llm.bind_tools(router_tools + librarian_tools + general_tools)
+            router_llm = llm.bind_tools(agent_tools)
             librarian_llm = router_llm
             broker_wait_enabled = True
             emit_provider_ready(provider, model_name)
@@ -991,7 +1101,7 @@ def init_provider():
             if google_api_key:
                 os.environ["GOOGLE_API_KEY"] = google_api_key
             llm = ChatGoogleGenerativeAI(model=model_name, temperature=0)
-            router_llm = llm.bind_tools(router_tools + librarian_tools + general_tools)
+            router_llm = llm.bind_tools(agent_tools)
             librarian_llm = router_llm
             broker_wait_enabled = True
             emit_provider_ready(provider, model_name)
@@ -1057,7 +1167,7 @@ def init_provider():
                 # bearer token, but langchain-openai requires a nonempty value.
                 kwargs["api_key"] = "ollama"
             llm = ChatOpenAI(**kwargs)
-            router_llm = llm.bind_tools(router_tools + librarian_tools + general_tools)
+            router_llm = llm.bind_tools(agent_tools)
             librarian_llm = router_llm
             broker_wait_enabled = True
             emit_provider_ready(provider, model_name)
@@ -1260,7 +1370,7 @@ def librarian_node(state: AgentState):
     return {"messages": [response]}
 
 from langgraph.prebuilt import ToolNode
-execute_tool_node = ToolNode(router_tools + librarian_tools + general_tools)
+execute_tool_node = ToolNode(agent_tools)
 
 def should_route(state: AgentState):
     next_node = state.get("next_node", "FINISH")
@@ -2076,6 +2186,13 @@ if __name__ == "__main__":
                     init_provider()
             elif method == "agent.get_config":
                 emit({"jsonrpc": "2.0", "method": "config_state", "params": config_manager.config})
+            elif method == "agent.set_tool_catalog":
+                try:
+                    state = install_native_tool_catalog(req.get("params", {}).get("catalog"))
+                except (TypeError, ValueError) as error:
+                    state = {"accepted": False, "method_count": 0, "tool_count": 0,
+                             "error": str(error), "secret_value_visible": False}
+                emit({"jsonrpc": "2.0", "method": "tool_catalog_state", "params": state})
             elif method == "agent.activate_provider":
                 params = req.get("params", {})
                 provider_id = params.get("provider") or config_manager.get("provider", "openai")

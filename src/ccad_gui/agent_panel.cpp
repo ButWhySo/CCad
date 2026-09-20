@@ -1327,12 +1327,6 @@ void AgentPanel::startPythonBackend() {
   python_process_->setProcessEnvironment(agent_env);
   connect(python_process_, &QProcess::readyReadStandardOutput, this, &AgentPanel::handlePythonOutput);
   connect(python_process_, &QProcess::readyReadStandardError, this, &AgentPanel::handlePythonError);
-  connect(python_process_, &QProcess::started, this, [this]() {
-    // Backend config is the persisted source of truth. Request it before
-    // accepting user input, then restore the active provider secret from the
-    // OS vault through private IPC only.
-    sendJsonRpc("agent.get_config", QJsonObject());
-  });
   python_process_->start();
 }
 
@@ -1408,6 +1402,19 @@ void AgentPanel::handlePythonOutput() {
                          call_id.isEmpty() ? QStringLiteral("Broker acknowledgment received")
                                            : QStringLiteral("Call ") + call_id,
                          "agent.tool_result_ack");
+      } else if (obj.contains("method") && obj["method"].toString() == "tool_catalog_state") {
+        const QJsonObject params = obj["params"].toObject();
+        if (params["accepted"].toBool(false)) {
+          native_tool_catalog_sent_ = true;
+        } else {
+          addActivityEvent("error", "Native tool catalog rejected",
+                           params["error"].toString("Invalid catalog payload"),
+                           "agent.set_tool_catalog");
+        }
+        if (!backend_config_requested_) {
+          backend_config_requested_ = true;
+          sendJsonRpc("agent.get_config", QJsonObject());
+        }
       } else if (obj.contains("method") && obj["method"].toString() == "config_state") {
         const QJsonObject params = obj["params"].toObject();
         const QString configured_provider = params["provider"].toString().trimmed();
@@ -1449,6 +1456,12 @@ void AgentPanel::handlePythonOutput() {
         const QJsonObject params = obj["params"].toObject();
         backend_ready_ = params["ready"].toBool(false);
         backend_provider_initialized_ = params["provider_initialized"].toBool(false);
+        if (backend_ready_ && !native_tool_catalog_.isEmpty() && !native_tool_catalog_sent_) {
+          sendJsonRpc("agent.set_tool_catalog", QJsonObject{{"catalog", native_tool_catalog_}});
+        } else if (backend_ready_ && !backend_config_requested_) {
+          backend_config_requested_ = true;
+          sendJsonRpc("agent.get_config", QJsonObject());
+        }
       } else if (obj.contains("method") && obj["method"].toString() == "provider_state") {
         const QJsonObject params = obj["params"].toObject();
         if (!params["model"].toString().trimmed().isEmpty()) {
@@ -1717,6 +1730,7 @@ void AgentPanel::setLiveQueryProvider(LiveQueryProvider provider) {
   QJsonObject catalog = response.object();
   if (catalog.value("result").isObject()) catalog = catalog.value("result").toObject();
   const QJsonArray methods = catalog.value("methods").toArray();
+  native_tool_catalog_ = methods;
   for (const QJsonValue& value : methods) {
     if (!value.isObject()) continue;
     const QJsonObject entry = value.toObject();
@@ -1732,6 +1746,9 @@ void AgentPanel::setLiveQueryProvider(LiveQueryProvider provider) {
                  ? live_query_provider_(QString::fromStdString(name), QString::fromStdString(args)).toStdString()
                  : std::string("{\"error\":\"live_query_unavailable\"}");
     }});
+  }
+  if (backend_ready_ && !native_tool_catalog_.isEmpty() && !native_tool_catalog_sent_) {
+    sendJsonRpc("agent.set_tool_catalog", QJsonObject{{"catalog", native_tool_catalog_}});
   }
 }
 
@@ -3023,6 +3040,8 @@ QString AgentPanel::workspaceStateJson() const {
   response.insert("status", statusText());
   response.insert("backend_ready", backend_ready_);
   response.insert("backend_provider_initialized", backend_provider_initialized_);
+  response.insert("native_tool_catalog_installed", native_tool_catalog_sent_);
+  response.insert("native_tool_catalog_method_count", native_tool_catalog_.size());
   response.insert("result_state", resultStateText());
   response.insert("action_id", actionIdText());
   response.insert("live_method", liveMethodText());
