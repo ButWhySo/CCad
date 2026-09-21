@@ -8,6 +8,8 @@ This document tracks user-visible and agent-visible features that exist in the r
 
 Verification uses `gui_agent_panel`, `gui_ui_map`, and `agent_preview` CTest targets; no-network Python contract tests for DRC, context package, provider failure classification, provider failure events, and approval-result truth; the full 92-test Qt CTest gate; and an inspected GUI screenshot from `scripts/run_sprint_demo.ps1`. Provider startup wording remains explicitly tracked as unfinished when it claims that a configured provider was not contacted.
 
+Gemini import-time dependency warnings are now suppressed from the user-visible activity stream because they do not describe provider readiness or request execution. Real provider state remains emitted only through provider-state events. The no-network warning contract and inspected Sprint 951 GUI screenshot verify that a configured Gemini provider no longer receives a fabricated “Provider was not contacted” card.
+
 PNS meander placement now records a deduplicated routed polyline, updates its active item to each destination, and clears state on finish. Length matching and serpentine optimization remain future work.
 
 Meander placement also reports current length, non-negative remaining target distance, and target-reached state for adaptive agent control.

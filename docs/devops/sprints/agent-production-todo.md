@@ -91,7 +91,7 @@ Update this file in the same commit as each implementation slice.
 - [ ] Make quick DRC execute authoritative DRC or remove the chip; do not merely insert `/drc`.
 - [x] Map `/drc` to authoritative `project.drc`, return its diagnostics, and never leave a chat turn at “Running DRC checks…”.
 - [ ] Preserve 429/quota/rate-limit categories from provider SDK exceptions; never relabel them `provider_unavailable`.
-- [ ] Remove the stale Gemini adapter notice that says no provider was contacted after a configured provider has initialized or completed a real call.
+- [x] Remove the stale Gemini adapter notice that says no provider was contacted after a configured provider has initialized or completed a real call.
 - [ ] Bind one immutable proposal/call ID to one approval and one execution; reject duplicate/replayed approval results.
 - [ ] Never narrate a failed UI gesture or transaction as a completed board change; surface the authoritative failure reason.
 - [ ] Make collapsed Agent dock restorable through a mapped action and release its unused dock space.

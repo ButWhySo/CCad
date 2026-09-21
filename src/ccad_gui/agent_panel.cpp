@@ -1623,10 +1623,10 @@ void AgentPanel::handlePythonError() {
   const QString error = QString::fromLocal8Bit(python_process_->readAllStandardError()).trimmed();
   if (error.isEmpty()) return;
 
-  // langchain-google-genai 2.x currently emits this dependency retirement
-  // notice during import.  It is neither an inference failure nor actionable
-  // in a chat conversation. Keep a compact diagnostic event instead of
-  // rendering raw Python paths and warning text to the user.
+  // langchain-google-genai 2.x can emit this dependency retirement notice
+  // during import. It says nothing about adapter readiness or whether a
+  // provider request later ran, so it must not become a user-visible provider
+  // status event.
   // QProcess may deliver a Python warning in several stderr chunks.  Match
   // both its first frame and its complete text so no partial traceback leaks
   // into the chat stream.
@@ -1634,9 +1634,6 @@ void AgentPanel::handlePythonError() {
        error.contains("google.generativeai package has ended")) ||
       (error.contains("FutureWarning") &&
        error.contains("langchain_google_genai"))) {
-    addActivityEvent("diagnostic", "Gemini adapter dependency notice",
-                     "Provider was not contacted; update is tracked separately.",
-                     "agent.backend_warning");
     return;
   }
 
