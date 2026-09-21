@@ -10,6 +10,8 @@ Verification uses `gui_agent_panel`, `gui_ui_map`, and `agent_preview` CTest tar
 
 Gemini import-time dependency warnings are now suppressed from the user-visible activity stream because they do not describe provider readiness or request execution. Real provider state remains emitted only through provider-state events. The no-network warning contract and inspected Sprint 951 GUI screenshot verify that a configured Gemini provider no longer receives a fabricated “Provider was not contacted” card.
 
+The visible `Run DRC` quick action now calls the same authoritative read-only `project.drc` live-query method as the slash command, rather than inserting `/drc` into the composer. Its GUI test proves one exact `project.drc {}` request, while the inspected live UI-map click records `performed:true` and the rendered `Result OK project.drc` activity event.
+
 PNS meander placement now records a deduplicated routed polyline, updates its active item to each destination, and clears state on finish. Length matching and serpentine optimization remain future work.
 
 Meander placement also reports current length, non-negative remaining target distance, and target-reached state for adaptive agent control.

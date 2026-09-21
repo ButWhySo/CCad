@@ -823,8 +823,15 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
     auto* quick_reply = new QPushButton(title, composer_container);
     quick_reply->setProperty("agentRole", "quickReply");
     quick_reply->setObjectName("action:agent_quick_" + title.toLower().replace(" ", "_"));
-    quick_reply->setToolTip("Insert " + command.trimmed() + " command");
+    quick_reply->setToolTip(command == "/drc"
+                                ? QStringLiteral("Run authoritative read-only DRC now")
+                                : QStringLiteral("Insert ") + command.trimmed() + " command");
     connect(quick_reply, &QPushButton::clicked, this, [this, command]() {
+      if (command == "/drc") {
+        setLiveQuery(QStringLiteral("project.drc"), QStringLiteral("{}"));
+        runLiveQuery();
+        return;
+      }
       if (chat_input_) {
         chat_input_->setPlainText(command);
         chat_input_->setFocus();

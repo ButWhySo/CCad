@@ -5,6 +5,7 @@
 #include <QCheckBox>
 #include <QPushButton>
 #include <QTextEdit>
+#include <QPlainTextEdit>
 #include <QListWidget>
 #include <QFile>
 #include <QJsonDocument>
@@ -459,6 +460,25 @@ private slots:
     QCoreApplication::processEvents();
     // Popup focus is platform-dependent in offscreen Qt; production event-filter
     // handling is exercised by the live GUI harness.
+  }
+
+  void testQuickDrcCallsAuthoritativeReadOnlyMethod() {
+    AgentPanel panel;
+    QStringList calls;
+    panel.setLiveQueryProvider([&calls](const QString& method, const QString& payload) {
+      calls.append(method + " " + payload);
+      return QStringLiteral("{\"schema_version\":1,\"ok\":true,\"error_count\":0,"
+                            "\"warning_count\":0,\"diagnostic_count\":0}");
+    });
+    calls.clear();  // Catalog discovery is setup, not quick-action execution.
+    auto* quick_drc = panel.findChild<QPushButton*>("action:agent_quick_run_drc");
+    QVERIFY(quick_drc != nullptr);
+    QVERIFY(quick_drc->toolTip().contains("authoritative"));
+    QTest::mouseClick(quick_drc, Qt::LeftButton);
+    QCOMPARE(calls, QStringList{QStringLiteral("project.drc {}")});
+    auto* output = panel.findChild<QPlainTextEdit*>();
+    QVERIFY(output != nullptr);
+    QVERIFY(output->toPlainText().contains("diagnostic_count"));
   }
 
   void testQueueStateCheckpointRoundTrip() {

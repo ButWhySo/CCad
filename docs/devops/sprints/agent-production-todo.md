@@ -88,7 +88,7 @@ Update this file in the same commit as each implementation slice.
 - [ ] Add editable annotations, reviewer comments, structured revision scope, revise/reject/cancel, and one approval boundary.
 - [ ] Render no preview for unsupported actions; report the exact unavailable/staging reason without fabricated geometry.
 - [ ] Fix live Agent Settings opening and modeless dialog discovery through the UI map.
-- [ ] Make quick DRC execute authoritative DRC or remove the chip; do not merely insert `/drc`.
+- [x] Make quick DRC execute authoritative DRC or remove the chip; do not merely insert `/drc`.
 - [x] Map `/drc` to authoritative `project.drc`, return its diagnostics, and never leave a chat turn at “Running DRC checks…”.
 - [ ] Preserve 429/quota/rate-limit categories from provider SDK exceptions; never relabel them `provider_unavailable`.
 - [x] Remove the stale Gemini adapter notice that says no provider was contacted after a configured provider has initialized or completed a real call.
@@ -137,7 +137,7 @@ Update this file in the same commit as each implementation slice.
 - [ ] Preserve `/cc`/`/compact` as bounded context compaction but implement semantic compaction before claiming summarization.
 - [ ] Replace fake `/schedule` string queue with a real persistent scheduler before exposing the command.
 - [ ] Make `/marketplace` open Marketplace and `/marketplace install <id>` execute real install.
-- [ ] Fix `/drc` to invoke authoritative read-only `project.drc`.
+- [x] Fix `/drc` to invoke authoritative read-only `project.drc`.
 - [ ] Scope `/route` wording to actual routing capability; do not claim complete autorouting until autorouter exists.
 - [ ] Keep `/place` behind real typed placement tools and normal approval flow.
 - [ ] Keep `/design` but remove fabricated fallback pins on generation failure.
