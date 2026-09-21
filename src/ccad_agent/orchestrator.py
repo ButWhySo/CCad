@@ -1534,22 +1534,10 @@ def compact_session_history(messages):
 
 # --- Custom Workflows ---
 def handle_marketplace(text: str):
-    parts = text.split(" ")
-    if len(parts) >= 2 and parts[1] == "install":
-        plugin_name = " ".join(parts[2:])
-        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "marketplace.install", "args": {"plugin": plugin_name}}})
-        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Marketplace: Installing plugin '{plugin_name}'..."}})
-        
-        # Actually register it into config so it persists
-        installed = config_manager.get("installed_plugins", [])
-        if plugin_name not in installed:
-            installed.append(plugin_name)
-            config_manager.update("installed_plugins", installed)
-            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Plugin '{plugin_name}' activated and hooked into context."}})
-        else:
-            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Plugin '{plugin_name}' is already installed."}})
-    else:
-        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Marketplace: Unknown command. Use `/marketplace install <plugin>`."}})
+    del text
+    emit({"jsonrpc": "2.0", "method": "message", "params": {
+        "text": "Marketplace installation is unavailable: CCad has no verified plugin installer or runtime loader. No plugin was changed."
+    }})
 
 def get_dynamic_marketplace_catalog():
     # Scan dynamic plugins if they exist, fallback to core + installed state

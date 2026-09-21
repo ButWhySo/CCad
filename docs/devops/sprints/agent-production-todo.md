@@ -119,7 +119,7 @@ Update this file in the same commit as each implementation slice.
 - [ ] Implement real search filtering.
 - [ ] Implement working category navigation for workflows, prompts, hooks, tools, and plugins.
 - [ ] Add typed Marketplace cards with Install/Remove/Enable/Open-details actions.
-- [ ] Remove false "activated and hooked into context" claims when installation has not occurred.
+- [x] Remove false "activated and hooked into context" claims when installation has not occurred.
 - [ ] Implement one real marketplace install/uninstall backend path; do not mutate config independently of tool execution.
 - [ ] Clear Marketplace callbacks safely on dialog destruction.
 - [ ] Persist installed/enabled state through the canonical `plugins` / `workflows` schema.
