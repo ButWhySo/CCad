@@ -928,11 +928,11 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
     if (proposal_avoid_area_->isChecked()) constraints << "avoid selected area";
     const QString instructions = proposal_revision_input_->toPlainText().trimmed();
     if (!instructions.isEmpty()) constraints << instructions;
-    if (chat_input_) {
-      chat_input_->setPlainText("/revise " + constraints.join("; "));
-      chat_input_->setFocus();
-    }
-    addActivityEvent("proposal", "Revision submitted", constraints.join("; "), "agent.proposal");
+    Q_UNUSED(instructions);
+    Q_UNUSED(constraints);
+    addActivityEvent("error", "Revision unavailable",
+                     "Staged proposal revision is not implemented; the pending proposal was not changed.",
+                     "agent.proposal");
   });
   connect(proposal_details_button_, &QPushButton::clicked, this, [this]() {
     QJsonParseError parse_error;

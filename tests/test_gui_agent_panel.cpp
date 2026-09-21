@@ -438,8 +438,7 @@ private slots:
     auto* submit_revision = panel.findChild<QPushButton*>("action:agent_proposal_submit_revision");
     QVERIFY(submit_revision != nullptr);
     QTest::mouseClick(submit_revision, Qt::LeftButton);
-    QVERIFY(panel.findChild<QTextEdit*>("control:agent_chat_input")->toPlainText().contains("preserve placement"));
-    QVERIFY(panel.findChild<QTextEdit*>("control:agent_chat_input")->toPlainText().contains("Keep the original route"));
+    QVERIFY(panel.findChild<QTextEdit*>("control:agent_chat_input")->toPlainText().isEmpty());
     auto* reject = panel.findChild<QPushButton*>("action:agent_proposal_reject");
     QVERIFY(reject != nullptr);
     QTest::mouseClick(reject, Qt::LeftButton);

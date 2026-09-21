@@ -143,7 +143,7 @@ Update this file in the same commit as each implementation slice.
 - [ ] Keep `/design` but remove fabricated fallback pins on generation failure.
 - [ ] Make `/clear` clear the current UI/thread context consistently, without deleting persistent memories.
 - [ ] Implement a real `/settings` native action.
-- [ ] Implement `/revise` through the pending proposal/thread path or stop generating it from the UI.
+- [x] Implement `/revise` through the pending proposal/thread path or stop generating it from the UI.
 
 ## Langfuse observability
 
