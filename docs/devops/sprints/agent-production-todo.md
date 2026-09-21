@@ -80,3 +80,85 @@ Update this file in the same commit as each implementation slice.
 - [ ] Run redacted repository and staged-diff secret scans before every commit.
 - [ ] Update architecture, feature, CLI, methodology, provider, memory, tracing, autorouter, backlog, and progress docs in the same commit.
 - [ ] Commit only verified source/tests/docs; never keys, vault data, local config, logs, screenshots, generated boards, or unrelated user files.
+
+## UI truthfulness and parity
+
+- [ ] Replace text-only proposal review with typed staged PCB/schematic before/after renders and real change lists.
+- [ ] Make proposal review a scrollable chat popout with viewport controls, object focus, and DRC/ERC delta.
+- [ ] Add editable annotations, reviewer comments, structured revision scope, revise/reject/cancel, and one approval boundary.
+- [ ] Render no preview for unsupported actions; report the exact unavailable/staging reason without fabricated geometry.
+- [ ] Fix live Agent Settings opening and modeless dialog discovery through the UI map.
+- [ ] Make quick DRC execute authoritative DRC or remove the chip; do not merely insert `/drc`.
+- [x] Map `/drc` to authoritative `project.drc`, return its diagnostics, and never leave a chat turn at “Running DRC checks…”.
+- [ ] Preserve 429/quota/rate-limit categories from provider SDK exceptions; never relabel them `provider_unavailable`.
+- [ ] Remove the stale Gemini adapter notice that says no provider was contacted after a configured provider has initialized or completed a real call.
+- [ ] Bind one immutable proposal/call ID to one approval and one execution; reject duplicate/replayed approval results.
+- [ ] Never narrate a failed UI gesture or transaction as a completed board change; surface the authoritative failure reason.
+- [ ] Make collapsed Agent dock restorable through a mapped action and release its unused dock space.
+- [ ] Expose Layers/Objects child tabs as stable UI-map targets.
+- [ ] Repair Layers / Objects dock topology: prevent Agent dock from crushing the Appearance panel; preserve user dock geometry and minimum usable widths.
+- [ ] Add adaptive right-dock behavior: side-by-side on wide windows, tabified Layers/Agent on constrained widths.
+- [ ] Remove native dotted focus rectangles application-wide while preserving solid keyboard-focus indication.
+- [ ] Implement real collapsible conversation-history sidebar with pinned/recent sessions.
+- [ ] Implement New Chat as a real session/thread operation and bind it to LangGraph thread identity.
+- [ ] Bind current chat title to durable session metadata.
+- [ ] Replace dead `action:agent_menu` with actual history/back behavior.
+- [ ] Replace all temporary/stand-in Agent icons with semantic, theme-aware CCad icons.
+- [ ] Remove `Summarize`, `Run DRC`, and `Route` quick chips unless they remain intentional product actions.
+- [ ] Replace text-path attachment insertion with structured attachment transport.
+- [ ] Hide voice control until real STT capture/transcription exists.
+- [ ] Replace fake context-refresh chat message with real context state inspection.
+- [ ] Implement circular context-usage indicator using actual/estimated token usage and selected-model context limit.
+- [ ] Make `show_context_usage` control visibility only; do not confuse it with context refresh or settings.
+- [ ] Add context-breakdown popover for conversation/project/memory/tool-schema contribution.
+
+## Marketplace
+
+- [ ] Remove "Live" naming until catalogue contents are actually live/dynamic.
+- [ ] Replace hardcoded pseudo-plugin catalogue with one typed marketplace registry.
+- [ ] Implement real search filtering.
+- [ ] Implement working category navigation for workflows, prompts, hooks, tools, and plugins.
+- [ ] Add typed Marketplace cards with Install/Remove/Enable/Open-details actions.
+- [ ] Remove false "activated and hooked into context" claims when installation has not occurred.
+- [ ] Implement one real marketplace install/uninstall backend path; do not mutate config independently of tool execution.
+- [ ] Clear Marketplace callbacks safely on dialog destruction.
+- [ ] Persist installed/enabled state through the canonical `plugins` / `workflows` schema.
+
+## Slash command registry
+
+- [ ] Replace GUI hardcoded slash list plus separate `/commands` and `/help` strings with one authoritative command registry.
+- [ ] Provide syntax and plain-language description for every slash command in autocomplete.
+- [ ] Add `/memory` to slash autocomplete.
+- [ ] Make `/help` an alias/view over the same registry as `/commands`.
+- [ ] Validate `/workflow use:` against installed workflows.
+- [ ] Either implement `chaining_phase` semantics or remove `/workflow chaining phase:`.
+- [ ] Add hook list/remove/validation/persistence instead of free-form string append only.
+- [ ] Make `/set provider:model` use the same canonical provider/model state as Settings.
+- [ ] Preserve `/cc`/`/compact` as bounded context compaction but implement semantic compaction before claiming summarization.
+- [ ] Replace fake `/schedule` string queue with a real persistent scheduler before exposing the command.
+- [ ] Make `/marketplace` open Marketplace and `/marketplace install <id>` execute real install.
+- [ ] Fix `/drc` to invoke authoritative read-only `project.drc`.
+- [ ] Scope `/route` wording to actual routing capability; do not claim complete autorouting until autorouter exists.
+- [ ] Keep `/place` behind real typed placement tools and normal approval flow.
+- [ ] Keep `/design` but remove fabricated fallback pins on generation failure.
+- [ ] Make `/clear` clear the current UI/thread context consistently, without deleting persistent memories.
+- [ ] Implement a real `/settings` native action.
+- [ ] Implement `/revise` through the pending proposal/thread path or stop generating it from the UI.
+
+## Langfuse observability
+
+- [ ] Use Langfuse as the only user-facing observability backend for the current product slice; keep generic OTel internal.
+- [ ] Add Settings -> Observability -> Langfuse.
+- [ ] Add enable state, public key, secret key, base URL, environment, test/status controls.
+- [ ] Store Langfuse secret key in the OS credential vault, never config/project/logs/prompts.
+- [ ] Update LangChain integration to the current `langfuse.langchain.CallbackHandler` API.
+- [ ] Pin a tested Langfuse SDK major/minor range instead of unconstrained `langfuse>=2.30.0`.
+- [ ] Replace import-time-only tracer/callback initialization with reconfigurable `LangfuseRuntime`.
+- [ ] Add `agent.langfuse_set_config`, `agent.langfuse_set_secret`, `agent.langfuse_status`, and `agent.langfuse_test`.
+- [ ] Use durable Agent thread ID as Langfuse session ID.
+- [ ] Trace agent run, prompt assembly, model calls, routing, tool calls, approvals, transactions, verification, DRC/ERC, retries, cancellation, and failures.
+- [ ] Record provider/model/token/cost/latency when available.
+- [ ] Implement Langfuse `mask_otel_spans` redaction before export.
+- [ ] Default prompt contents, raw tool arguments, screenshots, and project contents to OFF.
+- [ ] Flush Langfuse on explicit test, application shutdown, and bounded process termination.
+- [ ] Prove one opt-in real Langfuse trace contains the expected hierarchy and no secrets.

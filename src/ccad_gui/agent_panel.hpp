@@ -7,6 +7,7 @@
 #include <QString>
 #include <QStringList>
 #include <QVector>
+#include <QPointer>
 
 #include <functional>
 #include <memory>
@@ -25,12 +26,14 @@ class QVBoxLayout;
 class QProcess;
 class QProgressBar;
 class QListWidget;
+class AgentSettingsDialog;
 
 class AgentPanel final : public QWidget {
  public:
   using UiMapProvider = std::function<QString()>;
   using SafeActionTrigger = std::function<QString(const QString&)>;
   using LiveQueryProvider = std::function<QString(const QString&, const QString&)>;
+  using ProposalPreviewTrigger = std::function<QString(const QString&, const QJsonObject&)>;
   using ContextProvider = std::function<std::string()>;
   using ConfigStateCallback = std::function<void(const QJsonObject&)>;
   using ProviderStateCallback = std::function<void(const QJsonObject&)>;
@@ -60,6 +63,7 @@ class AgentPanel final : public QWidget {
   void setUiMapProvider(UiMapProvider provider);
   void setSafeActionTrigger(SafeActionTrigger trigger);
   void setLiveQueryProvider(LiveQueryProvider provider);
+  void setProposalPreviewTrigger(ProposalPreviewTrigger trigger);
   void setContextProvider(ContextProvider provider);
   void setProviderSecret(const QString& provider_id, const QString& secret);
   void setConfigStateCallback(ConfigStateCallback cb);
@@ -202,6 +206,7 @@ class AgentPanel final : public QWidget {
   void hideSlashPopup();
   void filterSlashCommands();
   void executeSlashCommand(const QString& cmd);
+  void openSettingsDialog();
 
   // Chat UI Elements
   QTextBrowser* chat_stream_ = nullptr;
@@ -276,6 +281,8 @@ class AgentPanel final : public QWidget {
   UiMapProvider ui_map_provider_;
   SafeActionTrigger safe_action_trigger_;
   LiveQueryProvider live_query_provider_;
+  ProposalPreviewTrigger proposal_preview_trigger_;
+  QPointer<AgentSettingsDialog> settings_dialog_;
   QString staged_goal_;
   QString staged_command_;
   QString run_state_ = "idle";
@@ -317,6 +324,13 @@ class AgentPanel final : public QWidget {
   bool policy_would_execute_ = false;
   QString provider_status_ = "env_unchecked";
   QString provider_model_ = "Auto";
+  QString context_revision_;
+  QStringList context_sources_;
+  int context_schema_version_ = 0;
+  int context_content_size_ = 0;
+  int context_memory_entry_count_ = 0;
+  int context_history_message_count_ = 0;
+  bool context_truncated_ = false;
   bool provider_env_present_ = false;
   QHash<QString, QString> provider_secrets_;
   QVector<ActivityEvent> activity_events_;

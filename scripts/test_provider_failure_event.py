@@ -17,6 +17,10 @@ class RateLimitError(RuntimeError):
     status_code = 429
 
 
+class GeminiQuotaError(RuntimeError):
+    pass
+
+
 captured = []
 orchestrator.emit = captured.append
 redaction_probe = "sk-" + "fixture-value-not-a-credential"
@@ -40,4 +44,11 @@ captured.clear()
 orchestrator.emit_provider_failure("cerebras", RateLimitError("not exposing details"))
 assert captured[0]["params"]["error_category"] == "rate_limited"
 assert orchestrator.provider_http_status(RateLimitError("safe")) == 429
+
+captured.clear()
+orchestrator.emit_provider_failure(
+    "google_gemini",
+    GeminiQuotaError("ResourceExhausted: 429 You exceeded your current quota"),
+)
+assert captured[0]["params"]["error_category"] == "quota_exhausted"
 print("PASS provider failure event is classified and redacted; no network")

@@ -115,6 +115,7 @@ class ReviewWindow final : public QMainWindow {
   QString uiWaitForDeltaJson(int since_epoch, int timeout_ms);
   QString triggerSafeUiActionJson(const QString& id);
   QString runAgentUiQueryJson(const QString& method, const QString& payload);
+  QString showAgentProposalPreview(const QString& method, const QJsonObject& args);
   QString activePcbLayerJson() const;
   QString setActivePcbLayerForAutomation(const QString& layer_id);
   QString activePcbNetJson() const;

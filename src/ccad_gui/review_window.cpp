@@ -1,4 +1,5 @@
 #include "review_window.hpp"
+#include "ccad_core/agent_preview.hpp"
 #include "ccad_core/router_tool.hpp"
 
 #include "board_canvas_renderer.hpp"
@@ -2037,6 +2038,10 @@ ReviewWindow::ReviewWindow() {
   agent_panel_->setLiveQueryProvider(
       [this](const QString& method, const QString& payload) {
         return runAgentUiQueryJson(method, payload);
+      });
+  agent_panel_->setProposalPreviewTrigger(
+      [this](const QString& method, const QJsonObject& args) {
+        return showAgentProposalPreview(method, args);
       });
   agent_panel_->setContextProvider([this]() {
       ccad::ProjectContext ctx;
@@ -6410,7 +6415,11 @@ QString ReviewWindow::uiCanvasDragJson(const double start_x_mm, const double sta
   if (!found_start || !found_end) {
     response.insert("ui_epoch", ui_map_epoch_);
     response.insert("performed", false);
-    response.insert("reason", found_start ? "end_target_not_found" : "start_target_not_found");
+    const QString start_reason = start_target->value("reason").toString();
+    const QString end_reason = end_target->value("reason").toString();
+    response.insert("reason", !found_start
+                                ? (start_reason.isEmpty() ? "start_target_not_found" : start_reason)
+                                : (end_reason.isEmpty() ? "end_target_not_found" : end_reason));
     response.insert("mode_after", interactionModeName(interaction_mode_));
     insertBoardObjectCounts(response, project_cache_.boards[0]);
     return jsonObjectLine(response);
@@ -8218,6 +8227,79 @@ QString ReviewWindow::commitViaPlacementForAutomation(const double x_mm, const d
         !project_cache_.boards.empty() ? project_cache_.boards[0].vias.size() : 0;
     return result(false, QString::fromUtf8(e.what()), via_count);
   }
+}
+
+QString ReviewWindow::showAgentProposalPreview(const QString& method,
+                                               const QJsonObject& args) {
+  if (method != "ui.route_track") return "preview_unavailable_for_" + method;
+  const auto number = [&args](const char* key) -> std::optional<double> {
+    const QJsonValue value = args.value(QLatin1String(key));
+    return value.isDouble() ? std::optional<double>(value.toDouble()) : std::nullopt;
+  };
+  const auto start_x = number("start_x_mm");
+  const auto start_y = number("start_y_mm");
+  const auto end_x = number("end_x_mm");
+  const auto end_y = number("end_y_mm");
+  if (!start_x || !start_y || !end_x || !end_y) return "preview_invalid_route_coordinates";
+
+  std::string reason;
+  const auto preview = ccad::stageRouteTrackPreview(
+      project_cache_, {.start_x_mm = *start_x, .start_y_mm = *start_y,
+                       .end_x_mm = *end_x, .end_y_mm = *end_y,
+                       .net_id = activePcbNetOrDefault(), .layer_id = activePcbLayerOrDefault()},
+      &reason);
+  if (!preview.has_value()) return "preview_not_staged_" + qstr(reason);
+
+  auto* dialog = new QDialog(this);
+  dialog->setAttribute(Qt::WA_DeleteOnClose);
+  dialog->setObjectName("dialog:agent_proposal_preview");
+  dialog->setWindowTitle("Visual Change Review (PCB)");
+  dialog->resize(1100, 720);
+  auto* outer = new QVBoxLayout(dialog);
+  auto* title = new QLabel("Rendered route candidate — project unchanged until approval", dialog);
+  title->setObjectName("label:agent_preview_title");
+  title->setStyleSheet("font-weight:600; font-size:15px;");
+  outer->addWidget(title);
+  auto* scroll = new QScrollArea(dialog);
+  scroll->setObjectName("scroll:agent_proposal_preview");
+  scroll->setWidgetResizable(true);
+  auto* content = new QWidget(scroll);
+  auto* content_layout = new QVBoxLayout(content);
+  auto* canvases = new QHBoxLayout();
+  const auto addCanvas = [&canvases, content](const QString& caption, const ccad::Board& board) {
+    auto* column = new QWidget(content);
+    auto* column_layout = new QVBoxLayout(column);
+    column_layout->addWidget(new QLabel(caption, column));
+    auto* scene = new QGraphicsScene(column);
+    renderBoardCanvas(*scene, ccad::buildCanvasScene(board));
+    auto* view = new BoardCanvasView(scene, column);
+    view->setObjectName(caption.startsWith("Before") ? "canvas:proposal_before" : "canvas:proposal_after");
+    view->setMinimumSize(420, 360);
+    view->zoomToFit();
+    column_layout->addWidget(view, 1);
+    canvases->addWidget(column, 1);
+  };
+  addCanvas("Before (current)", preview->before.boards.front());
+  addCanvas("After (staged)", preview->after.boards.front());
+  content_layout->addLayout(canvases);
+  content_layout->addWidget(new QLabel("Real project diff", content));
+  auto* changes = new QListWidget(content);
+  changes->setObjectName("list:agent_preview_changes");
+  for (const ccad::DiffEntry& entry : preview->diff.entries) {
+    changes->addItem(qstr(entry.change + " " + entry.object_type + " " + entry.object_id + ": " + entry.message));
+  }
+  content_layout->addWidget(changes);
+  content_layout->addWidget(new QLabel(
+      QString("Staged DRC diagnostics: %1").arg(preview->drc_diagnostics.size()), content));
+  scroll->setWidget(content);
+  outer->addWidget(scroll, 1);
+  auto* close = new QDialogButtonBox(QDialogButtonBox::Close, dialog);
+  connect(close, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
+  outer->addWidget(close);
+  dialog->show();
+  dialog->raise();
+  dialog->activateWindow();
+  return "preview_staged_" + qstr(preview->focus_object_id);
 }
 
 QString ReviewWindow::commitTrackPlacementForAutomation(const double start_x_mm,

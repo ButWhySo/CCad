@@ -13,6 +13,7 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 covered the bounded runtime and EDA evidence expansion through Sprint 225. Phase 9 is the bounded KiCad parity execution phase.
 
 **Current State**: 
+- **Sprint 950 (Agent execution truthfulness)** is in verification on `sprint-947-agent-tool-context`. It adds bounded context-state events, broker-backed staged route preview coverage, authoritative `/drc` completion, quota classification, and one-call approval-result handling. The remaining UI parity and provider-status defects stay tracked in `docs/devops/sprints/agent-production-todo.md`.
 - [x] Phase 4: LangGraph Python Bridge Architecture Refactoring (Sprint 211)
 - [x] Phase 5: Python IPC Process Wrapper Implementation (Sprint 212)
 - [x] Phase 6: True Tool Bridging with ToolBroker and ContextBuilder

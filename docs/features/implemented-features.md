@@ -2,6 +2,12 @@
 
 This document tracks user-visible and agent-visible features that exist in the repo, how to use them, how to test them, and where they are implemented.
 
+## Sprint 950 Agent execution truthfulness
+
+`/drc` now dispatches the authoritative native `project.drc` method and reports its returned error, warning, and diagnostic counts instead of leaving a chat turn at a progress-only message. Context assembly emits a bounded, secret-safe `context_state` event with its schema revision and aggregate counts. Pending mutations remain one-call approval boundaries: duplicate calls are rejected, and an approval is shown as applied only when the broker reports a performed successful result. A failed broker/gesture result is returned to the model as an error and remains visibly unapplied. `ui.canvas_drag` now preserves reasons such as `outside_board` rather than reducing every target failure to `start_target_not_found`.
+
+Verification uses `gui_agent_panel`, `gui_ui_map`, and `agent_preview` CTest targets; no-network Python contract tests for DRC, context package, provider failure classification, provider failure events, and approval-result truth; the full 92-test Qt CTest gate; and an inspected GUI screenshot from `scripts/run_sprint_demo.ps1`. Provider startup wording remains explicitly tracked as unfinished when it claims that a configured provider was not contacted.
+
 PNS meander placement now records a deduplicated routed polyline, updates its active item to each destination, and clears state on finish. Length matching and serpentine optimization remain future work.
 
 Meander placement also reports current length, non-negative remaining target distance, and target-reached state for adaptive agent control.

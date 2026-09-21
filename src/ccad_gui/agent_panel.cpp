@@ -350,6 +350,21 @@ QJsonObject resultObjectFromAgentOutput(const QJsonObject& root) {
   return root;
 }
 
+bool authoritativeToolSucceeded(const QJsonObject& result) {
+  if (result.contains("error") ||
+      (result.value("ok").isBool() && !result.value("ok").toBool())) {
+    return false;
+  }
+  return !result.value("performed").isBool() || result.value("performed").toBool();
+}
+
+QString authoritativeToolFailureReason(const QJsonObject& result) {
+  const QString error = result.value("error").toString().trimmed();
+  if (!error.isEmpty()) return error;
+  const QString reason = result.value("reason").toString().trimmed();
+  return reason.isEmpty() ? QStringLiteral("tool_execution_failed") : reason;
+}
+
 QString methodFromAgentOutput(const QJsonObject& root, const QString& fallback) {
   const QString method = root.value("method").toString().trimmed();
   return method.isEmpty() ? fallback.trimmed() : method;
@@ -740,13 +755,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   settings_btn->setProperty("agentRole", "iconButton");
   settings_btn->setFixedSize(24, 24);
   connect(settings_btn, &QPushButton::clicked, this, [this]() {
-    // Keep Settings modeless: UI-map/MCP clients must continue querying the
-    // main window while its controls are visible and actionable.
-    auto* dialog = new AgentSettingsDialog(this);
-    dialog->setAttribute(Qt::WA_DeleteOnClose);
-    dialog->show();
-    dialog->raise();
-    dialog->activateWindow();
+    openSettingsDialog();
   });
 
   auto* close_btn = new QPushButton(top_bar);
@@ -1000,6 +1009,15 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
     addActivityEvent("proposal", "Revision submitted", constraints.join("; "), "agent.proposal");
   });
   connect(proposal_details_button_, &QPushButton::clicked, this, [this]() {
+    QJsonParseError parse_error;
+    const QJsonDocument args_document =
+        QJsonDocument::fromJson(pending_tool_args_.toUtf8(), &parse_error);
+    if (proposal_preview_trigger_ && parse_error.error == QJsonParseError::NoError &&
+        args_document.isObject()) {
+      const QString result = proposal_preview_trigger_(pending_tool_name_, args_document.object());
+      addActivityEvent("proposal", "Preview opened", result, "agent.proposal.preview");
+      return;
+    }
     auto* dialog = new QDialog(this);
     dialog->setAttribute(Qt::WA_DeleteOnClose);
     dialog->setWindowTitle("Proposed Change Review");
@@ -1015,10 +1033,9 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
     const QString before = proposal_before_snapshot_.isEmpty()
                                ? "Project context was not available at proposal time."
                                : proposal_before_snapshot_;
-    add_page("PCB diff", "BEFORE (current project context)\n\n" + before +
-             "\n\nAFTER (proposed)\n\nPending proposal; no geometry has been applied.");
-    add_page("Schematic diff", "BEFORE (current project context)\n\n" + before +
-             "\n\nAFTER (proposed)\n\nNo schematic change has been applied.");
+    add_page("Preview unavailable",
+             "No rendered preview is available for this action.\n\n" + before +
+                 "\n\nThis action remains pending and has not changed the project.");
     add_page("Change list", proposal_summary_label_->text() + "\n\n" +
                                   [&]() {
                                     QStringList rows;
@@ -1039,10 +1056,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
     clearProposal();
   });
   connect(proposal_approve_button_, &QPushButton::clicked, this, [this]() {
-    setApprovalRequestText("Approve proposed changes: " + proposal_summary_label_->text());
-    requestApproval();
-    addActivityEvent("proposal", "Approval requested", proposal_summary_label_->text(), "agent.proposal");
-    clearProposal();
+    approveNextApproval();
   });
   main_layout->addWidget(proposal_card);
 
@@ -1289,6 +1303,29 @@ void AgentPanel::appendChatMessage(const QString& role, const QString& text) {
   chat_stream_->ensureCursorVisible();
 }
 
+void AgentPanel::openSettingsDialog() {
+  // The dialog must have an owning top-level window.  Passing AgentPanel as
+  // the first constructor argument only supplies the bridge; it is not the
+  // QWidget parent.  Retaining the live dialog also makes repeated mapped
+  // opens deterministic instead of creating invisible orphan windows.
+  if (settings_dialog_) {
+    settings_dialog_->showNormal();
+    settings_dialog_->raise();
+    settings_dialog_->activateWindow();
+    return;
+  }
+
+  auto* dialog = new AgentSettingsDialog(this, window());
+  dialog->setObjectName("dialog:agent_settings");
+  dialog->setAttribute(Qt::WA_DeleteOnClose);
+  dialog->setWindowModality(Qt::NonModal);
+  settings_dialog_ = dialog;
+  connect(dialog, &QObject::destroyed, this, [this]() { settings_dialog_ = nullptr; });
+  dialog->show();
+  dialog->raise();
+  dialog->activateWindow();
+}
+
 void AgentPanel::renderChatChecklist() {
   // Activity events are represented in the same selectable transcript as
   // messages. Keep this compatibility hook side-effect free; workspaceStateJson
@@ -1351,6 +1388,20 @@ void AgentPanel::handlePythonOutput() {
         result["method"] = "tool_result";
         bool awaiting_approval = false;
 
+        // An approval is an immutable action boundary. A provider retry must
+        // not replace a pending call with another action that can be approved.
+        if (!pending_tool_call_id_.isEmpty()) {
+          const QString reason = call_id == pending_tool_call_id_
+                                     ? QStringLiteral("duplicate_pending_tool_call")
+                                     : QStringLiteral("approval_already_pending");
+          result["error"] = QJsonObject{{"code", -32002}, {"message", reason}};
+          if (python_process_) {
+            python_process_->write(QJsonDocument(result).toJson(QJsonDocument::Compact) + "\n");
+          }
+          addActivityEvent("error", "Tool call rejected", reason, "agent.approval");
+          continue;
+        }
+
         if (orchestrator_) {
             ccad::OrchestratorConfig cfg;
             std::string res_str = orchestrator_->execute_tool(tool.toStdString(), args.toStdString(), cfg);
@@ -1372,6 +1423,7 @@ void AgentPanel::handlePythonOutput() {
                    "No project change is applied until you approve."});
               setApprovalRequestText("Agent tool: " + tool + " " + args);
               requestApproval();
+              if (approval_preview_) approval_preview_->hide();
               awaiting_approval = true;
             }
         } else {
@@ -1389,6 +1441,26 @@ void AgentPanel::handlePythonOutput() {
             result_state_label_->setText("Result Chat response received");
           }
         }
+      } else if (obj.contains("method") && obj["method"].toString() == "context_state") {
+        const QJsonObject params = obj["params"].toObject();
+        context_revision_ = params["revision"].toString();
+        context_schema_version_ = params["context_schema_version"].toInt();
+        context_content_size_ = params["content_size"].toInt();
+        context_memory_entry_count_ = params["memory_entry_count"].toInt();
+        context_history_message_count_ = params["history_message_count"].toInt();
+        context_truncated_ = params["truncated"].toBool(false);
+        context_sources_.clear();
+        for (const QJsonValue& source : params["sources"].toArray()) {
+          if (source.isString()) context_sources_.append(source.toString());
+        }
+        addActivityEvent("context", "Context package prepared",
+                         QString("v%1 | %2 chars | %3 memories | %4 history | %5")
+                             .arg(context_schema_version_)
+                             .arg(context_content_size_)
+                             .arg(context_memory_entry_count_)
+                             .arg(context_history_message_count_)
+                             .arg(context_truncated_ ? "truncated" : "bounded"),
+                         "agent.context_state");
       } else if (obj.contains("method") && obj["method"].toString() == "tool_result_ack") {
         const QJsonObject params = obj["params"].toObject();
         const bool success = params["success"].toBool(false);
@@ -1750,6 +1822,10 @@ void AgentPanel::setLiveQueryProvider(LiveQueryProvider provider) {
   if (backend_ready_ && !native_tool_catalog_.isEmpty() && !native_tool_catalog_sent_) {
     sendJsonRpc("agent.set_tool_catalog", QJsonObject{{"catalog", native_tool_catalog_}});
   }
+}
+
+void AgentPanel::setProposalPreviewTrigger(ProposalPreviewTrigger trigger) {
+  proposal_preview_trigger_ = std::move(trigger);
 }
 
 void AgentPanel::setContextProvider(ContextProvider provider) {
@@ -2675,10 +2751,20 @@ void AgentPanel::approveNextApproval() {
     QJsonParseError error;
     const QJsonDocument document = QJsonDocument::fromJson(
         QString::fromStdString(approved).toUtf8(), &error);
+    bool executed = false;
+    QString failure_reason;
     if (error.error == QJsonParseError::NoError && document.isObject()) {
-      result.insert("result", document.object());
+      const QJsonObject authoritative_result = document.object();
+      executed = authoritativeToolSucceeded(authoritative_result);
+      if (executed) {
+        result.insert("result", authoritative_result);
+      } else {
+        failure_reason = authoritativeToolFailureReason(authoritative_result);
+        result.insert("error", QJsonObject{{"code", -32010}, {"message", failure_reason}});
+      }
     } else {
-      result.insert("result", QString::fromStdString(approved));
+      failure_reason = QStringLiteral("invalid_tool_broker_result");
+      result.insert("error", QJsonObject{{"code", -32010}, {"message", failure_reason}});
     }
     if (python_process_) {
       python_process_->write(QJsonDocument(result).toJson(QJsonDocument::Compact) + "\n");
@@ -2687,14 +2773,44 @@ void AgentPanel::approveNextApproval() {
     pending_tool_args_.clear();
     pending_tool_call_id_.clear();
     pending_approval_token_.clear();
+    if (executed) {
+      approval_last_decision_ = "accept";
+      approval_status_label_->setText("Proposal applied: " + request);
+      status_label_->setText("Proposal applied");
+      result_state_label_->setText("Result proposal applied");
+      addActivityEvent("proposal", "Proposal applied", request, "agent.proposal");
+    } else {
+      approval_last_decision_ = "execution_failed";
+      approval_status_label_->setText("Proposal was not applied: " + failure_reason);
+      status_label_->setText("Proposal was not applied");
+      result_state_label_->setText("Result tool failed: " + failure_reason);
+      addActivityEvent("error", "Proposal was not applied", failure_reason, "agent.proposal");
+    }
+  } else {
+    const QString failure_reason = pending_tool_name_.isEmpty()
+                                       ? QStringLiteral("pending_tool_unavailable")
+                                       : QStringLiteral("tool_broker_unavailable");
+    if (!pending_tool_call_id_.isEmpty() && python_process_) {
+      const QJsonObject result{
+          {"jsonrpc", "2.0"},
+          {"method", "tool_result"},
+          {"id", pending_tool_call_id_},
+          {"error", QJsonObject{{"code", -32010}, {"message", failure_reason}}}};
+      python_process_->write(QJsonDocument(result).toJson(QJsonDocument::Compact) + "\n");
+    }
+    pending_tool_name_.clear();
+    pending_tool_args_.clear();
+    pending_tool_call_id_.clear();
+    pending_approval_token_.clear();
+    approval_last_decision_ = "execution_failed";
+    approval_status_label_->setText("Proposal was not applied: " + failure_reason);
+    status_label_->setText("Proposal was not applied");
+    result_state_label_->setText("Result tool failed: " + failure_reason);
+    addActivityEvent("error", "Proposal was not applied", failure_reason, "agent.proposal");
   }
   pending_approval_request_.clear();
-  approval_last_decision_ = "accept";
-  approval_status_label_->setText("Approval accepted: " + request);
-  status_label_->setText("Approval accepted");
-  result_state_label_->setText("Result Approval accepted");
-  addActivityEvent("approval", "Approval accepted", request, "agent.approval");
   if (approval_preview_) approval_preview_->hide();
+  clearProposal();
 }
 
 void AgentPanel::declineNextApproval() {
@@ -3042,6 +3158,13 @@ QString AgentPanel::workspaceStateJson() const {
   response.insert("backend_provider_initialized", backend_provider_initialized_);
   response.insert("native_tool_catalog_installed", native_tool_catalog_sent_);
   response.insert("native_tool_catalog_method_count", native_tool_catalog_.size());
+  response.insert("context_revision", context_revision_);
+  response.insert("context_schema_version", context_schema_version_);
+  response.insert("context_content_size", context_content_size_);
+  response.insert("context_memory_entry_count", context_memory_entry_count_);
+  response.insert("context_history_message_count", context_history_message_count_);
+  response.insert("context_truncated", context_truncated_);
+  response.insert("context_sources", QJsonArray::fromStringList(context_sources_));
   response.insert("result_state", resultStateText());
   response.insert("action_id", actionIdText());
   response.insert("live_method", liveMethodText());

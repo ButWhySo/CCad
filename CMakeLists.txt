@@ -24,6 +24,7 @@ add_library(ccad_core
   src/ccad_core/am_primitive.cpp
   src/ccad_core/aperture_macro.cpp
   src/ccad_core/agent_policy.cpp
+  src/ccad_core/agent_preview.cpp
   src/ccad_core/autorouter_matrix.cpp
   src/ccad_core/autoplacer.cpp
   src/ccad_core/board_collector.cpp
@@ -1202,6 +1203,15 @@ if(MINGW)
   target_link_options(ccad_diff_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME diff COMMAND ccad_diff_tests)
+
+add_executable(ccad_agent_preview_tests
+  tests/test_agent_preview.cpp
+)
+target_link_libraries(ccad_agent_preview_tests PRIVATE ccad_core)
+if(MINGW)
+  target_link_options(ccad_agent_preview_tests PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+add_test(NAME agent_preview COMMAND ccad_agent_preview_tests)
 
 add_executable(ccad_transaction_tests
   tests/test_transaction.cpp

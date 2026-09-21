@@ -45,6 +45,7 @@ from config import AgentConfigManager
 from telemetry import trace_function, tracer
 import hooks
 from memory_store import MemoryStore
+from context_package import build_context_package
 
 def emit(payload: dict):
     print(json.dumps(payload), flush=True)
@@ -578,7 +579,8 @@ def orchestrator_method_catalog():
                      "thread_id", "revision", "previous_revision", "changed", "change_kind",
                      "content_present", "content_size", "original_content_size",
                      "context_limit", "truncated", "content_emitted", "sources",
-                     "memory_content_emitted"]}},
+                     "memory_content_emitted", "memory_entry_count",
+                     "history_message_count", "context_schema_version"]}},
              "secret_value_visible": False},
         ],
         "secret_value_visible": False,
@@ -642,18 +644,13 @@ def dispatch_client_tool(tool_name: str, args: dict, *, await_result: bool = Fal
 config_manager = AgentConfigManager()
 memory_store = MemoryStore()
 
-def local_memory_context():
-    """Return bounded project memories for explicit short-term context use."""
+def local_memory_entries():
+    """Return bounded user-owned project memories for provider context."""
     memory_config = config_manager.get("memory", {})
     if not memory_config.get("stm", True):
-        return ""
+        return []
     entries = memory_store.list(scope="project")[-8:]
-    if not entries:
-        return ""
-    lines = ["[CCAD pinned local memory]"]
-    for entry in entries:
-        lines.append(f"- [{entry.get('id', 'unknown')}] {entry.get('title') or 'memory'}: {entry.get('content', '')[:1000]}")
-    return "\n".join(lines)
+    return entries if isinstance(entries, list) else []
 
 def parse_memory_add_args(arguments):
     """Parse optional leading scope/title flags from a memory add command."""
@@ -1006,6 +1003,13 @@ def classify_provider_error(error: Exception):
     # when the account/project has not been activated or funded.
     if status == 402 or any(marker in text for marker in ("insufficient credits", "insufficient balance", "billing quota", "payment required")):
         return "payment_required"
+    # Google surfaces exhausted account/model quota as ResourceExhausted even
+    # when the SDK wrapper does not retain HTTP 429.  This is key/account
+    # specific; it does not mean the configured provider adapter is missing.
+    if any(marker in text for marker in (
+            "resourceexhausted", "resource exhausted", "exceeded your current quota",
+            "quota exhausted", "quota exceeded")):
+        return "quota_exhausted"
     if status == 429 or any(marker in text for marker in ("rate limit", "too many requests", "requests per minute")):
         return "rate_limited"
     if isinstance(error, (TimeoutError,)) or "timeout" in text:
@@ -1913,13 +1917,13 @@ if __name__ == "__main__":
                 os.environ["CCAD_AGENT_THREAD_ID"] = requested_thread
                 if not isinstance(raw_context, str):
                     raw_context = str(raw_context or "")
-                request_context_present = bool(raw_context.strip())
-                memory_context = local_memory_context()
-                memory_context_present = bool(memory_context)
-                if memory_context:
-                    raw_context = (raw_context + "\n\n" + memory_context).strip()
-                context_str = bound_context_text(raw_context)
-                context_truncated = len(context_str) < len(raw_context)
+                memory_entries = local_memory_entries()
+                package = build_context_package(
+                    raw_context, memory_entries, bound_session_history(session_messages),
+                    char_limit=agent_context_limit())
+                context_str = package["content"]
+                context_metadata = package["metadata"]
+                context_truncated = context_metadata["truncated"]
                 intake = scan_intake(text, raw_context)
                 emit({"jsonrpc": "2.0", "method": "intake_state", "params": intake})
                 if not intake["accepted"]:
@@ -1931,7 +1935,7 @@ if __name__ == "__main__":
                     continue
                 context_thread_id = requested_thread
                 previous_context_revision = context_revisions.get(context_thread_id, "")
-                current_context_revision = context_revision(context_str)
+                current_context_revision = context_metadata["project_revision"]
                 context_changed = current_context_revision != previous_context_revision
                 context_change_kind = (
                     "initial" if not previous_context_revision else
@@ -1949,14 +1953,16 @@ if __name__ == "__main__":
                     "changed": context_changed,
                     "change_kind": context_change_kind,
                     "content_present": bool(context_str),
-                    "content_size": len(context_str),
+                    "content_size": context_metadata["content_size"],
                     "original_content_size": len(raw_context),
-                    "context_limit": agent_context_limit(),
+                    "context_limit": context_metadata["context_limit"],
                     "truncated": context_truncated,
                     "content_emitted": False,
-                    "sources": (["request_context"] if request_context_present else []) +
-                               (["local_project_memory"] if memory_context_present else []),
+                    "sources": context_metadata["sources"],
                     "memory_content_emitted": False,
+                    "memory_entry_count": context_metadata["memory_entry_count"],
+                    "history_message_count": context_metadata["history_message_count"],
+                    "context_schema_version": context_metadata["schema_version"],
                 }})
                 
                 # Robust Command Parser
@@ -2041,7 +2047,31 @@ if __name__ == "__main__":
                         # Fall through to graph execution
                     elif cmd_base == "/drc":
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Running DRC checks..."}})
-                        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "action.drc", "args": {}}})
+                        # project.drc is a read-only, result-bearing broker
+                        # call. Waiting on the exact correlation ID prevents
+                        # the chat from claiming an in-progress DRC forever.
+                        drc_result = dispatch_client_tool("project.drc", {}, await_result=True)
+                        try:
+                            drc_report = json.loads(drc_result)
+                        except (TypeError, json.JSONDecodeError):
+                            drc_report = {"error": "invalid_drc_broker_result"}
+                        if isinstance(drc_report, dict) and drc_report.get("error"):
+                            emit({"jsonrpc": "2.0", "method": "message", "params": {
+                                "text": "DRC did not complete: " + str(drc_report["error"]),
+                                "kind": "tool_error", "tool": "project.drc",
+                            }})
+                        else:
+                            error_count = int(drc_report.get("error_count", 0))
+                            warning_count = int(drc_report.get("warning_count", 0))
+                            diagnostic_count = len(drc_report.get("diagnostics", []))
+                            emit({"jsonrpc": "2.0", "method": "message", "params": {
+                                "text": (f"DRC complete — {error_count} error(s), "
+                                         f"{warning_count} warning(s), "
+                                         f"{diagnostic_count} diagnostic(s)."),
+                                "kind": "drc_result", "tool": "project.drc",
+                                "error_count": error_count, "warning_count": warning_count,
+                                "diagnostic_count": diagnostic_count,
+                            }})
                         continue
                     elif cmd_base == "/place":
                         active_workflow = "placement_pass"

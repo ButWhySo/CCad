@@ -13,6 +13,7 @@
 #include <QDir>
 #include <QLabel>
 #include <QTableWidget>
+#include <QDialog>
 
 #include "ccad_gui/agent_settings_dialog.hpp"
 #include "ccad_gui/agent_marketplace_dialog.hpp"
@@ -48,6 +49,10 @@ private slots:
     QCOMPARE(workspace.value("provider_id").toString(), QString("cerebras"));
     QVERIFY(!workspace.value("native_tool_catalog_installed").toBool());
     QCOMPARE(workspace.value("native_tool_catalog_method_count").toInt(), 0);
+    QCOMPARE(workspace.value("context_schema_version").toInt(), 0);
+    QCOMPARE(workspace.value("context_content_size").toInt(), 0);
+    QCOMPARE(workspace.value("context_memory_entry_count").toInt(), 0);
+    QVERIFY(workspace.value("context_sources").toArray().isEmpty());
   }
 
   void testSettingsDialogInteractions() {
@@ -242,6 +247,38 @@ private slots:
     QVERIFY(dialog.isHidden());
     // Async config/catalog responses must not call the destroyed dialog.
     QTest::qWait(750);
+  }
+
+  void testPanelSettingsActionOpensOneRetainedDialog() {
+    AgentPanel panel;
+    panel.show();
+    QTest::qWait(50);
+
+    auto* settings = panel.findChild<QPushButton*>("action:settingsBtn");
+    QVERIFY(settings != nullptr);
+    QTest::mouseClick(settings, Qt::LeftButton);
+
+    AgentSettingsDialog* dialog = nullptr;
+    QTRY_VERIFY_WITH_TIMEOUT(([&]() {
+      for (QWidget* widget : QApplication::topLevelWidgets()) {
+        if (widget->objectName() == "dialog:agent_settings" && widget->isVisible()) {
+          dialog = qobject_cast<AgentSettingsDialog*>(widget);
+          return dialog != nullptr;
+        }
+      }
+      return false;
+    })(), 1000);
+
+    QTest::mouseClick(settings, Qt::LeftButton);
+    int visible_settings_count = 0;
+    for (QWidget* widget : QApplication::topLevelWidgets()) {
+      if (widget->objectName() == "dialog:agent_settings" && widget->isVisible()) {
+        ++visible_settings_count;
+      }
+    }
+    QCOMPARE(visible_settings_count, 1);
+    dialog->close();
+    QTest::qWait(50);
   }
 
   void testMarketplaceInteractions() {
