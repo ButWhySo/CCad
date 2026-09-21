@@ -42,7 +42,7 @@ from langgraph.graph import StateGraph, END
 from langgraph.types import Command, interrupt
 
 from config import AgentConfigManager
-from telemetry import trace_function, tracer
+from telemetry import runtime as telemetry_runtime, trace_function
 import hooks
 from memory_store import MemoryStore
 from context_package import build_context_package
@@ -515,6 +515,22 @@ def orchestrator_method_catalog():
                  "sandbox_mode", "approval_policy", "project_name", "project_path",
                  "trust_level", "memory", "hooks", "personalisation", "mcp_servers",
                  "plugins", "workflows"]}},
+            {"name": "agent.observability_status", "read_only": True, "secrets": False,
+             "response": {"method": "observability_state", "fields": [
+                 "configured", "enabled", "exporter_initialized", "backend",
+                 "last_test", "reason", "error_type", "secret_value_visible"]}},
+            {"name": "agent.set_observability_secret", "read_only": False,
+             "secrets": True, "approval_required": True,
+             "params": {"public_key": {"type": "string", "secret": True},
+                        "secret_key": {"type": "string", "secret": True}},
+             "response": {"method": "observability_state", "fields": [
+                 "configured", "enabled", "exporter_initialized", "backend",
+                 "last_test", "reason", "error_type", "secret_value_visible"]}},
+            {"name": "agent.test_export", "read_only": False, "secrets": False,
+             "side_effect": "bounded_observability_export",
+             "response": {"method": "observability_state", "fields": [
+                 "configured", "enabled", "exporter_initialized", "backend",
+                 "last_test", "reason", "error_type", "secret_value_visible"]}},
             {"name": "agent.set_tool_catalog", "read_only": False,
              "secrets": False, "side_effect": "runtime_tool_registration",
              "params": {"catalog": {"type": "array", "optional": False}},
@@ -945,25 +961,30 @@ def init_checkpointer():
         }})
         return False
 
-callbacks = []
-if os.environ.get("LANGFUSE_PUBLIC_KEY") and os.environ.get("LANGFUSE_SECRET_KEY"):
-    try:
-        from langfuse.callback import CallbackHandler
-        langfuse_handler = CallbackHandler()
-        callbacks.append(langfuse_handler)
-    except ImportError:
-        pass
-
+langsmith_callbacks = []
 # LangSmith is opt-in and provider-owned: no credentials means no exporter,
-# no network. Passing handler at graph level captures node/tool runs too.
+# no network. Langfuse callbacks are rebuilt by TelemetryRuntime after Settings
+# changes and are collected at each invocation rather than module import.
 if (os.environ.get("LANGCHAIN_TRACING_V2", "").lower() == "true"
         and os.environ.get("LANGCHAIN_API_KEY")):
     try:
         from langchain.callbacks.tracers import LangChainTracer
-        callbacks.append(LangChainTracer(
+        langsmith_callbacks.append(LangChainTracer(
             project_name=os.environ.get("LANGCHAIN_PROJECT", "ccad")))
     except ImportError:
         pass
+
+observability_secrets = {"public_key": "", "secret_key": ""}
+
+def active_callbacks():
+    return telemetry_runtime.callbacks() + list(langsmith_callbacks)
+
+def observability_state():
+    return telemetry_runtime.status()
+
+def reconfigure_observability():
+    return telemetry_runtime.configure(
+        config_manager.get("observability", {}), observability_secrets)
 
 def emit_provider_failure(provider: str, error: Exception):
     """Report adapter failure without exposing key, prompt, or endpoint data."""
@@ -1199,6 +1220,8 @@ def initialize_agent_process():
     """Initialize provider state only for a launched orchestration process."""
     global provider_initialized
     provider_initialized = False
+    observability = reconfigure_observability()
+    atexit.register(telemetry_runtime.shutdown)
     if os.environ.get("CCAD_AGENT_DEFER_PROVIDER_INIT", "").lower() not in {"1", "true", "yes"}:
         provider_initialized = init_provider()
     # Runtime readiness is independent from provider readiness. Harnesses can
@@ -1211,11 +1234,12 @@ def initialize_agent_process():
         "network_access": "not_probed",
         "secret_value_visible": False,
     }})
+    emit({"jsonrpc": "2.0", "method": "observability_state", "params": observability})
 
 
 def invoke_agent_run(state):
     """Invoke graph under one run span without exporting prompt contents."""
-    with tracer.start_as_current_span("agent_run") as span:
+    with telemetry_runtime.start_span("ccad.agent.run") as span:
         span.set_attribute("ccad.agent.workflow", active_workflow)
         span.set_attribute("ccad.agent.provider_ready", llm is not None)
         run_config = {"run_name": "ccad_agent_run"}
@@ -1228,8 +1252,10 @@ def invoke_agent_run(state):
             "ccad_workflow": active_workflow,
             "ccad_context_present": bool(state.get("context", "")),
             "ccad_thread_id_present": bool(thread_id),
+            "langfuse_session_id": thread_id,
         }
-        run_config["tags"] = ["ccad", "agent", active_workflow]
+        run_config["tags"] = ["ccad", "agent", active_workflow,
+                              os.environ.get("CCAD_PROVIDER", "configured")]
         # Bound supervisor -> specialist -> tool cycles.  This is a safety
         # limit, not a provider retry: a malformed tool call must not consume
         # quota forever while chaining is enabled.
@@ -1238,6 +1264,7 @@ def invoke_agent_run(state):
         except ValueError:
             recursion_limit = 12
         run_config["recursion_limit"] = min(32, max(4, recursion_limit))
+        callbacks = active_callbacks()
         if callbacks:
             run_config["callbacks"] = callbacks
         return executor.invoke(state, config=run_config)
@@ -1346,6 +1373,7 @@ def router_node(state: AgentState):
     
     system_msg = SystemMessage(content=system_text)
     prompt = [system_msg] + state["messages"]
+    callbacks = active_callbacks()
     response = invoke_provider_with_retry(
         router_llm, prompt, config={"callbacks": callbacks} if callbacks else {})
     if "post node" in [h.lower() for h in active_hooks]:
@@ -1367,6 +1395,7 @@ def librarian_node(state: AgentState):
     
     system_msg = SystemMessage(content=system_text)
     prompt = [system_msg] + state["messages"]
+    callbacks = active_callbacks()
     response = invoke_provider_with_retry(
         librarian_llm, prompt, config={"callbacks": callbacks} if callbacks else {})
     if "post node" in [h.lower() for h in active_hooks]:
@@ -1421,10 +1450,13 @@ def resume_checkpointed_run(thread_id: str, resume_value):
     """Resume an interrupted graph using same durable thread identity."""
     if checkpoint_saver is None:
         return None
-    return executor.invoke(
-        Command(resume=resume_value),
-        config={"configurable": {"thread_id": thread_id}},
-    )
+    config = {"configurable": {"thread_id": thread_id},
+              "metadata": {"langfuse_session_id": thread_id},
+              "tags": ["ccad", "agent", "resume"]}
+    callbacks = active_callbacks()
+    if callbacks:
+        config["callbacks"] = callbacks
+    return executor.invoke(Command(resume=resume_value), config=config)
 
 session_messages = []
 active_workflow = "default"
@@ -2191,12 +2223,35 @@ if __name__ == "__main__":
                     emit({"jsonrpc": "2.0", "method": "message", "params": {"text": last_msg.content}})
                     if "pre exit/end" in [h.lower() for h in active_hooks]:
                         hooks.trigger_hook("pre exit/end", emit)
+            elif method == "agent.observability_status":
+                emit({"jsonrpc": "2.0", "method": "observability_state",
+                      "params": observability_state()})
+            elif method == "agent.set_observability_secret":
+                params = req.get("params", {})
+                public_key = params.get("public_key", "")
+                secret_key = params.get("secret_key", "")
+                if not isinstance(public_key, str) or not isinstance(secret_key, str):
+                    emit({"jsonrpc": "2.0", "method": "observability_state", "params": {
+                        "configured": False, "enabled": False,
+                        "exporter_initialized": False, "backend": "langfuse",
+                        "last_test": "not_run", "reason": "invalid_secret_payload",
+                        "secret_value_visible": False,
+                    }})
+                    continue
+                observability_secrets["public_key"] = public_key
+                observability_secrets["secret_key"] = secret_key
+                emit({"jsonrpc": "2.0", "method": "observability_state",
+                      "params": reconfigure_observability()})
             elif method == "agent.test_export":
-                from telemetry import trace_provider
-                with tracer.start_as_current_span("test_export_span"):
-                    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Test trace span generated!"}})
-                trace_provider.force_flush()
-                emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "OTel span processors flushed successfully."}})
+                state = telemetry_runtime.test_export()
+                emit({"jsonrpc": "2.0", "method": "observability_state", "params": state})
+                if state.get("last_test") == "flushed":
+                    message = "Langfuse test trace flushed. Inspect it in Langfuse before treating export as connected."
+                else:
+                    message = "Observability test was not exported: " + state.get("reason", "not_configured")
+                emit({"jsonrpc": "2.0", "method": "message", "params": {
+                    "text": message, "secret_value_visible": False,
+                }})
             elif method == "agent.set_config":
                 config_data = req.get("params", {})
                 rejected_secret_keys = []
@@ -2214,6 +2269,9 @@ if __name__ == "__main__":
                     os.environ["CCAD_PROVIDER"] = config_data.get("provider", "openai")
                     os.environ["CCAD_MODEL"] = config_data.get("model", "gpt-5.1")
                     init_provider()
+                if "observability" in clean_config:
+                    emit({"jsonrpc": "2.0", "method": "observability_state",
+                          "params": reconfigure_observability()})
             elif method == "agent.get_config":
                 emit({"jsonrpc": "2.0", "method": "config_state", "params": config_manager.config})
             elif method == "agent.set_tool_catalog":

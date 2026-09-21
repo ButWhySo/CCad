@@ -77,7 +77,14 @@ class AgentConfigManager:
             },
             "mcp_servers": [],
             "plugins": [],
-            "workflows": []
+            "workflows": [],
+            "observability": {
+                "enabled": False,
+                "backend": "langfuse",
+                "base_url": "",
+                "environment": "development",
+                "service_name": "ccad-agent"
+            }
         }
 
     def save(self):

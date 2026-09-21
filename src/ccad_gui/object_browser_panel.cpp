@@ -248,6 +248,10 @@ QString ObjectBrowserPanel::netIdForRow(const int /*row*/) const {
   return {}; // Not robust across multiple lists
 }
 
+QTabWidget* ObjectBrowserPanel::tabWidget() const {
+  return tabs_;
+}
+
 void ObjectBrowserPanel::addSection(QListWidget* list, const QString& text) {
   auto* item = new QListWidgetItem(text, list);
   QFont font = item->font();

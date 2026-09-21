@@ -24,6 +24,7 @@ class ObjectBrowserPanel final : public QWidget {
   QString itemText(int row) const;
   QString objectIdForRow(int row) const;
   QString netIdForRow(int row) const;
+  QTabWidget* tabWidget() const;
 
  private:
   void addSection(QListWidget* list, const QString& text);

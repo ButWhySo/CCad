@@ -14,7 +14,6 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
-#include <QFileDialog>
 #include <QFileInfo>
 #include <QFrame>
 #include <QIcon>
@@ -48,7 +47,6 @@
 #endif
 
 #include "ccad_gui/agent_icons.hpp"
-#include "ccad_gui/agent_marketplace_dialog.hpp"
 #include "ccad_gui/agent_settings_dialog.hpp"
 
 #include <algorithm>
@@ -724,29 +722,9 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   auto* top_layout = new QHBoxLayout(top_bar);
   top_layout->setContentsMargins(8, 8, 8, 8);
   
-  auto* back_btn = new QPushButton(top_bar);
-  back_btn->setObjectName("action:agent_menu");
-  back_btn->setToolTip("Open agent navigation");
-  back_btn->setIcon(load_svg_icon(ccad_icons::icon_menu)); // Stand-in for back
-  back_btn->setProperty("agentRole", "iconButton");
-  back_btn->setFixedSize(24, 24);
-  
   auto* title = new QLabel("Chat", top_bar);
   title->setProperty("agentRole", "panelTitle");
   title->setAlignment(Qt::AlignCenter);
-
-  auto* templates_btn = new QPushButton(top_bar);
-  templates_btn->setObjectName("action:agent_templates");
-  templates_btn->setToolTip("Insert prompt template");
-  templates_btn->setIcon(load_svg_icon(ccad_icons::icon_templates));
-  templates_btn->setProperty("agentRole", "iconButton");
-  templates_btn->setFixedSize(24, 24);
-  connect(templates_btn, &QPushButton::clicked, this, [this]() {
-    if (chat_input_) {
-      chat_input_->insertPlainText("/");
-      chat_input_->setFocus();
-    }
-  });
 
   auto* settings_btn = new QPushButton(top_bar);
   settings_btn->setObjectName("action:settingsBtn");
@@ -782,11 +760,9 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
     }
   });
 
-  top_layout->addWidget(back_btn);
   top_layout->addStretch();
   top_layout->addWidget(title);
   top_layout->addStretch();
-  top_layout->addWidget(templates_btn);
   top_layout->addWidget(settings_btn);
   top_layout->addWidget(collapse_btn);
   top_layout->addWidget(close_btn);
@@ -817,8 +793,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
 
   auto* quick_reply_layout = new QHBoxLayout();
   quick_reply_layout->setSpacing(5);
-  const QList<QPair<QString, QString>> quick_replies = {
-      {"Summarize", "/explain "}, {"Run DRC", "/drc"}, {"Route", "/route"}};
+  const QList<QPair<QString, QString>> quick_replies = {{"Run DRC", "/drc"}};
   for (const auto& [title, command] : quick_replies) {
     auto* quick_reply = new QPushButton(title, composer_container);
     quick_reply->setProperty("agentRole", "quickReply");
@@ -855,57 +830,6 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   composer_layout->addWidget(chat_input_);
   
   auto* actions_layout = new QHBoxLayout();
-  auto* paperclip_btn = new QPushButton(composer_container);
-  paperclip_btn->setObjectName("action:agent_attach");
-  paperclip_btn->setToolTip("Attach file");
-  paperclip_btn->setIcon(load_svg_icon(ccad_icons::icon_attach));
-  paperclip_btn->setProperty("agentRole", "iconButton");
-  paperclip_btn->setFixedSize(24, 24);
-  connect(paperclip_btn, &QPushButton::clicked, this, [this]() {
-    const QString file = QFileDialog::getOpenFileName(this, "Attach File");
-    if (!file.isEmpty()) {
-      chat_input_->insertPlainText(QString(" [Attached: %1] ").arg(file));
-      chat_input_->setFocus();
-    }
-  });
-  
-  auto* marketplace_btn = new QPushButton(composer_container);
-  marketplace_btn->setObjectName("action:agent_marketplace");
-  marketplace_btn->setToolTip("Browse agent tools and providers");
-  marketplace_btn->setIcon(load_svg_icon(ccad_icons::icon_menu));
-  marketplace_btn->setProperty("agentRole", "iconButton");
-  marketplace_btn->setFixedSize(24, 24);
-  connect(marketplace_btn, &QPushButton::clicked, this, [this]() {
-    auto* dialog = new AgentMarketplaceDialog(this, this);
-    dialog->show();
-  });
-  
-  auto* context_circle = new QPushButton(composer_container);
-  context_circle->setObjectName("action:agent_context_refresh");
-  context_circle->setToolTip("Refresh project context");
-  context_circle->setIcon(load_svg_icon(ccad_icons::icon_settings)); // Reusing settings as context pie stand-in
-  context_circle->setProperty("agentRole", "iconButton");
-  context_circle->setFixedSize(24, 24);
-  
-  auto* context_label = new QLabel("0 / 128k context", composer_container);
-  context_label->setObjectName("control:contextLabel");
-  context_label->setStyleSheet("color: #8b949e; font-size: 11px;");
-  context_usage_label_ = context_label;
-  
-  connect(context_circle, &QPushButton::clicked, this, [this]() {
-    appendChatMessage("agent", "*Refreshing AI context map...*");
-  });
-
-  auto* stt_btn = new QPushButton(composer_container);
-  stt_btn->setObjectName("action:agent_voice");
-  stt_btn->setToolTip("Voice input");
-  stt_btn->setIcon(load_svg_icon(ccad_icons::icon_mic));
-  stt_btn->setProperty("agentRole", "iconButton");
-  stt_btn->setFixedSize(32, 24);
-  connect(stt_btn, &QPushButton::clicked, this, [this]() {
-    chat_input_->insertPlainText("[STT Recording...]");
-  });
-  
   auto* send_btn = new QPushButton(composer_container);
   send_btn->setIcon(load_svg_icon(ccad_icons::icon_send));
   send_btn->setProperty("agentRole", "iconButtonPrimary");
@@ -915,11 +839,6 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   send_btn->setFixedSize(32, 32);
   connect(send_btn, &QPushButton::clicked, this, &AgentPanel::submitChat);
 
-  actions_layout->addWidget(paperclip_btn);
-  actions_layout->addWidget(marketplace_btn);
-  actions_layout->addWidget(context_circle);
-  actions_layout->addWidget(context_label);
-  actions_layout->addWidget(stt_btn);
   actions_layout->addStretch();
   actions_layout->addWidget(send_btn);
 
@@ -1520,6 +1439,15 @@ void AgentPanel::handlePythonOutput() {
             sendJsonRpc("agent.activate_provider", activation);
           }
         }
+        // Observability credentials follow the same vault-only startup path
+        // as provider keys. They reach only the child process after persisted
+        // non-secret config is restored, before a user can submit a turn.
+        const QString langfuse_public = storedProviderSecret("langfuse_public");
+        const QString langfuse_secret = storedProviderSecret("langfuse_secret");
+        if (!langfuse_public.isEmpty() || !langfuse_secret.isEmpty()) {
+          sendJsonRpc("agent.set_observability_secret", QJsonObject{
+              {"public_key", langfuse_public}, {"secret_key", langfuse_secret}});
+        }
         if (config_state_cb_) config_state_cb_(params);
         if (grid_settings_cb_ && params.contains("grid")) {
           const QString grid = params["grid"].toString().trimmed();
@@ -1564,6 +1492,8 @@ void AgentPanel::handlePythonOutput() {
         if (provider_secret_result_cb_) provider_secret_result_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "mcp_status") {
         if (mcp_status_cb_) mcp_status_cb_(obj["params"].toObject());
+      } else if (obj.contains("method") && obj["method"].toString() == "observability_state") {
+        if (observability_state_cb_) observability_state_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "thread_state") {
         const QJsonObject params = obj["params"].toObject();
         const bool resumable = params["resumable"].toBool(false);
@@ -1880,6 +1810,10 @@ void AgentPanel::setModelCatalogCallback(ModelCatalogCallback cb) {
 
 void AgentPanel::setMcpStatusCallback(McpStatusCallback cb) {
   mcp_status_cb_ = std::move(cb);
+}
+
+void AgentPanel::setObservabilityStateCallback(ObservabilityStateCallback cb) {
+  observability_state_cb_ = std::move(cb);
 }
 
 void AgentPanel::setComponentWizardCallback(ComponentWizardCallback cb) {

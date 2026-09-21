@@ -43,6 +43,7 @@ class AgentPanel final : public QWidget {
   using MarketplaceCatalogCallback = std::function<void(const QJsonObject&)>;
   using ModelCatalogCallback = std::function<void(const QJsonObject&)>;
   using McpStatusCallback = std::function<void(const QJsonObject&)>;
+  using ObservabilityStateCallback = std::function<void(const QJsonObject&)>;
   using ComponentWizardCallback = std::function<void(const QJsonObject&)>;
   using GridSettingsCallback = std::function<void(double, bool)>;
 
@@ -74,6 +75,7 @@ class AgentPanel final : public QWidget {
   void setMarketplaceCatalogCallback(MarketplaceCatalogCallback cb);
   void setModelCatalogCallback(ModelCatalogCallback cb);
   void setMcpStatusCallback(McpStatusCallback cb);
+  void setObservabilityStateCallback(ObservabilityStateCallback cb);
   void setComponentWizardCallback(ComponentWizardCallback cb);
   void setGridSettingsCallback(GridSettingsCallback cb);
   void setProjectContext(const QString& project_label, int ui_map_epoch);
@@ -358,6 +360,7 @@ class AgentPanel final : public QWidget {
   MarketplaceCatalogCallback marketplace_catalog_cb_;
   ModelCatalogCallback model_catalog_cb_;
   McpStatusCallback mcp_status_cb_;
+  ObservabilityStateCallback observability_state_cb_;
   ComponentWizardCallback component_wizard_cb_;
   GridSettingsCallback grid_settings_cb_;
 };

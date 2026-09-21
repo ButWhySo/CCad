@@ -311,6 +311,18 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
                   .arg(status["servers"].toArray().size())
                   .arg(process_execution ? "enabled" : "disabled"));
       });
+      agent_panel_->setObservabilityStateCallback([this](const QJsonObject& state) {
+          if (!langfuse_status_label_) return;
+          if (!state["enabled"].toBool(false)) {
+              langfuse_status_label_->setText("Langfuse: disabled");
+          } else if (state["exporter_initialized"].toBool(false)) {
+              langfuse_status_label_->setText(
+                  "Langfuse: ready | last test " + state["last_test"].toString("not_run"));
+          } else {
+              langfuse_status_label_->setText(
+                  "Langfuse: " + state["reason"].toString("not configured"));
+          }
+      });
   }
 
   loadCurrentSettings();
@@ -328,6 +340,7 @@ AgentSettingsDialog::~AgentSettingsDialog() {
     agent_panel_->setMarketplaceCatalogCallback({});
     agent_panel_->setModelCatalogCallback({});
     agent_panel_->setMcpStatusCallback({});
+    agent_panel_->setObservabilityStateCallback({});
   }
 }
 
@@ -344,6 +357,7 @@ void AgentSettingsDialog::setupUi() {
   category_list_->addItem("Personalisation");
   category_list_->addItem("MCP");
   category_list_->addItem("API & Providers");
+  category_list_->addItem("Observability");
   category_list_->addItem("Plugins");
   category_list_->addItem("Workflows");
 
@@ -368,6 +382,10 @@ void AgentSettingsDialog::setupUi() {
   auto* api_tab = new QWidget();
   createAPIProvidersTab(api_tab);
   stacked_widget_->addWidget(api_tab);
+
+  auto* observability_tab = new QWidget();
+  createObservabilityTab(observability_tab);
+  stacked_widget_->addWidget(observability_tab);
 
   auto* plugins_tab = new QWidget();
   createPluginsTab(plugins_tab);
@@ -800,12 +818,80 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
   });
   layout->addWidget(clear_key);
   refresh_target();
-  auto* btn = new QPushButton("Test Export (OTel/Langfuse)", parent_widget);
-  btn->setObjectName("action:testExportBtn");
-  connect(btn, &QPushButton::clicked, this, [this]() {
-      agent_panel_->sendJsonRpc("agent.test_export", QJsonObject());
+  layout->addStretch();
+}
+
+void AgentSettingsDialog::createObservabilityTab(QWidget* parent_widget) {
+  auto* layout = new QVBoxLayout(parent_widget);
+  auto* observability_intro = new QLabel(
+      "<b>Langfuse observability</b><br>Exports are disabled until both keys are stored and tracing is enabled. "
+      "Keys stay in Windows Credential Manager; project files, settings JSON, chat, screenshots, and logs never contain them.",
+      parent_widget);
+  observability_intro->setWordWrap(true);
+  layout->addWidget(observability_intro);
+
+  langfuse_enabled_cb_ = new QCheckBox("Enable Langfuse tracing", parent_widget);
+  langfuse_enabled_cb_->setObjectName("control:langfuseEnabledCb");
+  layout->addWidget(langfuse_enabled_cb_);
+  auto* form = new QFormLayout();
+  langfuse_public_key_input_ = new QLineEdit(parent_widget);
+  langfuse_public_key_input_->setObjectName("control:langfusePublicKeyInput");
+  langfuse_public_key_input_->setEchoMode(QLineEdit::Password);
+  langfuse_public_key_input_->setPlaceholderText("pk-lf-… (Windows Credential Manager)");
+  langfuse_public_key_input_->setText(loadStoredSecret("langfuse_public"));
+  form->addRow("Public key", langfuse_public_key_input_);
+  langfuse_secret_key_input_ = new QLineEdit(parent_widget);
+  langfuse_secret_key_input_->setObjectName("control:langfuseSecretKeyInput");
+  langfuse_secret_key_input_->setEchoMode(QLineEdit::Password);
+  langfuse_secret_key_input_->setPlaceholderText("sk-lf-… (Windows Credential Manager)");
+  langfuse_secret_key_input_->setText(loadStoredSecret("langfuse_secret"));
+  form->addRow("Secret key", langfuse_secret_key_input_);
+  langfuse_base_url_input_ = new QLineEdit(parent_widget);
+  langfuse_base_url_input_->setObjectName("control:langfuseBaseUrlInput");
+  langfuse_base_url_input_->setPlaceholderText("https://cloud.langfuse.com");
+  form->addRow("Base URL", langfuse_base_url_input_);
+  langfuse_environment_input_ = new QLineEdit("development", parent_widget);
+  langfuse_environment_input_->setObjectName("control:langfuseEnvironmentInput");
+  form->addRow("Environment", langfuse_environment_input_);
+  langfuse_service_name_input_ = new QLineEdit("ccad-agent", parent_widget);
+  langfuse_service_name_input_->setObjectName("control:langfuseServiceNameInput");
+  form->addRow("Service name", langfuse_service_name_input_);
+  layout->addLayout(form);
+  langfuse_status_label_ = new QLabel("Langfuse: checking runtime state…", parent_widget);
+  langfuse_status_label_->setObjectName("label:langfuseStatus");
+  layout->addWidget(langfuse_status_label_);
+  auto* test = new QPushButton("Test Langfuse export", parent_widget);
+  test->setObjectName("action:testLangfuseExportBtn");
+  test->setToolTip("Flushes one redacted test span using the currently entered settings.");
+  connect(test, &QPushButton::clicked, this, [this]() {
+    if (!agent_panel_) return;
+    const QJsonObject config{{"observability", QJsonObject{
+        {"enabled", langfuse_enabled_cb_ && langfuse_enabled_cb_->isChecked()},
+        {"backend", "langfuse"},
+        {"base_url", langfuse_base_url_input_ ? langfuse_base_url_input_->text().trimmed() : QString()},
+        {"environment", langfuse_environment_input_ ? langfuse_environment_input_->text().trimmed() : QStringLiteral("development")},
+        {"service_name", langfuse_service_name_input_ ? langfuse_service_name_input_->text().trimmed() : QStringLiteral("ccad-agent")},
+    }}};
+    agent_panel_->sendJsonRpc("agent.set_config", config);
+    agent_panel_->sendJsonRpc("agent.set_observability_secret", QJsonObject{
+        {"public_key", langfuse_public_key_input_ ? langfuse_public_key_input_->text() : QString()},
+        {"secret_key", langfuse_secret_key_input_ ? langfuse_secret_key_input_->text() : QString()},
+    });
+    agent_panel_->sendJsonRpc("agent.test_export", QJsonObject());
   });
-  layout->addWidget(btn);
+  layout->addWidget(test);
+  auto* remove = new QPushButton("Remove Langfuse credentials", parent_widget);
+  remove->setObjectName("action:clearLangfuseCredentialsBtn");
+  connect(remove, &QPushButton::clicked, this, [this]() {
+    if (!storeSecret("langfuse_public", QString()) || !storeSecret("langfuse_secret", QString())) {
+      if (langfuse_status_label_) langfuse_status_label_->setText("Langfuse: credential removal failed");
+      return;
+    }
+    if (langfuse_public_key_input_) langfuse_public_key_input_->clear();
+    if (langfuse_secret_key_input_) langfuse_secret_key_input_->clear();
+    if (agent_panel_) agent_panel_->sendJsonRpc("agent.set_observability_secret", QJsonObject());
+  });
+  layout->addWidget(remove);
   layout->addStretch();
 }
 
@@ -841,6 +927,11 @@ void AgentSettingsDialog::createWorkflowsTab(QWidget* parent_widget) {
 void AgentSettingsDialog::loadCurrentSettings() {
   if (agent_panel_) {
       agent_panel_->sendJsonRpc("agent.get_config", QJsonObject());
+      agent_panel_->sendJsonRpc("agent.set_observability_secret", QJsonObject{
+          {"public_key", langfuse_public_key_input_ ? langfuse_public_key_input_->text() : QString()},
+          {"secret_key", langfuse_secret_key_input_ ? langfuse_secret_key_input_->text() : QString()},
+      });
+      agent_panel_->sendJsonRpc("agent.observability_status", QJsonObject());
       agent_panel_->sendJsonRpc("agent.get_marketplace_catalog", QJsonObject());
       agent_panel_->sendJsonRpc("agent.mcp_status", QJsonObject());
   }
@@ -910,6 +1001,11 @@ void AgentSettingsDialog::applyConfigState(const QJsonObject& config) {
     if (inline_detached_ && personalisation.contains("chat_mode")) inline_detached_->setCurrentText(personalisation["chat_mode"].toString());
     if (agent_personality_ && personalisation.contains("agent_personality")) agent_personality_->setCurrentText(personalisation["agent_personality"].toString());
     if (custom_instructions_ && personalisation.contains("custom_instructions")) custom_instructions_->setPlainText(personalisation["custom_instructions"].toString());
+    const QJsonObject observability = config.value("observability").toObject();
+    if (langfuse_enabled_cb_ && observability.contains("enabled")) langfuse_enabled_cb_->setChecked(observability["enabled"].toBool());
+    if (langfuse_base_url_input_ && observability.contains("base_url")) langfuse_base_url_input_->setText(observability["base_url"].toString());
+    if (langfuse_environment_input_ && observability.contains("environment")) langfuse_environment_input_->setText(observability["environment"].toString());
+    if (langfuse_service_name_input_ && observability.contains("service_name")) langfuse_service_name_input_->setText(observability["service_name"].toString());
     if (mcp_servers_table_ && config.contains("mcp_servers")) {
         const QJsonArray servers = config["mcp_servers"].toArray();
         mcp_servers_table_->setRowCount(0);
@@ -1022,6 +1118,14 @@ void AgentSettingsDialog::saveAllSettings() {
   if (custom_instructions_) personalisation["custom_instructions"] = custom_instructions_->toPlainText();
   config["personalisation"] = personalisation;
 
+  QJsonObject observability;
+  if (langfuse_enabled_cb_) observability["enabled"] = langfuse_enabled_cb_->isChecked();
+  observability["backend"] = "langfuse";
+  if (langfuse_base_url_input_) observability["base_url"] = langfuse_base_url_input_->text().trimmed();
+  if (langfuse_environment_input_) observability["environment"] = langfuse_environment_input_->text().trimmed();
+  if (langfuse_service_name_input_) observability["service_name"] = langfuse_service_name_input_->text().trimmed();
+  config["observability"] = observability;
+
   if (system_prompt_) config["system_prompt"] = system_prompt_->toPlainText();
   if (dev_prompt_) config["dev_prompt"] = dev_prompt_->toPlainText();
 
@@ -1060,6 +1164,18 @@ void AgentSettingsDialog::saveAllSettings() {
       return;
     }
     agent_panel_->setProviderSecret(provider, api_key_input_->text());
+  }
+  if (agent_panel_) {
+    const QString public_key = langfuse_public_key_input_ ? langfuse_public_key_input_->text() : QString();
+    const QString secret_key = langfuse_secret_key_input_ ? langfuse_secret_key_input_->text() : QString();
+    if ((!public_key.isEmpty() && !storeSecret("langfuse_public", public_key)) ||
+        (!secret_key.isEmpty() && !storeSecret("langfuse_secret", secret_key))) {
+      QMessageBox::critical(this, "Agent Settings",
+                            "Windows Credential Manager rejected Langfuse credentials. Settings were not saved.");
+      return;
+    }
+    agent_panel_->sendJsonRpc("agent.set_observability_secret", QJsonObject{
+        {"public_key", public_key}, {"secret_key", secret_key}});
   }
 
   if (plugins_list_) {

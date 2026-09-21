@@ -12,7 +12,6 @@ runtime = set(re.findall(r'(?:if|elif) method == "(agent\.[^"]+)"', source))
 for group in re.findall(r'method in \(([^)]*)\)', source, flags=re.DOTALL):
     runtime.update(re.findall(r'"(agent\.[^"]+)"', group))
 catalog = set(re.findall(r'"name": "(agent\.[^"]+)"', source))
-intentional_legacy = {"agent.test_export"}
-assert runtime - catalog == intentional_legacy, sorted(runtime - catalog)
+assert runtime - catalog == set(), sorted(runtime - catalog)
 assert catalog - runtime == set(), sorted(catalog - runtime)
-print("PASS runtime agent methods remain discoverable; legacy telemetry explicitly excluded; no network")
+print("PASS runtime agent methods remain discoverable; no network")

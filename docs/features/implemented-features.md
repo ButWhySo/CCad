@@ -2818,3 +2818,11 @@ operation. It makes one minimal request, does not retry or run tools, restores
 the active adapter afterwards, and displays either a redacted success preview
 or a safe terminal failure category. The physical GUI harness waits for that
 terminal callback rather than aborting the request while it is still sending.
+
+### Runtime Langfuse configuration
+
+Agent Settings now has an Observability page with enablement, masked Langfuse
+keys, base URL, environment, service name, runtime status, test export, and
+credential removal. Keys use Windows Credential Manager; status never treats
+stored credentials as a successful export. The UI-map screenshot method captures
+the active settings or review dialog when it is open.

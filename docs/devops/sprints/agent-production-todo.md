@@ -148,8 +148,8 @@ Update this file in the same commit as each implementation slice.
 ## Langfuse observability
 
 - [ ] Use Langfuse as the only user-facing observability backend for the current product slice; keep generic OTel internal.
-- [ ] Add Settings -> Observability -> Langfuse.
-- [ ] Add enable state, public key, secret key, base URL, environment, test/status controls.
+- [x] Add Settings -> Observability -> Langfuse.
+- [x] Add enable state, public key, secret key, base URL, environment, test/status controls.
 - [ ] Store Langfuse secret key in the OS credential vault, never config/project/logs/prompts.
 - [ ] Update LangChain integration to the current `langfuse.langchain.CallbackHandler` API.
 - [ ] Pin a tested Langfuse SDK major/minor range instead of unconstrained `langfuse>=2.30.0`.

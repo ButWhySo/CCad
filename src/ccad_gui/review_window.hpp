@@ -228,6 +228,7 @@ class ReviewWindow final : public QMainWindow {
 
   AgentPanel* agent_panel_ = nullptr;
   QDockWidget* agent_dock_ = nullptr;
+  QDockWidget* objects_dock_ = nullptr;
   ProjectSummaryPanel* project_summary_ = nullptr;
   QLabel* cursor_status_ = nullptr;
   QLabel* zoom_status_ = nullptr;

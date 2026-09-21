@@ -238,10 +238,16 @@ private slots:
 
     // Skip custom instructions text edit as QTest::keyClicks can be flaky on QTextEdit
 
-    // 4. API & Providers
-    auto* test_export = dialog.findChild<QPushButton*>("action:testExportBtn");
-    QVERIFY(test_export != nullptr);
-    QTest::mouseClick(test_export, Qt::LeftButton);
+    // 4. Observability controls use a distinct secret vault/runtime path.
+    auto* langfuse_enabled = dialog.findChild<QCheckBox*>("control:langfuseEnabledCb");
+    QVERIFY(langfuse_enabled != nullptr);
+    QTest::mouseClick(langfuse_enabled, Qt::LeftButton);
+    auto* langfuse_public = dialog.findChild<QLineEdit*>("control:langfusePublicKeyInput");
+    QVERIFY(langfuse_public != nullptr);
+    auto* langfuse_secret = dialog.findChild<QLineEdit*>("control:langfuseSecretKeyInput");
+    QVERIFY(langfuse_secret != nullptr);
+    auto* langfuse_test = dialog.findChild<QPushButton*>("action:testLangfuseExportBtn");
+    QVERIFY(langfuse_test != nullptr);
 
     // Save
     QTest::mouseClick(save_btn, Qt::LeftButton);
@@ -331,22 +337,20 @@ private slots:
     QVERIFY(collapse != nullptr);
     QVERIFY(!collapse->toolTip().isEmpty());
     QVERIFY(!send->toolTip().isEmpty());
-    QVERIFY(panel.findChild<QPushButton*>("action:agent_attach") != nullptr);
-    QVERIFY(panel.findChild<QPushButton*>("action:agent_marketplace") != nullptr);
-    QVERIFY(panel.findChild<QPushButton*>("action:agent_context_refresh") != nullptr);
-    QVERIFY(panel.findChild<QPushButton*>("action:agent_voice") != nullptr);
+    QVERIFY(panel.findChild<QPushButton*>("action:agent_attach") == nullptr);
+    QVERIFY(panel.findChild<QPushButton*>("action:agent_marketplace") == nullptr);
+    QVERIFY(panel.findChild<QPushButton*>("action:agent_context_refresh") == nullptr);
+    QVERIFY(panel.findChild<QPushButton*>("action:agent_voice") == nullptr);
+    QVERIFY(panel.findChild<QPushButton*>("action:agent_menu") == nullptr);
+    QVERIFY(panel.findChild<QPushButton*>("action:agent_templates") == nullptr);
     QVERIFY(panel.findChild<QLabel*>("status:agent_run") != nullptr);
     QVERIFY(panel.findChild<QLabel*>("label:agent_result") != nullptr);
-    auto* context_label = panel.findChild<QLabel*>("control:contextLabel");
-    QVERIFY(context_label != nullptr);
-    QVERIFY(context_label->text().contains("/ 128k context"));
+    QVERIFY(panel.findChild<QLabel*>("control:contextLabel") == nullptr);
     auto* chat_input = panel.findChild<QTextEdit*>("control:agent_chat_input");
     QVERIFY(chat_input != nullptr);
     QVERIFY(chat_input->isEnabled());
-    auto* summarize = panel.findChild<QPushButton*>("action:agent_quick_summarize");
-    QVERIFY(summarize != nullptr);
-    QTest::mouseClick(summarize, Qt::LeftButton);
-    QCOMPARE(chat_input->toPlainText(), QString("/explain "));
+    QVERIFY(panel.findChild<QPushButton*>("action:agent_quick_summarize") == nullptr);
+    QVERIFY(panel.findChild<QPushButton*>("action:agent_quick_route") == nullptr);
   }
 
   void testModelPresetSwitch() {

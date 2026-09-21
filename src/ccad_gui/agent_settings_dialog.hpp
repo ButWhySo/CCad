@@ -31,6 +31,7 @@ private:
   void createPersonalisationTab(QWidget* parent_widget);
   void createMCPTab(QWidget* parent_widget);
   void createAPIProvidersTab(QWidget* parent_widget);
+  void createObservabilityTab(QWidget* parent_widget);
   void createPluginsTab(QWidget* parent_widget);
   void createWorkflowsTab(QWidget* parent_widget);
 
@@ -54,6 +55,13 @@ private:
   QLineEdit* api_key_input_{nullptr};
   QLabel* provider_target_label_{nullptr};
   QLabel* provider_status_label_{nullptr};
+  QCheckBox* langfuse_enabled_cb_{nullptr};
+  QLineEdit* langfuse_public_key_input_{nullptr};
+  QLineEdit* langfuse_secret_key_input_{nullptr};
+  QLineEdit* langfuse_base_url_input_{nullptr};
+  QLineEdit* langfuse_environment_input_{nullptr};
+  QLineEdit* langfuse_service_name_input_{nullptr};
+  QLabel* langfuse_status_label_{nullptr};
   QLabel* mcp_runtime_status_label_{nullptr};
   QCheckBox* sandbox_cb_{nullptr};
   QCheckBox* approval_cb_{nullptr};

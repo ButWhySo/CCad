@@ -3012,3 +3012,10 @@ Native catalog transport, generated tools, ToolNode rebuild, and scoped UI-map
 Full Qt Release build and CTest gate pass: 91/91 in 158.16 seconds. The
 runner callback/executor handoff is synchronized so captured-output execution
 does not hang the suite.
+
+### Sprint 950 - runtime Langfuse observability
+
+Implemented reconfigurable Langfuse runtime, private vault IPC, Settings
+controls, redacted status/test path, active-dialog UI-map screenshots, and
+adaptive Appearance/Agent dock tabs. Focused `gui_agent_panel` and `gui_ui_map`
+tests pass; external Langfuse trace verification remains explicitly open.

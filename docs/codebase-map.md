@@ -1828,3 +1828,10 @@ through global positions, avoiding parent-hierarchy warnings.
 Sprint 949 handover: AgentPanel sends `agent.methods` before provider activation;
 Python validates schemas, builds provider-safe tools, and dispatches original
 native IDs through ToolBroker. Real provider tool-call proof remains pending.
+
+Sprint 950 handover: `telemetry.py` owns a runtime-reconfigurable Langfuse
+adapter. Agent Settings stores Langfuse keys only in the Windows credential
+vault and sends them through private IPC; normal configuration stores only
+enablement, URL, environment, and service name. UI-map screenshots capture the
+active dialog when one owns interaction, so settings and approval evidence is
+not silently omitted.

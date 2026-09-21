@@ -2083,17 +2083,21 @@ ReviewWindow::ReviewWindow() {
 
   object_browser_ = new ObjectBrowserPanel(this);
   auto* objects_dock = new QDockWidget("Layers / Objects", this);
+  objects_dock_ = objects_dock;
   objects_dock->setObjectName("dock:objects");
   objects_dock->setWidget(object_browser_);
+  objects_dock->setMinimumWidth(240);
   addDockWidget(Qt::RightDockWidgetArea, objects_dock);
 
   auto* agent_dock = new QDockWidget("Agent", this);
   agent_dock_ = agent_dock;
   agent_dock->setWidget(agent_panel_);
   agent_dock->setObjectName("dock:agent");
-  agent_dock->setMinimumWidth(360);
+  agent_dock->setMinimumWidth(380);
   agent_dock->setMinimumHeight(340);
   addDockWidget(Qt::RightDockWidgetArea, agent_dock);
+  // Keep both panels usable on wide windows. Constrained layouts tabify them
+  // after the first show instead of crushing the Layers/Objects browser.
   splitDockWidget(objects_dock, agent_dock, Qt::Horizontal);
   connect(agent_dock, &QDockWidget::visibilityChanged, this, [this](bool) {
     markUiMapChanged({"tab:agent",
@@ -2282,7 +2286,13 @@ ReviewWindow::ReviewWindow() {
   setDockNestingEnabled(true);
   resizeDocks({project_dock, objects_dock}, {360, 320}, Qt::Horizontal);
   resizeDocks({project_dock, diagnostics_dock}, {620, 240}, Qt::Vertical);
-  resizeDocks({objects_dock, agent_dock}, {300, 380}, Qt::Horizontal);
+  resizeDocks({objects_dock, agent_dock}, {280, 400}, Qt::Horizontal);
+  QTimer::singleShot(0, this, [this, objects_dock, agent_dock]() {
+    if (width() < 1520) {
+      tabifyDockWidget(objects_dock, agent_dock);
+      objects_dock->raise();
+    }
+  });
 
   auto* navigation_help_action = new QAction("Navigation Controls", this);
   navigation_help_action->setObjectName("action:navigation_help");
@@ -2379,7 +2389,10 @@ ReviewWindow::ReviewWindow() {
   view_menu->addAction(selection_dock->toggleViewAction());
   view_menu->addAction(diagnostics_dock->toggleViewAction());
   view_menu->addAction(transactions_dock->toggleViewAction());
-  view_menu->addAction(agent_dock->toggleViewAction());
+  auto* show_agent_action = agent_dock->toggleViewAction();
+  show_agent_action->setObjectName("action:show_agent");
+  show_agent_action->setText("Show Agent");
+  view_menu->addAction(show_agent_action);
 
   QMenu* place_menu = menuBar()->addMenu("&Place");
   place_menu->addAction("Add Symbol...");
@@ -4151,6 +4164,27 @@ QString ReviewWindow::buildUiMapJson() const {
   appendPanelNode("panel:diagnostics", "Diagnostics", diagnostics_, "bottom");
   appendPanelNode("panel:agent", "Agent", agent_panel_, "right");
 
+  if (object_browser_ != nullptr && object_browser_->tabWidget() != nullptr &&
+      object_browser_->tabWidget()->tabBar() != nullptr) {
+    const QTabWidget* tabs = object_browser_->tabWidget();
+    for (int index = 0; index < tabs->count(); ++index) {
+      const QString id = "tab:appearance_" + normalizedIdPart(tabs->tabText(index));
+      const QRect tab_rect = tabs->tabBar()->tabRect(index);
+      const QRect global_rect(tabs->tabBar()->mapToGlobal(tab_rect.topLeft()), tab_rect.size());
+      nodes << QString("{\"id\":%1,\"role\":\"tab\",\"label\":%2,"
+                       "\"visible\":%3,\"enabled\":%4,\"selected\":%5,"
+                       "\"global_rect\":%6,\"target_x\":%7,\"target_y\":%8}")
+                   .arg(jsonString(id))
+                   .arg(jsonString(tabs->tabText(index)))
+                   .arg(boolJson(tabs->isVisible()))
+                   .arg(boolJson(tabs->isTabEnabled(index)))
+                   .arg(boolJson(tabs->currentIndex() == index))
+                   .arg(rectJson(global_rect))
+                   .arg(global_rect.center().x())
+                   .arg(global_rect.center().y());
+    }
+  }
+
   const QList<QToolButton*> buttons = findChildren<QToolButton*>();
   for (const QToolButton* button : buttons) {
     const QAction* action = button->defaultAction();
@@ -5454,6 +5488,19 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
         .arg(targetPointJson(global_rect.center(), dpr));
   }
 
+  if (object_browser_ != nullptr && object_browser_->tabWidget() != nullptr &&
+      object_browser_->tabWidget()->tabBar() != nullptr) {
+    const QTabWidget* tabs = object_browser_->tabWidget();
+    for (int index = 0; index < tabs->count(); ++index) {
+      const QString tab_id = "tab:appearance_" + normalizedIdPart(tabs->tabText(index));
+      if (tab_id != id) continue;
+      const QRect tab_rect = tabs->tabBar()->tabRect(index);
+      const QRect global_rect(tabs->tabBar()->mapToGlobal(tab_rect.topLeft()), tab_rect.size());
+      return foundTarget(tab_id, "tab", tabs->tabText(index), tabs->isVisible(),
+                         tabs->isTabEnabled(index), global_rect.center());
+    }
+  }
+
   if (editor_tabs_ != nullptr && editor_tabs_->tabBar() != nullptr) {
     for (int index = 0; index < editor_tabs_->count(); ++index) {
       const QString tab_id = index == 0 ? "tab:pcb" : index == 1 ? "tab:schematic"
@@ -6523,7 +6570,14 @@ QString ReviewWindow::uiScreenshotJson(const QString& path, const bool dry_run) 
     target_path = std::filesystem::path(trimmed_path.toStdString());
   }
 
-  const QPixmap pixmap = grab();
+  // Evidence must include the dialog that currently owns user interaction.
+  // Capturing only the main window makes settings, approvals, and reviews look
+  // absent even when they are visibly open above the canvas.
+  QWidget* capture_target = QApplication::activeWindow();
+  if (!capture_target || !capture_target->isVisible()) {
+    capture_target = this;
+  }
+  const QPixmap pixmap = capture_target->grab();
   QJsonObject response;
   response.insert("schema_version", 1);
   response.insert("ui_epoch", ui_map_epoch_);
@@ -6533,6 +6587,7 @@ QString ReviewWindow::uiScreenshotJson(const QString& path, const bool dry_run) 
   response.insert("width", pixmap.width());
   response.insert("height", pixmap.height());
   response.insert("device_pixel_ratio", pixmap.devicePixelRatio());
+  response.insert("capture_target", capture_target->objectName());
 
   if (pixmap.isNull()) {
     response.insert("performed", false);
@@ -7931,6 +7986,18 @@ QString ReviewWindow::triggerSafeUiActionJson(const QString& id) {
         .arg(jsonString(action_id))
         .arg(jsonString(mode));
   };
+
+  if (object_browser_ != nullptr && object_browser_->tabWidget() != nullptr) {
+    QTabWidget* tabs = object_browser_->tabWidget();
+    for (int index = 0; index < tabs->count(); ++index) {
+      const QString tab_id = "tab:appearance_" + normalizedIdPart(tabs->tabText(index));
+      if (tab_id != id) continue;
+      if (!tabs->isTabEnabled(index)) return result(id, false, "disabled");
+      tabs->setCurrentIndex(index);
+      markUiMapChanged({tab_id, "panel:layers_objects"});
+      return result(id, true, "tab_selected");
+    }
+  }
 
   if (id == "tab:pcb" || id == "tab:schematic") {
     if (editor_tabs_ == nullptr) {
