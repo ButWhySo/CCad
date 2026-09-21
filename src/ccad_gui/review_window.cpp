@@ -6588,6 +6588,23 @@ QString ReviewWindow::uiScreenshotJson(const QString& path, const bool dry_run) 
   response.insert("height", pixmap.height());
   response.insert("device_pixel_ratio", pixmap.devicePixelRatio());
   response.insert("capture_target", capture_target->objectName());
+  QJsonObject viewport;
+  if (canvas_view_ != nullptr && canvas_view_->viewport() != nullptr) {
+    const QRect rect = canvas_view_->viewport()->rect();
+    viewport.insert("width", rect.width());
+    viewport.insert("height", rect.height());
+    viewport.insert("canvas", "pcb");
+  }
+  response.insert("viewport", viewport);
+  response.insert("active_layer_id", qstr(activePcbLayerOrDefault()));
+  QJsonArray selected_ids;
+  if (canvas_scene_ != nullptr) {
+    for (QGraphicsItem* item : canvas_scene_->selectedItems()) {
+      const QString id = item->data(0).toString();
+      if (!id.isEmpty()) selected_ids.append(id);
+    }
+  }
+  response.insert("selected_object_ids", selected_ids);
 
   if (pixmap.isNull()) {
     response.insert("performed", false);

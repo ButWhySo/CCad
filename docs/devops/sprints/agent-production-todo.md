@@ -32,7 +32,7 @@ Update this file in the same commit as each implementation slice.
 - [ ] Add guarded real CLI execution with structured stdout, stderr, artifacts, and safe failure mapping.
 - [ ] Add deterministic unit-aware calculator and coordinate-transform tool.
 - [ ] Add constrained project-scoped Python computation with explicit artifacts, no inherited secrets or shell interpolation, bounded execution, and approval for persistence.
-- [ ] Add screenshot/evidence capture with viewport, layer, and selection metadata.
+- [x] Add screenshot/evidence capture with viewport, layer, and selection metadata.
 - [ ] Add UI-map inspection and mapped-action tools; never fixed-coordinate scripts for normal operation.
 - [ ] Add exact PCB/schematic state inspection and typed placement/edit transactions with units, snap, net, geometry, rules, and validation.
 - [x] Let models compose real tools dynamically.
