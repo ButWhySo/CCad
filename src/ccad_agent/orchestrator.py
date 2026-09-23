@@ -549,7 +549,10 @@ def orchestrator_method_catalog():
                  "configured", "enabled", "exporter_initialized", "backend",
                  "last_test", "reason", "error_type", "secret_value_visible"]}},
             {"name": "agent.set_config", "read_only": False, "secrets": False,
-             "side_effect": "persist_non_secret_preferences"},
+             "side_effect": "persist_non_secret_preferences",
+             "params": {"config": {"type": "object", "optional": False}},
+             "response": {"method": "message", "fields": [
+                 "text", "secret_value_visible"]}},
             {"name": "agent.langfuse_set_config", "read_only": False, "secrets": False,
              "side_effect": "persist_non_secret_preferences",
              "deprecated_alias_for": "agent.set_config"},
@@ -1158,6 +1161,7 @@ def invoke_agent_run(state):
             "provider_ready": llm is not None,
             "thread_id": thread_id,
             "context_chars": len(str(state.get("context", ""))),
+            "context_package_digest": str(state.get("context_metadata", {}).get("package_digest", "")),
         }):
         run_config: Dict[str, Any] = {"run_name": "agent-turn"}
         run_config["configurable"] = {"thread_id": thread_id}
@@ -1171,6 +1175,8 @@ def invoke_agent_run(state):
             "ccad_context_present": "true" if state.get("context", "") else "false",
             "ccad_thread_id_present": "true" if thread_id else "false",
             "langfuse_session_id": thread_id,
+            "ccad_context_package_digest": str(state.get("context_metadata", {}).get("package_digest", "")),
+            "ccad_context_estimated_tokens": str(state.get("context_metadata", {}).get("estimated_token_count", "")),
         }
         run_config["tags"] = ["ccad", "agent", active_workflow,
                               os.environ.get("CCAD_PROVIDER", "configured")]
@@ -1917,6 +1923,9 @@ if __name__ == "__main__":
                     "memory_entry_count": context_metadata["memory_entry_count"],
                     "history_message_count": context_metadata["history_message_count"],
                     "context_schema_version": context_metadata["schema_version"],
+                    "package_digest": context_metadata["package_digest"],
+                    "estimated_token_count": context_metadata["estimated_token_count"],
+                    "project_counts": context_metadata["project_counts"],
                 }})
                 
                 # Robust Command Parser
@@ -2081,6 +2090,7 @@ if __name__ == "__main__":
                 try:
                     final_state = invoke_agent_run({"messages": session_messages, "goal": text,
                                                     "context": context_str, "next_node": "",
+                                                    "context_metadata": context_metadata,
                                                     "thread_id": context_thread_id})
                 except Exception as error:
                     trace = telemetry_runtime.current_trace()

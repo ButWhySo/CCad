@@ -34,6 +34,9 @@ metadata = package["metadata"]
 assert package["content"].startswith("[CCAD_CONTEXT_V2]\n")
 assert metadata["schema_version"] == 2
 assert metadata["project_revision"] == "native-revision"
+assert len(metadata["package_digest"]) == 24
+assert metadata["estimated_token_count"] == (metadata["content_size"] + 3) // 4
+assert metadata["project_counts"] == {}
 assert metadata["history_message_count"] == 2
 assert metadata["memory_entry_count"] == 1
 assert metadata["secret_value_visible"] is False
@@ -46,5 +49,6 @@ assert len(package["content"]) <= 1300
 truncated = build_context_package(raw + ("x" * 9000), [], [], char_limit=1024)
 assert truncated["metadata"]["truncated"] is True
 assert len(truncated["content"]) <= 1024
+assert truncated["metadata"]["package_digest"] != metadata["package_digest"]
 
 print("PASS agent context package contract; no network")

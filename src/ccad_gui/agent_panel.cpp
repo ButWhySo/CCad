@@ -1401,13 +1401,17 @@ void AgentPanel::handlePythonOutput() {
         for (const QJsonValue& source : params["sources"].toArray()) {
           if (source.isString()) context_sources_.append(source.toString());
         }
+        const QString digest = params["package_digest"].toString();
+        const int estimated_tokens = params["estimated_token_count"].toInt();
         addActivityEvent("context", "Context package prepared",
-                         QString("v%1 | %2 chars | %3 memories | %4 history | %5")
+                         QString("v%1 | %2 chars | ~%3 tokens | %4 memories | %5 history | %6")
                              .arg(context_schema_version_)
                              .arg(context_content_size_)
+                             .arg(estimated_tokens)
                              .arg(context_memory_entry_count_)
                              .arg(context_history_message_count_)
-                             .arg(context_truncated_ ? "truncated" : "bounded"),
+                             .arg(context_truncated_ ? "truncated" : "bounded")
+                             + (digest.isEmpty() ? QString() : QString(" | %1").arg(digest)),
                          "agent.context_state");
       } else if (obj.contains("method") && obj["method"].toString() == "tool_result_ack") {
         const QJsonObject params = obj["params"].toObject();

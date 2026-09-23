@@ -3049,3 +3049,7 @@ Added explicit ownership types for checkpoint, executor, queue, plugin, and Lang
 ### Sprint 956 — provider catalog failure categories
 
 Provider model refreshes now preserve safe provider identity and actionable authentication, permission, payment, rate-limit, timeout, connection, and invalid-response categories without returning raw response bodies. Controlled catalog contracts cover OpenAI, Anthropic, Gemini, OpenRouter, Cerebras, and Ollama paths; broad provider integration verification remains open.
+
+### Sprint 957 â€” exact bounded context metadata
+
+The bounded provider package now carries a stable redacted package digest, estimated token count, and native project-domain counts alongside its revision, source, memory, history, truncation, and secret-safety metadata. The same metadata is emitted through `context_state` and passed into the agent-turn trace/config, so GUI evidence, orchestration, and observability refer to one exact package rather than separate character-count approximations. Context, revision, memory-boundary, and JSON-RPC contracts pass without network access. Pyright still reports the pre-existing single orchestrator complexity diagnostic; it remains open without suppression.

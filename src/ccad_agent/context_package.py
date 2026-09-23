@@ -53,6 +53,26 @@ def _memory_payload(entries: Iterable[dict], per_entry_limit: int = 1000) -> lis
     return result
 
 
+def _project_counts(project: Any) -> dict[str, int]:
+    """Expose counts only; never export native design payload through metadata."""
+    if not isinstance(project, dict):
+        return {}
+    project = project.get("project", project)
+    if not isinstance(project, dict):
+        return {}
+    counts: dict[str, int] = {}
+    for key in ("components", "footprints", "pads", "pins", "nets", "tracks",
+                "vias", "zones", "layers", "rules", "libraries", "selection"):
+        value = project.get(key)
+        if isinstance(value, (list, tuple, dict)):
+            counts[key] = len(value)
+    for key in ("board", "schematic", "tool_state"):
+        value = project.get(key)
+        if isinstance(value, dict):
+            counts[f"{key}_fields"] = len(value)
+    return counts
+
+
 def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
                           history: Iterable[Any], *, char_limit: int) -> dict:
     """Return actual provider content plus non-content metadata for one turn."""
@@ -84,6 +104,8 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
         sort_keys=True, separators=(",", ":"))
     revision = native_revision or hashlib.sha256(
         revision_material.encode("utf-8")).hexdigest()[:24]
+    package_digest = hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:24]
+    project_counts = _project_counts(project)
     sources = []
     if project:
         sources.append("project_snapshot")
@@ -97,11 +119,14 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
             "schema_version": 2,
             "project_revision": revision,
             "content_size": len(encoded),
+            "package_digest": package_digest,
+            "estimated_token_count": (len(encoded) + 3) // 4,
             "context_limit": limit,
             "truncated": truncated,
             "sources": sources,
             "memory_entry_count": len(memories),
             "history_message_count": len(history_items),
+            "project_counts": project_counts,
             "content_emitted": False,
             "secret_value_visible": False,
         },
