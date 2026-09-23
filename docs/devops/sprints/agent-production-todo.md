@@ -73,6 +73,7 @@ Update this file in the same commit as each implementation slice.
 
 ## Delivery gates
 
+- [x] Install and verify global C++/Qt, Python, and CMake language servers; expose the real Qt/MinGW compile database to clangd.
 - [ ] Write contract tests before behavior changes.
 - [x] Build Qt and run targeted/full CTest.
 - [x] Run scoped UI-map/mouse-keyboard validation; inspect screenshots and logs.

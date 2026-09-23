@@ -1638,14 +1638,15 @@ void AgentPanel::submitChat() {
   }
 }
 
-void AgentPanel::sendJsonRpc(const QString& method, const QJsonObject& params) {
-  if (python_process_ && python_process_->state() == QProcess::Running) {
-    QJsonObject payload;
-    payload["jsonrpc"] = "2.0";
-    payload["method"] = method;
-    payload["params"] = params;
-    python_process_->write(QJsonDocument(payload).toJson(QJsonDocument::Compact) + "\n");
-  }
+bool AgentPanel::sendJsonRpc(const QString& method, const QJsonObject& params) {
+  if (!python_process_ || python_process_->state() != QProcess::Running) return false;
+  QJsonObject payload;
+  payload["jsonrpc"] = "2.0";
+  payload["method"] = method;
+  payload["params"] = params;
+  const QByteArray wire = QJsonDocument(payload).toJson(QJsonDocument::Compact) + "\n";
+  if (python_process_->write(wire) != wire.size()) return false;
+  return python_process_->waitForBytesWritten(1000);
 }
 
 bool AgentPanel::eventFilter(QObject* obj, QEvent* event) {

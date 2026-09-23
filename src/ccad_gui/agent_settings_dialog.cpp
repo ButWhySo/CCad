@@ -872,12 +872,26 @@ void AgentSettingsDialog::createObservabilityTab(QWidget* parent_widget) {
         {"environment", langfuse_environment_input_ ? langfuse_environment_input_->text().trimmed() : QStringLiteral("development")},
         {"service_name", langfuse_service_name_input_ ? langfuse_service_name_input_->text().trimmed() : QStringLiteral("ccad-agent")},
     }}};
-    agent_panel_->sendJsonRpc("agent.set_config", config);
-    agent_panel_->sendJsonRpc("agent.langfuse_set_secret", QJsonObject{
+    const bool config_sent = agent_panel_->sendJsonRpc("agent.set_config", config);
+    const bool secret_sent = agent_panel_->sendJsonRpc("agent.langfuse_set_secret", QJsonObject{
         {"public_key", langfuse_public_key_input_ ? langfuse_public_key_input_->text() : QString()},
         {"secret_key", langfuse_secret_key_input_ ? langfuse_secret_key_input_->text() : QString()},
     });
-    agent_panel_->sendJsonRpc("agent.langfuse_test", QJsonObject());
+    const bool test_sent = agent_panel_->sendJsonRpc("agent.langfuse_test", QJsonObject());
+    if (!config_sent || !secret_sent || !test_sent) {
+      if (langfuse_status_label_) {
+        langfuse_status_label_->setText("Langfuse: agent backend unavailable");
+      }
+      return;
+    }
+    if (langfuse_status_label_) langfuse_status_label_->setText("Langfuse: test running...");
+    QPointer<AgentSettingsDialog> dialog_guard(this);
+    QTimer::singleShot(12000, this, [dialog_guard]() {
+      if (dialog_guard && dialog_guard->langfuse_status_label_ &&
+          dialog_guard->langfuse_status_label_->text() == "Langfuse: test running...") {
+        dialog_guard->langfuse_status_label_->setText("Langfuse: test response timeout");
+      }
+    });
   });
   layout->addWidget(test);
   auto* remove = new QPushButton("Remove Langfuse credentials", parent_widget);

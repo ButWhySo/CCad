@@ -36,7 +36,7 @@ Wait a few seconds and interact with at least two or three basic GUI elements be
 
 ### Phase 2: Research and Implementation
 
-Research first. Look up existing projects, standard implementations, and proven approaches before reinventing core behavior. Adapt findings strictly to the project’s LLM-native CAD use-case.
+Research first. Look up existing projects, standard implementations, and proven approaches before reinventing core behavior. Adapt findings strictly to the project’s LLM-native CAD use-case.Use internet and browser and lookup the existing implementation and best practices for current scope.Use browser automation if needed. I am specifically banning you from mock/stub codes and plumbing. in complete ccad project.Whatever imlpementation/code you write should be complete, end to end , production grade.
 
 Use the local KiCad source checkout, expected around `F:\kicad_src`, as a reference implementation source. Study relevant KiCad patterns and adapt the architectural lessons where appropriate, without blindly copying behavior that does not fit CCAD.
 
@@ -67,11 +67,11 @@ Start-Sleep -Seconds 2
 .\build-qt\ccad_gui.exe *> gui_stdout.log 2> gui_stderr.log
 ```
 
-If a more complete PowerShell launcher already exists in the repo, use that script instead of duplicating it, but ensure it still satisfies the same requirements: beep, 2-second pre-launch wait, focused maximized/fullscreen launch, 7-second load wait, stderr capture, stdout capture, and screenshot capture.
+If a more complete PowerShell launcher already exists in the repo, use that script with use case based corrections/modifications instead of duplicating it, but ensure it still satisfies the same requirements: beep, 2-second pre-launch wait, focused maximized/fullscreen launch, 7-second load wait, stderr capture, stdout capture, and screenshot capture.
 
-Interact with the GUI through the live Qt6 GUI map feature already coded in the project. Do not use random coordinates unless there is no mapped alternative and the exception is documented. The GUI map must be used to identify real widgets, menus, actions, buttons, panels, dialogs, and newly changed elements.
+Interact with the GUI through the live Qt6 GUI map feature already coded in the project. Do not use random coordinates unless there is no mapped alternative and the exception is documented. The GUI map must be used to identify real widgets, menus, actions, buttons, panels, dialogs, and newly changed elements.In running visual validation, you are supposed to ingest the output screenshots and then observe them. Visual validation was meant to simply guide/verify the actual work you did was implemented and working fine without bugs as a user, you need to visually verify the feature that you worked on/bug you fixed not simply perform the fixed steps everytime.
 
-During GUI validation, interact with at least 7 elements. Space interactions by roughly 0.5 seconds unless the UI requires longer. The interaction set must include normal existing elements, newly coded or recently fixed elements, menus that open dialog boxes, and controls inside those dialog boxes. After opening a dialog, interact with relevant controls inside it, capture screenshots, then close the dialog cleanly after successful verification.
+During GUI validation, interact with at least 7 elements(if you are not aware of what changes u did, otherwise be specific to the feature/bug you solved). Space interactions by roughly 0.5 seconds unless the UI requires longer. The interaction set must include normal existing elements, newly coded or recently fixed elements, menus that open dialog boxes, and controls inside those dialog boxes. After opening a dialog, interact with relevant controls inside it, capture screenshots, then close the dialog cleanly after successful verification.
 
 Capture a screenshot after every interaction. Do not rely on a single final screenshot. The screenshot sequence must prove that the GUI remains alive, focused, visually correct, and responsive over time.
 
@@ -81,7 +81,31 @@ Ingest every generated screenshot from the current validation run into image-ana
 
 The visual validation is only accepted when the screenshots, GUI-map interactions, stdout logs, stderr logs, and feature-specific behavior all agree that the GUI works as expected.
 
-Agents must use the official PowerShell interaction scripts to test features and must interact with the GUI by actively injecting mouse clicks and keyboard values. Every feature worked on must be tested by utilizing mouse and keyboard inputs, adopting agent-first methodologies, executing command prompt direct controls, and utilizing the GUI map to the fullest extent. Every generated screenshot from the validation run must be explicitly ingested and visually inspected by the agent to verify layout correctness and feature behavior.
+Agents must use the official PowerShell interaction scripts to test features and must interact with the GUI by actively injecting mouse clicks and keyboard values , or through the ui map and the live commands/tool calls developed in ccad/mouse keyboard computer use. Every feature worked on must be tested by utilizing mouse and keyboard inputs, adopting agent-first methodologies, executing command prompt direct controls, and utilizing the GUI map to the fullest extent. Every generated screenshot from the validation run must be explicitly ingested and visually inspected by the agent to verify layout correctness and specific scoped feature/bug resolution behavior.
+
+Run moderated automated testing before committing. Test both CLI and GUI behavior. Since C++ builds can take time, use judgment during development, but the full CMake build and CTest gate are mandatory before merging to main or pushing final changes.
+
+If GUI or visual components are touched, use scripts/run_sprint_demo.ps1 (or an equivalent existing launcher) only to get the application into a stable, loaded, screenshot-capable state — beep, 2-second pre-launch wait, focused/maximized/fullscreen launch, 7-second settle time, stdout/stderr capture. The script's job ends there. It is scaffolding, not the test.
+
+The actual verification is driven by what changed this sprint, not by the script's built-in steps. Before touching the GUI:
+
+Identify the specific feature added or bug fixed in this branch — name it explicitly (e.g. "trace-width validation on the routing dialog," not "routing").
+Identify, via the Qt6 GUI map, which real widgets/menus/dialogs/controls that change actually touches. Do not use random coordinates unless there is no mapped alternative, and document the exception if so.
+Build a short interaction plan around that feature/bug specifically — what sequence of clicks/inputs would exercise it, expose the old bug if it regressed, or confirm the new behavior works as intended.
+
+Then execute:
+
+Interact with at least 7 elements total, spaced ~0.5s apart (longer if the UI needs it). This set must include: pre-existing unrelated elements (proving the app is generally alive), and the newly coded/fixed elements specifically, including opening any dialog involved and operating the controls inside it.
+Screenshot after every interaction — never rely on a single final screenshot. The sequence must show the target feature/bug in its "before" state, mid-interaction, and "after" state, not just a generic tour of the UI.
+Intercept stdout/stderr into logs and actually inspect them for warnings, failed widget lookups, missing assets, or rendering failures tied to the touched area.
+
+Explicitly do not treat "the script ran and produced screenshots" as sufficient. The harness proves the app booted; it does not prove the feature works. Running the demo script's default steps without deliberately routing through the sprint's actual change is not valid verification — if the script's built-in flow happens not to touch the feature/bug in question, that's a gap to fill manually via the GUI map, not something to paper over with the script's default screenshots.
+
+Ingest every generated screenshot into image-analysis tools (view_file or equivalent). Judge them specifically against what the feature/bug was supposed to do — not just generic "no crash, no clipping" checks, though those still apply. Ask: does this screenshot sequence actually demonstrate the thing I built or fixed, in a way a human reviewer could verify without reading the diff?
+
+Visual validation is only accepted when the screenshots, GUI-map interactions, stdout/stderr logs, and the specific feature/bug behavior all agree — and the interaction plan can be pointed to as evidence of that sprint's change, not just evidence the binary launches.
+
+Do not mistake a local "green" status for a CI/CD/CT "green" status anymore.
 
 ### Phase 4: Documentation and Cleanup
 
@@ -112,3 +136,8 @@ Provide the user with the required status format:
 ```text
 Progress: Phase X/Y, Sprint N, <branch>, <status> <worked_on> <importance_from_user_pov_no_dev_lang_layman_lang_only>
 ```
+## Language-server-assisted validation
+
+When the feature touches C++, Qt, Python, or CMake, use the available language server before launching the GUI to catch declaration, include, type, and configuration errors quickly. For C++/Qt, prefer clangd with the repository's generated `compile_commands.json`; for Python orchestration, use Pyright with the agent virtual environment; for CMake, use cmake-language-server. These checks are advisory and must not replace the actual build, CTest, provider calls, GUI-map interactions, screenshots, or log inspection.
+
+Useful open-ended checks include asking clangd to inspect changed translation units, checking symbol references and generated Qt MOC-visible declarations, running Pyright on provider/graph/memory/telemetry modules, validating CMake target and dependency edits, and using the server diagnostics to choose targeted GUI-map scenarios. Repeat the server check after edits that change public interfaces, IPC payloads, tool schemas, settings persistence, or renderer contracts. Record the exact server version, database/configuration path, changed files, and diagnostic result in the validation evidence when it materially affects the feature.
