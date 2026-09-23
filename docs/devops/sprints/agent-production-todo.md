@@ -33,7 +33,10 @@ Update this file in the same commit as each implementation slice.
   - [x] Publish native GUI methods and real CLI command descriptors in one discovery response; mark only broker-backed GUI methods callable.
   - [x] Derive CLI command effect metadata through the shared CCad command policy classifier.
   - [x] Verify discovery contains the exact CLI help inventory and Python binds only callable GUI broker methods.
-  - [ ] Register Python memory/runtime controls and all kernel transaction capabilities in the unified registry.
+  - [x] Give Python JSON-RPC controls typed parameter, response, transport, dispatchability, and secrecy metadata; test uniqueness and memory safety semantics.
+  - [ ] Merge Python control-plane descriptors into GUI `agent.methods`/`agent.method_schema` discovery without presenting them as model-callable tools.
+  - [x] Audit `ccad_core::Transaction`: current API builds/serializes diffs and impact only; no kernel apply/undo dispatcher exists to register as callable.
+  - [ ] Expose kernel transaction capabilities only after the real apply/undo/verify execution path is wired; retain explicit unavailable state until then.
 - [x] Give each supported command schemas, examples, validation, side-effect class, context needs, and result shape.
 - [ ] Add guarded real CLI execution with structured stdout, stderr, artifacts, and safe failure mapping.
 - [ ] Add deterministic unit-aware calculator and coordinate-transform tool.

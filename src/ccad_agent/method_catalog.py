@@ -1,6 +1,6 @@
 def orchestrator_method_catalog():
     """Describe only the child-process JSON-RPC controls and their safety."""
-    return {
+    catalog = {
         "schema_version": 1,
         "methods": [
             {"name": "agent.methods", "read_only": True},
@@ -10,17 +10,22 @@ def orchestrator_method_catalog():
              "response": {"method": "context_state_snapshot", "fields": [
                  "thread_id", "revision", "content_emitted", "secret_value_visible"]}},
             {"name": "agent.memory_state", "read_only": True, "secrets": False,
-             "params": {"tier": {"type": "string", "optional": True}},
+             "params": {"tier": {"type": "string", "optional": True,
+                                    "enum": ["stm", "ltm", "episodic"]}},
              "response": {"method": "memory_state", "fields": [
                  "tiers", "secret_value_visible"]}},
             {"name": "agent.memory_set_enabled", "read_only": False, "secrets": False,
-             "params": {"tier": {"type": "string"}, "enabled": {"type": "boolean"}},
+             "approval_required": False,
+             "side_effect": "persist_memory_preference_and_update_runtime_cache",
+             "params": {"tier": {"type": "string", "enum": ["stm", "ltm", "episodic"]},
+                        "enabled": {"type": "boolean"}},
              "response": {"method": "memory_state", "fields": [
                  "tier", "enabled", "runtime_entries", "persistent_entries",
                  "loaded_into_process", "secret_value_visible"]}},
             {"name": "agent.memory_reset", "read_only": False, "secrets": False,
              "approval_required": True,
-             "params": {"tier": {"type": "string", "optional": True}},
+             "params": {"tier": {"type": "string", "optional": True,
+                                    "enum": ["stm", "ltm", "episodic"]}},
              "response": {"method": "memory_reset", "fields": [
                  "tier", "removed", "secret_value_visible"]}},
             {"name": "agent.pending_calls", "read_only": True, "secrets": False,
@@ -138,10 +143,6 @@ def orchestrator_method_catalog():
             {"name": "agent.mcp_plan", "read_only": True, "network_access": "none",
              "secrets": False, "response": {"method": "mcp_plan", "fields": [
                  "servers", "launch_allowed", "reason"]}},
-            {"name": "agent.set_config", "read_only": False, "secrets": False,
-             "params": {"config": {"type": "object", "optional": False}},
-             "response": {"method": "message", "fields": [
-                 "text", "secret_value_visible"]}},
             {"name": "agent.activate_provider", "read_only": False,
              "network_access": "adapter_initialization_only", "secrets": False,
              "params": {"provider": {"type": "string"},
@@ -196,3 +197,12 @@ def orchestrator_method_catalog():
         ],
         "secret_value_visible": False,
     }
+    methods = catalog["methods"]
+    # This is a control-plane catalog, not the model-callable tool list. Keep
+    # transport and dispatchability explicit so clients cannot infer otherwise.
+    for method in methods:
+        method.setdefault("transport", "python_json_rpc")
+        method.setdefault("dispatchable", True)
+        method["agent_tool_callable"] = False
+        method.setdefault("secrets", False)
+    return catalog

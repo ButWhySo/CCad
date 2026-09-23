@@ -1889,3 +1889,18 @@ the offline native-catalog protocol test passed. Live Qt UI-map inspection
 reported 170 entries (59 callable GUI methods, 111 non-callable CLI commands),
 and all 10 captured screenshots were inspected. GUI stdout/stderr were empty.
 The screenshot/log directory is local validation evidence and must not be staged.
+
+Sprint 964 handover: `method_catalog.py` is the Python child-process JSON-RPC
+control-plane catalog. Every entry now declares its JSON-RPC transport,
+dispatchability, and that it is not a model-callable tool; memory controls
+declare allowed tiers, persistence/runtime effects, and reset approval.
+`scripts/test_agent_orchestrator_method_catalog.py` checks uniqueness, secrecy,
+and memory contracts, and CTest runs it when Python is available. Qt's
+`agent.methods` response does not yet merge these descriptors. The core
+`Transaction` API only builds/serializes project diffs and impacts; do not list
+apply/undo as callable until an authoritative dispatcher exists.
+Sprint 964 language-server evidence: Pyright 1.1.414 reported zero diagnostics
+for the changed Python files. The installed CMake language server 0.1.11 is
+incompatible with global pygls 2.1.1 (`LanguageServer` import failure); CMake
+configure/generate accepted the build-file change. No C++ source changed in
+this slice, so clangd was not invoked.

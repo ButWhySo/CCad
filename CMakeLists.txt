@@ -235,6 +235,12 @@ endif()
 
 enable_testing()
 
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(Python3_Interpreter_FOUND)
+  add_test(NAME agent_python_method_catalog
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_agent_orchestrator_method_catalog.py")
+endif()
+
 add_executable(ccad_tests
   tests/test_serialize.cpp
 )
