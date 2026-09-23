@@ -3065,3 +3065,7 @@ Verified the six configured provider adapters against their official model-catal
 ### Sprint 960 â€” orchestration complexity refactor, first half
 
 Moved the pure JSON-RPC method catalog into `method_catalog.py` without changing its schema or runtime contract. Context and native-catalog contracts pass. The remaining Pyright complexity diagnostic is in the still-monolithic RPC dispatch loop; the Tier 1 checkbox remains open until that loop is split and Pyright is clean.
+
+### Sprint 961 - orchestration dispatch complexity resolved
+
+Extracted provider, thread, model-catalog, context, and memory RPC handling into `handle_provider_and_state_request`. The dispatch loop now delegates that cohesive stateful group without changing JSON-RPC events or provider behavior. Project-venv context, native-catalog, provider, and memory contracts pass. Pyright no longer reports the complexity diagnostic; seven unrelated existing type diagnostics remain for later cleanup.

@@ -1319,6 +1319,277 @@ def get_dynamic_marketplace_catalog():
         ]
     }
 
+def handle_provider_and_state_request(req, executor):
+    method = req.get("method")
+    if method in ("agent.test_provider", "agent.test_provider_connection"):
+        # Transient tests: never update config_manager or write config.
+        params = req.get("params", {})
+        provider_id = params.get("provider", "openai")
+        model = params.get("model", "").strip()
+        secret = params.get("secret", "")
+        connection_requested = method == "agent.test_provider_connection"
+        test_env_names = ("CCAD_PROVIDER", "CCAD_MODEL", "CCAD_GEMINI_MODEL",
+                          "CCAD_OPENROUTER_MODEL", "CCAD_CEREBRAS_MODEL",
+                          "CCAD_CEREBRAS_REASONING_EFFORT",
+                          "CCAD_OPENAI_COMPATIBLE_MODEL", "CCAD_LOCAL_MODEL_NAME",
+                          "CCAD_OLLAMA_MODEL", "CCAD_OLLAMA_BASE_URL",
+                          "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY",
+                          "GOOGLE_API_KEY", "OPENROUTER_API_KEY", "CEREBRAS_API_KEY",
+                          "CCAD_OPENAI_COMPATIBLE_API_KEY", "CCAD_LOCAL_MODEL_API_KEY",
+                          "CCAD_OLLAMA_API_KEY")
+        saved_test_env = {name: os.environ.get(name) for name in test_env_names}
+        saved_session_provider_env = set(session_provider_env)
+        os.environ["CCAD_PROVIDER"] = provider_id
+        if model:
+            os.environ["CCAD_MODEL"] = model
+            model_env = {"google_gemini": "CCAD_GEMINI_MODEL",
+                         "openai_compatible": "CCAD_OPENAI_COMPATIBLE_MODEL",
+                         "openrouter": "CCAD_OPENROUTER_MODEL",
+                         "cerebras": "CCAD_CEREBRAS_MODEL",
+                         "local_model": "CCAD_LOCAL_MODEL_NAME",
+                         "ollama": "CCAD_OLLAMA_MODEL",
+                         "local_model_server": "CCAD_LOCAL_MODEL_NAME"}.get(provider_id)
+            if model_env: os.environ[model_env] = model
+        env_names = {"openai": "OPENAI_API_KEY", "anthropic": "ANTHROPIC_API_KEY",
+                     "google_gemini": "GEMINI_API_KEY",
+                     "openai_compatible": "CCAD_OPENAI_COMPATIBLE_API_KEY",
+                     "openrouter": "OPENROUTER_API_KEY",
+                     "cerebras": "CEREBRAS_API_KEY",
+                     "local_model": "CCAD_LOCAL_MODEL_API_KEY",
+                     "ollama": "CCAD_OLLAMA_API_KEY",
+                     "local_model_server": "CCAD_LOCAL_MODEL_API_KEY"}
+        env_name = env_names.get(provider_id, "OPENAI_API_KEY")
+        clear_session_provider_env()
+        if secret:
+            set_session_provider_env(env_name, secret)
+            if provider_id == "google_gemini": set_session_provider_env("GOOGLE_API_KEY", secret)
+        provider_ready = init_provider()
+        # `init_provider` can emit ambient provider_state events for the
+        # temporary selection.  The GUI must not use those to decide a
+        # settings validation result because restoring the active
+        # provider emits another ambient state afterwards.
+        test_error = "" if provider_ready else (
+            "provider_unavailable" if secret else "missing_api_key")
+        test_category = "" if provider_ready else (
+            "provider_unavailable" if secret else "missing_api_key")
+        connection_preview = ""
+        connection_category = test_category
+        connection_status = None
+        connection_attempted = False
+        if connection_requested and provider_ready and llm is not None:
+            try:
+                # This is deliberately not invoke_provider_with_retry:
+                # user clicked an explicit quota-spending connection test.
+                connection_attempted = True
+                connection_preview = provider_connection_probe(llm)
+                connection_category = ""
+            except Exception as error:
+                connection_category = classify_provider_error(error)
+                connection_status = provider_http_status(error)
+        clear_session_provider_env()
+        for name, value in saved_test_env.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+        session_provider_env.update(saved_session_provider_env)
+        init_provider()
+        if connection_requested:
+            emit({"jsonrpc": "2.0", "method": "provider_connection_result", "params": {
+                "provider": provider_id,
+                "model": model,
+                "connected": provider_ready and not connection_category,
+                "response_preview": connection_preview,
+                "error_category": connection_category,
+                "http_status": connection_status,
+                "network_access": "explicit_one_request",
+                "tool_executed": False,
+                "request_count": 1 if connection_attempted else 0,
+                "secret_value_visible": False,
+            }})
+        else:
+            # This adapter-only validation intentionally sends no request.
+            emit({"jsonrpc": "2.0", "method": "provider_test_result", "params": {
+                "provider": provider_id,
+                "model": model,
+                "configured": bool(secret),
+                "execution_enabled": provider_ready,
+                "network_access": "not_probed",
+                "error": test_error,
+                "error_category": test_category,
+                "secret_value_visible": False,
+            }})
+    elif method == "agent.set_provider_secret":
+        # Private IPC only. Never emit, persist, or add credential to
+        # prompts. Provider SDK reads process memory via its env var.
+        provider_id = req.get("params", {}).get("provider", "openai")
+        secret = req.get("params", {}).get("secret", "")
+        env_names = {
+            "openai": "OPENAI_API_KEY",
+            "anthropic": "ANTHROPIC_API_KEY",
+            "google_gemini": "GEMINI_API_KEY",
+            "openai_compatible": "CCAD_OPENAI_COMPATIBLE_API_KEY",
+            "openrouter": "OPENROUTER_API_KEY",
+            "cerebras": "CEREBRAS_API_KEY",
+            "local_model": "CCAD_LOCAL_MODEL_API_KEY",
+            "ollama": "CCAD_OLLAMA_API_KEY",
+            "local_model_server": "CCAD_LOCAL_MODEL_API_KEY",
+        }
+        env_name = env_names.get(provider_id, "OPENAI_API_KEY")
+        clear_session_provider_env()
+        if secret:
+            set_session_provider_env(env_name, secret)
+            if provider_id == "google_gemini":
+                set_session_provider_env("GOOGLE_API_KEY", secret)
+        provider_ready = init_provider()
+        # Complete the selected key operation with a dedicated event.
+        # Ambient provider_state traffic is not reliable Settings UI
+        # feedback because set_config may have emitted an earlier state.
+        emit({"jsonrpc": "2.0", "method": "provider_secret_result", "params": {
+            "provider": provider_id,
+            "configured": bool(secret),
+            "execution_enabled": provider_ready,
+            "network_access": "not_probed",
+            "error": "" if provider_ready else ("provider_unavailable" if secret else "missing_api_key"),
+            "error_category": "" if provider_ready else ("provider_unavailable" if secret else "missing_api_key"),
+            "secret_value_visible": False,
+        }})
+    elif method == "agent.set_thread_id":
+        thread_id = req.get("params", {}).get("thread_id", "").strip()
+        if thread_id:
+            os.environ["CCAD_AGENT_THREAD_ID"] = thread_id
+        else:
+            os.environ.pop("CCAD_AGENT_THREAD_ID", None)
+        emit({"jsonrpc": "2.0", "method": "thread_state", "params": {
+            "configured": bool(thread_id), "secret_value_visible": False,
+        }})
+    elif method == "agent.resume_thread":
+        thread_id = os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
+        if checkpoint_saver is None:
+            emit({"jsonrpc": "2.0", "method": "thread_state", "params": {
+                "resumable": False, "reason": "checkpoint_disabled",
+            }})
+        else:
+            snapshot = executor.get_state({"configurable": {"thread_id": thread_id}})
+            resume_value = req.get("params", {}).get("resume")
+            if resume_value is not None and snapshot.next:
+                resumed = resume_checkpointed_run(thread_id, resume_value)
+                emit({"jsonrpc": "2.0", "method": "thread_resumed", "params": {
+                    "thread_id": thread_id,
+                    "next": list(executor.get_state({"configurable": {"thread_id": thread_id}}).next),
+                    "message_count": len(resumed.get("messages", [])) if isinstance(resumed, dict) else 0,
+                }})
+                snapshot = executor.get_state({"configurable": {"thread_id": thread_id}})
+            emit({"jsonrpc": "2.0", "method": "thread_state", "params": {
+                "resumable": bool(snapshot.values), "thread_id": thread_id,
+                "next": list(snapshot.next), "checkpoint_id": snapshot.config.get("configurable", {}).get("checkpoint_id", ""),
+            }})
+    elif method == "agent.methods":
+        emit({"jsonrpc": "2.0", "method": "agent_methods",
+              "params": orchestrator_method_catalog()})
+    elif method == "agent.list_models":
+        raw_provider = req.get("params", {}).get("provider", "openrouter")
+        if not isinstance(raw_provider, str):
+            emit({"jsonrpc": "2.0", "method": "provider_models",
+                  "params": {"provider": "", "ok": False,
+                              "error": "invalid_params",
+                              "error_detail": "provider must be a string",
+                              "network_access": "none", "models": []}})
+            return True
+        provider_id = raw_provider.strip().lower()
+        if provider_id == "openai":
+            emit({"jsonrpc": "2.0", "method": "provider_models",
+                  "params": {"provider": provider_id, **fetch_openai_models()}})
+        elif provider_id == "anthropic":
+            emit({"jsonrpc": "2.0", "method": "provider_models",
+                  "params": {"provider": provider_id, **fetch_anthropic_models()}})
+        elif provider_id == "google_gemini":
+            emit({"jsonrpc": "2.0", "method": "provider_models",
+                  "params": {"provider": provider_id, **fetch_gemini_models()}})
+        elif provider_id == "openrouter":
+            emit({"jsonrpc": "2.0", "method": "provider_models",
+                  "params": {"provider": provider_id, **fetch_openrouter_models()}})
+        elif provider_id == "cerebras":
+            emit({"jsonrpc": "2.0", "method": "provider_models",
+                  "params": {"provider": provider_id, **fetch_cerebras_models()}})
+        elif provider_id == "ollama":
+            emit({"jsonrpc": "2.0", "method": "provider_models",
+                  "params": {"provider": provider_id, **fetch_ollama_models()}})
+        else:
+            emit({"jsonrpc": "2.0", "method": "provider_models",
+                  "params": {"provider": provider_id, "ok": False,
+                              "error": "unsupported_provider",
+                              "error_detail": "model catalog is unavailable for this provider",
+                              "network_access": "explicit_refresh",
+                              "models": []}})
+    elif method == "agent.pending_calls":
+        thread_id = req.get("params", {}).get("thread_id", "")
+        emit({"jsonrpc": "2.0", "method": "pending_calls_state", "params":
+              pending_call_snapshot(str(thread_id))})
+    elif method == "agent.context_state":
+        requested_thread = req.get("params", {}).get("thread_id", "")
+        thread_id = str(requested_thread or
+                        os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local"))
+        emit({"jsonrpc": "2.0", "method": "context_state_snapshot", "params": {
+            "thread_id": thread_id,
+            "revision": context_revisions.get(thread_id, ""),
+            "content_emitted": False,
+            "secret_value_visible": False,
+        }})
+    elif method == "agent.memory_state":
+        tier = req.get("params", {}).get("tier")
+        try:
+            state = memory_manager.state(str(tier)) if tier else memory_manager.state()
+            emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
+                "tiers": state if tier is None else {str(tier): state},
+                "secret_value_visible": False,
+            }})
+        except (TypeError, ValueError) as error:
+            emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
+                "tiers": {}, "error": str(error), "secret_value_visible": False}})
+    elif method == "agent.memory_set_enabled":
+        params = req.get("params", {})
+        tier = str(params.get("tier", ""))
+        try:
+            state = (memory_manager.enable(tier) if bool(params.get("enabled"))
+                     else memory_manager.disable(tier))
+            memory_config = dict(config_manager.get("memory", {}))
+            memory_config[tier] = bool(params.get("enabled"))
+            config_manager.update("memory", memory_config)
+            emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
+                "tier": tier, **state, "secret_value_visible": False}})
+        except (TypeError, ValueError, RuntimeError) as error:
+            emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
+                "tier": tier, "enabled": False, "error": str(error),
+                "secret_value_visible": False}})
+    elif method == "agent.memory_reset":
+        tier = req.get("params", {}).get("tier")
+        tier = str(tier) if tier else None
+        try:
+            removed = memory_manager.reset(tier)
+            emit({"jsonrpc": "2.0", "method": "memory_reset", "params": {
+                "tier": tier or "all", "removed": removed,
+                "secret_value_visible": False}})
+        except (TypeError, ValueError) as error:
+            emit({"jsonrpc": "2.0", "method": "memory_reset", "params": {
+                "tier": tier or "all", "removed": 0, "error": str(error),
+                "secret_value_visible": False}})
+
+    return method in {
+        "agent.test_provider",
+        "agent.test_provider_connection",
+        "agent.set_provider_secret",
+        "agent.set_thread_id",
+        "agent.resume_thread",
+        "agent.methods",
+        "agent.list_models",
+        "agent.pending_calls",
+        "agent.context_state",
+        "agent.memory_state",
+        "agent.memory_set_enabled",
+        "agent.memory_reset",
+    }
+
 if __name__ == "__main__":
     initialize_agent_process()
     # LangfuseRuntime owns tracing.  Do not install the process-global
@@ -1350,259 +1621,8 @@ if __name__ == "__main__":
         try:
             req = json.loads(line)
             method = req.get("method")
-            if method in ("agent.test_provider", "agent.test_provider_connection"):
-                # Transient tests: never update config_manager or write config.
-                params = req.get("params", {})
-                provider_id = params.get("provider", "openai")
-                model = params.get("model", "").strip()
-                secret = params.get("secret", "")
-                connection_requested = method == "agent.test_provider_connection"
-                test_env_names = ("CCAD_PROVIDER", "CCAD_MODEL", "CCAD_GEMINI_MODEL",
-                                  "CCAD_OPENROUTER_MODEL", "CCAD_CEREBRAS_MODEL",
-                                  "CCAD_CEREBRAS_REASONING_EFFORT",
-                                  "CCAD_OPENAI_COMPATIBLE_MODEL", "CCAD_LOCAL_MODEL_NAME",
-                                  "CCAD_OLLAMA_MODEL", "CCAD_OLLAMA_BASE_URL",
-                                  "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY",
-                                  "GOOGLE_API_KEY", "OPENROUTER_API_KEY", "CEREBRAS_API_KEY",
-                                  "CCAD_OPENAI_COMPATIBLE_API_KEY", "CCAD_LOCAL_MODEL_API_KEY",
-                                  "CCAD_OLLAMA_API_KEY")
-                saved_test_env = {name: os.environ.get(name) for name in test_env_names}
-                saved_session_provider_env = set(session_provider_env)
-                os.environ["CCAD_PROVIDER"] = provider_id
-                if model:
-                    os.environ["CCAD_MODEL"] = model
-                    model_env = {"google_gemini": "CCAD_GEMINI_MODEL",
-                                 "openai_compatible": "CCAD_OPENAI_COMPATIBLE_MODEL",
-                                 "openrouter": "CCAD_OPENROUTER_MODEL",
-                                 "cerebras": "CCAD_CEREBRAS_MODEL",
-                                 "local_model": "CCAD_LOCAL_MODEL_NAME",
-                                 "ollama": "CCAD_OLLAMA_MODEL",
-                                 "local_model_server": "CCAD_LOCAL_MODEL_NAME"}.get(provider_id)
-                    if model_env: os.environ[model_env] = model
-                env_names = {"openai": "OPENAI_API_KEY", "anthropic": "ANTHROPIC_API_KEY",
-                             "google_gemini": "GEMINI_API_KEY",
-                             "openai_compatible": "CCAD_OPENAI_COMPATIBLE_API_KEY",
-                             "openrouter": "OPENROUTER_API_KEY",
-                             "cerebras": "CEREBRAS_API_KEY",
-                             "local_model": "CCAD_LOCAL_MODEL_API_KEY",
-                             "ollama": "CCAD_OLLAMA_API_KEY",
-                             "local_model_server": "CCAD_LOCAL_MODEL_API_KEY"}
-                env_name = env_names.get(provider_id, "OPENAI_API_KEY")
-                clear_session_provider_env()
-                if secret:
-                    set_session_provider_env(env_name, secret)
-                    if provider_id == "google_gemini": set_session_provider_env("GOOGLE_API_KEY", secret)
-                provider_ready = init_provider()
-                # `init_provider` can emit ambient provider_state events for the
-                # temporary selection.  The GUI must not use those to decide a
-                # settings validation result because restoring the active
-                # provider emits another ambient state afterwards.
-                test_error = "" if provider_ready else (
-                    "provider_unavailable" if secret else "missing_api_key")
-                test_category = "" if provider_ready else (
-                    "provider_unavailable" if secret else "missing_api_key")
-                connection_preview = ""
-                connection_category = test_category
-                connection_status = None
-                connection_attempted = False
-                if connection_requested and provider_ready and llm is not None:
-                    try:
-                        # This is deliberately not invoke_provider_with_retry:
-                        # user clicked an explicit quota-spending connection test.
-                        connection_attempted = True
-                        connection_preview = provider_connection_probe(llm)
-                        connection_category = ""
-                    except Exception as error:
-                        connection_category = classify_provider_error(error)
-                        connection_status = provider_http_status(error)
-                clear_session_provider_env()
-                for name, value in saved_test_env.items():
-                    if value is None:
-                        os.environ.pop(name, None)
-                    else:
-                        os.environ[name] = value
-                session_provider_env.update(saved_session_provider_env)
-                init_provider()
-                if connection_requested:
-                    emit({"jsonrpc": "2.0", "method": "provider_connection_result", "params": {
-                        "provider": provider_id,
-                        "model": model,
-                        "connected": provider_ready and not connection_category,
-                        "response_preview": connection_preview,
-                        "error_category": connection_category,
-                        "http_status": connection_status,
-                        "network_access": "explicit_one_request",
-                        "tool_executed": False,
-                        "request_count": 1 if connection_attempted else 0,
-                        "secret_value_visible": False,
-                    }})
-                else:
-                    # This adapter-only validation intentionally sends no request.
-                    emit({"jsonrpc": "2.0", "method": "provider_test_result", "params": {
-                        "provider": provider_id,
-                        "model": model,
-                        "configured": bool(secret),
-                        "execution_enabled": provider_ready,
-                        "network_access": "not_probed",
-                        "error": test_error,
-                        "error_category": test_category,
-                        "secret_value_visible": False,
-                    }})
-            elif method == "agent.set_provider_secret":
-                # Private IPC only. Never emit, persist, or add credential to
-                # prompts. Provider SDK reads process memory via its env var.
-                provider_id = req.get("params", {}).get("provider", "openai")
-                secret = req.get("params", {}).get("secret", "")
-                env_names = {
-                    "openai": "OPENAI_API_KEY",
-                    "anthropic": "ANTHROPIC_API_KEY",
-                    "google_gemini": "GEMINI_API_KEY",
-                    "openai_compatible": "CCAD_OPENAI_COMPATIBLE_API_KEY",
-                    "openrouter": "OPENROUTER_API_KEY",
-                    "cerebras": "CEREBRAS_API_KEY",
-                    "local_model": "CCAD_LOCAL_MODEL_API_KEY",
-                    "ollama": "CCAD_OLLAMA_API_KEY",
-                    "local_model_server": "CCAD_LOCAL_MODEL_API_KEY",
-                }
-                env_name = env_names.get(provider_id, "OPENAI_API_KEY")
-                clear_session_provider_env()
-                if secret:
-                    set_session_provider_env(env_name, secret)
-                    if provider_id == "google_gemini":
-                        set_session_provider_env("GOOGLE_API_KEY", secret)
-                provider_ready = init_provider()
-                # Complete the selected key operation with a dedicated event.
-                # Ambient provider_state traffic is not reliable Settings UI
-                # feedback because set_config may have emitted an earlier state.
-                emit({"jsonrpc": "2.0", "method": "provider_secret_result", "params": {
-                    "provider": provider_id,
-                    "configured": bool(secret),
-                    "execution_enabled": provider_ready,
-                    "network_access": "not_probed",
-                    "error": "" if provider_ready else ("provider_unavailable" if secret else "missing_api_key"),
-                    "error_category": "" if provider_ready else ("provider_unavailable" if secret else "missing_api_key"),
-                    "secret_value_visible": False,
-                }})
-            elif method == "agent.set_thread_id":
-                thread_id = req.get("params", {}).get("thread_id", "").strip()
-                if thread_id:
-                    os.environ["CCAD_AGENT_THREAD_ID"] = thread_id
-                else:
-                    os.environ.pop("CCAD_AGENT_THREAD_ID", None)
-                emit({"jsonrpc": "2.0", "method": "thread_state", "params": {
-                    "configured": bool(thread_id), "secret_value_visible": False,
-                }})
-            elif method == "agent.resume_thread":
-                thread_id = os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
-                if checkpoint_saver is None:
-                    emit({"jsonrpc": "2.0", "method": "thread_state", "params": {
-                        "resumable": False, "reason": "checkpoint_disabled",
-                    }})
-                else:
-                    snapshot = executor.get_state({"configurable": {"thread_id": thread_id}})
-                    resume_value = req.get("params", {}).get("resume")
-                    if resume_value is not None and snapshot.next:
-                        resumed = resume_checkpointed_run(thread_id, resume_value)
-                        emit({"jsonrpc": "2.0", "method": "thread_resumed", "params": {
-                            "thread_id": thread_id,
-                            "next": list(executor.get_state({"configurable": {"thread_id": thread_id}}).next),
-                            "message_count": len(resumed.get("messages", [])) if isinstance(resumed, dict) else 0,
-                        }})
-                        snapshot = executor.get_state({"configurable": {"thread_id": thread_id}})
-                    emit({"jsonrpc": "2.0", "method": "thread_state", "params": {
-                        "resumable": bool(snapshot.values), "thread_id": thread_id,
-                        "next": list(snapshot.next), "checkpoint_id": snapshot.config.get("configurable", {}).get("checkpoint_id", ""),
-                    }})
-            elif method == "agent.methods":
-                emit({"jsonrpc": "2.0", "method": "agent_methods",
-                      "params": orchestrator_method_catalog()})
-            elif method == "agent.list_models":
-                raw_provider = req.get("params", {}).get("provider", "openrouter")
-                if not isinstance(raw_provider, str):
-                    emit({"jsonrpc": "2.0", "method": "provider_models",
-                          "params": {"provider": "", "ok": False,
-                                      "error": "invalid_params",
-                                      "error_detail": "provider must be a string",
-                                      "network_access": "none", "models": []}})
-                    continue
-                provider_id = raw_provider.strip().lower()
-                if provider_id == "openai":
-                    emit({"jsonrpc": "2.0", "method": "provider_models",
-                          "params": {"provider": provider_id, **fetch_openai_models()}})
-                elif provider_id == "anthropic":
-                    emit({"jsonrpc": "2.0", "method": "provider_models",
-                          "params": {"provider": provider_id, **fetch_anthropic_models()}})
-                elif provider_id == "google_gemini":
-                    emit({"jsonrpc": "2.0", "method": "provider_models",
-                          "params": {"provider": provider_id, **fetch_gemini_models()}})
-                elif provider_id == "openrouter":
-                    emit({"jsonrpc": "2.0", "method": "provider_models",
-                          "params": {"provider": provider_id, **fetch_openrouter_models()}})
-                elif provider_id == "cerebras":
-                    emit({"jsonrpc": "2.0", "method": "provider_models",
-                          "params": {"provider": provider_id, **fetch_cerebras_models()}})
-                elif provider_id == "ollama":
-                    emit({"jsonrpc": "2.0", "method": "provider_models",
-                          "params": {"provider": provider_id, **fetch_ollama_models()}})
-                else:
-                    emit({"jsonrpc": "2.0", "method": "provider_models",
-                          "params": {"provider": provider_id, "ok": False,
-                                      "error": "unsupported_provider",
-                                      "error_detail": "model catalog is unavailable for this provider",
-                                      "network_access": "explicit_refresh",
-                                      "models": []}})
-            elif method == "agent.pending_calls":
-                thread_id = req.get("params", {}).get("thread_id", "")
-                emit({"jsonrpc": "2.0", "method": "pending_calls_state", "params":
-                      pending_call_snapshot(str(thread_id))})
-            elif method == "agent.context_state":
-                requested_thread = req.get("params", {}).get("thread_id", "")
-                thread_id = str(requested_thread or
-                                os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local"))
-                emit({"jsonrpc": "2.0", "method": "context_state_snapshot", "params": {
-                    "thread_id": thread_id,
-                    "revision": context_revisions.get(thread_id, ""),
-                    "content_emitted": False,
-                    "secret_value_visible": False,
-                }})
-            elif method == "agent.memory_state":
-                tier = req.get("params", {}).get("tier")
-                try:
-                    state = memory_manager.state(str(tier)) if tier else memory_manager.state()
-                    emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
-                        "tiers": state if tier is None else {str(tier): state},
-                        "secret_value_visible": False,
-                    }})
-                except (TypeError, ValueError) as error:
-                    emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
-                        "tiers": {}, "error": str(error), "secret_value_visible": False}})
-            elif method == "agent.memory_set_enabled":
-                params = req.get("params", {})
-                tier = str(params.get("tier", ""))
-                try:
-                    state = (memory_manager.enable(tier) if bool(params.get("enabled"))
-                             else memory_manager.disable(tier))
-                    memory_config = dict(config_manager.get("memory", {}))
-                    memory_config[tier] = bool(params.get("enabled"))
-                    config_manager.update("memory", memory_config)
-                    emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
-                        "tier": tier, **state, "secret_value_visible": False}})
-                except (TypeError, ValueError, RuntimeError) as error:
-                    emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
-                        "tier": tier, "enabled": False, "error": str(error),
-                        "secret_value_visible": False}})
-            elif method == "agent.memory_reset":
-                tier = req.get("params", {}).get("tier")
-                tier = str(tier) if tier else None
-                try:
-                    removed = memory_manager.reset(tier)
-                    emit({"jsonrpc": "2.0", "method": "memory_reset", "params": {
-                        "tier": tier or "all", "removed": removed,
-                        "secret_value_visible": False}})
-                except (TypeError, ValueError) as error:
-                    emit({"jsonrpc": "2.0", "method": "memory_reset", "params": {
-                        "tier": tier or "all", "removed": 0, "error": str(error),
-                        "secret_value_visible": False}})
+            if handle_provider_and_state_request(req, executor):
+                continue
             elif method == "tool_result":
                 # Accept broker response by correlation ID. If graph is paused
                 # at an interrupt, feed authoritative result into same thread.
