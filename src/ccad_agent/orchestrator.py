@@ -13,7 +13,7 @@ import warnings
 import urllib.request
 import urllib.error
 import urllib.parse
-from typing import Annotated, Any, Dict, List, Literal, TypedDict
+from typing import Annotated, Any, Dict, List, Literal, TypedDict, cast
 from langchain_core.tools import StructuredTool
 from pydantic import Field, create_model
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
@@ -323,7 +323,7 @@ def context_revision(context: str) -> str:
 broker_wait_enabled = False
 current_run_trace_id = ""
 current_run_span_id = ""
-inbound_queue = None
+inbound_queue: Any = None
 deferred_queue = queue.Queue()
 pending_calls = {}
 pending_call_threads = {}
@@ -817,10 +817,10 @@ def install_native_tool_catalog(catalog: object) -> dict:
 llm = None
 router_llm = None
 librarian_llm = None
-checkpoint_saver = None
-checkpoint_context = None
+checkpoint_saver: Any = None
+checkpoint_context: Any = None
 session_provider_env = set()
-executor = None
+executor: Any = None
 
 def set_session_provider_env(name, value):
     """Set provider credential only for this process and track its alias."""
@@ -992,7 +992,7 @@ def init_provider():
         try:
             from langchain_anthropic import ChatAnthropic
             if not model_name: model_name = "claude-opus-5"
-            llm = ChatAnthropic(model=model_name, temperature=0)
+            llm = cast(Any, ChatAnthropic)(model=model_name, temperature=0)
             router_llm = llm.bind_tools(agent_tools)
             librarian_llm = router_llm
             broker_wait_enabled = True
@@ -1142,7 +1142,7 @@ def invoke_agent_run(state):
             "thread_id": thread_id,
             "context_chars": len(str(state.get("context", ""))),
         }):
-        run_config = {"run_name": "agent-turn"}
+        run_config: Dict[str, Any] = {"run_name": "agent-turn"}
         run_config["configurable"] = {"thread_id": thread_id}
         # Metadata is deliberately non-content: prompt, context, tool args, and
         # credentials must not be exported by observability callbacks.
@@ -1366,7 +1366,7 @@ def resume_checkpointed_run(thread_id: str, resume_value):
     """Resume an interrupted graph using same durable thread identity."""
     if checkpoint_saver is None:
         return None
-    config = {"configurable": {"thread_id": thread_id},
+    config: Dict[str, Any] = {"configurable": {"thread_id": thread_id},
               "metadata": {"langfuse_session_id": thread_id},
               "tags": ["ccad", "agent", "resume"]}
     callbacks = active_callbacks()
@@ -1458,7 +1458,7 @@ def handle_marketplace(text: str):
 def get_dynamic_marketplace_catalog():
     # Scan dynamic plugins if they exist, fallback to core + installed state
     installed = config_manager.get("installed_plugins", [])
-    core_plugins = [
+    core_plugins: List[Dict[str, Any]] = [
         {"id": "plugin.autoplacer", "name": "AutoPlacer", "description": "AI-driven component placement using simulated annealing"},
         {"id": "plugin.autorouter", "name": "AutoRouter", "description": "Cloud-accelerated PCB autorouter"},
         {"id": "plugin.kicad_sync", "name": "KiCad Sync", "description": "Two-way synchronization with KiCad"},

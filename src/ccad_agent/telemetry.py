@@ -7,6 +7,7 @@ import threading
 import time
 from contextlib import contextmanager, nullcontext
 from functools import wraps
+from typing import Any, cast
 from urllib.parse import urlsplit
 
 from opentelemetry.sdk.resources import Resource
@@ -30,10 +31,10 @@ class TelemetryRuntime:
     """
     def __init__(self):
         self._lock = threading.RLock()
-        self._provider = None
-        self._langfuse_client = None
-        self._langfuse_handler = None
-        self._exporter = None
+        self._provider: Any = None
+        self._langfuse_client: Any = None
+        self._langfuse_handler: Any = None
+        self._exporter: Any = None
         self._fingerprint = None
         self._active_trace_id = ""
         self._active_span_id = ""
@@ -136,6 +137,9 @@ class TelemetryRuntime:
             return
         with client.start_as_current_observation(name=name, as_type=as_type,
                 metadata=redact(metadata or {}), model=model) as observation:
+            if observation is None:
+                raise RuntimeError("observation_not_created")
+            observation = cast(Any, observation)
             with self._lock:
                 self._active_trace_id = str(observation.trace_id)
                 self._active_span_id = str(observation.id)
@@ -162,6 +166,8 @@ class TelemetryRuntime:
             self._status.update(last_test="running", connected=False)
             try:
                 with self.observation("ccad.observability.connection_test") as observation:
+                    if observation is None:
+                        raise RuntimeError("observation_not_created")
                     trace_id = observation.trace_id
                 if not self._provider.force_flush(timeout_millis=6000):
                     raise TimeoutError("flush_timeout")
@@ -175,7 +181,7 @@ class TelemetryRuntime:
                             request_options={"timeout_in_seconds": 5, "max_retries": 0})
                         if trace.id == trace_id:
                             self._status.update(last_test="verified", connected=True, reason="ready",
-                                                observation_count=len(trace.observations or []))
+                                                observation_count=str(len(trace.observations or [])))
                             break
                     except Exception as error:
                         self._status["error_type"] = type(error).__name__

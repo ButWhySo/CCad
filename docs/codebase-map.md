@@ -1862,3 +1862,9 @@ Sprint 954 handover: `wait_for_orchestrate()` now has a ten-second bounded wait;
 the full Qt/CTest gate completes 92/92. Language-server setup is global, while
 `build-qt-agent/compile_commands.json` supplies the Qt/MinGW analysis database.
 Pyright remains advisory and reports existing typing debt in the Python agent.
+
+Sprint 955 handover: Python checkpoint/executor/queue/plugin state is explicitly
+typed as runtime-owned values, and Langfuse observation creation now fails
+explicitly if the SDK returns no observation. Pyright is at one remaining
+complexity diagnostic; do not mark provider validation complete until it is
+resolved and official integrations are checked.

@@ -3042,3 +3042,7 @@ Installed and verified clangd 19.1.7, Pyright 1.1.414, and cmake-language-server
 ### Sprint 954 — bounded orchestration tests
 
 Bounded the native orchestrator test callback wait at ten seconds so a stalled runner produces an explicit test failure. Rebuilt the Qt release targets and ran the complete CTest gate: 92/92 passed in 110.53 seconds.
+
+### Sprint 955 — Python runtime type safety
+
+Added explicit ownership types for checkpoint, executor, queue, plugin, and Langfuse runtime handles; added observation creation guards; and corrected callback/config metadata typing. Pyright diagnostics reduced from 22 to 1. The remaining complexity diagnostic stays open; no suppression was added.
