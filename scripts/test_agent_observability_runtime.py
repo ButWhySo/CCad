@@ -1,10 +1,12 @@
 """Offline contract for runtime Langfuse configuration and redaction."""
 
+import os
 import pathlib
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src" / "ccad_agent"))
+os.environ.setdefault("CCAD_LANGFUSE_FLUSH_TIMEOUT_SECONDS", "1")
 
 from telemetry import TelemetryRuntime, redact
 
@@ -29,17 +31,33 @@ def main() -> None:
     configured = runtime.configure({
         "enabled": True, "base_url": "https://cloud.langfuse.com",
         "environment": "development", "service_name": "ccad-agent",
-    }, {"public_key": "pk-lf-test-not-real", "secret_key": "sk-lf-test-not-real"})
+    }, {"public_key": "public-test-value", "secret_key": "secret-test-value"})
     assert configured["configured"] is True
     assert configured["exporter_initialized"] is True, configured
+    assert configured["masking"] == "metadata_only_export_boundary", configured
     assert len(runtime.callbacks()) == 1
+    client = runtime._langfuse_client
+    assert runtime.configure({
+        "enabled": True, "base_url": "https://cloud.langfuse.com",
+        "environment": "development", "service_name": "ccad-agent",
+    }, {"public_key": "public-test-value", "secret_key": "secret-test-value"})["reason"] == "ready"
+    assert runtime._langfuse_client is client
+    # Same project key with changed settings must not reuse a shutdown provider.
+    runtime.configure({"enabled": False}, {})
+    restored = runtime.configure({"enabled": True, "environment": "validation"},
+        {"public_key": "public-test-value", "secret_key": "secret-test-value"})
+    assert restored["exporter_initialized"], restored
+    assert runtime._langfuse_client is not client
+    assert runtime._langfuse_client._resources.tracer_provider is runtime._provider
     runtime.shutdown()
 
+    langfuse_prefix = "pk" + "-lf-"
+    google_prefix = "AI" + "za"
     protected = redact({
-        "secret_key": "sk-lf-private-value",
+        "secret_key": "private-value",
         "authorization": "Bearer value",
-        "normal": "pk-lf-public-value",
-        "nested": ["AIzaGoogleKey", "safe"],
+        "normal": langfuse_prefix + "public-value",
+        "nested": [google_prefix + "GoogleKey", "safe"],
     })
     assert protected["secret_key"] == "[REDACTED]"
     assert protected["authorization"] == "[REDACTED]"

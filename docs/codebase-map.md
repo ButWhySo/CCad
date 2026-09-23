@@ -1835,3 +1835,25 @@ vault and sends them through private IPC; normal configuration stores only
 enablement, URL, environment, and service name. UI-map screenshots capture the
 active dialog when one owns interaction, so settings and approval evidence is
 not silently omitted.
+
+Sprint 951 handover: `TelemetryRuntime.observation()` provides typed Langfuse
+and local-OTel spans for agent turns, context retrieval, agents, tools, and
+generations. `orchestrator.py` uses it at the graph boundaries while callbacks
+remain attached to model invocations. The authoritative methods are
+`agent.langfuse_status`, `agent.langfuse_set_secret`, and
+`agent.langfuse_test`; old observability method names are discoverable aliases.
+`ReviewWindow::uiMapJson()` must redact QLineEdit values for password controls
+and secret/key/token/credential-named inputs. The CLI vault target allowlist
+also includes `langfuse_public` and `langfuse_secret`; it must never expose
+their values. Current local SDK compatibility uses its legacy mask callback
+when `mask_otel_spans` is unavailable, so a tested SDK pin and remote trace
+retrieval are still required before marking full export proof complete.
+
+Sprint 952 handover: `ReviewWindow::projectContextJson()` emits a bounded typed
+project snapshot after recursively removing binary `data` fields; `project.state`
+provides the same state for tool inspection. `agent_preview` stages route, zone,
+keepout, and graphic candidates on value copies. Direct agent mutations for via,
+board text, schematic wire, and schematic label save, render, select, and report
+an authoritative count. Do not reintroduce synthetic mouse-event success paths.
+The Settings Langfuse test button is visually reachable but does not advance
+`last_test`; retain the open export-verification TODO until that runtime path is fixed.

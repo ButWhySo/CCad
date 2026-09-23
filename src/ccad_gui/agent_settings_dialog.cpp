@@ -873,11 +873,11 @@ void AgentSettingsDialog::createObservabilityTab(QWidget* parent_widget) {
         {"service_name", langfuse_service_name_input_ ? langfuse_service_name_input_->text().trimmed() : QStringLiteral("ccad-agent")},
     }}};
     agent_panel_->sendJsonRpc("agent.set_config", config);
-    agent_panel_->sendJsonRpc("agent.set_observability_secret", QJsonObject{
+    agent_panel_->sendJsonRpc("agent.langfuse_set_secret", QJsonObject{
         {"public_key", langfuse_public_key_input_ ? langfuse_public_key_input_->text() : QString()},
         {"secret_key", langfuse_secret_key_input_ ? langfuse_secret_key_input_->text() : QString()},
     });
-    agent_panel_->sendJsonRpc("agent.test_export", QJsonObject());
+    agent_panel_->sendJsonRpc("agent.langfuse_test", QJsonObject());
   });
   layout->addWidget(test);
   auto* remove = new QPushButton("Remove Langfuse credentials", parent_widget);
@@ -889,7 +889,7 @@ void AgentSettingsDialog::createObservabilityTab(QWidget* parent_widget) {
     }
     if (langfuse_public_key_input_) langfuse_public_key_input_->clear();
     if (langfuse_secret_key_input_) langfuse_secret_key_input_->clear();
-    if (agent_panel_) agent_panel_->sendJsonRpc("agent.set_observability_secret", QJsonObject());
+    if (agent_panel_) agent_panel_->sendJsonRpc("agent.langfuse_set_secret", QJsonObject());
   });
   layout->addWidget(remove);
   layout->addStretch();
@@ -926,12 +926,18 @@ void AgentSettingsDialog::createWorkflowsTab(QWidget* parent_widget) {
 
 void AgentSettingsDialog::loadCurrentSettings() {
   if (agent_panel_) {
+      // The panel receives this durable, non-secret state during startup.
+      // Apply it synchronously so Settings never exposes defaults while an
+      // asynchronous refresh is still in transit.
+      if (!agent_panel_->cachedConfigState().isEmpty()) {
+          applyConfigState(agent_panel_->cachedConfigState());
+      }
       agent_panel_->sendJsonRpc("agent.get_config", QJsonObject());
-      agent_panel_->sendJsonRpc("agent.set_observability_secret", QJsonObject{
+      agent_panel_->sendJsonRpc("agent.langfuse_set_secret", QJsonObject{
           {"public_key", langfuse_public_key_input_ ? langfuse_public_key_input_->text() : QString()},
           {"secret_key", langfuse_secret_key_input_ ? langfuse_secret_key_input_->text() : QString()},
       });
-      agent_panel_->sendJsonRpc("agent.observability_status", QJsonObject());
+      agent_panel_->sendJsonRpc("agent.langfuse_status", QJsonObject());
       agent_panel_->sendJsonRpc("agent.get_marketplace_catalog", QJsonObject());
       agent_panel_->sendJsonRpc("agent.mcp_status", QJsonObject());
   }
@@ -1174,7 +1180,7 @@ void AgentSettingsDialog::saveAllSettings() {
                             "Windows Credential Manager rejected Langfuse credentials. Settings were not saved.");
       return;
     }
-    agent_panel_->sendJsonRpc("agent.set_observability_secret", QJsonObject{
+    agent_panel_->sendJsonRpc("agent.langfuse_set_secret", QJsonObject{
         {"public_key", public_key}, {"secret_key", secret_key}});
   }
 

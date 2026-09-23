@@ -13,6 +13,7 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 covered the bounded runtime and EDA evidence expansion through Sprint 225. Phase 9 is the bounded KiCad parity execution phase.
 
 **Current State**: 
+- **Sprint 951 (Langfuse runtime and UI-map redaction)** is in verification on `sprint-947-agent-tool-context`. It adds typed Langfuse observations around context, agent nodes, generation, and native-tool dispatch; canonical Langfuse IPC aliases; CLI vault targets; and blocks credential values from live UI-map export. An opt-in account trace fetch/review remains required.
 - **Sprint 950 (Agent execution truthfulness)** is in verification on `sprint-947-agent-tool-context`. It adds bounded context-state events, broker-backed staged route preview coverage, authoritative `/drc` completion, quota classification, and one-call approval-result handling. The remaining UI parity and provider-status defects stay tracked in `docs/devops/sprints/agent-production-todo.md`.
 - [x] Phase 4: LangGraph Python Bridge Architecture Refactoring (Sprint 211)
 - [x] Phase 5: Python IPC Process Wrapper Implementation (Sprint 212)
@@ -3019,3 +3020,18 @@ Implemented reconfigurable Langfuse runtime, private vault IPC, Settings
 controls, redacted status/test path, active-dialog UI-map screenshots, and
 adaptive Appearance/Agent dock tabs. Focused `gui_agent_panel` and `gui_ui_map`
 tests pass; external Langfuse trace verification remains explicitly open.
+
+### Sprint 952 - typed context and truthful staged edits
+
+The provider context now carries a bounded, binary-free typed project state:
+board and schematic objects, layers, nets, selection, and active layer/net are
+available through `project.context` and `project.state`. Native catalog tools
+now create real vias, board text, schematic wires, and schematic labels through
+the project model rather than synthetic Qt pointer gestures. Zone, keepout, and
+graphic line previews stage a copied project, compute a real diff and DRC, then
+render that candidate without changing the live board.
+
+Focused `agent_preview` and `gui_ui_map` CTest targets pass. A disposable GUI
+run inspected eleven screenshots. The Langfuse test click did not advance
+`last_test`, so real export proof remains open. The full suite is blocked by
+the existing unbounded `test_agent_orchestrator` promise wait.

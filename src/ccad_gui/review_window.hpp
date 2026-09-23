@@ -101,6 +101,7 @@ class ReviewWindow final : public QMainWindow {
   QString uiScreenshotJson(const QString& path, bool dry_run);
   QString agentHarnessContextJson() const;
   QString projectContextJson() const;
+  QString projectStateJson() const;
   QString projectObjectCountsJson() const;
   QString projectReviewJson() const;
   QString projectErcJson() const;

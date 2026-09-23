@@ -14,7 +14,7 @@ import urllib.request
 import urllib.error
 import urllib.parse
 from typing import Annotated, Any, Dict, List, Literal, TypedDict
-from langchain_core.tools import StructuredTool, tool
+from langchain_core.tools import StructuredTool
 from pydantic import Field, create_model
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 # langgraph-checkpoint currently emits this known pending-deprecation warning
@@ -515,22 +515,33 @@ def orchestrator_method_catalog():
                  "sandbox_mode", "approval_policy", "project_name", "project_path",
                  "trust_level", "memory", "hooks", "personalisation", "mcp_servers",
                  "plugins", "workflows"]}},
-            {"name": "agent.observability_status", "read_only": True, "secrets": False,
+            {"name": "agent.langfuse_status", "read_only": True, "secrets": False,
              "response": {"method": "observability_state", "fields": [
                  "configured", "enabled", "exporter_initialized", "backend",
                  "last_test", "reason", "error_type", "secret_value_visible"]}},
-            {"name": "agent.set_observability_secret", "read_only": False,
+            {"name": "agent.langfuse_set_secret", "read_only": False,
              "secrets": True, "approval_required": True,
              "params": {"public_key": {"type": "string", "secret": True},
                         "secret_key": {"type": "string", "secret": True}},
              "response": {"method": "observability_state", "fields": [
                  "configured", "enabled", "exporter_initialized", "backend",
                  "last_test", "reason", "error_type", "secret_value_visible"]}},
-            {"name": "agent.test_export", "read_only": False, "secrets": False,
+            {"name": "agent.langfuse_test", "read_only": False, "secrets": False,
              "side_effect": "bounded_observability_export",
              "response": {"method": "observability_state", "fields": [
                  "configured", "enabled", "exporter_initialized", "backend",
                  "last_test", "reason", "error_type", "secret_value_visible"]}},
+            {"name": "agent.set_config", "read_only": False, "secrets": False,
+             "side_effect": "persist_non_secret_preferences"},
+            {"name": "agent.langfuse_set_config", "read_only": False, "secrets": False,
+             "side_effect": "persist_non_secret_preferences",
+             "deprecated_alias_for": "agent.set_config"},
+            {"name": "agent.observability_status", "read_only": True, "secrets": False,
+             "deprecated_alias_for": "agent.langfuse_status"},
+            {"name": "agent.set_observability_secret", "read_only": False,
+             "secrets": True, "deprecated_alias_for": "agent.langfuse_set_secret"},
+            {"name": "agent.test_export", "read_only": False, "secrets": False,
+             "deprecated_alias_for": "agent.langfuse_test"},
             {"name": "agent.set_tool_catalog", "read_only": False,
              "secrets": False, "side_effect": "runtime_tool_registration",
              "params": {"catalog": {"type": "array", "optional": False}},
@@ -620,6 +631,7 @@ def sanitize_persisted_config(value, secret_key_fragments, rejected_keys, path="
                                            rejected_keys, path) for item in value]
     return value
 
+@trace_function("dispatch-native-tool", "tool")
 def dispatch_checkpointed_tool(tool_name: str, args: dict):
     """Pause graph until C++ client returns authoritative tool result."""
     call_id = checkpoint_tool_call_id(tool_name, args)
@@ -638,24 +650,26 @@ def tool_approval_decision(tool_name: str, args: dict):
     return {"required": required,
             "reason": "dry_run" if dry_run else "project_mutation"}
 
-def dispatch_client_tool(tool_name: str, args: dict, *, await_result: bool = False) -> str:
-    """Send one client tool call and optionally await its authoritative result."""
+@trace_function("dispatch-native-tool", "tool")
+def dispatch_client_tool(tool_name: str, args: dict) -> str:
+    """Send one client tool call and await its authoritative broker result."""
     call_id = (checkpoint_tool_call_id(tool_name, args)
                if checkpoint_saver is not None and broker_wait_enabled
                else new_tool_call_id(tool_name))
     approval = tool_approval_decision(tool_name, args)
     emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
         "tool": tool_name, "args": args, "call_id": call_id,
-        "approval_required": bool(await_result and approval["required"]),
+        "approval_required": approval["required"],
         "approval_reason": approval["reason"],
     }})
-    if broker_wait_enabled and await_result:
+    if broker_wait_enabled:
         if approval["required"]:
             emit_tool_approval_state()
         if checkpoint_saver is not None:
             return dispatch_checkpointed_tool(tool_name, args)
         return wait_for_broker_result(call_id)
-    return "Action dispatched to CCad client."
+    return json.dumps({"error": "broker_wait_unavailable", "tool": tool_name,
+                       "project_action": False})
 
 config_manager = AgentConfigManager()
 memory_store = MemoryStore()
@@ -694,124 +708,6 @@ class AgentState(TypedDict):
     goal: str
     context: str
     next_node: str
-
-@tool
-def ui_place_via(x_mm: float, y_mm: float, dry_run: bool = False):
-    """Places a via on the PCB at the specified x, y coordinates (in mm)."""
-    args = {"x_mm": x_mm, "y_mm": y_mm, "dry_run": dry_run}
-    call_id = (checkpoint_tool_call_id("ui.place_via", args)
-               if checkpoint_saver is not None and broker_wait_enabled
-               else new_tool_call_id("ui-place-via"))
-    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
-        "tool": "ui.place_via",
-        "args": args,
-        "call_id": call_id,
-        "approval_required": tool_approval_decision("ui.place_via", args)["required"],
-        "approval_reason": tool_approval_decision("ui.place_via", args)["reason"],
-    }})
-    if broker_wait_enabled and not dry_run:
-        emit_tool_approval_state()
-        if checkpoint_saver is not None:
-            return dispatch_checkpointed_tool("ui.place_via", args)
-        return wait_for_broker_result(call_id)
-    return "Action dispatched to CCad client."
-
-@tool
-def ui_add_track(x1: float, y1: float, x2: float, y2: float, dry_run: bool = False):
-    """Adds a track segment between two coordinates."""
-    args = {"start_x_mm": x1, "start_y_mm": y1, "end_x_mm": x2, "end_y_mm": y2,
-            "dry_run": dry_run}
-    call_id = (checkpoint_tool_call_id("ui.route_track", args)
-               if checkpoint_saver is not None and broker_wait_enabled
-               else new_tool_call_id("ui-route-track"))
-    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
-        "tool": "ui.route_track", "args": args, "call_id": call_id,
-        "approval_required": tool_approval_decision("ui.route_track", args)["required"],
-        "approval_reason": tool_approval_decision("ui.route_track", args)["reason"],
-    }})
-    if broker_wait_enabled and not dry_run:
-        emit_tool_approval_state()
-        if checkpoint_saver is not None:
-            return dispatch_checkpointed_tool("ui.route_track", args)
-        return wait_for_broker_result(call_id)
-    return "Action dispatched to CCad client."
-
-@tool
-def ui_place_footprint(name: str, x: float, y: float, dry_run: bool = False):
-    """Places a footprint component."""
-    return dispatch_client_tool("ui.place_footprint", {
-        "name": name, "x": x, "y": y, "dry_run": dry_run}, await_result=True)
-
-@tool
-def ui_add_polygon(points: List[List[float]], layer: str, dry_run: bool = False):
-    """Adds a polygon pour on a specific layer."""
-    # Assuming the first two points map to start and end for rectangular zones for parity
-    if len(points) >= 2:
-        x1, y1 = points[0][0], points[0][1]
-        x2, y2 = points[1][0], points[1][1]
-        args = {"start_x_mm": x1, "start_y_mm": y1, "end_x_mm": x2, "end_y_mm": y2,
-                "layer": layer, "dry_run": dry_run}
-        call_id = (checkpoint_tool_call_id("ui.add_zone", args)
-                   if checkpoint_saver is not None and broker_wait_enabled
-                   else new_tool_call_id("ui-add-zone"))
-        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
-            "tool": "ui.add_zone", "args": args, "layer": layer,
-            "call_id": call_id,
-            "approval_required": tool_approval_decision("ui.add_zone", args)["required"],
-            "approval_reason": tool_approval_decision("ui.add_zone", args)["reason"],
-        }})
-        if broker_wait_enabled and not dry_run:
-            emit_tool_approval_state()
-            if checkpoint_saver is not None:
-                return dispatch_checkpointed_tool("ui.add_zone", args)
-            return wait_for_broker_result(call_id)
-    return "Action dispatched to CCad client."
-
-@tool
-def ui_place_symbol(name: str, x: float, y: float, dry_run: bool = False):
-    """Places a schematic symbol on the schematic editor."""
-    return dispatch_client_tool("ui.place_symbol", {
-        "name": name, "x": x, "y": y, "dry_run": dry_run}, await_result=True)
-
-@tool
-def project_review():
-    """Generates a project review summary of the current board state."""
-    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "project.review", "args": {}}})
-    return "Action dispatched to CCad client."
-
-@tool
-def ui_screenshot():
-    """Takes a screenshot of the current GUI."""
-    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.screenshot", "args": {}}})
-    return "Action dispatched to CCad client."
-
-@tool
-def ui_open_component_wizard():
-    """Opens the AI Component Designer Wizard in the GUI."""
-    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.open_component_wizard", "args": {}}})
-    return "Component Wizard requested from CCad client."
-
-@tool
-def ui_add_wire(x1: float, y1: float, x2: float, y2: float):
-    """Adds a wire segment between two coordinates on the schematic."""
-    return dispatch_client_tool("ui.add_wire", {"x1": x1, "y1": y1, "x2": x2, "y2": y2}, await_result=True)
-
-@tool
-def ui_add_label(text: str, x: float, y: float, global_label: bool = False):
-    """Adds a text label to the schematic at the specified coordinates."""
-    return dispatch_client_tool("ui.add_label", {"text": text, "x": x, "y": y, "global": global_label}, await_result=True)
-
-@tool
-def lib_catalog_info(component_id: str):
-    """Gets metadata info from the CCad library catalog for a specific component ID."""
-    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "lib.catalog_info", "args": {"component_id": component_id}}})
-    return "Action dispatched to CCad client."
-
-@tool
-def lib_catalog_search(query: str):
-    """Searches the CCad library catalog for components matching a query."""
-    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "lib.catalog_search", "args": {"query": query}}})
-    return "Action dispatched to CCad client."
 
 def tool_provider_name(method_name: str) -> str:
     """Create a provider-compatible stable name without losing native identity."""
@@ -891,7 +787,7 @@ def build_native_tools(catalog: List[dict]) -> List[StructuredTool]:
         read_only = entry["read_only"]
 
         def invoke_native_tool(_method=method, _read_only=read_only, **kwargs):
-            return dispatch_client_tool(_method, kwargs, await_result=True)
+            return dispatch_client_tool(_method, kwargs)
 
         tools.append(StructuredTool.from_function(
             invoke_native_tool, name=tool_provider_name(method),
@@ -1239,19 +1135,24 @@ def initialize_agent_process():
 
 def invoke_agent_run(state):
     """Invoke graph under one run span without exporting prompt contents."""
-    with telemetry_runtime.start_span("ccad.agent.run") as span:
-        span.set_attribute("ccad.agent.workflow", active_workflow)
-        span.set_attribute("ccad.agent.provider_ready", llm is not None)
-        run_config = {"run_name": "ccad_agent_run"}
-        thread_id = state.get("thread_id") or os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
+    thread_id = state.get("thread_id") or os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
+    with telemetry_runtime.session(thread_id), telemetry_runtime.observation("agent-turn", "agent", {
+            "workflow": active_workflow,
+            "provider_ready": llm is not None,
+            "thread_id": thread_id,
+            "context_chars": len(str(state.get("context", ""))),
+        }):
+        run_config = {"run_name": "agent-turn"}
         run_config["configurable"] = {"thread_id": thread_id}
         # Metadata is deliberately non-content: prompt, context, tool args, and
         # credentials must not be exported by observability callbacks.
         run_config["metadata"] = {
             "ccad_provider": os.environ.get("CCAD_PROVIDER", "configured"),
             "ccad_workflow": active_workflow,
-            "ccad_context_present": bool(state.get("context", "")),
-            "ccad_thread_id_present": bool(thread_id),
+            # Langfuse propagated attributes accept strings. Keep these
+            # metadata-only flags instead of emitting SDK warnings every turn.
+            "ccad_context_present": "true" if state.get("context", "") else "false",
+            "ccad_thread_id_present": "true" if thread_id else "false",
             "langfuse_session_id": thread_id,
         }
         run_config["tags"] = ["ccad", "agent", active_workflow,
@@ -1277,14 +1178,19 @@ def get_system_prompt(role_desc: str) -> str:
     personality = person_config.get("agent_personality", "Default")
     custom_inst = person_config.get("custom_instructions", "")
     
-    parts = [f"You are {role_desc}"]
+    parts = [f"You are {role_desc}",
+             "Use only tools in the native catalog. Never invent a tool, board object, layer, net, placement, preview, or successful mutation.",
+             "Read the typed project context before design-specific work. Use project.state for complete live PCB/schematic state when needed.",
+             "For a requested PCB layer or net, verify it exists in project context, then call ui.set_active_layer or ui.set_active_net before a dependent mutation.",
+             "Treat tool results as authoritative: report a change only after performed=true; report the returned failure reason otherwise.",
+             "Persistent mutations require the approval path. Use rendered proposal preview when available; never describe text-only context as a visual diff."]
     if base_prompt: parts.append(f"System Base: {base_prompt}")
     
     # Inject active workflow context
     if active_workflow == "routing_pass":
-        parts.append("Current Phase: ROUTING. You must strictly focus on trace placement, impedance matching, and differential pairs. Use ui_add_track and ui_place_via.")
+        parts.append("Current Phase: ROUTING. Focus on trace placement and available routing constraints. Use ui.route_track and ui.place_via only after validating layer/net state.")
     elif active_workflow == "placement_pass":
-        parts.append("Current Phase: PLACEMENT. Focus on component alignment, signal flow, and thermal separation. Use ui_place_footprint.")
+        parts.append("Current Phase: PLACEMENT. Focus on component alignment, signal flow, and thermal separation. Use ui.place_footprint only with an available typed footprint source.")
     elif active_workflow == "sch_to_pcb":
         parts.append("Current Phase: FORWARD ANNOTATION. Map schematic nets to board layout instances.")
 
@@ -1337,7 +1243,7 @@ def provider_connection_probe(client):
             for block in content)
     return re.sub(r"\s+", " ", str(content)).strip()[:240]
 
-@trace_function("supervisor_node")
+@trace_function("supervisor", "agent")
 def supervisor_node(state: AgentState):
     if "pre node" in [h.lower() for h in active_hooks]:
         hooks.trigger_hook("pre node", emit, "supervisor")
@@ -1358,7 +1264,7 @@ def supervisor_node(state: AgentState):
     # chaining ended after the supervisor.
     return {"next_node": next_node}
 
-@trace_function("router_node")
+@trace_function("router", "agent")
 def router_node(state: AgentState):
     if "pre node" in [h.lower() for h in active_hooks]:
         hooks.trigger_hook("pre node", emit, "router")
@@ -1374,13 +1280,18 @@ def router_node(state: AgentState):
     system_msg = SystemMessage(content=system_text)
     prompt = [system_msg] + state["messages"]
     callbacks = active_callbacks()
-    response = invoke_provider_with_retry(
-        router_llm, prompt, config={"callbacks": callbacks} if callbacks else {})
+    with telemetry_runtime.observation("generate-routing-response", "generation", {
+            "provider": os.environ.get("CCAD_PROVIDER", "configured"),
+            "model": os.environ.get("CCAD_MODEL", "configured"),
+            "context_chars": len(context_str),
+        }, model=os.environ.get("CCAD_MODEL", "configured")):
+        response = invoke_provider_with_retry(
+            router_llm, prompt, config={"callbacks": callbacks} if callbacks else {})
     if "post node" in [h.lower() for h in active_hooks]:
         hooks.trigger_hook("post node", emit, "router")
     return {"messages": [response]}
 
-@trace_function("librarian_node")
+@trace_function("librarian", "agent")
 def librarian_node(state: AgentState):
     if "pre node" in [h.lower() for h in active_hooks]:
         hooks.trigger_hook("pre node", emit, "librarian")
@@ -1396,8 +1307,13 @@ def librarian_node(state: AgentState):
     system_msg = SystemMessage(content=system_text)
     prompt = [system_msg] + state["messages"]
     callbacks = active_callbacks()
-    response = invoke_provider_with_retry(
-        librarian_llm, prompt, config={"callbacks": callbacks} if callbacks else {})
+    with telemetry_runtime.observation("generate-library-response", "generation", {
+            "provider": os.environ.get("CCAD_PROVIDER", "configured"),
+            "model": os.environ.get("CCAD_MODEL", "configured"),
+            "context_chars": len(context_str),
+        }, model=os.environ.get("CCAD_MODEL", "configured")):
+        response = invoke_provider_with_retry(
+            librarian_llm, prompt, config={"callbacks": callbacks} if callbacks else {})
     if "post node" in [h.lower() for h in active_hooks]:
         hooks.trigger_hook("post node", emit, "librarian")
     return {"messages": [response]}
@@ -1565,13 +1481,9 @@ def get_dynamic_marketplace_catalog():
 
 if __name__ == "__main__":
     initialize_agent_process()
-    # --- OTel Setup ---
-    try:
-        from opentelemetry.instrumentation.langchain import LangchainInstrumentor
-        LangchainInstrumentor().instrument()
-        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "OpenTelemetry Langchain Instrumentation enabled."}})
-    except ImportError:
-        pass
+    # LangfuseRuntime owns tracing.  Do not install the process-global
+    # LangChain auto-instrumentor: it can duplicate spans and bypass the
+    # metadata-only exporter configured by Agent Settings.
 
     init_checkpointer()
     executor = create_orchestrator()
@@ -1938,9 +1850,14 @@ if __name__ == "__main__":
                 if not isinstance(raw_context, str):
                     raw_context = str(raw_context or "")
                 memory_entries = local_memory_entries()
-                package = build_context_package(
-                    raw_context, memory_entries, bound_session_history(session_messages),
-                    char_limit=agent_context_limit())
+                with telemetry_runtime.observation("assemble-context", "retriever", {
+                        "memory_entry_count": len(memory_entries),
+                        "history_message_count": len(session_messages),
+                        "raw_context_chars": len(raw_context),
+                    }):
+                    package = build_context_package(
+                        raw_context, memory_entries, bound_session_history(session_messages),
+                        char_limit=agent_context_limit())
                 context_str = package["content"]
                 context_metadata = package["metadata"]
                 context_truncated = context_metadata["truncated"]
@@ -2063,14 +1980,17 @@ if __name__ == "__main__":
                     elif cmd_base == "/route":
                         active_workflow = "routing_pass"
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Initiating routing workflow pass..."}})
-                        session_messages.append(HumanMessage(content="Start the routing workflow and autoroute the current board context. Please use the ui_add_track and ui_place_via tools to route all unrouted nets based on the context."))
+                        session_messages.append(HumanMessage(content=(
+                            "Inspect typed project context first. Route only a bounded, validated request "
+                            "using catalog tools ccad_ui_route_track and ccad_ui_place_via when available. "
+                            "Do not promise complete autorouting or mutate without approval.")))
                         # Fall through to graph execution
                     elif cmd_base == "/drc":
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Running DRC checks..."}})
                         # project.drc is a read-only, result-bearing broker
                         # call. Waiting on the exact correlation ID prevents
                         # the chat from claiming an in-progress DRC forever.
-                        drc_result = dispatch_client_tool("project.drc", {}, await_result=True)
+                        drc_result = dispatch_client_tool("project.drc", {})
                         try:
                             drc_report = json.loads(drc_result)
                         except (TypeError, json.JSONDecodeError):
@@ -2094,10 +2014,9 @@ if __name__ == "__main__":
                             }})
                         continue
                     elif cmd_base == "/place":
-                        active_workflow = "placement_pass"
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Initiating component placement pass..."}})
-                        session_messages.append(HumanMessage(content="Start the placement workflow. Please use the ui_place_footprint tool to optimally place components on the board canvas."))
-                        # Fall through to graph execution
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {
+                            "text": "Placement workflow unavailable: no typed footprint source and placement transaction are registered. No project action was sent."}})
+                        continue
                     elif cmd_base == "/design":
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Opening the Component Designer Wizard..."}})
                         emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.open_component_wizard", "args": {}}})
@@ -2142,23 +2061,14 @@ if __name__ == "__main__":
                     }})
                     continue
 
-                run_trace_id = "ccad-agent-" + uuid.uuid4().hex
-                run_span_id = uuid.uuid4().hex[:16]
-                current_run_trace_id = run_trace_id
-                current_run_span_id = run_span_id
-                emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
-                    "run_state": "running", "trace_id": run_trace_id,
-                    "span_id": run_span_id, "provider": os.environ.get("CCAD_PROVIDER", "configured"),
-                    "token_usage": "unavailable", "cost": "unavailable",
-                }})
                 try:
                     final_state = invoke_agent_run({"messages": session_messages, "goal": text,
                                                     "context": context_str, "next_node": "",
                                                     "thread_id": context_thread_id})
                 except Exception as error:
+                    trace = telemetry_runtime.current_trace()
                     emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
-                        "run_state": "failed", "trace_id": run_trace_id,
-                        "span_id": run_span_id, "error_type": type(error).__name__,
+                        "run_state": "failed", **trace, "error_type": type(error).__name__,
                         "prompt_emitted": False, "secret_value_visible": False,
                     }})
                     emit({"jsonrpc": "2.0", "method": "message", "params": {
@@ -2175,9 +2085,10 @@ if __name__ == "__main__":
                 last_msg = session_messages[-1]
                 has_tool_calls = bool(getattr(last_msg, "tool_calls", None))
                 has_legacy_tool = "<TOOL>" in str(getattr(last_msg, "content", ""))
+                trace = telemetry_runtime.current_trace()
                 emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
                     "run_state": "awaiting_tool_approval" if (has_tool_calls or has_legacy_tool) else "completed",
-                    "trace_id": run_trace_id, "span_id": run_span_id,
+                    **trace,
                     "token_usage": "unavailable", "cost": "unavailable",
                 }})
                 
@@ -2211,10 +2122,10 @@ if __name__ == "__main__":
                     emit({"jsonrpc": "2.0", "method": "message", "params": {"text": last_msg.content}})
                     if "pre exit/end" in [h.lower() for h in active_hooks]:
                         hooks.trigger_hook("pre exit/end", emit)
-            elif method == "agent.observability_status":
+            elif method in ("agent.langfuse_status", "agent.observability_status"):
                 emit({"jsonrpc": "2.0", "method": "observability_state",
                       "params": observability_state()})
-            elif method == "agent.set_observability_secret":
+            elif method in ("agent.langfuse_set_secret", "agent.set_observability_secret"):
                 params = req.get("params", {})
                 public_key = params.get("public_key", "")
                 secret_key = params.get("secret_key", "")
@@ -2230,7 +2141,7 @@ if __name__ == "__main__":
                 observability_secrets["secret_key"] = secret_key
                 emit({"jsonrpc": "2.0", "method": "observability_state",
                       "params": reconfigure_observability()})
-            elif method == "agent.test_export":
+            elif method in ("agent.langfuse_test", "agent.test_export"):
                 state = telemetry_runtime.test_export()
                 emit({"jsonrpc": "2.0", "method": "observability_state", "params": state})
                 if state.get("last_test") == "flushed":
@@ -2240,7 +2151,7 @@ if __name__ == "__main__":
                 emit({"jsonrpc": "2.0", "method": "message", "params": {
                     "text": message, "secret_value_visible": False,
                 }})
-            elif method == "agent.set_config":
+            elif method in ("agent.set_config", "agent.langfuse_set_config"):
                 config_data = req.get("params", {})
                 rejected_secret_keys = []
                 secret_key_fragments = ("api_key", "apikey", "secret", "token",

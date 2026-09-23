@@ -35,6 +35,7 @@
 #include <QAbstractItemView>
 #include <QAction>
 #include <QApplication>
+#include <QByteArray>
 #include <QComboBox>
 #include <QDateTime>
 #include <QDialog>
@@ -148,6 +149,39 @@ QString formatCursorStatus(const std::optional<ccad::Board>& board, const QPoint
 }
 
 namespace {
+
+QJsonValue stripContextBinaryData(const QJsonValue& value) {
+  if (value.isArray()) {
+    QJsonArray cleaned;
+    for (const QJsonValue& item : value.toArray()) cleaned.append(stripContextBinaryData(item));
+    return cleaned;
+  }
+  if (!value.isObject()) return value;
+  QJsonObject cleaned = value.toObject();
+  // Board reference images and schematic bitmaps are binary assets, not
+  // language-model context. Preserve their typed metadata but never inject
+  // base64 into a provider turn or project-state tool response.
+  cleaned.remove("data");
+  for (auto it = cleaned.begin(); it != cleaned.end(); ++it) {
+    it.value() = stripContextBinaryData(it.value());
+  }
+  return cleaned;
+}
+
+QJsonObject safeTypedProjectState(const ccad::Project& project) {
+  QJsonParseError error;
+  const QJsonDocument document = QJsonDocument::fromJson(
+      QByteArray::fromStdString(ccad::dumpProjectJson(project)), &error);
+  QJsonObject state;
+  state.insert("available", error.error == QJsonParseError::NoError && document.isObject());
+  state.insert("binary_payloads_excluded", true);
+  if (error.error == QJsonParseError::NoError && document.isObject()) {
+    state.insert("project", stripContextBinaryData(document.object()).toObject());
+  } else {
+    state.insert("error", "project_serialization_failed");
+  }
+  return state;
+}
 
 std::string readFile(const std::filesystem::path& path) {
   std::ifstream input(path);
@@ -796,6 +830,27 @@ QJsonArray agentMethodCatalogArray() {
                           "Draw a board graphic line.",
                           false, true, true, true, true, boardDragSchema(true),
                           "Graphic placement result and board counts."));
+  append(agentMethodEntry("ui.add_wire", "schematic", "Add Schematic Wire",
+                          "Add one typed schematic wire between two millimeter coordinates.",
+                          false, true, true, false, true,
+                          schemaObject(QJsonObject{{"x1", schemaProperty("number", "Start X in millimeters.")},
+                                                   {"y1", schemaProperty("number", "Start Y in millimeters.")},
+                                                   {"x2", schemaProperty("number", "End X in millimeters.")},
+                                                   {"y2", schemaProperty("number", "End Y in millimeters.")},
+                                                   {"dry_run", dryRunProperty()}},
+                                       {"x1", "y1", "x2", "y2"}),
+                          "Wire placement result and schematic object counts.",
+                          QJsonObject{{"x1", 8}, {"y1", 8}, {"x2", 18}, {"y2", 8}}));
+  append(agentMethodEntry("ui.add_label", "schematic", "Add Schematic Label",
+                          "Add one typed local schematic label at a millimeter coordinate.",
+                          false, true, true, false, true,
+                          schemaObject(QJsonObject{{"x", schemaProperty("number", "Label X in millimeters.")},
+                                                   {"y", schemaProperty("number", "Label Y in millimeters.")},
+                                                   {"text", schemaProperty("string", "Label text.")},
+                                                   {"dry_run", dryRunProperty()}},
+                                       {"x", "y", "text"}),
+                          "Label placement result and schematic object counts.",
+                          QJsonObject{{"x", 18}, {"y", 8}, {"text", "GND"}}));
   QJsonObject text_point_schema = boardPointSchema(true);
   QJsonObject text_props = text_point_schema.value("properties").toObject();
   text_props.insert("text", schemaProperty("string", "Board text content."));
@@ -857,9 +912,13 @@ QJsonArray agentMethodCatalogArray() {
                           "Current UI epoch."));
 
   append(agentMethodEntry("project.context", "project", "Project Context",
-                          "Return a compact project and board summary.",
+                          "Return bounded typed project, PCB, schematic, selection, layer, net, and tool context.",
                           true, false, false, false, false, emptySchema(),
                           "Project id, board summary, and active state."));
+  append(agentMethodEntry("project.state", "project", "Typed Project State",
+                          "Return the serialized typed PCB and schematic model with binary image payloads excluded.",
+                          true, false, false, false, false, emptySchema(),
+                          "Typed project model, board and schematic objects, and binary-payload policy."));
   append(agentMethodEntry("project.object_counts", "project", "Object Counts",
                           "Return project and board object counts.",
                           true, false, false, false, false, emptySchema(),
@@ -1592,12 +1651,6 @@ ccad::Point schematicPointFromScene(const QPointF& scene_position) {
           ccad::millimeters((scene_position.y() - margin) / scale)};
 }
 
-QPointF schematicPositionToScene(const double x_mm, const double y_mm) {
-  constexpr double margin = 18.0;
-  constexpr double scale = 10.0;
-  return QPointF(margin + (x_mm * scale), margin + (y_mm * scale));
-}
-
 std::string placementPrefixFromName(const std::string& name) {
   if (name.starts_with("R") || name.starts_with("Resistor")) return "R";
   if (name.starts_with("C") || name.starts_with("Capacitor")) return "C";
@@ -1851,6 +1904,10 @@ ccad::Size defaultBoardTextSize() {
                     .height = ccad::millimeters(1.50)};
 }
 
+ccad::Length defaultBoardTextStrokeWidth() {
+  return ccad::millimeters(0.15);
+}
+
 QPainterPath sceneTrackPath(const QPointF& start, const QPointF& end) {
   QPainterPath path;
   path.moveTo(start);
@@ -2044,20 +2101,7 @@ ReviewWindow::ReviewWindow() {
         return showAgentProposalPreview(method, args);
       });
   agent_panel_->setContextProvider([this]() {
-      ccad::ProjectContext ctx;
-      ctx.project_id = "Current Workspace";
-      if (!project_cache_.schematics.empty()) {
-          ctx.component_count = project_cache_.schematics[0].symbols.size();
-          ctx.net_count = project_cache_.schematics[0].nets.size();
-      }
-      if (!project_cache_.boards.empty()) {
-          ctx.has_board = true;
-          ctx.track_count = project_cache_.boards[0].tracks.size();
-          ctx.pad_count = project_cache_.boards[0].pads.size();
-          ctx.via_count = project_cache_.boards[0].vias.size();
-          ctx.zone_count = project_cache_.boards[0].zones.size();
-      }
-      return ccad::ContextBuilder().build_context(ctx);
+      return projectContextJson().toStdString();
   });
   updateAgentPanelContext();
 
@@ -4253,12 +4297,17 @@ QString ReviewWindow::buildUiMapJson() const {
     const QRect local_rect(local_top_left, input->size());
     const QRect global_rect(input->mapToGlobal(QPoint(0, 0)), input->size());
     const QString label = input->accessibleName().isEmpty() ? id : input->accessibleName();
+    const QString lowered_id = id.toLower();
+    const bool secret_input = input->echoMode() != QLineEdit::Normal ||
+        lowered_id.contains("secret") || lowered_id.contains("token") ||
+        lowered_id.contains("api_key") || lowered_id.contains("apikey") ||
+        lowered_id.contains("credential");
     nodes << QString("{\"id\":%1,\"role\":\"control\",\"label\":%2,"
                      "\"value\":%3,\"visible\":%4,\"enabled\":%5,\"local_rect\":%6,"
                      "\"global_rect\":%7,\"target_x\":%8,\"target_y\":%9}")
                  .arg(jsonString(id))
                  .arg(jsonString(label))
-                 .arg(jsonString(input->text()))
+                 .arg(jsonString(secret_input ? QStringLiteral("[REDACTED]") : input->text()))
                  .arg(boolJson(input->isVisible()))
                  .arg(boolJson(input->isEnabled()))
                  .arg(rectJson(local_rect))
@@ -6697,6 +6746,34 @@ QString ReviewWindow::projectContextJson() const {
   response.insert("active_pcb_net_id", qstr(activePcbNetOrDefault()));
   response.insert("interaction_mode", interactionModeName(interaction_mode_));
   response.insert("has_interaction_anchor", interaction_has_anchor_);
+  response.insert("typed_state", safeTypedProjectState(project_cache_));
+  response.insert("selection", parsedJsonObjectOrRaw(uiSelectionJson()));
+  return jsonObjectLine(response);
+}
+
+std::string nextSchematicWireId(const ccad::Schematic& schematic) {
+  int max_num = 0;
+  for (const ccad::SchWire& wire : schematic.wires) {
+    max_num = std::max(max_num, numericSuffixAfterPrefix(wire.id, "W"));
+  }
+  return "W" + std::to_string(max_num + 1);
+}
+
+std::string nextSchematicLabelId(const ccad::Schematic& schematic) {
+  int max_num = 0;
+  for (const ccad::SchLabel& label : schematic.labels) {
+    max_num = std::max(max_num, numericSuffixAfterPrefix(label.id, "L"));
+  }
+  return "L" + std::to_string(max_num + 1);
+}
+
+QString ReviewWindow::projectStateJson() const {
+  QJsonObject response = safeTypedProjectState(project_cache_);
+  response.insert("schema_version", 1);
+  response.insert("ui_epoch", ui_map_epoch_);
+  response.insert("active_pcb_layer_id", qstr(activePcbLayerOrDefault()));
+  response.insert("active_pcb_net_id", qstr(activePcbNetOrDefault()));
+  response.insert("selection", parsedJsonObjectOrRaw(uiSelectionJson()));
   return jsonObjectLine(response);
 }
 
@@ -6787,25 +6864,18 @@ QString ReviewWindow::uiWorkflowPlaceViaJson(const double x_mm, const double y_m
     return jsonObjectLine(response);
   }
 
-  const QJsonObject activation = parsedJsonObjectOrRaw(triggerSafeUiActionJson("action:add_via"));
-  response.insert("activation", activation);
-  if (!activation.value("performed").toBool(false)) {
+  if (canvas_id != "canvas:pcb" || project_cache_.boards.empty()) {
     response.insert("performed", false);
-    response.insert("reason", "activation_failed");
-    response.insert("mode_after", interactionModeName(interaction_mode_));
-    insertBoardObjectCounts(response, project_cache_.boards[0]);
+    response.insert("reason", canvas_id != "canvas:pcb" ? "unsupported_canvas" : "missing_board");
     return jsonObjectLine(response);
   }
-
-  const QJsonObject gesture = parsedJsonObjectOrRaw(uiCanvasClickJson(x_mm, y_mm, false,
-                                                                      canvas_id, {}));
-  response.insert("gesture", gesture);
-  response.insert("performed", gesture.value("performed").toBool(false));
-  response.insert("reason", gesture.value("performed").toBool(false)
-                                ? "workflow_completed"
-                                : gesture.value("reason").toString("gesture_failed"));
+  cancelInteractionMode();
+  const QJsonObject commit = parsedJsonObjectOrRaw(commitViaPlacementForAutomation(x_mm, y_mm));
+  response.insert("commit", commit);
+  response.insert("performed", commit.value("performed").toBool(false));
+  response.insert("reason", commit.value("reason").toString("commit_failed"));
   response.insert("mode_after", interactionModeName(interaction_mode_));
-  copyBoardObjectCounts(response, gesture);
+  insertBoardObjectCounts(response, project_cache_.boards[0]);
   return jsonObjectLine(response);
 }
 
@@ -6884,25 +6954,45 @@ QString ReviewWindow::uiWorkflowRectangleToolJson(const QString& action_id,
     return jsonObjectLine(response);
   }
 
-  const QJsonObject activation = parsedJsonObjectOrRaw(triggerSafeUiActionJson(action_id));
-  response.insert("activation", activation);
-  if (!activation.value("performed").toBool(false)) {
+  const bool schematic_wire = action_id == "action:add_wire";
+  if ((schematic_wire && (canvas_id != "canvas:schematic" || project_cache_.schematics.empty())) ||
+      (!schematic_wire && (canvas_id != "canvas:pcb" || project_cache_.boards.empty()))) {
     response.insert("performed", false);
-    response.insert("reason", "activation_failed");
-    response.insert("mode_after", interactionModeName(interaction_mode_));
-    insertBoardObjectCounts(response, project_cache_.boards[0]);
+    response.insert("reason", canvas_id != (schematic_wire ? "canvas:schematic" : "canvas:pcb")
+                                  ? "unsupported_canvas"
+                                  : (schematic_wire ? "missing_schematic" : "missing_board"));
     return jsonObjectLine(response);
   }
-
-  const QJsonObject gesture = parsedJsonObjectOrRaw(
-      uiCanvasDragJson(start_x_mm, start_y_mm, end_x_mm, end_y_mm, false, canvas_id));
-  response.insert("gesture", gesture);
-  response.insert("performed", gesture.value("performed").toBool(false));
-  response.insert("reason", gesture.value("performed").toBool(false)
-                                ? "workflow_completed"
-                                : gesture.value("reason").toString("gesture_failed"));
+  // Clear any interrupted manual gesture before the typed mutation. A stale
+  // anchor is UI state, never input to an approved agent transaction.
+  cancelInteractionMode();
+  // Do not route this through uiCanvasDrag: it always activates Add Tracks,
+  // which silently replaced the selected zone/keepout/graphic tool. These
+  // commit helpers own real board mutation, persistence, redraw and count.
+  QString committed;
+  if (action_id == "action:add_zone") {
+    committed = commitZonePlacementForAutomation(start_x_mm, start_y_mm, end_x_mm, end_y_mm);
+  } else if (action_id == "action:add_keepout_area") {
+    committed = commitKeepoutPlacementForAutomation(start_x_mm, start_y_mm, end_x_mm, end_y_mm);
+  } else if (action_id == "action:add_graphical_segments") {
+    committed = commitGraphicLinePlacementForAutomation(start_x_mm, start_y_mm, end_x_mm, end_y_mm);
+  } else if (action_id == "action:add_wire") {
+    committed = commitWirePlacementForAutomation(start_x_mm, start_y_mm, end_x_mm, end_y_mm);
+  } else {
+    response.insert("performed", false);
+    response.insert("reason", "unsupported_rectangle_action");
+    return jsonObjectLine(response);
+  }
+  const QJsonObject commit = parsedJsonObjectOrRaw(committed);
+  response.insert("commit", commit);
+  response.insert("performed", commit.value("performed").toBool(false));
+  response.insert("reason", commit.value("reason").toString("commit_failed"));
   response.insert("mode_after", interactionModeName(interaction_mode_));
-  copyBoardObjectCounts(response, gesture);
+  if (schematic_wire) {
+    response.insert("object_counts", projectObjectCountsObject(project_cache_));
+  } else {
+    insertBoardObjectCounts(response, project_cache_.boards[0]);
+  }
   return jsonObjectLine(response);
 }
 
@@ -6930,25 +7020,18 @@ QString ReviewWindow::uiWorkflowPlaceTextJson(const double x_mm, const double y_
     return jsonObjectLine(response);
   }
 
-  const QJsonObject activation = parsedJsonObjectOrRaw(triggerSafeUiActionJson("action:text"));
-  response.insert("activation", activation);
-  if (!activation.value("performed").toBool(false)) {
+  if (canvas_id != "canvas:pcb" || project_cache_.boards.empty()) {
     response.insert("performed", false);
-    response.insert("reason", "activation_failed");
-    response.insert("mode_after", interactionModeName(interaction_mode_));
-    insertBoardObjectCounts(response, project_cache_.boards[0]);
+    response.insert("reason", canvas_id != "canvas:pcb" ? "unsupported_canvas" : "missing_board");
     return jsonObjectLine(response);
   }
-
-  const QJsonObject gesture = parsedJsonObjectOrRaw(uiCanvasClickJson(x_mm, y_mm, false,
-                                                                      canvas_id, text));
-  response.insert("gesture", gesture);
-  response.insert("performed", gesture.value("performed").toBool(false));
-  response.insert("reason", gesture.value("performed").toBool(false)
-                                ? "workflow_completed"
-                                : gesture.value("reason").toString("gesture_failed"));
+  cancelInteractionMode();
+  const QJsonObject commit = parsedJsonObjectOrRaw(commitBoardTextPlacementForAutomation(text, x_mm, y_mm));
+  response.insert("commit", commit);
+  response.insert("performed", commit.value("performed").toBool(false));
+  response.insert("reason", commit.value("reason").toString("commit_failed"));
   response.insert("mode_after", interactionModeName(interaction_mode_));
-  copyBoardObjectCounts(response, gesture);
+  insertBoardObjectCounts(response, project_cache_.boards[0]);
   return jsonObjectLine(response);
 }
 
@@ -7394,6 +7477,9 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
   if (trimmed_method == "project.context") {
     return agentQueryResponse(trimmed_method, true, {}, projectContextJson());
   }
+  if (trimmed_method == "project.state") {
+    return agentQueryResponse(trimmed_method, true, {}, projectStateJson());
+  }
   if (trimmed_method == "project.object_counts") {
     return agentQueryResponse(trimmed_method, true, {}, projectObjectCountsJson());
   }
@@ -7722,30 +7808,26 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
       return agentQueryResponse(trimmed_method, false, "ui.add_label requires numeric x and y");
     }
     const QString text = object->value("text").toString();
-    const bool global_label = object->value("global").toBool(false);
     const bool dry_run = object->value("dry_run").toBool(false);
-    const QString action_id = global_label ? "action:add_global_label" : "action:add_label";
-    
     QJsonObject response;
     response.insert("schema_version", 1);
     response.insert("ui_epoch", ui_map_epoch_);
-    response.insert("action_id", action_id);
+    response.insert("action_id", "action:add_label");
     response.insert("dry_run", dry_run);
     response.insert("x_mm", x_value.toDouble());
     response.insert("y_mm", y_value.toDouble());
     response.insert("text", text);
     
-    const QJsonObject activation = parsedJsonObjectOrRaw(triggerSafeUiActionJson(action_id));
-    response.insert("activation", activation);
-    if (!activation.value("performed").toBool(false) && !dry_run) {
-        response.insert("performed", false);
-        response.insert("reason", "activation_failed");
-        return jsonObjectLine(response);
+    if (dry_run) {
+      response.insert("performed", false);
+      response.insert("reason", "dry_run");
+      return agentQueryResponse(trimmed_method, true, {}, jsonObjectLine(response));
     }
-    
-    const QJsonObject gesture = parsedJsonObjectOrRaw(uiCanvasClickJson(x_value.toDouble(), y_value.toDouble(), dry_run, "canvas:schematic", text));
-    response.insert("gesture", gesture);
-    response.insert("performed", gesture.value("performed").toBool(false));
+    const QJsonObject commit = parsedJsonObjectOrRaw(
+        commitSchematicLabelPlacementForAutomation(text, x_value.toDouble(), y_value.toDouble()));
+    response.insert("commit", commit);
+    response.insert("performed", commit.value("performed").toBool(false));
+    response.insert("reason", commit.value("reason").toString("commit_failed"));
     return agentQueryResponse(trimmed_method, true, {}, jsonObjectLine(response));
   }
   if (trimmed_method == "lib.catalog_info") {
@@ -8290,19 +8372,25 @@ QString ReviewWindow::commitViaPlacementForAutomation(const double x_mm, const d
     return result(false, "missing_board", 0);
   }
   try {
-    enterAddViaMode();
-    if (interaction_mode_ != InteractionMode::AddVia) {
-      return result(false, "tool_unavailable", project_cache_.boards[0].vias.size());
+    ccad::Board& board = project_cache_.boards[0];
+    const std::size_t before_count = board.vias.size();
+    const ccad::Point position{ccad::millimeters(x_mm), ccad::millimeters(y_mm)};
+    const auto& origin = board.outline.origin;
+    const auto& size = board.outline.size;
+    if (position.x.nanometers < origin.x.nanometers || position.y.nanometers < origin.y.nanometers ||
+        position.x.nanometers > origin.x.nanometers + size.width.nanometers ||
+        position.y.nanometers > origin.y.nanometers + size.height.nanometers) {
+      return result(false, "outside_board_outline", before_count);
     }
-    const QPointF scene_point = boardPositionToScene(project_cache_.boards[0], x_mm, y_mm);
-    const QPoint viewport_point = canvas_view_->mapFromScene(scene_point);
-    QMouseEvent press(QEvent::MouseButtonPress, QPointF(viewport_point), QPointF(viewport_point),
-                      Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-    QApplication::sendEvent(canvas_view_->viewport(), &press);
-    QApplication::processEvents();
-    const std::size_t via_count =
-        !project_cache_.boards.empty() ? project_cache_.boards[0].vias.size() : 0;
-    return result(true, "placed", via_count);
+    pushUndoSnapshot();
+    const std::string id = nextViaId(board);
+    board.vias.push_back(ccad::Via{.id = id, .net_id = activePcbNetOrDefault(), .position = position,
+        .diameter = defaultViaDiameter(), .drill = defaultViaDrill(),
+        .start_layer_id = "F.Cu", .end_layer_id = "B.Cu"});
+    saveProjectCacheAfterMutation("Placed via " + qstr(id));
+    renderReview(ccad::buildReview(project_cache_));
+    selectCanvasObjectById(*canvas_scene_, qstr(id));
+    return result(board.vias.size() == before_count + 1, "placed", board.vias.size());
   } catch (const std::exception& e) {
     if (interaction_mode_ != InteractionMode::Default) {
       cancelInteractionMode();
@@ -8315,7 +8403,6 @@ QString ReviewWindow::commitViaPlacementForAutomation(const double x_mm, const d
 
 QString ReviewWindow::showAgentProposalPreview(const QString& method,
                                                const QJsonObject& args) {
-  if (method != "ui.route_track") return "preview_unavailable_for_" + method;
   const auto number = [&args](const char* key) -> std::optional<double> {
     const QJsonValue value = args.value(QLatin1String(key));
     return value.isDouble() ? std::optional<double>(value.toDouble()) : std::nullopt;
@@ -8324,14 +8411,39 @@ QString ReviewWindow::showAgentProposalPreview(const QString& method,
   const auto start_y = number("start_y_mm");
   const auto end_x = number("end_x_mm");
   const auto end_y = number("end_y_mm");
-  if (!start_x || !start_y || !end_x || !end_y) return "preview_invalid_route_coordinates";
+  if (!start_x || !start_y || !end_x || !end_y) {
+    return "preview_invalid_coordinates";
+  }
 
   std::string reason;
-  const auto preview = ccad::stageRouteTrackPreview(
-      project_cache_, {.start_x_mm = *start_x, .start_y_mm = *start_y,
-                       .end_x_mm = *end_x, .end_y_mm = *end_y,
-                       .net_id = activePcbNetOrDefault(), .layer_id = activePcbLayerOrDefault()},
-      &reason);
+  std::optional<ccad::StagedProjectPreview> preview;
+  if (method == "ui.route_track") {
+    preview = ccad::stageRouteTrackPreview(
+        project_cache_, {.start_x_mm = *start_x, .start_y_mm = *start_y,
+                         .end_x_mm = *end_x, .end_y_mm = *end_y,
+                         .net_id = activePcbNetOrDefault(), .layer_id = activePcbLayerOrDefault()},
+        &reason);
+  } else if (method == "ui.add_zone") {
+    preview = ccad::stageZonePreview(
+        project_cache_, {.start_x_mm = *start_x, .start_y_mm = *start_y,
+                         .end_x_mm = *end_x, .end_y_mm = *end_y,
+                         .net_id = activePcbNetOrDefault(), .layer_id = activePcbLayerOrDefault()},
+        &reason);
+  } else if (method == "ui.add_keepout") {
+    preview = ccad::stageKeepoutPreview(
+        project_cache_, {.start_x_mm = *start_x, .start_y_mm = *start_y,
+                         .end_x_mm = *end_x, .end_y_mm = *end_y,
+                         .net_id = ""},
+        &reason);
+  } else if (method == "ui.draw_graphic") {
+    preview = ccad::stageGraphicLinePreview(
+        project_cache_, {.start_x_mm = *start_x, .start_y_mm = *start_y,
+                         .end_x_mm = *end_x, .end_y_mm = *end_y,
+                         .layer_id = activePcbLayerOrDefault()},
+        &reason);
+  } else {
+    return "preview_unavailable_for_" + method;
+  }
   if (!preview.has_value()) return "preview_not_staged_" + qstr(reason);
 
   auto* dialog = new QDialog(this);
@@ -8442,24 +8554,28 @@ QString ReviewWindow::commitZonePlacementForAutomation(const double start_x_mm,
     return result(false, "missing_board", 0);
   }
   try {
-    enterAddZoneMode();
-    if (interaction_mode_ != InteractionMode::AddZone) {
-      return result(false, "tool_unavailable", project_cache_.boards[0].zones.size());
-    }
-    const auto click = [this](const QPointF& scene_point) {
-      const QPoint viewport_point = canvas_view_->mapFromScene(scene_point);
-      QMouseEvent press(QEvent::MouseButtonPress, QPointF(viewport_point), QPointF(viewport_point),
-                        Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-      QApplication::sendEvent(canvas_view_->viewport(), &press);
-      QApplication::processEvents();
-    };
-    click(boardPositionToScene(project_cache_.boards[0], start_x_mm, start_y_mm));
-    if (!project_cache_.boards.empty()) {
-      click(boardPositionToScene(project_cache_.boards[0], end_x_mm, end_y_mm));
-    }
-    const std::size_t zone_count =
-        !project_cache_.boards.empty() ? project_cache_.boards[0].zones.size() : 0;
-    return result(true, "placed", zone_count);
+    const std::size_t before_count = project_cache_.boards[0].zones.size();
+    const std::int64_t min_x = ccad::millimeters(std::min(start_x_mm, end_x_mm)).nanometers;
+    const std::int64_t min_y = ccad::millimeters(std::min(start_y_mm, end_y_mm)).nanometers;
+    const std::int64_t max_x = ccad::millimeters(std::max(start_x_mm, end_x_mm)).nanometers;
+    const std::int64_t max_y = ccad::millimeters(std::max(start_y_mm, end_y_mm)).nanometers;
+    if (min_x == max_x || min_y == max_y) return result(false, "zero_area", before_count);
+    ccad::Board& board = project_cache_.boards[0];
+    pushUndoSnapshot();
+    const std::string id = nextZoneId(board);
+    board.zones.push_back(ccad::BoardZone{.id = id, .name = "Zone " + id,
+        .net_id = activePcbNetOrDefault(), .layer_ids = {activePcbLayerOrDefault()},
+        .outline = {{.x = ccad::nanometers(min_x), .y = ccad::nanometers(min_y)},
+                    {.x = ccad::nanometers(max_x), .y = ccad::nanometers(min_y)},
+                    {.x = ccad::nanometers(max_x), .y = ccad::nanometers(max_y)},
+                    {.x = ccad::nanometers(min_x), .y = ccad::nanometers(max_y)}},
+        .holes = {}, .filled_contours = {}, .filled_thermal_spokes = {}, .priority = 0,
+        .clearance = defaultZoneClearance(board), .min_thickness = defaultZoneMinThickness(board),
+        .fill_enabled = true, .pad_connection = "thermal"});
+    saveProjectCacheAfterMutation("Added zone " + qstr(id));
+    renderReview(ccad::buildReview(project_cache_));
+    selectCanvasObjectById(*canvas_scene_, qstr(id));
+    return result(board.zones.size() == before_count + 1, "placed", board.zones.size());
   } catch (const std::exception& e) {
     if (interaction_mode_ != InteractionMode::Default) {
       cancelInteractionMode();
@@ -8485,24 +8601,22 @@ QString ReviewWindow::commitKeepoutPlacementForAutomation(const double start_x_m
     return result(false, "missing_board", 0);
   }
   try {
-    enterAddKeepoutMode();
-    if (interaction_mode_ != InteractionMode::AddKeepout) {
-      return result(false, "tool_unavailable", project_cache_.boards[0].keepouts.size());
-    }
-    const auto click = [this](const QPointF& scene_point) {
-      const QPoint viewport_point = canvas_view_->mapFromScene(scene_point);
-      QMouseEvent press(QEvent::MouseButtonPress, QPointF(viewport_point), QPointF(viewport_point),
-                        Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-      QApplication::sendEvent(canvas_view_->viewport(), &press);
-      QApplication::processEvents();
-    };
-    click(boardPositionToScene(project_cache_.boards[0], start_x_mm, start_y_mm));
-    if (!project_cache_.boards.empty()) {
-      click(boardPositionToScene(project_cache_.boards[0], end_x_mm, end_y_mm));
-    }
-    const std::size_t keepout_count =
-        !project_cache_.boards.empty() ? project_cache_.boards[0].keepouts.size() : 0;
-    return result(true, "placed", keepout_count);
+    ccad::Board& board = project_cache_.boards[0];
+    const std::size_t before_count = board.keepouts.size();
+    const std::int64_t min_x = ccad::millimeters(std::min(start_x_mm, end_x_mm)).nanometers;
+    const std::int64_t min_y = ccad::millimeters(std::min(start_y_mm, end_y_mm)).nanometers;
+    const std::int64_t width = std::llabs(ccad::millimeters(end_x_mm).nanometers - ccad::millimeters(start_x_mm).nanometers);
+    const std::int64_t height = std::llabs(ccad::millimeters(end_y_mm).nanometers - ccad::millimeters(start_y_mm).nanometers);
+    if (width == 0 || height == 0) return result(false, "zero_area", before_count);
+    pushUndoSnapshot();
+    const std::string id = nextKeepoutId(board);
+    board.keepouts.push_back(ccad::Keepout{.id = id, .kind = "routing",
+        .area = {.origin = {.x = ccad::nanometers(min_x), .y = ccad::nanometers(min_y)},
+                 .size = {.width = ccad::nanometers(width), .height = ccad::nanometers(height)}}});
+    saveProjectCacheAfterMutation("Added keepout " + qstr(id));
+    renderReview(ccad::buildReview(project_cache_));
+    selectCanvasObjectById(*canvas_scene_, qstr(id));
+    return result(board.keepouts.size() == before_count + 1, "placed", board.keepouts.size());
   } catch (const std::exception& e) {
     if (interaction_mode_ != InteractionMode::Default) {
       cancelInteractionMode();
@@ -8528,24 +8642,30 @@ QString ReviewWindow::commitGraphicLinePlacementForAutomation(const double start
     return result(false, "missing_board", 0);
   }
   try {
-    enterDrawGraphicMode();
-    if (interaction_mode_ != InteractionMode::DrawGraphic) {
-      return result(false, "tool_unavailable", project_cache_.boards[0].graphics.size());
-    }
-    const auto click = [this](const QPointF& scene_point) {
-      const QPoint viewport_point = canvas_view_->mapFromScene(scene_point);
-      QMouseEvent press(QEvent::MouseButtonPress, QPointF(viewport_point), QPointF(viewport_point),
-                        Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-      QApplication::sendEvent(canvas_view_->viewport(), &press);
-      QApplication::processEvents();
+    ccad::Board& board = project_cache_.boards[0];
+    const std::size_t before_count = board.graphics.size();
+    const ccad::Point start{.x = ccad::millimeters(start_x_mm), .y = ccad::millimeters(start_y_mm)};
+    const ccad::Point end{.x = ccad::millimeters(end_x_mm), .y = ccad::millimeters(end_y_mm)};
+    if (start.x.nanometers == end.x.nanometers && start.y.nanometers == end.y.nanometers)
+      return result(false, "zero_length", before_count);
+    const auto inside_outline = [&board](const ccad::Point& point) {
+      const auto& origin = board.outline.origin;
+      const auto& size = board.outline.size;
+      return point.x.nanometers >= origin.x.nanometers && point.y.nanometers >= origin.y.nanometers &&
+             point.x.nanometers <= origin.x.nanometers + size.width.nanometers &&
+             point.y.nanometers <= origin.y.nanometers + size.height.nanometers;
     };
-    click(boardPositionToScene(project_cache_.boards[0], start_x_mm, start_y_mm));
-    if (!project_cache_.boards.empty()) {
-      click(boardPositionToScene(project_cache_.boards[0], end_x_mm, end_y_mm));
-    }
-    const std::size_t graphic_count =
-        !project_cache_.boards.empty() ? project_cache_.boards[0].graphics.size() : 0;
-    return result(true, "placed", graphic_count);
+    if (!inside_outline(start) || !inside_outline(end))
+      return result(false, "outside_board_outline", before_count);
+    pushUndoSnapshot();
+    const std::string id = nextGraphicId(board);
+    board.graphics.push_back(ccad::BoardGraphic{.id = id, .kind = "line",
+        .layer_id = activePcbLayerOrDefault(), .start = start, .end = end,
+        .width = defaultGraphicWidth()});
+    saveProjectCacheAfterMutation("Drew graphic " + qstr(id));
+    renderReview(ccad::buildReview(project_cache_));
+    selectCanvasObjectById(*canvas_scene_, qstr(id));
+    return result(board.graphics.size() == before_count + 1, "placed", board.graphics.size());
   } catch (const std::exception& e) {
     if (interaction_mode_ != InteractionMode::Default) {
       cancelInteractionMode();
@@ -8568,20 +8688,23 @@ QString ReviewWindow::commitBoardTextPlacementForAutomation(const QString& text,
   if (!!project_cache_.boards.empty()) {
     return result(false, "missing_board", 0);
   }
+  if (text.trimmed().isEmpty()) {
+    return result(false, "empty_text", project_cache_.boards[0].texts.size());
+  }
   try {
-    enterPlaceTextMode(text);
-    if (interaction_mode_ != InteractionMode::PlaceText) {
-      return result(false, "tool_unavailable", project_cache_.boards[0].texts.size());
-    }
-    const QPointF scene_point = boardPositionToScene(project_cache_.boards[0], x_mm, y_mm);
-    const QPoint viewport_point = canvas_view_->mapFromScene(scene_point);
-    QMouseEvent press(QEvent::MouseButtonPress, QPointF(viewport_point), QPointF(viewport_point),
-                      Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-    QApplication::sendEvent(canvas_view_->viewport(), &press);
-    QApplication::processEvents();
-    const std::size_t text_count =
-        !project_cache_.boards.empty() ? project_cache_.boards[0].texts.size() : 0;
-    return result(true, "placed", text_count);
+    ccad::Board& board = project_cache_.boards[0];
+    const std::size_t before_count = board.texts.size();
+    pushUndoSnapshot();
+    const std::string id = nextBoardTextId(board);
+    board.texts.push_back(ccad::BoardText{.id = id,
+        .layer_id = defaultBoardTextLayerId(board, activePcbLayerOrDefault()),
+        .text = text.toStdString(),
+        .position = {ccad::millimeters(x_mm), ccad::millimeters(y_mm)},
+        .size = defaultBoardTextSize(), .stroke_width = defaultBoardTextStrokeWidth()});
+    saveProjectCacheAfterMutation("Placed board text " + qstr(id));
+    renderReview(ccad::buildReview(project_cache_));
+    selectCanvasObjectById(*canvas_scene_, qstr(id));
+    return result(board.texts.size() == before_count + 1, "placed", board.texts.size());
   } catch (const std::exception& e) {
     if (interaction_mode_ != InteractionMode::Default) {
       cancelInteractionMode();
@@ -8607,24 +8730,21 @@ QString ReviewWindow::commitWirePlacementForAutomation(const double start_x_mm,
     return result(false, "missing_schematic", 0);
   }
   try {
-    enterAddWireMode();
-    if (interaction_mode_ != InteractionMode::AddWire) {
-      return result(false, "tool_unavailable", project_cache_.schematics[0].wires.size());
+    ccad::Schematic& schematic = project_cache_.schematics[0];
+    const std::size_t before_count = schematic.wires.size();
+    const ccad::Point start{ccad::millimeters(start_x_mm), ccad::millimeters(start_y_mm)};
+    const ccad::Point end{ccad::millimeters(end_x_mm), ccad::millimeters(end_y_mm)};
+    if (start.x.nanometers == end.x.nanometers && start.y.nanometers == end.y.nanometers) {
+      return result(false, "zero_length", before_count);
     }
-    const auto click = [this](const QPointF& scene_point) {
-      const QPoint viewport_point = schematic_view_->mapFromScene(scene_point);
-      QMouseEvent press(QEvent::MouseButtonPress, QPointF(viewport_point), QPointF(viewport_point),
-                        Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-      QApplication::sendEvent(schematic_view_->viewport(), &press);
-      QApplication::processEvents();
-    };
-    click(schematicPositionToScene(start_x_mm, start_y_mm));
-    if (!project_cache_.schematics.empty()) {
-      click(schematicPositionToScene(end_x_mm, end_y_mm));
-    }
-    const std::size_t wire_count =
-        !project_cache_.schematics.empty() ? project_cache_.schematics[0].wires.size() : 0;
-    return result(true, "placed", wire_count);
+    pushUndoSnapshot();
+    const std::string id = nextSchematicWireId(schematic);
+    schematic.wires.push_back(ccad::SchWire{.id = id, .start = start, .end = end,
+        .net_id = activePcbNetOrDefault()});
+    saveProjectCacheAfterMutation("Placed schematic wire " + qstr(id));
+    renderReview(ccad::buildReview(project_cache_));
+    selectCanvasObjectById(*schematic_scene_, qstr(id));
+    return result(schematic.wires.size() == before_count + 1, "placed", schematic.wires.size());
   } catch (const std::exception& e) {
     if (interaction_mode_ != InteractionMode::Default) {
       cancelInteractionMode();
@@ -8647,20 +8767,21 @@ QString ReviewWindow::commitSchematicLabelPlacementForAutomation(const QString& 
   if (!!project_cache_.schematics.empty()) {
     return result(false, "missing_schematic", 0);
   }
+  if (text.trimmed().isEmpty()) {
+    return result(false, "empty_text", project_cache_.schematics[0].labels.size());
+  }
   try {
-    enterAddLabelMode(text);
-    if (interaction_mode_ != InteractionMode::AddLabel) {
-      return result(false, "tool_unavailable", project_cache_.schematics[0].labels.size());
-    }
-    const QPointF scene_point = schematicPositionToScene(x_mm, y_mm);
-    const QPoint viewport_point = schematic_view_->mapFromScene(scene_point);
-    QMouseEvent press(QEvent::MouseButtonPress, QPointF(viewport_point), QPointF(viewport_point),
-                      Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-    QApplication::sendEvent(schematic_view_->viewport(), &press);
-    QApplication::processEvents();
-    const std::size_t label_count =
-        !project_cache_.schematics.empty() ? project_cache_.schematics[0].labels.size() : 0;
-    return result(true, "placed", label_count);
+    ccad::Schematic& schematic = project_cache_.schematics[0];
+    const std::size_t before_count = schematic.labels.size();
+    pushUndoSnapshot();
+    const std::string id = nextSchematicLabelId(schematic);
+    schematic.labels.push_back(ccad::SchLabel{.id = id, .text = text.toStdString(),
+        .net_id = activePcbNetOrDefault(),
+        .position = {ccad::millimeters(x_mm), ccad::millimeters(y_mm)}});
+    saveProjectCacheAfterMutation("Placed schematic label " + qstr(id));
+    renderReview(ccad::buildReview(project_cache_));
+    selectCanvasObjectById(*schematic_scene_, qstr(id));
+    return result(schematic.labels.size() == before_count + 1, "placed", schematic.labels.size());
   } catch (const std::exception& e) {
     if (interaction_mode_ != InteractionMode::Default) {
       cancelInteractionMode();
@@ -9020,6 +9141,10 @@ void ReviewWindow::cancelInteractionMode() {
   interaction_has_anchor_ = false;
   canvas_view_->viewport()->unsetCursor();
   schematic_view_->viewport()->unsetCursor();
+  // A completed or cancelled placement must not retain its anchor affordance.
+  // Stale status made a committed board look as if a second click remained
+  // pending, and encouraged users/agents to create a centre-point artefact.
+  if (tool_status_ != nullptr) tool_status_->setText("Tool Select");
 }
 
 void ReviewWindow::enterPlaceFootprintMode(const std::string& component_id, const ccad::Footprint& footprint, const std::string& layer_id) {

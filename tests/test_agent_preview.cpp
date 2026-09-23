@@ -43,4 +43,33 @@ int main() {
   require(!ccad::stageRouteTrackPreview(source, invalid, &reason).has_value(),
           "preview rejects missing net instead of inventing one");
   require(reason == "missing_net", "missing net has stable reason");
+
+  ccad::RectanglePreviewRequest rectangle{
+      .start_x_mm = 1.0, .start_y_mm = 1.0,
+      .end_x_mm = 4.0, .end_y_mm = 3.0,
+      .net_id = "GND", .layer_id = "F.Cu",
+  };
+  const auto zone = ccad::stageZonePreview(source, rectangle, &reason);
+  require(zone.has_value() && zone->after.boards[0].zones.size() == 1,
+          "zone preview stages typed geometry without mutating source");
+  require(source.boards[0].zones.empty(), "zone preview keeps source unchanged");
+  const auto keepout = ccad::stageKeepoutPreview(source, rectangle, &reason);
+  require(keepout.has_value() && keepout->after.boards[0].keepouts.size() == 1,
+          "keepout preview stages typed geometry");
+
+  ccad::Project bounded = source;
+  bounded.boards[0].outline = {{ccad::millimeters(0), ccad::millimeters(0)},
+                               {ccad::millimeters(10), ccad::millimeters(10)}};
+  const ccad::GraphicPreviewRequest graphic{
+      .start_x_mm = 1.0, .start_y_mm = 1.0,
+      .end_x_mm = 4.0, .end_y_mm = 1.0, .layer_id = "F.Cu",
+  };
+  const auto line = ccad::stageGraphicLinePreview(bounded, graphic, &reason);
+  require(line.has_value() && line->after.boards[0].graphics.size() == 1,
+          "graphic preview stages a bounded line");
+  ccad::GraphicPreviewRequest outside = graphic;
+  outside.end_x_mm = 11.0;
+  require(!ccad::stageGraphicLinePreview(bounded, outside, &reason).has_value() &&
+              reason == "outside_board_outline",
+          "graphic preview refuses impossible geometry");
 }

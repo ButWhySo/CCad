@@ -68,6 +68,7 @@ class AgentPanel final : public QWidget {
   void setContextProvider(ContextProvider provider);
   void setProviderSecret(const QString& provider_id, const QString& secret);
   void setConfigStateCallback(ConfigStateCallback cb);
+  const QJsonObject& cachedConfigState() const;
   void setProviderStateCallback(ProviderStateCallback cb);
   void setProviderTestResultCallback(ProviderTestResultCallback cb);
   void setProviderConnectionResultCallback(ProviderConnectionResultCallback cb);
@@ -353,6 +354,7 @@ class AgentPanel final : public QWidget {
   std::unique_ptr<ccad::AgentOrchestrator> orchestrator_;
   ContextProvider context_provider_;
   ConfigStateCallback config_state_cb_;
+  QJsonObject cached_config_state_;
   ProviderStateCallback provider_state_cb_;
   ProviderTestResultCallback provider_test_result_cb_;
   ProviderConnectionResultCallback provider_connection_result_cb_;

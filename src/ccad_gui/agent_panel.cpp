@@ -941,7 +941,10 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
     if (proposal_preview_trigger_ && parse_error.error == QJsonParseError::NoError &&
         args_document.isObject()) {
       const QString result = proposal_preview_trigger_(pending_tool_name_, args_document.object());
-      addActivityEvent("proposal", "Preview opened", result, "agent.proposal.preview");
+      addActivityEvent(result.startsWith("preview_staged_") ? "proposal" : "warning",
+                       result.startsWith("preview_staged_") ? "Rendered preview opened"
+                                                            : "Rendered preview unavailable",
+                       result, "agent.proposal.preview");
       return;
     }
     auto* dialog = new QDialog(this);
@@ -956,12 +959,10 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
       page->setPlainText(text);
       tabs->addTab(page, name);
     };
-    const QString before = proposal_before_snapshot_.isEmpty()
-                               ? "Project context was not available at proposal time."
-                               : proposal_before_snapshot_;
     add_page("Preview unavailable",
-             "No rendered preview is available for this action.\n\n" + before +
-                 "\n\nThis action remains pending and has not changed the project.");
+             "No rendered preview is available for this action.\n\n"
+             "This action remains pending and has not changed the project.\n\n"
+             "Use Revise, Reject, or Cancel; do not infer geometry from this notice.");
     add_page("Change list", proposal_summary_label_->text() + "\n\n" +
                                   [&]() {
                                     QStringList rows;
@@ -1224,7 +1225,7 @@ void AgentPanel::appendChatMessage(const QString& role, const QString& text) {
   if (!chat_stream_->toPlainText().isEmpty()) cursor.insertText("\n\n");
   const QString prefix = role == "user" ? QStringLiteral("You\n")
                                        : QStringLiteral("CCad Agent\n");
-  cursor.insertText(prefix + (text.startsWith("<TOOL>") ? text.mid(6) : text));
+  cursor.insertText(prefix + text);
   chat_stream_->setTextCursor(cursor);
   chat_stream_->ensureCursorVisible();
 }
@@ -1307,7 +1308,10 @@ void AgentPanel::handlePythonOutput() {
         QString tool = params["tool"].toString();
         QString args = QJsonDocument(params["args"].toObject()).toJson(QJsonDocument::Compact);
         const QString call_id = params["call_id"].toString();
-        appendChatMessage("agent", "<TOOL>" + tool + " " + args);
+        // Tool traffic is structured runtime activity, not assistant prose.
+        // Rendering raw <TOOL> payloads made the chat look like a debug log
+        // and encouraged users to treat an unexecuted call as a board change.
+        addActivityEvent("tool", "Tool requested", tool, "agent.tool");
         QJsonObject result;
         result["jsonrpc"] = "2.0";
         result["id"] = call_id.isEmpty() ? QString("agent-tool-call") : call_id;
@@ -1347,8 +1351,26 @@ void AgentPanel::handlePythonOutput() {
                   "Agent proposes " + tool,
                   {"Tool: " + tool, "Arguments: " + args,
                    "No project change is applied until you approve."});
-              setApprovalRequestText("Agent tool: " + tool + " " + args);
-              requestApproval();
+              QJsonParseError preview_error;
+              const QJsonDocument preview_args = QJsonDocument::fromJson(args.toUtf8(), &preview_error);
+              if (proposal_preview_trigger_ && preview_error.error == QJsonParseError::NoError &&
+                  preview_args.isObject()) {
+                const QString preview = proposal_preview_trigger_(tool, preview_args.object());
+                addActivityEvent(preview.startsWith("preview_staged_") ? "proposal" : "warning",
+                                 preview.startsWith("preview_staged_") ? "Rendered preview opened"
+                                                                          : "Rendered preview unavailable",
+                                 preview, "agent.proposal.preview");
+              }
+              // Proposal card is the only approval surface for an agent tool.
+              // Do not also enqueue the legacy generic approval card: that
+              // made one immutable tool call look like two approvals.
+              pending_approval_request_ = "Agent tool: " + tool + " " + args;
+              approval_last_decision_ = "pending";
+              approval_status_label_->setText("Approval pending: " + pending_approval_request_);
+              status_label_->setText("Approval pending");
+              result_state_label_->setText("Result Approval pending");
+              addActivityEvent("approval", "Approval pending", pending_approval_request_,
+                               "agent.approval");
               if (approval_preview_) approval_preview_->hide();
               awaiting_approval = true;
             }
@@ -1415,6 +1437,7 @@ void AgentPanel::handlePythonOutput() {
         }
       } else if (obj.contains("method") && obj["method"].toString() == "config_state") {
         const QJsonObject params = obj["params"].toObject();
+        cached_config_state_ = params;
         const QString configured_provider = params["provider"].toString().trimmed();
         if (!configured_provider.isEmpty() && provider_selector_ != nullptr) {
           const int provider_index = provider_selector_->findData(configured_provider);
@@ -1445,7 +1468,7 @@ void AgentPanel::handlePythonOutput() {
         const QString langfuse_public = storedProviderSecret("langfuse_public");
         const QString langfuse_secret = storedProviderSecret("langfuse_secret");
         if (!langfuse_public.isEmpty() || !langfuse_secret.isEmpty()) {
-          sendJsonRpc("agent.set_observability_secret", QJsonObject{
+          sendJsonRpc("agent.langfuse_set_secret", QJsonObject{
               {"public_key", langfuse_public}, {"secret_key", langfuse_secret}});
         }
         if (config_state_cb_) config_state_cb_(params);
@@ -1797,7 +1820,11 @@ void AgentPanel::setProviderSecret(const QString& provider_id, const QString& se
 }
 
 void AgentPanel::setConfigStateCallback(ConfigStateCallback cb) {
-    config_state_cb_ = std::move(cb);
+  config_state_cb_ = std::move(cb);
+}
+
+const QJsonObject& AgentPanel::cachedConfigState() const {
+  return cached_config_state_;
 }
 
 void AgentPanel::setMarketplaceCatalogCallback(MarketplaceCatalogCallback cb) {

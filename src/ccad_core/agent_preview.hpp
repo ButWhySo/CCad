@@ -21,6 +21,23 @@ struct RouteTrackPreviewRequest {
   std::string layer_id = "F.Cu";
 };
 
+struct RectanglePreviewRequest {
+  double start_x_mm = 0.0;
+  double start_y_mm = 0.0;
+  double end_x_mm = 0.0;
+  double end_y_mm = 0.0;
+  std::string net_id;
+  std::string layer_id = "F.Cu";
+};
+
+struct GraphicPreviewRequest {
+  double start_x_mm = 0.0;
+  double start_y_mm = 0.0;
+  double end_x_mm = 0.0;
+  double end_y_mm = 0.0;
+  std::string layer_id = "F.Cu";
+};
+
 struct StagedProjectPreview {
   Project before;
   Project after;
@@ -34,6 +51,18 @@ struct StagedProjectPreview {
 // candidate. It never changes `project`.
 std::optional<StagedProjectPreview> stageRouteTrackPreview(
     const Project& project, const RouteTrackPreviewRequest& request,
+    std::string* reason = nullptr);
+
+std::optional<StagedProjectPreview> stageZonePreview(
+    const Project& project, const RectanglePreviewRequest& request,
+    std::string* reason = nullptr);
+
+std::optional<StagedProjectPreview> stageKeepoutPreview(
+    const Project& project, const RectanglePreviewRequest& request,
+    std::string* reason = nullptr);
+
+std::optional<StagedProjectPreview> stageGraphicLinePreview(
+    const Project& project, const GraphicPreviewRequest& request,
     std::string* reason = nullptr);
 
 }  // namespace ccad

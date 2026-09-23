@@ -2826,3 +2826,21 @@ keys, base URL, environment, service name, runtime status, test export, and
 credential removal. Keys use Windows Credential Manager; status never treats
 stored credentials as a successful export. The UI-map screenshot method captures
 the active settings or review dialog when it is open.
+
+Sprint 951 makes the running adapter observable rather than configuration-only.
+The Python runtime rebuilds Langfuse when its non-secret configuration or vault
+credentials change, attaches the current LangChain callback to graph calls, and
+creates typed observations for context assembly, routing, library work, native
+tool dispatch, model generation, and each agent turn. The agent CLI accepts
+`langfuse_public` and `langfuse_secret` as vault-only credential targets. UI-map
+output redacts every password-style or secret-named line edit, including masked
+Langfuse controls, so inspection tools cannot recover stored values. A real
+remote trace retrieval remains an opt-in verification step.
+
+### Typed Agent project context and staged PCB previews
+
+`project.context` and `project.state` expose a bounded typed board/schematic
+snapshot with binary payloads removed. Vias, board text, schematic wires, and
+labels now save through typed project data. Route, zone, keepout, and graphic
+line proposals use copied-project staging and native before/after rendering;
+unsupported operations return an explicit unavailable reason.

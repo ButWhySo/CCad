@@ -121,6 +121,10 @@ bool knownProvider(const std::string& id) {
   return false;
 }
 
+bool knownCredentialTarget(const std::string& id) {
+  return knownProvider(id) || id == "langfuse_public" || id == "langfuse_secret";
+}
+
 std::string credentialTarget(const std::string& provider) {
   return "CCad/provider/" + provider;
 }
@@ -301,8 +305,8 @@ std::string agentProviderStatusJson() {
 
 int agentProviderCredentialCommand(const std::vector<std::string>& args) {
   if (args.size() != 2 || (args[0] != "status" && args[0] != "set" && args[0] != "remove") ||
-      !knownProvider(args[1])) {
-    std::cerr << "Usage: ccad agent credential <status|set|remove> <provider>\n";
+      !knownCredentialTarget(args[1])) {
+    std::cerr << "Usage: ccad agent credential <status|set|remove> <provider|langfuse_public|langfuse_secret>\n";
     return 2;
   }
 #ifndef _WIN32
