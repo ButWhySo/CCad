@@ -3057,3 +3057,7 @@ The bounded provider package now carries a stable redacted package digest, estim
 ### Sprint 958 â€” tiered memory lifecycle
 
 Implemented durable STM, LTM, and episodic namespaces with runtime enable/disable unloading, ranked bounded retrieval, expiry cleanup, compaction, secret rejection, reset/delete separation, and safe memory-state IPC. Settings Reset Memories now confirms and invokes the real reset operation. Added lifecycle documentation and no-network manager/store contracts. Full Qt/CTest and GUI evidence remain the required end-of-slice gate.
+
+### Sprint 959 â€” documented provider integration matrix
+
+Verified the six configured provider adapters against their official model-catalog contracts: OpenAI, Anthropic, Gemini, OpenRouter, Cerebras, and Ollama. Added a checked-in endpoint/credential/adapter matrix and a no-network contract covering headers, response shapes, pagination/local-source semantics, and safe authentication, permission, payment, rate-limit, timeout, connection, and invalid-response categories. Live provider calls remain opt-in because they consume the user's quota.
