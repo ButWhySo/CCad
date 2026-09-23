@@ -153,6 +153,57 @@ int main(int argc, char** argv) {
     return 18;
   }
 
+  const QJsonObject python_control{{"schema_version", 1},
+                                   {"secret_value_visible", false},
+                                   {"methods", QJsonArray{
+                                       QJsonObject{{"name", "agent.memory_set_enabled"},
+                                                   {"transport", "python_json_rpc"},
+                                                   {"dispatchable", true},
+                                                   {"agent_tool_callable", false},
+                                                   {"read_only", false},
+                                                   {"secrets", false},
+                                                   {"side_effect", "persist_memory_preference"},
+                                                   {"params", QJsonObject{
+                                                       {"tier", QJsonObject{{"type", "string"},
+                                                                             {"enum", QJsonArray{"stm", "ltm"}}}},
+                                                       {"enabled", QJsonObject{{"type", "boolean"}}}}},
+                                                   {"response", QJsonObject{
+                                                       {"method", "memory_state"},
+                                                       {"fields", QJsonArray{"tier", "enabled"}}}}}}}};
+  if (!window.setPythonControlMethodCatalog(python_control)) return 19;
+  const QJsonObject integrated_methods = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("agent.methods", "{}").toUtf8()).object()
+      .value("result").toObject();
+  const QJsonObject integrated_entry = [&]() {
+    for (const QJsonValue& value : integrated_methods.value("methods").toArray()) {
+      const QJsonObject entry = value.toObject();
+      if (entry.value("method").toString() == "agent.memory_set_enabled") return entry;
+    }
+    return QJsonObject{};
+  }();
+  const QJsonObject integrated_schema = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("agent.method_schema",
+          R"({"method_name":"agent.memory_set_enabled"})").toUtf8())
+      .object().value("result").toObject().value("entry").toObject()
+      .value("inputSchema").toObject();
+  if (integrated_methods.value("registry_sources").toArray().contains(
+          "python_json_rpc_control") == false ||
+      integrated_entry.value("surface").toString() != "python_json_rpc_control" ||
+      integrated_entry.value("callable").toBool(true) ||
+      integrated_entry.value("agent_tool_callable").toBool(true) ||
+      integrated_entry.value("control_dispatchable").toBool() != true ||
+      integrated_entry.value("result_shape").toObject().value("method").toString() != "memory_state" ||
+      integrated_schema.value("properties").toObject().value("tier").toObject()
+          .value("enum").toArray().size() != 2 ||
+      integrated_schema.value("required").toArray().size() != 2 ||
+      integrated_methods.value("callable_method_count").toInt() != callable_descriptor_count ||
+      window.setPythonControlMethodCatalog(QJsonObject{{"schema_version", 1},
+          {"secret_value_visible", true}, {"methods", QJsonArray{}}}) ||
+      !window.runAgentUiQueryJson("agent.method_schema",
+          R"({"method_name":"agent.memory_set_enabled"})").contains("\"found\":true")) {
+    return 19;
+  }
+
   const QString add_wire = window.runAgentUiQueryJson(
       "ui.add_wire", "{\"x1\":1,\"y1\":1,\"x2\":5,\"y2\":1}");
   const QString add_label = window.runAgentUiQueryJson(

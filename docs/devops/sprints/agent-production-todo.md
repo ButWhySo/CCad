@@ -34,7 +34,7 @@ Update this file in the same commit as each implementation slice.
   - [x] Derive CLI command effect metadata through the shared CCad command policy classifier.
   - [x] Verify discovery contains the exact CLI help inventory and Python binds only callable GUI broker methods.
   - [x] Give Python JSON-RPC controls typed parameter, response, transport, dispatchability, and secrecy metadata; test uniqueness and memory safety semantics.
-  - [ ] Merge Python control-plane descriptors into GUI `agent.methods`/`agent.method_schema` discovery without presenting them as model-callable tools.
+  - [x] Merge Python control-plane descriptors into GUI `agent.methods`/`agent.method_schema` discovery without presenting them as model-callable tools.
   - [x] Audit `ccad_core::Transaction`: current API builds/serializes diffs and impact only; no kernel apply/undo dispatcher exists to register as callable.
   - [ ] Expose kernel transaction capabilities only after the real apply/undo/verify execution path is wired; retain explicit unavailable state until then.
 - [x] Give each supported command schemas, examples, validation, side-effect class, context needs, and result shape.
@@ -110,9 +110,11 @@ Update this file in the same commit as each implementation slice.
 - [x] Reject agent graphic endpoints outside the board outline instead of committing a DRC-error marker.
 - [ ] Make collapsed Agent dock restorable through a mapped action and release its unused dock space.
 - [x] Expose Layers/Objects child tabs as stable UI-map targets.
+- [ ] Give Preferences-menu actions stable UI-map targets and dispatch; validate a real menu-to-dialog path.
 - [ ] Repair Layers / Objects dock topology: prevent Agent dock from crushing the Appearance panel; preserve user dock geometry and minimum usable widths.
 - [ ] Add adaptive right-dock behavior: side-by-side on wide windows, tabified Layers/Agent on constrained widths.
-- [ ] Remove native dotted focus rectangles application-wide while preserving solid keyboard-focus indication.
+- [x] Remove native dotted focus rectangles application-wide while preserving themed keyboard-focus indication.
+- [x] Preserve board-object selection as geometry-based highlighting rather than a generic focus rectangle.
 - [ ] Implement real collapsible conversation-history sidebar with pinned/recent sessions.
 - [ ] Implement New Chat as a real session/thread operation and bind it to LangGraph thread identity.
 - [ ] Bind current chat title to durable session metadata.
@@ -1170,7 +1172,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 
 - [ ] Repair Layers/Objects vs Agent dock topology.
 - [ ] Add adaptive tabification.
-- [ ] Remove dotted native focus rectangle.
+- [x] Remove dotted native focus rectangle and retain themed keyboard-focus feedback.
 - [ ] Replace stand-in icons needed by the shell.
 - [ ] Implement history sidebar visual structure.
 - [ ] Implement New Chat/thread creation.
@@ -1307,7 +1309,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 Do not claim Agent UI parity until all of the following are simultaneously true.
 
 - [ ] Layers/Objects and Agent docks remain usable at target window sizes.
-- [ ] No unwanted dotted focus rectangles remain.
+- [x] No unwanted dotted focus rectangles remain in the scoped settings/Agent UI validation.
 - [ ] Conversation history is real and collapsible.
 - [ ] New Chat creates a real independent thread.
 - [ ] Conversation switching restores the correct thread.

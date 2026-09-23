@@ -139,6 +139,7 @@ AgentRunner::~AgentRunner() {
 }
 
 void AgentRunner::start() {
+    std::lock_guard<std::mutex> lock(queue_mutex_);
     if (!running_) {
         running_ = true;
         worker_thread_ = std::thread(&AgentRunner::execution_loop, this);
@@ -146,13 +147,15 @@ void AgentRunner::start() {
 }
 
 void AgentRunner::stop() {
-    if (running_) {
+    {
+        // The worker tests this predicate while holding queue_mutex_. Update
+        // it under the same lock so stop cannot notify between the predicate
+        // check and the condition-variable wait.
+        std::lock_guard<std::mutex> lock(queue_mutex_);
         running_ = false;
-        cv_.notify_all();
-        if (worker_thread_.joinable()) {
-            worker_thread_.join();
-        }
     }
+    cv_.notify_all();
+    if (worker_thread_.joinable()) worker_thread_.join();
 }
 
 void AgentRunner::enqueue_goal(const AgentGoal& goal) {

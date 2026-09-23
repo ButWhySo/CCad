@@ -81,6 +81,7 @@
 #include <QSize>
 #include <QSizePolicy>
 #include <QSignalBlocker>
+#include <QSet>
 #include <QStatusBar>
 #include <QStyle>
 #include <QStringList>
@@ -629,7 +630,7 @@ QJsonObject agentMethodLookupSchema() {
   return schemaObject(properties, {});
 }
 
-QJsonArray agentMethodCatalogArray() {
+QJsonArray agentMethodCatalogArray(const QJsonArray& python_control_methods = {}) {
   QJsonArray catalog;
 
   auto append = [&catalog](const QJsonObject& entry) { catalog.append(entry); };
@@ -1050,11 +1051,66 @@ QJsonArray agentMethodCatalogArray() {
       catalog.append(entry);
     }
   }
+
+  QSet<QString> known_methods;
+  for (const QJsonValue& value : catalog) {
+    const QString method = value.toObject().value("method").toString();
+    if (!method.isEmpty()) known_methods.insert(method);
+  }
+  for (const QJsonValue& value : python_control_methods) {
+    if (!value.isObject()) continue;
+    const QJsonObject control = value.toObject();
+    const QString name = control.value("name").toString().trimmed();
+    if (name.isEmpty() || known_methods.contains(name)) continue;
+
+    QJsonObject properties;
+    QJsonArray required;
+    const QJsonObject params = control.value("params").toObject();
+    for (auto it = params.begin(); it != params.end(); ++it) {
+      if (!it.value().isObject()) continue;
+      const QJsonObject parameter = it.value().toObject();
+      QJsonObject property{{"type", parameter.value("type").toString("string")}};
+      const QString description = parameter.value("description").toString();
+      if (!description.isEmpty()) property.insert("description", description);
+      if (parameter.contains("enum")) property.insert("enum", parameter.value("enum"));
+      if (parameter.contains("default")) property.insert("default", parameter.value("default"));
+      if (parameter.value("secret").toBool()) property.insert("writeOnly", true);
+      properties.insert(it.key(), property);
+      if (!parameter.value("optional").toBool(false)) required.append(it.key());
+    }
+
+    QJsonObject entry{{"method", name},
+                      {"surface", "python_json_rpc_control"},
+                      {"callable", false},
+                      {"agent_tool_callable", false},
+                      {"control_dispatchable", control.value("dispatchable").toBool(false)},
+                      {"execution_binding", "python_json_rpc_control_plane"},
+                      {"transport", control.value("transport").toString("python_json_rpc")},
+                      {"category", "python_control"},
+                      {"title", name},
+                      {"description", control.value("description").toString(
+                           "Python orchestrator control method.")},
+                      {"read_only", control.value("read_only").toBool(false)},
+                      {"secrets", control.value("secrets").toBool(false)},
+                      {"side_effect", control.value("side_effect").toString(
+                           control.value("read_only").toBool(false) ? "read_only" : "runtime_control")},
+                      {"inputSchema", QJsonObject{{"type", "object"},
+                                                  {"properties", properties},
+                                                  {"required", required},
+                                                  {"additionalProperties", false}}},
+                      {"control_contract", control}};
+    if (control.contains("approval_required"))
+      entry.insert("approval_required", control.value("approval_required"));
+    if (control.contains("response")) entry.insert("result_shape", control.value("response"));
+    if (control.contains("responses")) entry.insert("response_events", control.value("responses"));
+    catalog.append(entry);
+    known_methods.insert(name);
+  }
   return catalog;
 }
 
-QJsonObject agentMethodsJsonObject() {
-  const QJsonArray methods = agentMethodCatalogArray();
+QJsonObject agentMethodsJsonObject(const QJsonArray& python_control_methods = {}) {
+  const QJsonArray methods = agentMethodCatalogArray(python_control_methods);
   int callable_method_count = 0;
   for (const QJsonValue& value : methods) {
     if (value.toObject().value("callable").toBool()) ++callable_method_count;
@@ -1066,15 +1122,17 @@ QJsonObject agentMethodsJsonObject() {
   response.insert("callable_method_count", callable_method_count);
   response.insert("methods", methods);
   response.insert("registry_sources",
-                  QJsonArray{"native_gui_broker", "ccad_cli_dispatch_help", "ccad_core_policy"});
+                  QJsonArray{"native_gui_broker", "ccad_cli_dispatch_help", "ccad_core_policy",
+                              "python_json_rpc_control"});
   response.insert("reference_model",
                   "KiCad-style named actions plus MCP-style tool schemas for LLM-native use.");
   return response;
 }
 
-std::optional<QJsonObject> agentMethodCatalogEntry(const QString& method_name) {
+std::optional<QJsonObject> agentMethodCatalogEntry(
+    const QString& method_name, const QJsonArray& python_control_methods = {}) {
   const QString trimmed = method_name.trimmed();
-  for (const QJsonValue& value : agentMethodCatalogArray()) {
+  for (const QJsonValue& value : agentMethodCatalogArray(python_control_methods)) {
     if (!value.isObject()) {
       continue;
     }
@@ -1086,15 +1144,17 @@ std::optional<QJsonObject> agentMethodCatalogEntry(const QString& method_name) {
   return std::nullopt;
 }
 
-QString agentMethodsJson() {
-  return jsonObjectLine(agentMethodsJsonObject());
+QString agentMethodsJson(const QJsonArray& python_control_methods = {}) {
+  return jsonObjectLine(agentMethodsJsonObject(python_control_methods));
 }
 
-QString agentMethodSchemaJson(const QString& method_name) {
+QString agentMethodSchemaJson(const QString& method_name,
+                              const QJsonArray& python_control_methods = {}) {
   QJsonObject response;
   response.insert("schema_version", 1);
   response.insert("method", method_name.trimmed());
-  const std::optional<QJsonObject> entry = agentMethodCatalogEntry(method_name);
+  const std::optional<QJsonObject> entry =
+      agentMethodCatalogEntry(method_name, python_control_methods);
   response.insert("found", entry.has_value());
   if (entry.has_value()) {
     response.insert("entry", *entry);
@@ -2206,6 +2266,12 @@ ReviewWindow::ReviewWindow() {
       board_view->setGridVisible(visible);
     }
   });
+  agent_panel_->setOrchestratorMethodCatalogCallback(
+      [this](const QJsonObject& catalog) {
+        if (!setPythonControlMethodCatalog(catalog)) {
+          statusBar()->showMessage("Python control catalog rejected: invalid contract", 5000);
+        }
+      });
   agent_panel_->setUiMapProvider([this]() { return uiMapJson(); });
   agent_panel_->setSafeActionTrigger(
       [this](const QString& id) { return triggerSafeUiActionJson(id); });
@@ -3631,7 +3697,7 @@ void ReviewWindow::applyStyle() {
       border-radius: 4px;
     }
     QMenuBar::item:selected {
-      background-color: #1e2430;
+      background-color: #292337;
     }
     QToolBar {
       background-color: #0f1115;
@@ -3647,6 +3713,10 @@ void ReviewWindow::applyStyle() {
     }
     QToolButton:hover {
       background-color: #1e2430;
+      color: #ffffff;
+    }
+    QToolButton:focus {
+      background-color: #292337;
       color: #ffffff;
     }
     QToolButton:pressed {
@@ -7511,6 +7581,33 @@ QString ReviewWindow::uiWatchDeltaJson(const int since_epoch, const int timeout_
   return jsonObjectLine(response);
 }
 
+bool ReviewWindow::setPythonControlMethodCatalog(const QJsonObject& catalog) {
+  if (catalog.value("schema_version").toInt() != 1 ||
+      catalog.value("secret_value_visible").toBool(true) ||
+      !catalog.value("methods").isArray()) {
+    return false;
+  }
+
+  const QJsonArray methods = catalog.value("methods").toArray();
+  if (methods.isEmpty() || methods.size() > 512) return false;
+  QSet<QString> names;
+  for (const QJsonValue& value : methods) {
+    if (!value.isObject()) return false;
+    const QJsonObject method = value.toObject();
+    const QString name = method.value("name").toString().trimmed();
+    if (name.isEmpty() || names.contains(name) ||
+        method.value("transport").toString() != "python_json_rpc" ||
+        !method.value("dispatchable").toBool(false) ||
+        method.value("agent_tool_callable").toBool(true) ||
+        (method.contains("params") && !method.value("params").isObject())) {
+      return false;
+    }
+    names.insert(name);
+  }
+  python_control_methods_ = methods;
+  return true;
+}
+
 QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& payload) {
   const QString trimmed_method = method.trimmed();
   const std::optional<QJsonObject> request = parseJsonObject(payload.isEmpty() ? "{}" : payload);
@@ -7522,7 +7619,7 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
   };
 
   if (trimmed_method == "agent.methods") {
-    return agentQueryResponse(trimmed_method, true, {}, agentMethodsJson());
+    return agentQueryResponse(trimmed_method, true, {}, agentMethodsJson(python_control_methods_));
   }
   if (trimmed_method == "agent.method_schema") {
     const std::optional<QJsonObject> object = requireObject();
@@ -7539,7 +7636,8 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
         method_name = candidate;
       }
     }
-    return agentQueryResponse(trimmed_method, true, {}, agentMethodSchemaJson(method_name));
+    return agentQueryResponse(trimmed_method, true, {},
+                              agentMethodSchemaJson(method_name, python_control_methods_));
   }
   if (trimmed_method == "agent.quickstart") {
     return agentQueryResponse(trimmed_method, true, {}, agentQuickstartJson());

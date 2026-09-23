@@ -649,6 +649,10 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
       background-color: #374151;
       color: #ffffff;
     }
+    QPushButton[agentRole="iconButton"]:focus {
+      background-color: #3a3047;
+      color: #ffffff;
+    }
     QPushButton[agentRole="iconButtonPrimary"] {
       background-color: #8a2be2;
       border-radius: 8px;
@@ -656,6 +660,9 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
     }
     QPushButton[agentRole="iconButtonPrimary"]:hover {
       background-color: #7b1fa2;
+    }
+    QPushButton[agentRole="iconButtonPrimary"]:focus {
+      background-color: #9b4dff;
     }
     QFrame[agentRole="proposalCard"] {
       background-color: #202c3d;
@@ -688,6 +695,10 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
     }
     QPushButton[agentRole="quickReply"]:hover {
       background-color: #343740;
+      border-color: #8a2be2;
+    }
+    QPushButton[agentRole="quickReply"]:focus {
+      background-color: #342b40;
       border-color: #8a2be2;
     }
     QLabel[agentRole="panelTitle"] {
@@ -1413,6 +1424,17 @@ void AgentPanel::handlePythonOutput() {
                              .arg(context_truncated_ ? "truncated" : "bounded")
                              + (digest.isEmpty() ? QString() : QString(" | %1").arg(digest)),
                          "agent.context_state");
+      } else if (obj.contains("method") && obj["method"].toString() == "agent_methods") {
+        const QJsonObject params = obj["params"].toObject();
+        if (params.value("schema_version").toInt() == 1 &&
+            params.value("secret_value_visible").toBool(true) == false &&
+            params.value("methods").isArray() && orchestrator_method_catalog_cb_) {
+          orchestrator_method_catalog_cb_(params);
+        } else {
+          addActivityEvent("error", "Python control catalog rejected",
+                           "Invalid catalog schema or secret-safety metadata.",
+                           "agent.methods");
+        }
       } else if (obj.contains("method") && obj["method"].toString() == "tool_result_ack") {
         const QJsonObject params = obj["params"].toObject();
         const bool success = params["success"].toBool(false);
@@ -1490,6 +1512,9 @@ void AgentPanel::handlePythonOutput() {
         const QJsonObject params = obj["params"].toObject();
         backend_ready_ = params["ready"].toBool(false);
         backend_provider_initialized_ = params["provider_initialized"].toBool(false);
+        if (backend_ready_ && !orchestrator_catalog_requested_) {
+          orchestrator_catalog_requested_ = sendJsonRpc("agent.methods", QJsonObject());
+        }
         if (backend_ready_ && !native_tool_catalog_.isEmpty() && !native_tool_catalog_sent_) {
           sendJsonRpc("agent.set_tool_catalog", QJsonObject{{"catalog", native_tool_catalog_}});
         } else if (backend_ready_ && !backend_config_requested_) {
@@ -1854,6 +1879,11 @@ void AgentPanel::setComponentWizardCallback(ComponentWizardCallback cb) {
 
 void AgentPanel::setGridSettingsCallback(GridSettingsCallback cb) {
   grid_settings_cb_ = std::move(cb);
+}
+
+void AgentPanel::setOrchestratorMethodCatalogCallback(
+    OrchestratorMethodCatalogCallback cb) {
+  orchestrator_method_catalog_cb_ = std::move(cb);
 }
 
 void AgentPanel::setProjectContext(const QString& project_label, const int ui_map_epoch) {

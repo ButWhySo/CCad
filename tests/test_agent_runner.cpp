@@ -3,16 +3,21 @@
 #include "ccad_core/agent_runner.hpp"
 #include <chrono>
 #include <future>
+#include <stdexcept>
 #include <thread>
 
 using namespace ccad;
 
 static void test_starts_and_stops() {
     std::cout << "  test_starts_and_stops... ";
-    AgentRunner runner;
-    runner.start();
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    runner.stop();
+    for (int attempt = 0; attempt < 64; ++attempt) {
+        AgentRunner runner;
+        runner.start();
+        if ((attempt % 8) == 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+        runner.stop();
+    }
     std::cout << "PASS\n";
 }
 
@@ -51,7 +56,10 @@ static void test_processes_goal() {
     // worker, callback, or scheduler regression prevents terminal progress.
     // Keep the assertion tied to the real callback, but bound the test so the
     // full CTest gate reports a failure instead of hanging indefinitely.
-    assert(completed.wait_for(std::chrono::seconds(5)) == std::future_status::ready);
+    if (completed.wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
+        runner.stop();
+        throw std::runtime_error("agent runner did not report completed goal within five seconds");
+    }
     const AgentGoal completed_result = completed.get();
     runner.stop();
     assert(completed_result.completed_count == 1);
@@ -75,7 +83,10 @@ static void test_rejects_goal_without_executor() {
     goal.tasks.push_back(AgentTask{.id = "read-only-task", .risk = TaskRisk::ReadOnly});
     goal.total_count = 1;
     runner.enqueue_goal(goal);
-    assert(failed.wait_for(std::chrono::seconds(5)) == std::future_status::ready);
+    if (failed.wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
+        runner.stop();
+        throw std::runtime_error("agent runner did not report failed goal within five seconds");
+    }
     const AgentGoal result = failed.get();
     runner.stop();
     assert(result.failed_count == 1);

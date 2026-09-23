@@ -46,6 +46,7 @@ class AgentPanel final : public QWidget {
   using ObservabilityStateCallback = std::function<void(const QJsonObject&)>;
   using ComponentWizardCallback = std::function<void(const QJsonObject&)>;
   using GridSettingsCallback = std::function<void(double, bool)>;
+  using OrchestratorMethodCatalogCallback = std::function<void(const QJsonObject&)>;
 
   struct AgentSessionMetadata {
     QString session_id;
@@ -79,6 +80,7 @@ class AgentPanel final : public QWidget {
   void setObservabilityStateCallback(ObservabilityStateCallback cb);
   void setComponentWizardCallback(ComponentWizardCallback cb);
   void setGridSettingsCallback(GridSettingsCallback cb);
+  void setOrchestratorMethodCatalogCallback(OrchestratorMethodCatalogCallback cb);
   void setProjectContext(const QString& project_label, int ui_map_epoch);
   void setWorkspaceContext(const QString& active_view,
                            const QString& active_layer,
@@ -301,6 +303,7 @@ class AgentPanel final : public QWidget {
   bool backend_provider_initialized_ = false;
   bool native_tool_catalog_sent_ = false;
   bool backend_config_requested_ = false;
+  bool orchestrator_catalog_requested_ = false;
   QJsonArray native_tool_catalog_;
   QString trace_id_;
   QString span_id_;
@@ -365,4 +368,5 @@ class AgentPanel final : public QWidget {
   ObservabilityStateCallback observability_state_cb_;
   ComponentWizardCallback component_wizard_cb_;
   GridSettingsCallback grid_settings_cb_;
+  OrchestratorMethodCatalogCallback orchestrator_method_catalog_cb_;
 };

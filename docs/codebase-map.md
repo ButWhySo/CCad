@@ -1896,7 +1896,8 @@ dispatchability, and that it is not a model-callable tool; memory controls
 declare allowed tiers, persistence/runtime effects, and reset approval.
 `scripts/test_agent_orchestrator_method_catalog.py` checks uniqueness, secrecy,
 and memory contracts, and CTest runs it when Python is available. Qt's
-`agent.methods` response does not yet merge these descriptors. The core
+At the Sprint 964 handover, the GUI `agent.methods` response did not yet merge
+these descriptors; Sprint 965 completes that merge as described below. The core
 `Transaction` API only builds/serializes project diffs and impacts; do not list
 apply/undo as callable until an authoritative dispatcher exists.
 Sprint 964 language-server evidence: Pyright 1.1.414 reported zero diagnostics
@@ -1904,3 +1905,25 @@ for the changed Python files. The installed CMake language server 0.1.11 is
 incompatible with global pygls 2.1.1 (`LanguageServer` import failure); CMake
 configure/generate accepted the build-file change. No C++ source changed in
 this slice, so clangd was not invoked.
+
+Sprint 965 handover: `ReviewWindow::agentMethodCatalogArray()` merges validated
+Python JSON-RPC control descriptors into `agent.methods` and
+`agent.method_schema`, preserving Python transport, dispatchability, and
+`callable:false`. `AgentPanel` requests this catalog after backend readiness
+and validates it before forwarding it. `setPythonControlMethodCatalog` rejects
+malformed, duplicate, or secret-bearing descriptors without replacing the
+existing catalog; see `tests/test_gui_ui_map.cpp`. `ThemedFocusStyle` in
+`main.cpp` suppresses Qt's native dotted focus primitive, with scoped QSS focus
+and selected states in Agent/settings/review UI. CAD object selection remains
+geometry-based. `AgentRunner::start/stop` synchronize the worker predicate with
+the queue mutex; `test_agent_runner` exercises 64 quick cycles and passed 30
+CTest repeats. Verification: Qt/MinGW Release build and CTest 93/93; live
+`agent.methods` returned 199 descriptors, including typed Python memory
+controls as dispatchable but non-model-callable; scoped settings/focus and
+object-selection screenshots were inspected in
+`artifacts/screenshots/sprint965-focus-registry/`. Pyright reported zero
+diagnostics on the changed Python catalog. cmake-language-server 0.1.11 passed
+JSON-RPC initialize with pygls 1.3.1. clangd 19.1.7 used the Qt compile
+database; its optional extraction-action self-test reported one internal
+invalid-loop extraction failure and no source diagnostic. Preferences menu
+actions remain unmapped and tracked as open work.

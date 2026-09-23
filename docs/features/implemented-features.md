@@ -2846,3 +2846,16 @@ snapshot with binary payloads removed. Vias, board text, schematic wires, and
 labels now save through typed project data. Route, zone, keepout, and graphic
 line proposals use copied-project staging and native before/after rendering;
 unsupported operations return an explicit unavailable reason.
+
+### Sprint 965 - GUI method discovery and focus feedback
+
+The GUI's `agent.methods` and `agent.method_schema` responses now include typed
+Python JSON-RPC control descriptors while keeping them non-model-callable.
+Qt's native dotted focus primitive is suppressed; themed focus and selected
+states remain visible, and PCB selection stays attached to the selected
+geometry. Verification: Qt Release build and CTest 93/93; 30 repeated
+AgentRunner tests; Pyright reported zero diagnostics for the changed Python
+catalog; cmake-language-server initialize handshake passed; scoped live
+GUI-map/mouse/keyboard screenshots and empty stdout/stderr were inspected in
+`artifacts/screenshots/sprint965-focus-registry/`. Preferences-menu actions
+remain unmapped and are not claimed complete.

@@ -11,6 +11,8 @@
 #include <QPainter>
 #include <QPixmap>
 #include <QListWidget>
+#include <QProxyStyle>
+#include <QStyleOption>
 #include <QThread>
 #include <QTimer>
 
@@ -23,6 +25,17 @@
 #include <vector>
 
 namespace {
+
+class ThemedFocusStyle final : public QProxyStyle {
+ public:
+  using QProxyStyle::QProxyStyle;
+
+  void drawPrimitive(const PrimitiveElement element, const QStyleOption* option,
+                     QPainter* painter, const QWidget* widget = nullptr) const override {
+    if (element == PE_FrameFocusRect) return;
+    QProxyStyle::drawPrimitive(element, option, painter, widget);
+  }
+};
 
 constexpr int kSingleScreenshotWaitMs = 7000;
 constexpr int kMultiTargetInitialWaitMs = 5000;
@@ -98,6 +111,7 @@ int screenshotWindow(QWidget& window, const QString& screenshot_path, const char
 
 int main(int argc, char** argv) {
   QApplication app(argc, argv);
+  app.setStyle(new ThemedFocusStyle());
 
   if (argc == 4 && (std::string(argv[1]) == "--dump-ui-map" ||
                     std::string(argv[1]) == "--validate-ui-map-targets")) {

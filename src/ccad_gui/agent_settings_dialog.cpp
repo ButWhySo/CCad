@@ -188,6 +188,9 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
       background-color: rgba(138, 43, 226, 0.15);
       border-left: 3px solid #8a2be2;
     }
+    QListWidget::item:selected:focus {
+      background-color: rgba(167, 113, 230, 0.24);
+    }
     QLabel {
       color: #e6edf3;
       font-size: 13px;
@@ -198,6 +201,10 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
       border-radius: 6px;
       padding: 8px;
       color: #e6edf3;
+    }
+    QLineEdit:focus, QTextEdit:focus, QComboBox:focus {
+      background-color: #171321;
+      border-color: #8a2be2;
     }
     QPushButton {
       background-color: #21262d;
@@ -210,6 +217,10 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
       background-color: #30363d;
       border-color: #8a2be2;
     }
+    QPushButton:focus {
+      background-color: #32283e;
+      border-color: #8a2be2;
+    }
     QPushButton#primaryButton {
       background-color: #8a2be2;
       border: none;
@@ -217,6 +228,9 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
     }
     QPushButton#primaryButton:hover {
       background-color: #9b4dff;
+    }
+    QPushButton#primaryButton:focus {
+      background-color: #a765f4;
     }
     QGroupBox {
       border: 1px solid #30363d;
@@ -238,7 +252,7 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
       agent_panel_->setConfigStateCallback([this](const QJsonObject& config) {
           this->applyConfigState(config);
       });
-      agent_panel_->setProviderStateCallback([this](const QJsonObject& state) {
+      agent_panel_->setProviderStateCallback([](const QJsonObject& state) {
           // Ambient backend state may describe the restored active provider.
           // It is deliberately not used to complete a selected-provider check.
           Q_UNUSED(state);

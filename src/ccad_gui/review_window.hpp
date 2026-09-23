@@ -116,6 +116,7 @@ class ReviewWindow final : public QMainWindow {
   QString uiWaitForDeltaJson(int since_epoch, int timeout_ms);
   QString triggerSafeUiActionJson(const QString& id);
   QString runAgentUiQueryJson(const QString& method, const QString& payload);
+  bool setPythonControlMethodCatalog(const QJsonObject& catalog);
   QString showAgentProposalPreview(const QString& method, const QJsonObject& args);
   QString activePcbLayerJson() const;
   QString setActivePcbLayerForAutomation(const QString& layer_id);
@@ -251,6 +252,7 @@ class ReviewWindow final : public QMainWindow {
   TransactionTimelinePanel* transaction_timeline_ = nullptr;
   std::filesystem::path current_path_;
   ccad::Project project_cache_;
+  QJsonArray python_control_methods_;
   std::vector<ccad::Project> undo_stack_;
   std::vector<ccad::Project> redo_stack_;
   QAction* undo_action_ = nullptr;
