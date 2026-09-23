@@ -30,7 +30,7 @@ Update this file in the same commit as each implementation slice.
 ## Typed CCad tool surface
 
 - [ ] Generate one typed registry from real CLI, core transactions, UI-map, DRC/ERC, library/catalog, schematic, PCB, routing, export, inspection, memory, and evidence surfaces.
-- [ ] Give each supported command schemas, examples, validation, side-effect class, context needs, and result shape.
+- [x] Give each supported command schemas, examples, validation, side-effect class, context needs, and result shape.
 - [ ] Add guarded real CLI execution with structured stdout, stderr, artifacts, and safe failure mapping.
 - [ ] Add deterministic unit-aware calculator and coordinate-transform tool.
 - [ ] Add constrained project-scoped Python computation with explicit artifacts, no inherited secrets or shell interpolation, bounded execution, and approval for persistence.

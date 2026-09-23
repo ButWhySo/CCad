@@ -3069,3 +3069,7 @@ Moved the pure JSON-RPC method catalog into `method_catalog.py` without changing
 ### Sprint 961 - orchestration dispatch complexity resolved
 
 Extracted provider, thread, model-catalog, context, and memory RPC handling into `handle_provider_and_state_request`. The dispatch loop now delegates that cohesive stateful group without changing JSON-RPC events or provider behavior. Project-venv context, native-catalog, provider, and memory contracts pass. Pyright no longer reports the complexity diagnostic; seven unrelated existing type diagnostics remain for later cleanup.
+
+### Sprint 962 - native catalog execution metadata
+
+Added uniform metadata to every native GUI Agent catalog entry: derived side-effect class, required context, schema-backed validation, and result shape. The contract script passes without network access. The broader registry still needs real CLI/core command aggregation.

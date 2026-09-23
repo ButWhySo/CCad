@@ -525,6 +525,24 @@ QJsonObject agentMethodEntry(const QString& method, const QString& category,
   entry.insert("mutates_project", mutates_project);
   entry.insert("requires_project", requires_project);
   entry.insert("supports_dry_run", supports_dry_run);
+  const QString side_effect = read_only
+                                  ? QStringLiteral("read_only")
+                                  : mutates_project
+                                      ? QStringLiteral("project_mutation")
+                                      : mutates_ui
+                                          ? QStringLiteral("ui_mutation")
+                                          : QStringLiteral("runtime_or_external");
+  entry.insert("side_effect", side_effect);
+  QJsonArray context_requirements;
+  if (requires_project) context_requirements.append("project_state");
+  if (mutates_project) context_requirements.append("project_revision");
+  if (mutates_ui) context_requirements.append("ui_map");
+  entry.insert("context_requirements", context_requirements);
+  entry.insert("validation", QJsonObject{
+                                  {"schema", "inputSchema"},
+                                  {"required_fields", input_schema.value("required")},
+                                  {"dry_run_supported", supports_dry_run}});
+  entry.insert("result_shape", output_summary);
   entry.insert("inputSchema", input_schema);
   entry.insert("output_summary", output_summary);
   QJsonArray examples;
