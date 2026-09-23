@@ -38,6 +38,9 @@ class OrchestratorMethodCatalogTests(unittest.TestCase):
         self.assertTrue(reset["approval_required"])
         self.assertIn("runtime_entries", toggle["response"]["fields"])
         self.assertIn("persistent_entries", toggle["response"]["fields"])
+        self.assertTrue(self.by_name["agent.memory_delete"]["approval_required"])
+        self.assertTrue(self.by_name["agent.memory_list"]["read_only"])
+        self.assertTrue(self.by_name["agent.memory_add"]["params"]["content"]["secret_rejected"])
 
     def test_catalog_never_discloses_secret_values(self):
         self.assertFalse(self.catalog["secret_value_visible"])

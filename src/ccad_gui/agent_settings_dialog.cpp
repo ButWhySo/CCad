@@ -252,6 +252,9 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
       agent_panel_->setConfigStateCallback([this](const QJsonObject& config) {
           this->applyConfigState(config);
       });
+      agent_panel_->setMemoryStateCallback([this](const QJsonObject& state) {
+          this->applyMemoryState(state);
+      });
       agent_panel_->setProviderStateCallback([](const QJsonObject& state) {
           // Ambient backend state may describe the restored active provider.
           // It is deliberately not used to complete a selected-provider check.
@@ -356,6 +359,7 @@ AgentSettingsDialog::~AgentSettingsDialog() {
   // callbacks capturing this dialog after accept() destroys it.
   if (agent_panel_) {
     agent_panel_->setConfigStateCallback({});
+    agent_panel_->setMemoryStateCallback({});
     agent_panel_->setProviderStateCallback({});
     agent_panel_->setProviderTestResultCallback({});
     agent_panel_->setProviderConnectionResultCallback({});
@@ -364,6 +368,11 @@ AgentSettingsDialog::~AgentSettingsDialog() {
     agent_panel_->setModelCatalogCallback({});
     agent_panel_->setMcpStatusCallback({});
     agent_panel_->setObservabilityStateCallback({});
+  }
+  if (memory_dialog_) {
+    memory_dialog_->disconnect(this);
+    memory_dialog_->close();
+    memory_dialog_.clear();
   }
 }
 
@@ -425,6 +434,7 @@ void AgentSettingsDialog::setupUi() {
   auto* btn_layout = new QHBoxLayout();
   btn_layout->addStretch();
   cancel_btn_ = new QPushButton("Cancel", this);
+  cancel_btn_->setObjectName("action:cancelSettingsButton");
   auto* save_btn = new QPushButton("Save Preferences", this);
   save_btn->setObjectName("action:primaryButton");
   btn_layout->addWidget(cancel_btn_);
@@ -539,19 +549,6 @@ void AgentSettingsDialog::createConfigurationTab(QWidget* parent_widget) {
   form->addRow("Project Path:", project_path_);
   form->addRow("Trust Level:", trust_level_);
 
-  auto* mem_group = new QGroupBox("Generate Memories", parent_widget);
-  auto* mem_layout = new QVBoxLayout(mem_group);
-  stm_cb_ = new QCheckBox("STM (handles stm)", parent_widget);
-  stm_cb_->setObjectName("control:stmCb");
-  ltm_cb_ = new QCheckBox("LTM (handles ltm)", parent_widget);
-  ltm_cb_->setObjectName("control:ltmCb");
-  episodic_cb_ = new QCheckBox("Episodic (handles episodic)", parent_widget);
-  episodic_cb_->setObjectName("control:episodicCb");
-  mem_layout->addWidget(stm_cb_);
-  mem_layout->addWidget(ltm_cb_);
-  mem_layout->addWidget(episodic_cb_);
-  form->addRow(mem_group);
-
   hooks_combo_ = new QComboBox(parent_widget);
   hooks_combo_->setObjectName("control:hooksCombo");
   hooks_combo_->addItems({"Active Prompts", "Selected Prompts"});
@@ -649,22 +646,56 @@ void AgentSettingsDialog::createPersonalisationTab(QWidget* parent_widget) {
 
   auto* mem_group = new QGroupBox("Memory Settings", parent_widget);
   auto* mem_layout = new QVBoxLayout(mem_group);
-  mem_layout->addWidget(new QLabel("STM -> Goal/Task set specific"));
-  mem_layout->addWidget(new QLabel("LTM -> Chat/convo specific"));
-  mem_layout->addWidget(new QLabel("Episodic -> Global of all chats & convo just like humans"));
-  auto* reset_btn = new QPushButton("Reset Memories", parent_widget);
+  stm_cb_ = new QCheckBox("Short-term memory — current task/session only", mem_group);
+  stm_cb_->setObjectName("control:stmCb");
+  stm_cb_->setToolTip("Temporary working memory. Cleared when this agent process ends.");
+  ltm_cb_ = new QCheckBox("Conversation memory — this chat thread", mem_group);
+  ltm_cb_->setObjectName("control:ltmCb");
+  ltm_cb_->setToolTip("Durable records scoped to the current conversation thread.");
+  episodic_cb_ = new QCheckBox("Episodic memory — across this local user’s chats", mem_group);
+  episodic_cb_->setObjectName("control:episodicCb");
+  episodic_cb_->setToolTip("Durable local-user memories shared across projects on this device.");
+  mem_layout->addWidget(stm_cb_);
+  mem_layout->addWidget(ltm_cb_);
+  mem_layout->addWidget(episodic_cb_);
+  memory_status_label_ = new QLabel("Memory state: waiting for backend", mem_group);
+  memory_status_label_->setObjectName("label:memoryState");
+  memory_status_label_->setWordWrap(false);
+  memory_status_label_->setToolTip("Per tier: enabled state, runtime-loaded / persistent count. Unsafe legacy records are hidden.");
+  mem_layout->addWidget(memory_status_label_);
+  auto* memory_actions = new QHBoxLayout();
+  auto* manage_btn = new QPushButton("Manage memories", mem_group);
+  manage_btn->setObjectName("action:agent_memory_manage");
+  connect(manage_btn, &QPushButton::clicked, this, &AgentSettingsDialog::openMemoryManager);
+  memory_actions->addWidget(manage_btn);
+  auto* reset_btn = new QPushButton("Reset memories…", mem_group);
   reset_btn->setObjectName("action:agent_memory_reset");
   connect(reset_btn, &QPushButton::clicked, this, [this, reset_btn]() {
     const auto answer = QMessageBox::warning(
         this, "Reset memories", "Delete all persisted Agent memories?",
         QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
     if (answer != QMessageBox::Yes || !agent_panel_) return;
-    if (agent_panel_->sendJsonRpc("agent.memory_reset", QJsonObject{})) {
+    if (agent_panel_->sendJsonRpc("agent.memory_reset", QJsonObject{{"confirmed", true}})) {
       reset_btn->setEnabled(false);
       QTimer::singleShot(1000, reset_btn, [reset_btn]() { reset_btn->setEnabled(true); });
     }
   });
-  mem_layout->addWidget(reset_btn);
+  memory_actions->addWidget(reset_btn);
+  memory_actions->addStretch();
+  mem_layout->addLayout(memory_actions);
+  const auto setMemoryTier = [this](const QString& tier, bool enabled) {
+    if (memory_status_label_) memory_status_label_->setText("Memory state: updating " + tier + "…");
+    if (!agent_panel_ || !agent_panel_->sendJsonRpc("agent.memory_set_enabled",
+          QJsonObject{{"tier", tier}, {"enabled", enabled}})) {
+      if (memory_status_label_) memory_status_label_->setText("Memory state: backend unavailable; preference unchanged");
+    }
+  };
+  connect(stm_cb_, &QCheckBox::toggled, this,
+          [setMemoryTier](bool enabled) { setMemoryTier("stm", enabled); });
+  connect(ltm_cb_, &QCheckBox::toggled, this,
+          [setMemoryTier](bool enabled) { setMemoryTier("ltm", enabled); });
+  connect(episodic_cb_, &QCheckBox::toggled, this,
+          [setMemoryTier](bool enabled) { setMemoryTier("episodic", enabled); });
   form->addRow(mem_group);
 
   layout->addLayout(form);
@@ -982,6 +1013,7 @@ void AgentSettingsDialog::loadCurrentSettings() {
           applyConfigState(agent_panel_->cachedConfigState());
       }
       agent_panel_->sendJsonRpc("agent.get_config", QJsonObject());
+      agent_panel_->sendJsonRpc("agent.memory_state", QJsonObject());
       agent_panel_->sendJsonRpc("agent.langfuse_set_secret", QJsonObject{
           {"public_key", langfuse_public_key_input_ ? langfuse_public_key_input_->text() : QString()},
           {"secret_key", langfuse_secret_key_input_ ? langfuse_secret_key_input_->text() : QString()},
@@ -1047,9 +1079,9 @@ void AgentSettingsDialog::applyConfigState(const QJsonObject& config) {
     if (project_path_ && config.contains("project_path")) project_path_->setText(config["project_path"].toString());
     if (trust_level_ && config.contains("trust_level")) trust_level_->setCurrentText(config["trust_level"].toString());
     const QJsonObject memory = config.value("memory").toObject();
-    if (stm_cb_ && memory.contains("stm")) stm_cb_->setChecked(memory["stm"].toBool());
-    if (ltm_cb_ && memory.contains("ltm")) ltm_cb_->setChecked(memory["ltm"].toBool());
-    if (episodic_cb_ && memory.contains("episodic")) episodic_cb_->setChecked(memory["episodic"].toBool());
+    if (stm_cb_ && memory.contains("stm")) { const QSignalBlocker blocker(stm_cb_); stm_cb_->setChecked(memory["stm"].toBool()); }
+    if (ltm_cb_ && memory.contains("ltm")) { const QSignalBlocker blocker(ltm_cb_); ltm_cb_->setChecked(memory["ltm"].toBool()); }
+    if (episodic_cb_ && memory.contains("episodic")) { const QSignalBlocker blocker(episodic_cb_); episodic_cb_->setChecked(memory["episodic"].toBool()); }
     const QJsonObject personalisation = config.value("personalisation").toObject();
     if (follow_up_ && personalisation.contains("follow_up")) follow_up_->setText(personalisation["follow_up"].toString());
     if (context_window_ && personalisation.contains("show_context_usage")) context_window_->setChecked(personalisation["show_context_usage"].toBool());
@@ -1085,6 +1117,163 @@ void AgentSettingsDialog::applyConfigState(const QJsonObject& config) {
             mcp_servers_table_->setItem(row, 4, enabled);
         }
     }
+}
+
+void AgentSettingsDialog::applyMemoryState(const QJsonObject& state) {
+  QJsonObject tiers = state.value("tiers").toObject();
+  if (tiers.isEmpty() && state.contains("tier"))
+    tiers.insert(state.value("tier").toString(), state);
+  QStringList summary;
+  const auto applyTier = [&tiers, &summary](const QString& tier,
+                                                  QCheckBox* checkbox) {
+    const QJsonObject item = tiers.value(tier).toObject();
+    if (item.isEmpty()) return;
+    const bool enabled = item.value("enabled").toBool(false);
+    if (checkbox) {
+      const QSignalBlocker blocker(checkbox);
+      checkbox->setChecked(enabled);
+    }
+    QString tier_summary = QString("%1 %2 %3/%4")
+                   .arg(tier.toUpper(), enabled ? "on" : "off")
+                   .arg(item.value("runtime_entries").toInt())
+                   .arg(item.value("persistent_entries").toInt());
+    const int unsafe = item.value("unsafe_persistent_entries_omitted").toInt();
+    if (unsafe > 0)
+      tier_summary += QString(" !%1 hidden").arg(unsafe);
+    summary << tier_summary;
+  };
+  applyTier("stm", stm_cb_);
+  applyTier("ltm", ltm_cb_);
+  applyTier("episodic", episodic_cb_);
+  if (memory_status_label_ && !summary.isEmpty())
+    memory_status_label_->setText(summary.join("  |  "));
+
+  const QJsonArray entries = state.value("entries").toArray();
+  if (memory_entries_ && state.contains("entries") && memory_dialog_) {
+    const QString selected = memory_entries_->currentItem()
+                                 ? memory_entries_->currentItem()->data(Qt::UserRole).toString()
+                                 : QString();
+    memory_entries_->clear();
+    for (const QJsonValue& value : entries) {
+      const QJsonObject entry = value.toObject();
+      const QString label = QString("%1 memory  ·  record %2")
+          .arg(entry.value("tier").toString(), entry.value("id").toString().right(8));
+      auto* row = new QListWidgetItem(label, memory_entries_);
+      row->setData(Qt::UserRole, entry.value("id").toString());
+      row->setData(Qt::UserRole + 1, entry.value("content").toString());
+      row->setData(Qt::UserRole + 2, entry.value("tier").toString());
+      row->setData(Qt::UserRole + 3, entry.value("scope").toString());
+      row->setData(Qt::UserRole + 4, entry.value("title").toString());
+      if (row->data(Qt::UserRole).toString() == selected)
+        memory_entries_->setCurrentItem(row);
+    }
+  }
+}
+
+void AgentSettingsDialog::openMemoryManager() {
+  if (!agent_panel_) return;
+  if (memory_dialog_) {
+    memory_dialog_->raise();
+    memory_dialog_->activateWindow();
+    return;
+  }
+  auto* dialog = new QDialog(this);
+  memory_dialog_ = dialog;
+  dialog->setObjectName("dialog:agentMemoryManager");
+  dialog->setWindowTitle("Manage Agent memories");
+  dialog->setMinimumSize(660, 480);
+  auto* root = new QVBoxLayout(dialog);
+  auto* entries = new QListWidget(dialog);
+  memory_entries_ = entries;
+  entries->setObjectName("control:memoryEntries");
+  root->addWidget(entries, 1);
+  auto* form = new QFormLayout();
+  memory_tier_ = new QComboBox(dialog);
+  memory_tier_->setObjectName("control:memoryTier");
+  memory_tier_->addItem("Short-term (task)", "stm");
+  memory_tier_->addItem("Conversation (thread)", "ltm");
+  memory_tier_->addItem("Episodic (local user)", "episodic");
+  memory_title_ = new QLineEdit(dialog);
+  memory_title_->setObjectName("control:memoryTitle");
+  memory_scope_ = new QLineEdit(dialog);
+  memory_scope_->setObjectName("control:memoryScope");
+  memory_content_ = new QTextEdit(dialog);
+  memory_content_->setObjectName("control:memoryContent");
+  memory_content_->setMaximumHeight(100);
+  form->addRow("Tier:", memory_tier_);
+  form->addRow("Title:", memory_title_);
+  form->addRow("Scope:", memory_scope_);
+  form->addRow("Content:", memory_content_);
+  root->addLayout(form);
+  auto* buttons = new QHBoxLayout();
+  auto* add = new QPushButton("New", dialog);
+  add->setObjectName("action:addMemory");
+  auto* save = new QPushButton("Save memory", dialog);
+  save->setObjectName("action:saveMemory");
+  auto* remove = new QPushButton("Delete…", dialog);
+  remove->setObjectName("action:deleteMemory");
+  auto* close = new QPushButton("Close", dialog);
+  close->setObjectName("action:closeMemoryManager");
+  buttons->addWidget(add);
+  buttons->addWidget(save);
+  buttons->addWidget(remove);
+  buttons->addStretch();
+  buttons->addWidget(close);
+  root->addLayout(buttons);
+  connect(entries, &QListWidget::currentItemChanged, this,
+          [this](QListWidgetItem* current) {
+    if (!current) return;
+    if (memory_content_) memory_content_->setPlainText(current->data(Qt::UserRole + 1).toString());
+    if (memory_title_) memory_title_->setText(current->data(Qt::UserRole + 4).toString());
+    if (memory_scope_) memory_scope_->setText(current->data(Qt::UserRole + 3).toString());
+    const int tier = memory_tier_ ? memory_tier_->findData(current->data(Qt::UserRole + 2)) : -1;
+    if (tier >= 0) memory_tier_->setCurrentIndex(tier);
+  });
+  connect(add, &QPushButton::clicked, this, [this]() {
+    if (memory_entries_) memory_entries_->clearSelection();
+    if (memory_content_) memory_content_->clear();
+    if (memory_title_) memory_title_->clear();
+    if (memory_scope_) memory_scope_->setText("conversation");
+  });
+  connect(save, &QPushButton::clicked, this, [this]() {
+    if (!agent_panel_ || !memory_tier_ || !memory_content_ || !memory_scope_) return;
+    QJsonObject params{{"tier", memory_tier_->currentData().toString()},
+                       {"scope", memory_scope_->text().trimmed()},
+                       {"title", memory_title_ ? memory_title_->text().trimmed() : QString()},
+                       {"content", memory_content_->toPlainText()}};
+    const auto* current = memory_entries_ ? memory_entries_->currentItem() : nullptr;
+    const bool update = current && !current->data(Qt::UserRole).toString().isEmpty();
+    if (update) {
+      params["id"] = current->data(Qt::UserRole).toString();
+      agent_panel_->sendJsonRpc("agent.memory_update", params);
+    } else {
+      agent_panel_->sendJsonRpc("agent.memory_add", params);
+    }
+    agent_panel_->sendJsonRpc("agent.memory_list", QJsonObject{});
+  });
+  connect(remove, &QPushButton::clicked, this, [this]() {
+    const auto* current = memory_entries_ ? memory_entries_->currentItem() : nullptr;
+    if (!current || !agent_panel_) return;
+    if (QMessageBox::warning(this, "Delete memory", "Permanently delete this memory record?",
+                             QMessageBox::Yes | QMessageBox::No,
+                             QMessageBox::No) != QMessageBox::Yes) return;
+    agent_panel_->sendJsonRpc("agent.memory_delete",
+                              QJsonObject{{"id", current->data(Qt::UserRole).toString()},
+                                          {"confirmed", true}});
+    agent_panel_->sendJsonRpc("agent.memory_list", QJsonObject{});
+  });
+  connect(close, &QPushButton::clicked, dialog, &QDialog::close);
+  connect(dialog, &QObject::destroyed, this, [this]() {
+    memory_dialog_.clear();
+    memory_entries_ = nullptr;
+    memory_content_ = nullptr;
+    memory_title_ = nullptr;
+    memory_scope_ = nullptr;
+    memory_tier_ = nullptr;
+  });
+  dialog->setAttribute(Qt::WA_DeleteOnClose);
+  dialog->show();
+  agent_panel_->sendJsonRpc("agent.memory_list", QJsonObject{});
 }
 
 void AgentSettingsDialog::applyMarketplaceCatalog(const QJsonObject& catalog) {

@@ -4,6 +4,7 @@ import operator
 import os
 import re
 import queue
+import sys
 import threading
 import time
 import uuid
@@ -47,7 +48,9 @@ from telemetry import runtime as telemetry_runtime, trace_function
 import hooks
 from memory_store import MemoryStore
 from memory_manager import MemoryManager
-from context_package import build_context_package
+from memory_commands import execute_memory_command
+from context_package import (build_context_package, build_provider_request_report,
+                             format_large_context_explanation)
 
 def emit(payload: dict):
     print(json.dumps(payload), flush=True)
@@ -452,7 +455,7 @@ def pending_call_snapshot(thread_id: str = ""):
 
 from method_catalog import orchestrator_method_catalog
 
-def sanitize_persisted_config(value, secret_key_fragments, rejected_keys, path=""):
+def sanitize_persisted_config(value, secret_key_fragments, rejected_keys, path="") -> Any:
     """Remove secret-like keys before any config value reaches disk."""
     if isinstance(value, dict):
         clean = {}
@@ -517,8 +520,59 @@ memory_manager.configure(config_manager.get("memory", {}))
 
 def local_memory_entries(query=""):
     """Return ranked, enabled, namespace-scoped memories for one turn."""
-    entries = memory_manager.context_entries(query)
-    return entries if isinstance(entries, list) else []
+    entries, provenance = memory_manager.retrieve_with_metadata(query)
+    return (entries if isinstance(entries, list) else [],
+            provenance if isinstance(provenance, list) else [])
+
+
+def emit_provider_request_context(system_text, messages, context_content,
+                                 context_metadata, tools, provider, model):
+    """Emit safe prompt-size facts; expose full breakdown only for large turns."""
+    report = build_provider_request_report(
+        system_text, messages, tools, provider=provider, model=model,
+        context_content=context_content, context_metadata=context_metadata,
+        large_context_threshold=os.environ.get(
+            "CCAD_AGENT_LARGE_CONTEXT_TOKENS", "4096"))
+    emit({"jsonrpc": "2.0", "method": "provider_request_context",
+          "params": report})
+    if os.environ.get("CCAD_TRACE_DEBUG", "").lower() in {"1", "true", "yes"}:
+        print("[ccad-context] " + json.dumps(report, sort_keys=True),
+              file=sys.stderr, flush=True)
+    if report["large_context"]:
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "kind": "large_context_breakdown",
+            "text": format_large_context_explanation(report, context_metadata)}})
+    return report
+
+
+def provider_request_trace_metadata(report):
+    """Convert safe request accounting to Langfuse-compatible string metadata."""
+    result = {
+        "prompt_chars": str(report["prompt_chars"]),
+        "estimated_input_tokens": str(report["estimated_input_tokens"]),
+        "tool_schema_count": str(report["tool_schema_count"]),
+        "model_context_limit": str(report["model_context_limit"] or "unavailable"),
+        "context_package_truncated": str(report["context_package_truncated"]).lower(),
+        "project_snapshot_omitted": str(report["project_snapshot_omitted"]).lower(),
+        "project_source_chars": str(report["project_source_chars"]),
+        "memory_entry_count": str(report["memory_entry_count"]),
+        "estimate_includes_all_payloads": str(report["estimate_includes_all_payloads"]).lower(),
+    }
+    for name, component in report["components"].items():
+        result[f"input_{name}_estimated_tokens"] = str(component["estimated_tokens"])
+    for tier, count in report["memory_tier_counts"].items():
+        result[f"memory_{tier}_retrieved_count"] = str(count)
+    for tier, runtime in report["memory_runtime"].items():
+        result[f"memory_{tier}_enabled"] = str(runtime["enabled"]).lower()
+        result[f"memory_{tier}_loaded_count"] = str(runtime["runtime_entries"])
+        result[f"memory_{tier}_persistent_count"] = str(runtime["persistent_entries"])
+        result[f"memory_{tier}_namespace_hash"] = runtime["namespace_hash"]
+    for item in report["memory_retrieval"]:
+        prefix = f"memory_match_{item['rank']}"
+        result[f"{prefix}_tier"] = item["tier"]
+        result[f"{prefix}_overlap_terms"] = str(item["query_overlap_terms"])
+        result[f"{prefix}_namespace_hash"] = item["namespace_hash"]
+    return result
 
 def parse_memory_add_args(arguments):
     """Parse optional leading scope/title flags from a memory add command."""
@@ -545,7 +599,9 @@ class AgentState(TypedDict):
     messages: Annotated[List[BaseMessage], operator.add]
     goal: str
     context: str
+    context_metadata: Dict[str, Any]
     next_node: str
+    thread_id: str
 
 def tool_provider_name(method_name: str) -> str:
     """Create a provider-compatible stable name without losing native identity."""
@@ -645,13 +701,26 @@ native_tool_catalog: List[dict] = []
 agent_tools: List[StructuredTool] = []
 
 
+def bind_native_tools(model: Any):
+    """Bind CCad StructuredTools at the dynamic LangChain adapter boundary.
+
+    Provider packages expose narrower `bind_tools` annotations than the
+    StructuredTool objects they accept at runtime, so keep the dynamic call in
+    one checked boundary instead of repeating adapter-specific type escapes.
+    """
+    binder = getattr(model, "bind_tools", None)
+    if not callable(binder):
+        raise TypeError("provider adapter does not support tool binding")
+    return binder(agent_tools)
+
+
 def install_native_tool_catalog(catalog: object) -> dict:
     """Install the GUI's current native catalog and rebuild live graph bindings."""
     global native_tool_catalog, agent_tools, router_llm, librarian_llm, execute_tool_node, executor
     native_tool_catalog = validate_native_tool_catalog(catalog)
     agent_tools = build_native_tools(native_tool_catalog)
     if llm is not None:
-        router_llm = llm.bind_tools(agent_tools)
+        router_llm = bind_native_tools(llm)
         librarian_llm = router_llm
     execute_tool_node = ToolNode(agent_tools)
     if executor is not None:
@@ -885,7 +954,7 @@ def init_provider():
             from langchain_anthropic import ChatAnthropic
             if not model_name: model_name = "claude-opus-5"
             llm = cast(Any, ChatAnthropic)(model=model_name, temperature=0)
-            router_llm = llm.bind_tools(agent_tools)
+            router_llm = bind_native_tools(llm)
             librarian_llm = router_llm
             broker_wait_enabled = True
             emit_provider_ready(provider, model_name)
@@ -914,7 +983,7 @@ def init_provider():
             if google_api_key:
                 os.environ["GOOGLE_API_KEY"] = google_api_key
             llm = ChatGoogleGenerativeAI(model=model_name, temperature=0)
-            router_llm = llm.bind_tools(agent_tools)
+            router_llm = bind_native_tools(llm)
             librarian_llm = router_llm
             broker_wait_enabled = True
             emit_provider_ready(provider, model_name)
@@ -980,7 +1049,7 @@ def init_provider():
                 # bearer token, but langchain-openai requires a nonempty value.
                 kwargs["api_key"] = "ollama"
             llm = ChatOpenAI(**kwargs)
-            router_llm = llm.bind_tools(agent_tools)
+            router_llm = bind_native_tools(llm)
             librarian_llm = router_llm
             broker_wait_enabled = True
             emit_provider_ready(provider, model_name)
@@ -1176,10 +1245,16 @@ def router_node(state: AgentState):
     system_msg = SystemMessage(content=system_text)
     prompt = [system_msg] + state["messages"]
     callbacks = active_callbacks()
+    request_context = emit_provider_request_context(
+        system_text, state["messages"], context_str,
+        state.get("context_metadata", {}), agent_tools,
+        os.environ.get("CCAD_PROVIDER", "configured"),
+        os.environ.get("CCAD_MODEL", "configured"))
     with telemetry_runtime.observation("generate-routing-response", "generation", {
             "provider": os.environ.get("CCAD_PROVIDER", "configured"),
             "model": os.environ.get("CCAD_MODEL", "configured"),
-            "context_chars": len(context_str),
+            "context_chars": str(len(context_str)),
+            **provider_request_trace_metadata(request_context),
         }, model=os.environ.get("CCAD_MODEL", "configured")):
         response = invoke_provider_with_retry(
             router_llm, prompt, config={"callbacks": callbacks} if callbacks else {})
@@ -1203,10 +1278,16 @@ def librarian_node(state: AgentState):
     system_msg = SystemMessage(content=system_text)
     prompt = [system_msg] + state["messages"]
     callbacks = active_callbacks()
+    request_context = emit_provider_request_context(
+        system_text, state["messages"], context_str,
+        state.get("context_metadata", {}), agent_tools,
+        os.environ.get("CCAD_PROVIDER", "configured"),
+        os.environ.get("CCAD_MODEL", "configured"))
     with telemetry_runtime.observation("generate-library-response", "generation", {
             "provider": os.environ.get("CCAD_PROVIDER", "configured"),
             "model": os.environ.get("CCAD_MODEL", "configured"),
-            "context_chars": len(context_str),
+            "context_chars": str(len(context_str)),
+            **provider_request_trace_metadata(request_context),
         }, model=os.environ.get("CCAD_MODEL", "configured")):
         response = invoke_provider_with_retry(
             librarian_llm, prompt, config={"callbacks": callbacks} if callbacks else {})
@@ -1231,10 +1312,10 @@ def should_continue(state: AgentState):
         return END
     last_message = messages[-1]
     
-    if hasattr(last_message, "tool_calls") and last_message.tool_calls:
+    if getattr(last_message, "tool_calls", None):
         return "execute_tool"
         
-    if "<TOOL>" in last_message.content:
+    if "<TOOL>" in str(getattr(last_message, "content", "")):
         return "execute_tool"
         
     return END
@@ -1511,13 +1592,20 @@ def handle_provider_and_state_request(req, executor):
             "secret_value_visible": False,
         }})
     elif method == "agent.set_thread_id":
-        thread_id = req.get("params", {}).get("thread_id", "").strip()
+        params = req.get("params", {})
+        thread_id = str(params.get("thread_id", "")).strip()
         if thread_id:
             os.environ["CCAD_AGENT_THREAD_ID"] = thread_id
+            memory_manager.set_identities(
+                run_id=str(params.get("session_id") or thread_id),
+                thread_id=thread_id,
+                project_id=str(params.get("project_id") or "project"))
+            memory_manager.configure(config_manager.get("memory", {}))
         else:
             os.environ.pop("CCAD_AGENT_THREAD_ID", None)
         emit({"jsonrpc": "2.0", "method": "thread_state", "params": {
-            "configured": bool(thread_id), "secret_value_visible": False,
+            "configured": bool(thread_id), "memory_tiers": memory_manager.state(),
+            "secret_value_visible": False,
         }})
     elif method == "agent.resume_thread":
         thread_id = os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
@@ -1613,22 +1701,65 @@ def handle_provider_and_state_request(req, executor):
             memory_config[tier] = bool(params.get("enabled"))
             config_manager.update("memory", memory_config)
             emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
-                "tier": tier, **state, "secret_value_visible": False}})
+                "tier": tier, **state, "tiers": memory_manager.state(),
+                "secret_value_visible": False}})
         except (TypeError, ValueError, RuntimeError) as error:
             emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
                 "tier": tier, "enabled": False, "error": str(error),
                 "secret_value_visible": False}})
     elif method == "agent.memory_reset":
-        tier = req.get("params", {}).get("tier")
+        params = req.get("params", {})
+        tier = params.get("tier")
         tier = str(tier) if tier else None
         try:
+            if not bool(params.get("confirmed", False)):
+                raise ValueError("explicit confirmation required to reset persistent memories")
             removed = memory_manager.reset(tier)
             emit({"jsonrpc": "2.0", "method": "memory_reset", "params": {
                 "tier": tier or "all", "removed": removed,
                 "secret_value_visible": False}})
+            emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
+                "tiers": memory_manager.state(), "secret_value_visible": False}})
         except (TypeError, ValueError) as error:
             emit({"jsonrpc": "2.0", "method": "memory_reset", "params": {
                 "tier": tier or "all", "removed": 0, "error": str(error),
+                "secret_value_visible": False}})
+    elif method in {"agent.memory_list", "agent.memory_add", "agent.memory_update",
+                    "agent.memory_delete"}:
+        params = req.get("params", {})
+        try:
+            if method == "agent.memory_list":
+                tier = str(params.get("tier", "")).strip() or None
+                scope = str(params.get("scope", "")).strip() or None
+                result = {"entries": memory_manager.list(tier=tier, scope=scope),
+                          "tier": tier or "all", "secret_value_visible": False}
+                event = "memory_state"
+            elif method == "agent.memory_add":
+                entry = memory_manager.add(
+                    str(params.get("content", "")),
+                    tier=str(params.get("tier", "ltm")),
+                    scope=str(params.get("scope", "")),
+                    title=str(params.get("title", "")))
+                result = {"id": entry["id"], "tier": entry["tier"],
+                          "scope": entry["scope"], "secret_value_visible": False}
+                event = "memory_added"
+            elif method == "agent.memory_update":
+                entry = memory_manager.update(
+                    str(params.get("id", "")), str(params.get("content", "")),
+                    title=params.get("title"), scope=params.get("scope"))
+                result = {"id": str(params.get("id", "")), "updated": entry is not None,
+                          "secret_value_visible": False}
+                event = "memory_updated"
+            else:
+                if not bool(params.get("confirmed", False)):
+                    raise ValueError("explicit confirmation required to delete a memory")
+                result = {"removed": memory_manager.delete(str(params.get("id", ""))),
+                          "secret_value_visible": False}
+                event = "memory_deleted"
+            emit({"jsonrpc": "2.0", "method": event, "params": result})
+        except (TypeError, ValueError, RuntimeError) as error:
+            emit({"jsonrpc": "2.0", "method": "memory_error", "params": {
+                "operation": method, "error": str(error),
                 "secret_value_visible": False}})
 
     return method in {
@@ -1644,6 +1775,10 @@ def handle_provider_and_state_request(req, executor):
         "agent.memory_state",
         "agent.memory_set_enabled",
         "agent.memory_reset",
+        "agent.memory_list",
+        "agent.memory_add",
+        "agent.memory_update",
+        "agent.memory_delete",
     }
 
 if __name__ == "__main__":
@@ -1657,11 +1792,12 @@ if __name__ == "__main__":
     emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Python Multi-Agent Orchestrator ready."}})
     
     inbound_queue = queue.Queue()
+    input_queue = inbound_queue
     def read_protocol_lines():
         for protocol_line in sys.stdin:
             if not route_protocol_line(protocol_line):
-                inbound_queue.put(protocol_line)
-        inbound_queue.put(None)
+                input_queue.put(protocol_line)
+        input_queue.put(None)
     threading.Thread(target=read_protocol_lines, name="ccad-agent-stdin", daemon=True).start()
 
     while True:
@@ -1737,6 +1873,11 @@ if __name__ == "__main__":
                         "message_count": len(resumed.get("messages", [])) if isinstance(resumed, dict) else 0,
                     }})
                 else:
+                    if pending_result_queue is None:
+                        emit({"jsonrpc": "2.0", "method": "tool_result_ignored", "params": {
+                            "call_id": call_id, "reason": "unknown_or_late_call",
+                        }})
+                        continue
                     emit({"jsonrpc": "2.0", "method": "tool_result_ack", "params": {
                         "call_id": call_id,
                         "success": error is None and result is not None,
@@ -1800,16 +1941,18 @@ if __name__ == "__main__":
                 raw_context = params.get("context", "")
                 requested_thread = str(params.get("thread_id") or
                                        os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local"))
+                requested_session = str(params.get("session_id") or requested_thread)
                 os.environ["CCAD_AGENT_THREAD_ID"] = requested_thread
-                memory_manager.identities["ltm"] = requested_thread
-                memory_manager.identities["stm"] = requested_thread + ":run"
                 project_id = str(params.get("project_id") or
                                  config_manager.get("project_name", "project"))
-                memory_manager.identities["episodic"] = project_id
+                memory_manager.set_identities(run_id=requested_session,
+                                              thread_id=requested_thread,
+                                              project_id=project_id)
                 memory_manager.configure(config_manager.get("memory", {}))
                 if not isinstance(raw_context, str):
                     raw_context = str(raw_context or "")
-                memory_entries = local_memory_entries(text)
+                memory_entries, memory_retrieval = local_memory_entries(text)
+                memory_runtime = memory_manager.state()
                 with telemetry_runtime.observation("assemble-context", "retriever", {
                         "memory_entry_count": len(memory_entries),
                         "history_message_count": len(session_messages),
@@ -1817,7 +1960,9 @@ if __name__ == "__main__":
                     }):
                     package = build_context_package(
                         raw_context, memory_entries, bound_session_history(session_messages),
-                        char_limit=agent_context_limit())
+                        char_limit=agent_context_limit(),
+                        memory_retrieval=memory_retrieval,
+                        memory_runtime=memory_runtime)
                 context_str = package["content"]
                 context_metadata = package["metadata"]
                 context_truncated = context_metadata["truncated"]
@@ -1859,9 +2004,20 @@ if __name__ == "__main__":
                     "memory_content_emitted": False,
                     "memory_entry_count": context_metadata["memory_entry_count"],
                     "history_message_count": context_metadata["history_message_count"],
+                    "history_in_context_package": context_metadata["history_in_context_package"],
+                    "history_sent_as_provider_messages": context_metadata["history_sent_as_provider_messages"],
                     "context_schema_version": context_metadata["schema_version"],
                     "package_digest": context_metadata["package_digest"],
                     "estimated_token_count": context_metadata["estimated_token_count"],
+                    "project_snapshot_chars": context_metadata["project_snapshot_chars"],
+                    "project_summary_chars": context_metadata["project_summary_chars"],
+                    "project_source_chars": context_metadata["project_source_chars"],
+                    "project_snapshot_omitted": context_metadata["project_snapshot_omitted"],
+                    "omitted_memory_entry_count": context_metadata["omitted_memory_entry_count"],
+                    "memory_tier_counts": context_metadata["memory_tier_counts"],
+                    "memory_tier_chars": context_metadata["memory_tier_chars"],
+                    "memory_retrieval": context_metadata["memory_retrieval"],
+                    "memory_runtime": context_metadata["memory_runtime"],
                     "project_counts": context_metadata["project_counts"],
                 }})
                 
@@ -1875,30 +2031,13 @@ if __name__ == "__main__":
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|list scope:x|add [scope:x] [title:y] <text>|update <id> [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`"}})
                         continue
                     elif cmd_base == "/memory":
-                        memory_args = cmd_args.strip()
-                        if memory_args == "list":
-                            emit({"jsonrpc": "2.0", "method": "memory_state", "params": {"entries": memory_store.list()}})
-                        elif memory_args.startswith("list scope:"):
-                            scope = memory_args[len("list scope:"):].strip()
-                            emit({"jsonrpc": "2.0", "method": "memory_state", "params": {"scope": scope, "entries": memory_store.list(scope=scope)}})
-                        elif memory_args.startswith("add "):
-                            content, title, scope = parse_memory_add_args(memory_args[4:].strip())
-                            entry = memory_store.add(content, title=title, scope=scope)
-                            emit({"jsonrpc": "2.0", "method": "memory_added", "params": {"id": entry["id"], "scope": entry["scope"]}})
-                        elif memory_args.startswith("delete "):
-                            removed = memory_store.delete(memory_args[7:].strip())
-                            emit({"jsonrpc": "2.0", "method": "memory_deleted", "params": {"removed": removed}})
-                        elif memory_args.startswith("update "):
-                            entry_id, content, scope, title = parse_memory_update_args(memory_args[7:].strip())
-                            entry = memory_store.update(entry_id, content, title=title, scope=scope)
-                            emit({"jsonrpc": "2.0", "method": "memory_updated", "params": {"id": entry_id, "updated": entry is not None}})
-                        elif memory_args == "clear all":
-                            emit({"jsonrpc": "2.0", "method": "memory_cleared", "params": {"removed": memory_store.clear()}})
-                        elif memory_args.startswith("clear scope:"):
-                            scope = memory_args[len("clear scope:"):].strip()
-                            emit({"jsonrpc": "2.0", "method": "memory_cleared", "params": {"scope": scope, "removed": memory_store.clear(scope)}})
-                        else:
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Memory: use `/memory list|list scope:x|add [scope:x] [title:y] <text>|update <id> [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`. Bare clear does nothing."}})
+                        try:
+                            event, result = execute_memory_command(memory_manager, cmd_args)
+                            emit({"jsonrpc": "2.0", "method": event, "params": result})
+                        except (ValueError, RuntimeError) as error:
+                            emit({"jsonrpc": "2.0", "method": "message", "params": {
+                                "text": str(error), "kind": "memory_command_error",
+                                "secret_value_visible": False}})
                         continue
                     elif cmd_base == "/marketplace":
                         handle_marketplace(text)
@@ -2120,7 +2259,13 @@ if __name__ == "__main__":
                     "text": message, "secret_value_visible": False,
                 }})
             elif method in ("agent.set_config", "agent.langfuse_set_config"):
-                config_data = req.get("params", {})
+                raw_config_data = req.get("params", {})
+                if not isinstance(raw_config_data, dict):
+                    emit({"jsonrpc": "2.0", "method": "message", "params": {
+                        "text": "Agent configuration was not saved: expected an object.",
+                        "kind": "configuration_error", "secret_value_visible": False}})
+                    continue
+                config_data: dict[str, Any] = raw_config_data
                 rejected_secret_keys = []
                 secret_key_fragments = ("api_key", "apikey", "secret", "token",
                                         "password", "credential")
@@ -2132,9 +2277,11 @@ if __name__ == "__main__":
                         else "Agent configuration saved; secret fields were rejected.")
                 emit({"jsonrpc": "2.0", "method": "message", "params": {
                     "text": text, "secret_value_visible": False}})
-                if "provider" in config_data or "model" in config_data:
-                    os.environ["CCAD_PROVIDER"] = config_data.get("provider", "openai")
-                    os.environ["CCAD_MODEL"] = config_data.get("model", "gpt-5.1")
+                if "provider" in clean_config or "model" in clean_config:
+                    provider = clean_config.get("provider", "openai")
+                    model = clean_config.get("model", "gpt-5.1")
+                    os.environ["CCAD_PROVIDER"] = str(provider) if isinstance(provider, str) else "openai"
+                    os.environ["CCAD_MODEL"] = str(model) if isinstance(model, str) else "gpt-5.1"
                     init_provider()
                 if "observability" in clean_config:
                     emit({"jsonrpc": "2.0", "method": "observability_state",

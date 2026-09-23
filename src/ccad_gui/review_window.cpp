@@ -4488,7 +4488,8 @@ QString ReviewWindow::buildUiMapJson() const {
     const bool secret_input = input->echoMode() != QLineEdit::Normal ||
         lowered_id.contains("secret") || lowered_id.contains("token") ||
         lowered_id.contains("api_key") || lowered_id.contains("apikey") ||
-        lowered_id.contains("credential");
+        lowered_id.contains("credential") || lowered_id.contains("memorytitle") ||
+        lowered_id.contains("memoryscope");
     nodes << QString("{\"id\":%1,\"role\":\"control\",\"label\":%2,"
                      "\"value\":%3,\"visible\":%4,\"enabled\":%5,\"local_rect\":%6,"
                      "\"global_rect\":%7,\"target_x\":%8,\"target_y\":%9}")
@@ -7262,6 +7263,7 @@ QString ReviewWindow::uiTypeTextJson(const QString& id, const QString& text) {
                                    "control:apiKeyInput", "control:modelInput",
                                    "control:projectNameInput", "control:projectPathInput",
                                    "control:followUpInput", "control:customInstructionsText",
+                                   "control:memoryContent",
                                    "control:agent_provider_model",
                                    "control:agent_approval_request"};
   QJsonObject response;

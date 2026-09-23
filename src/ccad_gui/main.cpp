@@ -437,22 +437,44 @@ int main(int argc, char** argv) {
           catalog_startup.contains("\"backend_ready\":true") &&
           catalog_startup.contains("\"native_tool_catalog_installed\":true") &&
           !catalog_startup.contains("\"native_tool_catalog_method_count\":0");
-      const QStringList target_ids = {"action:cursor", "action:measurement", "action:save",
+      const QStringList target_ids = name.startsWith("sprint967-memory")
+          ? QStringList{"action:settingsBtn", "control:categoryList",
+                        "control:stmCb", "control:ltmCb",
+                        "control:episodicCb", "label:memoryState",
+                        "action:agent_memory_manage", "control:memoryEntries",
+                        "control:memoryTier", "control:memoryContent",
+                        "action:closeMemoryManager", "action:cancelSettingsButton"}
+          : QStringList{"action:cursor", "action:measurement", "action:save",
                                       "menu:file", "panel:properties", "action:grid",
                                       "action:polar_coord", "action:unit_inch",
                                       "action:cursor_shape", "action:show_ratsnest",
                                       "action:net_highlight", "action:contrast_mode",
                                       "tab:agent", "control:agent_chat_input",
                                       "action:agent_submit_chat", "action:settingsBtn",
+                                      "control:stmCb", "control:ltmCb",
+                                      "control:episodicCb", "label:memoryState",
+                                      "action:agent_memory_manage", "control:memoryEntries",
+                                      "control:memoryTier", "control:memoryContent",
+                                      "action:closeMemoryManager",
                                       "control:providerCombo", "control:modelCombo",
                                       "control:apiKeyInput", "control:mcpServersTable",
                                       "action:addMcpServerBtn", "action:removeMcpServerBtn"};
-      const QStringList trigger_before_capture_ids = {
+      const QStringList trigger_before_capture_ids = name.startsWith("sprint967-memory")
+          ? QStringList{"action:settingsBtn"}
+          : QStringList{
           "action:grid",          "action:polar_coord",   "action:unit_inch",
           "action:cursor_shape",  "action:show_ratsnest", "action:net_highlight",
           "action:contrast_mode", "tab:agent", "action:settingsBtn"};
       const QStringList click_before_capture_ids = {"action:agent_footer_trigger_drc",
-                                                    "action:agent_pin_evidence"};
+                                                    "action:agent_pin_evidence",
+                                                    "control:categoryList",
+                                                    "control:stmCb", "control:ltmCb",
+                                                    "control:episodicCb",
+                                                    "action:agent_memory_manage",
+                                                    "control:memoryTier",
+                                                    "control:memoryContent",
+                                                    "action:closeMemoryManager",
+                                                    "action:cancelSettingsButton"};
       const auto runPass = [window, &entries, &output_dir, &name, &target_ids,
                             &trigger_before_capture_ids,
                             &click_before_capture_ids,
@@ -471,12 +493,18 @@ int main(int argc, char** argv) {
           }
           if (id == "control:providerCombo" || id == "control:modelCombo" ||
               id == "control:apiKeyInput" || id == "control:mcpServersTable" ||
-              id == "action:addMcpServerBtn" || id == "action:removeMcpServerBtn") {
-            const int category = id == "control:mcpServersTable" ||
+              id == "action:addMcpServerBtn" || id == "action:removeMcpServerBtn" ||
+              id == "control:stmCb" || id == "control:ltmCb" ||
+              id == "control:episodicCb" || id == "label:memoryState" ||
+              id == "action:agent_memory_manage") {
+            const bool memory_control = id == "control:stmCb" || id == "control:ltmCb" ||
+                id == "control:episodicCb" || id == "label:memoryState" ||
+                id == "action:agent_memory_manage";
+            const int category = memory_control ? 2 : (id == "control:mcpServersTable" ||
                                          id == "action:addMcpServerBtn" ||
                                          id == "action:removeMcpServerBtn"
                                      ? 3
-                                     : (id == "control:apiKeyInput" ? 4 : 1);
+                                     : (id == "control:apiKeyInput" ? 4 : 1));
             for (QWidget* top_level : QApplication::topLevelWidgets()) {
               auto* categories = top_level->findChild<QListWidget*>("control:categoryList");
               if (categories == nullptr || !top_level->isVisible()) {
@@ -490,9 +518,17 @@ int main(int argc, char** argv) {
             }
           }
           if (click_before_capture_ids.contains(id)) {
-            const QString payload = QString("{\"id\":%1}").arg(jsonStringLocal(id));
-            window->runAgentUiQueryJson("ui.click", payload);
+            const QString payload = id == "control:categoryList"
+                ? QString("{\"id\":%1,\"row\":2}").arg(jsonStringLocal(id))
+                : QString("{\"id\":%1}").arg(jsonStringLocal(id));
+            const QString click_result = window->runAgentUiQueryJson("ui.click", payload);
+            entries << QString("{\"pass\":%1,\"id\":%2,\"interaction\":\"ui.click\",\"result\":%3}")
+                           .arg(jsonStringLocal(pass_name), jsonStringLocal(id), click_result.trimmed());
             QApplication::processEvents();
+            if (id == "action:agent_memory_manage") {
+              QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
+              QApplication::processEvents();
+            }
           }
           const QString target_json = window->uiTargetJsonById(id);
           const bool found = target_json.contains("\"found\":true");
@@ -532,6 +568,29 @@ int main(int argc, char** argv) {
                              local_target.y() + 16);
             painter.end();
             screenshot.save(screenshot_path);
+          } else if (click_before_capture_ids.contains(id)) {
+            QWidget* active = QApplication::activeWindow();
+            if (active && active->isVisible()) {
+              const std::filesystem::path path = output_dir /
+                  (name + "-" + pass_name + "-" + id.mid(id.indexOf(':') + 1) + "-after.png").toStdString();
+              screenshot_path = QString::fromStdString(path.string());
+              active->grab().save(screenshot_path);
+            }
+          }
+          if (id == "control:memoryContent" && found) {
+            const QString typing = QString("{\"id\":%1,\"text\":\"visual validation text; not saved\"}")
+                .arg(jsonStringLocal(id));
+            const QString typing_result = window->runAgentUiQueryJson("ui.type_text", typing);
+            QApplication::processEvents();
+            QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
+            QApplication::processEvents();
+            const std::filesystem::path typed_path = output_dir /
+                (name + "-" + pass_name + "-memory-content-typed.png").toStdString();
+            QWidget* active = QApplication::activeWindow();
+            if (active && active->isVisible()) active->grab().save(QString::fromStdString(typed_path.string()));
+            entries << QString("{\"pass\":%1,\"id\":%2,\"interaction\":\"ui.type_text\",\"result\":%3,\"screenshot\":%4}")
+                           .arg(jsonStringLocal(pass_name), jsonStringLocal(id), typing_result.trimmed(),
+                                jsonStringLocal(QString::fromStdString(typed_path.string())));
           }
           entries << QString("{\"pass\":%1,\"id\":%2,\"found\":%3,\"target\":%4,"
                              "\"screenshot\":%5}")

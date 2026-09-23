@@ -2,6 +2,14 @@
 
 This document tracks user-visible and agent-visible features that exist in the repo, how to use them, how to test them, and where they are implemented.
 
+## Sprint 967 request context and memory lifecycle
+
+The Python agent assembles bounded project/design context plus records retrieved only from enabled memory tiers. Conversation messages, system instructions, and tool schemas are distinct provider-request inputs; their character-based token counts are explicitly estimates, and unknown model limits or multimodal sizes are not invented. Above the configurable large-context threshold, chat receives a source/count breakdown and development logs receive only privacy-safe counts and opaque identifiers. If the envelope is too large, CCad replaces the complete project snapshot with a revision/count summary and drops lowest-ranked memories until valid JSON fits.
+
+Memory is managed through one tier-aware runtime manager shared by Settings and `/memory`: STM is session-scoped and process-only, LTM is durable per conversation thread, and episodic memory is durable per local user across projects on this device. Capture is explicit, disabled tiers unload from the current process without deleting stored records, secret-like writes are rejected, unsafe legacy entries are hidden, expiry is enforced, exact normalized duplicates are avoided, and durable storage is capped at 64 newest entries per namespace. The UI provides live tier state, memory management, and separately confirmed reset/delete operations. Scope labels are explicit management filters, not semantic retrieval filters; STM task identity, semantic compaction, near-duplicate detection, and automatic capture remain unimplemented.
+
+Verification: no-network memory/context contracts pass, Pyright reports 0 diagnostics for touched Python modules, Qt MinGW Release build succeeds, and full CTest passes 98/98. The app-owned GUI-map validation performed 10 actions per pass and inspected all 26 screenshots; report, stdout, and stderr are in ignored `artifacts/screenshots/sprint967-memory-final*` files. A real large-context chat render was not exercised because that would submit a provider request.
+
 ## Sprint 950 Agent execution truthfulness
 
 `/drc` now dispatches the authoritative native `project.drc` method and reports its returned error, warning, and diagnostic counts instead of leaving a chat turn at a progress-only message. Context assembly emits a bounded, secret-safe `context_state` event with its schema revision and aggregate counts. Pending mutations remain one-call approval boundaries: duplicate calls are rejected, and an approval is shown as applied only when the broker reports a performed successful result. A failed broker/gesture result is returned to the model as an error and remains visibly unapplied. `ui.canvas_drag` now preserves reasons such as `outside_board` rather than reducing every target failure to `start_target_not_found`.
@@ -2879,3 +2887,24 @@ zero diagnostics; six known orchestrator diagnostics remain. References: Langfus
 [LangChain integration](https://langfuse.com/integrations/frameworks/langchain),
 [SDK flushing](https://langfuse.com/docs/observability/sdk/instrumentation), and
 [export-stage masking](https://langfuse.com/docs/observability/features/masking).
+
+### Sprint 967 - full request and memory accounting
+
+Before each provider generation, CCad now measures the assembled system
+instructions, project context, retrieved memories, conversation messages, and
+live bound tool schemas. Reports contain sizes and safe provenance only, never
+the corresponding content. They label token counts as estimates, flag
+multimodal payloads the text estimator cannot count, and show the selected
+model's context limit as unavailable unless authoritative metadata is present.
+When estimated input crosses `CCAD_AGENT_LARGE_CONTEXT_TOKENS` (default 4096),
+the chat explains the breakdown, enabled/loaded/retrieved memory counts,
+retrieval rank/keyword overlap, namespace scopes, truncation state, and the
+current explicit-memory-capture limitation. Setting `CCAD_TRACE_DEBUG=1` also
+writes the structured content-free report to stderr and each generation span
+receives the same safe component counts. Conversation history is identified as
+separate provider messages, not falsely attributed to the context envelope.
+Six Python context contracts pass and Pyright reports zero diagnostics for the
+changed Python modules. The Qt/MinGW Release build and full CTest pass 94/94.
+Feature-specific rendered chat proof is still pending; the GUI checklist is
+deliberately not marked complete because triggering the report through the
+normal live path would submit a real provider request.

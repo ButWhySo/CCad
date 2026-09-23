@@ -239,6 +239,16 @@ find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_Interpreter_FOUND)
   add_test(NAME agent_python_method_catalog
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_agent_orchestrator_method_catalog.py")
+  add_test(NAME agent_context_budget
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_context_budget.py")
+  add_test(NAME agent_memory_store
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_memory_store.py")
+  add_test(NAME agent_memory_manager
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_memory_manager.py")
+  add_test(NAME agent_memory_commands
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_memory_command_contract.py")
+  add_test(NAME agent_memory_context_contract
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_memory_context_contract.py")
 endif()
 
 add_executable(ccad_tests

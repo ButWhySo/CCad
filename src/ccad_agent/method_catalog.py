@@ -28,6 +28,32 @@ def orchestrator_method_catalog():
                                     "enum": ["stm", "ltm", "episodic"]}},
              "response": {"method": "memory_reset", "fields": [
                  "tier", "removed", "secret_value_visible"]}},
+            {"name": "agent.memory_list", "read_only": True, "secrets": False,
+             "params": {"tier": {"type": "string", "optional": True,
+                                   "enum": ["stm", "ltm", "episodic"]},
+                        "scope": {"type": "string", "optional": True}},
+             "response": {"method": "memory_state", "fields": [
+                 "entries", "tier", "secret_value_visible"]}},
+            {"name": "agent.memory_add", "read_only": False, "secrets": True,
+             "side_effect": "persist_enabled_memory_tier",
+             "params": {"tier": {"type": "string", "enum": ["stm", "ltm", "episodic"]},
+                        "scope": {"type": "string"}, "title": {"type": "string"},
+                        "content": {"type": "string", "secret_rejected": True}},
+             "response": {"method": "memory_added", "fields": [
+                 "id", "tier", "scope", "secret_value_visible"]}},
+            {"name": "agent.memory_update", "read_only": False, "secrets": True,
+             "side_effect": "update_owned_memory_record",
+             "params": {"id": {"type": "string"},
+                        "content": {"type": "string", "secret_rejected": True}},
+             "response": {"method": "memory_updated", "fields": [
+                 "id", "updated", "secret_value_visible"]}},
+            {"name": "agent.memory_delete", "read_only": False, "secrets": False,
+             "approval_required": True,
+             "side_effect": "delete_owned_memory_record",
+             "params": {"id": {"type": "string"},
+                        "confirmed": {"type": "boolean", "required": True}},
+             "response": {"method": "memory_deleted", "fields": [
+                 "removed", "secret_value_visible"]}},
             {"name": "agent.pending_calls", "read_only": True, "secrets": False,
              "params": {"thread_id": {"type": "string", "optional": True,
                                          "description": "Opaque session identity"}},

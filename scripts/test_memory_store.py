@@ -11,11 +11,15 @@ from memory_store import MemoryStore
 
 with tempfile.TemporaryDirectory() as temp:
     store = MemoryStore(Path(temp) / "memory.json")
-    item = store.add("Use 0.25 mm minimum track width", title="routing", tags=["pcb"])
+    item = store.add("Use 0.25 mm minimum track width", title="routing", tags=["pcb"],
+                     tier="episodic", namespace="local-user", scope="user")
     assert store.list()[0]["id"] == item["id"]
     assert store.list(scope="other") == []
     updated = store.update(item["id"], "Use 0.30 mm minimum track width", title="updated")
     assert updated["id"] == item["id"]
+    assert updated["tier"] == "episodic"
+    assert updated["namespace"] == "local-user"
+    assert updated["scope"] == "user"
     assert store.list()[0]["content"].startswith("Use 0.30")
     assert store.delete(item["id"]) is True
     assert store.list() == []
@@ -25,6 +29,13 @@ with tempfile.TemporaryDirectory() as temp:
         assert "secret" in str(error)
     else:
         raise AssertionError("secret-looking memory was accepted")
+    for value in ("sk-testabcdef0123456789", "ghp_123456789012345678901234567890", "Bearer abcdef1234567890"):
+        try:
+            store.add(value)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("provider credential pattern was accepted")
     for kwargs in ({"title": "api_key: hidden"}, {"tags": ["token: hidden"]}):
         try:
             store.add("safe content", **kwargs)
@@ -32,6 +43,12 @@ with tempfile.TemporaryDirectory() as temp:
             pass
         else:
             raise AssertionError("secret-looking memory metadata was accepted")
+    try:
+        store.add("expired policy", expires_at="not-a-time")
+    except ValueError as error:
+        assert "ISO-8601" in str(error)
+    else:
+        raise AssertionError("invalid memory expiry was accepted")
 
 with tempfile.TemporaryDirectory() as temp:
     os.environ["APPDATA"] = temp

@@ -2,11 +2,13 @@
 
 #include <QDialog>
 #include <QJsonObject>
+#include <QPointer>
 #include <QWidget>
 #include <QString>
 
 class QListWidget;
 class QTableWidget;
+class QDialog;
 class QStackedWidget;
 class QVBoxLayout;
 class QComboBox;
@@ -41,6 +43,8 @@ private:
   void applyConfigState(const QJsonObject& config);
   void applyMarketplaceCatalog(const QJsonObject& catalog);
   void applyModelCatalog(const QJsonObject& catalog);
+  void openMemoryManager();
+  void applyMemoryState(const QJsonObject& state);
 
   AgentPanel* agent_panel_;
   QListWidget* category_list_;
@@ -71,6 +75,13 @@ private:
   QCheckBox* stm_cb_{nullptr};
   QCheckBox* ltm_cb_{nullptr};
   QCheckBox* episodic_cb_{nullptr};
+  QLabel* memory_status_label_{nullptr};
+  QPointer<QDialog> memory_dialog_;
+  QListWidget* memory_entries_{nullptr};
+  QTextEdit* memory_content_{nullptr};
+  QLineEdit* memory_title_{nullptr};
+  QLineEdit* memory_scope_{nullptr};
+  QComboBox* memory_tier_{nullptr};
   QComboBox* hooks_combo_{nullptr};
 
   // General settings

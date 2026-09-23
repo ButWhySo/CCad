@@ -24,9 +24,24 @@ Update this file in the same commit as each implementation slice.
 - [x] Verify a current real Agent turn appears in the configured Langfuse project (live turn returned `trace test`; exact trace readback verified, 16 spans; screenshot `artifacts/screenshots/sprint966-live-turn/08-live-trace-status.png`).
 - [x] Show `verified` only after fetching the exact exported trace ID; distinguish queued, transport success, pending readback, and failure.
 - [x] In development, log safe per-turn trace ID, span count, and backend-readback result for debugging.
-- [ ] When context crosses a large-context threshold, explain its full build and memory lifecycle to the user, including source contributions, token estimates, truncation, enabled memory tiers, retrieval scope/ranking, and what was actually sent.
+- [x] When context crosses the configured large-context threshold, explain its build and memory lifecycle with source counts, estimates, overflow/omission details, enabled tiers, ranking, and separately sent request inputs; live provider-backed chat rendering remains an opt-in evidence item below.
 - [x] Run full CTest (93/93), app-owned GUI-map live turn and Settings checks; inspect every screenshot and captured stdout/stderr (empty).
 - [x] Allow the official launcher to target an alternate built executable when the user's active GUI holds `ccad_gui.exe` open.
+
+### Sprint 967 active slice â€” full provider-request and memory accounting
+
+- [x] Measure the live system prompt, context package, conversation messages, and bound tool schemas without exporting their contents.
+- [x] Mark context source channels truthfully; conversation history is sent separately from the project/memory envelope.
+- [x] Report enabled/loaded/persistent/retrieved STM, LTM, and episodic counts with retrieval rank, overlap score, and opaque namespace identity.
+- [x] Show a full count-only chat explanation and structured `CCAD_TRACE_DEBUG` stderr record when estimated input exceeds the configurable large-context threshold.
+- [x] Label token counts as estimates, flag unestimated multimodal blocks, and report unknown model limits as unavailable rather than inventing a limit.
+- [x] Preserve a valid bounded context envelope on overflow; report the project summary, exact retained/omitted memory counts, and retrieval provenance.
+- [x] Add Python contracts for component counts, privacy, multimodal estimates, memory ranking, disabled-tier exclusion, and overflow accounting.
+- [x] Resolve the six existing Pyright diagnostics in the touched orchestration module without suppressing analysis.
+- [ ] Make a feature-specific large-context explanation visible in the live Agent chat without spending a provider request; inspect rendered screenshots and logs.
+- [x] Run the Qt Release build and full CTest gate (98/98).
+- [x] Validate memory Settings/Manage Memories through the live GUI map; inspect all 26 screenshots and captured stdout/stderr. Large-context chat rendering remains a separate unchecked provider-backed item above.
+- [ ] Run redacted repository/staged secret scans; commit and push only verified files.
 
 #### References checked
 
@@ -40,13 +55,15 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 - [x] Resolve the remaining Pyright complexity diagnostic in the provider/orchestration module without suppressing analysis.
 - [x] Build bounded context from project, PCB, schematic, selection, coordinates, layers, nets, rules, libraries, tool state, conversation, and memories.
 - [x] Report safe metadata for the exact context package sent on each turn.
-- [ ] Calculate/report the full provider-request budget across system instructions, conversation messages, project snapshot, retrieved memories, and bound tool schemas; label estimates and model limits accurately.
-- [ ] Make context source metadata match actual provider input (history is carried as separate messages while the v2 envelope stores only a count).
-- [ ] Implement STM, project-long-term, and episodic memory: retrieval, scope, ranking, update, deletion, reset, expiry, compaction, and secret redaction.
-- [ ] Route `/memory` CRUD through MemoryManager tier/namespace rules so direct store writes are retrievable by the matching enabled tier.
-- [ ] Confirm STM run identity is unique per task/run and LTM/Episodic scopes match durable thread/project/user identity.
-- [ ] Define which events create/update memories; do not imply automatic capture when none is implemented.
-- [ ] Publish the exhaustive memory/context lifecycle report after resolving the newly identified namespace and accounting gaps.
+- [x] Calculate/report the full provider-request budget across system instructions, conversation messages, project snapshot, retrieved memories, and bound tool schemas; label estimates and model limits accurately.
+- [x] Make context source metadata match actual provider input (history is carried as separate messages while the v2 envelope stores only a count).
+- [ ] Implement STM, conversation-long-term, and episodic memory: retrieval, scope, ranking, update, deletion, reset, expiry, bounded retention, and secret rejection; finish UI CRUD/reset interaction evidence.
+- [x] Route `/memory` CRUD through MemoryManager tier/namespace rules so writes are retrievable only through the matching enabled tier.
+- [ ] Give STM a distinct goal/task identity (currently chat-session scoped); keep LTM keyed to thread and episodic keyed to local OS user.
+- [x] Align memory retrieval with tier/namespace isolation; keep `scope` as explicit list/delete metadata rather than claiming it filters retrieval.
+- [x] Define memory capture as explicit Manage Memories or `/memory` operations; ordinary chat is not automatically captured.
+- [x] Publish `docs/devops/memory-context-lifecycle.md` with end-to-end context/memory flow and explicit gaps.
+- [ ] Add semantic compaction and near-duplicate detection; bounded newest-64 retention and exact normalized deduplication are implemented.
 
 ## Typed CCad tool surface
 
@@ -543,32 +560,32 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 
 ### Memory tier controls
 
-- [ ] Move STM, LTM, and episodic enablement to the canonical Personalisation memory section.
-- [ ] Render each memory tier as an independent checkbox/toggle.
+- [x] Move STM, LTM, and episodic enablement to the canonical Personalisation memory section; Release build and mapped validation passed.
+- [x] Render each memory tier as an independent checkbox/toggle.
 - [ ] Define STM as current goal/task working memory.
-- [ ] Define LTM as current conversation/thread durable memory.
-- [ ] Define episodic memory as cross-conversation/project experiences.
+- [x] Define LTM as current conversation/thread durable memory.
+- [x] Define episodic memory as cross-conversation/project experiences on this local user/device.
 - [ ] Enabling a tier must create/open its backing store/namespace if required.
-- [ ] Enabling a tier must load relevant entries into runtime state.
-- [ ] Enabling a tier must permit capture/update for that tier.
-- [ ] Enabling a tier must permit retrieval from that tier.
-- [ ] Disabling a tier must stop new capture for that tier.
-- [ ] Disabling a tier must stop retrieval/context injection for that tier.
-- [ ] Disabling a tier must unload its process/runtime cache immediately.
-- [ ] Disabling a tier must not silently delete durable records.
-- [ ] Add `Manage memories`.
-- [ ] Add explicit `Reset/Delete memories` separately from enable/disable.
+- [x] Enabling a tier loads relevant entries into bounded runtime state.
+- [x] Enabling a tier permits explicit capture/update for that tier.
+- [x] Enabling a tier permits query-ranked retrieval from that tier.
+- [x] Disabling a tier stops new capture for that tier.
+- [x] Disabling a tier stops retrieval/context injection for that tier.
+- [x] Disabling a tier unloads its process/runtime cache immediately.
+- [x] Disabling a tier preserves durable records.
+- [x] Add `Manage memories` with tier-aware list/add/update/delete IPC and mapped UI controls; persistent CRUD button interactions remain open evidence.
+- [x] Add explicit `Reset/Delete memories` separately from enable/disable.
 - [ ] Require confirmation before destructive reset/delete.
-- [ ] Report enabled state, loaded runtime count, and persistent count truthfully where practical.
+- [x] Report enabled state, loaded runtime count, and persistent count truthfully where practical.
 - [ ] Ensure disabling LTM does not delete ordinary chat transcript/checkpoint state.
 - [ ] Ensure disabling episodic memory does not erase project/conversation state.
 - [ ] Implement per-tier ranking/retrieval and not one shared flat store presented as three different systems.
-- [ ] Implement secret redaction before memory persistence.
-- [ ] Implement expiry policy.
-- [ ] Implement compaction policy.
-- [ ] Implement duplicate/near-duplicate handling.
-- [ ] Implement per-scope deletion.
-- [ ] Implement complete reset.
+- [ ] Reject/redact legacy secret-bearing records before memory persistence and display; writes are rejected, legacy values are excluded from runtime/UI, but remaining redaction evidence is pending.
+- [x] Implement expiry policy with timezone-aware ISO-8601 values and load/retrieval cleanup.
+- [ ] Implement semantic compaction policy; current retention cap is 64 records per tier namespace.
+- [ ] Implement near-duplicate handling; normalized exact duplicates are deduplicated.
+- [x] Implement per-scope deletion.
+- [x] Implement complete reset across durable namespaces.
 - [ ] Add IPC/runtime state event for memory tier enable/disable instead of waiting only for application restart.
 
 ## Providers & Models

@@ -14,7 +14,10 @@ from pathlib import Path
 
 
 SECRET_MARKERS = re.compile(
-    r"(api[_-]?key|secret|password|token)\s*[:=]\s*\S+", re.IGNORECASE
+    r"(api[_-]?key|secret|password|token)\s*[:=]\s*\S+|"
+    r"\bsk-[A-Za-z0-9_-]{12,}\b|\bgh[pousr]_[A-Za-z0-9_]{20,}\b|"
+    r"\bBearer\s+[A-Za-z0-9._~-]{12,}|\bAIza[0-9A-Za-z_-]{30,}\b|"
+    r"\bya29\.[0-9A-Za-z_-]{20,}", re.IGNORECASE
 )
 
 
@@ -63,6 +66,13 @@ class MemoryStore:
         return entry
 
     @staticmethod
+    def normalise(content, *, title="", scope="project", tags=None, tier="ltm",
+                  namespace="project", expires_at=""):
+        return MemoryStore._normalise_entry(
+            content, title=title, scope=scope, tags=tags, tier=tier,
+            namespace=namespace, expires_at=expires_at)
+
+    @staticmethod
     def _normalise_entry(content, *, title="", scope="project", tags=None,
                          tier="ltm", namespace="project", expires_at=""):
         content = str(content or "").strip()
@@ -88,18 +98,28 @@ class MemoryStore:
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
         if expires_at:
-            entry["expires_at"] = str(expires_at)[:40]
+            try:
+                expiry = datetime.fromisoformat(str(expires_at).replace("Z", "+00:00"))
+            except ValueError as error:
+                raise ValueError("memory expiry must be an ISO-8601 timestamp") from error
+            if expiry.tzinfo is None:
+                raise ValueError("memory expiry must include a timezone")
+            entry["expires_at"] = expiry.astimezone(timezone.utc).isoformat()
         return entry
 
-    def update(self, entry_id, content, *, title="", scope="project", tags=None,
-               tier="ltm", namespace="project", expires_at=""):
+    def update(self, entry_id, content, *, title=None, scope=None, tags=None,
+               tier=None, namespace=None, expires_at=None):
         entries = self._read()
         for index, current in enumerate(entries):
             if current.get("id") == entry_id:
-                replacement = self._normalise_entry(content, title=title, scope=scope,
-                                                    tags=tags, tier=tier,
-                                                    namespace=namespace,
-                                                    expires_at=expires_at)
+                replacement = self._normalise_entry(
+                    content,
+                    title=current.get("title", "") if title is None else title,
+                    scope=current.get("scope", "project") if scope is None else scope,
+                    tags=current.get("tags", []) if tags is None else tags,
+                    tier=current.get("tier", "ltm") if tier is None else tier,
+                    namespace=current.get("namespace", "project") if namespace is None else namespace,
+                    expires_at=current.get("expires_at", "") if expires_at is None else expires_at)
                 replacement["id"] = entry_id
                 replacement["created_at"] = current.get("created_at", replacement["created_at"])
                 entries[index] = replacement
@@ -113,6 +133,12 @@ class MemoryStore:
                 if (scope is None or item.get("scope") == scope)
                 and (tier is None or item.get("tier", "ltm") == tier)
                 and (namespace is None or item.get("namespace", "project") == namespace)]
+
+    @staticmethod
+    def contains_secret(entry):
+        return any(SECRET_MARKERS.search(str(value or "")) for value in (
+            entry.get("content", ""), entry.get("title", ""),
+            entry.get("scope", ""), *entry.get("tags", [])))
 
     def delete(self, entry_id):
         old = self._read()
@@ -136,6 +162,31 @@ class MemoryStore:
             item.get("tier", "ltm") == tier and
             (namespace is None or item.get("namespace", "project") == namespace))]
         removed = len(old) - len(new)
+        if removed:
+            self._write(new)
+        return removed
+
+    def clear_scope(self, scope, *, tier=None, namespace=None):
+        old = self._read()
+        new = [item for item in old if not (
+            item.get("scope") == scope and
+            (tier is None or item.get("tier", "ltm") == tier) and
+            (namespace is None or item.get("namespace", "project") == namespace))]
+        removed = len(old) - len(new)
+        if removed:
+            self._write(new)
+        return removed
+
+    def keep_latest(self, tier, namespace, limit):
+        entries = self._read()
+        selected = [item for item in entries if item.get("tier", "ltm") == tier
+                    and item.get("namespace", "project") == namespace]
+        selected.sort(key=lambda item: item.get("created_at", ""), reverse=True)
+        keep_ids = {item.get("id") for item in selected[:max(1, int(limit))]}
+        new = [item for item in entries if item.get("tier", "ltm") != tier
+               or item.get("namespace", "project") != namespace
+               or item.get("id") in keep_ids]
+        removed = len(entries) - len(new)
         if removed:
             self._write(new)
         return removed

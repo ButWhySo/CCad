@@ -1508,6 +1508,14 @@ void AgentPanel::handlePythonOutput() {
           if (visible && ok && spacing_mm > 0.0) grid_settings_cb_(spacing_mm, true);
           else if (!visible) grid_settings_cb_(1.0, false);
         }
+      } else if (obj.contains("method") && obj["method"].toString() == "memory_state") {
+        const QJsonObject params = obj["params"].toObject();
+        if (memory_state_cb_) memory_state_cb_(params);
+      } else if (obj.contains("method") && obj["method"].toString() == "memory_error") {
+        const QJsonObject params = obj["params"].toObject();
+        addActivityEvent("error", "Memory operation failed",
+                         params.value("error").toString("Memory operation rejected"),
+                         params.value("operation").toString());
       } else if (obj.contains("method") && obj["method"].toString() == "backend_state") {
         const QJsonObject params = obj["params"].toObject();
         backend_ready_ = params["ready"].toBool(false);
@@ -1655,6 +1663,8 @@ void AgentPanel::submitChat() {
     payload["method"] = "human_message";
     QJsonObject params;
     params["text"] = text;
+    params["session_id"] = durable_session_id_;
+    params["thread_id"] = durable_thread_id_;
     if (context_provider_) {
         const QString context = QString::fromStdString(context_provider_());
         params["context"] = context;
@@ -1851,6 +1861,10 @@ void AgentPanel::setProviderSecret(const QString& provider_id, const QString& se
 
 void AgentPanel::setConfigStateCallback(ConfigStateCallback cb) {
   config_state_cb_ = std::move(cb);
+}
+
+void AgentPanel::setMemoryStateCallback(MemoryStateCallback cb) {
+  memory_state_cb_ = std::move(cb);
 }
 
 const QJsonObject& AgentPanel::cachedConfigState() const {
@@ -2215,7 +2229,10 @@ void AgentPanel::applySessionMetadata(const AgentSessionMetadata& metadata, cons
   durable_session_id_ = metadata.session_id;
   durable_thread_id_ = metadata.thread_id;
   if (python_process_ && python_process_->state() == QProcess::Running) {
-    sendJsonRpc("agent.set_thread_id", QJsonObject{{"thread_id", durable_thread_id_}});
+    sendJsonRpc("agent.set_thread_id", QJsonObject{
+        {"thread_id", durable_thread_id_},
+        {"session_id", durable_session_id_},
+        {"project_id", cached_config_state_.value("project_name").toString("project")}});
   }
   latest_checkpoint_id_ = metadata.latest_checkpoint_id;
   session_checkpoint_count_ = metadata.checkpoint_count;

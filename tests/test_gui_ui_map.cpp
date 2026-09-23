@@ -263,9 +263,13 @@ int main(int argc, char** argv) {
   }
   public_key->setText("public-ui-value-must-not-leak");
   secret_key->setText("secret-ui-value-must-not-leak");
+  QLineEdit memory_title(&window);
+  memory_title.setObjectName("control:memoryTitle");
+  memory_title.setText("private-memory-title-must-not-leak");
   const QString secret_map = window.uiMapJson();
   settings.close();
   if (secret_map.contains("ui-map-must-not-leak") ||
+      secret_map.contains("private-memory-title-must-not-leak") ||
       !secret_map.contains("[REDACTED]")) {
     return 12;
   }

@@ -6,13 +6,14 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 966
+- Sprint: 967
 - Branch: `sprint-947-agent-tool-context`
 - Phase 9 sprint budget: originally Sprints 226 through 254; the active programme has continued through Sprint 947 for deterministic KiCad PCB editor parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, autorouter integration, and the production agent surface. Sprint 226 root file walk is completely audited.
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 covered the bounded runtime and EDA evidence expansion through Sprint 225. Phase 9 is the bounded KiCad parity execution phase.
 
 **Current State**: 
+- **Sprint 967 (provider request and memory lifecycle)** is verified locally on `sprint-947-agent-tool-context`. Bounded context reporting and the shared three-tier memory manager are implemented, including explicit capture, scope/ranking, expiry, secret rejection, reset/delete, exact deduplication, and retention. Python tests pass and targeted Pyright is clean; Qt Release and CTest pass 98/98. The memory Settings/Manage UI-map pass completed with 26 inspected screenshots and clean logs. Large-context chat rendering still needs opt-in provider-backed visual proof; secret scan, commit, and push remain open.
 - **Sprint 966 (provider failure truthfulness and development Langfuse delivery)** is verified locally on `sprint-947-agent-tool-context`. Wrapped provider exceptions retain quota/rate-limit categories and safe user guidance; development turns flush and fetch the exact trace ID. The live GUI response, matching Langfuse trace with 16 spans, Qt Release build, CTest 93/93, and screenshot/log inspection passed. Six unrelated orchestrator Pyright diagnostics remain open.
 - **Sprint 951 (Langfuse runtime and UI-map redaction)** is in verification on `sprint-947-agent-tool-context`. It adds typed Langfuse observations around context, agent nodes, generation, and native-tool dispatch; canonical Langfuse IPC aliases; CLI vault targets; and blocks credential values from live UI-map export. An opt-in account trace fetch/review remains required.
 - **Sprint 950 (Agent execution truthfulness)** is in verification on `sprint-947-agent-tool-context`. It adds bounded context-state events, broker-backed staged route preview coverage, authoritative `/drc` completion, quota classification, and one-call approval-result handling. The remaining UI parity and provider-status defects stay tracked in `docs/devops/sprints/agent-production-todo.md`.

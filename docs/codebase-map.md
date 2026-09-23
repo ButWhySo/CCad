@@ -1947,3 +1947,43 @@ readback verified the matching trace with 16 spans. Screenshots and empty
 stdout/stderr were inspected in `artifacts/screenshots/sprint966-live-turn/`.
 Telemetry-only Pyright reports zero diagnostics; six existing orchestrator
 typing diagnostics remain open.
+
+## Sprint 967 request-context and memory accounting
+
+`context_package.py` builds a bounded versioned JSON envelope from active
+project/design snapshot data, enabled-tier memories selected for the current
+query, and context policy. Conversation messages, system instructions, and
+provider-bound tool schemas are separate request inputs and are counted
+separately. `build_provider_request_report()` estimates request size using
+`ceil(characters / 4)`, plus fixed message/tool overhead; it marks this as an
+estimate, identifies unmeasured multimodal content, and reports model limits
+only when authoritative model metadata provides one. When the configured
+large-context threshold is crossed, the orchestrator posts a content-free
+breakdown to chat and emits safe `CCAD_TRACE_DEBUG` diagnostics. Diagnostics
+include counts, source sizes, retrieval rank/overlap scores, context revision,
+and opaque identities, never prompt/design/memory values or raw tool arguments.
+
+Overflow handling replaces the full project snapshot with a valid revision/count
+summary, then drops lowest-ranked memories until the serialized envelope fits;
+it never slices JSON at an arbitrary offset. The report records retained and
+omitted content counts. `memory_manager.py` owns three tier namespaces:
+session-scoped process-only STM, durable thread-scoped LTM, and durable
+local-user Episodic memory shared across this device's projects. Keyword overlap,
+recency, and tier order rank retrieval; explicit scope labels are management
+filters, not retrieval filters. Capture is explicit via Manage Memories or
+`/memory`; ordinary chat is not auto-saved. Secret-like new records are rejected
+and unsafe legacy records are hidden from runtime/UI. Expiry, exact normalized
+deduplication, and a 64-record per-namespace cap are enforced. Semantic
+compaction, near-duplicate detection, and a distinct STM goal identity remain
+open.
+
+`memory_commands.py`, Settings RPC, and the Manage Memories dialog use the same
+manager for list/add/update/delete/reset. Disabling a tier unloads runtime
+material but preserves durable records; destructive operations require explicit
+confirmation. Release build and full CTest passed 98/98; Pyright reports zero
+diagnostics on changed Python modules. The live GUI-map pass executed 10 mapped
+actions per pass across Settings, tier toggles, Manage Memories, tier selector,
+content editor, and clean closes; all 26 screenshots and empty stdout/stderr
+were inspected. Live chat rendering of the large-context explanation remains
+unverified because it requires sending a provider request; offline contracts
+cover its trigger and count-only breakdown.

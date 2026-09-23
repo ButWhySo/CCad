@@ -36,6 +36,7 @@ class AgentPanel final : public QWidget {
   using ProposalPreviewTrigger = std::function<QString(const QString&, const QJsonObject&)>;
   using ContextProvider = std::function<std::string()>;
   using ConfigStateCallback = std::function<void(const QJsonObject&)>;
+  using MemoryStateCallback = std::function<void(const QJsonObject&)>;
   using ProviderStateCallback = std::function<void(const QJsonObject&)>;
   using ProviderTestResultCallback = std::function<void(const QJsonObject&)>;
   using ProviderConnectionResultCallback = std::function<void(const QJsonObject&)>;
@@ -69,6 +70,7 @@ class AgentPanel final : public QWidget {
   void setContextProvider(ContextProvider provider);
   void setProviderSecret(const QString& provider_id, const QString& secret);
   void setConfigStateCallback(ConfigStateCallback cb);
+  void setMemoryStateCallback(MemoryStateCallback cb);
   const QJsonObject& cachedConfigState() const;
   void setProviderStateCallback(ProviderStateCallback cb);
   void setProviderTestResultCallback(ProviderTestResultCallback cb);
@@ -357,6 +359,7 @@ class AgentPanel final : public QWidget {
   std::unique_ptr<ccad::AgentOrchestrator> orchestrator_;
   ContextProvider context_provider_;
   ConfigStateCallback config_state_cb_;
+  MemoryStateCallback memory_state_cb_;
   QJsonObject cached_config_state_;
   ProviderStateCallback provider_state_cb_;
   ProviderTestResultCallback provider_test_result_cb_;
