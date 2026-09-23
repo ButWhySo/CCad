@@ -630,6 +630,17 @@ void AgentSettingsDialog::createPersonalisationTab(QWidget* parent_widget) {
   mem_layout->addWidget(new QLabel("LTM -> Chat/convo specific"));
   mem_layout->addWidget(new QLabel("Episodic -> Global of all chats & convo just like humans"));
   auto* reset_btn = new QPushButton("Reset Memories", parent_widget);
+  reset_btn->setObjectName("action:agent_memory_reset");
+  connect(reset_btn, &QPushButton::clicked, this, [this, reset_btn]() {
+    const auto answer = QMessageBox::warning(
+        this, "Reset memories", "Delete all persisted Agent memories?",
+        QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+    if (answer != QMessageBox::Yes || !agent_panel_) return;
+    if (agent_panel_->sendJsonRpc("agent.memory_reset", QJsonObject{})) {
+      reset_btn->setEnabled(false);
+      QTimer::singleShot(1000, reset_btn, [reset_btn]() { reset_btn->setEnabled(true); });
+    }
+  });
   mem_layout->addWidget(reset_btn);
   form->addRow(mem_group);
 

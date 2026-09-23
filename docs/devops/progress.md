@@ -3053,3 +3053,7 @@ Provider model refreshes now preserve safe provider identity and actionable auth
 ### Sprint 957 â€” exact bounded context metadata
 
 The bounded provider package now carries a stable redacted package digest, estimated token count, and native project-domain counts alongside its revision, source, memory, history, truncation, and secret-safety metadata. The same metadata is emitted through `context_state` and passed into the agent-turn trace/config, so GUI evidence, orchestration, and observability refer to one exact package rather than separate character-count approximations. Context, revision, memory-boundary, and JSON-RPC contracts pass without network access. Pyright still reports the pre-existing single orchestrator complexity diagnostic; it remains open without suppression.
+
+### Sprint 958 â€” tiered memory lifecycle
+
+Implemented durable STM, LTM, and episodic namespaces with runtime enable/disable unloading, ranked bounded retrieval, expiry cleanup, compaction, secret rejection, reset/delete separation, and safe memory-state IPC. Settings Reset Memories now confirms and invokes the real reset operation. Added lifecycle documentation and no-network manager/store contracts. Full Qt/CTest and GUI evidence remain the required end-of-slice gate.

@@ -45,6 +45,7 @@ from config import AgentConfigManager
 from telemetry import runtime as telemetry_runtime, trace_function
 import hooks
 from memory_store import MemoryStore
+from memory_manager import MemoryManager
 from context_package import build_context_package
 
 def emit(payload: dict):
@@ -459,6 +460,20 @@ def orchestrator_method_catalog():
                                          "description": "Opaque session identity"}},
              "response": {"method": "context_state_snapshot", "fields": [
                  "thread_id", "revision", "content_emitted", "secret_value_visible"]}},
+            {"name": "agent.memory_state", "read_only": True, "secrets": False,
+             "params": {"tier": {"type": "string", "optional": True}},
+             "response": {"method": "memory_state", "fields": [
+                 "tiers", "secret_value_visible"]}},
+            {"name": "agent.memory_set_enabled", "read_only": False, "secrets": False,
+             "params": {"tier": {"type": "string"}, "enabled": {"type": "boolean"}},
+             "response": {"method": "memory_state", "fields": [
+                 "tier", "enabled", "runtime_entries", "persistent_entries",
+                 "loaded_into_process", "secret_value_visible"]}},
+            {"name": "agent.memory_reset", "read_only": False, "secrets": False,
+             "approval_required": True,
+             "params": {"tier": {"type": "string", "optional": True}},
+             "response": {"method": "memory_reset", "fields": [
+                 "tier", "removed", "secret_value_visible"]}},
             {"name": "agent.pending_calls", "read_only": True, "secrets": False,
              "params": {"thread_id": {"type": "string", "optional": True,
                                          "description": "Opaque session identity"}},
@@ -693,13 +708,12 @@ def dispatch_client_tool(tool_name: str, args: dict) -> str:
 
 config_manager = AgentConfigManager()
 memory_store = MemoryStore()
+memory_manager = MemoryManager(memory_store)
+memory_manager.configure(config_manager.get("memory", {}))
 
-def local_memory_entries():
-    """Return bounded user-owned project memories for provider context."""
-    memory_config = config_manager.get("memory", {})
-    if not memory_config.get("stm", True):
-        return []
-    entries = memory_store.list(scope="project")[-8:]
+def local_memory_entries(query=""):
+    """Return ranked, enabled, namespace-scoped memories for one turn."""
+    entries = memory_manager.context_entries(query)
     return entries if isinstance(entries, list) else []
 
 def parse_memory_add_args(arguments):
@@ -1748,6 +1762,44 @@ if __name__ == "__main__":
                     "content_emitted": False,
                     "secret_value_visible": False,
                 }})
+            elif method == "agent.memory_state":
+                tier = req.get("params", {}).get("tier")
+                try:
+                    state = memory_manager.state(str(tier)) if tier else memory_manager.state()
+                    emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
+                        "tiers": state if tier is None else {str(tier): state},
+                        "secret_value_visible": False,
+                    }})
+                except (TypeError, ValueError) as error:
+                    emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
+                        "tiers": {}, "error": str(error), "secret_value_visible": False}})
+            elif method == "agent.memory_set_enabled":
+                params = req.get("params", {})
+                tier = str(params.get("tier", ""))
+                try:
+                    state = (memory_manager.enable(tier) if bool(params.get("enabled"))
+                             else memory_manager.disable(tier))
+                    memory_config = dict(config_manager.get("memory", {}))
+                    memory_config[tier] = bool(params.get("enabled"))
+                    config_manager.update("memory", memory_config)
+                    emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
+                        "tier": tier, **state, "secret_value_visible": False}})
+                except (TypeError, ValueError, RuntimeError) as error:
+                    emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
+                        "tier": tier, "enabled": False, "error": str(error),
+                        "secret_value_visible": False}})
+            elif method == "agent.memory_reset":
+                tier = req.get("params", {}).get("tier")
+                tier = str(tier) if tier else None
+                try:
+                    removed = memory_manager.reset(tier)
+                    emit({"jsonrpc": "2.0", "method": "memory_reset", "params": {
+                        "tier": tier or "all", "removed": removed,
+                        "secret_value_visible": False}})
+                except (TypeError, ValueError) as error:
+                    emit({"jsonrpc": "2.0", "method": "memory_reset", "params": {
+                        "tier": tier or "all", "removed": 0, "error": str(error),
+                        "secret_value_visible": False}})
             elif method == "tool_result":
                 # Accept broker response by correlation ID. If graph is paused
                 # at an interrupt, feed authoritative result into same thread.
@@ -1870,9 +1922,15 @@ if __name__ == "__main__":
                 requested_thread = str(params.get("thread_id") or
                                        os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local"))
                 os.environ["CCAD_AGENT_THREAD_ID"] = requested_thread
+                memory_manager.identities["ltm"] = requested_thread
+                memory_manager.identities["stm"] = requested_thread + ":run"
+                project_id = str(params.get("project_id") or
+                                 config_manager.get("project_name", "project"))
+                memory_manager.identities["episodic"] = project_id
+                memory_manager.configure(config_manager.get("memory", {}))
                 if not isinstance(raw_context, str):
                     raw_context = str(raw_context or "")
-                memory_entries = local_memory_entries()
+                memory_entries = local_memory_entries(text)
                 with telemetry_runtime.observation("assemble-context", "retriever", {
                         "memory_entry_count": len(memory_entries),
                         "history_message_count": len(session_messages),
@@ -2198,6 +2256,10 @@ if __name__ == "__main__":
                 if "observability" in clean_config:
                     emit({"jsonrpc": "2.0", "method": "observability_state",
                           "params": reconfigure_observability()})
+                if "memory" in clean_config:
+                    memory_manager.configure(clean_config.get("memory", {}))
+                    emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
+                        "tiers": memory_manager.state(), "secret_value_visible": False}})
             elif method == "agent.get_config":
                 emit({"jsonrpc": "2.0", "method": "config_state", "params": config_manager.config})
             elif method == "agent.set_tool_catalog":

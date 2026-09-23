@@ -1,0 +1,11 @@
+# CCad Agent memory lifecycle
+
+The Agent memory runtime has three durable namespaces, each with an explicit runtime cache. STM is scoped to one run identity, LTM is scoped to one durable conversation thread, and episodic memory is scoped to the configured project identity. Every record stores a tier, namespace, scope, title, bounded content, tags, creation time, and optional expiry. Secret-looking values are rejected by `MemoryStore` before persistence.
+
+At process or thread activation, enabled tiers load only records from their namespace, discard expired records, and cap the in-process cache at 64 records. Retrieval is opt-in and ranked by query-token overlap followed by recency; at most eight records enter one provider context. Disabled tiers neither retrieve nor capture and their runtime cache is cleared immediately. Disabling preserves durable records. Re-enabling reloads them from disk.
+
+Writes require an enabled tier, are normalized and secret-checked, then update both the durable store and that tier's bounded runtime cache. Updates and individual deletes remain available through the existing memory commands. Reset is separate from disable: it clears the selected tier or all tiers from both runtime and durable storage and is exposed through the confirmed Settings action and `agent.memory_reset`. Expiry is evaluated on load and removed durably. Compaction keeps the newest bounded records in the active runtime cache without deleting older durable records unless reset is explicitly requested.
+
+The JSON-RPC lifecycle is `agent.memory_state` for safe counts and namespace hashes, `agent.memory_set_enabled` for persisted enable/disable changes, and `agent.memory_reset` for explicit deletion. Events contain enabled state, runtime count, persistent count, loaded state, and no memory content or secrets. Context assembly calls the manager with the current thread, run, project, and prompt identity; raw memory content remains inside the bounded provider package and is never placed in lifecycle metadata.
+
+Evidence: `scripts/test_memory_manager.py`, `scripts/test_memory_store.py`, `scripts/test_memory_context_contract.py`, and the full Qt/CTest gate recorded in the sprint progress log.

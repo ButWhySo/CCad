@@ -24,8 +24,8 @@ Update this file in the same commit as each implementation slice.
 - [ ] Resolve the remaining Pyright complexity diagnostic in the provider/orchestration module without suppressing analysis.
 - [x] Build bounded context from project, PCB, schematic, selection, coordinates, layers, nets, rules, libraries, tool state, conversation, and memories.
 - [x] Report safe metadata for the exact context package sent on each turn.
-- [ ] Implement STM, project-long-term, and episodic memory: retrieval, scope, ranking, update, deletion, reset, expiry, compaction, and secret redaction.
-- [ ] Publish the exhaustive memory/context lifecycle report.
+- [x] Implement STM, project-long-term, and episodic memory: retrieval, scope, ranking, update, deletion, reset, expiry, compaction, and secret redaction.
+- [x] Publish the exhaustive memory/context lifecycle report.
 
 ## Typed CCad tool surface
 
