@@ -3046,3 +3046,6 @@ Bounded the native orchestrator test callback wait at ten seconds so a stalled r
 ### Sprint 955 — Python runtime type safety
 
 Added explicit ownership types for checkpoint, executor, queue, plugin, and Langfuse runtime handles; added observation creation guards; and corrected callback/config metadata typing. Pyright diagnostics reduced from 22 to 1. The remaining complexity diagnostic stays open; no suppression was added.
+### Sprint 956 — provider catalog failure categories
+
+Provider model refreshes now preserve safe provider identity and actionable authentication, permission, payment, rate-limit, timeout, connection, and invalid-response categories without returning raw response bodies. Controlled catalog contracts cover OpenAI, Anthropic, Gemini, OpenRouter, Cerebras, and Ollama paths; broad provider integration verification remains open.

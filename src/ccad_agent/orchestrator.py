@@ -50,6 +50,33 @@ from context_package import build_context_package
 def emit(payload: dict):
     print(json.dumps(payload), flush=True)
 
+def catalog_failure(provider: str, error: Exception, source_url: str,
+                    network_access: str):
+    """Return a safe, provider-specific catalog failure without raw bodies."""
+    status = getattr(error, "code", None) or getattr(error, "status_code", None)
+    text = str(error).lower()
+    if status == 401 or "unauthorized" in text or "invalid api key" in text:
+        category = "authentication"
+    elif status == 403 or "forbidden" in text or "permission" in text:
+        category = "permission_denied"
+    elif status == 402 or any(marker in text for marker in
+                              ("payment required", "insufficient credit", "billing")):
+        category = "payment_required"
+    elif status == 429 or any(marker in text for marker in
+                               ("rate limit", "rate_limit", "too many requests", "quota")):
+        category = "rate_limited"
+    elif isinstance(error, TimeoutError):
+        category = "timeout"
+    elif isinstance(error, urllib.error.URLError):
+        category = "connection_error"
+    elif isinstance(error, ValueError):
+        category = "invalid_response"
+    else:
+        category = "provider_unavailable"
+    return {"ok": False, "error": category, "error_type": type(error).__name__,
+            "provider": provider, "models": [], "network_access": network_access,
+            "source_url": source_url, "source_kind": "provider_api"}
+
 def fetch_openrouter_models():
     """Explicit, bounded OpenRouter catalog refresh; never called at startup."""
     source_url = "https://openrouter.ai/api/v1/models"
@@ -86,9 +113,7 @@ def fetch_openrouter_models():
                 "network_access": "explicit_refresh", "source_url": source_url,
                 "source_kind": "provider_api"}
     except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
-        return {"ok": False, "error": type(error).__name__, "models": [],
-                "network_access": "explicit_refresh", "source_url": source_url,
-                "source_kind": "provider_api"}
+        return catalog_failure("openrouter", error, source_url, "explicit_refresh")
 
 def fetch_cerebras_models():
     """Explicit, bounded public Cerebras catalog refresh; never at startup.
@@ -129,9 +154,7 @@ def fetch_cerebras_models():
                 "network_access": "explicit_refresh", "source_url": source_url,
                 "source_kind": "provider_api"}
     except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
-        return {"ok": False, "error": type(error).__name__, "models": [],
-                "network_access": "explicit_refresh", "source_url": source_url,
-                "source_kind": "provider_api"}
+        return catalog_failure("cerebras", error, source_url, "explicit_refresh")
 
 def fetch_ollama_models():
     """Explicit local Ollama inventory; never starts, pulls, or changes Ollama."""
@@ -161,9 +184,9 @@ def fetch_ollama_models():
                 "network_access": "explicit_local_refresh", "source_url": source_url,
                 "source_kind": "local_provider_api"}
     except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
-        return {"ok": False, "error": type(error).__name__, "models": [],
-                "network_access": "explicit_local_refresh", "source_url": source_url,
-                "source_kind": "local_provider_api"}
+        result = catalog_failure("ollama", error, source_url, "explicit_local_refresh")
+        result["source_kind"] = "local_provider_api"
+        return result
 
 def catalog_timeout_seconds():
     """Return a bounded timeout shared by explicit catalog requests."""
@@ -198,9 +221,7 @@ def fetch_openai_models():
                 "network_access": "explicit_refresh", "source_url": source_url,
                 "source_kind": "provider_api"}
     except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
-        return {"ok": False, "error": type(error).__name__, "models": [],
-                "network_access": "explicit_refresh", "source_url": source_url,
-                "source_kind": "provider_api"}
+        return catalog_failure("openai", error, source_url, "explicit_refresh")
 
 def fetch_anthropic_models():
     """Explicit Anthropic `/v1/models` refresh; never called at startup."""
@@ -242,9 +263,7 @@ def fetch_anthropic_models():
                 "network_access": "explicit_refresh", "source_url": source_url,
                 "source_kind": "provider_api"}
     except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
-        return {"ok": False, "error": type(error).__name__, "models": [],
-                "network_access": "explicit_refresh", "source_url": source_url,
-                "source_kind": "provider_api"}
+        return catalog_failure("anthropic", error, source_url, "explicit_refresh")
 
 def fetch_gemini_models():
     """Explicit Gemini `models.list` refresh; never called at startup."""
@@ -290,9 +309,7 @@ def fetch_gemini_models():
                 "network_access": "explicit_refresh", "source_url": source_url,
                 "source_kind": "provider_api"}
     except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
-        return {"ok": False, "error": type(error).__name__, "models": [],
-                "network_access": "explicit_refresh", "source_url": source_url,
-                "source_kind": "provider_api"}
+        return catalog_failure("google_gemini", error, source_url, "explicit_refresh")
 
 def cerebras_model_snapshot():
     """Return documented public presets without a network call.

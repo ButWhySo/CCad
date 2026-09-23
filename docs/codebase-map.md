@@ -1868,3 +1868,8 @@ typed as runtime-owned values, and Langfuse observation creation now fails
 explicitly if the SDK returns no observation. Pyright is at one remaining
 complexity diagnostic; do not mark provider validation complete until it is
 resolved and official integrations are checked.
+
+Sprint 956 handover: explicit model-catalog refresh failures use
+`catalog_failure()` for safe provider/category/source metadata. Catalog refresh
+does not expose response bodies or credentials; it remains explicit and never
+runs at startup.

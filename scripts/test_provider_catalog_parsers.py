@@ -4,6 +4,7 @@ import importlib.util
 import json
 import os
 import sys
+import urllib.error
 from pathlib import Path
 from unittest.mock import patch
 
@@ -82,5 +83,26 @@ for function, key_name in ((orchestrator.fetch_openai_models, "OPENAI_API_KEY"),
                            (orchestrator.fetch_gemini_models, "GEMINI_API_KEY")):
     result, _ = invoke(function, key_name, "shape-test", [])
     assert result["ok"] is False and result["error"] == "invalid_catalog_shape"
+
+for function, key_name, provider, expected in (
+    (orchestrator.fetch_openai_models, "OPENAI_API_KEY", "openai", "rate_limited"),
+    (orchestrator.fetch_anthropic_models, "ANTHROPIC_API_KEY", "anthropic", "payment_required"),
+):
+    previous = os.environ.get(key_name)
+    os.environ[key_name] = "failure-test"
+    try:
+        status = 429 if expected == "rate_limited" else 402
+        error = urllib.error.HTTPError("https://provider.invalid", status, "provider failure", {}, None)
+        with patch.object(orchestrator.urllib.request, "urlopen", side_effect=error):
+            result = function()
+    finally:
+        if previous is None:
+            os.environ.pop(key_name, None)
+        else:
+            os.environ[key_name] = previous
+    assert result["ok"] is False
+    assert result["provider"] == provider
+    assert result["error"] == expected
+    assert "failure" not in json.dumps(result).lower()
 
 print("PASS provider catalog parsers and auth headers; controlled local responses only")
