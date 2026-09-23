@@ -837,6 +837,12 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
     const int doc_height = chat_input_->document()->size().height();
     const int new_height = std::clamp(static_cast<int>(doc_height + 16), 60, 200);
     chat_input_->setFixedHeight(new_height);
+    const QString text = chat_input_->toPlainText();
+    if (text.startsWith("/")) {
+      filterSlashCommands();
+    } else {
+      hideSlashPopup();
+    }
   });
   composer_layout->addWidget(chat_input_);
   
@@ -1728,13 +1734,6 @@ bool AgentPanel::eventFilter(QObject* obj, QEvent* event) {
           return true;
         }
       }
-    } else if (event->type() == QEvent::KeyRelease) {
-      QString text = chat_input_->toPlainText();
-      if (text.startsWith("/")) {
-        filterSlashCommands();
-      } else {
-        hideSlashPopup();
-      }
     }
   }
   return QWidget::eventFilter(obj, event);
@@ -1756,7 +1755,7 @@ void AgentPanel::hideSlashPopup() {
 
 void AgentPanel::filterSlashCommands() {
   QString text = chat_input_->toPlainText().mid(1).trimmed().toLower();
-  QStringList all_commands = {"/commands", "/workflow use:", "/workflow chaining phase:", "/workflow chaining state:", "/hooks ", "/set ", "/compact", "/cc", "/schedule ", "/help", "/drc", "/route", "/place", "/design", "/explain", "/clear", "/marketplace", "/settings"};
+  QStringList all_commands = {"/commands", "/workflow use:", "/workflow chaining phase:", "/workflow chaining state:", "/hooks ", "/set ", "/compact", "/cc", "/task start", "/task status", "/task end", "/schedule ", "/help", "/drc", "/route", "/place", "/design", "/explain", "/clear", "/marketplace", "/settings"};
   slash_popup_->clear();
   for (const QString& cmd : all_commands) {
     if (text.isEmpty() || cmd.mid(1).toLower().startsWith(text)) {
@@ -2225,6 +2224,10 @@ void AgentPanel::setSessionFilePath(const QString& path) {
 }
 
 void AgentPanel::applySessionMetadata(const AgentSessionMetadata& metadata, const QString& path) {
+  if (durable_session_id_ != metadata.session_id) {
+    staged_goal_.clear();
+    if (task_state_label_) task_state_label_->setText("Task idle");
+  }
   session_file_path_ = QFileInfo(path).absoluteFilePath();
   durable_session_id_ = metadata.session_id;
   durable_thread_id_ = metadata.thread_id;
@@ -2266,6 +2269,8 @@ void AgentPanel::resetSessionBinding(const QString& status) {
   session_file_path_.clear();
   durable_session_id_.clear();
   durable_thread_id_.clear();
+  staged_goal_.clear();
+  if (task_state_label_) task_state_label_->setText("Task idle");
   latest_checkpoint_id_.clear();
   session_checkpoint_count_ = 0;
   session_replayable_ = false;

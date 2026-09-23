@@ -4,33 +4,42 @@ from __future__ import annotations
 
 import hashlib
 import re
+from collections import OrderedDict
 from datetime import datetime, timezone
 from typing import Any
+from uuid import uuid4
 
 from memory_store import MemoryStore
 
 
 class MemoryManager:
     TIERS = ("stm", "ltm", "episodic")
+    MAX_STM_TASKS = 32
+    NEAR_DUPLICATE_THRESHOLD = 0.88
     _word = re.compile(r"[a-z0-9_]{3,}", re.IGNORECASE)
 
-    def __init__(self, store: MemoryStore, *, run_id="ccad-run", thread_id="ccad-local",
+    def __init__(self, store: MemoryStore, *, task_id="ccad-task", thread_id="ccad-local",
                  project_id="project", user_id="local-user"):
         self.store = store
-        self.identities = {"stm": str(run_id), "ltm": str(thread_id),
+        self.identities = {"stm": str(task_id), "ltm": str(thread_id),
                            "episodic": str(user_id)}
         self.project_id = str(project_id)
         self.enabled = {tier: False for tier in self.TIERS}
         self.runtime: dict[str, list[dict[str, Any]]] = {tier: [] for tier in self.TIERS}
+        self._stm_tasks: OrderedDict[str, list[dict[str, Any]]] = OrderedDict()
+        self._retain_stm_task = True
 
-    def set_identities(self, *, run_id: str, thread_id: str, project_id: str,
-                       user_id="local-user"):
-        identities = {"stm": str(run_id), "ltm": str(thread_id),
+    def set_identities(self, *, task_id: str, thread_id: str, project_id: str,
+                       user_id="local-user", retain_stm_task=True):
+        identities = {"stm": str(task_id), "ltm": str(thread_id),
                       "episodic": str(user_id)}
         changed = {tier for tier in self.TIERS
                    if identities[tier] != self.identities[tier]}
         self.identities = identities
         self.project_id = str(project_id)
+        self._retain_stm_task = bool(retain_stm_task)
+        if not self._retain_stm_task:
+            self.runtime["stm"] = []
         for tier in changed:
             self.runtime[tier] = self._load(tier) if self.enabled[tier] else []
 
@@ -56,11 +65,20 @@ class MemoryManager:
         self._check_tier(tier)
         self.enabled[tier] = False
         self.runtime[tier] = []
+        if tier == "stm":
+            self._stm_tasks.clear()
         return self.state(tier)
 
     def _load(self, tier: str):
         if tier == "stm":
-            return []
+            if not self._retain_stm_task:
+                return []
+            namespace = self.identities[tier]
+            entries = self._stm_tasks.pop(namespace, [])
+            self._stm_tasks[namespace] = entries
+            while len(self._stm_tasks) > self.MAX_STM_TASKS:
+                self._stm_tasks.popitem(last=False)
+            return entries
         now = self._now()
         entries = []
         expired = []
@@ -121,13 +139,21 @@ class MemoryManager:
         self._check_tier(tier)
         if not self.enabled[tier]:
             raise RuntimeError(f"memory tier disabled: {tier}")
-        scope = str(scope or {"stm": "task", "ltm": "conversation",
-                              "episodic": "user"}[tier])
+        if tier == "stm" and not self._retain_stm_task:
+            raise RuntimeError("STM requires an active task; use /task start")
         normalized = " ".join(str(content).casefold().split())
         existing = next((item for item in self.list(tier=tier)
                          if " ".join(str(item.get("content", "")).casefold().split()) == normalized), None)
         if existing:
             return existing
+        duplicate = self._near_duplicate(content, tier)
+        if duplicate:
+            entry, similarity = duplicate
+            raise ValueError(
+                f"near-duplicate memory exists ({entry['id']}, lexical overlap "
+                f"{similarity:.0%}); update that record or add distinct information")
+        scope = str(scope or {"stm": "task", "ltm": "conversation",
+                              "episodic": "user"}[tier])
         entry = self.store.normalise(content, title=title, scope=scope, tags=tags,
                                      tier=tier, namespace=self.identities[tier],
                                      expires_at=expires_at)
@@ -140,7 +166,30 @@ class MemoryManager:
             entry["project_id"] = self.project_id
         self.runtime[tier].append(entry)
         self.runtime[tier] = self.runtime[tier][-64:]
+        if tier == "stm":
+            self._stm_tasks[self.identities[tier]] = self.runtime[tier]
+            self._stm_tasks.move_to_end(self.identities[tier])
+            while len(self._stm_tasks) > self.MAX_STM_TASKS:
+                self._stm_tasks.popitem(last=False)
         return entry
+
+    def _near_duplicate(self, content: str, tier: str, *, exclude_id=""):
+        words = set(self._word.findall(str(content).casefold()))
+        if len(words) < 5:
+            return None
+        best = None
+        for entry in self.list(tier=tier):
+            if entry.get("id") == exclude_id:
+                continue
+            existing = set(self._word.findall(
+                str(entry.get("content", "")).casefold()))
+            if len(existing) < 5:
+                continue
+            similarity = len(words & existing) / len(words | existing)
+            if similarity >= self.NEAR_DUPLICATE_THRESHOLD and (
+                    best is None or similarity > best[1]):
+                best = (entry, similarity)
+        return best
 
     def list(self, *, tier=None, scope=None):
         self._prune_expired()
@@ -179,8 +228,13 @@ class MemoryManager:
             if expired_ids:
                 self.runtime[tier] = [item for item in self.runtime[tier]
                                       if item.get("id") not in expired_ids]
+                if tier == "stm":
+                    for namespace, entries in list(self._stm_tasks.items()):
+                        self._stm_tasks[namespace] = [
+                            item for item in entries
+                            if item.get("id") not in expired_ids]
                 for entry_id in expired_ids:
-                    if entry_id:
+                    if entry_id and tier != "stm":
                         self.store.delete(entry_id)
 
     def update(self, entry_id, content, *, title=None, scope=None, tags=None,
@@ -196,6 +250,12 @@ class MemoryManager:
                           if item.get("id") == entry_id), None)
             if entry is None:
                 continue
+            duplicate = self._near_duplicate(content, tier, exclude_id=entry_id)
+            if duplicate:
+                other, similarity = duplicate
+                raise ValueError(
+                    f"near-duplicate memory exists ({other['id']}, lexical overlap "
+                    f"{similarity:.0%}); revise to distinct information")
             fields = {"title": entry.get("title", "") if title is None else title,
                       "scope": entry.get("scope", "project") if scope is None else scope,
                       "tags": entry.get("tags", []) if tags is None else tags,
@@ -212,6 +272,8 @@ class MemoryManager:
                 replacement["project_id"] = self.project_id
             self.runtime[tier] = [replacement if item.get("id") == entry_id else item
                                   for item in self.runtime[tier]]
+            if tier == "stm":
+                self._stm_tasks[self.identities[tier]] = self.runtime[tier]
             return replacement
         return None
 
@@ -221,6 +283,11 @@ class MemoryManager:
             if matching:
                 self.runtime[tier] = [item for item in self.runtime[tier]
                                       if item.get("id") != entry_id]
+                if tier == "stm":
+                    for namespace, entries in list(self._stm_tasks.items()):
+                        self._stm_tasks[namespace] = [
+                            item for item in entries
+                            if item.get("id") != entry_id]
                 return tier == "stm" or self.store.delete(entry_id)
         return False
 
@@ -229,8 +296,15 @@ class MemoryManager:
         removed = 0
         for current in tiers:
             self._check_tier(current)
-            runtime_matches = {item.get("id") for item in self.runtime[current]
-                               if item.get("scope") == scope}
+            if current == "stm":
+                runtime_matches = {item.get("id") for entries in self._stm_tasks.values()
+                                   for item in entries if item.get("scope") == scope}
+                for namespace, entries in list(self._stm_tasks.items()):
+                    self._stm_tasks[namespace] = [
+                        item for item in entries if item.get("scope") != scope]
+            else:
+                runtime_matches = {item.get("id") for item in self.runtime[current]
+                                   if item.get("scope") == scope}
             persistent_matches = set() if current == "stm" else {
                 item.get("id") for item in self.store.list(
                     tier=current, namespace=self.identities[current], scope=scope)}
@@ -249,6 +323,10 @@ class MemoryManager:
             self._check_tier(current)
             runtime_ids = {item.get("id") for item in self.runtime[current]}
             self.runtime[current] = []
+            if current == "stm":
+                runtime_ids.update(item.get("id") for entries in self._stm_tasks.values()
+                                   for item in entries)
+                self._stm_tasks.clear()
             if persistent:
                 stored_ids = {item.get("id") for item in self.store.list(tier=current)}
                 removed += self.store.clear_tier(current, None)
@@ -257,9 +335,19 @@ class MemoryManager:
                 removed += len(runtime_ids)
         return removed
 
+    def clear_task(self, task_id: str):
+        """Discard one process-only STM task without touching durable tiers."""
+        task_id = str(task_id)
+        entries = self._stm_tasks.pop(task_id, [])
+        if self.identities["stm"] == task_id:
+            self.runtime["stm"] = []
+        return len(entries)
+
     def compact(self, tier: str, limit=64):
         self._check_tier(tier)
         self.runtime[tier] = self.runtime[tier][-max(1, min(64, int(limit))):]
+        if tier == "stm":
+            self._stm_tasks[self.identities[tier]] = self.runtime[tier]
         removed = (0 if tier == "stm" else self.store.keep_latest(
             tier, self.identities[tier], max(1, min(64, int(limit)))))
         return {"runtime_entries": len(self.runtime[tier]), "persistent_removed": removed}
@@ -277,7 +365,8 @@ class MemoryManager:
             result[current] = {"enabled": self.enabled[current],
                                "runtime_entries": len(self.runtime[current]),
                                "persistent_entries": persistent,
-                               "loaded_into_process": self.enabled[current],
+                               "loaded_into_process": self.enabled[current] and
+                               (current != "stm" or self._retain_stm_task),
                                "unsafe_persistent_entries_omitted": len(raw_persistent) - persistent,
                                "namespace_hash": hashlib.sha256(
                                    self.identities[current].encode()).hexdigest()[:16]}
@@ -287,3 +376,45 @@ class MemoryManager:
     def _check_tier(cls, tier):
         if tier not in cls.TIERS:
             raise ValueError("unknown memory tier")
+
+
+class MemoryTaskScopes:
+    """Bounded active-task IDs keyed by durable chat session identity."""
+
+    def __init__(self, memory: MemoryManager, *, max_sessions=32):
+        self.memory = memory
+        self.max_sessions = max(1, int(max_sessions))
+        self._active: OrderedDict[str, str] = OrderedDict()
+
+    def current(self, session_id: str):
+        session_id = str(session_id).strip()
+        task_id = self._active.get(session_id)
+        if task_id:
+            self._active.move_to_end(session_id)
+        return task_id
+
+    def is_active(self, task_id: str):
+        return bool(task_id) and task_id in self._active.values()
+
+    def start(self, session_id: str):
+        session_id = self._require_session(session_id)
+        ended_id = self._active.pop(session_id, None)
+        cleared = self.memory.clear_task(ended_id) if ended_id else 0
+        task_id = uuid4().hex
+        self._active[session_id] = task_id
+        while len(self._active) > self.max_sessions:
+            _, expired_task = self._active.popitem(last=False)
+            cleared += self.memory.clear_task(expired_task)
+        return task_id, cleared
+
+    def end(self, session_id: str):
+        session_id = self._require_session(session_id)
+        task_id = self._active.pop(session_id, None)
+        return (task_id, self.memory.clear_task(task_id)) if task_id else (None, 0)
+
+    @staticmethod
+    def _require_session(session_id: str):
+        session_id = str(session_id).strip()
+        if not session_id:
+            raise ValueError("durable session identity is required for task memory")
+        return session_id

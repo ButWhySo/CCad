@@ -461,6 +461,17 @@ private slots:
     QVERIFY(!popup->item(0)->text().contains(":use:"));
     QTest::keyClick(input, Qt::Key_Escape);
     QCoreApplication::processEvents();
+    input->setPlainText("/task");
+    QCoreApplication::processEvents();
+    QVERIFY(popup->isVisible());
+    QStringList task_commands;
+    for (int index = 0; index < popup->count(); ++index) {
+      if (popup->item(index)->text().startsWith("/task"))
+        task_commands.append(popup->item(index)->text());
+    }
+    QCOMPARE(task_commands, QStringList({"/task start", "/task status", "/task end"}));
+    QTest::keyClick(input, Qt::Key_Escape);
+    QCoreApplication::processEvents();
     // Popup focus is platform-dependent in offscreen Qt; production event-filter
     // handling is exercised by the live GUI harness.
   }

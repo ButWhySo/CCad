@@ -245,6 +245,8 @@ if(Python3_Interpreter_FOUND)
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_memory_store.py")
   add_test(NAME agent_memory_manager
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_memory_manager.py")
+  add_test(NAME agent_memory_task_scopes
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_memory_task_scopes.py")
   add_test(NAME agent_memory_commands
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_memory_command_contract.py")
   add_test(NAME agent_memory_context_contract

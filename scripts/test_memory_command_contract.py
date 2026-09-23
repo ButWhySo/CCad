@@ -14,8 +14,16 @@ from memory_store import MemoryStore
 
 with tempfile.TemporaryDirectory() as temp:
     manager = MemoryManager(MemoryStore(Path(temp) / "memory.json"),
-                            thread_id="thread-a", run_id="task-a")
+                            thread_id="thread-a", task_id="task-a")
     manager.configure({"stm": True, "ltm": True, "episodic": True})
+    manager.set_identities(task_id="turn-only", thread_id="thread-a",
+                           project_id="project-a", retain_stm_task=False)
+    try:
+        execute_memory_command(manager, "add tier:stm title:stm Keep only this task constraint")
+    except RuntimeError as error:
+        assert "active task" in str(error)
+    else:
+        raise AssertionError("non-retained STM memory write succeeded")
     added, result = execute_memory_command(
         manager, 'add tier:ltm scope:conversation title:"route rule" Keep ground return short')
     assert added == "memory_added" and result["tier"] == "ltm"

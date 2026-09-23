@@ -437,6 +437,86 @@ int main(int argc, char** argv) {
           catalog_startup.contains("\"backend_ready\":true") &&
           catalog_startup.contains("\"native_tool_catalog_installed\":true") &&
           !catalog_startup.contains("\"native_tool_catalog_method_count\":0");
+      if (name.startsWith("sprint968-task")) {
+        const auto interact = [window, &entries, &output_dir, &name,
+                               per_target_wait_ms](const QString& method,
+                                                  const QString& payload,
+                                                  const QString& target_id,
+                                                  const QString& action_name) {
+          const QString target = window->uiTargetJsonById(target_id);
+          if (!target.contains("\"found\":true")) {
+            entries << QString("{\"target\":%1,\"found\":false}")
+                           .arg(jsonStringLocal(target_id));
+            return false;
+          }
+          const QString result = window->runAgentUiQueryJson(method, payload);
+          QApplication::processEvents();
+          QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
+          QApplication::processEvents();
+          const QString screenshot_path = QString::fromStdString(
+              (output_dir / (name + "-" + action_name + ".png").toStdString()).string());
+          window->grab().save(screenshot_path);
+          QString popup_screenshot;
+          if (auto* popup = window->findChild<QListWidget*>("panel:agent_slash_commands");
+              popup && popup->isVisible()) {
+            popup_screenshot = QString::fromStdString(
+                (output_dir / (name + "-" + action_name + "-slash-popup.png").toStdString()).string());
+            popup->grab().save(popup_screenshot);
+          }
+          entries << QString("{\"target\":%1,\"interaction\":%2,\"result\":%3,\"screenshot\":%4,\"popup_screenshot\":%5}")
+                         .arg(jsonStringLocal(target_id), jsonStringLocal(method),
+                              result.trimmed(), jsonStringLocal(screenshot_path),
+                              popup_screenshot.isEmpty() ? "null" : jsonStringLocal(popup_screenshot));
+          const QJsonDocument parsed = QJsonDocument::fromJson(result.toUtf8());
+          if (!parsed.isObject() || !parsed.object().value("ok").toBool()) return false;
+          const QJsonObject action_result = parsed.object().value("result").toObject();
+          return action_result.value("performed").toBool(true);
+        };
+        bool ok = true;
+        ok = interact("ui.click", "{\"id\":\"tab:agent\"}",
+                      "tab:agent", "agent-tab-clicked") && ok;
+        ok = interact("ui.type_text",
+                      "{\"id\":\"control:agent_chat_input\",\"text\":\"/task\"}",
+                      "control:agent_chat_input", "task-palette-opened") && ok;
+        ok = interact("ui.key", "{\"key\":\"Enter\"}",
+                      "panel:agent_slash_commands", "task-start-selected") && ok;
+        ok = interact("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
+                      "action:agent_submit_chat", "task-started") && ok;
+        ok = interact("ui.type_text",
+                      "{\"id\":\"control:agent_chat_input\",\"text\":\"/task status\"}",
+                      "control:agent_chat_input", "task-status-entered") && ok;
+        ok = interact("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
+                      "action:agent_submit_chat", "task-status-checked") && ok;
+        ok = interact("ui.type_text",
+                      "{\"id\":\"control:agent_chat_input\",\"text\":\"/task end\"}",
+                      "control:agent_chat_input", "task-end-entered") && ok;
+        ok = interact("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
+                      "action:agent_submit_chat", "task-ended") && ok;
+        const std::filesystem::path output_path =
+            output_dir / (name + "-target-sequence.json").toStdString();
+        std::ofstream output(output_path, std::ios::binary);
+        const QString report =
+            QString("{\"schema_version\":1,\"name\":%1,\"interaction_plan\":"
+                    "\"Agent tab; slash palette; start/status/end task without model request\","
+                    "\"catalog_startup_verified\":%2,\"entries\":[%3]}\n")
+                .arg(jsonStringLocal(name))
+                .arg(catalog_startup_verified ? "true" : "false")
+                .arg(entries.join(','));
+        const QByteArray bytes = report.toUtf8();
+        output.write(bytes.constData(), bytes.size());
+        output.close();
+        if (!output || !ok) {
+          std::cerr << "task-scope GUI-map interaction failed: "
+                    << output_path.string() << '\n';
+          std::cerr.flush();
+          QCoreApplication::exit(2);
+          return;
+        }
+        std::cout << "task-scope GUI-map sequence saved: " << output_path.string() << '\n';
+        std::cout.flush();
+        QCoreApplication::exit(0);
+        return;
+      }
       const QStringList target_ids = name.startsWith("sprint967-memory")
           ? QStringList{"action:settingsBtn", "control:categoryList",
                         "control:stmCb", "control:ltmCb",

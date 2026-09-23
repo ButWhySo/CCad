@@ -43,6 +43,17 @@ Update this file in the same commit as each implementation slice.
 - [x] Validate memory Settings/Manage Memories through the live GUI map; inspect all 26 screenshots and captured stdout/stderr. Large-context chat rendering remains a separate unchecked provider-backed item above.
 - [ ] Run redacted repository/staged secret scans; commit and push only verified files.
 
+### Sprint 968 active slice â€” task-scoped STM and memory duplicate safety
+
+- [x] Give STM a distinct task UUID, held only during explicit `/task start` to `/task end` scope; isolate sessions and reject non-retained STM writes.
+- [x] Bound active task/session scopes and STM records; clear ended, replaced, and evicted scopes.
+- [x] Detect normalized exact duplicates and high lexical-overlap near-duplicates consistently on add/update; report the existing record without overwriting it.
+- [x] Expose `/task start|status|end` in the chat slash palette and command help without invoking the model.
+- [x] Add task-scope, isolation, replacement, end, eviction, and near-duplicate regression coverage.
+- [x] Run Qt Release build and full CTest gate (99/99).
+- [x] Validate task commands through 8 GUI-map actions per run; inspect both 12-image screenshot runs, stdout, and stderr, including a >20-second live run.
+- [ ] Run staged-diff secret scan; commit and push code, tests, docs, and TODO together.
+
 #### References checked
 
 Langfuse's current [LangChain integration](https://langfuse.com/integrations/frameworks/langchain) uses `langfuse.langchain.CallbackHandler`; the [SDK instrumentation guide](https://langfuse.com/docs/observability/sdk/instrumentation) documents buffered export and explicit `flush()`; the [masking guide](https://langfuse.com/docs/observability/features/masking) recommends export-stage `mask_otel_spans`. CCad retains metadata-only sanitization and flushes per turn only in the configured development environment; this sprint's exact-ID readback verified delivery to the Langfuse project selected by the stored credentials.
@@ -59,11 +70,11 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 - [x] Make context source metadata match actual provider input (history is carried as separate messages while the v2 envelope stores only a count).
 - [ ] Implement STM, conversation-long-term, and episodic memory: retrieval, scope, ranking, update, deletion, reset, expiry, bounded retention, and secret rejection; finish UI CRUD/reset interaction evidence.
 - [x] Route `/memory` CRUD through MemoryManager tier/namespace rules so writes are retrievable only through the matching enabled tier.
-- [ ] Give STM a distinct goal/task identity (currently chat-session scoped); keep LTM keyed to thread and episodic keyed to local OS user.
+- [x] Give STM a distinct task identity with `/task start|status|end` and cache-isolation validation; keep LTM keyed to thread and episodic keyed to local OS user.
 - [x] Align memory retrieval with tier/namespace isolation; keep `scope` as explicit list/delete metadata rather than claiming it filters retrieval.
 - [x] Define memory capture as explicit Manage Memories or `/memory` operations; ordinary chat is not automatically captured.
 - [x] Publish `docs/devops/memory-context-lifecycle.md` with end-to-end context/memory flow and explicit gaps.
-- [ ] Add semantic compaction and near-duplicate detection; bounded newest-64 retention and exact normalized deduplication are implemented.
+- [ ] Add semantic compaction; bounded newest-64 retention, exact normalized deduplication, and lexical near-duplicate rejection are implemented.
 
 ## Typed CCad tool surface
 
@@ -126,7 +137,7 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 - [x] Build Qt and run targeted/full CTest.
 - [x] Run scoped UI-map/mouse-keyboard validation; inspect screenshots and logs.
 - [x] Run bounded real provider tests.
-- [ ] Run redacted repository and staged-diff secret scans before every commit.
+- [x] Run redacted tracked-repository and staged-diff secret-pattern scans before this commit; inspected two legacy documentation path-only false positives.
 - [ ] Update architecture, feature, CLI, methodology, provider, memory, tracing, autorouter, backlog, and progress docs in the same commit.
 - [ ] Commit only verified source/tests/docs; never keys, vault data, local config, logs, screenshots, generated boards, or unrelated user files.
 
@@ -562,7 +573,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 
 - [x] Move STM, LTM, and episodic enablement to the canonical Personalisation memory section; Release build and mapped validation passed.
 - [x] Render each memory tier as an independent checkbox/toggle.
-- [ ] Define STM as current goal/task working memory.
+- [x] Define STM as current goal/task working memory; `/task start|status|end` supplies its explicit task boundary (99/99 CTest; mapped GUI evidence inspected).
 - [x] Define LTM as current conversation/thread durable memory.
 - [x] Define episodic memory as cross-conversation/project experiences on this local user/device.
 - [ ] Enabling a tier must create/open its backing store/namespace if required.
@@ -583,7 +594,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Reject/redact legacy secret-bearing records before memory persistence and display; writes are rejected, legacy values are excluded from runtime/UI, but remaining redaction evidence is pending.
 - [x] Implement expiry policy with timezone-aware ISO-8601 values and load/retrieval cleanup.
 - [ ] Implement semantic compaction policy; current retention cap is 64 records per tier namespace.
-- [ ] Implement near-duplicate handling; normalized exact duplicates are deduplicated.
+- [ ] Implement semantic near-duplicate handling; exact duplicates and high lexical-overlap duplicates are handled, but semantic similarity remains unimplemented.
 - [x] Implement per-scope deletion.
 - [x] Implement complete reset across durable namespaces.
 - [ ] Add IPC/runtime state event for memory tier enable/disable instead of waiting only for application restart.

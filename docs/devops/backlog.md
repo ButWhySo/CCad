@@ -7,8 +7,9 @@ This file is the single local backlog for scattered CCad feature requests. Sprin
 This ledger is the current single checklist for scattered user-reported GUI, KiCad compatibility, and agent-harness work. Check an item only after code review, focused tests, KiCad/reference comparison where relevant, and visual validation when the behavior is visible.
 
 - [x] Sprint 157: read-only native UI map export through `ccad_gui --dump-ui-map`, with target validation against live Qt hit-testing.
-- [ ] Sprint 967: implementation, 98/98 CTest, clean targeted Pyright, and memory Settings GUI-map evidence are verified locally; opt-in live large-context chat proof, secret scan, commit, and push remain open.
-- [ ] Memory follow-up: introduce a distinct task identity for STM, implement semantic compaction and near-duplicate matching, and decide whether explicit capture should include project-scoped episodic storage. Ordinary chat capture remains off.
+- [ ] Sprint 967: implementation, 98/98 CTest, clean targeted Pyright, and memory Settings GUI-map evidence are verified locally; opt-in live large-context chat proof remains open.
+- [x] Sprint 968: explicit task-scoped STM, bounded session/task cache, lexical near-duplicate guard, 99/99 CTest, inspected 8-action GUI-map flow, and >20-second GUI stability run verified locally; secret scan, commit, and push remain open. Semantic compaction remains open.
+- [ ] Memory follow-up: add semantic compaction and decide whether explicit capture should include project-scoped episodic storage. Ordinary chat capture remains off.
 
 ## Demo-deadline orchestration gate
 

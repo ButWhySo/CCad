@@ -110,7 +110,7 @@ class ContextBudgetTests(unittest.TestCase):
         self.assertEqual(report["context_package_limit_chars"], 1024)
         self.assertEqual(report["project_counts"]["tracks"], 1)
         explanation = CONTEXT.format_large_context_explanation(report, meta)
-        for expected in ("STM is transient and session-scoped",
+        for expected in ("STM is transient and scoped to an explicit `/task start`",
                          "stored scope label is descriptive metadata",
                          "Memory capture remains explicit",
                          "unsafe legacy records are excluded",
@@ -166,7 +166,7 @@ class ContextBudgetTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             manager = MemoryManager(
                 MemoryStore(Path(directory) / "memory.json"),
-                run_id="run-42", thread_id="thread-7", project_id="project-3")
+                task_id="run-42", thread_id="thread-7", project_id="project-3")
             manager.configure({"stm": True, "ltm": True, "episodic": True})
             manager.add("USB power return rail", tier="stm")
             manager.add("USB power connector on F.Cu", tier="ltm")

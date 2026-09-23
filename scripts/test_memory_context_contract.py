@@ -9,6 +9,9 @@ assert "from memory_manager import MemoryManager" in text
 assert "memory_manager.retrieve_with_metadata(query)" in text
 assert 'memory_manager.configure(config_manager.get("memory", {}))' in text
 assert 'memory_manager.configure(clean_config.get("memory", {}))' in text
+assert 'elif cmd_base == "/task":' in text
+assert 'memory_task_scopes.start(requested_session)' in text
+assert 'memory_task_scopes.end(requested_session)' in text
 assert 'memory_entries, memory_retrieval = local_memory_entries(text)' in text
 assert 'package = build_context_package(' in text
 print("PASS bounded local memory retrieval contract; no network")

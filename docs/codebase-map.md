@@ -1967,15 +1967,20 @@ Overflow handling replaces the full project snapshot with a valid revision/count
 summary, then drops lowest-ranked memories until the serialized envelope fits;
 it never slices JSON at an arbitrary offset. The report records retained and
 omitted content counts. `memory_manager.py` owns three tier namespaces:
-session-scoped process-only STM, durable thread-scoped LTM, and durable
-local-user Episodic memory shared across this device's projects. Keyword overlap,
+task-scoped process-only STM, durable thread-scoped LTM, and durable
+local-user Episodic memory shared across this device's projects. `/task start`,
+`/task status`, and `/task end` bind and clear STM for a durable Agent session;
+unstaged turns receive non-retained identities. Active session/task maps and
+per-task records are bounded, with old STM removed on replacement, end, or
+eviction. Exact normalized duplicates resolve to the existing record, and
+high lexical-overlap duplicates are rejected on add/update with the existing ID;
+this is not semantic deduplication. Keyword overlap,
 recency, and tier order rank retrieval; explicit scope labels are management
 filters, not retrieval filters. Capture is explicit via Manage Memories or
 `/memory`; ordinary chat is not auto-saved. Secret-like new records are rejected
 and unsafe legacy records are hidden from runtime/UI. Expiry, exact normalized
-deduplication, and a 64-record per-namespace cap are enforced. Semantic
-compaction, near-duplicate detection, and a distinct STM goal identity remain
-open.
+deduplication, lexical near-duplicate checks, and a 64-record per-namespace cap
+are enforced. Semantic compaction and semantic duplicate detection remain open.
 
 `memory_commands.py`, Settings RPC, and the Manage Memories dialog use the same
 manager for list/add/update/delete/reset. Disabling a tier unloads runtime
@@ -1987,3 +1992,21 @@ content editor, and clean closes; all 26 screenshots and empty stdout/stderr
 were inspected. Live chat rendering of the large-context explanation remains
 unverified because it requires sending a provider request; offline contracts
 cover its trigger and count-only breakdown.
+
+## Sprint 968 task-scoped STM and duplicate handling
+
+`MemoryTaskScopes` in `src/ccad_agent/memory_manager.py` maps at most 32 durable
+chat sessions to distinct task UUIDs. The orchestrator implements `/task
+start|status|end` before the model graph; `MemoryManager` retains at most 64 STM
+records per task and rejects writes when the current turn has no active retained
+scope. Ending/replacing/evicting a task removes only its process STM. Durable
+LTM remains keyed by thread and episodic memory by local OS user. Exact
+normalized duplicates return the existing record; add/update reject lexical
+Jaccard overlap >=0.88 (at least five unique terms) with the matching ID.
+`agent_panel.cpp` refreshes slash suggestions from `textChanged`, so keyboard
+and mapped `ui.type_text` input follow the same path. Coverage is in
+`scripts/test_memory_task_scopes.py`, `scripts/test_memory_manager.py`,
+`scripts/test_memory_command_contract.py`, and `tests/test_gui_agent_panel.cpp`.
+Qt Release plus full CTest passed 99/99; mapped GUI screenshots/logs were
+inspected, including a >20-second run. Semantic duplicate detection and
+semantic compaction remain open.
