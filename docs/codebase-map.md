@@ -1927,3 +1927,23 @@ JSON-RPC initialize with pygls 1.3.1. clangd 19.1.7 used the Qt compile
 database; its optional extraction-action self-test reported one internal
 invalid-loop extraction failure and no source diagnostic. Preferences menu
 actions remain unmapped and tracked as open work.
+
+Sprint 966 implementation: `provider_exception_chain()` in
+`src/ccad_agent/orchestrator.py` walks `__cause__`, `__context__`, and grouped
+exceptions. `provider_http_status()` and `classify_provider_error()` use that
+chain so wrapped SDK quota/rate-limit/auth/payment/connection errors retain
+their safe categories. `provider_error_user_message()` supplies category-level
+guidance and status only; raw exception text is not forwarded to chat. The
+offline regressions are `scripts/test_provider_failure_event.py` and
+`scripts/test_provider_error_classification.py`. `TelemetryRuntime.begin_turn()`
+clears stale export counters and trace identity; `flush_turn()` performs a
+bounded development flush, fetches the exact trace ID before reporting
+`verified`, publishes trace ID/span count/result over `observability_state`,
+and logs the same safe fields to stderr. Production keeps SDK background
+batching. `AgentSettingsDialog` displays the latest result. Focused provider,
+observability-runtime, privacy, and UI source contracts pass; Qt Release build
+and CTest pass 93/93. A live GUI-map turn returned `trace test`; Langfuse
+readback verified the matching trace with 16 spans. Screenshots and empty
+stdout/stderr were inspected in `artifacts/screenshots/sprint966-live-turn/`.
+Telemetry-only Pyright reports zero diagnostics; six existing orchestrator
+typing diagnostics remain open.

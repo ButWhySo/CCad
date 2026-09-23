@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import os
+import sys
 import threading
 import time
 from contextlib import contextmanager, nullcontext
@@ -40,10 +42,11 @@ class TelemetryRuntime:
         self._active_span_id = ""
         self._last_trace_id = ""
         self._last_span_id = ""
+        self._development_logging = os.environ.get("CCAD_TRACE_DEBUG", "").lower() in {"1", "true", "yes"}
         self._status = self._state(False, False, "disabled")
 
     @staticmethod
-    def _state(enabled, configured, reason):
+    def _state(enabled, configured, reason) -> dict[str, Any]:
         return dict(enabled=enabled, configured=configured, reason=reason,
                     exporter_initialized=False, backend="langfuse",
                     last_test="not_run", connected=False,
@@ -68,6 +71,10 @@ class TelemetryRuntime:
         base_url = str(config.get("base_url") or "https://cloud.langfuse.com").strip().rstrip("/")
         environment = str(config.get("environment") or "development").strip()
         service = str(config.get("service_name") or "ccad-agent").strip()
+        self._development_logging = (
+            environment.lower() not in {"production", "prod"}
+            or os.environ.get("CCAD_TRACE_DEBUG", "").lower() in {"1", "true", "yes"}
+        )
         fingerprint = (enabled, base_url, environment, service,
                        hashlib.sha256(public_key.encode()).digest(),
                        hashlib.sha256(secret_key.encode()).digest())
@@ -125,6 +132,81 @@ class TelemetryRuntime:
             return {"trace_id": self._active_trace_id or self._last_trace_id or "unavailable",
                     "span_id": self._active_span_id or self._last_span_id or "unavailable"}
 
+    def begin_turn(self):
+        """Clear per-turn exporter and trace identity to prevent stale reports."""
+        with self._lock:
+            self._last_trace_id = ""
+            self._last_span_id = ""
+            if self._exporter is not None:
+                self._exporter.last_result = None
+                self._exporter.last_span_count = 0
+
+    def flush_turn(self):
+        """Flush one completed/failed turn and expose safe exporter diagnostics."""
+        with self._lock:
+            error_type = ""
+            provider = self._provider
+            exporter = self._exporter
+            trace_id = self._last_trace_id or "unavailable"
+            if provider is None or exporter is None:
+                result = "disabled"
+                span_count = 0
+            elif not self._development_logging:
+                # The SDK's background batch processor owns production delivery.
+                # Synchronous per-turn flushing is enabled in development so
+                # developers can correlate a prompt with a concrete export result.
+                result = "queued"
+                span_count = int(exporter.last_span_count)
+            else:
+                try:
+                    flushed = bool(provider.force_flush(timeout_millis=6000))
+                    export_result = exporter.last_result
+                    span_count = int(exporter.last_span_count)
+                    if not flushed:
+                        result = "flush_timeout"
+                    elif export_result == SpanExportResult.SUCCESS:
+                        result = "success"
+                        client = self._langfuse_client
+                        if client is not None and trace_id != "unavailable":
+                            # A successful OTLP response only proves the
+                            # collector accepted the batch. In development,
+                            # verify this exact turn by fetching its trace ID.
+                            result = "not_received"
+                            for attempt in range(3):
+                                try:
+                                    trace = client.api.trace.get(
+                                    trace_id,
+                                    request_options={"timeout_in_seconds": 5,
+                                                     "max_retries": 0})
+                                    if trace.id == trace_id:
+                                        result = "verified"
+                                        error_type = ""
+                                        break
+                                except Exception as error:
+                                    error_type = type(error).__name__
+                                if attempt < 2:
+                                    time.sleep(0.5)
+                    elif export_result is None:
+                        result = "no_spans_exported"
+                    else:
+                        result = "export_failed"
+                except Exception as error:
+                    span_count = 0
+                    result = "flush_error"
+                    error_type = type(error).__name__
+            self._status.update(last_export=result, trace_id=trace_id,
+                                exported_span_count=span_count,
+                                last_export_ok=result in {"success", "verified"})
+            if result in {"success", "verified"}:
+                self._status.pop("last_export_error_type", None)
+            elif error_type:
+                self._status["last_export_error_type"] = error_type
+            if self._development_logging:
+                error_suffix = f" error_type={error_type}" if error_type else ""
+                print(f"[ccad-otel] turn_flush trace_id={trace_id} result={result} "
+                      f"spans={span_count}{error_suffix}", file=sys.stderr, flush=True)
+            return self.status()
+
     def start_span(self, name):
         return self.observation(name)
 
@@ -180,7 +262,9 @@ class TelemetryRuntime:
                         trace = self._langfuse_client.api.trace.get(trace_id,
                             request_options={"timeout_in_seconds": 5, "max_retries": 0})
                         if trace.id == trace_id:
-                            self._status.update(last_test="verified", connected=True, reason="ready",
+                            self._status.update(last_test="verified", last_export="verified",
+                                                exported_span_count=int(self._exporter.last_span_count),
+                                                last_export_ok=True, connected=True, reason="ready",
                                                 observation_count=str(len(trace.observations or [])))
                             break
                     except Exception as error:

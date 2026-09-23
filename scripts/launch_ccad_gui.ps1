@@ -1,5 +1,6 @@
 param(
   [string]$Project = "artifacts/demos/sprint-demo.ccad.json",
+  [string]$GuiExecutable = "build-qt/ccad_gui.exe",
   [switch]$ServeUiMap,
   [string]$ServerName = "",
   [string]$OutputDirectory = "",
@@ -11,7 +12,11 @@ $repo = Split-Path -Parent $PSScriptRoot
 $qtBin = "C:\Qt\6.11.1\mingw_64\bin"
 $mingwBin = "C:\Qt\Tools\mingw1310_64\bin"
 $env:PATH = "$qtBin;$mingwBin;$env:PATH"
-$gui = Join-Path $repo "build-qt\ccad_gui.exe"
+$gui = if ([IO.Path]::IsPathRooted($GuiExecutable)) {
+  $GuiExecutable
+} else {
+  Join-Path $repo $GuiExecutable
+}
 $projectPath = if ([IO.Path]::IsPathRooted($Project)) { $Project } else { Join-Path $repo $Project }
 
 if (-not (Test-Path -LiteralPath $gui)) { throw "GUI not built: $gui" }

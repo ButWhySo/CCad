@@ -9,6 +9,7 @@ header = (root / "src" / "ccad_gui" / "agent_panel.hpp").read_text(encoding="utf
 settings = (root / "src" / "ccad_gui" / "agent_settings_dialog.cpp").read_text(encoding="utf-8")
 review = (root / "src" / "ccad_gui" / "review_window.cpp").read_text(encoding="utf-8")
 main = (root / "src" / "ccad_gui" / "main.cpp").read_text(encoding="utf-8")
+orchestrator = (root / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
 
 assert "QTextBrowser* chat_stream_" in header
 assert 'setObjectName("control:agent_chat_stream")' in panel
@@ -101,8 +102,12 @@ assert 'provider_connection_result_cb_' in header
 assert '"provider_connection_result"' in panel
 assert 'Test live connection (uses quota)' in settings
 assert 'agent.test_provider_connection' in settings
+assert 'Langfuse: ready | export ' in settings
+assert 'exported_span_count' in settings
+assert 'trace_id' in settings
+assert 'telemetry_runtime.flush_turn()' in orchestrator
+assert 'method": "observability_state"' in orchestrator
 assert 'payment, credits, or project billing is required' in settings
-orchestrator = (root / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
 assert 'https://api.cerebras.ai/public/v1/models' in orchestrator
 assert 'CCad/1.0 (+https://github.com/ButWhySo/CCad)' in orchestrator
 assert 'connection_attempted = True' in orchestrator
@@ -116,7 +121,7 @@ assert 'provider payment, credits, or project billing is required' in settings
 assert 'provider rate limit reached' in settings
 assert 'selected model was not found' in settings
 assert 'API key was rejected' in settings
-assert settings.count('sendJsonRpc("agent.set_config", config)') == 1
+assert settings.count('sendJsonRpc("agent.set_config", config)') == 2
 assert 'QJsonObject{{"grid", grid_combo_->currentText()}}' not in settings
 assert 'combo_selection_selected' in review
 assert 'object->value("value").toString()' in review
@@ -128,5 +133,5 @@ assert 'storedProviderSecret(configured_provider)' in panel
 assert 'openrouter/free' in settings
 assert 'provider_combo_->addItem("Ollama (local)", "ollama")' in settings
 assert 'fetch_ollama_models' in orchestrator
-assert '"ollama": "explicit_local_refresh"' in orchestrator
+assert '"network_access": "explicit_local_refresh"' in orchestrator
 print("PASS agent UI/provider runtime source contract; no GUI launched")

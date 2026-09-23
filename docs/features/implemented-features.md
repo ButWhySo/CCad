@@ -2859,3 +2859,23 @@ catalog; cmake-language-server initialize handshake passed; scoped live
 GUI-map/mouse/keyboard screenshots and empty stdout/stderr were inspected in
 `artifacts/screenshots/sprint965-focus-registry/`. Preferences-menu actions
 remain unmapped and are not claimed complete.
+
+### Sprint 966 - provider failures and development Langfuse delivery
+
+The Python runtime walks wrapped provider exceptions to retain safe quota,
+rate-limit, payment, authentication, model, timeout, connection, and dependency
+categories. Chat output uses category-level troubleshooting guidance and HTTP
+status when available; it does not expose raw SDK exception text or claim that
+no tool ran. Development turns flush Langfuse export after both success and
+provider failure, then report the trace ID, exported span count, and result to
+stderr and the Settings status event; production keeps background batching.
+Focused no-network provider, Langfuse-runtime, trace-privacy, and UI source
+contracts pass. Qt Release build and full CTest passed 93/93. A live GUI-map
+turn returned `trace test`; its exact trace ID was fetched from Langfuse and
+verified with 16 spans. Development Settings showed the fresh result, and all
+screenshots plus empty stdout/stderr were inspected in
+`artifacts/screenshots/sprint966-live-turn/`. Telemetry-only Pyright reports
+zero diagnostics; six known orchestrator diagnostics remain. References: Langfuse's current
+[LangChain integration](https://langfuse.com/integrations/frameworks/langchain),
+[SDK flushing](https://langfuse.com/docs/observability/sdk/instrumentation), and
+[export-stage masking](https://langfuse.com/docs/observability/features/masking).

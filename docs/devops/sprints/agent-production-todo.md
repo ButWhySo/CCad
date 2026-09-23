@@ -16,6 +16,22 @@ Update this file in the same commit as each implementation slice.
 - [x] Qt Release build and full CTest gate (92/92).
 - [x] Bounded real-provider catalog tool call and broker result.
 
+### Sprint 966 active slice — provider failures and live Langfuse export
+
+- [x] Preserve quota/rate-limit/connection categories through wrapped SDK errors.
+- [x] Show actionable, secret-safe provider failure guidance in chat.
+- [x] Flush development turns and expose safe trace/export status in logs and Settings.
+- [x] Verify a current real Agent turn appears in the configured Langfuse project (live turn returned `trace test`; exact trace readback verified, 16 spans; screenshot `artifacts/screenshots/sprint966-live-turn/08-live-trace-status.png`).
+- [x] Show `verified` only after fetching the exact exported trace ID; distinguish queued, transport success, pending readback, and failure.
+- [x] In development, log safe per-turn trace ID, span count, and backend-readback result for debugging.
+- [ ] When context crosses a large-context threshold, explain its full build and memory lifecycle to the user, including source contributions, token estimates, truncation, enabled memory tiers, retrieval scope/ranking, and what was actually sent.
+- [x] Run full CTest (93/93), app-owned GUI-map live turn and Settings checks; inspect every screenshot and captured stdout/stderr (empty).
+- [x] Allow the official launcher to target an alternate built executable when the user's active GUI holds `ccad_gui.exe` open.
+
+#### References checked
+
+Langfuse's current [LangChain integration](https://langfuse.com/integrations/frameworks/langchain) uses `langfuse.langchain.CallbackHandler`; the [SDK instrumentation guide](https://langfuse.com/docs/observability/sdk/instrumentation) documents buffered export and explicit `flush()`; the [masking guide](https://langfuse.com/docs/observability/features/masking) recommends export-stage `mask_otel_spans`. CCad retains metadata-only sanitization and flushes per turn only in the configured development environment; this sprint's exact-ID readback verified delivery to the Langfuse project selected by the stored credentials.
+
 ## Provider, context, and memory
 
 - [x] Restore persisted provider, model, and OS-vault credential before first chat turn.
@@ -24,8 +40,13 @@ Update this file in the same commit as each implementation slice.
 - [x] Resolve the remaining Pyright complexity diagnostic in the provider/orchestration module without suppressing analysis.
 - [x] Build bounded context from project, PCB, schematic, selection, coordinates, layers, nets, rules, libraries, tool state, conversation, and memories.
 - [x] Report safe metadata for the exact context package sent on each turn.
-- [x] Implement STM, project-long-term, and episodic memory: retrieval, scope, ranking, update, deletion, reset, expiry, compaction, and secret redaction.
-- [x] Publish the exhaustive memory/context lifecycle report.
+- [ ] Calculate/report the full provider-request budget across system instructions, conversation messages, project snapshot, retrieved memories, and bound tool schemas; label estimates and model limits accurately.
+- [ ] Make context source metadata match actual provider input (history is carried as separate messages while the v2 envelope stores only a count).
+- [ ] Implement STM, project-long-term, and episodic memory: retrieval, scope, ranking, update, deletion, reset, expiry, compaction, and secret redaction.
+- [ ] Route `/memory` CRUD through MemoryManager tier/namespace rules so direct store writes are retrievable by the matching enabled tier.
+- [ ] Confirm STM run identity is unique per task/run and LTM/Episodic scopes match durable thread/project/user identity.
+- [ ] Define which events create/update memories; do not imply automatic capture when none is implemented.
+- [ ] Publish the exhaustive memory/context lifecycle report after resolving the newly identified namespace and accounting gaps.
 
 ## Typed CCad tool surface
 
@@ -101,7 +122,7 @@ Update this file in the same commit as each implementation slice.
 - [x] Fix live Agent Settings opening and modeless dialog discovery through the UI map.
 - [x] Make quick DRC execute authoritative DRC or remove the chip; do not merely insert `/drc`.
 - [x] Map `/drc` to authoritative `project.drc`, return its diagnostics, and never leave a chat turn at “Running DRC checks…”.
-- [ ] Preserve 429/quota/rate-limit categories from provider SDK exceptions; never relabel them `provider_unavailable`.
+- [x] Preserve 429/quota/rate-limit categories from provider SDK exceptions; never relabel them `provider_unavailable`.
 - [x] Remove the stale Gemini adapter notice that says no provider was contacted after a configured provider has initialized or completed a real call.
 - [ ] Bind one immutable proposal/call ID to one approval and one execution; reject duplicate/replayed approval results.
 - [ ] Never narrate a failed UI gesture or transaction as a completed board change; surface the authoritative failure reason.
@@ -173,6 +194,7 @@ Update this file in the same commit as each implementation slice.
 - [ ] Wire `agent.langfuse_set_config`, `agent.langfuse_set_secret`, `agent.langfuse_status`, and `agent.langfuse_test` through the live Settings test/status controls.
 - [ ] Use durable Agent thread ID as Langfuse session ID.
 - [ ] Trace agent run, prompt assembly, model calls, routing, tool calls, approvals, transactions, verification, DRC/ERC, retries, cancellation, and failures.
+- [ ] Verify a failed provider turn still exports its root observation and a current trace identifier to the selected Langfuse project.
 - [ ] Record provider/model/token/cost/latency when available.
 - [ ] Implement Langfuse `mask_otel_spans` redaction before export.
 - [ ] Default prompt contents, raw tool arguments, screenshots, and project contents to OFF.
@@ -579,7 +601,8 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Never persist provider secrets in `agent_config.json`.
 - [ ] Test provider without mutating persisted provider/model settings unless user saves them.
 - [ ] Report authentication, permission, model-not-found, credit/quota, rate-limit, connection, timeout, and provider-unavailable categories distinctly.
-- [ ] Preserve provider SDK error category/status when safe.
+- [x] Preserve provider SDK error category/status when safe, including wrapped exceptions.
+- [x] Explain quota, payment, rate-limit, connection, and authentication failures in chat without exposing SDK text.
 - [ ] Never include response bodies containing secrets in GUI error messages or traces.
 
 ## Langfuse and internal OTel instrumentation

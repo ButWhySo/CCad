@@ -13,7 +13,8 @@ import warnings
 import urllib.request
 import urllib.error
 import urllib.parse
-from typing import Annotated, Any, Dict, List, Literal, TypedDict, cast
+from collections import deque
+from typing import Annotated, Any, Dict, Iterable, List, Literal, TypedDict, cast
 from langchain_core.tools import StructuredTool
 from pydantic import Field, create_model
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
@@ -737,47 +738,94 @@ def emit_provider_failure(provider: str, error: Exception):
     }})
     return category
 
+def provider_exception_chain(error: Exception) -> Iterable[Exception]:
+    """Yield wrapped SDK exceptions once, including exception-group children."""
+    pending = deque([error])
+    seen = set()
+    while pending:
+        candidate = pending.popleft()
+        if id(candidate) in seen:
+            continue
+        seen.add(id(candidate))
+        yield candidate
+        for nested in (getattr(candidate, "__cause__", None),
+                       getattr(candidate, "__context__", None)):
+            if isinstance(nested, Exception):
+                pending.append(nested)
+        nested_errors = getattr(candidate, "exceptions", ())
+        if isinstance(nested_errors, (tuple, list)):
+            pending.extend(item for item in nested_errors if isinstance(item, Exception))
+
 def provider_http_status(error: Exception):
-    """Extract a numeric HTTP status from common SDK wrappers without text."""
-    for candidate in (error, getattr(error, "response", None)):
-        status = getattr(candidate, "status_code", None)
-        if isinstance(status, int) and 100 <= status <= 599:
-            return status
+    """Extract a numeric HTTP status from nested SDK/HTTP response wrappers."""
+    for candidate in provider_exception_chain(error):
+        for response in (candidate, getattr(candidate, "response", None)):
+            status = getattr(response, "status_code", None)
+            if isinstance(status, int) and 100 <= status <= 599:
+                return status
     return None
 
 def classify_provider_error(error: Exception):
     """Return safe, actionable category; never include secret-bearing text."""
-    status = provider_http_status(error)
-    text = str(error).lower()
-    if any(marker in text for marker in ("api_key", "api key", "apikey")) and any(
-        marker in text for marker in ("required", "must be set", "not provided", "missing", "none")
-    ):
-        return "missing_api_key"
-    if status == 401 or any(marker in text for marker in ("unauthorized", "invalid api key", "authentication")):
-        return "authentication"
-    if status == 403 or any(marker in text for marker in ("forbidden", "permission denied", "not permitted")):
-        return "permission_denied"
-    if status == 404 or any(marker in text for marker in ("model not found", "does not exist", "unknown model")):
-        return "model_not_found"
-    # HTTP 402 is a billing/payment state, not a rate limit.  Keeping it
-    # distinct avoids telling a new-key user that they have "used up" quota
-    # when the account/project has not been activated or funded.
-    if status == 402 or any(marker in text for marker in ("insufficient credits", "insufficient balance", "billing quota", "payment required")):
-        return "payment_required"
-    # Google surfaces exhausted account/model quota as ResourceExhausted even
-    # when the SDK wrapper does not retain HTTP 429.  This is key/account
-    # specific; it does not mean the configured provider adapter is missing.
-    if any(marker in text for marker in (
-            "resourceexhausted", "resource exhausted", "exceeded your current quota",
-            "quota exhausted", "quota exceeded")):
-        return "quota_exhausted"
-    if status == 429 or any(marker in text for marker in ("rate limit", "too many requests", "requests per minute")):
-        return "rate_limited"
-    if isinstance(error, (TimeoutError,)) or "timeout" in text:
-        return "timeout"
-    if isinstance(error, (ImportError, ModuleNotFoundError)):
-        return "dependency"
+    for candidate in provider_exception_chain(error):
+        status = next((getattr(response, "status_code", None)
+                       for response in (candidate, getattr(candidate, "response", None))
+                       if isinstance(getattr(response, "status_code", None), int)), None)
+        text = str(candidate).lower()
+        error_name = type(candidate).__name__.lower()
+        if any(marker in text for marker in ("api_key", "api key", "apikey")) and any(
+            marker in text for marker in ("required", "must be set", "not provided", "missing", "none")
+        ):
+            return "missing_api_key"
+        if status == 401 or any(marker in text for marker in ("unauthorized", "invalid api key", "authentication")):
+            return "authentication"
+        if status == 403 or any(marker in text for marker in ("forbidden", "permission denied", "not permitted")):
+            return "permission_denied"
+        if status == 404 or any(marker in text for marker in ("model not found", "does not exist", "unknown model")):
+            return "model_not_found"
+        # HTTP 402 is billing/payment, distinct from quota and rate limiting.
+        if status == 402 or any(marker in text for marker in (
+                "insufficient credits", "insufficient balance", "billing quota", "payment required")):
+            return "payment_required"
+        # Google may wrap ResourceExhausted without preserving its HTTP status.
+        if any(marker in text or marker in error_name for marker in (
+                "resourceexhausted", "resource exhausted", "exceeded your current quota",
+                "quota exhausted", "quota exceeded")):
+            return "quota_exhausted"
+        if status == 429 or any(marker in text for marker in (
+                "rate limit", "too many requests", "requests per minute")):
+            return "rate_limited"
+        if isinstance(candidate, TimeoutError) or "timeout" in text or "timeout" in error_name:
+            return "timeout"
+        if isinstance(candidate, (ImportError, ModuleNotFoundError)):
+            return "dependency"
+        if isinstance(candidate, ConnectionError) or any(marker in text or marker in error_name for marker in (
+                "connectionerror", "connecterror", "connection refused", "failed to establish a new connection",
+                "network is unreachable", "name or service not known")):
+            return "connection_error"
     return "provider_unavailable"
+
+def provider_error_user_message(error: Exception):
+    """Explain a provider failure without exposing SDK text or secrets."""
+    category = classify_provider_error(error)
+    guidance = {
+        "missing_api_key": "Add the selected provider's API key in Agent Settings.",
+        "authentication": "The provider rejected this credential; verify the key for the selected provider.",
+        "permission_denied": "The credential lacks access to this model or project; check provider permissions.",
+        "model_not_found": "The provider does not recognize this model ID; verify the selected model.",
+        "payment_required": "The provider reports billing or payment is required; this is distinct from a rate limit.",
+        "quota_exhausted": "The provider reports quota exhausted or unavailable for this key, project, or model; check the provider quota and billing details.",
+        "rate_limited": "The provider rate-limited requests; wait before retrying or reduce request frequency.",
+        "timeout": "The provider request timed out; check connectivity and retry later.",
+        "connection_error": "CCad could not connect to the provider; check network access and the provider endpoint.",
+        "dependency": "The provider adapter dependency is unavailable; install the configured adapter.",
+        "provider_unavailable": "The provider request failed for an unclassified reason; check provider status and network settings.",
+    }
+    status = provider_http_status(error)
+    status_text = f" (HTTP {status})" if status is not None else ""
+    return ("Provider request stopped before a response was completed. "
+            f"{guidance.get(category, guidance['provider_unavailable'])} "
+            f"Cause: {category}{status_text}.")
 
 def emit_dependency_warning(module_name: str):
     """Give users a safe, copyable remedy when an optional adapter is absent."""
@@ -980,6 +1028,7 @@ def initialize_agent_process():
 def invoke_agent_run(state):
     """Invoke graph under one run span without exporting prompt contents."""
     thread_id = state.get("thread_id") or os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
+    telemetry_runtime.begin_turn()
     with telemetry_runtime.session(thread_id), telemetry_runtime.observation("agent-turn", "agent", {
             "workflow": active_workflow,
             "provider_ready": llm is not None,
@@ -1981,21 +2030,24 @@ if __name__ == "__main__":
                                                     "context_metadata": context_metadata,
                                                     "thread_id": context_thread_id})
                 except Exception as error:
+                    export_state = telemetry_runtime.flush_turn()
+                    emit({"jsonrpc": "2.0", "method": "observability_state",
+                          "params": export_state})
                     trace = telemetry_runtime.current_trace()
                     emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
                         "run_state": "failed", **trace, "error_type": type(error).__name__,
                         "prompt_emitted": False, "secret_value_visible": False,
                     }})
                     emit({"jsonrpc": "2.0", "method": "message", "params": {
-                        "text": ("Provider request stopped; no tool was executed. "
-                                 f"Cause: {classify_provider_error(error)}"
-                                 + (f" (HTTP {provider_http_status(error)})" if provider_http_status(error) else "")
-                                 + ". Check the matching provider setting; no automatic retry was sent."),
+                        "text": provider_error_user_message(error),
                         "kind": "provider_error", "error_type": type(error).__name__,
                         "cause": classify_provider_error(error),
                         "http_status": provider_http_status(error),
                     }})
                     continue
+                export_state = telemetry_runtime.flush_turn()
+                emit({"jsonrpc": "2.0", "method": "observability_state",
+                      "params": export_state})
                 session_messages = bound_session_history(final_state["messages"])
                 last_msg = session_messages[-1]
                 has_tool_calls = bool(getattr(last_msg, "tool_calls", None))
@@ -2062,7 +2114,8 @@ if __name__ == "__main__":
                 if state.get("last_test") == "flushed":
                     message = "Langfuse test trace flushed. Inspect it in Langfuse before treating export as connected."
                 else:
-                    message = "Observability test was not exported: " + state.get("reason", "not_configured")
+                    message = "Observability test was not exported: " + str(
+                        state.get("reason", "not_configured"))
                 emit({"jsonrpc": "2.0", "method": "message", "params": {
                     "text": message, "secret_value_visible": False,
                 }})

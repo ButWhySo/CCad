@@ -330,8 +330,17 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
           if (!state["enabled"].toBool(false)) {
               langfuse_status_label_->setText("Langfuse: disabled");
           } else if (state["exporter_initialized"].toBool(false)) {
-              langfuse_status_label_->setText(
-                  "Langfuse: ready | last test " + state["last_test"].toString("not_run"));
+              QString status = "Langfuse: ready | export " +
+                  state["last_export"].toString("not_run") +
+                  " | last test " + state["last_test"].toString("not_run");
+              if (state.contains("exported_span_count")) {
+                  status += " | spans " +
+                      QString::number(state["exported_span_count"].toInt());
+              }
+              if (state.contains("trace_id")) {
+                  status += " | trace " + state["trace_id"].toString();
+              }
+              langfuse_status_label_->setText(status);
           } else {
               langfuse_status_label_->setText(
                   "Langfuse: " + state["reason"].toString("not configured"));
@@ -884,6 +893,7 @@ void AgentSettingsDialog::createObservabilityTab(QWidget* parent_widget) {
   layout->addLayout(form);
   langfuse_status_label_ = new QLabel("Langfuse: checking runtime state…", parent_widget);
   langfuse_status_label_->setObjectName("label:langfuseStatus");
+  langfuse_status_label_->setWordWrap(true);
   layout->addWidget(langfuse_status_label_);
   auto* test = new QPushButton("Test Langfuse export", parent_widget);
   test->setObjectName("action:testLangfuseExportBtn");

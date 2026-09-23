@@ -48,9 +48,12 @@ class MetadataOnlyExporter(SpanExporter):
     def __init__(self, exporter):
         self.exporter = exporter
         self.last_result = None
+        self.last_span_count = 0
 
     def export(self, spans):
-        self.last_result = self.exporter.export(tuple(sanitize_span(s) for s in spans))
+        safe_spans = tuple(sanitize_span(s) for s in spans)
+        self.last_span_count += len(safe_spans)
+        self.last_result = self.exporter.export(safe_spans)
         return self.last_result
 
     def force_flush(self, timeout_millis=30000):
