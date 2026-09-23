@@ -8,7 +8,8 @@ import sys
 
 
 SOURCE = Path(__file__).parents[1] / "src" / "ccad_agent" / "orchestrator.py"
-text = SOURCE.read_text(encoding="utf-8")
+CATALOG = SOURCE.with_name("method_catalog.py")
+text = SOURCE.read_text(encoding="utf-8") + CATALOG.read_text(encoding="utf-8")
 
 assert 'CCAD_AGENT_HISTORY_LIMIT' in text
 assert 'def bound_session_history(messages):' in text

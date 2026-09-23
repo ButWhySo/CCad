@@ -3061,3 +3061,7 @@ Implemented durable STM, LTM, and episodic namespaces with runtime enable/disabl
 ### Sprint 959 â€” documented provider integration matrix
 
 Verified the six configured provider adapters against their official model-catalog contracts: OpenAI, Anthropic, Gemini, OpenRouter, Cerebras, and Ollama. Added a checked-in endpoint/credential/adapter matrix and a no-network contract covering headers, response shapes, pagination/local-source semantics, and safe authentication, permission, payment, rate-limit, timeout, connection, and invalid-response categories. Live provider calls remain opt-in because they consume the user's quota.
+
+### Sprint 960 â€” orchestration complexity refactor, first half
+
+Moved the pure JSON-RPC method catalog into `method_catalog.py` without changing its schema or runtime contract. Context and native-catalog contracts pass. The remaining Pyright complexity diagnostic is in the still-monolithic RPC dispatch loop; the Tier 1 checkbox remains open until that loop is split and Pyright is clean.
