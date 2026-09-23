@@ -920,6 +920,28 @@ def provider_timeout_seconds():
         value = 60
     return min(120, max(1, value))
 
+
+def active_provider_model():
+    """Resolve the selected adapter/model using the provider-startup rules."""
+    provider = os.environ.get("CCAD_PROVIDER") or config_manager.get("provider", "openai")
+    if not isinstance(provider, str) or not provider:
+        provider = "openai"
+    model_name = os.environ.get("CCAD_MODEL") or config_manager.get("model", "")
+    if not isinstance(model_name, str):
+        model_name = ""
+    adapter_provider = "local_model" if provider == "local_model_server" else provider
+    provider_model_env = {
+        "openai_compatible": "CCAD_OPENAI_COMPATIBLE_MODEL",
+        "openrouter": "CCAD_OPENROUTER_MODEL",
+        "cerebras": "CCAD_CEREBRAS_MODEL",
+        "local_model": "CCAD_LOCAL_MODEL_NAME",
+        "ollama": "CCAD_OLLAMA_MODEL",
+        "google_gemini": "CCAD_GEMINI_MODEL",
+    }.get(adapter_provider)
+    if provider_model_env:
+        model_name = os.environ.get(provider_model_env) or model_name
+    return adapter_provider, model_name
+
 def init_provider():
     global llm, router_llm, librarian_llm, broker_wait_enabled
     failure_category = "provider_unavailable"
@@ -931,24 +953,7 @@ def init_provider():
     librarian_llm = None
     broker_wait_enabled = False
     
-    provider = os.environ.get("CCAD_PROVIDER") or config_manager.get("provider", "openai")
-    # Keep GUI provider IDs and adapter IDs identical at the process boundary.
-    # The local-model label is a ChatOpenAI-compatible OpenAI protocol server.
-    if provider == "local_model_server":
-        provider = "local_model"
-    model_name = os.environ.get("CCAD_MODEL") or config_manager.get("model", "")
-    if provider == "openai_compatible":
-        model_name = os.environ.get("CCAD_OPENAI_COMPATIBLE_MODEL") or model_name
-    elif provider == "openrouter":
-        model_name = os.environ.get("CCAD_OPENROUTER_MODEL") or model_name
-    elif provider == "cerebras":
-        model_name = os.environ.get("CCAD_CEREBRAS_MODEL") or model_name
-    elif provider == "local_model":
-        model_name = os.environ.get("CCAD_LOCAL_MODEL_NAME") or model_name
-    elif provider == "ollama":
-        model_name = os.environ.get("CCAD_OLLAMA_MODEL") or model_name
-    elif provider == "google_gemini":
-        model_name = os.environ.get("CCAD_GEMINI_MODEL") or model_name
+    provider, model_name = active_provider_model()
 
     if provider == "anthropic":
         try:
@@ -1963,7 +1968,12 @@ if __name__ == "__main__":
                 memory_manager.configure(config_manager.get("memory", {}))
                 if not isinstance(raw_context, str):
                     raw_context = str(raw_context or "")
-                memory_entries, memory_retrieval = local_memory_entries(text)
+                memory_query = text
+                if text.partition(" ")[0].casefold() == "/context":
+                    memory_query = text.partition(" ")[2].strip()
+                    if memory_query.casefold().startswith("preview "):
+                        memory_query = memory_query[8:].strip()
+                memory_entries, memory_retrieval = local_memory_entries(memory_query)
                 memory_runtime = memory_manager.state()
                 with telemetry_runtime.observation("assemble-context", "retriever", {
                         "memory_entry_count": len(memory_entries),
@@ -2039,8 +2049,52 @@ if __name__ == "__main__":
                     cmd_base = cmd_parts[0].lower()
                     cmd_args = cmd_parts[1] if len(cmd_parts) > 1 else ""
                     
+                    if cmd_base == "/context":
+                        draft = cmd_args.strip()
+                        if draft.casefold().startswith("preview "):
+                            draft = draft[8:].strip()
+                        preview_messages = bound_session_history(session_messages)
+                        if draft:
+                            preview_messages.append(HumanMessage(content=draft))
+                        preview_system = get_system_prompt(
+                            "the CCad PCB Routing Expert.") + f"\nContext: {context_str}"
+                        preview_provider, preview_model = active_provider_model()
+                        report = build_provider_request_report(
+                            preview_system, preview_messages, agent_tools,
+                            provider=preview_provider,
+                            model=preview_model or "provider default (not resolved)",
+                            context_content=context_str,
+                            context_metadata=context_metadata,
+                            large_context_threshold=os.environ.get(
+                                "CCAD_AGENT_LARGE_CONTEXT_TOKENS", "4096"))
+                        report.update({
+                            "request_mode": "local_preview",
+                            "provider_request_sent": False,
+                            "preview_prompt_included": bool(draft),
+                            "preview_prompt_chars": len(draft),
+                        })
+                        if os.environ.get("CCAD_TRACE_DEBUG", "").lower() in {
+                                "1", "true", "yes"}:
+                            print("[ccad-context-preview] " + json.dumps(
+                                report, sort_keys=True), file=sys.stderr, flush=True)
+                        emit({"jsonrpc": "2.0", "method": "provider_request_context",
+                              "params": report})
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {
+                            "text": format_large_context_explanation(
+                                report, context_metadata, mode="preview"),
+                            "kind": "context_preview",
+                            "request_mode": "local_preview",
+                            "provider_request_sent": False,
+                            "tool_executed": False,
+                            "large_context": report["large_context"],
+                            "estimated_input_tokens": report["estimated_input_tokens"],
+                            "large_context_threshold_tokens": report[
+                                "large_context_threshold_tokens"],
+                            "secret_value_visible": False,
+                        }})
+                        continue
                     if cmd_base == "/commands":
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|list scope:x|add [scope:x] [title:y] <text>|update <id> [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/task start|status|end` (manage task-scoped STM)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`"}})
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/context [draft]` (inspect bounded context and memory; no provider call)\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|list scope:x|add [scope:x] [title:y] <text>|update <id> [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/task start|status|end` (manage task-scoped STM)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`"}})
                         continue
                     elif cmd_base == "/task":
                         task_action = cmd_args.strip().casefold()
@@ -2190,7 +2244,7 @@ if __name__ == "__main__":
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Opening agent settings panel..."}})
                         continue
                     elif cmd_base == "/help":
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|list scope:x|add [scope:x] [title:y] <text>|update <id> [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/task start|status|end` (manage task-scoped STM)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`\n- `/route`\n- `/drc`\n- `/place`\n- `/design`\n- `/explain`\n- `/clear`\n- `/settings`"}})
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/context [draft]` (inspect bounded context and memory; no provider call)\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|list scope:x|add [scope:x] [title:y] <text>|update <id> [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/task start|status|end` (manage task-scoped STM)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`\n- `/route`\n- `/drc`\n- `/place`\n- `/design`\n- `/explain`\n- `/clear`\n- `/settings`"}})
                         continue
                     else:
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Unknown command: {cmd_base}"}})

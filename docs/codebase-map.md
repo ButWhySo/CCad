@@ -2010,3 +2010,7 @@ and mapped `ui.type_text` input follow the same path. Coverage is in
 Qt Release plus full CTest passed 99/99; mapped GUI screenshots/logs were
 inspected, including a >20-second run. Semantic duplicate detection and
 semantic compaction remain open.
+
+### Sprint 969 local context preview
+
+`src/ccad_agent/orchestrator.py` handles `/context [draft]` before provider execution. It builds accounting from the actual bounded context package, selected system prompt, bounded session history, enabled memory retrieval, and currently bound model tool schemas using `context_package.py::build_provider_request_report`. It emits content-free request-budget metadata and a chat message explicitly marked `provider_request_sent:false` and `tool_executed:false`; the draft is not added to history. `/commands` and the Agent slash palette expose the command. The app-owned `sprint969-context` UI-map sequence tests the large branch and captures each interaction; `scripts/test_agent_context_preview_runtime.py` verifies no model initialization, tool dispatch, history pollution, or private-content output.

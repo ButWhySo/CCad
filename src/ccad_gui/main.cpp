@@ -13,6 +13,7 @@
 #include <QListWidget>
 #include <QProxyStyle>
 #include <QStyleOption>
+#include <QTextBrowser>
 #include <QThread>
 #include <QTimer>
 
@@ -437,7 +438,8 @@ int main(int argc, char** argv) {
           catalog_startup.contains("\"backend_ready\":true") &&
           catalog_startup.contains("\"native_tool_catalog_installed\":true") &&
           !catalog_startup.contains("\"native_tool_catalog_method_count\":0");
-      if (name.startsWith("sprint968-task")) {
+      if (name.startsWith("sprint968-task") ||
+          name.startsWith("sprint969-context")) {
         const auto interact = [window, &entries, &output_dir, &name,
                                per_target_wait_ms](const QString& method,
                                                   const QString& payload,
@@ -473,31 +475,59 @@ int main(int argc, char** argv) {
           return action_result.value("performed").toBool(true);
         };
         bool ok = true;
-        ok = interact("ui.click", "{\"id\":\"tab:agent\"}",
-                      "tab:agent", "agent-tab-clicked") && ok;
-        ok = interact("ui.type_text",
-                      "{\"id\":\"control:agent_chat_input\",\"text\":\"/task\"}",
-                      "control:agent_chat_input", "task-palette-opened") && ok;
-        ok = interact("ui.key", "{\"key\":\"Enter\"}",
-                      "panel:agent_slash_commands", "task-start-selected") && ok;
-        ok = interact("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
-                      "action:agent_submit_chat", "task-started") && ok;
-        ok = interact("ui.type_text",
-                      "{\"id\":\"control:agent_chat_input\",\"text\":\"/task status\"}",
-                      "control:agent_chat_input", "task-status-entered") && ok;
-        ok = interact("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
-                      "action:agent_submit_chat", "task-status-checked") && ok;
-        ok = interact("ui.type_text",
-                      "{\"id\":\"control:agent_chat_input\",\"text\":\"/task end\"}",
-                      "control:agent_chat_input", "task-end-entered") && ok;
-        ok = interact("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
-                      "action:agent_submit_chat", "task-ended") && ok;
+        if (name.startsWith("sprint969-context")) {
+          ok = interact("ui.click", "{\"id\":\"tab:pcb\"}",
+                        "tab:pcb", "pcb-tab-checked") && ok;
+          ok = interact("ui.click", "{\"id\":\"tab:schematic\"}",
+                        "tab:schematic", "schematic-tab-checked") && ok;
+          ok = interact("ui.click", "{\"id\":\"tab:agent\"}",
+                        "tab:agent", "agent-tab-opened") && ok;
+          ok = interact("ui.type_text",
+                        "{\"id\":\"control:agent_chat_input\",\"text\":\"/context\"}",
+                        "control:agent_chat_input", "context-palette-opened") && ok;
+          ok = interact("ui.key", "{\"key\":\"Enter\"}",
+                        "panel:agent_slash_commands", "context-command-selected") && ok;
+          ok = interact("ui.type_text",
+                        "{\"id\":\"control:agent_chat_input\",\"text\":\"/context preview Preserve ground clearance around U3\"}",
+                        "control:agent_chat_input", "context-preview-draft-entered") && ok;
+          ok = interact("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
+                        "action:agent_submit_chat", "context-preview-rendered") && ok;
+          auto* chat = window->findChild<QTextBrowser*>("control:agent_chat_stream");
+          const bool preview_visible = chat != nullptr &&
+              chat->toPlainText().contains("Local context preview (large)") &&
+              chat->toPlainText().contains("no provider request was sent") &&
+              !chat->toPlainText().contains(
+                  "Agent backend warning: [ccad-context-preview]");
+          entries << QString("{\"context_preview_visible\":%1,\"provider_request_sent\":false}")
+                         .arg(preview_visible ? "true" : "false");
+          ok = preview_visible && ok;
+        } else {
+          ok = interact("ui.click", "{\"id\":\"tab:agent\"}",
+                        "tab:agent", "agent-tab-clicked") && ok;
+          ok = interact("ui.type_text",
+                        "{\"id\":\"control:agent_chat_input\",\"text\":\"/task\"}",
+                        "control:agent_chat_input", "task-palette-opened") && ok;
+          ok = interact("ui.key", "{\"key\":\"Enter\"}",
+                        "panel:agent_slash_commands", "task-start-selected") && ok;
+          ok = interact("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
+                        "action:agent_submit_chat", "task-started") && ok;
+          ok = interact("ui.type_text",
+                        "{\"id\":\"control:agent_chat_input\",\"text\":\"/task status\"}",
+                        "control:agent_chat_input", "task-status-entered") && ok;
+          ok = interact("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
+                        "action:agent_submit_chat", "task-status-checked") && ok;
+          ok = interact("ui.type_text",
+                        "{\"id\":\"control:agent_chat_input\",\"text\":\"/task end\"}",
+                        "control:agent_chat_input", "task-end-entered") && ok;
+          ok = interact("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
+                        "action:agent_submit_chat", "task-ended") && ok;
+        }
         const std::filesystem::path output_path =
             output_dir / (name + "-target-sequence.json").toStdString();
         std::ofstream output(output_path, std::ios::binary);
         const QString report =
             QString("{\"schema_version\":1,\"name\":%1,\"interaction_plan\":"
-                    "\"Agent tab; slash palette; start/status/end task without model request\","
+                    "\"Feature-specific mapped Agent interaction with per-action screenshots; no model request\","
                     "\"catalog_startup_verified\":%2,\"entries\":[%3]}\n")
                 .arg(jsonStringLocal(name))
                 .arg(catalog_startup_verified ? "true" : "false")
@@ -506,13 +536,13 @@ int main(int argc, char** argv) {
         output.write(bytes.constData(), bytes.size());
         output.close();
         if (!output || !ok) {
-          std::cerr << "task-scope GUI-map interaction failed: "
+          std::cerr << "scoped GUI-map interaction failed: "
                     << output_path.string() << '\n';
           std::cerr.flush();
           QCoreApplication::exit(2);
           return;
         }
-        std::cout << "task-scope GUI-map sequence saved: " << output_path.string() << '\n';
+        std::cout << "scoped GUI-map sequence saved: " << output_path.string() << '\n';
         std::cout.flush();
         QCoreApplication::exit(0);
         return;

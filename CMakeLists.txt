@@ -241,6 +241,8 @@ if(Python3_Interpreter_FOUND)
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_agent_orchestrator_method_catalog.py")
   add_test(NAME agent_context_budget
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_context_budget.py")
+  add_test(NAME agent_context_preview_runtime
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_agent_context_preview_runtime.py")
   add_test(NAME agent_memory_store
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_memory_store.py")
   add_test(NAME agent_memory_manager

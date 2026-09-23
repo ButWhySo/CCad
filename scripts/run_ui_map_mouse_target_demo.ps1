@@ -55,10 +55,25 @@ $stderrLog = Join-Path $ScreenshotDir "$Name.stderr.log"
 Invoke-PreTestBeep
 Start-Sleep -Seconds 2
 
-$process = Start-Process -FilePath $Gui `
-  -ArgumentList @("--test-ui-map-target-sequence", $ProjectPath, $ScreenshotDir, $Name,
-                  [string]$InitialLoadMilliseconds, [string]$PerTargetMilliseconds) `
-  -PassThru -Wait -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
+$priorThreshold = $env:CCAD_AGENT_LARGE_CONTEXT_TOKENS
+$priorTraceDebug = $env:CCAD_TRACE_DEBUG
+if ($Name.StartsWith("sprint969-context")) {
+  # Exercise the real large-context branch with a deliberately low, valid
+  # threshold. The /context feature remains local and never invokes the model.
+  $env:CCAD_AGENT_LARGE_CONTEXT_TOKENS = "512"
+  $env:CCAD_TRACE_DEBUG = "1"
+}
+try {
+  $process = Start-Process -FilePath $Gui `
+    -ArgumentList @("--test-ui-map-target-sequence", $ProjectPath, $ScreenshotDir, $Name,
+                    [string]$InitialLoadMilliseconds, [string]$PerTargetMilliseconds) `
+    -PassThru -Wait -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
+} finally {
+  if ($null -eq $priorThreshold) { Remove-Item Env:CCAD_AGENT_LARGE_CONTEXT_TOKENS -ErrorAction SilentlyContinue }
+  else { $env:CCAD_AGENT_LARGE_CONTEXT_TOKENS = $priorThreshold }
+  if ($null -eq $priorTraceDebug) { Remove-Item Env:CCAD_TRACE_DEBUG -ErrorAction SilentlyContinue }
+  else { $env:CCAD_TRACE_DEBUG = $priorTraceDebug }
+}
 
 if ($process.ExitCode -ne 0) {
   throw "UI map target sequence failed with exit code $($process.ExitCode). Stdout: $stdoutLog Stderr: $stderrLog"

@@ -6,6 +6,19 @@ Check a box only after implementation and its required evidence exist.
 
 Update this file in the same commit as each implementation slice.
 
+### Sprint 969 active slice — local large-context explanation
+
+- [x] Add `/context [draft]` as an explicit local preview using real project context, enabled-memory retrieval, current conversation, system instructions, and bound tool schemas.
+- [x] Reuse the provider request budget/accounting path; show only counts, estimates, memory lifecycle/ranking, and model-limit availability.
+- [x] Ensure preview and command help do not call a provider, execute tools, persist the draft, alter conversation history, or reveal prompt/design/memory text.
+- [x] Prove the real Python child process crosses the large-context threshold without provider initialization; inspect safe stdout/stderr.
+- [x] Prove slash palette and local preview in the app-owned GUI-map harness; ingest and inspect every screenshot and review stdout/stderr.
+- [x] Run Qt Release build and full CTest (100/100); run Pyright on changed Python modules (0 diagnostics).
+- [ ] Complete clangd source check.
+- [x] Update handover, feature inventory, progress, backlog, and memory/context lifecycle documentation with verified behavior and limitations.
+- [x] Run redacted tracked-repository and staged-diff secret-pattern scans; one repository hit was an intentional existing memory-store test fixture and the staged diff had zero matches.
+- [x] Commit and push only verified files; no keys, logs, screenshots, generated projects, or unrelated changes are staged.
+
 ### Sprint 949 checklist
 
 - [x] Native catalog transport before provider activation.
@@ -38,10 +51,10 @@ Update this file in the same commit as each implementation slice.
 - [x] Preserve a valid bounded context envelope on overflow; report the project summary, exact retained/omitted memory counts, and retrieval provenance.
 - [x] Add Python contracts for component counts, privacy, multimodal estimates, memory ranking, disabled-tier exclusion, and overflow accounting.
 - [x] Resolve the six existing Pyright diagnostics in the touched orchestration module without suppressing analysis.
-- [ ] Make a feature-specific large-context explanation visible in the live Agent chat without spending a provider request; inspect rendered screenshots and logs.
+- [x] Make a feature-specific large-context explanation visible in live Agent chat without spending a provider request; inspect rendered screenshots and logs (Sprint 969 `/context` preview).
 - [x] Run the Qt Release build and full CTest gate (98/98).
 - [x] Validate memory Settings/Manage Memories through the live GUI map; inspect all 26 screenshots and captured stdout/stderr. Large-context chat rendering remains a separate unchecked provider-backed item above.
-- [ ] Run redacted repository/staged secret scans; commit and push only verified files.
+- [x] Run redacted repository/staged secret scans; commit and push only verified files.
 
 ### Sprint 968 active slice â€” task-scoped STM and memory duplicate safety
 
@@ -52,7 +65,7 @@ Update this file in the same commit as each implementation slice.
 - [x] Add task-scope, isolation, replacement, end, eviction, and near-duplicate regression coverage.
 - [x] Run Qt Release build and full CTest gate (99/99).
 - [x] Validate task commands through 8 GUI-map actions per run; inspect both 12-image screenshot runs, stdout, and stderr, including a >20-second live run.
-- [ ] Run staged-diff secret scan; commit and push code, tests, docs, and TODO together.
+- [x] Run staged-diff secret scan; commit and push code, tests, docs, and TODO together.
 
 #### References checked
 
@@ -137,9 +150,9 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 - [x] Build Qt and run targeted/full CTest.
 - [x] Run scoped UI-map/mouse-keyboard validation; inspect screenshots and logs.
 - [x] Run bounded real provider tests.
-- [x] Run redacted tracked-repository and staged-diff secret-pattern scans before this commit; inspected two legacy documentation path-only false positives.
+- [x] Run redacted tracked-repository and staged-diff secret-pattern scans before this commit; inspect and document only redacted match locations.
 - [ ] Update architecture, feature, CLI, methodology, provider, memory, tracing, autorouter, backlog, and progress docs in the same commit.
-- [ ] Commit only verified source/tests/docs; never keys, vault data, local config, logs, screenshots, generated boards, or unrelated user files.
+- [x] Commit only verified source/tests/docs; never keys, vault data, local config, logs, screenshots, generated boards, or unrelated user files.
 
 ## UI truthfulness and parity
 

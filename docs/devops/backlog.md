@@ -7,8 +7,9 @@ This file is the single local backlog for scattered CCad feature requests. Sprin
 This ledger is the current single checklist for scattered user-reported GUI, KiCad compatibility, and agent-harness work. Check an item only after code review, focused tests, KiCad/reference comparison where relevant, and visual validation when the behavior is visible.
 
 - [x] Sprint 157: read-only native UI map export through `ccad_gui --dump-ui-map`, with target validation against live Qt hit-testing.
-- [ ] Sprint 967: implementation, 98/98 CTest, clean targeted Pyright, and memory Settings GUI-map evidence are verified locally; opt-in live large-context chat proof remains open.
-- [x] Sprint 968: explicit task-scoped STM, bounded session/task cache, lexical near-duplicate guard, 99/99 CTest, inspected 8-action GUI-map flow, and >20-second GUI stability run verified locally; secret scan, commit, and push remain open. Semantic compaction remains open.
+- [x] Sprint 967: implementation, 98/98 CTest, clean targeted Pyright, and memory Settings GUI-map evidence verified locally; Sprint 969 adds provider-free large-context chat proof. Provider-backed validation was not needed for the local preview contract.
+- [x] Sprint 968: explicit task-scoped STM, bounded session/task cache, lexical near-duplicate guard, 99/99 CTest, inspected 8-action GUI-map flow, >20-second GUI stability run, secret scan, commit, and push verified. Semantic compaction remains open.
+- [x] Sprint 969: local `/context [draft]` preview uses persisted provider/model identity, live bounded context, the actual GUI native tool catalog (59 schemas), memory retrieval, system instructions, and conversation accounting, without provider/tool/history side effects. Release build and 100/100 CTest, Pyright, eight mapped interactions, nine inspected screenshots, stdout/stderr review, and safe source-content exclusion verified. Staged secret scan is clean; verified implementation/docs are committed and pushed.
 - [ ] Memory follow-up: add semantic compaction and decide whether explicit capture should include project-scoped episodic storage. Ordinary chat capture remains off.
 
 ## Demo-deadline orchestration gate

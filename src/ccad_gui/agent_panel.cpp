@@ -8,6 +8,7 @@
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QDateTime>
+#include <QDebug>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDockWidget>
@@ -1626,6 +1627,14 @@ void AgentPanel::handlePythonError() {
   const QString error = QString::fromLocal8Bit(python_process_->readAllStandardError()).trimmed();
   if (error.isEmpty()) return;
 
+  // This content-free report is an intentional development diagnostic, not a
+  // Python/backend failure. Preserve it in the GUI process logs without
+  // rendering a false warning card in the conversation.
+  if (error.startsWith("[ccad-context-preview]")) {
+    qInfo().noquote() << error;
+    return;
+  }
+
   // langchain-google-genai 2.x can emit this dependency retirement notice
   // during import. It says nothing about adapter readiness or whether a
   // provider request later ran, so it must not become a user-visible provider
@@ -1755,7 +1764,7 @@ void AgentPanel::hideSlashPopup() {
 
 void AgentPanel::filterSlashCommands() {
   QString text = chat_input_->toPlainText().mid(1).trimmed().toLower();
-  QStringList all_commands = {"/commands", "/workflow use:", "/workflow chaining phase:", "/workflow chaining state:", "/hooks ", "/set ", "/compact", "/cc", "/task start", "/task status", "/task end", "/schedule ", "/help", "/drc", "/route", "/place", "/design", "/explain", "/clear", "/marketplace", "/settings"};
+  QStringList all_commands = {"/commands", "/context", "/workflow use:", "/workflow chaining phase:", "/workflow chaining state:", "/hooks ", "/set ", "/compact", "/cc", "/task start", "/task status", "/task end", "/schedule ", "/help", "/drc", "/route", "/place", "/design", "/explain", "/clear", "/marketplace", "/settings"};
   slash_popup_->clear();
   for (const QString& cmd : all_commands) {
     if (text.isEmpty() || cmd.mid(1).toLower().startsWith(text)) {

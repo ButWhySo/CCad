@@ -378,21 +378,23 @@ def build_provider_request_report(system_text: str, messages: Iterable[Any],
 
 
 def format_large_context_explanation(report: dict,
-                                     context_metadata: dict) -> str:
+                                     context_metadata: dict,
+                                     *, mode: str = "provider") -> str:
     """Explain actual context and memory flow without disclosing their content."""
     components = report["components"]
-    component_text = "; ".join(
-        f"{name.replace('_', ' ')} ~{value['estimated_tokens']} tokens"
+    component_text = "\n".join(
+        f"{name.replace('_', ' ')}: ~{value['estimated_tokens']:,} tokens"
         for name, value in components.items())
     tiers = report["memory_tier_counts"]
     lifecycle = context_metadata.get("memory_runtime", {})
-    tier_text = "; ".join(
-        f"{tier}: {'on' if lifecycle.get(tier, {}).get('enabled') else 'off'}, "
-        f"{lifecycle.get(tier, {}).get('runtime_entries', 0)} loaded, "
-        f"{tiers.get(tier, 0)} retrieved"
+    tier_text = "\n".join(
+        f"{tier.upper()}: {'enabled' if lifecycle.get(tier, {}).get('enabled') else 'disabled'}; "
+        f"{lifecycle.get(tier, {}).get('runtime_entries', 0)} cached in this process; "
+        f"{tiers.get(tier, 0)} retrieved for this request; "
+        f"{lifecycle.get(tier, {}).get('persistent_entries', 0)} durable records"
         for tier in ("stm", "ltm", "episodic"))
     retrieval = context_metadata.get("memory_retrieval", [])
-    ranking = ", ".join(
+    ranking = "; ".join(
         f"#{item['rank']} {item['tier']} overlap={item['query_overlap_terms']}"
         for item in retrieval) or "none"
     limit = report["model_context_limit"]
@@ -428,17 +430,27 @@ def format_large_context_explanation(report: dict,
         "writes are rejected, and unsafe legacy records are excluded from runtime and UI "
         "listing. Turning a tier off immediately unloads it and stops retrieval/writes, "
         "but preserves durable records; scoped delete/reset is a separate confirmed action.")
-    return (
+    heading = (
+        f"Local context preview{' (large)' if report['large_context'] else ''} "
+        f"for {report['provider']}/{report['model']} "
+        "(no provider request was sent): "
+        if mode == "preview" else
         f"Large provider request assembled for {report['provider']}/{report['model']}: "
-        f"~{report['estimated_input_tokens']:,} input tokens ({report['estimate_method']}). "
-        f"Breakdown: {component_text}. Memory lifecycle: {tier_text}. "
-        f"Retrieved-memory ranking: {ranking}. {lifecycle_detail} {project_detail} "
-        f"Included memories: {report['memory_entry_count']}; omitted by package budget: "
-        f"{report['omitted_memory_entry_count']}. Project object counts: "
-        f"{report['project_counts']}. The package is bounded to "
-        f"{report['context_package_limit_chars']:,} chars; project/memory source channels: "
-        f"{report['context_package_sources']}. Project context package: "
-        f"{report['context_package_chars']:,} chars, "
-        f"truncated={str(report['context_package_truncated']).lower()}; "
-        f"selected-model context limit: {limit_text}. This diagnostic contains counts "
-        "only, not prompt, design, or memory content.")
+    )
+    return (
+        heading +
+        f"~{report['estimated_input_tokens']:,} estimated input tokens using "
+        f"{report['estimate_method']}. Model context limit: {limit_text}.\n\n"
+        f"REQUEST COMPONENTS\n{component_text}\n\n"
+        f"MEMORY STATE\n{tier_text}\n"
+        f"Memory matches ranked by query-term overlap, recency, and tier order: {ranking}. "
+        f"{report['memory_entry_count']} included; "
+        f"{report['omitted_memory_entry_count']} omitted by package budget.\n\n"
+        f"ASSEMBLY LIFECYCLE\n{lifecycle_detail}\n\n"
+        f"PROJECT CONTEXT\n{project_detail} Object counts: {report['project_counts']}. "
+        f"The envelope is bounded to {report['context_package_limit_chars']:,} chars; "
+        f"sources: {report['context_package_sources']}. It contains "
+        f"{report['context_package_chars']:,} chars; truncated="
+        f"{str(report['context_package_truncated']).lower()}.\n\n"
+        "PRIVACY\nThis explanation contains counts and lifecycle metadata only, not prompt, "
+        "design, memory, or credential contents.")

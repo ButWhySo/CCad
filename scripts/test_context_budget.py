@@ -114,12 +114,18 @@ class ContextBudgetTests(unittest.TestCase):
                          "stored scope label is descriptive metadata",
                          "Memory capture remains explicit",
                          "unsafe legacy records are excluded",
-                         "omitted by package budget: 1",
+                         "1 omitted by package budget",
                          "exact design work must first call project.state",
-                         "selected-model context limit: unavailable"):
+                         "Model context limit: unavailable"):
             self.assertIn(expected, explanation)
         self.assertNotIn("USB power constraints", explanation)
         self.assertNotIn("board snapshot", explanation)
+
+        preview = CONTEXT.format_large_context_explanation(report, meta, mode="preview")
+        self.assertIn("Local context preview", preview)
+        self.assertIn("no provider request was sent", preview)
+        self.assertNotIn("USB power constraints", preview)
+        self.assertNotIn("board snapshot", preview)
 
     def test_request_report_counts_live_components_without_content(self):
         context = CONTEXT.build_context_package(
