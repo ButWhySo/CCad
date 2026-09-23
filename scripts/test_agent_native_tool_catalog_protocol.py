@@ -29,6 +29,16 @@ CATALOG = [{
         },
         "required": ["start_x_mm", "end_x_mm"],
     },
+}, {
+    "method": "cli.pcb.add-track",
+    "description": "CLI command descriptor only; the GUI broker has no CLI executor yet.",
+    "read_only": False,
+    "callable": False,
+    "inputSchema": {
+        "type": "object",
+        "properties": {"argv": {"type": "array", "items": {"type": "string"}}},
+        "required": ["argv"],
+    },
 }]
 
 
@@ -39,6 +49,13 @@ spec.loader.exec_module(module)
 tools = module.build_native_tools(module.validate_native_tool_catalog(CATALOG))
 assert [tool.name for tool in tools] == ["ccad_project_context", "ccad_ui_route_track"]
 assert tools[1].args_schema.model_json_schema()["required"] == ["start_x_mm", "end_x_mm"]
+assert len(module.validate_native_tool_catalog(CATALOG)) == 2
+try:
+    module.validate_native_tool_catalog([CATALOG[-1]])
+except ValueError as error:
+    assert "callable" in str(error)
+else:
+    raise AssertionError("a catalog containing only non-callable descriptors must not install")
 
 env = os.environ.copy()
 env["CCAD_AGENT_DEFER_PROVIDER_INIT"] = "1"

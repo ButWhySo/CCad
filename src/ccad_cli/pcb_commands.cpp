@@ -1853,6 +1853,7 @@ int pcbCommand(const std::vector<std::string>& args) {
           .start = start,
           .end = end,
           .width = width,
+          .source_route_request_id = "",
       });
       context.markDirty();
       if (!writeProjectFile(file, project)) {
@@ -2091,6 +2092,9 @@ int pcbCommand(const std::vector<std::string>& args) {
           .net_id = options.contains("--net") ? options.at("--net") : "",
           .layer_ids = layers,
           .outline = points,
+          .holes = {},
+          .filled_contours = {},
+          .filled_thermal_spokes = {},
           .priority = options.contains("--priority") ? requireNonNegativeIntOption(options, "--priority") : 0,
           .clearance = ccad::millimeters(optionDoubleOrDefault(options, "--clearance-mm", 0.508)),
           .min_thickness = ccad::millimeters(optionDoubleOrDefault(options, "--min-thickness-mm", 0.254)),
@@ -2734,10 +2738,12 @@ int pcbCommand(const std::vector<std::string>& args) {
                                                         size.width.nanometers),
                                   .y = ccad::nanometers(origin.y.nanometers +
                                                         size.height.nanometers)},
-                      ccad::Point{.x = origin.x,
-                                  .y = ccad::nanometers(origin.y.nanometers +
-                                                        size.height.nanometers)}},
+                                  ccad::Point{.x = origin.x,
+                                              .y = ccad::nanometers(origin.y.nanometers +
+                                                                    size.height.nanometers)}},
+          .holes = {},
           .filled_contours = {},
+          .filled_thermal_spokes = {},
           .priority = requireNonNegativeIntOption(options, "--priority"),
           .clearance = requirePositiveMillimeters(options, "--clearance-mm"),
           .min_thickness = requirePositiveMillimeters(options, "--min-thickness-mm"),

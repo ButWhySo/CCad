@@ -88,7 +88,8 @@ int schCommand(const std::vector<std::string>& args) {
                     ccad::millimeters(requireDoubleOption(options, "--start-y-mm"))},
           .end = {ccad::millimeters(requireDoubleOption(options, "--end-x-mm")),
                   ccad::millimeters(requireDoubleOption(options, "--end-y-mm"))},
-          .bus_id = options.contains("--bus") ? options.at("--bus") : ""
+          .bus_id = options.contains("--bus") ? options.at("--bus") : "",
+          .net_ids = {},
       };
       ccad::ensurePrimarySchematic(project).buses.push_back(bus);
       context.markDirty();

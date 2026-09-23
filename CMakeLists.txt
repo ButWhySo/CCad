@@ -207,11 +207,10 @@ else()
   endif()
 endif()
 
-add_executable(ccad
+add_library(ccad_cli_lib
   src/ccad_cli/app.cpp
   src/ccad_cli/common.cpp
   src/ccad_cli/lib_commands.cpp
-  src/ccad_cli/main.cpp
   src/ccad_cli/pcb_commands.cpp
   src/ccad_cli/pcb_object_queries.cpp
   src/ccad_cli/project_commands.cpp
@@ -223,7 +222,11 @@ add_executable(ccad
   src/ccad_cli/agent_session.cpp
   src/ccad_cli/agent_orchestrator_cli.cpp
 )
-target_link_libraries(ccad PRIVATE ccad_core)
+target_link_libraries(ccad_cli_lib PUBLIC ccad_core)
+target_include_directories(ccad_cli_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+add_executable(ccad src/ccad_cli/main.cpp)
+target_link_libraries(ccad PRIVATE ccad_cli_lib)
 
 
 if(MINGW)
@@ -548,21 +551,8 @@ add_test(NAME library_catalog COMMAND ccad_library_catalog_tests)
 
 add_executable(ccad_agent_serve_tests 
   tests/test_agent_serve.cpp
-  src/ccad_cli/app.cpp
-  src/ccad_cli/common.cpp
-  src/ccad_cli/lib_commands.cpp
-  src/ccad_cli/pcb_commands.cpp
-  src/ccad_cli/pcb_object_queries.cpp
-  src/ccad_cli/project_commands.cpp
-  src/ccad_cli/sch_commands.cpp
-  src/ccad_cli/agent_commands.cpp
-  src/ccad_cli/agent_kicad_evidence.cpp
-  src/ccad_cli/agent_observability_config.cpp
-  src/ccad_cli/agent_provider_config.cpp
-  src/ccad_cli/agent_session.cpp
-  src/ccad_cli/agent_orchestrator_cli.cpp
 )
-target_link_libraries(ccad_agent_serve_tests PRIVATE ccad_core)
+target_link_libraries(ccad_agent_serve_tests PRIVATE ccad_cli_lib)
 add_test(NAME agent_serve COMMAND ccad_agent_serve_tests)
 
 add_executable(ccad_kicad_pcb_export_tests
@@ -747,7 +737,7 @@ if(CCAD_BUILD_GUI)
       src/ccad_gui/selection_inspector_panel.cpp
       src/ccad_gui/transaction_timeline_panel.cpp
     )
-    target_link_libraries(ccad_gui PRIVATE ccad_core Qt6::Widgets Qt6::Svg Qt6::Network)
+    target_link_libraries(ccad_gui PRIVATE ccad_core ccad_cli_lib Qt6::Widgets Qt6::Svg Qt6::Network)
     if(WIN32)
       target_link_libraries(ccad_gui PRIVATE dwmapi credui)
     endif()
@@ -984,7 +974,7 @@ if(CCAD_BUILD_GUI)
       src/ccad_gui/schematic_canvas_renderer.cpp
       src/ccad_gui/ui_map_server.cpp
     )
-    target_link_libraries(ccad_gui_action_tools_tests PRIVATE ccad_core Qt6::Widgets Qt6::Svg Qt6::Network)
+    target_link_libraries(ccad_gui_action_tools_tests PRIVATE ccad_core ccad_cli_lib Qt6::Widgets Qt6::Svg Qt6::Network)
     if(WIN32)
       target_link_libraries(ccad_gui_action_tools_tests PRIVATE dwmapi)
     endif()
@@ -1091,7 +1081,7 @@ if(CCAD_BUILD_GUI)
       src/ccad_gui/schematic_canvas_renderer.cpp
       src/ccad_gui/ui_map_server.cpp
     )
-    target_link_libraries(ccad_gui_ui_map_tests PRIVATE ccad_core Qt6::Widgets Qt6::Svg Qt6::Network)
+    target_link_libraries(ccad_gui_ui_map_tests PRIVATE ccad_core ccad_cli_lib Qt6::Widgets Qt6::Svg Qt6::Network)
     if(WIN32)
       target_link_libraries(ccad_gui_ui_map_tests PRIVATE dwmapi)
     endif()
@@ -1130,7 +1120,7 @@ if(CCAD_BUILD_GUI)
       src/ccad_gui/board_canvas_renderer.cpp
       src/ccad_gui/schematic_canvas_renderer.cpp
     )
-    target_link_libraries(ccad_gui_review_window_cursor_status_tests PRIVATE ccad_core Qt6::Widgets Qt6::Svg Qt6::Network)
+    target_link_libraries(ccad_gui_review_window_cursor_status_tests PRIVATE ccad_core ccad_cli_lib Qt6::Widgets Qt6::Svg Qt6::Network)
     if(WIN32)
       target_link_libraries(ccad_gui_review_window_cursor_status_tests PRIVATE dwmapi)
     endif()

@@ -1,10 +1,14 @@
 #include <QApplication>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QLineEdit>
 #include <QTemporaryDir>
 #include <QTimer>
 
 #include <fstream>
 
+#include "ccad_cli/app.hpp"
 #include "ccad_core/geometry.hpp"
 #include "ccad_core/model.hpp"
 #include "ccad_core/serialize.hpp"
@@ -96,6 +100,57 @@ int main(int argc, char** argv) {
       !context.contains("Front copper") || !context.contains("U1") ||
       !state.contains("binary_payloads_excluded") || !state.contains("GND")) {
     return 13;
+  }
+
+  const QJsonObject methods_envelope =
+      QJsonDocument::fromJson(methods.toUtf8()).object();
+  const QJsonObject registry = methods_envelope.value("result").toObject();
+  const QJsonArray registry_methods = registry.value("methods").toArray();
+  const QJsonObject cli_help = QJsonDocument::fromJson(
+      QByteArray::fromStdString(ccad_cli::commandCatalogJson())).object();
+  int cli_descriptor_count = 0;
+  int callable_descriptor_count = 0;
+  for (const QJsonValue& value : registry_methods) {
+    const QJsonObject entry = value.toObject();
+    if (entry.value("surface").toString() == "ccad_cli") {
+      ++cli_descriptor_count;
+      if (entry.value("callable").toBool(true)) return 17;
+    }
+    if (entry.value("callable").toBool()) ++callable_descriptor_count;
+  }
+  const QJsonObject native_drc = [&]() {
+    for (const QJsonValue& value : registry_methods) {
+      const QJsonObject entry = value.toObject();
+      if (entry.value("method").toString() == "project.drc") return entry;
+    }
+    return QJsonObject{};
+  }();
+  const QJsonObject cli_track = [&]() {
+    for (const QJsonValue& value : registry_methods) {
+      const QJsonObject entry = value.toObject();
+      if (entry.value("method").toString() == "cli.pcb.add-track") return entry;
+    }
+    return QJsonObject{};
+  }();
+  if (registry.value("catalog_kind").toString() != "ccad_unified_agent_registry" ||
+      registry.value("method_count").toInt() != registry_methods.size() ||
+      registry.value("callable_method_count").toInt() != callable_descriptor_count ||
+      cli_descriptor_count != cli_help.value("commands").toArray().size() ||
+      cli_descriptor_count == 0 ||
+      native_drc.value("callable").toBool() != true ||
+      native_drc.value("surface").toString() != "native_gui_broker" ||
+      cli_track.value("callable").toBool(true) ||
+      cli_track.value("side_effect").toString() != "project_mutation" ||
+      cli_track.value("inputSchema").toObject().value("properties").toObject()
+              .value("argv").toObject().value("type").toString() != "array" ||
+      cli_track.value("examples").toArray().isEmpty()) {
+    return 17;
+  }
+  const QString cli_track_schema = window.runAgentUiQueryJson(
+      "agent.method_schema", R"({"method_name":"cli.pcb.add-track"})");
+  if (!cli_track_schema.contains("\"found\":true") ||
+      !cli_track_schema.contains("\"callable\":false")) {
+    return 18;
   }
 
   const QString add_wire = window.runAgentUiQueryJson(

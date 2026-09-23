@@ -114,6 +114,8 @@ AgentCommandPolicy classifyAgentCommandPolicy(const std::vector<std::string>& ar
   if (top == "project") {
     if (args.size() >= 2 && args[1] == "export-bom") {
       markFileMutation(policy, "file_write");
+    } else if (args.size() >= 2 && args[1] == "set-text-variable") {
+      markProjectMutation(policy, "project_mutation");
     } else {
       markRead(policy);
     }
@@ -121,12 +123,18 @@ AgentCommandPolicy classifyAgentCommandPolicy(const std::vector<std::string>& ar
   }
   if (top == "pcb") {
     const std::string sub = args.size() >= 2 ? args[1] : "";
-    if (isOneOf(sub, {"get-object", "list-objects", "list-nets", "list-route-requests",
-                      "route-status", "export-route-job"})) {
+    if (isOneOf(sub, {"drill-statistics", "board-statistics", "cleanup-actions",
+                      "collect-items", "get-object",
+                      "list-objects", "list-nets", "list-by-net", "calculate-net-bridges",
+                      "list-connected", "list-route-requests", "route-status",
+                      "export-route-job", "list-enabled-layers", "list-visible-layers",
+                      "get-layer-name", "get-board-stackup", "get-rules", "get-outline",
+                      "outline-polygon", "cross-probe", "expand-text-variables"})) {
       markRead(policy);
       return policy;
     }
-    if (isOneOf(sub, {"export-kicad", "export-dsn", "export-pnp", "export-drill"})) {
+    if (isOneOf(sub, {"export-board-bom", "export-kicad", "export-dsn", "export-pnp",
+                      "export-drill"})) {
       markFileMutation(policy, "file_write");
       return policy;
     }
@@ -134,6 +142,10 @@ AgentCommandPolicy classifyAgentCommandPolicy(const std::vector<std::string>& ar
     return policy;
   }
   if (top == "sch" || top == "schematic") {
+    if (args.size() >= 2 && args[1] == "collect-items") {
+      markRead(policy);
+      return policy;
+    }
     markProjectMutation(policy, "project_mutation");
     return policy;
   }

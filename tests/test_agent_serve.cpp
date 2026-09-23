@@ -1,4 +1,5 @@
 #include "ccad_cli/agent_commands.hpp"
+#include "ccad_core/agent_policy.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -1247,6 +1248,24 @@ void testAgentToolCallRpc() {
 
 }
 
+void testUnifiedCatalogCommandEffects() {
+  const auto project_write = ccad::classifyAgentCommandPolicy(
+      {"project", "set-text-variable", "--file", "board.ccad.json"}, false);
+  const auto file_write = ccad::classifyAgentCommandPolicy(
+      {"pcb", "export-board-bom", "--file", "board.ccad.json", "--output", "bom.csv"}, false);
+  const auto pcb_read = ccad::classifyAgentCommandPolicy(
+      {"pcb", "collect-items", "--file", "board.ccad.json"}, false);
+  const auto schematic_read = ccad::classifyAgentCommandPolicy(
+      {"sch", "collect-items", "--file", "board.ccad.json"}, false);
+  if (!project_write.mutates_project || !project_write.mutates_files ||
+      project_write.read_only || !file_write.mutates_files || file_write.mutates_project ||
+      !pcb_read.read_only || pcb_read.mutates_project || pcb_read.mutates_files ||
+      !schematic_read.read_only || schematic_read.mutates_project || schematic_read.mutates_files) {
+    std::cerr << "FAIL unified catalog command effect policy classification\n";
+    std::exit(1);
+  }
+}
+
 void testMCPInitializedNotificationIsSilent() {
   std::istringstream in(
       "{\"jsonrpc\": \"2.0\", \"method\": \"notifications/initialized\"}\n"
@@ -1299,6 +1318,7 @@ int main() {
     testAgentWorkspaceParityCommands();
     testAgentSessionCheckpointCommands();
     testAgentPolicyCommands();
+    testUnifiedCatalogCommandEffects();
     testAgentMetadataJsonRpc();
     testAgentWorkspaceParityJsonRpc();
     testAgentSessionJsonRpc();

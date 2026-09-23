@@ -1873,3 +1873,19 @@ Sprint 956 handover: explicit model-catalog refresh failures use
 `catalog_failure()` for safe provider/category/source metadata. Catalog refresh
 does not expose response bodies or credentials; it remains explicit and never
 runs at startup.
+
+Sprint 963 handover: `ccad_cli_lib` owns the real CLI implementation and is
+linked by both `ccad` and the Qt GUI. `ccad_cli::commandCatalogJson()` returns
+the exact command-help inventory used by `ccad help --format json`.
+`ReviewWindow::agentMethodCatalogArray()` combines that inventory with live
+native GUI methods and derives CLI side-effect flags from
+`classifyAgentCommandPolicy()`. Native GUI entries declare
+`callable:true`; CLI descriptors declare `callable:false` and remain metadata
+only until a guarded CLI executor reaches the broker. `orchestrator.py` validates
+all catalog shapes, then binds only callable entries into LangChain. This keeps
+discovery complete without creating tools whose dispatcher does not exist.
+Sprint 963 verification: Qt/MinGW Release build and full CTest passed (92/92);
+the offline native-catalog protocol test passed. Live Qt UI-map inspection
+reported 170 entries (59 callable GUI methods, 111 non-callable CLI commands),
+and all 10 captured screenshots were inspected. GUI stdout/stderr were empty.
+The screenshot/log directory is local validation evidence and must not be staged.

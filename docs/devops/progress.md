@@ -3073,3 +3073,7 @@ Extracted provider, thread, model-catalog, context, and memory RPC handling into
 ### Sprint 962 - native catalog execution metadata
 
 Added uniform metadata to every native GUI Agent catalog entry: derived side-effect class, required context, schema-backed validation, and result shape. The contract script passes without network access. The broader registry still needs real CLI/core command aggregation.
+
+### Sprint 963 - unified native and CLI discovery
+
+Moved CLI implementation into a reusable library and exposed its authoritative command-help table to the GUI catalog. `agent.methods` now returns native broker methods and CLI command descriptors together; CLI entries carry policy-derived read/write effects and remain non-callable until the guarded executor is wired. Python catalog conversion validates these entries but binds only methods with a real broker handler. Corrected policy classification for project text-variable writes, PCB BOM exports, and read-only PCB/schematic inspections. Qt/MinGW Release build passed, full CTest passed 92/92, and the offline Python catalog contract passed. Live UI-map validation confirmed 170 total entries (59 callable native methods and 111 non-callable CLI descriptors), checked native DRC and CLI track schemas, and inspected all 10 screenshots; app stdout/stderr were empty. Evidence is in `artifacts/screenshots/sprint963-registry-20260923/` and remains local, untracked validation output.

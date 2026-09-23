@@ -589,6 +589,11 @@ def validate_native_tool_catalog(catalog: object) -> List[dict]:
                 or not isinstance(description, str) or not description.strip()
                 or not isinstance(schema, dict) or schema.get("type") != "object"):
             raise ValueError("catalog entry has invalid method, description, or inputSchema")
+        callable_method = entry.get("callable", True)
+        if not isinstance(callable_method, bool):
+            raise ValueError("catalog callable flag must be boolean")
+        if not callable_method:
+            continue
         provider_name = tool_provider_name(method)
         if method in seen_methods or provider_name in seen_provider_names:
             raise ValueError("catalog contains duplicate method identity")
@@ -597,6 +602,8 @@ def validate_native_tool_catalog(catalog: object) -> List[dict]:
         accepted.append({"method": method, "description": description.strip(),
                          "inputSchema": schema,
                          "read_only": bool(entry.get("read_only", False))})
+    if not accepted:
+        raise ValueError("catalog has no callable native methods")
     return accepted
 
 

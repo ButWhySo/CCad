@@ -9,6 +9,7 @@
 #include "ccad_core/serialize.hpp"
 #include "ccad_core/component_generator.hpp"
 #include "ccad_core/component_generator.hpp"
+#include "ccad_core/agent_policy.hpp"
 #include "ccad_core/drc.hpp"
 #include "ccad_core/agent_orchestrator.hpp"
 #include "ccad_core/nearest_neighbor_connectivity.hpp"
@@ -21,6 +22,7 @@
 #include "ccad_core/json.hpp"
 #include "ccad_core/library_catalog.hpp"
 #include "ccad_gui/agent_panel.hpp"
+#include "ccad_cli/app.hpp"
 #include "symbol_placement_dialog.hpp"
 #include "footprint_placement_dialog.hpp"
 
@@ -517,6 +519,9 @@ QJsonObject agentMethodEntry(const QString& method, const QString& category,
                              const QJsonObject& example_payload = QJsonObject{}) {
   QJsonObject entry;
   entry.insert("method", method);
+  entry.insert("surface", "native_gui_broker");
+  entry.insert("callable", true);
+  entry.insert("execution_binding", "ReviewWindow::runAgentUiQueryJson");
   entry.insert("category", category);
   entry.insert("title", title);
   entry.insert("description", description);
@@ -958,16 +963,110 @@ QJsonArray agentMethodCatalogArray() {
                           true, false, false, false, false, emptySchema(),
                           "Combined diagnostic counts and items."));
 
+  QJsonParseError parse_error;
+  const QJsonDocument cli_document = QJsonDocument::fromJson(
+      QByteArray::fromStdString(ccad_cli::commandCatalogJson()), &parse_error);
+  if (parse_error.error == QJsonParseError::NoError && cli_document.isObject()) {
+    const QJsonArray cli_commands = cli_document.object().value("commands").toArray();
+    for (const QJsonValue& command_value : cli_commands) {
+      if (!command_value.isObject()) continue;
+      const QJsonObject command = command_value.toObject();
+      const QString command_name = command.value("name").toString().trimmed();
+      const QString summary = command.value("summary").toString().trimmed();
+      const QString usage = command.value("usage").toString().trimmed();
+      if (command_name.isEmpty() || summary.isEmpty() || usage.isEmpty()) continue;
+
+      std::vector<std::string> command_args;
+      for (const QString& part : command_name.split(' ', Qt::SkipEmptyParts)) {
+        command_args.push_back(part.toStdString());
+      }
+      const ccad::AgentCommandPolicy policy =
+          ccad::classifyAgentCommandPolicy(command_args, false);
+      QString side_effect = "read_only";
+      if (command_name == "agent serve") {
+        side_effect = "runtime_service";
+      } else if (policy.approval_reason.find("external_process") != std::string::npos) {
+        side_effect = "external_process_file_mutation";
+      }
+      if (policy.mutates_project) {
+        side_effect = "project_mutation";
+      } else if (policy.mutates_files) {
+        if (command_name != "agent serve" &&
+            policy.approval_reason.find("external_process") == std::string::npos) {
+          side_effect = "file_mutation";
+        }
+      }
+      QString method = "cli." + command_name;
+      method.replace(' ', '.');
+      QJsonObject argv_schema{{"type", "array"},
+                              {"items", QJsonObject{{"type", "string"}}},
+                              {"description", "Separate argv tokens after the fixed command words; shell parsing is not used."}};
+      QJsonObject input_schema{{"type", "object"},
+                               {"properties", QJsonObject{{"argv", argv_schema}}},
+                               {"required", QJsonArray{"argv"}},
+                               {"additionalProperties", false}};
+      const QString root = command_args.empty() ? QString{} : QString::fromStdString(command_args.front());
+      const bool requires_project =
+          root == "pcb" || root == "sch" || root == "schematic" || root == "project" ||
+          root == "validate" || root == "drc" || root == "inspect" || root == "diff";
+      QJsonArray context_requirements;
+      if (requires_project) {
+        context_requirements.append("project_file");
+      }
+      if (policy.mutates_project) context_requirements.append("project_revision");
+      if (policy.mutates_files) context_requirements.append("output_target");
+
+      QJsonObject result_shape{{"type", "object"},
+                               {"properties", QJsonObject{
+                                   {"exit_code", QJsonObject{{"type", "integer"}}},
+                                   {"stdout", QJsonObject{{"type", "string"}}},
+                                   {"stderr", QJsonObject{{"type", "string"}}}}}};
+      QJsonObject entry{{"method", method},
+                        {"surface", "ccad_cli"},
+                        {"callable", false},
+                        {"execution_binding", "not_bound_to_gui_broker"},
+                        {"category", "cli_command"},
+                        {"title", command_name},
+                        {"description", summary},
+                        {"usage", usage},
+                        {"read_only", policy.read_only && command_name != "agent serve"},
+                        {"mutates_ui", false},
+                        {"mutates_project", policy.mutates_project},
+                        {"mutates_files", policy.mutates_files},
+                        {"requires_project", requires_project},
+                        {"supports_dry_run", false},
+                        {"side_effect", side_effect},
+                        {"context_requirements", context_requirements},
+                        {"validation", QJsonObject{
+                            {"schema", "inputSchema"},
+                            {"required_fields", QJsonArray{"argv"}},
+                            {"validator", "ccad_cli dispatcher"}}},
+                        {"inputSchema", input_schema},
+                        {"result_shape", result_shape},
+                        {"output_summary", "CLI exit status and captured stdout/stderr."},
+                        {"unavailable_reason", "Guarded CLI execution is not connected to the GUI tool broker."},
+                        {"examples", QJsonArray{QJsonObject{
+                            {"usage", usage}, {"callable", false}}}}};
+      catalog.append(entry);
+    }
+  }
   return catalog;
 }
 
 QJsonObject agentMethodsJsonObject() {
   const QJsonArray methods = agentMethodCatalogArray();
+  int callable_method_count = 0;
+  for (const QJsonValue& value : methods) {
+    if (value.toObject().value("callable").toBool()) ++callable_method_count;
+  }
   QJsonObject response;
   response.insert("schema_version", 1);
-  response.insert("catalog_kind", "ccad_agent_protocol");
+  response.insert("catalog_kind", "ccad_unified_agent_registry");
   response.insert("method_count", methods.size());
+  response.insert("callable_method_count", callable_method_count);
   response.insert("methods", methods);
+  response.insert("registry_sources",
+                  QJsonArray{"native_gui_broker", "ccad_cli_dispatch_help", "ccad_core_policy"});
   response.insert("reference_model",
                   "KiCad-style named actions plus MCP-style tool schemas for LLM-native use.");
   return response;

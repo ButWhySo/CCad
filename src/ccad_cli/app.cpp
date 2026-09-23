@@ -463,6 +463,8 @@ int helpCommand(const std::vector<std::string>& args) {
 
 }  // namespace
 
+std::string commandCatalogJson() { return helpJson(); }
+
 int run(int argc, char** argv) {
   if (argc < 2) {
     printUsage(std::cerr);
