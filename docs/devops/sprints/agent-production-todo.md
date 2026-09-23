@@ -13,7 +13,7 @@ Update this file in the same commit as each implementation slice.
 - [x] ToolNode and provider binding rebuild from native catalog.
 - [x] Native method ID and authoritative broker-result preservation.
 - [x] Catalog IPC contract, focused CTest, and scoped UI-map validation.
-- [x] Qt Release build and full CTest gate (91/91).
+- [x] Qt Release build and full CTest gate (92/92).
 - [x] Bounded real-provider catalog tool call and broker result.
 
 ## Provider, context, and memory
@@ -74,6 +74,7 @@ Update this file in the same commit as each implementation slice.
 ## Delivery gates
 
 - [x] Install and verify global C++/Qt, Python, and CMake language servers; expose the real Qt/MinGW compile database to clangd.
+- [x] Bound agent-orchestrator completion tests so stalled callbacks fail explicitly instead of hanging the CTest gate.
 - [ ] Write contract tests before behavior changes.
 - [x] Build Qt and run targeted/full CTest.
 - [x] Run scoped UI-map/mouse-keyboard validation; inspect screenshots and logs.

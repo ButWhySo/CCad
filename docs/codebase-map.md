@@ -1857,3 +1857,8 @@ board text, schematic wire, and schematic label save, render, select, and report
 an authoritative count. Do not reintroduce synthetic mouse-event success paths.
 The Settings Langfuse test button is visually reachable but does not advance
 `last_test`; retain the open export-verification TODO until that runtime path is fixed.
+
+Sprint 954 handover: `wait_for_orchestrate()` now has a ten-second bounded wait;
+the full Qt/CTest gate completes 92/92. Language-server setup is global, while
+`build-qt-agent/compile_commands.json` supplies the Qt/MinGW analysis database.
+Pyright remains advisory and reports existing typing debt in the Python agent.

@@ -9,6 +9,8 @@
 #include <iostream>
 #include <string>
 #include <future>
+#include <chrono>
+#include <stdexcept>
 
 // Helper to synchronously wait for the background AgentRunner to complete a goal
 static ccad::AgentGoal wait_for_orchestrate(ccad::AgentOrchestrator& orch, const std::string& desc, const ccad::ProjectContext& ctx) {
@@ -20,6 +22,9 @@ static ccad::AgentGoal wait_for_orchestrate(ccad::AgentOrchestrator& orch, const
         }
     });
     orch.orchestrate(desc, ctx);
+    if (f.wait_for(std::chrono::seconds(10)) != std::future_status::ready) {
+        throw std::runtime_error("agent_orchestrator_completion_timeout");
+    }
     return f.get();
 }
 

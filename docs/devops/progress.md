@@ -3038,3 +3038,7 @@ the existing unbounded `test_agent_orchestrator` promise wait.
 ### Sprint 953 — language-server toolchain
 
 Installed and verified clangd 19.1.7, Pyright 1.1.414, and cmake-language-server 0.1.11. Generated `compile_commands.json` from the Qt/MinGW CMake configuration for clangd; Python user Scripts was added to the Windows user PATH. These tools accelerate diagnostics only; CMake, CTest, real provider calls, and GUI validation remain authoritative.
+
+### Sprint 954 — bounded orchestration tests
+
+Bounded the native orchestrator test callback wait at ten seconds so a stalled runner produces an explicit test failure. Rebuilt the Qt release targets and ran the complete CTest gate: 92/92 passed in 110.53 seconds.
