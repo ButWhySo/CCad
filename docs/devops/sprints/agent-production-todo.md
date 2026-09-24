@@ -12,7 +12,7 @@ References checked: [KiCad PCB Editor via and layer-stack behavior](https://docs
 - [ ] Complete all entity-to-layer and project-graph coverage, including zones, rules, diagnostics, footprints, and remaining object variants.
 - [x] Pass Qt MinGW Release build and full CTest (113/113); pass the provider-disabled GUI-map scenario with nine mapped actions, a disposable project, persisted F.Cu/B.Cu endpoints, non-empty per-turn PCB layer context, and five inspected screenshots; review stdout/stderr.
 - [x] Update handover, features, progress, backlog and this checklist; record wider project-graph/layer coverage as open.
-- [ ] Scan and publish only verified files to GitHub `main`, then remove the completed local sprint branch.
+- [x] Scan and publish only verified files to GitHub `main`; remove the completed local sprint branch.
 
 ### Sprint 981 active slice — schematic net-member retrieval (Tier 1, C3)
 
