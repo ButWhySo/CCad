@@ -2,6 +2,19 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 983 active slice — production-shaped project-index coverage (Tier 1, C3)
+
+References checked: [KiCad board file format](https://dev-docs.kicad.org/en/file-formats/sexpr-pcb/) models layers, setup, footprints, graphics, images, tracks, and zones as typed board sections; [KiCad PCB Editor](https://docs.kicad.org/10.0/en/pcbnew/pcbnew.html) describes pads, tracks, vias, and zones as distinct physical/net objects. CCad retains its own serialized model; this slice indexes the actual CCad JSON fields and does not infer rule IDs or layer membership absent from the kernel model.
+
+- [x] Index production `padstack.layer_set`, preferred route-request layer, explicit single/multiple layers, and via endpoints with incremental stale-edge removal.
+- [x] Retrieve typed layer-bearing board object variants, including zones, arcs, graphics, dimensions, text, barcodes, reference images, tables, targets, and teardrops; exclude reference-image bytes.
+- [x] Index typed keepout/placement-region rectangle bounds and board scalar design-rule values; preserve values through bounded provider context.
+- [x] Add regressions against nested padstack serialization, each layer-bearing object family, rectangle bounds, rule edits, incremental index changes, and compaction.
+- [x] Pass changed-module Pyright (0 diagnostics), Qt MinGW Release build, and full CTest (113/113).
+- [x] Pass adapted provider-disabled GUI-map query against a disposable project with nested serialized pad layers; complete seven mapped actions, inspect three feature-relevant screenshots and stdout/stderr. The turn included 10 typed project matches and four distinct PCB layer IDs; no provider request was sent.
+- [x] Update handover/features/progress/backlog and this checklist; staged secret scan has zero findings. The tracked-repository scan found one expected synthetic GitHub-token fixture in the redaction test only.
+- [x] Commit the verified slice, fast-forward/push `main`, verify remote SHA, and remove the completed sprint branch.
+
 ### Sprint 982 active slice — multilayer typed-project context (Tier 1, C3)
 
 References checked: [KiCad PCB Editor via and layer-stack behavior](https://docs.kicad.org/10.0/en/pcbnew/pcbnew.html) defines through vias as spanning front-to-back copper, while blind, buried, and microvias use their declared endpoints; [KiCad legacy board-format reference](https://dev-docs.kicad.org/en/file-formats/legacy-pcb/) records explicit via start/end layer semantics. This slice applies the board's outer copper layers to newly placed through vias and indexes every declared layer membership without claiming complete entity-graph coverage.

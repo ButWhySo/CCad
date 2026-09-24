@@ -85,13 +85,47 @@ def _point(value: Any) -> tuple[float, float] | None:
 
 def _points(value: Any) -> list[tuple[float, float]]:
     if isinstance(value, dict):
+        if "position_x_nm" in value and "position_y_nm" in value:
+            return _points({"x_nm": value["position_x_nm"],
+                            "y_nm": value["position_y_nm"]})
         direct = _point(value)
         if direct is not None:
             return [direct]
         points = []
+        # Board keepouts and placement regions serialize an axis-aligned
+        # Rect as either {origin:{x_nm,y_nm},size:{width_nm,height_nm}} or
+        # {x_nm,y_nm,width_nm,height_nm}. Keep geometry interpretation tied
+        # to those explicit typed fields; do not guess from arbitrary JSON.
+        area = value.get("area")
+        if isinstance(area, dict):
+            origin = _point(area.get("origin", area))
+            size = area.get("size", area)
+            if origin is not None and isinstance(size, dict):
+                try:
+                    divisor = 1_000_000 if any(
+                        key in size for key in ("width_nm", "height_nm")) else 1.0
+                    width = float(size.get("width_nm", size.get("width_mm", 0))) / divisor
+                    height = float(size.get("height_nm", size.get("height_mm", 0))) / divisor
+                    if all(math.isfinite(v) and abs(v) <= 1_000_000
+                           for v in (width, height)):
+                        x, y = origin
+                        points.extend(((x, y), (x + width, y + height)))
+                except (TypeError, ValueError, OverflowError):
+                    pass
+        if "x_mm" in value and "y_mm" in value and any(
+                key in value for key in ("width_mm", "height_mm")):
+            try:
+                x, y = float(value["x_mm"]), float(value["y_mm"])
+                width, height = float(value.get("width_mm", 0)), float(value.get("height_mm", 0))
+                if all(math.isfinite(v) and abs(v) <= 1_000_000
+                       for v in (x, y, width, height)):
+                    points.extend(((x, y), (x + width, y + height)))
+            except (TypeError, ValueError, OverflowError):
+                pass
         for key in ("start", "mid", "end", "position", "text_position"):
             points.extend(_points(value.get(key)))
-        for key in ("points", "outline", "outer", "filled_contours"):
+        for key in ("points", "outline", "outer", "filled_contours",
+                    "front_courtyard", "back_courtyard"):
             points.extend(_points(value.get(key)))
         return points
     if isinstance(value, list):
@@ -202,7 +236,7 @@ class ProjectIndex:
         layer = _safe(layer_id or item.get("layer_id") or item.get("layer"), 120)
         if not layer and kind == "layer":
             layer = object_id
-        layer_values = [layer]
+        layer_values = [layer, _safe(item.get("preferred_layer_id"), 120)]
         for key in ("start_layer_id", "end_layer_id"):
             value = _safe(item.get(key), 120)
             if value:
@@ -210,6 +244,12 @@ class ProjectIndex:
                 layer_values.append(value)
         for key in ("layers", "layer_ids"):
             values = item.get(key)
+            if isinstance(values, (list, tuple)):
+                layer_values.extend(_safe(value, 120) for value in values[:32]
+                                    if isinstance(value, str) and _safe(value, 120))
+        padstack = item.get("padstack")
+        if isinstance(padstack, dict):
+            values = padstack.get("layer_set")
             if isinstance(values, (list, tuple)):
                 layer_values.extend(_safe(value, 120) for value in values[:32]
                                     if isinstance(value, str) and _safe(value, 120))
@@ -238,6 +278,11 @@ class ProjectIndex:
         symbol_id = _safe(item.get("symbol_id"), 120)
         if symbol_id:
             fields["symbol_id"] = symbol_id
+        for key in ("anchor_pad_id", "anchor_via_id", "anchor_track_id",
+                    "from_object_id", "to_object_id", "preferred_layer_id"):
+            clean = _safe(item.get(key), 120)
+            if clean:
+                fields[key] = clean
         raw_position = position if position is not None else item.get("position")
         point = _point(raw_position)
         if point is None:
@@ -287,6 +332,43 @@ class ProjectIndex:
             board = boards[0] if isinstance(boards, list) and boards and isinstance(boards[0], dict) else {}
         docs = []
 
+        # CCad currently stores design constraints as one board-level typed
+        # value object rather than individually identified rule objects. Keep
+        # the exact scalar settings searchable and disclose that identity model
+        # instead of inventing per-rule IDs.
+        raw_rules = board.get("design_rules")
+        if isinstance(raw_rules, dict):
+            rule_values = {}
+            rule_terms = []
+            for key, value in sorted(raw_rules.items()):
+                if not isinstance(key, str) or not re.fullmatch(r"[a-z][a-z0-9_]{0,63}", key):
+                    continue
+                if isinstance(value, bool):
+                    rule_value = value
+                elif isinstance(value, (int, float)) and math.isfinite(value) and abs(value) <= 1e12:
+                    rule_value = value
+                else:
+                    continue
+                rule_values[key] = rule_value
+                phrase = key.removesuffix("_nm").removesuffix("_degrees").replace("_", " ")
+                phrase = re.sub(r"\bmin\b", "minimum", phrase)
+                phrase = re.sub(r"\bmax\b", "maximum", phrase)
+                rule_terms.extend((key.replace("_", " "), phrase))
+            if rule_values:
+                rule_doc = cls._make_doc(
+                    "design_rules", {"id": "board-design-rules", "name": "Design rules"},
+                    aliases=("id", "name"), extra_text=rule_terms)
+                if rule_doc is not None:
+                    rule_doc["fields"]["design_rules"] = rule_values
+                    rule_doc["aliases"].update(_normalize(term) for term in rule_terms
+                                                if _normalize(term))
+                    rule_doc["tokens"] = Counter(
+                        token.casefold() for token in _WORD.findall(
+                            rule_doc["text"] + " " + " ".join(rule_terms))
+                        if len(token) <= 80)
+                    rule_doc["signature"] = cls._signature(rule_doc)
+                    docs.append(rule_doc)
+
         def add(kind, items, **kwargs):
             for item in _iter_dicts(items):
                 if len(docs) >= _MAX_INPUT_ENTITIES:
@@ -310,7 +392,10 @@ class ProjectIndex:
                           ("dimension", "dimensions"), ("keepout", "keepouts"),
                           ("route_request", "route_requests"), ("board_group", "groups"),
                           ("target", "targets"), ("barcode", "barcodes"),
-                          ("board_table", "tables")):
+                          ("board_table", "tables"),
+                          ("placement_region", "placement_regions"),
+                          ("reference_image", "reference_images"),
+                          ("teardrop", "teardrops")):
             add(kind, board.get(key), aliases=("id", "name", "text", "kind", "net_id"))
 
         schematic_sources = [project]
@@ -710,6 +795,12 @@ class ProjectIndex:
                                "pin_name", "pin_number", "type", "net_id", "membership_kind", "layer_id",
                                "layer_ids", "start_layer_id", "end_layer_id",
                                "component_id", "symbol_id", "position_mm", "bounds_mm"}}
+            if "design_rules" in fields:
+                item["design_rules"] = fields["design_rules"]
+            for key in ("anchor_pad_id", "anchor_via_id", "anchor_track_id",
+                        "from_object_id", "to_object_id", "preferred_layer_id"):
+                if key in fields:
+                    item[key] = fields[key]
             item["retrieval"] = mode
             item["rank"] = rank
             if relation:

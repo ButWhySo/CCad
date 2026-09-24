@@ -109,7 +109,7 @@ def _project_retrieval_payload(value: dict | None) -> dict:
                     "pin_name", "pin_number", "type", "net_id", "membership_kind", "layer_id",
                     "start_layer_id", "end_layer_id",
                     "component_id", "symbol_id", "position_mm", "bounds_mm", "retrieval",
-                    "rank", "relationship", "distance_mm"):
+                    "rank", "relationship", "distance_mm", "design_rules"):
             if key in entity and isinstance(entity[key], (str, int, float, dict)):
                 item[key] = entity[key]
         layer_ids = entity.get("layer_ids")

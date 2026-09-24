@@ -116,6 +116,136 @@ class ProjectIndexTests(unittest.TestCase):
         self.assertEqual(via["layer_ids"], ["F.Cu", "In1.Cu"])
         self.assertEqual(in1["stats"]["index_state"], "cached")
 
+    def test_real_serialized_padstack_layer_set_is_retrievable_and_incremental(self):
+        index = ProjectIndex()
+        snapshot = project_snapshot()
+        board = snapshot["typed_state"]["project"]["board"]
+        board["pads"][0]["padstack"] = {"layer_set": ["F.Cu", "B.Cu"]}
+        found = index.retrieve(snapshot, "B.Cu", limit=20)
+        pad = next(item for item in found["entities"]
+                   if item["kind"] == "pad" and item["id"] == "P1")
+        self.assertEqual(pad["layer_ids"], ["F.Cu", "B.Cu"])
+        self.assertEqual(pad["relationship"], "same_layer")
+
+        snapshot["typed_state"]["project"]["board"]["pads"][0]["padstack"][
+            "layer_set"] = ["F.Cu"]
+        changed = index.retrieve(snapshot, "B.Cu", limit=20)
+        self.assertEqual(changed["stats"]["updated_count"], 1)
+        self.assertFalse(any(item["kind"] == "pad" and item["id"] == "P1"
+                             for item in changed["entities"]))
+
+    def test_all_serialized_board_layer_variants_retrieve_from_exact_layer(self):
+        snapshot = project_snapshot()
+        board = snapshot["typed_state"]["project"]["board"]
+        board["graphics"] = [{"id": "G1", "layer_id": "B.Cu",
+                              "start": {"x_nm": 1_000_000, "y_nm": 2_000_000},
+                              "end": {"x_nm": 3_000_000, "y_nm": 2_000_000}}]
+        board["track_arcs"] = [{"id": "A1", "layer_id": "B.Cu", "net_id": "GND",
+                                "start": {"x_nm": 4_000_000, "y_nm": 0},
+                                "mid": {"x_nm": 5_000_000, "y_nm": 1_000_000},
+                                "end": {"x_nm": 6_000_000, "y_nm": 0}}]
+        board["texts"] = [{"id": "TX1", "layer_id": "B.Cu", "text": "GND_LABEL",
+                           "position": {"x_nm": 7_000_000, "y_nm": 0}}]
+        board["dimensions"] = [{"id": "D1", "layer_id": "B.Cu",
+                                "start": {"x_nm": 8_000_000, "y_nm": 0},
+                                "end": {"x_nm": 9_000_000, "y_nm": 0},
+                                "text_position": {"x_nm": 8_500_000, "y_nm": 500_000}}]
+        board["barcodes"] = [{"id": "BC1", "layer_id": "B.Cu", "text": "LOT42",
+                              "position": {"x_nm": 10_000_000, "y_nm": 0}}]
+        board["reference_images"] = [{"id": "IMG1", "layer": "B.Cu", "data": "binary",
+                                      "x_mm": 12, "y_mm": 2}]
+        board["tables"] = [{"id": "TB1", "layer": "B.Cu", "x_mm": 14, "y_mm": 3,
+                            "width_mm": 2, "height_mm": 1}]
+        board["teardrops"] = [{"id": "TD1", "layer_id": "B.Cu", "net_id": "GND",
+                               "anchor_track_id": "T1",
+                               "outline": [{"x_nm": 15_000_000, "y_nm": 0},
+                                           {"x_nm": 16_000_000, "y_nm": 1_000_000}]}]
+        board["route_requests"] = [{"id": "RR1", "net_id": "GND",
+                                    "preferred_layer_id": "B.Cu",
+                                    "from_object_id": "P1", "to_object_id": "P2"}]
+        board["targets"] = [{"id": "TG1", "layer_id": "B.Cu",
+                             "position_x_nm": 17_000_000,
+                             "position_y_nm": 1_000_000}]
+
+        result = ProjectIndex().retrieve(snapshot, "B.Cu", limit=30)
+        found = {(item["kind"], item["id"]): item for item in result["entities"]}
+        for key in (("graphic", "G1"), ("track_arc", "A1"), ("board_text", "TX1"),
+                    ("dimension", "D1"), ("barcode", "BC1"),
+                    ("reference_image", "IMG1"), ("board_table", "TB1"),
+                    ("teardrop", "TD1"), ("target", "TG1")):
+            self.assertIn(key, found)
+            self.assertEqual(found[key]["layer_id"], "B.Cu")
+        self.assertNotIn("data", found[("reference_image", "IMG1")])
+        self.assertEqual(found[("reference_image", "IMG1")]["position_mm"],
+                         {"x": 12.0, "y": 2.0})
+        self.assertEqual(found[("route_request", "RR1")]["preferred_layer_id"], "B.Cu")
+        self.assertEqual(found[("route_request", "RR1")]["layer_ids"], ["B.Cu"])
+        self.assertEqual(found[("target", "TG1")]["position_mm"], {"x": 17.0, "y": 1.0})
+
+    def test_regions_and_rectangular_object_bounds_are_spatially_searchable(self):
+        snapshot = project_snapshot()
+        board = snapshot["typed_state"]["project"]["board"]
+        board["keepouts"] = [{"id": "KO1", "kind": "copper",
+                              "area": {"origin": {"x_nm": 20_000_000, "y_nm": 20_000_000},
+                                       "size": {"width_nm": 4_000_000,
+                                                "height_nm": 2_000_000}}}]
+        board["placement_regions"] = [{"id": "PR1", "kind": "placement",
+                                       "area": {"x_nm": 30_000_000, "y_nm": 20_000_000,
+                                                "width_nm": 5_000_000,
+                                                "height_nm": 3_000_000}}]
+        board["footprints"][1]["front_courtyard"] = [[
+            {"x_nm": 40_000_000, "y_nm": 30_000_000},
+            {"x_nm": 42_000_000, "y_nm": 32_000_000}]]
+        index = ProjectIndex()
+        result = index.retrieve(snapshot, "objects within 1 mm of 22,21", limit=20)
+        by_key = {(item["kind"], item["id"]): item for item in result["entities"]}
+        self.assertIn(("keepout", "KO1"), by_key)
+        self.assertEqual(by_key[("keepout", "KO1")]["bounds_mm"],
+                         {"min_x_mm": 20.0, "min_y_mm": 20.0,
+                          "max_x_mm": 24.0, "max_y_mm": 22.0})
+        self.assertEqual(by_key[("keepout", "KO1")]["retrieval"], "spatial")
+        self.assertNotIn(("placement_region", "PR1"), by_key)
+        farther = index.retrieve(snapshot, "objects within 2 mm of 30,21", limit=20)
+        self.assertTrue(any(item["kind"] == "placement_region" and item["id"] == "PR1"
+                            and item["retrieval"] == "spatial"
+                            for item in farther["entities"]))
+        courtyard = index.retrieve(snapshot, "objects within 1 mm of 41,31", limit=20)
+        j2 = next(item for item in courtyard["entities"]
+                  if item["kind"] == "footprint" and item["id"] == "J2")
+        self.assertEqual(j2["bounds_mm"]["max_x_mm"], 42.0)
+        self.assertEqual(j2["bounds_mm"]["max_y_mm"], 32.0)
+
+    def test_board_design_rule_values_are_searchable_incremental_and_survive_compaction(self):
+        import json
+        snapshot = project_snapshot()
+        board = snapshot["typed_state"]["project"]["board"]
+        board["design_rules"] = {
+            "copper_clearance_nm": 200_000,
+            "min_track_width_nm": 150_000,
+            "min_via_diameter_nm": 500_000,
+            "tent_vias_front": True,
+        }
+        index = ProjectIndex()
+        result = index.retrieve(snapshot, "minimum track width", limit=12)
+        rules = next(item for item in result["entities"] if item["kind"] == "design_rules")
+        self.assertEqual(rules["design_rules"]["min_track_width_nm"], 150_000)
+        self.assertEqual(rules["design_rules"]["copper_clearance_nm"], 200_000)
+        self.assertEqual(rules["retrieval"], "exact")
+
+        board["design_rules"]["min_track_width_nm"] = 175_000
+        changed = index.retrieve(snapshot, "minimum track width", limit=12)
+        self.assertEqual(changed["stats"]["index_state"], "incremental")
+        self.assertEqual(changed["stats"]["updated_count"], 1)
+        updated = next(item for item in changed["entities"]
+                       if item["kind"] == "design_rules")
+        package = build_context_package(json.dumps(snapshot), [], [], char_limit=4096,
+                                        project_retrieval=changed)
+        envelope = json.loads(package["content"].split("\n", 1)[1])
+        packaged = next(item for item in envelope["project_retrieval"]["entities"]
+                        if item["kind"] == "design_rules")
+        self.assertEqual(updated["design_rules"]["min_track_width_nm"], 175_000)
+        self.assertEqual(packaged["design_rules"]["min_track_width_nm"], 175_000)
+
     def test_bounded_context_preserves_only_included_layer_memberships(self):
         import json
         snapshot = project_snapshot()

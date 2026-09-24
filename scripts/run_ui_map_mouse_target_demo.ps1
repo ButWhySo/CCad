@@ -65,10 +65,22 @@ $priorDeferProvider = $env:CCAD_AGENT_DEFER_PROVIDER_INIT
 $priorConversationDb = $env:CCAD_AGENT_CONVERSATION_DB
 $isolatedMemoryProfile = $null
 $isolatedProjectPath = $null
-if ($Name.StartsWith("sprint982-multilayer-project-context")) {
+if ($Name.StartsWith("sprint982-multilayer-project-context") -or
+    $Name.StartsWith("sprint983-project-index-typed-geometry")) {
   $isolatedProjectPath = Join-Path ([IO.Path]::GetTempPath()) (
-    "ccad-sprint982-multilayer-" + [Guid]::NewGuid().ToString("N") + ".ccad.json")
+    "ccad-sprint" + $(if ($Name.StartsWith("sprint983")) { "983-typed-geometry-" } else { "982-multilayer-" }) +
+    [Guid]::NewGuid().ToString("N") + ".ccad.json")
   Copy-Item -LiteralPath $ProjectPath -Destination $isolatedProjectPath
+  if ($Name.StartsWith("sprint983-project-index-typed-geometry")) {
+    $fixture = Get-Content -Raw -LiteralPath $isolatedProjectPath | ConvertFrom-Json
+    if (-not $fixture.board.pads -or $fixture.board.pads.Count -eq 0) {
+      throw "Typed layer GUI scenario requires a serialized board pad."
+    }
+    $fixture.board.pads[0] | Add-Member -MemberType NoteProperty -Name padstack `
+      -Value ([pscustomobject]@{ layer_set = @("F.Cu", "B.Cu") }) -Force
+    [IO.File]::WriteAllText($isolatedProjectPath,
+      (ConvertTo-Json -InputObject $fixture -Depth 64), [Text.UTF8Encoding]::new($false))
+  }
   $ProjectPath = $isolatedProjectPath
 }
 if ($Name.StartsWith("sprint969-context")) {
@@ -172,9 +184,12 @@ if ($Name.StartsWith("sprint976-conversation")) {
 }
 if ($Name.StartsWith("sprint980-project-retrieval") -or
     $Name.StartsWith("sprint981-schematic-project-graph") -or
-    $Name.StartsWith("sprint982-multilayer-project-context")) {
+    $Name.StartsWith("sprint982-multilayer-project-context") -or
+    $Name.StartsWith("sprint983-project-index-typed-geometry")) {
   $profilePrefix = if ($Name.StartsWith("sprint982-multilayer-project-context")) {
     "ccad-sprint982-multilayer-"
+  } elseif ($Name.StartsWith("sprint983-project-index-typed-geometry")) {
+    "ccad-sprint983-typed-geometry-"
   } elseif ($Name.StartsWith("sprint981-schematic-project-graph")) {
     "ccad-sprint981-project-graph-"
   } else { "ccad-sprint980-project-" }
@@ -186,6 +201,8 @@ if ($Name.StartsWith("sprint980-project-retrieval") -or
   $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
   $env:CCAD_AGENT_THREAD_ID = if ($Name.StartsWith("sprint982-multilayer-project-context")) {
     "sprint982-multilayer-project-context-ui-thread"
+  } elseif ($Name.StartsWith("sprint983-project-index-typed-geometry")) {
+    "sprint983-project-index-typed-geometry-ui-thread"
   } elseif ($Name.StartsWith("sprint981-schematic-project-graph")) {
     "sprint981-schematic-project-graph-ui-thread"
   } else { "sprint980-project-retrieval-ui-thread" }
@@ -296,7 +313,8 @@ try {
   if ($Name.StartsWith("sprint976-conversation") -or $Name.StartsWith("sprint977-context") -or
       $Name.StartsWith("sprint980-project-retrieval") -or
       $Name.StartsWith("sprint981-schematic-project-graph") -or
-      $Name.StartsWith("sprint982-multilayer-project-context")) {
+      $Name.StartsWith("sprint982-multilayer-project-context") -or
+      $Name.StartsWith("sprint983-project-index-typed-geometry")) {
     $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
     $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
     foreach ($field in @("conversation_turn_visible", "canonical_transcript_retained_after_clear")) {
@@ -314,6 +332,8 @@ try {
     $databaseVerifier = Join-Path $Root "scripts\verify_conversation_ui_state.py"
     $expectedThreadId = if ($Name.StartsWith("sprint982-multilayer-project-context")) {
       "sprint982-multilayer-project-context-ui-thread"
+    } elseif ($Name.StartsWith("sprint983-project-index-typed-geometry")) {
+      "sprint983-project-index-typed-geometry-ui-thread"
     } elseif ($Name.StartsWith("sprint981-schematic-project-graph")) {
       "sprint981-schematic-project-graph-ui-thread"
     } elseif ($Name.StartsWith("sprint980-project-retrieval")) {
@@ -337,7 +357,8 @@ try {
     }
     if (($Name.StartsWith("sprint980-project-retrieval") -or
          $Name.StartsWith("sprint981-schematic-project-graph") -or
-         $Name.StartsWith("sprint982-multilayer-project-context")) -and
+         $Name.StartsWith("sprint982-multilayer-project-context") -or
+         $Name.StartsWith("sprint983-project-index-typed-geometry")) -and
         -not ($reportData.entries | Where-Object { $_.project_retrieval_visible -eq $true })) {
       throw "Mapped turn did not visibly prove a non-empty typed-project retrieval result."
     }
@@ -348,6 +369,10 @@ try {
     if ($Name.StartsWith("sprint982-multilayer-project-context") -and
         -not ($reportData.entries | Where-Object { $_.project_layers_visible -eq $true })) {
       throw "Mapped turn did not visibly include the via's F.Cu/B.Cu layer identities."
+    }
+    if ($Name.StartsWith("sprint983-project-index-typed-geometry") -and
+        -not ($reportData.entries | Where-Object { $_.multiple_project_layers_visible -eq $true })) {
+      throw "Mapped turn did not prove multiple exact PCB layer identities reached bounded context."
     }
     if ($Name.StartsWith("sprint981-schematic-project-graph") -and
         (-not ($reportData.entries | Where-Object { $_.schematic_pin_retrieval_visible -eq $true }) -or
@@ -396,8 +421,9 @@ try {
     $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
     $projectFile = [IO.Path]::GetFullPath($isolatedProjectPath)
     if (-not $projectFile.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase) -or
-        [IO.Path]::GetFileName($projectFile) -notlike "ccad-sprint982-multilayer-*.ccad.json") {
-      throw "Refusing to remove a project outside the verified Sprint 982 temporary target."
+        -not ([IO.Path]::GetFileName($projectFile) -like "ccad-sprint982-multilayer-*.ccad.json" -or
+              [IO.Path]::GetFileName($projectFile) -like "ccad-sprint983-typed-geometry-*.ccad.json")) {
+      throw "Refusing to remove a project outside the verified Sprint 982/983 temporary targets."
     }
     Remove-Item -LiteralPath $projectFile -Force
   }

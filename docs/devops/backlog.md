@@ -7,6 +7,7 @@ This file is the single local backlog for scattered CCad feature requests. Sprin
 This ledger is the current single checklist for scattered user-reported GUI, KiCad compatibility, and agent-harness work. Check an item only after code review, focused tests, KiCad/reference comparison where relevant, and visual validation when the behavior is visible.
 
 - [x] Sprint 157: read-only native UI map export through `ccad_gui --dump-ui-map`, with target validation against live Qt hit-testing.
+- [x] Sprint 983: production-shaped project retrieval indexes nested `padstack.layer_set`, typed board layer families, route-request preferred layers, bounds, serialized positions, and board-level design-rule scalars; 20/20 focused contracts, zero changed-module Pyright diagnostics, Qt MinGW Release, 113/113 CTest, and seven-action provider-disabled GUI-map proof with inspected screenshots/logs. Per-rule IDs and broader graph/diagnostic coverage remain open.
 - [x] Sprint 975: truthful Agent memory add/update/delete/reset UI outcomes, safe confirmed deletion across thread switches, isolated GUI-map lifecycle validation, and correction of the visible GUI-map privacy-test fixture.
 - [x] Sprint 967: implementation, 98/98 CTest, clean targeted Pyright, and memory Settings GUI-map evidence verified locally; Sprint 969 adds provider-free large-context chat proof. Provider-backed validation was not needed for the local preview contract.
 - [x] Sprint 968: explicit task-scoped STM, bounded session/task cache, lexical near-duplicate guard, 99/99 CTest, inspected 8-action GUI-map flow, >20-second GUI stability run, secret scan, commit, and push verified. Later Sprint 970 implements conversation-history compaction; Sprint 974 adds reviewed durable-memory compaction.
@@ -1176,9 +1177,12 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [ ] Sprint 977 follow-up: add project-scoped memory storage/retrieval and a
   revision-aware exact/lexical/graph/spatial project index before claiming full
   PCB/schematic state retrieval.
-- [ ] Sprint 982 follow-up: index layer memberships for every remaining typed
-  PCB/schematic object variant, including zone geometry, rules and diagnostics;
-  exact multi-layer indexing currently covers via endpoints and declared pad sets.
+- [ ] Sprint 983 follow-up: complete project graph and diagnostic-to-object
+  relationships, durable rule/diagnostic/artifact identities where the kernel
+  supports them, schematic hierarchy, arbitrary bounding-box queries,
+  DRC-marker search, and measured retrieval benchmarks. Supported typed
+  layer-bearing PCB classes and board-level scalar rules are now indexed;
+  individual rule IDs are not invented where CCad has no such model objects.
 - [x] Sprint 978: join context assembly, retrieval, package, and LangGraph
   observations under one thread-session-scoped `agent.turn` root; verify actual
   Langfuse SDK parent links with a local in-memory exporter.
