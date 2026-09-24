@@ -54,6 +54,32 @@ class Tool:
 
 
 class ContextBudgetTests(unittest.TestCase):
+    def test_memory_summary_manifest_and_turn_context_are_bounded_and_truthful(self):
+        package = CONTEXT.build_context_package(
+            "{}", [{"id": "m1", "tier": "ltm", "scope": "conversation",
+                    "title": "Routing", "content": "Keep the GND return path short."}],
+            [], char_limit=4096, memory_summary="Routing: Keep the GND return path short.",
+            memory_manifest={"tiers": {"ltm": {"enabled": True,
+                                                   "available_count": 4,
+                                                   "loaded_count": 4,
+                                                   "scope": "current_thread"}},
+                             "available_tier_count": 1,
+                             "historical_thread_summary_count": 2,
+                             "semantic_retrieval_ready": False,
+                             "contents_included": True,
+                             "secret": "must not pass through"},
+            turn_context={"version": 3, "change_reason": "new_component",
+                          "signal_digest": "abcd1234"})
+        envelope = json.loads(package["content"].split("\n", 1)[1])
+        self.assertEqual(envelope["memory_summary"],
+                         "Routing: Keep the GND return path short.")
+        self.assertFalse(envelope["memory_manifest"]["contents_included"])
+        self.assertEqual(envelope["memory_manifest"]["tiers"]["ltm"]["available_count"], 4)
+        self.assertNotIn("must not pass through", package["content"])
+        self.assertEqual(envelope["turn_context"]["version"], 3)
+        self.assertEqual(package["metadata"]["turn_context_change_reason"], "new_component")
+        self.assertIn("memory_manifest", package["metadata"]["sources"])
+
     def test_package_reports_memory_tiers_and_history_transport_separately(self):
         package = CONTEXT.build_context_package(
             '{"project":{"tracks":[1,2]}}',

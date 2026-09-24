@@ -21,6 +21,11 @@ assert 'package = build_context_package(' in text
 assert 'memory_entry_count' in text
 assert 'history_message_count' in text
 assert 'context_schema_version' in text
+assert 'memory_manifest' in text
+assert 'turn_context_version' in text
+assert 'context_cache_hit' in text
+assert 'context.assemble' in text
+assert 'memory.retrieve' in text
 assert '"previous_revision": previous_context_revision' in text
 assert '"change_kind": context_change_kind' in text
 assert '"response_contracts": {' in text
@@ -146,7 +151,7 @@ assert pending_snapshot["params"]["thread_id"] == "ccad-local"
 assert pending_snapshot["params"]["approval_required"] is False
 assert pending_snapshot["params"]["approval_reason"] == ""
 events = [item for item in lines if item.get("method") == "context_state"]
-assert len(events) == 4
+assert len(events) == 4, run.stdout + run.stderr
 assert events[0]["params"]["previous_revision"] == ""
 assert events[0]["params"]["change_kind"] == "initial"
 assert events[0]["params"]["thread_id"] == "thread-a"
@@ -161,6 +166,10 @@ for event in events:
     assert params["context_schema_version"] == 3
     assert params["content_emitted"] is False
     assert params["memory_content_emitted"] is False
+    assert params["memory_manifest"]["contents_included"] is False
+    assert params["turn_context_version"] >= 1
+    assert len(params["turn_context_signal_digest"]) == 24
+    assert params["memory_token_budget"] >= 64
     assert params["history_message_count"] >= 0
     assert "project_snapshot" in params["sources"]
 print("PASS agent context history boundary contract; no network")

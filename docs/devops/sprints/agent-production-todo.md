@@ -2,6 +2,17 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 977 active slice — deterministic context and memory retrieval
+
+- [x] Extract bounded, secret-redacted task/editor/selection/entity/history signals without an LLM call.
+- [x] Assemble a versioned per-thread TurnContext with deterministic, scope-filtered memory retrieval, provenance, and cache invalidation.
+- [x] Inject a bounded memory summary and content-free tier/scope manifest into the actual provider context package.
+- [x] Bound retrieved memory separately by configurable estimated-token and record limits; preserve valid package serialization under overflow.
+- [x] Add a real read-only `ccad_search_memory` LangChain tool for targeted in-turn memory retrieval and version refresh.
+- [x] Add focused no-network tests for signal redaction, relevance, scope isolation, cache/write invalidation, targeted refresh, provider tool composition, and package budgets.
+- [x] Pass Qt MinGW Release build and full CTest (110/110); pass changed-module Pyright and clangd; complete seven mapped GUI actions with four inspected screenshots and reviewed stdout/stderr; run repository and staged-diff secret scans before commit.
+- [ ] Follow-on: project-scoped memory/indexing, semantic relevance, same-root `agent.turn` Langfuse context spans, provider-tokenizer budgeting, and preference/correction-aware ranking.
+
 ### Sprint 976 conversation-store slice
 
 - [x] Persist full conversation messages per thread with tool-call identity and secret redaction.
@@ -3987,27 +3998,27 @@ Keep complete raw messages, but additionally build one compact `TurnRecord` for 
 
 ## Parent task: retrieve likely-relevant memory automatically before reasoning
 
-- [ ] Run automatic memory retrieval during initial ContextBroker assembly.
+- [x] Run automatic memory retrieval during initial ContextBroker assembly.
 - [ ] Construct the retrieval query from:
-  - [ ] current user request.
-  - [ ] normalized goal.
-  - [ ] active project.
-  - [ ] active editor.
-  - [ ] selected objects.
-  - [ ] explicit components/nets/layers.
-  - [ ] workflow/domain.
-  - [ ] current task.
-  - [ ] relevant recent TurnRecord summaries.
-- [ ] Apply scope/authorization filters before relevance ranking.
-- [ ] Retrieve global/user memories where allowed.
+- [x] current user request.
+- [x] normalized goal.
+- [x] active project identity.
+- [x] active editor.
+- [x] selected objects.
+- [x] explicit components/nets/layers.
+- [x] workflow/domain signals.
+- [x] current task.
+- [x] relevant recent TurnRecord summaries.
+- [x] Apply tier/namespace scope filters before relevance ranking.
+- [x] Retrieve enabled user/episodic memories where allowed.
 - [ ] Retrieve project-scoped memories.
-- [ ] Retrieve thread-scoped memories where useful.
-- [ ] Include a bounded stable Memory Summary.
-- [ ] Include bounded top-K automatically retrieved memories.
-- [ ] Deduplicate automatic memories against recent conversation and thread recap.
+- [x] Retrieve thread-scoped memories where useful.
+- [x] Include a bounded stable Memory Summary.
+- [x] Include bounded top-K automatically retrieved memories.
+- [ ] Deduplicate automatic memories against both recent conversation and thread recap.
 - [ ] Prefer explicit user preferences/corrections over inferred memories.
-- [ ] Keep retrieval within memory token budget.
-- [ ] Record retrieval provenance/rank metadata.
+- [x] Keep retrieval within its bounded estimated memory token budget.
+- [x] Record retrieval provenance/rank metadata.
 
 ---
 
@@ -4015,17 +4026,17 @@ Keep complete raw messages, but additionally build one compact `TurnRecord` for 
 
 ## Parent task: let the Agent know what additional memory exists without injecting everything
 
-- [ ] Add a compact `MemoryManifest` to provider context.
-- [ ] Manifest contains category/scope availability, not full memory contents.
-- [ ] Include approximate counts for available global user memories.
+- [x] Add a compact `MemoryManifest` to provider context.
+- [x] Manifest contains category/scope availability, not full memory contents.
+- [x] Include approximate counts for available global user memories.
 - [ ] Include current-project memory count.
-- [ ] Include relevant historical thread-summary count.
+- [x] Include relevant historical thread-summary count.
 - [ ] Include available procedural/reusable lesson categories where supported.
-- [ ] Include semantic-retrieval readiness.
-- [ ] Keep manifest small and bounded.
-- [ ] Never expose memory contents solely through the manifest.
-- [ ] Let the Agent use deep `memory.search` after discovering a new information need.
-- [ ] Do not force a deep memory-search call merely to know whether a memory category exists.
+- [x] Include semantic-retrieval readiness.
+- [x] Keep manifest small and bounded.
+- [x] Never expose memory contents solely through the manifest.
+- [x] Let the Agent use deep `memory.search` after discovering a new information need.
+- [x] Do not force a deep memory-search call merely to know whether a memory category exists.
 
 ---
 
@@ -4039,8 +4050,8 @@ Keep complete raw messages, but additionally build one compact `TurnRecord` for 
 - [ ] Append/replace working findings as tools and specialists return evidence.
 - [ ] Convert large raw tool results into compact structured artifacts once raw detail is no longer immediately required.
 - [ ] Keep artifact references available for re-expansion.
-- [ ] Maintain context version number.
-- [ ] Record which observation caused a context version change.
+- [x] Maintain context version number.
+- [x] Record which observation caused a context version change.
 - [ ] Keep stable source IDs across context versions.
 
 ### Context-refresh triggers
@@ -4053,7 +4064,7 @@ Run targeted retrieval refresh when one or more of the following occurs:
 - [ ] Agent changes from schematic to PCB domain.
 - [ ] Agent discovers a new functional block.
 - [ ] Agent discovers that its initial interpretation was wrong.
-- [ ] Agent explicitly requests deeper memory retrieval.
+- [x] Agent explicitly requests deeper memory retrieval.
 - [ ] Agent explicitly requests deeper project retrieval.
 - [ ] Specialist task requires additional permitted context.
 - [ ] user revision materially changes the requested scope.
@@ -4063,10 +4074,10 @@ Run targeted retrieval refresh when one or more of the following occurs:
 ### Targeted refresh
 
 - [ ] Refresh only affected memory/project/context channels.
-- [ ] Preserve still-valid existing context.
-- [ ] Merge new results with deduplication.
+- [x] Preserve still-valid memory entries during a targeted memory refresh.
+- [x] Merge new memory results with deduplication.
 - [ ] Remove/invalidate stale project-derived context.
-- [ ] Re-run context budget allocation after refresh.
+- [x] Re-apply memory retrieval budget after refresh.
 - [ ] Do not blindly append until model context overflows.
 
 ---
@@ -4464,9 +4475,9 @@ Include:
 
 Under the existing root Langfuse `agent.turn` trace:
 
-- [ ] Add `context.assemble`.
+- [ ] Add `context.assemble` under the same root `agent.turn` trace.
 - [ ] Add `conversation.retrieve`.
-- [ ] Add `memory.retrieve`.
+- [ ] Add `memory.retrieve` under the same root `agent.turn` trace.
 - [ ] Add `project.retrieve`.
 - [ ] Add `project.exact`.
 - [ ] Add `project.graph`.
@@ -4476,14 +4487,14 @@ Under the existing root Langfuse `agent.turn` trace:
 - [ ] Add `capability.preselect`.
 - [ ] Add `context.budget`.
 - [ ] Add targeted `context.refresh` observations when context materially changes.
-- [ ] Record token/character/object counts.
+- [x] Record token/character/memory counts for context assembly.
 - [ ] Record exact vs estimated token accounting.
-- [ ] Record retrieval result counts.
-- [ ] Record omission counts.
-- [ ] Record context version.
-- [ ] Record project revision.
-- [ ] Record safe source IDs/hashes where appropriate.
-- [ ] Keep raw prompt/project/memory contents disabled by default.
+- [x] Record retrieval result counts.
+- [x] Record omission counts.
+- [x] Record context version.
+- [x] Record project revision.
+- [x] Record safe source IDs/hashes where appropriate.
+- [x] Keep raw prompt/project/memory contents disabled by default.
 - [ ] Do not create separate top-level traces for context sub-operations.
 
 ---
@@ -4554,16 +4565,16 @@ Complete in one coherent implementation slice:
 
 Complete together:
 
-- [ ] deterministic signal extraction.
-- [ ] initial ContextBroker.
-- [ ] automatic memory retrieval.
-- [ ] Memory Summary injection.
-- [ ] Memory Manifest.
-- [ ] TurnContext versioning/caching.
-- [ ] targeted memory refresh.
-- [ ] token budgeting.
+- [x] deterministic signal extraction.
+- [x] initial ContextBroker for thread-scoped memory retrieval and provider package assembly.
+- [x] automatic memory retrieval.
+- [x] Memory Summary injection.
+- [x] Memory Manifest.
+- [x] TurnContext versioning/caching.
+- [x] targeted memory refresh.
+- [x] bounded memory token budgeting.
 - [ ] Langfuse context hierarchy.
-- [ ] tests/docs.
+- [x] tests/docs.
 
 ## Group C3 — Project exact/lexical/graph/spatial retrieval
 

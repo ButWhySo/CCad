@@ -54,6 +54,7 @@ from memory_manager import MemoryManager, MemoryTaskScopes
 from memory_commands import execute_memory_command
 from memory_compaction import (MemoryCompactionError, MemoryCompactionPlans,
                                MEMORY_SUMMARY_SYSTEM_PROMPT)
+from context_broker import ContextBroker, extract_context_signals
 from history_compaction import (HistoryCompactionError,
                                 compact_history,
                                 prepare_history_compaction,
@@ -533,12 +534,119 @@ memory_manager = MemoryManager(memory_store)
 memory_task_scopes = MemoryTaskScopes(memory_manager)
 memory_manager.configure(config_manager.get("memory", {}))
 memory_compaction_plans = MemoryCompactionPlans()
+try:
+    _memory_token_budget = int(os.environ.get("CCAD_AGENT_MEMORY_TOKENS", "1000"))
+except ValueError:
+    _memory_token_budget = 1000
+context_broker = ContextBroker(memory_token_budget=_memory_token_budget)
+active_turn_contexts: dict[str, dict] = {}
 
-def local_memory_entries(query=""):
-    """Return ranked, enabled, namespace-scoped memories for one turn."""
-    entries, provenance = memory_manager.retrieve_with_metadata(query)
-    return (entries if isinstance(entries, list) else [],
-            provenance if isinstance(provenance, list) else [])
+
+def invalidate_thread_context(thread_id):
+    """Purge cached and currently active context after a scope/write change."""
+    thread = str(thread_id or "")
+    if thread:
+        context_broker.invalidate_thread(thread)
+        active_turn_contexts.pop(thread, None)
+
+
+def project_retrieval_signals(raw_context):
+    """Extract only stable selection/editor IDs from the typed context envelope."""
+    try:
+        decoded = json.loads(raw_context) if isinstance(raw_context, str) else {}
+    except (TypeError, json.JSONDecodeError):
+        return "", []
+    if not isinstance(decoded, dict):
+        return "", []
+    project = decoded.get("project", decoded)
+    if not isinstance(project, dict):
+        project = decoded
+    editor = ""
+    for source in (decoded, project, decoded.get("editor_state", {})):
+        if isinstance(source, dict):
+            editor = next((str(source[key]) for key in
+                           ("active_editor", "editor", "document_kind")
+                           if source.get(key)), editor)
+        if editor:
+            break
+    selection = decoded.get("selection", project.get("selection", []))
+    selected = []
+    if isinstance(selection, dict):
+        selection = selection.get("objects", selection.get("items", []))
+    if isinstance(selection, list):
+        for item in selection[:32]:
+            if isinstance(item, (str, int)):
+                selected.append(str(item))
+            elif isinstance(item, dict):
+                for key in ("id", "uuid", "reference", "ref", "refdes", "net", "layer"):
+                    if item.get(key):
+                        selected.append(str(item[key]))
+    return editor[:40], selected[:32]
+
+
+def recent_retrieval_text(messages):
+    """Expose only bounded text blocks to deterministic retrieval signals."""
+    result = []
+    for message in list(messages)[-8:]:
+        content = getattr(message, "content", "")
+        if isinstance(content, str):
+            result.append(content[:240])
+        elif isinstance(content, list):
+            result.append(" ".join(block["text"][:240] for block in content
+                                   if isinstance(block, dict) and
+                                   isinstance(block.get("text"), str))[:240])
+    return [item for item in result if item]
+
+def search_memory_context(query: str) -> str:
+    """Expose a real, read-only deep retrieval tool to the active Agent turn."""
+    thread_id = str(memory_manager.identities["ltm"])
+    context = active_turn_contexts.get(thread_id)
+    if context is None:
+        return json.dumps({"ok": False, "error": "turn_context_unavailable",
+                           "results": [], "secret_value_visible": False})
+    if len(str(query)) > 1000:
+        return json.dumps({"ok": False, "error": "query_too_long", "results": [],
+                           "secret_value_visible": False})
+    if not any(memory_manager.enabled.values()):
+        return json.dumps({"ok": True, "results": [], "reason": "all_tiers_disabled",
+                           "secret_value_visible": False})
+    with telemetry_runtime.observation("memory.refresh", "retriever", {
+            "thread_id_hash": hashlib.sha256(thread_id.encode()).hexdigest()[:16],
+            "query_digest": hashlib.sha256(str(query).encode()).hexdigest()[:24],
+            "context_version": str(context.get("version", 0)),
+        }) as observation:
+        refreshed = context_broker.refresh_memory(
+            memory_manager, context, query, reason="agent_requested_deeper_memory")
+        if observation is not None:
+            observation.update(metadata={
+                "result_count": str(len(refreshed["memories"])),
+                "new_context_version": str(refreshed["version"]),
+                "memory_chars": str(refreshed["memory_chars"]),
+            })
+    active_turn_contexts[thread_id] = refreshed
+    results = [{key: entry.get(key, "") for key in
+                ("id", "title", "tier", "scope", "content")}
+               for entry in refreshed["memories"]]
+    return json.dumps({"ok": True, "context_version": refreshed["version"],
+                       "change_reason": refreshed["change_reason"],
+                       "memory_summary": refreshed["memory_summary"],
+                       "memory_manifest": refreshed["manifest"],
+                       "retrieval": refreshed["memory_retrieval"],
+                       "results": results, "secret_value_visible": False},
+                      ensure_ascii=False, sort_keys=True)
+
+
+def build_memory_search_tool():
+    """Build the local deterministic search tool beside C++ broker tools."""
+    schema = create_model("CCad_MemorySearchArgs",
+                          query=(str, Field(..., min_length=1, max_length=1000,
+                                            description="Specific memory detail to retrieve")))
+    return StructuredTool.from_function(
+        search_memory_context, name="ccad_search_memory",
+        description=("Search enabled CCad memory tiers for relevant stored user preferences, "
+                     "conversation knowledge, and task facts. Read-only; results are scoped "
+                     "to the active user/task/thread and returned with provenance."),
+        args_schema=schema)
 
 
 def handle_durable_memory_compaction(arguments: str, thread_id: str) -> None:
@@ -775,6 +883,7 @@ def handle_durable_memory_compaction(arguments: str, thread_id: str) -> None:
                     scope=plan["scope"], source_entries=source,
                     summary=plan["summary"], title=f"Compacted memory ({len(source)} records)",
                     tags=tags, expires_at=expires_at)
+            invalidate_thread_context(memory_manager.identities["ltm"])
             memory_compaction_plans.cancel(plan_id)
             emit({"jsonrpc": "2.0", "method": "observability_state",
                   "params": telemetry_runtime.flush_turn()})
@@ -997,6 +1106,8 @@ def install_native_tool_catalog(catalog: object) -> dict:
     global native_tool_catalog, agent_tools, router_llm, librarian_llm, execute_tool_node, executor
     native_tool_catalog = validate_native_tool_catalog(catalog)
     agent_tools = build_native_tools(native_tool_catalog)
+    if "ccad_search_memory" not in {tool.name for tool in agent_tools}:
+        agent_tools.append(build_memory_search_tool())
     if llm is not None:
         router_llm = bind_native_tools(llm)
         librarian_llm = router_llm
@@ -1004,7 +1115,9 @@ def install_native_tool_catalog(catalog: object) -> dict:
     if executor is not None:
         executor = create_orchestrator()
     return {"accepted": True, "method_count": len(native_tool_catalog),
-            "tool_count": len(agent_tools), "secret_value_visible": False}
+            "tool_count": len(agent_tools), "native_tool_count": len(native_tool_catalog),
+            "local_tool_count": len(agent_tools) - len(native_tool_catalog),
+            "secret_value_visible": False}
 
 llm = None
 router_llm = None
@@ -2251,6 +2364,9 @@ def handle_provider_and_state_request(req, executor):
         params = req.get("params", {})
         thread_id = str(params.get("thread_id", "")).strip()
         if thread_id:
+            previous_thread = str(memory_manager.identities["ltm"])
+            if previous_thread != thread_id:
+                invalidate_thread_context(previous_thread)
             os.environ["CCAD_AGENT_THREAD_ID"] = thread_id
             session_id = str(params.get("session_id") or thread_id)
             project_id = str(params.get("project_id") or "project")
@@ -2401,6 +2517,7 @@ def handle_provider_and_state_request(req, executor):
                 "error": category, "tiers": memory_manager.state(),
                 "secret_value_visible": False}})
             return True
+        invalidate_thread_context(memory_manager.identities["ltm"])
         memory_compaction_plans.retain_current(
             memory_manager.identities, memory_manager.enabled)
         emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
@@ -2414,6 +2531,7 @@ def handle_provider_and_state_request(req, executor):
             if not bool(params.get("confirmed", False)):
                 raise ValueError("explicit confirmation required to reset persistent memories")
             removed = memory_manager.reset(tier)
+            invalidate_thread_context(memory_manager.identities["ltm"])
             emit({"jsonrpc": "2.0", "method": "memory_reset", "params": {
                 "tier": tier or "all", "removed": removed,
                 "secret_value_visible": False}})
@@ -2460,6 +2578,8 @@ def handle_provider_and_state_request(req, executor):
                 result = {"removed": memory_manager.delete(str(params.get("id", ""))),
                           "secret_value_visible": False}
                 event = "memory_deleted"
+            if method != "agent.memory_list":
+                invalidate_thread_context(memory_manager.identities["ltm"])
             emit({"jsonrpc": "2.0", "method": event, "params": result})
         except (TypeError, ValueError, RuntimeError) as error:
             emit({"jsonrpc": "2.0", "method": "memory_error", "params": {
@@ -2679,10 +2799,13 @@ if __name__ == "__main__":
                         "category": getattr(error, "category", "conversation_history_unavailable"),
                         "provider_request_sent": False, "secret_value_visible": False}})
                     continue
+                previous_thread = str(memory_manager.identities["ltm"])
                 memory_manager.set_identities(task_id=requested_task,
                                               thread_id=requested_thread,
                                               project_id=project_id,
                                               retain_stm_task=task_is_active)
+                if previous_thread != requested_thread:
+                    invalidate_thread_context(previous_thread)
                 memory_manager.configure(config_manager.get("memory", {}))
                 memory_compaction_plans.retain_current(
                     memory_manager.identities, memory_manager.enabled)
@@ -2693,7 +2816,6 @@ if __name__ == "__main__":
                     memory_query = text.partition(" ")[2].strip()
                     if memory_query.casefold().startswith("preview "):
                         memory_query = memory_query[8:].strip()
-                memory_entries, memory_retrieval = local_memory_entries(memory_query)
                 memory_runtime = memory_manager.state()
                 try:
                     turn_records = conversation_store.search_turn_records(
@@ -2706,19 +2828,100 @@ if __name__ == "__main__":
                         "category": error.category, "secret_value_visible": False}})
                     turn_records = []
                     recap = {"source_turn_ids": [], "turns": []}
-                with telemetry_runtime.observation("assemble-context", "retriever", {
-                        "memory_entry_count": len(memory_entries),
-                        "historical_turn_count": len(turn_records),
-                        "history_message_count": len(session_messages),
-                        "raw_context_chars": len(raw_context),
-                    }):
-                    package = build_context_package(
-                        raw_context, memory_entries, bound_session_history(session_messages),
-                        char_limit=agent_context_limit(),
-                        memory_retrieval=memory_retrieval,
-                        memory_runtime=memory_runtime,
-                        turn_records=turn_records,
-                        thread_recap=recap)
+                active_editor, selected_objects = project_retrieval_signals(raw_context)
+                recent_context = recent_retrieval_text(session_messages)
+                signals = extract_context_signals(
+                    memory_query, goal=text, project_id=project_id,
+                    active_editor=active_editor, selected_objects=selected_objects,
+                    workflow=active_workflow,
+                    task=memory_manager.identities["stm"], recent_turns=turn_records,
+                    recent_context=recent_context)
+                with telemetry_runtime.session(requested_thread), telemetry_runtime.observation(
+                        "context.assemble", "chain", {
+                            "thread_id_hash": hashlib.sha256(
+                                requested_thread.encode()).hexdigest()[:16],
+                            "project_revision": context_revision(raw_context),
+                            "signal_digest": signals["digest"],
+                            "recent_message_count": str(len(session_messages)),
+                            "historical_turn_count": str(len(turn_records)),
+                        }) as assembly_observation:
+                    with telemetry_runtime.observation("memory.retrieve", "retriever", {
+                            "signal_digest": signals["digest"],
+                            "enabled_tier_count": str(sum(memory_manager.enabled.values())),
+                            "retrieval_mode": "deterministic_lexical",
+                        }) as retrieval_observation:
+                        turn_context = context_broker.prepare(
+                            memory_manager, thread_id=requested_thread,
+                            project_revision=context_revision(raw_context),
+                            user_request=memory_query, goal=text,
+                            project_id=project_id, active_editor=active_editor,
+                            selected_objects=selected_objects, workflow=active_workflow,
+                            task=memory_manager.identities["stm"], recent_turns=turn_records,
+                            historical_turn_count=len(turn_records), signals=signals,
+                            recent_context=recent_context)
+                        if retrieval_observation is not None:
+                            retrieval_observation.update(
+                                input={"signal_digest": signals["digest"],
+                                       "enabled_tier_count": str(
+                                           sum(memory_manager.enabled.values()))},
+                                output={"result_count": str(
+                                            len(turn_context["memories"])),
+                                        "context_version": str(
+                                            turn_context["version"])},
+                                metadata={
+                                "cache_hit": str(turn_context["cache_hit"]).lower(),
+                                "memory_chars": str(turn_context["memory_chars"]),
+                            })
+                    memory_entries = turn_context["memories"]
+                    memory_retrieval = turn_context["memory_retrieval"]
+                    active_turn_contexts[requested_thread] = turn_context
+                    while len(active_turn_contexts) > ContextBroker.MAX_CACHE_ENTRIES:
+                        active_turn_contexts.pop(next(iter(active_turn_contexts)))
+                    with telemetry_runtime.observation("context.package", "span", {
+                            "context_version": str(turn_context["version"]),
+                            "memory_count": str(len(memory_entries)),
+                            "memory_chars": str(turn_context["memory_chars"]),
+                        }) as package_observation:
+                        package = build_context_package(
+                            raw_context, memory_entries,
+                            bound_session_history(session_messages),
+                            char_limit=agent_context_limit(),
+                            memory_retrieval=memory_retrieval,
+                            memory_runtime=memory_runtime,
+                            turn_records=turn_records,
+                            thread_recap=recap,
+                            memory_summary=turn_context["memory_summary"],
+                            memory_manifest=turn_context["manifest"],
+                            turn_context={key: turn_context[key] for key in
+                                          ("version", "change_reason", "signal_digest")})
+                        if package_observation is not None:
+                            package_observation.update(
+                                input={"project_revision": context_revision(raw_context),
+                                       "signal_digest": signals["digest"]},
+                                output={"context_package_digest": package["metadata"][
+                                            "package_digest"],
+                                        "context_chars": str(package["metadata"][
+                                            "content_size"]),
+                                        "truncated": str(package["metadata"][
+                                            "truncated"]).lower()})
+                    if assembly_observation is not None:
+                        context_metadata = package["metadata"]
+                        assembly_observation.update(
+                            input={"signal_digest": signals["digest"],
+                                   "project_revision": context_revision(raw_context)},
+                            output={"context_package_digest": context_metadata[
+                                        "package_digest"],
+                                    "memory_count": str(len(memory_entries)),
+                                    "context_chars": str(context_metadata[
+                                        "content_size"])},
+                            metadata={
+                            "context_package_digest": context_metadata["package_digest"],
+                            "context_chars": str(context_metadata["content_size"]),
+                            "context_tokens_estimated": str(
+                                context_metadata["estimated_token_count"]),
+                            "truncated": str(context_metadata["truncated"]).lower(),
+                            "source_count": str(len(context_metadata["sources"])),
+                        })
                 context_str = package["content"]
                 context_metadata = package["metadata"]
                 context_truncated = context_metadata["truncated"]
@@ -2779,6 +2982,15 @@ if __name__ == "__main__":
                     "memory_tier_chars": context_metadata["memory_tier_chars"],
                     "memory_retrieval": context_metadata["memory_retrieval"],
                     "memory_runtime": context_metadata["memory_runtime"],
+                    "memory_summary_chars": context_metadata["memory_summary_chars"],
+                    "memory_manifest": context_metadata["memory_manifest"],
+                    "turn_context_version": context_metadata["turn_context_version"],
+                    "turn_context_change_reason": context_metadata[
+                        "turn_context_change_reason"],
+                    "turn_context_signal_digest": context_metadata[
+                        "turn_context_signal_digest"],
+                    "context_cache_hit": turn_context["cache_hit"],
+                    "memory_token_budget": turn_context["memory_token_budget"],
                     "project_counts": context_metadata["project_counts"],
                 }})
                 
@@ -2842,6 +3054,7 @@ if __name__ == "__main__":
                             memory_manager.set_identities(
                                 task_id=task_id, thread_id=requested_thread,
                                 project_id=project_id, retain_stm_task=True)
+                            invalidate_thread_context(requested_thread)
                             memory_manager.configure(config_manager.get("memory", {}))
                             emit({"jsonrpc": "2.0", "method": "message", "params": {
                                 "text": "Task-scoped memory started. STM is isolated to this task; "
@@ -2853,6 +3066,7 @@ if __name__ == "__main__":
                             memory_manager.set_identities(
                                 task_id=uuid.uuid4().hex, thread_id=requested_thread,
                                 project_id=project_id, retain_stm_task=False)
+                            invalidate_thread_context(requested_thread)
                             memory_manager.configure(config_manager.get("memory", {}))
                             emit({"jsonrpc": "2.0", "method": "message", "params": {
                                 "text": ("Task-scoped memory ended and its process-only "
@@ -2882,6 +3096,9 @@ if __name__ == "__main__":
                         else:
                             try:
                                 event, result = execute_memory_command(memory_manager, cmd_args)
+                                if event in {"memory_added", "memory_updated",
+                                             "memory_deleted", "memory_reset"}:
+                                    invalidate_thread_context(requested_thread)
                                 emit({"jsonrpc": "2.0", "method": event, "params": result})
                             except (ValueError, RuntimeError) as error:
                                 emit({"jsonrpc": "2.0", "method": "message", "params": {
@@ -3227,6 +3444,7 @@ if __name__ == "__main__":
                           "params": reconfigure_observability()})
                 if "memory" in clean_config and not persistence_error:
                     failures = memory_manager.configure(clean_config.get("memory", {}))
+                    invalidate_thread_context(memory_manager.identities["ltm"])
                     memory_compaction_plans.retain_current(
                         memory_manager.identities, memory_manager.enabled)
                     emit({"jsonrpc": "2.0", "method": "memory_state", "params": {

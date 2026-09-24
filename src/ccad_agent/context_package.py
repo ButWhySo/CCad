@@ -54,6 +54,48 @@ def _memory_payload(entries: Iterable[dict], per_entry_limit: int = 1000) -> lis
     return result
 
 
+def _memory_summary(entries: Iterable[dict], supplied: str = "") -> str:
+    """Create a bounded, deterministic summary from only included safe entries."""
+    if supplied:
+        text = _safe_text(supplied, 1200)
+        if text:
+            return text
+    parts = []
+    for entry in entries:
+        title = _safe_text(entry.get("title"), 80)
+        content = _safe_text(entry.get("content"), 180)
+        if content:
+            parts.append((f"{title}: " if title else "") + content)
+    return "; ".join(parts)[:1200]
+
+
+def _memory_manifest(value: dict | None) -> dict:
+    """Allowlist compact availability facts; never accept manifest content."""
+    source = value if isinstance(value, dict) else {}
+    source_tiers = source.get("tiers", {})
+    tiers = {}
+    for tier in ("stm", "ltm", "episodic"):
+        item = source_tiers.get(tier, {}) if isinstance(source_tiers, dict) else {}
+        if not isinstance(item, dict):
+            continue
+        tiers[tier] = {
+            "enabled": bool(item.get("enabled", False)),
+            "available_count": max(0, int(item.get("available_count", 0) or 0)),
+            "loaded_count": max(0, int(item.get("loaded_count", 0) or 0)),
+            "scope": _safe_text(item.get("scope"), 32),
+        }
+    return {"version": 1, "tiers": tiers,
+            "available_tier_count": max(0, int(source.get("available_tier_count", 0) or 0)),
+            "historical_thread_summary_count": max(
+                0, int(source.get("historical_thread_summary_count", 0) or 0)),
+            "project_scope_available": bool(source.get("project_scope_available", False)),
+            "project_memory_count": (max(0, int(source["project_memory_count"]))
+                                     if isinstance(source.get("project_memory_count"), int)
+                                     else None),
+            "semantic_retrieval_ready": bool(source.get("semantic_retrieval_ready", False)),
+            "contents_included": False}
+
+
 def _turn_payload(records: Iterable[dict]) -> list[dict]:
     """Keep retrieved history concise and traceable to durable source messages."""
     result = []
@@ -132,11 +174,17 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
                           memory_retrieval: Iterable[dict] = (),
                           memory_runtime: dict | None = None,
                           turn_records: Iterable[dict] = (),
-                          thread_recap: dict | None = None) -> dict:
+                          thread_recap: dict | None = None,
+                          memory_summary: str = "",
+                          memory_manifest: dict | None = None,
+                          turn_context: dict | None = None) -> dict:
     """Return actual provider content plus non-content metadata for one turn."""
     limit = min(131072, max(1024, int(char_limit)))
     project, native_revision = _project_payload(raw_context)
     memories = _memory_payload(memory_entries)
+    summary = _memory_summary(memories, memory_summary)
+    manifest = _memory_manifest(memory_manifest)
+    turn_context = turn_context if isinstance(turn_context, dict) else {}
     prior_turns = _turn_payload(turn_records)
     recap = _recap_payload(thread_recap)
     history_items = list(history)
@@ -148,6 +196,13 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
         "context_kind": "ccad_provider_context",
         "project": project,
         "memory": memories,
+        "memory_summary": summary,
+        "memory_manifest": manifest,
+        "turn_context": {
+            "version": max(0, int(turn_context.get("version", 0) or 0)),
+            "change_reason": _safe_text(turn_context.get("change_reason"), 80),
+            "signal_digest": _safe_text(turn_context.get("signal_digest"), 24),
+        },
         "conversation": {"recent_message_count": len(history_items)},
         "prior_turns": prior_turns,
         "thread_recap": recap,
@@ -180,8 +235,32 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
             }
             envelope["constraints"]["project_snapshot_omitted"] = True
         envelope["constraints"]["context_truncated"] = True
+        # The summary repeats titles only, while entries carry the actual
+        # source-backed facts. Keep the manifest's tier availability compact
+        # before sacrificing a relevant memory record.
+        if len(encoded := encode()) > limit and envelope["memory_summary"]:
+            envelope["memory_summary"] = ""
+        if len(encoded := encode()) > limit:
+            current_manifest = envelope["memory_manifest"]
+            envelope["memory_manifest"] = {
+                "version": 1,
+                "tiers": {tier: {"enabled": item["enabled"],
+                                 "available_count": item["available_count"]}
+                          for tier, item in current_manifest["tiers"].items()
+                          if item["enabled"] or item["available_count"]},
+                "available_tier_count": current_manifest["available_tier_count"],
+                "historical_thread_summary_count": current_manifest[
+                    "historical_thread_summary_count"],
+                "project_scope_available": current_manifest[
+                    "project_scope_available"],
+                "project_memory_count": current_manifest["project_memory_count"],
+                "semantic_retrieval_ready": current_manifest[
+                    "semantic_retrieval_ready"],
+                "contents_included": False,
+            }
         while len(encoded := encode()) > limit and envelope["memory"]:
             envelope["memory"].pop()
+            envelope["memory_summary"] = _memory_summary(envelope["memory"])
             omitted_memory_count += 1
         if omitted_memory_count:
             envelope["constraints"]["omitted_memory_entry_count"] = omitted_memory_count
@@ -203,6 +282,7 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
             encoded = encode()
         if len(encoded) > limit:
             envelope["memory"] = []
+            envelope["memory_summary"] = ""
             omitted_memory_count = len(memories)
             envelope["constraints"]["omitted_memory_entry_count"] = omitted_memory_count
             encoded = encode()
@@ -225,6 +305,10 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
         sources.append("project_summary")
     if included_memories:
         sources.append("retrieved_memory")
+    if envelope["memory_summary"]:
+        sources.append("memory_summary")
+    if envelope["memory_manifest"]["tiers"]:
+        sources.append("memory_manifest")
     if envelope["prior_turns"]:
         sources.append("retrieved_conversation_turns")
     included_recap = envelope["thread_recap"]
@@ -269,6 +353,11 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
             "memory_tier_counts": memory_tier_counts,
             "memory_tier_chars": memory_tier_chars,
             "memory_retrieval": included_retrieval,
+            "memory_summary_chars": len(envelope["memory_summary"]),
+            "memory_manifest": envelope["memory_manifest"],
+            "turn_context_version": envelope["turn_context"]["version"],
+            "turn_context_change_reason": envelope["turn_context"]["change_reason"],
+            "turn_context_signal_digest": envelope["turn_context"]["signal_digest"],
             "memory_runtime": {
                 tier: {
                     "enabled": bool((memory_runtime or {}).get(tier, {}).get("enabled", False)),

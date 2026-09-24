@@ -2158,3 +2158,8 @@ scoped screenshots/logs are in ignored `artifacts/screenshots/`; review the
 progress and memory-context lifecycle note for exact visual/database results
 and remaining limits. No history UI, legacy-checkpoint migration, cross-thread
 search, or semantic retrieval is claimed by this slice.
+### Sprint 977 context broker and runtime memory retrieval
+
+`src/ccad_agent/context_broker.py` derives bounded task/editor/selection/entity/history signals, applies the existing `MemoryManager` tier/namespace filters before lexical ranking, caps selected records by estimated memory tokens, and caches the result against thread, project revision, request signals, history count, and memory generation. A thread's cached context is invalidated when its memory changes, a task starts/ends, or the thread changes. The `TurnContext` carries only safe counts/digests for diagnosis; the provider-facing context package separately carries the authorized memory entries, a title-only bounded summary, and an allowlisted content-free scope/count manifest.
+
+`orchestrator.py` creates that context before graph/model reasoning and binds `ccad_search_memory` beside the real native catalog tools. The local tool reuses the active thread's TurnContext, performs deterministic deeper retrieval, re-applies the memory budget, and returns source IDs/scopes plus an incremented context version. It is not a substitute for project entity search. Project-scoped memory does not exist in the current durable schema, and `MemoryManifest` says so rather than inferring a count. Langfuse currently contains a nested context-assembly tree, but it is created before the later `agent.turn` trace; same-root end-to-end observation remains open.

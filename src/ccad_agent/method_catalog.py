@@ -161,7 +161,8 @@ def orchestrator_method_catalog():
              "secrets": False, "side_effect": "runtime_tool_registration",
              "params": {"catalog": {"type": "array", "optional": False}},
              "response": {"method": "tool_catalog_state", "fields": [
-                 "accepted", "method_count", "tool_count", "error",
+                 "accepted", "method_count", "tool_count", "native_tool_count",
+                 "local_tool_count", "error",
                  "secret_value_visible"]}},
             {"name": "agent.mcp_status", "read_only": True, "network_access": "none",
              "secrets": False, "response": {"method": "mcp_status", "fields": [

@@ -122,6 +122,38 @@ if ($Name.StartsWith("sprint975-memory-ui")) {
   [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
     ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
 }
+if ($Name.StartsWith("sprint977-context")) {
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint977-context-" + [Guid]::NewGuid().ToString("N"))
+  $configDir = Join-Path $isolatedMemoryProfile "CCad"
+  New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+  $env:APPDATA = $isolatedMemoryProfile
+  $env:CCAD_AGENT_MEMORY_PATH = Join-Path $isolatedMemoryProfile "agent_memory.json"
+  $env:CCAD_AGENT_CONVERSATION_DB = Join-Path $isolatedMemoryProfile "agent_conversations.sqlite3"
+  $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
+  $env:CCAD_AGENT_THREAD_ID = "sprint977-context-ui-thread"
+  $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
+  $testConfig = [ordered]@{
+    provider = "openai"
+    model = "gpt-5.1"
+    memory = @{ stm = $false; ltm = $true; episodic = $false }
+    observability = @{ enabled = $false; backend = "langfuse"; environment = "development" }
+  }
+  [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
+    ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
+  $testMemory = @(@{
+    id = "sprint977-gnd-u3-memory"
+    title = "GND routing near U3"
+    content = "Keep the GND return path short around U3 on F.Cu."
+    scope = "conversation"
+    tier = "ltm"
+    namespace = $env:CCAD_AGENT_THREAD_ID
+    tags = @("GND", "U3", "F.Cu")
+    created_at = [DateTime]::UtcNow.ToString("o")
+    expires_at = ""
+  })
+  [IO.File]::WriteAllText($env:CCAD_AGENT_MEMORY_PATH,
+    (ConvertTo-Json -InputObject $testMemory -Depth 8), [Text.UTF8Encoding]::new($false))
+}
 if ($Name.StartsWith("sprint976-conversation")) {
   $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint976-" + [Guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path $isolatedMemoryProfile -Force | Out-Null
@@ -204,7 +236,7 @@ try {
       throw "Mapped memory deletion did not capture its confirmation dialog."
     }
   }
-  if ($Name.StartsWith("sprint976-conversation")) {
+  if ($Name.StartsWith("sprint976-conversation") -or $Name.StartsWith("sprint977-context")) {
     $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
     $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
     foreach ($field in @("conversation_turn_visible", "canonical_transcript_retained_after_clear")) {
@@ -220,13 +252,22 @@ try {
       throw "The configured Agent Python runtime is required to inspect the conversation database."
     }
     $databaseVerifier = Join-Path $Root "scripts\verify_conversation_ui_state.py"
-    $databaseStateJson = & $agentPython $databaseVerifier $env:CCAD_AGENT_CONVERSATION_DB "sprint976-conversation-ui-thread"
+    $expectedThreadId = if ($Name.StartsWith("sprint977-context")) {
+      "sprint977-context-ui-thread"
+    } else {
+      "sprint976-conversation-ui-thread"
+    }
+    $databaseStateJson = & $agentPython $databaseVerifier $env:CCAD_AGENT_CONVERSATION_DB $expectedThreadId
     if ($LASTEXITCODE -ne 0) { throw "Could not inspect the isolated conversation database." }
     $databaseState = $databaseStateJson | ConvertFrom-Json
     if ($databaseState.messages -ne 2 -or $databaseState.users -ne 1 -or
         $databaseState.assistants -ne 1 -or $databaseState.turn_records -ne 1 -or
         $databaseState.projection -ne "[]") {
       throw "Unexpected persisted transcript/projection state: $databaseStateJson"
+    }
+    if ($Name.StartsWith("sprint977-context") -and
+        -not ($reportData.entries | Where-Object { $_.context_memory_attached -eq $true })) {
+      throw "Mapped turn did not visibly prove inclusion of its enabled scoped memory entry."
     }
     $databaseState | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $ScreenshotDir "$Name-database-verification.json")
     if ($stdoutLog -and (Select-String -LiteralPath $stdoutLog -Pattern 'provider_request_sent":true' -Quiet)) {

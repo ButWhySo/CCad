@@ -241,8 +241,13 @@ if(Python3_Interpreter_FOUND)
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_agent_orchestrator_method_catalog.py")
   add_test(NAME agent_context_budget
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_context_budget.py")
+  add_test(NAME agent_context_broker
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_context_broker.py")
 
   if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe")
+    add_test(NAME agent_memory_search_tool
+      COMMAND "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe"
+              "${CMAKE_SOURCE_DIR}/scripts/test_agent_memory_search_tool.py")
     add_test(NAME agent_conversation_store
       COMMAND "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe"
               "${CMAKE_SOURCE_DIR}/scripts/test_conversation_store.py")

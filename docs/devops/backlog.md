@@ -1172,3 +1172,11 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   verify checkpoint restoration against the per-thread model projection.
 - [ ] Sprint 976 follow-up: add ranked BM25/semantic retrieval and richer
   evidence extraction; current TurnRecord search is bounded lexical overlap.
+- [ ] Sprint 977 follow-up: add project-scoped memory storage/retrieval and a
+  revision-aware exact/lexical/graph/spatial project index before claiming full
+  PCB/schematic state retrieval.
+- [ ] Sprint 977 follow-up: join context assembly/retrieval observations to the
+  same root `agent.turn` Langfuse trace; current assembly precedes that trace.
+- [ ] Sprint 977 follow-up: add explicit preference/correction weighting and
+  provider-tokenizer-based global budget allocation; current memory ranking and
+  token counts are deterministic lexical/character estimates.
