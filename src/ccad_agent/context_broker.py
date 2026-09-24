@@ -247,7 +247,9 @@ class ContextBroker:
         project_retrieval = {"available": False, "entities": [], "characters": 0,
                              "revision": "", "stats": {"index_state": "unavailable",
                              "total_entities": 0, "omitted_count": 0},
-                             "relationship_semantics": "shared_net_association_only"}
+                             "relationship_semantics": "shared_net_association_only",
+                             "board_net_semantics":
+                             "native_net_id_association_not_physical_continuity"}
         if project_snapshot:
             project_model_data = project_model(project_snapshot)
             project_key = str(project_model_data.get("id") or

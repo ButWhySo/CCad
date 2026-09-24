@@ -398,6 +398,25 @@ class ProjectIndex:
                           ("teardrop", "teardrops")):
             add(kind, board.get(key), aliases=("id", "name", "text", "kind", "net_id"))
 
+        # The typed board stores net IDs on copper objects instead of in a
+        # separate board-net table. Materialize one searchable node per ID so
+        # board-only projects can resolve a net query and expand to members.
+        # This indexes native association only; it does not claim continuity.
+        board_net_kinds = {"footprint", "pad", "track", "track_arc", "via", "zone",
+                           "graphic", "board_text", "dimension", "keepout",
+                           "route_request", "board_group", "target", "barcode",
+                           "board_table", "placement_region", "reference_image",
+                           "teardrop"}
+        board_net_ids = sorted({doc["fields"].get("net_id", "") for doc in docs
+                                if doc["fields"]["kind"] in board_net_kinds and
+                                doc["fields"].get("net_id")})
+        for net_id in board_net_ids:
+            net_doc = cls._make_doc("board_net", {"id": net_id, "net_id": net_id},
+                                    aliases=("id", "net_id"),
+                                    extra_text=("PCB board net",))
+            if net_doc is not None and len(docs) < _MAX_INPUT_ENTITIES:
+                docs.append(net_doc)
+
         schematic_sources = [project]
         schematics = project.get("schematics", [])
         if isinstance(schematics, list):
@@ -619,12 +638,18 @@ class ProjectIndex:
         tokens = {token.casefold() for token in _WORD.findall(normalized)}
         candidates = {alias for token in tokens
                       for alias in self._alias_tokens.get(token, ())}
+        matched = []
         for alias in candidates:
             uids = self._aliases.get(alias, ())
             if len(alias) < 2:
                 continue
             if re.search(r"(?<![\w])" + re.escape(alias) + r"(?![\w])", normalized):
-                found.update(uids)
+                matched.append((alias, uids))
+        # A full colon-delimited pin identity outranks its embedded net-name
+        # alias, including when natural-language words precede the identity.
+        structured = [(alias, uids) for alias, uids in matched if ":" in alias]
+        for _, uids in structured or matched:
+            found.update(uids)
         for value in extras:
             found.update(self._aliases.get(_normalize(value), ()))
         return found
@@ -706,6 +731,13 @@ class ProjectIndex:
                     if doc["fields"]["kind"] in schematic_kinds and \
                             other_kind in schematic_kinds:
                         relation = "logical_net_member"
+                    elif "board_net" in {doc["fields"]["kind"], other_kind}:
+                        relation = ("matching_net_id" if
+                                    doc["fields"]["kind"] in schematic_kinds or
+                                    other_kind in schematic_kinds else "board_net_member")
+                    elif doc["fields"]["kind"] in schematic_kinds or \
+                            other_kind in schematic_kinds:
+                        relation = "matching_net_id"
                     found[neighbor].add(relation)
             for layer in doc["layers"]:
                 for neighbor in self._layer_docs.get(layer, ()):
@@ -734,6 +766,8 @@ class ProjectIndex:
             return {"available": False, "reason": "typed_project_snapshot_unavailable",
                     "entities": [], "characters": 0, "revision": "",
                     "relationship_semantics": "shared_net_association_only",
+                    "board_net_semantics":
+                        "native_net_id_association_not_physical_continuity",
                     "logical_net_semantics":
                         "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity",
                     "spatial_semantics": "axis_aligned_bounds_distance_only",
@@ -823,6 +857,8 @@ class ProjectIndex:
         return {"available": True, "reason": "", "revision": self._revision,
                 "entities": output, "characters": used_chars, "stats": stats,
                 "relationship_semantics": "shared_net_association_only",
+                "board_net_semantics":
+                    "native_net_id_association_not_physical_continuity",
                 "logical_net_semantics":
                     "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity",
                 "spatial_semantics": "axis_aligned_bounds_distance_only",

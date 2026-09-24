@@ -2,6 +2,17 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 984 active slice — exact native PCB-net retrieval (Tier 1, C3)
+
+- [x] Derive bounded board-net index nodes from net IDs present on native typed board objects; preserve net ID and member relationships without claiming physical continuity.
+- [x] Ensure a full colon-delimited schematic-pin identity wins over its embedded net-name token, including when natural-language text precedes the identity.
+- [x] Preserve the native board-net association semantics in bounded provider context and expose the number of actually packaged board-net records in safe turn metadata and the Agent activity line.
+- [x] Add board-only, exact retrieval, bounded-context, structured-ID, and incremental net reassignment/stale-membership regression contracts.
+- [x] Pass the 23 focused project-index contracts, changed-module Pyright 1.1.414 (0 diagnostics), Qt MinGW Release build, and full CTest (113/113).
+- [x] Pass the provider-disabled seven-action GUI-map query against the real `agent-catalog` project; verify displayed board-net count, transcript retention/clear behavior, inspect all three distinct screenshots, and review stdout/stderr.
+- [x] Update handover/features/progress and this checklist; the production TODO is the canonical backlog, so no duplicate backlog file was created. Run the staged secret scan.
+- [ ] Commit the verified slice, fast-forward/push `main`, verify remote SHA, and remove only the completed sprint branch.
+
 ### Sprint 983 active slice — production-shaped project-index coverage (Tier 1, C3)
 
 References checked: [KiCad board file format](https://dev-docs.kicad.org/en/file-formats/sexpr-pcb/) models layers, setup, footprints, graphics, images, tracks, and zones as typed board sections; [KiCad PCB Editor](https://docs.kicad.org/10.0/en/pcbnew/pcbnew.html) describes pads, tracks, vias, and zones as distinct physical/net objects. CCad retains its own serialized model; this slice indexes the actual CCad JSON fields and does not infer rule IDs or layer membership absent from the kernel model.
@@ -4648,7 +4659,7 @@ Complete together:
 
 - [x] Exact identity index for implemented typed entity classes; remaining entity coverage stays open above.
 - [x] Deterministic BM25 index for implemented typed entity text; remaining text-field coverage stays open above.
-- [ ] project relationship graph (Sprint 981 implements bounded connected schematic-net membership and component links; full graph remains open).
+- [ ] project relationship graph (Sprint 981 implements bounded schematic-net membership and component links; Sprint 984 adds exact native board-net nodes/membership. Diagnostic/object, sheet, and broader graph coverage remains open).
 - [x] PCB spatial index for supported typed entity geometry; diagnostic-marker and arbitrary bbox query coverage remains open.
 - [x] Hybrid deterministic project retrieval.
 - [x] Content revision/staleness handling against the live typed snapshot.

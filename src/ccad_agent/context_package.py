@@ -134,6 +134,8 @@ def _project_retrieval_payload(value: dict | None) -> dict:
         "revision": _safe_text(source.get("revision"), 32),
         "search_method": _safe_text(source.get("search_method"), 80),
         "relationship_semantics": "shared_net_association_only",
+        "board_net_semantics":
+            "native_net_id_association_not_physical_continuity",
         "logical_net_semantics":
             "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity",
         "spatial_semantics": "axis_aligned_bounds_distance_only",

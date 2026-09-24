@@ -459,6 +459,7 @@ int main(int argc, char** argv) {
           name.startsWith("sprint981-schematic-project-graph") ||
           name.startsWith("sprint982-multilayer-project-context") ||
           name.startsWith("sprint983-project-index-typed-geometry") ||
+          name.startsWith("sprint984-board-net-retrieval") ||
           name.startsWith("sprint975-memory-ui") ||
           name.startsWith("sprint974-memory")) {
         const auto interact = [window, &entries, &output_dir, &name,
@@ -486,7 +487,8 @@ int main(int argc, char** argv) {
                !name.startsWith("sprint980-project-retrieval") &&
                !name.startsWith("sprint981-schematic-project-graph") &&
                !name.startsWith("sprint982-multilayer-project-context") &&
-               !name.startsWith("sprint983-project-index-typed-geometry")) ||
+               !name.startsWith("sprint983-project-index-typed-geometry") &&
+               !name.startsWith("sprint984-board-net-retrieval")) ||
               memory_checkpoints.contains(action_name)) {
             screenshot_path = QString::fromStdString(
                 (output_dir / (name + "-" + action_name + ".png").toStdString()).string());
@@ -496,6 +498,7 @@ int main(int argc, char** argv) {
           QString popup_screenshot;
           if (auto* popup = window->findChild<QListWidget*>("panel:agent_slash_commands");
               !name.startsWith("sprint983-project-index-typed-geometry") &&
+              !name.startsWith("sprint984-board-net-retrieval") &&
               popup && popup->isVisible()) {
             popup_screenshot = QString::fromStdString(
                 (output_dir / (name + "-" + action_name + "-slash-popup.png").toStdString()).string());
@@ -567,7 +570,8 @@ int main(int argc, char** argv) {
                    name.startsWith("sprint980-project-retrieval") ||
                    name.startsWith("sprint981-schematic-project-graph") ||
                    name.startsWith("sprint982-multilayer-project-context") ||
-                   name.startsWith("sprint983-project-index-typed-geometry")) {
+                   name.startsWith("sprint983-project-index-typed-geometry") ||
+                   name.startsWith("sprint984-board-net-retrieval")) {
           const auto capture = [window, &output_dir, &name, &entries](const QString& state) {
             const QString path = QString::fromStdString(
                 (output_dir / (name + "-" + state + ".png").toStdString()).string());
@@ -593,9 +597,12 @@ int main(int argc, char** argv) {
               name.startsWith("sprint982-multilayer-project-context");
           const bool serialized_pad_layer_validation =
               name.startsWith("sprint983-project-index-typed-geometry");
+          const bool board_net_validation =
+              name.startsWith("sprint984-board-net-retrieval");
           const bool project_retrieval_validation = schematic_graph_validation ||
               multilayer_project_validation ||
               serialized_pad_layer_validation ||
+              board_net_validation ||
               name.startsWith("sprint980-project-retrieval");
           if (multilayer_project_validation) {
             const QString before_state_json = window->runAgentUiQueryJson("project.state", "{}");
@@ -640,6 +647,8 @@ int main(int argc, char** argv) {
                      ? QStringLiteral("Inspect schematic net AC1 and list its member pins.")
                      : serialized_pad_layer_validation
                      ? QString()
+                     : board_net_validation
+                     ? QStringLiteral("Inspect the PCB net AC1 and identify its exact member pads.")
                      : QStringLiteral("Describe component U_DEMO in the loaded project."))
               : context_memory_validation
               ? QStringLiteral("What memory applies to GND near U3 on F.Cu?")
@@ -692,6 +701,16 @@ int main(int argc, char** argv) {
               (chat && chat->toPlainText().contains("schematic symbols"));
           const bool pcb_layers_visible = !multilayer_project_validation ||
               (chat && chat->toPlainText().contains(" PCB layers"));
+          bool board_net_visible = !board_net_validation;
+          if (board_net_validation && chat) {
+            for (int net_count = 1; net_count <= 32; ++net_count) {
+              if (chat->toPlainText().contains(
+                      QString("PCB nets: %1").arg(net_count))) {
+                board_net_visible = true;
+                break;
+              }
+            }
+          }
           bool multiple_project_layers_visible = !serialized_pad_layer_validation;
           if (serialized_pad_layer_validation && chat) {
             for (int layer_count = 2; layer_count <= 32; ++layer_count) {
@@ -704,18 +723,19 @@ int main(int argc, char** argv) {
           }
           const bool turn_visible = chat && memory_visible && project_matches_visible &&
               schematic_pin_visible && schematic_symbol_visible && pcb_layers_visible &&
-              multiple_project_layers_visible &&
+              multiple_project_layers_visible && board_net_visible &&
               chat->toPlainText().contains(user_prompt) &&
               chat->toPlainText().contains(
                   "Provider execution is unavailable; configure a provider");
-          entries << QString("{\"conversation_turn_visible\":%1,\"context_memory_attached\":%2,\"project_retrieval_visible\":%3,\"schematic_pin_retrieval_visible\":%4,\"schematic_symbol_retrieval_visible\":%5,\"project_layers_visible\":%6,\"multiple_project_layers_visible\":%7,\"provider_request_sent\":false}")
+          entries << QString("{\"conversation_turn_visible\":%1,\"context_memory_attached\":%2,\"project_retrieval_visible\":%3,\"schematic_pin_retrieval_visible\":%4,\"schematic_symbol_retrieval_visible\":%5,\"project_layers_visible\":%6,\"multiple_project_layers_visible\":%7,\"board_net_count_visible\":%8,\"provider_request_sent\":false}")
                          .arg(turn_visible ? "true" : "false",
                               memory_visible ? "true" : "false",
                               project_matches_visible ? "true" : "false",
                               schematic_pin_visible ? "true" : "false",
                               schematic_symbol_visible ? "true" : "false",
                               pcb_layers_visible ? "true" : "false",
-                              multiple_project_layers_visible ? "true" : "false");
+                              multiple_project_layers_visible ? "true" : "false",
+                              board_net_visible ? "true" : "false");
           ok = turn_visible && capture("turn-persisted") && ok;
           ok = interact("ui.type_text",
                         "{\"id\":\"control:agent_chat_input\",\"text\":\"/clear\"}",
@@ -978,7 +998,9 @@ int main(int argc, char** argv) {
         const std::filesystem::path output_path =
             output_dir / (name + "-target-sequence.json").toStdString();
         std::ofstream output(output_path, std::ios::binary);
-        const QString interaction_plan = name.startsWith("sprint983-project-index-typed-geometry")
+        const QString interaction_plan = name.startsWith("sprint984-board-net-retrieval")
+            ? QStringLiteral("Ask the real Agent UI to inspect native PCB net AC1 and expose its board-net retrieval count in safe per-turn context metadata; complete seven mapped chat/editor actions with provider disabled")
+            : name.startsWith("sprint983-project-index-typed-geometry")
             ? QStringLiteral("Retrieve a production-shaped nested padstack.layer_set through exact B.Cu context; inspect typed board state, complete seven mapped chat interactions, and prove multiple PCB layer IDs reached bounded context with provider disabled")
             : name.startsWith("sprint982-multilayer-project-context")
             ? QStringLiteral("Place one via on the disposable board through mapped toolbar and board-point interactions, then prove its F.Cu/B.Cu span survives exact project retrieval and bounded Agent context; provider disabled")

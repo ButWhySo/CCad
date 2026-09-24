@@ -185,8 +185,11 @@ if ($Name.StartsWith("sprint976-conversation")) {
 if ($Name.StartsWith("sprint980-project-retrieval") -or
     $Name.StartsWith("sprint981-schematic-project-graph") -or
     $Name.StartsWith("sprint982-multilayer-project-context") -or
-    $Name.StartsWith("sprint983-project-index-typed-geometry")) {
-  $profilePrefix = if ($Name.StartsWith("sprint982-multilayer-project-context")) {
+    $Name.StartsWith("sprint983-project-index-typed-geometry") -or
+    $Name.StartsWith("sprint984-board-net-retrieval")) {
+  $profilePrefix = if ($Name.StartsWith("sprint984-board-net-retrieval")) {
+    "ccad-sprint984-board-net-"
+  } elseif ($Name.StartsWith("sprint982-multilayer-project-context")) {
     "ccad-sprint982-multilayer-"
   } elseif ($Name.StartsWith("sprint983-project-index-typed-geometry")) {
     "ccad-sprint983-typed-geometry-"
@@ -199,7 +202,9 @@ if ($Name.StartsWith("sprint980-project-retrieval") -or
   $env:APPDATA = $isolatedMemoryProfile
   $env:CCAD_AGENT_CONVERSATION_DB = Join-Path $isolatedMemoryProfile "agent_conversations.sqlite3"
   $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
-  $env:CCAD_AGENT_THREAD_ID = if ($Name.StartsWith("sprint982-multilayer-project-context")) {
+  $env:CCAD_AGENT_THREAD_ID = if ($Name.StartsWith("sprint984-board-net-retrieval")) {
+    "sprint984-board-net-retrieval-ui-thread"
+  } elseif ($Name.StartsWith("sprint982-multilayer-project-context")) {
     "sprint982-multilayer-project-context-ui-thread"
   } elseif ($Name.StartsWith("sprint983-project-index-typed-geometry")) {
     "sprint983-project-index-typed-geometry-ui-thread"
@@ -314,7 +319,8 @@ try {
       $Name.StartsWith("sprint980-project-retrieval") -or
       $Name.StartsWith("sprint981-schematic-project-graph") -or
       $Name.StartsWith("sprint982-multilayer-project-context") -or
-      $Name.StartsWith("sprint983-project-index-typed-geometry")) {
+      $Name.StartsWith("sprint983-project-index-typed-geometry") -or
+      $Name.StartsWith("sprint984-board-net-retrieval")) {
     $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
     $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
     foreach ($field in @("conversation_turn_visible", "canonical_transcript_retained_after_clear")) {
@@ -330,7 +336,9 @@ try {
       throw "The configured Agent Python runtime is required to inspect the conversation database."
     }
     $databaseVerifier = Join-Path $Root "scripts\verify_conversation_ui_state.py"
-    $expectedThreadId = if ($Name.StartsWith("sprint982-multilayer-project-context")) {
+    $expectedThreadId = if ($Name.StartsWith("sprint984-board-net-retrieval")) {
+      "sprint984-board-net-retrieval-ui-thread"
+    } elseif ($Name.StartsWith("sprint982-multilayer-project-context")) {
       "sprint982-multilayer-project-context-ui-thread"
     } elseif ($Name.StartsWith("sprint983-project-index-typed-geometry")) {
       "sprint983-project-index-typed-geometry-ui-thread"
@@ -358,7 +366,8 @@ try {
     if (($Name.StartsWith("sprint980-project-retrieval") -or
          $Name.StartsWith("sprint981-schematic-project-graph") -or
          $Name.StartsWith("sprint982-multilayer-project-context") -or
-         $Name.StartsWith("sprint983-project-index-typed-geometry")) -and
+         $Name.StartsWith("sprint983-project-index-typed-geometry") -or
+         $Name.StartsWith("sprint984-board-net-retrieval")) -and
         -not ($reportData.entries | Where-Object { $_.project_retrieval_visible -eq $true })) {
       throw "Mapped turn did not visibly prove a non-empty typed-project retrieval result."
     }
@@ -373,6 +382,10 @@ try {
     if ($Name.StartsWith("sprint983-project-index-typed-geometry") -and
         -not ($reportData.entries | Where-Object { $_.multiple_project_layers_visible -eq $true })) {
       throw "Mapped turn did not prove multiple exact PCB layer identities reached bounded context."
+    }
+    if ($Name.StartsWith("sprint984-board-net-retrieval") -and
+        -not ($reportData.entries | Where-Object { $_.board_net_count_visible -eq $true })) {
+      throw "Mapped turn did not show native PCB net retrieval in safe context metadata."
     }
     if ($Name.StartsWith("sprint981-schematic-project-graph") -and
         (-not ($reportData.entries | Where-Object { $_.schematic_pin_retrieval_visible -eq $true }) -or
