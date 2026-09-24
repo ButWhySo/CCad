@@ -2,6 +2,18 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 978 active slice — one Langfuse root per Agent turn
+
+References Checked: [Langfuse SDK instrumentation](https://langfuse.com/docs/observability/sdk/instrumentation) documents active-context nesting; [Langfuse sessions](https://langfuse.com/docs/observability/features/sessions) documents propagating one stable conversation session ID to child observations. `context_broker.py` and the orchestrator confirm the recap was packaged but not supplied to automatic-memory deduplication.
+
+- [x] Open one `agent.turn` root and bind the durable thread session before context construction.
+- [x] Keep context assembly, memory retrieval, context packaging, and LangGraph invocation under that trace; close root before export/readback.
+- [x] Close and flush early-exit turns without a provider call; preserve truthful disabled/unconfigured tracing behavior.
+- [x] Deduplicate automatic memories against recent conversation and the actual thread recap; include recap changes in cache invalidation and reuse dedup context during targeted refresh.
+- [x] Verify real Langfuse SDK ancestry with a local in-memory exporter, source-order contract, recap-dedup/cache/refresh regressions, Qt Release, full CTest (111/111), and seven mapped GUI interactions with four inspected screenshots and reviewed logs.
+- [ ] Resolve Pyright's `orchestrator.py` complexity cutoff; telemetry, ContextBroker, and new regression contracts are clean under Pyright 1.1.414.
+- [ ] Follow-on: project-scoped memory/indexing, semantic relevance, provider-tokenizer budgeting, and preference/correction-aware ranking.
+
 ### Sprint 977 active slice — deterministic context and memory retrieval
 
 - [x] Extract bounded, secret-redacted task/editor/selection/entity/history signals without an LLM call.
@@ -11,7 +23,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Add a real read-only `ccad_search_memory` LangChain tool for targeted in-turn memory retrieval and version refresh.
 - [x] Add focused no-network tests for signal redaction, relevance, scope isolation, cache/write invalidation, targeted refresh, provider tool composition, and package budgets.
 - [x] Pass Qt MinGW Release build and full CTest (110/110); pass changed-module Pyright and clangd; complete seven mapped GUI actions with four inspected screenshots and reviewed stdout/stderr; run repository and staged-diff secret scans before commit.
-- [ ] Follow-on: project-scoped memory/indexing, semantic relevance, same-root `agent.turn` Langfuse context spans, provider-tokenizer budgeting, and preference/correction-aware ranking.
+- [x] Follow-on completed in Sprint 978: same-root context/graph tracing and deduplication against recent conversation plus thread recap.
 
 ### Sprint 976 conversation-store slice
 
@@ -4015,7 +4027,7 @@ Keep complete raw messages, but additionally build one compact `TurnRecord` for 
 - [x] Retrieve thread-scoped memories where useful.
 - [x] Include a bounded stable Memory Summary.
 - [x] Include bounded top-K automatically retrieved memories.
-- [ ] Deduplicate automatic memories against both recent conversation and thread recap.
+- [x] Deduplicate automatic memories against both recent conversation and thread recap (Sprint 978 regression coverage).
 - [ ] Prefer explicit user preferences/corrections over inferred memories.
 - [x] Keep retrieval within its bounded estimated memory token budget.
 - [x] Record retrieval provenance/rank metadata.
@@ -4573,7 +4585,7 @@ Complete together:
 - [x] TurnContext versioning/caching.
 - [x] targeted memory refresh.
 - [x] bounded memory token budgeting.
-- [ ] Langfuse context hierarchy.
+- [x] Langfuse context hierarchy: context and graph observations are children of one per-turn root; real SDK parent/trace identity contract passes (Sprint 978).
 - [x] tests/docs.
 
 ## Group C3 — Project exact/lexical/graph/spatial retrieval

@@ -1175,8 +1175,11 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [ ] Sprint 977 follow-up: add project-scoped memory storage/retrieval and a
   revision-aware exact/lexical/graph/spatial project index before claiming full
   PCB/schematic state retrieval.
-- [ ] Sprint 977 follow-up: join context assembly/retrieval observations to the
-  same root `agent.turn` Langfuse trace; current assembly precedes that trace.
+- [x] Sprint 978: join context assembly, retrieval, package, and LangGraph
+  observations under one thread-session-scoped `agent.turn` root; verify actual
+  Langfuse SDK parent links with a local in-memory exporter.
+- [ ] Langfuse follow-up: verify a fresh opt-in production-account trace/readback
+  and preserve trace identity across approval interruption and resume.
 - [ ] Sprint 977 follow-up: add explicit preference/correction weighting and
   provider-tokenizer-based global budget allocation; current memory ranking and
   token counts are deterministic lexical/character estimates.

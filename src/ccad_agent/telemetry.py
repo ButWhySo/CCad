@@ -7,7 +7,7 @@ import os
 import sys
 import threading
 import time
-from contextlib import contextmanager, nullcontext
+from contextlib import ExitStack, contextmanager, nullcontext
 from functools import wraps
 from typing import Any, cast
 from urllib.parse import urlsplit
@@ -42,6 +42,7 @@ class TelemetryRuntime:
         self._active_span_id = ""
         self._last_trace_id = ""
         self._last_span_id = ""
+        self._turn_scope = None
         self._development_logging = os.environ.get("CCAD_TRACE_DEBUG", "").lower() in {"1", "true", "yes"}
         self._status = self._state(False, False, "disabled")
 
@@ -141,8 +142,37 @@ class TelemetryRuntime:
                 self._exporter.last_result = None
                 self._exporter.last_span_count = 0
 
+    def start_agent_turn(self, thread_id, metadata=None):
+        """Open one active root so context and graph observations share a trace."""
+        self.finish_agent_turn()
+        self.begin_turn()
+        with self._lock:
+            if self._langfuse_client is None:
+                return False
+        scope = ExitStack()
+        try:
+            scope.enter_context(self.session(thread_id))
+            scope.enter_context(self.observation("agent.turn", "agent", metadata or {}))
+        except Exception:
+            scope.close()
+            raise
+        with self._lock:
+            self._turn_scope = scope
+        return True
+
+    def finish_agent_turn(self):
+        """End the root once; callers can safely close at early-exit boundaries."""
+        with self._lock:
+            scope = self._turn_scope
+            self._turn_scope = None
+        if scope is None:
+            return False
+        scope.close()
+        return True
+
     def flush_turn(self):
         """Flush one completed/failed turn and expose safe exporter diagnostics."""
+        self.finish_agent_turn()
         with self._lock:
             error_type = ""
             provider = self._provider
