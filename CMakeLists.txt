@@ -243,6 +243,9 @@ if(Python3_Interpreter_FOUND)
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_context_budget.py")
   add_test(NAME agent_context_broker
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_context_broker.py")
+  add_test(NAME agent_protocol_handler_boundaries
+    COMMAND "${Python3_EXECUTABLE}"
+            "${CMAKE_SOURCE_DIR}/scripts/test_agent_protocol_handler_boundaries.py")
   if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe")
     add_test(NAME agent_turn_trace_hierarchy
       COMMAND "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe"

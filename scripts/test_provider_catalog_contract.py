@@ -3,7 +3,9 @@
 from pathlib import Path
 
 
-source = (Path(__file__).resolve().parents[1] / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
+root = Path(__file__).resolve().parents[1]
+source = "\n".join((root / "src" / "ccad_agent" / name).read_text(encoding="utf-8")
+                   for name in ("orchestrator.py", "model_catalog.py", "method_catalog.py"))
 contracts = {
     "openai": ("fetch_openai_models", "https://api.openai.com/v1/models", "OPENAI_API_KEY"),
     "anthropic": ("fetch_anthropic_models", "https://api.anthropic.com/v1/models", "ANTHROPIC_API_KEY"),

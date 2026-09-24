@@ -2,6 +2,17 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 979 active slice — Pyright analysis and protocol boundary
+
+References checked: [Pyright configuration: `maxCodeComplexity`](https://github.com/microsoft/pyright/blob/main/docs/configuration.md) exposes the analyzer's complexity guard, and [Pyright issue 3138](https://github.com/microsoft/pyright/issues/3138) explains why oversized control-flow scopes stop analysis. This slice decomposes runtime code; it does not suppress the diagnostic or raise the limit.
+
+- [x] Move bounded provider model-catalog HTTP requests and response parsing to `src/ccad_agent/model_catalog.py`, preserving explicit refresh, auth headers, timeout bounds, safe failure classification, and the existing JSON-RPC facade.
+- [x] Extract one user-turn handler from the JSON-RPC loop while preserving dispatcher continuation, process state, cancellation, memory, conversation, and trace behavior.
+- [x] Add a CTest-registered protocol-boundary contract and update provider catalog contracts to inspect the owning runtime modules; verify controlled-response parser tests with zero provider/network calls.
+- [x] Resolve Pyright's `orchestrator.py` complexity cutoff without suppressions; targeted Pyright 1.1.414 reports zero diagnostics for the orchestrator and model catalog.
+- [x] Pass Qt MinGW Release build and full CTest (112/112); targeted live GUI-map scenario completed seven mapped actions with provider disabled, and all four distinct retained screenshots plus stdout/stderr were inspected.
+- [x] Update codebase map, feature inventory, progress, backlog; scan staged changes and publish verified changes to GitHub `main`.
+
 ### Sprint 978 active slice — one Langfuse root per Agent turn
 
 References Checked: [Langfuse SDK instrumentation](https://langfuse.com/docs/observability/sdk/instrumentation) documents active-context nesting; [Langfuse sessions](https://langfuse.com/docs/observability/features/sessions) documents propagating one stable conversation session ID to child observations. `context_broker.py` and the orchestrator confirm the recap was packaged but not supplied to automatic-memory deduplication.
@@ -11,7 +22,7 @@ References Checked: [Langfuse SDK instrumentation](https://langfuse.com/docs/obs
 - [x] Close and flush early-exit turns without a provider call; preserve truthful disabled/unconfigured tracing behavior.
 - [x] Deduplicate automatic memories against recent conversation and the actual thread recap; include recap changes in cache invalidation and reuse dedup context during targeted refresh.
 - [x] Verify real Langfuse SDK ancestry with a local in-memory exporter, source-order contract, recap-dedup/cache/refresh regressions, Qt Release, full CTest (111/111), and seven mapped GUI interactions with four inspected screenshots and reviewed logs.
-- [ ] Resolve Pyright's `orchestrator.py` complexity cutoff; telemetry, ContextBroker, and new regression contracts are clean under Pyright 1.1.414.
+- [x] Resolve Pyright's `orchestrator.py` complexity cutoff; telemetry, ContextBroker, and new regression contracts are clean under Pyright 1.1.414 (Sprint 979).
 - [ ] Follow-on: project-scoped memory/indexing, semantic relevance, provider-tokenizer budgeting, and preference/correction-aware ranking.
 
 ### Sprint 977 active slice — deterministic context and memory retrieval

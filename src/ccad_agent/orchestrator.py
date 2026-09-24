@@ -63,6 +63,12 @@ from context_package import (build_context_package, build_provider_request_repor
                              format_large_context_explanation)
 from conversation_store import (ConversationStore, ConversationStoreError,
                                 budgeted_history_window)
+from model_catalog import (fetch_anthropic_models as _fetch_anthropic_models,
+                           fetch_cerebras_models as _fetch_cerebras_models,
+                           fetch_gemini_models as _fetch_gemini_models,
+                           fetch_ollama_models as _fetch_ollama_models,
+                           fetch_openai_models as _fetch_openai_models,
+                           fetch_openrouter_models as _fetch_openrouter_models)
 
 def emit(payload: dict):
     print(json.dumps(payload), flush=True)
@@ -104,254 +110,24 @@ def catalog_failure(provider: str, error: Exception, source_url: str,
     return result
 
 def fetch_openrouter_models():
-    """Explicit, bounded OpenRouter catalog refresh; never called at startup."""
-    source_url = "https://openrouter.ai/api/v1/models"
-    key = os.environ.get("OPENROUTER_API_KEY", "")
-    if not key:
-        return {"ok": False, "error": "missing_api_key", "models": [],
-                "source_url": source_url, "source_kind": "provider_api"}
-    request = urllib.request.Request(
-        "https://openrouter.ai/api/v1/models",
-        headers={"Authorization": f"Bearer {key}", "Accept": "application/json"},
-    )
-    try:
-        timeout_value = int(os.environ.get("CCAD_MODEL_CATALOG_TIMEOUT_SECONDS", "8"))
-    except ValueError:
-        timeout_value = 8
-    timeout = min(20, max(2, timeout_value))
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-        if not isinstance(payload, dict):
-            return {"ok": False, "error": "invalid_catalog_shape", "models": [],
-                    "network_access": "explicit_refresh", "source_url": source_url,
-                    "source_kind": "provider_api"}
-        models = []
-        for item in payload.get("data", []):
-            if not isinstance(item, dict) or not item.get("id"):
-                continue
-            model = {
-                "id": item["id"], "name": item.get("name", item["id"]),
-                "context_length": item.get("context_length"),
-                "architecture": item.get("architecture", {}),
-            }
-            supported = item.get("supported_parameters")
-            if isinstance(supported, list):
-                model["supported_parameters"] = [
-                    value for value in supported if isinstance(value, str)
-                ]
-            models.append(model)
-        return {"ok": True, "models": models, "count": len(models),
-                "network_access": "explicit_refresh", "source_url": source_url,
-                "source_kind": "provider_api"}
-    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
-        return catalog_failure("openrouter", error, source_url, "explicit_refresh")
+    return _fetch_openrouter_models(catalog_failure)
 
 def fetch_cerebras_models():
-    """Explicit, bounded public Cerebras catalog refresh; never at startup.
-
-    Cerebras documents this endpoint as public.  It deliberately does not use
-    the saved inference credential, so model discovery remains available while
-    a project is awaiting billing activation and cannot spend inference quota.
-    """
-    source_url = "https://api.cerebras.ai/public/v1/models"
-    request = urllib.request.Request(source_url, headers={
-        "Accept": "application/json",
-        # Cerebras fronts the public catalog with Cloudflare, which rejects
-        # Python's anonymous default user agent even though this endpoint is
-        # intentionally unauthenticated.
-        "User-Agent": "CCad/1.0 (+https://github.com/ButWhySo/CCad)",
-    })
-    try:
-        timeout_value = int(os.environ.get("CCAD_MODEL_CATALOG_TIMEOUT_SECONDS", "8"))
-    except ValueError:
-        timeout_value = 8
-    timeout = min(20, max(2, timeout_value))
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-        if not isinstance(payload, dict):
-            return {"ok": False, "error": "invalid_catalog_shape", "models": [],
-                    "network_access": "explicit_refresh", "source_url": source_url,
-                    "source_kind": "provider_api"}
-        models = []
-        for item in payload.get("data", []):
-            if not isinstance(item, dict) or not item.get("id"):
-                continue
-            limits = item.get("limits")
-            limits = limits if isinstance(limits, dict) else {}
-            context_length = item.get("context_length") or limits.get("max_context_length")
-            model = {"id": item["id"], "display_name": item.get("name", item["id"]),
-                     "owned_by": item.get("owned_by"), "context_length": context_length}
-            capabilities = item.get("capabilities")
-            if isinstance(capabilities, dict):
-                model["capabilities"] = {
-                    key: value for key, value in capabilities.items()
-                    if key in {"function_calling", "tools", "tool_choice",
-                               "parallel_tool_calls", "vision"}
-                    and isinstance(value, bool)
-                }
-            models.append(model)
-        return {"ok": True, "models": models, "count": len(models),
-                "network_access": "explicit_refresh", "source_url": source_url,
-                "source_kind": "provider_api"}
-    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
-        return catalog_failure("cerebras", error, source_url, "explicit_refresh")
+    return _fetch_cerebras_models(catalog_failure)
 
 def fetch_ollama_models():
-    """Explicit local Ollama inventory; never starts, pulls, or changes Ollama."""
-    base_url = os.environ.get("CCAD_OLLAMA_BASE_URL", "http://127.0.0.1:11434/v1")
-    base_url = base_url.rstrip("/")
-    if base_url.endswith("/v1"):
-        base_url = base_url[:-3]
-    source_url = base_url + "/api/tags"
-    request = urllib.request.Request(source_url, headers={"Accept": "application/json"})
-    try:
-        with urllib.request.urlopen(request, timeout=catalog_timeout_seconds()) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-        if not isinstance(payload, dict) or not isinstance(payload.get("models"), list):
-            return {"ok": False, "error": "invalid_catalog_shape", "models": [],
-                    "network_access": "explicit_local_refresh", "source_url": source_url,
-                    "source_kind": "local_provider_api"}
-        models = []
-        for item in payload["models"]:
-            if not isinstance(item, dict):
-                continue
-            model_id = item.get("model") or item.get("name")
-            if not isinstance(model_id, str) or not model_id:
-                continue
-            models.append({"id": model_id, "display_name": item.get("name", model_id),
-                           "details": item.get("details", {}), "size": item.get("size")})
-        return {"ok": True, "models": models, "count": len(models),
-                "network_access": "explicit_local_refresh", "source_url": source_url,
-                "source_kind": "local_provider_api"}
-    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
-        result = catalog_failure("ollama", error, source_url, "explicit_local_refresh")
-        result["source_kind"] = "local_provider_api"
-        return result
-
-def catalog_timeout_seconds():
-    """Return a bounded timeout shared by explicit catalog requests."""
-    try:
-        timeout_value = int(os.environ.get("CCAD_MODEL_CATALOG_TIMEOUT_SECONDS", "8"))
-    except ValueError:
-        timeout_value = 8
-    return min(20, max(2, timeout_value))
+    return _fetch_ollama_models(catalog_failure)
 
 def fetch_openai_models():
-    """Explicit OpenAI `/v1/models` refresh; never called at startup."""
-    source_url = "https://api.openai.com/v1/models"
-    key = os.environ.get("OPENAI_API_KEY", "")
-    if not key:
-        return {"ok": False, "error": "missing_api_key", "models": [],
-                "network_access": "explicit_refresh", "source_url": source_url,
-                "source_kind": "provider_api"}
-    request = urllib.request.Request(source_url, headers={
-        "Authorization": f"Bearer {key}", "Accept": "application/json"})
-    try:
-        with urllib.request.urlopen(request, timeout=catalog_timeout_seconds()) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-        if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
-            return {"ok": False, "error": "invalid_catalog_shape", "models": [],
-                    "network_access": "explicit_refresh", "source_url": source_url,
-                    "source_kind": "provider_api"}
-        models = [{"id": item["id"], "display_name": item.get("id"),
-                   "owned_by": item.get("owned_by")}
-                  for item in payload.get("data", [])
-                  if isinstance(item, dict) and isinstance(item.get("id"), str)]
-        return {"ok": True, "models": models, "count": len(models),
-                "network_access": "explicit_refresh", "source_url": source_url,
-                "source_kind": "provider_api"}
-    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
-        return catalog_failure("openai", error, source_url, "explicit_refresh")
+    return _fetch_openai_models(catalog_failure)
 
 def fetch_anthropic_models():
-    """Explicit Anthropic `/v1/models` refresh; never called at startup."""
-    source_url = "https://api.anthropic.com/v1/models"
-    key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not key:
-        return {"ok": False, "error": "missing_api_key", "models": [],
-                "network_access": "explicit_refresh", "source_url": source_url,
-                "source_kind": "provider_api"}
-    try:
-        models, after_id = [], ""
-        # Anthropic returns at most 1,000 entries per page and pages with the
-        # opaque final model id. Cap continuation defensively in case a server
-        # repeats a cursor; normal accounts complete in the first request.
-        for _ in range(20):
-            query = {"limit": "1000"}
-            if after_id: query["after_id"] = after_id
-            request = urllib.request.Request(
-                source_url + "?" + urllib.parse.urlencode(query), headers={
-                    "x-api-key": key, "anthropic-version": "2023-06-01",
-                    "Accept": "application/json"})
-            with urllib.request.urlopen(request, timeout=catalog_timeout_seconds()) as response:
-                payload = json.loads(response.read().decode("utf-8"))
-            if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
-                return {"ok": False, "error": "invalid_catalog_shape", "models": [],
-                        "network_access": "explicit_refresh", "source_url": source_url,
-                        "source_kind": "provider_api"}
-            models.extend({"id": item["id"],
-                           "display_name": item.get("display_name", item["id"]),
-                           "created_at": item.get("created_at"),
-                           "capabilities": item.get("capabilities", {})}
-                          for item in payload["data"]
-                          if isinstance(item, dict) and isinstance(item.get("id"), str))
-            next_after = payload.get("last_id", "")
-            if not payload.get("has_more") or not isinstance(next_after, str) or not next_after or next_after == after_id:
-                break
-            after_id = next_after
-        return {"ok": True, "models": models, "count": len(models),
-                "network_access": "explicit_refresh", "source_url": source_url,
-                "source_kind": "provider_api"}
-    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
-        return catalog_failure("anthropic", error, source_url, "explicit_refresh")
+    return _fetch_anthropic_models(catalog_failure)
 
 def fetch_gemini_models():
-    """Explicit Gemini `models.list` refresh; never called at startup."""
-    source_url = "https://generativelanguage.googleapis.com/v1beta/models"
-    key = os.environ.get("GEMINI_API_KEY", "") or os.environ.get("GOOGLE_API_KEY", "")
-    if not key:
-        return {"ok": False, "error": "missing_api_key", "models": [],
-                "network_access": "explicit_refresh", "source_url": source_url,
-                "source_kind": "provider_api"}
-    try:
-        models = []
-        page_token = ""
-        # The Gemini REST catalog is paginated.  Preserve every model the
-        # current key can use rather than silently offering only page one.
-        for _ in range(20):
-            query = {"pageSize": "1000"}
-            if page_token: query["pageToken"] = page_token
-            request = urllib.request.Request(
-                source_url + "?" + urllib.parse.urlencode(query), headers={
-                    "x-goog-api-key": key, "Accept": "application/json"})
-            with urllib.request.urlopen(request, timeout=catalog_timeout_seconds()) as response:
-                payload = json.loads(response.read().decode("utf-8"))
-            if not isinstance(payload, dict) or not isinstance(payload.get("models"), list):
-                return {"ok": False, "error": "invalid_catalog_shape", "models": [],
-                        "network_access": "explicit_refresh", "source_url": source_url,
-                        "source_kind": "provider_api"}
-            for item in payload["models"]:
-                if not isinstance(item, dict) or not isinstance(item.get("name"), str):
-                    continue
-                methods = item.get("supportedGenerationMethods", [])
-                if methods and "generateContent" not in methods:
-                    continue
-                model_id = item["name"].removeprefix("models/")
-                models.append({"id": model_id,
-                               "display_name": item.get("displayName", model_id),
-                               "context_length": item.get("inputTokenLimit"),
-                               "supported_generation_methods": methods})
-            next_token = payload.get("nextPageToken", "")
-            if not isinstance(next_token, str) or not next_token or next_token == page_token:
-                break
-            page_token = next_token
-        return {"ok": True, "models": models, "count": len(models),
-                "network_access": "explicit_refresh", "source_url": source_url,
-                "source_kind": "provider_api"}
-    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
-        return catalog_failure("google_gemini", error, source_url, "explicit_refresh")
+    return _fetch_gemini_models(catalog_failure)
+
+
 
 def context_revision(context: str) -> str:
     """Return stable opaque context identity; never expose context contents."""
@@ -2604,6 +2380,613 @@ def handle_provider_and_state_request(req, executor):
         "agent.memory_delete",
     }
 
+def handle_human_message(req):
+    global active_workflow, chaining_phase, chaining_state, session_messages
+
+    params = req.get("params", {})
+    if not isinstance(params, dict):
+        params = {}
+    text = params.get("text", "")
+    raw_context = params.get("context", "")
+    requested_thread = str(params.get("thread_id") or
+                           os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local"))
+    telemetry_runtime.start_agent_turn(requested_thread, {
+        "thread_id_hash": hashlib.sha256(
+            requested_thread.encode()).hexdigest()[:16],
+        "workflow": active_workflow,
+        "provider_ready": str(llm is not None).lower(),
+    })
+    requested_session = str(params.get("session_id") or requested_thread)
+    requested_task = (memory_task_scopes.current(requested_session)
+                      or uuid.uuid4().hex)
+    task_is_active = memory_task_scopes.is_active(requested_task)
+    os.environ["CCAD_AGENT_THREAD_ID"] = requested_thread
+    project_id = str(params.get("project_id") or
+                     config_manager.get("project_name", "project"))
+    try:
+        activate_conversation(requested_thread, requested_session, project_id)
+    except (ConversationStoreError, ValueError) as error:
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "text": "This conversation could not be loaded safely; no provider request was sent.",
+            "kind": "conversation_history_unavailable",
+            "category": getattr(error, "category", "conversation_history_unavailable"),
+            "provider_request_sent": False, "secret_value_visible": False}})
+        return
+    previous_thread = str(memory_manager.identities["ltm"])
+    memory_manager.set_identities(task_id=requested_task,
+                                  thread_id=requested_thread,
+                                  project_id=project_id,
+                                  retain_stm_task=task_is_active)
+    if previous_thread != requested_thread:
+        invalidate_thread_context(previous_thread)
+    memory_manager.configure(config_manager.get("memory", {}))
+    memory_compaction_plans.retain_current(
+        memory_manager.identities, memory_manager.enabled)
+    if not isinstance(raw_context, str):
+        raw_context = str(raw_context or "")
+    memory_query = text
+    if text.partition(" ")[0].casefold() == "/context":
+        memory_query = text.partition(" ")[2].strip()
+        if memory_query.casefold().startswith("preview "):
+            memory_query = memory_query[8:].strip()
+    memory_runtime = memory_manager.state()
+    try:
+        turn_records = conversation_store.search_turn_records(
+            requested_thread, memory_query, limit=5)
+        recap = conversation_store.thread_recap(requested_thread)
+    except ConversationStoreError as error:
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "text": "Historical conversation retrieval is unavailable; no unverified history was added to context.",
+            "kind": "conversation_retrieval_unavailable",
+            "category": error.category, "secret_value_visible": False}})
+        turn_records = []
+        recap = {"source_turn_ids": [], "turns": []}
+    active_editor, selected_objects = project_retrieval_signals(raw_context)
+    recent_context = recent_retrieval_text(session_messages)
+    signals = extract_context_signals(
+        memory_query, goal=text, project_id=project_id,
+        active_editor=active_editor, selected_objects=selected_objects,
+        workflow=active_workflow,
+        task=memory_manager.identities["stm"], recent_turns=turn_records,
+        recent_context=recent_context)
+    with telemetry_runtime.session(requested_thread), telemetry_runtime.observation(
+            "context.assemble", "chain", {
+                "thread_id_hash": hashlib.sha256(
+                    requested_thread.encode()).hexdigest()[:16],
+                "project_revision": context_revision(raw_context),
+                "signal_digest": signals["digest"],
+                "recent_message_count": str(len(session_messages)),
+                "historical_turn_count": str(len(turn_records)),
+            }) as assembly_observation:
+        with telemetry_runtime.observation("memory.retrieve", "retriever", {
+                "signal_digest": signals["digest"],
+                "enabled_tier_count": str(sum(memory_manager.enabled.values())),
+                "retrieval_mode": "deterministic_lexical",
+            }) as retrieval_observation:
+            turn_context = context_broker.prepare(
+                memory_manager, thread_id=requested_thread,
+                project_revision=context_revision(raw_context),
+                user_request=memory_query, goal=text,
+                project_id=project_id, active_editor=active_editor,
+                selected_objects=selected_objects, workflow=active_workflow,
+                task=memory_manager.identities["stm"], recent_turns=turn_records,
+                historical_turn_count=len(turn_records), signals=signals,
+                recent_context=recent_context, thread_recap=recap)
+            if retrieval_observation is not None:
+                retrieval_observation.update(
+                    input={"signal_digest": signals["digest"],
+                           "enabled_tier_count": str(
+                               sum(memory_manager.enabled.values()))},
+                    output={"result_count": str(
+                                len(turn_context["memories"])),
+                            "context_version": str(
+                                turn_context["version"])},
+                    metadata={
+                    "cache_hit": str(turn_context["cache_hit"]).lower(),
+                    "memory_chars": str(turn_context["memory_chars"]),
+                })
+        memory_entries = turn_context["memories"]
+        memory_retrieval = turn_context["memory_retrieval"]
+        active_turn_contexts[requested_thread] = turn_context
+        while len(active_turn_contexts) > ContextBroker.MAX_CACHE_ENTRIES:
+            active_turn_contexts.pop(next(iter(active_turn_contexts)))
+        with telemetry_runtime.observation("context.package", "span", {
+                "context_version": str(turn_context["version"]),
+                "memory_count": str(len(memory_entries)),
+                "memory_chars": str(turn_context["memory_chars"]),
+            }) as package_observation:
+            package = build_context_package(
+                raw_context, memory_entries,
+                bound_session_history(session_messages),
+                char_limit=agent_context_limit(),
+                memory_retrieval=memory_retrieval,
+                memory_runtime=memory_runtime,
+                turn_records=turn_records,
+                thread_recap=recap,
+                memory_summary=turn_context["memory_summary"],
+                memory_manifest=turn_context["manifest"],
+                turn_context={key: turn_context[key] for key in
+                              ("version", "change_reason", "signal_digest")})
+            if package_observation is not None:
+                package_observation.update(
+                    input={"project_revision": context_revision(raw_context),
+                           "signal_digest": signals["digest"]},
+                    output={"context_package_digest": package["metadata"][
+                                "package_digest"],
+                            "context_chars": str(package["metadata"][
+                                "content_size"]),
+                            "truncated": str(package["metadata"][
+                                "truncated"]).lower()})
+        if assembly_observation is not None:
+            context_metadata = package["metadata"]
+            assembly_observation.update(
+                input={"signal_digest": signals["digest"],
+                       "project_revision": context_revision(raw_context)},
+                output={"context_package_digest": context_metadata[
+                            "package_digest"],
+                        "memory_count": str(len(memory_entries)),
+                        "context_chars": str(context_metadata[
+                            "content_size"])},
+                metadata={
+                "context_package_digest": context_metadata["package_digest"],
+                "context_chars": str(context_metadata["content_size"]),
+                "context_tokens_estimated": str(
+                    context_metadata["estimated_token_count"]),
+                "truncated": str(context_metadata["truncated"]).lower(),
+                "source_count": str(len(context_metadata["sources"])),
+            })
+    context_str = package["content"]
+    context_metadata = package["metadata"]
+    context_truncated = context_metadata["truncated"]
+    intake = scan_intake(text, raw_context)
+    emit({"jsonrpc": "2.0", "method": "intake_state", "params": intake})
+    if not intake["accepted"]:
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "text": "Request blocked by CCad intake guardrail; remove instruction injection or inline secret and retry.",
+            "kind": "intake_blocked", "category": intake["category"],
+            "secret_value_visible": False,
+        }})
+        return
+    context_thread_id = requested_thread
+    previous_context_revision = context_revisions.get(context_thread_id, "")
+    current_context_revision = context_metadata["project_revision"]
+    context_changed = current_context_revision != previous_context_revision
+    context_change_kind = (
+        "initial" if not previous_context_revision else
+        ("changed" if context_changed else "unchanged")
+    )
+    context_revisions[context_thread_id] = current_context_revision
+    if len(context_revisions) > CONTEXT_REVISION_THREAD_LIMIT:
+        oldest_thread_id = next(iter(context_revisions))
+        if oldest_thread_id != context_thread_id:
+            context_revisions.pop(oldest_thread_id, None)
+    emit({"jsonrpc": "2.0", "method": "context_state", "params": {
+        "thread_id": context_thread_id,
+        "revision": current_context_revision,
+        "previous_revision": previous_context_revision,
+        "changed": context_changed,
+        "change_kind": context_change_kind,
+        "content_present": bool(context_str),
+        "content_size": context_metadata["content_size"],
+        "original_content_size": len(raw_context),
+        "context_limit": context_metadata["context_limit"],
+        "truncated": context_truncated,
+        "content_emitted": False,
+        "sources": context_metadata["sources"],
+        "memory_content_emitted": False,
+        "memory_entry_count": context_metadata["memory_entry_count"],
+        "historical_turn_count": context_metadata["prior_turn_count"],
+        "omitted_historical_turn_count": context_metadata[
+            "omitted_prior_turn_count"],
+        "thread_recap_turn_count": context_metadata[
+            "thread_recap_turn_count"],
+        "history_message_count": context_metadata["history_message_count"],
+        "history_in_context_package": context_metadata["history_in_context_package"],
+        "history_sent_as_provider_messages": context_metadata["history_sent_as_provider_messages"],
+        "context_schema_version": context_metadata["schema_version"],
+        "package_digest": context_metadata["package_digest"],
+        "estimated_token_count": context_metadata["estimated_token_count"],
+        "project_snapshot_chars": context_metadata["project_snapshot_chars"],
+        "project_summary_chars": context_metadata["project_summary_chars"],
+        "project_source_chars": context_metadata["project_source_chars"],
+        "project_snapshot_omitted": context_metadata["project_snapshot_omitted"],
+        "omitted_memory_entry_count": context_metadata["omitted_memory_entry_count"],
+        "memory_tier_counts": context_metadata["memory_tier_counts"],
+        "memory_tier_chars": context_metadata["memory_tier_chars"],
+        "memory_retrieval": context_metadata["memory_retrieval"],
+        "memory_runtime": context_metadata["memory_runtime"],
+        "memory_summary_chars": context_metadata["memory_summary_chars"],
+        "memory_manifest": context_metadata["memory_manifest"],
+        "turn_context_version": context_metadata["turn_context_version"],
+        "turn_context_change_reason": context_metadata[
+            "turn_context_change_reason"],
+        "turn_context_signal_digest": context_metadata[
+            "turn_context_signal_digest"],
+        "context_cache_hit": turn_context["cache_hit"],
+        "memory_token_budget": turn_context["memory_token_budget"],
+        "project_counts": context_metadata["project_counts"],
+    }})
+
+    # Robust Command Parser
+    if text.startswith("/"):
+        cmd_parts = text.split(" ", 1)
+        cmd_base = cmd_parts[0].lower()
+        cmd_args = cmd_parts[1] if len(cmd_parts) > 1 else ""
+
+        if cmd_base == "/context":
+            draft = cmd_args.strip()
+            if draft.casefold().startswith("preview "):
+                draft = draft[8:].strip()
+            preview_messages = bound_session_history(session_messages)
+            if draft:
+                preview_messages.append(HumanMessage(content=draft))
+            preview_system = get_system_prompt(
+                "the CCad PCB Routing Expert.") + f"\nContext: {context_str}"
+            preview_provider, preview_model = active_provider_model()
+            report = build_provider_request_report(
+                preview_system, preview_messages, agent_tools,
+                provider=preview_provider,
+                model=preview_model or "provider default (not resolved)",
+                context_content=context_str,
+                context_metadata=context_metadata,
+                large_context_threshold=os.environ.get(
+                    "CCAD_AGENT_LARGE_CONTEXT_TOKENS", "4096"))
+            report.update({
+                "request_mode": "local_preview",
+                "provider_request_sent": False,
+                "preview_prompt_included": bool(draft),
+                "preview_prompt_chars": len(draft),
+            })
+            if os.environ.get("CCAD_TRACE_DEBUG", "").lower() in {
+                    "1", "true", "yes"}:
+                print("[ccad-context-preview] " + json.dumps(
+                    report, sort_keys=True), file=sys.stderr, flush=True)
+            emit({"jsonrpc": "2.0", "method": "provider_request_context",
+                  "params": report})
+            emit({"jsonrpc": "2.0", "method": "message", "params": {
+                "text": format_large_context_explanation(
+                    report, context_metadata, mode="preview"),
+                "kind": "context_preview",
+                "request_mode": "local_preview",
+                "provider_request_sent": False,
+                "tool_executed": False,
+                "large_context": report["large_context"],
+                "estimated_input_tokens": report["estimated_input_tokens"],
+                "large_context_threshold_tokens": report[
+                    "large_context_threshold_tokens"],
+                "secret_value_visible": False,
+            }})
+            return
+        if cmd_base == "/commands":
+            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/context [draft]` (inspect bounded context and memory; no provider call)\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|list scope:x|add [scope:x] [title:y] <text>|update <id> [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/task start|status|end` (manage task-scoped STM)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`"}})
+            return
+        elif cmd_base == "/task":
+            task_action = cmd_args.strip().casefold()
+            if task_action == "start":
+                task_id, cleared = memory_task_scopes.start(requested_session)
+                memory_manager.set_identities(
+                    task_id=task_id, thread_id=requested_thread,
+                    project_id=project_id, retain_stm_task=True)
+                invalidate_thread_context(requested_thread)
+                memory_manager.configure(config_manager.get("memory", {}))
+                emit({"jsonrpc": "2.0", "method": "message", "params": {
+                    "text": "Task-scoped memory started. STM is isolated to this task; "
+                    f"a previous task scope, if any, was cleared ({cleared} records).",
+                    "kind": "memory_task_state", "active": True,
+                    "runtime_entries": 0, "secret_value_visible": False}})
+            elif task_action == "end":
+                ended_id, cleared = memory_task_scopes.end(requested_session)
+                memory_manager.set_identities(
+                    task_id=uuid.uuid4().hex, thread_id=requested_thread,
+                    project_id=project_id, retain_stm_task=False)
+                invalidate_thread_context(requested_thread)
+                memory_manager.configure(config_manager.get("memory", {}))
+                emit({"jsonrpc": "2.0", "method": "message", "params": {
+                    "text": ("Task-scoped memory ended and its process-only "
+                             f"STM was cleared ({cleared} records)." if ended_id
+                             else "No active task-scoped memory."),
+                    "kind": "memory_task_state", "active": False,
+                    "runtime_entries": 0, "secret_value_visible": False}})
+            elif task_action == "status":
+                task_id = memory_task_scopes.current(requested_session)
+                memory_state = memory_manager.state("stm")
+                emit({"jsonrpc": "2.0", "method": "message", "params": {
+                    "text": ("Task-scoped memory active; "
+                             f"{memory_state['runtime_entries']} STM entries loaded."
+                             if task_id else "No active task-scoped memory."),
+                    "kind": "memory_task_state", "active": bool(task_id),
+                    "runtime_entries": memory_state["runtime_entries"],
+                    "secret_value_visible": False}})
+            else:
+                emit({"jsonrpc": "2.0", "method": "message", "params": {
+                    "text": "Use `/task start`, `/task status`, or `/task end`.",
+                    "kind": "memory_task_usage", "secret_value_visible": False}})
+            return
+        elif cmd_base == "/memory":
+            if cmd_args.strip().casefold().startswith("compact"):
+                handle_durable_memory_compaction(
+                    cmd_args.strip()[len("compact"):], context_thread_id)
+            else:
+                try:
+                    event, result = execute_memory_command(memory_manager, cmd_args)
+                    if event in {"memory_added", "memory_updated",
+                                 "memory_deleted", "memory_reset"}:
+                        invalidate_thread_context(requested_thread)
+                    emit({"jsonrpc": "2.0", "method": event, "params": result})
+                except (ValueError, RuntimeError) as error:
+                    emit({"jsonrpc": "2.0", "method": "message", "params": {
+                        "text": str(error), "kind": "memory_command_error",
+                        "secret_value_visible": False}})
+            return
+        elif cmd_base == "/marketplace":
+            handle_marketplace(text)
+            return
+        elif cmd_base == "/set":
+            provider_name, separator, model_name = cmd_args.partition(":")
+            if separator and provider_name.strip() and model_name.strip():
+                os.environ["CCAD_PROVIDER"] = provider_name.strip()
+                os.environ["CCAD_MODEL"] = model_name.strip()
+                init_provider()
+                emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Model set to {provider_name.strip()}:{model_name.strip()}"}})
+            return
+        elif cmd_base in ["/cc", "/compact"]:
+            handle_compaction_command(context_thread_id)
+            return
+        elif cmd_base == "/workflow":
+            if cmd_args.startswith("use:"):
+                active_workflow = cmd_args.replace("use:", "").strip()
+                emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Active workflow set to: {active_workflow}"}})
+            elif cmd_args.startswith("chaining phase:"):
+                chaining_phase = cmd_args.replace("chaining phase:", "").strip()
+                emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Workflow chaining phase set to: {chaining_phase}"}})
+            elif cmd_args.startswith("chaining state:"):
+                val = cmd_args.replace("chaining state:", "").strip().lower()
+                chaining_state = (val == "true")
+                emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Workflow chaining state set to: {chaining_state}"}})
+            return
+        elif cmd_base == "/hooks":
+            hook_name = cmd_args.strip()
+            if hook_name:
+                active_hooks.append(hook_name)
+                emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Hook registered: {hook_name}. Will be triggered during lifecycle."}})
+            return
+        elif cmd_base == "/schedule":
+            sched_info = cmd_args.strip()
+            if sched_info:
+                schedules.append(sched_info)
+                emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Schedule created: {sched_info}. Background task queued."}})
+            return
+        elif cmd_base == "/route":
+            active_workflow = "routing_pass"
+            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Initiating routing workflow pass..."}})
+            session_messages.append(HumanMessage(content=(
+                "Inspect typed project context first. Route only a bounded, validated request "
+                "using catalog tools ccad_ui_route_track and ccad_ui_place_via when available. "
+                "Do not promise complete autorouting or mutate without approval.")))
+            # Fall through to graph execution
+        elif cmd_base == "/drc":
+            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Running DRC checks..."}})
+            # project.drc is a read-only, result-bearing broker
+            # call. Waiting on the exact correlation ID prevents
+            # the chat from claiming an in-progress DRC forever.
+            drc_result = dispatch_client_tool("project.drc", {})
+            try:
+                drc_report = json.loads(drc_result)
+            except (TypeError, json.JSONDecodeError):
+                drc_report = {"error": "invalid_drc_broker_result"}
+            if isinstance(drc_report, dict) and drc_report.get("error"):
+                emit({"jsonrpc": "2.0", "method": "message", "params": {
+                    "text": "DRC did not complete: " + str(drc_report["error"]),
+                    "kind": "tool_error", "tool": "project.drc",
+                }})
+            else:
+                error_count = int(drc_report.get("error_count", 0))
+                warning_count = int(drc_report.get("warning_count", 0))
+                diagnostic_count = len(drc_report.get("diagnostics", []))
+                emit({"jsonrpc": "2.0", "method": "message", "params": {
+                    "text": (f"DRC complete — {error_count} error(s), "
+                             f"{warning_count} warning(s), "
+                             f"{diagnostic_count} diagnostic(s)."),
+                    "kind": "drc_result", "tool": "project.drc",
+                    "error_count": error_count, "warning_count": warning_count,
+                    "diagnostic_count": diagnostic_count,
+                }})
+            return
+        elif cmd_base == "/place":
+            emit({"jsonrpc": "2.0", "method": "message", "params": {
+                "text": "Placement workflow unavailable: no typed footprint source and placement transaction are registered. No project action was sent."}})
+            return
+        elif cmd_base == "/design":
+            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Opening the Component Designer Wizard..."}})
+            emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.open_component_wizard", "args": {}}})
+            return
+        elif cmd_base == "/explain":
+            active_workflow = "default"
+            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Explaining the current context..."}})
+            session_messages.append(HumanMessage(content="Explain the current board selection or context in detail. Please provide a concise summary of the active design constraints."))
+            # Fall through to graph execution
+        elif cmd_base == "/clear":
+            try:
+                conversation_store.clear_model_projection(context_thread_id)
+            except (ConversationStoreError, ValueError) as error:
+                emit({"jsonrpc": "2.0", "method": "message", "params": {
+                    "text": "Active conversation context was not cleared because its projection could not be saved.",
+                    "kind": "conversation_projection_failed",
+                    "category": getattr(error, "category", "conversation_projection_write_failed"),
+                    "secret_value_visible": False}})
+                return
+            session_messages = []
+            context_revisions.pop(context_thread_id, None)
+            emit({"jsonrpc": "2.0", "method": "message", "params": {
+                "text": "Active model context cleared. The durable transcript remains available in conversation history.",
+                "kind": "conversation_context_cleared"}})
+            return
+        elif cmd_base == "/settings":
+            emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.open_settings", "args": {}}})
+            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Opening agent settings panel..."}})
+            return
+        elif cmd_base == "/help":
+            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/context [draft]` (inspect bounded context and memory; no provider call)\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|list scope:x|add [scope:x] [title:y] <text>|update <id> [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/task start|status|end` (manage task-scoped STM)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`\n- `/route`\n- `/drc`\n- `/place`\n- `/design`\n- `/explain`\n- `/clear`\n- `/settings`"}})
+            return
+        else:
+            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Unknown command: {cmd_base}"}})
+            return
+
+    turn_id = uuid.uuid4().hex
+    user_message = HumanMessage(content=text)
+    try:
+        next_history = bound_session_history([*session_messages, user_message])
+    except ValueError:
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "text": "This request exceeds the configured recent-history budget; no provider request was sent.",
+            "kind": "conversation_history_budget_exceeded",
+            "provider_request_sent": False, "secret_value_visible": False}})
+        return
+    try:
+        persist_turn_messages(requested_thread, turn_id, [user_message],
+                              requested_session, project_id)
+    except (ConversationStoreError, ValueError) as error:
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "text": "Conversation could not be saved safely; no provider request was sent.",
+            "kind": "conversation_store_unavailable",
+            "category": getattr(error, "category", "conversation_store_write_failed"),
+            "provider_request_sent": False, "secret_value_visible": False}})
+        return
+    session_messages = next_history
+    if "post prompt" in [h.lower() for h in active_hooks]:
+        hooks.trigger_hook("post prompt", emit, text)
+
+    # Keep chat useful and truthful while no provider is configured.
+    # Do not enter the graph: it cannot produce an answer and older
+    # code could then index an empty message list.
+    if llm is None:
+        unavailable_text = (
+            "Local CCad agent received your request and current "
+            f"design context ({len(context_str)} chars). "
+            "Provider execution is unavailable; configure a provider "
+            "key or use local CCad tools.")
+        unavailable_message = AIMessage(content=unavailable_text)
+        session_messages = bound_session_history(
+            [*session_messages, unavailable_message])
+        try:
+            persist_turn_messages(requested_thread, turn_id,
+                                  [unavailable_message],
+                                  requested_session, project_id)
+            conversation_store.record_turn(
+                requested_thread, turn_id, text,
+                [user_message, unavailable_message],
+                outcome="provider_unavailable", project_id=project_id,
+                project_revision_before=context_metadata.get(
+                    "project_revision", ""))
+        except (ConversationStoreError, ValueError):
+            pass
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "text": unavailable_text,
+            "kind": "provider_unavailable",
+            "context_received": bool(context_str),
+        }})
+        return
+
+    try:
+        final_state = invoke_agent_run({"messages": session_messages, "goal": text,
+                                        "context": context_str, "next_node": "",
+                                        "context_metadata": context_metadata,
+                                        "thread_id": context_thread_id})
+    except Exception as error:
+        failure_text = provider_error_user_message(error)
+        failure_message = AIMessage(content=failure_text)
+        session_messages = bound_session_history(
+            [*session_messages, failure_message])
+        try:
+            persist_turn_messages(requested_thread, turn_id,
+                                  [failure_message], requested_session,
+                                  project_id)
+            conversation_store.record_turn(
+                requested_thread, turn_id, text,
+                [user_message, failure_message], outcome="provider_error",
+                project_id=project_id,
+                project_revision_before=context_metadata.get(
+                    "project_revision", ""))
+        except (ConversationStoreError, ValueError):
+            pass
+        export_state = telemetry_runtime.flush_turn()
+        emit({"jsonrpc": "2.0", "method": "observability_state",
+              "params": export_state})
+        trace = telemetry_runtime.current_trace()
+        emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
+            "run_state": "failed", **trace, "error_type": type(error).__name__,
+            "prompt_emitted": False, "secret_value_visible": False,
+        }})
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "text": failure_text,
+            "kind": "provider_error", "error_type": type(error).__name__,
+            "cause": classify_provider_error(error),
+            "http_status": provider_http_status(error),
+            "retry_after_seconds": provider_retry_after_seconds(error),
+        }})
+        return
+    export_state = telemetry_runtime.flush_turn()
+    emit({"jsonrpc": "2.0", "method": "observability_state",
+          "params": export_state})
+    session_messages = bound_session_history(final_state["messages"])
+    last_msg = session_messages[-1]
+    has_tool_calls = bool(getattr(last_msg, "tool_calls", None))
+    has_legacy_tool = "<TOOL>" in str(getattr(last_msg, "content", ""))
+    try:
+        persist_turn_messages(requested_thread, turn_id,
+                              final_state.get("messages", []),
+                              requested_session, project_id)
+        if not (has_tool_calls or has_legacy_tool):
+            conversation_store.record_turn(
+                requested_thread, turn_id, text,
+                final_state.get("messages", []), outcome="completed",
+                project_id=project_id,
+                project_revision_before=context_metadata.get("project_revision", ""))
+    except (ConversationStoreError, ValueError) as error:
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "text": "The provider turn completed, but its transcript update could not be persisted.",
+            "kind": "conversation_store_write_failed",
+            "category": getattr(error, "category", "conversation_store_write_failed"),
+            "secret_value_visible": False}})
+    trace = telemetry_runtime.current_trace()
+    emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
+        "run_state": "awaiting_tool_approval" if (has_tool_calls or has_legacy_tool) else "completed",
+        **trace,
+        "token_usage": "unavailable", "cost": "unavailable",
+    }})
+
+    if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
+        for tcall in last_msg.tool_calls:
+            tool_name = tcall.get("name", "")
+            args = tcall.get("args", {})
+            if "pre tool call" in [h.lower() for h in active_hooks]:
+                hooks.trigger_hook("pre tool call", emit, tool_name)
+            emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
+                "tool": tool_name, "args": args,
+                "call_id": tcall.get("id", "") or "agent-tool-call",
+            }})
+            if "post tool call" in [h.lower() for h in active_hooks]:
+                hooks.trigger_hook("post tool call", emit, tool_name)
+    elif "<TOOL>" in last_msg.content:
+        tool_call_str = last_msg.content.replace("<TOOL>", "").strip()
+        tool_name = tool_call_str.split(" ")[0]
+        if "pre tool call" in [h.lower() for h in active_hooks]:
+            hooks.trigger_hook("pre tool call", emit, tool_name)
+        args_str = tool_call_str[len(tool_name):].strip()
+        args = {}
+        try:
+            args = json.loads(args_str)
+        except Exception as e:
+            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Error parsing tool args: {e}"}})
+        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": tool_name, "args": args}})
+        if "post tool call" in [h.lower() for h in active_hooks]:
+            hooks.trigger_hook("post tool call", emit, tool_name)
+    else:
+        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": last_msg.content}})
+        if "pre exit/end" in [h.lower() for h in active_hooks]:
+            hooks.trigger_hook("pre exit/end", emit)
+
+
 if __name__ == "__main__":
     initialize_agent_process()
     # LangfuseRuntime owns tracing.  Do not install the process-global
@@ -2780,608 +3163,7 @@ if __name__ == "__main__":
                     "call_id": call_id, "reason": str(reason),
                 }})
             elif method == "human_message":
-                params = req.get("params", {})
-                if not isinstance(params, dict):
-                    params = {}
-                text = params.get("text", "")
-                raw_context = params.get("context", "")
-                requested_thread = str(params.get("thread_id") or
-                                       os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local"))
-                telemetry_runtime.start_agent_turn(requested_thread, {
-                    "thread_id_hash": hashlib.sha256(
-                        requested_thread.encode()).hexdigest()[:16],
-                    "workflow": active_workflow,
-                    "provider_ready": str(llm is not None).lower(),
-                })
-                requested_session = str(params.get("session_id") or requested_thread)
-                requested_task = (memory_task_scopes.current(requested_session)
-                                  or uuid.uuid4().hex)
-                task_is_active = memory_task_scopes.is_active(requested_task)
-                os.environ["CCAD_AGENT_THREAD_ID"] = requested_thread
-                project_id = str(params.get("project_id") or
-                                 config_manager.get("project_name", "project"))
-                try:
-                    activate_conversation(requested_thread, requested_session, project_id)
-                except (ConversationStoreError, ValueError) as error:
-                    emit({"jsonrpc": "2.0", "method": "message", "params": {
-                        "text": "This conversation could not be loaded safely; no provider request was sent.",
-                        "kind": "conversation_history_unavailable",
-                        "category": getattr(error, "category", "conversation_history_unavailable"),
-                        "provider_request_sent": False, "secret_value_visible": False}})
-                    continue
-                previous_thread = str(memory_manager.identities["ltm"])
-                memory_manager.set_identities(task_id=requested_task,
-                                              thread_id=requested_thread,
-                                              project_id=project_id,
-                                              retain_stm_task=task_is_active)
-                if previous_thread != requested_thread:
-                    invalidate_thread_context(previous_thread)
-                memory_manager.configure(config_manager.get("memory", {}))
-                memory_compaction_plans.retain_current(
-                    memory_manager.identities, memory_manager.enabled)
-                if not isinstance(raw_context, str):
-                    raw_context = str(raw_context or "")
-                memory_query = text
-                if text.partition(" ")[0].casefold() == "/context":
-                    memory_query = text.partition(" ")[2].strip()
-                    if memory_query.casefold().startswith("preview "):
-                        memory_query = memory_query[8:].strip()
-                memory_runtime = memory_manager.state()
-                try:
-                    turn_records = conversation_store.search_turn_records(
-                        requested_thread, memory_query, limit=5)
-                    recap = conversation_store.thread_recap(requested_thread)
-                except ConversationStoreError as error:
-                    emit({"jsonrpc": "2.0", "method": "message", "params": {
-                        "text": "Historical conversation retrieval is unavailable; no unverified history was added to context.",
-                        "kind": "conversation_retrieval_unavailable",
-                        "category": error.category, "secret_value_visible": False}})
-                    turn_records = []
-                    recap = {"source_turn_ids": [], "turns": []}
-                active_editor, selected_objects = project_retrieval_signals(raw_context)
-                recent_context = recent_retrieval_text(session_messages)
-                signals = extract_context_signals(
-                    memory_query, goal=text, project_id=project_id,
-                    active_editor=active_editor, selected_objects=selected_objects,
-                    workflow=active_workflow,
-                    task=memory_manager.identities["stm"], recent_turns=turn_records,
-                    recent_context=recent_context)
-                with telemetry_runtime.session(requested_thread), telemetry_runtime.observation(
-                        "context.assemble", "chain", {
-                            "thread_id_hash": hashlib.sha256(
-                                requested_thread.encode()).hexdigest()[:16],
-                            "project_revision": context_revision(raw_context),
-                            "signal_digest": signals["digest"],
-                            "recent_message_count": str(len(session_messages)),
-                            "historical_turn_count": str(len(turn_records)),
-                        }) as assembly_observation:
-                    with telemetry_runtime.observation("memory.retrieve", "retriever", {
-                            "signal_digest": signals["digest"],
-                            "enabled_tier_count": str(sum(memory_manager.enabled.values())),
-                            "retrieval_mode": "deterministic_lexical",
-                        }) as retrieval_observation:
-                        turn_context = context_broker.prepare(
-                            memory_manager, thread_id=requested_thread,
-                            project_revision=context_revision(raw_context),
-                            user_request=memory_query, goal=text,
-                            project_id=project_id, active_editor=active_editor,
-                            selected_objects=selected_objects, workflow=active_workflow,
-                            task=memory_manager.identities["stm"], recent_turns=turn_records,
-                            historical_turn_count=len(turn_records), signals=signals,
-                            recent_context=recent_context, thread_recap=recap)
-                        if retrieval_observation is not None:
-                            retrieval_observation.update(
-                                input={"signal_digest": signals["digest"],
-                                       "enabled_tier_count": str(
-                                           sum(memory_manager.enabled.values()))},
-                                output={"result_count": str(
-                                            len(turn_context["memories"])),
-                                        "context_version": str(
-                                            turn_context["version"])},
-                                metadata={
-                                "cache_hit": str(turn_context["cache_hit"]).lower(),
-                                "memory_chars": str(turn_context["memory_chars"]),
-                            })
-                    memory_entries = turn_context["memories"]
-                    memory_retrieval = turn_context["memory_retrieval"]
-                    active_turn_contexts[requested_thread] = turn_context
-                    while len(active_turn_contexts) > ContextBroker.MAX_CACHE_ENTRIES:
-                        active_turn_contexts.pop(next(iter(active_turn_contexts)))
-                    with telemetry_runtime.observation("context.package", "span", {
-                            "context_version": str(turn_context["version"]),
-                            "memory_count": str(len(memory_entries)),
-                            "memory_chars": str(turn_context["memory_chars"]),
-                        }) as package_observation:
-                        package = build_context_package(
-                            raw_context, memory_entries,
-                            bound_session_history(session_messages),
-                            char_limit=agent_context_limit(),
-                            memory_retrieval=memory_retrieval,
-                            memory_runtime=memory_runtime,
-                            turn_records=turn_records,
-                            thread_recap=recap,
-                            memory_summary=turn_context["memory_summary"],
-                            memory_manifest=turn_context["manifest"],
-                            turn_context={key: turn_context[key] for key in
-                                          ("version", "change_reason", "signal_digest")})
-                        if package_observation is not None:
-                            package_observation.update(
-                                input={"project_revision": context_revision(raw_context),
-                                       "signal_digest": signals["digest"]},
-                                output={"context_package_digest": package["metadata"][
-                                            "package_digest"],
-                                        "context_chars": str(package["metadata"][
-                                            "content_size"]),
-                                        "truncated": str(package["metadata"][
-                                            "truncated"]).lower()})
-                    if assembly_observation is not None:
-                        context_metadata = package["metadata"]
-                        assembly_observation.update(
-                            input={"signal_digest": signals["digest"],
-                                   "project_revision": context_revision(raw_context)},
-                            output={"context_package_digest": context_metadata[
-                                        "package_digest"],
-                                    "memory_count": str(len(memory_entries)),
-                                    "context_chars": str(context_metadata[
-                                        "content_size"])},
-                            metadata={
-                            "context_package_digest": context_metadata["package_digest"],
-                            "context_chars": str(context_metadata["content_size"]),
-                            "context_tokens_estimated": str(
-                                context_metadata["estimated_token_count"]),
-                            "truncated": str(context_metadata["truncated"]).lower(),
-                            "source_count": str(len(context_metadata["sources"])),
-                        })
-                context_str = package["content"]
-                context_metadata = package["metadata"]
-                context_truncated = context_metadata["truncated"]
-                intake = scan_intake(text, raw_context)
-                emit({"jsonrpc": "2.0", "method": "intake_state", "params": intake})
-                if not intake["accepted"]:
-                    emit({"jsonrpc": "2.0", "method": "message", "params": {
-                        "text": "Request blocked by CCad intake guardrail; remove instruction injection or inline secret and retry.",
-                        "kind": "intake_blocked", "category": intake["category"],
-                        "secret_value_visible": False,
-                    }})
-                    continue
-                context_thread_id = requested_thread
-                previous_context_revision = context_revisions.get(context_thread_id, "")
-                current_context_revision = context_metadata["project_revision"]
-                context_changed = current_context_revision != previous_context_revision
-                context_change_kind = (
-                    "initial" if not previous_context_revision else
-                    ("changed" if context_changed else "unchanged")
-                )
-                context_revisions[context_thread_id] = current_context_revision
-                if len(context_revisions) > CONTEXT_REVISION_THREAD_LIMIT:
-                    oldest_thread_id = next(iter(context_revisions))
-                    if oldest_thread_id != context_thread_id:
-                        context_revisions.pop(oldest_thread_id, None)
-                emit({"jsonrpc": "2.0", "method": "context_state", "params": {
-                    "thread_id": context_thread_id,
-                    "revision": current_context_revision,
-                    "previous_revision": previous_context_revision,
-                    "changed": context_changed,
-                    "change_kind": context_change_kind,
-                    "content_present": bool(context_str),
-                    "content_size": context_metadata["content_size"],
-                    "original_content_size": len(raw_context),
-                    "context_limit": context_metadata["context_limit"],
-                    "truncated": context_truncated,
-                    "content_emitted": False,
-                    "sources": context_metadata["sources"],
-                    "memory_content_emitted": False,
-                    "memory_entry_count": context_metadata["memory_entry_count"],
-                    "historical_turn_count": context_metadata["prior_turn_count"],
-                    "omitted_historical_turn_count": context_metadata[
-                        "omitted_prior_turn_count"],
-                    "thread_recap_turn_count": context_metadata[
-                        "thread_recap_turn_count"],
-                    "history_message_count": context_metadata["history_message_count"],
-                    "history_in_context_package": context_metadata["history_in_context_package"],
-                    "history_sent_as_provider_messages": context_metadata["history_sent_as_provider_messages"],
-                    "context_schema_version": context_metadata["schema_version"],
-                    "package_digest": context_metadata["package_digest"],
-                    "estimated_token_count": context_metadata["estimated_token_count"],
-                    "project_snapshot_chars": context_metadata["project_snapshot_chars"],
-                    "project_summary_chars": context_metadata["project_summary_chars"],
-                    "project_source_chars": context_metadata["project_source_chars"],
-                    "project_snapshot_omitted": context_metadata["project_snapshot_omitted"],
-                    "omitted_memory_entry_count": context_metadata["omitted_memory_entry_count"],
-                    "memory_tier_counts": context_metadata["memory_tier_counts"],
-                    "memory_tier_chars": context_metadata["memory_tier_chars"],
-                    "memory_retrieval": context_metadata["memory_retrieval"],
-                    "memory_runtime": context_metadata["memory_runtime"],
-                    "memory_summary_chars": context_metadata["memory_summary_chars"],
-                    "memory_manifest": context_metadata["memory_manifest"],
-                    "turn_context_version": context_metadata["turn_context_version"],
-                    "turn_context_change_reason": context_metadata[
-                        "turn_context_change_reason"],
-                    "turn_context_signal_digest": context_metadata[
-                        "turn_context_signal_digest"],
-                    "context_cache_hit": turn_context["cache_hit"],
-                    "memory_token_budget": turn_context["memory_token_budget"],
-                    "project_counts": context_metadata["project_counts"],
-                }})
-                
-                # Robust Command Parser
-                if text.startswith("/"):
-                    cmd_parts = text.split(" ", 1)
-                    cmd_base = cmd_parts[0].lower()
-                    cmd_args = cmd_parts[1] if len(cmd_parts) > 1 else ""
-                    
-                    if cmd_base == "/context":
-                        draft = cmd_args.strip()
-                        if draft.casefold().startswith("preview "):
-                            draft = draft[8:].strip()
-                        preview_messages = bound_session_history(session_messages)
-                        if draft:
-                            preview_messages.append(HumanMessage(content=draft))
-                        preview_system = get_system_prompt(
-                            "the CCad PCB Routing Expert.") + f"\nContext: {context_str}"
-                        preview_provider, preview_model = active_provider_model()
-                        report = build_provider_request_report(
-                            preview_system, preview_messages, agent_tools,
-                            provider=preview_provider,
-                            model=preview_model or "provider default (not resolved)",
-                            context_content=context_str,
-                            context_metadata=context_metadata,
-                            large_context_threshold=os.environ.get(
-                                "CCAD_AGENT_LARGE_CONTEXT_TOKENS", "4096"))
-                        report.update({
-                            "request_mode": "local_preview",
-                            "provider_request_sent": False,
-                            "preview_prompt_included": bool(draft),
-                            "preview_prompt_chars": len(draft),
-                        })
-                        if os.environ.get("CCAD_TRACE_DEBUG", "").lower() in {
-                                "1", "true", "yes"}:
-                            print("[ccad-context-preview] " + json.dumps(
-                                report, sort_keys=True), file=sys.stderr, flush=True)
-                        emit({"jsonrpc": "2.0", "method": "provider_request_context",
-                              "params": report})
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {
-                            "text": format_large_context_explanation(
-                                report, context_metadata, mode="preview"),
-                            "kind": "context_preview",
-                            "request_mode": "local_preview",
-                            "provider_request_sent": False,
-                            "tool_executed": False,
-                            "large_context": report["large_context"],
-                            "estimated_input_tokens": report["estimated_input_tokens"],
-                            "large_context_threshold_tokens": report[
-                                "large_context_threshold_tokens"],
-                            "secret_value_visible": False,
-                        }})
-                        continue
-                    if cmd_base == "/commands":
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/context [draft]` (inspect bounded context and memory; no provider call)\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|list scope:x|add [scope:x] [title:y] <text>|update <id> [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/task start|status|end` (manage task-scoped STM)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`"}})
-                        continue
-                    elif cmd_base == "/task":
-                        task_action = cmd_args.strip().casefold()
-                        if task_action == "start":
-                            task_id, cleared = memory_task_scopes.start(requested_session)
-                            memory_manager.set_identities(
-                                task_id=task_id, thread_id=requested_thread,
-                                project_id=project_id, retain_stm_task=True)
-                            invalidate_thread_context(requested_thread)
-                            memory_manager.configure(config_manager.get("memory", {}))
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {
-                                "text": "Task-scoped memory started. STM is isolated to this task; "
-                                f"a previous task scope, if any, was cleared ({cleared} records).",
-                                "kind": "memory_task_state", "active": True,
-                                "runtime_entries": 0, "secret_value_visible": False}})
-                        elif task_action == "end":
-                            ended_id, cleared = memory_task_scopes.end(requested_session)
-                            memory_manager.set_identities(
-                                task_id=uuid.uuid4().hex, thread_id=requested_thread,
-                                project_id=project_id, retain_stm_task=False)
-                            invalidate_thread_context(requested_thread)
-                            memory_manager.configure(config_manager.get("memory", {}))
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {
-                                "text": ("Task-scoped memory ended and its process-only "
-                                         f"STM was cleared ({cleared} records)." if ended_id
-                                         else "No active task-scoped memory."),
-                                "kind": "memory_task_state", "active": False,
-                                "runtime_entries": 0, "secret_value_visible": False}})
-                        elif task_action == "status":
-                            task_id = memory_task_scopes.current(requested_session)
-                            memory_state = memory_manager.state("stm")
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {
-                                "text": ("Task-scoped memory active; "
-                                         f"{memory_state['runtime_entries']} STM entries loaded."
-                                         if task_id else "No active task-scoped memory."),
-                                "kind": "memory_task_state", "active": bool(task_id),
-                                "runtime_entries": memory_state["runtime_entries"],
-                                "secret_value_visible": False}})
-                        else:
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {
-                                "text": "Use `/task start`, `/task status`, or `/task end`.",
-                                "kind": "memory_task_usage", "secret_value_visible": False}})
-                        continue
-                    elif cmd_base == "/memory":
-                        if cmd_args.strip().casefold().startswith("compact"):
-                            handle_durable_memory_compaction(
-                                cmd_args.strip()[len("compact"):], context_thread_id)
-                        else:
-                            try:
-                                event, result = execute_memory_command(memory_manager, cmd_args)
-                                if event in {"memory_added", "memory_updated",
-                                             "memory_deleted", "memory_reset"}:
-                                    invalidate_thread_context(requested_thread)
-                                emit({"jsonrpc": "2.0", "method": event, "params": result})
-                            except (ValueError, RuntimeError) as error:
-                                emit({"jsonrpc": "2.0", "method": "message", "params": {
-                                    "text": str(error), "kind": "memory_command_error",
-                                    "secret_value_visible": False}})
-                        continue
-                    elif cmd_base == "/marketplace":
-                        handle_marketplace(text)
-                        continue
-                    elif cmd_base == "/set":
-                        provider_name, separator, model_name = cmd_args.partition(":")
-                        if separator and provider_name.strip() and model_name.strip():
-                            os.environ["CCAD_PROVIDER"] = provider_name.strip()
-                            os.environ["CCAD_MODEL"] = model_name.strip()
-                            init_provider()
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Model set to {provider_name.strip()}:{model_name.strip()}"}})
-                        continue
-                    elif cmd_base in ["/cc", "/compact"]:
-                        handle_compaction_command(context_thread_id)
-                        continue
-                    elif cmd_base == "/workflow":
-                        if cmd_args.startswith("use:"):
-                            active_workflow = cmd_args.replace("use:", "").strip()
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Active workflow set to: {active_workflow}"}})
-                        elif cmd_args.startswith("chaining phase:"):
-                            chaining_phase = cmd_args.replace("chaining phase:", "").strip()
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Workflow chaining phase set to: {chaining_phase}"}})
-                        elif cmd_args.startswith("chaining state:"):
-                            val = cmd_args.replace("chaining state:", "").strip().lower()
-                            chaining_state = (val == "true")
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Workflow chaining state set to: {chaining_state}"}})
-                        continue
-                    elif cmd_base == "/hooks":
-                        hook_name = cmd_args.strip()
-                        if hook_name:
-                            active_hooks.append(hook_name)
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Hook registered: {hook_name}. Will be triggered during lifecycle."}})
-                        continue
-                    elif cmd_base == "/schedule":
-                        sched_info = cmd_args.strip()
-                        if sched_info:
-                            schedules.append(sched_info)
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Schedule created: {sched_info}. Background task queued."}})
-                        continue
-                    elif cmd_base == "/route":
-                        active_workflow = "routing_pass"
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Initiating routing workflow pass..."}})
-                        session_messages.append(HumanMessage(content=(
-                            "Inspect typed project context first. Route only a bounded, validated request "
-                            "using catalog tools ccad_ui_route_track and ccad_ui_place_via when available. "
-                            "Do not promise complete autorouting or mutate without approval.")))
-                        # Fall through to graph execution
-                    elif cmd_base == "/drc":
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Running DRC checks..."}})
-                        # project.drc is a read-only, result-bearing broker
-                        # call. Waiting on the exact correlation ID prevents
-                        # the chat from claiming an in-progress DRC forever.
-                        drc_result = dispatch_client_tool("project.drc", {})
-                        try:
-                            drc_report = json.loads(drc_result)
-                        except (TypeError, json.JSONDecodeError):
-                            drc_report = {"error": "invalid_drc_broker_result"}
-                        if isinstance(drc_report, dict) and drc_report.get("error"):
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {
-                                "text": "DRC did not complete: " + str(drc_report["error"]),
-                                "kind": "tool_error", "tool": "project.drc",
-                            }})
-                        else:
-                            error_count = int(drc_report.get("error_count", 0))
-                            warning_count = int(drc_report.get("warning_count", 0))
-                            diagnostic_count = len(drc_report.get("diagnostics", []))
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {
-                                "text": (f"DRC complete — {error_count} error(s), "
-                                         f"{warning_count} warning(s), "
-                                         f"{diagnostic_count} diagnostic(s)."),
-                                "kind": "drc_result", "tool": "project.drc",
-                                "error_count": error_count, "warning_count": warning_count,
-                                "diagnostic_count": diagnostic_count,
-                            }})
-                        continue
-                    elif cmd_base == "/place":
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {
-                            "text": "Placement workflow unavailable: no typed footprint source and placement transaction are registered. No project action was sent."}})
-                        continue
-                    elif cmd_base == "/design":
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Opening the Component Designer Wizard..."}})
-                        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.open_component_wizard", "args": {}}})
-                        continue
-                    elif cmd_base == "/explain":
-                        active_workflow = "default"
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Explaining the current context..."}})
-                        session_messages.append(HumanMessage(content="Explain the current board selection or context in detail. Please provide a concise summary of the active design constraints."))
-                        # Fall through to graph execution
-                    elif cmd_base == "/clear":
-                        try:
-                            conversation_store.clear_model_projection(context_thread_id)
-                        except (ConversationStoreError, ValueError) as error:
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {
-                                "text": "Active conversation context was not cleared because its projection could not be saved.",
-                                "kind": "conversation_projection_failed",
-                                "category": getattr(error, "category", "conversation_projection_write_failed"),
-                                "secret_value_visible": False}})
-                            continue
-                        session_messages = []
-                        context_revisions.pop(context_thread_id, None)
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {
-                            "text": "Active model context cleared. The durable transcript remains available in conversation history.",
-                            "kind": "conversation_context_cleared"}})
-                        continue
-                    elif cmd_base == "/settings":
-                        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.open_settings", "args": {}}})
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Opening agent settings panel..."}})
-                        continue
-                    elif cmd_base == "/help":
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/context [draft]` (inspect bounded context and memory; no provider call)\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|list scope:x|add [scope:x] [title:y] <text>|update <id> [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/task start|status|end` (manage task-scoped STM)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`\n- `/route`\n- `/drc`\n- `/place`\n- `/design`\n- `/explain`\n- `/clear`\n- `/settings`"}})
-                        continue
-                    else:
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Unknown command: {cmd_base}"}})
-                        continue
-
-                turn_id = uuid.uuid4().hex
-                user_message = HumanMessage(content=text)
-                try:
-                    next_history = bound_session_history([*session_messages, user_message])
-                except ValueError:
-                    emit({"jsonrpc": "2.0", "method": "message", "params": {
-                        "text": "This request exceeds the configured recent-history budget; no provider request was sent.",
-                        "kind": "conversation_history_budget_exceeded",
-                        "provider_request_sent": False, "secret_value_visible": False}})
-                    continue
-                try:
-                    persist_turn_messages(requested_thread, turn_id, [user_message],
-                                          requested_session, project_id)
-                except (ConversationStoreError, ValueError) as error:
-                    emit({"jsonrpc": "2.0", "method": "message", "params": {
-                        "text": "Conversation could not be saved safely; no provider request was sent.",
-                        "kind": "conversation_store_unavailable",
-                        "category": getattr(error, "category", "conversation_store_write_failed"),
-                        "provider_request_sent": False, "secret_value_visible": False}})
-                    continue
-                session_messages = next_history
-                if "post prompt" in [h.lower() for h in active_hooks]:
-                    hooks.trigger_hook("post prompt", emit, text)
-
-                # Keep chat useful and truthful while no provider is configured.
-                # Do not enter the graph: it cannot produce an answer and older
-                # code could then index an empty message list.
-                if llm is None:
-                    unavailable_text = (
-                        "Local CCad agent received your request and current "
-                        f"design context ({len(context_str)} chars). "
-                        "Provider execution is unavailable; configure a provider "
-                        "key or use local CCad tools.")
-                    unavailable_message = AIMessage(content=unavailable_text)
-                    session_messages = bound_session_history(
-                        [*session_messages, unavailable_message])
-                    try:
-                        persist_turn_messages(requested_thread, turn_id,
-                                              [unavailable_message],
-                                              requested_session, project_id)
-                        conversation_store.record_turn(
-                            requested_thread, turn_id, text,
-                            [user_message, unavailable_message],
-                            outcome="provider_unavailable", project_id=project_id,
-                            project_revision_before=context_metadata.get(
-                                "project_revision", ""))
-                    except (ConversationStoreError, ValueError):
-                        pass
-                    emit({"jsonrpc": "2.0", "method": "message", "params": {
-                        "text": unavailable_text,
-                        "kind": "provider_unavailable",
-                        "context_received": bool(context_str),
-                    }})
-                    continue
-
-                try:
-                    final_state = invoke_agent_run({"messages": session_messages, "goal": text,
-                                                    "context": context_str, "next_node": "",
-                                                    "context_metadata": context_metadata,
-                                                    "thread_id": context_thread_id})
-                except Exception as error:
-                    failure_text = provider_error_user_message(error)
-                    failure_message = AIMessage(content=failure_text)
-                    session_messages = bound_session_history(
-                        [*session_messages, failure_message])
-                    try:
-                        persist_turn_messages(requested_thread, turn_id,
-                                              [failure_message], requested_session,
-                                              project_id)
-                        conversation_store.record_turn(
-                            requested_thread, turn_id, text,
-                            [user_message, failure_message], outcome="provider_error",
-                            project_id=project_id,
-                            project_revision_before=context_metadata.get(
-                                "project_revision", ""))
-                    except (ConversationStoreError, ValueError):
-                        pass
-                    export_state = telemetry_runtime.flush_turn()
-                    emit({"jsonrpc": "2.0", "method": "observability_state",
-                          "params": export_state})
-                    trace = telemetry_runtime.current_trace()
-                    emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
-                        "run_state": "failed", **trace, "error_type": type(error).__name__,
-                        "prompt_emitted": False, "secret_value_visible": False,
-                    }})
-                    emit({"jsonrpc": "2.0", "method": "message", "params": {
-                        "text": failure_text,
-                        "kind": "provider_error", "error_type": type(error).__name__,
-                        "cause": classify_provider_error(error),
-                        "http_status": provider_http_status(error),
-                        "retry_after_seconds": provider_retry_after_seconds(error),
-                    }})
-                    continue
-                export_state = telemetry_runtime.flush_turn()
-                emit({"jsonrpc": "2.0", "method": "observability_state",
-                      "params": export_state})
-                session_messages = bound_session_history(final_state["messages"])
-                last_msg = session_messages[-1]
-                has_tool_calls = bool(getattr(last_msg, "tool_calls", None))
-                has_legacy_tool = "<TOOL>" in str(getattr(last_msg, "content", ""))
-                try:
-                    persist_turn_messages(requested_thread, turn_id,
-                                          final_state.get("messages", []),
-                                          requested_session, project_id)
-                    if not (has_tool_calls or has_legacy_tool):
-                        conversation_store.record_turn(
-                            requested_thread, turn_id, text,
-                            final_state.get("messages", []), outcome="completed",
-                            project_id=project_id,
-                            project_revision_before=context_metadata.get("project_revision", ""))
-                except (ConversationStoreError, ValueError) as error:
-                    emit({"jsonrpc": "2.0", "method": "message", "params": {
-                        "text": "The provider turn completed, but its transcript update could not be persisted.",
-                        "kind": "conversation_store_write_failed",
-                        "category": getattr(error, "category", "conversation_store_write_failed"),
-                        "secret_value_visible": False}})
-                trace = telemetry_runtime.current_trace()
-                emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
-                    "run_state": "awaiting_tool_approval" if (has_tool_calls or has_legacy_tool) else "completed",
-                    **trace,
-                    "token_usage": "unavailable", "cost": "unavailable",
-                }})
-                
-                if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
-                    for tcall in last_msg.tool_calls:
-                        tool_name = tcall.get("name", "")
-                        args = tcall.get("args", {})
-                        if "pre tool call" in [h.lower() for h in active_hooks]:
-                            hooks.trigger_hook("pre tool call", emit, tool_name)
-                        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
-                            "tool": tool_name, "args": args,
-                            "call_id": tcall.get("id", "") or "agent-tool-call",
-                        }})
-                        if "post tool call" in [h.lower() for h in active_hooks]:
-                            hooks.trigger_hook("post tool call", emit, tool_name)
-                elif "<TOOL>" in last_msg.content:
-                    tool_call_str = last_msg.content.replace("<TOOL>", "").strip()
-                    tool_name = tool_call_str.split(" ")[0]
-                    if "pre tool call" in [h.lower() for h in active_hooks]:
-                        hooks.trigger_hook("pre tool call", emit, tool_name)
-                    args_str = tool_call_str[len(tool_name):].strip()
-                    args = {}
-                    try:
-                        args = json.loads(args_str)
-                    except Exception as e:
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Error parsing tool args: {e}"}})
-                    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": tool_name, "args": args}})
-                    if "post tool call" in [h.lower() for h in active_hooks]:
-                        hooks.trigger_hook("post tool call", emit, tool_name)
-                else:
-                    emit({"jsonrpc": "2.0", "method": "message", "params": {"text": last_msg.content}})
-                    if "pre exit/end" in [h.lower() for h in active_hooks]:
-                        hooks.trigger_hook("pre exit/end", emit)
+                handle_human_message(req)
             elif method in ("agent.langfuse_status", "agent.observability_status"):
                 emit({"jsonrpc": "2.0", "method": "observability_state",
                       "params": observability_state()})

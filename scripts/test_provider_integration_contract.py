@@ -3,7 +3,9 @@
 from pathlib import Path
 
 
-source = (Path(__file__).parents[1] / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
+root = Path(__file__).parents[1]
+source = "\n".join((root / "src" / "ccad_agent" / name).read_text(encoding="utf-8")
+                   for name in ("orchestrator.py", "model_catalog.py", "method_catalog.py"))
 compatibility = (Path(__file__).parents[1] / "docs" / "research" / "provider-model-compatibility.md").read_text(encoding="utf-8")
 compatibility_text = " ".join(compatibility.split())
 contracts = {
@@ -18,7 +20,7 @@ for provider, (endpoint, credential, adapter) in contracts.items():
     assert endpoint in source, provider
     assert adapter in source, provider
     assert credential in source, provider
-    assert f'catalog_failure("{provider}"' in source or provider == "ollama"
+    assert f'failure("{provider}"' in source
 for category in ("authentication", "permission_denied", "payment_required",
                  "quota_or_rate_limit", "rate_limited", "timeout", "connection_error", "invalid_response"):
     assert f'"{category}"' in source
