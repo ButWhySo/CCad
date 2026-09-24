@@ -99,6 +99,63 @@ class ProjectIndexTests(unittest.TestCase):
         self.assertEqual(result["relationship_semantics"], "shared_net_association_only")
         self.assertFalse(any("connected" in item for item in result["entities"]))
 
+    def test_schematic_net_expands_all_member_pins_and_symbols(self):
+        result = ProjectIndex().retrieve(project_snapshot(), "inspect GND net", limit=20)
+        kinds_by_id = {(item["kind"], item["id"]): item for item in result["entities"]}
+        self.assertIn(("schematic_pin", "GND:sch-u3:GND"), kinds_by_id)
+        self.assertIn(("schematic_pin", "GND:sch-j2:GND"), kinds_by_id)
+        self.assertIn(("schematic_symbol", "sch-u3"), kinds_by_id)
+        self.assertIn(("schematic_symbol", "sch-j2"), kinds_by_id)
+        self.assertEqual(kinds_by_id[("schematic_pin", "GND:sch-u3:GND")]["component_id"], "U3")
+        self.assertEqual(kinds_by_id[("schematic_pin", "GND:sch-u3:GND")]["net_id"], "GND")
+        self.assertNotIn("position_mm", kinds_by_id[("schematic_pin", "GND:sch-u3:GND")])
+        self.assertEqual(kinds_by_id[("schematic_pin", "GND:sch-u3:GND")]["symbol_id"], "sch-u3")
+        self.assertEqual(kinds_by_id[("schematic_pin", "GND:sch-u3:GND")]["membership_kind"],
+                         "schematic_net_member")
+        self.assertEqual(kinds_by_id[("schematic_symbol", "sch-u3")]["relationship"],
+                         "logical_net_member")
+        self.assertEqual(result["logical_net_semantics"],
+                         "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity")
+        self.assertEqual(result["stats"]["index_state"], "built")
+
+    def test_net_membership_change_invalidates_previous_graph_edges(self):
+        index = ProjectIndex()
+        before = project_snapshot()
+        before_board = before["typed_state"]["project"]["board"]
+        before_board["pads"], before_board["tracks"], before_board["vias"] = [], [], []
+        index.retrieve(before, "GND net", limit=20)
+        after = project_snapshot()
+        after_board = after["typed_state"]["project"]["board"]
+        after_board["pads"], after_board["tracks"], after_board["vias"] = [], [], []
+        after["typed_state"]["project"]["nets"][0]["members"].pop()
+        result = index.retrieve(after, "GND net", limit=20)
+        found = {(item["kind"], item["id"]) for item in result["entities"]}
+        self.assertEqual(result["stats"]["index_state"], "incremental")
+        self.assertEqual(result["stats"]["updated_count"], 1)
+        self.assertEqual(result["stats"]["removed_count"], 1)
+        self.assertIn(("schematic_symbol", "sch-u3"), found)
+        self.assertNotIn(("schematic_symbol", "sch-j2"), found)
+        self.assertNotIn(("schematic_pin", "GND:sch-j2:GND"), found)
+
+    def test_connected_schematic_pin_links_across_netlist_and_board_views(self):
+        result = ProjectIndex().retrieve(project_snapshot(), "GND:sch-u3:GND", limit=20)
+        by_key = {(item["kind"], item["id"]): item for item in result["entities"]}
+        self.assertIn(("schematic_pin", "GND:sch-u3:GND"), by_key)
+        self.assertIn(("schematic_wire", "W1"), by_key)
+        self.assertIn(("pad", "P1"), by_key)
+        self.assertEqual(by_key[("pad", "P1")]["net_id"], "GND")
+        self.assertEqual(by_key[("schematic_pin", "GND:sch-u3:GND")]["membership_kind"],
+                         "schematic_net_member")
+
+    def test_schematic_net_links_to_its_typed_label(self):
+        snapshot = project_snapshot()
+        snapshot["typed_state"]["project"]["labels"] = [
+            {"id": "L1", "text": "GND", "net_id": "GND"}]
+        result = ProjectIndex().retrieve(snapshot, "GND net", limit=20)
+        label = next(item for item in result["entities"]
+                     if item["kind"] == "schematic_label" and item["id"] == "L1")
+        self.assertEqual(label["relationship"], "logical_net_member")
+
     def test_component_reference_links_schematic_and_physical_objects(self):
         result = ProjectIndex().retrieve(project_snapshot(), "inspect U3 component",
                                          limit=12)
@@ -129,7 +186,7 @@ class ProjectIndexTests(unittest.TestCase):
         self.assertEqual(result["stats"]["index_state"], "incremental")
         self.assertEqual(result["stats"]["removed_count"], 1)
         self.assertEqual(result["stats"]["updated_count"], 1)
-        self.assertEqual(result["stats"]["unchanged_count"], 10)
+        self.assertEqual(result["stats"]["unchanged_count"], 12)
         ids = {item["id"] for item in result["entities"]}
         self.assertNotIn("V1", ids)
         self.assertEqual(index.retrieve(after, "USB-C receptacle")["stats"]["index_state"],
@@ -151,17 +208,22 @@ class ProjectIndexTests(unittest.TestCase):
     def test_retrieved_project_facts_survive_large_snapshot_compaction(self):
         snapshot = project_snapshot()
         snapshot["project_extra"] = "x" * 9000
-        retrieval = ProjectIndex().retrieve(snapshot, "USB connector receptacle")
+        retrieval = ProjectIndex().retrieve(snapshot, "GND net", limit=20)
         package = build_context_package(
             __import__("json").dumps(snapshot), [], [], char_limit=4096,
             project_retrieval=retrieval)
         self.assertTrue(package["metadata"]["project_snapshot_omitted"])
         self.assertIn("project_retrieval", package["metadata"]["sources"])
         envelope = __import__("json").loads(package["content"].split("\n", 1)[1])
-        self.assertTrue(any(item["id"] == "J2" for item in
+        self.assertTrue(any(item["kind"] == "schematic_pin" for item in
                             envelope["project_retrieval"]["entities"]))
         self.assertEqual(envelope["project_retrieval"]["relationship_semantics"],
                          "shared_net_association_only")
+        self.assertEqual(
+            envelope["project_retrieval"]["logical_net_semantics"],
+            "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity")
+        self.assertGreater(package["metadata"]["project_retrieval_kinds"].get(
+            "schematic_pin", 0), 0)
         self.assertLessEqual(package["metadata"]["content_size"], 4096)
 
     def test_context_broker_reuses_project_index_and_refreshes_changed_geometry(self):

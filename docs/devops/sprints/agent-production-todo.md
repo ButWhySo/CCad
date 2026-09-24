@@ -2,6 +2,15 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 981 active slice — schematic net-member retrieval (Tier 1, C3)
+
+- [x] Expand each bounded `schematic_net.members` entry into an independently retrievable pin identity linked to its source net and symbol/component.
+- [x] Retrieve sibling net members and schematic symbols through explicit logical membership; keep board-pad/track associations separately labeled and never infer geometric continuity.
+- [x] Include only actually packaged schematic pin/symbol counts in the safe per-turn metadata and Agent activity line.
+- [x] Prove incremental membership edits remove stale pins/edges without rebuilding unchanged entities; bound extraction work for multi-sheet netlists.
+- [x] Pass focused project-index/context contracts (13/13), Pyright 1.1.414 (0 diagnostics), clangd 19.1.7 with the Qt/MinGW compile database (no source diagnostics; optional `agent_panel.cpp` ExtractFunction action probe has known analyzer-internal errors), Qt Release build, full CTest (113/113), and a provider-disabled seven-action GUI-map scenario with all four generated screenshots plus logs inspected.
+- [x] Update handover/feature/progress docs; staged added-line secret scan is clean (tracked repository scan found only 3 pre-existing synthetic/test-context patterns).
+
 ### Sprint 980 active slice — deterministic typed-project retrieval (Context Runtime C3)
 
 Research: [KiCad PCB Editor](https://docs.kicad.org/7.0/en/pcbnew/pcbnew.html) separates layers, objects, and nets as distinct board views; [KiCad board file format](https://dev-docs.kicad.org/en/file-formats/sexpr-pcb/) identifies tracks, vias, zones, footprints, pads, and layers as structured board entities. CCad retrieval follows its native typed snapshot and deliberately labels net association separately from physical copper continuity.
@@ -4193,12 +4202,12 @@ Index textual fields such as:
 
 Represent/traverse relationships such as:
 
-- [ ] schematic symbol -> pins.
-- [ ] pin -> schematic net.
-- [ ] schematic net -> labels.
-- [ ] schematic symbol -> footprint.
-- [ ] PCB footprint -> pads.
-- [ ] pad -> PCB net.
+- [ ] schematic symbol -> all declared pins (connected memberships are indexed by Sprint 981; unconnected library pins remain open).
+- [x] connected schematic pin -> source schematic net via exact typed net-member identity (Sprint 981).
+- [x] schematic net -> schematic wires and labels (shared typed net membership; not geometric continuity proof).
+- [x] schematic symbol -> matching schematic/PCB component identity; verify full annotation/footprint links remain open.
+- [x] PCB footprint/component identity -> its typed pads.
+- [x] pad -> PCB net association (not electrical continuity proof).
 - [x] net -> tracks.
 - [x] net -> vias.
 - [x] net -> zones.
@@ -4614,7 +4623,7 @@ Complete together:
 
 - [x] Exact identity index for implemented typed entity classes; remaining entity coverage stays open above.
 - [x] Deterministic BM25 index for implemented typed entity text; remaining text-field coverage stays open above.
-- [ ] project relationship graph.
+- [ ] project relationship graph (Sprint 981 implements bounded connected schematic-net membership and component links; full graph remains open).
 - [x] PCB spatial index for supported typed entity geometry; diagnostic-marker and arbitrary bbox query coverage remains open.
 - [x] Hybrid deterministic project retrieval.
 - [x] Content revision/staleness handling against the live typed snapshot.

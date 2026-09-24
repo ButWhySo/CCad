@@ -1403,7 +1403,7 @@ def get_system_prompt(role_desc: str) -> str:
     
     parts = [f"You are {role_desc}",
              "Use only tools in the native catalog. Never invent a tool, board object, layer, net, placement, preview, or successful mutation.",
-             "Read the typed project context and project_retrieval matches before design-specific work. Retrieved positions and IDs come from the active typed model; same_net means only shared net assignment, not proven physical copper continuity. Use project.state for complete live PCB/schematic state before changes or when the requested details are not present.",
+             "Read the typed project context and project_retrieval matches before design-specific work. Retrieved positions and IDs come from the active typed model. Schematic pin membership is an authoritative netlist assignment; shared PCB net IDs are not proof of geometric copper continuity. Use project.state for complete live PCB/schematic state before changes or when requested details are not present.",
              "For a requested PCB layer or net, verify it exists in project context, then call ui.set_active_layer or ui.set_active_net before a dependent mutation.",
              "Treat tool results as authoritative: report a change only after performed=true; report the returned failure reason otherwise.",
              "Persistent mutations require the approval path. Use rendered proposal preview when available; never describe text-only context as a visual diff."]
@@ -2616,6 +2616,10 @@ def handle_human_message(req):
         "project_source_chars": context_metadata["project_source_chars"],
         "project_snapshot_omitted": context_metadata["project_snapshot_omitted"],
         "project_retrieval_count": context_metadata["project_retrieval_count"],
+        "project_retrieval_schematic_pin_count": context_metadata.get(
+            "project_retrieval_kinds", {}).get("schematic_pin", 0),
+        "project_retrieval_schematic_symbol_count": context_metadata.get(
+            "project_retrieval_kinds", {}).get("schematic_symbol", 0),
         "project_retrieval_chars": context_metadata["project_retrieval_chars"],
         "project_retrieval_revision": context_metadata["project_retrieval_revision"],
         "project_retrieval_method": context_metadata["project_retrieval_method"],

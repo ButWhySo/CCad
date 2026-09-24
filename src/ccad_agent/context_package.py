@@ -106,8 +106,8 @@ def _project_retrieval_payload(value: dict | None) -> dict:
             continue
         item = {}
         for key in ("id", "kind", "reference", "value", "name", "part",
-                    "pin_name", "pin_number", "type", "net_id", "layer_id",
-                    "component_id", "position_mm", "bounds_mm", "retrieval",
+                    "pin_name", "pin_number", "type", "net_id", "membership_kind", "layer_id",
+                    "component_id", "symbol_id", "position_mm", "bounds_mm", "retrieval",
                     "rank", "relationship", "distance_mm"):
             if key in entity and isinstance(entity[key], (str, int, float, dict)):
                 item[key] = entity[key]
@@ -127,6 +127,8 @@ def _project_retrieval_payload(value: dict | None) -> dict:
         "revision": _safe_text(source.get("revision"), 32),
         "search_method": _safe_text(source.get("search_method"), 80),
         "relationship_semantics": "shared_net_association_only",
+        "logical_net_semantics":
+            "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity",
         "spatial_semantics": "axis_aligned_bounds_distance_only",
         "entities": entities,
         "stats": {key: max(0, int(stats.get(key, 0) or 0)) for key in
@@ -355,6 +357,11 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
         sources.append("project_summary")
     included_project_retrieval = envelope.get("project_retrieval", {
         "revision": "", "search_method": "", "stats": {}, "entities": []})
+    project_retrieval_kinds: dict[str, int] = {}
+    for entity in included_project_retrieval["entities"]:
+        kind = entity.get("kind") if isinstance(entity, dict) else None
+        if isinstance(kind, str) and re.fullmatch(r"[a-z_]{1,40}", kind):
+            project_retrieval_kinds[kind] = project_retrieval_kinds.get(kind, 0) + 1
     if included_project_retrieval["entities"]:
         sources.append("project_retrieval")
     if included_memories:
@@ -434,6 +441,7 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
             "project_retrieval_revision": included_project_retrieval["revision"],
             "project_retrieval_method": included_project_retrieval["search_method"],
             "project_retrieval_stats": included_project_retrieval["stats"],
+            "project_retrieval_kinds": project_retrieval_kinds,
             "project_retrieval_count": len(included_project_retrieval["entities"]),
             "project_retrieval_chars": len(json.dumps(
                 included_project_retrieval["entities"], ensure_ascii=False,

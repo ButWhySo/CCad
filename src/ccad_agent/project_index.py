@@ -166,6 +166,15 @@ class ProjectIndex:
         self._spatial_global: set[str] = set()
 
     @staticmethod
+    def _signature(doc: dict) -> str:
+        indexed = {"fields": doc["fields"], "aliases": sorted(doc["aliases"]),
+                   "tokens": dict(doc["tokens"]), "net": doc["net"],
+                   "components": sorted(doc["components"]), "layer": doc["layer"],
+                   "text": doc["text"]}
+        return hashlib.sha256(json.dumps(
+            indexed, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+    @staticmethod
     def _make_doc(kind: str, item: dict, *, id_key: str = "id",
                   aliases=(), position=None, points=None, net_id="", layer_id="",
                   component_id="", extra_text=()) -> dict | None:
@@ -193,12 +202,20 @@ class ProjectIndex:
         component = _safe(component_id or item.get("component_id") or
                            (item.get("reference") if kind in
                             {"footprint", "schematic_symbol"} else ""), 120)
+        component_values = {_normalize(value) for value in (
+            component, object_id if kind == "schematic_symbol" else "",
+            _safe(item.get("symbol_id"), 120)) if _normalize(value)}
         if net:
             fields["net_id"] = net
+            if kind == "schematic_pin":
+                fields["membership_kind"] = "schematic_net_member"
         if layer:
             fields["layer_id"] = layer
         if component:
             fields["component_id"] = component
+        symbol_id = _safe(item.get("symbol_id"), 120)
+        if symbol_id:
+            fields["symbol_id"] = symbol_id
         raw_position = position if position is not None else item.get("position")
         point = _point(raw_position)
         if point is None:
@@ -225,13 +242,14 @@ class ProjectIndex:
                         [_safe(value, 160) for value in extra_text if _safe(value, 160)])
         tokens = Counter(token.casefold() for token in _WORD.findall(text)
                          if len(token) <= 80)
-        return {"uid": f"{kind}:{object_id}", "fields": fields,
+        doc = {"uid": f"{kind}:{object_id}", "fields": fields,
                 "aliases": {_normalize(value) for value in exact_values if _normalize(value)},
                 "tokens": tokens, "net": net.casefold(),
-                "component": component.casefold(), "layer": layer.casefold(),
-                "signature": hashlib.sha256(json.dumps(
-                    fields, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
+                "component": component.casefold(), "components": component_values,
+                "layer": layer.casefold(),
                 "text": text[:1200]}
+        doc["signature"] = ProjectIndex._signature(doc)
+        return doc
 
     @classmethod
     def _extract(cls, snapshot: dict) -> tuple[str, list[dict]]:
@@ -290,28 +308,66 @@ class ProjectIndex:
                               ("schematic_text", "texts")):
                 add(kind, schematic.get(key), aliases=("id", "name", "text", "value", "net_id"))
 
+        # Build the membership lookup once; scanning every source net for every
+        # indexed net makes large multi-sheet projects quadratic.
+        members_by_net: dict[str, list[dict]] = defaultdict(list)
+        seen_members: set[tuple[str, str, str]] = set()
+        member_count = 0
+        for source in schematic_sources:
+            for net in _iter_dicts(source.get("nets")):
+                net_id = _safe(net.get("id"), 120)
+                if not net_id:
+                    continue
+                for member in _iter_dicts(net.get("members")):
+                    component_id = _safe(member.get("component_id"), 120)
+                    pin_name = _safe(member.get("pin_name"), 100)
+                    key = (net_id, component_id, pin_name)
+                    if not component_id or not pin_name or key in seen_members:
+                        continue
+                    seen_members.add(key)
+                    members_by_net[net_id].append(member)
+                    member_count += 1
+                    if member_count >= _MAX_INPUT_ENTITIES:
+                        break
+                if member_count >= _MAX_INPUT_ENTITIES:
+                    break
+            if member_count >= _MAX_INPUT_ENTITIES:
+                break
+
         # Schematic net.members points at serialized component IDs and pins;
-        # enrich the net's indexed text so exact pin/component queries find it.
-        symbols = {str(doc["fields"].get("id", "")).casefold(): doc for doc in docs
-                   if doc["fields"]["kind"] == "schematic_symbol"}
+        # preserve each declared member as a separate searchable logical pin.
+        symbols = {}
+        for symbol in docs:
+            if symbol["fields"]["kind"] != "schematic_symbol":
+                continue
+            for key in ("id", "reference"):
+                value = _normalize(symbol["fields"].get(key, ""))
+                if value:
+                    symbols[value] = symbol
         for doc in docs:
             if doc["fields"]["kind"] != "schematic_net":
                 continue
             net_id = doc["fields"]["id"]
-            for source in schematic_sources:
-                for net in _iter_dicts(source.get("nets")):
-                    if _safe(net.get("id")) != net_id:
-                        continue
-                    for member in _iter_dicts(net.get("members")):
-                        component_id = _safe(member.get("component_id"), 120).casefold()
-                        pin_name = _safe(member.get("pin_name"), 100)
-                        if component_id:
-                            doc["component"] = component_id
-                            doc["tokens"].update(token.casefold() for token in
-                                _WORD.findall(f"{component_id} {pin_name}"))
-                            symbol = symbols.get(component_id)
-                            if symbol is not None:
-                                doc["aliases"].update(symbol["aliases"])
+            for member in members_by_net.get(net_id, ()):
+                component_id = _safe(member.get("component_id"), 120)
+                pin_name = _safe(member.get("pin_name"), 100)
+                symbol = symbols.get(_normalize(component_id))
+                symbol_fields = symbol["fields"] if symbol else {}
+                reference = _safe(symbol_fields.get("reference"), 120) or component_id
+                symbol_id = _safe(symbol_fields.get("id"), 120) or component_id
+                pin_doc = cls._make_doc(
+                    "schematic_pin",
+                    {"id": f"{net_id}:{component_id}:{pin_name}",
+                     "component_id": reference, "symbol_id": symbol_id,
+                     "reference": reference, "pin_name": pin_name,
+                     "net_id": net_id},
+                    aliases=("id", "pin_name", "component_id", "symbol_id"),
+                    component_id=reference, net_id=net_id)
+                if pin_doc is not None and len(docs) < _MAX_INPUT_ENTITIES:
+                    docs.append(pin_doc)
+                    doc["components"].update(pin_doc["components"])
+        for doc in docs:
+            doc["signature"] = cls._signature(doc)
         return project_id, docs
 
     def _remove(self, uid: str):
@@ -337,13 +393,18 @@ class ProjectIndex:
                 if not posting:
                     self._postings.pop(term, None)
         self._doc_lengths.pop(uid, None)
-        for field, value in (("net", doc["net"]), ("component", doc["component"]),
-                             ("layer", doc["layer"])):
+        for field, value in (("net", doc["net"]), ("layer", doc["layer"])):
             bucket = getattr(self, f"_{field}_docs").get(value) if value else None
             if bucket:
                 bucket.discard(uid)
                 if not bucket:
                     getattr(self, f"_{field}_docs").pop(value, None)
+        for value in doc["components"]:
+            bucket = self._component_docs.get(value)
+            if bucket:
+                bucket.discard(uid)
+                if not bucket:
+                    self._component_docs.pop(value, None)
         self._remove_spatial(uid)
 
     def _remove_spatial(self, uid: str):
@@ -382,10 +443,12 @@ class ProjectIndex:
         self._doc_lengths[uid] = sum(doc["tokens"].values())
         for term, count in doc["tokens"].items():
             self._postings[term][uid] = count
-        for field in ("net", "component", "layer"):
+        for field in ("net", "layer"):
             value = doc[field]
             if value:
                 getattr(self, f"_{field}_docs")[value].add(uid)
+        for value in doc["components"]:
+            self._component_docs[value].add(uid)
         self._add_spatial(doc)
 
     def _sync(self, snapshot: dict) -> dict:
@@ -521,15 +584,32 @@ class ProjectIndex:
             if not doc:
                 continue
             for field, index in (("net", self._net_docs),
-                                 ("component", self._component_docs),
                                  ("layer", self._layer_docs)):
                 value = doc[field]
                 if not value:
                     continue
-                relationship = {"net": "same_net", "component": "same_component",
-                                "layer": "same_layer"}[field]
+                relationship = {"net": "same_net", "layer": "same_layer"}[field]
                 for neighbor in index.get(value, ()):
                     if neighbor != uid and neighbor not in seeds:
+                        relation = relationship
+                        other_kind = self._docs.get(neighbor, {}).get(
+                            "fields", {}).get("kind", "")
+                        schematic_kinds = {"schematic_net", "schematic_pin",
+                                           "schematic_symbol", "schematic_wire",
+                                           "schematic_label"}
+                        if field == "net" and doc["fields"]["kind"] in schematic_kinds and \
+                                other_kind in schematic_kinds:
+                            relation = "logical_net_member"
+                        found[neighbor].add(relation)
+            for value in doc["components"]:
+                for neighbor in self._component_docs.get(value, ()):
+                    if neighbor != uid and neighbor not in seeds:
+                        other_kind = self._docs.get(neighbor, {}).get(
+                            "fields", {}).get("kind", "")
+                        relationship = ("logical_net_member"
+                                        if doc["fields"]["kind"] == "schematic_net" and
+                                        other_kind in {"schematic_pin", "schematic_symbol"}
+                                        else "same_component")
                         found[neighbor].add(relationship)
         return found
 
@@ -544,6 +624,8 @@ class ProjectIndex:
             return {"available": False, "reason": "typed_project_snapshot_unavailable",
                     "entities": [], "characters": 0, "revision": "",
                     "relationship_semantics": "shared_net_association_only",
+                    "logical_net_semantics":
+                        "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity",
                     "spatial_semantics": "axis_aligned_bounds_distance_only",
                     "stats": {"index_state": "unavailable", "total_entities": 0,
                               "exact_match_count": 0, "lexical_match_count": 0,
@@ -600,8 +682,8 @@ class ProjectIndex:
             fields = self._docs[uid]["fields"]
             item = {key: value for key, value in fields.items()
                     if key in {"id", "kind", "reference", "value", "name", "part",
-                               "pin_name", "pin_number", "type", "net_id", "layer_id",
-                               "component_id", "position_mm", "bounds_mm"}}
+                               "pin_name", "pin_number", "type", "net_id", "membership_kind", "layer_id",
+                               "component_id", "symbol_id", "position_mm", "bounds_mm"}}
             item["retrieval"] = mode
             item["rank"] = rank
             if relation:
@@ -624,5 +706,7 @@ class ProjectIndex:
         return {"available": True, "reason": "", "revision": self._revision,
                 "entities": output, "characters": used_chars, "stats": stats,
                 "relationship_semantics": "shared_net_association_only",
+                "logical_net_semantics":
+                    "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity",
                 "spatial_semantics": "axis_aligned_bounds_distance_only",
                 "search_method": "exact_alias_bm25_relationship_spatial"}

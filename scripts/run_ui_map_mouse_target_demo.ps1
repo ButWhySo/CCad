@@ -163,14 +163,20 @@ if ($Name.StartsWith("sprint976-conversation")) {
   $env:CCAD_AGENT_THREAD_ID = "sprint976-conversation-ui-thread"
   $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
 }
-if ($Name.StartsWith("sprint980-project-retrieval")) {
-  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint980-project-" + [Guid]::NewGuid().ToString("N"))
+if ($Name.StartsWith("sprint980-project-retrieval") -or
+    $Name.StartsWith("sprint981-schematic-project-graph")) {
+  $profilePrefix = if ($Name.StartsWith("sprint981-schematic-project-graph")) {
+    "ccad-sprint981-project-graph-"
+  } else { "ccad-sprint980-project-" }
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ($profilePrefix + [Guid]::NewGuid().ToString("N"))
   $configDir = Join-Path $isolatedMemoryProfile "CCad"
   New-Item -ItemType Directory -Path $configDir -Force | Out-Null
   $env:APPDATA = $isolatedMemoryProfile
   $env:CCAD_AGENT_CONVERSATION_DB = Join-Path $isolatedMemoryProfile "agent_conversations.sqlite3"
   $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
-  $env:CCAD_AGENT_THREAD_ID = "sprint980-project-retrieval-ui-thread"
+  $env:CCAD_AGENT_THREAD_ID = if ($Name.StartsWith("sprint981-schematic-project-graph")) {
+    "sprint981-schematic-project-graph-ui-thread"
+  } else { "sprint980-project-retrieval-ui-thread" }
   $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
   $testConfig = [ordered]@{
     provider = "openai"
@@ -255,7 +261,8 @@ try {
     }
   }
   if ($Name.StartsWith("sprint976-conversation") -or $Name.StartsWith("sprint977-context") -or
-      $Name.StartsWith("sprint980-project-retrieval")) {
+      $Name.StartsWith("sprint980-project-retrieval") -or
+      $Name.StartsWith("sprint981-schematic-project-graph")) {
     $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
     $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
     foreach ($field in @("conversation_turn_visible", "canonical_transcript_retained_after_clear")) {
@@ -271,7 +278,9 @@ try {
       throw "The configured Agent Python runtime is required to inspect the conversation database."
     }
     $databaseVerifier = Join-Path $Root "scripts\verify_conversation_ui_state.py"
-    $expectedThreadId = if ($Name.StartsWith("sprint980-project-retrieval")) {
+    $expectedThreadId = if ($Name.StartsWith("sprint981-schematic-project-graph")) {
+      "sprint981-schematic-project-graph-ui-thread"
+    } elseif ($Name.StartsWith("sprint980-project-retrieval")) {
       "sprint980-project-retrieval-ui-thread"
     } elseif ($Name.StartsWith("sprint977-context")) {
       "sprint977-context-ui-thread"
@@ -290,7 +299,8 @@ try {
         -not ($reportData.entries | Where-Object { $_.context_memory_attached -eq $true })) {
       throw "Mapped turn did not visibly prove inclusion of its enabled scoped memory entry."
     }
-    if ($Name.StartsWith("sprint980-project-retrieval") -and
+    if (($Name.StartsWith("sprint980-project-retrieval") -or
+         $Name.StartsWith("sprint981-schematic-project-graph")) -and
         -not ($reportData.entries | Where-Object { $_.project_retrieval_visible -eq $true })) {
       throw "Mapped turn did not visibly prove a non-empty typed-project retrieval result."
     }
@@ -298,7 +308,14 @@ try {
     if ($stdoutLog -and (Select-String -LiteralPath $stdoutLog -Pattern 'provider_request_sent":true' -Quiet)) {
       throw "Provider request occurred during conversation UI validation."
     }
-    $requiredScreenshots = if ($Name.StartsWith("sprint980-project-retrieval")) {
+    if ($Name.StartsWith("sprint981-schematic-project-graph") -and
+        (-not ($reportData.entries | Where-Object { $_.schematic_pin_retrieval_visible -eq $true }) -or
+         -not ($reportData.entries | Where-Object { $_.schematic_symbol_retrieval_visible -eq $true }))) {
+      throw "Mapped turn did not visibly include retrieved schematic net pins and related symbols."
+    }
+    $requiredScreenshots = if ($Name.StartsWith("sprint981-schematic-project-graph")) {
+      @("before", "turn-persisted", "projection-cleared")
+    } elseif ($Name.StartsWith("sprint980-project-retrieval")) {
       @("before", "turn-persisted")
     } else { @("before", "turn-persisted", "projection-cleared") }
     foreach ($state in $requiredScreenshots) {
