@@ -1764,7 +1764,7 @@ void AgentPanel::hideSlashPopup() {
 
 void AgentPanel::filterSlashCommands() {
   QString text = chat_input_->toPlainText().mid(1).trimmed().toLower();
-  QStringList all_commands = {"/commands", "/context", "/workflow use:", "/workflow chaining phase:", "/workflow chaining state:", "/hooks ", "/set ", "/compact", "/cc", "/task start", "/task status", "/task end", "/schedule ", "/help", "/drc", "/route", "/place", "/design", "/explain", "/clear", "/marketplace", "/settings"};
+  QStringList all_commands = {"/commands", "/context", "/workflow use:", "/workflow chaining phase:", "/workflow chaining state:", "/hooks ", "/set ", "/compact", "/cc", "/memory compact plan", "/memory compact send:", "/memory compact apply:", "/memory compact cancel:", "/task start", "/task status", "/task end", "/schedule ", "/help", "/drc", "/route", "/place", "/design", "/explain", "/clear", "/marketplace", "/settings"};
   slash_popup_->clear();
   for (const QString& cmd : all_commands) {
     if (text.isEmpty() || cmd.mid(1).toLower().startsWith(text)) {

@@ -261,6 +261,10 @@ if(Python3_Interpreter_FOUND)
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_memory_command_contract.py")
   add_test(NAME agent_memory_context_contract
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_memory_context_contract.py")
+  add_test(NAME agent_memory_semantic_compaction
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_agent_memory_compaction.py")
+  add_test(NAME agent_memory_compaction_runtime
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_agent_memory_compaction_runtime.py")
   add_test(NAME agent_semantic_history_compaction
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_agent_semantic_compaction.py")
   add_test(NAME agent_compaction_orchestrator_contract

@@ -4,6 +4,7 @@ Memory is user-owned JSON, never sent to a model automatically. Entries are
 bounded, tagged, and deletable; credential-looking content is rejected.
 """
 
+import hashlib
 import json
 import os
 import re
@@ -219,3 +220,62 @@ class MemoryStore:
         if removed:
             self._write(new)
         return removed
+
+    @staticmethod
+    def _compaction_fingerprint(entry):
+        fields = {key: entry.get(key) for key in (
+            "id", "title", "content", "scope", "tier", "namespace",
+            "tags", "created_at", "expires_at") if key in entry}
+        return hashlib.sha256(json.dumps(
+            fields, ensure_ascii=False, sort_keys=True,
+            separators=(",", ":")).encode("utf-8")).hexdigest()
+
+    def replace_with_compaction(self, source_entries, summary, *, tier,
+                                namespace, scope, title, tags, expires_at=""):
+        """Atomically replace unchanged durable records with one reviewed summary."""
+        if tier not in {"ltm", "episodic"}:
+            raise ValueError("only durable memory tiers can be compacted")
+        namespace, scope = str(namespace), str(scope)
+        sources = list(source_entries)
+        source_ids = [str(entry.get("id", "")) for entry in sources]
+        if len(sources) < 2 or not all(source_ids) or len(set(source_ids)) != len(source_ids):
+            raise ValueError("memory compaction requires distinct durable source records")
+        if any(entry.get("tier") != tier or entry.get("namespace") != namespace
+               or entry.get("scope") != scope for entry in sources):
+            raise ValueError("memory compaction source scope changed")
+
+        entries = self._read()
+        self._validate_compaction_sources(entries, sources, tier, namespace, scope)
+
+        replacement = self._normalise_entry(
+            summary, title=title, scope=scope, tags=tags, tier=tier,
+            namespace=namespace, expires_at=expires_at)
+        source_id_set = set(source_ids)
+        updated = [entry for entry in entries
+                   if str(entry.get("id", "")) not in source_id_set]
+        updated.append(replacement)
+        self._write(updated)
+        return replacement
+
+    def validate_compaction_sources(self, source_entries, *, tier, namespace, scope):
+        """Refuse to export a reviewed snapshot after its durable records change."""
+        sources = list(source_entries)
+        if (len(sources) < 2 or any(
+                entry.get("tier") != tier or entry.get("namespace") != namespace
+                or entry.get("scope") != scope for entry in sources)):
+            raise MemoryStoreError("memory_compaction_stale")
+        self._validate_compaction_sources(self._read(), sources, tier, namespace, scope)
+
+    def _validate_compaction_sources(self, entries, sources, tier, namespace, scope):
+        source_ids = [str(entry.get("id", "")) for entry in sources]
+        if len(sources) < 2 or not all(source_ids) or len(set(source_ids)) != len(source_ids):
+            raise MemoryStoreError("memory_compaction_stale")
+        current = {str(entry.get("id", "")): entry for entry in entries}
+        for source in sources:
+            stored = current.get(str(source["id"]))
+            if (stored is None or stored.get("tier", "ltm") != tier
+                    or stored.get("namespace", "project") != namespace
+                    or stored.get("scope", "project") != scope
+                    or self._compaction_fingerprint(stored) !=
+                    self._compaction_fingerprint(source)):
+                raise MemoryStoreError("memory_compaction_stale")

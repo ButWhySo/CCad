@@ -37,7 +37,7 @@ if ($qtDllResolved -ne $expectedDllResolved) {
 $compilerResolved = (Resolve-Path $ExpectedCompiler).Path
 
 if (Test-Path $cache) {
-  $compilerLine = Select-String -Path $cache -Pattern '^CMAKE_CXX_COMPILER:(FILEPATH|STRING)=' | Select-Object -First 1
+  $compilerLine = Select-String -Path $cache -Pattern '^CMAKE_CXX_COMPILER:(FILEPATH|STRING|UNINITIALIZED)=' | Select-Object -First 1
   if (-not $compilerLine) {
     throw "CMAKE_CXX_COMPILER missing in $cache"
   }

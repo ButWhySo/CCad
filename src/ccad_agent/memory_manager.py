@@ -374,6 +374,25 @@ class MemoryManager:
             self.runtime["stm"] = []
         return len(entries)
 
+    def apply_compaction(self, *, tier: str, namespace: str, scope: str,
+                         source_entries: list[dict[str, Any]], summary: str,
+                         title: str, tags: list[str], expires_at=""):
+        """Commit a reviewed durable summary iff every source is unchanged."""
+        self._check_tier(tier)
+        if tier == "stm":
+            raise ValueError("short-term task memory is not durable and cannot be compacted")
+        if not self.enabled[tier] or self.storage_errors.get(tier):
+            raise RuntimeError(f"memory tier is unavailable: {tier}")
+        if str(namespace) != self.identities[tier]:
+            raise MemoryStoreError("memory_compaction_stale")
+        entry = self.store.replace_with_compaction(
+            source_entries, summary, tier=tier, namespace=namespace, scope=scope,
+            title=title, tags=tags, expires_at=expires_at)
+        self.runtime[tier] = self._load(tier)
+        self.storage_errors.pop(tier, None)
+        entry["project_id"] = self.project_id
+        return entry
+
     def compact(self, tier: str, limit=64):
         self._check_tier(tier)
         self.runtime[tier] = self.runtime[tier][-max(1, min(64, int(limit))):]

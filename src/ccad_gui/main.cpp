@@ -15,6 +15,7 @@
 #include <QListWidget>
 #include <QMessageBox>
 #include <QProxyStyle>
+#include <QRegularExpression>
 #include <QStyleOption>
 #include <QTextBrowser>
 #include <QThread>
@@ -443,7 +444,8 @@ int main(int argc, char** argv) {
           !catalog_startup.contains("\"native_tool_catalog_method_count\":0");
       if (name.startsWith("sprint968-task") ||
           name.startsWith("sprint969-context") ||
-          name.startsWith("sprint970-compaction")) {
+          name.startsWith("sprint970-compaction") ||
+          name.startsWith("sprint974-memory")) {
         const auto interact = [window, &entries, &output_dir, &name,
                                per_target_wait_ms](const QString& method,
                                                   const QString& payload,
@@ -529,6 +531,41 @@ int main(int argc, char** argv) {
           entries << QString("{\"safe_noop_visible\":%1,\"provider_request_sent\":false}")
                          .arg(safe_noop_visible ? "true" : "false");
           ok = safe_noop_visible && ok;
+        } else if (name.startsWith("sprint974-memory")) {
+          ok = interact("ui.click", "{\"id\":\"tab:pcb\"}",
+                        "tab:pcb", "pcb-tab-checked") && ok;
+          ok = interact("ui.click", "{\"id\":\"tab:schematic\"}",
+                        "tab:schematic", "schematic-tab-checked") && ok;
+          ok = interact("ui.click", "{\"id\":\"tab:agent\"}",
+                        "tab:agent", "agent-tab-opened") && ok;
+          ok = interact("ui.type_text",
+                        "{\"id\":\"control:agent_chat_input\",\"text\":\"/memory compact plan tier:ltm scope:conversation\"}",
+                        "control:agent_chat_input", "compaction-plan-entered") && ok;
+          ok = interact("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
+                        "action:agent_submit_chat", "compaction-plan-result") && ok;
+          auto* chat = window->findChild<QTextBrowser*>("control:agent_chat_stream");
+          const QString chat_text = chat ? chat->toPlainText() : QString{};
+          const QRegularExpression plan_match("send:([0-9a-f]{32})");
+          const auto match = plan_match.match(chat_text);
+          const bool planned = chat_text.contains("Prepared compaction for") &&
+                               match.hasMatch();
+          entries << QString("{\"plan_created\":%1,\"provider_request_sent\":false}")
+                         .arg(planned ? "true" : "false");
+          ok = planned && ok;
+          if (planned) {
+            const QString cancel_command = "/memory compact cancel:" + match.captured(1);
+            ok = interact("ui.type_text",
+                          QString("{\"id\":\"control:agent_chat_input\",\"text\":%1}")
+                              .arg(jsonStringLocal(cancel_command)),
+                          "control:agent_chat_input", "compaction-cancel-entered") && ok;
+            ok = interact("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
+                          "action:agent_submit_chat", "compaction-cancelled") && ok;
+            const bool cancelled = chat && chat->toPlainText().contains(
+                "Memory compaction cancelled; stored records are unchanged.");
+            entries << QString("{\"plan_cancelled\":%1,\"persistent_change\":false}")
+                           .arg(cancelled ? "true" : "false");
+            ok = cancelled && ok;
+          }
         } else {
           ok = interact("ui.click", "{\"id\":\"tab:agent\"}",
                         "tab:agent", "agent-tab-clicked") && ok;

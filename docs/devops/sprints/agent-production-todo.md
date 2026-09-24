@@ -6,6 +6,22 @@ Check a box only after implementation and its required evidence exist.
 
 Update this file in the same commit as each implementation slice.
 
+### Sprint 974 active slice - reviewed durable-memory compaction
+
+- [x] Bound same-tier, same-namespace, same-scope durable-memory selection; reject secret-bearing sources and unsafe summaries.
+- [x] Add explicit plan, provider-send, review, apply, and cancel stages; provider calls use the selected model with tools disabled.
+- [x] Keep plans process-only and expiring; clear them on memory disable and thread/namespace changes.
+- [x] Revalidate records before provider transmission and atomically replace only unchanged records after explicit apply.
+- [x] Add offline/store contracts and real JSON-RPC lifecycle coverage; prove no-provider paths preserve storage.
+- [x] Pass Qt MinGW Release build and full CTest (106/106); run seven mapped Agent interactions in an isolated profile, inspect all seven screenshots and stdout/stderr.
+- [x] Update feature, handover, progress, and backlog docs; fix preflight acceptance of the valid `UNINITIALIZED` compiler cache type.
+- [ ] Verify one opt-in real provider summary and reviewed apply on disposable memory; this slice made no quota-consuming provider request.
+- [x] Run redacted tracked-repository and staged-diff secret scans; staged diff is clean, with only an existing synthetic token-shaped test fixture in `scripts/test_memory_store.py` found in tracked sources.
+- [x] Commit only the verified files; exclude unrelated GUI edits, local configs, logs, screenshots, and generated projects.
+- [x] Push the verified commit to the sprint branch.
+
+Reference checked: [LangGraph long-term memory](https://docs.langchain.com/oss/python/langgraph/add-memory) describes durable memory lifecycle and namespace/scope boundaries. CCad compaction is explicit and reviewed; generated output is never persisted automatically.
+
 ### Sprint 973 active slice - provider/model capability and limit truth
 
 - [x] Verify the provider adapters, documented model presets, dynamic model metadata, and safe failure categories against official provider docs.
@@ -46,7 +62,7 @@ Durable semantic memory-record compaction remains a separate open item; this sli
 - [x] Exercise `/cc` from the real Agent composer through seven mapped GUI interactions; inspect each screenshot and stdout/stderr.
 - [x] Run Qt MinGW Release build, full CTest (103/103), and changed-module Pyright (0 diagnostics).
 - [ ] Complete the bundled Python contract sweep; its broad source-contract run encountered unrelated failures and hung in an independent local OpenAI-compatible harness, so no pass is claimed.
-- [ ] Keep durable memory-record semantic compaction explicitly separate and open; it is not implemented by chat-history compaction.
+- [x] Keep durable memory-record compaction separate from chat-history compaction; Sprint 974 adds its explicit reviewed plan/send/apply lifecycle.
 
 References checked: LangGraph's official [short-term memory guide](https://langchain-ai.github.io/langgraph/how-tos/cross-thread-persistence-functional/) documents summarizing earlier history, message deletion through `RemoveMessage` with an `add_messages` reducer, and the need to preserve valid provider tool-call/result sequences. The installed LangGraph 0.2.62 implementation was also inspected because its pinned API does not export `REMOVE_ALL_MESSAGES`; CCad therefore removes existing message IDs individually and verifies the resulting checkpoint.
 

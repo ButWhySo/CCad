@@ -2044,7 +2044,22 @@ also uses a throwaway profile and captures memory Settings, Manage, save, and re
 confirmation interactions. It verifies the durable record, reset cancellation,
 and reopened Personalisation checkbox values against saved preferences; all 42
 screenshots, stdout and stderr were inspected after a Qt MinGW Release build and
-104/104 CTest. Durable semantic memory compaction remains open.
+104/104 CTest.
+
+## Sprint 974 reviewed durable-memory compaction
+
+`memory_compaction.py` bounds and validates selected durable records and owns
+short-lived, process-only plans. The orchestrator exposes explicit local
+plan/cancel operations and a selected-model summary request with tool binding
+disabled. The provider summary is not persisted until the user submits the
+separate apply command. `MemoryStore.validate_compaction_sources()` prevents
+sending a stale snapshot; `replace_with_compaction()` revalidates and atomically
+replaces only unchanged same-tier/scope records. `MemoryManager` then reloads
+that tier's cache. Thread/namespace changes and tier disable discard plans so
+source text is not retained in the process. Contracts are in
+`scripts/test_agent_memory_compaction.py` and
+`scripts/test_agent_memory_compaction_runtime.py`; the mapped UI run is named
+`sprint974-memory`.
 
 ## Sprint 968 task-scoped STM and duplicate handling
 

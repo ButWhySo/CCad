@@ -60,6 +60,8 @@ $priorTraceDebug = $env:CCAD_TRACE_DEBUG
 $priorAppData = $env:APPDATA
 $priorMemoryPath = $env:CCAD_AGENT_MEMORY_PATH
 $priorCheckpointPath = $env:CCAD_AGENT_CHECKPOINT_DB
+$priorThreadId = $env:CCAD_AGENT_THREAD_ID
+$priorDeferProvider = $env:CCAD_AGENT_DEFER_PROVIDER_INIT
 $isolatedMemoryProfile = $null
 if ($Name.StartsWith("sprint969-context")) {
   # Exercise the real large-context branch with a deliberately low, valid
@@ -74,8 +76,35 @@ if ($Name.StartsWith("sprint971-memory")) {
   $env:CCAD_AGENT_MEMORY_PATH = Join-Path $isolatedMemoryProfile "agent_memory.json"
   $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
 }
+if ($Name.StartsWith("sprint974-memory")) {
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint974-" + [Guid]::NewGuid().ToString("N"))
+  New-Item -ItemType Directory -Path $isolatedMemoryProfile | Out-Null
+  $configDir = Join-Path $isolatedMemoryProfile "CCad"
+  New-Item -ItemType Directory -Path $configDir | Out-Null
+  $env:APPDATA = $isolatedMemoryProfile
+  $env:CCAD_AGENT_MEMORY_PATH = Join-Path $isolatedMemoryProfile "agent_memory.json"
+  $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
+  $env:CCAD_AGENT_THREAD_ID = "sprint974-test-thread"
+  $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
+  $testConfig = [ordered]@{
+    provider = "openai"
+    model = "gpt-5.1"
+    memory = @{ stm = $false; ltm = $true; episodic = $false }
+    observability = @{ enabled = $false; backend = "langfuse"; environment = "development" }
+  }
+  [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
+    ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
+  $fixedText = "Preserve verified connector J3 placement and the existing ground return path. Keep minimum copper clearance at 0.25 mm on F.Cu; do not move U3 or alter net assignments. This durable preference is retained only to validate explicit memory-compaction planning and cancellation in an isolated test profile."
+  $testRecords = @(
+    @{ id = "sprint974-memory-a"; tier = "ltm"; namespace = "sprint974-test-thread"; scope = "conversation"; title = "PCB constraints A"; content = $fixedText; tags = @("pcb", "clearance"); created_at = "2026-09-20T10:00:00+00:00"; expires_at = "" },
+    @{ id = "sprint974-memory-b"; tier = "ltm"; namespace = "sprint974-test-thread"; scope = "conversation"; title = "PCB constraints B"; content = ($fixedText + " Also preserve the current board outline and all existing via locations during unrelated edits."); tags = @("pcb", "outline"); created_at = "2026-09-21T10:00:00+00:00"; expires_at = "" }
+  )
+  [IO.File]::WriteAllText($env:CCAD_AGENT_MEMORY_PATH,
+    (ConvertTo-Json -InputObject $testRecords -Depth 8), [Text.UTF8Encoding]::new($false))
+  $script:memoryBeforeHash = (Get-FileHash -LiteralPath $env:CCAD_AGENT_MEMORY_PATH -Algorithm SHA256).Hash
+}
 try {
-  $process = Start-Process -FilePath $Gui `
+  $process = Start-Process -FilePath $Gui -WindowStyle Maximized `
     -ArgumentList @("--test-ui-map-target-sequence", $ProjectPath, $ScreenshotDir, $Name,
                     [string]$InitialLoadMilliseconds, [string]$PerTargetMilliseconds) `
     -PassThru -Wait -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
@@ -110,6 +139,21 @@ try {
       throw "Mapped GUI did not capture the reset confirmation before cancelling it."
     }
   }
+  if ($Name.StartsWith("sprint974-memory")) {
+    $memoryAfterHash = (Get-FileHash -LiteralPath $env:CCAD_AGENT_MEMORY_PATH -Algorithm SHA256).Hash
+    $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
+    $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
+    if ($memoryBeforeHash -ne $memoryAfterHash) {
+      throw "Plan/cancel GUI flow unexpectedly changed persistent memory."
+    }
+    if (-not ($reportData.entries | Where-Object { $_.plan_created -eq $true }) -or
+        -not ($reportData.entries | Where-Object { $_.plan_cancelled -eq $true })) {
+      throw "GUI did not prove explicit durable-memory compaction plan and cancellation."
+    }
+    if ($stdoutLog -and (Select-String -LiteralPath $stdoutLog -Pattern '"provider_request_sent":true' -Quiet)) {
+      throw "Provider request occurred during plan/cancel validation."
+    }
+  }
 } finally {
   if ($null -eq $priorThreshold) { Remove-Item Env:CCAD_AGENT_LARGE_CONTEXT_TOKENS -ErrorAction SilentlyContinue }
   else { $env:CCAD_AGENT_LARGE_CONTEXT_TOKENS = $priorThreshold }
@@ -121,6 +165,10 @@ try {
   else { $env:CCAD_AGENT_MEMORY_PATH = $priorMemoryPath }
   if ($null -eq $priorCheckpointPath) { Remove-Item Env:CCAD_AGENT_CHECKPOINT_DB -ErrorAction SilentlyContinue }
   else { $env:CCAD_AGENT_CHECKPOINT_DB = $priorCheckpointPath }
+  if ($null -eq $priorThreadId) { Remove-Item Env:CCAD_AGENT_THREAD_ID -ErrorAction SilentlyContinue }
+  else { $env:CCAD_AGENT_THREAD_ID = $priorThreadId }
+  if ($null -eq $priorDeferProvider) { Remove-Item Env:CCAD_AGENT_DEFER_PROVIDER_INIT -ErrorAction SilentlyContinue }
+  else { $env:CCAD_AGENT_DEFER_PROVIDER_INIT = $priorDeferProvider }
   if ($isolatedMemoryProfile -and (Test-Path -LiteralPath $isolatedMemoryProfile)) {
     $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
     $profilePath = [IO.Path]::GetFullPath($isolatedMemoryProfile)

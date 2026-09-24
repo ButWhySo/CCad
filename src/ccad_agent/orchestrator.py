@@ -52,6 +52,8 @@ import hooks
 from memory_store import MemoryStore, MemoryStoreError
 from memory_manager import MemoryManager, MemoryTaskScopes
 from memory_commands import execute_memory_command
+from memory_compaction import (MemoryCompactionError, MemoryCompactionPlans,
+                               MEMORY_SUMMARY_SYSTEM_PROMPT)
 from history_compaction import (HistoryCompactionError,
                                 compact_history,
                                 prepare_history_compaction,
@@ -528,12 +530,275 @@ memory_store = MemoryStore()
 memory_manager = MemoryManager(memory_store)
 memory_task_scopes = MemoryTaskScopes(memory_manager)
 memory_manager.configure(config_manager.get("memory", {}))
+memory_compaction_plans = MemoryCompactionPlans()
 
 def local_memory_entries(query=""):
     """Return ranked, enabled, namespace-scoped memories for one turn."""
     entries, provenance = memory_manager.retrieve_with_metadata(query)
     return (entries if isinstance(entries, list) else [],
             provenance if isinstance(provenance, list) else [])
+
+
+def handle_durable_memory_compaction(arguments: str, thread_id: str) -> None:
+    """Explicit plan -> provider summary -> reviewed atomic apply lifecycle."""
+    import shlex
+
+    try:
+        tokens = shlex.split(str(arguments))
+        if not tokens:
+            raise ValueError("Use `/memory compact plan tier:ltm scope:conversation`.")
+        action = tokens[0].casefold()
+        if action == "plan":
+            tokens.pop(0)
+            options = {}
+            for token in tokens:
+                key, separator, value = token.partition(":")
+                if not separator or key not in {"tier", "scope"} or not value.strip():
+                    raise ValueError("Plan syntax: `/memory compact plan tier:ltm|episodic scope:<scope>`.")
+                if key in options:
+                    raise ValueError(f"Specify `{key}` only once.")
+                options[key] = value.strip()
+            tier, scope = options.get("tier", ""), options.get("scope", "")
+            if tier not in {"ltm", "episodic"} or not scope:
+                raise ValueError("Choose durable tier `ltm` or `episodic` and an exact scope.")
+            if not memory_manager.enabled[tier] or memory_manager.storage_errors.get(tier):
+                raise ValueError(f"Memory tier `{tier}` must be enabled and available to compact.")
+            namespace = memory_manager.identities[tier]
+            telemetry_runtime.begin_turn()
+            with telemetry_runtime.session(thread_id), telemetry_runtime.observation(
+                    "memory.compaction.plan", "agent", {
+                        "tier": tier, "scope_present": "true",
+                    }):
+                plan = memory_compaction_plans.create(
+                    memory_manager.list(tier=tier, scope=scope), tier=tier,
+                    namespace=namespace, scope=scope)
+            emit({"jsonrpc": "2.0", "method": "observability_state",
+                  "params": telemetry_runtime.flush_turn()})
+            if not plan["ready"]:
+                reasons = {
+                    "too_few_records": "At least two records in that tier, namespace, and scope are required.",
+                    "insufficient_source": "Selected records are too short to benefit from compaction.",
+                    "unsafe_or_invalid_source": "A source record is unsafe or invalid; no provider request was sent.",
+                    "source_exceeds_compaction_bound": "Source data exceeds the safe compaction bound.",
+                    "tier_not_durable": "Only LTM and episodic records can be compacted.",
+                }
+                raise ValueError(reasons.get(plan["reason"],
+                                             "No eligible memory records were found."))
+            provider, model_name = active_provider_model()
+            plan["provider"] = provider
+            plan["model"] = model_name
+            request_chars = (len(MEMORY_SUMMARY_SYSTEM_PROMPT) +
+                             len(plan["source_json"]) +
+                             int(plan["report"]["summary_limit_chars"]))
+            estimated_tokens = (request_chars + 3) // 4 + 8
+            plan["report"].update(provider=provider, model=model_name,
+                                  request_chars=request_chars,
+                                  estimated_input_tokens=estimated_tokens)
+            emit({"jsonrpc": "2.0", "method": "memory_compaction_state", "params": {
+                "stage": "planned", "plan_id": plan["plan_id"],
+                "tier": tier, "scope": scope,
+                "source_record_count": plan["report"]["source_record_count"],
+                "source_chars": plan["report"]["source_chars"],
+                "estimated_input_tokens": estimated_tokens,
+                "provider": provider, "model": model_name,
+                "tools_enabled": False, "expires_in_seconds": 900,
+                "source_contents_emitted": False,
+                "secret_value_visible": False}})
+            emit({"jsonrpc": "2.0", "method": "message", "params": {
+                "kind": "memory_compaction_plan",
+                "text": (f"Prepared compaction for {plan['report']['source_record_count']} "
+                         f"{tier} records ({plan['report']['source_chars']} characters; "
+                         f"about {estimated_tokens} input tokens with {provider}/{model_name}). "
+                         "No provider request or memory change occurred. Review the scope and "
+                         f"send only with `/memory compact send:{plan['plan_id']}`. "
+                         "That sends the selected memory text to the named provider; its result "
+                         "will be shown for review before any records are replaced."),
+                "secret_value_visible": False}})
+            return
+
+        if len(tokens) != 1 or ":" not in tokens[0]:
+            raise ValueError("Use `/memory compact send:<plan-id>`, `apply:<plan-id>`, or `cancel:<plan-id>`." )
+        operation, plan_id = tokens[0].split(":", 1)
+        operation, plan_id = operation.casefold(), plan_id.strip()
+        if not plan_id:
+            raise ValueError("A compaction plan ID is required.")
+        plan = memory_compaction_plans.get(plan_id)
+        if plan["namespace"] != memory_manager.identities.get(plan["tier"]):
+            raise MemoryCompactionError("plan_namespace_changed")
+        if operation == "cancel":
+            telemetry_runtime.begin_turn()
+            with telemetry_runtime.session(thread_id), telemetry_runtime.observation(
+                    "memory.compaction.cancel", "span", {
+                        "tier": plan["tier"], "source_record_count": str(
+                            plan["report"]["source_record_count"]),
+                    }):
+                memory_compaction_plans.cancel(plan_id)
+            emit({"jsonrpc": "2.0", "method": "observability_state",
+                  "params": telemetry_runtime.flush_turn()})
+            emit({"jsonrpc": "2.0", "method": "memory_compaction_state", "params": {
+                "stage": "cancelled", "plan_id": plan_id,
+                "source_contents_emitted": False, "secret_value_visible": False}})
+            emit({"jsonrpc": "2.0", "method": "message", "params": {
+                "text": "Memory compaction cancelled; stored records are unchanged.",
+                "kind": "memory_compaction_cancelled", "secret_value_visible": False}})
+            return
+        if operation == "send":
+            if plan["status"] != "planned":
+                raise MemoryCompactionError("plan_already_summarized")
+            if (not memory_manager.enabled[plan["tier"]] or llm is None):
+                raise MemoryCompactionError("provider_or_memory_unavailable")
+            memory_store.validate_compaction_sources(
+                plan["source_entries"], tier=plan["tier"],
+                namespace=plan["namespace"], scope=plan["scope"])
+            provider, model_name = active_provider_model()
+            callbacks = active_callbacks()
+            run_config: RunnableConfig = {
+                "run_name": "ccad-durable-memory-compaction",
+                "tags": ["ccad", "memory-compaction", provider],
+                "metadata": {
+                    "ccad_operation": "durable_memory_compaction",
+                    "ccad_provider": provider, "ccad_model": model_name,
+                    "ccad_thread_id_present": "true" if thread_id else "false",
+                    "ccad_memory_tier": plan["tier"],
+                    "ccad_source_record_count": str(plan["report"]["source_record_count"]),
+                    "ccad_source_chars": str(plan["report"]["source_chars"]),
+                    "ccad_tools_enabled": "false",
+                },
+            }
+            if callbacks:
+                run_config["callbacks"] = callbacks
+            telemetry_runtime.begin_turn()
+            emit({"jsonrpc": "2.0", "method": "memory_compaction_state", "params": {
+                "stage": "request_started", "plan_id": plan_id,
+                "provider": provider, "model": model_name,
+                "estimated_input_tokens": plan["report"]["estimated_input_tokens"],
+                "provider_request_sent": False, "tools_enabled": False,
+                "source_contents_emitted": False, "secret_value_visible": False}})
+            try:
+                with telemetry_runtime.session(thread_id), telemetry_runtime.observation(
+                        "memory.compact", "agent", {
+                            "provider": provider, "model": model_name,
+                            "tier": plan["tier"],
+                            "source_record_count": str(plan["report"]["source_record_count"]),
+                            "source_chars": str(plan["report"]["source_chars"]),
+                        }):
+                    with telemetry_runtime.observation(
+                            "memory.compact.summary", "generation", {
+                                "source_record_count": str(plan["report"]["source_record_count"]),
+                                "tools_enabled": "false",
+                            }, model=model_name):
+                        response = llm.invoke([
+                            SystemMessage(content=(MEMORY_SUMMARY_SYSTEM_PROMPT +
+                                                  "\nMaximum summary length: " +
+                                                  str(plan["max_summary_chars"]) +
+                                                  " characters.")),
+                            HumanMessage(content=plan["source_json"]),
+                        ], config=run_config)
+                summary_text = getattr(response, "content", "")
+                if not isinstance(summary_text, str):
+                    raise MemoryCompactionError("non_text_summary")
+                plan = memory_compaction_plans.set_summary(plan_id, summary_text)
+                usage = getattr(response, "usage_metadata", None)
+                usage_data = ({key: value for key, value in usage.items()
+                               if key in {"input_tokens", "output_tokens", "total_tokens"}
+                               and isinstance(value, int) and not isinstance(value, bool)}
+                              if isinstance(usage, dict) else {})
+                emit({"jsonrpc": "2.0", "method": "memory_compaction_state", "params": {
+                    "stage": "summary_ready", "plan_id": plan_id,
+                    "tier": plan["tier"],
+                    "source_record_count": plan["report"]["source_record_count"],
+                    "source_chars": plan["report"]["source_chars"],
+                    "summary_chars": len(plan["summary"]),
+                    "provider": provider, "model": model_name,
+                    "provider_usage": usage_data, "provider_request_sent": True,
+                    "tools_enabled": False, "persistent_change": False,
+                    "secret_value_visible": False}})
+                emit({"jsonrpc": "2.0", "method": "observability_state",
+                      "params": telemetry_runtime.flush_turn()})
+                emit({"jsonrpc": "2.0", "method": "message", "params": {
+                    "kind": "memory_compaction_summary",
+                    "text": ("Proposed durable-memory summary (not saved):\n\n" +
+                             plan["summary"] + "\n\nReview it, then apply only with "
+                             f"`/memory compact apply:{plan_id}`. Cancel with "
+                             f"`/memory compact cancel:{plan_id}`."),
+                    "provider_request_sent": True, "tools_enabled": False,
+                    "persistent_change": False, "secret_value_visible": False}})
+            except Exception as error:
+                export_state = telemetry_runtime.flush_turn()
+                emit({"jsonrpc": "2.0", "method": "observability_state",
+                      "params": export_state})
+                category = (error.category if isinstance(error, MemoryCompactionError)
+                            else classify_provider_error(error))
+                emit({"jsonrpc": "2.0", "method": "memory_compaction_state", "params": {
+                    "stage": "failed", "plan_id": plan_id,
+                    "category": category, "provider_request_sent": True,
+                    "persistent_change": False, "secret_value_visible": False}})
+                emit({"jsonrpc": "2.0", "method": "message", "params": {
+                    "text": ("Memory summary was not accepted; original records are unchanged. "
+                             + (str(error) if isinstance(error, MemoryCompactionError)
+                                else provider_error_user_message(error))),
+                    "kind": "memory_compaction_failed", "category": category,
+                    "provider_request_sent": True, "persistent_change": False,
+                    "secret_value_visible": False}})
+            return
+        if operation == "apply":
+            if plan["status"] != "summarized":
+                raise MemoryCompactionError("summary_review_required")
+            if not memory_manager.enabled[plan["tier"]]:
+                raise MemoryCompactionError("memory_tier_disabled")
+            source = plan["source_entries"]
+            tags = list(dict.fromkeys(tag for item in source
+                                      for tag in item.get("tags", []) if tag))[:32]
+            expiries = []
+            for item in source:
+                value = str(item.get("expires_at", ""))
+                if value:
+                    try:
+                        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                    except ValueError as error:
+                        raise MemoryCompactionError("invalid_source_expiry") from error
+                    if parsed.tzinfo is None:
+                        raise MemoryCompactionError("invalid_source_expiry")
+                    expiries.append((parsed, value))
+            expires_at = min(expiries, key=lambda item: item[0])[1] if expiries else ""
+            telemetry_runtime.begin_turn()
+            with telemetry_runtime.session(thread_id), telemetry_runtime.observation(
+                    "memory.compaction.apply", "agent", {
+                        "tier": plan["tier"],
+                        "source_record_count": str(len(source)),
+                        "summary_chars": str(len(plan["summary"])),
+                    }):
+                entry = memory_manager.apply_compaction(
+                    tier=plan["tier"], namespace=plan["namespace"],
+                    scope=plan["scope"], source_entries=source,
+                    summary=plan["summary"], title=f"Compacted memory ({len(source)} records)",
+                    tags=tags, expires_at=expires_at)
+            memory_compaction_plans.cancel(plan_id)
+            emit({"jsonrpc": "2.0", "method": "observability_state",
+                  "params": telemetry_runtime.flush_turn()})
+            emit({"jsonrpc": "2.0", "method": "memory_compaction_state", "params": {
+                "stage": "applied", "plan_id": plan_id,
+                "tier": plan["tier"], "replaced_record_count": len(source),
+                "summary_record_id": entry["id"], "persistent_change": True,
+                "secret_value_visible": False}})
+            emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
+                "tier": plan["tier"], **memory_manager.state(plan["tier"]),
+                "secret_value_visible": False}})
+            emit({"jsonrpc": "2.0", "method": "message", "params": {
+                "text": (f"Applied reviewed summary. Replaced {len(source)} unchanged "
+                         f"{plan['tier']} records with one durable record; runtime cache "
+                         "reloaded. The operation was atomic."),
+                "kind": "memory_compaction_applied", "persistent_change": True,
+                "secret_value_visible": False}})
+            return
+        raise ValueError("Use `plan`, `send:<plan-id>`, `apply:<plan-id>`, or `cancel:<plan-id>`. ")
+    except (MemoryCompactionError, ValueError, RuntimeError, MemoryStoreError) as error:
+        category = getattr(error, "category", "memory_compaction_invalid_request")
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "text": f"Memory compaction not performed ({category}): {error}",
+            "kind": "memory_compaction_refused", "category": category,
+            "provider_request_sent": False, "persistent_change": False,
+            "secret_value_visible": False}})
 
 
 def emit_provider_request_context(system_text, messages, context_content,
@@ -1925,6 +2190,8 @@ def handle_provider_and_state_request(req, executor):
                 project_id=str(params.get("project_id") or "project"),
                 retain_stm_task=bool(task_id))
             memory_manager.configure(config_manager.get("memory", {}))
+            memory_compaction_plans.retain_current(
+                memory_manager.identities, memory_manager.enabled)
         else:
             os.environ.pop("CCAD_AGENT_THREAD_ID", None)
         emit({"jsonrpc": "2.0", "method": "thread_state", "params": {
@@ -2052,6 +2319,8 @@ def handle_provider_and_state_request(req, executor):
                 "error": category, "tiers": memory_manager.state(),
                 "secret_value_visible": False}})
             return True
+        memory_compaction_plans.retain_current(
+            memory_manager.identities, memory_manager.enabled)
         emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
             "tier": tier, **state, "persisted": True,
             "tiers": memory_manager.state(), "secret_value_visible": False}})
@@ -2307,6 +2576,8 @@ if __name__ == "__main__":
                                               project_id=project_id,
                                               retain_stm_task=task_is_active)
                 memory_manager.configure(config_manager.get("memory", {}))
+                memory_compaction_plans.retain_current(
+                    memory_manager.identities, memory_manager.enabled)
                 if not isinstance(raw_context, str):
                     raw_context = str(raw_context or "")
                 memory_query = text
@@ -2478,13 +2749,17 @@ if __name__ == "__main__":
                                 "kind": "memory_task_usage", "secret_value_visible": False}})
                         continue
                     elif cmd_base == "/memory":
-                        try:
-                            event, result = execute_memory_command(memory_manager, cmd_args)
-                            emit({"jsonrpc": "2.0", "method": event, "params": result})
-                        except (ValueError, RuntimeError) as error:
-                            emit({"jsonrpc": "2.0", "method": "message", "params": {
-                                "text": str(error), "kind": "memory_command_error",
-                                "secret_value_visible": False}})
+                        if cmd_args.strip().casefold().startswith("compact"):
+                            handle_durable_memory_compaction(
+                                cmd_args.strip()[len("compact"):], context_thread_id)
+                        else:
+                            try:
+                                event, result = execute_memory_command(memory_manager, cmd_args)
+                                emit({"jsonrpc": "2.0", "method": event, "params": result})
+                            except (ValueError, RuntimeError) as error:
+                                emit({"jsonrpc": "2.0", "method": "message", "params": {
+                                    "text": str(error), "kind": "memory_command_error",
+                                    "secret_value_visible": False}})
                         continue
                     elif cmd_base == "/marketplace":
                         handle_marketplace(text)
@@ -2746,6 +3021,8 @@ if __name__ == "__main__":
                           "params": reconfigure_observability()})
                 if "memory" in clean_config and not persistence_error:
                     failures = memory_manager.configure(clean_config.get("memory", {}))
+                    memory_compaction_plans.retain_current(
+                        memory_manager.identities, memory_manager.enabled)
                     emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
                         "tiers": memory_manager.state(), "storage_errors": failures,
                         "persisted": True, "secret_value_visible": False}})
