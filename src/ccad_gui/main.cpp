@@ -439,7 +439,8 @@ int main(int argc, char** argv) {
           catalog_startup.contains("\"native_tool_catalog_installed\":true") &&
           !catalog_startup.contains("\"native_tool_catalog_method_count\":0");
       if (name.startsWith("sprint968-task") ||
-          name.startsWith("sprint969-context")) {
+          name.startsWith("sprint969-context") ||
+          name.startsWith("sprint970-compaction")) {
         const auto interact = [window, &entries, &output_dir, &name,
                                per_target_wait_ms](const QString& method,
                                                   const QString& payload,
@@ -501,6 +502,30 @@ int main(int argc, char** argv) {
           entries << QString("{\"context_preview_visible\":%1,\"provider_request_sent\":false}")
                          .arg(preview_visible ? "true" : "false");
           ok = preview_visible && ok;
+        } else if (name.startsWith("sprint970-compaction")) {
+          ok = interact("ui.click", "{\"id\":\"tab:pcb\"}",
+                        "tab:pcb", "pcb-tab-checked") && ok;
+          ok = interact("ui.click", "{\"id\":\"tab:schematic\"}",
+                        "tab:schematic", "schematic-tab-checked") && ok;
+          ok = interact("ui.click", "{\"id\":\"tab:agent\"}",
+                        "tab:agent", "agent-tab-opened") && ok;
+          ok = interact("ui.type_text",
+                        "{\"id\":\"control:agent_chat_input\",\"text\":\"/cc\"}",
+                        "control:agent_chat_input", "compact-command-suggested") && ok;
+          ok = interact("ui.key", "{\"key\":\"Enter\"}",
+                        "panel:agent_slash_commands", "compact-command-selected") && ok;
+          ok = interact("ui.type_text",
+                        "{\"id\":\"control:agent_chat_input\",\"text\":\"/cc\"}",
+                        "control:agent_chat_input", "compact-command-ready") && ok;
+          ok = interact("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
+                        "action:agent_submit_chat", "compact-command-result") && ok;
+          auto* chat = window->findChild<QTextBrowser*>("control:agent_chat_stream");
+          const bool safe_noop_visible = chat != nullptr &&
+              chat->toPlainText().contains(
+                  "No older conversation history needs compaction; no provider request was sent.");
+          entries << QString("{\"safe_noop_visible\":%1,\"provider_request_sent\":false}")
+                         .arg(safe_noop_visible ? "true" : "false");
+          ok = safe_noop_visible && ok;
         } else {
           ok = interact("ui.click", "{\"id\":\"tab:agent\"}",
                         "tab:agent", "agent-tab-clicked") && ok;

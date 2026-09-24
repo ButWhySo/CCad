@@ -27,6 +27,8 @@ Phase 6 is complete. CCad now has an Agent protocol: JSON-RPC/MCP over the trans
 - CLI agent policy gates: `ccad agent policy-schema`, `ccad agent policy-check`, and `ccad agent dry-run` classify command risk, read/write permission needs, approval-required state, and dry-run decisions before execution, with matching `agent.policy_schema` and `agent.policy_check` JSON-RPC routes.
 - CLI agent provider configuration: `ccad agent provider-config-schema`, `ccad agent provider-config-template`, and `ccad agent provider-status` expose BYOK/BYOT env-var metadata, no-secret templates, and presence-only readiness checks, with matching `agent.provider_config_schema`, `agent.provider_config_template`, and `agent.provider_status` JSON-RPC routes.
 
+The Agent explains context assembly automatically when estimated request size crosses its configured large-context threshold; the report covers project data, conversation, tool schemas, enabled/retrieved memory tiers, omissions, and estimation limits without exposing source content. `/context [draft]` previews that accounting locally without a provider call. `/cc` and `/compact` instead send bounded older conversation history to the selected model for a recap, with tools disabled; this can consume provider quota, while the newest four messages and persistent memory records remain intact.
+
 ## Gemini BYOK quickstart
 
 Set credentials only in the PowerShell process that launches CCad. Replace the model with any model supported by your Google account; `gemini-3.8-flash` is the current fast smoke-test choice.

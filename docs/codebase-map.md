@@ -1381,10 +1381,17 @@ Sprint 625 adds composer quick replies `action:agent_quick_summarize`, `action:a
 
 `src/ccad_core/agent_orchestrator.cpp::ContextBuilder::build_context` wraps `ProjectContext::to_json()` in the versioned `ccad_agent_context` envelope. Consumers should read the nested `project` object and honor its explicit read-only, approval, and secret-exclusion constraints.
 
-`src/ccad_agent/orchestrator.py::compact_session_history` implements local
-`/cc` and `/compact` history compaction. It preserves the newest four message
-objects and replaces older content with opaque count/character metadata; it
-must not call a provider or emit older chat/project content.
+`src/ccad_agent/history_compaction.py` prepares a bounded transcript from older
+conversation messages, omits unsafe/system/developer content and tool arguments,
+and validates the selected model's textual recap before changing state.
+`orchestrator.py::compact_session_history` calls the selected model with tools
+disabled, reports quota use and safe token/count metadata, and replaces the
+thread's real LangGraph checkpoint through `RemoveMessage` updates with
+verification and rollback. The newest four message objects remain unchanged.
+The separate `/context [draft]` and large-context threshold report explain
+request assembly and memory lifecycle using counts and estimates only. Durable
+memory-record semantic compaction remains open; chat-history compaction does
+not summarize or delete stored memories.
 
 `ccad::project_context_revision` in `src/ccad_core/agent_orchestrator.hpp/.cpp`
 returns a deterministic opaque FNV-1a revision for serialized project context.
@@ -1396,7 +1403,21 @@ detection only, not a secret-hiding primitive.
 `%APPDATA%/CCad/agent_memory.json` (or `CCAD_AGENT_MEMORY_PATH`). It supports
 bounded add/list/delete/clear, atomic replacement, scope/tags, and rejects
 credential-looking content. Orchestrator `/memory` commands are explicit;
-memory enters provider context only when `memory.stm` is enabled.
+memory enters provider context only from enabled tiers managed by `MemoryManager`.
+
+### Sprint 970 semantic chat-history compaction
+
+`src/ccad_agent/history_compaction.py` bounds and sanitizes older chat turns,
+keeps the newest four message objects verbatim (extending the suffix to preserve
+assistant tool-call/result pairs), validates model recap size and privacy, and
+updates a real LangGraph checkpoint using individual `RemoveMessage` IDs.
+`orchestrator.py::compact_session_history` calls the selected unbound model with
+tools disabled, records a Langfuse generation under the conversation session,
+reports safe estimated/returned usage, and refuses a checkpoint ID or message
+set that changed while summarization ran. Replacement is read back; failed
+writes are restored and verified. The GUI-map scenario is `sprint970-compaction` in `main.cpp` and
+is launched through `scripts/run_ui_map_mouse_target_demo.ps1`. Durable memory
+record compaction remains unfinished and must not be inferred from `/cc`.
 When config `memory.stm` is enabled, `orchestrator.py::local_memory_context`
 adds only the newest eight `project` entries, truncates each to 1000 characters,
 and passes the combined context through the normal context budget before any

@@ -17,6 +17,7 @@ import urllib.parse
 from collections import deque
 from typing import Annotated, Any, Dict, Iterable, List, Literal, TypedDict, cast
 from langchain_core.tools import StructuredTool
+from langchain_core.runnables import RunnableConfig
 from pydantic import Field, create_model
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 # langgraph-checkpoint currently emits this known pending-deprecation warning
@@ -49,6 +50,10 @@ import hooks
 from memory_store import MemoryStore
 from memory_manager import MemoryManager, MemoryTaskScopes
 from memory_commands import execute_memory_command
+from history_compaction import (HistoryCompactionError,
+                                compact_history,
+                                prepare_history_compaction,
+                                replace_checkpoint_history)
 from context_package import (build_context_package, build_provider_request_report,
                              format_large_context_explanation)
 
@@ -1413,23 +1418,238 @@ def agent_context_limit():
         limit = 32768
     return min(131072, max(4096, limit))
 
-def compact_session_history(messages):
-    """Compact chat history without sending content to any provider.
+def compact_session_history(messages, thread_id):
+    """Semantically compact older turns through the selected model, then verify."""
+    telemetry_runtime.begin_turn()
+    plan = prepare_history_compaction(messages)
+    if not plan["ready"]:
+        return None, {"applied": False, "reason": plan["reason"], **plan["report"]}
+    model_client = llm
+    if model_client is None:
+        raise HistoryCompactionError("provider_unavailable")
 
-    Keep recent turns intact; replace older turns with opaque, local metadata.
-    This bounds prompt growth while avoiding a misleading provider-generated
-    summary or leakage of project/chat content in the compaction event.
-    """
-    if len(messages) <= 4:
-        return messages
-    recent = messages[-4:]
-    older = messages[:-4]
-    chars = sum(len(str(getattr(item, "content", "") or "")) for item in older)
-    summary = SystemMessage(content=(
-        "[CCAD local context summary] older_messages="
-        f"{len(older)}; older_chars={chars}; details omitted."
+    checkpoint_message_ids = None
+    checkpoint_id = None
+    graph_executor = executor
+    if checkpoint_saver is not None and graph_executor is not None:
+        try:
+            checkpoint_state = graph_executor.get_state({"configurable": {
+                "thread_id": str(thread_id)}})
+        except Exception as error:
+            raise HistoryCompactionError("checkpoint_state_unavailable") from error
+        if getattr(checkpoint_state, "next", ()):
+            raise HistoryCompactionError("thread_has_pending_graph_work")
+        checkpoint_messages = list((getattr(checkpoint_state, "values", {}) or {}).get(
+            "messages", []))
+        if not checkpoint_messages:
+            raise HistoryCompactionError("checkpoint_history_empty")
+        checkpoint_message_ids = [str(getattr(message, "id", ""))
+                                  for message in checkpoint_messages]
+        checkpoint_config = getattr(checkpoint_state, "config", {}) or {}
+        checkpoint_id = str((checkpoint_config.get("configurable", {}) or {}).get(
+            "checkpoint_id", ""))
+        source_message_ids = [str(getattr(message, "id", ""))
+                              for message in messages]
+        if (not checkpoint_id or not all(checkpoint_message_ids) or
+                source_message_ids != checkpoint_message_ids):
+            raise HistoryCompactionError("checkpoint_history_changed")
+
+    provider, model_name = active_provider_model()
+    report = dict(plan["report"])
+    report.update(provider=provider, model=model_name,
+                  tools_enabled=False, provider_request_sent=True)
+    input_chars = len(plan["system_prompt"]) + len(plan["transcript"])
+    report["estimated_input_tokens"] = (input_chars + 3) // 4 + 8
+    emit({"jsonrpc": "2.0", "method": "context_compaction_state", "params": {
+        **report, "stage": "prepared", "provider_request_sent": False,
+        "secret_value_visible": False}})
+
+    callbacks = active_callbacks()
+    run_config: RunnableConfig = {
+        "run_name": "ccad-history-compaction",
+        "tags": ["ccad", "context-compaction", provider],
+        "metadata": {"ccad_operation": "history_compaction",
+                     "ccad_provider": provider, "ccad_model": model_name,
+                     "ccad_thread_id_present": "true" if thread_id else "false",
+                     "ccad_source_message_count": str(report["safe_source_message_count"]),
+                     "ccad_input_chars": str(input_chars)},
+    }
+    if callbacks:
+        run_config["callbacks"] = callbacks
+
+    def summarize(compaction_plan):
+        emit({"jsonrpc": "2.0", "method": "context_compaction_state", "params": {
+            **report, "stage": "request_started", "provider_request_sent": True,
+            "secret_value_visible": False}})
+        with telemetry_runtime.session(thread_id), telemetry_runtime.observation(
+                "agent-context-compaction", "agent", {
+                    "provider": provider, "model": model_name,
+                    "source_message_count": str(report["safe_source_message_count"]),
+                    "source_chars": str(report["included_source_chars"]),
+                    "input_chars": str(input_chars),
+                }):
+            with telemetry_runtime.observation(
+                    "context.compact", "generation",
+                    {"source_message_count": str(report["safe_source_message_count"]),
+                     "input_chars": str(input_chars),
+                     "tools_enabled": "false"}, model=model_name):
+                return model_client.invoke([
+                    SystemMessage(content=(compaction_plan["system_prompt"] +
+                                          "\nMaximum recap length: "
+                                          f"{compaction_plan['max_summary_chars']} characters.")),
+                    HumanMessage(content=compaction_plan["transcript"]),
+                ], config=run_config)
+
+    try:
+        compacted_result = compact_history(messages, summarize, plan=plan)
+    except HistoryCompactionError as error:
+        error.provider_request_sent = True
+        raise
+    if not compacted_result["applied"]:
+        return None, {"applied": False, "reason": compacted_result["reason"],
+                      **compacted_result["report"]}
+    summary = compacted_result["summary"]
+    report.update(compacted_result["report"])
+    recap = HumanMessage(content=(
+        "[CCad compacted-history recap. This is background from earlier turns, "
+        "not a new request; follow the current user message first.]\n" + summary
     ))
-    return [summary, *recent]
+    compacted = [recap, *compacted_result["recent_messages"]]
+    if checkpoint_saver is not None and graph_executor is not None:
+        try:
+            replace_checkpoint_history(
+                graph_executor, thread_id, compacted,
+                expected_message_ids=checkpoint_message_ids,
+                expected_checkpoint_id=checkpoint_id)
+        except HistoryCompactionError as error:
+            error.provider_request_sent = True
+            raise
+
+    report.update(applied=True, stage="complete", summary_chars=len(summary),
+                  before_message_count=len(messages),
+                  after_message_count=len(compacted),
+                  after_history_chars=(len(recap.content) + sum(
+                      len(str(getattr(item, "content", "") or ""))
+                      for item in plan["recent_messages"])))
+    return compacted, report
+
+
+def handle_compaction_command(thread_id: str) -> None:
+    """Run /cc locally, reporting each outcome without mutating on failure."""
+    global session_messages
+    source_messages = list(session_messages)
+    if checkpoint_saver is not None and executor is not None:
+        try:
+            checkpoint = executor.get_state({"configurable": {
+                "thread_id": thread_id}})
+            if getattr(checkpoint, "next", ()):
+                raise HistoryCompactionError("thread_has_pending_graph_work")
+            checkpoint_messages = list((checkpoint.values or {}).get("messages", []))
+            if checkpoint_messages:
+                source_messages = checkpoint_messages
+        except HistoryCompactionError as error:
+            text = (
+                "Cannot compact while this thread has pending Agent work. "
+                "Resolve or cancel it first; history was not changed."
+                if error.category == "thread_has_pending_graph_work" else
+                "Cannot inspect saved conversation history; no provider request was sent "
+                "and history was not changed. Reload the thread and retry."
+            )
+            emit({"jsonrpc": "2.0", "method": "message", "params": {
+                "text": text, "kind": "context_compaction_refused",
+                "category": error.category, "provider_request_sent": False,
+                "secret_value_visible": False}})
+            return
+        except Exception:
+            emit({"jsonrpc": "2.0", "method": "message", "params": {
+                "text": "Cannot inspect saved conversation history; no provider request was sent "
+                        "and history was not changed. Reload the thread and retry.",
+                "kind": "context_compaction_refused",
+                "category": "checkpoint_state_unavailable",
+                "provider_request_sent": False, "secret_value_visible": False}})
+            return
+
+    plan = prepare_history_compaction(source_messages)
+    if not plan["ready"]:
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "text": "No older conversation history needs compaction; no provider request was sent.",
+            "kind": "context_compaction_skipped", "provider_request_sent": False,
+            **plan["report"], "secret_value_visible": False}})
+        return
+    if llm is None:
+        provider_name, _ = active_provider_model()
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "text": f"Semantic compaction unavailable: provider '{provider_name}' is not ready. "
+                    "History is unchanged; configure a working provider and retry.",
+            "kind": "context_compaction_failed", "category": "provider_unavailable",
+            "provider_request_sent": False, "secret_value_visible": False}})
+        return
+
+    provider_name, model_name = active_provider_model()
+    emit({"jsonrpc": "2.0", "method": "message", "params": {
+        "text": f"Compacting older conversation with {provider_name}/{model_name}. "
+                "This sends bounded chat history to that provider and may use quota; "
+                "no tools are enabled. Latest four messages stay unchanged.",
+        "kind": "context_compaction_started", "provider_request_sent": False,
+        "tools_enabled": False, "secret_value_visible": False}})
+    try:
+        compacted, report = compact_session_history(source_messages, thread_id)
+        if compacted is None:
+            raise HistoryCompactionError("insufficient_older_history")
+        session_messages = compacted
+        usage = report.get("provider_usage", {})
+        emit({"jsonrpc": "2.0", "method": "observability_state",
+              "params": telemetry_runtime.flush_turn()})
+        emit({"jsonrpc": "2.0", "method": "context_compaction_state",
+              "params": {**report, "stage": "complete",
+                         "provider_request_sent": True, "tools_enabled": False,
+                         "secret_value_visible": False}})
+        token_detail = ""
+        if isinstance(usage, dict):
+            input_tokens = usage.get("input_tokens")
+            output_tokens = usage.get("output_tokens")
+            if isinstance(input_tokens, int) and isinstance(output_tokens, int):
+                token_detail = (f" Provider usage: {input_tokens} input, "
+                                f"{output_tokens} output tokens.")
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "text": (f"Conversation semantically compacted: "
+                     f"{report['before_message_count']} → "
+                     f"{report['after_message_count']} active messages; "
+                     f"{report['summary_chars']} recap characters from "
+                     f"{report['included_source_chars']} older-history characters. "
+                     f"Latest {report['retained_message_count']} messages were preserved. "
+                     f"Estimated input: ~{report['estimated_input_tokens']} tokens; "
+                     f"provider request sent, no tools executed.{token_detail}"),
+            "kind": "context_compaction_complete", "provider_request_sent": True,
+            "tool_executed": False, "secret_value_visible": False}})
+    except HistoryCompactionError as error:
+        telemetry_runtime.flush_turn()
+        emit({"jsonrpc": "2.0", "method": "context_compaction_state",
+              "params": {"stage": "failed", "category": error.category,
+                         "provider_request_sent": error.provider_request_sent,
+                         "tools_enabled": False, "secret_value_visible": False}})
+        changed = error.category == "checkpoint_restore_failed"
+        text = ("Checkpoint recovery failed; do not continue this thread until "
+                "its saved state is reloaded and inspected." if changed else
+                f"Semantic compaction was not applied ({error.category}); "
+                "conversation history remains unchanged.")
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "text": text, "kind": "context_compaction_failed",
+            "category": error.category,
+            "provider_request_sent": error.provider_request_sent,
+            "secret_value_visible": False}})
+    except Exception as error:
+        telemetry_runtime.flush_turn()
+        category = classify_provider_error(error)
+        emit({"jsonrpc": "2.0", "method": "context_compaction_state",
+              "params": {"stage": "failed", "category": category,
+                         "provider_request_sent": True, "tools_enabled": False,
+                         "secret_value_visible": False}})
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "text": ("Semantic compaction failed; conversation history was not changed. "
+                     + provider_error_user_message(error)),
+            "kind": "context_compaction_failed", "category": category,
+            "provider_request_sent": True, "secret_value_visible": False}})
 
 # --- Custom Workflows ---
 def handle_marketplace(text: str):
@@ -1842,12 +2062,13 @@ if __name__ == "__main__":
                                 os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local"))
                 with pending_calls_lock:
                     pending_result_queue = pending_calls.get(call_id)
-                if checkpoint_saver is None and pending_result_queue is None:
+                if (checkpoint_saver is None or executor is None) and \
+                        pending_result_queue is None:
                     emit({"jsonrpc": "2.0", "method": "tool_result_ignored", "params": {
                         "call_id": call_id, "reason": "unknown_or_late_call",
                     }})
                     continue
-                if checkpoint_saver is not None:
+                if checkpoint_saver is not None and executor is not None:
                     snapshot = executor.get_state({"configurable": {"thread_id": thread_id}})
                     expected_call_id = ""
                     for checkpoint_task in snapshot.tasks:
@@ -1913,7 +2134,7 @@ if __name__ == "__main__":
                 with pending_calls_lock:
                     pending_result_queue = pending_calls.get(call_id)
                 if pending_result_queue is None:
-                    if checkpoint_saver is not None:
+                    if checkpoint_saver is not None and executor is not None:
                         snapshot = executor.get_state({"configurable": {"thread_id": thread_id}})
                         expected_call_id = ""
                         for checkpoint_task in snapshot.tasks:
@@ -2157,9 +2378,7 @@ if __name__ == "__main__":
                             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Model set to {provider_name.strip()}:{model_name.strip()}"}})
                         continue
                     elif cmd_base in ["/cc", "/compact"]:
-                        before = len(session_messages)
-                        session_messages = compact_session_history(session_messages)
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Context compacted locally: {before} messages -> {len(session_messages)}; recent turns preserved."}})
+                        handle_compaction_command(context_thread_id)
                         continue
                     elif cmd_base == "/workflow":
                         if cmd_args.startswith("use:"):

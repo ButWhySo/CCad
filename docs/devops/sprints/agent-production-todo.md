@@ -6,12 +6,30 @@ Check a box only after implementation and its required evidence exist.
 
 Update this file in the same commit as each implementation slice.
 
+### Sprint 970 active slice — semantic chat-history compaction
+
+- [x] Replace count-only `/cc` and `/compact` behavior with a real selected-model summary; preserve the newest four messages exactly and never enable tools for this request.
+- [x] Bound and sanitize historical input, reject unsafe or non-compacting model output, and keep provider failures/quota use truthful.
+- [x] Replace and verify the real LangGraph checkpoint history; refuse pending graph work and restore prior history if replacement verification fails.
+- [ ] Trace compaction under the current conversation session with safe provider/model, counts, usage, and request-state metadata.
+- [x] Explain provider/quota use before the request and report whether a request was actually sent; no-op when there is no compactable history.
+- [x] Add offline contracts for input bounds, safety, summary validation, real LangGraph checkpoint replacement, and pending-review refusal.
+- [x] Exercise `/cc` from the real Agent composer through seven mapped GUI interactions; inspect each screenshot and stdout/stderr.
+- [x] Run Qt MinGW Release build, full CTest (103/103), and changed-module Pyright (0 diagnostics).
+- [ ] Complete the bundled Python contract sweep; its broad source-contract run encountered unrelated failures and hung in an independent local OpenAI-compatible harness, so no pass is claimed.
+- [ ] Keep durable memory-record semantic compaction explicitly separate and open; it is not implemented by chat-history compaction.
+
+References checked: LangGraph's official [short-term memory guide](https://langchain-ai.github.io/langgraph/how-tos/cross-thread-persistence-functional/) documents summarizing earlier history, message deletion through `RemoveMessage` with an `add_messages` reducer, and the need to preserve valid provider tool-call/result sequences. The installed LangGraph 0.2.62 implementation was also inspected because its pinned API does not export `REMOVE_ALL_MESSAGES`; CCad therefore removes existing message IDs individually and verifies the resulting checkpoint.
+
+### Sprint 969 active slice — local large-context explanation
+
 ### Sprint 969 active slice — local large-context explanation
 
 - [x] Add `/context [draft]` as an explicit local preview using real project context, enabled-memory retrieval, current conversation, system instructions, and bound tool schemas.
 - [x] Reuse the provider request budget/accounting path; show only counts, estimates, memory lifecycle/ranking, and model-limit availability.
 - [x] Ensure preview and command help do not call a provider, execute tools, persist the draft, alter conversation history, or reveal prompt/design/memory text.
 - [x] Prove the real Python child process crosses the large-context threshold without provider initialization; inspect safe stdout/stderr.
+- [x] Automatically explain the end-to-end context and memory assembly in chat whenever the configured large-context threshold is crossed; show safe counts, estimates, omissions, and privacy boundaries, never source contents.
 - [x] Prove slash palette and local preview in the app-owned GUI-map harness; ingest and inspect every screenshot and review stdout/stderr.
 - [x] Run Qt Release build and full CTest (100/100); run Pyright on changed Python modules (0 diagnostics).
 - [ ] Complete clangd source check.
@@ -87,7 +105,7 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 - [x] Align memory retrieval with tier/namespace isolation; keep `scope` as explicit list/delete metadata rather than claiming it filters retrieval.
 - [x] Define memory capture as explicit Manage Memories or `/memory` operations; ordinary chat is not automatically captured.
 - [x] Publish `docs/devops/memory-context-lifecycle.md` with end-to-end context/memory flow and explicit gaps.
-- [ ] Add semantic compaction; bounded newest-64 retention, exact normalized deduplication, and lexical near-duplicate rejection are implemented.
+- [ ] Add semantic compaction for durable memory records; bounded newest-64 retention, exact normalized deduplication, and lexical near-duplicate rejection are implemented. Sprint 970 compacts conversation history only.
 
 ## Typed CCad tool surface
 
@@ -212,7 +230,7 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 - [ ] Either implement `chaining_phase` semantics or remove `/workflow chaining phase:`.
 - [ ] Add hook list/remove/validation/persistence instead of free-form string append only.
 - [ ] Make `/set provider:model` use the same canonical provider/model state as Settings.
-- [ ] Preserve `/cc`/`/compact` as bounded context compaction but implement semantic compaction before claiming summarization.
+- [ ] Preserve `/cc`/`/compact` as bounded context compaction and implement provider-backed semantic summarization (Sprint 970); durable memory-record semantic compaction remains separate.
 - [ ] Replace fake `/schedule` string queue with a real persistent scheduler before exposing the command.
 - [ ] Make `/marketplace` open Marketplace and `/marketplace install <id>` execute real install.
 - [x] Fix `/drc` to invoke authoritative read-only `project.drc`.
@@ -606,7 +624,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Implement per-tier ranking/retrieval and not one shared flat store presented as three different systems.
 - [ ] Reject/redact legacy secret-bearing records before memory persistence and display; writes are rejected, legacy values are excluded from runtime/UI, but remaining redaction evidence is pending.
 - [x] Implement expiry policy with timezone-aware ISO-8601 values and load/retrieval cleanup.
-- [ ] Implement semantic compaction policy; current retention cap is 64 records per tier namespace.
+- [ ] Implement semantic compaction policy for durable memory records; current retention cap is 64 records per tier namespace. Conversation `/cc` compaction is implemented separately in Sprint 970.
 - [ ] Implement semantic near-duplicate handling; exact duplicates and high lexical-overlap duplicates are handled, but semantic similarity remains unimplemented.
 - [x] Implement per-scope deletion.
 - [x] Implement complete reset across durable namespaces.
