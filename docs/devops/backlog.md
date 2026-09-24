@@ -1166,3 +1166,9 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [ ] Provider follow-up: remove the pinned Gemini adapter's implicit retries
   only through a supported dependency/API upgrade; do not patch installed SDK
   files. Keep live-provider verification explicitly initiated and quota-aware.
+- [ ] Sprint 976 follow-up: migrate compatible checkpoint-only history into the
+  canonical thread store without losing thread identity or tool-call edges.
+- [ ] Sprint 976 follow-up: connect durable conversation listing/resume UI and
+  verify checkpoint restoration against the per-thread model projection.
+- [ ] Sprint 976 follow-up: add ranked BM25/semantic retrieval and richer
+  evidence extraction; current TurnRecord search is bounded lexical overlap.

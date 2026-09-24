@@ -2133,3 +2133,28 @@ its sentinel text cannot appear in the main window during GUI tests. Confirmed
 reset reports the backend record count or a safe failure, re-enables its action
 on response, refreshes an open memory list, and uses a bounded timeout only if
 the child sends no result.
+
+## Sprint 976 durable conversation store
+
+`src/ccad_agent/conversation_store.py` owns the SQLite canonical transcript,
+bounded model projection, structured TurnRecords, per-thread lexical index, and
+bounded recap. `orchestrator.py` activates a thread before context assembly,
+keeps the in-memory history isolated, persists user/assistant/tool messages by
+stable ID, and indexes only terminal turns. `/cc` and `/clear` update the model
+projection and never erase canonical history. `context_package.py` includes
+source-linked retrieved TurnRecords and recap in the version-3 provider
+envelope, with safe counts and omission metadata. The default database is
+`%APPDATA%/CCad/agent_conversations.sqlite3`; tests and isolated harnesses may
+override it with `CCAD_AGENT_CONVERSATION_DB`.
+
+Contract coverage: `scripts/test_conversation_store.py` checks role/tool-call
+round-trip, idempotent writes, secret redaction, token-bounded complete-turn
+windows, raw transcript preservation, projection clear, recap, and retrieval.
+`scripts/test_conversation_runtime.py` launches two real orchestrator
+subprocesses over JSON-RPC and verifies durable restart/thread isolation without
+a provider call. `scripts/verify_conversation_ui_state.py` is a read-only
+postcondition check used by the isolated seven-action GUI-map scenario. The
+scoped screenshots/logs are in ignored `artifacts/screenshots/`; review the
+progress and memory-context lifecycle note for exact visual/database results
+and remaining limits. No history UI, legacy-checkpoint migration, cross-thread
+search, or semantic retrieval is claimed by this slice.

@@ -74,6 +74,31 @@ class ContextBudgetTests(unittest.TestCase):
         self.assertEqual(meta["memory_retrieval"][0]["rank"], 1)
         self.assertIn("Keep vias clear", package["content"])
 
+    def test_retrieved_turn_context_keeps_source_message_provenance(self):
+        package = CONTEXT.build_context_package("{}", [], [], char_limit=4096,
+            turn_records=[{"turn_id": "turn-1", "source_message_ids": ["msg-1"],
+                           "user_request_summary": "Place U3 beside USB",
+                           "assistant_summary": "Placed U3", "outcome": "completed",
+                           "tool_ids": ["project.inspect"]}])
+        envelope = json.loads(package["content"].split("\n", 1)[1])
+        self.assertEqual(package["metadata"]["prior_turn_count"], 1)
+        self.assertIn("retrieved_conversation_turns", package["metadata"]["sources"])
+        self.assertEqual(envelope["prior_turns"][0]["source_message_ids"], ["msg-1"])
+        self.assertIn("Place U3 beside USB", package["content"])
+
+    def test_thread_recap_is_injected_with_turn_provenance(self):
+        package = CONTEXT.build_context_package("{}", [], [], char_limit=4096,
+            thread_recap={"thread_id": "thread-1", "source_turn_ids": ["turn-1"],
+                          "turns": [{"turn_id": "turn-1",
+                                     "user_request_summary": "Fix USB route",
+                                     "assistant_summary": "Moved T1",
+                                     "outcome": "completed",
+                                     "tool_ids": ["project.route"]}]})
+        envelope = json.loads(package["content"].split("\n", 1)[1])
+        self.assertEqual(package["metadata"]["thread_recap_turn_count"], 1)
+        self.assertIn("thread_recap", package["metadata"]["sources"])
+        self.assertEqual(envelope["thread_recap"]["source_turn_ids"], ["turn-1"])
+
     def test_overflow_keeps_valid_json_and_reports_exact_omissions(self):
         package = CONTEXT.build_context_package(
             json.dumps({"project": {"tracks": [{"id": "T1"}],

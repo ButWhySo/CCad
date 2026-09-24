@@ -10,7 +10,7 @@ _SECRET = re.compile(
     r"(?:api[_-]?key|secret|password|token)\s*[:=]\s*\S+"
     r"|\b(?:sk|csk|gsk|xai|sk-or)-[A-Za-z0-9_-]{12,}\b"
     r"|\bAIza[A-Za-z0-9_-]{20,}", re.IGNORECASE)
-_PREFIX = "[CCAD_CONTEXT_V2]\n"
+_PREFIX = "[CCAD_CONTEXT_V3]\n"
 
 
 def _safe_text(value: Any, limit: int) -> str:
@@ -54,6 +54,59 @@ def _memory_payload(entries: Iterable[dict], per_entry_limit: int = 1000) -> lis
     return result
 
 
+def _turn_payload(records: Iterable[dict]) -> list[dict]:
+    """Keep retrieved history concise and traceable to durable source messages."""
+    result = []
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        sources = [str(value)[:100] for value in record.get("source_message_ids", [])
+                   if isinstance(value, str) and value][:32]
+        if not sources:
+            continue
+        summary = {}
+        for field, name in (("user_request_summary", "request"),
+                            ("assistant_summary", "result"), ("outcome", "outcome")):
+            text = _safe_text(record.get(field), 600)
+            if text:
+                summary[name] = text
+        tools = [str(value)[:120] for value in record.get("tool_ids", [])
+                 if isinstance(value, str)][:24]
+        result.append({"turn_id": _safe_text(record.get("turn_id"), 100),
+                       "source_message_ids": sources, "summary": summary, "tools": tools})
+    return result[:12]
+
+
+def _recap_payload(recap: dict | None) -> dict:
+    if not isinstance(recap, dict):
+        return {"source_turn_ids": [], "turns": []}
+    turns = []
+    for item in recap.get("turns", [])[-6:]:
+        if not isinstance(item, dict):
+            continue
+        turn_id = _safe_text(item.get("turn_id"), 100)
+        if not turn_id:
+            continue
+        turns.append({
+            "turn_id": turn_id,
+            "request": _safe_text(item.get("user_request_summary"), 300),
+            "result": _safe_text(item.get("assistant_summary"), 300),
+            "outcome": _safe_text(item.get("outcome"), 40),
+            "constraints": [_safe_text(value, 180) for value in
+                            item.get("explicit_constraints", [])[:8]
+                            if _safe_text(value, 180)],
+            "tools": [str(value)[:100] for value in item.get("tool_ids", [])[:8]
+                      if isinstance(value, str)],
+            "entities": item.get("referenced_entities", {}),
+            "findings": item.get("important_findings", [])[:4],
+            "revision_before": _safe_text(item.get("project_revision_before"), 100),
+            "revision_after": _safe_text(item.get("project_revision_after"), 100),
+        })
+    return {"source_turn_ids": [str(value)[:100] for value in
+            recap.get("source_turn_ids", [])[:6] if isinstance(value, str)],
+            "turns": turns}
+
+
 def _project_counts(project: Any) -> dict[str, int]:
     """Expose counts only; never export native design payload through metadata."""
     if not isinstance(project, dict):
@@ -77,21 +130,27 @@ def _project_counts(project: Any) -> dict[str, int]:
 def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
                           history: Iterable[Any], *, char_limit: int,
                           memory_retrieval: Iterable[dict] = (),
-                          memory_runtime: dict | None = None) -> dict:
+                          memory_runtime: dict | None = None,
+                          turn_records: Iterable[dict] = (),
+                          thread_recap: dict | None = None) -> dict:
     """Return actual provider content plus non-content metadata for one turn."""
     limit = min(131072, max(1024, int(char_limit)))
     project, native_revision = _project_payload(raw_context)
     memories = _memory_payload(memory_entries)
+    prior_turns = _turn_payload(turn_records)
+    recap = _recap_payload(thread_recap)
     history_items = list(history)
     project_counts = _project_counts(project)
     project_source_chars = len(json.dumps(
         project, ensure_ascii=False, sort_keys=True, separators=(",", ":"))) if project else 0
     envelope = {
-        "schema_version": 2,
+        "schema_version": 3,
         "context_kind": "ccad_provider_context",
         "project": project,
         "memory": memories,
         "conversation": {"recent_message_count": len(history_items)},
+        "prior_turns": prior_turns,
+        "thread_recap": recap,
         "constraints": {
             "read_only_by_default": True,
             "approval_required_for_mutation": True,
@@ -103,6 +162,8 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
     encoded = encode()
     truncated = False
     omitted_memory_count = 0
+    omitted_turn_count = 0
+    omitted_recap_turn_count = 0
     if len(encoded) > limit:
         # Never cut serialized JSON mid-token. If the full design snapshot is
         # too large, send a valid summary and preserve the highest-ranked
@@ -124,6 +185,21 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
             omitted_memory_count += 1
         if omitted_memory_count:
             envelope["constraints"]["omitted_memory_entry_count"] = omitted_memory_count
+            encoded = encode()
+        if len(encoded) > limit:
+            while len(encoded := encode()) > limit and envelope["prior_turns"]:
+                envelope["prior_turns"].pop()
+                omitted_turn_count += 1
+        if omitted_turn_count:
+            envelope["constraints"]["omitted_prior_turn_count"] = omitted_turn_count
+            encoded = encode()
+        if len(encoded) > limit:
+            while len(encoded := encode()) > limit and envelope["thread_recap"]["turns"]:
+                removed = envelope["thread_recap"]["turns"].pop(0)
+                envelope["thread_recap"]["source_turn_ids"].remove(removed["turn_id"])
+                omitted_recap_turn_count += 1
+        if omitted_recap_turn_count:
+            envelope["constraints"]["omitted_thread_recap_turn_count"] = omitted_recap_turn_count
             encoded = encode()
         if len(encoded) > limit:
             envelope["memory"] = []
@@ -149,6 +225,11 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
         sources.append("project_summary")
     if included_memories:
         sources.append("retrieved_memory")
+    if envelope["prior_turns"]:
+        sources.append("retrieved_conversation_turns")
+    included_recap = envelope["thread_recap"]
+    if included_recap["turns"]:
+        sources.append("thread_recap")
     memory_tier_counts: dict[str, int] = {}
     memory_tier_chars: dict[str, int] = {}
     for entry in included_memories:
@@ -171,7 +252,7 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
     return {
         "content": encoded,
         "metadata": {
-            "schema_version": 2,
+            "schema_version": 3,
             "project_revision": revision,
             "content_size": len(encoded),
             "package_digest": package_digest,
@@ -180,6 +261,10 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
             "truncated": truncated,
             "sources": sources,
             "memory_entry_count": len(included_memories),
+            "prior_turn_count": len(envelope["prior_turns"]),
+            "omitted_prior_turn_count": omitted_turn_count,
+            "thread_recap_turn_count": len(included_recap["turns"]),
+            "omitted_thread_recap_turn_count": omitted_recap_turn_count,
             "omitted_memory_entry_count": omitted_memory_count,
             "memory_tier_counts": memory_tier_counts,
             "memory_tier_chars": memory_tier_chars,

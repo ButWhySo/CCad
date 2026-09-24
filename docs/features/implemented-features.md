@@ -12,6 +12,12 @@ Provider configuration state means the adapter initialized; it is not a network/
 
 This document tracks user-visible and agent-visible features that exist in the repo, how to use them, how to test them, and where they are implemented.
 
+## Sprint 976 durable Agent conversation projection
+
+The Python Agent now stores sanitized canonical messages in a per-thread SQLite database at `%APPDATA%/CCad/agent_conversations.sqlite3` (override with `CCAD_AGENT_CONVERSATION_DB`). User, assistant, and tool messages retain stable message/tool-call IDs; recognized credential-like values are redacted before persistence. Provider input history is a bounded projection that keeps recent complete turns under `CCAD_AGENT_HISTORY_TOKENS` and `CCAD_AGENT_HISTORY_LIMIT`. `/cc` updates only that projection, while `/clear` empties active model context; neither deletes the canonical transcript. Completed and terminally unavailable turns produce a structured, source-message-linked TurnRecord and a recap of up to six recent turns. Historical TurnRecords are retrieved per thread by deterministic lexical token overlap and included in the versioned provider context with source IDs; this is not semantic/vector search.
+
+The current boundary is deliberate: old LangGraph checkpoint-only sessions are not migrated automatically, the new durable thread list/resume UI is not yet wired, and retrieval does not cross thread boundaries or use embeddings. Verification is through `scripts/test_conversation_store.py`, `scripts/test_conversation_runtime.py`, context-package contracts, and the isolated seven-action GUI-map scenario `sprint976-conversation-20260924`; the latter validates one persisted user/assistant pair, one TurnRecord, preserved canonical rows after `/clear`, and an empty model projection without making a provider request.
+
 ## Sprint 967 request context and memory lifecycle
 
 The Python agent assembles bounded project/design context plus records retrieved only from enabled memory tiers. Conversation messages, system instructions, and tool schemas are distinct provider-request inputs; their character-based token counts are explicitly estimates, and unknown model limits or multimodal sizes are not invented. Above the configurable large-context threshold, chat receives a source/count breakdown and development logs receive only privacy-safe counts and opaque identifiers. If the envelope is too large, CCad replaces the complete project snapshot with a revision/count summary and drops lowest-ranked memories until valid JSON fits.

@@ -2,6 +2,18 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 976 conversation-store slice
+
+- [x] Persist full conversation messages per thread with tool-call identity and secret redaction.
+- [x] Bound provider history by estimated tokens and message count without splitting recent tool turns.
+- [x] Store source-linked TurnRecords and bounded thread recap; retrieve them into provider context.
+- [x] Keep `/cc` and `/clear` model projection separate from canonical transcript.
+- [x] Verify restart/thread isolation with real JSON-RPC subprocesses; zero provider calls.
+- [x] Verify chat, persistence status, and `/clear` through the isolated live GUI-map flow.
+- [x] Run focused Python tests, Pyright, clangd, Release build, full CTest, visual inspection, and secret scan.
+- [x] Update handover, feature, lifecycle, progress, backlog, and TODO documentation in the implementation commit.
+- [ ] Follow-on: migrate existing checkpoint-only history, add history UI/resume integration, and semantic retrieval beyond lexical turn search.
+
 ## Update protocol and active slice
 
 Update this file in the same commit as each implementation slice.
@@ -4528,15 +4540,15 @@ Under the existing root Langfuse `agent.turn` trace:
 
 Complete in one coherent implementation slice:
 
-- [ ] token-budgeted recent raw conversation window.
-- [ ] TurnRecord schema.
-- [ ] TurnRecord persistence.
-- [ ] thread recap.
-- [ ] raw-history preservation.
-- [ ] `/cc` separation from canonical history.
-- [ ] historical TurnRecord retrieval.
-- [ ] context tests.
-- [ ] docs/TODO/evidence.
+- [x] token-budgeted recent raw conversation window.
+- [x] TurnRecord schema.
+- [x] TurnRecord persistence.
+- [x] thread recap.
+- [x] raw-history preservation.
+- [x] `/cc` separation from canonical history.
+- [x] historical TurnRecord retrieval.
+- [x] context tests.
+- [x] docs/TODO/evidence.
 
 ## Group C2 — ContextBroker and automatic memory retrieval
 

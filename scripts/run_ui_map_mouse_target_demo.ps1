@@ -62,6 +62,7 @@ $priorMemoryPath = $env:CCAD_AGENT_MEMORY_PATH
 $priorCheckpointPath = $env:CCAD_AGENT_CHECKPOINT_DB
 $priorThreadId = $env:CCAD_AGENT_THREAD_ID
 $priorDeferProvider = $env:CCAD_AGENT_DEFER_PROVIDER_INIT
+$priorConversationDb = $env:CCAD_AGENT_CONVERSATION_DB
 $isolatedMemoryProfile = $null
 if ($Name.StartsWith("sprint969-context")) {
   # Exercise the real large-context branch with a deliberately low, valid
@@ -120,6 +121,15 @@ if ($Name.StartsWith("sprint975-memory-ui")) {
   }
   [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
     ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
+}
+if ($Name.StartsWith("sprint976-conversation")) {
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint976-" + [Guid]::NewGuid().ToString("N"))
+  New-Item -ItemType Directory -Path $isolatedMemoryProfile -Force | Out-Null
+  $env:APPDATA = $isolatedMemoryProfile
+  $env:CCAD_AGENT_CONVERSATION_DB = Join-Path $isolatedMemoryProfile "agent_conversations.sqlite3"
+  $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
+  $env:CCAD_AGENT_THREAD_ID = "sprint976-conversation-ui-thread"
+  $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
 }
 try {
   $process = Start-Process -FilePath $Gui -WindowStyle Maximized `
@@ -194,6 +204,40 @@ try {
       throw "Mapped memory deletion did not capture its confirmation dialog."
     }
   }
+  if ($Name.StartsWith("sprint976-conversation")) {
+    $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
+    $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
+    foreach ($field in @("conversation_turn_visible", "canonical_transcript_retained_after_clear")) {
+      if (-not ($reportData.entries | Where-Object { $_.$field -eq $true })) {
+        throw "Mapped conversation scenario did not verify '$field'. Report: $reportPath"
+      }
+    }
+    if (-not (Test-Path -LiteralPath $env:CCAD_AGENT_CONVERSATION_DB)) {
+      throw "GUI run did not create its isolated durable conversation database."
+    }
+    $agentPython = Join-Path $Root "src\ccad_agent\venv\Scripts\python.exe"
+    if (-not (Test-Path -LiteralPath $agentPython)) {
+      throw "The configured Agent Python runtime is required to inspect the conversation database."
+    }
+    $databaseVerifier = Join-Path $Root "scripts\verify_conversation_ui_state.py"
+    $databaseStateJson = & $agentPython $databaseVerifier $env:CCAD_AGENT_CONVERSATION_DB "sprint976-conversation-ui-thread"
+    if ($LASTEXITCODE -ne 0) { throw "Could not inspect the isolated conversation database." }
+    $databaseState = $databaseStateJson | ConvertFrom-Json
+    if ($databaseState.messages -ne 2 -or $databaseState.users -ne 1 -or
+        $databaseState.assistants -ne 1 -or $databaseState.turn_records -ne 1 -or
+        $databaseState.projection -ne "[]") {
+      throw "Unexpected persisted transcript/projection state: $databaseStateJson"
+    }
+    $databaseState | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $ScreenshotDir "$Name-database-verification.json")
+    if ($stdoutLog -and (Select-String -LiteralPath $stdoutLog -Pattern 'provider_request_sent":true' -Quiet)) {
+      throw "Provider request occurred during conversation UI validation."
+    }
+    foreach ($state in @("before", "turn-persisted", "projection-cleared")) {
+      if (-not (Test-Path -LiteralPath (Join-Path $ScreenshotDir "$Name-$state.png"))) {
+        throw "Conversation UI validation is missing the '$state' visual checkpoint."
+      }
+    }
+  }
 } finally {
   if ($null -eq $priorThreshold) { Remove-Item Env:CCAD_AGENT_LARGE_CONTEXT_TOKENS -ErrorAction SilentlyContinue }
   else { $env:CCAD_AGENT_LARGE_CONTEXT_TOKENS = $priorThreshold }
@@ -209,6 +253,8 @@ try {
   else { $env:CCAD_AGENT_THREAD_ID = $priorThreadId }
   if ($null -eq $priorDeferProvider) { Remove-Item Env:CCAD_AGENT_DEFER_PROVIDER_INIT -ErrorAction SilentlyContinue }
   else { $env:CCAD_AGENT_DEFER_PROVIDER_INIT = $priorDeferProvider }
+  if ($null -eq $priorConversationDb) { Remove-Item Env:CCAD_AGENT_CONVERSATION_DB -ErrorAction SilentlyContinue }
+  else { $env:CCAD_AGENT_CONVERSATION_DB = $priorConversationDb }
   if ($isolatedMemoryProfile -and (Test-Path -LiteralPath $isolatedMemoryProfile)) {
     $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
     $profilePath = [IO.Path]::GetFullPath($isolatedMemoryProfile)

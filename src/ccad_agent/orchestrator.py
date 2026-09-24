@@ -60,6 +60,8 @@ from history_compaction import (HistoryCompactionError,
                                 replace_checkpoint_history)
 from context_package import (build_context_package, build_provider_request_report,
                              format_large_context_explanation)
+from conversation_store import (ConversationStore, ConversationStoreError,
+                                budgeted_history_window)
 
 def emit(payload: dict):
     print(json.dumps(payload), flush=True)
@@ -1720,6 +1722,10 @@ def resume_checkpointed_run(thread_id: str, resume_value):
     return executor.invoke(Command(resume=resume_value), config=config)
 
 session_messages = []
+conversation_store = ConversationStore()
+active_conversation_thread_id = ""
+active_conversation_session_id = ""
+active_conversation_project_id = ""
 active_workflow = "default"
 chaining_phase = "none"
 chaining_state = True
@@ -1729,13 +1735,68 @@ context_revisions = {}
 CONTEXT_REVISION_THREAD_LIMIT = 128
 
 def bound_session_history(messages):
-    """Keep interactive history bounded before it becomes provider input."""
+    """Keep newest whole user-turn groups within explicit token/message bounds."""
     try:
         limit = int(os.environ.get("CCAD_AGENT_HISTORY_LIMIT", "24"))
     except ValueError:
         limit = 24
     limit = min(64, max(4, limit))
-    return messages[-limit:]
+    try:
+        token_budget = int(os.environ.get("CCAD_AGENT_HISTORY_TOKENS", "8192"))
+    except ValueError:
+        token_budget = 8192
+    token_budget = min(32768, max(256, token_budget))
+    return budgeted_history_window(messages, token_budget=token_budget,
+                                   max_messages=limit)
+
+
+def activate_conversation(thread_id: str, session_id: str = "",
+                          project_id: str = "") -> None:
+    """Load one thread's canonical model projection; never mix thread caches."""
+    global session_messages, active_conversation_thread_id
+    global active_conversation_session_id, active_conversation_project_id
+    thread_id = str(thread_id).strip()
+    if not thread_id:
+        raise ValueError("conversation_thread_id_required")
+    if thread_id != active_conversation_thread_id:
+        loaded = conversation_store.load_model_messages(thread_id)
+        session_messages = bound_session_history(loaded)
+        active_conversation_thread_id = thread_id
+    active_conversation_session_id = str(session_id or thread_id)
+    active_conversation_project_id = str(project_id or "project")
+
+
+def persist_turn_messages(thread_id: str, turn_id: str, messages: Iterable[Any],
+                          session_id: str, project_id: str) -> int:
+    return conversation_store.append_messages(
+        thread_id, messages, turn_id=turn_id, session_id=session_id,
+        project_id=project_id)
+
+
+def persist_resumed_turn(thread_id: str, resumed: Any, *, terminal: bool) -> tuple[str, str]:
+    """Persist authoritative checkpoint output and index it only when terminal."""
+    if not isinstance(resumed, dict) or not isinstance(resumed.get("messages"), list):
+        return "", ""
+    messages = resumed["messages"]
+    request = next((item for item in reversed(messages)
+                    if getattr(item, "type", "") == "human"), None)
+    if request is None or not getattr(request, "id", None):
+        return "", ""
+    turn_id = conversation_store.turn_id_for_message(thread_id, request.id)
+    if not turn_id:
+        return "", ""
+    session_id = (active_conversation_session_id
+                  if active_conversation_thread_id == thread_id else thread_id)
+    project_id = (active_conversation_project_id
+                  if active_conversation_thread_id == thread_id else "project")
+    persist_turn_messages(thread_id, turn_id, messages, session_id, project_id)
+    last = messages[-1] if messages else None
+    if terminal and last is not None and not getattr(last, "tool_calls", None):
+        conversation_store.record_turn(
+            thread_id, turn_id, str(request.content), messages,
+            outcome="completed", project_id=project_id)
+        return str(getattr(last, "content", "") or ""), turn_id
+    return "", turn_id
 
 def bound_context_text(context):
     """Cap provider-bound project context while preserving truncation signal."""
@@ -1953,6 +2014,15 @@ def handle_compaction_command(thread_id: str) -> None:
         compacted, report = compact_session_history(source_messages, thread_id)
         if compacted is None:
             raise HistoryCompactionError("insufficient_older_history")
+        try:
+            conversation_store.compact_projection(thread_id, compacted)
+        except (ConversationStoreError, ValueError) as error:
+            emit({"jsonrpc": "2.0", "method": "message", "params": {
+                "text": "Conversation compaction was not saved; the canonical transcript remains unchanged.",
+                "kind": "conversation_projection_failed",
+                "category": getattr(error, "category", "conversation_projection_write_failed"),
+                "secret_value_visible": False}})
+            return
         session_messages = compacted
         usage = report.get("provider_usage", {})
         emit({"jsonrpc": "2.0", "method": "observability_state",
@@ -2183,11 +2253,21 @@ def handle_provider_and_state_request(req, executor):
         if thread_id:
             os.environ["CCAD_AGENT_THREAD_ID"] = thread_id
             session_id = str(params.get("session_id") or thread_id)
+            project_id = str(params.get("project_id") or "project")
+            try:
+                activate_conversation(thread_id, session_id, project_id)
+            except (ConversationStoreError, ValueError) as error:
+                emit({"jsonrpc": "2.0", "method": "conversation_state", "params": {
+                    "thread_id": thread_id,
+                    "available": False,
+                    "error": getattr(error, "category", "conversation_history_unavailable"),
+                    "secret_value_visible": False}})
+                return True
             task_id = memory_task_scopes.current(session_id)
             memory_manager.set_identities(
                 task_id=task_id or uuid.uuid4().hex,
                 thread_id=thread_id,
-                project_id=str(params.get("project_id") or "project"),
+                project_id=project_id,
                 retain_stm_task=bool(task_id))
             memory_manager.configure(config_manager.get("memory", {}))
             memory_compaction_plans.retain_current(
@@ -2196,6 +2276,8 @@ def handle_provider_and_state_request(req, executor):
             os.environ.pop("CCAD_AGENT_THREAD_ID", None)
         emit({"jsonrpc": "2.0", "method": "thread_state", "params": {
             "configured": bool(thread_id), "memory_tiers": memory_manager.state(),
+            "conversation_loaded": bool(thread_id),
+            "conversation_message_count": len(session_messages),
             "secret_value_visible": False,
         }})
     elif method == "agent.resume_thread":
@@ -2490,6 +2572,23 @@ if __name__ == "__main__":
                     }})
                     resume_value = {"error": error} if error is not None else result
                     resumed = resume_checkpointed_run(thread_id, resume_value)
+                    resumed_snapshot = executor.get_state(
+                        {"configurable": {"thread_id": thread_id}})
+                    try:
+                        assistant_text, resumed_turn_id = persist_resumed_turn(
+                            thread_id, resumed, terminal=not bool(resumed_snapshot.next))
+                    except (ConversationStoreError, ValueError) as store_error:
+                        assistant_text, resumed_turn_id = "", ""
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {
+                            "text": "The approved tool result was received, but the conversation update could not be saved.",
+                            "kind": "conversation_store_write_failed",
+                            "category": getattr(store_error, "category",
+                                                "conversation_store_write_failed"),
+                            "secret_value_visible": False}})
+                    if assistant_text:
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {
+                            "text": assistant_text, "kind": "assistant_response",
+                            "turn_id": resumed_turn_id, "secret_value_visible": False}})
                     emit({"jsonrpc": "2.0", "method": "thread_resumed", "params": {
                         "thread_id": thread_id,
                         "call_id": received_call_id,
@@ -2571,6 +2670,15 @@ if __name__ == "__main__":
                 os.environ["CCAD_AGENT_THREAD_ID"] = requested_thread
                 project_id = str(params.get("project_id") or
                                  config_manager.get("project_name", "project"))
+                try:
+                    activate_conversation(requested_thread, requested_session, project_id)
+                except (ConversationStoreError, ValueError) as error:
+                    emit({"jsonrpc": "2.0", "method": "message", "params": {
+                        "text": "This conversation could not be loaded safely; no provider request was sent.",
+                        "kind": "conversation_history_unavailable",
+                        "category": getattr(error, "category", "conversation_history_unavailable"),
+                        "provider_request_sent": False, "secret_value_visible": False}})
+                    continue
                 memory_manager.set_identities(task_id=requested_task,
                                               thread_id=requested_thread,
                                               project_id=project_id,
@@ -2587,8 +2695,20 @@ if __name__ == "__main__":
                         memory_query = memory_query[8:].strip()
                 memory_entries, memory_retrieval = local_memory_entries(memory_query)
                 memory_runtime = memory_manager.state()
+                try:
+                    turn_records = conversation_store.search_turn_records(
+                        requested_thread, memory_query, limit=5)
+                    recap = conversation_store.thread_recap(requested_thread)
+                except ConversationStoreError as error:
+                    emit({"jsonrpc": "2.0", "method": "message", "params": {
+                        "text": "Historical conversation retrieval is unavailable; no unverified history was added to context.",
+                        "kind": "conversation_retrieval_unavailable",
+                        "category": error.category, "secret_value_visible": False}})
+                    turn_records = []
+                    recap = {"source_turn_ids": [], "turns": []}
                 with telemetry_runtime.observation("assemble-context", "retriever", {
                         "memory_entry_count": len(memory_entries),
+                        "historical_turn_count": len(turn_records),
                         "history_message_count": len(session_messages),
                         "raw_context_chars": len(raw_context),
                     }):
@@ -2596,7 +2716,9 @@ if __name__ == "__main__":
                         raw_context, memory_entries, bound_session_history(session_messages),
                         char_limit=agent_context_limit(),
                         memory_retrieval=memory_retrieval,
-                        memory_runtime=memory_runtime)
+                        memory_runtime=memory_runtime,
+                        turn_records=turn_records,
+                        thread_recap=recap)
                 context_str = package["content"]
                 context_metadata = package["metadata"]
                 context_truncated = context_metadata["truncated"]
@@ -2637,6 +2759,11 @@ if __name__ == "__main__":
                     "sources": context_metadata["sources"],
                     "memory_content_emitted": False,
                     "memory_entry_count": context_metadata["memory_entry_count"],
+                    "historical_turn_count": context_metadata["prior_turn_count"],
+                    "omitted_historical_turn_count": context_metadata[
+                        "omitted_prior_turn_count"],
+                    "thread_recap_turn_count": context_metadata[
+                        "thread_recap_turn_count"],
                     "history_message_count": context_metadata["history_message_count"],
                     "history_in_context_package": context_metadata["history_in_context_package"],
                     "history_sent_as_provider_messages": context_metadata["history_sent_as_provider_messages"],
@@ -2849,9 +2976,20 @@ if __name__ == "__main__":
                         session_messages.append(HumanMessage(content="Explain the current board selection or context in detail. Please provide a concise summary of the active design constraints."))
                         # Fall through to graph execution
                     elif cmd_base == "/clear":
+                        try:
+                            conversation_store.clear_model_projection(context_thread_id)
+                        except (ConversationStoreError, ValueError) as error:
+                            emit({"jsonrpc": "2.0", "method": "message", "params": {
+                                "text": "Active conversation context was not cleared because its projection could not be saved.",
+                                "kind": "conversation_projection_failed",
+                                "category": getattr(error, "category", "conversation_projection_write_failed"),
+                                "secret_value_visible": False}})
+                            continue
                         session_messages = []
                         context_revisions.pop(context_thread_id, None)
-                        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Chat history and context cleared."}})
+                        emit({"jsonrpc": "2.0", "method": "message", "params": {
+                            "text": "Active model context cleared. The durable transcript remains available in conversation history.",
+                            "kind": "conversation_context_cleared"}})
                         continue
                     elif cmd_base == "/settings":
                         emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": "ui.open_settings", "args": {}}})
@@ -2864,8 +3002,27 @@ if __name__ == "__main__":
                         emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Unknown command: {cmd_base}"}})
                         continue
 
-                session_messages = bound_session_history(session_messages)
-                session_messages.append(HumanMessage(content=text))
+                turn_id = uuid.uuid4().hex
+                user_message = HumanMessage(content=text)
+                try:
+                    next_history = bound_session_history([*session_messages, user_message])
+                except ValueError:
+                    emit({"jsonrpc": "2.0", "method": "message", "params": {
+                        "text": "This request exceeds the configured recent-history budget; no provider request was sent.",
+                        "kind": "conversation_history_budget_exceeded",
+                        "provider_request_sent": False, "secret_value_visible": False}})
+                    continue
+                try:
+                    persist_turn_messages(requested_thread, turn_id, [user_message],
+                                          requested_session, project_id)
+                except (ConversationStoreError, ValueError) as error:
+                    emit({"jsonrpc": "2.0", "method": "message", "params": {
+                        "text": "Conversation could not be saved safely; no provider request was sent.",
+                        "kind": "conversation_store_unavailable",
+                        "category": getattr(error, "category", "conversation_store_write_failed"),
+                        "provider_request_sent": False, "secret_value_visible": False}})
+                    continue
+                session_messages = next_history
                 if "post prompt" in [h.lower() for h in active_hooks]:
                     hooks.trigger_hook("post prompt", emit, text)
 
@@ -2873,11 +3030,28 @@ if __name__ == "__main__":
                 # Do not enter the graph: it cannot produce an answer and older
                 # code could then index an empty message list.
                 if llm is None:
+                    unavailable_text = (
+                        "Local CCad agent received your request and current "
+                        f"design context ({len(context_str)} chars). "
+                        "Provider execution is unavailable; configure a provider "
+                        "key or use local CCad tools.")
+                    unavailable_message = AIMessage(content=unavailable_text)
+                    session_messages = bound_session_history(
+                        [*session_messages, unavailable_message])
+                    try:
+                        persist_turn_messages(requested_thread, turn_id,
+                                              [unavailable_message],
+                                              requested_session, project_id)
+                        conversation_store.record_turn(
+                            requested_thread, turn_id, text,
+                            [user_message, unavailable_message],
+                            outcome="provider_unavailable", project_id=project_id,
+                            project_revision_before=context_metadata.get(
+                                "project_revision", ""))
+                    except (ConversationStoreError, ValueError):
+                        pass
                     emit({"jsonrpc": "2.0", "method": "message", "params": {
-                        "text": ("Local CCad agent received your request and current "
-                                 f"design context ({len(context_str)} chars). "
-                                 "Provider execution is unavailable; configure a provider "
-                                 "key or use local CCad tools."),
+                        "text": unavailable_text,
                         "kind": "provider_unavailable",
                         "context_received": bool(context_str),
                     }})
@@ -2889,6 +3063,22 @@ if __name__ == "__main__":
                                                     "context_metadata": context_metadata,
                                                     "thread_id": context_thread_id})
                 except Exception as error:
+                    failure_text = provider_error_user_message(error)
+                    failure_message = AIMessage(content=failure_text)
+                    session_messages = bound_session_history(
+                        [*session_messages, failure_message])
+                    try:
+                        persist_turn_messages(requested_thread, turn_id,
+                                              [failure_message], requested_session,
+                                              project_id)
+                        conversation_store.record_turn(
+                            requested_thread, turn_id, text,
+                            [user_message, failure_message], outcome="provider_error",
+                            project_id=project_id,
+                            project_revision_before=context_metadata.get(
+                                "project_revision", ""))
+                    except (ConversationStoreError, ValueError):
+                        pass
                     export_state = telemetry_runtime.flush_turn()
                     emit({"jsonrpc": "2.0", "method": "observability_state",
                           "params": export_state})
@@ -2898,7 +3088,7 @@ if __name__ == "__main__":
                         "prompt_emitted": False, "secret_value_visible": False,
                     }})
                     emit({"jsonrpc": "2.0", "method": "message", "params": {
-                        "text": provider_error_user_message(error),
+                        "text": failure_text,
                         "kind": "provider_error", "error_type": type(error).__name__,
                         "cause": classify_provider_error(error),
                         "http_status": provider_http_status(error),
@@ -2912,6 +3102,22 @@ if __name__ == "__main__":
                 last_msg = session_messages[-1]
                 has_tool_calls = bool(getattr(last_msg, "tool_calls", None))
                 has_legacy_tool = "<TOOL>" in str(getattr(last_msg, "content", ""))
+                try:
+                    persist_turn_messages(requested_thread, turn_id,
+                                          final_state.get("messages", []),
+                                          requested_session, project_id)
+                    if not (has_tool_calls or has_legacy_tool):
+                        conversation_store.record_turn(
+                            requested_thread, turn_id, text,
+                            final_state.get("messages", []), outcome="completed",
+                            project_id=project_id,
+                            project_revision_before=context_metadata.get("project_revision", ""))
+                except (ConversationStoreError, ValueError) as error:
+                    emit({"jsonrpc": "2.0", "method": "message", "params": {
+                        "text": "The provider turn completed, but its transcript update could not be persisted.",
+                        "kind": "conversation_store_write_failed",
+                        "category": getattr(error, "category", "conversation_store_write_failed"),
+                        "secret_value_visible": False}})
                 trace = telemetry_runtime.current_trace()
                 emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
                     "run_state": "awaiting_tool_approval" if (has_tool_calls or has_legacy_tool) else "completed",

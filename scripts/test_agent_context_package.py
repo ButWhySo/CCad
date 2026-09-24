@@ -29,21 +29,42 @@ memories = [
      "content": "api_key=fixture-not-a-real-secret", "tags": []},
 ]
 
-package = build_context_package(raw, memories, history, char_limit=1300)
+turn_record = {
+    "turn_id": "turn-source-1",
+    "source_message_ids": ["message-user-1", "message-assistant-1"],
+    "user_request_summary": "Inspect U3 on F.Cu",
+    "assistant_summary": "U3 is on the front copper layer.",
+    "outcome": "completed",
+    "tool_ids": ["project.inspect"],
+}
+recap = {"source_turn_ids": ["turn-source-1"], "turns": [{
+    **turn_record,
+    "explicit_constraints": ["Keep U3 in place."],
+    "referenced_entities": {"user_reference": ["U3"]},
+    "important_findings": [],
+}]}
+package = build_context_package(raw, memories, history, char_limit=1300,
+                                 turn_records=[turn_record], thread_recap=recap)
 metadata = package["metadata"]
-assert package["content"].startswith("[CCAD_CONTEXT_V2]\n")
-assert metadata["schema_version"] == 2
+assert package["content"].startswith("[CCAD_CONTEXT_V3]\n")
+assert metadata["schema_version"] == 3
 assert metadata["project_revision"] == "native-revision"
 assert len(metadata["package_digest"]) == 24
 assert metadata["estimated_token_count"] == (metadata["content_size"] + 3) // 4
 assert metadata["project_counts"] == {}
 assert metadata["history_message_count"] == 2
 assert metadata["memory_entry_count"] == 1
+assert metadata["prior_turn_count"] == 1
+assert metadata["thread_recap_turn_count"] == 1
+assert "retrieved_conversation_turns" in metadata["sources"]
+assert "thread_recap" in metadata["sources"]
 assert metadata["secret_value_visible"] is False
 assert metadata["content_emitted"] is False
 assert "project_snapshot" in metadata["sources"]
-assert "project_memory" in metadata["sources"]
+assert "retrieved_memory" in metadata["sources"]
 assert "fixture-not-a-real-secret" not in package["content"]
+assert "message-user-1" in package["content"]
+assert "Keep U3 in place." in package["content"]
 assert len(package["content"]) <= 1300
 
 truncated = build_context_package(raw + ("x" * 9000), [], [], char_limit=1024)

@@ -448,6 +448,7 @@ int main(int argc, char** argv) {
       if (name.startsWith("sprint968-task") ||
           name.startsWith("sprint969-context") ||
           name.startsWith("sprint970-compaction") ||
+          name.startsWith("sprint976-conversation") ||
           name.startsWith("sprint975-memory-ui") ||
           name.startsWith("sprint974-memory")) {
         const auto interact = [window, &entries, &output_dir, &name,
@@ -469,7 +470,8 @@ int main(int argc, char** argv) {
               "memory-ui-settings-open", "memory-ui-manager-open",
               "memory-ui-settings-closed"};
           QString screenshot_path;
-          if (!name.startsWith("sprint975-memory-ui") ||
+          if ((!name.startsWith("sprint975-memory-ui") &&
+               !name.startsWith("sprint976-conversation")) ||
               memory_checkpoints.contains(action_name)) {
             screenshot_path = QString::fromStdString(
                 (output_dir / (name + "-" + action_name + ".png").toStdString()).string());
@@ -544,6 +546,55 @@ int main(int argc, char** argv) {
           entries << QString("{\"safe_noop_visible\":%1,\"provider_request_sent\":false}")
                          .arg(safe_noop_visible ? "true" : "false");
           ok = safe_noop_visible && ok;
+        } else if (name.startsWith("sprint976-conversation")) {
+          const auto capture = [window, &output_dir, &name, &entries](const QString& state) {
+            const QString path = QString::fromStdString(
+                (output_dir / (name + "-" + state + ".png").toStdString()).string());
+            window->raise();
+            window->activateWindow();
+            QApplication::processEvents();
+            if (!window->grab().save(path)) return false;
+            entries << QString("{\"conversation_screenshot\":%1,\"state\":%2}")
+                           .arg(jsonStringLocal(path), jsonStringLocal(state));
+            return true;
+          };
+          ok = capture("before") && ok;
+          ok = interact("ui.click", "{\"id\":\"tab:pcb\"}",
+                        "tab:pcb", "conversation-pcb-tab") && ok;
+          ok = interact("ui.click", "{\"id\":\"tab:schematic\"}",
+                        "tab:schematic", "conversation-schematic-tab") && ok;
+          ok = interact("ui.click", "{\"id\":\"tab:agent\"}",
+                        "tab:agent", "conversation-agent-tab") && ok;
+          ok = interact("ui.type_text",
+                        "{\"id\":\"control:agent_chat_input\",\"text\":\"Record this thread-local verification turn.\"}",
+                        "control:agent_chat_input", "conversation-prompt-entered") && ok;
+          ok = interact("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
+                        "action:agent_submit_chat", "conversation-turn-submitted") && ok;
+          auto* chat = window->findChild<QTextBrowser*>("control:agent_chat_stream");
+          for (int attempt = 0; attempt < 60; ++attempt) {
+            QApplication::processEvents();
+            if (chat && chat->toPlainText().contains(
+                    "Provider execution is unavailable; configure a provider")) break;
+            QThread::msleep(100);
+          }
+          const bool turn_visible = chat &&
+              chat->toPlainText().contains("Record this thread-local verification turn.") &&
+              chat->toPlainText().contains(
+                  "Provider execution is unavailable; configure a provider");
+          entries << QString("{\"conversation_turn_visible\":%1,\"provider_request_sent\":false}")
+                         .arg(turn_visible ? "true" : "false");
+          ok = turn_visible && capture("turn-persisted") && ok;
+          ok = interact("ui.type_text",
+                        "{\"id\":\"control:agent_chat_input\",\"text\":\"/clear\"}",
+                        "control:agent_chat_input", "conversation-clear-entered") && ok;
+          ok = interact("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
+                        "action:agent_submit_chat", "conversation-clear-submitted") && ok;
+          QApplication::processEvents();
+          const bool transcript_retained = chat &&
+              chat->toPlainText().contains("Record this thread-local verification turn.");
+          entries << QString("{\"canonical_transcript_retained_after_clear\":%1}")
+                         .arg(transcript_retained ? "true" : "false");
+          ok = transcript_retained && capture("projection-cleared") && ok;
         } else if (name.startsWith("sprint975-memory-ui")) {
           const auto captureMemoryResult = [&]() {
             const QString path = QString::fromStdString(
@@ -795,11 +846,14 @@ int main(int argc, char** argv) {
         const std::filesystem::path output_path =
             output_dir / (name + "-target-sequence.json").toStdString();
         std::ofstream output(output_path, std::ios::binary);
+        const QString interaction_plan = name.startsWith("sprint976-conversation")
+            ? QStringLiteral("Verify thread conversation persistence and /clear transcript preservation via seven mapped actions; provider disabled")
+            : QStringLiteral("Mapped memory lifecycle with all actions logged and distinct visual checkpoints; no model request");
         const QString report =
-            QString("{\"schema_version\":1,\"name\":%1,\"interaction_plan\":"
-                    "\"Mapped memory lifecycle with all actions logged and distinct visual checkpoints; no model request\","
-                    "\"catalog_startup_verified\":%2,\"entries\":[%3]}\n")
+            QString("{\"schema_version\":1,\"name\":%1,\"interaction_plan\":%2,"
+                    "\"catalog_startup_verified\":%3,\"entries\":[%4]}\n")
                 .arg(jsonStringLocal(name))
+                .arg(jsonStringLocal(interaction_plan))
                 .arg(catalog_startup_verified ? "true" : "false")
                 .arg(entries.join(','));
         const QByteArray bytes = report.toUtf8();

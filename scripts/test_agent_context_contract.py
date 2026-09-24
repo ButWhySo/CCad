@@ -16,7 +16,7 @@ assert 'def bound_session_history(messages):' in text
 assert 'min(64, max(4, limit))' in text
 assert 'session_messages = bound_session_history(final_state["messages"])' in text
 assert 'memory_content_emitted' in text
-assert 'from context_package import build_context_package' in text
+assert 'from context_package import (build_context_package' in text
 assert 'package = build_context_package(' in text
 assert 'memory_entry_count' in text
 assert 'history_message_count' in text
@@ -158,7 +158,7 @@ assert events[2]["params"]["change_kind"] == "unchanged"
 assert events[2]["params"]["thread_id"] == "thread-b"
 for event in events:
     params = event["params"]
-    assert params["context_schema_version"] == 2
+    assert params["context_schema_version"] == 3
     assert params["content_emitted"] is False
     assert params["memory_content_emitted"] is False
     assert params["history_message_count"] >= 0
