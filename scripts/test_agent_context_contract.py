@@ -30,6 +30,14 @@ assert '"previous_revision": previous_context_revision' in text
 assert '"change_kind": context_change_kind' in text
 assert '"response_contracts": {' in text
 assert '"intake_state": {"fields": [' in text
+human_start = text.index('elif method == "human_message":')
+human_handler = text[human_start:]
+assert human_handler.index("telemetry_runtime.start_agent_turn(") < human_handler.index(
+    '"context.assemble"')
+invoke_start = text.index("def invoke_agent_run(state):")
+invoke_end = text.index("\ndef get_system_prompt", invoke_start)
+assert "telemetry_runtime.begin_turn()" not in text[invoke_start:invoke_end]
+assert "telemetry_runtime.finish_agent_turn()" in text
 
 env = os.environ.copy()
 env.update({"CCAD_AGENT_DEFER_PROVIDER_INIT": "1", "PYTHONNOUSERSITE": "1",

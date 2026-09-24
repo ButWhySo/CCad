@@ -151,14 +151,30 @@ class ContextBroker:
         return selected, selected_meta, chars
 
     @staticmethod
-    def _deduplicate_against_context(entries, provenance, recent_turns, recent_context):
+    def _comparison_texts(recent_turns, recent_context, thread_recap):
         corpus = []
-        for record in list(recent_turns)[-6:]:
+        for record in list(recent_turns or ())[-6:]:
             if isinstance(record, dict):
                 corpus.extend((record.get("user_request_summary", ""),
                                record.get("assistant_summary", "")))
-        corpus.extend(list(recent_context)[-8:])
-        token_sets = [set(_WORDS.findall(str(value).casefold())) for value in corpus]
+        corpus.extend(list(recent_context or ())[-8:])
+        if isinstance(thread_recap, dict):
+            for record in list(thread_recap.get("turns", ()))[-6:]:
+                if not isinstance(record, dict):
+                    continue
+                corpus.extend((record.get("user_request_summary", ""),
+                               record.get("assistant_summary", "")))
+                corpus.extend(record.get("explicit_constraints", ())[:8]
+                              if isinstance(record.get("explicit_constraints"), list)
+                              else ())
+                corpus.extend(record.get("important_findings", ())[:4]
+                              if isinstance(record.get("important_findings"), list)
+                              else ())
+        return [_safe_signal(value, 300) for value in corpus if _safe_signal(value, 300)]
+
+    @staticmethod
+    def _deduplicate_against_context(entries, provenance, comparison_texts):
+        token_sets = [set(_WORDS.findall(value.casefold())) for value in comparison_texts]
         token_sets = [terms for terms in token_sets if len(terms) >= 5]
         if not token_sets:
             return entries, provenance
@@ -166,11 +182,13 @@ class ContextBroker:
                 if isinstance(item, dict)}
         kept, kept_meta = [], []
         for entry in entries:
-            terms = set(_WORDS.findall(
+            content_terms = set(_WORDS.findall(str(entry.get("content", "")).casefold()))
+            all_terms = set(_WORDS.findall(
                 f"{entry.get('title', '')} {entry.get('content', '')}".casefold()))
             duplicated = any(
-                len(terms & previous) / max(1, len(terms | previous)) >= 0.92
-                for previous in token_sets if len(terms) >= 5)
+                len(content_terms & previous) / max(1, len(content_terms)) >= 0.92
+                or len(all_terms & previous) / max(1, len(all_terms)) >= 0.92
+                for previous in token_sets if len(content_terms) >= 5)
             if duplicated:
                 continue
             kept.append(entry)
@@ -194,7 +212,7 @@ class ContextBroker:
                 active_editor: str = "", selected_objects=(), workflow: str = "",
                 task: str = "", recent_turns=(), historical_turn_count=0,
                 force_refresh=False, signals: dict | None = None,
-                recent_context=()):
+                recent_context=(), thread_recap: dict | None = None):
         signals = signals or extract_context_signals(
             user_request, goal=goal, project_id=project_id, active_editor=active_editor,
             selected_objects=selected_objects, workflow=workflow, task=task,
@@ -202,8 +220,13 @@ class ContextBroker:
         states = manager.state()
         generation = self._memory_generation(manager)
         query_digest = hashlib.sha256(str(signals["query"]).encode()).hexdigest()[:24]
+        comparison_texts = self._comparison_texts(recent_turns, recent_context, thread_recap)
+        comparison_digest = hashlib.sha256(json.dumps(
+            comparison_texts, ensure_ascii=False, separators=(",", ":")).encode()
+        ).hexdigest()[:24]
         key_material = json.dumps([str(thread_id), str(project_revision), signals["digest"],
                                    query_digest, int(historical_turn_count), generation,
+                                   comparison_digest,
                                    int(self.memory_token_budget)],
                                   separators=(",", ":"))
         key = hashlib.sha256(key_material.encode()).hexdigest()
@@ -214,7 +237,7 @@ class ContextBroker:
         entries, provenance = manager.retrieve_with_metadata(signals["query"],
                                                               limit=self.MAX_MEMORY_ENTRIES)
         entries, provenance = self._deduplicate_against_context(
-            entries, provenance, recent_turns, recent_context)
+            entries, provenance, comparison_texts)
         entries, provenance, chars = self._select(entries, provenance)
         manifest = self._manifest(manager, historical_turn_count, states)
         thread = str(thread_id)
@@ -224,6 +247,7 @@ class ContextBroker:
                   "project_revision": str(project_revision), "signal_digest": signals["digest"],
                   "memory_generation": generation, "signals": signals,
                   "memories": entries, "memory_retrieval": provenance,
+                  "dedup_context": comparison_texts,
                   "memory_summary": self._summary(entries), "manifest": manifest,
                   "memory_chars": chars, "memory_token_budget": self.memory_token_budget,
                   "historical_turn_count": max(0, int(historical_turn_count)),
@@ -239,6 +263,8 @@ class ContextBroker:
         merged_query = (str(context.get("signals", {}).get("query", "")) + " " + extra).strip()
         entries, provenance = manager.retrieve_with_metadata(merged_query,
                                                               limit=self.MAX_MEMORY_ENTRIES)
+        entries, provenance = self._deduplicate_against_context(
+            entries, provenance, list(context.get("dedup_context", ())))
         old_entries = {str(item.get("id")): item for item in context.get("memories", [])}
         old_provenance = {str(item.get("entry_id")): item
                           for item in context.get("memory_retrieval", [])}

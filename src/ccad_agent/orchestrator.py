@@ -1580,7 +1580,6 @@ def initialize_agent_process():
 def invoke_agent_run(state):
     """Invoke graph under one run span without exporting prompt contents."""
     thread_id = state.get("thread_id") or os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
-    telemetry_runtime.begin_turn()
     with telemetry_runtime.session(thread_id), telemetry_runtime.observation("agent-turn", "agent", {
             "workflow": active_workflow,
             "provider_ready": llm is not None,
@@ -2625,6 +2624,9 @@ if __name__ == "__main__":
     threading.Thread(target=read_protocol_lines, name="ccad-agent-stdin", daemon=True).start()
 
     while True:
+        if telemetry_runtime.finish_agent_turn():
+            emit({"jsonrpc": "2.0", "method": "observability_state",
+                  "params": telemetry_runtime.flush_turn()})
         try:
             line = deferred_queue.get_nowait()
         except queue.Empty:
@@ -2779,10 +2781,18 @@ if __name__ == "__main__":
                 }})
             elif method == "human_message":
                 params = req.get("params", {})
+                if not isinstance(params, dict):
+                    params = {}
                 text = params.get("text", "")
                 raw_context = params.get("context", "")
                 requested_thread = str(params.get("thread_id") or
                                        os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local"))
+                telemetry_runtime.start_agent_turn(requested_thread, {
+                    "thread_id_hash": hashlib.sha256(
+                        requested_thread.encode()).hexdigest()[:16],
+                    "workflow": active_workflow,
+                    "provider_ready": str(llm is not None).lower(),
+                })
                 requested_session = str(params.get("session_id") or requested_thread)
                 requested_task = (memory_task_scopes.current(requested_session)
                                   or uuid.uuid4().hex)
@@ -2858,7 +2868,7 @@ if __name__ == "__main__":
                             selected_objects=selected_objects, workflow=active_workflow,
                             task=memory_manager.identities["stm"], recent_turns=turn_records,
                             historical_turn_count=len(turn_records), signals=signals,
-                            recent_context=recent_context)
+                            recent_context=recent_context, thread_recap=recap)
                         if retrieval_observation is not None:
                             retrieval_observation.update(
                                 input={"signal_digest": signals["digest"],

@@ -117,6 +117,50 @@ class ContextBrokerTests(unittest.TestCase):
             self.assertEqual(unloaded["memories"], [])
             self.assertEqual(unloaded["manifest"]["tiers"]["ltm"]["loaded_count"], 0)
 
+    def test_automatic_memory_deduplicates_recent_context_and_thread_recap(self):
+        with tempfile.TemporaryDirectory() as temp:
+            manager = MemoryManager(MemoryStore(Path(temp) / "memory.json"),
+                                    thread_id="thread", project_id="project")
+            manager.configure({"ltm": True})
+            recent_duplicate = manager.add(
+                "Keep GND return path short near U3", title="GND routing preference",
+                tier="ltm")
+            recap_duplicate = manager.add(
+                "Preserve connector clearance near J4 during routing",
+                title="J4 clearance", tier="ltm")
+            distinct = manager.add(
+                "Keep reference designators readable after silkscreen edits", tier="ltm")
+            broker = ContextBroker()
+            context = broker.prepare(
+                manager, thread_id="thread", project_revision="r1",
+                user_request="Review GND return path, connector clearance, and silkscreen",
+                recent_context=["Keep GND return path short near U3 while routing nearby nets"],
+                thread_recap={"turns": [{
+                    "user_request_summary": "Preserve connector clearance near J4 during routing on the crowded edge",
+                    "assistant_summary": "Connector clearance near J4 was preserved during routing with other constraints",
+                }]})
+            selected = {entry["id"] for entry in context["memories"]}
+            self.assertNotIn(recent_duplicate["id"], selected)
+            self.assertNotIn(recap_duplicate["id"], selected)
+            self.assertIn(distinct["id"], selected)
+            refreshed = broker.refresh_memory(
+                manager, context, "GND return path connector clearance silkscreen",
+                reason="user_requested_more_memory")
+            refreshed_ids = {entry["id"] for entry in refreshed["memories"]}
+            self.assertNotIn(recent_duplicate["id"], refreshed_ids)
+            self.assertNotIn(recap_duplicate["id"], refreshed_ids)
+            changed_recap = broker.prepare(
+                manager, thread_id="thread", project_revision="r1",
+                user_request="Review GND return path, connector clearance, and silkscreen",
+                recent_context=["Keep GND return path short near U3 while routing nearby nets"],
+                thread_recap={"turns": [{
+                    "user_request_summary": "A separate history task with different information",
+                    "assistant_summary": "Completed unrelated work on an earlier task",
+                }]})
+            self.assertFalse(changed_recap["cache_hit"])
+            self.assertIn(recap_duplicate["id"],
+                          {entry["id"] for entry in changed_recap["memories"]})
+
     def test_manifest_explicitly_does_not_claim_missing_project_or_semantic_indices(self):
         with tempfile.TemporaryDirectory() as temp:
             manager = MemoryManager(MemoryStore(Path(temp) / "memory.json"),
