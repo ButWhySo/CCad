@@ -45,6 +45,7 @@ private:
   void applyModelCatalog(const QJsonObject& catalog);
   void openMemoryManager();
   void applyMemoryState(const QJsonObject& state);
+  void applyMemoryOperation(const QString& method, const QJsonObject& result);
 
   AgentPanel* agent_panel_;
   QListWidget* category_list_;
@@ -76,6 +77,9 @@ private:
   QCheckBox* ltm_cb_{nullptr};
   QCheckBox* episodic_cb_{nullptr};
   QLabel* memory_status_label_{nullptr};
+  QLabel* memory_manager_status_label_{nullptr};
+  QPushButton* memory_save_button_{nullptr};
+  QPushButton* memory_delete_button_{nullptr};
   QPointer<QDialog> memory_dialog_;
   QListWidget* memory_entries_{nullptr};
   QTextEdit* memory_content_{nullptr};

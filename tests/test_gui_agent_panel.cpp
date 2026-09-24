@@ -288,6 +288,38 @@ private slots:
     QTest::qWait(50);
   }
 
+  void testMemoryManagerProvidesOperationFeedbackControls() {
+    AgentPanel panel;
+    AgentSettingsDialog settings(&panel);
+    settings.show();
+    QTest::qWait(50);
+    auto* categories = settings.findChild<QListWidget*>("control:categoryList");
+    QVERIFY(categories != nullptr);
+    categories->setCurrentRow(2);
+    QCoreApplication::processEvents();
+    auto* manage = settings.findChild<QPushButton*>("action:agent_memory_manage");
+    QVERIFY(manage != nullptr);
+    QTest::mouseClick(manage, Qt::LeftButton);
+    QTRY_VERIFY_WITH_TIMEOUT(([&]() {
+      for (QWidget* widget : QApplication::topLevelWidgets()) {
+        if (widget->objectName() == "dialog:agentMemoryManager" && widget->isVisible())
+          return true;
+      }
+      return false;
+    })(), 1000);
+    auto* status = settings.findChild<QLabel*>("label:memoryManagerStatus");
+    auto* save = settings.findChild<QPushButton*>("action:saveMemory");
+    auto* remove = settings.findChild<QPushButton*>("action:deleteMemory");
+    QVERIFY(status != nullptr);
+    QCOMPARE(status->text(), QString("Ready."));
+    QVERIFY(save != nullptr);
+    QVERIFY(save->isEnabled());
+    QVERIFY(remove != nullptr);
+    QVERIFY(remove->isEnabled());
+    settings.close();
+    QTest::qWait(50);
+  }
+
   void testMarketplaceInteractions() {
     AgentPanel panel;
     AgentMarketplaceDialog dialog(&panel, &panel);

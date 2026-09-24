@@ -2117,3 +2117,16 @@ Qt MinGW Release build succeeded, CTest passed 104/104, six provider contracts
 passed, and changed-module Pyright reported zero diagnostics. The scoped local
 Settings validation completed; all 18 screenshots were inspected and captured
 stderr was empty. This does not validate fresh Langfuse trace delivery.
+
+## Sprint 975 Agent memory-management outcomes
+
+`AgentPanel` routes the orchestrator's memory operation events into
+`AgentSettingsDialog`. The dialog reports authoritative success/error text,
+prevents overlapping writes, refreshes only after success, and confirms
+per-record deletion. `MemoryManager.delete()` preserves the selected record
+identity if the active thread changes while confirmation is open. The mapped
+Sprint 975 scenario in `src/ccad_gui/main.cpp`, driven by
+`scripts/run_ui_map_mouse_target_demo.ps1`, records every interaction and
+captures only distinct visual checkpoints. Its profile is isolated from user
+memory. `tests/test_gui_ui_map.cpp` keeps the redaction-test fixture hidden so
+its sentinel text cannot appear in the main window during GUI tests.

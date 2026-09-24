@@ -1518,11 +1518,20 @@ void AgentPanel::handlePythonOutput() {
       } else if (obj.contains("method") && obj["method"].toString() == "memory_state") {
         const QJsonObject params = obj["params"].toObject();
         if (memory_state_cb_) memory_state_cb_(params);
-      } else if (obj.contains("method") && obj["method"].toString() == "memory_error") {
+      } else if (obj.contains("method") &&
+                 (obj["method"].toString() == "memory_added" ||
+                  obj["method"].toString() == "memory_updated" ||
+                  obj["method"].toString() == "memory_deleted" ||
+                  obj["method"].toString() == "memory_reset" ||
+                  obj["method"].toString() == "memory_error")) {
+        const QString method = obj["method"].toString();
         const QJsonObject params = obj["params"].toObject();
-        addActivityEvent("error", "Memory operation failed",
-                         params.value("error").toString("Memory operation rejected"),
-                         params.value("operation").toString());
+        if (memory_operation_cb_) memory_operation_cb_(method, params);
+        if (method == "memory_error") {
+          addActivityEvent("error", "Memory operation failed",
+                           params.value("error").toString("Memory operation rejected"),
+                           params.value("operation").toString());
+        }
       } else if (obj.contains("method") && obj["method"].toString() == "backend_state") {
         const QJsonObject params = obj["params"].toObject();
         backend_ready_ = params["ready"].toBool(false);
@@ -1873,6 +1882,10 @@ void AgentPanel::setConfigStateCallback(ConfigStateCallback cb) {
 
 void AgentPanel::setMemoryStateCallback(MemoryStateCallback cb) {
   memory_state_cb_ = std::move(cb);
+}
+
+void AgentPanel::setMemoryOperationCallback(MemoryOperationCallback cb) {
+  memory_operation_cb_ = std::move(cb);
 }
 
 const QJsonObject& AgentPanel::cachedConfigState() const {

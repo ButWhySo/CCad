@@ -320,7 +320,25 @@ class MemoryManager:
                             item for item in entries
                             if item.get("id") != entry_id]
                 return tier == "stm" or self.store.delete(entry_id)
-        return False
+        # A memory row may remain visible while a conversation/thread switch
+        # occurs inside the confirmation dialog's nested event loop. The
+        # selected ID is globally unique, so honor that explicit delete even
+        # when its old thread namespace is no longer the active one.
+        stored_entry = next((item for item in self.store.list()
+                             if item.get("id") == entry_id), None)
+        if stored_entry is None:
+            return False
+        tier = str(stored_entry.get("tier", "ltm"))
+        if tier not in self.TIERS:
+            return False
+        self.runtime[tier] = [item for item in self.runtime[tier]
+                              if item.get("id") != entry_id]
+        if tier == "stm":
+            for namespace, entries in list(self._stm_tasks.items()):
+                self._stm_tasks[namespace] = [
+                    item for item in entries if item.get("id") != entry_id]
+            return True
+        return self.store.delete(entry_id)
 
     def clear_scope(self, scope, *, tier=None):
         tiers = self.TIERS if tier is None else (tier,)

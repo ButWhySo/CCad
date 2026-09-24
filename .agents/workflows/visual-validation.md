@@ -36,7 +36,7 @@ Wait a few seconds and interact with at least two or three basic GUI elements be
 
 ### Phase 2: Research and Implementation
 
-Research first. Look up existing projects, standard implementations, and proven approaches before reinventing core behavior. Adapt findings strictly to the project’s LLM-native CAD use-case.Use internet and browser and lookup the existing implementation and best practices for current scope.Use browser automation if needed. I am specifically banning you from mock/stub codes and plumbing. in complete ccad project.Whatever imlpementation/code you write should be complete, end to end , production grade.
+Research first. Look up existing projects, standard implementations, and proven approaches before reinventing core behavior. Adapt findings strictly to the project’s LLM-native CAD use-case.Use internet and browser and lookup the existing implementation and best practices for current scope.Use browser automation if needed. I am specifically banning you from mock/stub codes and plumbing. in complete ccad project.Whatever imlpementation/code you write should be complete, end to end , production grade.We also have browser automation setup, which will help you saerch and lookup, we have playwright setup.
 
 Use the local KiCad source checkout, expected around `F:\kicad_src`, as a reference implementation source. Study relevant KiCad patterns and adapt the architectural lessons where appropriate, without blindly copying behavior that does not fit CCAD.
 
@@ -54,7 +54,7 @@ If GUI or visual components are touched, run the official test harness:
 scripts/run_sprint_demo.ps1
 ```
 
-The harness must load the board, place the component, wait the current single-preview settle time of 7 seconds, and capture screenshots. For multi-target GUI validation, use the app-owned target harness with a 5-second initial load wait and fast per-action waits around 800 ms, unless the specific feature requires a longer explicit wait.
+The harness must load the board, place the component, wait the current single-preview settle time of 7 seconds, and capture screenshots. For multi-target GUI validation, use the app-owned target harness with a 5-second initial load wait and fast per-action waits around 800 ms, unless the specific feature requires a longer explicit wait. We also have language servers setup.
 
 Intercept both `stdout` and `stderr`. Redirect errors into logs that are inspected by the agent, not merely saved and ignored. Underlying Qt crashes, warnings, failed widget lookups, missing assets, and rendering failures must be visible during verification.
 
@@ -73,7 +73,7 @@ Interact with the GUI through the live Qt6 GUI map feature already coded in the 
 
 During GUI validation, interact with at least 7 elements(if you are not aware of what changes u did, otherwise be specific to the feature/bug you solved). Space interactions by roughly 0.5 seconds unless the UI requires longer. The interaction set must include normal existing elements, newly coded or recently fixed elements, menus that open dialog boxes, and controls inside those dialog boxes. After opening a dialog, interact with relevant controls inside it, capture screenshots, then close the dialog cleanly after successful verification.
 
-Capture a screenshot after every interaction. Do not rely on a single final screenshot. The screenshot sequence must prove that the GUI remains alive, focused, visually correct, and responsive over time.
+Record every mapped interaction in the machine-readable action log, but capture screenshots only at visually meaningful checkpoints: the feature's before state, a distinct dialog/control state, the result after an asynchronous action completes, and the restored/final state. Do not save near-identical images for every click or keystroke. Add a screenshot only when it exposes a new state, regression, or feature-specific result that the existing checkpoints cannot prove. Inspect every retained screenshot.
 
 For any currently worked-on, newly coded, fixed, or patched feature, perform targeted interaction through the GUI map and capture screenshots before and after the feature-specific action. Small tests passing is not enough, because the final build may still crash or visually break after running for more than 20 seconds.
 
@@ -95,8 +95,7 @@ Build a short interaction plan around that feature/bug specifically — what seq
 
 Then execute:
 
-Interact with at least 7 elements total, spaced ~0.5s apart (longer if the UI needs it). This set must include: pre-existing unrelated elements (proving the app is generally alive), and the newly coded/fixed elements specifically, including opening any dialog involved and operating the controls inside it.
-Screenshot after every interaction — never rely on a single final screenshot. The sequence must show the target feature/bug in its "before" state, mid-interaction, and "after" state, not just a generic tour of the UI.
+Interact with at least 7 elements total, spaced ~0.5s apart (longer if the UI needs it). This set must include pre-existing elements that prove the app is alive and the newly coded/fixed elements, including opening relevant dialogs and operating their controls. Keep a machine-readable record for every interaction. Capture only distinct visual checkpoints: target before state, relevant dialog/control state, completed feature result, and cleanly restored final state. Capture intermediate states only when they prove behavior that cannot be inferred from adjacent checkpoints; never generate near-identical screenshots for every action.
 Intercept stdout/stderr into logs and actually inspect them for warnings, failed widget lookups, missing assets, or rendering failures tied to the touched area.
 
 Explicitly do not treat "the script ran and produced screenshots" as sufficient. The harness proves the app booted; it does not prove the feature works. Running the demo script's default steps without deliberately routing through the sprint's actual change is not valid verification — if the script's built-in flow happens not to touch the feature/bug in question, that's a gap to fill manually via the GUI map, not something to paper over with the script's default screenshots.

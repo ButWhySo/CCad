@@ -1,5 +1,9 @@
 # Implemented Features
 
+## Agent memory management outcomes (Sprint 975)
+
+The memory manager now reports add, update, delete, reset, and backend-error outcomes from the Python memory runtime to the GUI. The settings panel disables write controls while a mutation is pending, displays operation-specific success or safe error text, refreshes records only after authoritative success, rejects empty content visibly, and requires confirmation before deleting a selected record. Delete targets the record ID selected before the confirmation dialog, even if the active conversation changes while that dialog is open. Validation used an isolated profile. The mapped harness records every interaction but retains only distinct screenshots for dialogs and completed outcomes, avoiding redundant per-click captures.
+
 ## Provider status and failure categories
 
 Provider model discovery preserves OpenRouter `supported_parameters` and Cerebras' allowlisted capability flags and context limits. A catalog capability means the provider advertises that feature; it is not a live request test. Generic/local OpenAI-compatible servers and models without capability metadata remain explicitly unverified. Google `RESOURCE_EXHAUSTED` without structured quota/rate details is reported as `quota_or_rate_limit`, not falsely as payment or exhausted quota, and does not trigger an automatic retry.

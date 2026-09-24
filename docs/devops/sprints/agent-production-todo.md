@@ -6,6 +6,17 @@ Check a box only after implementation and its required evidence exist.
 
 Update this file in the same commit as each implementation slice.
 
+### Sprint 975 memory-management feedback
+
+- [x] Return authoritative add/update/delete/reset success and failure events to the settings UI.
+- [x] Keep memory controls disabled while writes are pending; refresh only after backend success and confirm destructive deletion.
+- [x] Preserve deletion of the specifically selected durable record across a thread switch during confirmation.
+- [x] Validate add/update/delete and empty-input rejection through mapped GUI actions against an isolated durable store.
+- [x] Log every mapped action; retain only distinct screenshots proving dialogs, operation results, confirmation, and restored UI.
+- [x] Fix GUI-map test fixture text accidentally rendered over the live menu bar.
+
+Remaining memory/context lifecycle and orchestration work below remains open.
+
 ### Sprint 974 active slice - reviewed durable-memory compaction
 
 - [x] Bound same-tier, same-namespace, same-scope durable-memory selection; reject secret-bearing sources and unsafe summaries.
@@ -1927,3 +1938,2690 @@ Before declaring the Agent UI complete, audit every interactive element.
   - [ ] fabricated `ok:true` responses.
   - [ ] fabricated completion prose.
 - [ ] Search the full Agent-related source tree for these patterns before the final parity gate.
+# Orchestration Runtime v2, Memory v2, Capability Discovery, and Multi-Agent Architecture
+
+This section extends the existing CCad Agent production TODO. It does not replace already verified Sprint 949–974 work.
+
+The implementation must evolve the current LangGraph/C++/Qt architecture incrementally. Do not introduce a second competing orchestration framework and do not rewrite functioning provider, tool-broker, approval, transaction, memory, or Langfuse contracts merely to resemble another framework.
+
+The architectural ideas below are derived from the useful patterns observed in current CCad, OpenAI Codex, Ruflo, LangGraph, and the earlier CCad orchestration design:
+
+- adaptive cyclic graph orchestration rather than a fixed linear chain;
+- capability discovery instead of exposing every tool/skill/agent on every turn;
+- durable thread/turn identity;
+- bounded specialist agents;
+- structured artifacts instead of shared mutable files or giant agent-to-agent chats;
+- complete conversation persistence separate from model-context compaction;
+- automatic but governed episodic-memory extraction;
+- lexical + semantic memory/tool/skill retrieval;
+- explicit retries, back-edges, replanning, partial invalidation, and resume;
+- immutable revisioned project snapshots;
+- staged batch mutation and one authoritative C++ commit path;
+- one Langfuse session per conversation and one Langfuse trace per root user turn;
+- deterministic budgets, permissions, loop detection, approval, validation, and transaction safety around all model-selected behavior.
+
+A parent task is complete only when all required subtasks are complete and their required tests/evidence exist.
+
+Do not check a parent while one of its required children remains open.
+
+A parent task and all of its completed children belong to the same logical implementation commit.
+
+---
+
+## Architecture invariants
+
+These are non-negotiable constraints for all work below.
+
+- [ ] Keep Python/LangGraph as the sole model reasoning, planning, routing, specialist-agent, skill-selection, memory-retrieval, and multi-agent orchestration owner.
+- [ ] Keep C++ core as the authoritative owner of project state, CAD operations, DRC/ERC, geometry/rules, staging, transactions, undo/revert, and authoritative mutation results.
+- [ ] Keep Qt as the native presentation and human-interaction layer.
+- [ ] Keep Langfuse as observability, not operational state.
+- [ ] Keep the Run Ledger as orchestration/run-state truth.
+- [ ] Keep the Project Kernel as CAD/design-state truth.
+- [ ] Keep the conversation store as human-visible thread-history truth.
+- [ ] Keep memory stores as learned-history/knowledge truth.
+- [ ] Never reconstruct authoritative run/project state from rendered chat prose.
+- [ ] Never let hidden Qt widgets become backend state containers.
+- [ ] Never let a specialist Agent directly commit authoritative project mutations.
+- [ ] Never allow memory, skills, plugins, MCP, or subagents to bypass ToolBroker/policy/approval/transaction boundaries.
+- [ ] Never allow model confidence or specialist consensus to override deterministic project validation.
+- [ ] Never expose fake capabilities, fake success, fake installation, fake traces, fake previews, fake memories, fake tools, fake agents, or fake verification.
+- [ ] Preserve existing verified provider/catalog/ToolBroker IPC contracts wherever possible.
+- [ ] Extend the current LangGraph graph incrementally rather than replacing it with a new external orchestration runtime.
+- [ ] Treat Ruflo/Codex techniques as architectural inspiration, not as dependencies that must be embedded into CCad.
+
+---
+
+# Adaptive cyclic orchestration graph
+
+## Parent task: replace fixed routing assumptions with a general adaptive decision loop
+
+The CCad runtime is a cyclic adaptive state graph, not a mandatory linear workflow.
+
+After every material observation, the root Orchestrator must be able to reconsider what happens next.
+
+### Required top-level behavior
+
+- [ ] Preserve the current LangGraph conditional-loop architecture as the migration base.
+- [ ] Replace hard-coded long-term `supervisor -> router/librarian` assumptions with one structured Orchestrator decision contract.
+- [ ] Keep current `router` and `librarian` nodes working during migration.
+- [ ] Register existing router/librarian behavior as capabilities before deleting any working path.
+- [ ] Do not require every turn to create a formal plan.
+- [ ] Do not require every turn to create a TaskGraph.
+- [ ] Do not require every turn to spawn a specialist.
+- [ ] Do not require every turn to run a Verifier Agent.
+- [ ] Allow simple requests to remain root-Agent-only.
+- [ ] Allow direct read-only tool use when the root Agent already knows the required capability.
+- [ ] Allow direct final response when no additional action is required.
+- [ ] Allow the root Orchestrator to change domains when new evidence changes its understanding of the task.
+- [ ] Allow repeated return to the Orchestrator after context, memory, tool, specialist, verification, approval revision, or failure observations.
+
+### Canonical high-level graph
+
+Implement behavior equivalent to:
+
+```mermaid
+flowchart TD
+    START([Root user turn]) --> INTAKE[Intake + turn state]
+    INTAKE --> O[Root Orchestrator]
+
+    O -->|enough information| FINAL[Finalizer]
+    O -->|need context| CTX[Context retrieval]
+    O -->|need memory| MEM[Memory retrieval]
+    O -->|unknown capability| DISC[Capability discovery]
+    O -->|known tool| TOOL[Tool execution]
+    O -->|delegate| AGENT[Specialist Agent]
+    O -->|complex dependent work| TASKS[TaskGraph]
+    O -->|need verification| VERIFY[Verification]
+    O -->|persistent change ready| STAGE[Stage proposal]
+    O -->|need human information| HUMAN[Ask user]
+
+    CTX --> O
+    MEM --> O
+    DISC --> O
+
+    TOOL --> OBS[Normalized observation]
+    OBS --> O
+
+    AGENT --> ART[Structured artifact]
+    ART --> O
+
+    TASKS --> ART
+
+    VERIFY -->|more work| O
+    VERIFY -->|read-only done| FINAL
+    VERIFY -->|mutation candidate| STAGE
+
+    STAGE --> REVIEW[Human review]
+    REVIEW -->|revise| O
+    REVIEW -->|reject| FINAL
+    REVIEW -->|cancel| FINAL
+    REVIEW -->|approve| COMMIT[C++ atomic transaction]
+
+    COMMIT --> POST[Post-commit verification]
+    POST -->|recoverable failure| O
+    POST -->|success| FINAL
+
+    HUMAN --> O
+    FINAL --> END([Turn terminal state])
+```
+
+- [ ] Document this as a graph of possible transitions, not a workflow that every turn traverses.
+- [ ] Keep runtime transition predicates explicit and testable.
+- [ ] Ensure new tool/skill/agent capabilities can be added without adding a bespoke top-level graph branch for each capability.
+
+---
+
+## Parent task: structured Orchestrator decisions
+
+### Decision schema
+
+- [ ] Introduce a typed `NextAction` or equivalent decision object.
+- [ ] Give every decision a stable decision ID.
+- [ ] Include decision kind.
+- [ ] Include optional target capability/tool/agent/task.
+- [ ] Include structured arguments.
+- [ ] Include safe rationale summary suitable for audit/debugging.
+- [ ] Include required artifact/context references.
+- [ ] Include expected output type.
+- [ ] Include retry/replan lineage when applicable.
+- [ ] Validate every decision before executing it.
+
+Support decision kinds equivalent to:
+
+- [ ] `respond`.
+- [ ] `retrieve_context`.
+- [ ] `retrieve_memory`.
+- [ ] `discover_capability`.
+- [ ] `invoke_tool`.
+- [ ] `delegate`.
+- [ ] `create_task_graph`.
+- [ ] `continue_task_graph`.
+- [ ] `verify`.
+- [ ] `stage_change`.
+- [ ] `request_human_input`.
+- [ ] `retry`.
+- [ ] `replan`.
+- [ ] `finish`.
+- [ ] `fail`.
+
+### Deterministic runtime enforcement
+
+- [ ] The model chooses desired semantic next action.
+- [ ] The runtime validates whether that transition is legal.
+- [ ] The runtime rejects unknown decision kinds.
+- [ ] The runtime rejects unknown capability IDs.
+- [ ] The runtime rejects disallowed tools for the current Agent.
+- [ ] The runtime rejects mutation outside the staging/approval path.
+- [ ] The runtime rejects stale-revision operations.
+- [ ] The runtime rejects budget-exceeded actions.
+- [ ] The runtime rejects recursion/spawn-depth violations.
+- [ ] The runtime rejects invalid task dependencies.
+- [ ] The runtime reports rejection back to the Orchestrator as a structured observation rather than silently changing behavior.
+
+---
+
+# Back-edges, retries, replanning, and cycles
+
+## Parent task: make back-edges first-class
+
+The graph must support controlled cyclic execution.
+
+Do not model every backwards transition as the same generic retry.
+
+### Retry
+
+Use retry only when the operation itself is still appropriate and failure appears transient.
+
+Examples:
+
+- provider timeout;
+- temporary connection failure;
+- retryable MCP transport error;
+- bounded provider 429 according to retry policy.
+
+- [ ] Add typed retry reason.
+- [ ] Add retry counter.
+- [ ] Add retry delay/backoff metadata.
+- [ ] Add maximum retries per action.
+- [ ] Preserve action lineage.
+- [ ] Do not retry deterministic validation/schema/policy failures unchanged.
+
+### Correction loop
+
+A correction loop occurs when an action executed but its result failed verification.
+
+Example:
+
+`candidate route -> staged DRC failure -> modify candidate route`.
+
+- [ ] Distinguish correction from provider/tool retry.
+- [ ] Preserve valid context/evidence.
+- [ ] Invalidate only artifacts derived from the invalid candidate.
+- [ ] Send structured verification failures back to the planning Agent.
+- [ ] Require a materially changed candidate before restaging after repeated identical failure.
+
+### Replan
+
+A replan occurs when newly observed evidence invalidates assumptions or the current approach.
+
+- [ ] Add explicit replan transition.
+- [ ] Record why prior plan/task subtree was invalidated.
+- [ ] Preserve still-valid evidence/artifacts.
+- [ ] Mark obsolete tasks/artifacts superseded rather than silently deleting history.
+- [ ] Allow replan to select a completely different domain/capability.
+- [ ] Allow PCB work to trigger schematic investigation.
+- [ ] Allow schematic work to trigger PCB investigation.
+- [ ] Allow missing library/data evidence to trigger Library/Datasheet Agent work.
+- [ ] Allow verification failures to route back to any relevant capability, not only the immediately previous node.
+
+### Human revision loop
+
+- [ ] Treat Revise as a graph back-edge, not a completely unrelated new run.
+- [ ] Preserve originating thread ID.
+- [ ] Preserve originating turn/trace relationship according to the existing trace-continuity policy.
+- [ ] Preserve base project revision unless it has become stale.
+- [ ] Preserve accepted constraints/artifacts.
+- [ ] Invalidate only proposal/candidate parts affected by revision feedback.
+- [ ] Generate a new proposal version/ID after revision.
+
+---
+
+## Parent task: checkpointed jumps and partial re-execution
+
+Do not allow unrestricted arbitrary goto.
+
+Use typed checkpoints and dependency invalidation.
+
+### Checkpoint classes
+
+Support material checkpoints equivalent to:
+
+- [ ] `turn_started`.
+- [ ] `context_ready`.
+- [ ] `inspection_complete`.
+- [ ] `task_graph_ready`.
+- [ ] `candidate_ready`.
+- [ ] `staging_complete`.
+- [ ] `verification_complete`.
+- [ ] `proposal_ready`.
+- [ ] `approval_wait`.
+- [ ] `transaction_committed`.
+- [ ] `post_verification_complete`.
+
+### Resume/jump behavior
+
+- [ ] Give material checkpoints stable IDs.
+- [ ] Record their dependency/artifact set.
+- [ ] Allow resume from a valid checkpoint.
+- [ ] Prevent resume when its base project revision is stale unless a supported deterministic rebase exists.
+- [ ] Compute downstream invalidation from changed dependencies.
+- [ ] Preserve unaffected upstream artifacts.
+- [ ] Do not rerun expensive inspection/context work unnecessarily after a local revision.
+- [ ] Re-run all validation affected by changed candidate operations.
+- [ ] Never skip mandatory safety/approval/verification merely because execution resumed from a later checkpoint.
+
+---
+
+# Loop detection and bounded execution
+
+## Parent task: deterministic run budgets
+
+### Root-turn budgets
+
+- [ ] Maximum provider/model calls.
+- [ ] Maximum tool calls.
+- [ ] Maximum total tokens.
+- [ ] Maximum total wall time.
+- [ ] Maximum retries.
+- [ ] Maximum replans.
+- [ ] Maximum specialist Agents.
+- [ ] Maximum concurrent Agents.
+- [ ] Maximum Agent spawn depth.
+- [ ] Maximum TaskGraph nodes.
+- [ ] Maximum repeated identical failure count.
+
+### Per-Agent budgets
+
+- [ ] Provider/model-call budget.
+- [ ] Tool-call budget.
+- [ ] Token budget.
+- [ ] Wall-time budget.
+- [ ] Specialist delegation budget.
+- [ ] Retry budget.
+
+### Failure fingerprinting
+
+- [ ] Normalize and fingerprint:
+  - [ ] task ID/type.
+  - [ ] Agent ID.
+  - [ ] tool/method.
+  - [ ] normalized arguments.
+  - [ ] failure category.
+  - [ ] project revision.
+- [ ] Detect repeated identical failures.
+- [ ] Detect repeated equivalent candidate generation.
+- [ ] Detect circular Agent delegation.
+- [ ] Detect circular TaskGraph dependencies.
+- [ ] Detect no-progress execution.
+- [ ] Detect repeated stale-state execution.
+- [ ] On loop detection, require replan, escalation, human input, or terminal failure.
+- [ ] Do not silently continue consuming provider quota after loop detection.
+- [ ] Add deterministic tests proving loops terminate inside configured bounds.
+
+---
+
+# Optional TaskGraph execution
+
+## Parent task: TaskGraph as an optional Orchestrator capability
+
+A TaskGraph is useful for complex work but is not the universal execution model.
+
+### Task schema
+
+- [ ] Stable task ID.
+- [ ] Parent task ID where nested.
+- [ ] Root run/turn ID.
+- [ ] Description/goal.
+- [ ] Required capabilities.
+- [ ] Input artifact references.
+- [ ] Output artifact schema.
+- [ ] Dependency IDs.
+- [ ] State.
+- [ ] Assigned Agent where applicable.
+- [ ] Budget.
+- [ ] Project revision dependency.
+- [ ] Retry/replan lineage.
+- [ ] Created/started/finished timestamps.
+- [ ] Failure category.
+
+### Task states
+
+Support:
+
+- [ ] pending.
+- [ ] ready.
+- [ ] running.
+- [ ] waiting.
+- [ ] blocked.
+- [ ] completed.
+- [ ] failed.
+- [ ] cancelled.
+- [ ] superseded.
+
+### Nested tasks
+
+- [ ] Allow a parent task to contain bounded subtasks.
+- [ ] Allow subtasks to depend on sibling tasks.
+- [ ] Aggregate child completion into parent state deterministically.
+- [ ] Parent task cannot become completed while required child tasks remain incomplete.
+- [ ] A task may dynamically request additional subtasks if new evidence justifies them.
+- [ ] Newly added tasks must still obey root budgets and dependency validation.
+
+### Parallel execution
+
+- [ ] Run independent read-only tasks in parallel where safe.
+- [ ] Join on explicit dependency barriers.
+- [ ] Do not parallelize operations that depend on a previous mutation/stage result.
+- [ ] Do not allow parallel live project mutations.
+- [ ] Record parallel branches separately in Run Ledger and Langfuse.
+
+---
+
+# Capability Registry and dynamic discovery
+
+## Parent task: create one searchable capability layer
+
+A capability may be:
+
+- tool;
+- skill;
+- specialist Agent;
+- MCP capability;
+- plugin capability;
+- workflow capability.
+
+### Capability Registry
+
+- [ ] Add a read-only derived `CapabilityRegistry`.
+- [ ] Build it from authoritative underlying registries rather than duplicating definitions.
+- [ ] Index Tool Registry.
+- [ ] Index Skill Registry.
+- [ ] Index Agent Registry.
+- [ ] Index MCP-discovered capabilities.
+- [ ] Index verified Plugin Registry.
+- [ ] Index verified Workflow Registry where useful.
+- [ ] Give every capability a stable ID.
+- [ ] Give every capability a kind.
+- [ ] Add short description.
+- [ ] Add domain.
+- [ ] Add capability tags/keywords.
+- [ ] Add side-effect classification.
+- [ ] Add required context.
+- [ ] Add required permissions.
+- [ ] Add availability/readiness state.
+- [ ] Add version/source.
+- [ ] Add expected input/output types.
+
+### Capability discovery
+
+- [ ] Add model/runtime `capability.search`.
+- [ ] Search lexical metadata.
+- [ ] Add semantic search when embedding backend is operational.
+- [ ] Return bounded top-N candidates.
+- [ ] Return type and safe summary rather than dumping complete detailed schemas.
+- [ ] Require a second selection/load step before exposing large tool/skill definitions where appropriate.
+- [ ] Never return unavailable/stub capabilities as executable.
+
+---
+
+# Progressive tool disclosure
+
+## Parent task: separate Tool Registry from TurnToolSet
+
+### Authoritative Tool Registry
+
+- [ ] Preserve one canonical executable registry.
+- [ ] Keep native C++ method ID authoritative.
+- [ ] Keep JSON schema.
+- [ ] Keep validation.
+- [ ] Keep side-effect class.
+- [ ] Keep approval requirement.
+- [ ] Keep context needs.
+- [ ] Keep result schema.
+- [ ] Keep runtime availability.
+- [ ] Keep authoritative broker dispatch.
+
+### Tool exposure classes
+
+Add:
+
+- [ ] eager.
+- [ ] deferred.
+- [ ] internal/hidden.
+
+### TurnToolSet
+
+- [ ] Build a bounded provider-visible tool set per generation/step.
+- [ ] Preselect obvious tools using domain/task/workflow/editor signals.
+- [ ] Keep capability/tool search available when the required capability is unknown.
+- [ ] Bind full JSON schemas only for currently selected tools.
+- [ ] Do not send the complete CCad tool surface on every provider request.
+- [ ] Keep execution possible only through the authoritative Tool Registry/ToolBroker.
+- [ ] Tool discovery never itself grants execution permission.
+- [ ] Re-run ToolBroker/policy validation at execution.
+
+### Tool search
+
+- [ ] Use BM25/FTS lexical tool search.
+- [ ] Add optional semantic tool search.
+- [ ] Rank using domain/task relevance.
+- [ ] Boost capabilities matching active PCB/schematic context.
+- [ ] Boost workflow-required capabilities.
+- [ ] Preserve deterministic side-effect/policy filtering before final exposure.
+- [ ] Measure provider tool-schema token reduction.
+- [ ] Measure tool-selection accuracy.
+- [ ] Add regression tests for tools that should and should not be exposed for representative prompts.
+
+---
+
+# Progressive skill disclosure
+
+## Parent task: separate Agent, Skill, and Tool concepts
+
+The definitions are:
+
+`Agent = reasoning role`
+
+`Skill = procedural/domain guidance`
+
+`Tool = executable capability`
+
+### Skill Registry
+
+- [ ] Stable skill ID.
+- [ ] Name.
+- [ ] Short descriptor.
+- [ ] Full procedural content.
+- [ ] Version.
+- [ ] Source.
+- [ ] Domain.
+- [ ] Required context.
+- [ ] Required capabilities/tools.
+- [ ] Applicability rules.
+- [ ] Trust level.
+- [ ] Enabled/disabled state.
+
+### Progressive loading
+
+- [ ] Expose only compact skill descriptors during initial routing.
+- [ ] Select skills with deterministic lexical search first.
+- [ ] Add optional semantic skill retrieval.
+- [ ] Load full procedural skill instructions only after selection.
+- [ ] Prevent loaded skills from being automatically learned into episodic memory as user preferences.
+- [ ] Validate required tools before skill activation.
+- [ ] Keep skills incapable of bypassing normal policies.
+- [ ] Add skill provenance to Langfuse/Run Ledger when used.
+
+---
+
+# Agent Registry and specialist Agents
+
+## Parent task: bounded Agent Registry
+
+### Agent descriptor
+
+- [ ] Stable Agent ID.
+- [ ] Role/capability description.
+- [ ] Allowed domains.
+- [ ] Allowed ToolSet/capability families.
+- [ ] Allowed side-effect ceiling.
+- [ ] Required context projection.
+- [ ] Available skills.
+- [ ] Default model-routing policy.
+- [ ] Input artifact schemas.
+- [ ] Output artifact schemas.
+- [ ] Spawn eligibility.
+- [ ] Maximum nested spawn permission.
+
+### Initial specialist set
+
+Do not create dozens of decorative Agents.
+
+Start with verified roles:
+
+- [ ] Root Orchestrator/Supervisor.
+- [ ] Context Librarian.
+- [ ] PCB Inspector.
+- [ ] Schematic Inspector.
+- [ ] Rules/DRC/ERC Analyst where distinct specialization proves useful.
+- [ ] Library/Datasheet Analyst.
+- [ ] Routing Planner.
+- [ ] Placement Planner.
+- [ ] Design/Manufacturability Reviewer.
+- [ ] Verifier.
+
+### Specialist behavior
+
+- [ ] Specialists receive scoped task + scoped context.
+- [ ] Specialists do not automatically receive entire parent conversation history.
+- [ ] Specialists do not automatically receive all memory.
+- [ ] Specialists do not automatically receive all tools.
+- [ ] Specialists may request more permitted context.
+- [ ] Specialists may request capability discovery.
+- [ ] Specialists may invoke allowed read-only/calculation/staging tools.
+- [ ] Specialists return structured artifacts.
+- [ ] Specialists cannot directly commit authoritative project mutations.
+- [ ] Specialists cannot independently write global user preference memories.
+- [ ] Specialists may submit memory candidates/evidence to the memory subsystem.
+
+---
+
+# Subagent lifecycle and spawn control
+
+## Parent task: safe bounded multi-agent execution
+
+### Spawn reservation
+
+- [ ] Reserve Agent slot before spawning.
+- [ ] Reject spawn when total/concurrent limits are exhausted.
+- [ ] Track parent Agent.
+- [ ] Track child Agent.
+- [ ] Track task assignment.
+- [ ] Track spawn depth.
+- [ ] Prevent duplicate active task paths where inappropriate.
+- [ ] Release reservation after completion/failure/cancel.
+- [ ] Recover leaked reservation after abnormal termination.
+
+### Agent lifecycle
+
+Support:
+
+- [ ] spawn.
+- [ ] run.
+- [ ] publish artifact.
+- [ ] wait.
+- [ ] message through structured channel where required.
+- [ ] interrupt.
+- [ ] cancel.
+- [ ] close.
+- [ ] follow-up task.
+- [ ] status/list.
+
+### Communication
+
+- [ ] Prefer structured artifacts over arbitrary free-form Agent-to-Agent conversations.
+- [ ] Allow bounded structured messages only when direct coordination is necessary.
+- [ ] Never rely on shared mutable filesystem files as primary communication.
+- [ ] Never use full shared conversational history as the default multi-agent coordination mechanism.
+
+---
+
+# Run Blackboard and Artifact Store
+
+## Parent task: structured shared run state
+
+### Blackboard
+
+Create a run-scoped blackboard containing references to:
+
+- [ ] goal.
+- [ ] constraints.
+- [ ] task graph.
+- [ ] findings.
+- [ ] evidence.
+- [ ] candidate plans.
+- [ ] candidate operations.
+- [ ] verification results.
+- [ ] questions.
+- [ ] proposal references.
+- [ ] approval references.
+- [ ] transaction references.
+- [ ] failure/retry/replan history.
+
+### Artifact base metadata
+
+Every artifact must include:
+
+- [ ] artifact ID.
+- [ ] kind/schema version.
+- [ ] producer Agent.
+- [ ] producer task.
+- [ ] run ID.
+- [ ] thread/turn ID.
+- [ ] base project revision where relevant.
+- [ ] creation timestamp.
+- [ ] provenance/source references.
+- [ ] validity/stale state.
+- [ ] content hash where useful.
+
+### Required artifact types
+
+- [ ] Finding.
+- [ ] Evidence.
+- [ ] Constraint.
+- [ ] Question.
+- [ ] CandidatePlan.
+- [ ] CandidateOperation.
+- [ ] CandidateChangeSet.
+- [ ] VerificationResult.
+- [ ] ToolEvidence.
+- [ ] MemoryCandidate.
+- [ ] ExternalArtifactReference.
+
+### Large artifacts
+
+- [ ] Store large data once in an artifact store.
+- [ ] Put artifact references on the Blackboard.
+- [ ] Let Agents retrieve detailed content on demand.
+- [ ] Do not copy large project snapshots/tool output into every Agent context.
+- [ ] Bound artifact read size.
+- [ ] Redact artifacts before provider exposure according to data policy.
+
+---
+
+# Immutable project snapshots and multi-agent file safety
+
+## Parent task: prohibit concurrent authoritative file mutation
+
+- [ ] Every specialist working on CAD state binds to an immutable base project revision.
+- [ ] Use typed project/context queries rather than agents independently opening/editing project files where native access exists.
+- [ ] Do not let two Agents concurrently write the same project files.
+- [ ] Do not use text-file merge semantics for PCB/schematic collaboration.
+- [ ] Do not expose half-written files to sibling Agents.
+- [ ] All persistent CAD mutation passes through one staged C++ transaction path.
+- [ ] Mark artifacts stale if their base revision no longer matches the authoritative project.
+
+### External-tool isolated workspaces
+
+Only create physical task workspaces when an external tool genuinely requires files.
+
+- [ ] Create per-run/task temporary workspace.
+- [ ] Copy/materialize only required inputs.
+- [ ] Keep authoritative project unchanged.
+- [ ] Do not inherit unnecessary secrets/environment variables.
+- [ ] Bound filesystem access.
+- [ ] Bound process duration.
+- [ ] Bound output size.
+- [ ] Import outputs as typed artifacts.
+- [ ] Validate imported results before using them in project staging.
+- [ ] Clean up temporary workspace according to policy.
+
+---
+
+# Batch editing and CandidateChangeSet
+
+## Parent task: restore/implement first-class batch editing
+
+A coherent engineering change should normally be staged and reviewed as one logical batch rather than several independent live mutations.
+
+### CandidateChangeSet
+
+- [ ] Stable change-set ID.
+- [ ] Base project revision.
+- [ ] Producer task/Agent.
+- [ ] Ordered typed operation list.
+- [ ] Dependencies between operations where necessary.
+- [ ] Affected object IDs.
+- [ ] Affected nets.
+- [ ] Affected layers.
+- [ ] Affected regions.
+- [ ] Engineering intent/reason.
+- [ ] Required verification set.
+- [ ] Provenance.
+
+### Batch staging
+
+- [ ] Clone/stage from one immutable base revision.
+- [ ] Apply the entire candidate batch to staged state.
+- [ ] Validate individual operations.
+- [ ] Validate interactions among operations.
+- [ ] Run required DRC/ERC/connectivity/rule checks against the complete staged batch.
+- [ ] Compute one ProjectDiff from base to staged result.
+- [ ] Build one reviewable proposal.
+- [ ] Never apply individual batch members live before approval.
+
+### Partial revision
+
+- [ ] Give each operation stable operation ID.
+- [ ] Let review select specific operations/objects for revision.
+- [ ] Preserve explicitly accepted candidate operations where still valid.
+- [ ] Replace/revise selected candidate operations.
+- [ ] Rebuild the resulting complete candidate batch.
+- [ ] Restage the complete resulting batch.
+- [ ] Re-run all affected verification.
+- [ ] Never assume retained operations remain valid after another operation changes.
+
+### Partial approval
+
+- [ ] Do not commit arbitrary unchecked subsets directly from old staged state.
+- [ ] If product permits partial acceptance, derive a fresh CandidateChangeSet containing the accepted subset.
+- [ ] Restage and reverify that new set.
+- [ ] Present the exact resulting set before final commit when required by approval policy.
+
+---
+
+# Multi-agent candidate generation and semantic conflict detection
+
+## Parent task: safe combination of parallel candidate work
+
+### Independent candidates
+
+- [ ] Allow multiple Agents to propose competing CandidateChangeSets from the same base revision.
+- [ ] Stage candidates independently.
+- [ ] Compare deterministic metrics.
+- [ ] Never merge their project files.
+
+### Candidate scoring
+
+Where applicable record:
+
+- [ ] DRC/ERC result.
+- [ ] connectivity correctness.
+- [ ] route length.
+- [ ] via count.
+- [ ] clearance.
+- [ ] congestion.
+- [ ] layer usage.
+- [ ] keepout/rule compliance.
+- [ ] affected-object count.
+- [ ] user constraints.
+- [ ] engineering intent satisfaction.
+
+### Semantic conflict detection
+
+Before combining candidate sets check:
+
+- [ ] same object overlap.
+- [ ] same net overlap.
+- [ ] spatial/region overlap.
+- [ ] component dependencies.
+- [ ] zone dependencies.
+- [ ] keepout dependencies.
+- [ ] global rule/settings dependencies.
+- [ ] stackup dependencies.
+- [ ] shared schematic connectivity dependencies.
+
+### Combination
+
+- [ ] Combine only where policy allows.
+- [ ] Build a new combined CandidateChangeSet.
+- [ ] Restage from the same authoritative base.
+- [ ] Re-run complete verification.
+- [ ] Do not treat separately valid candidates as automatically valid when combined.
+
+---
+
+# Run Ledger
+
+## Parent task: create one orchestration source of truth
+
+### Run record
+
+- [ ] Root run ID.
+- [ ] durable thread ID.
+- [ ] turn ID.
+- [ ] Langfuse trace ID/reference.
+- [ ] user goal.
+- [ ] normalized intent.
+- [ ] project base revision.
+- [ ] TaskGraph.
+- [ ] Agents.
+- [ ] decisions.
+- [ ] artifacts.
+- [ ] tool calls/results.
+- [ ] retries.
+- [ ] replans.
+- [ ] proposal IDs.
+- [ ] approval states.
+- [ ] transaction IDs.
+- [ ] verification results.
+- [ ] budget usage.
+- [ ] terminal state.
+- [ ] failure category.
+- [ ] timestamps.
+
+### Run Ledger rules
+
+- [ ] Chat UI reads presentation state derived from Run Ledger/runtime events.
+- [ ] Qt widgets do not become run state.
+- [ ] Langfuse may mirror Run Ledger events but is never required to reconstruct execution.
+- [ ] Persist enough state for safe approval/checkpoint resume.
+- [ ] Keep sensitive content out of ledger fields that do not require it.
+- [ ] Add migration/versioning for persisted run records.
+
+---
+
+# Context projections for multiple Agents
+
+## Parent task: per-Agent context views
+
+- [ ] Define context projection policy by Agent capability.
+- [ ] Root Agent receives broad but bounded turn context.
+- [ ] PCB Agent receives relevant PCB state, region, nets, rules, findings, and task.
+- [ ] Schematic Agent receives relevant symbols/wires/connectivity/ERC/task.
+- [ ] Library Agent receives relevant component identifiers/datasheet/library evidence.
+- [ ] Verifier receives goal, constraints, proposed diff, deterministic evidence, and relevant findings rather than planner scratch history.
+- [ ] Do not automatically pass every previous Agent message into every specialist.
+- [ ] Pass artifact references instead of large payloads where practical.
+- [ ] Allow an Agent to request additional permitted context if initial projection is insufficient.
+- [ ] Account context/token usage per Agent.
+- [ ] Record projection metadata in Langfuse without raw sensitive contents by default.
+
+---
+
+# Conversation-first Memory v2
+
+## Parent task: preserve existing Sprint 970–974 work while correcting product semantics
+
+Product definitions:
+
+`Working Memory = temporary task-specific scratch state`
+
+`STM = complete current conversation/thread transcript`
+
+`LTM = durable archive/index of all thread transcripts`
+
+`Episodic Memory = distilled important reusable knowledge`
+
+### Existing STM migration
+
+- [ ] Rename current task-scoped process-only STM implementation to Working Memory / Task Scratchpad.
+- [ ] Preserve existing `/task` functionality.
+- [ ] Preserve existing task-scope bounds.
+- [ ] Migrate config/state safely.
+- [ ] Do not silently present task scratchpad as complete conversation STM.
+
+### Canonical conversation store
+
+- [ ] Add durable thread store.
+- [ ] Persist complete chronological user-visible conversation events.
+- [ ] Keep thread IDs stable across resume.
+- [ ] Keep turn IDs stable.
+- [ ] Keep tool/approval/transaction references where required to reconstruct chat.
+- [ ] Do not store private chain-of-thought.
+- [ ] Redact secrets before persistence.
+- [ ] Current active thread becomes STM.
+- [ ] All persisted threads collectively form LTM archive/index.
+- [ ] Do not physically duplicate the same transcript into separate STM and LTM copies.
+
+### Compaction separation
+
+- [ ] Keep full canonical transcript intact after `/cc`.
+- [ ] Compact only the model-facing context/checkpoint projection.
+- [ ] Keep recent messages verbatim as required by compaction policy.
+- [ ] Keep summaries linked to the source message range they summarize.
+- [ ] Reopening History must show the complete transcript, not only compacted summary.
+- [ ] Provider context may remain compact while human-visible transcript remains complete.
+
+---
+
+# Automatic episodic-memory generation
+
+## Parent task: separate memory use from memory generation
+
+### User controls
+
+- [ ] `Use memories`.
+- [ ] `Generate memories`.
+- [ ] `Memory summary`.
+- [ ] `Manage memories`.
+- [ ] `Reset memories`.
+
+### Semantics
+
+- [ ] `Use memories=off` stops future retrieval/injection but preserves stored memory.
+- [ ] `Generate memories=off` stops new automatic extraction but preserves existing memory.
+- [ ] Allow `Use=on, Generate=off`.
+- [ ] Allow `Use=off, Generate=on`.
+- [ ] Manual memory CRUD remains available independently.
+
+---
+
+## Parent task: per-thread background memory extraction
+
+Borrow the useful Codex pattern without coupling to Codex internals.
+
+- [ ] Process eligible completed/idle root threads.
+- [ ] Exclude ephemeral/no-memory threads.
+- [ ] Claim jobs atomically.
+- [ ] Prevent duplicate concurrent processing.
+- [ ] Bound job count.
+- [ ] Bound extraction concurrency.
+- [ ] Add retry/backoff.
+- [ ] Record success/no-memory/failure states.
+- [ ] Use no mutation tools.
+- [ ] Use no project-write capability.
+- [ ] Apply provider/quota policy.
+- [ ] Support dedicated memory-extraction model/configuration.
+- [ ] Redact input before provider call.
+- [ ] Trace safely in Langfuse.
+
+### Extraction priorities
+
+- [ ] Explicit user preferences.
+- [ ] User corrections.
+- [ ] stable user constraints.
+- [ ] important project decisions.
+- [ ] verified recurring project conventions.
+- [ ] reusable workflow lessons.
+- [ ] meaningful failures worth avoiding.
+- [ ] unresolved important issues.
+
+### Things that must not become user memory automatically
+
+- [ ] one-off request unless explicitly scoped durably.
+- [ ] system prompt.
+- [ ] developer instructions.
+- [ ] AGENTS instructions.
+- [ ] loaded skill text.
+- [ ] tool schema.
+- [ ] MCP description.
+- [ ] retrieved memory text.
+- [ ] subagent speculation.
+- [ ] unsupported assistant inference.
+- [ ] credentials/secrets.
+
+---
+
+# Episodic memory schema and write gate
+
+## Parent task: typed provenance-bearing memory
+
+### Memory schema
+
+- [ ] memory ID.
+- [ ] kind.
+- [ ] scope.
+- [ ] content.
+- [ ] importance.
+- [ ] confidence.
+- [ ] explicit-user-evidence flag.
+- [ ] source thread IDs.
+- [ ] source turn/event IDs.
+- [ ] source evidence class.
+- [ ] created timestamp.
+- [ ] updated timestamp.
+- [ ] last used.
+- [ ] last verified.
+- [ ] embedding model/version where applicable.
+- [ ] expiry/decay.
+- [ ] supersedes.
+- [ ] contradictions.
+- [ ] active/superseded/deleted state.
+- [ ] auto-generated vs user-authored/pinned.
+
+### Write gate
+
+- [ ] Validate authorized namespace/scope.
+- [ ] Prevent specialist Agents from directly writing global user preferences.
+- [ ] Detect exact duplicate.
+- [ ] Detect semantic near-duplicate.
+- [ ] Detect contradiction.
+- [ ] Preserve contradictory evidence.
+- [ ] Require explicit supersession for correction.
+- [ ] Bound automatic writes per extraction run.
+- [ ] Apply kind-specific TTL/decay.
+- [ ] Require provenance.
+- [ ] Apply secret rejection/redaction.
+- [ ] Never let similarity/confidence override security/scope policy.
+
+---
+
+# Global memory consolidation
+
+## Parent task: second-stage memory distillation
+
+- [ ] Run separately from per-thread extraction.
+- [ ] Serialize global consolidation.
+- [ ] Bound source candidate set.
+- [ ] Consider importance.
+- [ ] Consider explicitness of user evidence.
+- [ ] Consider repeated independent support.
+- [ ] Consider recency.
+- [ ] Consider usage.
+- [ ] Consider contradictions.
+- [ ] Consider supersession.
+- [ ] Keep project-specific facts project-scoped.
+- [ ] Promote global user preference only with appropriate evidence.
+- [ ] Prevent stale evidence from resurrecting corrected memories.
+- [ ] Produce bounded user-facing Memory Summary.
+- [ ] Preserve detailed provenance outside the summary.
+- [ ] Leave previous valid memory intact if consolidation fails.
+
+---
+
+# Hybrid semantic + lexical memory retrieval
+
+## Parent task: replace simple overlap ranking with bounded hybrid retrieval
+
+### Lexical
+
+- [ ] Add actual BM25/FTS retrieval.
+- [ ] Index episodic memory.
+- [ ] Index compact thread summaries.
+- [ ] Index relevant project-memory summaries.
+
+### Semantic
+
+- [ ] Add pluggable embedding backend.
+- [ ] Support explicit readiness state.
+- [ ] Never silently perform paid embedding calls.
+- [ ] Never silently download a large model.
+- [ ] Persist embedding model/version.
+- [ ] Invalidate/rebuild incompatible embeddings after model change.
+- [ ] Keep lexical-only fallback fully functional.
+
+### Ranking
+
+- [ ] Hard-filter scope/authorization first.
+- [ ] Filter inactive/deleted/expired memory.
+- [ ] Retrieve BM25 candidates.
+- [ ] Retrieve semantic candidates.
+- [ ] Fuse rankings with documented deterministic method such as RRF.
+- [ ] Add bounded importance/recency/usage adjustments.
+- [ ] Apply MMR/equivalent diversity selection.
+- [ ] Optional cross-encoder rerank only when actually installed/operational.
+- [ ] Bound every stage.
+- [ ] Bound final memory context by token budget.
+- [ ] Return provenance/rank metadata for debugging.
+
+### Historical conversation search
+
+- [ ] Search thread summaries before opening complete historical transcripts.
+- [ ] Retrieve relevant turns/chunks from a past thread only when needed.
+- [ ] Preserve exact source thread/turn pointers.
+- [ ] Stop when relevance is insufficient rather than filling context with weak matches.
+
+---
+
+# Memory Explorer
+
+## Parent task: native user-manageable memory UI
+
+- [ ] Add Memory Summary.
+- [ ] Add Manage action.
+- [ ] Add native Memory Explorer.
+- [ ] Add search.
+- [ ] Add kind filter.
+- [ ] Add scope filter.
+- [ ] Add Global/User filter.
+- [ ] Add Project filter.
+- [ ] Add active/superseded/deleted status.
+- [ ] Add provenance/source conversation.
+- [ ] Add `Why was this saved?`.
+- [ ] Add created/updated/last-used information.
+- [ ] Add Edit.
+- [ ] Add Forget/Delete.
+- [ ] Add Pin/Protect where supported.
+- [ ] Add Disable without delete where useful.
+- [ ] Add open source conversation.
+- [ ] Add reset by scope.
+- [ ] Require destructive confirmation.
+- [ ] Apply memory edits to runtime retrieval state without application restart.
+- [ ] Prevent stale consolidation from recreating explicitly forgotten/corrected memory.
+
+---
+
+# Evidence reconciliation and verification
+
+## Parent task: deterministic evidence beats model opinion
+
+Adopt precedence broadly equivalent to:
+
+`authoritative native project/validator result > verified external source > structured specialist evidence > model inference`
+
+- [ ] Record evidence source/type.
+- [ ] Do not resolve deterministic DRC disagreement by Agent vote.
+- [ ] Do not resolve project-state disagreement by Agent vote.
+- [ ] Query current native project state where inexpensive.
+- [ ] Treat model confidence only as metadata.
+- [ ] Preserve disagreement artifacts for debugging when useful.
+
+---
+
+## Parent task: dedicated Verifier Agent for complex work
+
+- [ ] Verifier receives goal.
+- [ ] Verifier receives constraints.
+- [ ] Verifier receives candidate ProjectDiff.
+- [ ] Verifier receives deterministic DRC/ERC/connectivity/rule evidence.
+- [ ] Verifier receives relevant structured specialist findings.
+- [ ] Verifier does not require full hidden planner transcript.
+- [ ] Verifier may identify missing evidence.
+- [ ] Verifier may request another inspection/replan.
+- [ ] Verifier cannot override deterministic validator failure.
+- [ ] Verifier is optional for simple read-only requests.
+- [ ] Verifier usage is budgeted.
+
+---
+
+# Model routing evolution
+
+## Parent task: deterministic model eligibility before learned routing
+
+- [ ] Respect explicit user-selected provider/model unless auto-routing is enabled.
+- [ ] Record task requirements.
+- [ ] Record tool-calling requirement.
+- [ ] Record context-window requirement.
+- [ ] Record vision/multimodal requirement.
+- [ ] Record reasoning requirement.
+- [ ] Record latency/cost preference.
+- [ ] Record provider health.
+- [ ] Filter models lacking required capabilities.
+- [ ] Do not route to an incompatible model because it is cheaper/faster.
+
+### Outcome collection
+
+Record by task class:
+
+- [ ] model/provider.
+- [ ] success/failure.
+- [ ] latency.
+- [ ] tokens.
+- [ ] cost.
+- [ ] retries.
+- [ ] user revision.
+- [ ] rejection.
+- [ ] undo.
+- [ ] DRC/ERC outcome.
+- [ ] final verification result.
+
+### Later adaptive routing
+
+- [ ] Keep learned routing disabled until sufficient real outcome data exists.
+- [ ] Add reset/disable.
+- [ ] Version routing state.
+- [ ] Add circuit breaker for failing provider/model combinations.
+- [ ] Evaluate Ruflo-style cost/outcome/bandit routing only after deterministic routing is stable.
+- [ ] Do not introduce learned routing into the critical path without controlled evaluation.
+
+---
+
+# Langfuse trace topology for graph and multi-agent execution
+
+## Parent task: one conversation session, one root trace per user turn
+
+### Session
+
+- [ ] `Langfuse session_id = durable CCad thread ID`.
+- [ ] All user turns in one conversation use the same session.
+- [ ] Different conversations use different sessions.
+
+### Root trace
+
+- [ ] Create `begin_turn()` immediately after a root human turn is accepted.
+- [ ] Enter Langfuse session before context/memory assembly.
+- [ ] Create one `agent.turn` root observation before any child activity.
+- [ ] Fix current `assemble-context` ordering so it cannot become an orphan top-level trace.
+- [ ] Keep trace active through the entire logical turn.
+- [ ] Preserve trace identity across approval/checkpoint resume.
+- [ ] End/flush only at actual terminal turn state.
+
+### Required hierarchy
+
+A complex turn should resemble:
+
+```text
+agent.turn
+├── intake
+├── memory.retrieve
+├── context.assemble
+├── orchestrator
+├── task_graph                     if used
+│   ├── specialist.pcb
+│   │   ├── model.generate
+│   │   └── tool.call
+│   ├── specialist.schematic
+│   │   ├── model.generate
+│   │   └── tool.call
+│   └── join
+├── capability.search              if used
+├── tool.call
+├── stage
+│   ├── clone/snapshot
+│   ├── candidate.apply
+│   ├── diff
+│   └── preview.verify
+├── verifier                       if used
+├── approval
+│   ├── wait
+│   └── decision
+├── transaction
+├── post.verify
+├── final.generate
+└── turn.complete
+```
+
+- [ ] Parallel Agents appear as sibling branches of the same trace.
+- [ ] Subagents do not create unrelated top-level traces.
+- [ ] Tool calls retain Agent/task parentage.
+- [ ] Retry/replan cycles remain inside the same root turn trace.
+- [ ] Record active compute separately from human approval wait.
+- [ ] Record Agent/task/model/tool cost attribution where available.
+- [ ] Add no-orphan-trace diagnostics in development/test mode.
+
+---
+
+# Orchestration observability and debugging
+
+## Parent task: make every runtime decision inspectable
+
+- [ ] Record Orchestrator decision kind.
+- [ ] Record selected capability.
+- [ ] Record TaskGraph creation/update.
+- [ ] Record Agent spawn/close.
+- [ ] Record Artifact production.
+- [ ] Record capability/tool/skill search.
+- [ ] Record retry.
+- [ ] Record correction.
+- [ ] Record replan.
+- [ ] Record budget usage.
+- [ ] Record loop detection.
+- [ ] Record stale revision.
+- [ ] Record approval.
+- [ ] Record transaction.
+- [ ] Record verification.
+- [ ] Do not expose hidden chain-of-thought.
+- [ ] Store only safe rationale/decision summaries.
+
+---
+
+# Migration from current CCad graph without breaking verified behavior
+
+## Parent task: incremental migration sequence
+
+### Migration A — decision contract
+
+- [ ] Add `NextAction` around current supervisor.
+- [ ] Map current routing mode to `router`.
+- [ ] Map current placement mode to `librarian`.
+- [ ] Preserve existing ToolNode.
+- [ ] Preserve existing provider/catalog behavior.
+- [ ] Preserve existing tests.
+
+### Migration B — capability registry
+
+- [ ] Register existing tools.
+- [ ] Register router/librarian as current Agent capabilities.
+- [ ] Add capability discovery without changing current default behavior.
+- [ ] Add tests.
+
+### Migration C — progressive tools
+
+- [ ] Introduce Tool exposure classes.
+- [ ] Introduce TurnToolSet.
+- [ ] Keep authoritative ToolBroker unchanged.
+- [ ] Compare token/tool accuracy before switching default.
+- [ ] Add tests.
+
+### Migration D — Blackboard/Run Ledger
+
+- [ ] Add typed run/artifact state.
+- [ ] Emit current router/librarian results as artifacts.
+- [ ] Keep existing visible behavior.
+- [ ] Add tests.
+
+### Migration E — bounded specialists
+
+- [ ] Add Agent Registry.
+- [ ] Add first real specialist.
+- [ ] Add scoped context/tool set.
+- [ ] Add spawn budgets.
+- [ ] Add lifecycle tests.
+
+### Migration F — optional TaskGraph
+
+- [ ] Add TaskGraph only after basic specialist/artifact flow is stable.
+- [ ] Keep simple prompts outside TaskGraph.
+- [ ] Add parallel read-only task validation.
+
+### Migration G — remove obsolete duplicate C++ planning
+
+- [ ] Retire `EDAAgent::decompose()` pseudo-provider planning.
+- [ ] Remove static `run_001/user/workspace/main`.
+- [ ] Remove or genuinely implement empty ContextBuilder loaders.
+- [ ] Update architecture docs/tests.
+- [ ] Keep C++ tool/project/transaction authority.
+
+---
+
+# C++/Python ownership cleanup
+
+## Parent task: remove duplicate orchestration ownership
+
+- [ ] Python owns goal interpretation.
+- [ ] Python owns task decomposition.
+- [ ] Python owns Agent routing.
+- [ ] Python owns capability discovery.
+- [ ] Python owns Skill selection.
+- [ ] Python owns memory retrieval.
+- [ ] Python owns model routing.
+- [ ] Python owns TaskGraph.
+- [ ] C++ owns ToolBroker.
+- [ ] C++ owns native policy enforcement.
+- [ ] C++ owns authoritative project state.
+- [ ] C++ owns staged project state.
+- [ ] C++ owns ProjectDiff.
+- [ ] C++ owns transaction commit.
+- [ ] C++ owns undo/revert.
+- [ ] C++ owns native DRC/ERC/geometry validation.
+- [ ] Qt owns native UI and human decisions.
+- [ ] Langfuse owns observability only.
+- [ ] Delete/deprecate any component that claims overlapping ownership without real functionality.
+
+---
+
+# UI integration for new orchestration without UI clutter
+
+## Parent task: expose useful activity, not internal swarm noise
+
+### Normal user chat
+
+Show compact truthful phases such as:
+
+- [ ] Inspecting PCB.
+- [ ] Checking schematic.
+- [ ] Running DRC.
+- [ ] Comparing routing alternatives.
+- [ ] Preparing proposal.
+- [ ] Waiting for approval.
+- [ ] Verifying applied changes.
+
+### Do not expose by default
+
+- [ ] raw Agent IDs.
+- [ ] provider retries.
+- [ ] token counters per specialist.
+- [ ] scheduler internals.
+- [ ] TaskGraph node IDs.
+- [ ] internal capability ranking.
+- [ ] status-chip dashboard.
+- [ ] raw LangGraph state.
+
+### Developer/debug surface
+
+- [ ] Run/task tree.
+- [ ] Agent state.
+- [ ] tool/capability selection.
+- [ ] artifact list.
+- [ ] budget usage.
+- [ ] retries/replans.
+- [ ] trace link.
+- [ ] model/provider usage.
+- [ ] failure categories.
+
+Keep this separate from normal Agent UI.
+
+---
+
+# SPA parity integration
+
+## Parent task: ensure the existing SPA remains the UI contract
+
+- [ ] Do not redesign the SPA again merely because orchestration changes.
+- [ ] Keep current approved Agent shell/history/composer/settings/review behavior.
+- [ ] Map new orchestration activity into existing timeline/activity UI rather than adding another orchestration dashboard.
+- [ ] Map specialist parallel activity into compact grouped activity rows.
+- [ ] Map proposal/revise/approve behavior into the existing review UI.
+- [ ] Keep one-to-one SPA -> Qt -> UI-map -> backend contract matrix.
+- [ ] Do not claim parity until both visual behavior and backend behavior are real.
+- [ ] Update the parity matrix when new orchestration capabilities affect user-visible state.
+
+---
+
+# Task grouping and commit discipline for Luna
+
+The following structure is mandatory for implementation work.
+
+A **Group** is a coherent production capability.
+
+A **Task** is a meaningful implementation unit inside the group.
+
+A **Sub-task** is an atomic code/test/documentation action inside a task.
+
+Do not commit each sub-task separately.
+
+Do not commit each checkbox separately.
+
+Complete the selected Group/Task boundary coherently and include all completed children in the same commit.
+
+## Commit rules
+
+- [ ] Every logical implementation commit contains production implementation.
+- [ ] Same commit contains its contract/unit tests.
+- [ ] Same commit contains UI-map changes where relevant.
+- [ ] Same commit contains documentation changes.
+- [ ] Same commit contains TODO checkbox changes.
+- [ ] Same commit references verification evidence.
+- [ ] Do not create a second `update docs` commit immediately after a feature commit.
+- [ ] Do not create a second `fix test` commit for predictable test breakage that should have been caught before commit.
+- [ ] Do not create one commit per file.
+- [ ] Do not create one commit per checkbox.
+- [ ] Do not commit partially wired UI as if the parent task is complete.
+- [ ] Do not check a parent task until all required children for that parent are complete.
+- [ ] If a group is too large, split at a natural independently functional architectural boundary before editing.
+
+---
+
+# Recommended implementation groups
+
+## Group O1 — Current graph ownership cleanup
+
+Complete in one coherent slice:
+
+- [ ] typed root decision contract.
+- [ ] preserve router/librarian behavior through adapter.
+- [ ] document graph transition semantics.
+- [ ] remove obvious stale duplicate C++ planner state that can be retired safely in this slice.
+- [ ] ownership contract tests.
+- [ ] architecture docs.
+- [ ] TODO update.
+- [ ] full required verification.
+
+## Group O2 — Run Ledger + Blackboard
+
+Complete together:
+
+- [ ] Run Ledger schema.
+- [ ] Artifact base schema.
+- [ ] Finding/Evidence/Constraint/CandidatePlan artifacts.
+- [ ] runtime production of artifacts.
+- [ ] persistence/checkpoint integration.
+- [ ] Langfuse IDs.
+- [ ] tests/docs.
+
+## Group O3 — Capability + Tool progressive disclosure
+
+Complete together:
+
+- [ ] CapabilityRegistry.
+- [ ] Tool exposure classes.
+- [ ] TurnToolSet.
+- [ ] lexical tool search.
+- [ ] deterministic preselection.
+- [ ] provider schema reduction.
+- [ ] executor compatibility.
+- [ ] tests measuring correct exposure and unchanged broker execution.
+
+## Group O4 — Skill Registry
+
+Complete together:
+
+- [ ] Skill schema.
+- [ ] registry.
+- [ ] lexical skill retrieval.
+- [ ] progressive loading.
+- [ ] tool-requirement validation.
+- [ ] memory-contamination protections.
+- [ ] tests/docs.
+
+## Group O5 — Agent Registry + bounded subagent lifecycle
+
+Complete together:
+
+- [ ] Agent descriptor.
+- [ ] spawn reservation.
+- [ ] concurrency/depth budgets.
+- [ ] Agent context projection.
+- [ ] scoped ToolSet.
+- [ ] lifecycle operations.
+- [ ] artifact return.
+- [ ] first real specialist.
+- [ ] tests/docs.
+
+## Group O6 — Optional TaskGraph
+
+Complete together:
+
+- [ ] Task schema.
+- [ ] dependencies.
+- [ ] nested tasks.
+- [ ] state transitions.
+- [ ] parallel read-only execution.
+- [ ] join.
+- [ ] replan/supersede.
+- [ ] budgets.
+- [ ] persistence.
+- [ ] tests/docs.
+
+## Group O7 — Retry/replan/loop control
+
+Complete together:
+
+- [ ] typed retry.
+- [ ] correction.
+- [ ] replan.
+- [ ] checkpoint resume.
+- [ ] failure fingerprints.
+- [ ] no-progress detection.
+- [ ] recursion/delegation detection.
+- [ ] budget enforcement.
+- [ ] tests demonstrating termination.
+
+## Group M1 — Conversation store + STM/LTM semantic migration
+
+Complete together:
+
+- [ ] durable full transcript store.
+- [ ] active thread STM.
+- [ ] archived threads LTM.
+- [ ] task STM rename to Working Memory.
+- [ ] `/cc` separation from transcript persistence.
+- [ ] migration.
+- [ ] history integration.
+- [ ] tests/docs.
+
+## Group M2 — Automatic episodic extraction
+
+Complete together:
+
+- [ ] Use/Generate controls.
+- [ ] eligible thread jobs.
+- [ ] job claiming.
+- [ ] extractor.
+- [ ] evidence filtering.
+- [ ] candidate schema.
+- [ ] write gate.
+- [ ] redaction.
+- [ ] tests/docs.
+
+## Group M3 — Episodic consolidation
+
+Complete together:
+
+- [ ] bounded global consolidation.
+- [ ] contradiction/supersession handling.
+- [ ] user Memory Summary.
+- [ ] stale-evidence prevention.
+- [ ] tests/docs.
+
+## Group M4 — Hybrid retrieval
+
+Complete together:
+
+- [ ] BM25/FTS.
+- [ ] embedding abstraction.
+- [ ] semantic candidate retrieval.
+- [ ] ranking fusion.
+- [ ] diversity reranking.
+- [ ] thread-summary retrieval.
+- [ ] benchmarks/tests.
+- [ ] safe fallback.
+
+## Group M5 — Memory Explorer
+
+Complete together:
+
+- [ ] Summary.
+- [ ] Manage UI.
+- [ ] search/filter.
+- [ ] provenance.
+- [ ] edit.
+- [ ] delete/forget.
+- [ ] source conversation.
+- [ ] reset.
+- [ ] runtime refresh.
+- [ ] visual validation.
+
+## Group B1 — CandidateChangeSet batch staging
+
+Complete together:
+
+- [ ] typed batch operations.
+- [ ] operation IDs.
+- [ ] staging.
+- [ ] complete batch validation.
+- [ ] ProjectDiff.
+- [ ] proposal.
+- [ ] tests.
+
+## Group B2 — Partial revision and semantic conflict detection
+
+Complete together:
+
+- [ ] retained/replaced operation handling.
+- [ ] dependency invalidation.
+- [ ] restaging.
+- [ ] semantic overlap checks.
+- [ ] combined candidate revalidation.
+- [ ] tests.
+
+## Group L1 — Langfuse graph topology repair
+
+Complete together:
+
+- [ ] root trace before context assembly.
+- [ ] session before child observations.
+- [ ] one trace per root turn.
+- [ ] subagent branches.
+- [ ] TaskGraph branches.
+- [ ] tool parentage.
+- [ ] approval resume trace continuity.
+- [ ] budget/retry/replan spans.
+- [ ] real trace inspection.
+
+---
+
+# Standing execution procedure for each Group
+
+At the beginning of a Group:
+
+- [ ] Fetch/inspect latest remote sprint branch.
+- [ ] Record exact branch and HEAD SHA.
+- [ ] Inspect `git status`.
+- [ ] Preserve unrelated local/user changes.
+- [ ] Read the production TODO top-to-bottom.
+- [ ] Read relevant architecture/progress/backlog docs.
+- [ ] Read `.agents/workflows/visual-validation.md` for any user-visible slice.
+- [ ] Inspect existing implementation before designing replacements.
+- [ ] Inspect callers.
+- [ ] Inspect existing tests.
+- [ ] Identify already-complete work and do not reimplement it.
+- [ ] State the chosen Group and exact required children before editing.
+
+During implementation:
+
+- [ ] Keep production code fully functional.
+- [ ] No placeholder success.
+- [ ] No demo-only production implementation.
+- [ ] No dead control presented as active.
+- [ ] No stub tool presented as available.
+- [ ] Use focused tests/language-server/static checks while developing.
+- [ ] Emit brief factual progress updates during long tool/build/research batches.
+- [ ] Do not claim completion in progress updates.
+
+At the end:
+
+- [ ] Run focused tests for the Group.
+- [ ] Run one authoritative required Qt build.
+- [ ] Run one authoritative full CTest gate.
+- [ ] Run Python contracts where relevant.
+- [ ] Run real-provider validation only where explicitly required/opted in.
+- [ ] Run UI-map and visual-validation workflow once for all UI touched by the Group.
+- [ ] Ingest and inspect every required screenshot.
+- [ ] Inspect stdout/stderr.
+- [ ] Run secret scan.
+- [ ] Update TODO only for items actually verified.
+- [ ] Update architecture/progress/methodology docs in same commit.
+- [ ] Commit the entire Group or natural independently functional sub-boundary together.
+- [ ] Push the verified commit.
+- [ ] Record exact SHA and verification evidence.
+- [ ] State which Group completed, remaining items in current priority tier, and next Group.
+
+---
+
+# Final Orchestration Runtime v2 acceptance gate
+
+Do not claim the new orchestration architecture complete until all of the following hold.
+
+- [ ] Root Agent can answer a simple request without unnecessary TaskGraph/subagents.
+- [ ] Root Agent can dynamically discover an initially unexposed tool.
+- [ ] Root Agent can dynamically discover/load a skill.
+- [ ] Root Agent can spawn a bounded specialist when useful.
+- [ ] Specialist receives scoped context and tools.
+- [ ] Specialist returns structured artifact rather than mutating project.
+- [ ] Root Agent can create an optional dependency TaskGraph.
+- [ ] Independent read-only tasks can execute in parallel.
+- [ ] A verification failure can back-edge to the appropriate planner/specialist.
+- [ ] New evidence can trigger a full replan into another domain.
+- [ ] Repeated failures terminate through loop detection/budget enforcement.
+- [ ] Revision can invalidate only affected proposal descendants.
+- [ ] A batch of typed operations can be staged atomically.
+- [ ] Partial revision rebuilds/restages/reverifies the resulting complete batch.
+- [ ] Multiple candidate Agents can produce independent candidates without file races.
+- [ ] Candidate combination uses semantic conflict detection and complete revalidation.
+- [ ] No specialist directly commits authoritative project state.
+- [ ] Every committed mutation still passes one C++ staging/approval/transaction path.
+- [ ] Project revision changes invalidate stale artifacts/proposals safely.
+- [ ] STM is the complete current conversation.
+- [ ] LTM is the durable conversation archive.
+- [ ] Working Memory remains task-specific scratch state.
+- [ ] `/cc` never destroys canonical thread history.
+- [ ] Episodic memories can be generated automatically under policy.
+- [ ] User can disable generation separately from usage.
+- [ ] Every generated memory has provenance.
+- [ ] User can inspect/edit/forget memory through Memory Explorer.
+- [ ] Memory retrieval supports lexical search.
+- [ ] Memory retrieval supports semantic search when operational.
+- [ ] Hybrid retrieval respects scope/security before similarity.
+- [ ] Tool schemas are progressively disclosed rather than always dumping the full registry.
+- [ ] Skill contents are progressively disclosed.
+- [ ] One CCad conversation maps to one Langfuse session.
+- [ ] One root user prompt maps to exactly one top-level Langfuse trace.
+- [ ] Parallel/subagent work appears beneath that trace.
+- [ ] Retry/replan/approval cycles remain inside that trace.
+- [ ] Run Ledger reconstructs operational flow without relying on chat text.
+- [ ] Project Kernel remains authoritative for design truth.
+- [ ] Current full build/test/visual/security gates pass on the exact final branch SHA.
+
+---
+
+# Final target architecture
+
+The target runtime architecture is:
+
+```mermaid
+flowchart TD
+    U[User / Qt] --> TURN[Root Turn Controller]
+
+    TURN --> O[Adaptive Orchestrator]
+
+    O -->|answer| FINAL[Final Response]
+    O -->|context| CTX[Context Projection]
+    O -->|memory| MEM[Hybrid Memory Retrieval]
+    O -->|unknown capability| CAP[Capability Search]
+    O -->|tool| TOOL[Scoped ToolSet / ToolBroker]
+    O -->|specialist| SPAWN[Agent Registry / Spawn]
+    O -->|complex work| TG[Optional TaskGraph]
+    O -->|verify| VER[Verifier]
+    O -->|mutation| CAND[CandidateChangeSet]
+    O -->|ask user| HUMAN[Human Input]
+
+    CTX --> O
+    MEM --> O
+    CAP --> O
+    TOOL --> BB[Run Blackboard]
+    SPAWN --> BB
+    TG --> BB
+    BB --> O
+
+    CAND --> STAGE[C++ Staged Project]
+    STAGE --> CHECK[Native Validation]
+
+    CHECK -->|failed / revise| O
+    CHECK -->|valid| REVIEW[Visual Human Review]
+
+    REVIEW -->|revise| O
+    REVIEW -->|reject/cancel| FINAL
+    REVIEW -->|approve| TX[C++ Atomic Transaction]
+
+    TX --> POST[DRC / ERC / State Verification]
+    POST -->|recoverable failure| O
+    POST -->|success| FINAL
+
+    HUMAN --> O
+
+    FINAL --> MEMORYPIPE[Conversation Archive + Episodic Extraction]
+```
+
+The essential architecture is:
+
+**The CCad Agent runtime is a bounded, revision-aware, cyclic adaptive graph rather than a fixed workflow pipeline. The Agent decides dynamically what information, capability, tool, skill, specialist, task decomposition, verification, or human input it needs next. Deterministic CCad infrastructure decides whether those requested transitions are legal, executes authoritative CAD operations, controls mutation, detects loops/staleness, enforces budgets and approvals, and verifies what is actually true.**
+
+### Automatic memory context assembly
+
+- [ ] Context creation must automatically retrieve likely-relevant memories before the first model call of a root turn.
+- [ ] Do not require the LLM to issue `memory.search` merely to discover whether relevant memory exists.
+- [ ] Build the automatic retrieval query from user prompt, normalized goal, active project, active editor, selected objects, relevant nets/components, workflow/domain, and current thread state.
+- [ ] Inject a bounded Memory Summary containing high-value stable user/project knowledge.
+- [ ] Inject a bounded top-K set of automatically retrieved relevant memories.
+- [ ] Include a compact Memory Manifest describing available memory scopes/categories without injecting their full contents.
+- [ ] Reuse the resulting TurnMemoryContext across subsequent model calls in the same turn.
+- [ ] Do not rerun full automatic memory retrieval at every graph node.
+- [ ] Refresh/extend TurnMemoryContext only after a meaningful task/domain/evidence change or explicit Agent memory request.
+- [ ] Let the Agent issue deeper `memory.search` when new facts discovered during execution make additional historical knowledge relevant.
+- [ ] Merge deep-retrieval results into the current turn memory context with deduplication and token-budget enforcement.
+- [ ] Record whether each memory entered context through Memory Summary, automatic retrieval, or explicit deep retrieval.
+- [ ] Report safe retrieval metadata in Langfuse under `memory.retrieve`.
+- [ ] Measure first-turn automatic retrieval recall and unnecessary-memory injection rate.
+- [ ] Measure extra model/tool calls avoided by automatic retrieval compared with on-demand-only memory search.
+- # Context Runtime v2 — automatic conversation, memory, and project retrieval
+
+This section defines how model context is constructed for every root turn and every specialist Agent.
+
+The canonical stored conversation/project may be arbitrarily large. The model context must remain a bounded, dynamically constructed working set.
+
+Context construction must not start empty and must not require the LLM to repeatedly discover basic relevant memory/project state through extra model calls.
+
+The target model is:
+
+`Canonical history/project state -> searchable indexes -> ContextBroker -> bounded TurnContext -> Agent`
+
+Context is rebuilt at the beginning of each root user turn and may be selectively extended during execution when new information changes what is relevant.
+
+---
+
+## Parent task: introduce one canonical ContextBroker
+
+- [ ] Introduce one `ContextBroker` or equivalent runtime owner for provider-bound context construction.
+- [ ] Do not let individual Agent nodes independently assemble unrelated context packages.
+- [ ] Build the initial root-turn context before the first reasoning/model call.
+- [ ] Initial context must never be intentionally empty when useful conversation/project/memory state exists.
+- [ ] Keep canonical stored data separate from the bounded context sent to a provider.
+- [ ] Keep raw conversation storage separate from model-facing conversation projection.
+- [ ] Keep project state/indexes separate from model-facing project projection.
+- [ ] Keep memory storage/indexes separate from model-facing retrieved memory.
+- [ ] Keep tool/skill registries separate from provider-visible capability descriptions.
+- [ ] Version the context-package schema.
+- [ ] Record exact source/provenance metadata for every context component.
+- [ ] Keep content redaction/privacy policy centralized in the ContextBroker.
+- [ ] Keep context construction deterministic except for explicitly configured semantic retrieval/reranking components.
+
+---
+
+# Initial root-turn context construction
+
+## Parent task: automatically build useful context before the first model call
+
+The first model call of a root user turn should receive a bounded useful working set assembled automatically.
+
+### Deterministic turn signals
+
+Extract without a generative LLM where possible:
+
+- [ ] current project ID.
+- [ ] current project revision.
+- [ ] active editor.
+- [ ] current PCB/schematic sheet.
+- [ ] active selection.
+- [ ] visible/selected object IDs.
+- [ ] reference designators mentioned by the user.
+- [ ] net names mentioned by the user.
+- [ ] layer names mentioned by the user.
+- [ ] coordinates/regions mentioned by the user.
+- [ ] component/library identifiers.
+- [ ] DRC/ERC diagnostic IDs.
+- [ ] active workflow.
+- [ ] current task identity.
+- [ ] explicit slash command.
+- [ ] obvious operation class such as inspect, route, place, explain, review, export, verify, or modify.
+- [ ] exact project entities referenced in the message.
+- [ ] lexical query terms useful for project/memory retrieval.
+- [ ] semantic retrieval query text.
+
+### Initial context package
+
+Before the first model call, assemble a bounded context containing:
+
+- [ ] system/developer-safe Agent instructions.
+- [ ] current user request.
+- [ ] current goal/task state.
+- [ ] current project identity/revision.
+- [ ] active editor/selection state.
+- [ ] recent raw conversation window.
+- [ ] compact older conversation recap where required.
+- [ ] relevant historical TurnRecords.
+- [ ] Working Memory / current task scratch state.
+- [ ] bounded Memory Summary.
+- [ ] automatically retrieved relevant episodic memories.
+- [ ] automatically retrieved relevant project entities/state.
+- [ ] relevant DRC/ERC/rule information.
+- [ ] compact capability/skill/tool manifest.
+- [ ] exact provider-visible tool schemas selected for this step.
+- [ ] current attachment metadata/content according to attachment policy.
+- [ ] context budget/omission metadata.
+
+- [ ] Do not require an initial `memory.search` call merely to discover that relevant memories exist.
+- [ ] Do not require an initial project-search tool call merely to discover obvious explicitly referenced objects.
+- [ ] Do not require a first LLM classifier call solely to construct basic context when deterministic retrieval can do it.
+- [ ] Keep all automatically retrieved content bounded by the selected-model context budget.
+
+---
+
+# Recent conversation reinforcement
+
+## Parent task: always preserve enough recent raw conversation to maintain immediate continuity
+
+The complete STM transcript is stored durably, but only a recent model-facing window is sent verbatim.
+
+### Recent raw message window
+
+- [ ] Include recent conversation messages verbatim on every provider call unless an operation explicitly requires another context policy.
+- [ ] Preserve at least the most recent user turn and its resulting assistant/tool interaction.
+- [ ] Prefer preserving at least the most recent two user turns when the context budget allows.
+- [ ] Do not rely on fixed message count alone.
+- [ ] Replace the long-term `last N messages` policy with a token-budgeted recent-message window.
+- [ ] Keep a configurable hard maximum message count as a safety bound.
+- [ ] Walk backward from the newest messages until the allocated recent-conversation token budget is reached.
+- [ ] Never split a provider tool-call/tool-result pair.
+- [ ] Preserve approval/revise/reject messages required to understand current pending state.
+- [ ] Preserve the currently active user request verbatim.
+- [ ] Preserve the current unsatisfied user constraints verbatim where practical.
+- [ ] Do not let old large tool results consume the entire recent-message budget.
+- [ ] Replace large old tool results with structured artifact references/compact summaries after their immediate reasoning step no longer requires the raw payload.
+- [ ] Record which raw messages were included and omitted through safe message IDs/counts.
+
+### Recent-state reinforcement
+
+- [ ] Include a compact `Current Turn State` block on repeated model calls.
+- [ ] Include current goal.
+- [ ] Include current unresolved constraints.
+- [ ] Include current task/Agent assignment.
+- [ ] Include important findings discovered so far.
+- [ ] Include current candidate/proposal state.
+- [ ] Include current project revision.
+- [ ] Include pending human decision where relevant.
+- [ ] Include retry/replan state where relevant.
+- [ ] Do not force the model to infer current state solely from a long message transcript.
+
+---
+
+# Structured TurnRecords
+
+## Parent task: summarize completed turns into searchable structured records
+
+Keep complete raw messages, but additionally build one compact `TurnRecord` for each completed root user turn.
+
+### TurnRecord schema
+
+- [ ] stable turn ID.
+- [ ] thread ID.
+- [ ] user-request summary.
+- [ ] explicit user constraints.
+- [ ] referenced project objects/nets/layers.
+- [ ] Agent work summary.
+- [ ] important tools/capabilities used.
+- [ ] important findings.
+- [ ] important decisions.
+- [ ] result/outcome.
+- [ ] proposal/approval outcome where applicable.
+- [ ] transaction ID where applicable.
+- [ ] project revision before.
+- [ ] project revision after.
+- [ ] important user follow-up/correction.
+- [ ] unresolved questions.
+- [ ] artifact references.
+- [ ] DRC/ERC result summary.
+- [ ] timestamp.
+- [ ] semantic-search text.
+- [ ] lexical-search fields.
+
+### TurnRecord generation
+
+- [ ] Generate TurnRecord only from actual recorded events/results.
+- [ ] Do not store private chain-of-thought.
+- [ ] Do not infer unsupported user emotions/preferences.
+- [ ] Record user frustration/preferences only when explicitly expressed or otherwise supported by the memory-evidence policy.
+- [ ] Keep raw messages as source of truth.
+- [ ] Keep pointers from every TurnRecord back to exact source message/event IDs.
+- [ ] Make TurnRecord generation bounded.
+- [ ] Regenerate/invalidate a TurnRecord if its source event set changes.
+- [ ] Index TurnRecords for lexical and semantic retrieval.
+
+### Historical conversation retrieval
+
+- [ ] Search TurnRecords before loading raw old conversation history.
+- [ ] Retrieve compact relevant TurnRecords into initial context.
+- [ ] Load exact historical messages only when the Agent needs additional detail.
+- [ ] Preserve source thread/turn/message IDs when historical content is loaded.
+- [ ] Prevent unrelated old conversations from flooding context solely because they are recent.
+
+---
+
+# Thread recap / hierarchical conversation compression
+
+## Parent task: maintain a compact thread-level recap separate from raw STM
+
+- [ ] Maintain a bounded thread recap derived from completed TurnRecords.
+- [ ] Thread recap must not replace or destroy the complete canonical transcript.
+- [ ] Include major goals.
+- [ ] Include important decisions.
+- [ ] Include active constraints.
+- [ ] Include unresolved issues.
+- [ ] Include major project changes.
+- [ ] Include current project revision relationship.
+- [ ] Include user corrections that remain relevant.
+- [ ] Keep recap provenance to source TurnRecords.
+- [ ] Update recap incrementally after completed root turns.
+- [ ] Keep recap under a strict token budget.
+- [ ] Use recap as background context when the raw conversation window no longer includes older relevant turns.
+- [ ] Ensure `/cc` and automatic recap generation operate on provider-facing context projections, never by deleting canonical raw thread history.
+
+---
+
+# Automatic memory retrieval during context creation
+
+## Parent task: retrieve likely-relevant memory automatically before reasoning
+
+- [ ] Run automatic memory retrieval during initial ContextBroker assembly.
+- [ ] Construct the retrieval query from:
+  - [ ] current user request.
+  - [ ] normalized goal.
+  - [ ] active project.
+  - [ ] active editor.
+  - [ ] selected objects.
+  - [ ] explicit components/nets/layers.
+  - [ ] workflow/domain.
+  - [ ] current task.
+  - [ ] relevant recent TurnRecord summaries.
+- [ ] Apply scope/authorization filters before relevance ranking.
+- [ ] Retrieve global/user memories where allowed.
+- [ ] Retrieve project-scoped memories.
+- [ ] Retrieve thread-scoped memories where useful.
+- [ ] Include a bounded stable Memory Summary.
+- [ ] Include bounded top-K automatically retrieved memories.
+- [ ] Deduplicate automatic memories against recent conversation and thread recap.
+- [ ] Prefer explicit user preferences/corrections over inferred memories.
+- [ ] Keep retrieval within memory token budget.
+- [ ] Record retrieval provenance/rank metadata.
+
+---
+
+# Memory Manifest
+
+## Parent task: let the Agent know what additional memory exists without injecting everything
+
+- [ ] Add a compact `MemoryManifest` to provider context.
+- [ ] Manifest contains category/scope availability, not full memory contents.
+- [ ] Include approximate counts for available global user memories.
+- [ ] Include current-project memory count.
+- [ ] Include relevant historical thread-summary count.
+- [ ] Include available procedural/reusable lesson categories where supported.
+- [ ] Include semantic-retrieval readiness.
+- [ ] Keep manifest small and bounded.
+- [ ] Never expose memory contents solely through the manifest.
+- [ ] Let the Agent use deep `memory.search` after discovering a new information need.
+- [ ] Do not force a deep memory-search call merely to know whether a memory category exists.
+
+---
+
+# Evolving TurnContext
+
+## Parent task: context may grow/change within a root turn without rebuilding everything every step
+
+- [ ] Create `TurnContext v1` before the first Agent call.
+- [ ] Reuse unchanged context components across subsequent model calls in the same turn.
+- [ ] Do not rerun complete memory/project retrieval at every graph node.
+- [ ] Append/replace working findings as tools and specialists return evidence.
+- [ ] Convert large raw tool results into compact structured artifacts once raw detail is no longer immediately required.
+- [ ] Keep artifact references available for re-expansion.
+- [ ] Maintain context version number.
+- [ ] Record which observation caused a context version change.
+- [ ] Keep stable source IDs across context versions.
+
+### Context-refresh triggers
+
+Run targeted retrieval refresh when one or more of the following occurs:
+
+- [ ] Agent discovers an important previously unknown component.
+- [ ] Agent discovers an important previously unknown net.
+- [ ] Agent changes from PCB to schematic domain.
+- [ ] Agent changes from schematic to PCB domain.
+- [ ] Agent discovers a new functional block.
+- [ ] Agent discovers that its initial interpretation was wrong.
+- [ ] Agent explicitly requests deeper memory retrieval.
+- [ ] Agent explicitly requests deeper project retrieval.
+- [ ] Specialist task requires additional permitted context.
+- [ ] user revision materially changes the requested scope.
+- [ ] project revision materially changes.
+- [ ] current retrieval confidence/relevance is insufficient.
+
+### Targeted refresh
+
+- [ ] Refresh only affected memory/project/context channels.
+- [ ] Preserve still-valid existing context.
+- [ ] Merge new results with deduplication.
+- [ ] Remove/invalidate stale project-derived context.
+- [ ] Re-run context budget allocation after refresh.
+- [ ] Do not blindly append until model context overflows.
+
+---
+
+# Context budgeting
+
+## Parent task: one explicit token-aware context budgeter
+
+- [ ] Derive total context limit from authoritative selected-model metadata where available.
+- [ ] Mark context limit unavailable when not known.
+- [ ] Reserve output-generation budget.
+- [ ] Reserve tool/continuation safety headroom.
+- [ ] Allocate remaining input budget across context channels.
+- [ ] Allocate system/custom-instruction budget.
+- [ ] Allocate recent-conversation budget.
+- [ ] Allocate thread-recap/TurnRecord budget.
+- [ ] Allocate memory budget.
+- [ ] Allocate project-context budget.
+- [ ] Allocate tool-schema budget.
+- [ ] Allocate working-artifact/tool-result budget.
+- [ ] Allocate attachment budget.
+- [ ] Keep a configurable reserve for later in-turn retrieval.
+- [ ] Allow allocation to adapt by task type.
+- [ ] Prefer more project budget for CAD inspection/design turns.
+- [ ] Prefer more conversation/memory budget for user-preference/history questions.
+- [ ] Never silently truncate structured content in a way that corrupts a tool-call/result sequence.
+- [ ] Report omitted/truncated channels/counts safely.
+- [ ] Update the circular context-usage UI from this real budget/accounting state.
+
+---
+
+# Project Knowledge Index
+
+## Parent task: add searchable project knowledge instead of repeatedly dumping the whole PCB/schematic
+
+The current typed PCB/schematic project should be indexed structurally. Do not treat KiCad/CCad files as generic text chunks.
+
+### Exact identity index
+
+Index exact identifiers for:
+
+- [ ] reference designators.
+- [ ] component UUIDs/object IDs.
+- [ ] symbol IDs.
+- [ ] footprint IDs.
+- [ ] pad IDs.
+- [ ] net IDs/names.
+- [ ] layer IDs/names.
+- [ ] sheet paths.
+- [ ] rule IDs.
+- [ ] DRC/ERC diagnostic IDs.
+- [ ] zone/keepout IDs.
+- [ ] track/via IDs.
+- [ ] project artifact IDs.
+
+### Lexical/BM25 project index
+
+Index textual fields such as:
+
+- [ ] component reference.
+- [ ] component value.
+- [ ] component description.
+- [ ] library description.
+- [ ] net names.
+- [ ] labels.
+- [ ] sheet names/titles.
+- [ ] properties.
+- [ ] notes.
+- [ ] rule descriptions.
+- [ ] DRC/ERC diagnostics.
+- [ ] generated functional-block summaries.
+- [ ] project annotations.
+
+- [ ] Use actual BM25/FTS rather than simple substring matching for broad textual retrieval.
+
+---
+
+# Project connectivity/relationship graph
+
+## Parent task: use EDA structure as a first-class retrieval mechanism
+
+Represent/traverse relationships such as:
+
+- [ ] schematic symbol -> pins.
+- [ ] pin -> schematic net.
+- [ ] schematic net -> labels.
+- [ ] schematic symbol -> footprint.
+- [ ] PCB footprint -> pads.
+- [ ] pad -> PCB net.
+- [ ] net -> tracks.
+- [ ] net -> vias.
+- [ ] net -> zones.
+- [ ] object -> layer.
+- [ ] object -> DRC/ERC diagnostic.
+- [ ] component -> nearby PCB components.
+- [ ] component -> associated decoupling/passive components where deterministically derivable.
+- [ ] schematic net -> PCB net.
+- [ ] sheet -> symbols.
+- [ ] region -> objects.
+- [ ] functional block -> components/nets.
+- [ ] candidate/proposal -> affected objects.
+
+### Graph retrieval
+
+- [ ] Expand exact user references through relevant graph edges.
+- [ ] Bound traversal depth.
+- [ ] Bound result count.
+- [ ] Prefer electrically/semantically relevant edges over arbitrary graph expansion.
+- [ ] Keep traversal deterministic.
+- [ ] Include source object IDs for all graph-derived context.
+- [ ] Query authoritative live project state before trusting stale derived graph data.
+
+---
+
+# PCB spatial retrieval
+
+## Parent task: use board geometry to retrieve nearby relevant state
+
+- [ ] Add spatial index for PCB objects.
+- [ ] Search by selected object region.
+- [ ] Search by bounding box.
+- [ ] Search by coordinate.
+- [ ] Search nearby tracks.
+- [ ] Search nearby vias.
+- [ ] Search nearby footprints.
+- [ ] Search nearby zones.
+- [ ] Search nearby keepouts.
+- [ ] Search relevant layers.
+- [ ] Search DRC markers in/near the region.
+- [ ] Bound spatial radius/result count.
+- [ ] Let exact object/net relationships override arbitrary geometric proximity when appropriate.
+
+---
+
+# Semantic/vector project retrieval
+
+## Parent task: add semantic search over meaningful project entities
+
+Do not embed every primitive track segment by default.
+
+### Semantic entities to index
+
+Prefer embeddings for:
+
+- [ ] project summary.
+- [ ] schematic sheet summaries.
+- [ ] functional blocks.
+- [ ] components.
+- [ ] component/library descriptions.
+- [ ] nets with useful semantic descriptions.
+- [ ] design-rule groups.
+- [ ] DRC/ERC issue clusters.
+- [ ] important PCB regions.
+- [ ] project annotations.
+- [ ] verified design-decision summaries.
+
+### Avoid wasteful primitive embedding
+
+- [ ] Do not embed every raw track purely from coordinates unless proven useful.
+- [ ] Do not embed every via purely from geometry unless proven useful.
+- [ ] Use exact/graph/spatial retrieval for primitive geometry.
+- [ ] Generate semantic summaries for regions/nets/components where vector search adds value.
+
+### Embedding lifecycle
+
+- [ ] Use pluggable embedding backend.
+- [ ] Persist embedding model/version.
+- [ ] Cache embeddings.
+- [ ] Update only changed semantic entities.
+- [ ] Never mix incompatible embedding dimensions/models silently.
+- [ ] Keep full lexical/exact/graph fallback if semantic backend is unavailable.
+- [ ] Never claim semantic project retrieval when embeddings are unavailable.
+
+---
+
+# Hybrid project retrieval
+
+## Parent task: combine exact, lexical, graph, spatial, and semantic retrieval
+
+For each root query:
+
+- [ ] resolve exact references first.
+- [ ] expand relevant graph relationships.
+- [ ] add relevant spatial PCB neighborhood.
+- [ ] run BM25/FTS search.
+- [ ] run semantic search when available.
+- [ ] merge/fuse result rankings.
+- [ ] deduplicate same object appearing through several retrieval channels.
+- [ ] apply project-revision/staleness checks.
+- [ ] rank authoritative current project objects above stale derived summaries.
+- [ ] bound final project-context result by object count and token budget.
+- [ ] preserve retrieval reason/provenance for every included project object.
+
+### Retrieval rationale metadata
+
+For each included item record safe metadata such as:
+
+- [ ] exact-reference match.
+- [ ] lexical match.
+- [ ] semantic match.
+- [ ] graph-neighbor relation.
+- [ ] spatial-neighbor relation.
+- [ ] selected-object relation.
+- [ ] active-net relation.
+- [ ] DRC/ERC relation.
+- [ ] Agent explicit retrieval request.
+
+---
+
+# Functional block indexing
+
+## Parent task: support high-level subsystem retrieval in large projects
+
+Examples:
+
+`USB-C interface`
+
+`buck converter`
+
+`MCU core`
+
+`crystal/clock`
+
+`sensor front-end`
+
+`motor driver`
+
+`power input`
+
+### Block creation
+
+- [ ] Prefer existing schematic hierarchy/sheets where available.
+- [ ] Use deterministic connectivity grouping where practical.
+- [ ] Use component/library metadata.
+- [ ] Use user-created groups/annotations.
+- [ ] Optionally use an LLM-generated block label only as a derived indexed artifact with source/provenance, never as project truth.
+- [ ] Store block members.
+- [ ] Store related nets.
+- [ ] Store PCB bounding region where derivable.
+- [ ] Update block membership after relevant project changes.
+
+### Retrieval
+
+- [ ] Let natural-language queries search functional blocks.
+- [ ] Expand selected block to relevant schematic/PCB entities.
+- [ ] Keep expansion bounded.
+- [ ] Verify block-derived facts against live project state where required.
+
+---
+
+# Incremental project-index updates
+
+## Parent task: avoid rebuilding all project indexes after every edit
+
+- [ ] Track project revision associated with each index entry.
+- [ ] Track source object IDs.
+- [ ] Track source hashes where useful.
+- [ ] On transaction commit, identify changed objects/nets/regions.
+- [ ] Update exact identity index for changed objects.
+- [ ] Update FTS fields for changed objects.
+- [ ] Update graph edges affected by changed connectivity.
+- [ ] Update spatial index for moved/added/deleted geometry.
+- [ ] Recompute semantic summaries/embeddings only for affected semantic entities.
+- [ ] Mark derived entries stale until successfully refreshed.
+- [ ] Never serve stale derived information as authoritative current state without a stale marker/verification.
+- [ ] Rebuild complete index only when schema/version corruption or broad migration requires it.
+
+---
+
+# Per-Agent context projections
+
+## Parent task: derive specialist-specific views from the shared TurnContext
+
+### Root Orchestrator projection
+
+Include:
+
+- [ ] current goal.
+- [ ] recent conversation.
+- [ ] thread recap/relevant TurnRecords.
+- [ ] relevant memories.
+- [ ] broad relevant project context.
+- [ ] Blackboard summary.
+- [ ] capability manifest.
+- [ ] current budgets.
+
+### PCB specialist projection
+
+Include only relevant:
+
+- [ ] PCB objects.
+- [ ] nets.
+- [ ] layers.
+- [ ] geometry.
+- [ ] rules.
+- [ ] spatial region.
+- [ ] DRC.
+- [ ] relevant artifacts.
+- [ ] task constraints.
+- [ ] scoped tools/skills.
+
+### Schematic specialist projection
+
+Include only relevant:
+
+- [ ] sheets.
+- [ ] symbols.
+- [ ] pins.
+- [ ] schematic nets.
+- [ ] labels.
+- [ ] ERC.
+- [ ] linked footprints/nets where needed.
+- [ ] relevant artifacts.
+- [ ] scoped tools/skills.
+
+### Library specialist projection
+
+Include only relevant:
+
+- [ ] component identifiers.
+- [ ] library metadata.
+- [ ] datasheet references/artifacts.
+- [ ] footprint/symbol state.
+- [ ] user/project requirements.
+- [ ] scoped tools/skills.
+
+### Verifier projection
+
+Include:
+
+- [ ] original goal.
+- [ ] explicit constraints.
+- [ ] candidate ProjectDiff.
+- [ ] deterministic DRC/ERC/connectivity evidence.
+- [ ] relevant findings.
+- [ ] affected object state.
+- [ ] required acceptance criteria.
+- [ ] Do not automatically include planner's entire conversational scratch history.
+
+- [ ] Account token/context use independently per specialist.
+- [ ] Do not duplicate the entire parent context into every child Agent.
+- [ ] Let specialists request additional permitted context through the ContextBroker.
+
+---
+
+# Tool-result compression and artifact promotion
+
+## Parent task: keep long-running turns from accumulating raw tool payloads indefinitely
+
+- [ ] Keep full raw tool result in the Run Artifact Store where required.
+- [ ] Keep immediate raw result available for the next reasoning step.
+- [ ] Promote stable important information into typed Finding/Evidence artifacts.
+- [ ] Replace old large raw payload in provider context with compact artifact summary/reference after it is no longer directly required.
+- [ ] Preserve exact raw artifact access through an explicit artifact/tool lookup.
+- [ ] Never discard authoritative evidence solely to save tokens.
+- [ ] Do not repeatedly resend identical large tool output on every provider call.
+- [ ] Account raw vs summarized artifact tokens separately.
+
+---
+
+# Context refresh after project mutation
+
+## Parent task: ensure context never continues reasoning against stale project state
+
+- [ ] On staged-project generation, distinguish live-project context from staged-project context.
+- [ ] Label staged context with staged revision/change-set ID.
+- [ ] After approved transaction, invalidate live-project context derived from the old revision.
+- [ ] Refresh affected project entities/indexes.
+- [ ] Update current TurnContext to the committed revision.
+- [ ] Remove superseded staged artifacts from active context while preserving audit history.
+- [ ] Run post-commit retrieval/verification against committed authoritative state.
+- [ ] Prevent an Agent from continuing to act on pre-commit geometry after project revision advances.
+
+---
+
+# Context caching
+
+## Parent task: avoid unnecessary repeated retrieval work
+
+- [ ] Cache TurnContext components by source/version.
+- [ ] Cache project retrieval results against project revision + query/signals.
+- [ ] Cache memory retrieval against memory index revision + query/scope.
+- [ ] Cache static system/custom instructions.
+- [ ] Cache selected skill contents by version.
+- [ ] Cache provider-visible tool schemas by registry version.
+- [ ] Invalidate cache deterministically when underlying source changes.
+- [ ] Do not cache secret-bearing provider responses beyond their documented lifecycle.
+- [ ] Record cache hit/miss metadata for development diagnostics.
+
+---
+
+# Context observability
+
+## Parent task: make context construction inspectable without leaking content
+
+Under the existing root Langfuse `agent.turn` trace:
+
+- [ ] Add `context.assemble`.
+- [ ] Add `conversation.retrieve`.
+- [ ] Add `memory.retrieve`.
+- [ ] Add `project.retrieve`.
+- [ ] Add `project.exact`.
+- [ ] Add `project.graph`.
+- [ ] Add `project.spatial`.
+- [ ] Add `project.lexical`.
+- [ ] Add `project.semantic` when used.
+- [ ] Add `capability.preselect`.
+- [ ] Add `context.budget`.
+- [ ] Add targeted `context.refresh` observations when context materially changes.
+- [ ] Record token/character/object counts.
+- [ ] Record exact vs estimated token accounting.
+- [ ] Record retrieval result counts.
+- [ ] Record omission counts.
+- [ ] Record context version.
+- [ ] Record project revision.
+- [ ] Record safe source IDs/hashes where appropriate.
+- [ ] Keep raw prompt/project/memory contents disabled by default.
+- [ ] Do not create separate top-level traces for context sub-operations.
+
+---
+
+# Context quality tests
+
+## Parent task: verify retrieval usefulness, not merely implementation
+
+### Conversation tests
+
+- [ ] Recent user correction remains visible in the next Agent call.
+- [ ] Older relevant TurnRecord can be retrieved after leaving the raw recent-message window.
+- [ ] `/cc` does not remove canonical conversation history.
+- [ ] Large old tool output does not crowd out the current user request.
+- [ ] Tool-call/tool-result sequences remain valid.
+- [ ] Current pending proposal/revision state survives context rebuilding.
+
+### Memory tests
+
+- [ ] Explicit relevant user preference is automatically retrieved.
+- [ ] Irrelevant preference is omitted.
+- [ ] Paraphrased memory can be found semantically.
+- [ ] Exact memory term can be found lexically.
+- [ ] Wrong-project memory cannot cross scope.
+- [ ] Forgotten/deleted memory cannot re-enter context.
+- [ ] Deep memory search can extend TurnContext without duplicating existing results.
+
+### Project tests
+
+- [ ] `U3` query resolves exact U3.
+- [ ] Net-name query resolves exact net.
+- [ ] Natural-language component description can retrieve the correct candidate through semantic search.
+- [ ] Graph traversal retrieves electrically connected relevant objects.
+- [ ] Spatial retrieval finds nearby PCB geometry.
+- [ ] Large project query remains bounded.
+- [ ] Unrelated project sections remain omitted.
+- [ ] Project edit invalidates stale derived retrieval state.
+- [ ] Semantic index failure falls back truthfully to exact/lexical/graph retrieval.
+
+### Context-evolution tests
+
+- [ ] Initial TurnContext is created before the first model call.
+- [ ] Same TurnContext components are reused where no semantic change occurs.
+- [ ] New important tool evidence triggers only targeted context expansion where appropriate.
+- [ ] PCB-to-schematic domain shift triggers relevant project/memory refresh.
+- [ ] Context never grows without token-budget enforcement.
+- [ ] Context version/provenance can explain why a newly retrieved item appeared.
+
+---
+
+# Context Runtime implementation group
+
+## Group C1 — Conversation projection and TurnRecords
+
+Complete in one coherent implementation slice:
+
+- [ ] token-budgeted recent raw conversation window.
+- [ ] TurnRecord schema.
+- [ ] TurnRecord persistence.
+- [ ] thread recap.
+- [ ] raw-history preservation.
+- [ ] `/cc` separation from canonical history.
+- [ ] historical TurnRecord retrieval.
+- [ ] context tests.
+- [ ] docs/TODO/evidence.
+
+## Group C2 — ContextBroker and automatic memory retrieval
+
+Complete together:
+
+- [ ] deterministic signal extraction.
+- [ ] initial ContextBroker.
+- [ ] automatic memory retrieval.
+- [ ] Memory Summary injection.
+- [ ] Memory Manifest.
+- [ ] TurnContext versioning/caching.
+- [ ] targeted memory refresh.
+- [ ] token budgeting.
+- [ ] Langfuse context hierarchy.
+- [ ] tests/docs.
+
+## Group C3 — Project exact/lexical/graph/spatial retrieval
+
+Complete together:
+
+- [ ] identity index.
+- [ ] FTS/BM25 index.
+- [ ] project relationship graph.
+- [ ] PCB spatial index.
+- [ ] hybrid deterministic project retrieval.
+- [ ] revision/staleness handling.
+- [ ] incremental index updates.
+- [ ] tests/docs.
+
+## Group C4 — Semantic project retrieval
+
+Complete together:
+
+- [ ] semantic project entity schema.
+- [ ] embedding backend.
+- [ ] semantic entity summaries.
+- [ ] vector retrieval.
+- [ ] hybrid fusion with exact/BM25/graph/spatial results.
+- [ ] incremental embedding update.
+- [ ] truthful lexical-only fallback.
+- [ ] retrieval benchmarks.
+- [ ] tests/docs.
+
+## Group C5 — Per-Agent context projection and artifact compression
+
+Complete together:
+
+- [ ] root projection.
+- [ ] PCB projection.
+- [ ] schematic projection.
+- [ ] library projection.
+- [ ] verifier projection.
+- [ ] tool-result artifact promotion.
+- [ ] large-result compression.
+- [ ] context refresh after mutation.
+- [ ] specialist token accounting.
+- [ ] tests/docs.
+
+---
+
+# Final Context Runtime acceptance gate
+
+Do not claim context architecture complete until all of the following are true.
+
+- [ ] First model call receives useful non-empty context automatically.
+- [ ] Relevant memories are automatically attached without an initial LLM memory-search call.
+- [ ] The Agent can still request deeper memory retrieval after discovering new information.
+- [ ] Recent raw conversation reinforces immediate current state.
+- [ ] Recent conversation uses token budgeting rather than fixed message count alone.
+- [ ] Complete STM transcript remains durably available even when only a small recent window is sent to the model.
+- [ ] Every completed root turn has a structured searchable TurnRecord.
+- [ ] Older relevant TurnRecords can re-enter context without injecting entire old conversations.
+- [ ] Thread recap remains compact and linked to source turns.
+- [ ] Large tool results become retrievable artifacts rather than being resent forever.
+- [ ] Exact PCB/schematic references are retrieved without semantic search.
+- [ ] Project connectivity graph contributes relevant context.
+- [ ] PCB spatial retrieval contributes nearby relevant geometry.
+- [ ] BM25/FTS contributes textually relevant project context.
+- [ ] Semantic project search finds useful non-exact natural-language matches when enabled.
+- [ ] Individual raw track/via primitives are not unnecessarily embedded.
+- [ ] Project-derived context is revision-aware.
+- [ ] Project index updates incrementally after changes.
+- [ ] Context evolves when new evidence materially changes the task.
+- [ ] Full context retrieval is not rerun blindly at every graph step.
+- [ ] Each specialist receives a scoped context projection rather than a complete copy of the parent context.
+- [ ] Context always remains under the selected-model budget.
+- [ ] The context-usage UI reflects the same real ContextBroker accounting.
+- [ ] Langfuse shows context construction/retrieval under the same root Agent turn trace.
+- [ ] Retrieval tests demonstrate useful relevance and exclusion of unrelated information.

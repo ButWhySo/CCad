@@ -13,9 +13,11 @@
 #include <QPainter>
 #include <QPixmap>
 #include <QListWidget>
+#include <QLabel>
 #include <QMessageBox>
 #include <QProxyStyle>
 #include <QRegularExpression>
+#include <QScreen>
 #include <QStyleOption>
 #include <QTextBrowser>
 #include <QThread>
@@ -25,6 +27,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -445,6 +448,7 @@ int main(int argc, char** argv) {
       if (name.startsWith("sprint968-task") ||
           name.startsWith("sprint969-context") ||
           name.startsWith("sprint970-compaction") ||
+          name.startsWith("sprint975-memory-ui") ||
           name.startsWith("sprint974-memory")) {
         const auto interact = [window, &entries, &output_dir, &name,
                                per_target_wait_ms](const QString& method,
@@ -461,9 +465,17 @@ int main(int argc, char** argv) {
           QApplication::processEvents();
           QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
           QApplication::processEvents();
-          const QString screenshot_path = QString::fromStdString(
-              (output_dir / (name + "-" + action_name + ".png").toStdString()).string());
-          window->grab().save(screenshot_path);
+          const QStringList memory_checkpoints = {
+              "memory-ui-settings-open", "memory-ui-manager-open",
+              "memory-ui-settings-closed"};
+          QString screenshot_path;
+          if (!name.startsWith("sprint975-memory-ui") ||
+              memory_checkpoints.contains(action_name)) {
+            screenshot_path = QString::fromStdString(
+                (output_dir / (name + "-" + action_name + ".png").toStdString()).string());
+            if (QScreen* screen = window->screen())
+              screen->grabWindow(0).save(screenshot_path);
+          }
           QString popup_screenshot;
           if (auto* popup = window->findChild<QListWidget*>("panel:agent_slash_commands");
               popup && popup->isVisible()) {
@@ -473,7 +485,8 @@ int main(int argc, char** argv) {
           }
           entries << QString("{\"target\":%1,\"interaction\":%2,\"result\":%3,\"screenshot\":%4,\"popup_screenshot\":%5}")
                          .arg(jsonStringLocal(target_id), jsonStringLocal(method),
-                              result.trimmed(), jsonStringLocal(screenshot_path),
+                              result.trimmed(), screenshot_path.isEmpty()
+                                  ? "null" : jsonStringLocal(screenshot_path),
                               popup_screenshot.isEmpty() ? "null" : jsonStringLocal(popup_screenshot));
           const QJsonDocument parsed = QJsonDocument::fromJson(result.toUtf8());
           if (!parsed.isObject() || !parsed.object().value("ok").toBool()) return false;
@@ -531,6 +544,133 @@ int main(int argc, char** argv) {
           entries << QString("{\"safe_noop_visible\":%1,\"provider_request_sent\":false}")
                          .arg(safe_noop_visible ? "true" : "false");
           ok = safe_noop_visible && ok;
+        } else if (name.startsWith("sprint975-memory-ui")) {
+          const auto captureMemoryResult = [&]() {
+            const QString path = QString::fromStdString(
+                (output_dir / (name + "-memory-ui-" +
+                    QString::number(entries.size()) + "-result.png").toStdString()).string());
+            QScreen* screen = window->screen();
+            if (!screen || !screen->grabWindow(0).save(path)) return false;
+            entries << QString("{\"memory_result_screenshot\":%1}")
+                           .arg(jsonStringLocal(path));
+            return true;
+          };
+          ok = interact("ui.click", "{\"id\":\"tab:pcb\"}",
+                        "tab:pcb", "memory-ui-pcb-tab") && ok;
+          ok = interact("ui.click", "{\"id\":\"tab:schematic\"}",
+                        "tab:schematic", "memory-ui-schematic-tab") && ok;
+          ok = interact("ui.click", "{\"id\":\"tab:agent\"}",
+                        "tab:agent", "memory-ui-agent-tab") && ok;
+          ok = interact("ui.click", "{\"id\":\"action:settingsBtn\"}",
+                        "action:settingsBtn", "memory-ui-settings-open") && ok;
+          ok = interact("ui.click", "{\"id\":\"control:categoryList\",\"row\":2}",
+                        "control:categoryList", "memory-ui-personalisation") && ok;
+          ok = interact("ui.click", "{\"id\":\"action:agent_memory_manage\"}",
+                        "action:agent_memory_manage", "memory-ui-manager-open") && ok;
+          ok = interact("ui.click", "{\"id\":\"action:addMemory\"}",
+                        "action:addMemory", "memory-ui-new-record") && ok;
+          ok = interact("ui.click", "{\"id\":\"control:memoryTier\",\"value\":\"ltm\"}",
+                        "control:memoryTier", "memory-ui-select-ltm") && ok;
+          ok = interact("ui.type_text",
+                        "{\"id\":\"control:memoryTitle\",\"text\":\"UI lifecycle record\"}",
+                        "control:memoryTitle", "memory-ui-title") && ok;
+          ok = interact("ui.type_text",
+                        "{\"id\":\"control:memoryScope\",\"text\":\"conversation\"}",
+                        "control:memoryScope", "memory-ui-scope") && ok;
+          ok = interact("ui.click", "{\"id\":\"action:saveMemory\"}",
+                        "action:saveMemory", "memory-ui-empty-save-rejected") && ok;
+          const auto memoryStatus = []() -> QLabel* {
+            for (QWidget* widget : QApplication::allWidgets()) {
+              auto* label = qobject_cast<QLabel*>(widget);
+              if (label && label->objectName() == "label:memoryManagerStatus" &&
+                  label->isVisible()) return label;
+            }
+            return nullptr;
+          };
+          for (int attempt = 0; attempt < 40; ++attempt) {
+            QThread::msleep(100);
+            QApplication::processEvents();
+            if (memoryStatus() && memoryStatus()->text().startsWith("Memory add failed:"))
+              break;
+          }
+          const bool empty_rejected = memoryStatus() &&
+              memoryStatus()->text().startsWith("Memory add failed:");
+          entries << QString("{\"memory_empty_write_rejected\":%1}")
+                         .arg(empty_rejected ? "true" : "false");
+          ok = empty_rejected && ok;
+          ok = captureMemoryResult() && ok;
+          ok = interact("ui.type_text",
+                        "{\"id\":\"control:memoryContent\",\"text\":\"Preserve the current ground return path around U3.\"}",
+                        "control:memoryContent", "memory-ui-content") && ok;
+          ok = interact("ui.click", "{\"id\":\"action:saveMemory\"}",
+                        "action:saveMemory", "memory-ui-add-request") && ok;
+          for (int attempt = 0; attempt < 40; ++attempt) {
+            QThread::msleep(100);
+            QApplication::processEvents();
+            if (memoryStatus() && memoryStatus()->text() == "Memory added.") break;
+          }
+          const bool added = memoryStatus() && memoryStatus()->text() == "Memory added.";
+          entries << QString("{\"memory_added\":%1}").arg(added ? "true" : "false");
+          ok = added && ok;
+          ok = captureMemoryResult() && ok;
+          ok = interact("ui.click", "{\"id\":\"control:memoryEntries\",\"row\":0}",
+                        "control:memoryEntries", "memory-ui-select-record") && ok;
+          ok = interact("ui.type_text",
+                        "{\"id\":\"control:memoryTitle\",\"text\":\"Updated UI lifecycle record\"}",
+                        "control:memoryTitle", "memory-ui-update-title") && ok;
+          ok = interact("ui.type_text",
+                        "{\"id\":\"control:memoryContent\",\"text\":\"Preserve U3 ground return and maintain 0.25 mm clearance.\"}",
+                        "control:memoryContent", "memory-ui-update-content") && ok;
+          ok = interact("ui.click", "{\"id\":\"action:saveMemory\"}",
+                        "action:saveMemory", "memory-ui-update-request") && ok;
+          for (int attempt = 0; attempt < 40; ++attempt) {
+            QThread::msleep(100);
+            QApplication::processEvents();
+            if (memoryStatus() && memoryStatus()->text() == "Memory updated.") break;
+          }
+          const bool updated = memoryStatus() && memoryStatus()->text() == "Memory updated.";
+          entries << QString("{\"memory_updated\":%1}").arg(updated ? "true" : "false");
+          ok = updated && ok;
+          ok = captureMemoryResult() && ok;
+          const auto* selected_memory = window->findChild<QListWidget*>("control:memoryEntries");
+          const QString selected_memory_id = selected_memory && selected_memory->currentItem()
+              ? selected_memory->currentItem()->data(Qt::UserRole).toString() : QString();
+          const auto delete_confirmation = output_dir /
+              (name + "-memory-ui-delete-confirmation.png").toStdString();
+          auto confirmation_result = std::make_shared<int>(0);
+          QTimer::singleShot(300, qApp, [delete_confirmation, confirmation_result]() {
+            for (QWidget* top_level : QApplication::topLevelWidgets()) {
+              auto* message = qobject_cast<QMessageBox*>(top_level);
+              if (!message || !message->isVisible()) continue;
+              message->grab().save(QString::fromStdString(delete_confirmation.string()));
+              if (QAbstractButton* yes = message->button(QMessageBox::Yes)) {
+                yes->click();
+                if (message->isVisible()) message->done(QMessageBox::Yes);
+              }
+              *confirmation_result = message->result();
+              return;
+            }
+          });
+          ok = interact("ui.click", "{\"id\":\"action:deleteMemory\"}",
+                        "action:deleteMemory", "memory-ui-delete-confirmed") && ok;
+          for (int attempt = 0; attempt < 40; ++attempt) {
+            QThread::msleep(100);
+            QApplication::processEvents();
+            if (memoryStatus() && memoryStatus()->text() == "Memory deleted.") break;
+          }
+          const bool deleted = memoryStatus() && memoryStatus()->text() == "Memory deleted.";
+          ok = captureMemoryResult() && ok;
+          entries << QString("{\"memory_deleted\":%1,\"memory_status\":%2,\"selected_memory_id\":%3,\"confirmation_result\":%4,\"confirmation_screenshot\":%5}")
+                         .arg(deleted ? "true" : "false",
+                              jsonStringLocal(memoryStatus() ? memoryStatus()->text() : QString("missing")),
+                              jsonStringLocal(selected_memory_id),
+                              QString::number(*confirmation_result),
+                              jsonStringLocal(QString::fromStdString(delete_confirmation.string())));
+          ok = deleted && ok;
+          ok = interact("ui.click", "{\"id\":\"action:closeMemoryManager\"}",
+                        "action:closeMemoryManager", "memory-ui-manager-closed") && ok;
+          ok = interact("ui.click", "{\"id\":\"action:cancelSettingsButton\"}",
+                        "action:cancelSettingsButton", "memory-ui-settings-closed") && ok;
         } else if (name.startsWith("sprint974-memory")) {
           ok = interact("ui.click", "{\"id\":\"tab:pcb\"}",
                         "tab:pcb", "pcb-tab-checked") && ok;
@@ -592,7 +732,7 @@ int main(int argc, char** argv) {
         std::ofstream output(output_path, std::ios::binary);
         const QString report =
             QString("{\"schema_version\":1,\"name\":%1,\"interaction_plan\":"
-                    "\"Feature-specific mapped Agent interaction with per-action screenshots; no model request\","
+                    "\"Mapped memory lifecycle with all actions logged and distinct visual checkpoints; no model request\","
                     "\"catalog_startup_verified\":%2,\"entries\":[%3]}\n")
                 .arg(jsonStringLocal(name))
                 .arg(catalog_startup_verified ? "true" : "false")

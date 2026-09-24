@@ -66,6 +66,12 @@ with tempfile.TemporaryDirectory() as temp:
     assert manager.state("stm")["runtime_entries"] == 0
     assert manager.list(tier="ltm") == []
     assert manager.list(tier="episodic")[0]["content"] == "Cross-project preference"
+    stale_thread_memory = manager.store.add(
+        "Delete this explicitly selected archived conversation record",
+        tier="ltm", namespace="thread-a", scope="conversation")
+    assert manager.delete(stale_thread_memory["id"])
+    assert all(item["id"] != stale_thread_memory["id"]
+               for item in manager.store.list(tier="ltm"))
     manager.set_identities(task_id="task-a", thread_id="thread-a",
                            project_id="project-a", user_id="local-user")
     manager.enable("ltm")
@@ -103,7 +109,8 @@ with tempfile.TemporaryDirectory() as temp:
     manager.delete(first_detail["id"])
     assert manager.clear_scope("conversation", tier="ltm") == 1
     for index in range(70):
-        manager.add(f"retention rule {index}", tier="ltm", scope="retention")
+        manager.add(f"retention rule batch{index} token{index} marker{index} note{index}",
+                    tier="ltm", scope="retention")
     assert len(manager.list(tier="ltm", scope="retention")) == 64
     assert manager.state("ltm")["persistent_entries"] == 64
 

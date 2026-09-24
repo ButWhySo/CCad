@@ -103,6 +103,24 @@ if ($Name.StartsWith("sprint974-memory")) {
     (ConvertTo-Json -InputObject $testRecords -Depth 8), [Text.UTF8Encoding]::new($false))
   $script:memoryBeforeHash = (Get-FileHash -LiteralPath $env:CCAD_AGENT_MEMORY_PATH -Algorithm SHA256).Hash
 }
+if ($Name.StartsWith("sprint975-memory-ui")) {
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint975-" + [Guid]::NewGuid().ToString("N"))
+  $configDir = Join-Path $isolatedMemoryProfile "CCad"
+  New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+  $env:APPDATA = $isolatedMemoryProfile
+  $env:CCAD_AGENT_MEMORY_PATH = Join-Path $isolatedMemoryProfile "agent_memory.json"
+  $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
+  $env:CCAD_AGENT_THREAD_ID = "sprint975-memory-ui-thread"
+  $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
+  $testConfig = [ordered]@{
+    provider = "openai"
+    model = "gpt-5.1"
+    memory = @{ stm = $false; ltm = $true; episodic = $false }
+    observability = @{ enabled = $false; backend = "langfuse"; environment = "development" }
+  }
+  [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
+    ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
+}
 try {
   $process = Start-Process -FilePath $Gui -WindowStyle Maximized `
     -ArgumentList @("--test-ui-map-target-sequence", $ProjectPath, $ScreenshotDir, $Name,
@@ -152,6 +170,28 @@ try {
     }
     if ($stdoutLog -and (Select-String -LiteralPath $stdoutLog -Pattern '"provider_request_sent":true' -Quiet)) {
       throw "Provider request occurred during plan/cancel validation."
+    }
+  }
+  if ($Name.StartsWith("sprint975-memory-ui")) {
+    $memoryFile = $env:CCAD_AGENT_MEMORY_PATH
+    if (-not (Test-Path -LiteralPath $memoryFile)) {
+      throw "Mapped memory CRUD scenario did not create the isolated durable store."
+    }
+    $memoryJson = [IO.File]::ReadAllText($memoryFile)
+    $records = ConvertFrom-Json -InputObject $memoryJson
+    if ($records.Count -ne 0) {
+      throw "Mapped memory CRUD scenario left a record after confirmed deletion: $memoryJson"
+    }
+    $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
+    $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
+    foreach ($field in @("memory_empty_write_rejected", "memory_added", "memory_updated", "memory_deleted")) {
+      if (-not ($reportData.entries | Where-Object { $_.$field -eq $true })) {
+        throw "Mapped memory CRUD scenario did not verify '$field'. Report: $reportPath"
+      }
+    }
+    $confirmation = Join-Path $ScreenshotDir "$Name-memory-ui-delete-confirmation.png"
+    if (-not (Test-Path -LiteralPath $confirmation)) {
+      throw "Mapped memory deletion did not capture its confirmation dialog."
     }
   }
 } finally {

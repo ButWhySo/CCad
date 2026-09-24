@@ -255,6 +255,10 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
       agent_panel_->setMemoryStateCallback([this](const QJsonObject& state) {
           this->applyMemoryState(state);
       });
+      agent_panel_->setMemoryOperationCallback(
+          [this](const QString& method, const QJsonObject& result) {
+            this->applyMemoryOperation(method, result);
+          });
       agent_panel_->setProviderStateCallback([](const QJsonObject& state) {
           // Ambient backend state may describe the restored active provider.
           // It is deliberately not used to complete a selected-provider check.
@@ -367,6 +371,7 @@ AgentSettingsDialog::~AgentSettingsDialog() {
   if (agent_panel_) {
     agent_panel_->setConfigStateCallback({});
     agent_panel_->setMemoryStateCallback({});
+    agent_panel_->setMemoryOperationCallback({});
     agent_panel_->setProviderStateCallback({});
     agent_panel_->setProviderTestResultCallback({});
     agent_panel_->setProviderConnectionResultCallback({});
@@ -1182,6 +1187,40 @@ void AgentSettingsDialog::applyMemoryState(const QJsonObject& state) {
   }
 }
 
+void AgentSettingsDialog::applyMemoryOperation(const QString& method,
+                                                const QJsonObject& result) {
+  if (!memory_dialog_) return;
+  const QString operation = result.value("operation").toString();
+  const bool write_operation = method == "memory_added" || method == "memory_updated" ||
+      method == "memory_deleted" || (method == "memory_error" &&
+      (operation == "agent.memory_add" || operation == "agent.memory_update" ||
+       operation == "agent.memory_delete"));
+  if (!write_operation) return;
+
+  if (memory_save_button_) memory_save_button_->setEnabled(true);
+  if (memory_delete_button_) memory_delete_button_->setEnabled(true);
+  if (!memory_manager_status_label_) return;
+  if (method == "memory_error") {
+    const QString action = operation == "agent.memory_add" ? "add" :
+        operation == "agent.memory_update" ? "update" : "delete";
+    memory_manager_status_label_->setText(QString("Memory %1 failed: %2")
+        .arg(action, result.value("error").toString("request rejected")));
+    return;
+  }
+  if (method == "memory_added") {
+    memory_manager_status_label_->setText("Memory added.");
+  } else if (method == "memory_updated") {
+    memory_manager_status_label_->setText(result.value("updated").toBool()
+        ? "Memory updated." : "Memory no longer exists.");
+  } else {
+    const QJsonValue removed = result.value("removed");
+    const bool deleted = removed.isBool() ? removed.toBool() : removed.toInt() > 0;
+    memory_manager_status_label_->setText(deleted
+        ? "Memory deleted." : "Memory no longer exists.");
+  }
+  if (agent_panel_) agent_panel_->sendJsonRpc("agent.memory_list", QJsonObject{});
+}
+
 void AgentSettingsDialog::openMemoryManager() {
   if (!agent_panel_) return;
   if (memory_dialog_) {
@@ -1217,13 +1256,19 @@ void AgentSettingsDialog::openMemoryManager() {
   form->addRow("Scope:", memory_scope_);
   form->addRow("Content:", memory_content_);
   root->addLayout(form);
+  memory_manager_status_label_ = new QLabel("Ready.", dialog);
+  memory_manager_status_label_->setObjectName("label:memoryManagerStatus");
+  memory_manager_status_label_->setWordWrap(true);
+  root->addWidget(memory_manager_status_label_);
   auto* buttons = new QHBoxLayout();
   auto* add = new QPushButton("New", dialog);
   add->setObjectName("action:addMemory");
   auto* save = new QPushButton("Save memory", dialog);
   save->setObjectName("action:saveMemory");
+  memory_save_button_ = save;
   auto* remove = new QPushButton("Delete…", dialog);
   remove->setObjectName("action:deleteMemory");
+  memory_delete_button_ = remove;
   auto* close = new QPushButton("Close", dialog);
   close->setObjectName("action:closeMemoryManager");
   buttons->addWidget(add);
@@ -1255,24 +1300,43 @@ void AgentSettingsDialog::openMemoryManager() {
                        {"content", memory_content_->toPlainText()}};
     const auto* current = memory_entries_ ? memory_entries_->currentItem() : nullptr;
     const bool update = current && !current->data(Qt::UserRole).toString().isEmpty();
+    const QString method = update ? "agent.memory_update" : "agent.memory_add";
+    if (memory_save_button_) memory_save_button_->setEnabled(false);
+    if (memory_delete_button_) memory_delete_button_->setEnabled(false);
+    if (memory_manager_status_label_)
+      memory_manager_status_label_->setText(update ? "Updating memory…" : "Adding memory…");
+    bool sent = false;
     if (update) {
       params["id"] = current->data(Qt::UserRole).toString();
-      agent_panel_->sendJsonRpc("agent.memory_update", params);
+      sent = agent_panel_->sendJsonRpc(method, params);
     } else {
-      agent_panel_->sendJsonRpc("agent.memory_add", params);
+      sent = agent_panel_->sendJsonRpc(method, params);
     }
-    agent_panel_->sendJsonRpc("agent.memory_list", QJsonObject{});
+    if (!sent) {
+      if (memory_save_button_) memory_save_button_->setEnabled(true);
+      if (memory_delete_button_) memory_delete_button_->setEnabled(true);
+      if (memory_manager_status_label_)
+        memory_manager_status_label_->setText("Memory request was not sent: agent backend unavailable.");
+    }
   });
   connect(remove, &QPushButton::clicked, this, [this]() {
     const auto* current = memory_entries_ ? memory_entries_->currentItem() : nullptr;
     if (!current || !agent_panel_) return;
+    const QString memory_id = current->data(Qt::UserRole).toString();
+    if (memory_id.isEmpty()) return;
     if (QMessageBox::warning(this, "Delete memory", "Permanently delete this memory record?",
                              QMessageBox::Yes | QMessageBox::No,
                              QMessageBox::No) != QMessageBox::Yes) return;
-    agent_panel_->sendJsonRpc("agent.memory_delete",
-                              QJsonObject{{"id", current->data(Qt::UserRole).toString()},
-                                          {"confirmed", true}});
-    agent_panel_->sendJsonRpc("agent.memory_list", QJsonObject{});
+    if (memory_save_button_) memory_save_button_->setEnabled(false);
+    if (memory_delete_button_) memory_delete_button_->setEnabled(false);
+    if (memory_manager_status_label_) memory_manager_status_label_->setText("Deleting memory…");
+    if (!agent_panel_->sendJsonRpc("agent.memory_delete",
+          QJsonObject{{"id", memory_id}, {"confirmed", true}})) {
+      if (memory_save_button_) memory_save_button_->setEnabled(true);
+      if (memory_delete_button_) memory_delete_button_->setEnabled(true);
+      if (memory_manager_status_label_)
+        memory_manager_status_label_->setText("Delete request was not sent: agent backend unavailable.");
+    }
   });
   connect(close, &QPushButton::clicked, dialog, &QDialog::close);
   connect(dialog, &QObject::destroyed, this, [this]() {
@@ -1282,6 +1346,9 @@ void AgentSettingsDialog::openMemoryManager() {
     memory_title_ = nullptr;
     memory_scope_ = nullptr;
     memory_tier_ = nullptr;
+    memory_manager_status_label_ = nullptr;
+    memory_save_button_ = nullptr;
+    memory_delete_button_ = nullptr;
   });
   dialog->setAttribute(Qt::WA_DeleteOnClose);
   dialog->show();
