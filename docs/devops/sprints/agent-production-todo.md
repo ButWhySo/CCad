@@ -9,7 +9,7 @@ Research: [KiCad PCB Editor](https://docs.kicad.org/7.0/en/pcbnew/pcbnew.html) s
 - [x] Implement/test deterministic exact, BM25, net/component/layer association, and coordinate-based retrieval from the active typed project snapshot; include bounded results, secret redaction, and content-revision updates.
 - [x] Inject relevant project entities into the actual provider context, preserve them when a large project snapshot is compacted, and report safe retrieval counts/revision/method.
 - [x] Run focused context contracts, changed-module Pyright, Qt MinGW Release build, full CTest (113/113), and scoped GUI-map validation (seven actions, 10 project matches, four inspected screenshots, provider disabled, stdout/stderr reviewed).
-- [ ] Update architecture/features/progress and this checklist, run staged secret scan, commit, push, and merge to GitHub `main`; remove only completed local/remote sprint branches.
+- [x] Update architecture/features/progress and this checklist; staged secret scan passed; commit `4d87b23` merged and pushed to GitHub `main`; delete the completed local sprint branch (no remote sprint branch required cleanup).
 
 ### Sprint 979 active slice — Pyright analysis and protocol boundary
 
