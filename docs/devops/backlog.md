@@ -1158,3 +1158,9 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   initialize the adapter only in the launched agent process.
 - [x] Update Gemini credential regression coverage for the selection-scoped
   `provider_test_result` protocol introduced by provider validation.
+- [x] Sprint 972: preserve quota exhaustion separately from rate limits,
+  expose bounded retry timing in explicit provider-probe status, and verify the
+  local no-network validation flow through mapped Settings controls.
+- [ ] Provider follow-up: remove the pinned Gemini adapter's implicit retries
+  only through a supported dependency/API upgrade; do not patch installed SDK
+  files. Keep live-provider verification explicitly initiated and quota-aware.

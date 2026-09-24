@@ -5636,7 +5636,8 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
     }
     for (QWidget* widget : top_level->findChildren<QWidget*>()) {
       if (widget->objectName() != id ||
-          !(id.startsWith("action:") || id.startsWith("control:"))) {
+          !(id.startsWith("action:") || id.startsWith("control:") ||
+            id.startsWith("label:"))) {
         continue;
       }
       ensureWidgetVisibleInAncestorScrollAreas(widget);
@@ -5644,13 +5645,16 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
       const QRect global_rect = clipped_rect.isEmpty()
                                     ? QRect(widget->mapToGlobal(QPoint(0, 0)), widget->size())
                                     : clipped_rect;
-      const QString role = id.startsWith("action:") ? "action" : "control";
+      const QString role = id.startsWith("action:") ? "action"
+                           : id.startsWith("label:") ? "label" : "control";
       QString label = widget->accessibleName().isEmpty() ? id : widget->accessibleName();
       if (label == id) {
         if (const auto* button = qobject_cast<const QPushButton*>(widget)) {
           label = button->text();
         } else if (const auto* checkbox = qobject_cast<const QCheckBox*>(widget)) {
           label = checkbox->text();
+        } else if (const auto* text_label = qobject_cast<const QLabel*>(widget)) {
+          label = text_label->text();
         }
       }
       return foundTarget(id, role, label,

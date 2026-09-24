@@ -1822,6 +1822,7 @@ def handle_provider_and_state_request(req, executor):
         connection_preview = ""
         connection_category = test_category
         connection_status = None
+        connection_retry_after = None
         connection_attempted = False
         if connection_requested and provider_ready and llm is not None:
             try:
@@ -1833,6 +1834,7 @@ def handle_provider_and_state_request(req, executor):
             except Exception as error:
                 connection_category = classify_provider_error(error)
                 connection_status = provider_http_status(error)
+                connection_retry_after = provider_retry_after_seconds(error)
         clear_session_provider_env()
         for name, value in saved_test_env.items():
             if value is None:
@@ -1849,6 +1851,7 @@ def handle_provider_and_state_request(req, executor):
                 "response_preview": connection_preview,
                 "error_category": connection_category,
                 "http_status": connection_status,
+                "retry_after_seconds": connection_retry_after,
                 "network_access": "explicit_one_request",
                 "tool_executed": False,
                 "request_count": 1 if connection_attempted else 0,

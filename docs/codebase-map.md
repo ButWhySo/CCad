@@ -2067,3 +2067,22 @@ semantic compaction remain open.
 ### Sprint 969 local context preview
 
 `src/ccad_agent/orchestrator.py` handles `/context [draft]` before provider execution. It builds accounting from the actual bounded context package, selected system prompt, bounded session history, enabled memory retrieval, and currently bound model tool schemas using `context_package.py::build_provider_request_report`. It emits content-free request-budget metadata and a chat message explicitly marked `provider_request_sent:false` and `tool_executed:false`; the draft is not added to history. `/commands` and the Agent slash palette expose the command. The app-owned `sprint969-context` UI-map sequence tests the large branch and captures each interaction; `scripts/test_agent_context_preview_runtime.py` verifies no model initialization, tool dispatch, history pollution, or private-content output.
+
+### Sprint 972 provider error fidelity and mapped local validation
+
+`src/ccad_agent/orchestrator.py` classifies wrapped SDK failures, extracts
+bounded `Retry-After`, and includes safe retry timing in the explicit
+`provider_connection_result`; this is distinct from `agent.test_provider`,
+which initializes the selected adapter without network access. The Settings
+callback in `agent_settings_dialog.cpp` renders quota/credit exhaustion and
+retry guidance without raw exception text. `ReviewWindow::uiTargetJsonById`
+supports named `label:` targets so the UI map can inspect exact status text.
+The `sprint972-provider` app-owned sequence exercises Settings navigation,
+provider/model controls, the masked key field, local validation, status, and
+clean cancel; it never targets the quota-consuming live test. Contracts are in
+`scripts/test_agent_ui_runtime_contract.py`, `scripts/test_provider_error_classification.py`,
+`scripts/test_provider_failure_event.py`, `scripts/test_provider_retry_behavior.py`,
+and `scripts/test_provider_probe_isolation.py`. Release build and CTest passed
+104/104; changed Python Pyright reports zero diagnostics; all 18 screenshots
+and stdout/stderr were inspected. Live per-provider capability checks and the
+pinned Gemini adapter's internal retries remain open.

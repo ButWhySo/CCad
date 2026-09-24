@@ -292,6 +292,7 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
           const QString category = state["error_category"].toString("provider_unavailable");
           const QHash<QString, QString> guidance = {
               {"payment_required", "payment, credits, or project billing is required"},
+              {"quota_exhausted", "provider quota or credits are exhausted; check quota and billing"},
               {"rate_limited", "provider rate limit reached; wait before retrying"},
               {"authentication", "API key was rejected"},
               {"permission_denied", "account or project cannot use this model"},
@@ -302,6 +303,9 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
           QString detail = guidance.value(category, category);
           const int http_status = state["http_status"].toInt(0);
           if (http_status > 0) detail += " (HTTP " + QString::number(http_status) + ")";
+          const int retry_after_seconds = state["retry_after_seconds"].toInt(0);
+          if (retry_after_seconds > 0)
+            detail += "; retry after " + QString::number(retry_after_seconds) + " seconds";
           provider_status_label_->setText("Live connection failed: " + detail);
       });
       agent_panel_->setProviderSecretResultCallback([this](const QJsonObject& state) {

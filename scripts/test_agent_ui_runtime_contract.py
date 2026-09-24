@@ -119,6 +119,9 @@ assert 'def initialize_agent_process():' in orchestrator
 assert 'if __name__ == "__main__":\n    initialize_agent_process()' in orchestrator
 assert 'provider payment, credits, or project billing is required' in settings
 assert 'provider rate limit reached' in settings
+assert 'provider quota or credits are exhausted; check quota and billing' in settings
+assert 'retry_after_seconds' in settings
+assert 'retry_after_seconds' in orchestrator
 assert 'selected model was not found' in settings
 assert 'API key was rejected' in settings
 assert settings.count('sendJsonRpc("agent.set_config", config)') == 2
@@ -134,4 +137,14 @@ assert 'openrouter/free' in settings
 assert 'provider_combo_->addItem("Ollama (local)", "ollama")' in settings
 assert 'fetch_ollama_models' in orchestrator
 assert '"network_access": "explicit_local_refresh"' in orchestrator
+for target in ("label:providerTestTarget", "label:providerTestStatus",
+               "action:testProviderBtn", "action:cancelSettingsButton"):
+    assert target in main
+assert 'name.startsWith("sprint972-provider")' in main
+assert 'Provider validation: ready (network not probed)' in settings
+assert 'provider quota or credits are exhausted; check quota and billing' in settings
+assert 'connection_retry_after = provider_retry_after_seconds(error)' in orchestrator
+assert '"retry_after_seconds": connection_retry_after' in orchestrator
+assert 'provider_local_validation_ready' in main
+assert 'id.startsWith("label:")' in (root / "src" / "ccad_gui" / "review_window.cpp").read_text(encoding="utf-8")
 print("PASS agent UI/provider runtime source contract; no GUI launched")

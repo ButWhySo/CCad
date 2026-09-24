@@ -132,6 +132,44 @@ wrapped_status.__cause__ = RateLimitError("HTTP rate limit")
 assert orchestrator.classify_provider_error(wrapped_status) == "rate_limited"
 assert orchestrator.provider_http_status(wrapped_status) == 429
 
+# Exercise the explicit Settings connection-result protocol at its provider
+# boundary without making an HTTP request or changing persistent settings.
+connection_error = OpenAICompatibleError(429, "rate_limit_exceeded", "slow down")
+connection_previous = {
+    "llm": orchestrator.llm,
+    "init_provider": orchestrator.init_provider,
+    "provider_connection_probe": orchestrator.provider_connection_probe,
+    "emit": orchestrator.emit,
+}
+connection_events = []
+def fail_connection_probe(_llm):
+    raise connection_error
+
+try:
+    orchestrator.llm = object()
+    orchestrator.init_provider = lambda: True
+    orchestrator.provider_connection_probe = fail_connection_probe
+    orchestrator.emit = connection_events.append
+    orchestrator.handle_provider_and_state_request({
+        "method": "agent.test_provider_connection",
+        "params": {"provider": "openai_compatible", "model": "offline-contract"},
+    }, None)
+finally:
+    orchestrator.llm = connection_previous["llm"]
+    orchestrator.init_provider = connection_previous["init_provider"]
+    orchestrator.provider_connection_probe = connection_previous["provider_connection_probe"]
+    orchestrator.emit = connection_previous["emit"]
+connection_result = next(event for event in connection_events
+                         if event.get("method") == "provider_connection_result")
+assert connection_result["params"]["error_category"] == "rate_limited"
+assert connection_result["params"]["http_status"] == 429
+assert connection_result["params"]["retry_after_seconds"] == 17
+assert connection_result["params"]["network_access"] == "explicit_one_request"
+assert connection_result["params"]["request_count"] == 1
+assert connection_result["params"]["tool_executed"] is False
+assert connection_result["params"]["secret_value_visible"] is False
+assert "slow down" not in json.dumps(connection_events)
+
 connection_error = ConnectionError("connection refused")
 assert orchestrator.classify_provider_error(connection_error) == "connection_error"
 assert "connection" in orchestrator.provider_error_user_message(connection_error).lower()

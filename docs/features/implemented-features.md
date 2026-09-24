@@ -2766,6 +2766,13 @@ provider SDK exposes an HTTP status, only that status is shown; response
 bodies, prompt data, endpoints, and keys remain hidden. These terminal
 failures do not receive automatic retries.
 
+Sprint 972 preserves exhausted quota/credits separately from transient rate
+limits, carries bounded `Retry-After` through the provider error path, and shows
+actionable quota/billing guidance in Settings. The local adapter validation is
+explicitly no-network and reports `ready (network not probed)`; a separate
+live-connection action is visibly labeled as quota-using. The mapped UI proof
+clicked only local validation and confirmed its result without a provider call.
+
 The Agent panel's internal provider-status selector is populated with every
 supported provider and switches before a session secret causes an activity
 entry. A Cerebras key therefore reports Cerebras local status rather than the

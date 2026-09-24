@@ -136,8 +136,27 @@ if ($process.ExitCode -ne 0) {
 }
 
 $Report = Join-Path $ScreenshotDir "$Name-target-sequence.json"
+$reportData = Get-Content -Raw $Report | ConvertFrom-Json
+if ($Name.StartsWith("sprint972-provider")) {
+  $readyEvent = @($reportData.entries | Where-Object {
+    $_.provider_local_validation_ready -eq $true
+  }) | Select-Object -First 1
+  $clickedLocalTest = @($reportData.entries | Where-Object {
+    $_.id -eq "action:testProviderBtn" -and $_.interaction -eq "ui.click" -and
+    $_.result.result.performed -eq $true
+  }) | Select-Object -First 1
+  $clickedCancel = @($reportData.entries | Where-Object {
+    $_.id -eq "action:cancelSettingsButton" -and $_.interaction -eq "ui.click" -and
+    $_.result.result.performed -eq $true
+  }) | Select-Object -First 1
+  if (-not $readyEvent -or -not $clickedLocalTest -or -not $clickedCancel) {
+    throw "Provider UI validation did not prove local no-network readiness and clean dialog close. Report: $Report"
+  }
+  if (@($reportData.entries | Where-Object { $_.id -eq "action:testProviderConnectionBtn" }).Count -gt 0) {
+    throw "Provider validation unexpectedly targeted the quota-consuming live connection test."
+  }
+}
 if ($RequireNativeToolCatalog) {
-  $reportData = Get-Content -Raw $Report | ConvertFrom-Json
   if (-not $reportData.catalog_startup_verified) {
     throw "Native agent tool catalog was not installed before persisted provider activation. Report: $Report"
   }

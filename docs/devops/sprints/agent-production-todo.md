@@ -11,8 +11,8 @@ Update this file in the same commit as each implementation slice.
 - [x] Extract nested HTTP/gRPC status, structured provider error codes, and bounded `Retry-After` without logging provider bodies or secrets.
 - [x] Distinguish exhausted quota/credits from transient rate limits across chat and model-catalog refresh paths.
 - [x] Disable implicit OpenAI/Anthropic retries where supported; document Gemini adapter's fixed internal retry behavior.
-- [ ] Verify provider error, retry, secret-redaction, and no-network contracts; run Qt Release, full CTest, Python/Pyright, and targeted UI-map evidence.
-- [ ] Update provider behavior docs, progress/backlog, and publish only the verified slice.
+- [x] Verify provider error, retry, secret-redaction, and no-network contracts; run Qt Release, full CTest, Python/Pyright, and targeted UI-map evidence.
+- [x] Update provider behavior docs, progress/backlog, and publish only the verified slice.
 
 ### Sprint 971 active slice - durable memory activation and failure truth
 

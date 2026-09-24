@@ -575,9 +575,16 @@ int main(int argc, char** argv) {
         QCoreApplication::exit(0);
         return;
       }
+      const bool provider_target_sequence = name.startsWith("sprint972-provider");
       const bool memory_target_sequence = name.startsWith("sprint967-memory") ||
                                           name.startsWith("sprint971-memory");
-      const QStringList target_ids = memory_target_sequence
+      const QStringList target_ids = provider_target_sequence
+          ? QStringList{"action:settingsBtn", "control:categoryList",
+                        "control:providerCombo", "control:modelCombo",
+                        "control:categoryList", "control:apiKeyInput",
+                        "label:providerTestTarget", "action:testProviderBtn",
+                        "label:providerTestStatus", "action:cancelSettingsButton"}
+          : memory_target_sequence
           ? QStringList{"action:settingsBtn", "control:categoryList",
                         "control:stmCb", "control:ltmCb",
                         "control:episodicCb", "label:memoryState",
@@ -602,7 +609,7 @@ int main(int argc, char** argv) {
                                       "control:providerCombo", "control:modelCombo",
                                       "control:apiKeyInput", "control:mcpServersTable",
                                       "action:addMcpServerBtn", "action:removeMcpServerBtn"};
-      const QStringList trigger_before_capture_ids = memory_target_sequence
+      const QStringList trigger_before_capture_ids = memory_target_sequence || provider_target_sequence
           ? QStringList{"action:settingsBtn"}
           : QStringList{
           "action:grid",          "action:polar_coord",   "action:unit_inch",
@@ -620,7 +627,8 @@ int main(int argc, char** argv) {
                                                     "control:memoryTitle", "control:memoryScope",
                                                     "control:memoryContent",
                                                     "action:closeMemoryManager",
-                                                    "action:cancelSettingsButton"};
+                                                    "action:cancelSettingsButton",
+                                                    "action:testProviderBtn"};
       bool memory_target_actions_ok = true;
       QJsonObject initial_memory_toggle_state;
       const auto visibleMemoryCheckbox = [](const QString& id) -> QCheckBox* {
@@ -633,6 +641,7 @@ int main(int argc, char** argv) {
       };
       const auto runPass = [window, &entries, &output_dir, &name, &target_ids,
                             memory_target_sequence,
+                            provider_target_sequence,
                             &memory_target_actions_ok, &initial_memory_toggle_state,
                             &visibleMemoryCheckbox,
                             &trigger_before_capture_ids,
@@ -656,16 +665,24 @@ int main(int argc, char** argv) {
               id == "control:stmCb" || id == "control:ltmCb" ||
               id == "control:episodicCb" || id == "label:memoryState" ||
               id == "action:agent_memory_manage" ||
-              id == "action:agent_memory_reset") {
+              id == "action:agent_memory_reset" ||
+              (provider_target_sequence && id == "action:testProviderBtn")) {
             const bool memory_control = id == "control:stmCb" || id == "control:ltmCb" ||
                 id == "control:episodicCb" || id == "label:memoryState" ||
                 id == "action:agent_memory_manage" ||
                 id == "action:agent_memory_reset";
-            const int category = memory_control ? 2 : (id == "control:mcpServersTable" ||
+            const int category = provider_target_sequence &&
+                                         (id == "control:providerCombo" || id == "control:modelCombo")
+                                     ? 1
+                                     : (provider_target_sequence &&
+                                                (id == "control:apiKeyInput" ||
+                                                 id == "action:testProviderBtn")
+                                            ? 4
+                                            : (memory_control ? 2 : (id == "control:mcpServersTable" ||
                                          id == "action:addMcpServerBtn" ||
                                          id == "action:removeMcpServerBtn"
                                      ? 3
-                                     : (id == "control:apiKeyInput" ? 4 : 1));
+                                     : (id == "control:apiKeyInput" ? 4 : 1))));
             for (QWidget* top_level : QApplication::topLevelWidgets()) {
               auto* categories = top_level->findChild<QListWidget*>("control:categoryList");
               if (categories == nullptr || !top_level->isVisible()) {
@@ -703,13 +720,16 @@ int main(int argc, char** argv) {
                 }
               });
             }
+            static int provider_category_click = 0;
+            const int category_row = provider_target_sequence
+                ? ((provider_category_click++ % 2) == 0 ? 1 : 4) : 2;
             const QString payload = id == "control:categoryList"
-                ? QString("{\"id\":%1,\"row\":2}").arg(jsonStringLocal(id))
+                ? QString("{\"id\":%1,\"row\":%2}").arg(jsonStringLocal(id)).arg(category_row)
                 : (id == "control:memoryTier"
                     ? QString("{\"id\":%1,\"value\":\"ltm\"}").arg(jsonStringLocal(id))
                     : QString("{\"id\":%1}").arg(jsonStringLocal(id)));
             const QString click_result = window->runAgentUiQueryJson("ui.click", payload);
-            if (memory_target_sequence) {
+            if (memory_target_sequence || provider_target_sequence) {
               const QJsonDocument click_doc = QJsonDocument::fromJson(click_result.toUtf8());
               const bool performed = click_doc.isObject() &&
                   click_doc.object().value("ok").toBool() &&
@@ -720,6 +740,20 @@ int main(int argc, char** argv) {
             entries << QString("{\"pass\":%1,\"id\":%2,\"interaction\":\"ui.click\",\"result\":%3}")
                            .arg(jsonStringLocal(pass_name), jsonStringLocal(id), click_result.trimmed());
             QApplication::processEvents();
+            if (provider_target_sequence && id == "action:testProviderBtn") {
+              QString status;
+              for (int attempt = 0; attempt < 50; ++attempt) {
+                QThread::msleep(100);
+                QApplication::processEvents();
+                status = window->uiTargetJsonById("label:providerTestStatus");
+                if (status.contains("Provider validation: ready (network not probed)"))
+                  break;
+              }
+              const bool ready = status.contains("Provider validation: ready (network not probed)");
+              memory_target_actions_ok = memory_target_actions_ok && ready;
+              entries << QString("{\"provider_local_validation_ready\":%1,\"status\":%2}")
+                             .arg(ready ? "true" : "false", status);
+            }
             if (id == "action:agent_memory_manage") {
               QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
               QApplication::processEvents();
@@ -728,6 +762,8 @@ int main(int argc, char** argv) {
           }
           const QString target_json = window->uiTargetJsonById(id);
           const bool found = target_json.contains("\"found\":true");
+          if (provider_target_sequence && id != "action:cancelSettingsButton" && !found)
+            memory_target_actions_ok = false;
           const std::optional<int> x = extractJsonInt(target_json, "\"logical_x\":");
           const std::optional<int> y = extractJsonInt(target_json, "\"logical_y\":");
           QString screenshot_path;
@@ -911,7 +947,8 @@ int main(int argc, char** argv) {
               .arg(entries.join(','));
       const QByteArray bytes = report.toUtf8();
       output.write(bytes.constData(), bytes.size());
-      if (!output || (memory_target_sequence && !memory_target_actions_ok)) {
+      if (!output || ((memory_target_sequence || provider_target_sequence) &&
+                      !memory_target_actions_ok)) {
         std::cerr << "GUI-map target sequence failed; report: " << output_path.string() << '\n';
         std::cerr.flush();
         QCoreApplication::exit(2);
