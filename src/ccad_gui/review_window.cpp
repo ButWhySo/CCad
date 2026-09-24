@@ -7263,6 +7263,7 @@ QString ReviewWindow::uiTypeTextJson(const QString& id, const QString& text) {
                                    "control:apiKeyInput", "control:modelInput",
                                    "control:projectNameInput", "control:projectPathInput",
                                    "control:followUpInput", "control:customInstructionsText",
+                                   "control:memoryTitle", "control:memoryScope",
                                    "control:memoryContent",
                                    "control:agent_provider_model",
                                    "control:agent_approval_request"};

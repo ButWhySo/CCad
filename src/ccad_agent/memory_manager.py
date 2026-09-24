@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
-from memory_store import MemoryStore
+from memory_store import MemoryStore, MemoryStoreError
 
 
 class MemoryManager:
@@ -26,6 +26,7 @@ class MemoryManager:
         self.project_id = str(project_id)
         self.enabled = {tier: False for tier in self.TIERS}
         self.runtime: dict[str, list[dict[str, Any]]] = {tier: [] for tier in self.TIERS}
+        self.storage_errors: dict[str, str] = {}
         self._stm_tasks: OrderedDict[str, list[dict[str, Any]]] = OrderedDict()
         self._retain_stm_task = True
 
@@ -41,7 +42,18 @@ class MemoryManager:
         if not self._retain_stm_task:
             self.runtime["stm"] = []
         for tier in changed:
-            self.runtime[tier] = self._load(tier) if self.enabled[tier] else []
+            if self.enabled[tier]:
+                try:
+                    loaded = self._load(tier)
+                except MemoryStoreError as error:
+                    self.enabled[tier] = False
+                    self.runtime[tier] = []
+                    self.storage_errors[tier] = error.category
+                else:
+                    self.runtime[tier] = loaded
+                    self.storage_errors.pop(tier, None)
+            else:
+                self.runtime[tier] = []
 
     @staticmethod
     def _now():
@@ -49,16 +61,28 @@ class MemoryManager:
 
     def configure(self, flags: dict[str, Any] | None):
         flags = flags if isinstance(flags, dict) else {}
+        failures = {}
         for tier in self.TIERS:
-            if bool(flags.get(tier, False)):
-                self.enable(tier)
-            else:
-                self.disable(tier)
+            try:
+                if bool(flags.get(tier, False)):
+                    self.enable(tier)
+                else:
+                    self.disable(tier)
+            except MemoryStoreError as error:
+                failures[tier] = error.category
+                self.enabled[tier] = False
+                self.runtime[tier] = []
+                self.storage_errors[tier] = error.category
+        return failures
 
     def enable(self, tier: str):
         self._check_tier(tier)
+        if tier != "stm":
+            self.store.ensure_namespace(tier, self.identities[tier])
+        loaded = self._load(tier)
+        self.runtime[tier] = loaded
         self.enabled[tier] = True
-        self.runtime[tier] = self._load(tier)
+        self.storage_errors.pop(tier, None)
         return self.state(tier)
 
     def disable(self, tier: str):
@@ -108,7 +132,7 @@ class MemoryManager:
         candidates = []
         query_words = set(self._word.findall(str(query).lower()))
         for tier_index, tier in enumerate(self.TIERS):
-            if not self.enabled[tier]:
+            if not self.enabled[tier] or self.storage_errors.get(tier):
                 continue
             for entry_index, entry in enumerate(self.runtime[tier]):
                 text = f"{entry.get('title', '')} {entry.get('content', '')}".lower()
@@ -213,7 +237,14 @@ class MemoryManager:
             namespace = self.identities[tier]
             candidates = list(self.runtime[tier])
             if tier != "stm":
-                candidates.extend(self.store.list(tier=tier, namespace=namespace))
+                try:
+                    candidates.extend(self.store.list(tier=tier, namespace=namespace))
+                    self.storage_errors.pop(tier, None)
+                except MemoryStoreError as error:
+                    self.storage_errors[tier] = error.category
+                    self.enabled[tier] = False
+                    self.runtime[tier] = []
+                    continue
             expired_ids = set()
             for entry in candidates:
                 value = entry.get("expires_at", "")
@@ -353,21 +384,37 @@ class MemoryManager:
         return {"runtime_entries": len(self.runtime[tier]), "persistent_removed": removed}
 
     def state(self, tier=None):
-        self._prune_expired()
         tiers = self.TIERS if tier is None else (tier,)
+        self._prune_expired()
         result = {}
         for current in tiers:
             self._check_tier(current)
-            raw_persistent = ([] if current == "stm" else self.store.list(
-                tier=current, namespace=self.identities[current]))
-            persistent = sum(not self.store.contains_secret(entry)
-                             for entry in raw_persistent)
+            raw_persistent = []
+            persistent_count_known = True
+            if current != "stm":
+                try:
+                    raw_persistent = self.store.list(
+                        tier=current, namespace=self.identities[current])
+                    self.storage_errors.pop(current, None)
+                except MemoryStoreError as error:
+                    self.storage_errors[current] = error.category
+                    self.enabled[current] = False
+                    self.runtime[current] = []
+                    persistent_count_known = False
+            persistent = (sum(not self.store.contains_secret(entry)
+                              for entry in raw_persistent)
+                          if persistent_count_known else None)
             result[current] = {"enabled": self.enabled[current],
                                "runtime_entries": len(self.runtime[current]),
                                "persistent_entries": persistent,
+                               "persistent_count_known": persistent_count_known,
+                               "storage_error": self.storage_errors.get(current, ""),
                                "loaded_into_process": self.enabled[current] and
-                               (current != "stm" or self._retain_stm_task),
-                               "unsafe_persistent_entries_omitted": len(raw_persistent) - persistent,
+                               (current != "stm" or self._retain_stm_task) and
+                               not self.storage_errors.get(current),
+                               "unsafe_persistent_entries_omitted": (
+                                   len(raw_persistent) - (persistent or 0)
+                                   if persistent_count_known else None),
                                "namespace_hash": hashlib.sha256(
                                    self.identities[current].encode()).hexdigest()[:16]}
         return result if tier is None else result[tier]

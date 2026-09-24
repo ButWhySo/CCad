@@ -2014,6 +2014,38 @@ were inspected. Live chat rendering of the large-context explanation remains
 unverified because it requires sending a provider request; offline contracts
 cover its trigger and count-only breakdown.
 
+## Sprint 971 durable memory activation and persistence
+
+`MemoryStore.ensure_namespace()` opens and validates the single durable JSON
+store before LTM or episodic activation. Missing storage is initialized; malformed
+or inaccessible storage raises a path-free `MemoryStoreError` category instead
+of looking like an empty memory list. Atomic writes preserve existing data.
+`MemoryManager` enables a durable tier only after a successful load, and a later
+storage failure disables retrieval and unloads the affected runtime cache.
+State reports distinguish a known zero count from an unknown count and include
+only a safe storage-error category.
+
+`AgentConfigManager.update_checked()` persists memory preferences with a verified
+same-directory temporary file and replaces its in-memory configuration only
+after durable read-back. `agent.memory_set_enabled` writes the preference before
+runtime activation and emits one `memory_state` event containing runtime counts,
+persistent-count availability, and persistence status. Activation failure rolls
+back the preference when possible. The Settings status renders unknown counts as
+`?`, never as zero. Reset remains separately confirmed; disabling a tier unloads
+only runtime state, while LTM/thread checkpoints and unrelated project files are
+not removed.
+
+Contracts: `scripts/test_memory_store.py`, `scripts/test_memory_manager.py`, and
+`scripts/test_agent_memory_persistence.py`. The last drives the real orchestrator
+subprocess with disposable APPDATA, a disposable memory store and checkpoint DB,
+proving success, persistence failure, corrupt-store preservation, reset refusal,
+confirmed reset, and unrelated file preservation. The Sprint 971 GUI-map scenario
+also uses a throwaway profile and captures memory Settings, Manage, save, and reset
+confirmation interactions. It verifies the durable record, reset cancellation,
+and reopened Personalisation checkbox values against saved preferences; all 42
+screenshots, stdout and stderr were inspected after a Qt MinGW Release build and
+104/104 CTest. Durable semantic memory compaction remains open.
+
 ## Sprint 968 task-scoped STM and duplicate handling
 
 `MemoryTaskScopes` in `src/ccad_agent/memory_manager.py` maps at most 32 durable

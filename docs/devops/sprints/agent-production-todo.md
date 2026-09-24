@@ -6,7 +6,19 @@ Check a box only after implementation and its required evidence exist.
 
 Update this file in the same commit as each implementation slice.
 
-### Sprint 970 active slice — semantic chat-history compaction
+### Sprint 971 active slice - durable memory activation and failure truth
+
+- [x] Create/open durable memory storage before enabling LTM or episodic retrieval; never interpret corrupt/unreadable storage as empty.
+- [x] Persist memory preferences atomically before runtime activation and report save/activation state through the same IPC event.
+- [x] On backing-store failure, unload the affected runtime cache, disable retrieval, report unknown durable counts, and preserve damaged bytes.
+- [x] Prove LTM disable preserves its durable record and LangGraph checkpoint; prove episodic toggling leaves project data unchanged.
+- [x] Prove reset refusal without confirmation and GUI confirmation cancellation; preserve the isolated memory record.
+- [x] Prove Personalisation GUI can create a durable LTM record with title, scope, and content through mapped controls; preserve other-profile settings and memory.
+- [x] Run Qt MinGW Release build, full CTest, changed-module Pyright, UI-map screenshots/log inspection, secret scan, and scoped commit/push.
+
+Durable semantic memory-record compaction remains a separate open item; this slice does not mark it complete.
+
+### Sprint 970 active slice - semantic chat-history compaction
 
 - [x] Replace count-only `/cc` and `/compact` behavior with a real selected-model summary; preserve the newest four messages exactly and never enable tools for this request.
 - [x] Bound and sanitize historical input, reject unsafe or non-compacting model output, and keep provider failures/quota use truthful.

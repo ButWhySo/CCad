@@ -245,6 +245,14 @@ if(Python3_Interpreter_FOUND)
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_agent_context_preview_runtime.py")
   add_test(NAME agent_memory_store
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_memory_store.py")
+  if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe")
+    add_test(NAME agent_memory_persistence
+      COMMAND "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe"
+              "${CMAKE_SOURCE_DIR}/scripts/test_agent_memory_persistence.py")
+  else()
+    add_test(NAME agent_memory_persistence
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_agent_memory_persistence.py")
+  endif()
   add_test(NAME agent_memory_manager
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_memory_manager.py")
   add_test(NAME agent_memory_task_scopes

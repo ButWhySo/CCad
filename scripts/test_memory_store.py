@@ -10,7 +10,10 @@ from memory_store import MemoryStore
 
 
 with tempfile.TemporaryDirectory() as temp:
-    store = MemoryStore(Path(temp) / "memory.json")
+    store_path = Path(temp) / "memory.json"
+    store = MemoryStore(store_path)
+    assert store.ensure_namespace("ltm", "thread-1") == []
+    assert store_path.is_file()
     item = store.add("Use 0.25 mm minimum track width", title="routing", tags=["pcb"],
                      tier="episodic", namespace="local-user", scope="user")
     assert store.list()[0]["id"] == item["id"]
@@ -49,6 +52,24 @@ with tempfile.TemporaryDirectory() as temp:
         assert "ISO-8601" in str(error)
     else:
         raise AssertionError("invalid memory expiry was accepted")
+
+with tempfile.TemporaryDirectory() as temp:
+    corrupt_path = Path(temp) / "memory.json"
+    corrupt_path.write_text("{not valid JSON", encoding="utf-8")
+    store = MemoryStore(corrupt_path)
+    try:
+        store.ensure_namespace("ltm", "thread-1")
+    except RuntimeError as error:
+        assert getattr(error, "category", "") == "memory_store_corrupt"
+    else:
+        raise AssertionError("corrupt memory store was reported as an empty namespace")
+    try:
+        store.add("do not replace damaged records", tier="ltm", namespace="thread-1")
+    except RuntimeError as error:
+        assert getattr(error, "category", "") == "memory_store_corrupt"
+    else:
+        raise AssertionError("memory add overwrote a corrupt backing store")
+    assert corrupt_path.read_text(encoding="utf-8") == "{not valid JSON"
 
 with tempfile.TemporaryDirectory() as temp:
     os.environ["APPDATA"] = temp

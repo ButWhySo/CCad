@@ -2924,6 +2924,10 @@ changed Python modules. The Qt/MinGW Release build and full CTest pass 94/94.
 Feature-specific rendered chat proof is still pending; the GUI checklist is
 deliberately not marked complete because triggering the report through the
 normal live path would submit a real provider request.
+
+## Durable Agent memory activation and persistence
+
+Personalisation memory toggles persist before runtime activation. LTM and episodic activation validates or initializes their durable store; storage failure unloads runtime content and reports an unknown persistent count rather than pretending the tier is empty. Disabling preserves durable entries and conversation checkpoints. Reset is separately confirmed. Validation: Qt MinGW Release build, CTest 104/104, changed-module Pyright (0 diagnostics), offline orchestrator persistence contracts, and the mapped GUI create/cancel-reset/reopen-settings flow; all 42 run screenshots and stdout/stderr were inspected. Durable memory semantic compaction is still not implemented.
 # Agent local context preview
 
 Type `/context` in the Agent chat to inspect how the current bounded request would be assembled, or `/context <draft>` to include a hypothetical user message and rank memory for that intent. The command uses the real project snapshot, enabled memory namespaces, conversation messages, system instructions, and bound model tool schemas, then renders safe counts, token estimates, ranking, omissions, the selected provider/model, and model-limit availability in chat. Provider/model identity follows the same persisted settings and environment override resolution as provider startup; a context limit remains unavailable unless authoritative selected-model metadata supplies one. The preview is local-only: no provider request, tool execution, history mutation, or draft persistence occurs. Automatic requests also receive the existing count-only explanation when estimated input crosses `CCAD_AGENT_LARGE_CONTEXT_TOKENS` (default 4096). Token counts are estimates rather than provider tokenizer measurements.

@@ -57,22 +57,78 @@ Start-Sleep -Seconds 2
 
 $priorThreshold = $env:CCAD_AGENT_LARGE_CONTEXT_TOKENS
 $priorTraceDebug = $env:CCAD_TRACE_DEBUG
+$priorAppData = $env:APPDATA
+$priorMemoryPath = $env:CCAD_AGENT_MEMORY_PATH
+$priorCheckpointPath = $env:CCAD_AGENT_CHECKPOINT_DB
+$isolatedMemoryProfile = $null
 if ($Name.StartsWith("sprint969-context")) {
   # Exercise the real large-context branch with a deliberately low, valid
   # threshold. The /context feature remains local and never invokes the model.
   $env:CCAD_AGENT_LARGE_CONTEXT_TOKENS = "512"
   $env:CCAD_TRACE_DEBUG = "1"
 }
+if ($Name.StartsWith("sprint971-memory")) {
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint971-" + [Guid]::NewGuid().ToString("N"))
+  New-Item -ItemType Directory -Path $isolatedMemoryProfile | Out-Null
+  $env:APPDATA = $isolatedMemoryProfile
+  $env:CCAD_AGENT_MEMORY_PATH = Join-Path $isolatedMemoryProfile "agent_memory.json"
+  $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
+}
 try {
   $process = Start-Process -FilePath $Gui `
     -ArgumentList @("--test-ui-map-target-sequence", $ProjectPath, $ScreenshotDir, $Name,
                     [string]$InitialLoadMilliseconds, [string]$PerTargetMilliseconds) `
     -PassThru -Wait -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
+  if ($Name.StartsWith("sprint971-memory")) {
+    $memoryFile = Join-Path $isolatedMemoryProfile "agent_memory.json"
+    $configFile = Join-Path $isolatedMemoryProfile "CCad\agent_config.json"
+    if (Test-Path -LiteralPath $configFile) {
+      $config = Get-Content -Raw -LiteralPath $configFile | ConvertFrom-Json
+      $safePreferences = [ordered]@{
+        stm = [bool]$config.memory.stm
+        ltm = [bool]$config.memory.ltm
+        episodic = [bool]$config.memory.episodic
+      }
+      $safePreferences | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $ScreenshotDir "$Name-memory-preferences.json")
+    } else {
+      throw "Mapped Agent run did not create its isolated configuration file."
+    }
+    if (-not (Test-Path -LiteralPath $memoryFile)) {
+      throw "Mapped memory flow did not create its isolated durable memory store."
+    }
+    $records = @(Get-Content -Raw -LiteralPath $memoryFile | ConvertFrom-Json)
+    $savedUiRecord = $records | Where-Object {
+      $_.tier -eq "ltm" -and $_.title -eq "UI-map verification" -and
+      $_.scope -eq "conversation" -and
+      $_.content -eq "Sprint 971 UI-map proof record; safe to delete"
+    } | Select-Object -First 1
+    if (-not $savedUiRecord) {
+      throw "Mapped GUI did not persist the exact LTM title, scope, and content."
+    }
+    $confirmationScreenshot = Join-Path $ScreenshotDir "$Name-initial-reset-confirmation.png"
+    if (-not (Test-Path -LiteralPath $confirmationScreenshot)) {
+      throw "Mapped GUI did not capture the reset confirmation before cancelling it."
+    }
+  }
 } finally {
   if ($null -eq $priorThreshold) { Remove-Item Env:CCAD_AGENT_LARGE_CONTEXT_TOKENS -ErrorAction SilentlyContinue }
   else { $env:CCAD_AGENT_LARGE_CONTEXT_TOKENS = $priorThreshold }
   if ($null -eq $priorTraceDebug) { Remove-Item Env:CCAD_TRACE_DEBUG -ErrorAction SilentlyContinue }
   else { $env:CCAD_TRACE_DEBUG = $priorTraceDebug }
+  if ($null -eq $priorAppData) { Remove-Item Env:APPDATA -ErrorAction SilentlyContinue }
+  else { $env:APPDATA = $priorAppData }
+  if ($null -eq $priorMemoryPath) { Remove-Item Env:CCAD_AGENT_MEMORY_PATH -ErrorAction SilentlyContinue }
+  else { $env:CCAD_AGENT_MEMORY_PATH = $priorMemoryPath }
+  if ($null -eq $priorCheckpointPath) { Remove-Item Env:CCAD_AGENT_CHECKPOINT_DB -ErrorAction SilentlyContinue }
+  else { $env:CCAD_AGENT_CHECKPOINT_DB = $priorCheckpointPath }
+  if ($isolatedMemoryProfile -and (Test-Path -LiteralPath $isolatedMemoryProfile)) {
+    $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+    $profilePath = [IO.Path]::GetFullPath($isolatedMemoryProfile)
+    if (-not $profilePath.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase)) {
+      throw "Refusing to remove a memory-test profile outside the system temp directory."
+    }
+    Remove-Item -LiteralPath $profilePath -Recurse -Force
+  }
 }
 
 if ($process.ExitCode -ne 0) {

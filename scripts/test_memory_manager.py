@@ -107,6 +107,39 @@ with tempfile.TemporaryDirectory() as temp:
     assert len(manager.list(tier="ltm", scope="retention")) == 64
     assert manager.state("ltm")["persistent_entries"] == 64
 
+with tempfile.TemporaryDirectory() as temp:
+    store_path = Path(temp) / "memory.json"
+    manager = MemoryManager(MemoryStore(store_path), thread_id="thread-open")
+    state = manager.enable("ltm")
+    assert store_path.is_file()
+    assert state["enabled"] is True and state["persistent_entries"] == 0
+
+with tempfile.TemporaryDirectory() as temp:
+    store_path = Path(temp) / "memory.json"
+    store_path.write_text("corrupt", encoding="utf-8")
+    manager = MemoryManager(MemoryStore(store_path), thread_id="thread-broken")
+    failures = manager.configure({"ltm": True})
+    state = manager.state("ltm")
+    assert failures == {"ltm": "memory_store_corrupt"}
+    assert state["enabled"] is False
+    assert state["loaded_into_process"] is False
+    assert state["persistent_count_known"] is False
+    assert state["storage_error"] == "memory_store_corrupt"
+    assert store_path.read_text(encoding="utf-8") == "corrupt"
+    state_after_external_damage = MemoryManager(
+        MemoryStore(Path(temp) / "healthy.json"), thread_id="thread-healthy")
+    state_after_external_damage.enable("ltm")
+    state_after_external_damage.add("Cached before backing-store damage", tier="ltm")
+    damaged_path = state_after_external_damage.store.path
+    damaged_path.write_text("broken", encoding="utf-8")
+    assert state_after_external_damage.retrieve("cached") == []
+    damaged_state = state_after_external_damage.state("ltm")
+    assert damaged_state["enabled"] is False
+    assert damaged_state["runtime_entries"] == 0
+    assert damaged_state["persistent_count_known"] is False
+    assert damaged_state["storage_error"] == "memory_store_corrupt"
+
+    manager.enable("stm")
     manager.set_identities(task_id="task-c", thread_id="thread-c",
                            project_id="project-c", user_id="local-user")
     manager.add("Task C private working constraint", tier="stm")

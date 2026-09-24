@@ -44,10 +44,10 @@ warnings.filterwarnings(
 from langgraph.graph import StateGraph, END
 from langgraph.types import Command, interrupt
 
-from config import AgentConfigManager
+from config import AgentConfigManager, ConfigPersistenceError
 from telemetry import runtime as telemetry_runtime, trace_function
 import hooks
-from memory_store import MemoryStore
+from memory_store import MemoryStore, MemoryStoreError
 from memory_manager import MemoryManager, MemoryTaskScopes
 from memory_commands import execute_memory_command
 from history_compaction import (HistoryCompactionError,
@@ -1923,19 +1923,43 @@ def handle_provider_and_state_request(req, executor):
     elif method == "agent.memory_set_enabled":
         params = req.get("params", {})
         tier = str(params.get("tier", ""))
+        requested = params.get("enabled")
+        if tier not in memory_manager.TIERS or not isinstance(requested, bool):
+            emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
+                "tier": tier, "enabled": False, "persisted": False,
+                "error": "invalid_memory_preference", "secret_value_visible": False}})
+            return True
+        previous_config = dict(config_manager.get("memory", {}))
+        previous_enabled = memory_manager.enabled[tier]
+        memory_config = dict(previous_config)
+        memory_config[tier] = requested
         try:
-            state = (memory_manager.enable(tier) if bool(params.get("enabled"))
+            config_manager.update_checked("memory", memory_config)
+        except ConfigPersistenceError as error:
+            emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
+                "tier": tier, **memory_manager.state(tier), "persisted": False,
+                "error": error.category, "tiers": memory_manager.state(),
+                "secret_value_visible": False}})
+            return True
+        try:
+            state = (memory_manager.enable(tier) if requested
                      else memory_manager.disable(tier))
-            memory_config = dict(config_manager.get("memory", {}))
-            memory_config[tier] = bool(params.get("enabled"))
-            config_manager.update("memory", memory_config)
+        except (TypeError, ValueError, RuntimeError, MemoryStoreError) as error:
+            try:
+                config_manager.update_checked("memory", previous_config)
+            except ConfigPersistenceError:
+                pass
+            state = memory_manager.state(tier)
+            category = getattr(error, "category", "memory_activation_failed")
             emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
-                "tier": tier, **state, "tiers": memory_manager.state(),
+                "tier": tier, **state, "enabled": previous_enabled,
+                "persisted": config_manager.get("memory", {}) == previous_config,
+                "error": category, "tiers": memory_manager.state(),
                 "secret_value_visible": False}})
-        except (TypeError, ValueError, RuntimeError) as error:
-            emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
-                "tier": tier, "enabled": False, "error": str(error),
-                "secret_value_visible": False}})
+            return True
+        emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
+            "tier": tier, **state, "persisted": True,
+            "tiers": memory_manager.state(), "secret_value_visible": False}})
     elif method == "agent.memory_reset":
         params = req.get("params", {})
         tier = params.get("tier")
@@ -1949,9 +1973,10 @@ def handle_provider_and_state_request(req, executor):
                 "secret_value_visible": False}})
             emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
                 "tiers": memory_manager.state(), "secret_value_visible": False}})
-        except (TypeError, ValueError) as error:
+        except (TypeError, ValueError, MemoryStoreError) as error:
             emit({"jsonrpc": "2.0", "method": "memory_reset", "params": {
-                "tier": tier or "all", "removed": 0, "error": str(error),
+                "tier": tier or "all", "removed": 0,
+                "error": getattr(error, "category", str(error)),
                 "secret_value_visible": False}})
     elif method in {"agent.memory_list", "agent.memory_add", "agent.memory_update",
                     "agent.memory_delete"}:
@@ -2596,12 +2621,24 @@ if __name__ == "__main__":
                                         "password", "credential")
                 clean_config = sanitize_persisted_config(
                     config_data, secret_key_fragments, rejected_secret_keys)
+                persistence_error = None
                 for k, v in clean_config.items():
-                    config_manager.update(k, v)
+                    try:
+                        if k == "memory":
+                            config_manager.update_checked(k, v)
+                        else:
+                            config_manager.update(k, v)
+                    except ConfigPersistenceError as error:
+                        persistence_error = error.category
+                        break
                 text = ("Agent configuration saved successfully." if not rejected_secret_keys
                         else "Agent configuration saved; secret fields were rejected.")
+                if persistence_error:
+                    text = "Agent configuration was not fully saved: " + persistence_error
                 emit({"jsonrpc": "2.0", "method": "message", "params": {
-                    "text": text, "secret_value_visible": False}})
+                    "text": text, "kind": "configuration_error" if persistence_error else "status",
+                    "persisted": not bool(persistence_error),
+                    "secret_value_visible": False}})
                 if "provider" in clean_config or "model" in clean_config:
                     provider = clean_config.get("provider", "openai")
                     model = clean_config.get("model", "gpt-5.1")
@@ -2611,10 +2648,11 @@ if __name__ == "__main__":
                 if "observability" in clean_config:
                     emit({"jsonrpc": "2.0", "method": "observability_state",
                           "params": reconfigure_observability()})
-                if "memory" in clean_config:
-                    memory_manager.configure(clean_config.get("memory", {}))
+                if "memory" in clean_config and not persistence_error:
+                    failures = memory_manager.configure(clean_config.get("memory", {}))
                     emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
-                        "tiers": memory_manager.state(), "secret_value_visible": False}})
+                        "tiers": memory_manager.state(), "storage_errors": failures,
+                        "persisted": True, "secret_value_visible": False}})
             elif method == "agent.get_config":
                 emit({"jsonrpc": "2.0", "method": "config_state", "params": config_manager.config})
             elif method == "agent.set_tool_catalog":

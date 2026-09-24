@@ -21,6 +21,14 @@ SECRET_MARKERS = re.compile(
 )
 
 
+class MemoryStoreError(RuntimeError):
+    """Safe storage failure category without exposing paths or stored values."""
+
+    def __init__(self, category):
+        self.category = str(category)
+        super().__init__(self.category)
+
+
 def memory_path() -> Path:
     configured = os.environ.get("CCAD_AGENT_MEMORY_PATH", "").strip()
     if configured:
@@ -35,25 +43,46 @@ class MemoryStore:
         self.path = Path(path) if path else memory_path()
 
     def _read(self):
-        if not self.path.exists():
-            return []
         try:
             data = json.loads(self.path.read_text(encoding="utf-8"))
-            return data if isinstance(data, list) else []
-        except (OSError, json.JSONDecodeError):
+        except FileNotFoundError:
             return []
+        except json.JSONDecodeError as error:
+            raise MemoryStoreError("memory_store_corrupt") from error
+        except OSError as error:
+            raise MemoryStoreError("memory_store_unavailable") from error
+        if not isinstance(data, list) or any(not isinstance(item, dict) for item in data):
+            raise MemoryStoreError("memory_store_corrupt")
+        return data
 
     def _write(self, entries):
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        fd, name = tempfile.mkstemp(prefix=".ccad-memory-", dir=self.path.parent)
+        name = ""
         try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            fd, name = tempfile.mkstemp(prefix=".ccad-memory-", dir=self.path.parent)
             with os.fdopen(fd, "w", encoding="utf-8") as handle:
                 json.dump(entries, handle, indent=2, ensure_ascii=False)
                 handle.write("\n")
             os.replace(name, self.path)
+        except OSError as error:
+            raise MemoryStoreError("memory_store_unavailable") from error
         finally:
-            if os.path.exists(name):
+            if name and os.path.exists(name):
                 os.unlink(name)
+
+    def ensure_namespace(self, tier, namespace):
+        """Open the single JSON backing store and validate this logical namespace."""
+        if tier not in {"ltm", "episodic"}:
+            raise ValueError("only durable memory tiers have persistent namespaces")
+        namespace = str(namespace or "").strip()
+        if not namespace:
+            raise ValueError("memory namespace identity is required")
+        entries = self._read()
+        if not self.path.is_file():
+            self._write(entries)
+        return [entry for entry in entries
+                if entry.get("tier", "ltm") == tier
+                and entry.get("namespace", "project") == namespace]
 
     def add(self, content, *, title="", scope="project", tags=None, tier="ltm",
             namespace="project", expires_at=""):

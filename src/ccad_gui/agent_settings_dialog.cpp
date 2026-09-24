@@ -1133,10 +1133,15 @@ void AgentSettingsDialog::applyMemoryState(const QJsonObject& state) {
       const QSignalBlocker blocker(checkbox);
       checkbox->setChecked(enabled);
     }
+    const QString persistent_count = item.value("persistent_count_known").toBool(true)
+        ? QString::number(item.value("persistent_entries").toInt()) : QString("?");
     QString tier_summary = QString("%1 %2 %3/%4")
                    .arg(tier.toUpper(), enabled ? "on" : "off")
                    .arg(item.value("runtime_entries").toInt())
-                   .arg(item.value("persistent_entries").toInt());
+                   .arg(persistent_count);
+    const QString storage_error = item.value("storage_error").toString();
+    if (!storage_error.isEmpty())
+      tier_summary += QString(" (%1)").arg(storage_error);
     const int unsafe = item.value("unsafe_persistent_entries_omitted").toInt();
     if (unsafe > 0)
       tier_summary += QString(" !%1 hidden").arg(unsafe);

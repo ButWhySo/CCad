@@ -4,6 +4,8 @@
 #include "ui_map_server.hpp"
 
 #include <QApplication>
+#include <QAbstractButton>
+#include <QCheckBox>
 #include <QCursor>
 #include <QElapsedTimer>
 #include <QDir>
@@ -11,6 +13,7 @@
 #include <QPainter>
 #include <QPixmap>
 #include <QListWidget>
+#include <QMessageBox>
 #include <QProxyStyle>
 #include <QStyleOption>
 #include <QTextBrowser>
@@ -572,12 +575,17 @@ int main(int argc, char** argv) {
         QCoreApplication::exit(0);
         return;
       }
-      const QStringList target_ids = name.startsWith("sprint967-memory")
+      const bool memory_target_sequence = name.startsWith("sprint967-memory") ||
+                                          name.startsWith("sprint971-memory");
+      const QStringList target_ids = memory_target_sequence
           ? QStringList{"action:settingsBtn", "control:categoryList",
                         "control:stmCb", "control:ltmCb",
                         "control:episodicCb", "label:memoryState",
+                        "action:agent_memory_reset",
                         "action:agent_memory_manage", "control:memoryEntries",
-                        "control:memoryTier", "control:memoryContent",
+                        "action:addMemory", "control:memoryTier",
+                        "control:memoryTitle", "control:memoryScope",
+                        "control:memoryContent", "action:saveMemory",
                         "action:closeMemoryManager", "action:cancelSettingsButton"}
           : QStringList{"action:cursor", "action:measurement", "action:save",
                                       "menu:file", "panel:properties", "action:grid",
@@ -594,7 +602,7 @@ int main(int argc, char** argv) {
                                       "control:providerCombo", "control:modelCombo",
                                       "control:apiKeyInput", "control:mcpServersTable",
                                       "action:addMcpServerBtn", "action:removeMcpServerBtn"};
-      const QStringList trigger_before_capture_ids = name.startsWith("sprint967-memory")
+      const QStringList trigger_before_capture_ids = memory_target_sequence
           ? QStringList{"action:settingsBtn"}
           : QStringList{
           "action:grid",          "action:polar_coord",   "action:unit_inch",
@@ -605,12 +613,28 @@ int main(int argc, char** argv) {
                                                     "control:categoryList",
                                                     "control:stmCb", "control:ltmCb",
                                                     "control:episodicCb",
+                                                    "action:agent_memory_reset",
                                                     "action:agent_memory_manage",
+                                                    "action:addMemory", "action:saveMemory",
                                                     "control:memoryTier",
+                                                    "control:memoryTitle", "control:memoryScope",
                                                     "control:memoryContent",
                                                     "action:closeMemoryManager",
                                                     "action:cancelSettingsButton"};
+      bool memory_target_actions_ok = true;
+      QJsonObject initial_memory_toggle_state;
+      const auto visibleMemoryCheckbox = [](const QString& id) -> QCheckBox* {
+        for (QWidget* widget : QApplication::allWidgets()) {
+          auto* checkbox = qobject_cast<QCheckBox*>(widget);
+          if (checkbox && checkbox->objectName() == id && checkbox->isVisible())
+            return checkbox;
+        }
+        return nullptr;
+      };
       const auto runPass = [window, &entries, &output_dir, &name, &target_ids,
+                            memory_target_sequence,
+                            &memory_target_actions_ok, &initial_memory_toggle_state,
+                            &visibleMemoryCheckbox,
                             &trigger_before_capture_ids,
                             &click_before_capture_ids,
                             per_target_wait_ms](
@@ -631,10 +655,12 @@ int main(int argc, char** argv) {
               id == "action:addMcpServerBtn" || id == "action:removeMcpServerBtn" ||
               id == "control:stmCb" || id == "control:ltmCb" ||
               id == "control:episodicCb" || id == "label:memoryState" ||
-              id == "action:agent_memory_manage") {
+              id == "action:agent_memory_manage" ||
+              id == "action:agent_memory_reset") {
             const bool memory_control = id == "control:stmCb" || id == "control:ltmCb" ||
                 id == "control:episodicCb" || id == "label:memoryState" ||
-                id == "action:agent_memory_manage";
+                id == "action:agent_memory_manage" ||
+                id == "action:agent_memory_reset";
             const int category = memory_control ? 2 : (id == "control:mcpServersTable" ||
                                          id == "action:addMcpServerBtn" ||
                                          id == "action:removeMcpServerBtn"
@@ -653,16 +679,51 @@ int main(int argc, char** argv) {
             }
           }
           if (click_before_capture_ids.contains(id)) {
+            if (memory_target_sequence && pass_name == "resized" &&
+                (id == "action:addMemory" || id == "action:saveMemory")) {
+              // The first pass created a real LTM record in the isolated test profile;
+              // the second pass only observes state after toggling the tier off.
+            } else {
+            if (memory_target_sequence && pass_name == "initial" &&
+                (id == "control:stmCb" || id == "control:ltmCb" ||
+                 id == "control:episodicCb")) {
+              if (QCheckBox* checkbox = visibleMemoryCheckbox(id))
+                initial_memory_toggle_state.insert(id, checkbox->isChecked());
+            }
+            if (id == "action:agent_memory_reset") {
+              const auto confirm_path = output_dir /
+                  (name + "-" + pass_name + "-reset-confirmation.png").toStdString();
+              QTimer::singleShot(300, qApp, [confirm_path]() {
+                for (QWidget* top_level : QApplication::topLevelWidgets()) {
+                  auto* message = qobject_cast<QMessageBox*>(top_level);
+                  if (message == nullptr || !message->isVisible()) continue;
+                  message->grab().save(QString::fromStdString(confirm_path.string()));
+                  if (QAbstractButton* no = message->button(QMessageBox::No)) no->click();
+                  break;
+                }
+              });
+            }
             const QString payload = id == "control:categoryList"
                 ? QString("{\"id\":%1,\"row\":2}").arg(jsonStringLocal(id))
-                : QString("{\"id\":%1}").arg(jsonStringLocal(id));
+                : (id == "control:memoryTier"
+                    ? QString("{\"id\":%1,\"value\":\"ltm\"}").arg(jsonStringLocal(id))
+                    : QString("{\"id\":%1}").arg(jsonStringLocal(id)));
             const QString click_result = window->runAgentUiQueryJson("ui.click", payload);
+            if (memory_target_sequence) {
+              const QJsonDocument click_doc = QJsonDocument::fromJson(click_result.toUtf8());
+              const bool performed = click_doc.isObject() &&
+                  click_doc.object().value("ok").toBool() &&
+                  click_doc.object().value("result").toObject()
+                      .value("performed").toBool();
+              memory_target_actions_ok = memory_target_actions_ok && performed;
+            }
             entries << QString("{\"pass\":%1,\"id\":%2,\"interaction\":\"ui.click\",\"result\":%3}")
                            .arg(jsonStringLocal(pass_name), jsonStringLocal(id), click_result.trimmed());
             QApplication::processEvents();
             if (id == "action:agent_memory_manage") {
               QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
               QApplication::processEvents();
+            }
             }
           }
           const QString target_json = window->uiTargetJsonById(id);
@@ -712,15 +773,29 @@ int main(int argc, char** argv) {
               active->grab().save(screenshot_path);
             }
           }
-          if (id == "control:memoryContent" && found) {
-            const QString typing = QString("{\"id\":%1,\"text\":\"visual validation text; not saved\"}")
-                .arg(jsonStringLocal(id));
+          if ((id == "control:memoryContent" || id == "control:memoryTitle" ||
+               id == "control:memoryScope") && found &&
+              (!memory_target_sequence || pass_name == "initial")) {
+            const QString value = id == "control:memoryContent"
+                ? "Sprint 971 UI-map proof record; safe to delete"
+                : (id == "control:memoryTitle" ? "UI-map verification" : "conversation");
+            const QString typing = QString("{\"id\":%1,\"text\":%2}")
+                .arg(jsonStringLocal(id), jsonStringLocal(value));
             const QString typing_result = window->runAgentUiQueryJson("ui.type_text", typing);
+            if (memory_target_sequence) {
+              const QJsonDocument typing_doc = QJsonDocument::fromJson(typing_result.toUtf8());
+              const bool performed = typing_doc.isObject() &&
+                  typing_doc.object().value("ok").toBool() &&
+                  typing_doc.object().value("result").toObject()
+                      .value("performed").toBool();
+              memory_target_actions_ok = memory_target_actions_ok && performed;
+            }
             QApplication::processEvents();
             QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
             QApplication::processEvents();
+            QString typed_slug = id.mid(id.indexOf(':') + 1);
             const std::filesystem::path typed_path = output_dir /
-                (name + "-" + pass_name + "-memory-content-typed.png").toStdString();
+                (name + "-" + pass_name + "-" + typed_slug + "-typed.png").toStdString();
             QWidget* active = QApplication::activeWindow();
             if (active && active->isVisible()) active->grab().save(QString::fromStdString(typed_path.string()));
             entries << QString("{\"pass\":%1,\"id\":%2,\"interaction\":\"ui.type_text\",\"result\":%3,\"screenshot\":%4}")
@@ -744,6 +819,82 @@ int main(int argc, char** argv) {
       QApplication::processEvents();
       QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
       runPass("resized");
+      if (memory_target_sequence) {
+        const QString reopen_result = window->runAgentUiQueryJson(
+            "ui.click", "{\"id\":\"action:settingsBtn\"}");
+        QApplication::processEvents();
+        QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
+        QApplication::processEvents();
+        const auto reloaded_settings_path = output_dir /
+            (name + "-preferences-reloaded.png").toStdString();
+        for (QWidget* top_level : QApplication::topLevelWidgets()) {
+          if (top_level != window && top_level->isVisible()) {
+            top_level->grab().save(
+                QString::fromStdString(reloaded_settings_path.string()));
+            break;
+          }
+        }
+        const QJsonDocument reopen_doc = QJsonDocument::fromJson(reopen_result.toUtf8());
+        memory_target_actions_ok = memory_target_actions_ok && reopen_doc.isObject() &&
+            reopen_doc.object().value("ok").toBool() &&
+            reopen_doc.object().value("result").toObject().value("performed").toBool();
+        entries << QString("{\"preference_reopen\":%1,\"screenshot\":%2}")
+                       .arg(memory_target_actions_ok ? "true" : "false",
+                            jsonStringLocal(QString::fromStdString(
+                                reloaded_settings_path.string())));
+        const QString memory_page_result = window->runAgentUiQueryJson(
+            "ui.click", "{\"id\":\"control:categoryList\",\"row\":2}");
+        QApplication::processEvents();
+        QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
+        QApplication::processEvents();
+        const QJsonDocument memory_page_doc =
+            QJsonDocument::fromJson(memory_page_result.toUtf8());
+        const bool memory_page_selected = memory_page_doc.isObject() &&
+            memory_page_doc.object().value("ok").toBool() &&
+            memory_page_doc.object().value("result").toObject()
+                .value("performed").toBool();
+        memory_target_actions_ok = memory_target_actions_ok && memory_page_selected;
+        const auto memory_page_path = output_dir /
+            (name + "-preferences-memory-page.png").toStdString();
+        for (QWidget* top_level : QApplication::topLevelWidgets()) {
+          if (top_level != window && top_level->isVisible()) {
+            top_level->grab().save(QString::fromStdString(memory_page_path.string()));
+            break;
+          }
+        }
+        entries << QString("{\"memory_page_selected\":%1,\"screenshot\":%2}")
+                       .arg(memory_page_selected ? "true" : "false",
+                            jsonStringLocal(QString::fromStdString(
+                                memory_page_path.string())));
+        for (auto it = initial_memory_toggle_state.constBegin();
+             it != initial_memory_toggle_state.constEnd(); ++it) {
+          const QCheckBox* checkbox = visibleMemoryCheckbox(it.key());
+          const bool matches = checkbox != nullptr &&
+                               checkbox->isChecked() == it.value().toBool();
+          memory_target_actions_ok = memory_target_actions_ok && matches;
+          entries << QString("{\"toggle\":%1,\"initial\":%2,\"final\":%3,\"matches\":%4}")
+                         .arg(jsonStringLocal(it.key()))
+                         .arg(it.value().toBool() ? "true" : "false")
+                         .arg(checkbox && checkbox->isChecked() ? "true" : "false")
+                         .arg(matches ? "true" : "false");
+        }
+        const QString close_result = window->runAgentUiQueryJson(
+            "ui.click", "{\"id\":\"action:cancelSettingsButton\"}");
+        QApplication::processEvents();
+        const auto closed_settings_path = output_dir /
+            (name + "-preferences-reloaded-closed.png").toStdString();
+        window->grab().save(QString::fromStdString(closed_settings_path.string()));
+        const QJsonDocument close_doc = QJsonDocument::fromJson(close_result.toUtf8());
+        memory_target_actions_ok = memory_target_actions_ok && close_doc.isObject() &&
+            close_doc.object().value("ok").toBool() &&
+            close_doc.object().value("result").toObject().value("performed").toBool();
+        entries << QString("{\"preferences_dialog_closed\":%1,\"screenshot\":%2}")
+                       .arg(memory_target_actions_ok ? "true" : "false",
+                            jsonStringLocal(QString::fromStdString(
+                                closed_settings_path.string())));
+        entries << QString("{\"memory_actions_ok\":%1}")
+                       .arg(memory_target_actions_ok ? "true" : "false");
+      }
 
       const std::filesystem::path output_path =
           output_dir / (name + "-target-sequence.json").toStdString();
@@ -760,8 +911,8 @@ int main(int argc, char** argv) {
               .arg(entries.join(','));
       const QByteArray bytes = report.toUtf8();
       output.write(bytes.constData(), bytes.size());
-      if (!output) {
-        std::cerr << "failed to write target sequence report: " << output_path.string() << '\n';
+      if (!output || (memory_target_sequence && !memory_target_actions_ok)) {
+        std::cerr << "GUI-map target sequence failed; report: " << output_path.string() << '\n';
         std::cerr.flush();
         QCoreApplication::exit(2);
         return;
