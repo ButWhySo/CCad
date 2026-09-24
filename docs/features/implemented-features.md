@@ -1,5 +1,9 @@
 # Implemented Features
 
+## Sprint 979 Agent runtime analysis boundaries
+
+Provider catalog requests and provider-specific response parsing now live in `src/ccad_agent/model_catalog.py`; the existing orchestration facade preserves the six provider refresh entry points and delegates failures to the canonical safe classifier. The request handler for one human turn is a separate `handle_human_message(req)` routine rather than code nested in the JSON-RPC dispatcher loop. This keeps protocol control flow independent from context assembly, memory handling, conversation persistence, commands, provider execution, and tool-call emission, while retaining no-provider local behavior. The boundary and catalog contracts are registered with CTest; provider parser tests use controlled local HTTP responses and do not contact providers. Pyright remains enabled without complexity-limit suppressions.
+
 ## Agent memory management outcomes (Sprint 975)
 
 The memory manager now reports add, update, delete, reset, and backend-error outcomes from the Python memory runtime to the GUI. The settings panel disables write controls while a mutation is pending, displays operation-specific success or safe error text, refreshes records only after authoritative success, rejects empty content visibly, and requires confirmation before deleting a selected record or resetting all persisted records. Delete targets the record ID selected before the confirmation dialog, even if the active conversation changes while that dialog is open. Reset reports the backend's removed-record count or failure and refreshes an open manager list; it no longer relies on a fixed re-enable timer. Validation used an isolated profile. The mapped harness records every interaction but retains only distinct screenshots for dialogs and completed outcomes, avoiding redundant per-click captures.
@@ -2958,6 +2962,10 @@ normal live path would submit a real provider request.
 
 Personalisation memory toggles persist before runtime activation. LTM and episodic activation validates or initializes their durable store; storage failure unloads runtime content and reports an unknown persistent count rather than pretending the tier is empty. Disabling preserves durable entries and conversation checkpoints. Reset is separately confirmed. Validation: Qt MinGW Release build, CTest 104/104, changed-module Pyright (0 diagnostics), offline orchestrator persistence contracts, and the mapped GUI create/cancel-reset/reopen-settings flow; all 42 run screenshots and stdout/stderr were inspected. Durable memory semantic compaction is still not implemented.
 # Agent runtime features
+
+## Sprint 979 protocol and provider-catalog boundaries
+
+Provider model-catalog refreshes use dedicated bounded HTTP clients in `src/ccad_agent/model_catalog.py`; the orchestrator retains its established JSON-RPC facade and safe failure classification. The full human-message turn is handled outside the JSON-RPC dispatcher loop, keeping protocol continuation separate from turn execution and satisfying Pyright's configured complexity analysis without suppressions. CTest contract `agent_protocol_handler_boundaries` verifies the source boundary; catalog parser contracts use controlled responses without contacting providers. Qt MinGW Release, full CTest (112/112), changed-module Pyright, and a provider-free seven-action GUI-map conversation-persistence/`/clear` scenario passed. Four meaningful screenshots and captured stdout/stderr were inspected.
 
 ## Sprint 978 Langfuse turn hierarchy and memory deduplication
 
