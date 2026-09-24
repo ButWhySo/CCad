@@ -56,10 +56,11 @@ assert catalog_method["provider_normalization"] == "trim_lowercase"
 assert catalog_method["params"]["provider"]["enum"] == [
     "openai", "anthropic", "google_gemini", "openrouter", "cerebras", "ollama"]
 assert {"source", "source_kind", "source_url"}.issubset(catalog_method["response"]["fields"])
-assert {"context_window_free", "context_window_paid", "speed_tokens_per_second"}.issubset(
-    catalog_method["response"]["model_fields"]
-)
-assert "reasoning_effort" in catalog_method["response"]["model_fields"]
+assert set(catalog_method["response"]["model_fields"]) == {
+    "id", "name", "display_name", "owned_by", "context_length",
+    "architecture", "capabilities", "supported_parameters",
+    "supported_generation_methods",
+}
 catalogs = [item["params"] for item in responses if item.get("method") == "provider_models"]
 openrouter = next(item for item in catalogs if item["provider"] == "openrouter")
 openai = next(item for item in catalogs if item["provider"] == "openai")

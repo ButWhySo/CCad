@@ -6,6 +6,15 @@ Check a box only after implementation and its required evidence exist.
 
 Update this file in the same commit as each implementation slice.
 
+### Sprint 973 active slice - provider/model capability and limit truth
+
+- [x] Verify the provider adapters, documented model presets, dynamic model metadata, and safe failure categories against official provider docs.
+- [x] Preserve OpenRouter/Cerebras tool-support and context metadata without returning raw provider payloads.
+- [x] Remove the unused Cerebras snapshot and stale model-detail fields; advertise only fields returned by live model-catalog parsers.
+- [x] Distinguish explicit Google quota/rate errors from ambiguous `RESOURCE_EXHAUSTED`; never retry limit failures automatically.
+- [x] Run provider contract tests, changed-module Pyright, Qt Release build, full CTest (104/104), and provider Settings UI-map validation (18 screenshots inspected; stdout/stderr reviewed).
+- [x] Update provider compatibility, feature, progress, backlog, and handover records; scan secrets and publish only the verified files.
+
 ### Sprint 972 active slice - provider SDK error fidelity
 
 - [x] Extract nested HTTP/gRPC status, structured provider error codes, and bounded `Retry-After` without logging provider bodies or secrets.
@@ -112,7 +121,7 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 ## Provider, context, and memory
 
 - [x] Restore persisted provider, model, and OS-vault credential before first chat turn.
-- [ ] Verify every provider/model integration against official documentation and classify failures safely.
+- [x] Verify provider adapters, documented model presets, and failure categories against official documentation; distinguish capability-unknown custom/local models and ambiguous Google limits.
 - [x] Map explicit provider catalog refresh failures to safe authentication, permission, payment, rate-limit, timeout, connection, and invalid-response categories.
 - [x] Resolve the remaining Pyright complexity diagnostic in the provider/orchestration module without suppressing analysis.
 - [x] Build bounded context from project, PCB, schematic, selection, coordinates, layers, nets, rules, libraries, tool state, conversation, and memories.
@@ -158,6 +167,7 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 ## Real orchestration validation
 
 - [ ] Prove a real model reports exact tools and exact context received.
+- [ ] Run a bounded real tool-call for each provider/model account the user elects to validate; report account/model-specific results without generalizing them to all models.
 - [ ] Prove read-only calls do not open approval UI.
 - [ ] Prove approved disposable-board PCB mutation: inspect, calculate, propose, visual diff, approve, transact, verify, DRC, screenshot, undo.
 - [ ] Prove equivalent schematic, catalog, DRC/ERC, export, guarded CLI, calculator, Python, screenshot, and UI-map flows.
@@ -171,6 +181,7 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 - [ ] Trace context, memory, routing, generations, plans, approvals, tool execution, transactions, verification, failures, latency, tokens, model/provider.
 - [ ] Use conversation/thread sessions, safe tags, and deliberate redaction.
 - [ ] Run opt-in real trace and inspect hierarchy, cost/token metrics, tool spans, approval path, and redaction.
+- [ ] Diagnose stale/missing newest-turn traces: correlate each submitted turn with its fresh trace ID, export/flush result, and a development-visible local log; prove Langfuse's latest trace is retrievable after refresh without treating older traces as success.
 
 ## Autorouter
 

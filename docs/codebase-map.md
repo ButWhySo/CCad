@@ -2086,3 +2086,19 @@ and `scripts/test_provider_probe_isolation.py`. Release build and CTest passed
 104/104; changed Python Pyright reports zero diagnostics; all 18 screenshots
 and stdout/stderr were inspected. Live per-provider capability checks and the
 pinned Gemini adapter's internal retries remain open.
+
+Sprint 973 provider compatibility touches `src/ccad_agent/orchestrator.py`,
+`src/ccad_agent/method_catalog.py`, and
+`src/ccad_gui/agent_settings_dialog.cpp`. Provider catalog parsing exposes
+OpenRouter `supported_parameters` and allowlisted Cerebras tool/context
+capabilities. Provider failure classification reports bare Google
+`RESOURCE_EXHAUSTED` as `quota_or_rate_limit`; explicit structured quota and
+rate-limit codes remain distinct. Tests are in
+`scripts/test_provider_catalog_parsers.py`,
+`scripts/test_provider_integration_contract.py`, and
+`scripts/test_provider_failure_event.py`. Live tool capability is still
+account/model-specific and requires an explicitly authorized inference test.
+Qt MinGW Release build succeeded, CTest passed 104/104, six provider contracts
+passed, and changed-module Pyright reported zero diagnostics. The scoped local
+Settings validation completed; all 18 screenshots were inspected and captured
+stderr was empty. This does not validate fresh Langfuse trace delivery.

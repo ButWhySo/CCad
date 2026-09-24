@@ -125,11 +125,17 @@ def fetch_openrouter_models():
         for item in payload.get("data", []):
             if not isinstance(item, dict) or not item.get("id"):
                 continue
-            models.append({
+            model = {
                 "id": item["id"], "name": item.get("name", item["id"]),
                 "context_length": item.get("context_length"),
                 "architecture": item.get("architecture", {}),
-            })
+            }
+            supported = item.get("supported_parameters")
+            if isinstance(supported, list):
+                model["supported_parameters"] = [
+                    value for value in supported if isinstance(value, str)
+                ]
+            models.append(model)
         return {"ok": True, "models": models, "count": len(models),
                 "network_access": "explicit_refresh", "source_url": source_url,
                 "source_kind": "provider_api"}
@@ -167,10 +173,20 @@ def fetch_cerebras_models():
         for item in payload.get("data", []):
             if not isinstance(item, dict) or not item.get("id"):
                 continue
-            models.append({"id": item["id"], "display_name": item.get("name", item["id"]),
-                           "owned_by": item.get("owned_by"),
-                           "context_length": item.get("context_length"),
-                           "capabilities": item.get("capabilities", {})})
+            limits = item.get("limits")
+            limits = limits if isinstance(limits, dict) else {}
+            context_length = item.get("context_length") or limits.get("max_context_length")
+            model = {"id": item["id"], "display_name": item.get("name", item["id"]),
+                     "owned_by": item.get("owned_by"), "context_length": context_length}
+            capabilities = item.get("capabilities")
+            if isinstance(capabilities, dict):
+                model["capabilities"] = {
+                    key: value for key, value in capabilities.items()
+                    if key in {"function_calling", "tools", "tool_choice",
+                               "parallel_tool_calls", "vision"}
+                    and isinstance(value, bool)
+                }
+            models.append(model)
         return {"ok": True, "models": models, "count": len(models),
                 "network_access": "explicit_refresh", "source_url": source_url,
                 "source_kind": "provider_api"}
@@ -331,28 +347,6 @@ def fetch_gemini_models():
                 "source_kind": "provider_api"}
     except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as error:
         return catalog_failure("google_gemini", error, source_url, "explicit_refresh")
-
-def cerebras_model_snapshot():
-    """Return documented public presets without a network call.
-
-    Source: https://inference-docs.cerebras.ai/models/overview
-    Refresh this snapshot when provider docs change; live model listing remains
-    an explicit public operation and is never performed at startup.
-    """
-    models = [
-        {"id": "gpt-oss-120b", "display_name": "OpenAI GPT OSS 120B", "tier": "production",
-         "context_window_free": 65000, "context_window_paid": 131000,
-         "speed_tokens_per_second": 3000,
-         "reasoning_effort": ["low", "medium", "high"]},
-        {"id": "qwen-3.8-27b", "display_name": "Qwen 3.8 27B", "tier": "production",
-         "context_window_free": 64000, "context_window_paid": 128000,
-         "speed_tokens_per_second": 1850,
-         "reasoning_effort": ["none", "low", "medium", "high"]},
-    ]
-    return {"ok": True, "models": models, "count": len(models),
-            "network_access": "none", "source": "official_curated_snapshot",
-            "source_url": "https://inference-docs.cerebras.ai/models/overview",
-            "source_kind": "first_party_documentation"}
 
 def context_revision(context: str) -> str:
     """Return stable opaque context identity; never expose context contents."""
@@ -929,7 +923,16 @@ def classify_provider_error(error: Exception):
             except Exception:
                 grpc_name = ""
         if str(grpc_name).upper() == "RESOURCE_EXHAUSTED":
-            return "quota_exhausted"
+            # Google uses RESOURCE_EXHAUSTED for both rate limits and quota
+            # exhaustion. Do not claim billing/quota failure without evidence.
+            if any(marker in text for marker in (
+                    "rate limit", "too many requests", "requests per minute")):
+                return "rate_limited"
+            if any(marker in text for marker in (
+                    "exceeded your current quota", "quota exhausted",
+                    "quota exceeded", "daily quota", "billing quota")):
+                return "quota_exhausted"
+            return "quota_or_rate_limit"
         if any(marker in text for marker in ("api_key", "api key", "apikey")) and any(
             marker in text for marker in ("required", "must be set", "not provided", "missing", "none")
         ):
@@ -945,10 +948,14 @@ def classify_provider_error(error: Exception):
                 "insufficient credits", "insufficient balance", "billing quota", "payment required")):
             return "payment_required"
         # Google may wrap ResourceExhausted without preserving its HTTP status.
+        # A bare ResourceExhausted signal is ambiguous and handled separately.
         if any(marker in text or marker in error_name for marker in (
-                "resourceexhausted", "resource exhausted", "exceeded your current quota",
+                "exceeded your current quota",
                 "quota exhausted", "quota exceeded")):
             return "quota_exhausted"
+        if any(marker in text or marker in error_name for marker in (
+                "resourceexhausted", "resource exhausted")):
+            return "quota_or_rate_limit"
         if status == 429 or any(marker in text for marker in (
                 "rate limit", "too many requests", "requests per minute")):
             return "rate_limited"
@@ -972,6 +979,7 @@ def provider_error_user_message(error: Exception):
         "model_not_found": "The provider does not recognize this model ID; verify the selected model.",
         "payment_required": "The provider reports billing or payment is required; this is distinct from a rate limit.",
         "quota_exhausted": "The provider reports quota exhausted or unavailable for this key, project, or model; check the provider quota and billing details.",
+        "quota_or_rate_limit": "The provider returned a limit error that does not distinguish quota from request rate. Check provider usage/quota and any retry-after value; no automatic retry was sent.",
         "rate_limited": "The provider rate-limited requests; wait before retrying or reduce request frequency.",
         "timeout": "The provider request timed out; check connectivity and retry later.",
         "connection_error": "CCad could not connect to the provider; check network access and the provider endpoint.",
@@ -1273,7 +1281,7 @@ def invoke_provider_with_retry(client, messages, config=None):
 
     def quota_or_rate_limited(error):
         return classify_provider_error(error) in {
-            "quota_exhausted", "rate_limited", "authentication",
+            "quota_exhausted", "quota_or_rate_limit", "rate_limited", "authentication",
             "permission_denied", "model_not_found", "payment_required",
         }
 

@@ -72,9 +72,9 @@ def orchestrator_method_catalog():
              "response": {"method": "provider_models", "fields": [
                  "provider", "ok", "error", "error_detail", "models",
                  "count", "network_access", "source", "source_kind", "source_url"],
-                 "model_fields": ["id", "display_name", "tier", "context_window_free",
-                                  "context_window_paid", "speed_tokens_per_second",
-                                  "reasoning_effort"]}},
+                 "model_fields": ["id", "name", "display_name", "owned_by",
+                                  "context_length", "architecture", "capabilities",
+                                  "supported_parameters", "supported_generation_methods"]}},
             {"name": "agent.set_thread_id", "read_only": False,
              "secrets": False,
              "params": {"thread_id": {"type": "string", "optional": False,

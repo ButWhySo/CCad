@@ -29,6 +29,9 @@ class StatusError(RuntimeError):
 
 
 class GoogleGrpcStatusError(RuntimeError):
+    def __init__(self, message="RESOURCE_EXHAUSTED"):
+        super().__init__(message)
+
     class Code:
         name = "RESOURCE_EXHAUSTED"
     code = Code()
@@ -114,7 +117,15 @@ assert orchestrator.classify_provider_error(
 assert orchestrator.classify_provider_error(
     OpenAICompatibleError(429, "rate_limit_exceeded", "slow down")) == "rate_limited"
 assert orchestrator.classify_provider_error(
-    GoogleGrpcStatusError("RESOURCE_EXHAUSTED")) == "quota_exhausted"
+    GoogleGrpcStatusError("RESOURCE_EXHAUSTED")) == "quota_or_rate_limit"
+assert orchestrator.classify_provider_error(
+    GoogleGrpcStatusError("RESOURCE_EXHAUSTED: rate limit exceeded")) == "rate_limited"
+assert orchestrator.classify_provider_error(
+    GoogleGrpcStatusError("RESOURCE_EXHAUSTED: daily quota exceeded")) == "quota_exhausted"
+assert orchestrator.classify_provider_error(
+    GeminiQuotaError("ResourceExhausted: 429 RESOURCE_EXHAUSTED")) == "quota_or_rate_limit"
+assert "does not distinguish quota from request rate" in orchestrator.provider_error_user_message(
+    GoogleGrpcStatusError("RESOURCE_EXHAUSTED"))
 assert orchestrator.provider_retry_after_seconds(
     OpenAICompatibleError(429, "rate_limit_exceeded", "slow down")) == 17
 assert orchestrator.provider_retry_after_seconds(

@@ -26,6 +26,10 @@ assert "current public model catalog" in compat
 assert stale_anthropic_model not in settings
 assert stale_anthropic_model not in compat
 assert production_model in orchestrator
+assert "def cerebras_model_snapshot" not in orchestrator
+for stale_field in ("context_window_free", "context_window_paid",
+                    "speed_tokens_per_second"):
+    assert stale_field not in orchestrator
 for model in gemini_25_text:
     assert model in settings
     assert model in compat

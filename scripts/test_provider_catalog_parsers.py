@@ -67,13 +67,23 @@ assert gemini["ok"] and [model["id"] for model in gemini["models"]] == ["gemini-
 assert request.get_header("X-goog-api-key") == "gemini-test"
 
 openrouter, request = invoke(orchestrator.fetch_openrouter_models, "OPENROUTER_API_KEY", "router-test", {
-    "data": [{"id": "provider/model", "name": "Model"}]})
+    "data": [{"id": "provider/model", "name": "Model", "context_length": 8192,
+               "supported_parameters": ["tools", "temperature"]}]})
 assert openrouter["ok"] and openrouter["models"][0]["id"] == "provider/model"
+assert openrouter["models"][0]["context_length"] == 8192
+assert openrouter["models"][0]["supported_parameters"] == ["tools", "temperature"]
 assert request.get_header("Authorization") == "Bearer router-test"
 
 cerebras, request = invoke(orchestrator.fetch_cerebras_models, "CEREBRAS_API_KEY", "cerebras-test", {
-    "data": [{"id": "qwen-3.8-27b", "owned_by": "cerebras"}]})
+    "data": [{"id": "qwen-3.8-27b", "owned_by": "cerebras",
+               "capabilities": {"function_calling": True, "tools": True, "vision": True,
+                                "untrusted_payload": "discard"},
+               "limits": {"max_context_length": 65536}}]})
 assert cerebras["ok"] and cerebras["models"][0]["id"] == "qwen-3.8-27b"
+assert cerebras["models"][0]["capabilities"] == {
+    "function_calling": True, "tools": True, "vision": True}
+assert cerebras["models"][0]["context_length"] == 65536
+assert "untrusted_payload" not in json.dumps(cerebras)
 assert request.full_url == "https://api.cerebras.ai/public/v1/models"
 assert request.get_header("Authorization") is None
 assert request.get_header("User-agent") == "CCad/1.0 (+https://github.com/ButWhySo/CCad)"

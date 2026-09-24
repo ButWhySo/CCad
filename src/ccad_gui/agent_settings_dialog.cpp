@@ -269,6 +269,8 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
               {"missing_api_key", "API key is missing"},
               {"authentication", "API key was rejected"},
               {"payment_required", "provider payment, credits, or project billing is required"},
+              {"quota_exhausted", "provider quota or credits are exhausted; check quota and billing"},
+              {"quota_or_rate_limit", "provider limit reached; quota versus rate limit is unclear; check usage and retry-after"},
               {"rate_limited", "provider rate limit reached"},
               {"permission_denied", "provider denied this account or model"},
               {"model_not_found", "selected model was not found"},
@@ -293,6 +295,7 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
           const QHash<QString, QString> guidance = {
               {"payment_required", "payment, credits, or project billing is required"},
               {"quota_exhausted", "provider quota or credits are exhausted; check quota and billing"},
+              {"quota_or_rate_limit", "provider limit reached; quota versus rate limit is unclear; check usage and retry-after"},
               {"rate_limited", "provider rate limit reached; wait before retrying"},
               {"authentication", "API key was rejected"},
               {"permission_denied", "account or project cannot use this model"},
