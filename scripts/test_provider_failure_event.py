@@ -2,6 +2,7 @@
 
 import json
 import sys
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,6 +26,34 @@ class StatusError(RuntimeError):
     def __init__(self, status_code, message):
         super().__init__(message)
         self.status_code = status_code
+
+
+class GoogleGrpcStatusError(RuntimeError):
+    class Code:
+        name = "RESOURCE_EXHAUSTED"
+    code = Code()
+
+
+class OpenAICompatibleError(RuntimeError):
+    def __init__(self, status_code, body_code, message):
+        super().__init__(message)
+        self.status_code = status_code
+        self.body = {"error": {"code": body_code, "message": message}}
+        self.response = type("Response", (), {
+            "status_code": status_code,
+            "headers": {"retry-after": "17"},
+            "json": lambda _self: self.body,
+        })()
+
+
+for error, category in (
+        (OpenAICompatibleError(429, "insufficient_quota", "credits exhausted"), "quota_exhausted"),
+        (OpenAICompatibleError(429, "rate_limit_exceeded", "slow down"), "rate_limited"),
+        (StatusError(402, "billing_error"), "payment_required")):
+    catalog = orchestrator.catalog_failure(
+        "provider-test", error, "https://invalid.example/models", "explicit_refresh")
+    assert catalog["error"] == category
+    assert catalog["http_status"] == error.status_code
 
 
 captured = []
@@ -53,6 +82,12 @@ assert orchestrator.provider_http_status(RateLimitError("safe")) == 429
 
 captured.clear()
 orchestrator.emit_provider_failure(
+    "openai", OpenAICompatibleError(429, "rate_limit_exceeded", "slow down"))
+assert captured[0]["params"]["http_status"] == 429
+assert captured[0]["params"]["retry_after_seconds"] == 17
+
+captured.clear()
+orchestrator.emit_provider_failure(
     "google_gemini",
     GeminiQuotaError("ResourceExhausted: 429 You exceeded your current quota"),
 )
@@ -72,6 +107,26 @@ user_message = orchestrator.provider_error_user_message(wrapped)
 assert "quota" in user_message.lower()
 assert "provider_unavailable" not in user_message
 assert redaction_probe not in user_message
+
+# SDK response metadata, not unsafe raw text, controls quota/payment diagnosis.
+assert orchestrator.classify_provider_error(
+    OpenAICompatibleError(429, "insufficient_quota", "quota reached")) == "quota_exhausted"
+assert orchestrator.classify_provider_error(
+    OpenAICompatibleError(429, "rate_limit_exceeded", "slow down")) == "rate_limited"
+assert orchestrator.classify_provider_error(
+    GoogleGrpcStatusError("RESOURCE_EXHAUSTED")) == "quota_exhausted"
+assert orchestrator.provider_retry_after_seconds(
+    OpenAICompatibleError(429, "rate_limit_exceeded", "slow down")) == 17
+assert orchestrator.provider_retry_after_seconds(
+    OpenAICompatibleError(429, "rate_limit_exceeded", f"{redaction_probe}")) == 17
+http_date = (datetime.now(timezone.utc) + timedelta(seconds=29)).strftime("%a, %d %b %Y %H:%M:%S GMT")
+date_retry = type("DateRetry", (RuntimeError,), {
+    "response": type("R", (), {"headers": {"Retry-After": http_date}})()})()
+assert 0 <= orchestrator.provider_retry_after_seconds(date_retry) <= 30
+assert orchestrator.provider_http_status(
+    type("GrpcHttpStatus", (RuntimeError,), {"status": 429})()) == 429
+assert orchestrator.provider_http_status(
+    type("ResponseWrapped", (RuntimeError,), {"response": type("R", (), {"status_code": 402})()})()) == 402
 wrapped_status = RuntimeError("request failed")
 wrapped_status.__cause__ = RateLimitError("HTTP rate limit")
 assert orchestrator.classify_provider_error(wrapped_status) == "rate_limited"

@@ -14,6 +14,8 @@ import warnings
 import urllib.request
 import urllib.error
 import urllib.parse
+from email.utils import parsedate_to_datetime
+from datetime import datetime, timezone
 from collections import deque
 from typing import Annotated, Any, Dict, Iterable, List, Literal, TypedDict, cast
 from langchain_core.tools import StructuredTool
@@ -63,15 +65,19 @@ def emit(payload: dict):
 def catalog_failure(provider: str, error: Exception, source_url: str,
                     network_access: str):
     """Return a safe, provider-specific catalog failure without raw bodies."""
-    status = getattr(error, "code", None) or getattr(error, "status_code", None)
+    status = provider_http_status(error)
     text = str(error).lower()
-    if status == 401 or "unauthorized" in text or "invalid api key" in text:
+    metadata = provider_error_metadata(error)
+    codes = metadata["codes"]
+    if status == 401 or any(code in {"authentication_error", "invalid_api_key"} for code in codes) or "unauthorized" in text or "invalid api key" in text:
         category = "authentication"
-    elif status == 403 or "forbidden" in text or "permission" in text:
+    elif status == 403 or any(code in {"permission_error", "permission_denied"} for code in codes) or "forbidden" in text or "permission" in text:
         category = "permission_denied"
-    elif status == 402 or any(marker in text for marker in
+    elif status == 402 or any(code in {"billing_error", "payment_required", "credit_balance_exhausted"} for code in codes) or any(marker in text for marker in
                               ("payment required", "insufficient credit", "billing")):
         category = "payment_required"
+    elif any(code in {"insufficient_quota", "quota_exceeded", "organization_spend_limit_exceeded", "project_spend_limit_exceeded"} for code in codes) or "quota exceeded" in text:
+        category = "quota_exhausted"
     elif status == 429 or any(marker in text for marker in
                                ("rate limit", "rate_limit", "too many requests", "quota")):
         category = "rate_limited"
@@ -83,9 +89,14 @@ def catalog_failure(provider: str, error: Exception, source_url: str,
         category = "invalid_response"
     else:
         category = "provider_unavailable"
-    return {"ok": False, "error": category, "error_type": type(error).__name__,
+    result = {"ok": False, "error": category, "error_type": type(error).__name__,
             "provider": provider, "models": [], "network_access": network_access,
             "source_url": source_url, "source_kind": "provider_api"}
+    if status is not None:
+        result["http_status"] = status
+    if metadata["retry_after_seconds"] is not None:
+        result["retry_after_seconds"] = metadata["retry_after_seconds"]
+    return result
 
 def fetch_openrouter_models():
     """Explicit, bounded OpenRouter catalog refresh; never called at startup."""
@@ -805,12 +816,19 @@ def reconfigure_observability():
 def emit_provider_failure(provider: str, error: Exception):
     """Report adapter failure without exposing key, prompt, or endpoint data."""
     category = classify_provider_error(error)
-    emit({"jsonrpc": "2.0", "method": "provider_state", "params": {
+    params = {
         "provider": provider, "configured": category != "missing_api_key",
         "error": type(error).__name__,
         "error_category": category, "execution_enabled": False,
         "secret_value_visible": False,
-    }})
+    }
+    status = provider_http_status(error)
+    retry_after = provider_retry_after_seconds(error)
+    if status is not None:
+        params["http_status"] = status
+    if retry_after is not None:
+        params["retry_after_seconds"] = retry_after
+    emit({"jsonrpc": "2.0", "method": "provider_state", "params": params})
     return category
 
 def provider_exception_chain(error: Exception) -> Iterable[Exception]:
@@ -832,13 +850,59 @@ def provider_exception_chain(error: Exception) -> Iterable[Exception]:
             pending.extend(item for item in nested_errors if isinstance(item, Exception))
 
 def provider_http_status(error: Exception):
-    """Extract a numeric HTTP status from nested SDK/HTTP response wrappers."""
+    """Extract a numeric HTTP status from nested SDK and gRPC wrappers."""
     for candidate in provider_exception_chain(error):
         for response in (candidate, getattr(candidate, "response", None)):
-            status = getattr(response, "status_code", None)
-            if isinstance(status, int) and 100 <= status <= 599:
-                return status
+            for name in ("status_code", "status", "code"):
+                status = getattr(response, name, None)
+                if isinstance(status, int) and 100 <= status <= 599:
+                    return status
     return None
+
+def provider_error_metadata(error: Exception):
+    """Return safe structured error codes and bounded retry delay, never body text."""
+    codes = []
+    retry_after = None
+    for candidate in provider_exception_chain(error):
+        response = getattr(candidate, "response", None)
+        body = getattr(candidate, "body", None)
+        response_json = getattr(response, "json", None) if response is not None else None
+        if callable(response_json):
+            try:
+                body = response_json()
+            except Exception:
+                body = None
+        if isinstance(body, dict):
+            error_body = body.get("error", body)
+            if isinstance(error_body, dict):
+                code = error_body.get("code") or error_body.get("type") or error_body.get("status")
+                if isinstance(code, str):
+                    codes.append(code.lower())
+        for source in (candidate, response):
+            headers = getattr(source, "headers", None)
+            if headers is None:
+                continue
+            try:
+                raw_delay = headers.get("retry-after") or headers.get("Retry-After")
+                try:
+                    delay = float(raw_delay)
+                except (TypeError, ValueError):
+                    retry_time = parsedate_to_datetime(str(raw_delay))
+                    if retry_time.tzinfo is None:
+                        retry_time = retry_time.replace(tzinfo=timezone.utc)
+                    delay = (retry_time - datetime.now(timezone.utc)).total_seconds()
+            except (AttributeError, TypeError, ValueError, OverflowError):
+                continue
+            if delay >= 0:
+                retry_after = max(0, min(3600, int(delay)))
+                break
+        if retry_after is not None:
+            break
+    return {"codes": tuple(codes), "retry_after_seconds": retry_after}
+
+def provider_retry_after_seconds(error: Exception):
+    """Expose a bounded Retry-After value for safe, actionable UI guidance."""
+    return provider_error_metadata(error)["retry_after_seconds"]
 
 def classify_provider_error(error: Exception):
     """Return safe, actionable category; never include secret-bearing text."""
@@ -848,6 +912,24 @@ def classify_provider_error(error: Exception):
                        if isinstance(getattr(response, "status_code", None), int)), None)
         text = str(candidate).lower()
         error_name = type(candidate).__name__.lower()
+        metadata = provider_error_metadata(candidate)
+        codes = metadata["codes"]
+        if any(code in {"insufficient_quota", "quota_exceeded", "credit_balance_exhausted",
+                        "organization_spend_limit_exceeded", "project_spend_limit_exceeded",
+                        "organization_usage_limit_exceeded", "billing_error"} for code in codes):
+            return "quota_exhausted"
+        if any(code in {"rate_limit_exceeded", "rate_limit_error", "too_many_requests"}
+               for code in codes):
+            return "rate_limited"
+        grpc_code = getattr(candidate, "code", None)
+        grpc_name = getattr(grpc_code, "name", "")
+        if callable(grpc_code):
+            try:
+                grpc_name = getattr(grpc_code(), "name", grpc_name)
+            except Exception:
+                grpc_name = ""
+        if str(grpc_name).upper() == "RESOURCE_EXHAUSTED":
+            return "quota_exhausted"
         if any(marker in text for marker in ("api_key", "api key", "apikey")) and any(
             marker in text for marker in ("required", "must be set", "not provided", "missing", "none")
         ):
@@ -898,9 +980,11 @@ def provider_error_user_message(error: Exception):
     }
     status = provider_http_status(error)
     status_text = f" (HTTP {status})" if status is not None else ""
+    retry_after = provider_retry_after_seconds(error)
+    retry_text = f" Retry after {retry_after} seconds as requested by the provider." if retry_after else ""
     return ("Provider request stopped before a response was completed. "
             f"{guidance.get(category, guidance['provider_unavailable'])} "
-            f"Cause: {category}{status_text}.")
+            f"Cause: {category}{status_text}.{retry_text}")
 
 def emit_dependency_warning(module_name: str):
     """Give users a safe, copyable remedy when an optional adapter is absent."""
@@ -964,7 +1048,7 @@ def init_provider():
         try:
             from langchain_anthropic import ChatAnthropic
             if not model_name: model_name = "claude-opus-5"
-            llm = cast(Any, ChatAnthropic)(model=model_name, temperature=0)
+            llm = cast(Any, ChatAnthropic)(model=model_name, temperature=0, max_retries=0)
             router_llm = bind_native_tools(llm)
             librarian_llm = router_llm
             broker_wait_enabled = True
@@ -1028,7 +1112,7 @@ def init_provider():
                 model_name = model_name or "gpt-5.1"
                 base_url = ""
             kwargs = {"model": model_name, "temperature": 0,
-                      "timeout": provider_timeout_seconds()}
+                      "timeout": provider_timeout_seconds(), "max_retries": 0}
             if base_url:
                 kwargs["base_url"] = base_url
             if provider == "cerebras":
@@ -2532,6 +2616,7 @@ if __name__ == "__main__":
                         "kind": "provider_error", "error_type": type(error).__name__,
                         "cause": classify_provider_error(error),
                         "http_status": provider_http_status(error),
+                        "retry_after_seconds": provider_retry_after_seconds(error),
                     }})
                     continue
                 export_state = telemetry_runtime.flush_turn()

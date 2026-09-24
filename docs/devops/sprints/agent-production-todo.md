@@ -6,6 +6,14 @@ Check a box only after implementation and its required evidence exist.
 
 Update this file in the same commit as each implementation slice.
 
+### Sprint 972 active slice - provider SDK error fidelity
+
+- [x] Extract nested HTTP/gRPC status, structured provider error codes, and bounded `Retry-After` without logging provider bodies or secrets.
+- [x] Distinguish exhausted quota/credits from transient rate limits across chat and model-catalog refresh paths.
+- [x] Disable implicit OpenAI/Anthropic retries where supported; document Gemini adapter's fixed internal retry behavior.
+- [ ] Verify provider error, retry, secret-redaction, and no-network contracts; run Qt Release, full CTest, Python/Pyright, and targeted UI-map evidence.
+- [ ] Update provider behavior docs, progress/backlog, and publish only the verified slice.
+
 ### Sprint 971 active slice - durable memory activation and failure truth
 
 - [x] Create/open durable memory storage before enabling LTM or episodic retrieval; never interpret corrupt/unreadable storage as empty.
@@ -104,7 +112,7 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 ## Provider, context, and memory
 
 - [x] Restore persisted provider, model, and OS-vault credential before first chat turn.
-- [x] Verify every provider/model integration against official documentation and classify failures safely.
+- [ ] Verify every provider/model integration against official documentation and classify failures safely.
 - [x] Map explicit provider catalog refresh failures to safe authentication, permission, payment, rate-limit, timeout, connection, and invalid-response categories.
 - [x] Resolve the remaining Pyright complexity diagnostic in the provider/orchestration module without suppressing analysis.
 - [x] Build bounded context from project, PCB, schematic, selection, coordinates, layers, nets, rules, libraries, tool state, conversation, and memories.
@@ -186,6 +194,7 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 
 ## UI truthfulness and parity
 
+- [ ] Fix dark-theme rendering of the MCP Servers table, including readable header, empty-state, and row backgrounds.
 - [ ] Replace text-only proposal review with typed staged PCB/schematic before/after renders and real change lists.
 - [ ] Make proposal review a scrollable chat popout with viewport controls, object focus, and DRC/ERC delta.
 - [ ] Add editable annotations, reviewer comments, structured revision scope, revise/reject/cancel, and one approval boundary.

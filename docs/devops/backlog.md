@@ -12,6 +12,9 @@ This ledger is the current single checklist for scattered user-reported GUI, KiC
 - [x] Sprint 969: local `/context [draft]` preview uses persisted provider/model identity, live bounded context, the actual GUI native tool catalog (59 schemas), memory retrieval, system instructions, and conversation accounting, without provider/tool/history side effects. Release build and 100/100 CTest, Pyright, eight mapped interactions, nine inspected screenshots, stdout/stderr review, and safe source-content exclusion verified. Staged secret scan is clean; verified implementation/docs are committed and pushed.
 - [x] Sprint 971: durable LTM/episodic activation validates storage, checked preferences persist before runtime changes, failures unload caches and preserve corrupt bytes, reset remains confirmed, and mapped GUI authoring/reopen state verified. Qt MinGW Release build, 104/104 CTest, targeted Pyright, isolated orchestrator contracts, 42 inspected screenshots, and logs passed; durable semantic memory compaction remains open.
 - [ ] Memory follow-up: add semantic compaction for durable memory records and decide whether explicit capture should include project-scoped episodic storage. Ordinary chat capture remains off; `/cc` compacts conversation history only.
+- [ ] Provider follow-up: replace LangChain Google Gemini's pinned adapter retry decorator when upgrading to an API with a supported retry setting; do not patch vendored site-packages.
+- [ ] Provider follow-up: add opt-in, explicitly initiated per-provider live model/tool-call verification and report verified capability separately from adapter initialization; normal startup remains no-network.
+- [ ] UI follow-up: repair MCP Servers table palette so its empty state, headers, and populated rows follow the dark Settings theme; visual validation exposed a white table body in the current dark dialog.
 
 ## Demo-deadline orchestration gate
 

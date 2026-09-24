@@ -1,5 +1,9 @@
 # Implemented Features
 
+## Provider status and failure categories
+
+Provider configuration state means the adapter initialized; it is not a network/model verification claim. Provider failures use nested HTTP and SDK error metadata to distinguish payment, quota/credits, rate limits, credentials, permissions, missing models, timeouts, dependencies, and connectivity without exposing raw error bodies or secrets. Valid `Retry-After` guidance is bounded before display. OpenAI-compatible and Anthropic adapters use zero SDK retries when supported so CCad controls retry behavior; the pinned Gemini adapter currently hard-codes two retries internally, which remains an upstream dependency limitation. Offline contracts live in `scripts/test_provider_failure_event.py` and `scripts/test_provider_error_classification.py`.
+
 This document tracks user-visible and agent-visible features that exist in the repo, how to use them, how to test them, and where they are implemented.
 
 ## Sprint 967 request context and memory lifecycle
