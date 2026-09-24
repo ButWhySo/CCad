@@ -675,6 +675,10 @@ void AgentSettingsDialog::createPersonalisationTab(QWidget* parent_widget) {
   memory_status_label_->setWordWrap(false);
   memory_status_label_->setToolTip("Per tier: enabled state, runtime-loaded / persistent count. Unsafe legacy records are hidden.");
   mem_layout->addWidget(memory_status_label_);
+  memory_operation_status_label_ = new QLabel("Memory operations: ready", mem_group);
+  memory_operation_status_label_->setObjectName("label:memoryOperationStatus");
+  memory_operation_status_label_->setWordWrap(true);
+  mem_layout->addWidget(memory_operation_status_label_);
   auto* memory_actions = new QHBoxLayout();
   auto* manage_btn = new QPushButton("Manage memories", mem_group);
   manage_btn->setObjectName("action:agent_memory_manage");
@@ -682,14 +686,29 @@ void AgentSettingsDialog::createPersonalisationTab(QWidget* parent_widget) {
   memory_actions->addWidget(manage_btn);
   auto* reset_btn = new QPushButton("Reset memories…", mem_group);
   reset_btn->setObjectName("action:agent_memory_reset");
+  memory_reset_button_ = reset_btn;
   connect(reset_btn, &QPushButton::clicked, this, [this, reset_btn]() {
     const auto answer = QMessageBox::warning(
         this, "Reset memories", "Delete all persisted Agent memories?",
         QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
     if (answer != QMessageBox::Yes || !agent_panel_) return;
+    reset_btn->setEnabled(false);
+    if (memory_operation_status_label_)
+      memory_operation_status_label_->setText("Memory reset requested…");
     if (agent_panel_->sendJsonRpc("agent.memory_reset", QJsonObject{{"confirmed", true}})) {
-      reset_btn->setEnabled(false);
-      QTimer::singleShot(1000, reset_btn, [reset_btn]() { reset_btn->setEnabled(true); });
+      QTimer::singleShot(30000, reset_btn, [this, reset_btn]() {
+        if (!reset_btn->isEnabled()) {
+          reset_btn->setEnabled(true);
+          if (memory_operation_status_label_)
+            memory_operation_status_label_->setText(
+                "Memory reset failed: no backend result arrived within 30 seconds.");
+        }
+      });
+    } else {
+      reset_btn->setEnabled(true);
+      if (memory_operation_status_label_)
+        memory_operation_status_label_->setText(
+            "Memory reset was not sent: agent backend unavailable.");
     }
   });
   memory_actions->addWidget(reset_btn);
@@ -1189,6 +1208,22 @@ void AgentSettingsDialog::applyMemoryState(const QJsonObject& state) {
 
 void AgentSettingsDialog::applyMemoryOperation(const QString& method,
                                                 const QJsonObject& result) {
+  if (method == "memory_reset") {
+    if (memory_reset_button_) memory_reset_button_->setEnabled(true);
+    if (!memory_operation_status_label_) return;
+    if (result.contains("error")) {
+      memory_operation_status_label_->setText(
+          "Memory reset failed: " + result.value("error").toString("request rejected"));
+    } else {
+      const int removed = result.value("removed").toInt();
+      memory_operation_status_label_->setText(
+          QString("Memory reset complete: %1 %2 removed.")
+              .arg(removed).arg(removed == 1 ? "record" : "records"));
+    }
+    if (memory_dialog_ && agent_panel_)
+      agent_panel_->sendJsonRpc("agent.memory_list", QJsonObject{});
+    return;
+  }
   if (!memory_dialog_) return;
   const QString operation = result.value("operation").toString();
   const bool write_operation = method == "memory_added" || method == "memory_updated" ||

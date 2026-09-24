@@ -2129,4 +2129,7 @@ Sprint 975 scenario in `src/ccad_gui/main.cpp`, driven by
 `scripts/run_ui_map_mouse_target_demo.ps1`, records every interaction and
 captures only distinct visual checkpoints. Its profile is isolated from user
 memory. `tests/test_gui_ui_map.cpp` keeps the redaction-test fixture hidden so
-its sentinel text cannot appear in the main window during GUI tests.
+its sentinel text cannot appear in the main window during GUI tests. Confirmed
+reset reports the backend record count or a safe failure, re-enables its action
+on response, refreshes an open memory list, and uses a bounded timeout only if
+the child sends no result.

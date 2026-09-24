@@ -2,7 +2,7 @@
 
 ## Agent memory management outcomes (Sprint 975)
 
-The memory manager now reports add, update, delete, reset, and backend-error outcomes from the Python memory runtime to the GUI. The settings panel disables write controls while a mutation is pending, displays operation-specific success or safe error text, refreshes records only after authoritative success, rejects empty content visibly, and requires confirmation before deleting a selected record. Delete targets the record ID selected before the confirmation dialog, even if the active conversation changes while that dialog is open. Validation used an isolated profile. The mapped harness records every interaction but retains only distinct screenshots for dialogs and completed outcomes, avoiding redundant per-click captures.
+The memory manager now reports add, update, delete, reset, and backend-error outcomes from the Python memory runtime to the GUI. The settings panel disables write controls while a mutation is pending, displays operation-specific success or safe error text, refreshes records only after authoritative success, rejects empty content visibly, and requires confirmation before deleting a selected record or resetting all persisted records. Delete targets the record ID selected before the confirmation dialog, even if the active conversation changes while that dialog is open. Reset reports the backend's removed-record count or failure and refreshes an open manager list; it no longer relies on a fixed re-enable timer. Validation used an isolated profile. The mapped harness records every interaction but retains only distinct screenshots for dialogs and completed outcomes, avoiding redundant per-click captures.
 
 ## Provider status and failure categories
 

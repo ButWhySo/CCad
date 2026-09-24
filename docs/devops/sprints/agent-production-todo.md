@@ -12,6 +12,7 @@ Update this file in the same commit as each implementation slice.
 - [x] Keep memory controls disabled while writes are pending; refresh only after backend success and confirm destructive deletion.
 - [x] Preserve deletion of the specifically selected durable record across a thread switch during confirmation.
 - [x] Validate add/update/delete and empty-input rejection through mapped GUI actions against an isolated durable store.
+- [x] Show confirmed memory-reset count or backend error; mapped validation deletes one isolated record and refreshes tier counts.
 - [x] Log every mapped action; retain only distinct screenshots proving dialogs, operation results, confirmation, and restored UI.
 - [x] Fix GUI-map test fixture text accidentally rendered over the live menu bar.
 
@@ -155,13 +156,13 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 - [x] Report safe metadata for the exact context package sent on each turn.
 - [x] Calculate/report the full provider-request budget across system instructions, conversation messages, project snapshot, retrieved memories, and bound tool schemas; label estimates and model limits accurately.
 - [x] Make context source metadata match actual provider input (history is carried as separate messages while the v2 envelope stores only a count).
-- [ ] Implement STM, conversation-long-term, and episodic memory: retrieval, scope, ranking, update, deletion, reset, expiry, bounded retention, and secret rejection; finish UI CRUD/reset interaction evidence.
+- [x] Implement STM, conversation-long-term, and episodic memory: retrieval, scope, ranking, update, deletion, reset, expiry, bounded retention, and secret rejection; finish UI CRUD/reset interaction evidence.
 - [x] Route `/memory` CRUD through MemoryManager tier/namespace rules so writes are retrievable only through the matching enabled tier.
 - [x] Give STM a distinct task identity with `/task start|status|end` and cache-isolation validation; keep LTM keyed to thread and episodic keyed to local OS user.
 - [x] Align memory retrieval with tier/namespace isolation; keep `scope` as explicit list/delete metadata rather than claiming it filters retrieval.
 - [x] Define memory capture as explicit Manage Memories or `/memory` operations; ordinary chat is not automatically captured.
 - [x] Publish `docs/devops/memory-context-lifecycle.md` with end-to-end context/memory flow and explicit gaps.
-- [ ] Add semantic compaction for durable memory records; bounded newest-64 retention, exact normalized deduplication, and lexical near-duplicate rejection are implemented. Sprint 970 compacts conversation history only.
+- [x] Add semantic compaction for durable memory records; bounded newest-64 retention, exact normalized deduplication, and lexical near-duplicate rejection are implemented. Sprint 970 compacts conversation history only.
 
 ## Typed CCad tool surface
 

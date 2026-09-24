@@ -667,8 +667,73 @@ int main(int argc, char** argv) {
                               QString::number(*confirmation_result),
                               jsonStringLocal(QString::fromStdString(delete_confirmation.string())));
           ok = deleted && ok;
+
+          ok = interact("ui.click", "{\"id\":\"action:addMemory\"}",
+                        "action:addMemory", "memory-ui-reset-fixture-new") && ok;
+          ok = interact("ui.click", "{\"id\":\"control:memoryTier\",\"value\":\"ltm\"}",
+                        "control:memoryTier", "memory-ui-reset-fixture-tier") && ok;
+          ok = interact("ui.type_text",
+                        "{\"id\":\"control:memoryTitle\",\"text\":\"Reset proof record\"}",
+                        "control:memoryTitle", "memory-ui-reset-fixture-title") && ok;
+          ok = interact("ui.type_text",
+                        "{\"id\":\"control:memoryScope\",\"text\":\"conversation\"}",
+                        "control:memoryScope", "memory-ui-reset-fixture-scope") && ok;
+          ok = interact("ui.type_text",
+                        "{\"id\":\"control:memoryContent\",\"text\":\"This record exists only to verify the confirmed reset flow.\"}",
+                        "control:memoryContent", "memory-ui-reset-fixture-content") && ok;
+          ok = interact("ui.click", "{\"id\":\"action:saveMemory\"}",
+                        "action:saveMemory", "memory-ui-reset-fixture-save") && ok;
+          for (int attempt = 0; attempt < 40; ++attempt) {
+            QThread::msleep(100);
+            QApplication::processEvents();
+            if (memoryStatus() && memoryStatus()->text() == "Memory added.") break;
+          }
+          const bool reset_fixture_added =
+              memoryStatus() && memoryStatus()->text() == "Memory added.";
+          entries << QString("{\"memory_reset_fixture_added\":%1}")
+                         .arg(reset_fixture_added ? "true" : "false");
+          ok = reset_fixture_added && ok;
           ok = interact("ui.click", "{\"id\":\"action:closeMemoryManager\"}",
                         "action:closeMemoryManager", "memory-ui-manager-closed") && ok;
+          const auto reset_confirmation_path = output_dir /
+              (name + "-memory-ui-reset-confirmation.png").toStdString();
+          auto reset_confirmation_result = std::make_shared<int>(0);
+          QTimer::singleShot(300, qApp,
+              [reset_confirmation_path, reset_confirmation_result]() {
+            for (QWidget* top_level : QApplication::topLevelWidgets()) {
+              auto* message = qobject_cast<QMessageBox*>(top_level);
+              if (!message || !message->isVisible()) continue;
+              message->grab().save(QString::fromStdString(
+                  reset_confirmation_path.string()));
+              if (QAbstractButton* yes = message->button(QMessageBox::Yes)) {
+                yes->click();
+                if (message->isVisible()) message->done(QMessageBox::Yes);
+              }
+              *reset_confirmation_result = message->result();
+              return;
+            }
+          });
+          ok = interact("ui.click", "{\"id\":\"action:agent_memory_reset\"}",
+                        "action:agent_memory_reset", "memory-ui-reset-confirmed") && ok;
+          auto* reset_status = window->findChild<QLabel*>(
+              "label:memoryOperationStatus");
+          for (int attempt = 0; attempt < 40; ++attempt) {
+            QThread::msleep(100);
+            QApplication::processEvents();
+            if (reset_status && reset_status->text() ==
+                "Memory reset complete: 1 record removed.") break;
+          }
+          const bool reset = reset_status && reset_status->text() ==
+              "Memory reset complete: 1 record removed.";
+          entries << QString("{\"memory_reset_complete\":%1,\"memory_reset_status\":%2,\"reset_confirmation_result\":%3,\"reset_confirmation_screenshot\":%4}")
+                         .arg(reset ? "true" : "false",
+                              jsonStringLocal(reset_status ? reset_status->text()
+                                                          : QString("missing")),
+                              QString::number(*reset_confirmation_result),
+                              jsonStringLocal(QString::fromStdString(
+                                  reset_confirmation_path.string())));
+          ok = reset && ok;
+          ok = captureMemoryResult() && ok;
           ok = interact("ui.click", "{\"id\":\"action:cancelSettingsButton\"}",
                         "action:cancelSettingsButton", "memory-ui-settings-closed") && ok;
         } else if (name.startsWith("sprint974-memory")) {
