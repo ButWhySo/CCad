@@ -1421,6 +1421,7 @@ void AgentPanel::handlePythonOutput() {
         }
         const QString digest = params["package_digest"].toString();
         const int estimated_tokens = params["estimated_token_count"].toInt();
+        const int project_match_count = params["project_retrieval_count"].toInt();
         addActivityEvent("context", "Context package prepared",
                          QString("v%1 | %2 chars | ~%3 tokens | %4 memories | %5 history | %6")
                              .arg(context_schema_version_)
@@ -1428,7 +1429,8 @@ void AgentPanel::handlePythonOutput() {
                              .arg(estimated_tokens)
                              .arg(context_memory_entry_count_)
                              .arg(context_history_message_count_)
-                             .arg(context_truncated_ ? "truncated" : "bounded")
+                             .arg(context_truncated_ ? "truncated" : "bounded") +
+                             QString(" | %1 project matches").arg(project_match_count)
                              + (digest.isEmpty() ? QString() : QString(" | %1").arg(digest)),
                          "agent.context_state");
       } else if (obj.contains("method") && obj["method"].toString() == "agent_methods") {

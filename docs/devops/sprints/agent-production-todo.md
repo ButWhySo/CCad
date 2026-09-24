@@ -2,6 +2,15 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 980 active slice — deterministic typed-project retrieval (Context Runtime C3)
+
+Research: [KiCad PCB Editor](https://docs.kicad.org/7.0/en/pcbnew/pcbnew.html) separates layers, objects, and nets as distinct board views; [KiCad board file format](https://dev-docs.kicad.org/en/file-formats/sexpr-pcb/) identifies tracks, vias, zones, footprints, pads, and layers as structured board entities. CCad retrieval follows its native typed snapshot and deliberately labels net association separately from physical copper continuity.
+
+- [x] Implement/test deterministic exact, BM25, net/component/layer association, and coordinate-based retrieval from the active typed project snapshot; include bounded results, secret redaction, and content-revision updates.
+- [x] Inject relevant project entities into the actual provider context, preserve them when a large project snapshot is compacted, and report safe retrieval counts/revision/method.
+- [x] Run focused context contracts, changed-module Pyright, Qt MinGW Release build, full CTest (113/113), and scoped GUI-map validation (seven actions, 10 project matches, four inspected screenshots, provider disabled, stdout/stderr reviewed).
+- [ ] Update architecture/features/progress and this checklist, run staged secret scan, commit, push, and merge to GitHub `main`; remove only completed local/remote sprint branches.
+
 ### Sprint 979 active slice — Pyright analysis and protocol boundary
 
 References checked: [Pyright configuration: `maxCodeComplexity`](https://github.com/microsoft/pyright/blob/main/docs/configuration.md) exposes the analyzer's complexity guard, and [Pyright issue 3138](https://github.com/microsoft/pyright/issues/3138) explains why oversized control-flow scopes stop analysis. This slice decomposes runtime code; it does not suppress the diagnostic or raise the limit.
@@ -4142,30 +4151,30 @@ The current typed PCB/schematic project should be indexed structurally. Do not t
 
 Index exact identifiers for:
 
-- [ ] reference designators.
-- [ ] component UUIDs/object IDs.
-- [ ] symbol IDs.
-- [ ] footprint IDs.
-- [ ] pad IDs.
+- [x] reference designators.
+- [x] component UUIDs/object IDs for indexed native project entities.
+- [x] symbol IDs.
+- [x] footprint IDs.
+- [x] pad IDs.
 - [ ] net IDs/names.
-- [ ] layer IDs/names.
+- [x] layer IDs/names.
 - [ ] sheet paths.
 - [ ] rule IDs.
 - [ ] DRC/ERC diagnostic IDs.
-- [ ] zone/keepout IDs.
-- [ ] track/via IDs.
+- [x] zone/keepout IDs.
+- [x] track/via IDs.
 - [ ] project artifact IDs.
 
 ### Lexical/BM25 project index
 
 Index textual fields such as:
 
-- [ ] component reference.
-- [ ] component value.
+- [x] component reference.
+- [x] component value.
 - [ ] component description.
 - [ ] library description.
-- [ ] net names.
-- [ ] labels.
+- [x] net names present in the native schematic/PCB entity fields.
+- [x] labels.
 - [ ] sheet names/titles.
 - [ ] properties.
 - [ ] notes.
@@ -4174,7 +4183,7 @@ Index textual fields such as:
 - [ ] generated functional-block summaries.
 - [ ] project annotations.
 
-- [ ] Use actual BM25/FTS rather than simple substring matching for broad textual retrieval.
+- [x] Use actual deterministic BM25 scoring over bounded per-entity postings rather than simple substring matching for broad textual retrieval.
 
 ---
 
@@ -4190,10 +4199,10 @@ Represent/traverse relationships such as:
 - [ ] schematic symbol -> footprint.
 - [ ] PCB footprint -> pads.
 - [ ] pad -> PCB net.
-- [ ] net -> tracks.
-- [ ] net -> vias.
-- [ ] net -> zones.
-- [ ] object -> layer.
+- [x] net -> tracks.
+- [x] net -> vias.
+- [x] net -> zones.
+- [ ] object -> layer for every object type (indexed single-layer associations are implemented; via multi-layer edges and full type coverage remain).
 - [ ] object -> DRC/ERC diagnostic.
 - [ ] component -> nearby PCB components.
 - [ ] component -> associated decoupling/passive components where deterministically derivable.
@@ -4205,13 +4214,13 @@ Represent/traverse relationships such as:
 
 ### Graph retrieval
 
-- [ ] Expand exact user references through relevant graph edges.
-- [ ] Bound traversal depth.
-- [ ] Bound result count.
-- [ ] Prefer electrically/semantically relevant edges over arbitrary graph expansion.
-- [ ] Keep traversal deterministic.
-- [ ] Include source object IDs for all graph-derived context.
-- [ ] Query authoritative live project state before trusting stale derived graph data.
+- [x] Expand exact user references through indexed component, layer, and shared-net association edges.
+- [x] Bound traversal depth to one relationship hop.
+- [x] Bound result count.
+- [x] Prefer exact and lexical matches over relationship expansion and spatial proximity.
+- [x] Keep traversal deterministic.
+- [x] Include source object IDs for all graph-derived context.
+- [x] Refresh/incrementally reconcile against the authoritative live project snapshot before returning results.
 
 ---
 
@@ -4219,19 +4228,19 @@ Represent/traverse relationships such as:
 
 ## Parent task: use board geometry to retrieve nearby relevant state
 
-- [ ] Add spatial index for PCB objects.
-- [ ] Search by selected object region.
+- [x] Add bounded grid spatial index for typed PCB geometry bounding boxes.
+- [x] Search around selected/exact object anchors when a proximity request is present.
 - [ ] Search by bounding box.
-- [ ] Search by coordinate.
-- [ ] Search nearby tracks.
-- [ ] Search nearby vias.
-- [ ] Search nearby footprints.
-- [ ] Search nearby zones.
-- [ ] Search nearby keepouts.
-- [ ] Search relevant layers.
+- [x] Search by coordinate.
+- [x] Search nearby tracks.
+- [x] Search nearby vias.
+- [x] Search nearby footprints.
+- [x] Search nearby zones.
+- [x] Search nearby keepouts.
+- [x] Search relevant layers.
 - [ ] Search DRC markers in/near the region.
-- [ ] Bound spatial radius/result count.
-- [ ] Let exact object/net relationships override arbitrary geometric proximity when appropriate.
+- [x] Bound spatial radius/result count.
+- [x] Let exact object/net relationships rank ahead of arbitrary geometric proximity.
 
 ---
 
@@ -4603,14 +4612,14 @@ Complete together:
 
 Complete together:
 
-- [ ] identity index.
-- [ ] FTS/BM25 index.
+- [x] Exact identity index for implemented typed entity classes; remaining entity coverage stays open above.
+- [x] Deterministic BM25 index for implemented typed entity text; remaining text-field coverage stays open above.
 - [ ] project relationship graph.
-- [ ] PCB spatial index.
-- [ ] hybrid deterministic project retrieval.
-- [ ] revision/staleness handling.
-- [ ] incremental index updates.
-- [ ] tests/docs.
+- [x] PCB spatial index for supported typed entity geometry; diagnostic-marker and arbitrary bbox query coverage remains open.
+- [x] Hybrid deterministic project retrieval.
+- [x] Content revision/staleness handling against the live typed snapshot.
+- [x] Incremental per-entity index updates for changes/additions/deletions.
+- [ ] Full C3 completion, remaining entity/relationship/spatial coverage, benchmarks, tests/docs.
 
 ## Group C4 — Semantic project retrieval
 

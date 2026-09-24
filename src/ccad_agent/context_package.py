@@ -96,6 +96,45 @@ def _memory_manifest(value: dict | None) -> dict:
             "contents_included": False}
 
 
+def _project_retrieval_payload(value: dict | None) -> dict:
+    """Copy a bounded allowlist of typed project search results into context."""
+    source = value if isinstance(value, dict) else {}
+    entities = []
+    used = 0
+    for entity in source.get("entities", [])[:12]:
+        if not isinstance(entity, dict):
+            continue
+        item = {}
+        for key in ("id", "kind", "reference", "value", "name", "part",
+                    "pin_name", "pin_number", "type", "net_id", "layer_id",
+                    "component_id", "position_mm", "bounds_mm", "retrieval",
+                    "rank", "relationship", "distance_mm"):
+            if key in entity and isinstance(entity[key], (str, int, float, dict)):
+                item[key] = entity[key]
+        if isinstance(entity.get("relationships"), list):
+            item["relationships"] = [_safe_text(value, 40) for value in
+                                      entity["relationships"][:8]
+                                      if isinstance(value, str)]
+        encoded_size = len(json.dumps(item, ensure_ascii=False, separators=(",", ":")))
+        if not item or used + encoded_size > 6000:
+            continue
+        entities.append(item)
+        used += encoded_size
+    stats = source.get("stats", {})
+    stats = stats if isinstance(stats, dict) else {}
+    return {
+        "available": bool(source.get("available", False)),
+        "revision": _safe_text(source.get("revision"), 32),
+        "search_method": _safe_text(source.get("search_method"), 80),
+        "relationship_semantics": "shared_net_association_only",
+        "spatial_semantics": "axis_aligned_bounds_distance_only",
+        "entities": entities,
+        "stats": {key: max(0, int(stats.get(key, 0) or 0)) for key in
+                  ("total_entities", "exact_match_count", "lexical_match_count",
+                   "relationship_match_count", "spatial_match_count", "omitted_count")},
+    }
+
+
 def _turn_payload(records: Iterable[dict]) -> list[dict]:
     """Keep retrieved history concise and traceable to durable source messages."""
     result = []
@@ -177,13 +216,15 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
                           thread_recap: dict | None = None,
                           memory_summary: str = "",
                           memory_manifest: dict | None = None,
-                          turn_context: dict | None = None) -> dict:
+                          turn_context: dict | None = None,
+                          project_retrieval: dict | None = None) -> dict:
     """Return actual provider content plus non-content metadata for one turn."""
     limit = min(131072, max(1024, int(char_limit)))
     project, native_revision = _project_payload(raw_context)
     memories = _memory_payload(memory_entries)
     summary = _memory_summary(memories, memory_summary)
     manifest = _memory_manifest(memory_manifest)
+    project_matches = _project_retrieval_payload(project_retrieval)
     turn_context = turn_context if isinstance(turn_context, dict) else {}
     prior_turns = _turn_payload(turn_records)
     recap = _recap_payload(thread_recap)
@@ -212,6 +253,8 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
             "secret_values_excluded": True,
         },
     }
+    if project_matches["entities"]:
+        envelope["project_retrieval"] = project_matches
     encode = lambda: _PREFIX + json.dumps(
         envelope, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     encoded = encode()
@@ -258,13 +301,6 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
                     "semantic_retrieval_ready"],
                 "contents_included": False,
             }
-        while len(encoded := encode()) > limit and envelope["memory"]:
-            envelope["memory"].pop()
-            envelope["memory_summary"] = _memory_summary(envelope["memory"])
-            omitted_memory_count += 1
-        if omitted_memory_count:
-            envelope["constraints"]["omitted_memory_entry_count"] = omitted_memory_count
-            encoded = encode()
         if len(encoded) > limit:
             while len(encoded := encode()) > limit and envelope["prior_turns"]:
                 envelope["prior_turns"].pop()
@@ -280,12 +316,26 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
         if omitted_recap_turn_count:
             envelope["constraints"]["omitted_thread_recap_turn_count"] = omitted_recap_turn_count
             encoded = encode()
+        # Preserve relevant memory ahead of older conversation material: the
+        # current request and its retrieved design facts are more actionable.
+        while len(encoded := encode()) > limit and envelope["memory"]:
+            envelope["memory"].pop()
+            omitted_memory_count += 1
+        envelope["memory_summary"] = _memory_summary(envelope["memory"])
+        if omitted_memory_count:
+            envelope["constraints"]["omitted_memory_entry_count"] = omitted_memory_count
+            encoded = encode()
         if len(encoded) > limit:
             envelope["memory"] = []
             envelope["memory_summary"] = ""
             omitted_memory_count = len(memories)
             envelope["constraints"]["omitted_memory_entry_count"] = omitted_memory_count
             encoded = encode()
+        if len(encoded) > limit:
+            while (len(encoded := encode()) > limit and
+                   envelope.get("project_retrieval", {}).get("entities")):
+                envelope["project_retrieval"]["entities"].pop()
+                envelope["project_retrieval"]["stats"]["omitted_count"] += 1
         if len(encoded) > limit:
             raise ValueError("context limit is too small for the safe summary envelope")
     # Conversation advances every turn; it must not invalidate a project/action
@@ -303,6 +353,10 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
         sources.append("project_snapshot")
     elif project_snapshot_omitted:
         sources.append("project_summary")
+    included_project_retrieval = envelope.get("project_retrieval", {
+        "revision": "", "search_method": "", "stats": {}, "entities": []})
+    if included_project_retrieval["entities"]:
+        sources.append("project_retrieval")
     if included_memories:
         sources.append("retrieved_memory")
     if envelope["memory_summary"]:
@@ -377,6 +431,13 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
             "history_in_context_package": False,
             "history_sent_as_provider_messages": bool(history_items),
             "project_counts": project_counts,
+            "project_retrieval_revision": included_project_retrieval["revision"],
+            "project_retrieval_method": included_project_retrieval["search_method"],
+            "project_retrieval_stats": included_project_retrieval["stats"],
+            "project_retrieval_count": len(included_project_retrieval["entities"]),
+            "project_retrieval_chars": len(json.dumps(
+                included_project_retrieval["entities"], ensure_ascii=False,
+                separators=(",", ":"))),
             "content_emitted": False,
             "secret_value_visible": False,
         },

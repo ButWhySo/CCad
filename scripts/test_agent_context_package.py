@@ -43,7 +43,7 @@ recap = {"source_turn_ids": ["turn-source-1"], "turns": [{
     "referenced_entities": {"user_reference": ["U3"]},
     "important_findings": [],
 }]}
-package = build_context_package(raw, memories, history, char_limit=1300,
+package = build_context_package(raw, memories, history, char_limit=4096,
                                  turn_records=[turn_record], thread_recap=recap)
 metadata = package["metadata"]
 assert package["content"].startswith("[CCAD_CONTEXT_V3]\n")
@@ -65,7 +65,7 @@ assert "retrieved_memory" in metadata["sources"]
 assert "fixture-not-a-real-secret" not in package["content"]
 assert "message-user-1" in package["content"]
 assert "Keep U3 in place." in package["content"]
-assert len(package["content"]) <= 1300
+assert len(package["content"]) <= 4096
 
 truncated = build_context_package(raw + ("x" * 9000), [], [], char_limit=1024)
 assert truncated["metadata"]["truncated"] is True

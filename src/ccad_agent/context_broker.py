@@ -8,6 +8,8 @@ import re
 from collections import OrderedDict
 from typing import Any
 
+from project_index import ProjectIndex, project_model
+
 
 _WORDS = re.compile(r"[a-z0-9_]{3,}", re.IGNORECASE)
 _IDENTIFIERS = re.compile(
@@ -84,6 +86,7 @@ class ContextBroker:
         self.memory_token_budget = max(64, min(8000, int(memory_token_budget)))
         self._cache: OrderedDict[str, dict] = OrderedDict()
         self._versions: dict[str, int] = {}
+        self._project_indexes: OrderedDict[str, ProjectIndex] = OrderedDict()
 
     def invalidate_thread(self, thread_id: str):
         """Immediately discard process-held memory/context for a thread."""
@@ -212,7 +215,8 @@ class ContextBroker:
                 active_editor: str = "", selected_objects=(), workflow: str = "",
                 task: str = "", recent_turns=(), historical_turn_count=0,
                 force_refresh=False, signals: dict | None = None,
-                recent_context=(), thread_recap: dict | None = None):
+                recent_context=(), thread_recap: dict | None = None,
+                project_snapshot=None, active_layer="", active_net=""):
         signals = signals or extract_context_signals(
             user_request, goal=goal, project_id=project_id, active_editor=active_editor,
             selected_objects=selected_objects, workflow=workflow, task=task,
@@ -240,6 +244,28 @@ class ContextBroker:
             entries, provenance, comparison_texts)
         entries, provenance, chars = self._select(entries, provenance)
         manifest = self._manifest(manager, historical_turn_count, states)
+        project_retrieval = {"available": False, "entities": [], "characters": 0,
+                             "revision": "", "stats": {"index_state": "unavailable",
+                             "total_entities": 0, "omitted_count": 0},
+                             "relationship_semantics": "shared_net_association_only"}
+        if project_snapshot:
+            project_model_data = project_model(project_snapshot)
+            project_key = str(project_model_data.get("id") or
+                              project_model_data.get("name") or
+                              project_id or project_revision)
+            project_index = self._project_indexes.get(project_key)
+            if project_index is None:
+                project_index = ProjectIndex()
+                self._project_indexes[project_key] = project_index
+            project_result = project_index.retrieve(
+                project_snapshot, signals["query"], active_layer=active_layer,
+                active_net=active_net, selected_objects=selected_objects)
+            project_retrieval = project_result
+            if project_result.get("available"):
+                # Retain populated indexes for incremental updates across turns.
+                self._project_indexes.move_to_end(project_key)
+                while len(self._project_indexes) > 1:
+                    self._project_indexes.popitem(last=False)
         thread = str(thread_id)
         version = self._versions.get(thread, 0) + 1
         self._versions[thread] = version
@@ -249,6 +275,7 @@ class ContextBroker:
                   "memories": entries, "memory_retrieval": provenance,
                   "dedup_context": comparison_texts,
                   "memory_summary": self._summary(entries), "manifest": manifest,
+                  "project_retrieval": project_retrieval,
                   "memory_chars": chars, "memory_token_budget": self.memory_token_budget,
                   "historical_turn_count": max(0, int(historical_turn_count)),
                   "change_reason": "initial_context" if version == 1 else "context_changed"}

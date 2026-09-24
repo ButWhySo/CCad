@@ -450,6 +450,7 @@ int main(int argc, char** argv) {
           name.startsWith("sprint970-compaction") ||
           name.startsWith("sprint976-conversation") ||
           name.startsWith("sprint977-context") ||
+          name.startsWith("sprint980-project-retrieval") ||
           name.startsWith("sprint975-memory-ui") ||
           name.startsWith("sprint974-memory")) {
         const auto interact = [window, &entries, &output_dir, &name,
@@ -473,7 +474,8 @@ int main(int argc, char** argv) {
           QString screenshot_path;
           if ((!name.startsWith("sprint975-memory-ui") &&
                !name.startsWith("sprint976-conversation") &&
-               !name.startsWith("sprint977-context")) ||
+               !name.startsWith("sprint977-context") &&
+               !name.startsWith("sprint980-project-retrieval")) ||
               memory_checkpoints.contains(action_name)) {
             screenshot_path = QString::fromStdString(
                 (output_dir / (name + "-" + action_name + ".png").toStdString()).string());
@@ -549,7 +551,8 @@ int main(int argc, char** argv) {
                          .arg(safe_noop_visible ? "true" : "false");
           ok = safe_noop_visible && ok;
         } else if (name.startsWith("sprint976-conversation") ||
-                   name.startsWith("sprint977-context")) {
+                   name.startsWith("sprint977-context") ||
+                   name.startsWith("sprint980-project-retrieval")) {
           const auto capture = [window, &output_dir, &name, &entries](const QString& state) {
             const QString path = QString::fromStdString(
                 (output_dir / (name + "-" + state + ".png").toStdString()).string());
@@ -569,7 +572,11 @@ int main(int argc, char** argv) {
           ok = interact("ui.click", "{\"id\":\"tab:agent\"}",
                         "tab:agent", "conversation-agent-tab") && ok;
           const bool context_memory_validation = name.startsWith("sprint977-context");
-          const QString user_prompt = context_memory_validation
+          const bool project_retrieval_validation =
+              name.startsWith("sprint980-project-retrieval");
+          const QString user_prompt = project_retrieval_validation
+              ? QStringLiteral("Describe component U_DEMO in the loaded project.")
+              : context_memory_validation
               ? QStringLiteral("What memory applies to GND near U3 on F.Cu?")
               : QStringLiteral("Record this thread-local verification turn.");
           ok = interact("ui.type_text",
@@ -588,13 +595,17 @@ int main(int argc, char** argv) {
           const bool memory_visible = !context_memory_validation ||
               (chat && chat->toPlainText().contains("Context package prepared") &&
                chat->toPlainText().contains("1 memories"));
-          const bool turn_visible = chat && memory_visible &&
+          const bool project_matches_visible = !project_retrieval_validation ||
+              (chat && chat->toPlainText().contains("project matches") &&
+               !chat->toPlainText().contains("| 0 project matches"));
+          const bool turn_visible = chat && memory_visible && project_matches_visible &&
               chat->toPlainText().contains(user_prompt) &&
               chat->toPlainText().contains(
                   "Provider execution is unavailable; configure a provider");
-          entries << QString("{\"conversation_turn_visible\":%1,\"context_memory_attached\":%2,\"provider_request_sent\":false}")
+          entries << QString("{\"conversation_turn_visible\":%1,\"context_memory_attached\":%2,\"project_retrieval_visible\":%3,\"provider_request_sent\":false}")
                          .arg(turn_visible ? "true" : "false",
-                              memory_visible ? "true" : "false");
+                              memory_visible ? "true" : "false",
+                              project_matches_visible ? "true" : "false");
           ok = turn_visible && capture("turn-persisted") && ok;
           ok = interact("ui.type_text",
                         "{\"id\":\"control:agent_chat_input\",\"text\":\"/clear\"}",
@@ -857,7 +868,9 @@ int main(int argc, char** argv) {
         const std::filesystem::path output_path =
             output_dir / (name + "-target-sequence.json").toStdString();
         std::ofstream output(output_path, std::ios::binary);
-        const QString interaction_plan = name.startsWith("sprint977-context")
+        const QString interaction_plan = name.startsWith("sprint980-project-retrieval")
+            ? QStringLiteral("Verify an actual typed-project retrieval match appears in per-turn Agent context and chat metadata via seven mapped actions; provider disabled")
+            : name.startsWith("sprint977-context")
             ? QStringLiteral("Verify a real bounded thread-memory context is assembled and shown in chat via seven mapped actions; provider disabled")
             : name.startsWith("sprint976-conversation")
             ? QStringLiteral("Verify thread conversation persistence and /clear transcript preservation via seven mapped actions; provider disabled")

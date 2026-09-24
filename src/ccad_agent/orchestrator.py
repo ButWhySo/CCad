@@ -1403,7 +1403,7 @@ def get_system_prompt(role_desc: str) -> str:
     
     parts = [f"You are {role_desc}",
              "Use only tools in the native catalog. Never invent a tool, board object, layer, net, placement, preview, or successful mutation.",
-             "Read the typed project context before design-specific work. Use project.state for complete live PCB/schematic state when needed.",
+             "Read the typed project context and project_retrieval matches before design-specific work. Retrieved positions and IDs come from the active typed model; same_net means only shared net assignment, not proven physical copper continuity. Use project.state for complete live PCB/schematic state before changes or when the requested details are not present.",
              "For a requested PCB layer or net, verify it exists in project context, then call ui.set_active_layer or ui.set_active_net before a dependent mutation.",
              "Treat tool results as authoritative: report a change only after performed=true; report the returned failure reason otherwise.",
              "Persistent mutations require the approval path. Use rendered proposal preview when available; never describe text-only context as a visual diff."]
@@ -2442,6 +2442,11 @@ def handle_human_message(req):
         turn_records = []
         recap = {"source_turn_ids": [], "turns": []}
     active_editor, selected_objects = project_retrieval_signals(raw_context)
+    try:
+        project_context = json.loads(raw_context) if raw_context else {}
+    except (TypeError, json.JSONDecodeError):
+        project_context = {}
+    project_context = project_context if isinstance(project_context, dict) else {}
     recent_context = recent_retrieval_text(session_messages)
     signals = extract_context_signals(
         memory_query, goal=text, project_id=project_id,
@@ -2471,7 +2476,10 @@ def handle_human_message(req):
                 selected_objects=selected_objects, workflow=active_workflow,
                 task=memory_manager.identities["stm"], recent_turns=turn_records,
                 historical_turn_count=len(turn_records), signals=signals,
-                recent_context=recent_context, thread_recap=recap)
+                recent_context=recent_context, thread_recap=recap,
+                project_snapshot=project_context,
+                active_layer=project_context.get("active_pcb_layer_id", ""),
+                active_net=project_context.get("active_pcb_net_id", ""))
             if retrieval_observation is not None:
                 retrieval_observation.update(
                     input={"signal_digest": signals["digest"],
@@ -2485,6 +2493,22 @@ def handle_human_message(req):
                     "cache_hit": str(turn_context["cache_hit"]).lower(),
                     "memory_chars": str(turn_context["memory_chars"]),
                 })
+        with telemetry_runtime.observation("project.retrieve", "retriever", {
+                "signal_digest": signals["digest"],
+                "project_revision": context_revision(raw_context),
+            }) as project_observation:
+            retrieval = turn_context["project_retrieval"]
+            if project_observation is not None:
+                stats = retrieval.get("stats", {})
+                project_observation.update(
+                    output={"result_count": str(len(retrieval.get("entities", []))),
+                            "index_state": str(stats.get("index_state", "unavailable")),
+                            "revision": str(retrieval.get("revision", ""))},
+                    metadata={"entity_count": str(stats.get("total_entities", 0)),
+                              "omitted_count": str(stats.get("omitted_count", 0)),
+                              "characters": str(retrieval.get("characters", 0)),
+                              "search_method": str(retrieval.get("search_method", "none")),
+                              "content_exported": "false"})
         memory_entries = turn_context["memories"]
         memory_retrieval = turn_context["memory_retrieval"]
         active_turn_contexts[requested_thread] = turn_context
@@ -2505,6 +2529,7 @@ def handle_human_message(req):
                 thread_recap=recap,
                 memory_summary=turn_context["memory_summary"],
                 memory_manifest=turn_context["manifest"],
+                project_retrieval=turn_context["project_retrieval"],
                 turn_context={key: turn_context[key] for key in
                               ("version", "change_reason", "signal_digest")})
             if package_observation is not None:
@@ -2590,6 +2615,11 @@ def handle_human_message(req):
         "project_summary_chars": context_metadata["project_summary_chars"],
         "project_source_chars": context_metadata["project_source_chars"],
         "project_snapshot_omitted": context_metadata["project_snapshot_omitted"],
+        "project_retrieval_count": context_metadata["project_retrieval_count"],
+        "project_retrieval_chars": context_metadata["project_retrieval_chars"],
+        "project_retrieval_revision": context_metadata["project_retrieval_revision"],
+        "project_retrieval_method": context_metadata["project_retrieval_method"],
+        "project_retrieval_stats": context_metadata["project_retrieval_stats"],
         "omitted_memory_entry_count": context_metadata["omitted_memory_entry_count"],
         "memory_tier_counts": context_metadata["memory_tier_counts"],
         "memory_tier_chars": context_metadata["memory_tier_chars"],
