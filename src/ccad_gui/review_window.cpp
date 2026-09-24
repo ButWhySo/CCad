@@ -106,6 +106,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 QString formatCursorStatus(const std::optional<ccad::Board>& board, const QPointF& scene_position) {
@@ -1875,6 +1876,25 @@ std::string firstCopperLayerId(const ccad::Board& board) {
     }
   }
   return {};
+}
+
+std::string lastCopperLayerId(const ccad::Board& board) {
+  for (auto layer = board.layers.rbegin(); layer != board.layers.rend(); ++layer) {
+    if (layer->kind == "copper" && layer->id == "B.Cu") return layer->id;
+  }
+  for (auto layer = board.layers.rbegin(); layer != board.layers.rend(); ++layer) {
+    if (layer->kind == "copper") return layer->id;
+  }
+  return {};
+}
+
+std::pair<std::string, std::string> throughViaLayerSpan(const ccad::Board& board) {
+  const std::string first = firstCopperLayerId(board);
+  const std::string last = lastCopperLayerId(board);
+  if (first.empty() || last.empty() || first == last) {
+    throw std::runtime_error("through via requires at least two copper layers");
+  }
+  return {first, last};
 }
 
 const ccad::Layer* findBoardLayer(const ccad::Board& board, const std::string& layer_id) {
@@ -8604,11 +8624,12 @@ QString ReviewWindow::commitViaPlacementForAutomation(const double x_mm, const d
         position.y.nanometers > origin.y.nanometers + size.height.nanometers) {
       return result(false, "outside_board_outline", before_count);
     }
-    pushUndoSnapshot();
     const std::string id = nextViaId(board);
+    const auto [start_layer_id, end_layer_id] = throughViaLayerSpan(board);
+    pushUndoSnapshot();
     board.vias.push_back(ccad::Via{.id = id, .net_id = activePcbNetOrDefault(), .position = position,
         .diameter = defaultViaDiameter(), .drill = defaultViaDrill(),
-        .start_layer_id = "F.Cu", .end_layer_id = "B.Cu"});
+        .start_layer_id = start_layer_id, .end_layer_id = end_layer_id});
     saveProjectCacheAfterMutation("Placed via " + qstr(id));
     renderReview(ccad::buildReview(project_cache_));
     selectCanvasObjectById(*canvas_scene_, qstr(id));
@@ -9854,13 +9875,17 @@ bool ReviewWindow::eventFilter(QObject* obj, QEvent* event) {
               if (!!project_cache_.boards.empty()) {
                 throw std::runtime_error("cannot place via without a board");
               }
+              const auto [start_layer_id, end_layer_id] =
+                  throughViaLayerSpan(project_cache_.boards[0]);
               pushUndoSnapshot();
               ccad::Board& board = project_cache_.boards[0];
               board.vias.push_back(ccad::Via{.id = nextViaId(board),
                                              .net_id = activePcbNetOrDefault(),
                                              .position = boardPointFromScene(board, scene_pos),
                                              .diameter = defaultViaDiameter(),
-                                             .drill = defaultViaDrill()});
+                                             .drill = defaultViaDrill(),
+                                             .start_layer_id = start_layer_id,
+                                             .end_layer_id = end_layer_id});
               const QString via_id = qstr(board.vias.back().id);
               cancelInteractionMode();
               saveProjectCacheAfterMutation("Placed via " + via_id);

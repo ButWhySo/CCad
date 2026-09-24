@@ -10,6 +10,9 @@
 #include <QElapsedTimer>
 #include <QDir>
 #include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QPainter>
 #include <QPixmap>
 #include <QListWidget>
@@ -425,6 +428,7 @@ int main(int argc, char** argv) {
         argc == 7 ? parsePositiveIntArg(argv, 6, kMultiTargetPerTargetWaitMs)
                   : kMultiTargetPerTargetWaitMs;
     std::filesystem::create_directories(output_dir);
+    QString placed_via_id;
     auto* window = new ReviewWindow();
     window->setAutomationMode(true);
 
@@ -438,7 +442,8 @@ int main(int argc, char** argv) {
     window->showMaximized();
 
     QTimer::singleShot(initial_wait_ms, window,
-                       [window, output_dir, name, initial_wait_ms, per_target_wait_ms]() {
+                       [window, output_dir, project_path, name, initial_wait_ms,
+                        per_target_wait_ms, &placed_via_id]() {
       QStringList entries;
       const QString catalog_startup = window->runAgentUiQueryJson("agent.workspace_state", "{}");
       const bool catalog_startup_verified =
@@ -452,6 +457,7 @@ int main(int argc, char** argv) {
           name.startsWith("sprint977-context") ||
           name.startsWith("sprint980-project-retrieval") ||
           name.startsWith("sprint981-schematic-project-graph") ||
+          name.startsWith("sprint982-multilayer-project-context") ||
           name.startsWith("sprint975-memory-ui") ||
           name.startsWith("sprint974-memory")) {
         const auto interact = [window, &entries, &output_dir, &name,
@@ -477,7 +483,8 @@ int main(int argc, char** argv) {
                !name.startsWith("sprint976-conversation") &&
                !name.startsWith("sprint977-context") &&
                !name.startsWith("sprint980-project-retrieval") &&
-               !name.startsWith("sprint981-schematic-project-graph")) ||
+               !name.startsWith("sprint981-schematic-project-graph") &&
+               !name.startsWith("sprint982-multilayer-project-context")) ||
               memory_checkpoints.contains(action_name)) {
             screenshot_path = QString::fromStdString(
                 (output_dir / (name + "-" + action_name + ".png").toStdString()).string());
@@ -555,7 +562,8 @@ int main(int argc, char** argv) {
         } else if (name.startsWith("sprint976-conversation") ||
                    name.startsWith("sprint977-context") ||
                    name.startsWith("sprint980-project-retrieval") ||
-                   name.startsWith("sprint981-schematic-project-graph")) {
+                   name.startsWith("sprint981-schematic-project-graph") ||
+                   name.startsWith("sprint982-multilayer-project-context")) {
           const auto capture = [window, &output_dir, &name, &entries](const QString& state) {
             const QString path = QString::fromStdString(
                 (output_dir / (name + "-" + state + ".png").toStdString()).string());
@@ -577,10 +585,51 @@ int main(int argc, char** argv) {
           const bool context_memory_validation = name.startsWith("sprint977-context");
           const bool schematic_graph_validation =
               name.startsWith("sprint981-schematic-project-graph");
+          const bool multilayer_project_validation =
+              name.startsWith("sprint982-multilayer-project-context");
           const bool project_retrieval_validation = schematic_graph_validation ||
+              multilayer_project_validation ||
               name.startsWith("sprint980-project-retrieval");
+          if (multilayer_project_validation) {
+            const QString before_state_json = window->runAgentUiQueryJson("project.state", "{}");
+            const QJsonObject before_state = QJsonDocument::fromJson(
+                before_state_json.toUtf8()).object().value("result").toObject()
+                .value("project").toObject().value("board").toObject();
+            const int before_via_count = before_state.value("vias").toArray().size();
+            ok = interact("ui.trigger_safe", "{\"id\":\"action:add_via\"}",
+                          "action:add_via", "multilayer-via-tool-activated") && ok;
+            ok = interact("ui.canvas_click",
+                          "{\"x_mm\":44,\"y_mm\":30,\"canvas\":\"canvas:pcb\"}",
+                          "canvas:pcb", "multilayer-via-placed") && ok;
+            const QString placed_state_json = window->runAgentUiQueryJson("project.state", "{}");
+            const QJsonObject placed_state = QJsonDocument::fromJson(
+                placed_state_json.toUtf8()).object().value("result").toObject()
+                .value("project").toObject().value("board").toObject();
+            const QJsonArray vias = placed_state.value("vias").toArray();
+            for (const QJsonValue& value : vias) {
+              const QJsonObject via = value.toObject();
+              if (via.value("start_layer_id").toString() == "F.Cu" &&
+                  via.value("end_layer_id").toString() == "B.Cu" &&
+                  !before_state.value("vias").toArray().contains(value)) {
+                placed_via_id = via.value("id").toString();
+                break;
+              }
+            }
+            const bool via_span_visible = vias.size() == before_via_count + 1 &&
+                                          !placed_via_id.isEmpty();
+            entries << QString("{\"multilayer_via_created\":%1,\"via_id\":%2,\"start_layer_id\":\"F.Cu\",\"end_layer_id\":\"B.Cu\"}")
+                           .arg(via_span_visible ? "true" : "false",
+                                jsonStringLocal(placed_via_id));
+            ok = via_span_visible && capture("via-placed") && ok;
+            if (via_span_visible)
+              entries << QString("{\"via_persist_path\":%1}")
+                             .arg(jsonStringLocal(QString::fromStdString(project_path.string())));
+          }
           const QString user_prompt = project_retrieval_validation
-              ? (schematic_graph_validation
+              ? (multilayer_project_validation
+                     ? QStringLiteral("What copper layers does via %1 span?")
+                           .arg(placed_via_id)
+                     : schematic_graph_validation
                      ? QStringLiteral("Inspect schematic net AC1 and list its member pins.")
                      : QStringLiteral("Describe component U_DEMO in the loaded project."))
               : context_memory_validation
@@ -609,17 +658,20 @@ int main(int argc, char** argv) {
               (chat && chat->toPlainText().contains("schematic pins"));
           const bool schematic_symbol_visible = !schematic_graph_validation ||
               (chat && chat->toPlainText().contains("schematic symbols"));
+          const bool pcb_layers_visible = !multilayer_project_validation ||
+              (chat && chat->toPlainText().contains(" PCB layers"));
           const bool turn_visible = chat && memory_visible && project_matches_visible &&
-              schematic_pin_visible && schematic_symbol_visible &&
+              schematic_pin_visible && schematic_symbol_visible && pcb_layers_visible &&
               chat->toPlainText().contains(user_prompt) &&
               chat->toPlainText().contains(
                   "Provider execution is unavailable; configure a provider");
-          entries << QString("{\"conversation_turn_visible\":%1,\"context_memory_attached\":%2,\"project_retrieval_visible\":%3,\"schematic_pin_retrieval_visible\":%4,\"schematic_symbol_retrieval_visible\":%5,\"provider_request_sent\":false}")
+          entries << QString("{\"conversation_turn_visible\":%1,\"context_memory_attached\":%2,\"project_retrieval_visible\":%3,\"schematic_pin_retrieval_visible\":%4,\"schematic_symbol_retrieval_visible\":%5,\"project_layers_visible\":%6,\"provider_request_sent\":false}")
                          .arg(turn_visible ? "true" : "false",
                               memory_visible ? "true" : "false",
                               project_matches_visible ? "true" : "false",
                               schematic_pin_visible ? "true" : "false",
-                              schematic_symbol_visible ? "true" : "false");
+                              schematic_symbol_visible ? "true" : "false",
+                              pcb_layers_visible ? "true" : "false");
           ok = turn_visible && capture("turn-persisted") && ok;
           ok = interact("ui.type_text",
                         "{\"id\":\"control:agent_chat_input\",\"text\":\"/clear\"}",
@@ -882,7 +934,9 @@ int main(int argc, char** argv) {
         const std::filesystem::path output_path =
             output_dir / (name + "-target-sequence.json").toStdString();
         std::ofstream output(output_path, std::ios::binary);
-        const QString interaction_plan = name.startsWith("sprint981-schematic-project-graph")
+        const QString interaction_plan = name.startsWith("sprint982-multilayer-project-context")
+            ? QStringLiteral("Place one via on the disposable board through mapped toolbar and board-point interactions, then prove its F.Cu/B.Cu span survives exact project retrieval and bounded Agent context; provider disabled")
+            : name.startsWith("sprint981-schematic-project-graph")
             ? QStringLiteral("Verify exact schematic net member pins and related symbols are counted in real turn context through seven mapped actions; provider disabled")
             : name.startsWith("sprint980-project-retrieval")
             ? QStringLiteral("Verify an actual typed-project retrieval match appears in per-turn Agent context and chat metadata via seven mapped actions; provider disabled")

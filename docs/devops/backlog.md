@@ -1176,6 +1176,9 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [ ] Sprint 977 follow-up: add project-scoped memory storage/retrieval and a
   revision-aware exact/lexical/graph/spatial project index before claiming full
   PCB/schematic state retrieval.
+- [ ] Sprint 982 follow-up: index layer memberships for every remaining typed
+  PCB/schematic object variant, including zone geometry, rules and diagnostics;
+  exact multi-layer indexing currently covers via endpoints and declared pad sets.
 - [x] Sprint 978: join context assembly, retrieval, package, and LangGraph
   observations under one thread-session-scoped `agent.turn` root; verify actual
   Langfuse SDK parent links with a local in-memory exporter.

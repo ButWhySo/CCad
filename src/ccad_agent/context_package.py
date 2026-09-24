@@ -107,10 +107,17 @@ def _project_retrieval_payload(value: dict | None) -> dict:
         item = {}
         for key in ("id", "kind", "reference", "value", "name", "part",
                     "pin_name", "pin_number", "type", "net_id", "membership_kind", "layer_id",
+                    "start_layer_id", "end_layer_id",
                     "component_id", "symbol_id", "position_mm", "bounds_mm", "retrieval",
                     "rank", "relationship", "distance_mm"):
             if key in entity and isinstance(entity[key], (str, int, float, dict)):
                 item[key] = entity[key]
+        layer_ids = entity.get("layer_ids")
+        if isinstance(layer_ids, list):
+            safe_layers = [_safe_text(value, 120) for value in layer_ids[:16]
+                           if isinstance(value, str) and _safe_text(value, 120)]
+            if safe_layers:
+                item["layer_ids"] = list(dict.fromkeys(safe_layers))
         if isinstance(entity.get("relationships"), list):
             item["relationships"] = [_safe_text(value, 40) for value in
                                       entity["relationships"][:8]
@@ -362,6 +369,12 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
         kind = entity.get("kind") if isinstance(entity, dict) else None
         if isinstance(kind, str) and re.fullmatch(r"[a-z_]{1,40}", kind):
             project_retrieval_kinds[kind] = project_retrieval_kinds.get(kind, 0) + 1
+    project_retrieval_layer_ids = sorted({
+        layer_id for entity in included_project_retrieval["entities"]
+        if isinstance(entity, dict)
+        for layer_id in entity.get("layer_ids", [])
+        if isinstance(layer_id, str) and re.fullmatch(r"[A-Za-z0-9_.-]{1,120}", layer_id)
+    }, key=str.casefold)
     if included_project_retrieval["entities"]:
         sources.append("project_retrieval")
     if included_memories:
@@ -443,6 +456,8 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
             "project_retrieval_stats": included_project_retrieval["stats"],
             "project_retrieval_kinds": project_retrieval_kinds,
             "project_retrieval_count": len(included_project_retrieval["entities"]),
+            "project_retrieval_layer_ids": project_retrieval_layer_ids,
+            "project_retrieval_layer_count": len(project_retrieval_layer_ids),
             "project_retrieval_chars": len(json.dumps(
                 included_project_retrieval["entities"], ensure_ascii=False,
                 separators=(",", ":"))),

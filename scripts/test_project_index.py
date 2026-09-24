@@ -80,6 +80,57 @@ class ProjectIndexTests(unittest.TestCase):
         self.assertEqual(result["revision"], index.revision("project-1"))
         self.assertEqual(result["stats"]["index_state"], "built")
 
+    def test_via_layer_span_is_retrieved_from_either_endpoint(self):
+        index = ProjectIndex()
+        result = index.retrieve(project_snapshot(), "B.Cu", limit=20)
+        via = next(item for item in result["entities"]
+                   if item["kind"] == "via" and item["id"] == "V1")
+        self.assertEqual(via["start_layer_id"], "F.Cu")
+        self.assertEqual(via["end_layer_id"], "B.Cu")
+        self.assertEqual(via["layer_ids"], ["F.Cu", "B.Cu"])
+        self.assertEqual(via["relationship"], "same_layer")
+        top_copper = index.retrieve(project_snapshot(), "F.Cu", limit=20)
+        self.assertTrue(any(item["kind"] == "via" and item["id"] == "V1" and
+                            item["layer_ids"] == ["F.Cu", "B.Cu"]
+                            for item in top_copper["entities"]))
+
+    def test_pad_layer_set_is_indexed_and_via_endpoint_edits_are_incremental(self):
+        index = ProjectIndex()
+        before = project_snapshot()
+        board = before["typed_state"]["project"]["board"]
+        board["layers"].append({"id": "In1.Cu", "name": "In1.Cu"})
+        board["pads"][0]["layers"] = ["F.Cu", "B.Cu"]
+        found = index.retrieve(before, "B.Cu", limit=20)
+        self.assertTrue(any(item["kind"] == "pad" and item["id"] == "P1"
+                            and item["layer_ids"] == ["F.Cu", "B.Cu"]
+                            for item in found["entities"]))
+        board["vias"][0]["end_layer_id"] = "In1.Cu"
+        changed = index.retrieve(before, "B.Cu", limit=20)
+        self.assertEqual(changed["stats"]["index_state"], "incremental")
+        self.assertEqual(changed["stats"]["updated_count"], 1)
+        self.assertFalse(any(item["kind"] == "via" and item["id"] == "V1"
+                             for item in changed["entities"]))
+        in1 = index.retrieve(before, "In1.Cu", limit=20)
+        via = next(item for item in in1["entities"]
+                   if item["kind"] == "via" and item["id"] == "V1")
+        self.assertEqual(via["layer_ids"], ["F.Cu", "In1.Cu"])
+        self.assertEqual(in1["stats"]["index_state"], "cached")
+
+    def test_bounded_context_preserves_only_included_layer_memberships(self):
+        import json
+        snapshot = project_snapshot()
+        snapshot["typed_state"]["project"]["extra"] = "x" * 9000
+        retrieval = ProjectIndex().retrieve(snapshot, "via V1", limit=12)
+        package = build_context_package(json.dumps(snapshot), [], [], char_limit=4096,
+                                        project_retrieval=retrieval)
+        envelope = json.loads(package["content"].split("\n", 1)[1])
+        via = next(item for item in envelope["project_retrieval"]["entities"]
+                   if item["kind"] == "via" and item["id"] == "V1")
+        self.assertEqual(via["layer_ids"], ["F.Cu", "B.Cu"])
+        self.assertEqual(package["metadata"]["project_retrieval_layer_ids"],
+                         ["B.Cu", "F.Cu"])
+        self.assertEqual(package["metadata"]["project_retrieval_layer_count"], 2)
+
     def test_bm25_finds_natural_language_entity_and_tracks_provenance(self):
         index = ProjectIndex()
         result = index.retrieve(project_snapshot(), "USB connector receptacle", limit=8)

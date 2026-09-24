@@ -169,7 +169,8 @@ class ProjectIndex:
     def _signature(doc: dict) -> str:
         indexed = {"fields": doc["fields"], "aliases": sorted(doc["aliases"]),
                    "tokens": dict(doc["tokens"]), "net": doc["net"],
-                   "components": sorted(doc["components"]), "layer": doc["layer"],
+                   "components": sorted(doc["components"]),
+                   "layers": sorted(doc["layers"]),
                    "text": doc["text"]}
         return hashlib.sha256(json.dumps(
             indexed, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
@@ -198,7 +199,26 @@ class ProjectIndex:
         net = _safe(net_id or item.get("net_id"), 120)
         if not net and kind.endswith("net"):
             net = object_id
-        layer = _safe(layer_id or item.get("layer_id", item.get("layer")), 120)
+        layer = _safe(layer_id or item.get("layer_id") or item.get("layer"), 120)
+        if not layer and kind == "layer":
+            layer = object_id
+        layer_values = [layer]
+        for key in ("start_layer_id", "end_layer_id"):
+            value = _safe(item.get(key), 120)
+            if value:
+                fields[key] = value
+                layer_values.append(value)
+        for key in ("layers", "layer_ids"):
+            values = item.get(key)
+            if isinstance(values, (list, tuple)):
+                layer_values.extend(_safe(value, 120) for value in values[:32]
+                                    if isinstance(value, str) and _safe(value, 120))
+        layer_ids, seen_layers = [], set()
+        for value in layer_values:
+            normalized = _normalize(value)
+            if normalized and normalized not in seen_layers:
+                seen_layers.add(normalized)
+                layer_ids.append(value)
         component = _safe(component_id or item.get("component_id") or
                            (item.get("reference") if kind in
                             {"footprint", "schematic_symbol"} else ""), 120)
@@ -211,6 +231,8 @@ class ProjectIndex:
                 fields["membership_kind"] = "schematic_net_member"
         if layer:
             fields["layer_id"] = layer
+        if layer_ids:
+            fields["layer_ids"] = layer_ids
         if component:
             fields["component_id"] = component
         symbol_id = _safe(item.get("symbol_id"), 120)
@@ -229,8 +251,9 @@ class ProjectIndex:
                       "max_x_mm": point[0], "max_y_mm": point[1]}
         if bounds:
             fields["bounds_mm"] = {key: round(value, 6) for key, value in bounds.items()}
-        searchable_values = [object_id, net, layer, component]
-        searchable_values.extend(_safe(item.get(key), 140) for key in aliases)
+        searchable_values = [object_id, net, component]
+        searchable_values.extend(_safe(item.get(key), 140) for key in aliases
+                                 if key not in {"start_layer_id", "end_layer_id"})
         searchable_values.extend(fields.get(key, "") for key in
                                  ("reference", "value", "name", "part", "pin_name", "pin_number"))
         exact_values = [object_id]
@@ -246,7 +269,8 @@ class ProjectIndex:
                 "aliases": {_normalize(value) for value in exact_values if _normalize(value)},
                 "tokens": tokens, "net": net.casefold(),
                 "component": component.casefold(), "components": component_values,
-                "layer": layer.casefold(),
+                "layers": {_normalize(value) for value in layer_ids
+                           if _normalize(value)},
                 "text": text[:1200]}
         doc["signature"] = ProjectIndex._signature(doc)
         return doc
@@ -393,12 +417,15 @@ class ProjectIndex:
                 if not posting:
                     self._postings.pop(term, None)
         self._doc_lengths.pop(uid, None)
-        for field, value in (("net", doc["net"]), ("layer", doc["layer"])):
-            bucket = getattr(self, f"_{field}_docs").get(value) if value else None
-            if bucket:
-                bucket.discard(uid)
-                if not bucket:
-                    getattr(self, f"_{field}_docs").pop(value, None)
+        for field, values in (("net", (doc["net"],)),
+                              ("layer", doc["layers"])):
+            buckets = getattr(self, f"_{field}_docs")
+            for value in values:
+                bucket = buckets.get(value) if value else None
+                if bucket:
+                    bucket.discard(uid)
+                    if not bucket:
+                        buckets.pop(value, None)
         for value in doc["components"]:
             bucket = self._component_docs.get(value)
             if bucket:
@@ -443,10 +470,10 @@ class ProjectIndex:
         self._doc_lengths[uid] = sum(doc["tokens"].values())
         for term, count in doc["tokens"].items():
             self._postings[term][uid] = count
-        for field in ("net", "layer"):
-            value = doc[field]
-            if value:
-                getattr(self, f"_{field}_docs")[value].add(uid)
+        if doc["net"]:
+            self._net_docs[doc["net"]].add(uid)
+        for value in doc["layers"]:
+            self._layer_docs[value].add(uid)
         for value in doc["components"]:
             self._component_docs[value].add(uid)
         self._add_spatial(doc)
@@ -583,24 +610,22 @@ class ProjectIndex:
             doc = self._docs.get(uid)
             if not doc:
                 continue
-            for field, index in (("net", self._net_docs),
-                                 ("layer", self._layer_docs)):
-                value = doc[field]
-                if not value:
-                    continue
-                relationship = {"net": "same_net", "layer": "same_layer"}[field]
-                for neighbor in index.get(value, ()):
+            for neighbor in self._net_docs.get(doc["net"], ()) if doc["net"] else ():
+                if neighbor != uid and neighbor not in seeds:
+                    relation = "same_net"
+                    other_kind = self._docs.get(neighbor, {}).get(
+                        "fields", {}).get("kind", "")
+                    schematic_kinds = {"schematic_net", "schematic_pin",
+                                       "schematic_symbol", "schematic_wire",
+                                       "schematic_label"}
+                    if doc["fields"]["kind"] in schematic_kinds and \
+                            other_kind in schematic_kinds:
+                        relation = "logical_net_member"
+                    found[neighbor].add(relation)
+            for layer in doc["layers"]:
+                for neighbor in self._layer_docs.get(layer, ()):
                     if neighbor != uid and neighbor not in seeds:
-                        relation = relationship
-                        other_kind = self._docs.get(neighbor, {}).get(
-                            "fields", {}).get("kind", "")
-                        schematic_kinds = {"schematic_net", "schematic_pin",
-                                           "schematic_symbol", "schematic_wire",
-                                           "schematic_label"}
-                        if field == "net" and doc["fields"]["kind"] in schematic_kinds and \
-                                other_kind in schematic_kinds:
-                            relation = "logical_net_member"
-                        found[neighbor].add(relation)
+                        found[neighbor].add("same_layer")
             for value in doc["components"]:
                 for neighbor in self._component_docs.get(value, ()):
                     if neighbor != uid and neighbor not in seeds:
@@ -683,6 +708,7 @@ class ProjectIndex:
             item = {key: value for key, value in fields.items()
                     if key in {"id", "kind", "reference", "value", "name", "part",
                                "pin_name", "pin_number", "type", "net_id", "membership_kind", "layer_id",
+                               "layer_ids", "start_layer_id", "end_layer_id",
                                "component_id", "symbol_id", "position_mm", "bounds_mm"}}
             item["retrieval"] = mode
             item["rank"] = rank

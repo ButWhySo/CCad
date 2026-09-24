@@ -2,6 +2,18 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 982 active slice — multilayer typed-project context (Tier 1, C3)
+
+References checked: [KiCad PCB Editor via and layer-stack behavior](https://docs.kicad.org/10.0/en/pcbnew/pcbnew.html) defines through vias as spanning front-to-back copper, while blind, buried, and microvias use their declared endpoints; [KiCad legacy board-format reference](https://dev-docs.kicad.org/en/file-formats/legacy-pcb/) records explicit via start/end layer semantics. This slice applies the board's outer copper layers to newly placed through vias and indexes every declared layer membership without claiming complete entity-graph coverage.
+
+- [x] Index via start/end layers and declared pad layer sets as exact, incremental project relationships; preserve bounded layer IDs in retrieved context and safe per-turn metadata.
+- [x] Ensure normal mapped canvas placement and the existing automation placement path both persist the board-derived outer copper endpoints for a through via.
+- [x] Add regressions for retrieval from either endpoint, incremental endpoint changes, pad multi-layer membership, and context-budget preservation.
+- [ ] Complete all entity-to-layer and project-graph coverage, including zones, rules, diagnostics, footprints, and remaining object variants.
+- [x] Pass Qt MinGW Release build and full CTest (113/113); pass the provider-disabled GUI-map scenario with nine mapped actions, a disposable project, persisted F.Cu/B.Cu endpoints, non-empty per-turn PCB layer context, and five inspected screenshots; review stdout/stderr.
+- [x] Update handover, features, progress, backlog and this checklist; record wider project-graph/layer coverage as open.
+- [ ] Scan and publish only verified files to GitHub `main`, then remove the completed local sprint branch.
+
 ### Sprint 981 active slice — schematic net-member retrieval (Tier 1, C3)
 
 - [x] Expand each bounded `schematic_net.members` entry into an independently retrievable pin identity linked to its source net and symbol/component.
@@ -4211,7 +4223,7 @@ Represent/traverse relationships such as:
 - [x] net -> tracks.
 - [x] net -> vias.
 - [x] net -> zones.
-- [ ] object -> layer for every object type (indexed single-layer associations are implemented; via multi-layer edges and full type coverage remain).
+- [ ] object -> layer for every object type (Sprint 982 indexes via endpoint spans and declared pad layer sets incrementally; other variants and complete coverage remain).
 - [ ] object -> DRC/ERC diagnostic.
 - [ ] component -> nearby PCB components.
 - [ ] component -> associated decoupling/passive components where deterministically derivable.

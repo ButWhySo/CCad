@@ -64,6 +64,13 @@ $priorThreadId = $env:CCAD_AGENT_THREAD_ID
 $priorDeferProvider = $env:CCAD_AGENT_DEFER_PROVIDER_INIT
 $priorConversationDb = $env:CCAD_AGENT_CONVERSATION_DB
 $isolatedMemoryProfile = $null
+$isolatedProjectPath = $null
+if ($Name.StartsWith("sprint982-multilayer-project-context")) {
+  $isolatedProjectPath = Join-Path ([IO.Path]::GetTempPath()) (
+    "ccad-sprint982-multilayer-" + [Guid]::NewGuid().ToString("N") + ".ccad.json")
+  Copy-Item -LiteralPath $ProjectPath -Destination $isolatedProjectPath
+  $ProjectPath = $isolatedProjectPath
+}
 if ($Name.StartsWith("sprint969-context")) {
   # Exercise the real large-context branch with a deliberately low, valid
   # threshold. The /context feature remains local and never invokes the model.
@@ -164,8 +171,11 @@ if ($Name.StartsWith("sprint976-conversation")) {
   $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
 }
 if ($Name.StartsWith("sprint980-project-retrieval") -or
-    $Name.StartsWith("sprint981-schematic-project-graph")) {
-  $profilePrefix = if ($Name.StartsWith("sprint981-schematic-project-graph")) {
+    $Name.StartsWith("sprint981-schematic-project-graph") -or
+    $Name.StartsWith("sprint982-multilayer-project-context")) {
+  $profilePrefix = if ($Name.StartsWith("sprint982-multilayer-project-context")) {
+    "ccad-sprint982-multilayer-"
+  } elseif ($Name.StartsWith("sprint981-schematic-project-graph")) {
     "ccad-sprint981-project-graph-"
   } else { "ccad-sprint980-project-" }
   $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ($profilePrefix + [Guid]::NewGuid().ToString("N"))
@@ -174,7 +184,9 @@ if ($Name.StartsWith("sprint980-project-retrieval") -or
   $env:APPDATA = $isolatedMemoryProfile
   $env:CCAD_AGENT_CONVERSATION_DB = Join-Path $isolatedMemoryProfile "agent_conversations.sqlite3"
   $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
-  $env:CCAD_AGENT_THREAD_ID = if ($Name.StartsWith("sprint981-schematic-project-graph")) {
+  $env:CCAD_AGENT_THREAD_ID = if ($Name.StartsWith("sprint982-multilayer-project-context")) {
+    "sprint982-multilayer-project-context-ui-thread"
+  } elseif ($Name.StartsWith("sprint981-schematic-project-graph")) {
     "sprint981-schematic-project-graph-ui-thread"
   } else { "sprint980-project-retrieval-ui-thread" }
   $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
@@ -192,6 +204,27 @@ try {
     -ArgumentList @("--test-ui-map-target-sequence", $ProjectPath, $ScreenshotDir, $Name,
                     [string]$InitialLoadMilliseconds, [string]$PerTargetMilliseconds) `
     -PassThru -Wait -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
+  if ($Name.StartsWith("sprint982-multilayer-project-context")) {
+    $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
+    $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
+    $viaProof = @($reportData.entries | Where-Object {
+      $_.multilayer_via_created -eq $true
+    } | Select-Object -First 1)
+    $layerProof = @($reportData.entries | Where-Object {
+      $_.project_layers_visible -eq $true
+    } | Select-Object -First 1)
+    if ($viaProof.Count -ne 1 -or $layerProof.Count -ne 1) {
+      throw "UI-map flow did not prove via placement and included layer context. Report: $reportPath"
+    }
+    $savedProject = Get-Content -Raw -LiteralPath $isolatedProjectPath | ConvertFrom-Json
+    $savedVias = @($savedProject.board.vias | Where-Object {
+      $_.id -eq $viaProof[0].via_id -and
+      $_.start_layer_id -eq "F.Cu" -and $_.end_layer_id -eq "B.Cu"
+    })
+    if ($savedVias.Count -ne 1) {
+      throw "Disposable project did not persist the mapped via's typed copper layer span."
+    }
+  }
   if ($Name.StartsWith("sprint971-memory")) {
     $memoryFile = Join-Path $isolatedMemoryProfile "agent_memory.json"
     $configFile = Join-Path $isolatedMemoryProfile "CCad\agent_config.json"
@@ -262,7 +295,8 @@ try {
   }
   if ($Name.StartsWith("sprint976-conversation") -or $Name.StartsWith("sprint977-context") -or
       $Name.StartsWith("sprint980-project-retrieval") -or
-      $Name.StartsWith("sprint981-schematic-project-graph")) {
+      $Name.StartsWith("sprint981-schematic-project-graph") -or
+      $Name.StartsWith("sprint982-multilayer-project-context")) {
     $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
     $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
     foreach ($field in @("conversation_turn_visible", "canonical_transcript_retained_after_clear")) {
@@ -278,7 +312,9 @@ try {
       throw "The configured Agent Python runtime is required to inspect the conversation database."
     }
     $databaseVerifier = Join-Path $Root "scripts\verify_conversation_ui_state.py"
-    $expectedThreadId = if ($Name.StartsWith("sprint981-schematic-project-graph")) {
+    $expectedThreadId = if ($Name.StartsWith("sprint982-multilayer-project-context")) {
+      "sprint982-multilayer-project-context-ui-thread"
+    } elseif ($Name.StartsWith("sprint981-schematic-project-graph")) {
       "sprint981-schematic-project-graph-ui-thread"
     } elseif ($Name.StartsWith("sprint980-project-retrieval")) {
       "sprint980-project-retrieval-ui-thread"
@@ -300,7 +336,8 @@ try {
       throw "Mapped turn did not visibly prove inclusion of its enabled scoped memory entry."
     }
     if (($Name.StartsWith("sprint980-project-retrieval") -or
-         $Name.StartsWith("sprint981-schematic-project-graph")) -and
+         $Name.StartsWith("sprint981-schematic-project-graph") -or
+         $Name.StartsWith("sprint982-multilayer-project-context")) -and
         -not ($reportData.entries | Where-Object { $_.project_retrieval_visible -eq $true })) {
       throw "Mapped turn did not visibly prove a non-empty typed-project retrieval result."
     }
@@ -308,12 +345,18 @@ try {
     if ($stdoutLog -and (Select-String -LiteralPath $stdoutLog -Pattern 'provider_request_sent":true' -Quiet)) {
       throw "Provider request occurred during conversation UI validation."
     }
+    if ($Name.StartsWith("sprint982-multilayer-project-context") -and
+        -not ($reportData.entries | Where-Object { $_.project_layers_visible -eq $true })) {
+      throw "Mapped turn did not visibly include the via's F.Cu/B.Cu layer identities."
+    }
     if ($Name.StartsWith("sprint981-schematic-project-graph") -and
         (-not ($reportData.entries | Where-Object { $_.schematic_pin_retrieval_visible -eq $true }) -or
          -not ($reportData.entries | Where-Object { $_.schematic_symbol_retrieval_visible -eq $true }))) {
       throw "Mapped turn did not visibly include retrieved schematic net pins and related symbols."
     }
-    $requiredScreenshots = if ($Name.StartsWith("sprint981-schematic-project-graph")) {
+    $requiredScreenshots = if ($Name.StartsWith("sprint982-multilayer-project-context")) {
+      @("before", "via-placed", "turn-persisted", "projection-cleared")
+    } elseif ($Name.StartsWith("sprint981-schematic-project-graph")) {
       @("before", "turn-persisted", "projection-cleared")
     } elseif ($Name.StartsWith("sprint980-project-retrieval")) {
       @("before", "turn-persisted")
@@ -348,6 +391,15 @@ try {
       throw "Refusing to remove a memory-test profile outside the system temp directory."
     }
     Remove-Item -LiteralPath $profilePath -Recurse -Force
+  }
+  if ($isolatedProjectPath -and (Test-Path -LiteralPath $isolatedProjectPath)) {
+    $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+    $projectFile = [IO.Path]::GetFullPath($isolatedProjectPath)
+    if (-not $projectFile.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase) -or
+        [IO.Path]::GetFileName($projectFile) -notlike "ccad-sprint982-multilayer-*.ccad.json") {
+      throw "Refusing to remove a project outside the verified Sprint 982 temporary target."
+    }
+    Remove-Item -LiteralPath $projectFile -Force
   }
 }
 
