@@ -1,0 +1,143 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint1001-memory-kind-final",
+    "feature":  "Persist explicit fact/preference/correction memory kinds through retrieval and context; mapped Manage Memories validation",
+    "validation_mode":  "gui",
+    "interaction_plan":  "config/gui_interaction_plans/sprint1001-memory-kind.json",
+    "target_sequence":  "sprint1001-memory-kind-sprint1001-memory-kind-final",
+    "visual_validation":  "required",
+    "started_utc":  "2026-09-25T21:34:20.9520229Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.89 log=artifacts/evidence/sprint1001-memory-kind-final/preflight.log",
+                      "finished_utc":  "2026-09-25T21:34:21.9333422Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint1001-memory-kind-rerun; source timestamps precede test log",
+                      "finished_utc":  "2026-09-25T21:34:55.9708873Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint1001-memory-kind-rerun; 115/115 passed",
+                      "finished_utc":  "2026-09-25T21:34:55.9718800Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=28.37 log=artifacts/evidence/sprint1001-memory-kind-final/ui_harness.log",
+                      "finished_utc":  "2026-09-25T21:35:24.3475430Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=14; screenshots=15",
+                      "finished_utc":  "2026-09-25T21:35:24.6103688Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-09-25T21:35:24.6949037Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/build.log",
+                                         "sha256":  "E1CC1DD76F4C907CEB1DF00A5A1A3021D74BF09CA0E329341563C96C4DE2F9F1"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/ctest.log",
+                                         "sha256":  "FF1A8DC8AE8F0B22550B3F93324F233A82AF7226025251499A271BA23550821D"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/sprint1001-memory-kind-sprint1001-memory-kind-final.stderr.log",
+                                         "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/sprint1001-memory-kind-sprint1001-memory-kind-final.stdout.log",
+                                         "sha256":  "2781CED78429D8ABF5A699958E98F3992645719B29CE3AB422FEF0130BD22ED0"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/sprint1001-memory-kind-sprint1001-memory-kind-final-initial-action_addMemory.png",
+                                         "sha256":  "0C42AA6AE04ACE78762FE86DED72529FFF4F6F36A4333F7B9E6A205341EF097F"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/sprint1001-memory-kind-sprint1001-memory-kind-final-initial-action_agent_memory_manage.png",
+                                         "sha256":  "C1F9E9D114C7867E32F2D1DD441ACD59E2937156E96E3D68D8CBC55E10A07928"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/sprint1001-memory-kind-sprint1001-memory-kind-final-initial-action_saveMemory.png",
+                                         "sha256":  "BA17E2A1592BCCB07BF63ED89B05D3E11681613304EEB105F390937BB439B950"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/sprint1001-memory-kind-sprint1001-memory-kind-final-initial-action_settingsBtn.png",
+                                         "sha256":  "88BCDD4A7DF5F510AEF0354FBAE750048C7FD31A887BA4A85405206D481F9228"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/sprint1001-memory-kind-sprint1001-memory-kind-final-initial-cancelSettingsButton-after.png",
+                                         "sha256":  "A85C1670192DACE80F7D2298104ED6A8850DA32655AA276D5068D138FE3D3E63"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/sprint1001-memory-kind-sprint1001-memory-kind-final-initial-closeMemoryManager-after.png",
+                                         "sha256":  "013B34F340A56E06AA902327BA5B7B3E5FBAC2D44F5143EBA646399D3C104E7E"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/sprint1001-memory-kind-sprint1001-memory-kind-final-initial-control_categoryList.png",
+                                         "sha256":  "FF4F274FE030DEBD622203E8F4F0921849AD7FF4971067E8970AC68F15261D4D"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/sprint1001-memory-kind-sprint1001-memory-kind-final-initial-control_memoryContent.png",
+                                         "sha256":  "9694D3CB9F58F33A7C4585811388BC946F00A41C6E5F81F5EDA059860EC1767A"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/sprint1001-memory-kind-sprint1001-memory-kind-final-initial-control_memoryKind.png",
+                                         "sha256":  "4C383CF8D971E3DCCB0D6DCBF068A91EDACAC1CFCA2CDAAE84D84B2E7FF6C55E"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/sprint1001-memory-kind-sprint1001-memory-kind-final-initial-control_memoryScope.png",
+                                         "sha256":  "8FBBCB9F5A5B8B6B897680DE8A6214F350391BD2459F6DF288D97520A009E384"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/sprint1001-memory-kind-sprint1001-memory-kind-final-initial-control_memoryTier.png",
+                                         "sha256":  "9F34BD561851B4CA4DAD7EDA0D3D2A99D4B5098301F7BEA802E1E61F4BAE6E77"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/sprint1001-memory-kind-sprint1001-memory-kind-final-initial-control_memoryTitle.png",
+                                         "sha256":  "F2CB25F4B1E5DA673DD4FAD76DDE0B30550A198B9BEDE0C7E0EDDDFBCE628F55"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/sprint1001-memory-kind-sprint1001-memory-kind-final-initial-memoryContent-typed.png",
+                                         "sha256":  "307E310A1A02A67A5E81C54C7CF3B88EDAE02CC965A82B755D6C846BA2F8729E"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/sprint1001-memory-kind-sprint1001-memory-kind-final-initial-memoryScope-typed.png",
+                                         "sha256":  "2D88B12484226E3F3B1815122C6B6F8DFA57B4FAF06AFF5A45D6B193BBCA6A33"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/sprint1001-memory-kind-sprint1001-memory-kind-final-initial-memoryTitle-typed.png",
+                                         "sha256":  "0C31F90014C869C89B7C8C0D2E9B540F3AF95D399400B7E90887A58168F15A06"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/sprint1001-memory-kind-sprint1001-memory-kind-final-target-sequence.json",
+                                         "sha256":  "350DFBF61D82CDDAFC7ED82D7BF82C84357C03753BE32B8DA5EA0EED0933ED03"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1001-memory-kind-final/ui_harness.log",
+                                         "sha256":  "62DDD9A526BA0C60BB23AA238D162FA5DF323DED5EB5AEF100AF4450C0D3DC89"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-25T21:35:24.8022660Z"
+}

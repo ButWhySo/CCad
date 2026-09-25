@@ -400,8 +400,8 @@ def search_memory_context(query: str) -> str:
                 "memory_chars": str(refreshed["memory_chars"]),
             })
     active_turn_contexts[thread_id] = refreshed
-    results = [{key: entry.get(key, "") for key in
-                ("id", "title", "tier", "scope", "content")}
+    results = [{key: entry.get(key, "fact" if key == "kind" else "") for key in
+                ("id", "title", "tier", "scope", "kind", "content")}
                for entry in refreshed["memories"]]
     return json.dumps({"ok": True, "context_version": refreshed["version"],
                        "change_reason": refreshed["change_reason"],
@@ -2339,15 +2339,21 @@ def handle_provider_and_state_request(req, executor):
                     str(params.get("content", "")),
                     tier=tier,
                     scope=str(params.get("scope", "")),
-                    title=str(params.get("title", "")))
+                    title=str(params.get("title", "")),
+                    kind=params.get("kind"))
+                if entry is None:
+                    raise RuntimeError("memory_add_failed")
                 result = {"id": entry["id"], "tier": entry["tier"],
-                          "scope": entry["scope"], "secret_value_visible": False}
+                          "scope": entry["scope"], "kind": entry["kind"],
+                          "secret_value_visible": False}
                 event = "memory_added"
             elif method == "agent.memory_update":
                 entry = memory_manager.update(
                     str(params.get("id", "")), str(params.get("content", "")),
-                    title=params.get("title"), scope=params.get("scope"))
+                    title=params.get("title"), scope=params.get("scope"),
+                    kind=params.get("kind"))
                 result = {"id": str(params.get("id", "")), "updated": entry is not None,
+                          "kind": entry.get("kind", "fact") if entry else "",
                           "secret_value_visible": False}
                 event = "memory_updated"
             else:

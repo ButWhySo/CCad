@@ -2,6 +2,21 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1001 active slice - typed preference/correction memory retrieval (Tier 1, M4)
+
+References checked before implementation: [LangGraph memory concepts](https://docs.langchain.com/oss/python/langgraph/add-memory) describe durable memories scoped by namespace; [LangChain embedding integrations](https://docs.langchain.com/oss/python/integrations/embeddings) document distinct query/document embedding paths and cache namespacing. This slice keeps memory meaning explicit and user-authored as `fact`, `preference`, or `correction`; it does not infer type from text or alter existing namespaces.
+
+- [x] Persist and validate kind; read legacy records as `fact` without eager disk rewrite.
+- [x] Carry kind through manager add/update, slash commands, JSON-RPC schema/results, search results, and provider context.
+- [x] Rank only already-relevant preference/correction candidates with bounded deterministic weights; return content-free kind provenance.
+- [x] Cover migration, validation, slash commands, ranking/provenance, package output, RPC, and Qt control contracts.
+- [x] Verify isolated provider-disabled Manage Memories flow with mapped controls, saved kind, 15 inspected interaction screenshots, and reviewed stdout/stderr.
+- [x] Run changed-module Pyright, Qt MinGW Release build, and full CTest; record actual results. Two existing `AgentConfigManager`/`ConfigPersistenceError` import-symbol diagnostics remain; no new diagnostics were introduced.
+- [x] Update this TODO, progress, feature inventory, codebase map, and applicable backlog; run redacted staged secret scan.
+- [x] Commit/push only verified scoped files; report PR and hosted CI separately. Feature-branch push verified; PR creation was denied by the GitHub integration (403), and the hosted status API returned no checks, so main was not merged.
+
+Scope boundary: memory kind is a user-authored ranking signal, not model classification. Provider-tokenizer budgets and recency/usage weighting remain open.
+
 ### Sprint 1000 active slice - opt-in semantic project retrieval (Tier 1, C4)
 
 - [x] Reuse the configured loopback-only Ollama embedding backend; require explicit enablement and a ready installed model.
@@ -141,7 +156,7 @@ Scope boundary: local Ollama semantic retrieval is optional and remains off unle
 - [x] Update lifecycle, feature, codebase, progress, and sprint notes.
 - [x] Commit, fast-forward and push `main`, verify the remote SHA, and remove only this completed sprint branch.
 
-Scope boundary: this adds lexical field fusion and diversity only. Embeddings, importance/recency/usage adjustments, preference/correction weighting, and provider-tokenizer budgeting remain open. It does not make paraphrase retrieval semantic.
+Scope boundary at Sprint 990: this added lexical field fusion and diversity only. Sprint 991 added optional embeddings; Sprint 1001 adds explicit preference/correction weighting. Importance/recency/usage adjustments and provider-tokenizer budgeting remain open. It does not make lexical retrieval semantic.
 
 ### Sprint 989 active slice â€” bounded BM25 memory/history retrieval (Tier 1, M4-A)
 
@@ -152,7 +167,7 @@ Scope boundary: this adds lexical field fusion and diversity only. Embeddings, i
 - [x] Run changed-module Pyright (0 diagnostics), focused retrieval contracts, Qt MinGW Release build, full CTest (114/114), and a staged secret scan.
 - [x] Update lifecycle, feature, codebase, progress, and sprint notes; commit, merge/push `main`, verify remote SHA, and remove only this completed branch.
 
-Scope boundary: this slice implemented BM25 lexical retrieval only. Sprint 990 adds fielded RRF/MMR for memory records; embeddings, preference/correction weighting, and provider-tokenizer budgeting remain open. Do not mark full M4 complete.
+Scope boundary at Sprint 989: this slice implemented BM25 lexical retrieval only. Sprint 990 adds fielded RRF/MMR, Sprint 991 adds semantic memory candidates, and Sprint 1001 adds preference/correction weighting. Provider-tokenizer budgets and remaining M4 controls remain open; do not mark full M4 complete.
 
 ### Sprint 988 completed slice â€” project-scoped durable memory (Tier 1, C2)
 
@@ -165,7 +180,7 @@ Scope boundary: this slice implemented BM25 lexical retrieval only. Sprint 990 a
 - [x] Update memory lifecycle, feature, codebase, progress, backlog, and sprint documentation; run redacted secret scan.
 - [x] Commit verified changes, push `main`, verify remote SHA, then remove only the completed sprint branch.
 
-References checked: [LangGraph long-term memory](https://docs.langchain.com/oss/python/langgraph/add-memory) recommends durable cross-session storage in scoped namespaces; CCad retains its local JSON store and uses the native project ID as the scope identity. Project data must never be inferred from a display name or shared across projects. Semantic ranking, preference/correction evidence, embedding retrieval, and provider-tokenizer budgeting remain separate open work.
+References checked: [LangGraph long-term memory](https://docs.langchain.com/oss/python/langgraph/add-memory) recommends durable cross-session storage in scoped namespaces; CCad retains its local JSON store and uses the native project ID as the scope identity. Project data must never be inferred from a display name or shared across projects. Semantic retrieval and explicit preference/correction evidence have since landed in Sprints 1000 and 1001; provider-tokenizer budgeting remains open.
 
 ### Sprint 987 completed slice â€” schematic fields and safe sheet identity (Tier 1, C3)
 
@@ -280,7 +295,7 @@ References Checked: [Langfuse SDK instrumentation](https://langfuse.com/docs/obs
 - [x] Deduplicate automatic memories against recent conversation and the actual thread recap; include recap changes in cache invalidation and reuse dedup context during targeted refresh.
 - [x] Verify real Langfuse SDK ancestry with a local in-memory exporter, source-order contract, recap-dedup/cache/refresh regressions, Qt Release, full CTest (111/111), and seven mapped GUI interactions with four inspected screenshots and reviewed logs.
 - [x] Resolve Pyright's `orchestrator.py` complexity cutoff; telemetry, ContextBroker, and new regression contracts are clean under Pyright 1.1.414 (Sprint 979).
-- [ ] Follow-on: semantic memory relevance, provider-tokenizer budgeting, and preference/correction-aware ranking.
+- [ ] Follow-on: provider-tokenizer budgeting and recency/usage-aware ranking. Sprint 1001 implements explicit preference/correction-aware ranking.
 
 ### Sprint 977 active slice â€” deterministic context and memory retrieval
 

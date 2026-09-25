@@ -15,17 +15,32 @@ with tempfile.TemporaryDirectory() as temp:
     assert store.ensure_namespace("ltm", "thread-1") == []
     assert store_path.is_file()
     item = store.add("Use 0.25 mm minimum track width", title="routing", tags=["pcb"],
-                     tier="episodic", namespace="local-user", scope="user")
+                     tier="episodic", namespace="local-user", scope="user",
+                     kind="preference")
     assert store.list()[0]["id"] == item["id"]
+    assert store.list()[0]["kind"] == "preference"
     assert store.list(scope="other") == []
     updated = store.update(item["id"], "Use 0.30 mm minimum track width", title="updated")
     assert updated["id"] == item["id"]
     assert updated["tier"] == "episodic"
     assert updated["namespace"] == "local-user"
     assert updated["scope"] == "user"
+    assert updated["kind"] == "preference"
     assert store.list()[0]["content"].startswith("Use 0.30")
+    legacy_path = Path(temp) / "legacy.json"
+    legacy_path.write_text('[{"id":"old","content":"legacy preference","tier":"ltm"}]',
+                           encoding="utf-8")
+    legacy = MemoryStore(legacy_path).list()[0]
+    assert legacy["kind"] == "fact"
+    assert '"kind"' not in legacy_path.read_text(encoding="utf-8")
     assert store.delete(item["id"]) is True
     assert store.list() == []
+    try:
+        store.add("Invalid memory classification", kind="speculation")
+    except ValueError as error:
+        assert "kind" in str(error)
+    else:
+        raise AssertionError("unknown memory kind was accepted")
     try:
         store.add("api_key: do-not-store")
     except ValueError as error:

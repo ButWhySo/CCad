@@ -310,12 +310,17 @@ private slots:
     auto* status = settings.findChild<QLabel*>("label:memoryManagerStatus");
     auto* save = settings.findChild<QPushButton*>("action:saveMemory");
     auto* remove = settings.findChild<QPushButton*>("action:deleteMemory");
+    auto* kind = settings.findChild<QComboBox*>("control:memoryKind");
     QVERIFY(status != nullptr);
     QCOMPARE(status->text(), QString("Ready."));
     QVERIFY(save != nullptr);
     QVERIFY(save->isEnabled());
     QVERIFY(remove != nullptr);
     QVERIFY(remove->isEnabled());
+    QVERIFY(kind != nullptr);
+    QCOMPARE(kind->currentData().toString(), QString("fact"));
+    QCOMPARE(kind->findData("preference") >= 0, true);
+    QCOMPARE(kind->findData("correction") >= 0, true);
     settings.close();
     QTest::qWait(50);
   }

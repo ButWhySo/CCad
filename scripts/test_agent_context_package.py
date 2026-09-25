@@ -24,6 +24,7 @@ raw = json.dumps({
 history = ["first prior turn", "second prior turn"]
 memories = [
     {"id": "mem-good", "title": "Board intent", "scope": "project",
+     "kind": "correction",
      "content": "Keep GND return path short.", "tags": ["layout"]},
     {"id": "mem-secret", "title": "Do not use", "scope": "project",
      "content": "api_key=fixture-not-a-real-secret", "tags": []},
@@ -65,6 +66,8 @@ assert "retrieved_memory" in metadata["sources"]
 assert "fixture-not-a-real-secret" not in package["content"]
 assert "message-user-1" in package["content"]
 assert "Keep U3 in place." in package["content"]
+assert '"kind":"correction"' in package["content"]
+assert "User correction: Board intent" in package["content"]
 assert len(package["content"]) <= 4096
 
 truncated = build_context_package(raw + ("x" * 9000), [], [], char_limit=1024)

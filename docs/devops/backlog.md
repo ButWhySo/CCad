@@ -1186,10 +1186,11 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   context status, and exact/lexical fallback. Qt Release/full CTest passed
   115/115; real-model relevance validation remains open because Ollama had no
   installed model.
-- [ ] Memory follow-up: preference/correction evidence, richer extraction, and
-  provider-tokenizer budgeting. Memory semantic retrieval and deterministic
-  field fusion/diversity are implemented; this remaining item does not imply
-  BM25 alone provides semantic recall.
+- [x] Sprint 1001: add explicit user-selected fact/preference/correction
+  evidence and bounded ranking weights. Remaining memory follow-up is richer
+  extraction and provider-tokenizer budgeting. Memory semantic retrieval and
+  deterministic field fusion/diversity are implemented; BM25 alone does not
+  provide semantic recall.
 - [ ] Sprint 1000 follow-up: validate opt-in semantic project retrieval against
   a real installed Ollama model and representative PCB/schematic paraphrase
   queries; generated summaries, durable vectors, and retrieval-quality metrics
@@ -1212,6 +1213,7 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   Langfuse SDK parent links with a local in-memory exporter.
 - [ ] Langfuse follow-up: verify a fresh opt-in production-account trace/readback
   and preserve trace identity across approval interruption and resume.
-- [ ] Sprint 977 follow-up: add explicit preference/correction weighting and
-  provider-tokenizer-based global budget allocation; current memory ranking and
-  token counts are deterministic lexical/character estimates.
+- [x] Sprint 1001 follow-up: add explicit preference/correction weighting with
+  content-free provenance, in addition to existing lexical/semantic relevance.
+- [ ] Provider-tokenizer-based global budget allocation; token counts remain
+  deterministic estimates until an authoritative provider tokenizer is used.

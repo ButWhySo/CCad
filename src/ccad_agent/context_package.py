@@ -41,6 +41,9 @@ def _memory_payload(entries: Iterable[dict], per_entry_limit: int = 1000) -> lis
     for entry in entries:
         if not isinstance(entry, dict):
             continue
+        kind = entry.get("kind", "fact")
+        if kind not in {"fact", "preference", "correction"}:
+            continue
         content = _safe_text(entry.get("content"), per_entry_limit)
         if not content:
             continue
@@ -48,6 +51,7 @@ def _memory_payload(entries: Iterable[dict], per_entry_limit: int = 1000) -> lis
             "id": _safe_text(entry.get("id"), 100),
             "title": _safe_text(entry.get("title"), 200),
             "tier": _safe_text(entry.get("tier", "ltm"), 32),
+            "kind": kind,
             "scope": _safe_text(entry.get("scope", "project"), 100),
             "tags": [_safe_text(tag, 60) for tag in entry.get("tags", [])[:20]
                      if _safe_text(tag, 60)],
@@ -67,7 +71,11 @@ def _memory_summary(entries: Iterable[dict], supplied: str = "") -> str:
         title = _safe_text(entry.get("title"), 80)
         content = _safe_text(entry.get("content"), 180)
         if content:
-            parts.append((f"{title}: " if title else "") + content)
+            kind = entry.get("kind", "fact")
+            prefix = {"preference": "User preference: ",
+                      "correction": "User correction: ",
+                      "fact": "Known fact: "}.get(kind, "")
+            parts.append(prefix + (f"{title}: " if title else "") + content)
     return "; ".join(parts)[:1200]
 
 

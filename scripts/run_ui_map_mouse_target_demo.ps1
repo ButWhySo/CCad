@@ -277,6 +277,24 @@ if ($Name.StartsWith("sprint991-semantic-memory")) {
   [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
     ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
 }
+if ($Name.StartsWith("sprint1001-memory-kind")) {
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint1001-memory-kind-" + [Guid]::NewGuid().ToString("N"))
+  $configDir = Join-Path $isolatedMemoryProfile "CCad"
+  New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+  $env:APPDATA = $isolatedMemoryProfile
+  $env:CCAD_AGENT_MEMORY_PATH = Join-Path $isolatedMemoryProfile "agent_memory.json"
+  $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
+  $env:CCAD_AGENT_THREAD_ID = "sprint1001-memory-kind-ui-thread"
+  $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
+  $testConfig = [ordered]@{
+    provider = "openai"
+    model = "gpt-5.1"
+    memory = @{ stm = $false; ltm = $true; episodic = $false }
+    observability = @{ enabled = $false; backend = "langfuse"; environment = "development" }
+  }
+  [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
+    ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
+}
 if ($Name.StartsWith("sprint974-memory")) {
   $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint974-" + [Guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path $isolatedMemoryProfile | Out-Null
@@ -530,6 +548,40 @@ if ($Name.StartsWith("sprint991-semantic-memory")) {
   }
   if (Select-String -LiteralPath $stdoutLog -Pattern 'provider_request_sent":true' -Quiet) {
     throw "Provider request occurred during semantic settings GUI validation."
+  }
+}
+if ($Name.StartsWith("sprint1001-memory-kind")) {
+  $memoryFile = $env:CCAD_AGENT_MEMORY_PATH
+  if (-not (Test-Path -LiteralPath $memoryFile)) {
+    throw "Mapped memory-kind flow did not create its isolated durable store."
+  }
+  $records = @(Get-Content -Raw -LiteralPath $memoryFile | ConvertFrom-Json)
+  $saved = @($records | Where-Object {
+    $_.tier -eq "ltm" -and $_.kind -eq "preference" -and
+    $_.title -eq "Memory kind proof" -and $_.scope -eq "conversation" -and
+    $_.content -eq "Keep ground return routing short in future edits"
+  })
+  if ($saved.Count -ne 1) {
+    throw "Mapped memory-kind flow did not persist exactly one typed preference record."
+  }
+  $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
+  $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
+  $performed = @($reportData.entries | Where-Object {
+    $_.interaction -eq "ui.click" -and $_.result.result.performed -eq $true
+  })
+  $typed = @($reportData.entries | Where-Object {
+    $_.interaction -eq "ui.type_text" -and $_.result.result.performed -eq $true
+  })
+  if ($performed.Count -lt 7 -or $typed.Count -lt 3 -or
+      -not ($reportData.entries | Where-Object { $_.memory_kind_saved_visible -eq $true })) {
+    throw "Mapped memory-kind flow did not prove mapped editing, save, and visible result."
+  }
+  $checkpoints = @(Get-ChildItem -LiteralPath $ScreenshotDir -Filter "$Name-*.png")
+  if ($checkpoints.Count -ne 15) {
+    throw "Memory-kind proof must retain one screenshot per mapped click/text entry (15 total); found $($checkpoints.Count)."
+  }
+  if (Select-String -LiteralPath $stdoutLog -Pattern 'provider_request_sent":true' -Quiet) {
+    throw "Provider request occurred during the isolated memory-kind GUI validation."
   }
 }
 if ($Name.StartsWith("sprint974-memory")) {

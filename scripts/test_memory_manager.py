@@ -123,6 +123,16 @@ with tempfile.TemporaryDirectory() as temp:
     assert manager.delete(updated["id"])
     assert not manager.delete(updated["id"])
 
+    manager.reset("ltm")
+    manager.add("Prefer short ground return routing", tier="ltm", kind="preference")
+    manager.add("Correction: keep ground return routing short", tier="ltm",
+                kind="correction")
+    manager.add("Ground return routing should be short", tier="ltm", kind="fact")
+    ranked, provenance = manager.retrieve_with_metadata("ground return routing short", limit=1)
+    assert ranked[0]["kind"] == "correction"
+    assert provenance[0]["memory_kind"] == "correction"
+    manager.reset("ltm")
+
     manager.add("same memory text", tier="ltm", scope="conversation")
     duplicate = manager.add(" SAME   memory TEXT ", tier="ltm", scope="conversation")
     assert duplicate["id"] == manager.list(tier="ltm")[0]["id"]

@@ -1402,8 +1402,30 @@ detection only, not a secret-hiding primitive.
 `src/ccad_agent/memory_store.py` owns local user memory at
 `%APPDATA%/CCad/agent_memory.json` (or `CCAD_AGENT_MEMORY_PATH`). It supports
 bounded add/list/delete/clear, atomic replacement, scope/tags, and rejects
-credential-looking content. Orchestrator `/memory` commands are explicit;
+credential-looking content. Records have user-selected kind `fact`, `preference`,
+or `correction`; legacy kind-less rows load as `fact` without a read-time rewrite.
+Orchestrator `/memory` commands are explicit;
 memory enters provider context only from enabled tiers managed by `MemoryManager`.
+
+### Sprint 1001 explicit memory kind path
+
+`MemoryManager.add/update` preserves the kind enum through STM/LTM/episodic storage.
+`retrieve_with_metadata()` first applies existing lexical/semantic eligibility,
+then multiplies candidate score by 1.0 for facts, 1.08 for preferences, or 1.16
+for corrections before deterministic MMR selection. Safe retrieval provenance
+contains kind and multiplier, never record content. `context_package.py` includes
+the validated kind in provider-facing memory records and labels the bounded
+memory summary; the on-demand memory search tool also returns kind. The enum is
+shared by `/memory add|update`, `agent.memory_add/update` catalog/result fields,
+and the Personalisation > Manage Memories kind selector. The isolated GUI scenario
+is `sprint1001-memory-kind` in `main.cpp`, started via
+`scripts/run_ui_map_mouse_target_demo.ps1` and its plan JSON. Coverage: memory
+store/manager/command/context package/RPC catalog/persistence contracts and the
+`testMemoryManagerProvidesOperationFeedbackControls` Qt test. Qt MinGW Release
+and full CTest pass 115/115; the provider-disabled mapped GUI flow persisted one
+typed preference and all 15 screenshots were inspected. Workspace-only evidence
+manifest: `artifacts/evidence/sprint1001-memory-kind-final.json` (SHA-256
+`DF1A4209369829BCC600ED828A580E7BB1FEAEC46E70EC08CD8B87BAAAF1F0AB`).
 
 ### Sprint 970 semantic chat-history compaction
 
@@ -2192,7 +2214,7 @@ The app-owned validation is `sprint986-project-spatial-index-*` in `scripts/run_
 
 `orchestrator.py` creates that context before graph/model reasoning and binds `ccad_search_memory` beside the real native catalog tools. The local tool reuses the active thread's TurnContext, performs deterministic deeper retrieval, re-applies the memory budget, and returns source IDs/scopes plus an incremented context version. It is not a substitute for project entity search. Sprint 988 gives durable LTM a second namespace derived from the active native project ID, alongside the existing conversation-thread namespace; automatic and targeted retrieval see project facts only within that project. Missing project identity rejects writes, project switch reloads runtime memory, changes context-cache identity, refuses refresh against an old-project TurnContext, and expires project-bound compaction plans. Explicit global reset still clears all durable namespaces. MemoryManifest reports only availability/counts, not record contents. Sprint 978 opens the `agent.turn` root and propagates the durable thread session before context assembly; the context, retrieval, package, and graph observations are children, and export closes the root first. Automatic-memory dedup compares recent messages and TurnRecords with the actual bounded thread recap; its content digest participates in cache identity and targeted refresh carries the same exclusion set.
 
-The real-SDK ancestry contract is `scripts/test_agent_turn_trace_hierarchy.py`. It uses Langfuse 4.x with OpenTelemetry's in-memory exporter, asserts shared trace IDs and each parent span, and performs no network export. `scripts/test_context_broker.py` covers recent-message and recap deduplication plus recap-driven cache invalidation. Project memory/indexing, semantic retrieval, provider-tokenizer accounting, and preference/correction ranking remain open.
+The real-SDK ancestry contract is `scripts/test_agent_turn_trace_hierarchy.py`. It uses Langfuse 4.x with OpenTelemetry's in-memory exporter, asserts shared trace IDs and each parent span, and performs no network export. `scripts/test_context_broker.py` covers recent-message and recap deduplication plus recap-driven cache invalidation. Sprint 1000 adds bounded opt-in semantic retrieval; Sprint 1001 adds explicit user-selected fact/preference/correction ranking. Provider-tokenizer accounting and recency/usage ranking remain open.
 # Current Agent project-reference graph (Sprint 985)
 
 `src/ccad_agent/project_index.py` builds bounded typed retrieval documents from the serialized CCad project and keeps explicit relationship indexes for board groups, route-request endpoints, teardrop anchors, diagnostic targets, and nested schematic pages. It does not infer physical continuity from shared net IDs or invent missing sheet ownership. Incremental updates replace entity signatures and remove stale exact, spatial, sheet, and reference associations. `ReviewWindow::projectContextJson()` in `src/ccad_gui/review_window.cpp` adds bounded live kernel DRC/ERC findings, tagged with source engine and affected object identity; `orchestrator.py` reports only diagnostic retrieval records retained in the assembled context, and `AgentPanel` shows that count. The GUI UI-map regression uses an isolated project copy and a real zero-length-track DRC finding. Broader graph/layer coverage and C3 completion remain open in the production TODO.
@@ -2205,7 +2227,7 @@ The real-SDK ancestry contract is `scripts/test_agent_turn_trace_hierarchy.py`. 
 
 `src/ccad_agent/memory_manager.py` stores project LTM under `project-<sha256(native_project_id)>`, with conversation LTM still under the thread ID and episodic memory under the local-user ID. `namespace_for()` routes only `tier=ltm, scope=project` to the project namespace; missing native identity rejects writes, and non-LTM project scope is rejected. Project records are loaded/retrieved alongside current-thread LTM, with per-namespace retention, list/update/scope-move/delete/clear/reset behavior. Full reset remains deliberately global across durable namespaces.
 
-`src/ccad_agent/context_broker.py` includes project identity in context-cache generation and an opaque project-identity digest in each turn context. `refresh_memory()` fails closed if the project changes before targeted retrieval. Manifest project availability/counts are safe metadata only. `memory_compaction.py` accepts the scope-specific project namespace when pruning source-bearing plans; the orchestrator uses the active namespace when validating plan creation and application. Regression contracts are in `scripts/test_memory_manager.py`, `test_memory_command_contract.py`, `test_context_broker.py`, `test_agent_memory_search_tool.py`, `test_agent_memory_compaction.py`, and `test_memory_context_contract.py`. Preference/correction ranking, semantic retrieval, and provider-tokenizer budgets remain open.
+`src/ccad_agent/context_broker.py` includes project identity in context-cache generation and an opaque project-identity digest in each turn context. `refresh_memory()` fails closed if the project changes before targeted retrieval. Manifest project availability/counts are safe metadata only. `memory_compaction.py` accepts the scope-specific project namespace when pruning source-bearing plans; the orchestrator uses the active namespace when validating plan creation and application. Regression contracts are in `scripts/test_memory_manager.py`, `test_memory_command_contract.py`, `test_context_broker.py`, `test_agent_memory_search_tool.py`, `test_agent_memory_compaction.py`, and `test_memory_context_contract.py`. Sprint 1001 supersedes the earlier open preference/correction-ranking item; provider-tokenizer budgets and recency/usage ranking remain open.
 
 # Current Agent runtime boundary (Sprint 979)
 
@@ -2219,7 +2241,7 @@ Focused contracts: `scripts/test_lexical_retrieval.py`, `scripts/test_memory_man
 
 # Sprint 990 fielded lexical memory ranking
 
-`MemoryManager.retrieve_with_metadata()` creates bounded per-record title, content, and tag fields only after active-tier/runtime/project namespace checks and expiry pruning. The combined document must first pass the existing minimum lexical match rule. `fuse_rankings()` applies deterministic weighted reciprocal-rank fusion to independent fielded BM25 lists; `diversify_ranked()` uses bounded greedy MMR over selected candidate text to reduce redundant records. The manager then exposes safe rank/channel/score and namespace-hash provenance while `ContextBroker` still enforces final entry, character, and estimated-token limits. No embedding service is configured or called. Conversation TurnRecords and project-history recaps remain BM25-only; embeddings, importance/recency/usage adjustments, preference/correction weighting, and provider tokenizer counts remain open.
+`MemoryManager.retrieve_with_metadata()` creates bounded per-record title, content, and tag fields only after active-tier/runtime/project namespace checks and expiry pruning. The combined document must first pass the existing minimum lexical match rule. `fuse_rankings()` applies deterministic weighted reciprocal-rank fusion to independent fielded BM25 lists; `diversify_ranked()` uses bounded greedy MMR over selected candidate text to reduce redundant records. The manager then exposes safe rank/channel/score and namespace-hash provenance while `ContextBroker` still enforces final entry, character, and estimated-token limits. At the time of Sprint 977, no embedding service was configured; Sprint 1000 later added opt-in local semantic project retrieval and Sprint 1001 added explicit preference/correction weighting. Conversation TurnRecords and project-history recaps remain BM25-only; importance/recency/usage adjustments and provider tokenizer counts remain open.
 
 Contracts: `scripts/test_lexical_retrieval.py` verifies stable RRF merging, deterministic diversity, and bounds; `scripts/test_memory_manager.py` verifies field ranks, tag-only matches, and tier lifecycle. Both remain offline/no-network.
 

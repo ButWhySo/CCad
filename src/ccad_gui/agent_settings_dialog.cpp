@@ -1262,14 +1262,16 @@ void AgentSettingsDialog::applyMemoryState(const QJsonObject& state) {
     memory_entries_->clear();
     for (const QJsonValue& value : entries) {
       const QJsonObject entry = value.toObject();
-      const QString label = QString("%1 memory  ·  record %2")
-          .arg(entry.value("tier").toString(), entry.value("id").toString().right(8));
+      const QString kind = entry.value("kind").toString("fact");
+      const QString label = QString("%1 · %2 memory  ·  record %3")
+          .arg(kind, entry.value("tier").toString(), entry.value("id").toString().right(8));
       auto* row = new QListWidgetItem(label, memory_entries_);
       row->setData(Qt::UserRole, entry.value("id").toString());
       row->setData(Qt::UserRole + 1, entry.value("content").toString());
       row->setData(Qt::UserRole + 2, entry.value("tier").toString());
       row->setData(Qt::UserRole + 3, entry.value("scope").toString());
       row->setData(Qt::UserRole + 4, entry.value("title").toString());
+      row->setData(Qt::UserRole + 5, kind);
       if (row->data(Qt::UserRole).toString() == selected)
         memory_entries_->setCurrentItem(row);
     }
@@ -1349,6 +1351,11 @@ void AgentSettingsDialog::openMemoryManager() {
   memory_tier_->addItem("Short-term (task)", "stm");
   memory_tier_->addItem("Conversation (thread)", "ltm");
   memory_tier_->addItem("Episodic (local user)", "episodic");
+  memory_kind_ = new QComboBox(dialog);
+  memory_kind_->setObjectName("control:memoryKind");
+  memory_kind_->addItem("Fact", "fact");
+  memory_kind_->addItem("Preference", "preference");
+  memory_kind_->addItem("Correction", "correction");
   memory_title_ = new QLineEdit(dialog);
   memory_title_->setObjectName("control:memoryTitle");
   memory_scope_ = new QLineEdit(dialog);
@@ -1357,6 +1364,7 @@ void AgentSettingsDialog::openMemoryManager() {
   memory_content_->setObjectName("control:memoryContent");
   memory_content_->setMaximumHeight(100);
   form->addRow("Tier:", memory_tier_);
+  form->addRow("Memory type:", memory_kind_);
   form->addRow("Title:", memory_title_);
   form->addRow("Scope:", memory_scope_);
   form->addRow("Content:", memory_content_);
@@ -1388,6 +1396,8 @@ void AgentSettingsDialog::openMemoryManager() {
     if (memory_content_) memory_content_->setPlainText(current->data(Qt::UserRole + 1).toString());
     if (memory_title_) memory_title_->setText(current->data(Qt::UserRole + 4).toString());
     if (memory_scope_) memory_scope_->setText(current->data(Qt::UserRole + 3).toString());
+    const int kind = memory_kind_ ? memory_kind_->findData(current->data(Qt::UserRole + 5)) : -1;
+    if (kind >= 0) memory_kind_->setCurrentIndex(kind);
     const int tier = memory_tier_ ? memory_tier_->findData(current->data(Qt::UserRole + 2)) : -1;
     if (tier >= 0) memory_tier_->setCurrentIndex(tier);
   });
@@ -1396,10 +1406,12 @@ void AgentSettingsDialog::openMemoryManager() {
     if (memory_content_) memory_content_->clear();
     if (memory_title_) memory_title_->clear();
     if (memory_scope_) memory_scope_->setText("conversation");
+    if (memory_kind_) memory_kind_->setCurrentIndex(memory_kind_->findData("fact"));
   });
   connect(save, &QPushButton::clicked, this, [this]() {
     if (!agent_panel_ || !memory_tier_ || !memory_content_ || !memory_scope_) return;
     QJsonObject params{{"tier", memory_tier_->currentData().toString()},
+                       {"kind", memory_kind_ ? memory_kind_->currentData().toString() : "fact"},
                        {"scope", memory_scope_->text().trimmed()},
                        {"title", memory_title_ ? memory_title_->text().trimmed() : QString()},
                        {"content", memory_content_->toPlainText()}};

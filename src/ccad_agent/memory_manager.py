@@ -314,6 +314,7 @@ class MemoryManager:
                                    "text": f"{title} {content} {tags}",
                                    "title_text": title, "content_text": content,
                                    "tags_text": tags,
+                                   "kind": entry.get("kind", "fact"),
                                    "created_at": str(entry.get("created_at", ""))})
         query_term_count = len(set(self._word.findall(str(query).casefold())))
         lexical = rank_documents(query, candidates,
@@ -337,6 +338,14 @@ class MemoryManager:
             fused = fuse_rankings({**channels, "semantic": semantic_ranked},
                                   weights={"title": 1.2, "content": 1.0,
                                            "tags": 0.8, "semantic": 1.0})
+        # Kind only adjusts already-relevant candidates; it cannot introduce a
+        # preference/correction that failed the lexical/semantic eligibility gate.
+        kind_weights = {"fact": 1.0, "preference": 1.08, "correction": 1.16}
+        for item in fused:
+            kind = item["document"].get("kind", "fact")
+            item["score"] *= kind_weights.get(kind, 1.0)
+            item["kind_weight"] = kind_weights.get(kind, 1.0)
+        fused.sort(key=lambda item: (-item["score"], item["ordinal"]))
         lexical_by_id = {item["document"]["entry"]["id"]: item
                          for item in lexical}
         diversified = diversify_ranked(fused, limit=max(0, min(32, int(limit))),
@@ -348,6 +357,8 @@ class MemoryManager:
             "entry_id": item["document"]["entry"]["id"],
             "rank": index + 1,
             "tier": item["document"]["tier"],
+            "memory_kind": item["document"].get("kind", "fact"),
+            "kind_weight": round(item.get("kind_weight", 1.0), 3),
             "query_overlap_terms": len(item["matched_terms"]),
             "bm25_score": round(lexical_by_id.get(
                 item["document"]["entry"]["id"], {}).get("score", 0.0), 6),
@@ -480,6 +491,7 @@ class MemoryManager:
         return self.retrieve(query, limit=8)
 
     def add(self, content: str, *, tier="ltm", title="", scope=None, tags=None,
+            kind=None,
             expires_at=""):
         self._check_tier(tier)
         if not self.enabled[tier]:
@@ -492,6 +504,8 @@ class MemoryManager:
         existing = next((item for item in self.list(tier=tier, scope=scope)
                          if " ".join(str(item.get("content", "")).casefold().split()) == normalized), None)
         if existing:
+            if kind is not None and existing.get("kind", "fact") != kind:
+                return self.update(existing["id"], content, kind=kind)
             return existing
         duplicate = self._near_duplicate(content, tier, scope=scope)
         if duplicate:
@@ -501,11 +515,12 @@ class MemoryManager:
                 f"{similarity:.0%}); update that record or add distinct information")
         namespace = self.namespace_for(tier, scope)
         entry = self.store.normalise(content, title=title, scope=scope, tags=tags,
-                                     tier=tier, namespace=namespace,
+                                     tier=tier, kind=kind or "fact", namespace=namespace,
                                      expires_at=expires_at)
         entry["project_id"] = self.project_id
         if tier != "stm":
             entry = self.store.add(content, title=title, scope=scope, tags=tags,
+                                   kind=kind or "fact",
                                    tier=tier, namespace=namespace,
                                    expires_at=expires_at)
             self.store.keep_latest(tier, namespace, 64)
@@ -604,7 +619,7 @@ class MemoryManager:
                         self.store.delete(entry_id)
 
     def update(self, entry_id, content, *, title=None, scope=None, tags=None,
-               expires_at=None):
+               expires_at=None, kind=None):
         for tier in self.TIERS:
             if not self.enabled[tier]:
                 if tier != "stm" and any(
@@ -630,6 +645,7 @@ class MemoryManager:
             fields = {"title": entry.get("title", "") if title is None else title,
                       "scope": target_scope,
                       "tags": entry.get("tags", []) if tags is None else tags,
+                      "kind": entry.get("kind", "fact") if kind is None else kind,
                       "tier": tier, "namespace": namespace,
                       "expires_at": entry.get("expires_at", "") if expires_at is None else expires_at}
             if tier == "stm":
