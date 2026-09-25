@@ -69,6 +69,100 @@ def project_snapshot():
 
 
 class ProjectIndexTests(unittest.TestCase):
+    def test_schematic_declared_pins_and_serialized_annotations_are_retrievable(self):
+        snapshot = project_snapshot()
+        project = snapshot["typed_state"]["project"]
+        symbol = project["components"][0]
+        symbol["unit"] = 1
+        symbol["pins"] = [
+            {"name": "VIN", "number": "1", "electrical_type": "power_in",
+             "graphical_style": "line", "orientation": "right"},
+            {"name": "PGOOD", "number": "2", "electrical_type": "output",
+             "graphical_style": "line", "orientation": "left"},
+        ]
+        project["nets"][0]["members"].append(
+            {"component_id": "sch-u3", "pin_name": "VIN"})
+        project.update({
+            "textboxes": [{"id": "TBX1", "text": "Input power requirements",
+                           "area": {"origin": {"x_nm": 0, "y_nm": 0},
+                                    "size": {"width_nm": 5_000_000,
+                                             "height_nm": 2_000_000}}}],
+            "graphics": [{"id": "SG1", "kind": "line",
+                          "start": {"x_nm": 0, "y_nm": 0},
+                          "end": {"x_nm": 1_000_000, "y_nm": 0}}],
+            "rule_areas": [{"id": "RA1", "name": "High voltage keepout",
+                            "outline": [{"x_nm": 0, "y_nm": 0},
+                                        {"x_nm": 2_000_000, "y_nm": 0},
+                                        {"x_nm": 2_000_000, "y_nm": 1_000_000}],
+                            "locked": True}],
+            "tables": [{"id": "ST1", "rows": 1, "cols": 1,
+                        "cells": [{"row": 0, "col": 0, "text": "ACME-42"}]}],
+            "junctions": [{"id": "JUNC1", "position": {"x_nm": 1_000_000,
+                                                          "y_nm": 2_000_000}}],
+            "no_connects": [{"id": "NC1", "position": {"x_nm": 2_000_000,
+                                                            "y_nm": 3_000_000}}],
+            "markers": [{"id": "MK1", "kind": "erc", "severity": "warning",
+                         "position": {"x_nm": 3_000_000, "y_nm": 4_000_000}}],
+            "bus_entries": [{"id": "BE1", "kind": "wire",
+                             "position": {"x_nm": 4_000_000, "y_nm": 5_000_000}}],
+        })
+        index = ProjectIndex()
+        pin_result = index.retrieve(snapshot, "PGOOD pin 2", limit=24)
+        pins = [item for item in pin_result["entities"]
+                if item["kind"] == "schematic_pin" and
+                item.get("symbol_id") == "sch-u3"]
+        unconnected = next(item for item in pins if item.get("pin_name") == "PGOOD")
+        connected = next(item for item in pins if item.get("pin_name") == "VIN")
+        self.assertEqual(unconnected["pin_number"], "2")
+        self.assertEqual(unconnected["electrical_type"], "output")
+        self.assertEqual(unconnected["membership_kind"], "declared_pin")
+        self.assertNotIn("net_id", unconnected)
+        self.assertEqual(connected["net_id"], "GND")
+        self.assertEqual(connected["membership_kind"], "schematic_net_member")
+        symbol = next(item for item in pin_result["entities"]
+                      if item["kind"] == "schematic_symbol" and
+                      item["id"] == "sch-u3")
+        self.assertIn("declared_pin", symbol.get("relationships", []))
+
+        expected = {
+            ("schematic_textbox", "TBX1"), ("schematic_graphic", "SG1"),
+            ("schematic_rule_area", "RA1"), ("schematic_table", "ST1"),
+            ("schematic_junction", "JUNC1"), ("schematic_no_connect", "NC1"),
+            ("schematic_marker", "MK1"), ("schematic_bus_entry", "BE1"),
+        }
+        # Query each typed identity independently. Generic junction and marker
+        # records have no meaningful prose, so a prose-only query must not be
+        # expected to retrieve them by coincidence.
+        by_key = {}
+        for kind, object_id in expected:
+            result = index.retrieve(snapshot, object_id, limit=40)
+            by_key.update({(item["kind"], item["id"]): item
+                           for item in result["entities"]})
+        actual = set(by_key)
+        self.assertTrue(expected.issubset(actual), expected - actual)
+        self.assertEqual(by_key[("schematic_textbox", "TBX1")]["text"],
+                         "Input power requirements")
+        self.assertTrue(by_key[("schematic_rule_area", "RA1")]["locked"])
+        self.assertEqual(by_key[("schematic_table", "ST1")]["text"], "ACME-42")
+
+    def test_declared_pin_and_schematic_entity_removals_are_incremental(self):
+        snapshot = project_snapshot()
+        project = snapshot["typed_state"]["project"]
+        project["components"][0]["pins"] = [
+            {"name": "PGOOD", "number": "2", "electrical_type": "output"}]
+        project["textboxes"] = [{"id": "TBX1", "text": "Output enable"}]
+        index = ProjectIndex()
+        before = index.retrieve(snapshot, "PGOOD Output enable", limit=20)
+        self.assertTrue(any(item["id"] == "TBX1" for item in before["entities"]))
+        project["components"][0]["pins"].clear()
+        project["textboxes"].clear()
+        after = index.retrieve(snapshot, "PGOOD Output enable", limit=20)
+        self.assertEqual(after["stats"]["index_state"], "incremental")
+        self.assertFalse(any(item["kind"] == "schematic_pin" and
+                             item.get("pin_name") == "PGOOD" for item in after["entities"]))
+        self.assertFalse(any(item["kind"] == "schematic_textbox" and
+                             item["id"] == "TBX1" for item in after["entities"]))
+
     def test_exact_identity_and_layer_lookup_use_typed_board_and_schematic(self):
         index = ProjectIndex()
         snapshot = project_snapshot()

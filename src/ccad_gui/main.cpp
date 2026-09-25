@@ -586,10 +586,16 @@ int main(int argc, char** argv) {
           const auto capture = [window, &output_dir, &name, &entries](const QString& state) {
             const QString path = QString::fromStdString(
                 (output_dir / (name + "-" + state + ".png").toStdString()).string());
-            window->raise();
-            window->activateWindow();
+            QWidget* capture_window = window;
+            if (state == "context-settings-dialog") {
+              QWidget* active = QApplication::activeWindow();
+              if (active && active != window && active->isVisible())
+                capture_window = active;
+            }
+            capture_window->raise();
+            capture_window->activateWindow();
             QApplication::processEvents();
-            if (!window->grab().save(path)) return false;
+            if (!capture_window->grab().save(path)) return false;
             entries << QString("{\"conversation_screenshot\":%1,\"state\":%2}")
                            .arg(jsonStringLocal(path), jsonStringLocal(state));
             return true;
@@ -606,6 +612,8 @@ int main(int argc, char** argv) {
               name.startsWith("sprint981-schematic-project-graph");
           const bool schematic_metadata_validation =
               name.startsWith("sprint987-schematic-metadata");
+          const bool declared_pin_validation = schematic_metadata_validation &&
+              name.contains("sprint992");
           const bool multilayer_project_validation =
               name.startsWith("sprint982-multilayer-project-context");
           const bool serialized_pad_layer_validation =
@@ -705,7 +713,9 @@ int main(int argc, char** argv) {
                       : board_net_validation
                       ? QStringLiteral("Inspect the PCB net AC1 and identify its exact member pads.")
                       : schematic_metadata_validation
-                      ? QStringLiteral("Find the Manufacturer field ACME-42 on U3 and the Power Stage schematic sheet path sheets/power_stage.kicad_sch.")
+                      ? (declared_pin_validation
+                           ? QStringLiteral("Find unconnected PGOOD pin 2 on U3, Manufacturer ACME-42, and the Power Stage schematic sheet path sheets/power_stage.kicad_sch.")
+                           : QStringLiteral("Find the Manufacturer field ACME-42 on U3 and the Power Stage schematic sheet path sheets/power_stage.kicad_sch."))
                       : QStringLiteral("Describe component U_DEMO in the loaded project."))
               : context_memory_validation
               ? QStringLiteral("What memory applies to GND near U3 on F.Cu?")
@@ -749,6 +759,7 @@ int main(int argc, char** argv) {
                        "sheets/power_stage.kicad_sch");
             }
             bool found_property = false;
+            bool found_declared_pin = !declared_pin_validation;
             for (const QJsonValue& value : project.value("components").toArray()) {
               const QJsonObject component = value.toObject();
               if (component.value("reference").toString() != "U3") continue;
@@ -758,12 +769,21 @@ int main(int argc, char** argv) {
                     (field.value("name").toString() == "Manufacturer" &&
                      field.value("text").toString() == "ACME-42");
               }
+              for (const QJsonValue& pin_value : component.value("pins").toArray()) {
+                const QJsonObject pin = pin_value.toObject();
+                found_declared_pin = found_declared_pin ||
+                    (pin.value("name").toString() == "PGOOD" &&
+                     pin.value("number").toString() == "2" &&
+                     pin.value("electrical_type").toString() == "output");
+              }
             }
-            schematic_metadata_serialized = found_sheet && found_property;
-            entries << QString("{\"schematic_metadata_serialized\":%1,\"sheet_path\":%2,\"property_value\":%3}")
+            schematic_metadata_serialized = found_sheet && found_property &&
+                found_declared_pin;
+            entries << QString("{\"schematic_metadata_serialized\":%1,\"sheet_path\":%2,\"property_value\":%3,\"declared_pin_serialized\":%4}")
                            .arg(schematic_metadata_serialized ? "true" : "false",
                                 jsonStringLocal(found_sheet ? "sheets/power_stage.kicad_sch" : ""),
-                                jsonStringLocal(found_property ? "ACME-42" : ""));
+                                jsonStringLocal(found_property ? "ACME-42" : ""),
+                                found_declared_pin ? "true" : "false");
             ok = schematic_metadata_serialized && ok;
           }
           ok = interact("ui.type_text",
@@ -792,12 +812,17 @@ int main(int argc, char** argv) {
             const QString transcript = chat->toPlainText();
             schematic_metadata_retrieved = transcript.contains("ACME-42") &&
                 transcript.contains("sheets/power_stage.kicad_sch");
+            if (declared_pin_validation)
+              schematic_metadata_retrieved = schematic_metadata_retrieved &&
+                  transcript.contains("PGOOD") &&
+                  transcript.contains("schematic pins");
             project_matches_visible = transcript.contains("project matches") &&
                 !transcript.contains("| 0 project matches");
             entries << QString("{\"schematic_metadata_retrieved\":%1}")
                            .arg(schematic_metadata_retrieved ? "true" : "false");
           }
-          const bool schematic_pin_visible = !schematic_graph_validation ||
+          const bool schematic_pin_visible = !(schematic_graph_validation ||
+                                                 declared_pin_validation) ||
               (chat && chat->toPlainText().contains("schematic pins"));
           const bool schematic_symbol_visible = !schematic_graph_validation ||
               (chat && chat->toPlainText().contains("schematic symbols"));
@@ -857,6 +882,15 @@ int main(int argc, char** argv) {
                               project_diagnostic_count_visible ? "true" : "false",
                               schematic_metadata_retrieved ? "true" : "false");
           ok = turn_visible && capture("turn-persisted") && ok;
+          if (declared_pin_validation) {
+            ok = interact("ui.click", "{\"id\":\"action:settingsBtn\"}",
+                          "action:settingsBtn", "context-settings-opened") && ok;
+            ok = interact("ui.click", "{\"id\":\"control:categoryList\",\"row\":2}",
+                          "control:categoryList", "context-settings-category") && ok;
+            ok = capture("context-settings-dialog") && ok;
+            ok = interact("ui.click", "{\"id\":\"action:cancelSettingsButton\"}",
+                          "action:cancelSettingsButton", "context-settings-closed") && ok;
+          }
           if (!diagnostic_validation) {
             ok = interact("ui.type_text",
                           "{\"id\":\"control:agent_chat_input\",\"text\":\"/clear\"}",
@@ -867,7 +901,7 @@ int main(int argc, char** argv) {
             const bool transcript_retained = chat && chat->toPlainText().contains(user_prompt);
             entries << QString("{\"canonical_transcript_retained_after_clear\":%1}")
                            .arg(transcript_retained ? "true" : "false");
-            ok = transcript_retained && capture("projection-cleared") && ok;
+            ok = transcript_retained && capture("restored-final") && ok;
           }
         } else if (name.startsWith("sprint975-memory-ui")) {
           const auto captureMemoryResult = [&]() {

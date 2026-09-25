@@ -1,0 +1,3 @@
+[1/4] Automatic MOC and UIC for target ccad_gui
+[2/3] Building CXX object CMakeFiles/ccad_gui.dir/src/ccad_gui/main.cpp.obj
+[3/3] Linking CXX executable ccad_gui.exe

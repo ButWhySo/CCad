@@ -1,0 +1,236 @@
+Internal ctest changing into directory: F:/CCad/build-qt
+Test project F:/CCad/build-qt
+        Start   1: agent_python_method_catalog
+  1/115 Test   #1: agent_python_method_catalog ..............   Passed    0.24 sec
+        Start   2: agent_context_budget
+  2/115 Test   #2: agent_context_budget .....................   Passed    0.40 sec
+        Start   3: agent_context_broker
+  3/115 Test   #3: agent_context_broker .....................   Passed    0.75 sec
+        Start   4: agent_project_index
+  4/115 Test   #4: agent_project_index ......................   Passed    0.55 sec
+        Start   5: agent_protocol_handler_boundaries
+  5/115 Test   #5: agent_protocol_handler_boundaries ........   Passed    0.22 sec
+        Start   6: agent_turn_trace_hierarchy
+  6/115 Test   #6: agent_turn_trace_hierarchy ...............   Passed    2.87 sec
+        Start   7: agent_memory_search_tool
+  7/115 Test   #7: agent_memory_search_tool .................   Passed    2.36 sec
+        Start   8: agent_conversation_store
+  8/115 Test   #8: agent_conversation_store .................   Passed    1.09 sec
+        Start   9: agent_conversation_runtime
+  9/115 Test   #9: agent_conversation_runtime ...............   Passed    4.95 sec
+        Start  10: agent_context_preview_runtime
+ 10/115 Test  #10: agent_context_preview_runtime ............   Passed    2.45 sec
+        Start  11: agent_memory_store
+ 11/115 Test  #11: agent_memory_store .......................   Passed    0.22 sec
+        Start  12: agent_memory_persistence
+ 12/115 Test  #12: agent_memory_persistence .................   Passed    7.88 sec
+        Start  13: agent_memory_manager
+ 13/115 Test  #13: agent_memory_manager .....................   Passed    1.90 sec
+        Start  14: agent_semantic_retrieval
+ 14/115 Test  #14: agent_semantic_retrieval .................   Passed    2.85 sec
+        Start  15: agent_lexical_retrieval
+ 15/115 Test  #15: agent_lexical_retrieval ..................   Passed    0.22 sec
+        Start  16: agent_memory_task_scopes
+ 16/115 Test  #16: agent_memory_task_scopes .................   Passed    0.24 sec
+        Start  17: agent_memory_commands
+ 17/115 Test  #17: agent_memory_commands ....................   Passed    0.39 sec
+        Start  18: agent_memory_context_contract
+ 18/115 Test  #18: agent_memory_context_contract ............   Passed    0.10 sec
+        Start  19: agent_memory_semantic_compaction
+ 19/115 Test  #19: agent_memory_semantic_compaction .........   Passed    0.36 sec
+        Start  20: agent_memory_compaction_runtime
+ 20/115 Test  #20: agent_memory_compaction_runtime ..........   Passed    2.28 sec
+        Start  21: agent_semantic_history_compaction
+ 21/115 Test  #21: agent_semantic_history_compaction ........   Passed    0.16 sec
+        Start  22: agent_compaction_orchestrator_contract
+ 22/115 Test  #22: agent_compaction_orchestrator_contract ...   Passed    0.10 sec
+        Start  23: agent_compaction_langgraph_checkpoint
+ 23/115 Test  #23: agent_compaction_langgraph_checkpoint ....   Passed    1.93 sec
+        Start  24: job_manager
+ 24/115 Test  #24: job_manager ..............................   Passed    0.14 sec
+        Start  25: serialize
+ 25/115 Test  #25: serialize ................................   Passed    0.03 sec
+        Start  26: gfx_import_utils
+ 26/115 Test  #26: gfx_import_utils .........................   Passed    0.04 sec
+        Start  27: diff_pair_tuning
+ 27/115 Test  #27: diff_pair_tuning .........................   Passed    0.03 sec
+        Start  28: track_length_tuning
+ 28/115 Test  #28: track_length_tuning ......................   Passed    0.03 sec
+        Start  29: custom_drc_rules
+ 29/115 Test  #29: custom_drc_rules .........................   Passed    0.03 sec
+        Start  30: drc_test_provider_clearance
+ 30/115 Test  #30: drc_test_provider_clearance ..............   Passed    0.03 sec
+        Start  31: drc_test_provider_courtyard
+ 31/115 Test  #31: drc_test_provider_courtyard ..............   Passed    0.03 sec
+        Start  32: drc_test_provider_edge_clearance
+ 32/115 Test  #32: drc_test_provider_edge_clearance .........   Passed    0.03 sec
+        Start  33: drc_test_provider_unrouted
+ 33/115 Test  #33: drc_test_provider_unrouted ...............   Passed    0.03 sec
+        Start  34: net_tie_drc
+ 34/115 Test  #34: net_tie_drc ..............................   Passed    0.02 sec
+        Start  35: router_tool
+ 35/115 Test  #35: router_tool ..............................   Passed    0.02 sec
+        Start  36: router_width_clearance
+ 36/115 Test  #36: router_width_clearance ...................   Passed    0.03 sec
+        Start  37: 3d_fastmath
+ 37/115 Test  #37: 3d_fastmath ..............................   Passed    0.02 sec
+        Start  38: nearest_neighbor_connectivity
+ 38/115 Test  #38: nearest_neighbor_connectivity ............   Passed    0.03 sec
+        Start  39: dynamic_ratnest_graph
+ 39/115 Test  #39: dynamic_ratnest_graph ....................   Passed    0.03 sec
+        Start  40: schematic_collector
+ 40/115 Test  #40: schematic_collector ......................   Passed    0.03 sec
+        Start  41: lib_symbol
+ 41/115 Test  #41: lib_symbol ...............................   Passed    0.02 sec
+        Start  42: placement
+ 42/115 Test  #42: placement ................................   Passed    0.02 sec
+        Start  43: barcode
+ 43/115 Test  #43: barcode ..................................   Passed    0.02 sec
+        Start  44: layers
+ 44/115 Test  #44: layers ...................................   Passed    0.02 sec
+        Start  45: pad_number_provider
+ 45/115 Test  #45: pad_number_provider ......................   Passed    0.03 sec
+        Start  46: autoplacer
+ 46/115 Test  #46: autoplacer ...............................   Passed    0.03 sec
+        Start  47: autorouter_matrix
+ 47/115 Test  #47: autorouter_matrix ........................   Passed    0.03 sec
+        Start  48: spread_footprints
+ 48/115 Test  #48: spread_footprints ........................   Passed    0.03 sec
+        Start  49: erc
+ 49/115 Test  #49: erc ......................................   Passed    0.03 sec
+        Start  50: fix_board_shape
+ 50/115 Test  #50: fix_board_shape ..........................   Passed    0.04 sec
+        Start  51: drc
+ 51/115 Test  #51: drc ......................................   Passed    0.03 sec
+        Start  52: board_design_settings
+ 52/115 Test  #52: board_design_settings ....................   Passed    0.03 sec
+        Start  53: board_loader
+ 53/115 Test  #53: board_loader .............................   Passed    0.03 sec
+        Start  54: board_item_container
+ 54/115 Test  #54: board_item_container .....................   Passed    0.03 sec
+        Start  55: board_collector
+ 55/115 Test  #55: board_collector ..........................   Passed    0.03 sec
+        Start  56: board_outline_polygon
+ 56/115 Test  #56: board_outline_polygon ....................   Passed    0.03 sec
+        Start  57: board_statistics
+ 57/115 Test  #57: board_statistics .........................   Passed    0.03 sec
+        Start  58: board_text_var_adapter
+ 58/115 Test  #58: board_text_var_adapter ...................   Passed    0.03 sec
+        Start  59: board_stackup
+ 59/115 Test  #59: board_stackup ............................   Passed    0.02 sec
+        Start  60: cleanup_item
+ 60/115 Test  #60: cleanup_item .............................   Passed    0.02 sec
+        Start  61: kicad_footprint_import
+ 61/115 Test  #61: kicad_footprint_import ...................   Passed    0.03 sec
+        Start  62: kicad_footprint_export
+ 62/115 Test  #62: kicad_footprint_export ...................   Passed    0.03 sec
+        Start  63: kicad_symbol_import
+ 63/115 Test  #63: kicad_symbol_import ......................   Passed    0.04 sec
+        Start  64: library_catalog
+ 64/115 Test  #64: library_catalog ..........................   Passed    0.03 sec
+        Start  65: agent_serve
+ 65/115 Test  #65: agent_serve ..............................   Passed    0.06 sec
+        Start  66: kicad_pcb_export
+ 66/115 Test  #66: kicad_pcb_export .........................   Passed    0.03 sec
+        Start  67: dsn_export
+ 67/115 Test  #67: dsn_export ...............................   Passed    0.02 sec
+        Start  68: teardrop_generator
+ 68/115 Test  #68: teardrop_generator .......................   Passed    0.03 sec
+        Start  69: bom_export
+ 69/115 Test  #69: bom_export ...............................   Passed    0.02 sec
+        Start  70: pnp_export
+ 70/115 Test  #70: pnp_export ...............................   Passed    0.02 sec
+        Start  71: drill_export
+ 71/115 Test  #71: drill_export .............................   Passed    0.02 sec
+        Start  72: visual_harness_policy
+ 72/115 Test  #72: visual_harness_policy ....................   Passed    0.03 sec
+        Start  73: cross_probing
+ 73/115 Test  #73: cross_probing ............................   Passed    0.02 sec
+        Start  74: net_chain_bridging
+ 74/115 Test  #74: net_chain_bridging .......................   Passed    0.03 sec
+        Start  75: net_info
+ 75/115 Test  #75: net_info .................................   Passed    0.02 sec
+        Start  76: pad_utils
+ 76/115 Test  #76: pad_utils ................................   Passed    0.02 sec
+        Start  77: item_geometry
+ 77/115 Test  #77: item_geometry ............................   Passed    0.02 sec
+        Start  78: agent_orchestrator
+ 78/115 Test  #78: agent_orchestrator .......................   Passed    0.03 sec
+        Start  79: refdes_tracker
+ 79/115 Test  #79: refdes_tracker ...........................   Passed    0.02 sec
+        Start  80: footprint_losslessness
+ 80/115 Test  #80: footprint_losslessness ...................   Passed    0.03 sec
+        Start  81: agent_runner
+ 81/115 Test  #81: agent_runner .............................   Passed    0.16 sec
+        Start  82: gui_footprint_placement
+ 82/115 Test  #82: gui_footprint_placement ..................   Passed    0.32 sec
+        Start  83: gui_symbol_placement
+ 83/115 Test  #83: gui_symbol_placement .....................   Passed    0.32 sec
+        Start  84: gui_inspector
+ 84/115 Test  #84: gui_inspector ............................   Passed    0.27 sec
+        Start  85: gui_object_browser
+ 85/115 Test  #85: gui_object_browser .......................   Passed    0.13 sec
+        Start  86: gui_project_summary
+ 86/115 Test  #86: gui_project_summary ......................   Passed    0.10 sec
+        Start  87: gui_canvas_selection_style
+ 87/115 Test  #87: gui_canvas_selection_style ...............   Passed    0.13 sec
+        Start  88: gui_diagnostics_panel
+ 88/115 Test  #88: gui_diagnostics_panel ....................   Passed    0.12 sec
+        Start  89: gui_canvas_selection_link
+ 89/115 Test  #89: gui_canvas_selection_link ................   Passed    0.16 sec
+        Start  90: gui_diagnostic_markers
+ 90/115 Test  #90: gui_diagnostic_markers ...................   Passed    0.16 sec
+        Start  91: gui_canvas_spatial_index
+ 91/115 Test  #91: gui_canvas_spatial_index .................   Passed    0.12 sec
+        Start  92: gui_action_tools
+ 92/115 Test  #92: gui_action_tools .........................   Passed    0.93 sec
+        Start  93: gui_transaction_timeline
+ 93/115 Test  #93: gui_transaction_timeline .................   Passed    0.15 sec
+        Start  94: gui_board_canvas_view
+ 94/115 Test  #94: gui_board_canvas_view ....................   Passed    0.27 sec
+        Start  95: gui_agent_panel
+ 95/115 Test  #95: gui_agent_panel ..........................   Passed   17.06 sec
+        Start  96: gui_ui_map
+ 96/115 Test  #96: gui_ui_map ...............................   Passed    8.59 sec
+        Start  97: gui_review_window_cursor_status
+ 97/115 Test  #97: gui_review_window_cursor_status ..........   Passed    0.07 sec
+        Start  98: cli
+ 98/115 Test  #98: cli ......................................   Passed   26.22 sec
+        Start  99: review
+ 99/115 Test  #99: review ...................................   Passed    0.03 sec
+        Start 100: annotate
+100/115 Test #100: annotate .................................   Passed    0.02 sec
+        Start 101: autoplace_fields
+101/115 Test #101: autoplace_fields .........................   Passed    0.03 sec
+        Start 102: junction_helpers
+102/115 Test #102: junction_helpers .........................   Passed    0.04 sec
+        Start 103: diff
+103/115 Test #103: diff .....................................   Passed    0.02 sec
+        Start 104: agent_preview
+104/115 Test #104: agent_preview ............................   Passed    0.03 sec
+        Start 105: transaction
+105/115 Test #105: transaction ..............................   Passed    0.03 sec
+        Start 106: geometry
+106/115 Test #106: geometry .................................   Passed    0.02 sec
+        Start 107: canvas
+107/115 Test #107: canvas ...................................   Passed    0.02 sec
+        Start 108: graphics_cleaner
+108/115 Test #108: graphics_cleaner .........................   Passed    0.03 sec
+        Start 109: pns_index
+109/115 Test #109: pns_index ................................   Passed    0.03 sec
+        Start 110: pns_diff_pair
+110/115 Test #110: pns_diff_pair ............................   Passed    0.03 sec
+        Start 111: pns_meander
+111/115 Test #111: pns_meander ..............................   Passed    0.03 sec
+        Start 112: pns_board_adapter
+112/115 Test #112: pns_board_adapter ........................   Passed    0.04 sec
+        Start 113: router_pns_adapter
+113/115 Test #113: router_pns_adapter .......................   Passed    0.03 sec
+        Start 114: zone_settings
+114/115 Test #114: zone_settings ............................   Passed    0.03 sec
+        Start 115: zone_fill
+115/115 Test #115: zone_fill ................................   Passed    0.03 sec
+
+100% tests passed, 0 tests failed out of 115
+
+Total Test time (real) =  92.17 sec

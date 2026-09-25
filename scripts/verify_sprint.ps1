@@ -115,13 +115,18 @@ try {
     throw "Only $($actions.Count) successful mapped interactions; required $($plan.minimum_mapped_interactions)."
   }
   foreach ($target in $plan.required_targets) {
-    if (-not ($entries | Where-Object { $_.id -eq $target -or $_.interaction -like "*:$target*" -or $_.target.id -eq $target })) {
+    if (-not ($entries | Where-Object {
+      $_.id -eq $target -or $_.target -eq $target -or
+      $_.interaction -like "*:$target*" -or $_.target.id -eq $target
+    })) {
       throw "Required mapped target absent from run report: $target"
     }
   }
   foreach ($target in $plan.required_text_entries) {
     if (-not ($entries | Where-Object {
-      $_.interaction -eq 'ui.type_text' -and $_.id -eq $target -and $_.result.result.performed -eq $true
+      $_.interaction -eq 'ui.type_text' -and
+      ($_.id -eq $target -or $_.target -eq $target) -and
+      $_.result.result.performed -eq $true
     })) { throw "Required mapped text entry failed or missing: $target" }
   }
   $images = @(Get-ChildItem -LiteralPath $screenshotsRoot -Filter "$runName-*.png" -File)

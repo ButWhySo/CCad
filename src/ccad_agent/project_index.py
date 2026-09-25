@@ -309,9 +309,15 @@ class ProjectIndex:
                            ("lib_id", item.get("lib_id")),
                            ("sheet_path", item.get("sheet_path")),
                            ("title", item.get("title")),
+                           ("text", item.get("text")),
                            ("notes", item.get("notes")),
+                           ("target", item.get("target")),
                            ("pin_name", item.get("pin_name")),
                            ("pin_number", item.get("pin_number")),
+                           ("electrical_type", item.get("electrical_type")),
+                           ("graphical_style", item.get("graphical_style")),
+                           ("orientation", item.get("orientation")),
+                           ("identity_source", item.get("identity_source")),
                            ("type", item.get("kind", item.get("type"))),
                            ("code", item.get("code")),
                            ("severity", item.get("severity")),
@@ -321,6 +327,12 @@ class ProjectIndex:
             clean = _safe(value, 140)
             if clean:
                 fields[key] = clean
+        for key in ("locked", "visible"):
+            if isinstance(item.get(key), bool):
+                fields[key] = item[key]
+        if (isinstance(item.get("unit"), int) and
+                not isinstance(item.get("unit"), bool) and 0 <= item["unit"] <= 1024):
+            fields["symbol_unit"] = item["unit"]
         raw_sheet_path = item.get("sheet_path", item.get("file_path"))
         sheet_path = _relative_sheet_path(raw_sheet_path)
         if kind == "schematic_sheet" and sheet_path:
@@ -366,7 +378,11 @@ class ProjectIndex:
         if net:
             fields["net_id"] = net
             if kind == "schematic_pin":
-                fields["membership_kind"] = "schematic_net_member"
+                fields["membership_kind"] = (
+                    _safe(item.get("membership_kind"), 40) or "schematic_net_member")
+        elif kind == "schematic_pin":
+            fields["membership_kind"] = (
+                _safe(item.get("membership_kind"), 40) or "declared_pin")
         if layer:
             fields["layer_id"] = layer
         if layer_ids:
@@ -407,7 +423,9 @@ class ProjectIndex:
         searchable_values.extend(fields.get(key, "") for key in
                                  ("reference", "value", "name", "part", "description",
                                   "library_description", "footprint_name", "lib_id",
-                                  "sheet_path", "title", "notes", "pin_name", "pin_number",
+                                  "sheet_path", "title", "text", "notes", "target",
+                                  "pin_name", "pin_number", "electrical_type",
+                                  "graphical_style", "orientation",
                                   "code", "severity", "message", "engine", "object_id"))
         for prop in properties:
             searchable_values.extend((prop["name"], prop["value"]))
@@ -552,6 +570,7 @@ class ProjectIndex:
                 docs.append(net_doc)
 
         schematic_sources = [project]
+        declared_pin_sources: list[tuple[str, dict]] = []
         schematics = project.get("schematics", [])
         if isinstance(schematics, list):
             schematic_sources.extend(item for item in schematics[:64] if isinstance(item, dict))
@@ -567,6 +586,11 @@ class ProjectIndex:
                 if page is not None and len(docs) < _MAX_INPUT_ENTITIES:
                     docs.append(page)
             symbols = schematic.get("components", schematic.get("symbols", []))
+            declared_pin_sources.extend(
+                (source_sheet_id, {**symbol, "symbol_id": _safe(symbol.get("id"), 120),
+                                   "reference": _safe(symbol.get("reference"), 120)})
+                for symbol in _iter_dicts(symbols)
+                if isinstance(symbol.get("pins"), list))
             add("schematic_symbol", symbols,
                 aliases=("id", "reference", "part", "value", "lib_id"),
                 sheet_id=source_sheet_id,
@@ -581,10 +605,37 @@ class ProjectIndex:
             for kind, key in (("power_symbol", "power_symbols"), ("schematic_bus", "buses"),
                               ("schematic_constraint", "constraints"),
                               ("schematic_group", "groups"), ("schematic_sheet", "sheets"),
-                              ("schematic_text", "texts")):
+                              ("schematic_text", "texts"),
+                              ("schematic_textbox", "textboxes"),
+                              ("schematic_graphic", "graphics"),
+                              ("schematic_junction", "junctions"),
+                              ("schematic_no_connect", "no_connects"),
+                              ("schematic_marker", "markers"),
+                              ("schematic_bus_entry", "bus_entries"),
+                              ("schematic_rule_area", "rule_areas"),
+                              ("schematic_table", "tables"),
+                              ("schematic_bitmap", "bitmaps")):
                 add(kind, schematic.get(key), aliases=("id", "name", "text", "value", "net_id"),
                     sheet_id=source_sheet_id,
                     parent_sheet_id=(source_sheet_id if kind == "schematic_sheet" else ""))
+            # Table cell text is useful for retrieval; embedded bitmap data is
+            # deliberately excluded from both the index and provider context.
+            for table in _iter_dicts(schematic.get("tables")):
+                cell_text = [_safe(cell.get("text"), 140)
+                             for cell in _iter_dicts(table.get("cells"))]
+                cell_text = [value for value in cell_text if value]
+                if cell_text:
+                    table_id = _safe(table.get("id"), 120)
+                    table_doc = next((doc for doc in reversed(docs)
+                                      if doc["fields"]["kind"] == "schematic_table" and
+                                      doc["fields"]["id"] == table_id), None)
+                    if table_doc is not None:
+                        table_doc["fields"]["text"] = " | ".join(cell_text)[:400]
+                        table_doc["text"] = (table_doc["text"] + " " +
+                                              table_doc["fields"]["text"])[:1200]
+                        table_doc["tokens"].update(Counter(
+                            token.casefold() for token in _WORD.findall(
+                                table_doc["fields"]["text"]) if len(token) <= 80))
 
         diagnostics = snapshot.get("project_diagnostics", [])
         if isinstance(diagnostics, list):
@@ -605,6 +656,46 @@ class ProjectIndex:
                     extra_text=("project diagnostic",))
                 if diagnostic is not None and len(docs) < _MAX_INPUT_ENTITIES:
                     docs.append(diagnostic)
+
+        # Build typed declared-pin records before linking net membership so
+        # unconnected pins remain visible and connected pins retain electrical
+        # metadata from their source symbol.
+        declared_pin_docs: list[dict] = []
+        declared_by_component_pin: dict[tuple[str, str], list[dict]] = defaultdict(list)
+        for sheet_id, symbol in declared_pin_sources:
+            symbol_id = _safe(symbol.get("symbol_id") or symbol.get("id"), 120)
+            reference = _safe(symbol.get("reference"), 120)
+            unit = symbol.get("unit", 1)
+            for pin in _iter_dicts(symbol.get("pins")):
+                pin_name = _safe(pin.get("name"), 100)
+                pin_number = _safe(pin.get("number"), 100)
+                if not pin_name and not pin_number:
+                    continue
+                source_pin_id = _safe(pin.get("id"), 120)
+                identity_part = source_pin_id or pin_number or pin_name
+                identity = f"declared:{symbol_id or reference}:{unit}:{identity_part}"
+                pin_item = {
+                    **pin, "id": identity, "symbol_id": symbol_id,
+                    "component_id": reference, "reference": reference,
+                    "pin_name": pin_name, "pin_number": pin_number,
+                    "unit": unit, "membership_kind": "declared_pin",
+                    "identity_source": ("native_pin_id" if source_pin_id else
+                        "derived_from_symbol_unit_and_pin_number_or_name"),
+                }
+                pin_doc = cls._make_doc(
+                    "schematic_pin", pin_item,
+                    aliases=("id", "pin_name", "pin_number", "symbol_id"),
+                    component_id=reference, sheet_id=sheet_id)
+                if pin_doc is None:
+                    continue
+                declared_pin_docs.append(pin_doc)
+                pin_key = _normalize(pin_name)
+                if pin_key:
+                    for component_key in {symbol_id, reference}:
+                        normalized_component = _normalize(component_key)
+                        if normalized_component:
+                            declared_by_component_pin[
+                                (normalized_component, pin_key)].append(pin_doc)
 
         # Build the membership lookup once; scanning every source net for every
         # indexed net makes large multi-sheet projects quadratic.
@@ -632,8 +723,9 @@ class ProjectIndex:
             if member_count >= _MAX_INPUT_ENTITIES:
                 break
 
-        # Schematic net.members points at serialized component IDs and pins;
-        # preserve each declared member as a separate searchable logical pin.
+        # Schematic net.members points at serialized component IDs and pins.
+        # Attach a membership to a declared pin only when that identity maps
+        # unambiguously; retain unresolved native members as separate records.
         symbols = {}
         for symbol in docs:
             if symbol["fields"]["kind"] != "schematic_symbol":
@@ -642,11 +734,61 @@ class ProjectIndex:
                 value = _normalize(symbol["fields"].get(key, ""))
                 if value:
                     symbols[value] = symbol
+        member_claims: dict[str, list[tuple[str, dict]]] = defaultdict(list)
+        unresolved_members: list[tuple[str, dict, bool]] = []
+        for net_id, members in members_by_net.items():
+            for member in members:
+                component_id = _safe(member.get("component_id"), 120)
+                pin_name = _safe(member.get("pin_name"), 100)
+                symbol = symbols.get(_normalize(component_id))
+                component_keys = {component_id}
+                if symbol:
+                    component_keys.update((symbol["fields"].get("id", ""),
+                                           symbol["fields"].get("reference", "")))
+                candidates = {pin_doc["uid"]: pin_doc
+                              for component_key in component_keys
+                              for pin_doc in declared_by_component_pin.get(
+                                  (_normalize(component_key), _normalize(pin_name)), ())}
+                if len(candidates) == 1:
+                    pin_doc = next(iter(candidates.values()))
+                    member_claims[pin_doc["uid"]].append((net_id, member))
+                else:
+                    unresolved_members.append((net_id, member, len(candidates) > 1))
+
+        for pin_doc in declared_pin_docs:
+            claims = member_claims.get(pin_doc["uid"], ())
+            claimed_nets = sorted({net_id for net_id, _member in claims})
+            if len(claimed_nets) == 1:
+                net_id = claimed_nets[0]
+                symbol_id = pin_doc["fields"].get("symbol_id", "")
+                pin_name = pin_doc["fields"].get("pin_name", "")
+                component_id = pin_doc["fields"].get("reference", "") or \
+                    pin_doc["fields"].get("component_id", "")
+                # Preserve the historical net-member ID while enriching its
+                # payload with the exact declaration fields.
+                pin_doc["fields"]["id"] = f"{net_id}:{component_id}:{pin_name}"
+                pin_doc["uid"] = f"schematic_pin:{pin_doc['fields']['id']}"
+                pin_doc["fields"]["net_id"] = net_id
+                pin_doc["fields"]["membership_kind"] = "schematic_net_member"
+                pin_doc["net"] = _normalize(net_id)
+                pin_doc["aliases"].add(_normalize(net_id))
+                pin_doc["tokens"].update(Counter(
+                    token.casefold() for token in _WORD.findall(net_id)))
+                pin_doc["text"] = (pin_doc["text"] + " " + net_id)[:1200]
+            elif claimed_nets:
+                pin_doc["fields"]["membership_kind"] = "ambiguous_net_membership"
+                pin_doc["fields"]["candidate_net_ids"] = claimed_nets[:8]
+                unresolved_members.extend((net_id, member, True)
+                                          for net_id, member in claims)
+
+        docs.extend(declared_pin_docs)
         for doc in docs:
             if doc["fields"]["kind"] != "schematic_net":
                 continue
             net_id = doc["fields"]["id"]
-            for member in members_by_net.get(net_id, ()):
+            for member_net, member, ambiguous in unresolved_members:
+                if member_net != net_id:
+                    continue
                 component_id = _safe(member.get("component_id"), 120)
                 pin_name = _safe(member.get("pin_name"), 100)
                 symbol = symbols.get(_normalize(component_id))
@@ -657,10 +799,12 @@ class ProjectIndex:
                     "schematic_pin",
                     {"id": f"{net_id}:{component_id}:{pin_name}",
                      "component_id": reference, "symbol_id": symbol_id,
-                     "reference": reference, "pin_name": pin_name,
-                     "net_id": net_id},
-                    aliases=("id", "pin_name", "component_id", "symbol_id"),
-                    component_id=reference, net_id=net_id)
+                      "reference": reference, "pin_name": pin_name,
+                      "net_id": net_id,
+                      "membership_kind": ("ambiguous_pin_declaration" if ambiguous
+                                          else "schematic_net_member")},
+                     aliases=("id", "pin_name", "component_id", "symbol_id"),
+                     component_id=reference, net_id=net_id)
                 if pin_doc is not None and len(docs) < _MAX_INPUT_ENTITIES:
                     docs.append(pin_doc)
                     doc["components"].update(pin_doc["components"])
@@ -980,6 +1124,20 @@ class ProjectIndex:
                                         if doc["fields"]["kind"] == "schematic_net" and
                                         other_kind in {"schematic_pin", "schematic_symbol"}
                                         else "same_component")
+                        if (doc["fields"]["kind"], other_kind) in {
+                                ("schematic_pin", "schematic_symbol"),
+                                ("schematic_symbol", "schematic_pin")}:
+                            pin = doc if doc["fields"]["kind"] == "schematic_pin" else \
+                                self._docs.get(neighbor, {})
+                            symbol = doc if doc["fields"]["kind"] == "schematic_symbol" else \
+                                self._docs.get(neighbor, {})
+                            pin_fields = pin.get("fields", {})
+                            symbol_fields = symbol.get("fields", {})
+                            if pin_fields.get("symbol_id") == symbol_fields.get("id"):
+                                relationship = (
+                                    "declared_pin"
+                                    if pin_fields.get("membership_kind") == "declared_pin"
+                                    else "logical_net_member")
                         found[neighbor].add(relationship)
             for sheet in doc["sheets"]:
                 for neighbor in self._sheet_docs.get(sheet, ()):
@@ -1082,9 +1240,11 @@ class ProjectIndex:
             item = {key: value for key, value in fields.items()
                     if key in {"id", "kind", "reference", "value", "name", "part",
                                "description", "library_description", "footprint_name",
-                               "lib_id", "sheet_path", "title", "notes",
+                               "lib_id", "sheet_path", "title", "text", "notes", "target",
                                "properties",
-                               "pin_name", "pin_number", "type", "net_id", "membership_kind", "layer_id",
+                               "pin_name", "pin_number", "electrical_type", "graphical_style",
+                               "orientation", "identity_source", "symbol_unit", "locked", "visible",
+                               "candidate_net_ids", "type", "net_id", "membership_kind", "layer_id",
                                "layer_ids", "start_layer_id", "end_layer_id",
                                "component_id", "symbol_id", "position_mm", "bounds_mm",
                                "sheet_id", "parent_sheet_id", "code", "severity",

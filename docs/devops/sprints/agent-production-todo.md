@@ -2,6 +2,16 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 992 active slice — declared schematic pins and annotations (Tier 1, C3)
+
+- [x] Index connected and unconnected symbol-declared pins with safe typed metadata and correct net membership.
+- [x] Retrieve serialized schematic annotations and rule-area/table content; never index embedded bitmap payloads.
+- [x] Prove incremental add/remove, exact retrieval, serialization, UI-map context, build, CTest, and reviewed evidence.
+- [x] Update feature, codebase, progress, and C3 relationship coverage records.
+
+Evidence: 34/34 project-index contracts; Pyright 0 diagnostics; Qt MinGW Release build; CTest 115/115; 10 successful mapped interactions, four inspected screenshots, no provider request, and reviewed stdout/stderr. Hash-bound manifest: `artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final.json`.
+Scope boundary: the current CCad JSON reader/writer omits `SchPin.id`, so file-loaded pin identities are derived from symbol, unit, and pin number/name. Preserving stable source pin IDs requires a future schema change; unsupported source-model graph relationships remain open.
+
 ### Sprint 991 active slice â€” opt-in local semantic memory retrieval (Tier 1, M4)
 
 References checked before implementation: [Ollama embedding guide](https://docs.ollama.com/capabilities/embeddings), [Ollama `/api/embed`](https://docs.ollama.com/api/embed), and [LangChain embeddings overview](https://docs.langchain.com/oss/python/integrations/embeddings). Embeddings use one pinned model identity for query and documents; semantic results augment fielded lexical retrieval rather than replacing exact-term matching. Endpoint is loopback-only and never triggers model installation.
@@ -4320,7 +4330,8 @@ Index textual fields such as:
 - [ ] rule descriptions.
 - [x] DRC/ERC diagnostic codes, severity, engine, and messages.
 - [ ] generated functional-block summaries.
-- [ ] project annotations.
+- [ ] project annotations beyond the currently serialized schematic objects.
+- [x] Index serialized schematic textboxes, graphics, junctions, no-connects, markers, bus entries, rule areas, and tables with bounded text; exclude bitmap payloads (Sprint 992).
 
 - [x] Use actual deterministic BM25 scoring over bounded per-entity postings rather than simple substring matching for broad textual retrieval.
 
@@ -4332,7 +4343,7 @@ Index textual fields such as:
 
 Represent/traverse relationships such as:
 
-- [ ] schematic symbol -> all declared pins (connected memberships are indexed by Sprint 981; unconnected library pins remain open).
+- [x] schematic symbol -> all serialized declared pins (connected and unconnected; Sprint 992; library definitions absent from the project snapshot remain open).
 - [x] connected schematic pin -> source schematic net via exact typed net-member identity (Sprint 981).
 - [x] schematic net -> schematic wires and labels (shared typed net membership; not geometric continuity proof).
 - [x] schematic symbol -> matching schematic/PCB component identity; remaining annotation/footprint source-link metadata stays open.

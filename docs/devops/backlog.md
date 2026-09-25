@@ -4,6 +4,8 @@ This file is the single local backlog for scattered CCad feature requests. Sprin
 
 ## Verified Work Ledger
 
+- [x] Sprint 992: retrieval includes connected/unconnected serialized schematic pins and bounded annotations, safe net membership, incremental deletion, and bitmap exclusion; 34/34 focused contracts, Pyright clean, Qt MinGW Release, 115/115 CTest, 10-action provider-free UI-map proof, four inspected screenshots, stdout/stderr reviewed. `SchPin.id` is still not serialized; broader C3 remains open.
+
 This ledger is the current single checklist for scattered user-reported GUI, KiCad compatibility, and agent-harness work. Check an item only after code review, focused tests, KiCad/reference comparison where relevant, and visual validation when the behavior is visible.
 
 - [x] Sprint 157: read-only native UI map export through `ccad_gui --dump-ui-map`, with target validation against live Qt hit-testing.

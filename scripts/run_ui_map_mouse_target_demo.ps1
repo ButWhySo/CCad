@@ -88,8 +88,24 @@ if ($Name.StartsWith("sprint982-multilayer-project-context") -or
     if (-not $fixture.components -or $fixture.components.Count -eq 0) {
       throw "Schematic metadata scenario requires a serialized schematic component."
     }
-    $fixture.components[0].reference = "U3"
-    $fixture.components[0].fields = @([pscustomobject]@{
+    $fixture.components[0] | Add-Member -MemberType NoteProperty -Name reference `
+      -Value "U3" -Force
+    if ($Name.Contains("sprint992")) {
+      $fixture.components[0] | Add-Member -MemberType NoteProperty -Name unit `
+        -Value 1 -Force
+      $fixture.components[0] | Add-Member -MemberType NoteProperty -Name pins -Value @([pscustomobject]@{
+        name = "PGOOD"
+        number = "2"
+        electrical_type = "output"
+        orientation = "right"
+      }, [pscustomobject]@{
+        name = "GND"
+        number = "3"
+        electrical_type = "power_in"
+        orientation = "left"
+      }) -Force
+    }
+    $fixture.components[0] | Add-Member -MemberType NoteProperty -Name fields -Value @([pscustomobject]@{
       id = "FIELD_SPRINT987_MANUFACTURER"
       name = "Manufacturer"
       text = "ACME-42"
@@ -105,15 +121,15 @@ if ($Name.StartsWith("sprint982-multilayer-project-context") -or
       rotation_degrees = 0
       size = [pscustomobject]@{ width_nm = 1000000; height_nm = 1000000 }
       visible = $true
-    })
-    $fixture.sheets = @([pscustomobject]@{
+    }) -Force
+    $fixture | Add-Member -MemberType NoteProperty -Name sheets -Value @([pscustomobject]@{
       id = "SHEET_SPRINT987"
       name = "Power Stage"
       file_path = "sheets/power_stage.kicad_sch"
       position = [pscustomobject]@{ x_nm = 0; y_nm = 0 }
       size = [pscustomobject]@{ width_nm = 40000000; height_nm = 30000000 }
       pins = @()
-    })
+    }) -Force
     [IO.File]::WriteAllText($isolatedProjectPath,
       (ConvertTo-Json -InputObject $fixture -Depth 64), [Text.UTF8Encoding]::new($false))
   } elseif ($Name.StartsWith("sprint985-project-reference-graph") -or
@@ -451,7 +467,11 @@ if ($Name.StartsWith("sprint974-memory")) {
       $Name.StartsWith("sprint987-schematic-metadata")) {
     $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
     $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
-    $requiredReportFields = if ($Name.StartsWith("sprint987-schematic-metadata")) {
+    $requiredReportFields = if ($Name.Contains("sprint992")) {
+      @("conversation_turn_visible", "schematic_metadata_serialized",
+        "declared_pin_serialized", "schematic_metadata_retrieved",
+        "schematic_pin_retrieval_visible")
+    } elseif ($Name.StartsWith("sprint987-schematic-metadata")) {
       @("conversation_turn_visible", "schematic_metadata_serialized",
         "schematic_metadata_retrieved")
     } elseif ($Name.StartsWith("sprint985-project-reference-graph") -or
@@ -473,6 +493,13 @@ if ($Name.StartsWith("sprint974-memory")) {
       $actualScreenshots = @(Get-ChildItem -LiteralPath $ScreenshotDir -Filter "$Name-*.png")
       if ($actualScreenshots.Count -ne $requiredScreenshots.Count) {
         throw "Spatial project GUI validation should retain only three distinct checkpoints; found $($actualScreenshots.Count)."
+      }
+    } elseif ($Name.Contains("sprint992")) {
+      $requiredScreenshots = @("before", "turn-persisted",
+                               "context-settings-dialog", "restored-final")
+      $actualScreenshots = @(Get-ChildItem -LiteralPath $ScreenshotDir -Filter "$Name-*.png")
+      if ($actualScreenshots.Count -ne $requiredScreenshots.Count) {
+        throw "Schematic pin retrieval GUI validation should retain four distinct checkpoints; found $($actualScreenshots.Count)."
       }
     } elseif ($Name.StartsWith("sprint987-schematic-metadata")) {
       $requiredScreenshots = @("before", "turn-persisted", "projection-cleared")
@@ -584,7 +611,9 @@ if ($Name.StartsWith("sprint974-memory")) {
          -not ($reportData.entries | Where-Object { $_.schematic_symbol_retrieval_visible -eq $true }))) {
       throw "Mapped turn did not visibly include retrieved schematic net pins and related symbols."
     }
-    $requiredScreenshots = if ($Name.StartsWith("sprint986-project-spatial-index")) {
+    $requiredScreenshots = if ($Name.Contains("sprint992")) {
+      @("before", "turn-persisted", "context-settings-dialog", "restored-final")
+    } elseif ($Name.StartsWith("sprint986-project-spatial-index")) {
       @("before", "diagnostics-ready", "turn-persisted")
     } elseif ($Name.StartsWith("sprint987-schematic-metadata")) {
       @("before", "turn-persisted", "projection-cleared")
