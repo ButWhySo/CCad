@@ -2,7 +2,7 @@
 
 Check a box only after implementation and its required evidence exist.
 
-### Sprint 988 active slice — project-scoped durable memory (Tier 1, C2)
+### Sprint 988 completed slice — project-scoped durable memory (Tier 1, C2)
 
 - [x] Store project LTM in a stable, opaque namespace derived from the native project ID; keep conversation LTM and global episodic records isolated.
 - [x] Automatically retrieve matching project records across threads for that same project; reload on project switch and fail closed when project identity is absent.
@@ -11,7 +11,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Invalidate cached context and pending project-memory compaction plans when project identity changes.
 - [x] Add persistence, isolation, active retrieval, CRUD, reset, manifest, and stale-plan contracts; run focused tests, Pyright, Qt Release build, and full CTest (113/113).
 - [x] Update memory lifecycle, feature, codebase, progress, backlog, and sprint documentation; run redacted secret scan.
-- [ ] Commit verified changes, push `main`, verify remote SHA, then remove only the completed sprint branch.
+- [x] Commit verified changes, push `main`, verify remote SHA, then remove only the completed sprint branch.
 
 References checked: [LangGraph long-term memory](https://docs.langchain.com/oss/python/langgraph/add-memory) recommends durable cross-session storage in scoped namespaces; CCad retains its local JSON store and uses the native project ID as the scope identity. Project data must never be inferred from a display name or shared across projects. Semantic ranking, preference/correction evidence, embedding retrieval, and provider-tokenizer budgeting remain separate open work.
 
