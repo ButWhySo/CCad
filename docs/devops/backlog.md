@@ -1173,8 +1173,13 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   canonical thread store without losing thread identity or tool-call edges.
 - [ ] Sprint 976 follow-up: connect durable conversation listing/resume UI and
   verify checkpoint restoration against the per-thread model projection.
-- [ ] Sprint 976 follow-up: add ranked BM25/semantic retrieval and richer
-  evidence extraction; current TurnRecord search is bounded lexical overlap.
+- [x] Sprint 989: replace overlap-only memory/TurnRecord ranking with bounded
+  BM25, search same-project compact recaps before source-linked turns, preserve
+  exact conversation pointers, and reject weak matches. Offline contracts and
+  full build/CTest evidence are tracked in the Sprint 989 TODO/log.
+- [ ] Follow-up: semantic embeddings, deterministic fusion/diversity ranking,
+  preference/correction evidence, richer extraction, and provider-tokenizer
+  budgeting; do not imply BM25 alone provides semantic recall.
 - [x] Sprint 988: add project-scoped durable LTM storage/retrieval; safe project
   identity, isolation, manifest counts, namespace-aware compaction invalidation,
   and reset semantics are covered by offline contracts.

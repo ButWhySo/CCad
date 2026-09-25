@@ -2441,6 +2441,20 @@ def handle_human_message(req):
             "category": error.category, "secret_value_visible": False}})
         turn_records = []
         recap = {"source_turn_ids": [], "turns": []}
+    try:
+        project_history = conversation_store.search_project_history(
+            project_id, memory_query, exclude_thread_id=requested_thread,
+            limit=4, candidate_limit=500)
+        seen_turn_ids = {str(record.get("turn_id", "")) for record in turn_records}
+        for record in project_history:
+            if record.get("turn_id") not in seen_turn_ids and len(turn_records) < 8:
+                turn_records.append(record)
+                seen_turn_ids.add(str(record.get("turn_id", "")))
+    except ConversationStoreError as error:
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "text": "Project-scoped history search is unavailable; no cross-thread history was added.",
+            "kind": "project_history_retrieval_unavailable",
+            "category": error.category, "secret_value_visible": False}})
     active_editor, selected_objects = project_retrieval_signals(raw_context)
     try:
         project_context = json.loads(raw_context) if raw_context else {}
@@ -2466,7 +2480,8 @@ def handle_human_message(req):
         with telemetry_runtime.observation("memory.retrieve", "retriever", {
                 "signal_digest": signals["digest"],
                 "enabled_tier_count": str(sum(memory_manager.enabled.values())),
-                "retrieval_mode": "deterministic_lexical",
+                "retrieval_mode": "bounded_bm25_project_scoped",
+                "historical_turn_count": str(len(turn_records)),
             }) as retrieval_observation:
             turn_context = context_broker.prepare(
                 memory_manager, thread_id=requested_thread,

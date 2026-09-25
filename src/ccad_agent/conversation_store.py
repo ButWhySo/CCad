@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from lexical_retrieval import rank_documents
 
 
 _WORDS = re.compile(r"[a-z0-9_]{2,}", re.IGNORECASE)
@@ -555,15 +556,21 @@ class ConversationStore:
         db = self._connect()
         try:
             placeholders = ",".join("?" for _ in words)
-            rows = db.execute(f"""SELECT r.record_json,COUNT(*) AS overlap
+            rows = db.execute(f"""SELECT r.record_json
                 FROM turn_terms t JOIN turn_records r ON r.turn_id=t.turn_id
                 WHERE t.thread_id=? AND t.term IN ({placeholders})
-                GROUP BY r.turn_id ORDER BY overlap DESC,r.created_at DESC LIMIT ?""",
-                [str(thread_id), *words, max(0, min(20, int(limit)))]).fetchall()
+                GROUP BY r.turn_id ORDER BY r.created_at DESC LIMIT 256""",
+                [str(thread_id), *words]).fetchall()
+            records = [json.loads(row["record_json"]) for row in rows]
+            ranked = rank_documents(query, [{"record": record,
+                "text": record.get("search_text", "")} for record in records],
+                min_matches=min(2, len(words)))
             result = []
-            for row in rows:
-                record = json.loads(row["record_json"])
-                record["retrieval_overlap_terms"] = int(row["overlap"])
+            for item in ranked[:max(0, min(20, int(limit)))]:
+                record = item["document"]["record"]
+                record["retrieval_overlap_terms"] = len(item["matched_terms"])
+                record["retrieval_bm25_score"] = round(item["score"], 6)
+                record["retrieval_matched_terms"] = item["matched_terms"]
                 result.append(record)
             return result
         except (sqlite3.Error, json.JSONDecodeError, TypeError, ValueError) as error:
@@ -581,6 +588,64 @@ class ConversationStore:
                 "source_turn_ids": [], "turns": []}
         except (sqlite3.Error, json.JSONDecodeError, TypeError) as error:
             raise ConversationStoreError("thread_recap_unavailable") from error
+        finally:
+            db.close()
+
+    def search_project_history(self, project_id: str, query: str, *,
+                               exclude_thread_id="", limit=4,
+                               candidate_limit=500) -> list[dict[str, Any]]:
+        """Retrieve source-linked prior turns after a hard project scope filter."""
+        project_id = str(project_id or "").strip()
+        words = sorted(set(_WORDS.findall(str(query).casefold())))[:32]
+        if not project_id or not words:
+            return []
+        db = self._connect()
+        try:
+            recaps = db.execute("""SELECT r.thread_id,r.recap_json
+                FROM thread_recaps r JOIN threads t ON t.thread_id=r.thread_id
+                WHERE t.project_id=? AND r.thread_id<>?
+                ORDER BY r.updated_at DESC,r.thread_id LIMIT ?""",
+                (project_id, str(exclude_thread_id),
+                 max(1, min(500, int(candidate_limit))))).fetchall()
+            documents = []
+            for row in recaps:
+                recap = json.loads(row["recap_json"])
+                turns = recap.get("turns", [])
+                documents.append({"thread_id": str(row["thread_id"]),
+                    "turn_ids": [str(turn.get("turn_id", "")) for turn in turns
+                                 if isinstance(turn, dict) and turn.get("turn_id")],
+                    "text": " ".join(" ".join(str(turn.get(key, ""))
+                        for key in ("user_request_summary", "assistant_summary",
+                                    "outcome", "tool_ids", "explicit_constraints",
+                                    "referenced_entities")) for turn in turns
+                        if isinstance(turn, dict))})
+            ranked_threads = rank_documents(query, documents,
+                                            min_matches=min(2, len(words)))
+            selected_ids = []
+            for thread in ranked_threads[:16]:
+                for turn_id in thread["document"]["turn_ids"]:
+                    if turn_id not in selected_ids:
+                        selected_ids.append(turn_id)
+            if not selected_ids:
+                return []
+            placeholders = ",".join("?" for _ in selected_ids)
+            rows = db.execute(f"""SELECT record_json FROM turn_records
+                WHERE project_id=? AND turn_id IN ({placeholders})""",
+                [project_id, *selected_ids]).fetchall()
+            records = [json.loads(row[0]) for row in rows]
+            ranked_turns = rank_documents(query, [{"record": record,
+                "text": record.get("search_text", "")} for record in records],
+                min_matches=min(2, len(words)))
+            results = []
+            for item in ranked_turns[:max(0, min(12, int(limit)))]:
+                record = item["document"]["record"]
+                record["retrieval_scope"] = "active_project"
+                record["retrieval_bm25_score"] = round(item["score"], 6)
+                record["retrieval_matched_terms"] = item["matched_terms"]
+                results.append(record)
+            return results
+        except (sqlite3.Error, json.JSONDecodeError, TypeError, ValueError) as error:
+            raise ConversationStoreError("project_history_search_failed") from error
         finally:
             db.close()
 

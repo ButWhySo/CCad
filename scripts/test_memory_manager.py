@@ -19,6 +19,10 @@ with tempfile.TemporaryDirectory() as temp:
     manager.add("Keep the return path short", tier="ltm", title="routing")
     manager.add("Current placement target is U3", tier="stm", title="goal")
     assert [item["title"] for item in manager.retrieve("return path")] == ["routing"]
+    ranked_memories, memory_sources = manager.retrieve_with_metadata("return path")
+    assert ranked_memories[0]["title"] == "routing"
+    assert memory_sources[0]["bm25_score"] > 0
+    assert memory_sources[0]["matched_terms"] == ["return", "path"]
     assert manager.state("ltm")["runtime_entries"] == 1
     manager.disable("ltm")
     assert manager.state("ltm")["runtime_entries"] == 0

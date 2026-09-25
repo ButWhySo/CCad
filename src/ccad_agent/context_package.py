@@ -189,7 +189,8 @@ def _turn_payload(records: Iterable[dict]) -> list[dict]:
                 summary[name] = text
         tools = [str(value)[:120] for value in record.get("tool_ids", [])
                  if isinstance(value, str)][:24]
-        result.append({"turn_id": _safe_text(record.get("turn_id"), 100),
+        result.append({"thread_id": _safe_text(record.get("thread_id"), 100),
+                       "turn_id": _safe_text(record.get("turn_id"), 100),
                        "source_message_ids": sources, "summary": summary, "tools": tools})
     return result[:12]
 
@@ -219,7 +220,8 @@ def _recap_payload(recap: dict | None) -> dict:
             "revision_before": _safe_text(item.get("project_revision_before"), 100),
             "revision_after": _safe_text(item.get("project_revision_after"), 100),
         })
-    return {"source_turn_ids": [str(value)[:100] for value in
+    return {"thread_id": _safe_text(recap.get("thread_id"), 100),
+            "source_turn_ids": [str(value)[:100] for value in
             recap.get("source_turn_ids", [])[:6] if isinstance(value, str)],
             "turns": turns}
 
@@ -432,7 +434,8 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
         item = retrieval_by_id.get(entry["id"])
         if item is not None:
             included_retrieval.append({key: item[key] for key in
-                                       ("rank", "tier", "query_overlap_terms", "namespace_hash")
+                                       ("rank", "tier", "query_overlap_terms", "bm25_score",
+                                        "matched_terms", "namespace_hash")
                                        if key in item})
     return {
         "content": encoded,

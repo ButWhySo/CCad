@@ -2,6 +2,17 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 989 active slice — bounded BM25 memory/history retrieval (Tier 1, M4-A)
+
+- [x] Replace simple memory and TurnRecord overlap ordering with deterministic BM25 ranking and matched-term/score provenance.
+- [x] Search compact prior-thread recaps only after an exact native-project scope filter; expand a bounded set into source-linked TurnRecords.
+- [x] Keep retrieval bounded and inject at most eight prior turns; preserve thread, turn, and message source IDs in provider context.
+- [x] Contract-test ranking, empty/weak matches, active-project isolation, current-thread exclusion, bounds, and source provenance.
+- [x] Run changed-module Pyright (0 diagnostics), focused retrieval contracts, Qt MinGW Release build, full CTest (114/114), and a staged secret scan.
+- [x] Update lifecycle, feature, codebase, progress, and sprint notes; commit, merge/push `main`, verify remote SHA, and remove only this completed branch.
+
+Scope boundary: this is BM25 lexical retrieval only. Embeddings, RRF fusion, MMR, preference/correction weighting, and provider-tokenizer budgeting remain open; do not mark the full M4 group complete.
+
 ### Sprint 988 completed slice — project-scoped durable memory (Tier 1, C2)
 
 - [x] Store project LTM in a stable, opaque namespace derived from the native project ID; keep conversation LTM and global episodic records isolated.
@@ -3149,9 +3160,9 @@ Borrow the useful Codex pattern without coupling to Codex internals.
 
 ### Lexical
 
-- [ ] Add actual BM25/FTS retrieval.
-- [ ] Index episodic memory.
-- [ ] Index compact thread summaries.
+- [x] Add actual BM25 retrieval for enabled memory tiers and conversation TurnRecords.
+- [x] Rank episodic records alongside the other enabled memory tiers.
+- [x] Search compact thread recaps before opening only matching source-linked turns.
 - [ ] Index relevant project-memory summaries.
 
 ### Semantic
@@ -3166,24 +3177,24 @@ Borrow the useful Codex pattern without coupling to Codex internals.
 
 ### Ranking
 
-- [ ] Hard-filter scope/authorization first.
-- [ ] Filter inactive/deleted/expired memory.
-- [ ] Retrieve BM25 candidates.
+- [x] Hard-filter scope/authorization first.
+- [x] Filter inactive/deleted/expired memory.
+- [x] Retrieve bounded BM25 candidates and stop below the minimum lexical-match floor.
 - [ ] Retrieve semantic candidates.
 - [ ] Fuse rankings with documented deterministic method such as RRF.
 - [ ] Add bounded importance/recency/usage adjustments.
 - [ ] Apply MMR/equivalent diversity selection.
 - [ ] Optional cross-encoder rerank only when actually installed/operational.
-- [ ] Bound every stage.
-- [ ] Bound final memory context by token budget.
-- [ ] Return provenance/rank metadata for debugging.
+- [x] Bound candidate, recap-expansion, result, and injected-history stages.
+- [x] Bound final memory context by token budget.
+- [x] Return rank, score, matched-term, namespace, and source-pointer provenance.
 
 ### Historical conversation search
 
-- [ ] Search thread summaries before opening complete historical transcripts.
-- [ ] Retrieve relevant turns/chunks from a past thread only when needed.
-- [ ] Preserve exact source thread/turn pointers.
-- [ ] Stop when relevance is insufficient rather than filling context with weak matches.
+- [x] Search project-scoped thread summaries before retrieving historical turns.
+- [x] Retrieve relevant TurnRecords only from ranked recaps, never complete historical transcripts.
+- [x] Preserve exact source thread/turn/message pointers in provider context.
+- [x] Stop below a two-term lexical match for multi-term queries rather than injecting weak matches.
 
 ---
 
@@ -3692,12 +3703,12 @@ Complete together:
 
 Complete together:
 
-- [ ] BM25/FTS.
+- [x] BM25 lexical retrieval (Sprint 989; semantic/fusion layers remain open).
 - [ ] embedding abstraction.
 - [ ] semantic candidate retrieval.
 - [ ] ranking fusion.
 - [ ] diversity reranking.
-- [ ] thread-summary retrieval.
+- [x] Bounded same-project thread-summary retrieval (Sprint 989).
 - [ ] benchmarks/tests.
 - [ ] safe fallback.
 

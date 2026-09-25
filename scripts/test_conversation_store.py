@@ -7,6 +7,7 @@ from tempfile import TemporaryDirectory
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "ccad_agent"))
 MODULE = Path(__file__).resolve().parents[1] / "src" / "ccad_agent" / "conversation_store.py"
 SPEC = importlib.util.spec_from_file_location("ccad_conversation_store", MODULE)
 assert SPEC is not None and SPEC.loader is not None
@@ -49,7 +50,7 @@ def run():
 
         record = store.record_turn(
             thread_a, "turn-1", "Place U3 near the USB connector.", loaded,
-            outcome="completed", project_revision_before="rev-1",
+            outcome="completed", project_id="project-a", project_revision_before="rev-1",
             project_revision_after="rev-1")
         assert record["source_message_ids"] == ["user-1", "assistant-1", "tool-1", "assistant-2"]
         assert record["tool_ids"] == ["project.inspect"]
@@ -58,6 +59,41 @@ def run():
         assert record["assistant_summary"] == "U3 is 12 mm from the USB connector."
         assert store.search_turn_records(thread_a, "USB connector U3")
         assert not store.search_turn_records(thread_b, "USB connector U3")
+
+        prior_thread = "thread-prior"
+        prior_messages = [HumanMessage(content="Preserve GND return clearance around U3",
+                                      id="prior-user"),
+                          AIMessage(content="GND return clearance around U3 was preserved",
+                                    id="prior-answer")]
+        store.append_messages(prior_thread, prior_messages, turn_id="prior-turn",
+                              project_id="project-a")
+        store.record_turn(prior_thread, "prior-turn",
+            "Preserve GND return clearance around U3", prior_messages,
+            outcome="completed", project_id="project-a")
+        other_project = "thread-other-project"
+        foreign_messages = [HumanMessage(content="Preserve GND return clearance around U3",
+                                         id="foreign-user"),
+                            AIMessage(content="Foreign project match", id="foreign-answer")]
+        store.append_messages(other_project, foreign_messages, turn_id="foreign-turn",
+                              project_id="project-b")
+        store.record_turn(other_project, "foreign-turn",
+            "Preserve GND return clearance around U3", foreign_messages,
+            outcome="completed", project_id="project-b")
+        weak_thread = "thread-weak"
+        weak_messages = [HumanMessage(content="GND routing note", id="weak-user"),
+                         AIMessage(content="Single shared term only", id="weak-answer")]
+        store.append_messages(weak_thread, weak_messages, turn_id="weak-turn",
+                              project_id="project-a")
+        store.record_turn(weak_thread, "weak-turn", "GND routing note", weak_messages,
+                          outcome="completed", project_id="project-a")
+        scoped = store.search_project_history("project-a",
+            "GND return clearance U3", exclude_thread_id=thread_a)
+        assert [item["turn_id"] for item in scoped] == ["prior-turn"]
+        assert scoped[0]["retrieval_scope"] == "active_project"
+        assert scoped[0]["source_message_ids"] == ["prior-user", "prior-answer"]
+        assert store.search_project_history("project-a", "GND return",
+                                            exclude_thread_id="thread-prior") == []
+        assert store.search_project_history("", "GND") == []
 
         secret = HumanMessage(content="api_key=fixture-secret-value", id="secret-1")
         store.append_messages(thread_a, [secret], turn_id="turn-secret")

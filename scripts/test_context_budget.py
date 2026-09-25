@@ -14,6 +14,8 @@ assert SPEC is not None and SPEC.loader is not None
 CONTEXT = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(CONTEXT)
 AGENT_DIR = MODULE.parent
+if str(AGENT_DIR) not in sys.path:
+    sys.path.insert(0, str(AGENT_DIR))
 
 
 def _load_agent_module(name):
@@ -86,6 +88,7 @@ class ContextBudgetTests(unittest.TestCase):
             [{"id": "m1", "tier": "stm", "scope": "run", "content": "Keep vias clear."}],
             [Message("old turn")], char_limit=8192,
             memory_retrieval=[{"entry_id": "m1", "rank": 1, "tier": "stm", "query_overlap_terms": 2,
+                               "bm25_score": 1.25, "matched_terms": ["vias", "clear"],
                                "namespace_hash": "ab12"}],
             memory_runtime={"stm": {"enabled": True, "runtime_entries": 1,
                                      "persistent_entries": 1, "loaded_into_process": True,
@@ -96,19 +99,22 @@ class ContextBudgetTests(unittest.TestCase):
         self.assertFalse(meta["history_in_context_package"])
         self.assertTrue(meta["history_sent_as_provider_messages"])
         self.assertEqual(meta["memory_tier_counts"], {"stm": 1})
+        self.assertEqual(meta["memory_retrieval"][0]["bm25_score"], 1.25)
         self.assertTrue(meta["memory_runtime"]["stm"]["enabled"])
         self.assertEqual(meta["memory_retrieval"][0]["rank"], 1)
         self.assertIn("Keep vias clear", package["content"])
 
     def test_retrieved_turn_context_keeps_source_message_provenance(self):
         package = CONTEXT.build_context_package("{}", [], [], char_limit=4096,
-            turn_records=[{"turn_id": "turn-1", "source_message_ids": ["msg-1"],
+            turn_records=[{"thread_id": "thread-1", "turn_id": "turn-1",
+                           "source_message_ids": ["msg-1"],
                            "user_request_summary": "Place U3 beside USB",
                            "assistant_summary": "Placed U3", "outcome": "completed",
                            "tool_ids": ["project.inspect"]}])
         envelope = json.loads(package["content"].split("\n", 1)[1])
         self.assertEqual(package["metadata"]["prior_turn_count"], 1)
         self.assertIn("retrieved_conversation_turns", package["metadata"]["sources"])
+        self.assertEqual(envelope["prior_turns"][0]["thread_id"], "thread-1")
         self.assertEqual(envelope["prior_turns"][0]["source_message_ids"], ["msg-1"])
         self.assertIn("Place U3 beside USB", package["content"])
 
@@ -123,6 +129,7 @@ class ContextBudgetTests(unittest.TestCase):
         envelope = json.loads(package["content"].split("\n", 1)[1])
         self.assertEqual(package["metadata"]["thread_recap_turn_count"], 1)
         self.assertIn("thread_recap", package["metadata"]["sources"])
+        self.assertEqual(envelope["thread_recap"]["thread_id"], "thread-1")
         self.assertEqual(envelope["thread_recap"]["source_turn_ids"], ["turn-1"])
 
     def test_overflow_keeps_valid_json_and_reports_exact_omissions(self):
@@ -229,12 +236,13 @@ class ContextBudgetTests(unittest.TestCase):
             manager.add("USB power connector on F.Cu", tier="ltm")
             manager.add("USB project uses 5V input", tier="episodic")
             entries, provenance = manager.retrieve_with_metadata("USB power return")
-            self.assertEqual(len(entries), 3)
-            self.assertEqual([entry["tier"] for entry in entries],
-                             ["stm", "ltm", "episodic"])
-            self.assertEqual([item["rank"] for item in provenance], [1, 2, 3])
-            self.assertEqual([item["query_overlap_terms"] for item in provenance],
-                             [3, 2, 1])
+            self.assertEqual(len(entries), 2)
+            self.assertEqual({entry["tier"] for entry in entries}, {"stm", "ltm"})
+            self.assertEqual([item["rank"] for item in provenance], [1, 2])
+            self.assertTrue(all(item["bm25_score"] > 0 for item in provenance))
+            self.assertTrue(all(item["matched_terms"] for item in provenance))
+            episodic, _ = manager.retrieve_with_metadata("5V input")
+            self.assertEqual([item["tier"] for item in episodic], ["episodic"])
             self.assertNotIn("thread-7", json.dumps(provenance))
             self.assertNotIn("run-42", json.dumps(provenance))
             self.assertEqual(manager.state("ltm")["persistent_entries"], 1)

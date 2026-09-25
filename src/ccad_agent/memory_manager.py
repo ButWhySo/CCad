@@ -7,6 +7,8 @@ import re
 from collections import OrderedDict
 from datetime import datetime, timezone
 from typing import Any
+
+from lexical_retrieval import rank_documents
 from uuid import uuid4
 
 from memory_store import MemoryStore, MemoryStoreError
@@ -178,28 +180,33 @@ class MemoryManager:
         """Return ranked entries plus content-free provenance for diagnostics."""
         self._prune_expired()
         candidates = []
-        query_words = set(self._word.findall(str(query).lower()))
         for tier_index, tier in enumerate(self.TIERS):
             if not self.enabled[tier] or self.storage_errors.get(tier):
                 continue
             for entry_index, entry in enumerate(self.runtime[tier]):
-                text = f"{entry.get('title', '')} {entry.get('content', '')}".lower()
-                overlap = len(query_words.intersection(self._word.findall(text)))
-                if query_words and overlap == 0:
-                    continue
-                recency = entry.get("created_at", "")
-                candidates.append((overlap, recency, -tier_index, entry_index,
-                                   tier, entry))
-        candidates.sort(key=lambda item: item[:4], reverse=True)
-        selected = candidates[:max(0, min(32, int(limit)))]
-        entries = [item[5] for item in selected]
+                candidates.append({"tier": tier, "tier_index": tier_index,
+                                   "entry_index": entry_index, "entry": entry,
+                                   "text": f"{entry.get('title', '')} {entry.get('content', '')}",
+                                   "created_at": str(entry.get("created_at", ""))})
+        query_term_count = len(set(self._word.findall(str(query).casefold())))
+        ranked = rank_documents(query, candidates,
+                                min_matches=min(2, query_term_count))
+        ranked.sort(key=lambda item: (item["score"],
+                                      -self.TIERS.index(item["document"]["tier"]),
+                                      item["document"]["created_at"],
+                                      item["document"]["entry_index"]), reverse=True)
+        selected = ranked[:max(0, min(32, int(limit)))]
+        entries = [item["document"]["entry"] for item in selected]
         provenance = [{
-            "entry_id": item[5]["id"],
+            "entry_id": item["document"]["entry"]["id"],
             "rank": index + 1,
-            "tier": item[4],
-            "query_overlap_terms": item[0],
+            "tier": item["document"]["tier"],
+            "query_overlap_terms": len(item["matched_terms"]),
+            "bm25_score": round(item["score"], 6),
+            "matched_terms": item["matched_terms"],
             "namespace_hash": hashlib.sha256(
-                str(item[5].get("namespace", self.identities[item[4]])).encode()
+                str(item["document"]["entry"].get(
+                    "namespace", self.identities[item["document"]["tier"]])).encode()
             ).hexdigest()[:16],
         } for index, item in enumerate(selected)]
         return entries, provenance
