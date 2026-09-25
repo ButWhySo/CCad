@@ -73,6 +73,12 @@ int main() {
                   "multi-target harness initial wait");
   requireContains(target_harness, "[int]$PerTargetMilliseconds = 800",
                   "multi-target harness per-target wait");
+  requireContains(target_harness,
+                  "} elseif ($Name.Contains(\"sprint997\")) {\n      @(\"conversation_turn_visible\", \"pcb_geometry_relationships_visible\")",
+                  "Sprint 997 geometry validation uses its own conversation assertions");
+  requireContains(target_harness,
+                  "} elseif ($Name.Contains(\"sprint997\")) {\n      $requiredScreenshots = @(\"before\", \"turn-persisted\",",
+                  "Sprint 997 geometry validation checks its four feature-specific checkpoints");
 
   requireContains(interaction_harness, "[int]$GuiWaitSeconds = 7",
                   "live interaction harness preview wait");

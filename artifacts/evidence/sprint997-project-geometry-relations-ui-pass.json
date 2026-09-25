@@ -1,0 +1,99 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint997-project-geometry-relations-ui-pass",
+    "feature":  "Keep explicitly requested nearby PCB footprints and placement-region members in bounded Agent context despite exact-match noise; expose included relation counts in the live UI.",
+    "validation_mode":  "gui",
+    "interaction_plan":  "config/gui_interaction_plans/sprint997-project-geometry-relations.json",
+    "target_sequence":  "sprint987-schematic-metadata-sprint997-project-geometry-relations-ui-pass",
+    "visual_validation":  "required",
+    "started_utc":  "2026-09-25T16:23:55.1837211Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.79 log=artifacts/evidence/sprint997-project-geometry-relations-ui-pass/preflight.log",
+                      "finished_utc":  "2026-09-25T16:23:56.0668738Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint997-project-geometry-relations-complete; source timestamps precede test log",
+                      "finished_utc":  "2026-09-25T16:24:25.5853034Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint997-project-geometry-relations-complete; 115/115 passed",
+                      "finished_utc":  "2026-09-25T16:24:25.5853034Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=21.47 log=artifacts/evidence/sprint997-project-geometry-relations-ui-pass/ui_harness.log",
+                      "finished_utc":  "2026-09-25T16:24:47.0593844Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=10; screenshots=4",
+                      "finished_utc":  "2026-09-25T16:24:47.2364945Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-09-25T16:24:47.3695521Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint997-project-geometry-relations-ui-pass/build.log",
+                                         "sha256":  "E1CC1DD76F4C907CEB1DF00A5A1A3021D74BF09CA0E329341563C96C4DE2F9F1"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint997-project-geometry-relations-ui-pass/ctest.log",
+                                         "sha256":  "4D29AF44AE4BC4A271C67A54F4FF2F2634256F073EA20CC777EEAD4385EBC553"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint997-project-geometry-relations-ui-pass/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint997-project-geometry-relations-ui-pass/sprint987-schematic-metadata-sprint997-project-geometry-relations-ui-pass.stderr.log",
+                                         "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint997-project-geometry-relations-ui-pass/sprint987-schematic-metadata-sprint997-project-geometry-relations-ui-pass.stdout.log",
+                                         "sha256":  "FE65A33A5DB5905BD5760C051DC4615D53EFE8749586549D1BB08AB0F3A57578"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint997-project-geometry-relations-ui-pass/sprint987-schematic-metadata-sprint997-project-geometry-relations-ui-pass-before.png",
+                                         "sha256":  "0772B9150125A6A3C0419D8161CDD70B64155B7DA3B1A6EB46356470F3D60CCB"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint997-project-geometry-relations-ui-pass/sprint987-schematic-metadata-sprint997-project-geometry-relations-ui-pass-context-settings-dialog.png",
+                                         "sha256":  "3503ED9589E6A5BD3A6B2AC0C25091BC54CAC2DB467EC52F7215599ECD0BE4BF"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint997-project-geometry-relations-ui-pass/sprint987-schematic-metadata-sprint997-project-geometry-relations-ui-pass-restored-final.png",
+                                         "sha256":  "155D24C75490CEB481694EDEB4375BDAA18FA988385FA14FC2C6309185C38324"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint997-project-geometry-relations-ui-pass/sprint987-schematic-metadata-sprint997-project-geometry-relations-ui-pass-target-sequence.json",
+                                         "sha256":  "589FA0A5F77005DEA1A1AFE82A42ED06196EE7F0AC966BF4F77F8DC9268FF381"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint997-project-geometry-relations-ui-pass/sprint987-schematic-metadata-sprint997-project-geometry-relations-ui-pass-turn-persisted.png",
+                                         "sha256":  "0FA85A74AF69A9C5046E7D4F5D4524749E4C8C367D3AA3F08D43DE3FF326E672"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint997-project-geometry-relations-ui-pass/ui_harness.log",
+                                         "sha256":  "F1FFFD106987D0FA6570A3F99152268FBEA8E93028C2BF9807EC8C8A0CA80A04"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-25T16:24:47.4677690Z"
+}

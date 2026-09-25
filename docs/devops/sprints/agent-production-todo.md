@@ -2,6 +2,19 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 997 active slice — PCB-only geometry relationships (Tier 1, C3)
+
+- [x] Keep board and schematic coordinates in separate spatial domains; retrieval contracts cover both coordinate-space exclusions.
+- [x] Retrieve nearby PCB footprints from an exact PCB-footprint anchor; tests verify provenance and geometric distance.
+- [x] Expand an exact placement region to intersecting typed PCB objects; tests verify inclusion, exclusion, and moved-region refresh.
+- [x] Preserve relation provenance and included counts through bounded context, IPC, and Agent status; the UI reports included nearby-footprint and region-member counts.
+- [x] Cover inclusion, exclusion, movement, incrementality, and bounded-context behavior with focused Python contracts and full CTest (115/115).
+- [x] Verify the disposable-board flow with the official mapped GUI harness; inspect all four screenshots and stdout/stderr logs. Manifest: `artifacts/evidence/sprint997-project-geometry-relations-ui-pass.json` (SHA-256 `104DC06FB7BA39509639D3BA7B49FE4D82BF5871AEC945E2B067C73C8B965C16`).
+- [x] Update handover docs and feature/progress records; `git diff --check` passes.
+- [x] Run redacted tracked-tree and staged-addition credential scans before commit; zero staged matches, with only two pre-existing documentation examples and one untouched synthetic fixture in the full tracked tree.
+- [ ] Commit and push the verified slice.
+- [ ] Inspect hosted CI status for the pushed SHA.
+
 ### Sprint 996 active slice — reconcile visual-validation replacement proposal
 
 - [x] Read the supplied replacement set in full and compare each proposed file with the current workflow, verifier, app-owned UI-map harness, evidence checker, commit hook, CI, and ignore rules.
@@ -4406,11 +4419,11 @@ Represent/traverse relationships such as:
 - [x] net -> zones.
 - [x] object -> layer for every currently serialized PCB object collection (Sprint 986 contract coverage; future model types require explicit additions).
 - [x] object -> DRC/ERC diagnostic.
-- [ ] component -> nearby PCB components.
+- [x] component -> nearby PCB components (exact PCB footprint anchors and board-coordinate footprint-AABB distance; Sprint 997 verified).
 - [ ] component -> associated decoupling/passive components where deterministically derivable.
 - [x] schematic net -> PCB net where serialized IDs match; association does not assert physical continuity.
 - [x] serialized schematic page -> symbols; file-path and hierarchy identity coverage remains separate.
-- [ ] region -> objects.
+- [x] region -> objects (exact placement-region identity and intersecting board AABBs; Sprint 997 verified).
 - [ ] functional block -> components/nets.
 - [ ] candidate/proposal -> affected objects.
 

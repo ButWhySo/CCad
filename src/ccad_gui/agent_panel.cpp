@@ -1430,6 +1430,10 @@ void AgentPanel::handlePythonOutput() {
         const int project_diagnostic_count =
             params["project_retrieval_diagnostic_count"].toInt();
         const int pcb_layer_count = params["project_retrieval_layer_count"].toInt();
+        const int nearby_pcb_component_count =
+            params["project_retrieval_near_component_count"].toInt();
+        const int placement_region_member_count =
+            params["project_retrieval_region_member_count"].toInt();
         QString schematic_detail;
         if (schematic_pin_count > 0)
           schematic_detail += QString(" | %1 schematic pins").arg(schematic_pin_count);
@@ -1446,6 +1450,12 @@ void AgentPanel::handlePythonOutput() {
         if (project_diagnostic_count > 0)
           schematic_detail += QString(" | %1 DRC/ERC diagnostics")
                                   .arg(project_diagnostic_count);
+        if (nearby_pcb_component_count > 0)
+          schematic_detail += QString(" | %1 nearby PCB components")
+                                  .arg(nearby_pcb_component_count);
+        if (placement_region_member_count > 0)
+          schematic_detail += QString(" | %1 placement-region objects")
+                                  .arg(placement_region_member_count);
         addActivityEvent("context", "Context package prepared",
                          QString("v%1 | %2 chars | ~%3 tokens | %4 memories | %5 history | %6")
                              .arg(context_schema_version_)

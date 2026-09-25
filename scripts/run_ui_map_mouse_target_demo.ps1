@@ -130,6 +130,35 @@ if ($Name.StartsWith("sprint982-multilayer-project-context") -or
       size = [pscustomobject]@{ width_nm = 40000000; height_nm = 30000000 }
       pins = @()
     }) -Force
+    if ($Name.Contains("sprint997")) {
+      if (-not $fixture.board.footprints) {
+        $fixture.board | Add-Member -MemberType NoteProperty -Name footprints -Value @() -Force
+      }
+      if (-not $fixture.board.placement_regions) {
+        $fixture.board | Add-Member -MemberType NoteProperty -Name placement_regions -Value @() -Force
+      }
+      $fixture.board.footprints += [pscustomobject]@{
+        reference = "JAC1"
+        value = "AC input"
+        footprint_name = "Connector_PinHeader_2.54mm"
+        layer_id = "F.Cu"
+        position = [pscustomobject]@{ x_nm = 8000000; y_nm = 17000000 }
+      }
+      $fixture.board.footprints += [pscustomobject]@{
+        reference = "C_NEAR"
+        value = "100 nF"
+        footprint_name = "C_0402"
+        layer_id = "F.Cu"
+        position = [pscustomobject]@{ x_nm = 10000000; y_nm = 17000000 }
+      }
+      $fixture.board.placement_regions = @($fixture.board.placement_regions) + @([pscustomobject]@{
+        id = "PR_SPRINT997"
+        kind = "placement"
+        area = [pscustomobject]@{
+          x_nm = 7000000; y_nm = 16000000; width_nm = 5000000; height_nm = 2000000
+        }
+      })
+    }
     if ($Name.Contains("sprint993")) {
       if (-not $fixture.board.groups) {
         $fixture.board | Add-Member -MemberType NoteProperty -Name groups -Value @() -Force
@@ -150,6 +179,13 @@ if ($Name.StartsWith("sprint982-multilayer-project-context") -or
     }
     [IO.File]::WriteAllText($isolatedProjectPath,
       (ConvertTo-Json -InputObject $fixture -Depth 64), [Text.UTF8Encoding]::new($false))
+    if ($Name.Contains("sprint997")) {
+      $fixtureCheck = Get-Content -Raw -LiteralPath $isolatedProjectPath | ConvertFrom-Json
+      if (@($fixtureCheck.board.footprints | Where-Object { $_.reference -in @("JAC1", "C_NEAR") }).Count -ne 2 -or
+          @($fixtureCheck.board.placement_regions | Where-Object { $_.id -eq "PR_SPRINT997" }).Count -ne 1) {
+        throw "Sprint 997 disposable board fixture did not serialize its proximity and placement-region records."
+      }
+    }
   } elseif ($Name.StartsWith("sprint985-project-reference-graph") -or
             $Name.StartsWith("sprint986-project-spatial-index")) {
     $fixture = Get-Content -Raw -LiteralPath $isolatedProjectPath | ConvertFrom-Json
@@ -321,7 +357,8 @@ if ($Name.StartsWith("sprint980-project-retrieval") -or
   $env:CCAD_AGENT_CONVERSATION_DB = Join-Path $isolatedMemoryProfile "agent_conversations.sqlite3"
   $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
   $env:CCAD_AGENT_THREAD_ID = if ($Name.StartsWith("sprint987-schematic-metadata")) {
-    if ($Name.Contains("sprint993")) { "sprint993-functional-block-ui-thread" }
+    if ($Name.Contains("sprint997")) { "sprint997-geometry-relations-ui-thread" }
+    elseif ($Name.Contains("sprint993")) { "sprint993-functional-block-ui-thread" }
     else { "sprint987-schematic-metadata-ui-thread" }
   } elseif ($Name.StartsWith("sprint986-project-spatial-index")) {
     "sprint986-project-spatial-index-ui-thread"
@@ -351,6 +388,22 @@ try {
     -ArgumentList @("--test-ui-map-target-sequence", $ProjectPath, $ScreenshotDir, $Name,
                     [string]$InitialLoadMilliseconds, [string]$PerTargetMilliseconds) `
     -PassThru -Wait -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
+  if ($Name.Contains("sprint997")) {
+    $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
+    $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
+    $geometryProof = @($reportData.entries | Where-Object {
+      $_.pcb_geometry_relationships_visible -eq $true
+    } | Select-Object -First 1)
+    $turnProof = @($reportData.entries | Where-Object {
+      $_.conversation_turn_visible -eq $true
+    } | Select-Object -First 1)
+    if ($geometryProof.Count -ne 1 -or $turnProof.Count -ne 1) {
+      throw "Mapped Agent context did not prove nearby-footprint and placement-region counts. Report: $reportPath"
+    }
+    if (Select-String -LiteralPath $stdoutLog -Pattern 'provider_request_sent":true' -Quiet) {
+      throw "Provider request occurred during the isolated geometry-context validation."
+    }
+  }
   if ($Name.StartsWith("sprint982-multilayer-project-context")) {
     $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
     $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
@@ -493,6 +546,8 @@ if ($Name.StartsWith("sprint974-memory")) {
     } elseif ($Name.Contains("sprint993")) {
       @("conversation_turn_visible", "schematic_metadata_serialized",
         "schematic_metadata_retrieved", "functional_block_visible")
+    } elseif ($Name.Contains("sprint997")) {
+      @("conversation_turn_visible", "pcb_geometry_relationships_visible")
     } elseif ($Name.StartsWith("sprint987-schematic-metadata")) {
       @("conversation_turn_visible", "schematic_metadata_serialized",
         "schematic_metadata_retrieved")
@@ -523,6 +578,13 @@ if ($Name.StartsWith("sprint974-memory")) {
       if ($actualScreenshots.Count -ne $requiredScreenshots.Count) {
         throw "Schematic pin retrieval GUI validation should retain four distinct checkpoints; found $($actualScreenshots.Count)."
       }
+    } elseif ($Name.Contains("sprint997")) {
+      $requiredScreenshots = @("before", "turn-persisted",
+                               "context-settings-dialog", "restored-final")
+      $actualScreenshots = @(Get-ChildItem -LiteralPath $ScreenshotDir -Filter "$Name-*.png")
+      if ($actualScreenshots.Count -ne $requiredScreenshots.Count) {
+        throw "Sprint 997 geometry retrieval GUI validation should retain four distinct checkpoints; found $($actualScreenshots.Count)."
+      }
     } elseif ($Name.StartsWith("sprint987-schematic-metadata")) {
       $requiredScreenshots = @("before", "turn-persisted", "projection-cleared")
       $actualScreenshots = @(Get-ChildItem -LiteralPath $ScreenshotDir -Filter "$Name-*.png")
@@ -548,7 +610,8 @@ if ($Name.StartsWith("sprint974-memory")) {
     }
     $databaseVerifier = Join-Path $Root "scripts\verify_conversation_ui_state.py"
     $expectedThreadId = if ($Name.StartsWith("sprint987-schematic-metadata")) {
-      if ($Name.Contains("sprint993")) { "sprint993-functional-block-ui-thread" }
+      if ($Name.Contains("sprint997")) { "sprint997-geometry-relations-ui-thread" }
+      elseif ($Name.Contains("sprint993")) { "sprint993-functional-block-ui-thread" }
       else { "sprint987-schematic-metadata-ui-thread" }
     } elseif ($Name.StartsWith("sprint986-project-spatial-index")) {
       "sprint986-project-spatial-index-ui-thread"
@@ -635,6 +698,8 @@ if ($Name.StartsWith("sprint974-memory")) {
       throw "Mapped turn did not visibly include retrieved schematic net pins and related symbols."
     }
     $requiredScreenshots = if ($Name.Contains("sprint992") -or $Name.Contains("sprint993")) {
+      @("before", "turn-persisted", "context-settings-dialog", "restored-final")
+    } elseif ($Name.Contains("sprint997")) {
       @("before", "turn-persisted", "context-settings-dialog", "restored-final")
     } elseif ($Name.StartsWith("sprint986-project-spatial-index")) {
       @("before", "diagnostics-ready", "turn-persisted")

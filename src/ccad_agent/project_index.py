@@ -30,6 +30,18 @@ _STOP = {"the", "and", "for", "with", "from", "into", "near", "around", "show",
          "project", "objects", "please", "current", "existing", "all", "are", "is"}
 _MAX_INPUT_ENTITIES = 50_000
 _MAX_RESULT_TEXT = 400
+_BOARD_GEOMETRY_KINDS = frozenset({
+    "footprint", "pad", "track", "track_arc", "via", "zone", "graphic",
+    "board_text", "dimension", "keepout", "route_request", "board_group",
+    "target", "barcode", "board_table", "placement_region", "reference_image",
+    "teardrop", "board_net"})
+_SCHEMATIC_GEOMETRY_KINDS = frozenset({
+    "schematic_symbol", "schematic_pin", "schematic_wire", "schematic_label",
+    "schematic_net", "schematic_page", "schematic_sheet", "schematic_text",
+    "schematic_textbox",
+    "schematic_graphic", "schematic_junction", "schematic_no_connect",
+    "schematic_marker", "schematic_bus_entry", "schematic_bus", "schematic_rule_area",
+    "schematic_table", "schematic_bitmap", "schematic_group", "power_symbol"})
 
 
 def _normalize(value: Any) -> str:
@@ -1298,6 +1310,24 @@ class ProjectIndex:
                         found[neighbor].add(relation)
         return found
 
+    @staticmethod
+    def _coordinate_domain(query: str, active_layer: str, exact_ids: set[str],
+                           docs: dict[str, dict]) -> str:
+        if re.search(r"\b(schematic|sheet|symbol|pin|wire|netlist)\b", query,
+                     re.IGNORECASE):
+            return "schematic"
+        if active_layer or re.search(
+                r"\b(pcb|board|physical|footprint|track|via|copper|layer)\b",
+                query, re.IGNORECASE):
+            return "board"
+        if any(docs.get(uid, {}).get("fields", {}).get("kind") == "footprint"
+               for uid in exact_ids):
+            return "board"
+        if any(docs.get(uid, {}).get("fields", {}).get("kind") in
+               _SCHEMATIC_GEOMETRY_KINDS for uid in exact_ids):
+            return "schematic"
+        return "board"
+
     def retrieve(self, snapshot: Any, query: str, *, active_layer: str = "",
                  active_net: str = "", selected_objects=(), limit: int = 10) -> dict:
         if isinstance(snapshot, str):
@@ -1314,9 +1344,13 @@ class ProjectIndex:
                     "logical_net_semantics":
                         "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity",
                     "spatial_semantics": "axis_aligned_bounds_intersection_or_distance_only",
+                    "geometry_relationship_semantics":
+                        "pcb_coordinates_only; near_component_measures_anchor_position_to_footprint_bounds; region_member_means_axis_aligned_bounds_intersection",
                     "stats": {"index_state": "unavailable", "total_entities": 0,
                               "exact_match_count": 0, "lexical_match_count": 0,
                               "relationship_match_count": 0, "spatial_match_count": 0,
+                              "near_component_match_count": 0,
+                              "region_member_match_count": 0,
                               "omitted_count": 0}}
         stats = self._sync(snapshot)
         query = _safe(query, 3072)
@@ -1333,21 +1367,75 @@ class ProjectIndex:
         points = [] if query_box else _coordinates(query)
         nearby = bool(re.search(r"\b(near|around|nearby|within|radius|close\s+to|beside)\b",
                                 query, re.IGNORECASE))
+        coordinate_domain = self._coordinate_domain(query, active_layer, exact_ids,
+                                                    self._docs)
         if nearby and not points:
-            for uid in sorted(exact_ids)[:4]:
+            for uid in sorted(exact_ids):
+                kind = self._docs.get(uid, {}).get("fields", {}).get("kind", "")
+                if ((coordinate_domain == "board" and kind not in _BOARD_GEOMETRY_KINDS) or
+                        (coordinate_domain == "schematic" and
+                         kind not in _SCHEMATIC_GEOMETRY_KINDS)):
+                    continue
                 position = self._docs[uid]["fields"].get("position_mm")
                 if position:
                     points.append((position["x"], position["y"]))
+                if len(points) == 4:
+                    break
         radius = _radius(query)
         spatial_scores: dict[str, float] = {}
+        near_component_distances: dict[str, float] = {}
         anchor_ids = exact_ids if nearby and not _coordinates(query) else set()
         if query_box:
-            spatial_scores.update(self._spatial_box(query_box))
+            spatial_scores.update({uid: distance for uid, distance in
+                                   self._spatial_box(query_box)
+                                   if self._docs[uid]["fields"]["kind"] in
+                                   (_BOARD_GEOMETRY_KINDS if coordinate_domain == "board"
+                                    else _SCHEMATIC_GEOMETRY_KINDS)})
         else:
             for point in points[:4]:
                 for uid, distance in self._spatial(point, radius)[:limit * 2]:
+                    kind = self._docs[uid]["fields"]["kind"]
+                    if kind not in (_BOARD_GEOMETRY_KINDS if coordinate_domain == "board"
+                                    else _SCHEMATIC_GEOMETRY_KINDS):
+                        continue
                     if uid not in anchor_ids:
                         spatial_scores[uid] = min(spatial_scores.get(uid, math.inf), distance)
+
+        if nearby and coordinate_domain == "board":
+            for anchor_uid in sorted(exact_ids):
+                anchor = self._docs.get(anchor_uid, {})
+                if anchor.get("fields", {}).get("kind") != "footprint":
+                    continue
+                position = anchor["fields"].get("position_mm")
+                if not position:
+                    continue
+                point = (position["x"], position["y"])
+                for uid, distance in self._spatial(point, radius):
+                    candidate = self._docs.get(uid, {})
+                    if candidate.get("fields", {}).get("kind") != "footprint" or uid in exact_ids:
+                        continue
+                    related[uid].add("near_component")
+                    near_component_distances[uid] = min(
+                        near_component_distances.get(uid, math.inf), distance)
+                    spatial_scores[uid] = min(spatial_scores.get(uid, math.inf), distance)
+
+        region_intent = bool(re.search(
+            r"\b(?:inside|within|intersect(?:s|ing)?|contained|members?|objects?|components?)\b",
+            query, re.IGNORECASE))
+        region_seeds = [uid for uid in sorted(exact_ids)
+                        if self._docs.get(uid, {}).get("fields", {}).get("kind") ==
+                        "placement_region"]
+        if coordinate_domain == "board" and region_intent:
+            for region_uid in region_seeds:
+                bounds = self._docs[region_uid]["fields"].get("bounds_mm")
+                if not bounds:
+                    continue
+                for uid, _distance in self._spatial_box(bounds):
+                    if uid == region_uid or self._docs[uid]["fields"]["kind"] not in \
+                            _BOARD_GEOMETRY_KINDS:
+                        continue
+                    related[uid].add("region_member")
+                    spatial_scores[uid] = 0.0
 
         # A spatially selected object carries its actual live DRC/ERC records;
         # unrelated diagnostics elsewhere stay out.
@@ -1356,17 +1444,38 @@ class ProjectIndex:
                     "project_diagnostic" and "diagnostic_for" in relations):
                 related[uid].add("diagnostic_for")
 
+        geometry_anchor_ids = {
+            uid for uid in exact_ids
+            if ((nearby and coordinate_domain == "board" and
+                 self._docs.get(uid, {}).get("fields", {}).get("kind") == "footprint") or
+                uid in region_seeds)
+        }
         scores: dict[str, tuple[float, str, str, float]] = {}
         for uid in exact_ids:
-            scores[uid] = (1000.0, "exact", "", 0.0)
+            scores[uid] = (1400.0 if uid in geometry_anchor_ids else 1000.0,
+                           "exact", "", 0.0)
         for rank, (uid, score) in enumerate(lexical):
             candidate = (500.0 + score - rank * 0.001, "lexical", "", 0.0)
             if uid not in scores or candidate[0] > scores[uid][0]:
                 scores[uid] = candidate
         for uid, relations in related.items():
             relation = sorted(relations)[0]
+            geometry_relations = relations.intersection(
+                {"near_component", "region_member"})
+            if geometry_relations:
+                relation = ("near_component" if "near_component" in geometry_relations
+                            else "region_member")
+                priority = 1250.0 if "near_component" in geometry_relations else 1200.0
+                prior = scores.get(uid)
+                if prior is None or prior[0] < priority:
+                    scores[uid] = (priority, "relationship", relation,
+                                   spatial_scores.get(uid, 0.0))
+                elif not prior[2]:
+                    scores[uid] = (prior[0], prior[1], relation, prior[3])
+                continue
             if uid not in scores:
-                scores[uid] = (100.0, "relationship", relation, 0.0)
+                scores[uid] = (100.0, "relationship", relation,
+                               spatial_scores.get(uid, 0.0))
             elif scores[uid][1] == "lexical":
                 prior = scores[uid]
                 scores[uid] = (prior[0], prior[1], relation, prior[3])
@@ -1407,6 +1516,8 @@ class ProjectIndex:
                 item["relationships"] = sorted(related.get(uid, ()))
             if mode == "spatial":
                 item["distance_mm"] = round(distance, 4)
+            elif "near_component" in related.get(uid, ()):
+                item["distance_mm"] = round(near_component_distances.get(uid, distance), 4)
             encoded_size = len(json.dumps(item, ensure_ascii=False, separators=(",", ":")))
             if len(output) >= limit or used_chars + encoded_size > self.max_chars:
                 continue
@@ -1417,6 +1528,10 @@ class ProjectIndex:
                       "lexical_match_count": len(lexical_ids),
                       "relationship_match_count": len(related),
                       "spatial_match_count": len(spatial_scores),
+                      "near_component_match_count": sum(
+                          "near_component" in values for values in related.values()),
+                      "region_member_match_count": sum(
+                          "region_member" in values for values in related.values()),
                       "omitted_count": max(0, len(scores) - len(output)),
                       "total_entities": len(self._docs)})
         return {"available": True, "reason": "", "revision": self._revision,
@@ -1427,6 +1542,8 @@ class ProjectIndex:
                 "logical_net_semantics":
                     "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity",
                 "spatial_semantics": "axis_aligned_bounds_intersection_or_distance_only",
+                "geometry_relationship_semantics":
+                    "pcb_coordinates_only; near_component_measures_anchor_position_to_footprint_bounds; region_member_means_axis_aligned_bounds_intersection",
                 "explicit_reference_semantics":
                     "serialized object references and declared schematic page membership only",
-                "search_method": "exact_alias_bm25_relationship_spatial_diagnostics"}
+                "search_method": "exact_alias_bm25_relationship_spatial_geometry_diagnostics"}

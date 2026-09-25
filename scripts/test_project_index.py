@@ -1,6 +1,7 @@
 """Contract for exact, lexical, relationship, spatial, and incremental retrieval."""
 
 import sys
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -10,7 +11,7 @@ sys.path.insert(0, str(ROOT / "src" / "ccad_agent"))
 
 from project_index import ProjectIndex
 from context_package import build_context_package
-from context_broker import ContextBroker
+from context_broker import ContextBroker, extract_context_signals
 from memory_manager import MemoryManager
 from memory_store import MemoryStore
 
@@ -401,18 +402,29 @@ class ProjectIndexTests(unittest.TestCase):
             {"engine": "drc", "severity": "error", "code": "FAR_AWAY",
              "message": "Unrelated violation", "object_id": "J2"},
         ]
-        result = ProjectIndex().retrieve(
-            snapshot, "objects in rectangle from -1,-1 to 3,2 mm", limit=32)
+        index = ProjectIndex()
+        result = index.retrieve(
+            snapshot, "PCB objects in rectangle from -1,-1 to 3,2 mm", limit=32)
         diagnostics = [item for item in result["entities"]
                        if item["kind"] == "project_diagnostic"]
         self.assertTrue(any(item["code"] == "TRACK_CLEARANCE" and
                             item["object_id"] == "T1" for item in diagnostics))
-        self.assertTrue(any(item["code"] == "PIN_NOT_CONNECTED" and
-                            item["object_id"] == "sch-u3" for item in diagnostics))
+        self.assertFalse(any(item["code"] == "PIN_NOT_CONNECTED"
+                             for item in diagnostics))
         self.assertFalse(any(item["code"] == "FAR_AWAY" for item in diagnostics))
         self.assertTrue(all(item["retrieval"] == "relationship" and
                             item["relationship"] == "diagnostic_for"
                             for item in diagnostics))
+
+        schematic_result = index.retrieve(
+            snapshot, "schematic symbols in rectangle from -1,-1 to 3,2 mm", limit=32)
+        schematic_diagnostics = [item for item in schematic_result["entities"]
+                                 if item["kind"] == "project_diagnostic"]
+        self.assertTrue(any(item["code"] == "PIN_NOT_CONNECTED" and
+                            item["object_id"] == "sch-u3"
+                            for item in schematic_diagnostics))
+        self.assertFalse(any(item["code"] == "TRACK_CLEARANCE"
+                             for item in schematic_diagnostics))
 
         with tempfile.TemporaryDirectory() as temp:
             manager = MemoryManager(MemoryStore(Path(temp) / "memory.json"),
@@ -876,7 +888,205 @@ class ProjectIndexTests(unittest.TestCase):
                        if item["retrieval"] == "spatial"}
         self.assertTrue({"U3", "P1", "T1", "V1"}.intersection(spatial_ids))
         near_u3 = index.retrieve(project_snapshot(), "what is near U3", limit=12)
-        self.assertTrue(any(item["retrieval"] == "spatial" for item in near_u3["entities"]))
+        self.assertFalse(any(item["kind"].startswith("schematic_") and
+                             item["retrieval"] == "spatial"
+                             for item in near_u3["entities"]))
+
+    def test_nearby_component_relation_stays_in_pcb_coordinate_space(self):
+        snapshot = project_snapshot()
+        project = snapshot["typed_state"]["project"]
+        project["board"]["footprints"].append({
+            "reference": "C_NEAR", "value": "100 nF", "footprint_name": "C_0402",
+            "layer_id": "F.Cu", "position": {"x_nm": 5_000_000, "y_nm": 0}})
+        project["components"].append({
+            "id": "sch-c-near", "reference": "C_NEAR", "value": "100 nF",
+            "position": {"x_nm": 1_000_000, "y_nm": 0}})
+
+        result = ProjectIndex().retrieve(
+            snapshot, "Which PCB footprints are within 10 mm of U3?", limit=20)
+        near = next(item for item in result["entities"]
+                    if item["kind"] == "footprint" and item["id"] == "C_NEAR")
+        self.assertEqual(near["retrieval"], "relationship")
+        self.assertEqual(near["relationship"], "near_component")
+        self.assertAlmostEqual(near["distance_mm"], 5.0)
+        self.assertFalse(any(item["kind"].startswith("schematic_") and
+                             item["retrieval"] == "spatial"
+                             for item in result["entities"]))
+        self.assertEqual(result["stats"]["near_component_match_count"], 1)
+        self.assertIn("pcb_coordinates_only", result["geometry_relationship_semantics"])
+
+    def test_identified_placement_region_expands_to_intersecting_board_objects_only(self):
+        snapshot = project_snapshot()
+        project = snapshot["typed_state"]["project"]
+        board = project["board"]
+        board["placement_regions"] = [{
+            "id": "PR_SPRINT997", "kind": "placement",
+            "area": {"x_nm": 20_000_000, "y_nm": 20_000_000,
+                     "width_nm": 10_000_000, "height_nm": 10_000_000}}]
+        board["footprints"].append({
+            "reference": "U_INSIDE", "value": "Controller", "footprint_name": "QFN",
+            "position": {"x_nm": 29_000_000, "y_nm": 25_000_000}})
+        board["footprints"].append({
+            "reference": "C_NEAR", "value": "100 nF", "footprint_name": "C_0402",
+            "position": {"x_nm": 28_000_000, "y_nm": 25_000_000}})
+        board["texts"] = [{
+            "id": "TX_CROSSES_REGION", "text": "Board label",
+            "position": {"x_nm": 20_000_000, "y_nm": 25_000_000}}]
+        project["components"].append({
+            "id": "sch-coincident", "reference": "R_SCHEMATIC",
+            "position": {"x_nm": 25_000_000, "y_nm": 25_000_000}})
+
+        result = ProjectIndex().retrieve(
+            snapshot, "Which PCB objects intersect placement region PR_SPRINT997?", limit=20)
+        related = {(item["kind"], item["id"]): item for item in result["entities"]
+                   if item.get("relationship") == "region_member"}
+        self.assertIn(("footprint", "U_INSIDE"), related)
+        self.assertIn(("board_text", "TX_CROSSES_REGION"), related)
+        self.assertNotIn(("footprint", "J2"), related)
+        self.assertFalse(any(item["id"] == "sch-coincident" for item in related.values()))
+        self.assertEqual(result["stats"]["region_member_match_count"], 3)
+        self.assertIn("axis_aligned_bounds_intersection", result["geometry_relationship_semantics"])
+
+        combined = ProjectIndex().retrieve(
+            snapshot,
+            "Which PCB footprints are within 5 mm of U_INSIDE and which objects intersect placement region PR_SPRINT997?",
+            limit=10)
+        combined_near = next(item for item in combined["entities"]
+                             if item["kind"] == "footprint" and
+                             item["id"] == "C_NEAR")
+        self.assertIn("near_component", combined_near["relationships"])
+        self.assertIn("region_member", combined_near["relationships"])
+        self.assertAlmostEqual(combined_near["distance_mm"], 1.0)
+        combined_region_members = [item for item in combined["entities"]
+                                   if item.get("relationship") == "region_member" or
+                                   "region_member" in item.get("relationships", ())]
+        self.assertGreater(len(combined_region_members), 0)
+        self.assertGreater(combined["stats"]["near_component_match_count"], 0)
+        self.assertGreater(combined["stats"]["region_member_match_count"], 0)
+
+        import json
+        package = build_context_package(json.dumps(snapshot), [], [], char_limit=4096,
+                                        project_retrieval=result)
+        envelope = json.loads(package["content"].split("\n", 1)[1])
+        retrieval = envelope["project_retrieval"]
+        packaged_region_members = [item for item in retrieval["entities"]
+                                   if item.get("relationship") == "region_member"]
+        self.assertEqual(len(packaged_region_members), 3)
+        self.assertEqual(retrieval["stats"]["region_member_match_count"], 3)
+        self.assertIn("pcb_coordinates_only",
+                      retrieval["geometry_relationship_semantics"])
+        self.assertEqual(package["metadata"]["project_retrieval_stats"][
+            "region_member_match_count"], 3)
+        self.assertNotIn("C:\\Users", package["content"])
+
+        board["placement_regions"][0]["area"]["x_nm"] = 70_000_000
+        moved = ProjectIndex().retrieve(
+            snapshot, "Which PCB objects intersect placement region PR_SPRINT997?",
+            limit=20)
+        self.assertEqual(moved["stats"]["region_member_match_count"], 0)
+        self.assertFalse(any(item.get("relationship") == "region_member"
+                             for item in moved["entities"]))
+
+    def test_production_limit_keeps_explicit_geometry_relations_ahead_of_lexical_noise(self):
+        fixture_path = ROOT / "artifacts" / "demos" / "sprint160-placement-crash-ci-final.ccad.json"
+        project = json.loads(fixture_path.read_text(encoding="utf-8"))
+        project["board"].setdefault("footprints", []).extend((
+            {"reference": "JAC1", "value": "AC input",
+             "footprint_name": "Connector_PinHeader_2.54mm", "layer_id": "F.Cu",
+             "position": {"x_nm": 8_000_000, "y_nm": 17_000_000}},
+            {"reference": "C_NEAR", "value": "100 nF", "footprint_name": "C_0402",
+             "layer_id": "F.Cu",
+             "position": {"x_nm": 10_000_000, "y_nm": 17_000_000}},
+        ))
+        project["board"].setdefault("placement_regions", []).append({
+            "id": "PR_SPRINT997", "kind": "placement",
+            "area": {"x_nm": 7_000_000, "y_nm": 16_000_000,
+                     "width_nm": 5_000_000, "height_nm": 2_000_000},
+        })
+        snapshot = {"typed_state": {"available": True, "project": project}}
+        query = ("Which PCB footprints are within 5 mm of JAC1, and which PCB objects "
+                 "intersect placement region PR_SPRINT997?")
+
+        result = ProjectIndex().retrieve(snapshot, query)
+        packaged = build_context_package(json.dumps(snapshot), [], [], char_limit=8192,
+                                         project_retrieval=result)
+        envelope = json.loads(packaged["content"].split("\n", 1)[1])
+        entities = envelope["project_retrieval"]["entities"]
+        self.assertTrue(any(item["id"] == "C_NEAR" and
+                            "near_component" in item.get("relationships", ())
+                            for item in entities))
+        self.assertTrue(any("region_member" in item.get("relationships", ())
+                            for item in entities))
+        self.assertGreater(packaged["metadata"]["project_retrieval_stats"][
+            "near_component_match_count"], 0)
+        self.assertGreater(packaged["metadata"]["project_retrieval_stats"][
+            "region_member_match_count"], 0)
+
+        live_signals = extract_context_signals(
+            query, goal=query, project_id="proj-sprint160-placement-crash-ci-final",
+            active_editor="pcb", selected_objects=("JAC1",))
+        with tempfile.TemporaryDirectory() as memory_dir:
+            live_manager = MemoryManager(
+                MemoryStore(Path(memory_dir) / "memory.json"),
+                thread_id="thread-geometry",
+                project_id="proj-sprint160-placement-crash-ci-final")
+            live_manager.configure({})
+            live_context = ContextBroker().prepare(
+                live_manager, thread_id="thread-geometry",
+                project_revision="fixture-revision", user_request=query,
+                goal=query, project_id="proj-sprint160-placement-crash-ci-final",
+                active_editor="pcb", selected_objects=("JAC1",),
+                signals=live_signals, project_snapshot=snapshot,
+                active_layer="F.Cu", active_net="AC1")
+        self.assertGreater(live_context["project_retrieval"]["stats"][
+            "near_component_match_count"], 0)
+        self.assertGreater(live_context["project_retrieval"]["stats"][
+            "region_member_match_count"], 0)
+
+        context_snapshot = json.loads(json.dumps(snapshot))
+        context_snapshot["project_diagnostics"] = [
+            {"id": f"diag-{index}", "code": f"FIXTURE_{index}",
+             "message": "Fixture diagnostic linked to selected pad",
+             "object_id": "JAC1.1", "severity": "warning", "engine": "drc"}
+            for index in range(3)]
+        selected_pad = "JAC1.1"
+        noisy_signals = extract_context_signals(
+            query, goal=query, project_id="proj-sprint160-placement-crash-ci-final",
+            active_editor="pcb", selected_objects=(selected_pad,))
+        noisy_retrieval = ProjectIndex().retrieve(
+            context_snapshot, noisy_signals["query"], active_layer="F.Cu",
+            active_net="AC1", selected_objects=(selected_pad,), limit=10)
+        self.assertGreater(noisy_retrieval["stats"]["exact_match_count"], 10)
+        noisy_package = build_context_package(
+            json.dumps(context_snapshot), [], [], char_limit=8192,
+            project_retrieval=noisy_retrieval)
+        self.assertGreater(noisy_package["metadata"]["project_retrieval_stats"][
+            "near_component_match_count"], 0)
+        self.assertGreater(noisy_package["metadata"]["project_retrieval_stats"][
+            "region_member_match_count"], 0)
+        self.assertTrue(any(entity["id"] == "C_NEAR" and
+                            "near_component" in entity.get("relationships", ())
+                            for entity in noisy_retrieval["entities"]))
+
+    def test_relationship_only_changes_invalidate_incremental_graph_edges(self):
+        snapshot = project_snapshot()
+        board = snapshot["typed_state"]["project"]["board"]
+        board["groups"] = [{"id": "GR_SPRINT997", "members": ["U3"]}]
+        index = ProjectIndex()
+        initial = index.retrieve(snapshot, "GR_SPRINT997", limit=20)
+        self.assertTrue(any(item["kind"] == "footprint" and item["id"] == "U3" and
+                            item.get("relationship") == "group_member"
+                            for item in initial["entities"]))
+
+        board["groups"][0]["members"] = ["J2"]
+        updated = index.retrieve(snapshot, "GR_SPRINT997", limit=20)
+        self.assertEqual(updated["stats"]["index_state"], "incremental")
+        self.assertTrue(any(item["kind"] == "footprint" and item["id"] == "J2" and
+                            item.get("relationship") == "group_member"
+                            for item in updated["entities"]))
+        self.assertFalse(any(item["kind"] == "footprint" and item["id"] == "U3" and
+                             item.get("relationship") == "group_member"
+                             for item in updated["entities"]))
 
     def test_revision_update_removes_deleted_rows_and_only_reindexes_changes(self):
         index = ProjectIndex()

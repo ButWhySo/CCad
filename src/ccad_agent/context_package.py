@@ -161,6 +161,16 @@ def _project_retrieval_payload(value: dict | None) -> dict:
         used += encoded_size
     stats = source.get("stats", {})
     stats = stats if isinstance(stats, dict) else {}
+    stats_payload = {key: max(0, int(stats.get(key, 0) or 0)) for key in
+                     ("total_entities", "exact_match_count", "lexical_match_count",
+                      "relationship_match_count", "spatial_match_count",
+                      "near_component_match_count", "region_member_match_count",
+                      "omitted_count")}
+    for relation, key in (("near_component", "near_component_match_count"),
+                          ("region_member", "region_member_match_count")):
+        stats_payload[key] = sum(
+            relation in entity.get("relationships", ()) or
+            entity.get("relationship") == relation for entity in entities)
     return {
         "available": bool(source.get("available", False)),
         "revision": _safe_text(source.get("revision"), 32),
@@ -170,11 +180,11 @@ def _project_retrieval_payload(value: dict | None) -> dict:
             "native_net_id_association_not_physical_continuity",
         "logical_net_semantics":
             "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity",
-        "spatial_semantics": "axis_aligned_bounds_distance_only",
+        "spatial_semantics": "axis_aligned_bounds_intersection_or_distance_only",
+        "geometry_relationship_semantics":
+            "pcb_coordinates_only; near_component_measures_anchor_position_to_footprint_bounds; region_member_means_axis_aligned_bounds_intersection",
         "entities": entities,
-        "stats": {key: max(0, int(stats.get(key, 0) or 0)) for key in
-                  ("total_entities", "exact_match_count", "lexical_match_count",
-                   "relationship_match_count", "spatial_match_count", "omitted_count")},
+        "stats": stats_payload,
     }
 
 
@@ -383,6 +393,16 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
                 envelope["project_retrieval"]["stats"]["omitted_count"] += 1
         if len(encoded) > limit:
             raise ValueError("context limit is too small for the safe summary envelope")
+    included_retrieval_stats = envelope.get("project_retrieval", {}).get("stats", {})
+    if isinstance(included_retrieval_stats, dict):
+        included_entities = envelope.get("project_retrieval", {}).get("entities", [])
+        for relation, key in (("near_component", "near_component_match_count"),
+                              ("region_member", "region_member_match_count")):
+            included_retrieval_stats[key] = sum(
+                relation in entity.get("relationships", ()) or
+                entity.get("relationship") == relation
+                for entity in included_entities if isinstance(entity, dict))
+        encoded = encode()
     # Conversation advances every turn; it must not invalidate a project/action
     # revision.  Fall back only to project and retrieved-memory identity.
     revision_material = json.dumps(
@@ -399,7 +419,9 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
     elif project_snapshot_omitted:
         sources.append("project_summary")
     included_project_retrieval = envelope.get("project_retrieval", {
-        "revision": "", "search_method": "", "stats": {}, "entities": []})
+        "revision": "", "search_method": "", "entities": [],
+        "stats": {"near_component_match_count": 0,
+                  "region_member_match_count": 0}})
     project_retrieval_kinds: dict[str, int] = {}
     for entity in included_project_retrieval["entities"]:
         kind = entity.get("kind") if isinstance(entity, dict) else None

@@ -616,6 +616,33 @@ int main(int argc, char** argv) {
               name.contains("sprint992");
           const bool functional_block_validation = schematic_metadata_validation &&
               name.contains("sprint993");
+          const bool geometry_relation_validation = schematic_metadata_validation &&
+              name.contains("sprint997");
+          if (geometry_relation_validation) {
+            const QString state_json = window->runAgentUiQueryJson("project.state", "{}");
+            QJsonParseError state_error;
+            const QJsonDocument state_document = QJsonDocument::fromJson(
+                state_json.toUtf8(), &state_error);
+            const QJsonObject result = state_document.object().value("result").toObject();
+            const QJsonObject project = result.value("project").toObject();
+            const QJsonObject board = project.value("board").toObject();
+            int fixture_footprints = 0;
+            for (const QJsonValue& item : board.value("footprints").toArray()) {
+              const QJsonObject footprint = item.toObject();
+              const QString reference = footprint.value("reference").toString();
+              if (reference == "JAC1" || reference == "C_NEAR") {
+                ++fixture_footprints;
+              }
+            }
+            bool fixture_region = false;
+            for (const QJsonValue& item : board.value("placement_regions").toArray()) {
+              fixture_region = fixture_region ||
+                  item.toObject().value("id").toString() == "PR_SPRINT997";
+            }
+            entries << QString("{\"typed_fixture_footprints\":%1,\"typed_fixture_region_loaded\":%2}")
+                           .arg(fixture_footprints)
+                           .arg(fixture_region ? "true" : "false");
+          }
           const bool multilayer_project_validation =
               name.startsWith("sprint982-multilayer-project-context");
           const bool serialized_pad_layer_validation =
@@ -701,7 +728,9 @@ int main(int argc, char** argv) {
                              .arg(jsonStringLocal(QString::fromStdString(project_path.string())));
           }
           QString user_prompt = project_retrieval_validation
-              ? (spatial_diagnostic_validation
+              ? (geometry_relation_validation
+                     ? QStringLiteral("Which PCB footprints are within 5 mm of JAC1, and which PCB objects intersect placement region PR_SPRINT997?")
+                     : spatial_diagnostic_validation
                      ? QStringLiteral("Find DRC markers in bounding box from 10,10 to 14,14 mm.")
                      : diagnostic_graph_validation
                      ? QStringLiteral("Find DRC ZERO_LENGTH_TRACK on T_SPRINT985_ZERO and explain the affected object.")
@@ -747,9 +776,11 @@ int main(int argc, char** argv) {
                                 jsonStringLocal(pad_id));
             ok = !pad_id.isEmpty() && ok;
           }
-          bool schematic_metadata_serialized = !schematic_metadata_validation;
-          bool schematic_metadata_retrieved = !schematic_metadata_validation;
-          if (schematic_metadata_validation) {
+          bool schematic_metadata_serialized = !schematic_metadata_validation ||
+              geometry_relation_validation;
+          bool schematic_metadata_retrieved = !schematic_metadata_validation ||
+              geometry_relation_validation;
+          if (schematic_metadata_validation && !geometry_relation_validation) {
             const QJsonObject project = QJsonDocument::fromJson(
                 window->runAgentUiQueryJson("project.state", "{}").toUtf8())
                 .object().value("result").toObject().value("project").toObject();
@@ -796,9 +827,13 @@ int main(int argc, char** argv) {
                         "control:agent_chat_input", "conversation-prompt-entered") && ok;
           ok = interact("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
                         "action:agent_submit_chat", "conversation-turn-submitted") && ok;
-          for (int attempt = 0; attempt < 60; ++attempt) {
+          for (int attempt = 0; attempt < 120; ++attempt) {
             QApplication::processEvents();
-            if (chat && (diagnostic_validation
+            const QString transcript = chat ? chat->toPlainText() : QString();
+            if (geometry_relation_validation &&
+                transcript.contains("nearby PCB components") &&
+                transcript.contains("placement-region objects")) break;
+            if (!geometry_relation_validation && chat && (diagnostic_validation
                     ? chat->toPlainText().contains("is not configured")
                     : chat->toPlainText().contains(
                           "Provider execution is unavailable; configure a provider"))) break;
@@ -812,7 +847,7 @@ int main(int argc, char** argv) {
               : !project_retrieval_validation ||
                     (chat && chat->toPlainText().contains("project matches") &&
                      !chat->toPlainText().contains("| 0 project matches"));
-          if (schematic_metadata_validation && chat) {
+          if (schematic_metadata_validation && !geometry_relation_validation && chat) {
             const QString transcript = chat->toPlainText();
             schematic_metadata_retrieved = functional_block_validation
                 ? transcript.contains("1 functional block")
@@ -864,18 +899,27 @@ int main(int argc, char** argv) {
               }
             }
           }
+          bool geometry_relations_visible = !geometry_relation_validation;
+          if (geometry_relation_validation && chat) {
+            const QString transcript = chat->toPlainText();
+            geometry_relations_visible =
+                transcript.contains("nearby PCB components") &&
+                transcript.contains("placement-region objects");
+            entries << QString("{\"pcb_geometry_relationships_visible\":%1}")
+                           .arg(geometry_relations_visible ? "true" : "false");
+          }
           const bool turn_visible = chat && memory_visible && project_matches_visible &&
               schematic_metadata_serialized &&
               schematic_metadata_retrieved &&
               schematic_pin_visible && schematic_symbol_visible && pcb_layers_visible &&
               multiple_project_layers_visible && board_net_visible && project_diagnostic_visible &&
-              project_diagnostic_count_visible &&
+              project_diagnostic_count_visible && geometry_relations_visible &&
               chat->toPlainText().contains(user_prompt) &&
               (diagnostic_validation
                    ? chat->toPlainText().contains("is not configured")
                    : chat->toPlainText().contains(
                          "Provider execution is unavailable; configure a provider"));
-          entries << QString("{\"conversation_turn_visible\":%1,\"context_memory_attached\":%2,\"project_retrieval_visible\":%3,\"schematic_pin_retrieval_visible\":%4,\"schematic_symbol_retrieval_visible\":%5,\"project_layers_visible\":%6,\"multiple_project_layers_visible\":%7,\"board_net_count_visible\":%8,\"project_diagnostic_visible\":%9,\"project_diagnostic_count_visible\":%10,\"schematic_metadata_retrieved\":%11,\"functional_block_visible\":%12,\"provider_request_sent\":false}")
+          entries << QString("{\"conversation_turn_visible\":%1,\"context_memory_attached\":%2,\"project_retrieval_visible\":%3,\"schematic_pin_retrieval_visible\":%4,\"schematic_symbol_retrieval_visible\":%5,\"project_layers_visible\":%6,\"multiple_project_layers_visible\":%7,\"board_net_count_visible\":%8,\"project_diagnostic_visible\":%9,\"project_diagnostic_count_visible\":%10,\"schematic_metadata_retrieved\":%11,\"functional_block_visible\":%12,\"pcb_geometry_relationships_visible\":%13,\"provider_request_sent\":false}")
                          .arg(turn_visible ? "true" : "false",
                               memory_visible ? "true" : "false",
                               project_matches_visible ? "true" : "false",
@@ -888,9 +932,11 @@ int main(int argc, char** argv) {
                               project_diagnostic_count_visible ? "true" : "false",
                               schematic_metadata_retrieved ? "true" : "false",
                               functional_block_validation && schematic_metadata_retrieved
-                                  ? "true" : "false");
+                                  ? "true" : "false",
+                              geometry_relations_visible ? "true" : "false");
           ok = turn_visible && capture("turn-persisted") && ok;
-          if (declared_pin_validation || functional_block_validation) {
+          if (declared_pin_validation || functional_block_validation ||
+              geometry_relation_validation) {
             ok = interact("ui.click", "{\"id\":\"action:settingsBtn\"}",
                           "action:settingsBtn", "context-settings-opened") && ok;
             ok = interact("ui.click", "{\"id\":\"control:categoryList\",\"row\":2}",
@@ -1174,6 +1220,8 @@ int main(int argc, char** argv) {
             ? QStringLiteral("Place one via on the disposable board through mapped toolbar and board-point interactions, then prove its F.Cu/B.Cu span survives exact project retrieval and bounded Agent context; provider disabled")
             : name.startsWith("sprint981-schematic-project-graph")
             ? QStringLiteral("Verify exact schematic net member pins and related symbols are counted in real turn context through seven mapped actions; provider disabled")
+            : name.contains("sprint997")
+            ? QStringLiteral("Verify explicitly requested nearby PCB footprints and placement-region members survive bounded Agent context and display their included counts through mapped chat and Settings actions; provider disabled")
             : name.startsWith("sprint987-schematic-metadata")
             ? QStringLiteral("Load authoritative schematic fields and a relative sheet path, inspect them through project.state, then query both identifiers through real Agent context; provider disabled")
             : name.startsWith("sprint980-project-retrieval")

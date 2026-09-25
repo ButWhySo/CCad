@@ -2645,6 +2645,10 @@ def handle_human_message(req):
             "project_retrieval_kinds", {}).get("project_diagnostic", 0),
         "project_retrieval_layer_count": context_metadata.get(
             "project_retrieval_layer_count", 0),
+        "project_retrieval_near_component_count": context_metadata.get(
+            "project_retrieval_stats", {}).get("near_component_match_count", 0),
+        "project_retrieval_region_member_count": context_metadata.get(
+            "project_retrieval_stats", {}).get("region_member_match_count", 0),
         "project_retrieval_chars": context_metadata["project_retrieval_chars"],
         "project_retrieval_revision": context_metadata["project_retrieval_revision"],
         "project_retrieval_method": context_metadata["project_retrieval_method"],
@@ -2665,7 +2669,6 @@ def handle_human_message(req):
         "memory_token_budget": turn_context["memory_token_budget"],
         "project_counts": context_metadata["project_counts"],
     }})
-
     # Robust Command Parser
     if text.startswith("/"):
         cmd_parts = text.split(" ", 1)

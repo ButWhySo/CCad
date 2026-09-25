@@ -1,5 +1,9 @@
 # Implemented Features
 
+## Sprint 997 coordinate-safe PCB geometry retrieval
+
+Project spatial queries now keep PCB and schematic coordinates separate. Exact PCB-footprint anchors can retrieve nearby physical footprints with `near_component` provenance, and exact placement-region IDs retrieve typed board objects whose AABBs intersect the region with `region_member` provenance. When a request explicitly asks for geometric relations, the anchor and related objects rank above unrelated exact matches, preserving the requested relationship inside the bounded package; ordinary exact retrieval is unchanged. The reported relations are geometric only: proximity is measured from an anchor position to footprint bounds, region membership is AABB intersection, and neither implies electrical connectivity or DRC clearance. Only relation counts for objects retained in bounded provider context are shown in the Agent activity status. `scripts/test_project_index.py` covers board-versus-schematic exclusion, proximity, region inclusion/exclusion/movement, incremental graph updates, and bounded context delivery. Pyright reports 0 diagnostics for the changed retrieval modules; the Qt MinGW Release build and full CTest pass 115/115. The official mapped GUI gate verified the disposable-board request and included counts with 10 mapped interactions; all four screenshots and stdout/stderr were inspected. Its workspace-only manifest is `artifacts/evidence/sprint997-project-geometry-relations-ui-pass.json` (SHA-256 `104DC06FB7BA39509639D3BA7B49FE4D82BF5871AEC945E2B067C73C8B965C16`); screenshots/logs remain local.
+
 ## Sprint 996 evidence-gated visual validation
 
 The visual-validation guide now points to the repository's actual app-owned
