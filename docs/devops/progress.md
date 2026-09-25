@@ -6,8 +6,9 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 1001
+- Sprint: 1002
 - Branch: `sprint-991-hybrid-memory-retrieval`
+- Sprint 1002 adds bounded recency and persistent retrieval-use adjustments to memory ranking only after relevance filtering. Recency is capped at +15% with a 90-day decay; usage influence is capped at +10% and 32 uses. Memory text remains unchanged, STM counters stay process-local, durable use metadata survives edits, and context manifests expose only allowlisted numeric weights and a controlled persistence label. Focused memory/context/semantic/lexical contracts pass and changed-module Pyright reports zero diagnostics. Full official Qt/CTest verification remains pending; no GUI behavior changed, so screenshots are not applicable.
 - Phase 9 sprint budget: originally Sprints 226 through 254; the active programme has continued through Sprint 947 for deterministic KiCad PCB editor parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, autorouter integration, and the production agent surface. Sprint 226 root file walk is completely audited.
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 covered the bounded runtime and EDA evidence expansion through Sprint 225. Phase 9 is the bounded KiCad parity execution phase.

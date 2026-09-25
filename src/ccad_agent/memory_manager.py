@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 import re
 from collections import OrderedDict
 from datetime import datetime, timezone
@@ -315,7 +316,10 @@ class MemoryManager:
                                    "title_text": title, "content_text": content,
                                    "tags_text": tags,
                                    "kind": entry.get("kind", "fact"),
-                                   "created_at": str(entry.get("created_at", ""))})
+                                   "created_at": str(entry.get("created_at", "")),
+                                   "last_used_at": str(entry.get("last_used_at", "")),
+                                   "updated_at": str(entry.get("updated_at", "")),
+                                   "use_count": entry.get("use_count", 0)})
         query_term_count = len(set(self._word.findall(str(query).casefold())))
         lexical = rank_documents(query, candidates,
                                  min_matches=min(2, query_term_count))
@@ -341,10 +345,15 @@ class MemoryManager:
         # Kind only adjusts already-relevant candidates; it cannot introduce a
         # preference/correction that failed the lexical/semantic eligibility gate.
         kind_weights = {"fact": 1.0, "preference": 1.08, "correction": 1.16}
+        ranked_at = self._now()
         for item in fused:
-            kind = item["document"].get("kind", "fact")
+            document = item["document"]
+            kind = document.get("kind", "fact")
             item["score"] *= kind_weights.get(kind, 1.0)
             item["kind_weight"] = kind_weights.get(kind, 1.0)
+            item["recency_weight"] = self._recency_weight(document, ranked_at)
+            item["usage_weight"] = self._usage_weight(document.get("use_count", 0))
+            item["score"] *= item["recency_weight"] * item["usage_weight"]
         fused.sort(key=lambda item: (-item["score"], item["ordinal"]))
         lexical_by_id = {item["document"]["entry"]["id"]: item
                          for item in lexical}
@@ -352,6 +361,30 @@ class MemoryManager:
                                        text_key="text", relevance_weight=0.7,
                                        similarity_fn=self._candidate_similarity)
         selected = diversified
+        durable_ids = [item["document"]["entry"]["id"] for item in selected
+                       if item["document"]["tier"] != "stm"]
+        try:
+            recorded_usage = self.store.record_usage(durable_ids,
+                                                     used_at=ranked_at.isoformat())
+        except MemoryStoreError:
+            recorded_usage = {}
+        for item in selected:
+            document = item["document"]
+            entry = document["entry"]
+            if document["tier"] == "stm":
+                entry["use_count"] = min(1_000_000, max(
+                    0, self._safe_use_count(entry.get("use_count", 0))) + 1)
+                entry["last_used_at"] = ranked_at.isoformat()
+                document["usage_persistence"] = "process"
+            elif entry["id"] in recorded_usage:
+                entry.update(recorded_usage[entry["id"]])
+                document["usage_persistence"] = "durable"
+            else:
+                entry["use_count"] = min(1_000_000, max(
+                    0, self._safe_use_count(entry.get("use_count", 0))) + 1)
+                entry["last_used_at"] = ranked_at.isoformat()
+                document["usage_persistence"] = "process_only"
+            entry["project_id"] = self.project_id
         entries = [item["document"]["entry"] for item in selected]
         provenance = [{
             "entry_id": item["document"]["entry"]["id"],
@@ -359,6 +392,9 @@ class MemoryManager:
             "tier": item["document"]["tier"],
             "memory_kind": item["document"].get("kind", "fact"),
             "kind_weight": round(item.get("kind_weight", 1.0), 3),
+            "recency_weight": round(item.get("recency_weight", 1.0), 6),
+            "usage_weight": round(item.get("usage_weight", 1.0), 6),
+            "usage_persistence": item["document"].get("usage_persistence", "unavailable"),
             "query_overlap_terms": len(item["matched_terms"]),
             "bm25_score": round(lexical_by_id.get(
                 item["document"]["entry"]["id"], {}).get("score", 0.0), 6),
@@ -378,6 +414,31 @@ class MemoryManager:
             ).hexdigest()[:16],
         } for index, item in enumerate(selected)]
         return entries, provenance
+
+    @classmethod
+    def _safe_use_count(cls, value):
+        return value if isinstance(value, int) and not isinstance(value, bool) else 0
+
+    @classmethod
+    def _usage_weight(cls, value):
+        count = min(32, max(0, cls._safe_use_count(value)))
+        return 1.0 + 0.10 * math.log1p(count) / math.log1p(32)
+
+    @staticmethod
+    def _recency_weight(document, now):
+        value = (document.get("last_used_at") or document.get("updated_at")
+                 or document.get("created_at"))
+        if not value:
+            return 1.0
+        try:
+            timestamp = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            if timestamp.tzinfo is None:
+                return 1.0
+            age_days = max(0.0, (now - timestamp.astimezone(timezone.utc)).total_seconds()
+                           / 86400.0)
+        except (TypeError, ValueError, OverflowError):
+            return 1.0
+        return 1.0 + 0.15 * math.exp(-age_days / 90.0)
 
     def _semantic_rankings(self, candidates, query):
         backend = self._embedding_backend
@@ -652,6 +713,10 @@ class MemoryManager:
                 replacement = self.store.normalise(content, **fields)
                 replacement.update(id=entry_id, project_id=self.project_id,
                                    created_at=entry.get("created_at", ""))
+                replacement["updated_at"] = self._now().isoformat()
+                for field in ("last_used_at", "use_count"):
+                    if field in entry:
+                        replacement[field] = entry[field]
             else:
                 replacement = self.store.update(entry_id, content, **fields)
                 if replacement is None:

@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import math
 import re
 from typing import Any, Iterable
 
@@ -13,6 +14,26 @@ _SECRET = re.compile(
 _SENSITIVE_PROPERTY = re.compile(
     r"api[_-]?key|secret|password|token|authorization|credential", re.IGNORECASE)
 _PREFIX = "[CCAD_CONTEXT_V3]\n"
+_RETRIEVAL_SAFE_FIELDS = (
+    "rank", "tier", "query_overlap_terms", "bm25_score", "ranking_method",
+    "channel_ranks", "rrf_score", "diversity_score", "redundancy_score",
+    "matched_terms", "namespace_hash")
+
+
+def _safe_retrieval_metadata(item: dict, *, include_bm25: bool) -> dict:
+    fields = _RETRIEVAL_SAFE_FIELDS if include_bm25 else tuple(
+        key for key in _RETRIEVAL_SAFE_FIELDS if key != "bm25_score")
+    safe = {key: item[key] for key in fields if key in item}
+    for key, ceiling in (("kind_weight", 1.16), ("recency_weight", 1.15),
+                         ("usage_weight", 1.10)):
+        value = item.get(key)
+        if (isinstance(value, (int, float)) and not isinstance(value, bool)
+                and math.isfinite(value) and 1.0 <= value <= ceiling):
+            safe[key] = value
+    persistence = item.get("usage_persistence")
+    if persistence in {"durable", "process", "process_only", "unavailable"}:
+        safe["usage_persistence"] = persistence
+    return safe
 
 
 def _safe_text(value: Any, limit: int) -> str:
@@ -482,12 +503,7 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
     for entry in included_memories:
         item = retrieval_by_id.get(entry["id"])
         if item is not None:
-            included_retrieval.append({key: item[key] for key in
-                                       ("rank", "tier", "query_overlap_terms", "bm25_score",
-                                        "ranking_method", "channel_ranks", "rrf_score",
-                                        "diversity_score", "redundancy_score",
-                                        "matched_terms", "namespace_hash")
-                                       if key in item})
+            included_retrieval.append(_safe_retrieval_metadata(item, include_bm25=True))
     return {
         "content": encoded,
         "metadata": {
@@ -697,11 +713,7 @@ def build_provider_request_report(system_text: str, messages: Iterable[Any],
         "memory_tier_counts": {tier: int(tiers.get(tier, 0))
                                 for tier in ("stm", "ltm", "episodic")},
         "memory_retrieval": [
-            {key: item[key] for key in
-             ("rank", "tier", "query_overlap_terms", "ranking_method",
-              "channel_ranks", "rrf_score", "diversity_score", "redundancy_score",
-              "namespace_hash")
-             if key in item}
+            _safe_retrieval_metadata(item, include_bm25=False)
             for item in context_metadata.get("memory_retrieval", [])
             if isinstance(item, dict)],
         "memory_runtime": {

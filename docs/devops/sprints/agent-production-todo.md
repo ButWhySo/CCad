@@ -2,6 +2,18 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1002 active slice - bounded memory recency/usage ranking (Tier 1, M4)
+
+- [x] Add bounded, deterministic recency and persisted retrieval-use weights after relevance filtering and before diversity selection.
+- [x] Persist retrieval count/time without changing memory content; preserve usage metadata across record edits and keep STM counters process-local.
+- [x] Report only numeric weights and a controlled persistence status through the allowlisted context manifest; exclude memory content.
+- [x] Contract-test recency/usage ranking, count persistence, edit preservation, and safe context-package forwarding.
+- [x] Run the full official non-visual Qt MinGW Release and CTest gate; inspect verifier output and manifest (115/115; manifest `artifacts/evidence/sprint1002-memory-ranking.json`, SHA-256 `CB8EF8DCA12816AE1C7E3761981B2C74FBCADE0AAE46A602A6360B27D4D27226`).
+- [x] Update progress, feature inventory, codebase map, memory lifecycle, and backlog; redacted staged scan is clean. Tracked-tree scan reports only pre-existing matches in documentation/examples/tests; no staged diff matches.
+- [x] Commit and push only verified scoped files; feature-branch push confirmed at Sprint 1002. Hosted CI and merge status remain separate; main is untouched.
+
+Scope boundary: weighting changes ranking only among candidates already admitted by namespace, expiry, relevance, and enablement filters. Recency has a maximum +15% factor and decays over 90 days; usage influence has a maximum +10% factor at 32 uses. No user-importance signal is inferred or fabricated, and provider-tokenizer budgeting remains open.
+
 ### Sprint 1001 active slice - typed preference/correction memory retrieval (Tier 1, M4)
 
 References checked before implementation: [LangGraph memory concepts](https://docs.langchain.com/oss/python/langgraph/add-memory) describe durable memories scoped by namespace; [LangChain embedding integrations](https://docs.langchain.com/oss/python/integrations/embeddings) document distinct query/document embedding paths and cache namespacing. This slice keeps memory meaning explicit and user-authored as `fact`, `preference`, or `correction`; it does not infer type from text or alter existing namespaces.
@@ -15,7 +27,7 @@ References checked before implementation: [LangGraph memory concepts](https://do
 - [x] Update this TODO, progress, feature inventory, codebase map, and applicable backlog; run redacted staged secret scan.
 - [x] Commit/push only verified scoped files; report PR and hosted CI separately. Feature-branch push verified; PR creation was denied by the GitHub integration (403), and the hosted status API returned no checks, so main was not merged.
 
-Scope boundary: memory kind is a user-authored ranking signal, not model classification. Provider-tokenizer budgets and recency/usage weighting remain open.
+Scope boundary: memory kind is a user-authored ranking signal, not model classification. Sprint 1002 adds bounded recency/usage weighting; provider-tokenizer budgets and a user-controlled importance signal remain open.
 
 ### Sprint 1000 active slice - opt-in semantic project retrieval (Tier 1, C4)
 
@@ -295,7 +307,7 @@ References Checked: [Langfuse SDK instrumentation](https://langfuse.com/docs/obs
 - [x] Deduplicate automatic memories against recent conversation and the actual thread recap; include recap changes in cache invalidation and reuse dedup context during targeted refresh.
 - [x] Verify real Langfuse SDK ancestry with a local in-memory exporter, source-order contract, recap-dedup/cache/refresh regressions, Qt Release, full CTest (111/111), and seven mapped GUI interactions with four inspected screenshots and reviewed logs.
 - [x] Resolve Pyright's `orchestrator.py` complexity cutoff; telemetry, ContextBroker, and new regression contracts are clean under Pyright 1.1.414 (Sprint 979).
-- [ ] Follow-on: provider-tokenizer budgeting and recency/usage-aware ranking. Sprint 1001 implements explicit preference/correction-aware ranking.
+- [ ] Follow-on: provider-tokenizer budgeting and user-controlled importance ranking. Sprint 1001 implements explicit preference/correction-aware ranking; Sprint 1002 implements bounded recency/usage adjustments.
 
 ### Sprint 977 active slice â€” deterministic context and memory retrieval
 
@@ -3338,7 +3350,8 @@ Borrow the useful Codex pattern without coupling to Codex internals.
 - [x] Retrieve bounded BM25 candidates and stop below the minimum lexical-match floor.
 - [ ] Retrieve semantic candidates.
 - [x] Fuse title/content/tag lexical rankings with weighted reciprocal-rank fusion (Sprint 990).
-- [ ] Add bounded importance/recency/usage adjustments.
+- [ ] Add bounded user-controlled importance weighting; do not infer importance from memory text.
+- [x] Add bounded recency/usage weighting only after relevance filtering (Sprint 1002); expose content-free weights in package provenance.
 - [x] Apply bounded deterministic MMR selection to reduce duplicate memory context (Sprint 990).
 - [ ] Optional cross-encoder rerank only when actually installed/operational.
 - [x] Bound candidate, recap-expansion, result, and injected-history stages.

@@ -26,7 +26,17 @@ with tempfile.TemporaryDirectory() as temp:
     assert updated["namespace"] == "local-user"
     assert updated["scope"] == "user"
     assert updated["kind"] == "preference"
-    assert store.list()[0]["content"].startswith("Use 0.30")
+    recorded = store.record_usage([item["id"], "missing"],
+                                  used_at="2026-09-25T12:00:00+00:00")
+    assert list(recorded) == [item["id"]]
+    assert recorded[item["id"]]["use_count"] == 1
+    assert recorded[item["id"]]["last_used_at"] == "2026-09-25T12:00:00+00:00"
+    assert recorded[item["id"]]["content"] == updated["content"]
+    updated = store.update(item["id"], "Use 0.28 mm minimum track width")
+    assert updated["use_count"] == 1
+    assert updated["last_used_at"] == "2026-09-25T12:00:00+00:00"
+    assert updated["updated_at"]
+    assert store.list()[0]["content"].startswith("Use 0.28")
     legacy_path = Path(temp) / "legacy.json"
     legacy_path.write_text('[{"id":"old","content":"legacy preference","tier":"ltm"}]',
                            encoding="utf-8")

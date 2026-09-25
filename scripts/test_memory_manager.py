@@ -26,6 +26,8 @@ with tempfile.TemporaryDirectory() as temp:
     assert memory_sources[0]["ranking_method"] == "fielded_bm25_rrf_mmr"
     assert memory_sources[0]["channel_ranks"]["content"] == 1
     assert memory_sources[0]["rrf_score"] > 0
+    assert memory_sources[0]["recency_weight"] >= 1.0
+    assert memory_sources[0]["usage_weight"] >= 1.0
     assert "diversity_score" in memory_sources[0]
     tagged = manager.add("Keep a clear gap around board edge", tier="ltm",
                          title="", tags=["manufacturing", "clearance"])
@@ -89,7 +91,8 @@ with tempfile.TemporaryDirectory() as temp:
     manager.set_identities(task_id="task-c", thread_id="thread-c",
                            project_id="project-a", user_id="local-user")
     assert manager.list(tier="ltm", scope="project")[0]["id"] == project_rule["id"]
-    assert manager.retrieve("sensor ground return") == [project_rule]
+    assert [item["id"] for item in manager.retrieve("sensor ground return")] == [
+        project_rule["id"]]
     project_state = manager.state("ltm")
     assert project_state["project_entries"] == 1
     restarted = MemoryManager(MemoryStore(manager.store.path),
@@ -131,6 +134,33 @@ with tempfile.TemporaryDirectory() as temp:
     ranked, provenance = manager.retrieve_with_metadata("ground return routing short", limit=1)
     assert ranked[0]["kind"] == "correction"
     assert provenance[0]["memory_kind"] == "correction"
+    manager.reset("ltm")
+
+    recent = manager.add(
+        "Keep return routing short near U3 connector pads", tier="ltm",
+        title="return route")
+    older = manager.add(
+        "Keep return routing clean near U3 board edge and connector area",
+        tier="ltm", title="alternate return route")
+    entries = manager.store._read()
+    for entry in entries:
+        if entry["id"] == recent["id"]:
+            entry["created_at"] = "2026-09-25T00:00:00+00:00"
+            entry["use_count"] = 12
+            entry["last_used_at"] = "2026-09-25T00:00:00+00:00"
+        elif entry["id"] == older["id"]:
+            entry["created_at"] = "2020-01-01T00:00:00+00:00"
+            entry["use_count"] = 0
+    manager.store._write(entries)
+    manager.enable("ltm")
+    ranked, ranking = manager.retrieve_with_metadata("return routing U3 pads", limit=1)
+    assert ranked[0]["id"] == recent["id"]
+    assert ranking[0]["recency_weight"] > 1.0
+    assert ranking[0]["usage_weight"] > 1.0
+    persisted = {item["id"]: item for item in manager.store.list(tier="ltm")}
+    assert persisted[recent["id"]]["use_count"] == 13
+    assert persisted[recent["id"]]["last_used_at"]
+    assert persisted[older["id"]].get("use_count", 0) == 0
     manager.reset("ltm")
 
     manager.add("same memory text", tier="ltm", scope="conversation")

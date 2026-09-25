@@ -161,6 +161,10 @@ class MemoryStore:
                     expires_at=current.get("expires_at", "") if expires_at is None else expires_at)
                 replacement["id"] = entry_id
                 replacement["created_at"] = current.get("created_at", replacement["created_at"])
+                replacement["updated_at"] = datetime.now(timezone.utc).isoformat()
+                for field in ("last_used_at", "use_count"):
+                    if field in current:
+                        replacement[field] = current[field]
                 entries[index] = replacement
                 self._write(entries)
                 return replacement
@@ -172,6 +176,26 @@ class MemoryStore:
                 if (scope is None or item.get("scope") == scope)
                 and (tier is None or item.get("tier", "ltm") == tier)
                 and (namespace is None or item.get("namespace", "project") == namespace)]
+
+    def record_usage(self, entry_ids, *, used_at=None):
+        """Persist bounded retrieval-use metadata without changing memory content."""
+        ids = {str(entry_id) for entry_id in entry_ids if str(entry_id)}
+        if not ids:
+            return {}
+        timestamp = used_at or datetime.now(timezone.utc).isoformat()
+        entries = self._read()
+        updated = {}
+        for entry in entries:
+            if entry.get("id") not in ids:
+                continue
+            count = entry.get("use_count", 0)
+            count = count if isinstance(count, int) and not isinstance(count, bool) else 0
+            entry["use_count"] = min(1_000_000, max(0, count) + 1)
+            entry["last_used_at"] = str(timestamp)
+            updated[entry["id"]] = entry
+        if updated:
+            self._write(entries)
+        return updated
 
     @staticmethod
     def contains_secret(entry):
