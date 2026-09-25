@@ -45,6 +45,11 @@ int main() {
       readFile(root / "scripts" / "run_gui_interaction_demo.ps1");
   const std::string evidence_verifier =
       readFile(root / "scripts" / "verify_sprint.ps1");
+  const std::string evidence_hook =
+      readFile(root / "scripts" / "hooks" / "commit-msg");
+  const std::string evidence_ci =
+      readFile(root / ".github" / "workflows" / "ci.yml");
+  const std::string evidence_ignore = readFile(root / ".gitignore");
   const std::string workflow =
       readFile(root / ".agents" / "workflows" / "visual-validation.md");
 
@@ -98,6 +103,24 @@ int main() {
                   "visual workflow requires passing CI checks before merge");
   requireContains(workflow, "Do not commit screenshots or logs",
                   "visual workflow preserves workspace-only evidence policy");
+  requireContains(workflow, "scripts/verify_sprint.ps1",
+                  "visual workflow identifies the canonical gate");
+  requireContains(workflow, "scripts/run_ui_map_mouse_target_demo.ps1",
+                  "visual workflow requires the app-owned mapped harness");
+  requireContains(workflow, "-ReusePassedBuildAndTestsFrom",
+                  "visual workflow permits only verifier-checked gate reuse");
+  requireContains(workflow, "-WorkspaceOnlyEvidence",
+                  "visual workflow preserves local-only screenshot/log handling");
+  requireContains(evidence_verifier, "[switch]$WorkspaceOnlyEvidence",
+                  "evidence verifier supports local-only payloads");
+  requireContains(evidence_verifier, "[string]$ReusePassedBuildAndTestsFrom",
+                  "evidence verifier gates prior build/test reuse");
+  requireContains(evidence_hook, "scripts/check_evidence_manifest.py",
+                  "commit hook uses the canonical evidence checker");
+  requireContains(evidence_ci, "evidence-manifest:",
+                  "hosted CI validates evidence manifests");
+  requireContains(evidence_ignore, "artifacts/",
+                  "generated evidence remains excluded by default");
   requireContains(evidence_verifier, "[switch]$NonVisual",
                   "evidence verifier supports explicit non-visual changes");
   requireContains(evidence_verifier, "not_applicable_no_gui_behavior_changed",

@@ -120,6 +120,35 @@ For user-facing progress, use:
 Progress: Phase X/Y, Sprint N, <branch>, <status> <work in plain language>
 ```
 
+## Repository-specific gate and evidence policy
+
+Use the existing `scripts/verify_sprint.ps1` as the single local gate. Its GUI
+mode requires an app-owned sequence from
+`scripts/run_ui_map_mouse_target_demo.ps1`; do not copy illustrative snippets
+that invoke nonexistent generic GUI wrappers or launch the application outside
+the mapped harness. The verifier checks the action report, required targets,
+logs, and planned distinct screenshots, then writes the manifest. Image quality
+still requires human inspection of every retained screenshot.
+
+Run one full Release build and CTest gate after the selected implementation slice
+is complete. For a docs-only or otherwise source-unchanged follow-up, the
+verifier's `-ReusePassedBuildAndTestsFrom <sprint-id>` is allowed only when its
+timestamp and prior-log checks pass; do not claim reuse if the verifier rejects
+it. GUI changes must never use `-NonVisual` to skip interaction evidence.
+
+Use `-WorkspaceOnlyEvidence` when screenshots or logs must remain local. Commit
+the evidence manifest and its hashes, not workspace-only images/logs. Do not
+unignore all of `artifacts/` or image files as a shortcut. The canonical handover
+paths are `docs/agent-methodology.md` and `docs/devops/backlog.md`; do not create
+a duplicate methodology file under another directory.
+
+Before changing the verifier, commit hook, CI workflow, or ignore rules, inspect
+their current implementations. `scripts/hooks/commit-msg` delegates to
+`scripts/check_evidence_manifest.py`, and `.github/workflows/ci.yml` contains
+the configured CI lanes. Report the actual workflow result for the pushed SHA;
+do not claim a self-hosted runner or branch protection unless repository
+settings and run results confirm them.
+
 ## Open-ended language-server use cases
 
 Use clangd for declarations, include/type diagnostics, Qt signal/slot references,

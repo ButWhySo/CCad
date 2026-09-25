@@ -2250,3 +2250,18 @@ The evidence runner supports `-WorkspaceOnlyEvidence` for generated screenshots 
 ## Sprint 992 declared schematic pins and annotations
 
 `ProjectIndex._extract()` emits `schematic_pin` documents from typed symbol-declared pins as well as net-member records. When the input snapshot contains a stable pin ID it is retained; otherwise the index labels its deterministic symbol/unit/number-or-name identity as derived. At Sprint 992 the CCad project JSON reader/writer did not serialize `SchPin.id`; Sprint 995 added optional native-ID persistence, so legacy files continue using derived identities while newer files retain source IDs. A net is attached only when the component/pin declaration maps unambiguously, leaving ambiguous or unmatched membership explicit. The extractor also indexes bounded textboxes, graphics, junctions, no-connects, markers, bus entries, rule areas, and tables; it includes bounded table-cell text and never forwards bitmap bytes. `scripts/test_project_index.py` covers exact identities, electrical metadata, connected/unconnected relationships, incremental deletion, annotations, and table text. The Sprint 992 app-owned UI-map scenario proves supported pin fields survive CCad's loader/serializer and are reflected in bounded Agent context without contacting a provider. Verification is recorded in `docs/devops/progress.md` and `artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final.json`.
+
+## Sprint 996 evidence workflow reconciliation
+
+The repository already has the enforceable evidence flow proposed by the
+replacement set: `scripts/verify_sprint.ps1` drives the app-owned target
+sequence, validates reports and planned screenshots, and writes a hash-bearing
+manifest; `scripts/hooks/commit-msg` delegates to the canonical manifest checker;
+and `.github/workflows/ci.yml` validates the manifest in configured CI lanes.
+The visual workflow now names these canonical paths and forbids copying
+illustrative generic GUI wrappers, globally unignoring generated evidence, or
+claiming unverified runner/branch-protection settings. Workspace-only screenshots
+and logs remain local while their hashes stay reviewable in the committed
+manifest. The policy contract passes, and Qt MinGW Release plus full CTest pass
+115/115. Manifest: `artifacts/evidence/sprint996-validation-reconciliation.json`
+(SHA-256 `06AD438359BB59D8D8B5D1B6E52A366CE9EBC2F2370CE9871268AD374382D45F`).

@@ -1,5 +1,18 @@
 # Implemented Features
 
+## Sprint 996 evidence-gated visual validation
+
+The visual-validation guide now points to the repository's actual app-owned
+Qt GUI-map harness, manifest verifier, commit hook, and hosted CI rather than
+copying illustrative generic wrappers. It documents the one end-of-slice
+Release/CTest gate, provenance-checked reuse for unchanged code, and the rule
+that generated screenshots/logs remain workspace-only when requested. A CTest
+policy contract protects the canonical paths and evidence behavior. This does
+not claim branch protection or a self-hosted runner; those require confirmation
+from repository settings and actual CI runs. Verification: Qt MinGW Release and
+full CTest 115/115; manifest `artifacts/evidence/sprint996-validation-reconciliation.json`
+(SHA-256 `06AD438359BB59D8D8B5D1B6E52A366CE9EBC2F2370CE9871268AD374382D45F`).
+
 ## Sprint 995 stable schematic pin identity persistence
 
 The project JSON reader accepts an optional `id` on each placed symbol-declared schematic pin, and the writer emits non-empty IDs while omitting empty ones. Existing project files without pin IDs remain readable and continue to receive explicitly derived index identities; native IDs use the `native_pin_id` provenance label. Serializer round-trip and legacy-format tests plus project-index provenance tests cover both paths. This does not add library-definition pin records or claim complete schematic graph coverage. Qt MinGW Release and full CTest pass 115/115. Official non-visual evidence manifest: `artifacts/evidence/sprint995-schematic-pin-identities.json` (SHA-256 `21c857fa71413cdb262e3018cdd56db0485d46b6caae1383664b148e46254561`); logs remain workspace-only. clangd parsed the translation unit but did not complete indexing, and is not counted as a pass.

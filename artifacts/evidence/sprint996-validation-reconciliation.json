@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint996-validation-reconciliation",
+    "feature":  "Reconcile supplied visual-validation replacement with existing CCad evidence gate",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-25T13:33:51.7218470Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.05 log=artifacts/evidence/sprint996-validation-reconciliation/preflight.log",
+                      "finished_utc":  "2026-09-25T13:33:52.8874665Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=5.92 log=artifacts/evidence/sprint996-validation-reconciliation/build.log",
+                      "finished_utc":  "2026-09-25T13:33:58.8232813Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=122.01 log=artifacts/evidence/sprint996-validation-reconciliation/ctest.log",
+                      "finished_utc":  "2026-09-25T13:36:00.8302994Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint996-validation-reconciliation/build.log",
+                                         "sha256":  "B4914D7AF1975EF93E67197541CC5DBB79CE711A548CC40D4165786A2936FDAA"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint996-validation-reconciliation/ctest.log",
+                                         "sha256":  "4E0518AAB85BE9C28EF84D3C96E747ACAD183C2FD7BC2A9623D904D2B9D7E995"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint996-validation-reconciliation/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-25T13:36:00.8983654Z"
+}

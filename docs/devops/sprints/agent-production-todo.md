@@ -2,6 +2,18 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 996 active slice — reconcile visual-validation replacement proposal
+
+- [x] Read the supplied replacement set in full and compare each proposed file with the current workflow, verifier, app-owned UI-map harness, evidence checker, commit hook, CI, and ignore rules.
+- [x] Keep the existing functional verifier and CI architecture; reject illustrative nonexistent wrappers, broad artifact unignoring, and unsupported self-hosted/branch-protection claims.
+- [x] Document canonical paths, one end-of-slice gate, verified unchanged-code reuse, and workspace-only screenshot/log policy.
+- [x] Add and pass the visual-harness policy contract for canonical entry points and evidence handling.
+- [x] Run the official non-visual verifier; inspect its manifest and all logs (Qt MinGW Release; full CTest 115/115). Manifest: `artifacts/evidence/sprint996-validation-reconciliation.json` (SHA-256 `06AD438359BB59D8D8B5D1B6E52A366CE9EBC2F2370CE9871268AD374382D45F`).
+- [x] Run redacted tracked-tree and staged-diff credential scans; staged additions are clean, and existing token-shaped fixture/documentation matches were classified as non-secrets.
+- [ ] Commit and push the documentation/test slice, then inspect hosted CI for the pushed SHA.
+
+Scope boundary: this updates the workflow contract only. Existing scripts, commit hook, CI lanes, and artifact policy remain authoritative; no GUI wrapper, self-hosted runner, or repository branch-protection setting is fabricated.
+
 ### Sprint 995 active slice — stable schematic pin identity persistence (Tier 1, C3)
 
 - [x] Add source-level coverage for native `SchPin.id` round-trip and the existing derived-identity path for records without IDs.
