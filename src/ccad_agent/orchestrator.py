@@ -2622,6 +2622,8 @@ def handle_human_message(req):
             "project_retrieval_kinds", {}).get("schematic_symbol", 0),
         "project_retrieval_board_net_count": context_metadata.get(
             "project_retrieval_kinds", {}).get("board_net", 0),
+        "project_retrieval_diagnostic_count": context_metadata.get(
+            "project_retrieval_kinds", {}).get("project_diagnostic", 0),
         "project_retrieval_layer_count": context_metadata.get(
             "project_retrieval_layer_count", 0),
         "project_retrieval_chars": context_metadata["project_retrieval_chars"],

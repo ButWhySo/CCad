@@ -30,7 +30,7 @@ assert '"previous_revision": previous_context_revision' in text
 assert '"change_kind": context_change_kind' in text
 assert '"response_contracts": {' in text
 assert '"intake_state": {"fields": [' in text
-human_start = text.index('elif method == "human_message":')
+human_start = text.index("def handle_human_message(req):")
 human_handler = text[human_start:]
 assert human_handler.index("telemetry_runtime.start_agent_turn(") < human_handler.index(
     '"context.assemble"')

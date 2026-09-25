@@ -57,6 +57,19 @@ ccad::Project boardOnlyProject() {
   return project;
 }
 
+ccad::Project diagnosticProject() {
+  ccad::Project project = boardOnlyProject();
+  project.id = "proj-diagnostics-context";
+  ccad::TrackSegment track;
+  track.id = "T_BAD";
+  track.layer_id = "F.Cu";
+  track.start = {ccad::millimeters(3.0), ccad::millimeters(3.0)};
+  track.end = track.start;
+  track.width = ccad::millimeters(0.25);
+  project.boards.front().tracks.push_back(track);
+  return project;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -68,8 +81,10 @@ int main(int argc, char** argv) {
 
   const QString empty_path = temp_dir.filePath("empty.ccad.json");
   const QString board_path = temp_dir.filePath("board-only.ccad.json");
+  const QString diagnostic_path = temp_dir.filePath("diagnostic-context.ccad.json");
   if (!writeProject(empty_path, emptyProject()) ||
-      !writeProject(board_path, boardOnlyProject())) {
+      !writeProject(board_path, boardOnlyProject()) ||
+      !writeProject(diagnostic_path, diagnosticProject())) {
     return 3;
   }
 
@@ -101,6 +116,29 @@ int main(int argc, char** argv) {
       !state.contains("binary_payloads_excluded") || !state.contains("GND")) {
     return 13;
   }
+
+  window.loadProjectPath(diagnostic_path.toStdString());
+  const QJsonObject diagnostic_context = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("project.context", "{}").toUtf8()).object()
+      .value("result").toObject();
+  const QJsonArray project_diagnostics = diagnostic_context.value(
+      "project_diagnostics").toArray();
+  bool linked_drc_present = false;
+  for (const QJsonValue& value : project_diagnostics) {
+    const QJsonObject diagnostic = value.toObject();
+    if (diagnostic.value("engine").toString() == "drc" &&
+        diagnostic.value("code").toString() == "ZERO_LENGTH_TRACK" &&
+        diagnostic.value("object_id").toString() == "T_BAD") {
+      linked_drc_present = true;
+      break;
+    }
+  }
+  if (!linked_drc_present ||
+      diagnostic_context.value("project_diagnostic_count").toInt() <
+          project_diagnostics.size()) {
+    return 19;
+  }
+  window.loadProjectPath(board_path.toStdString());
 
   const QJsonObject methods_envelope =
       QJsonDocument::fromJson(methods.toUtf8()).object();

@@ -1425,6 +1425,8 @@ void AgentPanel::handlePythonOutput() {
         const int schematic_pin_count = params["project_retrieval_schematic_pin_count"].toInt();
         const int schematic_symbol_count = params["project_retrieval_schematic_symbol_count"].toInt();
         const int board_net_count = params["project_retrieval_board_net_count"].toInt();
+        const int project_diagnostic_count =
+            params["project_retrieval_diagnostic_count"].toInt();
         const int pcb_layer_count = params["project_retrieval_layer_count"].toInt();
         QString schematic_detail;
         if (schematic_pin_count > 0)
@@ -1435,6 +1437,9 @@ void AgentPanel::handlePythonOutput() {
           schematic_detail += QString(" | PCB nets: %1").arg(board_net_count);
         if (pcb_layer_count > 0)
           schematic_detail += QString(" | %1 PCB layers").arg(pcb_layer_count);
+        if (project_diagnostic_count > 0)
+          schematic_detail += QString(" | %1 DRC/ERC diagnostics")
+                                  .arg(project_diagnostic_count);
         addActivityEvent("context", "Context package prepared",
                          QString("v%1 | %2 chars | ~%3 tokens | %4 memories | %5 history | %6")
                              .arg(context_schema_version_)

@@ -55,7 +55,15 @@ def project_model(snapshot: Any) -> dict:
         if not typed.get("available", False):
             return {}
         project = typed.get("project")
-        return project if isinstance(project, dict) else {}
+        if not isinstance(project, dict):
+            return {}
+        diagnostics = snapshot.get("project_diagnostics")
+        if isinstance(diagnostics, list):
+            # The GUI attaches live diagnostics beside typed_state; carry them
+            # into the index view without mutating the cached typed project.
+            project = dict(project)
+            project["project_diagnostics"] = diagnostics
+        return project
     project = snapshot.get("project", snapshot)
     if not isinstance(project, dict):
         return {}
@@ -194,6 +202,8 @@ class ProjectIndex:
         self._doc_lengths: dict[str, int] = {}
         self._net_docs: dict[str, set[str]] = defaultdict(set)
         self._component_docs: dict[str, set[str]] = defaultdict(set)
+        self._sheet_docs: dict[str, set[str]] = defaultdict(set)
+        self._reference_docs: dict[str, set[tuple[str, str]]] = defaultdict(set)
         self._layer_docs: dict[str, set[str]] = defaultdict(set)
         self._spatial_cells: dict[tuple[int, int], set[str]] = defaultdict(set)
         self._spatial_keys: dict[str, tuple[tuple[int, int], ...]] = {}
@@ -205,6 +215,8 @@ class ProjectIndex:
                    "tokens": dict(doc["tokens"]), "net": doc["net"],
                    "components": sorted(doc["components"]),
                    "layers": sorted(doc["layers"]),
+                   "sheets": sorted(doc["sheets"]),
+                   "references": sorted(doc["references"]),
                    "text": doc["text"]}
         return hashlib.sha256(json.dumps(
             indexed, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
@@ -212,7 +224,8 @@ class ProjectIndex:
     @staticmethod
     def _make_doc(kind: str, item: dict, *, id_key: str = "id",
                   aliases=(), position=None, points=None, net_id="", layer_id="",
-                  component_id="", extra_text=()) -> dict | None:
+                  component_id="", sheet_id="", parent_sheet_id="",
+                  extra_text=()) -> dict | None:
         object_id = _safe(item.get(id_key), 120)
         if not object_id:
             object_id = next((_safe(item.get(key), 120) for key in aliases
@@ -226,7 +239,12 @@ class ProjectIndex:
                            ("part", item.get("part")),
                            ("pin_name", item.get("pin_name")),
                            ("pin_number", item.get("pin_number")),
-                           ("type", item.get("kind", item.get("type")))):
+                           ("type", item.get("kind", item.get("type"))),
+                           ("code", item.get("code")),
+                           ("severity", item.get("severity")),
+                           ("message", item.get("message")),
+                           ("engine", item.get("engine")),
+                           ("object_id", item.get("object_id"))):
             clean = _safe(value, 140)
             if clean:
                 fields[key] = clean
@@ -278,6 +296,12 @@ class ProjectIndex:
         symbol_id = _safe(item.get("symbol_id"), 120)
         if symbol_id:
             fields["symbol_id"] = symbol_id
+        source_sheet = _safe(sheet_id or item.get("sheet_id"), 120)
+        parent_sheet = _safe(parent_sheet_id or item.get("parent_sheet_id"), 120)
+        if source_sheet:
+            fields["sheet_id"] = source_sheet
+        if parent_sheet:
+            fields["parent_sheet_id"] = parent_sheet
         for key in ("anchor_pad_id", "anchor_via_id", "anchor_track_id",
                     "from_object_id", "to_object_id", "preferred_layer_id"):
             clean = _safe(item.get(key), 120)
@@ -303,7 +327,9 @@ class ProjectIndex:
                                  ("reference", "value", "name", "part", "pin_name", "pin_number"))
         exact_values = [object_id]
         exact_values.extend(_safe(item.get(key), 140) for key in aliases
-                            if key in {"id", "reference", "name", "pin_name", "pin_number"})
+                            if key in {"id", "reference", "name", "pin_name", "pin_number"}
+                            or (kind == "project_diagnostic" and
+                                key in {"code", "object_id"}))
         if kind in {"layer", "schematic_net"}:
             exact_values.append(net or _safe(item.get("name"), 140))
         text = " ".join([kind] + [str(value) for value in searchable_values if value] +
@@ -316,7 +342,26 @@ class ProjectIndex:
                 "component": component.casefold(), "components": component_values,
                 "layers": {_normalize(value) for value in layer_ids
                            if _normalize(value)},
+                "sheets": {_normalize(source_sheet)} if _normalize(source_sheet) else set(),
+                "references": set(),
                 "text": text[:1200]}
+        for key, relation in (("from_object_id", "route_endpoint"),
+                              ("to_object_id", "route_endpoint"),
+                              ("anchor_pad_id", "anchored_to"),
+                              ("anchor_via_id", "anchored_to"),
+                              ("anchor_track_id", "anchored_to"),
+                              ("object_id", "diagnostic_for"),
+                              ("parent_sheet_id", "child_sheet")):
+            target_value = parent_sheet if key == "parent_sheet_id" else item.get(key)
+            target = _normalize(target_value)
+            if target:
+                doc["references"].add((target, relation))
+        members = item.get("members")
+        if isinstance(members, list):
+            for member in members[:_MAX_INPUT_ENTITIES]:
+                target = _normalize(member.get("id") if isinstance(member, dict) else member)
+                if target:
+                    doc["references"].add((target, "group_member"))
         doc["signature"] = ProjectIndex._signature(doc)
         return doc
 
@@ -422,19 +467,55 @@ class ProjectIndex:
         if isinstance(schematics, list):
             schematic_sources.extend(item for item in schematics[:64] if isinstance(item, dict))
         for schematic in schematic_sources:
+            source_sheet_id = (_safe(schematic.get("id") or schematic.get("name"), 120)
+                               if schematic is not project else "")
+            page_name = _safe(schematic.get("name") or source_sheet_id, 140)
+            if source_sheet_id:
+                page = cls._make_doc(
+                    "schematic_page", {"id": source_sheet_id, "name": page_name},
+                    aliases=("id", "name"), sheet_id=source_sheet_id,
+                    extra_text=("schematic sheet page",))
+                if page is not None and len(docs) < _MAX_INPUT_ENTITIES:
+                    docs.append(page)
             symbols = schematic.get("components", schematic.get("symbols", []))
             add("schematic_symbol", symbols,
                 aliases=("id", "reference", "part", "value", "lib_id"),
+                sheet_id=source_sheet_id,
                 extra_text=("schematic symbol",))
             add("schematic_net", schematic.get("nets"), aliases=("id", "name"),
+                sheet_id=source_sheet_id,
                 extra_text=("schematic net",))
-            add("schematic_wire", schematic.get("wires"), aliases=("id", "net_id"))
-            add("schematic_label", schematic.get("labels"), aliases=("id", "text", "net_id"))
+            add("schematic_wire", schematic.get("wires"), aliases=("id", "net_id"),
+                sheet_id=source_sheet_id)
+            add("schematic_label", schematic.get("labels"), aliases=("id", "text", "net_id"),
+                sheet_id=source_sheet_id)
             for kind, key in (("power_symbol", "power_symbols"), ("schematic_bus", "buses"),
                               ("schematic_constraint", "constraints"),
                               ("schematic_group", "groups"), ("schematic_sheet", "sheets"),
                               ("schematic_text", "texts")):
-                add(kind, schematic.get(key), aliases=("id", "name", "text", "value", "net_id"))
+                add(kind, schematic.get(key), aliases=("id", "name", "text", "value", "net_id"),
+                    sheet_id=source_sheet_id,
+                    parent_sheet_id=(source_sheet_id if kind == "schematic_sheet" else ""))
+
+        diagnostics = snapshot.get("project_diagnostics", [])
+        if isinstance(diagnostics, list):
+            duplicate_ids: dict[str, int] = defaultdict(int)
+            for item in diagnostics[:256]:
+                if not isinstance(item, dict):
+                    continue
+                safe_item = {key: item.get(key) for key in
+                             ("engine", "severity", "code", "message", "object_id")}
+                digest = hashlib.sha256(json.dumps(
+                    safe_item, sort_keys=True, separators=(",", ":")).encode()).hexdigest()[:16]
+                duplicate_ids[digest] += 1
+                engine = _safe(item.get("engine"), 16) or "diagnostic"
+                diagnostic = cls._make_doc(
+                    "project_diagnostic",
+                    {**safe_item, "id": f"{engine}:{digest}:{duplicate_ids[digest]}"},
+                    aliases=("id", "code", "object_id"),
+                    extra_text=("project diagnostic",))
+                if diagnostic is not None and len(docs) < _MAX_INPUT_ENTITIES:
+                    docs.append(diagnostic)
 
         # Build the membership lookup once; scanning every source net for every
         # indexed net makes large multi-sheet projects quadratic.
@@ -530,6 +611,18 @@ class ProjectIndex:
                     bucket.discard(uid)
                     if not bucket:
                         buckets.pop(value, None)
+        for value in doc["sheets"]:
+            bucket = self._sheet_docs.get(value)
+            if bucket:
+                bucket.discard(uid)
+                if not bucket:
+                    self._sheet_docs.pop(value, None)
+        for target, relation in doc["references"]:
+            bucket = self._reference_docs.get(target)
+            if bucket:
+                bucket.discard((uid, relation))
+                if not bucket:
+                    self._reference_docs.pop(target, None)
         for value in doc["components"]:
             bucket = self._component_docs.get(value)
             if bucket:
@@ -580,6 +673,10 @@ class ProjectIndex:
             self._layer_docs[value].add(uid)
         for value in doc["components"]:
             self._component_docs[value].add(uid)
+        for value in doc["sheets"]:
+            self._sheet_docs[value].add(uid)
+        for target, relation in doc["references"]:
+            self._reference_docs[target].add((uid, relation))
         self._add_spatial(doc)
 
     def _sync(self, snapshot: dict) -> dict:
@@ -753,6 +850,22 @@ class ProjectIndex:
                                         other_kind in {"schematic_pin", "schematic_symbol"}
                                         else "same_component")
                         found[neighbor].add(relationship)
+            for sheet in doc["sheets"]:
+                for neighbor in self._sheet_docs.get(sheet, ()):
+                    if neighbor != uid and neighbor not in seeds:
+                        found[neighbor].add("same_schematic_sheet")
+            for target, relation in doc["references"]:
+                for alias_uid in self._aliases.get(target, ()):
+                    if alias_uid != uid and alias_uid not in seeds:
+                        found[alias_uid].add(relation)
+            identity_keys = set(doc["aliases"])
+            identity = _normalize(doc["fields"].get("id"))
+            if identity:
+                identity_keys.add(identity)
+            for identity_key in identity_keys:
+                for neighbor, relation in self._reference_docs.get(identity_key, ()):
+                    if neighbor != uid and neighbor not in seeds:
+                        found[neighbor].add(relation)
         return found
 
     def retrieve(self, snapshot: Any, query: str, *, active_layer: str = "",
@@ -828,7 +941,9 @@ class ProjectIndex:
                     if key in {"id", "kind", "reference", "value", "name", "part",
                                "pin_name", "pin_number", "type", "net_id", "membership_kind", "layer_id",
                                "layer_ids", "start_layer_id", "end_layer_id",
-                               "component_id", "symbol_id", "position_mm", "bounds_mm"}}
+                               "component_id", "symbol_id", "position_mm", "bounds_mm",
+                               "sheet_id", "parent_sheet_id", "code", "severity",
+                               "message", "engine", "object_id"}}
             if "design_rules" in fields:
                 item["design_rules"] = fields["design_rules"]
             for key in ("anchor_pad_id", "anchor_via_id", "anchor_track_id",
@@ -862,4 +977,6 @@ class ProjectIndex:
                 "logical_net_semantics":
                     "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity",
                 "spatial_semantics": "axis_aligned_bounds_distance_only",
+                "explicit_reference_semantics":
+                    "serialized object references and declared schematic page membership only",
                 "search_method": "exact_alias_bm25_relationship_spatial"}

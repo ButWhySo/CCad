@@ -6960,6 +6960,22 @@ QString ReviewWindow::projectContextJson() const {
   response.insert("has_interaction_anchor", interaction_has_anchor_);
   response.insert("typed_state", safeTypedProjectState(project_cache_));
   response.insert("selection", parsedJsonObjectOrRaw(uiSelectionJson()));
+  const std::vector<ccad::Diagnostic> erc = ccad::runErc(project_cache_);
+  const std::vector<ccad::Diagnostic> drc = ccad::runDrc(project_cache_);
+  const std::size_t total_diagnostics = erc.size() + drc.size();
+  const std::size_t included_diagnostics = std::min<std::size_t>(256, total_diagnostics);
+  QJsonArray diagnostics;
+  for (std::size_t i = 0; i < included_diagnostics; ++i) {
+    const bool from_erc = i < erc.size();
+    const ccad::Diagnostic& diagnostic = from_erc ? erc.at(i) : drc.at(i - erc.size());
+    QJsonObject item = diagnosticJsonObject(diagnostic);
+    item.insert("engine", from_erc ? "erc" : "drc");
+    diagnostics.append(item);
+  }
+  response.insert("project_diagnostics", diagnostics);
+  response.insert("project_diagnostic_count", static_cast<qint64>(total_diagnostics));
+  response.insert("project_diagnostics_omitted",
+                  static_cast<qint64>(total_diagnostics - included_diagnostics));
   return jsonObjectLine(response);
 }
 

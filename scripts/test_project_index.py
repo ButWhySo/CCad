@@ -309,6 +309,101 @@ class ProjectIndexTests(unittest.TestCase):
         self.assertFalse(any(item["kind"] == "schematic_net"
                              for item in result["entities"]))
 
+    def test_explicit_board_references_groups_diagnostics_and_sheet_membership(self):
+        snapshot = project_snapshot()
+        project = snapshot["typed_state"]["project"]
+        board = project["board"]
+        board["groups"] = [{"id": "BG1", "name": "Power input",
+                             "members": ["U3", "P1", "T1"]}]
+        board["route_requests"] = [{"id": "RR1", "net_id": "GND",
+                                    "from_object_id": "P1", "to_object_id": "P2"}]
+        board["teardrops"] = [{"id": "TD1", "net_id": "GND",
+                               "anchor_track_id": "T1",
+                               "outline": [{"x_nm": 0, "y_nm": 0},
+                                           {"x_nm": 100_000, "y_nm": 100_000}]}]
+        schematic = {
+            "id": "SCH_ROOT", "name": "Power",
+            "components": project.pop("components"),
+            "nets": project.pop("nets"),
+            "wires": project.pop("wires"),
+            "labels": project.pop("labels"),
+            "sheets": [{"id": "SCH_CHILD", "name": "Regulator",
+                        "file_path": "regulator.ccad.sch"}],
+            "groups": [{"id": "SG1", "name": "Regulator core",
+                        "members": ["sch-u3", "GND:sch-u3:GND"]}],
+        }
+        project["schematics"] = [schematic]
+        snapshot["project_diagnostics"] = [{
+            "id": "drc-zero-track-T1", "engine": "drc", "severity": "error",
+            "code": "ZERO_LENGTH_TRACK", "message": "Track start and end must differ",
+            "object_id": "T1"}]
+
+        index = ProjectIndex(max_entities=32)
+        group = index.retrieve(snapshot, "Power input BG1", limit=32)
+        by_key = {(item["kind"], item["id"]): item for item in group["entities"]}
+        self.assertIn(("board_group", "BG1"), by_key)
+        self.assertEqual(by_key[("footprint", "U3")]["relationship"], "group_member")
+        self.assertEqual(by_key[("pad", "P1")]["relationship"], "group_member")
+
+        route = index.retrieve(snapshot, "route request RR1", limit=32)
+        self.assertEqual(next(item for item in route["entities"]
+                              if item["kind"] == "pad" and item["id"] == "P1")[
+                                  "relationship"], "route_endpoint")
+        anchor = index.retrieve(snapshot, "teardrop TD1", limit=32)
+        self.assertEqual(next(item for item in anchor["entities"]
+                              if item["kind"] == "track" and item["id"] == "T1")[
+                                  "relationship"], "anchored_to")
+
+        diagnostic = index.retrieve(snapshot, "ZERO_LENGTH_TRACK", limit=32)
+        found_diagnostic = next(item for item in diagnostic["entities"]
+                                if item["kind"] == "project_diagnostic")
+        self.assertEqual(found_diagnostic["object_id"], "T1")
+        self.assertEqual(found_diagnostic["engine"], "drc")
+        self.assertEqual(next(item for item in diagnostic["entities"]
+                              if item["kind"] == "track" and item["id"] == "T1")[
+                                  "relationship"], "diagnostic_for")
+        package = build_context_package(
+            __import__("json").dumps(snapshot), [], [], char_limit=4096,
+            project_retrieval=diagnostic)
+        self.assertEqual(package["metadata"]["project_retrieval_kinds"].get(
+            "project_diagnostic"), 1)
+        gui_context = {
+            "typed_state": snapshot["typed_state"],
+            "project_diagnostics": snapshot["project_diagnostics"],
+        }
+        gui_index = ProjectIndex(max_entities=32)
+        gui_diagnostic = gui_index.retrieve(gui_context, "ZERO_LENGTH_TRACK", limit=32)
+        self.assertTrue(any(item["kind"] == "project_diagnostic" and
+                            item["object_id"] == "T1"
+                            for item in gui_diagnostic["entities"]))
+        with tempfile.TemporaryDirectory() as temp:
+            manager = MemoryManager(MemoryStore(Path(temp) / "memory.json"),
+                                    thread_id="thread", project_id="project-1")
+            manager.configure({})
+            assembled = ContextBroker().prepare(
+                manager, thread_id="thread", project_revision="ui-diagnostics",
+                project_snapshot=gui_context, user_request="ZERO_LENGTH_TRACK T1")
+            self.assertTrue(any(item["kind"] == "project_diagnostic" and
+                                item["object_id"] == "T1"
+                                for item in assembled["project_retrieval"]["entities"]))
+
+        symbol = index.retrieve(snapshot, "sch-u3", limit=32)
+        u3 = next(item for item in symbol["entities"]
+                  if item["kind"] == "schematic_symbol" and item["id"] == "sch-u3")
+        self.assertEqual(u3["sheet_id"], "SCH_ROOT")
+        page = index.retrieve(snapshot, "SCH_ROOT", limit=32)
+        self.assertTrue(any(item["kind"] == "schematic_sheet" and
+                            item["id"] == "SCH_CHILD" and
+                            item.get("relationship") == "child_sheet"
+                            for item in page["entities"]))
+
+        snapshot["project_diagnostics"].clear()
+        snapshot["typed_state"]["project"]["board"]["groups"].clear()
+        refreshed = index.retrieve(snapshot, "ZERO_LENGTH_TRACK BG1", limit=32)
+        self.assertEqual(refreshed["stats"]["index_state"], "incremental")
+        self.assertFalse(any(item["kind"] in {"project_diagnostic", "board_group"}
+                             for item in refreshed["entities"]))
+
     def test_board_net_id_change_incrementally_removes_stale_membership(self):
         index = ProjectIndex()
         before = project_snapshot()
