@@ -59,12 +59,37 @@ def main() -> int:
         manifest = json.loads(raw)
     except (OSError, ValueError, subprocess.CalledProcessError) as exc:
         return fail(f"cannot load referenced manifest: {exc}")
+    if not isinstance(manifest, dict):
+        return fail("manifest root must be an object")
     if manifest.get("status") != "pass":
         return fail("manifest status is not pass")
-    for artifact in manifest.get("artifacts", []):
-        artifact_path = Path(artifact.get("path", "").replace("\\", "/"))
+    def checked_artifact_path(artifact: dict) -> tuple[Path, str] | None:
+        path_value = artifact.get("path")
+        if not isinstance(path_value, str) or not path_value:
+            fail("artifact path must be a non-empty string")
+            return None
+        artifact_path = Path(path_value.replace("\\", "/"))
         if artifact_path.is_absolute() or ".." in artifact_path.parts:
-            return fail("artifact path escapes repository")
+            fail("artifact path escapes repository")
+            return None
+        digest = artifact.get("sha256", "")
+        if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", digest):
+            fail(f"artifact has invalid SHA-256 metadata: {artifact_path.as_posix()}")
+            return None
+        return artifact_path, digest
+
+    artifacts = manifest.get("artifacts", [])
+    workspace_only = manifest.get("workspace_only_artifacts", [])
+    if not isinstance(artifacts, list) or not isinstance(workspace_only, list):
+        return fail("manifest artifact collections must be arrays")
+
+    for artifact in artifacts:
+        if not isinstance(artifact, dict):
+            return fail("artifact entry must be an object")
+        checked = checked_artifact_path(artifact)
+        if checked is None:
+            return 1
+        artifact_path, expected_digest = checked
         try:
             if staged_mode:
                 tracked = subprocess.run(["git", "ls-files", "--error-unmatch", "--", artifact_path.as_posix()],
@@ -78,9 +103,37 @@ def main() -> int:
                                         cwd=root, capture_output=True, check=True).stdout
         except (OSError, subprocess.CalledProcessError) as exc:
             return fail(f"artifact missing from commit: {artifact_path}: {exc}")
-        if hashlib.sha256(actual).hexdigest().lower() != artifact.get("sha256", "").lower():
+        if hashlib.sha256(actual).hexdigest().lower() != expected_digest.lower():
             return fail(f"artifact hash mismatch: {artifact_path}")
-    print(f"evidence gate: valid pass manifest {relative.as_posix()} ({len(manifest.get('artifacts', []))} artifacts)")
+
+    for artifact in workspace_only:
+        if not isinstance(artifact, dict):
+            return fail("workspace-only artifact entry must be an object")
+        checked = checked_artifact_path(artifact)
+        if checked is None:
+            return 1
+        artifact_path, expected_digest = checked
+        if staged_mode:
+            local_path = (root / artifact_path).resolve()
+            try:
+                local_path.relative_to(root)
+            except ValueError:
+                return fail("workspace-only artifact path escapes repository")
+            try:
+                actual = local_path.read_bytes()
+            except OSError as exc:
+                return fail(f"workspace-only artifact is missing from working tree: {artifact_path}: {exc}")
+            if hashlib.sha256(actual).hexdigest().lower() != expected_digest.lower():
+                return fail(f"workspace-only artifact hash mismatch: {artifact_path}")
+
+    workspace_note = (
+        f"; {len(workspace_only)} workspace-only artifact(s), not independently byte-verified from commit"
+        if workspace_only and not staged_mode else
+        f"; {len(workspace_only)} workspace-only artifact(s) checked in working tree"
+        if workspace_only else ""
+    )
+    print(f"evidence gate: valid pass manifest {relative.as_posix()} "
+          f"({len(artifacts)} committed artifact(s){workspace_note})")
     return 0
 
 

@@ -109,11 +109,18 @@ def _project_retrieval_payload(value: dict | None) -> dict:
         item: dict[str, Any] = {}
         for key in ("id", "kind", "reference", "value", "name", "part", "sheet_path",
                     "pin_name", "pin_number", "type", "net_id", "membership_kind", "layer_id",
+                    "provenance", "source_group_id", "source_sheet_id", "source_revision",
+                    "member_count",
                     "start_layer_id", "end_layer_id",
                     "component_id", "symbol_id", "position_mm", "bounds_mm", "retrieval",
                     "rank", "relationship", "distance_mm", "design_rules"):
             if key in entity and isinstance(entity[key], (str, int, float, dict)):
                 item[key] = entity[key]
+        for key in ("members", "source_member_ids", "related_net_ids"):
+            values = entity.get(key)
+            if isinstance(values, list):
+                item[key] = [clean for raw in values[:64]
+                             if (clean := _safe_text(raw, 120))]
         sheet_path = entity.get("sheet_path")
         if isinstance(sheet_path, str):
             normalized_path = sheet_path.replace("\\", "/")

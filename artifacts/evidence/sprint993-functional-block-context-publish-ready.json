@@ -1,0 +1,97 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint993-functional-block-context-publish-ready",
+    "feature":  "Retrieve explicit board-group and schematic-sheet functional blocks into revision-bound bounded Agent context",
+    "interaction_plan":  "config/gui_interaction_plans/sprint993-functional-block-context.json",
+    "target_sequence":  "sprint987-schematic-metadata-sprint993-functional-block-context-publish-ready",
+    "started_utc":  "2026-09-25T10:49:09.3704956Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.55 log=artifacts/evidence/sprint993-functional-block-context-publish-ready/preflight.log",
+                      "finished_utc":  "2026-09-25T10:49:09.9900433Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint993-functional-block-context-verified; source timestamps precede test log",
+                      "finished_utc":  "2026-09-25T10:49:21.4684739Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint993-functional-block-context-verified; 115/115 passed",
+                      "finished_utc":  "2026-09-25T10:49:21.4684739Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=20.52 log=artifacts/evidence/sprint993-functional-block-context-publish-ready/ui_harness.log",
+                      "finished_utc":  "2026-09-25T10:49:41.9986644Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=10; screenshots=4",
+                      "finished_utc":  "2026-09-25T10:49:42.0489896Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-09-25T10:49:42.2100879Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint993-functional-block-context-publish-ready/build.log",
+                                         "sha256":  "3173DFB40B17B6CBDF526DCF3DB72363BEFF758D512C6F6FFD6BFD85A43CBA77"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint993-functional-block-context-publish-ready/ctest.log",
+                                         "sha256":  "F00BACCC061520B74918DB611775E1588D0EED67BCD0B77419BD7DDD883EDEC6"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint993-functional-block-context-publish-ready/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint993-functional-block-context-publish-ready/sprint987-schematic-metadata-sprint993-functional-block-context-publish-ready.stderr.log",
+                                         "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint993-functional-block-context-publish-ready/sprint987-schematic-metadata-sprint993-functional-block-context-publish-ready.stdout.log",
+                                         "sha256":  "43BEA988B049253D027DA16E792FC286A0118481CEDEE1A752D92408C37AF8DC"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint993-functional-block-context-publish-ready/sprint987-schematic-metadata-sprint993-functional-block-context-publish-ready-before.png",
+                                         "sha256":  "DD9E3B9B5913B5C5DEE86008EAF24670813E5F1E2FEBA036DE4C82DB498DFA73"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint993-functional-block-context-publish-ready/sprint987-schematic-metadata-sprint993-functional-block-context-publish-ready-context-settings-dialog.png",
+                                         "sha256":  "A3A6FE13DA596E7069E0322F7021F9989D52BEF22E5E291F7E51727620558F46"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint993-functional-block-context-publish-ready/sprint987-schematic-metadata-sprint993-functional-block-context-publish-ready-restored-final.png",
+                                         "sha256":  "240E6339B5B150D62A49B6255CB2088BFE22DFF85F1665B4C419CE61A12E8099"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint993-functional-block-context-publish-ready/sprint987-schematic-metadata-sprint993-functional-block-context-publish-ready-target-sequence.json",
+                                         "sha256":  "16491D01AA506508D9965EB9B45CEBDFCCA5D8ED393FD3F2523C2FAE5846D4A1"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint993-functional-block-context-publish-ready/sprint987-schematic-metadata-sprint993-functional-block-context-publish-ready-turn-persisted.png",
+                                         "sha256":  "C76D4FC116537FA955FD46848BDE984384F12A92E3644B4DE6CCA13C289A43D4"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint993-functional-block-context-publish-ready/ui_harness.log",
+                                         "sha256":  "BE7B0DAFE3914CDDC7EE572162A7DBDB959773EB8893300391CE8A83859279CA"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-25T10:49:42.2855369Z"
+}

@@ -71,6 +71,14 @@ app-owned target sequence; it must fail if the requested interaction contract
 or output artifact is absent. Never hand-edit a passing manifest. Read every
 retained image and log before claiming the evidence gate passed.
 
+When repository policy forbids staging generated screenshots and logs, pass
+`-WorkspaceOnlyEvidence`. The manifest remains committed with hashes for those
+workspace-only payloads. The local commit hook must find and hash-check every
+payload before accepting the commit; hosted CI can verify the committed
+manifest and its fingerprint metadata, but cannot independently inspect
+workspace-only payload bytes. Source, tests, docs, interaction plans, and the
+manifest remain the reviewable commit contents.
+
 The commit-msg hook can enforce a referenced manifest's existence, hash, and
 `pass` status when installed. It checks evidence integrity, not screenshot
 quality, code correctness, or that an artifact was produced by trusted CI. CI

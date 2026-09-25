@@ -808,6 +808,147 @@ class ProjectIndex:
                 if pin_doc is not None and len(docs) < _MAX_INPUT_ENTITIES:
                     docs.append(pin_doc)
                     doc["components"].update(pin_doc["components"])
+
+        # Build functional-block search documents only from explicit native
+        # group membership and serialized sheet hierarchy. These are derived
+        # index records, never inferred design truth; their provenance and
+        # current source revision remain visible to callers.
+        initial_docs = tuple(docs)
+        aliases: dict[str, list[dict]] = defaultdict(list)
+        by_sheet: dict[str, list[dict]] = defaultdict(list)
+        for source_doc in initial_docs:
+            for alias in source_doc["aliases"]:
+                aliases[alias].append(source_doc)
+            for sheet in source_doc["sheets"]:
+                by_sheet[sheet].append(source_doc)
+
+        block_sources = [doc for doc in initial_docs
+                         if doc["fields"]["kind"] in {"board_group", "schematic_group"}]
+
+        def block_bounds(members):
+            points = []
+            for member in members:
+                fields = member["fields"]
+                position = fields.get("position_mm")
+                if isinstance(position, dict):
+                    point = _point(position)
+                    if point is not None:
+                        points.append(point)
+                bounds = fields.get("bounds_mm")
+                if isinstance(bounds, dict):
+                    for x_key, y_key in (("min_x_mm", "min_y_mm"),
+                                         ("max_x_mm", "max_y_mm")):
+                        point = _point({"x": bounds.get(x_key), "y": bounds.get(y_key)})
+                        if point is not None:
+                            points.append(point)
+            return _bbox(points)
+
+        for source_doc in block_sources:
+            fields = source_doc["fields"]
+            source_member_ids = sorted({target for target, relation in source_doc["references"]
+                                        if relation == "group_member"})[:64]
+            allowed_kinds = ({"footprint", "pad", "track", "track_arc", "via", "zone",
+                               "graphic", "board_text", "dimension", "keepout",
+                               "route_request", "board_group", "target", "barcode",
+                               "board_table", "placement_region", "reference_image",
+                               "teardrop"}
+                              if fields["kind"] == "board_group" else
+                              {"schematic_symbol", "schematic_net", "schematic_pin",
+                               "schematic_wire", "schematic_label", "schematic_page",
+                               "schematic_sheet", "schematic_text", "schematic_textbox",
+                               "schematic_graphic", "schematic_junction",
+                               "schematic_no_connect", "schematic_marker",
+                               "schematic_bus_entry", "schematic_rule_area",
+                               "schematic_table"})
+            member_docs = {}
+            for target, relation in source_doc["references"]:
+                if relation != "group_member":
+                    continue
+                for member in aliases.get(target, ()):
+                    if (member["uid"] != source_doc["uid"] and
+                            member["fields"]["kind"] in allowed_kinds):
+                        member_docs[member["uid"]] = member
+            block = cls._make_doc(
+                "functional_block",
+                {"id": f"group:{fields['kind']}:{fields['id']}",
+                 "name": fields.get("name") or fields.get("text") or fields["id"]},
+                aliases=("id", "name"),
+                extra_text=("explicit functional block", fields.get("name", ""),
+                            *(member["text"] for member in member_docs.values())))
+            if block is None:
+                continue
+            block["fields"].update({
+                "provenance": "explicit_user_group",
+                "source_group_id": fields["id"],
+                "member_count": len(member_docs),
+                "source_member_ids": source_member_ids,
+                "members": sorted({member["fields"].get("reference") or
+                                   member["fields"].get("id", "")
+                                   for member in member_docs.values()} - {""})[:64],
+                "related_net_ids": sorted({member["fields"].get("net_id", "")
+                                            for member in member_docs.values()
+                                            if member["fields"].get("net_id")})[:64],
+            })
+            bounds = block_bounds(member_docs.values())
+            if bounds:
+                block["fields"]["bounds_mm"] = {
+                    key: round(value, 6) for key, value in bounds.items()}
+            block["references"].update((member["fields"].get("id", ""), "group_member")
+                                        for member in member_docs.values())
+            block["references"].discard(("", "group_member"))
+            block["references"].add((fields["id"], "source_group"))
+            block["text"] = (block["text"] + " " + " ".join(
+                net for net in block["fields"]["related_net_ids"]))[:1200]
+            block["tokens"] = Counter(token.casefold() for token in _WORD.findall(
+                block["text"]) if len(token) <= 80)
+            block["signature"] = cls._signature(block)
+            if len(docs) < _MAX_INPUT_ENTITIES:
+                docs.append(block)
+
+        for sheet_doc in (doc for doc in initial_docs
+                          if doc["fields"]["kind"] == "schematic_sheet"):
+            sheet_id = sheet_doc["fields"]["id"]
+            member_docs = {member["uid"]: member for member in by_sheet.get(
+                _normalize(sheet_id), ()) if member["uid"] != sheet_doc["uid"]}
+            if not member_docs:
+                continue
+            fields = sheet_doc["fields"]
+            block = cls._make_doc(
+                "functional_block",
+                {"id": f"sheet:{sheet_id}",
+                 "name": fields.get("name") or fields.get("title") or sheet_id},
+                aliases=("id", "name"),
+                extra_text=("schematic sheet functional block", fields.get("name", ""),
+                            *(member["text"] for member in member_docs.values())))
+            if block is None:
+                continue
+            block["fields"].update({
+                "provenance": "serialized_schematic_sheet",
+                "source_sheet_id": sheet_id,
+                "member_count": len(member_docs),
+                "source_member_ids": [],
+                "members": sorted({member["fields"].get("reference") or
+                                   member["fields"].get("id", "")
+                                   for member in member_docs.values()} - {""})[:64],
+                "related_net_ids": sorted({member["fields"].get("net_id", "")
+                                            for member in member_docs.values()
+                                            if member["fields"].get("net_id")})[:64],
+            })
+            bounds = block_bounds(member_docs.values())
+            if bounds:
+                block["fields"]["bounds_mm"] = {
+                    key: round(value, 6) for key, value in bounds.items()}
+            block["references"].update((member["fields"].get("id", ""), "group_member")
+                                        for member in member_docs.values())
+            block["references"].add((sheet_id, "source_sheet"))
+            block["text"] = (block["text"] + " " + " ".join(
+                net for net in block["fields"]["related_net_ids"]))[:1200]
+            block["tokens"] = Counter(token.casefold() for token in _WORD.findall(
+                block["text"]) if len(token) <= 80)
+            block["signature"] = cls._signature(block)
+            if len(docs) < _MAX_INPUT_ENTITIES:
+                docs.append(block)
+
         for doc in docs:
             doc["signature"] = cls._signature(doc)
         return project_id, docs
@@ -1245,6 +1386,8 @@ class ProjectIndex:
                                "pin_name", "pin_number", "electrical_type", "graphical_style",
                                "orientation", "identity_source", "symbol_unit", "locked", "visible",
                                "candidate_net_ids", "type", "net_id", "membership_kind", "layer_id",
+                               "provenance", "source_group_id", "source_sheet_id", "member_count",
+                               "members", "source_member_ids", "related_net_ids",
                                "layer_ids", "start_layer_id", "end_layer_id",
                                "component_id", "symbol_id", "position_mm", "bounds_mm",
                                "sheet_id", "parent_sheet_id", "code", "severity",
@@ -1257,6 +1400,8 @@ class ProjectIndex:
                     item[key] = fields[key]
             item["retrieval"] = mode
             item["rank"] = rank
+            if fields.get("kind") == "functional_block":
+                item["source_revision"] = self._revision
             if relation:
                 item["relationship"] = relation
                 item["relationships"] = sorted(related.get(uid, ()))

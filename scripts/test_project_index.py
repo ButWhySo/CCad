@@ -711,6 +711,63 @@ class ProjectIndexTests(unittest.TestCase):
         self.assertFalse(any(item["kind"] in {"project_diagnostic", "board_group"}
                              for item in refreshed["entities"]))
 
+    def test_explicit_user_groups_become_revision_current_functional_blocks(self):
+        snapshot = project_snapshot()
+        project = snapshot["typed_state"]["project"]
+        project["board"]["groups"] = [{
+            "id": "GROUP_POWER", "name": "Buck converter input stage",
+            "members": ["U3", "P1", "T1", "missing-native-reference"],
+        }]
+        project["schematics"] = [
+            {"id": "ROOT", "name": "Root",
+             "sheets": [{"id": "SHEET_POWER", "name": "Power conversion"}]},
+            {"id": "SHEET_POWER", "name": "Power conversion",
+             "components": project["components"], "nets": project["nets"],
+             "groups": [{"id": "SG_POWER", "name": "Regulator feedback loop",
+                         "members": ["sch-u3", "GND:sch-u3:GND"]}]},
+        ]
+
+        index = ProjectIndex(max_entities=32)
+        retrieved = index.retrieve(snapshot, "buck converter input stage", limit=32)
+        block = next(item for item in retrieved["entities"]
+                     if item["kind"] == "functional_block" and
+                     item["id"] == "group:board_group:GROUP_POWER")
+        self.assertEqual(block["provenance"], "explicit_user_group")
+        self.assertEqual(block["source_revision"], retrieved["revision"])
+        self.assertEqual(block["members"], ["P1", "T1", "U3"])
+        self.assertIn("missing-native-reference", block["source_member_ids"])
+        self.assertEqual(block["related_net_ids"], ["GND"])
+        self.assertEqual(block["bounds_mm"], {
+            "min_x_mm": 0.0, "min_y_mm": 0.0,
+            "max_x_mm": 2.0, "max_y_mm": 0.0})
+        self.assertTrue(any(item["kind"] == "footprint" and item["id"] == "U3" and
+                            item.get("relationship") == "group_member"
+                            for item in retrieved["entities"]))
+        package = build_context_package(
+            __import__("json").dumps(snapshot), [], [], char_limit=4096,
+            project_retrieval=retrieved)
+        packaged_json = package["content"].split("\n", 1)[1]
+        packaged_content = __import__("json").loads(packaged_json)
+        packaged_block = next(item for item in packaged_content["project_retrieval"]["entities"]
+                              if item["kind"] == "functional_block")
+        self.assertEqual(packaged_block["members"], ["P1", "T1", "U3"])
+        self.assertEqual(packaged_block["related_net_ids"], ["GND"])
+        self.assertEqual(packaged_block["source_revision"], retrieved["revision"])
+        self.assertEqual(package["metadata"]["project_retrieval_kinds"][
+            "functional_block"], 1)
+        sheet_result = index.retrieve(snapshot, "Power conversion", limit=32)
+        sheet_block = next(item for item in sheet_result["entities"]
+                           if item["kind"] == "functional_block" and
+                           item["id"] == "sheet:SHEET_POWER")
+        self.assertEqual(sheet_block["provenance"], "serialized_schematic_sheet")
+
+        project["board"]["groups"].clear()
+        refreshed = index.retrieve(snapshot, "buck converter input stage", limit=32)
+        self.assertEqual(refreshed["stats"]["index_state"], "incremental")
+        self.assertFalse(any(item["kind"] == "functional_block" and
+                             item["id"] == "group:board_group:GROUP_POWER"
+                             for item in refreshed["entities"]))
+
     def test_board_net_id_change_incrementally_removes_stale_membership(self):
         index = ProjectIndex()
         before = project_snapshot()

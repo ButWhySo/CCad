@@ -614,6 +614,8 @@ int main(int argc, char** argv) {
               name.startsWith("sprint987-schematic-metadata");
           const bool declared_pin_validation = schematic_metadata_validation &&
               name.contains("sprint992");
+          const bool functional_block_validation = schematic_metadata_validation &&
+              name.contains("sprint993");
           const bool multilayer_project_validation =
               name.startsWith("sprint982-multilayer-project-context");
           const bool serialized_pad_layer_validation =
@@ -713,7 +715,9 @@ int main(int argc, char** argv) {
                       : board_net_validation
                       ? QStringLiteral("Inspect the PCB net AC1 and identify its exact member pads.")
                       : schematic_metadata_validation
-                      ? (declared_pin_validation
+                      ? (functional_block_validation
+                           ? QStringLiteral("Find the AC input stage functional block and its current PCB members and related nets.")
+                           : declared_pin_validation
                            ? QStringLiteral("Find unconnected PGOOD pin 2 on U3, Manufacturer ACME-42, and the Power Stage schematic sheet path sheets/power_stage.kicad_sch.")
                            : QStringLiteral("Find the Manufacturer field ACME-42 on U3 and the Power Stage schematic sheet path sheets/power_stage.kicad_sch."))
                       : QStringLiteral("Describe component U_DEMO in the loaded project."))
@@ -810,8 +814,10 @@ int main(int argc, char** argv) {
                      !chat->toPlainText().contains("| 0 project matches"));
           if (schematic_metadata_validation && chat) {
             const QString transcript = chat->toPlainText();
-            schematic_metadata_retrieved = transcript.contains("ACME-42") &&
-                transcript.contains("sheets/power_stage.kicad_sch");
+            schematic_metadata_retrieved = functional_block_validation
+                ? transcript.contains("1 functional block")
+                : transcript.contains("ACME-42") &&
+                  transcript.contains("sheets/power_stage.kicad_sch");
             if (declared_pin_validation)
               schematic_metadata_retrieved = schematic_metadata_retrieved &&
                   transcript.contains("PGOOD") &&
@@ -869,7 +875,7 @@ int main(int argc, char** argv) {
                    ? chat->toPlainText().contains("is not configured")
                    : chat->toPlainText().contains(
                          "Provider execution is unavailable; configure a provider"));
-          entries << QString("{\"conversation_turn_visible\":%1,\"context_memory_attached\":%2,\"project_retrieval_visible\":%3,\"schematic_pin_retrieval_visible\":%4,\"schematic_symbol_retrieval_visible\":%5,\"project_layers_visible\":%6,\"multiple_project_layers_visible\":%7,\"board_net_count_visible\":%8,\"project_diagnostic_visible\":%9,\"project_diagnostic_count_visible\":%10,\"schematic_metadata_retrieved\":%11,\"provider_request_sent\":false}")
+          entries << QString("{\"conversation_turn_visible\":%1,\"context_memory_attached\":%2,\"project_retrieval_visible\":%3,\"schematic_pin_retrieval_visible\":%4,\"schematic_symbol_retrieval_visible\":%5,\"project_layers_visible\":%6,\"multiple_project_layers_visible\":%7,\"board_net_count_visible\":%8,\"project_diagnostic_visible\":%9,\"project_diagnostic_count_visible\":%10,\"schematic_metadata_retrieved\":%11,\"functional_block_visible\":%12,\"provider_request_sent\":false}")
                          .arg(turn_visible ? "true" : "false",
                               memory_visible ? "true" : "false",
                               project_matches_visible ? "true" : "false",
@@ -880,9 +886,11 @@ int main(int argc, char** argv) {
                               board_net_visible ? "true" : "false",
                               project_diagnostic_visible ? "true" : "false",
                               project_diagnostic_count_visible ? "true" : "false",
-                              schematic_metadata_retrieved ? "true" : "false");
+                              schematic_metadata_retrieved ? "true" : "false",
+                              functional_block_validation && schematic_metadata_retrieved
+                                  ? "true" : "false");
           ok = turn_visible && capture("turn-persisted") && ok;
-          if (declared_pin_validation) {
+          if (declared_pin_validation || functional_block_validation) {
             ok = interact("ui.click", "{\"id\":\"action:settingsBtn\"}",
                           "action:settingsBtn", "context-settings-opened") && ok;
             ok = interact("ui.click", "{\"id\":\"control:categoryList\",\"row\":2}",

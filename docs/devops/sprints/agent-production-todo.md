@@ -2,6 +2,26 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 993 completed slice — explicit functional-block context (Tier 1, C3)
+
+- [x] Derive searchable blocks only from typed user groups and serialized schematic sheet hierarchy; retain source provenance.
+- [x] Resolve and expose bounded source member IDs, current PCB/schematic members, related nets, and derivable physical bounds.
+- [x] Rebuild block membership from each current project revision; expand matched blocks through typed member relationships.
+- [x] Carry safe block metadata through the bounded provider context and report its count in the live Agent context event.
+- [x] Add retrieval, unresolved-member, revision, context-budget, and incremental-removal contracts.
+- [x] Prove the included block count in the live GUI-map Agent context with provider disabled (10 mapped actions; four inspected states; isolated transcript verified).
+- [x] Update the C3 checklist, feature, codebase, progress, and backlog records.
+- [x] Complete Qt MinGW Release build and full CTest (115/115).
+- [x] Complete provider-disabled mapped GUI validation; inspect four distinct screenshots and captured stdout/stderr.
+- [x] Run added-line credential-pattern scan and `git diff --check`.
+- [x] Keep generated logs/screenshots workspace-only; locally verify artifact hashes while preserving hash metadata in committed evidence.
+- [x] Add six manifest-policy contracts, PowerShell syntax validation, and focused GUI-harness CTest.
+- [x] Commit and push verified Sprint 993 source, tests, docs, interaction plan, and manifest; exclude generated screenshots/logs.
+
+Evidence: `artifacts/evidence/sprint993-functional-block-context-publish-ready.json` (SHA-256 `8753A1ABDA9444A08B8B1E41D5D3D34B129A107719D75E8903CB9AE552598400`).
+
+Scope boundary: no labels are inferred by a model, and no semantic/vector project retrieval is claimed. Connectivity-only grouping, library-definition-only components, richer sheet net summaries, and vector retrieval remain open.
+
 ### Sprint 992 active slice — declared schematic pins and annotations (Tier 1, C3)
 
 - [x] Index connected and unconnected symbol-declared pins with safe typed metadata and correct net membership.
@@ -4491,22 +4511,22 @@ Examples:
 
 ### Block creation
 
-- [ ] Prefer existing schematic hierarchy/sheets where available.
+- [x] Prefer existing serialized schematic hierarchy/sheets where available (Sprint 993; direct sheet membership only).
 - [ ] Use deterministic connectivity grouping where practical.
-- [ ] Use component/library metadata.
-- [ ] Use user-created groups/annotations.
+- [x] Use serialized component and library metadata from current block members (Sprint 993).
+- [x] Use explicit user-created PCB/schematic groups as block sources; no model-generated project truth (Sprint 993).
 - [ ] Optionally use an LLM-generated block label only as a derived indexed artifact with source/provenance, never as project truth.
-- [ ] Store block members.
-- [ ] Store related nets.
-- [ ] Store PCB bounding region where derivable.
-- [ ] Update block membership after relevant project changes.
+- [x] Store resolved members and bounded original member IDs with source provenance (Sprint 993).
+- [x] Store related native net IDs for resolved members (Sprint 993).
+- [x] Store a board-space bounding region from resolved physical member geometry where derivable; never combine PCB and schematic coordinates (Sprint 993).
+- [x] Rebuild membership on current project revision and remove stale block documents incrementally (Sprint 993).
 
 ### Retrieval
 
-- [ ] Let natural-language queries search functional blocks.
-- [ ] Expand selected block to relevant schematic/PCB entities.
-- [ ] Keep expansion bounded.
-- [ ] Verify block-derived facts against live project state where required.
+- [x] Let lexical natural-language queries search explicitly named functional blocks; semantic/vector matching remains unimplemented (Sprint 993).
+- [x] Expand a matched block to its current direct typed PCB/schematic members and native relationships (Sprint 993).
+- [x] Keep block search documents, member IDs, expansion count, and context payload within existing index/context bounds (Sprint 993).
+- [x] Bind each returned block to the active project-index revision so stale derived block data is not treated as current (Sprint 993).
 
 ---
 

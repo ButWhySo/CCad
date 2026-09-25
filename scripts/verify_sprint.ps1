@@ -2,7 +2,8 @@ param(
   [Parameter(Mandatory)][ValidatePattern('^[a-z0-9][a-z0-9-]{2,63}$')][string]$SprintId,
   [Parameter(Mandatory)][string]$FeatureDescription,
   [Parameter(Mandatory)][string]$InteractionPlan,
-  [string]$ReusePassedBuildAndTestsFrom
+  [string]$ReusePassedBuildAndTestsFrom,
+  [switch]$WorkspaceOnlyEvidence
 )
 
 $ErrorActionPreference = 'Stop'
@@ -34,6 +35,7 @@ $manifest = [ordered]@{
   status = 'in_progress'
   steps = @()
   artifacts = @()
+  workspace_only_artifacts = @()
 }
 function Add-Step([string]$Name, [bool]$Passed, [string]$Detail) {
   $manifest.steps += [ordered]@{
@@ -156,9 +158,14 @@ try {
   }
   $manifest.status = 'pass'
   $manifest.finished_utc = [DateTime]::UtcNow.ToString('o')
-  $manifest.artifacts = @(Get-ChildItem -LiteralPath $evidenceRoot -File | Sort-Object Name | ForEach-Object {
+  $artifactDigests = @(Get-ChildItem -LiteralPath $evidenceRoot -File | Sort-Object Name | ForEach-Object {
     [ordered]@{ path = $_.FullName.Substring($root.Length+1).Replace('\','/'); sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }
   })
+  if ($WorkspaceOnlyEvidence) {
+    $manifest.workspace_only_artifacts = $artifactDigests
+  } else {
+    $manifest.artifacts = $artifactDigests
+  }
   $json = $manifest | ConvertTo-Json -Depth 8
   [IO.File]::WriteAllText($manifestPath,$json.Replace("`r`n", "`n").Replace("`r", "`n"),[Text.UTF8Encoding]::new($false))
   $manifestHash = (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash

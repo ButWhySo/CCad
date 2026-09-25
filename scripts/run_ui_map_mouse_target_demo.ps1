@@ -130,6 +130,24 @@ if ($Name.StartsWith("sprint982-multilayer-project-context") -or
       size = [pscustomobject]@{ width_nm = 40000000; height_nm = 30000000 }
       pins = @()
     }) -Force
+    if ($Name.Contains("sprint993")) {
+      if (-not $fixture.board.groups) {
+        $fixture.board | Add-Member -MemberType NoteProperty -Name groups -Value @() -Force
+      }
+      $inputComponents = @("JAC1", "JAC2", "D1", "D2", "D3", "D4")
+      $groupMembers = @($fixture.board.pads |
+        Where-Object { $_.component_id -in $inputComponents -and
+                       $_.net_id -in @("AC1", "AC2") } |
+        ForEach-Object { [string]$_.id })
+      if ($groupMembers.Count -lt 4) {
+        throw "Sprint 993 functional-block fixture lacks its serialized AC-input board pads."
+      }
+      $fixture.board.groups += [pscustomobject]@{
+        id = "GROUP_SPRINT993_AC_INPUT"
+        name = "AC input stage"
+        members = $groupMembers
+      }
+    }
     [IO.File]::WriteAllText($isolatedProjectPath,
       (ConvertTo-Json -InputObject $fixture -Depth 64), [Text.UTF8Encoding]::new($false))
   } elseif ($Name.StartsWith("sprint985-project-reference-graph") -or
@@ -303,7 +321,8 @@ if ($Name.StartsWith("sprint980-project-retrieval") -or
   $env:CCAD_AGENT_CONVERSATION_DB = Join-Path $isolatedMemoryProfile "agent_conversations.sqlite3"
   $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
   $env:CCAD_AGENT_THREAD_ID = if ($Name.StartsWith("sprint987-schematic-metadata")) {
-    "sprint987-schematic-metadata-ui-thread"
+    if ($Name.Contains("sprint993")) { "sprint993-functional-block-ui-thread" }
+    else { "sprint987-schematic-metadata-ui-thread" }
   } elseif ($Name.StartsWith("sprint986-project-spatial-index")) {
     "sprint986-project-spatial-index-ui-thread"
   } elseif ($Name.StartsWith("sprint984-board-net-retrieval")) {
@@ -471,6 +490,9 @@ if ($Name.StartsWith("sprint974-memory")) {
       @("conversation_turn_visible", "schematic_metadata_serialized",
         "declared_pin_serialized", "schematic_metadata_retrieved",
         "schematic_pin_retrieval_visible")
+    } elseif ($Name.Contains("sprint993")) {
+      @("conversation_turn_visible", "schematic_metadata_serialized",
+        "schematic_metadata_retrieved", "functional_block_visible")
     } elseif ($Name.StartsWith("sprint987-schematic-metadata")) {
       @("conversation_turn_visible", "schematic_metadata_serialized",
         "schematic_metadata_retrieved")
@@ -494,7 +516,7 @@ if ($Name.StartsWith("sprint974-memory")) {
       if ($actualScreenshots.Count -ne $requiredScreenshots.Count) {
         throw "Spatial project GUI validation should retain only three distinct checkpoints; found $($actualScreenshots.Count)."
       }
-    } elseif ($Name.Contains("sprint992")) {
+    } elseif ($Name.Contains("sprint992") -or $Name.Contains("sprint993")) {
       $requiredScreenshots = @("before", "turn-persisted",
                                "context-settings-dialog", "restored-final")
       $actualScreenshots = @(Get-ChildItem -LiteralPath $ScreenshotDir -Filter "$Name-*.png")
@@ -526,7 +548,8 @@ if ($Name.StartsWith("sprint974-memory")) {
     }
     $databaseVerifier = Join-Path $Root "scripts\verify_conversation_ui_state.py"
     $expectedThreadId = if ($Name.StartsWith("sprint987-schematic-metadata")) {
-      "sprint987-schematic-metadata-ui-thread"
+      if ($Name.Contains("sprint993")) { "sprint993-functional-block-ui-thread" }
+      else { "sprint987-schematic-metadata-ui-thread" }
     } elseif ($Name.StartsWith("sprint986-project-spatial-index")) {
       "sprint986-project-spatial-index-ui-thread"
     } elseif ($Name.StartsWith("sprint985-project-reference-graph")) {
@@ -611,7 +634,7 @@ if ($Name.StartsWith("sprint974-memory")) {
          -not ($reportData.entries | Where-Object { $_.schematic_symbol_retrieval_visible -eq $true }))) {
       throw "Mapped turn did not visibly include retrieved schematic net pins and related symbols."
     }
-    $requiredScreenshots = if ($Name.Contains("sprint992")) {
+    $requiredScreenshots = if ($Name.Contains("sprint992") -or $Name.Contains("sprint993")) {
       @("before", "turn-persisted", "context-settings-dialog", "restored-final")
     } elseif ($Name.StartsWith("sprint986-project-spatial-index")) {
       @("before", "diagnostics-ready", "turn-persisted")

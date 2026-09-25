@@ -4,6 +4,7 @@ This file is the single local backlog for scattered CCad feature requests. Sprin
 
 ## Verified Work Ledger
 
+- [x] Sprint 993: explicit board-group/schematic-sheet functional-block retrieval with revision provenance; 35/35 focused contracts, Pyright and clangd source diagnostics checked, Qt MinGW Release build, full CTest 115/115, provider-disabled 10-action GUI-map validation, four inspected states, captured logs reviewed, isolated transcript DB assertion, six evidence-manifest contracts, and focused GUI-harness CTest. `artifacts/evidence/sprint993-functional-block-context-publish-ready.json` (SHA-256 `8753A1ABDA9444A08B8B1E41D5D3D34B129A107719D75E8903CB9AE552598400`). Generated logs/screenshots remain workspace-only; only manifest fingerprints enter Git. Semantic/vector retrieval remains open.
 - [x] Sprint 992: retrieval includes connected/unconnected serialized schematic pins and bounded annotations, safe net membership, incremental deletion, and bitmap exclusion; 34/34 focused contracts, Pyright clean, Qt MinGW Release, 115/115 CTest, 10-action provider-free UI-map proof, four inspected screenshots, stdout/stderr reviewed. `SchPin.id` is still not serialized; broader C3 remains open.
 
 This ledger is the current single checklist for scattered user-reported GUI, KiCad compatibility, and agent-harness work. Check an item only after code review, focused tests, KiCad/reference comparison where relevant, and visual validation when the behavior is visible.

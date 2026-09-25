@@ -1425,6 +1425,8 @@ void AgentPanel::handlePythonOutput() {
         const int schematic_pin_count = params["project_retrieval_schematic_pin_count"].toInt();
         const int schematic_symbol_count = params["project_retrieval_schematic_symbol_count"].toInt();
         const int board_net_count = params["project_retrieval_board_net_count"].toInt();
+        const int functional_block_count =
+            params["project_retrieval_functional_block_count"].toInt();
         const int project_diagnostic_count =
             params["project_retrieval_diagnostic_count"].toInt();
         const int pcb_layer_count = params["project_retrieval_layer_count"].toInt();
@@ -1435,6 +1437,10 @@ void AgentPanel::handlePythonOutput() {
           schematic_detail += QString(" | %1 schematic symbols").arg(schematic_symbol_count);
         if (board_net_count > 0)
           schematic_detail += QString(" | PCB nets: %1").arg(board_net_count);
+        if (functional_block_count > 0)
+          schematic_detail += QString(" | %1 functional block%2")
+                                  .arg(functional_block_count)
+                                  .arg(functional_block_count == 1 ? "" : "s");
         if (pcb_layer_count > 0)
           schematic_detail += QString(" | %1 PCB layers").arg(pcb_layer_count);
         if (project_diagnostic_count > 0)
