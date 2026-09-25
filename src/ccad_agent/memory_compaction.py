@@ -181,7 +181,8 @@ class MemoryCompactionPlans:
         stale = [plan_id for plan_id, plan in self._plans.items()
                  if plan["tier"] not in {"ltm", "episodic"}
                  or not enabled.get(plan["tier"], False)
-                 or identities.get(plan["tier"]) != plan["namespace"]]
+                 or identities.get(f"{plan['tier']}:{plan['scope']}",
+                                   identities.get(plan["tier"])) != plan["namespace"]]
         for plan_id in stale:
             del self._plans[plan_id]
         return len(stale)

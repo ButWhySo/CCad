@@ -61,11 +61,38 @@ with tempfile.TemporaryDirectory() as temp:
     assert all(item["id"] != expired_live["id"]
                for item in manager.store.list(tier="ltm", namespace="thread-a"))
     manager.add("Cross-project preference", tier="episodic", scope="user")
+    project_rule = manager.add(
+        "Keep the sensor ground return beside the analog input",
+        tier="ltm", scope="project", title="Analog return constraint")
+    assert project_rule["namespace"] == manager.namespace_for("ltm", "project")
     manager.set_identities(task_id="task-b", thread_id="thread-b",
                            project_id="project-b", user_id="local-user")
     assert manager.state("stm")["runtime_entries"] == 0
     assert manager.list(tier="ltm") == []
     assert manager.list(tier="episodic")[0]["content"] == "Cross-project preference"
+    assert manager.list(tier="ltm", scope="project") == []
+    manager.set_identities(task_id="task-c", thread_id="thread-c",
+                           project_id="project-a", user_id="local-user")
+    assert manager.list(tier="ltm", scope="project")[0]["id"] == project_rule["id"]
+    assert manager.retrieve("sensor ground return") == [project_rule]
+    project_state = manager.state("ltm")
+    assert project_state["project_entries"] == 1
+    restarted = MemoryManager(MemoryStore(manager.store.path),
+                              thread_id="thread-new", project_id="project-a")
+    restarted.enable("ltm")
+    restarted.enable("episodic")
+    assert restarted.list(tier="ltm", scope="project")[0]["content"] == (
+        "Keep the sensor ground return beside the analog input")
+    try:
+        restarted.add("Should not become global", tier="episodic", scope="project")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("project memory was accepted into global episodic namespace")
+    assert manager.clear_scope("project", tier="ltm") == 1
+    assert manager.list(tier="ltm", scope="project") == []
+    manager.set_identities(task_id="task-b", thread_id="thread-b",
+                           project_id="project-b", user_id="local-user")
     stale_thread_memory = manager.store.add(
         "Delete this explicitly selected archived conversation record",
         tier="ltm", namespace="thread-a", scope="conversation")
@@ -162,4 +189,4 @@ with tempfile.TemporaryDirectory() as temp:
     manager.enable("stm")
     assert manager.list(tier="stm") == []
 
-print("PASS STM/LTM/episodic memory lifecycle; no network")
+print("PASS STM/LTM/project/episodic memory lifecycle; no network")

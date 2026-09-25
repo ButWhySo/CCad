@@ -37,25 +37,69 @@ class ContextBrokerTests(unittest.TestCase):
             manager.configure({"stm": True, "ltm": True, "episodic": True})
             relevant = manager.add("Keep the GND return path short near U3",
                                    tier="ltm", title="Routing preference")
+            project_memory = manager.add(
+                "Keep connector clearance above two millimeters on this board",
+                tier="ltm", scope="project", title="Board clearance rule")
             manager.add("Use blue labels in presentation slides", tier="episodic",
                          title="Unrelated preference")
             broker = ContextBroker()
             first = broker.prepare(manager, thread_id="thread",
                                    project_revision="rev-a",
-                                   user_request="Improve GND routing near U3")
+                                   user_request="Improve GND routing near U3 and connector clearance")
             second = broker.prepare(manager, thread_id="thread",
                                     project_revision="rev-a",
-                                    user_request="Improve GND routing near U3")
+                                    user_request="Improve GND routing near U3 and connector clearance")
             self.assertEqual(first["version"], 1)
             self.assertFalse(first["cache_hit"])
             self.assertTrue(second["cache_hit"])
-            self.assertEqual([entry["id"] for entry in first["memories"]],
-                             [relevant["id"]])
+            self.assertEqual({entry["id"] for entry in first["memories"]},
+                             {relevant["id"], project_memory["id"]})
+            self.assertTrue(first["manifest"]["project_scope_available"])
+            self.assertEqual(first["manifest"]["project_memory_count"], 1)
             changed = broker.prepare(manager, thread_id="thread",
                                      project_revision="rev-b",
-                                     user_request="Improve GND routing near U3")
+                                     user_request="Improve GND routing near U3 and connector clearance")
             self.assertEqual(changed["version"], 2)
             self.assertFalse(changed["cache_hit"])
+
+    def test_project_memory_isolated_from_other_project_and_thread(self):
+        with tempfile.TemporaryDirectory() as temp:
+            store = MemoryStore(Path(temp) / "memory.json")
+            manager = MemoryManager(store, thread_id="thread-a", project_id="project-a")
+            manager.configure({"ltm": True})
+            project_rule = manager.add("Keep USB shield connected at connector J1",
+                                       tier="ltm", scope="project")
+            manager.add("Keep USB shield connected at connector J1",
+                        tier="ltm", scope="conversation")
+            manager.set_identities(task_id="task", thread_id="thread-b",
+                                   project_id="project-b", user_id="local-user")
+            self.assertNotIn(project_rule["id"], {
+                entry["id"] for entry in manager.retrieve("USB shield connector J1")})
+            manager.set_identities(task_id="task", thread_id="thread-c",
+                                   project_id="project-a", user_id="local-user")
+            self.assertIn(project_rule["id"], {
+                entry["id"] for entry in manager.retrieve("USB shield connector J1")})
+            manager.disable("ltm")
+            self.assertEqual(manager.retrieve("USB shield connector J1"), [])
+            self.assertEqual(manager.state("ltm")["project_entries"], 1)
+
+    def test_project_switch_rejects_refresh_from_stale_turn_context(self):
+        with tempfile.TemporaryDirectory() as temp:
+            manager = MemoryManager(MemoryStore(Path(temp) / "memory.json"),
+                                    thread_id="thread-a", project_id="project-a")
+            manager.configure({"ltm": True})
+            manager.add("Keep USB shield attached near connector J2",
+                        tier="ltm", scope="project")
+            broker = ContextBroker()
+            context = broker.prepare(manager, thread_id="thread-a",
+                                     project_revision="r1",
+                                     user_request="Review USB shield routing",
+                                     project_id="project-a")
+            manager.set_identities(task_id="task", thread_id="thread-a",
+                                   project_id="project-b")
+            with self.assertRaisesRegex(ValueError, "memory_context_project_changed"):
+                broker.refresh_memory(manager, context, "USB shield",
+                                      reason="project_switched_during_turn")
 
     def test_targeted_refresh_merges_deduplicates_and_budgets_memories(self):
         with tempfile.TemporaryDirectory() as temp:

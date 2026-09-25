@@ -1175,9 +1175,11 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   verify checkpoint restoration against the per-thread model projection.
 - [ ] Sprint 976 follow-up: add ranked BM25/semantic retrieval and richer
   evidence extraction; current TurnRecord search is bounded lexical overlap.
-- [ ] Sprint 977 follow-up: add project-scoped memory storage/retrieval and a
-  revision-aware exact/lexical/graph/spatial project index before claiming full
-  PCB/schematic state retrieval.
+- [x] Sprint 988: add project-scoped durable LTM storage/retrieval; safe project
+  identity, isolation, manifest counts, namespace-aware compaction invalidation,
+  and reset semantics are covered by offline contracts.
+- [ ] Continue the revision-aware exact/lexical/graph/spatial project index
+  before claiming full PCB/schematic state retrieval.
 - [ ] Sprint 986 follow-up: finish source-supported project-graph identities,
   transaction-delta index maintenance, and representative retrieval-quality
   gates. Bounded bounding-box queries, linked DRC/ERC region retrieval, all

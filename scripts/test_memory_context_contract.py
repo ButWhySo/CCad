@@ -19,4 +19,6 @@ assert 'if text.partition(" ")[0].casefold() == "/context":' in text
 assert 'package = build_context_package(' in text
 assert 'memory_summary=turn_context["memory_summary"]' in text
 assert 'memory_manifest=turn_context["manifest"]' in text
+assert 'active_conversation_project_id = str(project_id or "")' in text
+assert 'memory_manager.compaction_identities()' in text
 print("PASS bounded local memory retrieval contract; no network")

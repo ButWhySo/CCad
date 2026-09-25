@@ -2,7 +2,20 @@
 
 Check a box only after implementation and its required evidence exist.
 
-### Sprint 987 active slice — schematic fields and safe sheet identity (Tier 1, C3)
+### Sprint 988 active slice — project-scoped durable memory (Tier 1, C2)
+
+- [x] Store project LTM in a stable, opaque namespace derived from the native project ID; keep conversation LTM and global episodic records isolated.
+- [x] Automatically retrieve matching project records across threads for that same project; reload on project switch and fail closed when project identity is absent.
+- [x] Support project memory through existing add/list/update/delete/clear flows; keep full reset explicit and preserve other projects during ordinary operations.
+- [x] Include truthful project-memory availability/count and namespace provenance in context state; keep contents out of diagnostics.
+- [x] Invalidate cached context and pending project-memory compaction plans when project identity changes.
+- [x] Add persistence, isolation, active retrieval, CRUD, reset, manifest, and stale-plan contracts; run focused tests, Pyright, Qt Release build, and full CTest (113/113).
+- [x] Update memory lifecycle, feature, codebase, progress, backlog, and sprint documentation; run redacted secret scan.
+- [ ] Commit verified changes, push `main`, verify remote SHA, then remove only the completed sprint branch.
+
+References checked: [LangGraph long-term memory](https://docs.langchain.com/oss/python/langgraph/add-memory) recommends durable cross-session storage in scoped namespaces; CCad retains its local JSON store and uses the native project ID as the scope identity. Project data must never be inferred from a display name or shared across projects. Semantic ranking, preference/correction evidence, embedding retrieval, and provider-tokenizer budgeting remain separate open work.
+
+### Sprint 987 completed slice — schematic fields and safe sheet identity (Tier 1, C3)
 
 - [x] Index typed symbol field names/text/visibility and sheet title plus relative path.
 - [x] Preserve bounded properties and relative sheet paths through context packaging; reject sensitive keys and absolute paths.
@@ -115,7 +128,7 @@ References Checked: [Langfuse SDK instrumentation](https://langfuse.com/docs/obs
 - [x] Deduplicate automatic memories against recent conversation and the actual thread recap; include recap changes in cache invalidation and reuse dedup context during targeted refresh.
 - [x] Verify real Langfuse SDK ancestry with a local in-memory exporter, source-order contract, recap-dedup/cache/refresh regressions, Qt Release, full CTest (111/111), and seven mapped GUI interactions with four inspected screenshots and reviewed logs.
 - [x] Resolve Pyright's `orchestrator.py` complexity cutoff; telemetry, ContextBroker, and new regression contracts are clean under Pyright 1.1.414 (Sprint 979).
-- [ ] Follow-on: project-scoped memory/indexing, semantic relevance, provider-tokenizer budgeting, and preference/correction-aware ranking.
+- [ ] Follow-on: semantic memory relevance, provider-tokenizer budgeting, and preference/correction-aware ranking.
 
 ### Sprint 977 active slice — deterministic context and memory retrieval
 
@@ -4126,7 +4139,7 @@ Keep complete raw messages, but additionally build one compact `TurnRecord` for 
 - [x] relevant recent TurnRecord summaries.
 - [x] Apply tier/namespace scope filters before relevance ranking.
 - [x] Retrieve enabled user/episodic memories where allowed.
-- [ ] Retrieve project-scoped memories.
+- [x] Retrieve LTM records scoped to the active native project identity across conversation threads (Sprint 988).
 - [x] Retrieve thread-scoped memories where useful.
 - [x] Include a bounded stable Memory Summary.
 - [x] Include bounded top-K automatically retrieved memories.
@@ -4144,7 +4157,7 @@ Keep complete raw messages, but additionally build one compact `TurnRecord` for 
 - [x] Add a compact `MemoryManifest` to provider context.
 - [x] Manifest contains category/scope availability, not full memory contents.
 - [x] Include approximate counts for available global user memories.
-- [ ] Include current-project memory count.
+- [x] Include current-project memory availability and count without exposing content (Sprint 988).
 - [x] Include relevant historical thread-summary count.
 - [ ] Include available procedural/reusable lesson categories where supported.
 - [x] Include semantic-retrieval readiness.
@@ -4681,7 +4694,7 @@ Complete in one coherent implementation slice:
 Complete together:
 
 - [x] deterministic signal extraction.
-- [x] initial ContextBroker for thread-scoped memory retrieval and provider package assembly.
+- [x] initial ContextBroker for thread- and project-scoped memory retrieval and provider package assembly.
 - [x] automatic memory retrieval.
 - [x] Memory Summary injection.
 - [x] Memory Manifest.

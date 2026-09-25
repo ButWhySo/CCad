@@ -19,7 +19,7 @@ class MemoryManager:
     _word = re.compile(r"[a-z0-9_]{3,}", re.IGNORECASE)
 
     def __init__(self, store: MemoryStore, *, task_id="ccad-task", thread_id="ccad-local",
-                 project_id="project", user_id="local-user"):
+                 project_id="", user_id="local-user"):
         self.store = store
         self.identities = {"stm": str(task_id), "ltm": str(thread_id),
                            "episodic": str(user_id)}
@@ -34,8 +34,11 @@ class MemoryManager:
                        user_id="local-user", retain_stm_task=True):
         identities = {"stm": str(task_id), "ltm": str(thread_id),
                       "episodic": str(user_id)}
+        project_changed = str(project_id) != self.project_id
         changed = {tier for tier in self.TIERS
                    if identities[tier] != self.identities[tier]}
+        if project_changed:
+            changed.add("ltm")
         self.identities = identities
         self.project_id = str(project_id)
         self._retain_stm_task = bool(retain_stm_task)
@@ -78,7 +81,8 @@ class MemoryManager:
     def enable(self, tier: str):
         self._check_tier(tier)
         if tier != "stm":
-            self.store.ensure_namespace(tier, self.identities[tier])
+            for namespace in self._namespaces(tier):
+                self.store.ensure_namespace(tier, namespace)
         loaded = self._load(tier)
         self.runtime[tier] = loaded
         self.enabled[tier] = True
@@ -106,21 +110,65 @@ class MemoryManager:
         now = self._now()
         entries = []
         expired = []
-        for entry in self.store.list(tier=tier, namespace=self.identities[tier]):
-            if self.store.contains_secret(entry):
-                continue
-            expires = entry.get("expires_at", "")
-            if expires:
-                try:
-                    if datetime.fromisoformat(expires.replace("Z", "+00:00")) <= now:
-                        expired.append(entry["id"])
-                        continue
-                except ValueError:
-                    pass
-            entries.append(entry)
+        for namespace in self._namespaces(tier):
+            for entry in self.store.list(tier=tier, namespace=namespace):
+                if self.store.contains_secret(entry):
+                    continue
+                expires = entry.get("expires_at", "")
+                if expires:
+                    try:
+                        if datetime.fromisoformat(expires.replace("Z", "+00:00")) <= now:
+                            expired.append(entry["id"])
+                            continue
+                    except ValueError:
+                        pass
+                if entry.get("scope") == "project" and tier != "ltm":
+                    continue
+                if tier == "ltm" and entry.get("scope") == "project":
+                    entry["project_id"] = self.project_id
+                entries.append(entry)
         for entry_id in expired:
             self.store.delete(entry_id)
-        return entries[-64:]
+        return self._bounded_runtime(tier, entries)
+
+    def _bounded_runtime(self, tier: str, entries=None, limit=64):
+        source = self.runtime[tier] if entries is None else entries
+        limit = max(1, min(64, int(limit)))
+        if tier == "stm":
+            return list(source[-limit:])
+        by_namespace: dict[str, list[dict[str, Any]]] = {}
+        for entry in source:
+            namespace = str(entry.get("namespace", self.identities[tier]))
+            by_namespace.setdefault(namespace, []).append(entry)
+        return [entry for namespace_entries in by_namespace.values()
+                for entry in namespace_entries[-limit:]]
+
+    def _namespaces(self, tier: str):
+        namespaces = [self.identities[tier]]
+        if tier == "ltm" and self.project_id.strip():
+            namespaces.append(self._project_namespace())
+        return list(dict.fromkeys(namespace for namespace in namespaces if namespace))
+
+    def _project_namespace(self):
+        return "project-" + hashlib.sha256(
+            self.project_id.strip().encode("utf-8")).hexdigest()
+
+    def namespace_for(self, tier: str, scope: str | None):
+        if scope == "project" and tier != "ltm":
+            raise ValueError("project-scoped memory must use the durable LTM tier")
+        if tier == "ltm" and scope == "project":
+            project_id = self.project_id.strip()
+            if not project_id:
+                raise ValueError("project-scoped memory requires an active project identity")
+            return self._project_namespace()
+        return self.identities[tier]
+
+    def compaction_identities(self):
+        """Expose only active identities needed to invalidate prepared summaries."""
+        identities = dict(self.identities)
+        if self.project_id.strip():
+            identities["ltm:project"] = self._project_namespace()
+        return identities
 
     def retrieve(self, query: str, *, limit=8):
         entries, _ = self.retrieve_with_metadata(query, limit=limit)
@@ -151,7 +199,8 @@ class MemoryManager:
             "tier": item[4],
             "query_overlap_terms": item[0],
             "namespace_hash": hashlib.sha256(
-                self.identities[item[4]].encode()).hexdigest()[:16],
+                str(item[5].get("namespace", self.identities[item[4]])).encode()
+            ).hexdigest()[:16],
         } for index, item in enumerate(selected)]
         return entries, provenance
 
@@ -166,30 +215,31 @@ class MemoryManager:
         if tier == "stm" and not self._retain_stm_task:
             raise RuntimeError("STM requires an active task; use /task start")
         normalized = " ".join(str(content).casefold().split())
-        existing = next((item for item in self.list(tier=tier)
+        scope = str(scope or {"stm": "task", "ltm": "conversation",
+                              "episodic": "user"}[tier])
+        existing = next((item for item in self.list(tier=tier, scope=scope)
                          if " ".join(str(item.get("content", "")).casefold().split()) == normalized), None)
         if existing:
             return existing
-        duplicate = self._near_duplicate(content, tier)
+        duplicate = self._near_duplicate(content, tier, scope=scope)
         if duplicate:
             entry, similarity = duplicate
             raise ValueError(
                 f"near-duplicate memory exists ({entry['id']}, lexical overlap "
                 f"{similarity:.0%}); update that record or add distinct information")
-        scope = str(scope or {"stm": "task", "ltm": "conversation",
-                              "episodic": "user"}[tier])
+        namespace = self.namespace_for(tier, scope)
         entry = self.store.normalise(content, title=title, scope=scope, tags=tags,
-                                     tier=tier, namespace=self.identities[tier],
+                                     tier=tier, namespace=namespace,
                                      expires_at=expires_at)
         entry["project_id"] = self.project_id
         if tier != "stm":
             entry = self.store.add(content, title=title, scope=scope, tags=tags,
-                                   tier=tier, namespace=self.identities[tier],
+                                   tier=tier, namespace=namespace,
                                    expires_at=expires_at)
-            self.store.keep_latest(tier, self.identities[tier], 64)
+            self.store.keep_latest(tier, namespace, 64)
             entry["project_id"] = self.project_id
         self.runtime[tier].append(entry)
-        self.runtime[tier] = self.runtime[tier][-64:]
+        self.runtime[tier] = self._bounded_runtime(tier)
         if tier == "stm":
             self._stm_tasks[self.identities[tier]] = self.runtime[tier]
             self._stm_tasks.move_to_end(self.identities[tier])
@@ -197,12 +247,16 @@ class MemoryManager:
                 self._stm_tasks.popitem(last=False)
         return entry
 
-    def _near_duplicate(self, content: str, tier: str, *, exclude_id=""):
+    def _near_duplicate(self, content: str, tier: str, *, exclude_id="", scope=None):
         words = set(self._word.findall(str(content).casefold()))
         if len(words) < 5:
             return None
         best = None
-        for entry in self.list(tier=tier):
+        namespace = self.namespace_for(tier, scope)
+        duplicate_scope = "project" if tier == "ltm" and scope == "project" else None
+        for entry in self.list(tier=tier, scope=duplicate_scope):
+            if tier != "stm" and entry.get("namespace") != namespace:
+                continue
             if entry.get("id") == exclude_id:
                 continue
             existing = set(self._word.findall(
@@ -221,9 +275,14 @@ class MemoryManager:
         entries = []
         for current in tiers:
             self._check_tier(current)
-            durable = ([] if current == "stm" else [item for item in self.store.list(
-                tier=current, namespace=self.identities[current], scope=scope)
-                if not self.store.contains_secret(item)])
+            durable = ([] if current == "stm" else [
+                item for namespace in self._namespaces(current)
+                for item in self.store.list(tier=current, namespace=namespace, scope=scope)
+                if not self.store.contains_secret(item) and
+                not (current != "ltm" and item.get("scope") == "project")])
+            if current == "ltm" and scope == "project":
+                for item in durable:
+                    item["project_id"] = self.project_id
             runtime = [item for item in self.runtime[current]
                        if scope is None or item.get("scope") == scope]
             by_id = {item.get("id"): item for item in durable}
@@ -238,7 +297,9 @@ class MemoryManager:
             candidates = list(self.runtime[tier])
             if tier != "stm":
                 try:
-                    candidates.extend(self.store.list(tier=tier, namespace=namespace))
+                    candidates.extend(item for namespace in self._namespaces(tier)
+                                     for item in self.store.list(tier=tier,
+                                                                 namespace=namespace))
                     self.storage_errors.pop(tier, None)
                 except MemoryStoreError as error:
                     self.storage_errors[tier] = error.category
@@ -273,24 +334,29 @@ class MemoryManager:
         for tier in self.TIERS:
             if not self.enabled[tier]:
                 if tier != "stm" and any(
-                        item.get("id") == entry_id for item in self.store.list(
-                            tier=tier, namespace=self.identities[tier])):
+                        item.get("id") == entry_id
+                        for namespace in self._namespaces(tier)
+                        for item in self.store.list(tier=tier, namespace=namespace)):
                     raise RuntimeError(f"memory tier disabled: {tier}")
                 continue
             entry = next((item for item in self.list(tier=tier)
                           if item.get("id") == entry_id), None)
             if entry is None:
                 continue
-            duplicate = self._near_duplicate(content, tier, exclude_id=entry_id)
+            target_scope = entry.get("scope") if scope is None else scope
+            duplicate = self._near_duplicate(content, tier, exclude_id=entry_id,
+                                             scope=target_scope)
             if duplicate:
                 other, similarity = duplicate
                 raise ValueError(
                     f"near-duplicate memory exists ({other['id']}, lexical overlap "
                     f"{similarity:.0%}); revise to distinct information")
+            target_scope = entry.get("scope", "project") if scope is None else scope
+            namespace = self.namespace_for(tier, target_scope)
             fields = {"title": entry.get("title", "") if title is None else title,
-                      "scope": entry.get("scope", "project") if scope is None else scope,
+                      "scope": target_scope,
                       "tags": entry.get("tags", []) if tags is None else tags,
-                      "tier": tier, "namespace": self.identities[tier],
+                      "tier": tier, "namespace": namespace,
                       "expires_at": entry.get("expires_at", "") if expires_at is None else expires_at}
             if tier == "stm":
                 replacement = self.store.normalise(content, **fields)
@@ -354,14 +420,18 @@ class MemoryManager:
             else:
                 runtime_matches = {item.get("id") for item in self.runtime[current]
                                    if item.get("scope") == scope}
+            namespaces = self._namespaces(current)
+            if current == "ltm" and scope == "project":
+                namespaces = [self.namespace_for(current, scope)]
             persistent_matches = set() if current == "stm" else {
-                item.get("id") for item in self.store.list(
-                    tier=current, namespace=self.identities[current], scope=scope)}
+                item.get("id") for namespace in namespaces
+                for item in self.store.list(tier=current, namespace=namespace, scope=scope)}
             self.runtime[current] = [item for item in self.runtime[current]
                                      if item.get("scope") != scope]
             if current != "stm":
-                removed += self.store.clear_scope(scope, tier=current,
-                                                  namespace=self.identities[current])
+                for namespace in namespaces:
+                    removed += self.store.clear_scope(scope, tier=current,
+                                                      namespace=namespace)
             removed += len(runtime_matches - persistent_matches)
         return removed
 
@@ -378,7 +448,7 @@ class MemoryManager:
                 self._stm_tasks.clear()
             if persistent:
                 stored_ids = {item.get("id") for item in self.store.list(tier=current)}
-                removed += self.store.clear_tier(current, None)
+                removed += self.store.clear_tier(current)
                 removed += len(runtime_ids - stored_ids)
             else:
                 removed += len(runtime_ids)
@@ -401,7 +471,7 @@ class MemoryManager:
             raise ValueError("short-term task memory is not durable and cannot be compacted")
         if not self.enabled[tier] or self.storage_errors.get(tier):
             raise RuntimeError(f"memory tier is unavailable: {tier}")
-        if str(namespace) != self.identities[tier]:
+        if str(namespace) != self.namespace_for(tier, scope):
             raise MemoryStoreError("memory_compaction_stale")
         entry = self.store.replace_with_compaction(
             source_entries, summary, tier=tier, namespace=namespace, scope=scope,
@@ -413,11 +483,12 @@ class MemoryManager:
 
     def compact(self, tier: str, limit=64):
         self._check_tier(tier)
-        self.runtime[tier] = self.runtime[tier][-max(1, min(64, int(limit))):]
+        self.runtime[tier] = self._bounded_runtime(tier, limit=limit)
         if tier == "stm":
             self._stm_tasks[self.identities[tier]] = self.runtime[tier]
-        removed = (0 if tier == "stm" else self.store.keep_latest(
-            tier, self.identities[tier], max(1, min(64, int(limit)))))
+        removed = (0 if tier == "stm" else sum(
+            self.store.keep_latest(tier, namespace, max(1, min(64, int(limit))))
+            for namespace in self._namespaces(tier)))
         return {"runtime_entries": len(self.runtime[tier]), "persistent_removed": removed}
 
     def state(self, tier=None):
@@ -430,8 +501,9 @@ class MemoryManager:
             persistent_count_known = True
             if current != "stm":
                 try:
-                    raw_persistent = self.store.list(
-                        tier=current, namespace=self.identities[current])
+                    raw_persistent = [entry for namespace in self._namespaces(current)
+                                      for entry in self.store.list(
+                                          tier=current, namespace=namespace)]
                     self.storage_errors.pop(current, None)
                 except MemoryStoreError as error:
                     self.storage_errors[current] = error.category
@@ -452,8 +524,14 @@ class MemoryManager:
                                "unsafe_persistent_entries_omitted": (
                                    len(raw_persistent) - (persistent or 0)
                                    if persistent_count_known else None),
-                               "namespace_hash": hashlib.sha256(
-                                   self.identities[current].encode()).hexdigest()[:16]}
+                               "project_entries": (sum(
+                                   entry.get("scope") == "project" and
+                                   entry.get("namespace") == self._project_namespace() and
+                                   not self.store.contains_secret(entry)
+                                   for entry in raw_persistent)
+                                   if persistent_count_known else None),
+                               "namespace_hash": hashlib.sha256("|".join(
+                                   self._namespaces(current)).encode()).hexdigest()[:16]}
         return result if tier is None else result[tier]
 
     @classmethod

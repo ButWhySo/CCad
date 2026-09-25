@@ -28,6 +28,8 @@ with tempfile.TemporaryDirectory() as temp:
     manager.configure({"stm": True, "ltm": True, "episodic": True})
     kept = manager.add("Keep connector clearance above one millimeter",
                        tier="ltm", title="Connector design constraint")
+    project_fact = manager.add("This board keeps USB connector clearance above two millimeters",
+                               tier="ltm", scope="project", title="Board clearance")
     manager.add("Prefer dark blue presentation headings", tier="episodic",
                 title="Slide preference")
     setattr(module, "memory_manager", manager)
@@ -46,6 +48,7 @@ with tempfile.TemporaryDirectory() as temp:
     assert result["ok"] is True
     assert result["context_version"] > initial["version"]
     assert any(row["id"] == kept["id"] for row in result["results"])
+    assert any(row["id"] == project_fact["id"] for row in result["results"])
     assert all("Slide preference" not in row["title"] for row in result["results"])
     assert result["secret_value_visible"] is False
     assert module.agent_tools[0].name == "ccad_project_context"

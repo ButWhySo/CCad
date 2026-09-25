@@ -130,6 +130,26 @@ except MemoryCompactionError as error:
 else:
     raise AssertionError("cancelled plan remained usable")
 plans = MemoryCompactionPlans()
+project_entries = [memory(f"p{index}", (
+    f"Keep board-specific verified constraint {index} on this project. "
+    "Preserve the analog return path and connector access during layout review. "
+    "Do not change the measured 0.25 mm copper clearance without DRC evidence."),
+    tier="ltm", namespace="project-identity-a", scope="project")
+    for index in range(2)]
+project_plan = plans.create(project_entries, tier="ltm",
+                            namespace="project-identity-a", scope="project",
+                            now=250.0)
+assert project_plan["ready"]
+assert plans.retain_current(
+    {"ltm": "thread-a", "ltm:project": "project-identity-b"},
+    {"ltm": True}) == 1
+try:
+    plans.get(project_plan["plan_id"], now=251.0)
+except MemoryCompactionError as error:
+    assert error.category == "plan_missing_or_expired"
+else:
+    raise AssertionError("project switch retained a source-bearing stale compaction plan")
+plans = MemoryCompactionPlans()
 stale_plan = plans.create(records, tier="ltm", namespace="thread-a",
                            scope="conversation", now=300.0)
 assert plans.retain_current({"ltm": "thread-b", "episodic": "local-user"},

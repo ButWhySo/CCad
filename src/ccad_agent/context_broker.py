@@ -100,6 +100,7 @@ class ContextBroker:
         rows: list[tuple[str, ...]] = [
             (tier, str(bool(manager.enabled[tier])), str(manager.identities[tier]))
             for tier in manager.TIERS]
+        rows.append(("project", str(getattr(manager, "project_id", ""))))
         for tier in manager.TIERS:
             if not manager.enabled[tier]:
                 continue
@@ -120,16 +121,19 @@ class ContextBroker:
                 "available_count": (state["persistent_entries"] if tier != "stm"
                                     else state["runtime_entries"]),
                 "loaded_count": int(state["runtime_entries"]),
-                "scope": {"stm": "active_task", "ltm": "current_thread",
+                "scope": {"stm": "active_task", "ltm": "current_thread+project",
                           "episodic": "local_user"}[tier],
+                "project_count": state.get("project_entries"),
             }
         return {"version": 1, "tiers": tiers,
                 "available_tier_count": sum(bool(item["enabled"] and
                                                     item["available_count"])
                                              for item in tiers.values()),
                 "historical_thread_summary_count": max(0, int(historical_turn_count)),
-                "project_scope_available": False,
-                "project_memory_count": None,
+                "project_scope_available": bool(getattr(manager, "project_id", "").strip()),
+                "project_memory_count": (states["ltm"].get("project_entries")
+                                         if getattr(manager, "project_id", "").strip()
+                                         else None),
                 "semantic_retrieval_ready": False,
                 "contents_included": False}
 
@@ -221,6 +225,9 @@ class ContextBroker:
             user_request, goal=goal, project_id=project_id, active_editor=active_editor,
             selected_objects=selected_objects, workflow=workflow, task=task,
             recent_turns=recent_turns, recent_context=recent_context)
+        current_project_id = str(project_id or getattr(manager, "project_id", ""))
+        project_identity_digest = (hashlib.sha256(current_project_id.encode()).hexdigest()[:16]
+                                   if current_project_id else "")
         states = manager.state()
         generation = self._memory_generation(manager)
         query_digest = hashlib.sha256(str(signals["query"]).encode()).hexdigest()[:24]
@@ -228,7 +235,8 @@ class ContextBroker:
         comparison_digest = hashlib.sha256(json.dumps(
             comparison_texts, ensure_ascii=False, separators=(",", ":")).encode()
         ).hexdigest()[:24]
-        key_material = json.dumps([str(thread_id), str(project_revision), signals["digest"],
+        key_material = json.dumps([str(thread_id), project_identity_digest,
+                                   str(project_revision), signals["digest"],
                                    query_digest, int(historical_turn_count), generation,
                                    comparison_digest,
                                    int(self.memory_token_budget)],
@@ -272,6 +280,7 @@ class ContextBroker:
         version = self._versions.get(thread, 0) + 1
         self._versions[thread] = version
         result = {"version": version, "cache_hit": False, "thread_id": thread,
+                  "project_identity_digest": project_identity_digest,
                   "project_revision": str(project_revision), "signal_digest": signals["digest"],
                   "memory_generation": generation, "signals": signals,
                   "memories": entries, "memory_retrieval": provenance,
@@ -288,6 +297,11 @@ class ContextBroker:
 
     def refresh_memory(self, manager, context: dict, query: str, *, reason: str):
         """Expand only memory retrieval; preserve prior valid candidates and IDs."""
+        current_project = str(getattr(manager, "project_id", ""))
+        current_project_digest = (hashlib.sha256(current_project.encode()).hexdigest()[:16]
+                                  if current_project else "")
+        if context.get("project_identity_digest", "") != current_project_digest:
+            raise ValueError("memory_context_project_changed")
         extra = extract_context_signals(query)["query"]
         merged_query = (str(context.get("signals", {}).get("query", "")) + " " + extra).strip()
         entries, provenance = manager.retrieve_with_metadata(merged_query,

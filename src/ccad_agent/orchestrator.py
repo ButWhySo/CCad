@@ -449,7 +449,7 @@ def handle_durable_memory_compaction(arguments: str, thread_id: str) -> None:
                 raise ValueError("Choose durable tier `ltm` or `episodic` and an exact scope.")
             if not memory_manager.enabled[tier] or memory_manager.storage_errors.get(tier):
                 raise ValueError(f"Memory tier `{tier}` must be enabled and available to compact.")
-            namespace = memory_manager.identities[tier]
+            namespace = memory_manager.namespace_for(tier, scope)
             telemetry_runtime.begin_turn()
             with telemetry_runtime.session(thread_id), telemetry_runtime.observation(
                     "memory.compaction.plan", "agent", {
@@ -509,7 +509,8 @@ def handle_durable_memory_compaction(arguments: str, thread_id: str) -> None:
         if not plan_id:
             raise ValueError("A compaction plan ID is required.")
         plan = memory_compaction_plans.get(plan_id)
-        if plan["namespace"] != memory_manager.identities.get(plan["tier"]):
+        if plan["namespace"] != memory_manager.namespace_for(
+                plan["tier"], plan["scope"]):
             raise MemoryCompactionError("plan_namespace_changed")
         if operation == "cancel":
             telemetry_runtime.begin_turn()
@@ -1651,7 +1652,7 @@ def activate_conversation(thread_id: str, session_id: str = "",
         session_messages = bound_session_history(loaded)
         active_conversation_thread_id = thread_id
     active_conversation_session_id = str(session_id or thread_id)
-    active_conversation_project_id = str(project_id or "project")
+    active_conversation_project_id = str(project_id or "")
 
 
 def persist_turn_messages(thread_id: str, turn_id: str, messages: Iterable[Any],
@@ -2144,7 +2145,7 @@ def handle_provider_and_state_request(req, executor):
                 invalidate_thread_context(previous_thread)
             os.environ["CCAD_AGENT_THREAD_ID"] = thread_id
             session_id = str(params.get("session_id") or thread_id)
-            project_id = str(params.get("project_id") or "project")
+            project_id = str(params.get("project_id") or "")
             try:
                 activate_conversation(thread_id, session_id, project_id)
             except (ConversationStoreError, ValueError) as error:
@@ -2162,7 +2163,7 @@ def handle_provider_and_state_request(req, executor):
                 retain_stm_task=bool(task_id))
             memory_manager.configure(config_manager.get("memory", {}))
             memory_compaction_plans.retain_current(
-                memory_manager.identities, memory_manager.enabled)
+                memory_manager.compaction_identities(), memory_manager.enabled)
         else:
             os.environ.pop("CCAD_AGENT_THREAD_ID", None)
         emit({"jsonrpc": "2.0", "method": "thread_state", "params": {
@@ -2294,7 +2295,7 @@ def handle_provider_and_state_request(req, executor):
             return True
         invalidate_thread_context(memory_manager.identities["ltm"])
         memory_compaction_plans.retain_current(
-            memory_manager.identities, memory_manager.enabled)
+            memory_manager.compaction_identities(), memory_manager.enabled)
         emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
             "tier": tier, **state, "persisted": True,
             "tiers": memory_manager.state(), "secret_value_visible": False}})
@@ -2401,8 +2402,7 @@ def handle_human_message(req):
                       or uuid.uuid4().hex)
     task_is_active = memory_task_scopes.is_active(requested_task)
     os.environ["CCAD_AGENT_THREAD_ID"] = requested_thread
-    project_id = str(params.get("project_id") or
-                     config_manager.get("project_name", "project"))
+    project_id = str(params.get("project_id") or "")
     try:
         activate_conversation(requested_thread, requested_session, project_id)
     except (ConversationStoreError, ValueError) as error:
@@ -2421,7 +2421,7 @@ def handle_human_message(req):
         invalidate_thread_context(previous_thread)
     memory_manager.configure(config_manager.get("memory", {}))
     memory_compaction_plans.retain_current(
-        memory_manager.identities, memory_manager.enabled)
+        memory_manager.compaction_identities(), memory_manager.enabled)
     if not isinstance(raw_context, str):
         raw_context = str(raw_context or "")
     memory_query = text
@@ -3278,7 +3278,7 @@ if __name__ == "__main__":
                     failures = memory_manager.configure(clean_config.get("memory", {}))
                     invalidate_thread_context(memory_manager.identities["ltm"])
                     memory_compaction_plans.retain_current(
-                        memory_manager.identities, memory_manager.enabled)
+                        memory_manager.compaction_identities(), memory_manager.enabled)
                     emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
                         "tiers": memory_manager.state(), "storage_errors": failures,
                         "persisted": True, "secret_value_visible": False}})
