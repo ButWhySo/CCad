@@ -71,13 +71,21 @@ app-owned target sequence; it must fail if the requested interaction contract
 or output artifact is absent. Never hand-edit a passing manifest. Read every
 retained image and log before claiming the evidence gate passed.
 
-When repository policy forbids staging generated screenshots and logs, pass
-`-WorkspaceOnlyEvidence`. The manifest remains committed with hashes for those
-workspace-only payloads. The local commit hook must find and hash-check every
-payload before accepting the commit; hosted CI can verify the committed
-manifest and its fingerprint metadata, but cannot independently inspect
-workspace-only payload bytes. Source, tests, docs, interaction plans, and the
-manifest remain the reviewable commit contents.
+For a slice that demonstrably changes no GUI behavior, run the same verifier
+with `-NonVisual` and no interaction plan. That mode still runs Qt/MinGW
+preflight, Release build, and full CTest, and produces a hash-bearing manifest
+with `visual_validation: not_applicable_no_gui_behavior_changed`. Do not use it
+to avoid mapped interaction or screenshots for a user-visible change; the
+default GUI mode still requires the app-owned plan and all its interaction and
+image checks.
+
+Pass `-WorkspaceOnlyEvidence` for GUI screenshots, captured logs, and other
+local-only evidence. Do not commit screenshots or logs. The manifest remains
+committed with hashes for those workspace-only payloads. The local commit hook
+must find and hash-check every payload before accepting the commit; hosted CI
+can verify the committed manifest and its fingerprint metadata, but cannot
+independently inspect workspace-only payload bytes. Source, tests, docs,
+interaction plans, and the manifest remain the reviewable commit contents.
 
 The commit-msg hook can enforce a referenced manifest's existence, hash, and
 `pass` status when installed. It checks evidence integrity, not screenshot
@@ -85,6 +93,14 @@ quality, code correctness, or that an artifact was produced by trusted CI. CI
 must run on configured hosted/self-hosted runners and report its actual result.
 Do not claim branch protection is active unless repository settings confirm it.
 Local success is not CI success; a pending/unavailable check stays pending.
+Complete the full local verification and commit the passing evidence manifest,
+then push the verified branch to trigger its independent CI run. Confirm the
+workflow ran against the pushed commit SHA and inspect its actual results; never
+describe a missing, pending, or unavailable check as green. Open or update the
+branch's pull request as appropriate, and merge only after the actual required
+CI checks pass. Verify the resulting main SHA before cleaning up the merged
+branch. Do not claim branch protection is configured unless repository settings
+confirm it.
 
 ## Documentation, commit, and handoff
 
@@ -93,10 +109,10 @@ Update `docs/codebase-map.md`, `docs/features/implemented-features.md`,
 Record unresolved edges and skipped evidence in the TODO. Do not commit secrets,
 vault/config data, local logs, unrelated files, or generated project boards.
 Stage explicit paths only. Use a descriptive multi-line message with `Why`,
-`Changed`, `Behavior`, `Verification`, and `Demo`. Merge/push only after the
-required local gates and available CI checks pass; verify the resulting commit
-SHA. Clean up only the feature branch that is confirmed merged and no longer
-needed.
+`Changed`, `Behavior`, `Verification`, and `Demo`. Push only after required
+local gates pass; then wait for the independent CI result before merging. Verify
+the resulting commit SHA. Clean up only the feature branch confirmed merged and
+no longer needed.
 
 For user-facing progress, use:
 

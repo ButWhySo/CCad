@@ -43,6 +43,8 @@ int main() {
       readFile(root / "scripts" / "run_ui_map_mouse_target_demo.ps1");
   const std::string interaction_harness =
       readFile(root / "scripts" / "run_gui_interaction_demo.ps1");
+  const std::string evidence_verifier =
+      readFile(root / "scripts" / "verify_sprint.ps1");
   const std::string workflow =
       readFile(root / ".agents" / "workflows" / "visual-validation.md");
 
@@ -88,4 +90,18 @@ int main() {
   requireContains(workflow, "5-second initial load wait",
                   "visual workflow multi-target initial wait policy");
   requireContains(workflow, "800 ms", "visual workflow per-action policy");
+  requireContains(workflow, "push the verified branch to trigger its independent CI run",
+                  "visual workflow triggers CI after local verification");
+  requireContains(workflow, "merge only after the actual required",
+                  "visual workflow gates merge on real CI status");
+  requireContains(workflow, "CI checks pass.",
+                  "visual workflow requires passing CI checks before merge");
+  requireContains(workflow, "Do not commit screenshots or logs",
+                  "visual workflow preserves workspace-only evidence policy");
+  requireContains(evidence_verifier, "[switch]$NonVisual",
+                  "evidence verifier supports explicit non-visual changes");
+  requireContains(evidence_verifier, "not_applicable_no_gui_behavior_changed",
+                  "non-visual manifest states why GUI proof is not applicable");
+  requireContains(evidence_verifier, "-InteractionPlan",
+                  "GUI evidence still requires an interaction plan");
 }

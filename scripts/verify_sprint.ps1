@@ -1,23 +1,34 @@
 param(
   [Parameter(Mandatory)][ValidatePattern('^[a-z0-9][a-z0-9-]{2,63}$')][string]$SprintId,
   [Parameter(Mandatory)][string]$FeatureDescription,
-  [Parameter(Mandatory)][string]$InteractionPlan,
+  [string]$InteractionPlan,
   [string]$ReusePassedBuildAndTestsFrom,
+  [switch]$NonVisual,
   [switch]$WorkspaceOnlyEvidence
 )
 
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $root
-$planPath = (Resolve-Path -LiteralPath $InteractionPlan).Path
-$plan = Get-Content -Raw -LiteralPath $planPath | ConvertFrom-Json
-if (-not $plan.target_sequence -or -not $plan.project -or
-    $plan.minimum_mapped_interactions -lt 7 -or
-    $plan.required_targets.Count -lt 7 -or
-    $plan.meaningful_screenshots -lt 1) {
-  throw 'Plan must name an existing app-owned target sequence, project, >=7 mapped targets, and expected checkpoint count.'
+$plan = $null
+$planPath = $null
+if ($NonVisual) {
+  if ($InteractionPlan) { throw '-InteractionPlan cannot be combined with -NonVisual.' }
+  $validationMode = 'non_visual'
+  $runName = "$SprintId-nonvisual"
+} else {
+  if (-not $InteractionPlan) { throw 'GUI validation requires -InteractionPlan; use -NonVisual only when no GUI behavior changed.' }
+  $planPath = (Resolve-Path -LiteralPath $InteractionPlan).Path
+  $plan = Get-Content -Raw -LiteralPath $planPath | ConvertFrom-Json
+  if (-not $plan.target_sequence -or -not $plan.project -or
+      $plan.minimum_mapped_interactions -lt 7 -or
+      $plan.required_targets.Count -lt 7 -or
+      $plan.meaningful_screenshots -lt 1) {
+    throw 'Plan must name an existing app-owned target sequence, project, >=7 mapped targets, and expected checkpoint count.'
+  }
+  $validationMode = 'gui'
+  $runName = "$($plan.target_sequence)-$SprintId"
 }
-$runName = "$($plan.target_sequence)-$SprintId"
 $evidenceRoot = Join-Path $root "artifacts\evidence\$SprintId"
 $manifestPath = Join-Path $root "artifacts\evidence\$SprintId.json"
 $screenshotsRoot = Join-Path $root 'artifacts\screenshots'
@@ -29,8 +40,10 @@ $manifest = [ordered]@{
   schema_version = 1
   sprint_id = $SprintId
   feature = $FeatureDescription
-  interaction_plan = $planPath.Substring($root.Length + 1).Replace('\','/')
-  target_sequence = $runName
+  validation_mode = $validationMode
+  interaction_plan = if ($planPath) { $planPath.Substring($root.Length + 1).Replace('\','/') } else { $null }
+  target_sequence = if ($plan) { $runName } else { $null }
+  visual_validation = if ($NonVisual) { 'not_applicable_no_gui_behavior_changed' } else { 'required' }
   started_utc = [DateTime]::UtcNow.ToString('o')
   status = 'in_progress'
   steps = @()
@@ -95,12 +108,15 @@ try {
     } (Join-Path $evidenceRoot 'ctest.log')
   }
 
-  $project = Join-Path $root $plan.project
-  if (-not (Test-Path -LiteralPath $project)) { throw "Plan project missing: $project" }
-  Invoke-Logged 'official_ui_map_target_sequence' {
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_ui_map_mouse_target_demo.ps1 `
-      -Name $runName -ProjectPath $project -InitialLoadMilliseconds 5000 -PerTargetMilliseconds 800
-  } (Join-Path $evidenceRoot 'ui_harness.log')
+  if ($NonVisual) {
+    Write-Output 'Visual validation: not applicable; this verification run is explicitly non-visual.'
+  } else {
+    $project = Join-Path $root $plan.project
+    if (-not (Test-Path -LiteralPath $project)) { throw "Plan project missing: $project" }
+    Invoke-Logged 'official_ui_map_target_sequence' {
+      powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_ui_map_mouse_target_demo.ps1 `
+        -Name $runName -ProjectPath $project -InitialLoadMilliseconds 5000 -PerTargetMilliseconds 800
+    } (Join-Path $evidenceRoot 'ui_harness.log')
 
   $report = Join-Path $screenshotsRoot "$runName-target-sequence.json"
   $stdout = Join-Path $screenshotsRoot "$runName.stdout.log"
@@ -148,6 +164,7 @@ try {
     throw 'GUI stderr contains a severe Qt/rendering/runtime failure; inspect the preserved log.'
   }
   Add-Step 'captured_gui_logs_and_images' $true 'stdout, stderr, action report, and every scoped PNG copied into evidence folder'
+  }
 
   foreach ($textArtifact in Get-ChildItem -LiteralPath $evidenceRoot -File | Where-Object {
     $_.Extension -in @('.json','.log')

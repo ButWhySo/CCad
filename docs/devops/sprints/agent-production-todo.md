@@ -2,6 +2,14 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 994 completed slice — local evidence to independent CI handoff
+
+- [x] Clarify that local verification and a passing evidence manifest precede commit/push; pushing triggers independent CI, and merge waits for the actual green result.
+- [x] Keep GUI screenshots/logs workspace-only and hash-checked locally; commit only source, tests, documentation, interaction plans, and manifest metadata.
+- [x] Add a visual-harness policy contract for CI handoff and evidence exclusion; focused CTest passed.
+- [x] Reuse the existing app-owned Qt UI-map verifier, manifest validator, commit hook, and hosted CI instead of introducing fictional wrapper scripts or an unconfigured runner.
+- [x] Add a truthful non-visual evidence-verification mode for process-only slices; it retains Qt preflight, Release build, full CTest, and the required generated manifest while forbidding use for GUI changes.
+
 ### Sprint 993 completed slice — explicit functional-block context (Tier 1, C3)
 
 - [x] Derive searchable blocks only from typed user groups and serialized schematic sheet hierarchy; retain source provenance.
