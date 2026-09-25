@@ -2,7 +2,7 @@
 
 Check a box only after implementation and its required evidence exist.
 
-### Sprint 990 active slice — fielded memory ranking and bounded diversity (Tier 1, M4)
+### Sprint 990 completed slice — fielded memory ranking and bounded diversity (Tier 1, M4)
 
 - [x] Index enabled project/conversation/user memory titles, content, and tags through separate lexical fields after existing scope and expiry gates.
 - [x] Fuse field rankings deterministically with weighted reciprocal-rank fusion while retaining the minimum lexical-match floor.
@@ -11,7 +11,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Contract-test cross-field retrieval, tag retrieval, stable fusion, diversity, result bounds, and lifecycle isolation.
 - [x] Run changed-module Pyright, focused contracts, Qt MinGW Release build, full CTest (114/114), and diff/secret scans.
 - [x] Update lifecycle, feature, codebase, progress, and sprint notes.
-- [ ] Commit, merge/push `main`, verify remote SHA, and remove only this completed branch.
+- [x] Commit, fast-forward and push `main`, verify the remote SHA, and remove only this completed sprint branch.
 
 Scope boundary: this adds lexical field fusion and diversity only. Embeddings, importance/recency/usage adjustments, preference/correction weighting, and provider-tokenizer budgeting remain open. It does not make paraphrase retrieval semantic.
 
