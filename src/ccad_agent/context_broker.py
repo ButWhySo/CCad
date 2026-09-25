@@ -276,7 +276,8 @@ class ContextBroker:
                 self._project_indexes[project_key] = project_index
             project_result = project_index.retrieve(
                 project_snapshot, signals["query"], active_layer=active_layer,
-                active_net=active_net, selected_objects=selected_objects)
+                active_net=active_net, selected_objects=selected_objects,
+                embedding_backend=getattr(manager, "semantic_embedding_backend", None))
             project_retrieval = project_result
             if project_result.get("available"):
                 # Retain populated indexes for incremental updates across turns.

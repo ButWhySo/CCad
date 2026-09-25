@@ -113,9 +113,16 @@ def _project_retrieval_payload(value: dict | None) -> dict:
                     "member_count",
                     "start_layer_id", "end_layer_id",
                     "component_id", "symbol_id", "position_mm", "bounds_mm", "retrieval",
-                    "rank", "relationship", "distance_mm", "design_rules"):
+                    "rank", "relationship", "distance_mm", "semantic_similarity",
+                    "design_rules"):
             if key in entity and isinstance(entity[key], (str, int, float, dict)):
                 item[key] = entity[key]
+        for key in ("description", "library_description", "footprint_name", "lib_id",
+                    "title", "text", "notes", "target"):
+            if key in entity:
+                content = _safe_text(entity[key], 480)
+                if content:
+                    item[key] = content
         for key in ("members", "source_member_ids", "related_net_ids"):
             values = entity.get(key)
             if isinstance(values, list):
@@ -163,18 +170,23 @@ def _project_retrieval_payload(value: dict | None) -> dict:
     stats = stats if isinstance(stats, dict) else {}
     stats_payload = {key: max(0, int(stats.get(key, 0) or 0)) for key in
                      ("total_entities", "exact_match_count", "lexical_match_count",
-                      "relationship_match_count", "spatial_match_count",
-                      "near_component_match_count", "region_member_match_count",
-                      "omitted_count")}
+                     "relationship_match_count", "spatial_match_count",
+                     "near_component_match_count", "region_member_match_count",
+                     "semantic_match_count",
+                     "omitted_count")}
     for relation, key in (("near_component", "near_component_match_count"),
                           ("region_member", "region_member_match_count")):
         stats_payload[key] = sum(
             relation in entity.get("relationships", ()) or
             entity.get("relationship") == relation for entity in entities)
+    stats_payload["semantic_match_count"] = sum(
+        isinstance(entity.get("semantic_similarity"), (int, float))
+        for entity in entities)
     return {
         "available": bool(source.get("available", False)),
         "revision": _safe_text(source.get("revision"), 32),
         "search_method": _safe_text(source.get("search_method"), 80),
+        "semantic_status": _safe_text(source.get("semantic_status"), 48) or "disabled",
         "relationship_semantics": "shared_net_association_only",
         "board_net_semantics":
             "native_net_id_association_not_physical_continuity",
@@ -514,7 +526,11 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
             "project_counts": project_counts,
             "project_retrieval_revision": included_project_retrieval["revision"],
             "project_retrieval_method": included_project_retrieval["search_method"],
+            "project_retrieval_semantic_status": included_project_retrieval.get(
+                "semantic_status", "disabled"),
             "project_retrieval_stats": included_project_retrieval["stats"],
+            "project_retrieval_semantic_count": included_project_retrieval[
+                "stats"].get("semantic_match_count", 0),
             "project_retrieval_kinds": project_retrieval_kinds,
             "project_retrieval_count": len(included_project_retrieval["entities"]),
             "project_retrieval_block_net_count": sum(

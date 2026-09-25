@@ -2,6 +2,20 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1000 active slice - opt-in semantic project retrieval (Tier 1, C4)
+
+- [x] Reuse the configured loopback-only Ollama embedding backend; require explicit enablement and a ready installed model.
+- [x] Embed bounded typed project descriptions, prioritize lexical candidates within the semantic cap, and exclude raw track/via primitives.
+- [x] Cache query/entity vectors in bounded process memory and invalidate changed entity vectors and disabled backend state.
+- [x] Add semantic ranking without displacing exact identity or discarding graph/spatial provenance; keep lexical fallback on failures.
+- [x] Preserve safe semantic status, similarity, and included-result counts through the provider package and turn metadata.
+- [x] Contract-test paraphrases, candidate bounds, cache invalidation, disable/re-enable, package propagation, and failure fallback.
+- [x] Pass the final official non-visual verifier after cache-bound cleanup: Qt/MinGW Release build and CTest 115/115. Manifest `artifacts/evidence/sprint1000-semantic-project-retrieval-final.json` (SHA-256 `EEEF1B410719F7E3FB006986C49EFCBD6C983143147BCEECB64FD99C83BF73F4`). No GUI code changed; screenshots are not applicable.
+- [x] Run Pyright on changed modules: index, broker, memory manager, and package report zero diagnostics; orchestrator retains two existing import-symbol diagnostics at `config` (both symbols are defined in `config.py`). Record this analyzer limitation rather than suppressing it.
+- [x] Run staged-added-line and tracked-tree high-confidence secret scans; zero matches. Commit/push only the explicitly scoped source, tests, docs, and final manifest.
+
+Scope boundary: this slice adds optional vector retrieval over existing typed entity text. It does not add a new entity schema, generated summaries, persistent embeddings, a real-model retrieval benchmark, or full C4 completion.
+
 ### Sprint 998 active slice — explicit functional-block net retrieval (Tier 1, C3)
 
 - [x] Add contract tests for typed board/schematic block-to-net edges, namespace separation, bounded context forwarding, incremental stale-edge replacement, and already-seeded active-net targets.
@@ -4861,14 +4875,14 @@ Complete together:
 Complete together:
 
 - [ ] semantic project entity schema.
-- [ ] embedding backend.
+- [x] Reuse the opt-in loopback Ollama embedding backend for bounded typed project retrieval (Sprint 1000).
 - [ ] semantic entity summaries.
-- [ ] vector retrieval.
-- [ ] hybrid fusion with exact/BM25/graph/spatial results.
-- [ ] incremental embedding update.
-- [ ] truthful lexical-only fallback.
+- [x] Bounded vector retrieval over eligible typed project descriptions (Sprint 1000).
+- [x] Fuse semantic candidates with BM25 while preserving exact-match guards and graph/spatial provenance (Sprint 1000).
+- [x] Re-embed changed entity text; clear process-only vectors when the backend is disabled or changes (Sprint 1000).
+- [x] Preserve exact/lexical retrieval when semantic retrieval is disabled, unavailable, or fails (Sprint 1000).
 - [ ] retrieval benchmarks.
-- [ ] tests/docs.
+- [x] Contract tests and implementation/handover docs for the bounded retrieval slice (Sprint 1000); real-model benchmark and remaining schema/summary work stay open.
 
 ## Group C5 â€” Per-Agent context projection and artifact compression
 
@@ -4905,7 +4919,7 @@ Do not claim context architecture complete until all of the following are true.
 - [ ] Project connectivity graph contributes relevant context.
 - [ ] PCB spatial retrieval contributes nearby relevant geometry.
 - [ ] BM25/FTS contributes textually relevant project context.
-- [ ] Semantic project search finds useful non-exact natural-language matches when enabled.
+- [x] Contract tests prove bounded non-exact semantic candidates and primitive exclusion; real-model relevance remains unverified without an installed embedding model.
 - [ ] Individual raw track/via primitives are not unnecessarily embedded.
 - [ ] Project-derived context is revision-aware.
 - [ ] Project index updates incrementally after changes.

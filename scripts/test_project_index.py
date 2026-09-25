@@ -70,6 +70,197 @@ def project_snapshot():
 
 
 class ProjectIndexTests(unittest.TestCase):
+    def test_semantic_project_retrieval_is_opt_in_and_fuses_nonlexical_matches(self):
+        class Backend:
+            identity = "contract:project-embeddings-v1"
+
+            def __init__(self):
+                self.document_batches = 0
+
+            @staticmethod
+            def _vector(text):
+                text = text.casefold()
+                if "receptacle" in text or "cable" in text:
+                    return [1.0, 0.0, 0.0]
+                if "usb connector" in text or "usb_c" in text:
+                    return [1.0, 0.0, 0.0]
+                if "power regulator" in text or "tps62130" in text:
+                    return [0.0, 1.0, 0.0]
+                return [0.0, 0.0, 1.0]
+
+            def embed_query(self, text):
+                return self._vector(text)
+
+            def embed_documents(self, texts):
+                self.document_batches += 1
+                return [self._vector(text) for text in texts]
+
+        snapshot = project_snapshot()
+        backend = Backend()
+        index = ProjectIndex()
+        lexical_only = index.retrieve(snapshot, "receptacle for a cable", limit=12)
+        self.assertEqual(lexical_only["semantic_status"], "disabled")
+        self.assertFalse(any(item.get("semantic_similarity") is not None
+                             for item in lexical_only["entities"]))
+
+        semantic = index.retrieve(snapshot, "receptacle for a cable", limit=12,
+                                  embedding_backend=backend)
+        connectors = [item for item in semantic["entities"]
+                      if item["kind"] == "footprint" and item["id"] == "J2"]
+        self.assertEqual(len(connectors), 1)
+        self.assertGreater(connectors[0]["semantic_similarity"], 0.99)
+        self.assertIn(connectors[0]["retrieval"], {"semantic", "hybrid"})
+        self.assertEqual(semantic["semantic_status"], "ready")
+        self.assertGreaterEqual(semantic["stats"]["semantic_match_count"], 1)
+        # Tracks and vias remain governed by exact/graph/spatial retrieval; they
+        # are not sent to the semantic backend as project-language documents.
+        self.assertEqual(backend.document_batches, 1)
+
+    def test_semantic_project_cache_reuses_unchanged_text_and_refreshes_edits(self):
+        class Backend:
+            identity = "contract:project-embeddings-v1"
+
+            def __init__(self):
+                self.calls = []
+
+            def embed_query(self, text):
+                return [1.0, 0.0]
+
+            def embed_documents(self, texts):
+                self.calls.extend(texts)
+                return [[1.0, 0.0] for _ in texts]
+
+        snapshot = project_snapshot()
+        backend = Backend()
+        index = ProjectIndex()
+        index.retrieve(snapshot, "adapter", embedding_backend=backend)
+        first_count = len(backend.calls)
+        self.assertGreater(first_count, 0)
+        index.retrieve(snapshot, "adapter", embedding_backend=backend)
+        self.assertEqual(len(backend.calls), first_count)
+
+        snapshot["typed_state"]["project"]["board"]["footprints"][1]["value"] = "USB-C host connector"
+        index.retrieve(snapshot, "adapter", embedding_backend=backend)
+        self.assertGreater(len(backend.calls), first_count)
+        self.assertIn("USB-C host connector", " ".join(backend.calls))
+
+    def test_semantic_candidate_cap_prioritizes_lexical_hits(self):
+        class Backend:
+            identity = "contract:bounded-project-embeddings"
+
+            def __init__(self):
+                self.documents = []
+
+            def embed_query(self, text):
+                return [1.0, 0.0]
+
+            def embed_documents(self, texts):
+                self.documents.extend(texts)
+                return [[1.0, 0.0] for _ in texts]
+
+        snapshot = project_snapshot()
+        board = snapshot["typed_state"]["project"]["board"]
+        board["footprints"] = [
+            {"reference": f"A{index:03}", "value": "Unrelated test device",
+             "footprint_name": "Package:Generic", "layer_id": "F.Cu",
+             "position": {"x_nm": index, "y_nm": 0}}
+            for index in range(80)
+        ] + board["footprints"]
+        backend = Backend()
+        result = ProjectIndex().retrieve(snapshot, "USB connector", limit=12,
+                                         embedding_backend=backend)
+        self.assertLessEqual(len(backend.documents), 64)
+        self.assertTrue(any("Connector_USB:USB_C_Receptacle" in text
+                            for text in backend.documents))
+        self.assertTrue(any(item["kind"] == "footprint" and item["id"] == "J2"
+                            for item in result["entities"]))
+
+    def test_semantic_backend_failure_preserves_exact_and_lexical_results(self):
+        class Backend:
+            identity = "contract:failure"
+
+            def embed_query(self, text):
+                raise RuntimeError("must not leak prompt or exception")
+
+            def embed_documents(self, texts):
+                raise RuntimeError("unreachable")
+
+        snapshot = project_snapshot()
+        result = ProjectIndex().retrieve(snapshot, "TPS62130 power regulator",
+                                         embedding_backend=Backend())
+        self.assertEqual(result["semantic_status"], "embedding_failed")
+        self.assertTrue(any(item["id"] == "U3" for item in result["entities"]))
+        self.assertTrue(any(item["retrieval"] in {"exact", "lexical"}
+                            for item in result["entities"]))
+
+    def test_context_broker_uses_configured_semantic_backend_and_unloads_it_when_disabled(self):
+        class Backend:
+            identity = "contract:configured-project-embeddings"
+
+            def __init__(self):
+                self.document_calls = 0
+
+            @staticmethod
+            def _vector(text):
+                text = text.casefold()
+                return ([1.0, 0.0] if "receptacle" in text or "usb connector" in text
+                        else [0.0, 1.0])
+
+            def embed_query(self, text):
+                return self._vector(text)
+
+            def embed_documents(self, texts):
+                self.document_calls += len(texts)
+                return [self._vector(text) for text in texts]
+
+        with tempfile.TemporaryDirectory() as temp:
+            manager = MemoryManager(MemoryStore(Path(temp) / "memory.json"),
+                                    project_id="project-1")
+            backend = Backend()
+            manager.set_embedding_backend(backend)
+            manager.configure({"semantic": {"enabled": True,
+                                               "backend": "ollama_local",
+                                               "model": "contract-model"}})
+            broker = ContextBroker()
+            prepared = broker.prepare(
+                manager, thread_id="thread-1", project_revision="rev-1",
+                project_id="project-1", user_request="receptacle for a cable",
+                project_snapshot=project_snapshot())
+            result = prepared["project_retrieval"]
+            self.assertEqual(result["semantic_status"], "ready")
+            self.assertTrue(any(item["kind"] == "footprint" and item["id"] == "J2"
+                                and item.get("semantic_similarity", 0) > 0.99
+                                for item in result["entities"]))
+            packaged = build_context_package(
+                json.dumps(project_snapshot()), [], [], char_limit=8192,
+                project_retrieval=result)
+            envelope = json.loads(packaged["content"].split("\n", 1)[1])
+            packaged_j2 = next(item for item in envelope["project_retrieval"]["entities"]
+                               if item["kind"] == "footprint" and item["id"] == "J2")
+            self.assertGreater(packaged_j2["semantic_similarity"], 0.99)
+            self.assertEqual(packaged_j2["footprint_name"],
+                             "Connector_USB:USB_C_Receptacle")
+            self.assertEqual(packaged["metadata"]["project_retrieval_semantic_status"],
+                             "ready")
+            self.assertGreater(packaged["metadata"]["project_retrieval_semantic_count"], 0)
+
+            manager.configure({"semantic": {"enabled": False}})
+            disabled = broker.prepare(
+                manager, thread_id="thread-1", project_revision="rev-1",
+                project_id="project-1", user_request="receptacle for a cable",
+                project_snapshot=project_snapshot(), force_refresh=True)
+            self.assertEqual(disabled["project_retrieval"]["semantic_status"], "disabled")
+            self.assertEqual(disabled["project_retrieval"]["stats"]["semantic_match_count"], 0)
+            prior_document_calls = backend.document_calls
+            manager.configure({"semantic": {"enabled": True,
+                                               "backend": "ollama_local",
+                                               "model": "contract-model"}})
+            broker.prepare(
+                manager, thread_id="thread-1", project_revision="rev-1",
+                project_id="project-1", user_request="receptacle for a cable",
+                project_snapshot=project_snapshot(), force_refresh=True)
+            self.assertGreater(backend.document_calls, prior_document_calls)
+
     def test_schematic_declared_pins_and_serialized_annotations_are_retrievable(self):
         snapshot = project_snapshot()
         project = snapshot["typed_state"]["project"]

@@ -2651,6 +2651,10 @@ def handle_human_message(req):
             "project_retrieval_stats", {}).get("near_component_match_count", 0),
         "project_retrieval_region_member_count": context_metadata.get(
             "project_retrieval_stats", {}).get("region_member_match_count", 0),
+        "project_retrieval_semantic_count": context_metadata.get(
+            "project_retrieval_semantic_count", 0),
+        "project_retrieval_semantic_status": context_metadata.get(
+            "project_retrieval_semantic_status", "disabled"),
         "project_retrieval_chars": context_metadata["project_retrieval_chars"],
         "project_retrieval_revision": context_metadata["project_retrieval_revision"],
         "project_retrieval_method": context_metadata["project_retrieval_method"],

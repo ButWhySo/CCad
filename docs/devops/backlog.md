@@ -1180,9 +1180,21 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   BM25, search same-project compact recaps before source-linked turns, preserve
   exact conversation pointers, and reject weak matches. Offline contracts and
   full build/CTest evidence are tracked in the Sprint 989 TODO/log.
-- [ ] Follow-up: semantic embeddings, deterministic fusion/diversity ranking,
-  preference/correction evidence, richer extraction, and provider-tokenizer
-  budgeting; do not imply BM25 alone provides semantic recall.
+- [x] Sprint 1000: add opt-in bounded semantic PCB/schematic context retrieval
+  through the existing local Ollama backend, with lexical candidate priority,
+  process-only signature-keyed vectors, exact/graph/spatial provenance, safe
+  context status, and exact/lexical fallback. Qt Release/full CTest passed
+  115/115; real-model relevance validation remains open because Ollama had no
+  installed model.
+- [ ] Memory follow-up: preference/correction evidence, richer extraction, and
+  provider-tokenizer budgeting. Memory semantic retrieval and deterministic
+  field fusion/diversity are implemented; this remaining item does not imply
+  BM25 alone provides semantic recall.
+- [ ] Sprint 1000 follow-up: validate opt-in semantic project retrieval against
+  a real installed Ollama model and representative PCB/schematic paraphrase
+  queries; generated summaries, durable vectors, and retrieval-quality metrics
+  remain unimplemented. Offline backend-contract tests do not establish model
+  relevance quality.
 - [x] Sprint 988: add project-scoped durable LTM storage/retrieval; safe project
   identity, isolation, manifest counts, namespace-aware compaction invalidation,
   and reset semantics are covered by offline contracts.

@@ -6,8 +6,10 @@ import hashlib
 import json
 import math
 import re
-from collections import Counter, defaultdict
+from collections import Counter, OrderedDict, defaultdict
 from typing import Any
+
+from semantic_retrieval import EmbeddingError, OllamaEmbeddingBackend
 
 
 _WORD = re.compile(r"[\w]+", re.UNICODE)
@@ -30,6 +32,18 @@ _STOP = {"the", "and", "for", "with", "from", "into", "near", "around", "show",
          "project", "objects", "please", "current", "existing", "all", "are", "is"}
 _MAX_INPUT_ENTITIES = 50_000
 _MAX_RESULT_TEXT = 400
+_MAX_SEMANTIC_DOCUMENTS = 64
+_MAX_SEMANTIC_VECTOR_CACHE = 512
+_MAX_SEMANTIC_QUERY_CACHE = 64
+_SEMANTIC_KINDS = {
+    "functional_block", "schematic_sheet", "footprint", "schematic_symbol",
+    "schematic_net", "design_rules", "project_diagnostic", "schematic_textbox",
+}
+_SEMANTIC_KIND_PRIORITY = {
+    "functional_block": 0, "schematic_sheet": 1, "footprint": 2,
+    "schematic_symbol": 3, "schematic_net": 4, "design_rules": 5,
+    "project_diagnostic": 6, "schematic_textbox": 7,
+}
 _BOARD_GEOMETRY_KINDS = frozenset({
     "footprint", "pad", "track", "track_arc", "via", "zone", "graphic",
     "board_text", "dimension", "keepout", "route_request", "board_group",
@@ -286,6 +300,28 @@ class ProjectIndex:
         self._spatial_cells: dict[tuple[int, int], set[str]] = defaultdict(set)
         self._spatial_keys: dict[str, tuple[tuple[int, int], ...]] = {}
         self._spatial_global: set[str] = set()
+        self._semantic_backend = None
+        self._semantic_identity = ""
+        self._semantic_status = "disabled"
+        self._semantic_vectors: OrderedDict[str, list[float]] = OrderedDict()
+        self._semantic_query_vectors: OrderedDict[str, list[float]] = OrderedDict()
+
+    def set_embedding_backend(self, backend):
+        """Set the explicitly configured, ready local project embedding backend."""
+        identity = str(getattr(backend, "identity", "")) if backend is not None else ""
+        if backend is None or not identity:
+            self._semantic_backend = None
+            self._semantic_identity = ""
+            self._semantic_status = "disabled"
+            self._semantic_vectors.clear()
+            self._semantic_query_vectors.clear()
+            return
+        if identity != self._semantic_identity:
+            self._semantic_vectors.clear()
+            self._semantic_query_vectors.clear()
+        self._semantic_backend = backend
+        self._semantic_identity = identity[:256]
+        self._semantic_status = "ready"
 
     @staticmethod
     def _signature(doc: dict) -> str:
@@ -1027,6 +1063,11 @@ class ProjectIndex:
                 if not bucket:
                     self._component_docs.pop(value, None)
         self._remove_spatial(uid)
+        if doc is not None and self._semantic_identity:
+            project_key = hashlib.sha256(self._project_id.encode("utf-8")).hexdigest()[:24]
+            vector_key = ":".join((self._semantic_identity, project_key, uid,
+                                    doc["signature"]))
+            self._semantic_vectors.pop(vector_key, None)
 
     def _remove_spatial(self, uid: str):
         for key in self._spatial_keys.pop(uid, ()):
@@ -1191,6 +1232,89 @@ class ProjectIndex:
             {"footprint", "pad", "track", "track_arc", "via", "zone"} else 1,
             item[0]))[:limit]
 
+    @staticmethod
+    def _cache_get(cache: OrderedDict, key: str):
+        value = cache.pop(key, None)
+        if value is not None:
+            cache[key] = value
+        return value
+
+    @staticmethod
+    def _cache_put(cache: OrderedDict, key: str, value: list[float], limit: int):
+        cache.pop(key, None)
+        cache[key] = value
+        while len(cache) > limit:
+            cache.popitem(last=False)
+
+    def _semantic_ranking(self, query: str,
+                          preferred_uids=()) -> list[tuple[str, float]]:
+        backend = self._semantic_backend
+        if backend is None or not query or _SECRET.search(query):
+            self._semantic_status = ("disabled" if backend is None else
+                                     "query_empty" if not query else "query_redacted")
+            return []
+        eligible = [doc for doc in self._docs.values()
+                    if doc["fields"].get("kind") in _SEMANTIC_KINDS and
+                    len(doc["text"].split()) >= 2 and not _SECRET.search(doc["text"])]
+        preferred = set(preferred_uids)
+        eligible.sort(key=lambda doc: (
+            0 if doc["uid"] in preferred else 1,
+            _SEMANTIC_KIND_PRIORITY.get(doc["fields"]["kind"], 99), doc["uid"]))
+        eligible = eligible[:_MAX_SEMANTIC_DOCUMENTS]
+        if not eligible:
+            self._semantic_status = "no_semantic_entities"
+            return []
+        try:
+            query_key = self._semantic_identity + ":q:" + hashlib.sha256(
+                query.encode("utf-8")).hexdigest()
+            query_vector = self._cache_get(self._semantic_query_vectors, query_key)
+            if query_vector is None:
+                query_vector = OllamaEmbeddingBackend._normalize_vector(
+                    backend.embed_query(query))
+                self._cache_put(self._semantic_query_vectors, query_key, query_vector,
+                                _MAX_SEMANTIC_QUERY_CACHE)
+
+            project_key = hashlib.sha256(self._project_id.encode("utf-8")).hexdigest()[:24]
+            vectors: dict[str, list[float]] = {}
+            missing = []
+            for doc in eligible:
+                key = ":".join((self._semantic_identity, project_key, doc["uid"],
+                                doc["signature"]))
+                vector = self._cache_get(self._semantic_vectors, key)
+                if vector is None:
+                    missing.append((doc, key))
+                else:
+                    vectors[doc["uid"]] = vector
+            for offset in range(0, len(missing), OllamaEmbeddingBackend.MAX_TEXTS):
+                batch = missing[offset:offset + OllamaEmbeddingBackend.MAX_TEXTS]
+                embedded = backend.embed_documents([doc["text"] for doc, _key in batch])
+                if len(embedded) != len(batch):
+                    raise EmbeddingError("embedding_invalid_response")
+                for (doc, key), raw_vector in zip(batch, embedded):
+                    vector = OllamaEmbeddingBackend._normalize_vector(raw_vector)
+                    if len(vector) != len(query_vector):
+                        raise EmbeddingError("embedding_dimension_mismatch")
+                    self._cache_put(self._semantic_vectors, key, vector,
+                                    _MAX_SEMANTIC_VECTOR_CACHE)
+                    vectors[doc["uid"]] = vector
+
+            ranked = []
+            for doc in eligible:
+                vector = vectors.get(doc["uid"])
+                if vector is None:
+                    continue
+                similarity = sum(left * right for left, right in zip(query_vector, vector))
+                if similarity >= 0.25:
+                    ranked.append((doc["uid"], similarity))
+            ranked.sort(key=lambda item: (-item[1], item[0]))
+            self._semantic_status = "ready"
+            return ranked
+        except EmbeddingError as error:
+            self._semantic_status = error.category
+        except Exception:
+            self._semantic_status = "embedding_failed"
+        return []
+
     def revision(self, project_id: str = "") -> str:
         """Return the active typed-project content revision, not a UI epoch."""
         if project_id and self._project_id not in (project_id, "opaque:" + project_id):
@@ -1346,7 +1470,9 @@ class ProjectIndex:
         return "board"
 
     def retrieve(self, snapshot: Any, query: str, *, active_layer: str = "",
-                 active_net: str = "", selected_objects=(), limit: int = 10) -> dict:
+                 active_net: str = "", selected_objects=(), limit: int = 10,
+                 embedding_backend=None) -> dict:
+        self.set_embedding_backend(embedding_backend)
         if isinstance(snapshot, str):
             try:
                 snapshot = json.loads(snapshot)
@@ -1363,6 +1489,7 @@ class ProjectIndex:
                     "spatial_semantics": "axis_aligned_bounds_intersection_or_distance_only",
                     "geometry_relationship_semantics":
                         "pcb_coordinates_only; near_component_measures_anchor_position_to_footprint_bounds; region_member_means_axis_aligned_bounds_intersection",
+                    "semantic_status": "disabled",
                     "stats": {"index_state": "unavailable", "total_entities": 0,
                               "exact_match_count": 0, "lexical_match_count": 0,
                               "relationship_match_count": 0, "spatial_match_count": 0,
@@ -1501,6 +1628,25 @@ class ProjectIndex:
             if uid not in scores:
                 scores[uid] = (50.0 - distance, "spatial", "", distance)
 
+        semantic = self._semantic_ranking(query, lexical_ids)
+        semantic_similarity = dict(semantic)
+        if semantic:
+            lexical_rank = {uid: rank for rank, (uid, _score) in enumerate(lexical, 1)}
+            semantic_rank = {uid: rank for rank, (uid, _score) in enumerate(semantic, 1)}
+            for uid in set(lexical_rank).union(semantic_rank):
+                prior = scores.get(uid)
+                if prior and (prior[1] == "exact" or prior[2] in
+                              {"near_component", "region_member"}):
+                    continue
+                reciprocal = (
+                    (1.0 / (60 + lexical_rank[uid]) if uid in lexical_rank else 0.0) +
+                    (1.0 / (60 + semantic_rank[uid]) if uid in semantic_rank else 0.0))
+                relation = prior[2] if prior else ""
+                distance = prior[3] if prior else 0.0
+                scores[uid] = (reciprocal * 20_000.0,
+                               "hybrid" if uid in lexical_rank else "semantic",
+                               relation, distance)
+
         chosen = sorted(scores.items(), key=lambda item: (-item[1][0], item[0]))
         output, used_chars = [], 0
         for rank, (uid, (_score, mode, relation, distance)) in enumerate(chosen, 1):
@@ -1527,6 +1673,8 @@ class ProjectIndex:
                     item[key] = fields[key]
             item["retrieval"] = mode
             item["rank"] = rank
+            if uid in semantic_similarity:
+                item["semantic_similarity"] = round(semantic_similarity[uid], 6)
             if fields.get("kind") == "functional_block":
                 item["source_revision"] = self._revision
             if relation:
@@ -1550,6 +1698,7 @@ class ProjectIndex:
                           "near_component" in values for values in related.values()),
                       "region_member_match_count": sum(
                           "region_member" in values for values in related.values()),
+                      "semantic_match_count": len(semantic),
                       "omitted_count": max(0, len(scores) - len(output)),
                       "total_entities": len(self._docs)})
         return {"available": True, "reason": "", "revision": self._revision,
@@ -1562,6 +1711,9 @@ class ProjectIndex:
                 "spatial_semantics": "axis_aligned_bounds_intersection_or_distance_only",
                 "geometry_relationship_semantics":
                     "pcb_coordinates_only; near_component_measures_anchor_position_to_footprint_bounds; region_member_means_axis_aligned_bounds_intersection",
+                "semantic_status": self._semantic_status,
                 "explicit_reference_semantics":
                     "serialized object references and declared schematic page membership only",
-                "search_method": "exact_alias_bm25_relationship_spatial_geometry_diagnostics"}
+                "search_method": ("exact_alias_bm25_semantic_rrf_relationship_spatial_geometry_diagnostics"
+                                  if semantic else
+                                  "exact_alias_bm25_relationship_spatial_geometry_diagnostics")}

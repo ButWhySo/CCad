@@ -165,6 +165,14 @@ class MemoryManager:
                 "cache_entries": self.embedding_cache_entries,
                 "model_version": str(self._semantic_status.get("model_version", ""))[:128]}
 
+    @property
+    def semantic_embedding_backend(self):
+        """Return the backend only while local semantic retrieval is enabled and ready."""
+        if (not self.semantic_config.get("enabled") or
+                not self._semantic_status.get("ready")):
+            return None
+        return self._embedding_backend
+
     def refresh_semantic_readiness(self):
         if not self.semantic_config.get("enabled") or self._embedding_backend_override is not None:
             return self.semantic_state()
