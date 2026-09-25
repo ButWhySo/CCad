@@ -2,7 +2,7 @@
 
 Check a box only after implementation and its required evidence exist.
 
-### Sprint 986 active slice — complete typed-project spatial retrieval (Tier 1, C3)
+### Sprint 986 completed slice — typed-project spatial retrieval (Tier 1, C3)
 
 - [x] Add explicit bounded bounding-box retrieval over indexed entity AABBs; preserve deterministic ordering and incremental stale-geometry removal.
 - [x] Retrieve live DRC/ERC records through explicit affected-object links when their target objects intersect the requested region; exclude unrelated distant diagnostics.
@@ -12,7 +12,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Pass 29 project-index plus 7 context-broker contracts and changed-module Pyright; run the 10k-track C3 benchmark and record cold/cached/single-entity-update behavior.
 - [x] Verify a provider-disabled mapped Agent request phrased as a bounded PCB rectangle against an isolated board; authoritative DRC and `project.context` confirm `ZERO_LENGTH_TRACK` is linked to `T_SPRINT986_ZERO`, the assembled context reports project/diagnostic counts, and no provider request is sent. Inspect the three distinct before/DRC-ready/result screenshots and stdout/stderr.
 - [x] Pass Qt MinGW Release build (21/21) and full CTest (113/113); run staged redacted secret scan and update codebase/features/progress/TODO together.
-- [ ] Commit, merge, and push the verified slice to GitHub `main`; verify remote SHA and remove only the completed sprint branch.
+- [x] Commit `5c69720`, fast-forward and push GitHub `main`, verify remote SHA `5c6972085f70d10ca53de1dc03f4bef238441350`, and remove only the completed sprint branch.
 
 Scope boundary: full C3 remains open for model identities/relationships CCad does not serialize, functional-block semantics, transaction-delta-driven index maintenance, and additional representative retrieval-quality/performance gates. Benchmark timings are local measurements, not performance guarantees.
 
