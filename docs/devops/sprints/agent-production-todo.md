@@ -2,6 +2,20 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 986 active slice — complete typed-project spatial retrieval (Tier 1, C3)
+
+- [x] Add explicit bounded bounding-box retrieval over indexed entity AABBs; preserve deterministic ordering and incremental stale-geometry removal.
+- [x] Retrieve live DRC/ERC records through explicit affected-object links when their target objects intersect the requested region; exclude unrelated distant diagnostics.
+- [x] Cover every currently serialized PCB collection's declared layer fields and test sheet/symbol, schematic-net/PCB-net ID, component/footprint, and diagnostic/object relationships.
+- [x] Include typed descriptions, rule values, and diagnostic code/severity/message in safe exact/BM25 indexing; reject secret-shaped fields.
+- [x] Avoid rebuilding entity documents for unchanged typed snapshots; key reuse to the project plus attached live diagnostics, not ephemeral GUI selection/layer state.
+- [x] Pass 29 project-index plus 7 context-broker contracts and changed-module Pyright; run the 10k-track C3 benchmark and record cold/cached/single-entity-update behavior.
+- [x] Verify a provider-disabled mapped Agent request phrased as a bounded PCB rectangle against an isolated board; authoritative DRC and `project.context` confirm `ZERO_LENGTH_TRACK` is linked to `T_SPRINT986_ZERO`, the assembled context reports project/diagnostic counts, and no provider request is sent. Inspect the three distinct before/DRC-ready/result screenshots and stdout/stderr.
+- [x] Pass Qt MinGW Release build (21/21) and full CTest (113/113); run staged redacted secret scan and update codebase/features/progress/TODO together.
+- [ ] Commit, merge, and push the verified slice to GitHub `main`; verify remote SHA and remove only the completed sprint branch.
+
+Scope boundary: full C3 remains open for model identities/relationships CCad does not serialize, functional-block semantics, transaction-delta-driven index maintenance, and additional representative retrieval-quality/performance gates. Benchmark timings are local measurements, not performance guarantees.
+
 ### Sprint 985 completed slice — typed project relationships and live diagnostics (Tier 1, C3)
 
 - [x] Include bounded authoritative DRC/ERC diagnostics with engine, code, severity, and object identity in live `project.context`.
@@ -45,7 +59,7 @@ References checked: [KiCad PCB Editor via and layer-stack behavior](https://docs
 - [x] Index via start/end layers and declared pad layer sets as exact, incremental project relationships; preserve bounded layer IDs in retrieved context and safe per-turn metadata.
 - [x] Ensure normal mapped canvas placement and the existing automation placement path both persist the board-derived outer copper endpoints for a through via.
 - [x] Add regressions for retrieval from either endpoint, incremental endpoint changes, pad multi-layer membership, and context-budget preservation.
-- [ ] Complete all entity-to-layer and project-graph coverage, including zones, rules, diagnostics, footprints, and remaining object variants.
+- [ ] Finish project-graph coverage; Sprint 986 now contract-tests layer membership for every currently serialized PCB collection and bounded object-linked diagnostics. Unavailable kernel identities/edges remain explicitly open below.
 - [x] Pass Qt MinGW Release build and full CTest (113/113); pass the provider-disabled GUI-map scenario with nine mapped actions, a disposable project, persisted F.Cu/B.Cu endpoints, non-empty per-turn PCB layer context, and five inspected screenshots; review stdout/stderr.
 - [x] Update handover, features, progress, backlog and this checklist; record wider project-graph/layer coverage as open.
 - [x] Scan and publish only verified files to GitHub `main`; remove the completed local sprint branch.
@@ -4213,11 +4227,11 @@ Index exact identifiers for:
 - [x] symbol IDs.
 - [x] footprint IDs.
 - [x] pad IDs.
-- [ ] net IDs/names.
+- [x] net IDs/names.
 - [x] layer IDs/names.
 - [ ] sheet paths.
 - [ ] rule IDs.
-- [ ] DRC/ERC diagnostic IDs.
+- [x] DRC/ERC diagnostic lookup IDs/codes and affected-object IDs.
 - [x] zone/keepout IDs.
 - [x] track/via IDs.
 - [ ] project artifact IDs.
@@ -4228,15 +4242,15 @@ Index textual fields such as:
 
 - [x] component reference.
 - [x] component value.
-- [ ] component description.
-- [ ] library description.
+- [x] component descriptions and typed footprint/library identifiers when present.
+- [x] library descriptions when serialized by the native entity.
 - [x] net names present in the native schematic/PCB entity fields.
 - [x] labels.
 - [ ] sheet names/titles.
 - [ ] properties.
 - [ ] notes.
 - [ ] rule descriptions.
-- [ ] DRC/ERC diagnostics.
+- [x] DRC/ERC diagnostic codes, severity, engine, and messages.
 - [ ] generated functional-block summaries.
 - [ ] project annotations.
 
@@ -4253,18 +4267,18 @@ Represent/traverse relationships such as:
 - [ ] schematic symbol -> all declared pins (connected memberships are indexed by Sprint 981; unconnected library pins remain open).
 - [x] connected schematic pin -> source schematic net via exact typed net-member identity (Sprint 981).
 - [x] schematic net -> schematic wires and labels (shared typed net membership; not geometric continuity proof).
-- [x] schematic symbol -> matching schematic/PCB component identity; verify full annotation/footprint links remain open.
+- [x] schematic symbol -> matching schematic/PCB component identity; remaining annotation/footprint source-link metadata stays open.
 - [x] PCB footprint/component identity -> its typed pads.
 - [x] pad -> PCB net association (not electrical continuity proof).
 - [x] net -> tracks.
 - [x] net -> vias.
 - [x] net -> zones.
-- [ ] object -> layer for every object type (Sprint 982 indexes via endpoint spans and declared pad layer sets incrementally; other variants and complete coverage remain).
-- [ ] object -> DRC/ERC diagnostic.
+- [x] object -> layer for every currently serialized PCB object collection (Sprint 986 contract coverage; future model types require explicit additions).
+- [x] object -> DRC/ERC diagnostic.
 - [ ] component -> nearby PCB components.
 - [ ] component -> associated decoupling/passive components where deterministically derivable.
-- [ ] schematic net -> PCB net.
-- [ ] sheet -> symbols.
+- [x] schematic net -> PCB net where serialized IDs match; association does not assert physical continuity.
+- [x] serialized schematic page -> symbols; file-path and hierarchy identity coverage remains separate.
 - [ ] region -> objects.
 - [ ] functional block -> components/nets.
 - [ ] candidate/proposal -> affected objects.
@@ -4287,7 +4301,7 @@ Represent/traverse relationships such as:
 
 - [x] Add bounded grid spatial index for typed PCB geometry bounding boxes.
 - [x] Search around selected/exact object anchors when a proximity request is present.
-- [ ] Search by bounding box.
+- [x] Search by explicit bounding box.
 - [x] Search by coordinate.
 - [x] Search nearby tracks.
 - [x] Search nearby vias.
@@ -4295,7 +4309,7 @@ Represent/traverse relationships such as:
 - [x] Search nearby zones.
 - [x] Search nearby keepouts.
 - [x] Search relevant layers.
-- [ ] Search DRC markers in/near the region.
+- [x] Search DRC/ERC markers linked to objects in/near the region.
 - [x] Bound spatial radius/result count.
 - [x] Let exact object/net relationships rank ahead of arbitrary geometric proximity.
 
@@ -4671,12 +4685,12 @@ Complete together:
 
 - [x] Exact identity index for implemented typed entity classes; remaining entity coverage stays open above.
 - [x] Deterministic BM25 index for implemented typed entity text; remaining text-field coverage stays open above.
-- [ ] project relationship graph (Sprint 981 implements bounded schematic-net membership and component links; Sprint 984 adds exact native board-net nodes/membership. Diagnostic/object, sheet, and broader graph coverage remains open).
-- [x] PCB spatial index for supported typed entity geometry; diagnostic-marker and arbitrary bbox query coverage remains open.
+- [ ] project relationship graph (Sprints 981/984/985/986 cover net membership, board-net identity, typed explicit links, diagnostics, serialized sheet-symbol membership, and cross-domain matching IDs; library-pin, artifact, proposal, functional-block, and further graph coverage remains open).
+- [x] PCB spatial index for supported typed entity geometry, explicit bounding-box queries, and linked DRC/ERC diagnostic retrieval.
 - [x] Hybrid deterministic project retrieval.
 - [x] Content revision/staleness handling against the live typed snapshot.
 - [x] Incremental per-entity index updates for changes/additions/deletions.
-- [ ] Full C3 completion, remaining entity/relationship/spatial coverage, benchmarks, tests/docs.
+- [ ] Full C3 completion, remaining source-model relationships and transaction-delta updates; Sprint 986 adds bbox/diagnostic contracts, all serialized layer-bearing collections, and a 10k-object benchmark; tests/docs.
 
 ## Group C4 — Semantic project retrieval
 

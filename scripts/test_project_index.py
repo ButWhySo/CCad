@@ -182,6 +182,58 @@ class ProjectIndexTests(unittest.TestCase):
         self.assertEqual(found[("route_request", "RR1")]["layer_ids"], ["B.Cu"])
         self.assertEqual(found[("target", "TG1")]["position_mm"], {"x": 17.0, "y": 1.0})
 
+    def test_every_serialized_board_collection_layer_field_is_indexed(self):
+        snapshot = project_snapshot()
+        board = snapshot["typed_state"]["project"]["board"]
+        board.update({
+            "footprints": [{"reference": "U4", "layer_id": "B.Cu"}],
+            "pads": [{"id": "P_B", "padstack": {"layer_set": ["F.Cu", "B.Cu"]}}],
+            "tracks": [{"id": "T_B", "layer_id": "B.Cu"}],
+            "track_arcs": [{"id": "A_B", "layer_id": "B.Cu"}],
+            "vias": [{"id": "V_B", "start_layer_id": "F.Cu", "end_layer_id": "B.Cu"}],
+            "zones": [{"id": "Z_B", "layer_ids": ["F.Cu", "B.Cu"]}],
+            "graphics": [{"id": "G_B", "layer_id": "B.Cu"}],
+            "texts": [{"id": "TX_B", "layer_id": "B.Cu"}],
+            "dimensions": [{"id": "D_B", "layer_id": "B.Cu"}],
+            "keepouts": [{"id": "KO_B", "layer_ids": ["B.Cu"]}],
+            "route_requests": [{"id": "RR_B", "preferred_layer_id": "B.Cu"}],
+            "groups": [{"id": "BG_B", "layer_id": "B.Cu"}],
+            "targets": [{"id": "TG_B", "layer_id": "B.Cu"}],
+            "barcodes": [{"id": "BC_B", "layer_id": "B.Cu"}],
+            "tables": [{"id": "TB_B", "layer": "B.Cu"}],
+            "placement_regions": [{"id": "PR_B", "layer_ids": ["B.Cu"]}],
+            "reference_images": [{"id": "IMG_B", "layer": "B.Cu"}],
+            "teardrops": [{"id": "TD_B", "layer_id": "B.Cu"}],
+        })
+        result = ProjectIndex(max_entities=32).retrieve(snapshot, "B.Cu", limit=32)
+        found = {(item["kind"], item["id"]): item for item in result["entities"]}
+        expected = {("footprint", "U4"), ("pad", "P_B"), ("track", "T_B"),
+                    ("track_arc", "A_B"), ("via", "V_B"), ("zone", "Z_B"),
+                    ("graphic", "G_B"), ("board_text", "TX_B"),
+                    ("dimension", "D_B"), ("keepout", "KO_B"),
+                    ("route_request", "RR_B"), ("board_group", "BG_B"),
+                    ("target", "TG_B"), ("barcode", "BC_B"),
+                    ("board_table", "TB_B"), ("placement_region", "PR_B"),
+                    ("reference_image", "IMG_B"), ("teardrop", "TD_B")}
+        self.assertTrue(expected.issubset(found.keys()), expected - found.keys())
+        for key in expected:
+            self.assertIn("B.Cu", found[key]["layer_ids"], key)
+
+    def test_diagnostic_code_and_message_are_searchable_without_provider(self):
+        snapshot = project_snapshot()
+        snapshot["project_diagnostics"] = [{
+            "engine": "drc", "severity": "error", "code": "TRACK_CLEARANCE",
+            "message": "Copper clearance below minimum", "object_id": "T1"}]
+        result = ProjectIndex().retrieve(snapshot, "minimum copper clearance", limit=12)
+        diagnostic = next(item for item in result["entities"]
+                          if item["kind"] == "project_diagnostic")
+        self.assertEqual(diagnostic["code"], "TRACK_CLEARANCE")
+        self.assertEqual(diagnostic["object_id"], "T1")
+        by_code = ProjectIndex().retrieve(snapshot, "TRACK_CLEARANCE", limit=12)
+        self.assertTrue(any(item["kind"] == "project_diagnostic" and
+                            item["code"] == "TRACK_CLEARANCE"
+                            for item in by_code["entities"]))
+
     def test_regions_and_rectangular_object_bounds_are_spatially_searchable(self):
         snapshot = project_snapshot()
         board = snapshot["typed_state"]["project"]["board"]
@@ -214,6 +266,79 @@ class ProjectIndexTests(unittest.TestCase):
                   if item["kind"] == "footprint" and item["id"] == "J2")
         self.assertEqual(j2["bounds_mm"]["max_x_mm"], 42.0)
         self.assertEqual(j2["bounds_mm"]["max_y_mm"], 32.0)
+
+    def test_bounding_box_query_returns_intersections_and_refreshes_moved_objects(self):
+        snapshot = project_snapshot()
+        board = snapshot["typed_state"]["project"]["board"]
+        board["zones"] = [{"id": "Z_IN", "layer_id": "F.Cu",
+                           "outline": [{"x_nm": 44_000_000, "y_nm": 44_000_000},
+                                       {"x_nm": 48_000_000, "y_nm": 48_000_000}]}]
+        board["texts"] = [{"id": "TX_OUT", "text": "outside",
+                           "position": {"x_nm": 150_000_000, "y_nm": 150_000_000}}]
+        index = ProjectIndex()
+        result = index.retrieve(snapshot,
+                                "objects in bounding box from 0,0 to 50,50 mm", limit=20)
+        found = {(item["kind"], item["id"]): item for item in result["entities"]}
+        self.assertIn(("zone", "Z_IN"), found)
+        self.assertNotIn(("board_text", "TX_OUT"), found)
+        self.assertEqual(found[("zone", "Z_IN")]["retrieval"], "spatial")
+        self.assertEqual(found[("zone", "Z_IN")]["distance_mm"], 0.0)
+
+        board["zones"][0]["outline"][0]["x_nm"] = 60_000_000
+        board["zones"][0]["outline"][1]["x_nm"] = 65_000_000
+        moved = index.retrieve(snapshot,
+                               "objects in bounding box from 0,0 to 50,50 mm", limit=20)
+        self.assertEqual(moved["stats"]["index_state"], "incremental")
+        self.assertFalse(any(item["kind"] == "zone" and item["id"] == "Z_IN"
+                             and item["retrieval"] == "spatial"
+                             for item in moved["entities"]))
+
+    def test_spatial_query_includes_only_diagnostics_linked_to_region_objects(self):
+        snapshot = project_snapshot()
+        snapshot["project_diagnostics"] = [
+            {"engine": "drc", "severity": "error", "code": "TRACK_CLEARANCE",
+             "message": "Clearance violation", "object_id": "T1"},
+            {"engine": "erc", "severity": "warning", "code": "PIN_NOT_CONNECTED",
+             "message": "Unconnected pin", "object_id": "sch-u3"},
+            {"engine": "drc", "severity": "error", "code": "FAR_AWAY",
+             "message": "Unrelated violation", "object_id": "J2"},
+        ]
+        result = ProjectIndex().retrieve(
+            snapshot, "objects in rectangle from -1,-1 to 3,2 mm", limit=32)
+        diagnostics = [item for item in result["entities"]
+                       if item["kind"] == "project_diagnostic"]
+        self.assertTrue(any(item["code"] == "TRACK_CLEARANCE" and
+                            item["object_id"] == "T1" for item in diagnostics))
+        self.assertTrue(any(item["code"] == "PIN_NOT_CONNECTED" and
+                            item["object_id"] == "sch-u3" for item in diagnostics))
+        self.assertFalse(any(item["code"] == "FAR_AWAY" for item in diagnostics))
+        self.assertTrue(all(item["retrieval"] == "relationship" and
+                            item["relationship"] == "diagnostic_for"
+                            for item in diagnostics))
+
+        with tempfile.TemporaryDirectory() as temp:
+            manager = MemoryManager(MemoryStore(Path(temp) / "memory.json"),
+                                    thread_id="thread", project_id="project-1")
+            manager.configure({})
+            assembled = ContextBroker().prepare(
+                manager, thread_id="thread", project_revision="spatial-region",
+                project_snapshot=snapshot,
+                user_request="Find DRC markers in bounding box from 10,10 to 14,14 mm")
+            packaged_diagnostics = [item for item in
+                                    assembled["project_retrieval"]["entities"]
+                                    if item["kind"] == "project_diagnostic"]
+            self.assertTrue(any(item["code"] == "TRACK_CLEARANCE" and
+                                item["object_id"] == "T1"
+                                for item in packaged_diagnostics))
+
+        snapshot["project_diagnostics"].pop(0)
+        refreshed = ProjectIndex()
+        refreshed.retrieve(snapshot, "T1")
+        snapshot["project_diagnostics"].clear()
+        stale = refreshed.retrieve(
+            snapshot, "objects in rectangle from -1,-1 to 3,2 mm", limit=32)
+        self.assertFalse(any(item["kind"] == "project_diagnostic"
+                             for item in stale["entities"]))
 
     def test_board_design_rule_values_are_searchable_incremental_and_survive_compaction(self):
         import json
@@ -392,6 +517,10 @@ class ProjectIndexTests(unittest.TestCase):
                   if item["kind"] == "schematic_symbol" and item["id"] == "sch-u3")
         self.assertEqual(u3["sheet_id"], "SCH_ROOT")
         page = index.retrieve(snapshot, "SCH_ROOT", limit=32)
+        self.assertTrue(any(item["kind"] == "schematic_symbol" and
+                            item["id"] == "sch-u3" and
+                            item.get("relationship") == "same_schematic_sheet"
+                            for item in page["entities"]))
         self.assertTrue(any(item["kind"] == "schematic_sheet" and
                             item["id"] == "SCH_CHILD" and
                             item.get("relationship") == "child_sheet"
@@ -472,6 +601,7 @@ class ProjectIndexTests(unittest.TestCase):
         self.assertEqual(pin["retrieval"], "exact")
         board_net = by_key[("board_net", "GND")]
         self.assertNotEqual(board_net["retrieval"], "exact")
+        self.assertEqual(board_net["relationship"], "matching_net_id")
 
     def test_schematic_net_links_to_its_typed_label(self):
         snapshot = project_snapshot()
@@ -491,6 +621,14 @@ class ProjectIndexTests(unittest.TestCase):
                             for item in related))
         self.assertTrue(any(item["kind"] == "schematic_symbol" and
                             item["id"] == "sch-u3" for item in result["entities"]))
+        snapshot = project_snapshot()
+        project = snapshot["typed_state"]["project"]
+        project["components"][0]["id"] = "symbol-uuid-3"
+        project["nets"][0]["members"][0]["component_id"] = "symbol-uuid-3"
+        from_symbol = ProjectIndex().retrieve(snapshot, "symbol-uuid-3", limit=12)
+        self.assertTrue(any(item["kind"] == "footprint" and item["id"] == "U3" and
+                            item.get("relationship") == "same_component"
+                            for item in from_symbol["entities"]))
 
     def test_spatial_query_uses_coordinates_and_near_exact_object(self):
         index = ProjectIndex()
@@ -517,6 +655,18 @@ class ProjectIndexTests(unittest.TestCase):
         self.assertNotIn("V1", ids)
         self.assertEqual(index.retrieve(after, "USB-C receptacle")["stats"]["index_state"],
                          "cached")
+
+    def test_ephemeral_ui_state_does_not_change_project_index_revision(self):
+        index = ProjectIndex()
+        first = project_snapshot()
+        initial = index.retrieve(first, "U3")
+        changed_ui = project_snapshot()
+        changed_ui["selection"]["items"] = [{"object_id": "J2"}]
+        changed_ui["active_pcb_layer_id"] = "B.Cu"
+        result = index.retrieve(changed_ui, "U3")
+        self.assertEqual(result["stats"]["index_state"], "cached")
+        self.assertEqual(result["revision"], initial["revision"])
+        self.assertEqual(index.revision("project-1"), initial["revision"])
 
     def test_bounds_and_secret_redaction_are_truthful(self):
         snapshot = project_snapshot()

@@ -1177,12 +1177,13 @@ Implement provider-neutral request/response transport, explicit approval-aware t
 - [ ] Sprint 977 follow-up: add project-scoped memory storage/retrieval and a
   revision-aware exact/lexical/graph/spatial project index before claiming full
   PCB/schematic state retrieval.
-- [ ] Sprint 983 follow-up: complete project graph and diagnostic-to-object
-  relationships, durable rule/diagnostic/artifact identities where the kernel
-  supports them, schematic hierarchy, arbitrary bounding-box queries,
-  DRC-marker search, and measured retrieval benchmarks. Supported typed
-  layer-bearing PCB classes and board-level scalar rules are now indexed;
-  individual rule IDs are not invented where CCad has no such model objects.
+- [ ] Sprint 986 follow-up: finish source-supported project-graph identities,
+  transaction-delta index maintenance, and representative retrieval-quality
+  gates. Bounded bounding-box queries, linked DRC/ERC region retrieval, all
+  current typed PCB layer-bearing collections, unchanged-snapshot reuse, and a
+  10k-track benchmark are implemented. The benchmark still shows full snapshot
+  extraction on one-object edits; rule IDs and other absent kernel objects are
+  not invented.
 - [x] Sprint 978: join context assembly, retrieval, package, and LangGraph
   observations under one thread-session-scoped `agent.turn` root; verify actual
   Langfuse SDK parent links with a local in-memory exporter.

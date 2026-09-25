@@ -461,6 +461,7 @@ int main(int argc, char** argv) {
           name.startsWith("sprint983-project-index-typed-geometry") ||
           name.startsWith("sprint984-board-net-retrieval") ||
           name.startsWith("sprint985-project-reference-graph") ||
+          name.startsWith("sprint986-project-spatial-index") ||
           name.startsWith("sprint975-memory-ui") ||
           name.startsWith("sprint974-memory")) {
         const auto interact = [window, &entries, &output_dir, &name,
@@ -488,8 +489,9 @@ int main(int argc, char** argv) {
                !name.startsWith("sprint980-project-retrieval") &&
                !name.startsWith("sprint981-schematic-project-graph") &&
                !name.startsWith("sprint982-multilayer-project-context") &&
-               !name.startsWith("sprint983-project-index-typed-geometry") &&
-               !name.startsWith("sprint984-board-net-retrieval")) ||
+                !name.startsWith("sprint983-project-index-typed-geometry") &&
+                !name.startsWith("sprint984-board-net-retrieval") &&
+                !name.startsWith("sprint986-project-spatial-index")) ||
               memory_checkpoints.contains(action_name)) {
             screenshot_path = QString::fromStdString(
                 (output_dir / (name + "-" + action_name + ".png").toStdString()).string());
@@ -500,6 +502,7 @@ int main(int argc, char** argv) {
           if (auto* popup = window->findChild<QListWidget*>("panel:agent_slash_commands");
                !name.startsWith("sprint983-project-index-typed-geometry") &&
                !name.startsWith("sprint984-board-net-retrieval") &&
+               !name.startsWith("sprint986-project-spatial-index") &&
                !name.startsWith("sprint985-project-reference-graph") &&
               popup && popup->isVisible()) {
             popup_screenshot = QString::fromStdString(
@@ -574,7 +577,8 @@ int main(int argc, char** argv) {
                    name.startsWith("sprint982-multilayer-project-context") ||
                    name.startsWith("sprint983-project-index-typed-geometry") ||
                    name.startsWith("sprint984-board-net-retrieval") ||
-                   name.startsWith("sprint985-project-reference-graph")) {
+                   name.startsWith("sprint985-project-reference-graph") ||
+                   name.startsWith("sprint986-project-spatial-index")) {
           const auto capture = [window, &output_dir, &name, &entries](const QString& state) {
             const QString path = QString::fromStdString(
                 (output_dir / (name + "-" + state + ".png").toStdString()).string());
@@ -604,13 +608,17 @@ int main(int argc, char** argv) {
               name.startsWith("sprint984-board-net-retrieval");
           const bool diagnostic_graph_validation =
               name.startsWith("sprint985-project-reference-graph");
+          const bool spatial_diagnostic_validation =
+              name.startsWith("sprint986-project-spatial-index");
+          const bool diagnostic_validation = diagnostic_graph_validation ||
+              spatial_diagnostic_validation;
           const bool project_retrieval_validation = schematic_graph_validation ||
               multilayer_project_validation ||
               serialized_pad_layer_validation ||
               board_net_validation ||
-              diagnostic_graph_validation ||
+              diagnostic_validation ||
               name.startsWith("sprint980-project-retrieval");
-          if (diagnostic_graph_validation) {
+          if (diagnostic_validation) {
             ok = interact("ui.click", "{\"id\":\"action:agent_quick_run_drc\"}",
                           "action:agent_quick_run_drc", "diagnostic-drc-command-entered") && ok;
             ok = interact("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
@@ -618,7 +626,7 @@ int main(int argc, char** argv) {
           }
           auto* chat = window->findChild<QTextBrowser*>("control:agent_chat_stream");
           bool project_diagnostic_visible = false;
-          if (diagnostic_graph_validation) {
+          if (diagnostic_validation) {
             const QJsonObject live_context = QJsonDocument::fromJson(
                 window->runAgentUiQueryJson("project.context", "{}").toUtf8())
                 .object().value("result").toObject();
@@ -629,12 +637,16 @@ int main(int argc, char** argv) {
               exact_live_diagnostic = exact_live_diagnostic ||
                   (diagnostic.value("engine").toString() == "drc" &&
                    diagnostic.value("code").toString() == "ZERO_LENGTH_TRACK" &&
-                   diagnostic.value("object_id").toString() == "T_SPRINT985_ZERO");
+                   diagnostic.value("object_id").toString() ==
+                       (spatial_diagnostic_validation ? "T_SPRINT986_ZERO" :
+                                                        "T_SPRINT985_ZERO"));
             }
             entries << QString("{\"live_diagnostic_object_link_verified\":%1}")
                            .arg(exact_live_diagnostic ? "true" : "false");
             project_diagnostic_visible = exact_live_diagnostic;
             ok = exact_live_diagnostic && ok;
+            if (spatial_diagnostic_validation)
+              ok = capture("diagnostics-ready") && ok;
           }
           if (multilayer_project_validation) {
             const QString before_state_json = window->runAgentUiQueryJson("project.state", "{}");
@@ -672,7 +684,9 @@ int main(int argc, char** argv) {
                              .arg(jsonStringLocal(QString::fromStdString(project_path.string())));
           }
           QString user_prompt = project_retrieval_validation
-              ? (diagnostic_graph_validation
+              ? (spatial_diagnostic_validation
+                     ? QStringLiteral("Find DRC markers in bounding box from 10,10 to 14,14 mm.")
+                     : diagnostic_graph_validation
                      ? QStringLiteral("Find DRC ZERO_LENGTH_TRACK on T_SPRINT985_ZERO and explain the affected object.")
                      : multilayer_project_validation
                      ? QStringLiteral("What copper layers does via %1 span?")
@@ -718,7 +732,7 @@ int main(int argc, char** argv) {
                         "action:agent_submit_chat", "conversation-turn-submitted") && ok;
           for (int attempt = 0; attempt < 60; ++attempt) {
             QApplication::processEvents();
-            if (chat && (diagnostic_graph_validation
+            if (chat && (diagnostic_validation
                     ? chat->toPlainText().contains("is not configured")
                     : chat->toPlainText().contains(
                           "Provider execution is unavailable; configure a provider"))) break;
@@ -727,7 +741,7 @@ int main(int argc, char** argv) {
           const bool memory_visible = !context_memory_validation ||
               (chat && chat->toPlainText().contains("Context package prepared") &&
                chat->toPlainText().contains("1 memories"));
-          const bool project_matches_visible = diagnostic_graph_validation
+          const bool project_matches_visible = diagnostic_validation
               ? project_diagnostic_visible
               : !project_retrieval_validation ||
                     (chat && chat->toPlainText().contains("project matches") &&
@@ -758,8 +772,8 @@ int main(int argc, char** argv) {
               }
             }
           }
-          bool project_diagnostic_count_visible = !diagnostic_graph_validation;
-          if (diagnostic_graph_validation && chat) {
+          bool project_diagnostic_count_visible = !diagnostic_validation;
+          if (diagnostic_validation && chat) {
             for (int diagnostic_count = 1; diagnostic_count <= 256; ++diagnostic_count) {
               if (chat->toPlainText().contains(
                       QString("%1 DRC/ERC diagnostics").arg(diagnostic_count))) {
@@ -773,7 +787,7 @@ int main(int argc, char** argv) {
               multiple_project_layers_visible && board_net_visible && project_diagnostic_visible &&
               project_diagnostic_count_visible &&
               chat->toPlainText().contains(user_prompt) &&
-              (diagnostic_graph_validation
+              (diagnostic_validation
                    ? chat->toPlainText().contains("is not configured")
                    : chat->toPlainText().contains(
                          "Provider execution is unavailable; configure a provider"));
@@ -789,7 +803,7 @@ int main(int argc, char** argv) {
                               project_diagnostic_visible ? "true" : "false",
                               project_diagnostic_count_visible ? "true" : "false");
           ok = turn_visible && capture("turn-persisted") && ok;
-          if (!diagnostic_graph_validation) {
+          if (!diagnostic_validation) {
             ok = interact("ui.type_text",
                           "{\"id\":\"control:agent_chat_input\",\"text\":\"/clear\"}",
                           "control:agent_chat_input", "conversation-clear-entered") && ok;
@@ -1052,7 +1066,9 @@ int main(int argc, char** argv) {
         const std::filesystem::path output_path =
             output_dir / (name + "-target-sequence.json").toStdString();
         std::ofstream output(output_path, std::ios::binary);
-        const QString interaction_plan = name.startsWith("sprint985-project-reference-graph")
+        const QString interaction_plan = name.startsWith("sprint986-project-spatial-index")
+            ? QStringLiteral("Run authoritative DRC on an isolated zero-length track, then ask the real Agent context builder for DRC markers inside an explicit PCB bounding box; verify the affected-object diagnostic count and provider-disabled result through mapped controls")
+            : name.startsWith("sprint985-project-reference-graph")
             ? QStringLiteral("Verify exact live DRC/ERC diagnostics and affected-object identity through project.context; test typed graph retrieval separately with no-network context-broker contracts, then verify the GUI truthfully reports provider configuration failure across seven mapped actions")
             : name.startsWith("sprint984-board-net-retrieval")
             ? QStringLiteral("Ask the real Agent UI to inspect native PCB net AC1 and expose its board-net retrieval count in safe per-turn context metadata; complete seven mapped chat/editor actions with provider disabled")

@@ -67,9 +67,10 @@ $isolatedMemoryProfile = $null
 $isolatedProjectPath = $null
 if ($Name.StartsWith("sprint982-multilayer-project-context") -or
     $Name.StartsWith("sprint983-project-index-typed-geometry") -or
-    $Name.StartsWith("sprint985-project-reference-graph")) {
+    $Name.StartsWith("sprint985-project-reference-graph") -or
+    $Name.StartsWith("sprint986-project-spatial-index")) {
   $isolatedProjectPath = Join-Path ([IO.Path]::GetTempPath()) (
-    "ccad-sprint" + $(if ($Name.StartsWith("sprint985")) { "985-project-graph-" } elseif ($Name.StartsWith("sprint983")) { "983-typed-geometry-" } else { "982-multilayer-" }) +
+    "ccad-sprint" + $(if ($Name.StartsWith("sprint986")) { "986-project-spatial-" } elseif ($Name.StartsWith("sprint985")) { "985-project-graph-" } elseif ($Name.StartsWith("sprint983")) { "983-typed-geometry-" } else { "982-multilayer-" }) +
     [Guid]::NewGuid().ToString("N") + ".ccad.json")
   Copy-Item -LiteralPath $ProjectPath -Destination $isolatedProjectPath
   if ($Name.StartsWith("sprint983-project-index-typed-geometry")) {
@@ -81,14 +82,18 @@ if ($Name.StartsWith("sprint982-multilayer-project-context") -or
       -Value ([pscustomobject]@{ layer_set = @("F.Cu", "B.Cu") }) -Force
     [IO.File]::WriteAllText($isolatedProjectPath,
       (ConvertTo-Json -InputObject $fixture -Depth 64), [Text.UTF8Encoding]::new($false))
-  } elseif ($Name.StartsWith("sprint985-project-reference-graph")) {
+  } elseif ($Name.StartsWith("sprint985-project-reference-graph") -or
+            $Name.StartsWith("sprint986-project-spatial-index")) {
     $fixture = Get-Content -Raw -LiteralPath $isolatedProjectPath | ConvertFrom-Json
     if (-not $fixture.board) { throw "Project graph GUI scenario requires a board." }
     if (-not $fixture.board.tracks) {
       $fixture.board | Add-Member -MemberType NoteProperty -Name tracks -Value @() -Force
     }
+    $syntheticTrackId = if ($Name.StartsWith("sprint986-project-spatial-index")) {
+      "T_SPRINT986_ZERO"
+    } else { "T_SPRINT985_ZERO" }
     $fixture.board.tracks += [pscustomobject]@{
-      id = "T_SPRINT985_ZERO"
+      id = $syntheticTrackId
       net_id = ""
       layer_id = "F.Cu"
       start = [pscustomobject]@{ x_nm = 12000000; y_nm = 12000000 }
@@ -205,8 +210,11 @@ if ($Name.StartsWith("sprint980-project-retrieval") -or
     $Name.StartsWith("sprint982-multilayer-project-context") -or
     $Name.StartsWith("sprint983-project-index-typed-geometry") -or
     $Name.StartsWith("sprint985-project-reference-graph") -or
-    $Name.StartsWith("sprint984-board-net-retrieval")) {
-  $profilePrefix = if ($Name.StartsWith("sprint985-project-reference-graph")) {
+    $Name.StartsWith("sprint984-board-net-retrieval") -or
+    $Name.StartsWith("sprint986-project-spatial-index")) {
+  $profilePrefix = if ($Name.StartsWith("sprint986-project-spatial-index")) {
+    "ccad-sprint986-project-spatial-"
+  } elseif ($Name.StartsWith("sprint985-project-reference-graph")) {
     "ccad-sprint985-project-graph-"
   } elseif ($Name.StartsWith("sprint984-board-net-retrieval")) {
     "ccad-sprint984-board-net-"
@@ -223,7 +231,9 @@ if ($Name.StartsWith("sprint980-project-retrieval") -or
   $env:APPDATA = $isolatedMemoryProfile
   $env:CCAD_AGENT_CONVERSATION_DB = Join-Path $isolatedMemoryProfile "agent_conversations.sqlite3"
   $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
-  $env:CCAD_AGENT_THREAD_ID = if ($Name.StartsWith("sprint984-board-net-retrieval")) {
+  $env:CCAD_AGENT_THREAD_ID = if ($Name.StartsWith("sprint986-project-spatial-index")) {
+    "sprint986-project-spatial-index-ui-thread"
+  } elseif ($Name.StartsWith("sprint984-board-net-retrieval")) {
     "sprint984-board-net-retrieval-ui-thread"
   } elseif ($Name.StartsWith("sprint982-multilayer-project-context")) {
     "sprint982-multilayer-project-context-ui-thread"
@@ -344,10 +354,12 @@ try {
       $Name.StartsWith("sprint982-multilayer-project-context") -or
       $Name.StartsWith("sprint983-project-index-typed-geometry") -or
       $Name.StartsWith("sprint984-board-net-retrieval") -or
-      $Name.StartsWith("sprint985-project-reference-graph")) {
+      $Name.StartsWith("sprint985-project-reference-graph") -or
+      $Name.StartsWith("sprint986-project-spatial-index")) {
     $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
     $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
-    $requiredReportFields = if ($Name.StartsWith("sprint985-project-reference-graph")) {
+    $requiredReportFields = if ($Name.StartsWith("sprint985-project-reference-graph") -or
+                                $Name.StartsWith("sprint986-project-spatial-index")) {
       @("conversation_turn_visible")
     } else { @("conversation_turn_visible", "canonical_transcript_retained_after_clear") }
     foreach ($field in $requiredReportFields) {
@@ -356,10 +368,17 @@ try {
       }
     }
     if (-not $Name.StartsWith("sprint985-project-reference-graph") -and
+        -not $Name.StartsWith("sprint986-project-spatial-index") -and
         -not (Test-Path -LiteralPath $env:CCAD_AGENT_CONVERSATION_DB)) {
       throw "GUI run did not create its isolated durable conversation database."
     }
-    if ($Name.StartsWith("sprint985-project-reference-graph")) {
+    if ($Name.StartsWith("sprint986-project-spatial-index")) {
+      $requiredScreenshots = @("before", "diagnostics-ready", "turn-persisted")
+      $actualScreenshots = @(Get-ChildItem -LiteralPath $ScreenshotDir -Filter "$Name-*.png")
+      if ($actualScreenshots.Count -ne $requiredScreenshots.Count) {
+        throw "Spatial project GUI validation should retain only three distinct checkpoints; found $($actualScreenshots.Count)."
+      }
+    } elseif ($Name.StartsWith("sprint985-project-reference-graph")) {
       $requiredScreenshots = @("before", "turn-persisted")
       foreach ($state in $requiredScreenshots) {
         if (-not (Test-Path -LiteralPath (Join-Path $ScreenshotDir "$Name-$state.png"))) {
@@ -377,7 +396,9 @@ try {
       throw "The configured Agent Python runtime is required to inspect the conversation database."
     }
     $databaseVerifier = Join-Path $Root "scripts\verify_conversation_ui_state.py"
-    $expectedThreadId = if ($Name.StartsWith("sprint985-project-reference-graph")) {
+    $expectedThreadId = if ($Name.StartsWith("sprint986-project-spatial-index")) {
+      "sprint986-project-spatial-index-ui-thread"
+    } elseif ($Name.StartsWith("sprint985-project-reference-graph")) {
       "sprint985-project-reference-graph-ui-thread"
     } elseif ($Name.StartsWith("sprint984-board-net-retrieval")) {
       "sprint984-board-net-retrieval-ui-thread"
@@ -394,7 +415,8 @@ try {
     } else {
       "sprint976-conversation-ui-thread"
     }
-    if ($Name.StartsWith("sprint985-project-reference-graph")) {
+    if ($Name.StartsWith("sprint985-project-reference-graph") -or
+        $Name.StartsWith("sprint986-project-spatial-index")) {
       $databaseState = $null
     } else {
       $databaseStateJson = & $agentPython $databaseVerifier $env:CCAD_AGENT_CONVERSATION_DB $expectedThreadId
@@ -402,6 +424,7 @@ try {
       $databaseState = $databaseStateJson | ConvertFrom-Json
     }
     if (-not $Name.StartsWith("sprint985-project-reference-graph") -and
+        -not $Name.StartsWith("sprint986-project-spatial-index") -and
         ($databaseState.messages -ne 2 -or $databaseState.users -ne 1 -or
         $databaseState.assistants -ne 1 -or $databaseState.turn_records -ne 1 -or
         $databaseState.projection -ne "[]")) {
@@ -416,7 +439,8 @@ try {
          $Name.StartsWith("sprint982-multilayer-project-context") -or
          $Name.StartsWith("sprint983-project-index-typed-geometry") -or
          $Name.StartsWith("sprint984-board-net-retrieval") -or
-         $Name.StartsWith("sprint985-project-reference-graph")) -and
+         $Name.StartsWith("sprint985-project-reference-graph") -or
+         $Name.StartsWith("sprint986-project-spatial-index")) -and
         -not ($reportData.entries | Where-Object { $_.project_retrieval_visible -eq $true })) {
       throw "Mapped turn did not visibly prove a non-empty typed-project retrieval result."
     }
@@ -444,12 +468,20 @@ try {
          -not ($reportData.entries | Where-Object { $_.live_diagnostic_object_link_verified -eq $true }))) {
       throw "Mapped run did not verify live DRC/ERC object identity and per-turn context count."
     }
+    if ($Name.StartsWith("sprint986-project-spatial-index") -and
+        (-not ($reportData.entries | Where-Object { $_.project_diagnostic_visible -eq $true }) -or
+         -not ($reportData.entries | Where-Object { $_.project_diagnostic_count_visible -eq $true }) -or
+         -not ($reportData.entries | Where-Object { $_.live_diagnostic_object_link_verified -eq $true }))) {
+      throw "Spatial context turn did not carry the live object-linked diagnostic into bounded Agent context."
+    }
     if ($Name.StartsWith("sprint981-schematic-project-graph") -and
         (-not ($reportData.entries | Where-Object { $_.schematic_pin_retrieval_visible -eq $true }) -or
          -not ($reportData.entries | Where-Object { $_.schematic_symbol_retrieval_visible -eq $true }))) {
       throw "Mapped turn did not visibly include retrieved schematic net pins and related symbols."
     }
-    $requiredScreenshots = if ($Name.StartsWith("sprint985-project-reference-graph")) {
+    $requiredScreenshots = if ($Name.StartsWith("sprint986-project-spatial-index")) {
+      @("before", "diagnostics-ready", "turn-persisted")
+    } elseif ($Name.StartsWith("sprint985-project-reference-graph")) {
       @("before", "turn-persisted")
     } elseif ($Name.StartsWith("sprint982-multilayer-project-context")) {
       @("before", "via-placed", "turn-persisted", "projection-cleared")
@@ -495,8 +527,9 @@ try {
     if (-not $projectFile.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase) -or
         -not ([IO.Path]::GetFileName($projectFile) -like "ccad-sprint982-multilayer-*.ccad.json" -or
               [IO.Path]::GetFileName($projectFile) -like "ccad-sprint983-typed-geometry-*.ccad.json" -or
-              [IO.Path]::GetFileName($projectFile) -like "ccad-sprint985-project-graph-*.ccad.json")) {
-      throw "Refusing to remove a project outside the verified Sprint 982/983/985 temporary targets."
+              [IO.Path]::GetFileName($projectFile) -like "ccad-sprint985-project-graph-*.ccad.json" -or
+              [IO.Path]::GetFileName($projectFile) -like "ccad-sprint986-project-spatial-*.ccad.json")) {
+      throw "Refusing to remove a project outside the verified Sprint 982/983/985/986 temporary targets."
     }
     Remove-Item -LiteralPath $projectFile -Force
   }

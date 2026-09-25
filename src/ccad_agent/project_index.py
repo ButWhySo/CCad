@@ -169,6 +169,21 @@ def _coordinates(query: str) -> list[tuple[float, float]]:
     return found
 
 
+def _query_bounds(query: str) -> dict | None:
+    """Read an explicit two-corner rectangle query; never infer a box from prose."""
+    if not re.search(r"\b(?:bbox|bounding\s+box|box|rectangle|rectangular\s+region)\b",
+                     query, re.IGNORECASE):
+        return None
+    points = _coordinates(query)
+    if len(points) < 2:
+        return None
+    first, second = points[:2]
+    return {"min_x_mm": min(first[0], second[0]),
+            "min_y_mm": min(first[1], second[1]),
+            "max_x_mm": max(first[0], second[0]),
+            "max_y_mm": max(first[1], second[1])}
+
+
 def _radius(query: str) -> float:
     match = _RADIUS.search(query)
     if not match:
@@ -193,6 +208,7 @@ class ProjectIndex:
         self.max_chars = max(512, min(16_000, int(max_chars)))
         self._project_id = ""
         self._revision = ""
+        self._source_signature = ""
         self._has_snapshot = False
         self._docs: dict[str, dict] = {}
         self._aliases: dict[str, set[str]] = defaultdict(set)
@@ -237,6 +253,13 @@ class ProjectIndex:
                            ("value", item.get("value")),
                            ("name", item.get("name")),
                            ("part", item.get("part")),
+                           ("description", item.get("description")),
+                           ("library_description", item.get("library_description")),
+                           ("footprint_name", item.get("footprint_name")),
+                           ("lib_id", item.get("lib_id")),
+                           ("sheet_path", item.get("sheet_path")),
+                           ("title", item.get("title")),
+                           ("notes", item.get("notes")),
                            ("pin_name", item.get("pin_name")),
                            ("pin_number", item.get("pin_number")),
                            ("type", item.get("kind", item.get("type"))),
@@ -324,7 +347,21 @@ class ProjectIndex:
         searchable_values.extend(_safe(item.get(key), 140) for key in aliases
                                  if key not in {"start_layer_id", "end_layer_id"})
         searchable_values.extend(fields.get(key, "") for key in
-                                 ("reference", "value", "name", "part", "pin_name", "pin_number"))
+                                 ("reference", "value", "name", "part", "description",
+                                  "library_description", "footprint_name", "lib_id",
+                                  "sheet_path", "title", "notes", "pin_name", "pin_number",
+                                  "code", "severity", "message", "engine", "object_id"))
+        properties = item.get("properties")
+        if isinstance(properties, dict):
+            for key, value in sorted(properties.items(), key=lambda pair: str(pair[0]))[:32]:
+                if isinstance(value, (str, int, float, bool)):
+                    searchable_values.append(_safe(key, 80))
+                    searchable_values.append(_safe(value, 160))
+        elif isinstance(properties, list):
+            for prop in properties[:32]:
+                if isinstance(prop, dict):
+                    searchable_values.extend((_safe(prop.get("name") or prop.get("key"), 80),
+                                             _safe(prop.get("value") or prop.get("text"), 160)))
         exact_values = [object_id]
         exact_values.extend(_safe(item.get(key), 140) for key in aliases
                             if key in {"id", "reference", "name", "pin_name", "pin_number"}
@@ -680,6 +717,20 @@ class ProjectIndex:
         self._add_spatial(doc)
 
     def _sync(self, snapshot: dict) -> dict:
+        project = project_model(snapshot)
+        source_signature = hashlib.sha256(json.dumps(
+            project, sort_keys=True, separators=(",", ":")
+        ).encode()).hexdigest()
+        if project:
+            project_id = _safe(project.get("id") or project.get("name"), 180)
+            if not project_id:
+                project_id = "opaque:" + source_signature[:24]
+            if (self._has_snapshot and project_id == self._project_id and
+                    source_signature == self._source_signature):
+                return {"index_state": "cached", "revision": self._revision,
+                        "inserted_count": 0, "updated_count": 0, "removed_count": 0,
+                        "unchanged_count": len(self._docs),
+                        "total_entities": len(self._docs)}
         project_id, incoming_docs = self._extract(snapshot)
         if not project_id:
             # Native snapshots in older projects can omit project.id. A stable
@@ -718,6 +769,7 @@ class ProjectIndex:
             self._insert(doc)
         self._project_id = project_id
         self._revision = content_revision
+        self._source_signature = source_signature
         self._has_snapshot = True
         return {"index_state": "built" if reset else "incremental",
                 "revision": content_revision, "inserted_count": inserted,
@@ -811,6 +863,33 @@ class ProjectIndex:
                     scored.append((uid, distance))
         return sorted(scored, key=lambda item: (item[1], item[0]))
 
+    def _spatial_box(self, bounds: dict) -> list[tuple[str, float]]:
+        """Return typed entities whose indexed AABBs intersect an explicit query box."""
+        cell = self.CELL_MM
+        x0 = math.floor(bounds["min_x_mm"] / cell)
+        y0 = math.floor(bounds["min_y_mm"] / cell)
+        x1 = math.floor(bounds["max_x_mm"] / cell)
+        y1 = math.floor(bounds["max_y_mm"] / cell)
+        candidates = set(self._spatial_global)
+        if (x1 - x0 + 1) * (y1 - y0 + 1) > 1024:
+            candidates.update(self._docs)
+        else:
+            for x in range(x0, x1 + 1):
+                for y in range(y0, y1 + 1):
+                    candidates.update(self._spatial_cells.get((x, y), ()))
+        found = []
+        for uid in candidates:
+            item_bounds = self._docs[uid]["fields"].get("bounds_mm")
+            if not item_bounds:
+                continue
+            intersects = (item_bounds["min_x_mm"] <= bounds["max_x_mm"] and
+                          item_bounds["max_x_mm"] >= bounds["min_x_mm"] and
+                          item_bounds["min_y_mm"] <= bounds["max_y_mm"] and
+                          item_bounds["max_y_mm"] >= bounds["min_y_mm"])
+            if intersects:
+                found.append((uid, 0.0))
+        return sorted(found, key=lambda item: item[0])
+
     def _relationship_neighbors(self, seeds: set[str]) -> dict[str, set[str]]:
         found: dict[str, set[str]] = defaultdict(set)
         for uid in seeds:
@@ -883,7 +962,7 @@ class ProjectIndex:
                         "native_net_id_association_not_physical_continuity",
                     "logical_net_semantics":
                         "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity",
-                    "spatial_semantics": "axis_aligned_bounds_distance_only",
+                    "spatial_semantics": "axis_aligned_bounds_intersection_or_distance_only",
                     "stats": {"index_state": "unavailable", "total_entities": 0,
                               "exact_match_count": 0, "lexical_match_count": 0,
                               "relationship_match_count": 0, "spatial_match_count": 0,
@@ -899,7 +978,8 @@ class ProjectIndex:
         seeds = exact_ids
         related = self._relationship_neighbors(seeds)
 
-        points = _coordinates(query)
+        query_box = _query_bounds(query)
+        points = [] if query_box else _coordinates(query)
         nearby = bool(re.search(r"\b(near|around|nearby|within|radius|close\s+to|beside)\b",
                                 query, re.IGNORECASE))
         if nearby and not points:
@@ -910,10 +990,20 @@ class ProjectIndex:
         radius = _radius(query)
         spatial_scores: dict[str, float] = {}
         anchor_ids = exact_ids if nearby and not _coordinates(query) else set()
-        for point in points[:4]:
-            for uid, distance in self._spatial(point, radius)[:limit * 2]:
-                if uid not in anchor_ids:
-                    spatial_scores[uid] = min(spatial_scores.get(uid, math.inf), distance)
+        if query_box:
+            spatial_scores.update(self._spatial_box(query_box))
+        else:
+            for point in points[:4]:
+                for uid, distance in self._spatial(point, radius)[:limit * 2]:
+                    if uid not in anchor_ids:
+                        spatial_scores[uid] = min(spatial_scores.get(uid, math.inf), distance)
+
+        # A spatially selected object carries its actual live DRC/ERC records;
+        # unrelated diagnostics elsewhere stay out.
+        for uid, relations in self._relationship_neighbors(set(spatial_scores)).items():
+            if (self._docs.get(uid, {}).get("fields", {}).get("kind") ==
+                    "project_diagnostic" and "diagnostic_for" in relations):
+                related[uid].add("diagnostic_for")
 
         scores: dict[str, tuple[float, str, str, float]] = {}
         for uid in exact_ids:
@@ -939,6 +1029,8 @@ class ProjectIndex:
             fields = self._docs[uid]["fields"]
             item = {key: value for key, value in fields.items()
                     if key in {"id", "kind", "reference", "value", "name", "part",
+                               "description", "library_description", "footprint_name",
+                               "lib_id", "sheet_path", "title", "notes",
                                "pin_name", "pin_number", "type", "net_id", "membership_kind", "layer_id",
                                "layer_ids", "start_layer_id", "end_layer_id",
                                "component_id", "symbol_id", "position_mm", "bounds_mm",
@@ -976,7 +1068,7 @@ class ProjectIndex:
                     "native_net_id_association_not_physical_continuity",
                 "logical_net_semantics":
                     "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity",
-                "spatial_semantics": "axis_aligned_bounds_distance_only",
+                "spatial_semantics": "axis_aligned_bounds_intersection_or_distance_only",
                 "explicit_reference_semantics":
                     "serialized object references and declared schematic page membership only",
-                "search_method": "exact_alias_bm25_relationship_spatial"}
+                "search_method": "exact_alias_bm25_relationship_spatial_diagnostics"}
