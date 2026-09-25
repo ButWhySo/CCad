@@ -2,6 +2,19 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 990 active slice — fielded memory ranking and bounded diversity (Tier 1, M4)
+
+- [x] Index enabled project/conversation/user memory titles, content, and tags through separate lexical fields after existing scope and expiry gates.
+- [x] Fuse field rankings deterministically with weighted reciprocal-rank fusion while retaining the minimum lexical-match floor.
+- [x] Apply bounded, deterministic maximal-marginal-relevance selection to reduce redundant memory context.
+- [x] Return only safe score/rank/channel provenance and opaque namespace identity; do not expose memory payloads in diagnostics.
+- [x] Contract-test cross-field retrieval, tag retrieval, stable fusion, diversity, result bounds, and lifecycle isolation.
+- [x] Run changed-module Pyright, focused contracts, Qt MinGW Release build, full CTest (114/114), and diff/secret scans.
+- [x] Update lifecycle, feature, codebase, progress, and sprint notes.
+- [ ] Commit, merge/push `main`, verify remote SHA, and remove only this completed branch.
+
+Scope boundary: this adds lexical field fusion and diversity only. Embeddings, importance/recency/usage adjustments, preference/correction weighting, and provider-tokenizer budgeting remain open. It does not make paraphrase retrieval semantic.
+
 ### Sprint 989 active slice — bounded BM25 memory/history retrieval (Tier 1, M4-A)
 
 - [x] Replace simple memory and TurnRecord overlap ordering with deterministic BM25 ranking and matched-term/score provenance.
@@ -11,7 +24,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Run changed-module Pyright (0 diagnostics), focused retrieval contracts, Qt MinGW Release build, full CTest (114/114), and a staged secret scan.
 - [x] Update lifecycle, feature, codebase, progress, and sprint notes; commit, merge/push `main`, verify remote SHA, and remove only this completed branch.
 
-Scope boundary: this is BM25 lexical retrieval only. Embeddings, RRF fusion, MMR, preference/correction weighting, and provider-tokenizer budgeting remain open; do not mark the full M4 group complete.
+Scope boundary: this slice implemented BM25 lexical retrieval only. Sprint 990 adds fielded RRF/MMR for memory records; embeddings, preference/correction weighting, and provider-tokenizer budgeting remain open. Do not mark full M4 complete.
 
 ### Sprint 988 completed slice — project-scoped durable memory (Tier 1, C2)
 
@@ -3163,7 +3176,7 @@ Borrow the useful Codex pattern without coupling to Codex internals.
 - [x] Add actual BM25 retrieval for enabled memory tiers and conversation TurnRecords.
 - [x] Rank episodic records alongside the other enabled memory tiers.
 - [x] Search compact thread recaps before opening only matching source-linked turns.
-- [ ] Index relevant project-memory summaries.
+- [x] Index project-memory titles, content, and tags in bounded fielded lexical retrieval (Sprint 990; generated semantic summaries remain open).
 
 ### Semantic
 
@@ -3181,9 +3194,9 @@ Borrow the useful Codex pattern without coupling to Codex internals.
 - [x] Filter inactive/deleted/expired memory.
 - [x] Retrieve bounded BM25 candidates and stop below the minimum lexical-match floor.
 - [ ] Retrieve semantic candidates.
-- [ ] Fuse rankings with documented deterministic method such as RRF.
+- [x] Fuse title/content/tag lexical rankings with weighted reciprocal-rank fusion (Sprint 990).
 - [ ] Add bounded importance/recency/usage adjustments.
-- [ ] Apply MMR/equivalent diversity selection.
+- [x] Apply bounded deterministic MMR selection to reduce duplicate memory context (Sprint 990).
 - [ ] Optional cross-encoder rerank only when actually installed/operational.
 - [x] Bound candidate, recap-expansion, result, and injected-history stages.
 - [x] Bound final memory context by token budget.
@@ -3703,11 +3716,11 @@ Complete together:
 
 Complete together:
 
-- [x] BM25 lexical retrieval (Sprint 989; semantic/fusion layers remain open).
+- [x] BM25 lexical retrieval (Sprint 989) and fielded lexical RRF/MMR memory ranking (Sprint 990; semantic candidates remain open).
 - [ ] embedding abstraction.
 - [ ] semantic candidate retrieval.
-- [ ] ranking fusion.
-- [ ] diversity reranking.
+- [x] deterministic fielded lexical ranking fusion for memory records (Sprint 990; semantic fusion remains open).
+- [x] bounded memory diversity reranking (Sprint 990; history diversity remains open).
 - [x] Bounded same-project thread-summary retrieval (Sprint 989).
 - [ ] benchmarks/tests.
 - [ ] safe fallback.

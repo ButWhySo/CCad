@@ -435,6 +435,8 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
         if item is not None:
             included_retrieval.append({key: item[key] for key in
                                        ("rank", "tier", "query_overlap_terms", "bm25_score",
+                                        "ranking_method", "channel_ranks", "rrf_score",
+                                        "diversity_score", "redundancy_score",
                                         "matched_terms", "namespace_hash")
                                        if key in item})
     return {
@@ -639,7 +641,9 @@ def build_provider_request_report(system_text: str, messages: Iterable[Any],
                                 for tier in ("stm", "ltm", "episodic")},
         "memory_retrieval": [
             {key: item[key] for key in
-             ("rank", "tier", "query_overlap_terms", "namespace_hash")
+             ("rank", "tier", "query_overlap_terms", "ranking_method",
+              "channel_ranks", "rrf_score", "diversity_score", "redundancy_score",
+              "namespace_hash")
              if key in item}
             for item in context_metadata.get("memory_retrieval", [])
             if isinstance(item, dict)],
@@ -731,7 +735,9 @@ def format_large_context_explanation(report: dict,
         f"{report['estimate_method']}. Model context limit: {limit_text}.\n\n"
         f"REQUEST COMPONENTS\n{component_text}\n\n"
         f"MEMORY STATE\n{tier_text}\n"
-        f"Memory matches ranked by query-term overlap, recency, and tier order: {ranking}. "
+        f"Memory matches use fielded BM25 over titles, content, and tags, reciprocal-rank fusion, "
+        f"then bounded maximal-marginal-relevance diversity selection; semantic embeddings are "
+        f"not configured. Selected matches: {ranking}. "
         f"{report['memory_entry_count']} included; "
         f"{report['omitted_memory_entry_count']} omitted by package budget.\n\n"
         f"ASSEMBLY LIFECYCLE\n{lifecycle_detail}\n\n"

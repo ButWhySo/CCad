@@ -1,5 +1,9 @@
 # Implemented Features
 
+## Sprint 990 fielded lexical memory ranking
+
+Enabled memory records are retrieved through separate BM25 title, content, and tag fields after tier, project namespace, expiry, and minimum-match filters. Weighted reciprocal-rank fusion combines field rankings without conflating their BM25 score scales, then bounded deterministic maximal-marginal-relevance selection reduces near-duplicate context. Safe diagnostics report channel ranks and opaque scope identity, never the memory payload. This is lexical retrieval, not semantic embedding search; history ranking, preference/correction weighting, importance/recency adjustments, and provider tokenizer counts remain open. Offline contracts: `scripts/test_lexical_retrieval.py` and `scripts/test_memory_manager.py`.
+
 ## Sprint 989 bounded BM25 memory and history retrieval
 
 Enabled task, conversation, project, and local-user memory now ranks through a shared deterministic BM25 scorer and returns rank/score/matched-term provenance. Conversation history search ranks compact thread recaps from the exact active native project before loading only the matching bounded TurnRecords; project mismatch, the active thread, and weak multi-term matches are excluded. At most eight retrieved prior turns enter context, with their exact thread, turn, and source-message IDs. The existing memory/context budget still governs memory injection. Offline contracts cover relevance, weak/no-match rejection, project isolation, provenance, and the memory lifecycle; `scripts/test_lexical_retrieval.py`, `scripts/test_memory_manager.py`, `scripts/test_conversation_store.py`, and `scripts/test_context_budget.py`.

@@ -8,7 +8,7 @@ from collections import OrderedDict
 from datetime import datetime, timezone
 from typing import Any
 
-from lexical_retrieval import rank_documents
+from lexical_retrieval import diversify_ranked, fuse_rankings, rank_documents
 from uuid import uuid4
 
 from memory_store import MemoryStore, MemoryStoreError
@@ -184,25 +184,50 @@ class MemoryManager:
             if not self.enabled[tier] or self.storage_errors.get(tier):
                 continue
             for entry_index, entry in enumerate(self.runtime[tier]):
+                title = str(entry.get("title", ""))
+                content = str(entry.get("content", ""))
+                raw_tags = entry.get("tags", [])
+                tag_values = raw_tags if isinstance(raw_tags, (list, tuple)) else ()
+                tags = " ".join(tag for tag in tag_values if isinstance(tag, str))
                 candidates.append({"tier": tier, "tier_index": tier_index,
                                    "entry_index": entry_index, "entry": entry,
-                                   "text": f"{entry.get('title', '')} {entry.get('content', '')}",
+                                   "text": f"{title} {content} {tags}",
+                                   "title_text": title, "content_text": content,
+                                   "tags_text": tags,
                                    "created_at": str(entry.get("created_at", ""))})
         query_term_count = len(set(self._word.findall(str(query).casefold())))
-        ranked = rank_documents(query, candidates,
-                                min_matches=min(2, query_term_count))
-        ranked.sort(key=lambda item: (item["score"],
-                                      -self.TIERS.index(item["document"]["tier"]),
-                                      item["document"]["created_at"],
-                                      item["document"]["entry_index"]), reverse=True)
-        selected = ranked[:max(0, min(32, int(limit)))]
+        lexical = rank_documents(query, candidates,
+                                 min_matches=min(2, query_term_count))
+        eligible = {item["document"]["entry"]["id"] for item in lexical}
+        channels = {}
+        for channel, field in (("title", "title_text"),
+                               ("content", "content_text"),
+                               ("tags", "tags_text")):
+            field_docs = [candidate for candidate in candidates
+                          if candidate["entry"]["id"] in eligible]
+            channels[channel] = rank_documents(query, field_docs,
+                                               text_key=field, min_matches=1)
+        fused = fuse_rankings(channels, weights={"title": 1.2,
+                                                 "content": 1.0,
+                                                 "tags": 0.8})
+        lexical_by_id = {item["document"]["entry"]["id"]: item
+                         for item in lexical}
+        diversified = diversify_ranked(fused, limit=max(0, min(32, int(limit))),
+                                       text_key="text", relevance_weight=0.7)
+        selected = diversified
         entries = [item["document"]["entry"] for item in selected]
         provenance = [{
             "entry_id": item["document"]["entry"]["id"],
             "rank": index + 1,
             "tier": item["document"]["tier"],
             "query_overlap_terms": len(item["matched_terms"]),
-            "bm25_score": round(item["score"], 6),
+            "bm25_score": round(lexical_by_id[
+                item["document"]["entry"]["id"]]["score"], 6),
+            "ranking_method": "fielded_bm25_rrf_mmr",
+            "channel_ranks": item["channel_ranks"],
+            "rrf_score": round(item["score"], 8),
+            "diversity_score": item["diversity_score"],
+            "redundancy_score": item["redundancy_score"],
             "matched_terms": item["matched_terms"],
             "namespace_hash": hashlib.sha256(
                 str(item["document"]["entry"].get(

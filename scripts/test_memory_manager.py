@@ -23,10 +23,21 @@ with tempfile.TemporaryDirectory() as temp:
     assert ranked_memories[0]["title"] == "routing"
     assert memory_sources[0]["bm25_score"] > 0
     assert memory_sources[0]["matched_terms"] == ["return", "path"]
-    assert manager.state("ltm")["runtime_entries"] == 1
+    assert memory_sources[0]["ranking_method"] == "fielded_bm25_rrf_mmr"
+    assert memory_sources[0]["channel_ranks"]["content"] == 1
+    assert memory_sources[0]["rrf_score"] > 0
+    assert "diversity_score" in memory_sources[0]
+    tagged = manager.add("Keep a clear gap around board edge", tier="ltm",
+                         title="", tags=["manufacturing", "clearance"])
+    tagged_results = manager.retrieve("manufacturing")
+    assert tagged_results and tagged_results[0]["id"] == tagged["id"]
+    tagged_meta = manager.retrieve_with_metadata("manufacturing")[1][0]
+    assert tagged_meta["channel_ranks"]["tags"] == 1
+    assert tagged_meta["matched_terms"] == ["manufacturing"]
+    assert manager.state("ltm")["runtime_entries"] == 2
     manager.disable("ltm")
     assert manager.state("ltm")["runtime_entries"] == 0
-    assert manager.state("ltm")["persistent_entries"] == 1
+    assert manager.state("ltm")["persistent_entries"] == 2
     try:
         manager.update(manager.store.list(tier="ltm", namespace="thread-1")[0]["id"],
                        "must not update while disabled")
@@ -35,8 +46,8 @@ with tempfile.TemporaryDirectory() as temp:
     else:
         raise AssertionError("disabled memory tier allowed mutation")
     manager.enable("ltm")
-    assert manager.state("ltm")["runtime_entries"] == 1
-    assert manager.reset("ltm") == 1
+    assert manager.state("ltm")["runtime_entries"] == 2
+    assert manager.reset("ltm") == 2
     assert manager.state("ltm")["persistent_entries"] == 0
     manager.enable("episodic")
     manager.add("User prefers conservative clearances", tier="episodic")
