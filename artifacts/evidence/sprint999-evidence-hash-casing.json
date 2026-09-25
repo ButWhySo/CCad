@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint999-evidence-hash-casing",
+    "feature":  "Accept PowerShell uppercase evidence manifest digests in commit messages",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-25T19:07:07.6641286Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.45 log=artifacts/evidence/sprint999-evidence-hash-casing/preflight.log",
+                      "finished_utc":  "2026-09-25T19:07:09.2413784Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=5.34 log=artifacts/evidence/sprint999-evidence-hash-casing/build.log",
+                      "finished_utc":  "2026-09-25T19:07:14.5941258Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=195.02 log=artifacts/evidence/sprint999-evidence-hash-casing/ctest.log",
+                      "finished_utc":  "2026-09-25T19:10:29.6210712Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint999-evidence-hash-casing/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint999-evidence-hash-casing/ctest.log",
+                                         "sha256":  "06F68FED103DA179CEC853027556ACCECBDBA81E94A4C97BA7F1CF8B6639FC59"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint999-evidence-hash-casing/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-25T19:10:29.6846022Z"
+}

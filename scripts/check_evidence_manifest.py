@@ -9,7 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-REFERENCE = re.compile(r"^Verification:\s+(\S+)\s+\(sha256\s+([0-9a-f]{64})\)\s*$", re.M)
+REFERENCE = re.compile(r"^Verification:\s+(\S+)\s+\(sha256\s+([0-9a-fA-F]{64})\)\s*$", re.M)
 
 
 def fail(message: str) -> int:

@@ -129,6 +129,10 @@ class EvidenceManifestTests(unittest.TestCase):
         self.assertNotEqual(local_check.returncode, 0)
         self.assertIn("workspace-only artifact hash mismatch", local_check.stderr)
 
+    def test_local_hook_accepts_uppercase_sha256_from_get_file_hash(self) -> None:
+        local_check = self.invoke_local_hook(self.manifest_hash.upper())
+        self.assertEqual(local_check.returncode, 0, local_check.stderr)
+
     def test_rejects_malformed_workspace_only_artifact_metadata(self) -> None:
         digest = self.commit_manifest({
             "status": "pass",

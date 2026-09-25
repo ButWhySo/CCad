@@ -11,7 +11,14 @@ Check a box only after implementation and its required evidence exist.
 - [x] Run focused Python contracts, Pyright (0 diagnostics), Qt MinGW Release build, and full CTest (115/115).
 - [x] Inspect all four scoped screenshots and review the 10-action GUI-map report, stdout, and stderr (stderr empty).
 - [x] Update C3, feature, codebase, progress, and the interaction-plan record; staged secret-pattern scan and `git diff --check` pass.
-- [ ] Commit and push the verified slice; inspect hosted CI when available.
+- [x] Commit and push the verified slice (`21bf3d6`); hosted CI/PR inspection remains open.
+
+### Sprint 999 active slice — manifest digest casing interoperability
+
+- [x] Add a contract that reproduces the PowerShell `Get-FileHash` uppercase-digest commit message.
+- [x] Accept uppercase and lowercase SHA-256 hex in evidence references while validating the manifest digest case-insensitively.
+- [x] Run evidence-checker contracts and the official non-visual Qt Release/full CTest gate; inspect manifest and logs.
+- [x] Update handover/progress/feature/TODO records, scan staged additions, and commit/push verified files.
 
 ### Sprint 997 active slice — PCB-only geometry relationships (Tier 1, C3)
 
@@ -23,7 +30,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Verify the disposable-board flow with the official mapped GUI harness; inspect all four screenshots and stdout/stderr logs. Manifest: `artifacts/evidence/sprint997-project-geometry-relations-ui-pass.json` (SHA-256 `104DC06FB7BA39509639D3BA7B49FE4D82BF5871AEC945E2B067C73C8B965C16`).
 - [x] Update handover docs and feature/progress records; `git diff --check` passes.
 - [x] Run redacted tracked-tree and staged-addition credential scans before commit; zero staged matches, with only two pre-existing documentation examples and one untouched synthetic fixture in the full tracked tree.
-- [ ] Commit and push the verified slice.
+- [x] Commit and push the verified slice (`21bf3d6`); hosted CI/PR inspection remains open.
 - [ ] Inspect hosted CI status for the pushed SHA.
 
 ### Sprint 996 active slice — reconcile visual-validation replacement proposal
@@ -34,7 +41,8 @@ Check a box only after implementation and its required evidence exist.
 - [x] Add and pass the visual-harness policy contract for canonical entry points and evidence handling.
 - [x] Run the official non-visual verifier; inspect its manifest and all logs (Qt MinGW Release; full CTest 115/115). Manifest: `artifacts/evidence/sprint996-validation-reconciliation.json` (SHA-256 `06AD438359BB59D8D8B5D1B6E52A366CE9EBC2F2370CE9871268AD374382D45F`).
 - [x] Run redacted tracked-tree and staged-diff credential scans; staged additions are clean, and existing token-shaped fixture/documentation matches were classified as non-secrets.
-- [ ] Commit and push the documentation/test slice, then inspect hosted CI for the pushed SHA.
+- [x] Commit and push the documentation/test slice (`21bf3d6` includes `2169827`).
+- [ ] Inspect hosted CI for the pushed SHA after a PR is available.
 
 Scope boundary: this updates the workflow contract only. Existing scripts, commit hook, CI lanes, and artifact policy remain authoritative; no GUI wrapper, self-hosted runner, or repository branch-protection setting is fabricated.
 
@@ -46,7 +54,8 @@ Scope boundary: this updates the workflow contract only. Existing scripts, commi
 - [x] Pass Qt MinGW Release build and full CTest (115/115) through `scripts/verify_sprint.ps1 -NonVisual`; inspect its logs and manifest. Manifest: `artifacts/evidence/sprint995-schematic-pin-identities.json` (SHA-256 `21c857fa71413cdb262e3018cdd56db0485d46b6caae1383664b148e46254561`).
 - [x] Update feature/codebase/progress/C3 documentation and record the verified manifest metadata.
 - [x] Run redacted credential-pattern scans: zero matches in staged files; the tracked repository has one pre-existing synthetic test fixture in `scripts/test_memory_store.py`.
-- [ ] Commit and push this verified slice; inspect hosted CI on the pushed SHA before merge.
+- [x] Commit and push this verified slice (`21bf3d6` includes `3c69d86`).
+- [ ] Inspect hosted CI on the pushed SHA before merge.
 
 Scope boundary: this preserves the source IDs that CCad currently serializes; library-definition pin identities and unrelated missing graph edges remain open.
 

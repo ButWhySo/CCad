@@ -70,6 +70,9 @@ report, and retained screenshots. The verifier may use only an existing
 app-owned target sequence; it must fail if the requested interaction contract
 or output artifact is absent. Never hand-edit a passing manifest. Read every
 retained image and log before claiming the evidence gate passed.
+The commit-msg evidence reference may use uppercase or lowercase SHA-256 hex;
+the verifier's PowerShell hash display is uppercase, and the manifest checker
+compares digest values without case sensitivity.
 
 For a slice that demonstrably changes no GUI behavior, run the same verifier
 with `-NonVisual` and no interaction plan. That mode still runs Qt/MinGW
