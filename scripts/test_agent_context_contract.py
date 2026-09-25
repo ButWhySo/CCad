@@ -77,7 +77,8 @@ requests.append({"method": "human_message", "params": {
     "thread_id": "thread-geometry-relations"}})
 payload = "\n".join(json.dumps(request) for request in requests) + "\n"
 run = subprocess.run([sys.executable, str(SOURCE)], input=payload, text=True,
-                     capture_output=True, env=env, check=True)
+                     capture_output=True, env=env, check=False)
+assert run.returncode == 0, run.stderr
 lines = [json.loads(line) for line in run.stdout.splitlines()
          if line.strip().startswith("{")]
 methods = next(item["params"] for item in lines
@@ -145,12 +146,14 @@ for field in ("thread_id", "process_call_ids", "checkpoint_call_ids", "count", "
 assert "context_state" in human_contract["response_contracts"]
 assert '"project_retrieval_near_component_count"' in text
 assert '"project_retrieval_region_member_count"' in text
+assert '"project_retrieval_block_net_count"' in text
 assert "provider_state" in human_contract["responses"]
 assert "backend_state" in human_contract["responses"]
 assert "change_kind" in human_contract["response_contracts"]["context_state"]["fields"]
 assert "thread_id" in human_contract["response_contracts"]["context_state"]["fields"]
 for field in ("project_retrieval_near_component_count",
-              "project_retrieval_region_member_count", "project_retrieval_stats"):
+              "project_retrieval_region_member_count",
+              "project_retrieval_block_net_count", "project_retrieval_stats"):
     assert field in human_contract["response_contracts"]["context_state"]["fields"]
 assert "intake_state" in human_contract["response_contracts"]
 assert "accepted" in human_contract["response_contracts"]["intake_state"]["fields"]
@@ -208,6 +211,7 @@ for event in events[:-1]:
     assert params["history_message_count"] >= 0
     assert params["project_retrieval_near_component_count"] == 0
     assert params["project_retrieval_region_member_count"] == 0
+    assert params["project_retrieval_block_net_count"] == 0
     assert params["project_retrieval_stats"]["near_component_match_count"] == 0
     assert params["project_retrieval_stats"]["region_member_match_count"] == 0
     assert "project_snapshot" in params["sources"]
@@ -215,6 +219,7 @@ geometry_event = events[-1]["params"]
 assert geometry_event["thread_id"] == "thread-geometry-relations"
 assert geometry_event["project_retrieval_near_component_count"] == 1
 assert geometry_event["project_retrieval_region_member_count"] > 0
+assert geometry_event["project_retrieval_block_net_count"] == 0
 assert geometry_event["project_retrieval_stats"]["near_component_match_count"] == 1
 assert geometry_event["project_retrieval_stats"]["region_member_match_count"] > 0
 print("PASS agent context history boundary contract; no network")

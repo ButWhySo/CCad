@@ -71,6 +71,9 @@ int main() {
 
   requireContains(target_harness, "[int]$InitialLoadMilliseconds = 5000",
                   "multi-target harness initial wait");
+  requireContains(target_harness,
+                  "failed its serialized group-to-native-net round trip",
+                  "Sprint 998 fixture proves native net membership before launch");
   requireContains(target_harness, "[int]$PerTargetMilliseconds = 800",
                   "multi-target harness per-target wait");
   requireContains(target_harness,

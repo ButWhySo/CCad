@@ -2,6 +2,17 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 998 active slice — explicit functional-block net retrieval (Tier 1, C3)
+
+- [x] Add contract tests for typed board/schematic block-to-net edges, namespace separation, bounded context forwarding, incremental stale-edge replacement, and already-seeded active-net targets.
+- [x] Implement only source-backed group/sheet net relations; keep PCB net IDs separate from schematic net IDs and do not infer connectivity.
+- [x] Carry the retained edge count through context metadata, JSON-RPC, Agent workspace state, and activity status; preserve explicit edges when the target net is already an exact seed.
+- [x] Add isolated provider-disabled GUI-map scenario; verify the disposable board group, exact context count, transcript, and Settings dialog.
+- [x] Run focused Python contracts, Pyright (0 diagnostics), Qt MinGW Release build, and full CTest (115/115).
+- [x] Inspect all four scoped screenshots and review the 10-action GUI-map report, stdout, and stderr (stderr empty).
+- [x] Update C3, feature, codebase, progress, and the interaction-plan record; staged secret-pattern scan and `git diff --check` pass.
+- [ ] Commit and push the verified slice; inspect hosted CI when available.
+
 ### Sprint 997 active slice — PCB-only geometry relationships (Tier 1, C3)
 
 - [x] Keep board and schematic coordinates in separate spatial domains; retrieval contracts cover both coordinate-space exclusions.
@@ -4424,7 +4435,7 @@ Represent/traverse relationships such as:
 - [x] schematic net -> PCB net where serialized IDs match; association does not assert physical continuity.
 - [x] serialized schematic page -> symbols; file-path and hierarchy identity coverage remains separate.
 - [x] region -> objects (exact placement-region identity and intersecting board AABBs; Sprint 997 verified).
-- [ ] functional block -> components/nets.
+- [x] functional block -> components/nets (typed source-backed membership and native net IDs; Sprint 998; no connectivity inference).
 - [ ] candidate/proposal -> affected objects.
 
 ### Graph retrieval

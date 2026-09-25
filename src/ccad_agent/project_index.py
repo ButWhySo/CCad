@@ -855,6 +855,7 @@ class ProjectIndex:
                             points.append(point)
             return _bbox(points)
 
+        available_uids = {doc["uid"] for doc in docs}
         for source_doc in block_sources:
             fields = source_doc["fields"]
             source_member_ids = sorted({target for target, relation in source_doc["references"]
@@ -909,6 +910,12 @@ class ProjectIndex:
                                         for member in member_docs.values())
             block["references"].discard(("", "group_member"))
             block["references"].add((fields["id"], "source_group"))
+            net_kind = {"board_group": "board_net",
+                        "schematic_group": "schematic_net"}.get(fields["kind"])
+            for net_id in block["fields"]["related_net_ids"]:
+                target_uid = f"{net_kind}:{net_id}" if net_kind else ""
+                if target_uid and target_uid in available_uids:
+                    block["references"].add((f"uid:{target_uid}", "block_net_member"))
             block["text"] = (block["text"] + " " + " ".join(
                 net for net in block["fields"]["related_net_ids"]))[:1200]
             block["tokens"] = Counter(token.casefold() for token in _WORD.findall(
@@ -953,6 +960,10 @@ class ProjectIndex:
             block["references"].update((member["fields"].get("id", ""), "group_member")
                                         for member in member_docs.values())
             block["references"].add((sheet_id, "source_sheet"))
+            for net_id in block["fields"]["related_net_ids"]:
+                target_uid = f"schematic_net:{net_id}"
+                if target_uid in available_uids:
+                    block["references"].add((f"uid:{target_uid}", "block_net_member"))
             block["text"] = (block["text"] + " " + " ".join(
                 net for net in block["fields"]["related_net_ids"]))[:1200]
             block["tokens"] = Counter(token.casefold() for token in _WORD.findall(
@@ -1297,10 +1308,16 @@ class ProjectIndex:
                     if neighbor != uid and neighbor not in seeds:
                         found[neighbor].add("same_schematic_sheet")
             for target, relation in doc["references"]:
-                for alias_uid in self._aliases.get(target, ()):
-                    if alias_uid != uid and alias_uid not in seeds:
+                target_uids = ({target[4:]} if target.startswith("uid:") and
+                               target[4:] in self._docs else
+                               self._aliases.get(target, ()) if not target.startswith("uid:")
+                               else ())
+                for alias_uid in target_uids:
+                    if (alias_uid != uid and
+                            (alias_uid not in seeds or relation == "block_net_member")):
                         found[alias_uid].add(relation)
             identity_keys = set(doc["aliases"])
+            identity_keys.add(f"uid:{doc['uid']}")
             identity = _normalize(doc["fields"].get("id"))
             if identity:
                 identity_keys.add(identity)
@@ -1476,7 +1493,8 @@ class ProjectIndex:
             if uid not in scores:
                 scores[uid] = (100.0, "relationship", relation,
                                spatial_scores.get(uid, 0.0))
-            elif scores[uid][1] == "lexical":
+            elif (scores[uid][1] == "lexical" or
+                  (not scores[uid][2] and relation == "block_net_member")):
                 prior = scores[uid]
                 scores[uid] = (prior[0], prior[1], relation, prior[3])
         for uid, distance in spatial_scores.items():

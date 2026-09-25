@@ -69,9 +69,10 @@ if ($Name.StartsWith("sprint982-multilayer-project-context") -or
     $Name.StartsWith("sprint983-project-index-typed-geometry") -or
     $Name.StartsWith("sprint985-project-reference-graph") -or
     $Name.StartsWith("sprint986-project-spatial-index") -or
-    $Name.StartsWith("sprint987-schematic-metadata")) {
+    $Name.StartsWith("sprint987-schematic-metadata") -or
+    $Name.StartsWith("sprint998-functional-block-net-context")) {
   $isolatedProjectPath = Join-Path ([IO.Path]::GetTempPath()) (
-    "ccad-sprint" + $(if ($Name.StartsWith("sprint987")) { "987-schematic-metadata-" } elseif ($Name.StartsWith("sprint986")) { "986-project-spatial-" } elseif ($Name.StartsWith("sprint985")) { "985-project-graph-" } elseif ($Name.StartsWith("sprint983")) { "983-typed-geometry-" } else { "982-multilayer-" }) +
+    "ccad-sprint" + $(if ($Name.StartsWith("sprint998")) { "998-block-net-" } elseif ($Name.StartsWith("sprint987")) { "987-schematic-metadata-" } elseif ($Name.StartsWith("sprint986")) { "986-project-spatial-" } elseif ($Name.StartsWith("sprint985")) { "985-project-graph-" } elseif ($Name.StartsWith("sprint983")) { "983-typed-geometry-" } else { "982-multilayer-" }) +
     [Guid]::NewGuid().ToString("N") + ".ccad.json")
   Copy-Item -LiteralPath $ProjectPath -Destination $isolatedProjectPath
   if ($Name.StartsWith("sprint983-project-index-typed-geometry")) {
@@ -210,6 +211,41 @@ if ($Name.StartsWith("sprint982-multilayer-project-context") -or
   }
   $ProjectPath = $isolatedProjectPath
 }
+if ($Name.StartsWith("sprint998-functional-block-net-context")) {
+  $fixture = Get-Content -Raw -LiteralPath $isolatedProjectPath | ConvertFrom-Json
+  if (-not $fixture.board.pads) {
+    throw "Functional-block net fixture requires a serialized board pad."
+  }
+  $netPad = @($fixture.board.pads | Where-Object {
+    $_.id -and $_.net_id
+  } | Select-Object -First 1)
+  if ($netPad.Count -ne 1) {
+    throw "Functional-block net fixture requires a pad with a native net ID."
+  }
+  if (-not $fixture.board.groups) {
+    $fixture.board | Add-Member -MemberType NoteProperty -Name groups -Value @() -Force
+  }
+  $fixture.board.groups += [pscustomobject]@{
+    id = "GROUP_SPRINT998_RETURN"
+    name = "Return path"
+    members = @([string]$netPad[0].id)
+  }
+  [IO.File]::WriteAllText($isolatedProjectPath,
+    (ConvertTo-Json -InputObject $fixture -Depth 64), [Text.UTF8Encoding]::new($false))
+  $fixtureCheck = Get-Content -Raw -LiteralPath $isolatedProjectPath | ConvertFrom-Json
+  $fixtureGroup = @($fixtureCheck.board.groups | Where-Object {
+    $_.id -eq "GROUP_SPRINT998_RETURN" -and $_.name -eq "Return path"
+  })
+  $fixtureMember = if ($fixtureGroup.Count -eq 1) {
+    [string]$fixtureGroup[0].members[0]
+  } else { "" }
+  $fixtureMemberPad = @($fixtureCheck.board.pads | Where-Object {
+    $_.id -eq $fixtureMember -and $_.net_id
+  })
+  if ($fixtureGroup.Count -ne 1 -or $fixtureMemberPad.Count -ne 1) {
+    throw "Sprint 998 disposable fixture failed its serialized group-to-native-net round trip."
+  }
+}
 if ($Name.StartsWith("sprint969-context")) {
   # Exercise the real large-context branch with a deliberately low, valid
   # threshold. The /context feature remains local and never invokes the model.
@@ -334,7 +370,8 @@ if ($Name.StartsWith("sprint980-project-retrieval") -or
     $Name.StartsWith("sprint985-project-reference-graph") -or
     $Name.StartsWith("sprint984-board-net-retrieval") -or
     $Name.StartsWith("sprint986-project-spatial-index") -or
-    $Name.StartsWith("sprint987-schematic-metadata")) {
+    $Name.StartsWith("sprint987-schematic-metadata") -or
+    $Name.StartsWith("sprint998-functional-block-net-context")) {
   $profilePrefix = if ($Name.StartsWith("sprint986-project-spatial-index")) {
     "ccad-sprint986-project-spatial-"
   } elseif ($Name.StartsWith("sprint987-schematic-metadata")) {
@@ -349,6 +386,8 @@ if ($Name.StartsWith("sprint980-project-retrieval") -or
     "ccad-sprint983-typed-geometry-"
   } elseif ($Name.StartsWith("sprint981-schematic-project-graph")) {
     "ccad-sprint981-project-graph-"
+  } elseif ($Name.StartsWith("sprint998-functional-block-net-context")) {
+    "ccad-sprint998-block-net-"
   } else { "ccad-sprint980-project-" }
   $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ($profilePrefix + [Guid]::NewGuid().ToString("N"))
   $configDir = Join-Path $isolatedMemoryProfile "CCad"
@@ -360,6 +399,8 @@ if ($Name.StartsWith("sprint980-project-retrieval") -or
     if ($Name.Contains("sprint997")) { "sprint997-geometry-relations-ui-thread" }
     elseif ($Name.Contains("sprint993")) { "sprint993-functional-block-ui-thread" }
     else { "sprint987-schematic-metadata-ui-thread" }
+  } elseif ($Name.StartsWith("sprint998-functional-block-net-context")) {
+    "sprint998-functional-block-net-context-ui-thread"
   } elseif ($Name.StartsWith("sprint986-project-spatial-index")) {
     "sprint986-project-spatial-index-ui-thread"
   } elseif ($Name.StartsWith("sprint984-board-net-retrieval")) {
@@ -548,6 +589,9 @@ if ($Name.StartsWith("sprint974-memory")) {
         "schematic_metadata_retrieved", "functional_block_visible")
     } elseif ($Name.Contains("sprint997")) {
       @("conversation_turn_visible", "pcb_geometry_relationships_visible")
+    } elseif ($Name.StartsWith("sprint998-functional-block-net-context")) {
+      @("conversation_turn_visible", "functional_block_fixture_loaded",
+        "functional_block_net_retrieval_visible")
     } elseif ($Name.StartsWith("sprint987-schematic-metadata")) {
       @("conversation_turn_visible", "schematic_metadata_serialized",
         "schematic_metadata_retrieved")
@@ -571,7 +615,8 @@ if ($Name.StartsWith("sprint974-memory")) {
       if ($actualScreenshots.Count -ne $requiredScreenshots.Count) {
         throw "Spatial project GUI validation should retain only three distinct checkpoints; found $($actualScreenshots.Count)."
       }
-    } elseif ($Name.Contains("sprint992") -or $Name.Contains("sprint993")) {
+    } elseif ($Name.Contains("sprint992") -or $Name.Contains("sprint993") -or
+              $Name.StartsWith("sprint998-functional-block-net-context")) {
       $requiredScreenshots = @("before", "turn-persisted",
                                "context-settings-dialog", "restored-final")
       $actualScreenshots = @(Get-ChildItem -LiteralPath $ScreenshotDir -Filter "$Name-*.png")
@@ -697,7 +742,8 @@ if ($Name.StartsWith("sprint974-memory")) {
          -not ($reportData.entries | Where-Object { $_.schematic_symbol_retrieval_visible -eq $true }))) {
       throw "Mapped turn did not visibly include retrieved schematic net pins and related symbols."
     }
-    $requiredScreenshots = if ($Name.Contains("sprint992") -or $Name.Contains("sprint993")) {
+    $requiredScreenshots = if ($Name.Contains("sprint992") -or $Name.Contains("sprint993") -or
+                               $Name.StartsWith("sprint998-functional-block-net-context")) {
       @("before", "turn-persisted", "context-settings-dialog", "restored-final")
     } elseif ($Name.Contains("sprint997")) {
       @("before", "turn-persisted", "context-settings-dialog", "restored-final")
@@ -753,7 +799,8 @@ if ($Name.StartsWith("sprint974-memory")) {
               [IO.Path]::GetFileName($projectFile) -like "ccad-sprint983-typed-geometry-*.ccad.json" -or
               [IO.Path]::GetFileName($projectFile) -like "ccad-sprint985-project-graph-*.ccad.json" -or
               [IO.Path]::GetFileName($projectFile) -like "ccad-sprint986-project-spatial-*.ccad.json" -or
-              [IO.Path]::GetFileName($projectFile) -like "ccad-sprint987-schematic-metadata-*.ccad.json")) {
+              [IO.Path]::GetFileName($projectFile) -like "ccad-sprint987-schematic-metadata-*.ccad.json" -or
+              [IO.Path]::GetFileName($projectFile) -like "ccad-sprint998-block-net-*.ccad.json")) {
       throw "Refusing to remove a project outside the verified temporary targets."
     }
     Remove-Item -LiteralPath $projectFile -Force

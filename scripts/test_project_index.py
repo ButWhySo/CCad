@@ -784,6 +784,74 @@ class ProjectIndexTests(unittest.TestCase):
                              item["id"] == "group:board_group:GROUP_POWER"
                              for item in refreshed["entities"]))
 
+    def test_functional_blocks_expand_only_to_their_typed_net_nodes(self):
+        snapshot = project_snapshot()
+        project = snapshot["typed_state"]["project"]
+        project["board"]["groups"] = [{
+            "id": "GROUP_POWER", "name": "Power conversion stage",
+            "members": ["P1"],
+        }]
+        project["board"]["pads"].append({
+            "id": "P3", "component_id": "U3", "pin_name": "VIN",
+            "net_id": "VIN", "position": {"x_nm": 1_000_000, "y_nm": 0},
+        })
+        project["groups"] = [{"id": "SG_POWER", "name": "Regulator supply",
+                              "members": ["GND:sch-u3:GND"]}]
+
+        index = ProjectIndex(max_entities=32)
+        board = index.retrieve(snapshot, "Power conversion stage", limit=32)
+        board_block = next(item for item in board["entities"]
+                           if item["kind"] == "functional_block" and
+                           item["id"] == "group:board_group:GROUP_POWER")
+        board_nets = [item for item in board["entities"]
+                      if item["kind"] == "board_net"]
+        self.assertEqual(board_block["related_net_ids"], ["GND"])
+        self.assertEqual([(item["id"], item["relationship"]) for item in board_nets],
+                         [("GND", "block_net_member")])
+
+        schematic = index.retrieve(snapshot, "Regulator supply schematic", limit=32)
+        sheet_block = next(item for item in schematic["entities"]
+                           if item["kind"] == "functional_block" and
+                           item["id"] == "group:schematic_group:SG_POWER")
+        schematic_nets = [item for item in schematic["entities"]
+                          if item["kind"] == "schematic_net"]
+        self.assertEqual(sheet_block["related_net_ids"], ["GND"])
+        self.assertEqual([(item["id"], item["relationship"])
+                          for item in schematic_nets],
+                         [("GND", "block_net_member")])
+
+        package = build_context_package(
+            __import__("json").dumps(snapshot), [], [], char_limit=4096,
+            project_retrieval=schematic)
+        payload = __import__("json").loads(package["content"].split("\n", 1)[1])
+        packaged_net = next(item for item in payload["project_retrieval"]["entities"]
+                            if item["kind"] == "schematic_net" and
+                            item.get("relationship") == "block_net_member")
+        self.assertEqual(packaged_net["relationship"], "block_net_member")
+        self.assertEqual(package["metadata"]["project_retrieval_block_net_count"], 1)
+
+    def test_functional_block_net_edges_refresh_after_member_net_changes(self):
+        index = ProjectIndex(max_entities=32)
+        before = project_snapshot()
+        board = before["typed_state"]["project"]["board"]
+        board["groups"] = [{"id": "BG_NET", "name": "Grounded group",
+                            "members": ["P1"]}]
+        first = index.retrieve(before, "Grounded group", limit=32)
+        self.assertTrue(any(item["kind"] == "board_net" and item["id"] == "GND"
+                            and item.get("relationship") == "block_net_member"
+                            for item in first["entities"]))
+
+        after = project_snapshot()
+        board = after["typed_state"]["project"]["board"]
+        board["groups"] = [{"id": "BG_NET", "name": "Grounded group",
+                            "members": ["P1"]}]
+        board["pads"][0]["net_id"] = "VIN"
+        refreshed = index.retrieve(after, "Grounded group", limit=32)
+        self.assertEqual(refreshed["stats"]["index_state"], "incremental")
+        net_edges = {(item["kind"], item["id"]) for item in refreshed["entities"]
+                     if item.get("relationship") == "block_net_member"}
+        self.assertEqual(net_edges, {("board_net", "VIN")})
+
     def test_board_net_id_change_incrementally_removes_stale_membership(self):
         index = ProjectIndex()
         before = project_snapshot()
@@ -1156,6 +1224,24 @@ class ProjectIndexTests(unittest.TestCase):
         self.assertGreater(package["metadata"]["project_retrieval_kinds"].get(
             "board_net", 0), 0)
         self.assertLessEqual(package["metadata"]["content_size"], 4096)
+
+    def test_explicit_functional_block_native_net_edge_survives_context_packaging(self):
+        snapshot = project_snapshot()
+        board = snapshot["typed_state"]["project"]["board"]
+        board["groups"] = [{"id": "GROUP_RETURN", "name": "Return path",
+                            "members": ["P1"]}]
+        # P1's typed pad is assigned to native board net GND in this fixture.
+        retrieval = ProjectIndex().retrieve(
+            snapshot, "Find the Return path functional block and its native PCB net.",
+            active_net="GND")
+        edge = next(entity for entity in retrieval["entities"]
+                    if entity["kind"] == "board_net" and entity["id"] == "GND")
+        self.assertEqual(edge["relationship"], "block_net_member")
+        package = build_context_package(
+            json.dumps(snapshot), [], [], char_limit=8192,
+            project_retrieval=retrieval)
+        self.assertEqual(package["metadata"]["project_retrieval_block_net_count"], 1)
+        self.assertIn("block_net_member", str(package["content"]))
 
     def test_context_broker_reuses_project_index_and_refreshes_changed_geometry(self):
         with tempfile.TemporaryDirectory() as temp:

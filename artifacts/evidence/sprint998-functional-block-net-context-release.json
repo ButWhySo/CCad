@@ -1,0 +1,99 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint998-functional-block-net-context-release",
+    "feature":  "Preserve typed functional-block net relations when selected net is an exact seed, with truthful GUI-map result evidence",
+    "validation_mode":  "gui",
+    "interaction_plan":  "config/gui_interaction_plans/sprint998-functional-block-net-context.json",
+    "target_sequence":  "sprint998-functional-block-net-context-ui-sprint998-functional-block-net-context-release",
+    "visual_validation":  "required",
+    "started_utc":  "2026-09-25T18:44:12.8486223Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.9 log=artifacts/evidence/sprint998-functional-block-net-context-release/preflight.log",
+                      "finished_utc":  "2026-09-25T18:44:13.8553701Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=86.24 log=artifacts/evidence/sprint998-functional-block-net-context-release/build.log",
+                      "finished_utc":  "2026-09-25T18:45:40.1103058Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=138.39 log=artifacts/evidence/sprint998-functional-block-net-context-release/ctest.log",
+                      "finished_utc":  "2026-09-25T18:47:58.4975848Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=23.47 log=artifacts/evidence/sprint998-functional-block-net-context-release/ui_harness.log",
+                      "finished_utc":  "2026-09-25T18:48:21.9764649Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=10; screenshots=4",
+                      "finished_utc":  "2026-09-25T18:48:22.1454650Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-09-25T18:48:22.1809976Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint998-functional-block-net-context-release/build.log",
+                                         "sha256":  "E1CC1DD76F4C907CEB1DF00A5A1A3021D74BF09CA0E329341563C96C4DE2F9F1"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint998-functional-block-net-context-release/ctest.log",
+                                         "sha256":  "9092725785430FAB0E5E29D1B4B4D592A14629380A0369A86F20B62C2064B4C4"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint998-functional-block-net-context-release/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint998-functional-block-net-context-release/sprint998-functional-block-net-context-ui-sprint998-functional-block-net-context-release.stderr.log",
+                                         "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint998-functional-block-net-context-release/sprint998-functional-block-net-context-ui-sprint998-functional-block-net-context-release.stdout.log",
+                                         "sha256":  "BE8892907B92C64C8C0D338ADA98936A5ED06603E797591FDAB7EE943BF64A45"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint998-functional-block-net-context-release/sprint998-functional-block-net-context-ui-sprint998-functional-block-net-context-release-before.png",
+                                         "sha256":  "79372597DB1D92016320D2C6FBBAEC0D183D4C8289C4FB231F7D9E8FE343671D"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint998-functional-block-net-context-release/sprint998-functional-block-net-context-ui-sprint998-functional-block-net-context-release-context-settings-dialog.png",
+                                         "sha256":  "A3A6FE13DA596E7069E0322F7021F9989D52BEF22E5E291F7E51727620558F46"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint998-functional-block-net-context-release/sprint998-functional-block-net-context-ui-sprint998-functional-block-net-context-release-restored-final.png",
+                                         "sha256":  "FD6C1AA7FCB7BB844334E3B42B9B41018C49E47494B09996318AE097A146FB99"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint998-functional-block-net-context-release/sprint998-functional-block-net-context-ui-sprint998-functional-block-net-context-release-target-sequence.json",
+                                         "sha256":  "278D31687BFBFC1FB6CC20C6A3D2155A636C8A5A276CAC45A1F472E1BC2B8CB7"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint998-functional-block-net-context-release/sprint998-functional-block-net-context-ui-sprint998-functional-block-net-context-release-turn-persisted.png",
+                                         "sha256":  "EA487AB7F9E3701EDFBB3741AA709B866765B7ADE2FE0885109AACEEA870616E"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint998-functional-block-net-context-release/ui_harness.log",
+                                         "sha256":  "2E0D90544F4227926247964245E4045C236CE691062197CA85C0121A3BE00C18"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-25T18:48:22.2729999Z"
+}

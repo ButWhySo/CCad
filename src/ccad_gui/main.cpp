@@ -463,6 +463,7 @@ int main(int argc, char** argv) {
           name.startsWith("sprint985-project-reference-graph") ||
           name.startsWith("sprint986-project-spatial-index") ||
           name.startsWith("sprint987-schematic-metadata") ||
+          name.startsWith("sprint998-functional-block-net-context") ||
           name.startsWith("sprint975-memory-ui") ||
           name.startsWith("sprint974-memory")) {
         const auto interact = [window, &entries, &output_dir, &name,
@@ -490,10 +491,11 @@ int main(int argc, char** argv) {
                !name.startsWith("sprint980-project-retrieval") &&
                !name.startsWith("sprint981-schematic-project-graph") &&
                !name.startsWith("sprint982-multilayer-project-context") &&
-                !name.startsWith("sprint983-project-index-typed-geometry") &&
+               !name.startsWith("sprint983-project-index-typed-geometry") &&
                !name.startsWith("sprint984-board-net-retrieval") &&
-                !name.startsWith("sprint986-project-spatial-index") &&
-                !name.startsWith("sprint987-schematic-metadata")) ||
+               !name.startsWith("sprint986-project-spatial-index") &&
+               !name.startsWith("sprint987-schematic-metadata") &&
+               !name.startsWith("sprint998-functional-block-net-context")) ||
               memory_checkpoints.contains(action_name)) {
             screenshot_path = QString::fromStdString(
                 (output_dir / (name + "-" + action_name + ".png").toStdString()).string());
@@ -507,6 +509,7 @@ int main(int argc, char** argv) {
                !name.startsWith("sprint986-project-spatial-index") &&
                !name.startsWith("sprint985-project-reference-graph") &&
                !name.startsWith("sprint987-schematic-metadata") &&
+               !name.startsWith("sprint998-functional-block-net-context") &&
               popup && popup->isVisible()) {
             popup_screenshot = QString::fromStdString(
                 (output_dir / (name + "-" + action_name + "-slash-popup.png").toStdString()).string());
@@ -582,7 +585,8 @@ int main(int argc, char** argv) {
                    name.startsWith("sprint984-board-net-retrieval") ||
                    name.startsWith("sprint985-project-reference-graph") ||
                    name.startsWith("sprint986-project-spatial-index") ||
-                   name.startsWith("sprint987-schematic-metadata")) {
+                   name.startsWith("sprint987-schematic-metadata") ||
+                   name.startsWith("sprint998-functional-block-net-context")) {
           const auto capture = [window, &output_dir, &name, &entries](const QString& state) {
             const QString path = QString::fromStdString(
                 (output_dir / (name + "-" + state + ".png").toStdString()).string());
@@ -618,6 +622,8 @@ int main(int argc, char** argv) {
               name.contains("sprint993");
           const bool geometry_relation_validation = schematic_metadata_validation &&
               name.contains("sprint997");
+          const bool functional_block_net_validation =
+              name.startsWith("sprint998-functional-block-net-context");
           if (geometry_relation_validation) {
             const QString state_json = window->runAgentUiQueryJson("project.state", "{}");
             QJsonParseError state_error;
@@ -660,8 +666,45 @@ int main(int argc, char** argv) {
               serialized_pad_layer_validation ||
               board_net_validation ||
               diagnostic_validation ||
+              functional_block_net_validation ||
               schematic_metadata_validation ||
               name.startsWith("sprint980-project-retrieval");
+          if (functional_block_net_validation) {
+            const QJsonObject state_response = QJsonDocument::fromJson(
+                window->runAgentUiQueryJson("project.state", "{}").toUtf8()).object();
+            const QJsonObject state_payload = state_response.value("result").toObject();
+            const QJsonObject state = state_payload.value("project").toObject();
+            const QJsonObject board = state.value("board").toObject();
+            bool group_loaded = false;
+            QString group_member_id;
+            int group_count = 0;
+            for (const QJsonValue& value : board.value("groups").toArray()) {
+              const QJsonObject group = value.toObject();
+              if (group.value("id").toString() != "GROUP_SPRINT998_RETURN" ||
+                  group.value("name").toString() != "Return path") continue;
+              ++group_count;
+              const QJsonArray members = group.value("members").toArray();
+              if (!members.isEmpty()) group_member_id = members.first().toString();
+            }
+            QString member_net_id;
+            for (const QJsonValue& value : board.value("pads").toArray()) {
+              const QJsonObject pad = value.toObject();
+              if (pad.value("id").toString() == group_member_id) {
+                member_net_id = pad.value("net_id").toString();
+                break;
+              }
+            }
+            group_loaded = state_payload.value("available").toBool() &&
+                group_count == 1 && !group_member_id.isEmpty() &&
+                !member_net_id.isEmpty();
+            entries << QString("{\"project_state_available\":%1,\"functional_block_group_count\":%2,\"functional_block_member_id\":%3,\"functional_block_member_net_id\":%4,\"functional_block_fixture_loaded\":%5}")
+                           .arg(state_payload.value("available").toBool() ? "true" : "false")
+                           .arg(group_count)
+                           .arg(jsonStringLocal(group_member_id))
+                           .arg(jsonStringLocal(member_net_id))
+                           .arg(group_loaded ? "true" : "false");
+            ok = group_loaded && ok;
+          }
           if (diagnostic_validation) {
             ok = interact("ui.click", "{\"id\":\"action:agent_quick_run_drc\"}",
                           "action:agent_quick_run_drc", "diagnostic-drc-command-entered") && ok;
@@ -728,7 +771,9 @@ int main(int argc, char** argv) {
                              .arg(jsonStringLocal(QString::fromStdString(project_path.string())));
           }
           QString user_prompt = project_retrieval_validation
-              ? (geometry_relation_validation
+              ? (functional_block_net_validation
+                     ? QStringLiteral("Find the Return path functional block and its native PCB net.")
+                     : geometry_relation_validation
                      ? QStringLiteral("Which PCB footprints are within 5 mm of JAC1, and which PCB objects intersect placement region PR_SPRINT997?")
                      : spatial_diagnostic_validation
                      ? QStringLiteral("Find DRC markers in bounding box from 10,10 to 14,14 mm.")
@@ -830,6 +875,8 @@ int main(int argc, char** argv) {
           for (int attempt = 0; attempt < 120; ++attempt) {
             QApplication::processEvents();
             const QString transcript = chat ? chat->toPlainText() : QString();
+            if (functional_block_net_validation &&
+                transcript.contains("functional-block net")) break;
             if (geometry_relation_validation &&
                 transcript.contains("nearby PCB components") &&
                 transcript.contains("placement-region objects")) break;
@@ -847,6 +894,22 @@ int main(int argc, char** argv) {
               : !project_retrieval_validation ||
                     (chat && chat->toPlainText().contains("project matches") &&
                      !chat->toPlainText().contains("| 0 project matches"));
+          bool functional_block_net_visible =
+              !functional_block_net_validation ||
+              (chat && chat->toPlainText().contains("1 functional-block net"));
+          if (functional_block_net_validation) {
+            const QJsonObject workspace_response = QJsonDocument::fromJson(
+                window->runAgentUiQueryJson("agent.workspace_state", "{}").toUtf8())
+                .object().value("result").toObject();
+            const int retained_block_net_count = workspace_response.value(
+                "context_project_retrieval_block_net_count").toInt(-1);
+            const bool exact_edge_count = retained_block_net_count == 1;
+            entries << QString("{\"functional_block_net_retrieval_visible\":%1,\"retained_block_net_count\":%2}")
+                           .arg(functional_block_net_visible && exact_edge_count
+                                    ? "true" : "false")
+                           .arg(retained_block_net_count);
+            functional_block_net_visible = functional_block_net_visible && exact_edge_count;
+          }
           if (schematic_metadata_validation && !geometry_relation_validation && chat) {
             const QString transcript = chat->toPlainText();
             schematic_metadata_retrieved = functional_block_validation
@@ -914,6 +977,7 @@ int main(int argc, char** argv) {
               schematic_pin_visible && schematic_symbol_visible && pcb_layers_visible &&
               multiple_project_layers_visible && board_net_visible && project_diagnostic_visible &&
               project_diagnostic_count_visible && geometry_relations_visible &&
+              functional_block_net_visible &&
               chat->toPlainText().contains(user_prompt) &&
               (diagnostic_validation
                    ? chat->toPlainText().contains("is not configured")
@@ -931,11 +995,14 @@ int main(int argc, char** argv) {
                               project_diagnostic_visible ? "true" : "false",
                               project_diagnostic_count_visible ? "true" : "false",
                               schematic_metadata_retrieved ? "true" : "false",
-                              functional_block_validation && schematic_metadata_retrieved
+                              (functional_block_validation || functional_block_net_validation) &&
+                                      schematic_metadata_retrieved
                                   ? "true" : "false",
                               geometry_relations_visible ? "true" : "false");
-          ok = turn_visible && capture("turn-persisted") && ok;
+          const bool turn_screenshot_saved = capture("turn-persisted");
+          ok = turn_visible && turn_screenshot_saved && ok;
           if (declared_pin_validation || functional_block_validation ||
+              functional_block_net_validation ||
               geometry_relation_validation) {
             ok = interact("ui.click", "{\"id\":\"action:settingsBtn\"}",
                           "action:settingsBtn", "context-settings-opened") && ok;
@@ -1222,6 +1289,8 @@ int main(int argc, char** argv) {
             ? QStringLiteral("Verify exact schematic net member pins and related symbols are counted in real turn context through seven mapped actions; provider disabled")
             : name.contains("sprint997")
             ? QStringLiteral("Verify explicitly requested nearby PCB footprints and placement-region members survive bounded Agent context and display their included counts through mapped chat and Settings actions; provider disabled")
+            : name.startsWith("sprint998-functional-block-net-context")
+            ? QStringLiteral("Load an isolated explicit PCB group and verify its exact native board-net edge survives live Agent context packaging and is disclosed as a safe count; provider disabled")
             : name.startsWith("sprint987-schematic-metadata")
             ? QStringLiteral("Load authoritative schematic fields and a relative sheet path, inspect them through project.state, then query both identifiers through real Agent context; provider disabled")
             : name.startsWith("sprint980-project-retrieval")

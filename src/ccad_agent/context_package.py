@@ -517,6 +517,10 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
             "project_retrieval_stats": included_project_retrieval["stats"],
             "project_retrieval_kinds": project_retrieval_kinds,
             "project_retrieval_count": len(included_project_retrieval["entities"]),
+            "project_retrieval_block_net_count": sum(
+                entity.get("relationship") == "block_net_member"
+                for entity in included_project_retrieval["entities"]
+                if isinstance(entity, dict)),
             "project_retrieval_layer_ids": project_retrieval_layer_ids,
             "project_retrieval_layer_count": len(project_retrieval_layer_ids),
             "project_retrieval_chars": len(json.dumps(
