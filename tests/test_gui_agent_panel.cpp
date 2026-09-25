@@ -320,6 +320,23 @@ private slots:
     QTest::qWait(50);
   }
 
+  void testSemanticMemorySettingsUseOptInLocalBackend() {
+    AgentPanel panel;
+    AgentSettingsDialog settings(&panel);
+    auto* enabled = settings.findChild<QCheckBox*>("control:semanticMemoryEnabled");
+    auto* endpoint = settings.findChild<QLineEdit*>("control:semanticMemoryEndpoint");
+    auto* model = settings.findChild<QLineEdit*>("control:semanticMemoryModel");
+    auto* status = settings.findChild<QLabel*>("label:semanticMemoryState");
+    QVERIFY(enabled != nullptr);
+    QVERIFY(endpoint != nullptr);
+    QVERIFY(model != nullptr);
+    QVERIFY(status != nullptr);
+    QVERIFY(!enabled->isChecked());
+    QCOMPARE(endpoint->text(), QString("http://127.0.0.1:11434"));
+    QCOMPARE(model->text(), QString("embeddinggemma"));
+    QVERIFY(status->text().contains("lexical retrieval remains active"));
+  }
+
   void testMarketplaceInteractions() {
     AgentPanel panel;
     AgentMarketplaceDialog dialog(&panel, &panel);

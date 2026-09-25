@@ -3,6 +3,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLineEdit>
+#include <QScrollArea>
 #include <QTemporaryDir>
 #include <QTimer>
 
@@ -294,6 +295,36 @@ int main(int argc, char** argv) {
   AgentSettingsDialog settings(nullptr, &window);
   settings.show();
   QApplication::processEvents();
+  auto* personalisation_scroll = settings.findChild<QScrollArea*>("scroll:personalisation");
+  auto* personalisation_page = settings.findChild<QWidget*>("personalisationPage");
+  if (personalisation_scroll == nullptr || personalisation_page == nullptr ||
+      !personalisation_scroll->styleSheet().contains("#0d1117") ||
+      !personalisation_page->styleSheet().contains("#0d1117")) {
+    return 21;
+  }
+  auto* categories = settings.findChild<QListWidget*>("control:categoryList");
+  if (categories == nullptr || categories->count() <= 2) {
+    return 18;
+  }
+  categories->setCurrentRow(2);
+  QApplication::processEvents();
+  auto* semantic_endpoint = settings.findChild<QLineEdit*>("control:semanticMemoryEndpoint");
+  auto* semantic_model = settings.findChild<QLineEdit*>("control:semanticMemoryModel");
+  if (semantic_endpoint == nullptr || semantic_model == nullptr) {
+    return 19;
+  }
+  const QString typed_endpoint = window.runAgentUiQueryJson(
+      "ui.type_text",
+      "{\"id\":\"control:semanticMemoryEndpoint\",\"text\":\"http://127.0.0.1:11435\"}");
+  const QString typed_model = window.runAgentUiQueryJson(
+      "ui.type_text",
+      "{\"id\":\"control:semanticMemoryModel\",\"text\":\"embeddinggemma:latest\"}");
+  if (!typed_endpoint.contains("\"performed\":true") ||
+      !typed_model.contains("\"performed\":true") ||
+      semantic_endpoint->text() != "http://127.0.0.1:11435" ||
+      semantic_model->text() != "embeddinggemma:latest") {
+    return 20;
+  }
   auto* public_key = settings.findChild<QLineEdit*>("control:langfusePublicKeyInput");
   auto* secret_key = settings.findChild<QLineEdit*>("control:langfuseSecretKeyInput");
   if (public_key == nullptr || secret_key == nullptr) {

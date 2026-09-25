@@ -101,6 +101,12 @@ class ContextBroker:
             (tier, str(bool(manager.enabled[tier])), str(manager.identities[tier]))
             for tier in manager.TIERS]
         rows.append(("project", str(getattr(manager, "project_id", ""))))
+        semantic = getattr(manager, "semantic_state", lambda: {})()
+        rows.append(("semantic", str(bool(semantic.get("enabled"))),
+                     str(bool(semantic.get("ready"))),
+                     str(semantic.get("backend", "")),
+                     str(semantic.get("model", "")),
+                     str(semantic.get("model_version", ""))))
         for tier in manager.TIERS:
             if not manager.enabled[tier]:
                 continue
@@ -134,7 +140,8 @@ class ContextBroker:
                 "project_memory_count": (states["ltm"].get("project_entries")
                                          if getattr(manager, "project_id", "").strip()
                                          else None),
-                "semantic_retrieval_ready": False,
+                "semantic_retrieval_ready": bool(
+                    getattr(manager, "semantic_state", lambda: {})().get("ready", False)),
                 "contents_included": False}
 
     def _select(self, entries, provenance):

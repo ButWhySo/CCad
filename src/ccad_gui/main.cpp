@@ -1166,6 +1166,7 @@ int main(int argc, char** argv) {
       const bool provider_target_sequence = name.startsWith("sprint972-provider");
       const bool memory_target_sequence = name.startsWith("sprint967-memory") ||
                                           name.startsWith("sprint971-memory");
+      const bool semantic_memory_target_sequence = name.startsWith("sprint991-semantic-memory");
       const QStringList target_ids = provider_target_sequence
           ? QStringList{"action:settingsBtn", "control:categoryList",
                         "control:providerCombo", "control:modelCombo",
@@ -1182,6 +1183,10 @@ int main(int argc, char** argv) {
                         "control:memoryTitle", "control:memoryScope",
                         "control:memoryContent", "action:saveMemory",
                         "action:closeMemoryManager", "action:cancelSettingsButton"}
+          : semantic_memory_target_sequence
+          ? QStringList{"action:settingsBtn", "control:categoryList",
+                        "control:semanticMemoryEnabled", "control:semanticMemoryEndpoint",
+                        "control:semanticMemoryModel", "action:primaryButton"}
           : QStringList{"action:cursor", "action:measurement", "action:save",
                                       "menu:file", "panel:properties", "action:grid",
                                       "action:polar_coord", "action:unit_inch",
@@ -1197,7 +1202,8 @@ int main(int argc, char** argv) {
                                       "control:providerCombo", "control:modelCombo",
                                       "control:apiKeyInput", "control:mcpServersTable",
                                       "action:addMcpServerBtn", "action:removeMcpServerBtn"};
-      const QStringList trigger_before_capture_ids = memory_target_sequence || provider_target_sequence
+      const QStringList trigger_before_capture_ids = memory_target_sequence ||
+          semantic_memory_target_sequence || provider_target_sequence
           ? QStringList{"action:settingsBtn"}
           : QStringList{
           "action:grid",          "action:polar_coord",   "action:unit_inch",
@@ -1208,6 +1214,9 @@ int main(int argc, char** argv) {
                                                     "control:categoryList",
                                                     "control:stmCb", "control:ltmCb",
                                                     "control:episodicCb",
+                                                    "control:semanticMemoryEnabled",
+                                                    "control:semanticMemoryEndpoint",
+                                                    "control:semanticMemoryModel",
                                                     "action:agent_memory_reset",
                                                     "action:agent_memory_manage",
                                                     "action:addMemory", "action:saveMemory",
@@ -1216,6 +1225,7 @@ int main(int argc, char** argv) {
                                                     "control:memoryContent",
                                                     "action:closeMemoryManager",
                                                     "action:cancelSettingsButton",
+                                                    "action:primaryButton",
                                                     "action:testProviderBtn"};
       bool memory_target_actions_ok = true;
       QJsonObject initial_memory_toggle_state;
@@ -1229,6 +1239,7 @@ int main(int argc, char** argv) {
       };
       const auto runPass = [window, &entries, &output_dir, &name, &target_ids,
                             memory_target_sequence,
+                            semantic_memory_target_sequence,
                             provider_target_sequence,
                             &memory_target_actions_ok, &initial_memory_toggle_state,
                             &visibleMemoryCheckbox,
@@ -1252,6 +1263,10 @@ int main(int argc, char** argv) {
               id == "action:addMcpServerBtn" || id == "action:removeMcpServerBtn" ||
               id == "control:stmCb" || id == "control:ltmCb" ||
               id == "control:episodicCb" || id == "label:memoryState" ||
+              id == "control:semanticMemoryEnabled" ||
+              id == "control:semanticMemoryEndpoint" ||
+              id == "control:semanticMemoryModel" ||
+              id == "label:semanticMemoryState" ||
               id == "action:agent_memory_manage" ||
               id == "action:agent_memory_reset" ||
               (provider_target_sequence && id == "action:testProviderBtn")) {
@@ -1266,7 +1281,7 @@ int main(int argc, char** argv) {
                                                 (id == "control:apiKeyInput" ||
                                                  id == "action:testProviderBtn")
                                             ? 4
-                                            : (memory_control ? 2 : (id == "control:mcpServersTable" ||
+                                            : ((memory_control || semantic_memory_target_sequence) ? 2 : (id == "control:mcpServersTable" ||
                                          id == "action:addMcpServerBtn" ||
                                          id == "action:removeMcpServerBtn"
                                      ? 3
@@ -1355,7 +1370,9 @@ int main(int argc, char** argv) {
           const std::optional<int> x = extractJsonInt(target_json, "\"logical_x\":");
           const std::optional<int> y = extractJsonInt(target_json, "\"logical_y\":");
           QString screenshot_path;
-          if (found && x.has_value() && y.has_value()) {
+          if (found && x.has_value() && y.has_value() &&
+              (!semantic_memory_target_sequence || id == "action:settingsBtn" ||
+               id == "action:primaryButton" || id == "action:cancelSettingsButton")) {
             QCursor::setPos(*x, *y);
             QApplication::processEvents();
             QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
@@ -1376,6 +1393,10 @@ int main(int argc, char** argv) {
                 break;
               }
             }
+            if (semantic_memory_target_sequence && id == "action:settingsBtn") {
+              QWidget* active = QApplication::activeWindow();
+              if (active && active->isVisible()) capture_window = active;
+            }
             QPixmap screenshot = capture_window->grab();
             QPainter painter(&screenshot);
             painter.setRenderHint(QPainter::Antialiasing, true);
@@ -1388,7 +1409,13 @@ int main(int argc, char** argv) {
                              local_target.y() + 16);
             painter.end();
             screenshot.save(screenshot_path);
-          } else if (click_before_capture_ids.contains(id)) {
+          } else if ((click_before_capture_ids.contains(id) &&
+                      !(semantic_memory_target_sequence &&
+                        (id == "control:categoryList" ||
+                         id == "action:primaryButton" ||
+                         id == "control:semanticMemoryEndpoint" ||
+                         id == "control:semanticMemoryModel"))) ||
+                     (semantic_memory_target_sequence && id == "label:semanticMemoryState")) {
             QWidget* active = QApplication::activeWindow();
             if (active && active->isVisible()) {
               const std::filesystem::path path = output_dir /
@@ -1426,6 +1453,23 @@ int main(int argc, char** argv) {
                            .arg(jsonStringLocal(pass_name), jsonStringLocal(id), typing_result.trimmed(),
                                 jsonStringLocal(QString::fromStdString(typed_path.string())));
           }
+          if ((id == "control:semanticMemoryEndpoint" ||
+               id == "control:semanticMemoryModel") && found &&
+              semantic_memory_target_sequence && pass_name == "initial") {
+            const QString value = id == "control:semanticMemoryEndpoint"
+                ? "http://127.0.0.1:11434" : "embeddinggemma";
+            const QString typing = QString("{\"id\":%1,\"text\":%2}")
+                .arg(jsonStringLocal(id), jsonStringLocal(value));
+            const QString typing_result = window->runAgentUiQueryJson("ui.type_text", typing);
+            const QJsonDocument typing_doc = QJsonDocument::fromJson(typing_result.toUtf8());
+            const bool performed = typing_doc.isObject() &&
+                typing_doc.object().value("ok").toBool() &&
+                typing_doc.object().value("result").toObject().value("performed").toBool();
+            memory_target_actions_ok = memory_target_actions_ok && performed;
+            QApplication::processEvents();
+            entries << QString("{\"pass\":%1,\"id\":%2,\"interaction\":\"ui.type_text\",\"result\":%3}")
+                .arg(jsonStringLocal(pass_name), jsonStringLocal(id), typing_result.trimmed());
+          }
           entries << QString("{\"pass\":%1,\"id\":%2,\"found\":%3,\"target\":%4,"
                              "\"screenshot\":%5}")
                          .arg(jsonStringLocal(pass_name))
@@ -1442,7 +1486,7 @@ int main(int argc, char** argv) {
       // window->resize(1120, 720); // Removed because fullscreen resize crashes Qt on Windows
       QApplication::processEvents();
       QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
-      runPass("resized");
+      if (!semantic_memory_target_sequence) runPass("resized");
       if (memory_target_sequence) {
         const QString reopen_result = window->runAgentUiQueryJson(
             "ui.click", "{\"id\":\"action:settingsBtn\"}");
@@ -1519,6 +1563,70 @@ int main(int argc, char** argv) {
         entries << QString("{\"memory_actions_ok\":%1}")
                        .arg(memory_target_actions_ok ? "true" : "false");
       }
+      if (semantic_memory_target_sequence) {
+        const QString reopen_result = window->runAgentUiQueryJson(
+            "ui.click", "{\"id\":\"action:settingsBtn\"}");
+        QApplication::processEvents();
+        QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
+        QApplication::processEvents();
+        auto recordPerformed = [&entries, &memory_target_actions_ok](
+                                   const QString& name, const QString& result) {
+          const QJsonDocument document = QJsonDocument::fromJson(result.toUtf8());
+          const bool performed = document.isObject() &&
+              document.object().value("ok").toBool() &&
+              document.object().value("result").toObject().value("performed").toBool();
+          memory_target_actions_ok = memory_target_actions_ok && performed;
+          entries << QString("{\"interaction\":%1,\"result\":%2}")
+              .arg(jsonStringLocal(name), result.trimmed());
+          return performed;
+        };
+        recordPerformed("ui.click:action:settingsBtn", reopen_result);
+        const QString category_result = window->runAgentUiQueryJson(
+            "ui.click", "{\"id\":\"control:categoryList\",\"row\":2}");
+        QApplication::processEvents();
+        QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
+        QApplication::processEvents();
+        recordPerformed("ui.click:control:categoryList:row2", category_result);
+        QString status_target;
+        for (int attempt = 0; attempt < 30; ++attempt) {
+          status_target = window->uiTargetJsonById("label:semanticMemoryState");
+          if (status_target.contains("service_unavailable") ||
+              status_target.contains("model_not_installed") ||
+              status_target.contains("\"label\":\"Semantic retrieval: ready"))
+            break;
+          QThread::msleep(100);
+          QApplication::processEvents();
+        }
+        const bool status_found = status_target.contains("\"found\":true") &&
+            (status_target.contains("service_unavailable") ||
+             status_target.contains("model_not_installed") ||
+             status_target.contains("\"label\":\"Semantic retrieval: ready"));
+        memory_target_actions_ok = memory_target_actions_ok && status_found;
+        QString status_screenshot;
+        for (QWidget* top_level : QApplication::topLevelWidgets()) {
+          if (top_level != window && top_level->isVisible()) {
+            const auto status_path = output_dir /
+                (name + "-runtime-status.png").toStdString();
+            status_screenshot = QString::fromStdString(status_path.string());
+            top_level->grab().save(status_screenshot);
+            break;
+          }
+        }
+        entries << QString("{\"semantic_runtime_status_found\":%1,\"target\":%2,\"screenshot\":%3}")
+            .arg(status_found ? "true" : "false", status_target,
+                 jsonStringLocal(status_screenshot));
+        const QString close_result = window->runAgentUiQueryJson(
+            "ui.click", "{\"id\":\"action:cancelSettingsButton\"}");
+        QApplication::processEvents();
+        QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
+        QApplication::processEvents();
+        recordPerformed("ui.click:action:cancelSettingsButton", close_result);
+        const auto final_path = output_dir /
+            (name + "-final.png").toStdString();
+        window->grab().save(QString::fromStdString(final_path.string()));
+        entries << QString("{\"final_screenshot\":%1}")
+            .arg(jsonStringLocal(QString::fromStdString(final_path.string())));
+      }
 
       const std::filesystem::path output_path =
           output_dir / (name + "-target-sequence.json").toStdString();
@@ -1535,7 +1643,8 @@ int main(int argc, char** argv) {
               .arg(entries.join(','));
       const QByteArray bytes = report.toUtf8();
       output.write(bytes.constData(), bytes.size());
-      if (!output || ((memory_target_sequence || provider_target_sequence) &&
+      if (!output || ((memory_target_sequence || provider_target_sequence ||
+                       semantic_memory_target_sequence) &&
                       !memory_target_actions_ok)) {
         std::cerr << "GUI-map target sequence failed; report: " << output_path.string() << '\n';
         std::cerr.flush();

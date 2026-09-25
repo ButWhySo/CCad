@@ -32,6 +32,8 @@ class OrchestratorMethodCatalogTests(unittest.TestCase):
         toggle = self.by_name["agent.memory_set_enabled"]
         reset = self.by_name["agent.memory_reset"]
         self.assertEqual(state["params"]["tier"]["type"], "string")
+        self.assertIn("semantic", state["response"]["tier_fields"])
+        self.assertIn("model_version", state["response"]["semantic_fields"])
         self.assertEqual(toggle["params"]["enabled"]["type"], "boolean")
         self.assertEqual(toggle["read_only"], False)
         self.assertFalse(toggle["approval_required"])

@@ -1,0 +1,21 @@
+{
+  "feature": "Edit persisted local semantic-memory endpoint/model, save the opt-in setting, and verify live runtime readiness in Personalisation > Memory.",
+  "target_sequence": "sprint991-semantic-memory-final2",
+  "project": "artifacts/demos/sprint160-placement-crash-ci-final.ccad.json",
+  "minimum_mapped_interactions": 7,
+  "required_targets": [
+    "action:settingsBtn",
+    "control:categoryList",
+    "control:semanticMemoryEnabled",
+    "control:semanticMemoryEndpoint",
+    "control:semanticMemoryModel",
+    "action:primaryButton",
+    "label:semanticMemoryState",
+    "action:cancelSettingsButton"
+  ],
+  "required_text_entries": [
+    "control:semanticMemoryEndpoint",
+    "control:semanticMemoryModel"
+  ],
+  "meaningful_screenshots": 4
+}

@@ -288,6 +288,8 @@ if(Python3_Interpreter_FOUND)
   endif()
   add_test(NAME agent_memory_manager
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_memory_manager.py")
+  add_test(NAME agent_semantic_retrieval
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_semantic_retrieval.py")
   add_test(NAME agent_lexical_retrieval
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_lexical_retrieval.py")
   add_test(NAME agent_memory_task_scopes

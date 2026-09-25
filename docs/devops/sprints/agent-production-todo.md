@@ -2,7 +2,26 @@
 
 Check a box only after implementation and its required evidence exist.
 
-### Sprint 990 completed slice — fielded memory ranking and bounded diversity (Tier 1, M4)
+### Sprint 991 active slice â€” opt-in local semantic memory retrieval (Tier 1, M4)
+
+References checked before implementation: [Ollama embedding guide](https://docs.ollama.com/capabilities/embeddings), [Ollama `/api/embed`](https://docs.ollama.com/api/embed), and [LangChain embeddings overview](https://docs.langchain.com/oss/python/integrations/embeddings). Embeddings use one pinned model identity for query and documents; semantic results augment fielded lexical retrieval rather than replacing exact-term matching. Endpoint is loopback-only and never triggers model installation.
+
+- [x] Add bounded, opt-in local embedding backend with exact installed-model readiness/version checks, strict vector validation, and safe categorized errors.
+- [x] Fuse semantic candidate rankings with existing title/content/tag lexical rankings and apply cosine-aware bounded MMR; retain lexical-only fallback on every embedding failure.
+- [x] Bound and invalidate process-only embedding caches on model, namespace, memory content, tier disable, clear, and compaction changes.
+- [x] Persist semantic enable/endpoint/model settings; show truthful runtime status in Personalisation â†’ Memory.
+- [x] Add protocol, loopback safety, semantic paraphrase, cache invalidation, failure fallback, GUI contract, and CTest coverage.
+- [x] Run focused language-server/contracts; then Qt MinGW Release build and full CTest gate (115/115). clangd was run on changed Qt translation units; its optional ExtractFunction actions emitted internal break/continue messages, with no compiler diagnostic or build failure.
+- [x] Verify settings through the official isolated-profile GUI-map harness; inspect four distinct screenshots and stdout/stderr. Seven mapped interactions succeeded, two typed fields changed, unavailable Ollama state displayed truthfully, and explicit dark-theme checkbox/group-box styling passed targeted GUI CTest plus a fresh GUI capture.
+- [x] Keep semantic endpoint/model fields reachable through the live UI map, and preserve readable dark styling and scroll visibility in Personalisation.
+- [x] Add a local evidence runner, manifest/artifact hash validator, commit-msg hook, and hosted CI evidence check; a passing manifest does not replace screenshot review.
+- [x] Update codebase/features/progress/TODO in this change set.
+- [x] Run redacted repository/staged secret scan; the only repository match is a pre-existing synthetic fixture in untouched `scripts/test_memory_store.py`, with zero staged matches.
+- [ ] Finish diff review, commit and push this branch; merge to `main` only after the actual CI check is green, then verify SHA and remove only this completed branch.
+
+Scope boundary: local Ollama semantic retrieval is optional and remains off unless enabled. A missing service/model or bad response leaves lexical retrieval available. This does not complete conversation-history semantic retrieval or project-entity embeddings.
+
+### Sprint 990 completed slice â€” fielded memory ranking and bounded diversity (Tier 1, M4)
 
 - [x] Index enabled project/conversation/user memory titles, content, and tags through separate lexical fields after existing scope and expiry gates.
 - [x] Fuse field rankings deterministically with weighted reciprocal-rank fusion while retaining the minimum lexical-match floor.
@@ -15,7 +34,7 @@ Check a box only after implementation and its required evidence exist.
 
 Scope boundary: this adds lexical field fusion and diversity only. Embeddings, importance/recency/usage adjustments, preference/correction weighting, and provider-tokenizer budgeting remain open. It does not make paraphrase retrieval semantic.
 
-### Sprint 989 active slice — bounded BM25 memory/history retrieval (Tier 1, M4-A)
+### Sprint 989 active slice â€” bounded BM25 memory/history retrieval (Tier 1, M4-A)
 
 - [x] Replace simple memory and TurnRecord overlap ordering with deterministic BM25 ranking and matched-term/score provenance.
 - [x] Search compact prior-thread recaps only after an exact native-project scope filter; expand a bounded set into source-linked TurnRecords.
@@ -26,7 +45,7 @@ Scope boundary: this adds lexical field fusion and diversity only. Embeddings, i
 
 Scope boundary: this slice implemented BM25 lexical retrieval only. Sprint 990 adds fielded RRF/MMR for memory records; embeddings, preference/correction weighting, and provider-tokenizer budgeting remain open. Do not mark full M4 complete.
 
-### Sprint 988 completed slice — project-scoped durable memory (Tier 1, C2)
+### Sprint 988 completed slice â€” project-scoped durable memory (Tier 1, C2)
 
 - [x] Store project LTM in a stable, opaque namespace derived from the native project ID; keep conversation LTM and global episodic records isolated.
 - [x] Automatically retrieve matching project records across threads for that same project; reload on project switch and fail closed when project identity is absent.
@@ -39,7 +58,7 @@ Scope boundary: this slice implemented BM25 lexical retrieval only. Sprint 990 a
 
 References checked: [LangGraph long-term memory](https://docs.langchain.com/oss/python/langgraph/add-memory) recommends durable cross-session storage in scoped namespaces; CCad retains its local JSON store and uses the native project ID as the scope identity. Project data must never be inferred from a display name or shared across projects. Semantic ranking, preference/correction evidence, embedding retrieval, and provider-tokenizer budgeting remain separate open work.
 
-### Sprint 987 completed slice — schematic fields and safe sheet identity (Tier 1, C3)
+### Sprint 987 completed slice â€” schematic fields and safe sheet identity (Tier 1, C3)
 
 - [x] Index typed symbol field names/text/visibility and sheet title plus relative path.
 - [x] Preserve bounded properties and relative sheet paths through context packaging; reject sensitive keys and absolute paths.
@@ -51,7 +70,7 @@ References checked: [LangGraph long-term memory](https://docs.langchain.com/oss/
 
 Scope boundary: rule IDs, project artifact identities, notes, generated functional-block summaries, and annotations remain open because the typed model does not currently provide complete authoritative records for them.
 
-### Sprint 986 completed slice — typed-project spatial retrieval (Tier 1, C3)
+### Sprint 986 completed slice â€” typed-project spatial retrieval (Tier 1, C3)
 
 - [x] Add explicit bounded bounding-box retrieval over indexed entity AABBs; preserve deterministic ordering and incremental stale-geometry removal.
 - [x] Retrieve live DRC/ERC records through explicit affected-object links when their target objects intersect the requested region; exclude unrelated distant diagnostics.
@@ -65,7 +84,7 @@ Scope boundary: rule IDs, project artifact identities, notes, generated function
 
 Scope boundary: full C3 remains open for model identities/relationships CCad does not serialize, functional-block semantics, transaction-delta-driven index maintenance, and additional representative retrieval-quality/performance gates. Benchmark timings are local measurements, not performance guarantees.
 
-### Sprint 985 completed slice — typed project relationships and live diagnostics (Tier 1, C3)
+### Sprint 985 completed slice â€” typed project relationships and live diagnostics (Tier 1, C3)
 
 - [x] Include bounded authoritative DRC/ERC diagnostics with engine, code, severity, and object identity in live `project.context`.
 - [x] Index explicit group membership, route endpoints, teardrop anchors, diagnostic targets, and actual schematic-page hierarchy; never infer missing model relationships.
@@ -77,7 +96,7 @@ Scope boundary: full C3 remains open for model identities/relationships CCad doe
 
 Scope boundary: this slice closes explicit-link and diagnostic retrieval coverage only; broader all-entity graph/layer coverage, benchmark coverage, and C3 completion remain open.
 
-### Sprint 984 active slice — exact native PCB-net retrieval (Tier 1, C3)
+### Sprint 984 active slice â€” exact native PCB-net retrieval (Tier 1, C3)
 
 - [x] Derive bounded board-net index nodes from net IDs present on native typed board objects; preserve net ID and member relationships without claiming physical continuity.
 - [x] Ensure a full colon-delimited schematic-pin identity wins over its embedded net-name token, including when natural-language text precedes the identity.
@@ -88,7 +107,7 @@ Scope boundary: this slice closes explicit-link and diagnostic retrieval coverag
 - [x] Update handover/features/progress and this checklist; the production TODO is the canonical backlog, so no duplicate backlog file was created. Run the staged secret scan.
 - [x] Commit the verified slice as `06a6c3d`, fast-forward and push `main`, verify GitHub SHA `06a6c3debb4495e7db6ce1ca55196c17bf3d5abf`, and remove the completed sprint branch.
 
-### Sprint 983 active slice — production-shaped project-index coverage (Tier 1, C3)
+### Sprint 983 active slice â€” production-shaped project-index coverage (Tier 1, C3)
 
 References checked: [KiCad board file format](https://dev-docs.kicad.org/en/file-formats/sexpr-pcb/) models layers, setup, footprints, graphics, images, tracks, and zones as typed board sections; [KiCad PCB Editor](https://docs.kicad.org/10.0/en/pcbnew/pcbnew.html) describes pads, tracks, vias, and zones as distinct physical/net objects. CCad retains its own serialized model; this slice indexes the actual CCad JSON fields and does not infer rule IDs or layer membership absent from the kernel model.
 
@@ -101,7 +120,7 @@ References checked: [KiCad board file format](https://dev-docs.kicad.org/en/file
 - [x] Update handover/features/progress/backlog and this checklist; staged secret scan has zero findings. The tracked-repository scan found one expected synthetic GitHub-token fixture in the redaction test only.
 - [x] Commit the verified slice, fast-forward/push `main`, verify remote SHA, and remove the completed sprint branch.
 
-### Sprint 982 active slice — multilayer typed-project context (Tier 1, C3)
+### Sprint 982 active slice â€” multilayer typed-project context (Tier 1, C3)
 
 References checked: [KiCad PCB Editor via and layer-stack behavior](https://docs.kicad.org/10.0/en/pcbnew/pcbnew.html) defines through vias as spanning front-to-back copper, while blind, buried, and microvias use their declared endpoints; [KiCad legacy board-format reference](https://dev-docs.kicad.org/en/file-formats/legacy-pcb/) records explicit via start/end layer semantics. This slice applies the board's outer copper layers to newly placed through vias and indexes every declared layer membership without claiming complete entity-graph coverage.
 
@@ -113,7 +132,7 @@ References checked: [KiCad PCB Editor via and layer-stack behavior](https://docs
 - [x] Update handover, features, progress, backlog and this checklist; record wider project-graph/layer coverage as open.
 - [x] Scan and publish only verified files to GitHub `main`; remove the completed local sprint branch.
 
-### Sprint 981 active slice — schematic net-member retrieval (Tier 1, C3)
+### Sprint 981 active slice â€” schematic net-member retrieval (Tier 1, C3)
 
 - [x] Expand each bounded `schematic_net.members` entry into an independently retrievable pin identity linked to its source net and symbol/component.
 - [x] Retrieve sibling net members and schematic symbols through explicit logical membership; keep board-pad/track associations separately labeled and never infer geometric continuity.
@@ -122,7 +141,7 @@ References checked: [KiCad PCB Editor via and layer-stack behavior](https://docs
 - [x] Pass focused project-index/context contracts (13/13), Pyright 1.1.414 (0 diagnostics), clangd 19.1.7 with the Qt/MinGW compile database (no source diagnostics; optional `agent_panel.cpp` ExtractFunction action probe has known analyzer-internal errors), Qt Release build, full CTest (113/113), and a provider-disabled seven-action GUI-map scenario with all four generated screenshots plus logs inspected.
 - [x] Update handover/feature/progress docs; staged added-line secret scan is clean (tracked repository scan found only 3 pre-existing synthetic/test-context patterns).
 
-### Sprint 980 active slice — deterministic typed-project retrieval (Context Runtime C3)
+### Sprint 980 active slice â€” deterministic typed-project retrieval (Context Runtime C3)
 
 Research: [KiCad PCB Editor](https://docs.kicad.org/7.0/en/pcbnew/pcbnew.html) separates layers, objects, and nets as distinct board views; [KiCad board file format](https://dev-docs.kicad.org/en/file-formats/sexpr-pcb/) identifies tracks, vias, zones, footprints, pads, and layers as structured board entities. CCad retrieval follows its native typed snapshot and deliberately labels net association separately from physical copper continuity.
 
@@ -131,7 +150,7 @@ Research: [KiCad PCB Editor](https://docs.kicad.org/7.0/en/pcbnew/pcbnew.html) s
 - [x] Run focused context contracts, changed-module Pyright, Qt MinGW Release build, full CTest (113/113), and scoped GUI-map validation (seven actions, 10 project matches, four inspected screenshots, provider disabled, stdout/stderr reviewed).
 - [x] Update architecture/features/progress and this checklist; staged secret scan passed; commit `4d87b23` merged and pushed to GitHub `main`; delete the completed local sprint branch (no remote sprint branch required cleanup).
 
-### Sprint 979 active slice — Pyright analysis and protocol boundary
+### Sprint 979 active slice â€” Pyright analysis and protocol boundary
 
 References checked: [Pyright configuration: `maxCodeComplexity`](https://github.com/microsoft/pyright/blob/main/docs/configuration.md) exposes the analyzer's complexity guard, and [Pyright issue 3138](https://github.com/microsoft/pyright/issues/3138) explains why oversized control-flow scopes stop analysis. This slice decomposes runtime code; it does not suppress the diagnostic or raise the limit.
 
@@ -142,7 +161,7 @@ References checked: [Pyright configuration: `maxCodeComplexity`](https://github.
 - [x] Pass Qt MinGW Release build and full CTest (112/112); targeted live GUI-map scenario completed seven mapped actions with provider disabled, and all four distinct retained screenshots plus stdout/stderr were inspected.
 - [x] Update codebase map, feature inventory, progress, backlog; scan staged changes and publish verified changes to GitHub `main`.
 
-### Sprint 978 active slice — one Langfuse root per Agent turn
+### Sprint 978 active slice â€” one Langfuse root per Agent turn
 
 References Checked: [Langfuse SDK instrumentation](https://langfuse.com/docs/observability/sdk/instrumentation) documents active-context nesting; [Langfuse sessions](https://langfuse.com/docs/observability/features/sessions) documents propagating one stable conversation session ID to child observations. `context_broker.py` and the orchestrator confirm the recap was packaged but not supplied to automatic-memory deduplication.
 
@@ -154,7 +173,7 @@ References Checked: [Langfuse SDK instrumentation](https://langfuse.com/docs/obs
 - [x] Resolve Pyright's `orchestrator.py` complexity cutoff; telemetry, ContextBroker, and new regression contracts are clean under Pyright 1.1.414 (Sprint 979).
 - [ ] Follow-on: semantic memory relevance, provider-tokenizer budgeting, and preference/correction-aware ranking.
 
-### Sprint 977 active slice — deterministic context and memory retrieval
+### Sprint 977 active slice â€” deterministic context and memory retrieval
 
 - [x] Extract bounded, secret-redacted task/editor/selection/entity/history signals without an LLM call.
 - [x] Assemble a versioned per-thread TurnContext with deterministic, scope-filtered memory retrieval, provenance, and cache invalidation.
@@ -253,9 +272,9 @@ Durable semantic memory-record compaction remains a separate open item; this sli
 
 References checked: LangGraph's official [short-term memory guide](https://langchain-ai.github.io/langgraph/how-tos/cross-thread-persistence-functional/) documents summarizing earlier history, message deletion through `RemoveMessage` with an `add_messages` reducer, and the need to preserve valid provider tool-call/result sequences. The installed LangGraph 0.2.62 implementation was also inspected because its pinned API does not export `REMOVE_ALL_MESSAGES`; CCad therefore removes existing message IDs individually and verifies the resulting checkpoint.
 
-### Sprint 969 active slice — local large-context explanation
+### Sprint 969 active slice â€” local large-context explanation
 
-### Sprint 969 active slice — local large-context explanation
+### Sprint 969 active slice â€” local large-context explanation
 
 - [x] Add `/context [draft]` as an explicit local preview using real project context, enabled-memory retrieval, current conversation, system instructions, and bound tool schemas.
 - [x] Reuse the provider request budget/accounting path; show only counts, estimates, memory lifecycle/ranking, and model-limit availability.
@@ -279,7 +298,7 @@ References checked: LangGraph's official [short-term memory guide](https://langc
 - [x] Qt Release build and full CTest gate (92/92).
 - [x] Bounded real-provider catalog tool call and broker result.
 
-### Sprint 966 active slice — provider failures and live Langfuse export
+### Sprint 966 active slice â€” provider failures and live Langfuse export
 
 - [x] Preserve quota/rate-limit/connection categories through wrapped SDK errors.
 - [x] Show actionable, secret-safe provider failure guidance in chat.
@@ -291,7 +310,7 @@ References checked: LangGraph's official [short-term memory guide](https://langc
 - [x] Run full CTest (93/93), app-owned GUI-map live turn and Settings checks; inspect every screenshot and captured stdout/stderr (empty).
 - [x] Allow the official launcher to target an alternate built executable when the user's active GUI holds `ccad_gui.exe` open.
 
-### Sprint 967 active slice â€” full provider-request and memory accounting
+### Sprint 967 active slice Ã¢â‚¬â€ full provider-request and memory accounting
 
 - [x] Measure the live system prompt, context package, conversation messages, and bound tool schemas without exporting their contents.
 - [x] Mark context source channels truthfully; conversation history is sent separately from the project/memory envelope.
@@ -306,7 +325,7 @@ References checked: LangGraph's official [short-term memory guide](https://langc
 - [x] Validate memory Settings/Manage Memories through the live GUI map; inspect all 26 screenshots and captured stdout/stderr. Large-context chat rendering remains a separate unchecked provider-backed item above.
 - [x] Run redacted repository/staged secret scans; commit and push only verified files.
 
-### Sprint 968 active slice â€” task-scoped STM and memory duplicate safety
+### Sprint 968 active slice Ã¢â‚¬â€ task-scoped STM and memory duplicate safety
 
 - [x] Give STM a distinct task UUID, held only during explicit `/task start` to `/task end` scope; isolate sessions and reject non-retained STM writes.
 - [x] Bound active task/session scopes and STM records; clear ended, replaced, and evicted scopes.
@@ -415,7 +434,7 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 - [ ] Render no preview for unsupported actions; report the exact unavailable/staging reason without fabricated geometry.
 - [x] Fix live Agent Settings opening and modeless dialog discovery through the UI map.
 - [x] Make quick DRC execute authoritative DRC or remove the chip; do not merely insert `/drc`.
-- [x] Map `/drc` to authoritative `project.drc`, return its diagnostics, and never leave a chat turn at “Running DRC checks…”.
+- [x] Map `/drc` to authoritative `project.drc`, return its diagnostics, and never leave a chat turn at â€œRunning DRC checksâ€¦â€.
 - [x] Preserve 429/quota/rate-limit categories from provider SDK exceptions; never relabel them `provider_unavailable`.
 - [x] Remove the stale Gemini adapter notice that says no provider was contacted after a configured provider has initialized or completed a real call.
 - [ ] Bind one immutable proposal/call ID to one approval and one execution; reject duplicate/replayed approval results.
@@ -495,7 +514,7 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 - [x] Flush Langfuse on explicit test, application shutdown, and bounded process termination.
 - [ ] Prove one opt-in real Langfuse trace contains the expected hierarchy and no secrets.
 
-## Audit intake — 2026-09-22
+## Audit intake â€” 2026-09-22
 
 - [ ] Re-run CI on the current branch head and record the exact workflow SHA/results.
 - [ ] Eliminate Linux `-Werror` unused-function regressions in Agent Settings.
@@ -537,7 +556,7 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 - [ ] Fetch and inspect an opt-in trace from Langfuse, including hierarchy, observations, tokens/costs, tool spans, approval path, and redaction.
 - [ ] Group future changes into cohesive user-visible slices: implementation, tests, docs, TODO, and verification evidence in one commit.
 
-## Atomic implementation breakdown — SPA parity and native Qt adaptation
+## Atomic implementation breakdown â€” SPA parity and native Qt adaptation
 
 This section decomposes the existing production TODO into bounded implementation slices for GPT-5.6 Luna.
 
@@ -565,7 +584,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Keep internal telemetry/run/session/provider state in models/runtime state instead of hidden QLabel/QWidget containers.
 - [ ] Keep developer diagnostics accessible through an explicit developer/debug surface rather than normal user UI.
 - [ ] Remove legacy run-queue presentation when no actual runtime event stream backs it.
-- [ ] Remove static/fabricated plan steps such as generic “Read context / Collect evidence / Apply changes”.
+- [ ] Remove static/fabricated plan steps such as generic â€œRead context / Collect evidence / Apply changesâ€.
 - [ ] Render runtime activity only from actual orchestration/tool events.
 - [ ] Ensure no widget is retained solely because an old UI test expects it; update tests to match the product contract instead.
 - [ ] Give the Agent dock a stable minimum width that does not crush the Layers/Objects panel.
@@ -598,7 +617,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Implement pinned/unpinned session state.
 - [ ] Implement rename session.
 - [ ] Implement delete session with confirmation and clear storage semantics.
-- [ ] Implement “Show all” or equivalent full history browser if history exceeds the compact sidebar.
+- [ ] Implement â€œShow allâ€ or equivalent full history browser if history exceeds the compact sidebar.
 - [ ] Show actual last-used timestamps rather than hardcoded example dates.
 - [ ] Show actual project association where available.
 
@@ -627,7 +646,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Use side-by-side right docks only when the main window has enough horizontal space.
 - [ ] Automatically tabify Layers/Objects and Agent at constrained widths instead of squeezing either panel into a sliver.
 - [ ] Choose a tested responsive threshold based on Qt logical pixels rather than one unverified hardcoded physical-screen assumption.
-- [ ] Preserve the user’s manually rearranged dock topology after startup.
+- [ ] Preserve the userâ€™s manually rearranged dock topology after startup.
 - [ ] Do not repeatedly call `resizeDocks()` in ways that overwrite user-adjusted dock sizes.
 - [ ] Persist/restore dock topology with the native Qt main-window state mechanism.
 - [ ] Expose `Layers`, `Objects`, and `Nets` child tabs as stable UI-map targets.
@@ -667,7 +686,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Add proper Undo/Revert icon.
 - [ ] Add proper Locate/Focus icon for visual review.
 - [ ] Add proper annotation/comment/highlight/rectangle/measure icons.
-- [ ] Remove icon comments containing “stand-in”.
+- [ ] Remove icon comments containing â€œstand-inâ€.
 - [ ] Remove Unicode glyphs used as permanent production icons where a native icon should exist.
 - [ ] Use theme-aware icon colours/states for enabled, disabled, hover, pressed, and selected states.
 - [ ] Verify every Agent icon at normal and high-DPI scaling.
@@ -684,7 +703,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Define typed evidence item.
 - [ ] Render raw tool names/arguments only in an explicit expandable developer/details view.
 - [ ] Render user-facing activity summaries from actual tool/orchestration events.
-- [ ] Never synthesize “Ran DRC”, “Updated board”, “Applied route”, or similar activity unless authoritative backend evidence exists.
+- [ ] Never synthesize â€œRan DRCâ€, â€œUpdated boardâ€, â€œApplied routeâ€, or similar activity unless authoritative backend evidence exists.
 - [ ] Keep streaming assistant text distinct from tool activity.
 - [ ] Correlate tool call, tool result, proposal, approval, transaction, and verification by stable IDs.
 - [ ] Ensure failed tool calls remain visually failures and cannot be converted into completion language.
@@ -789,7 +808,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Make every Settings control correspond to one canonical config/runtime field.
 - [ ] Read back persisted config after save and verify the round trip before reflecting success.
 
-## Settings — General
+## Settings â€” General
 
 - [ ] Keep theme control bound to actual theme state.
 - [ ] Keep grid spacing control bound to actual editor grid state.
@@ -804,7 +823,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Add confirmation-before-persistent-change setting bound to approval policy.
 - [ ] Do not add settings that merely alter labels while backend behavior remains unchanged.
 
-## Settings — resolved Configuration
+## Settings â€” resolved Configuration
 
 - [ ] Rename any misleading `config.toml` preview to `Resolved configuration` while JSON remains the persisted format.
 - [ ] Generate the preview from the effective canonical configuration rather than reconstructing it independently in Qt.
@@ -825,7 +844,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Add Copy action.
 - [ ] Keep preview read-only unless an explicitly validated advanced raw-config editor is later implemented.
 
-## Settings — Personalisation
+## Settings â€” Personalisation
 
 ### Personality and custom instructions
 
@@ -951,7 +970,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 
 - [ ] Keep OpenTelemetry as the instrumentation/transport layer underneath Langfuse where required.
 - [ ] Keep generic OTel endpoint/header configuration out of normal Settings while Langfuse is the selected product.
-- [ ] Do not show a second competing “OTel tracing” plugin in Marketplace if tracing is already an integrated Langfuse capability.
+- [ ] Do not show a second competing â€œOTel tracingâ€ plugin in Marketplace if tracing is already an integrated Langfuse capability.
 - [ ] Centralize trace attribute redaction before export.
 - [ ] Redact API keys.
 - [ ] Redact authorization headers.
@@ -993,7 +1012,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 
 ### Catalogue model
 
-- [ ] Remove “Live” from Marketplace title until catalogue contents are genuinely dynamically discovered.
+- [ ] Remove â€œLiveâ€ from Marketplace title until catalogue contents are genuinely dynamically discovered.
 - [ ] Define one typed Marketplace item schema.
 - [ ] Add item ID.
 - [ ] Add item type.
@@ -1044,7 +1063,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Prevent callbacks from targeting a destroyed dialog.
 - [ ] Verify installed/enabled state survives restart.
 - [ ] Verify removing an item removes its actual runtime capability.
-- [ ] Never report “activated and hooked into context” unless runtime evidence verifies it.
+- [ ] Never report â€œactivated and hooked into contextâ€ unless runtime evidence verifies it.
 
 ## Workflows and hooks
 
@@ -1107,33 +1126,33 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 
 ### Slash command definitions
 
-- [ ] `/commands` — show the canonical available command catalogue with syntax, description, and availability.
-- [ ] `/help [command]` — display help from the same canonical registry; do not maintain a second hardcoded help list.
-- [ ] `/set <provider>:<model>` — change the active provider and model using the same canonical state as Settings and the composer model selector.
-- [ ] `/cc` — compact older conversation/context while retaining recent turns, pinned constraints, useful summaries, tool state, and revision identity.
-- [ ] `/compact` — alias for `/cc`.
-- [ ] `/memory list [scope:<scope>]` — list stored memory records in the requested enabled/persistent scope.
-- [ ] `/memory add ...` — add a memory through the canonical typed memory manager with scope, redaction, ranking metadata, and persistence.
-- [ ] `/memory update <id> ...` — update one persistent memory record through the canonical memory manager.
-- [ ] `/memory delete <id>` — delete one explicit memory record.
-- [ ] `/memory clear <scope|all>` — destructively clear the explicit scope only after confirmation where appropriate; this is different from toggling a memory tier off.
-- [ ] `/workflow use: <name>` — activate an installed validated workflow.
-- [ ] `/workflow chaining phase: <phase>` — configure the supported chaining phase only after the runtime consumes the value; otherwise remove this command.
-- [ ] `/workflow chaining state: <true|false>` — enable/disable supported workflow chaining using the canonical workflow runtime.
-- [ ] `/hooks` — list actual configured hooks and their enable state.
-- [ ] `/hooks add ...` — add a typed hook only if command-based hook editing is intentionally supported.
-- [ ] `/hooks remove <id>` — remove a real configured hook.
-- [ ] `/schedule ...` — create/manage persisted scheduled Agent jobs only after a real scheduler exists; otherwise hide the command.
-- [ ] `/marketplace` — open the native Marketplace window.
-- [ ] `/marketplace install <id>` — install a real installable Marketplace item through the same canonical installation backend as the GUI.
-- [ ] `/drc` — run authoritative read-only `project.drc`, return actual diagnostics, and require no mutation approval.
-- [ ] `/route` — enter/request routing through currently supported typed routing tools; wording must not imply full autorouting until the autorouter exists.
-- [ ] `/place` — enter/request placement through typed placement tools and normal mutation approval.
-- [ ] `/design` — open/use the real component-design path; generation failure must remain a failure and must never fabricate VCC/GND/IN/OUT pins.
-- [ ] `/explain` — explain the current design/selection from actual assembled context without mutating the project.
-- [ ] `/clear` — clear current thread/chat runtime consistently while preserving persistent memories unless explicitly deleted.
-- [ ] `/settings` — invoke the real native Settings action.
-- [ ] `/revise` — revise the current pending proposal with structured feedback in the same Agent thread and approval lifecycle.
+- [ ] `/commands` â€” show the canonical available command catalogue with syntax, description, and availability.
+- [ ] `/help [command]` â€” display help from the same canonical registry; do not maintain a second hardcoded help list.
+- [ ] `/set <provider>:<model>` â€” change the active provider and model using the same canonical state as Settings and the composer model selector.
+- [ ] `/cc` â€” compact older conversation/context while retaining recent turns, pinned constraints, useful summaries, tool state, and revision identity.
+- [ ] `/compact` â€” alias for `/cc`.
+- [ ] `/memory list [scope:<scope>]` â€” list stored memory records in the requested enabled/persistent scope.
+- [ ] `/memory add ...` â€” add a memory through the canonical typed memory manager with scope, redaction, ranking metadata, and persistence.
+- [ ] `/memory update <id> ...` â€” update one persistent memory record through the canonical memory manager.
+- [ ] `/memory delete <id>` â€” delete one explicit memory record.
+- [ ] `/memory clear <scope|all>` â€” destructively clear the explicit scope only after confirmation where appropriate; this is different from toggling a memory tier off.
+- [ ] `/workflow use: <name>` â€” activate an installed validated workflow.
+- [ ] `/workflow chaining phase: <phase>` â€” configure the supported chaining phase only after the runtime consumes the value; otherwise remove this command.
+- [ ] `/workflow chaining state: <true|false>` â€” enable/disable supported workflow chaining using the canonical workflow runtime.
+- [ ] `/hooks` â€” list actual configured hooks and their enable state.
+- [ ] `/hooks add ...` â€” add a typed hook only if command-based hook editing is intentionally supported.
+- [ ] `/hooks remove <id>` â€” remove a real configured hook.
+- [ ] `/schedule ...` â€” create/manage persisted scheduled Agent jobs only after a real scheduler exists; otherwise hide the command.
+- [ ] `/marketplace` â€” open the native Marketplace window.
+- [ ] `/marketplace install <id>` â€” install a real installable Marketplace item through the same canonical installation backend as the GUI.
+- [ ] `/drc` â€” run authoritative read-only `project.drc`, return actual diagnostics, and require no mutation approval.
+- [ ] `/route` â€” enter/request routing through currently supported typed routing tools; wording must not imply full autorouting until the autorouter exists.
+- [ ] `/place` â€” enter/request placement through typed placement tools and normal mutation approval.
+- [ ] `/design` â€” open/use the real component-design path; generation failure must remain a failure and must never fabricate VCC/GND/IN/OUT pins.
+- [ ] `/explain` â€” explain the current design/selection from actual assembled context without mutating the project.
+- [ ] `/clear` â€” clear current thread/chat runtime consistently while preserving persistent memories unless explicitly deleted.
+- [ ] `/settings` â€” invoke the real native Settings action.
+- [ ] `/revise` â€” revise the current pending proposal with structured feedback in the same Agent thread and approval lifecycle.
 - [ ] Add command-specific tests for every command advertised as available.
 - [ ] Remove commands from autocomplete until their executing backend passes its contract test.
 
@@ -1212,7 +1231,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 
 ### Review window
 
-- [ ] Replace text-only “BEFORE / AFTER” proposal browser with native EDA visual review.
+- [ ] Replace text-only â€œBEFORE / AFTERâ€ proposal browser with native EDA visual review.
 - [ ] Support PCB review tab.
 - [ ] Support Schematic review tab.
 - [ ] Support structured Change List tab.
@@ -1258,7 +1277,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Show width/via dimensions where relevant.
 - [ ] Show reason/Agent intent where available.
 - [ ] Show DRC/ERC before/preview delta.
-- [ ] Never invent a “reason” when the runtime did not provide one.
+- [ ] Never invent a â€œreasonâ€ when the runtime did not provide one.
 
 ## Review annotations
 
@@ -1282,7 +1301,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Implement dedicated native Revise dialog/window.
 - [ ] Show current proposal summary.
 - [ ] Show base/proposed preview.
-- [ ] Ask “What should the agent change before resubmitting?”
+- [ ] Ask â€œWhat should the agent change before resubmitting?â€
 - [ ] Add Avoid this area option.
 - [ ] Add Keep original route here option.
 - [ ] Add Use fewer vias option.
@@ -1338,9 +1357,9 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Make one approved logical Agent action one coherent undoable operation.
 - [ ] Use native project undo snapshot/transaction mechanics.
 - [ ] Show `Undo changes` when no unrelated later edits would be destroyed.
-- [ ] Show `Revert this change…` when later unrelated edits exist.
+- [ ] Show `Revert this changeâ€¦` when later unrelated edits exist.
 - [ ] Implement targeted revert from transaction/diff where required.
-- [ ] Never ask the LLM to “reconstruct” the previous project as the primary undo mechanism.
+- [ ] Never ask the LLM to â€œreconstructâ€ the previous project as the primary undo mechanism.
 - [ ] Verify undo/revert restores project state.
 - [ ] Record undo/revert in audit/transaction timeline.
 
@@ -1466,8 +1485,8 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 
 - [ ] Do not make one commit per checkbox.
 - [ ] Do not make documentation-only follow-up commits for a feature whose code was just committed.
-- [ ] Do not make “fix typo”, “fix lint”, “fix unused helper”, “fix test expected string”, and “update progress” microcommits when they are consequences of the same implementation slice.
-- [ ] Before committing, run the slice’s tests so trivial follow-up fixes remain inside the same commit.
+- [ ] Do not make â€œfix typoâ€, â€œfix lintâ€, â€œfix unused helperâ€, â€œfix test expected stringâ€, and â€œupdate progressâ€ microcommits when they are consequences of the same implementation slice.
+- [ ] Before committing, run the sliceâ€™s tests so trivial follow-up fixes remain inside the same commit.
 - [ ] Bundle source + tests + UI-map + docs + TODO update + evidence references into one logical commit.
 - [ ] Use one commit for Agent shell/history/dock parity.
 - [ ] Use one commit for composer/context/attachments parity.
@@ -1479,13 +1498,13 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Use one commit for CI repair when the repair is independent of a feature slice.
 - [ ] Do not update progress/TODO claiming completion before tests have run.
 - [ ] Include exact verification commands/results in the commit body.
-- [ ] Keep commit messages in the repository’s required `Why / Changed / Behavior / Verification / Demo` structure.
+- [ ] Keep commit messages in the repositoryâ€™s required `Why / Changed / Behavior / Verification / Demo` structure.
 - [ ] Do not commit generated boards, keys, local config, logs, transient screenshots, vault material, or unrelated files.
 - [ ] Squash/rework obvious same-slice microcommits before merging where practical.
 
 ## Suggested implementation slices for Luna
 
-### Slice A — Shell and dock parity
+### Slice A â€” Shell and dock parity
 
 - [ ] Repair Layers/Objects vs Agent dock topology.
 - [ ] Add adaptive tabification.
@@ -1501,7 +1520,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Run screenshot validation.
 - [ ] Commit as one slice.
 
-### Slice B — Composer and context
+### Slice B â€” Composer and context
 
 - [ ] Replace fake attachment text with structured attachment objects.
 - [ ] Implement attachment visual rows.
@@ -1515,7 +1534,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Add tests and screenshots.
 - [ ] Commit as one slice.
 
-### Slice C — Settings and memory
+### Slice C â€” Settings and memory
 
 - [ ] Restructure Settings to match approved information architecture.
 - [ ] Remove duplicate memory controls.
@@ -1529,7 +1548,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Add Settings screenshots.
 - [ ] Commit as one slice.
 
-### Slice D — Providers and Langfuse
+### Slice D â€” Providers and Langfuse
 
 - [ ] Canonicalize provider/model state.
 - [ ] Verify provider catalog/adapter behavior.
@@ -1543,7 +1562,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Add screenshots.
 - [ ] Commit as one slice.
 
-### Slice E — Marketplace, workflows, hooks
+### Slice E â€” Marketplace, workflows, hooks
 
 - [ ] Replace pseudo Marketplace catalogue.
 - [ ] Define typed registry.
@@ -1556,7 +1575,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Add tests and screenshots.
 - [ ] Commit as one slice.
 
-### Slice F — Slash commands
+### Slice F â€” Slash commands
 
 - [ ] Create canonical command registry.
 - [ ] Generate autocomplete from registry.
@@ -1573,7 +1592,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Test every advertised command.
 - [ ] Commit as one slice.
 
-### Slice G — Proposal staging and review foundation
+### Slice G â€” Proposal staging and review foundation
 
 - [ ] Define immutable pending change model.
 - [ ] Bind proposal ID/call ID/base revision.
@@ -1586,7 +1605,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Add tests.
 - [ ] Commit as one slice.
 
-### Slice H — PCB visual review
+### Slice H â€” PCB visual review
 
 - [ ] Replace text-only PCB review.
 - [ ] Focus/zoom actual editor.
@@ -1599,7 +1618,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Add full disposable-board orchestration proof.
 - [ ] Commit as one slice.
 
-### Slice I — Schematic visual review
+### Slice I â€” Schematic visual review
 
 - [ ] Add staged schematic preview.
 - [ ] Add symbol/wire/net change list.
@@ -1610,7 +1629,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Add equivalent schematic orchestration proof.
 - [ ] Commit as one slice.
 
-### Slice J — Remaining execution surfaces
+### Slice J â€” Remaining execution surfaces
 
 - [ ] Complete guarded CLI execution.
 - [ ] Complete calculator/coordinate-transform tool.
@@ -1661,7 +1680,7 @@ Do not claim Agent UI parity until all of the following are simultaneously true.
 - [ ] Current branch head passes secret scanning.
 - [ ] TODO/progress/docs describe the actual current implementation without overstating capability.
 
-## Langfuse trace topology — one complete trace per Agent prompt
+## Langfuse trace topology â€” one complete trace per Agent prompt
 
 The required observability topology is:
 
@@ -2038,7 +2057,7 @@ A single real Agent prompt must be manually inspected in Langfuse before this se
 Do not mark Langfuse observability complete merely because data appears in Langfuse.
 
 - [ ] One prompt must read visually as one coherent tree.
-- [ ] A developer must be able to answer “why did this tool run?” from its parent observations.
+- [ ] A developer must be able to answer â€œwhy did this tool run?â€ from its parent observations.
 - [ ] A developer must be able to see which model generation requested a tool.
 - [ ] A developer must be able to see which tool result returned to the Agent.
 - [ ] A developer must be able to distinguish reasoning/model latency from tool latency.
@@ -2049,7 +2068,7 @@ Do not mark Langfuse observability complete merely because data appears in Langf
 - [ ] A developer must be able to correlate the trace with the CCad thread, turn, proposal, transaction, and project revision without exposing sensitive project contents.
 - [ ] There must be no unexplained sibling/top-level observations caused by broken OTel context propagation.
 
-## Native Qt UI implementation discipline — reference SPA is authoritative
+## Native Qt UI implementation discipline â€” reference SPA is authoritative
 
 The SPA has already been produced. Do not redesign it again. Its purpose is to stop autonomous UI invention by the coding agent.
 
@@ -2057,7 +2076,7 @@ The SPA has already been produced. Do not redesign it again. Its purpose is to s
 - [ ] Do not introduce React, WebView, Electron, Node, npm, browser runtime, or web dependencies into CCad to reproduce the SPA.
 - [ ] Rebuild each reference interaction using the existing Qt widget/framework architecture.
 - [ ] Reuse existing CCad/KiCad-derived theme tokens, icon infrastructure, spacing, docks, tabs, menus, dialogs, and editor views where possible.
-- [ ] Do not independently “improve”, simplify, or reinterpret the approved layout without an explicit product decision.
+- [ ] Do not independently â€œimproveâ€, simplify, or reinterpret the approved layout without an explicit product decision.
 - [ ] Do not replace approved UI with generic AI/SaaS dashboard patterns.
 - [ ] Do not add decorative status cards, telemetry dashboards, progress chips, assistant avatars, pills, or sidebars absent from the reference merely because they are common in AI products.
 - [ ] Do not omit a reference control merely because its backend is not yet implemented.
@@ -2082,7 +2101,7 @@ The SPA has already been produced. Do not redesign it again. Its purpose is to s
 - [ ] Verify each completed native screen side-by-side against the SPA reference.
 - [ ] Capture a native screenshot at the same approximate window dimensions as its SPA reference.
 - [ ] Inspect spacing, hierarchy, visibility, icon semantics, typography, control grouping, disabled states, and dock proportions.
-- [ ] Do not accept “functionally similar” if the native implementation has obviously drifted into another layout.
+- [ ] Do not accept â€œfunctionally similarâ€ if the native implementation has obviously drifted into another layout.
 - [ ] Do not accept visually matching UI when controls are backed by stubs.
 - [ ] Require both visual parity and backend truthfulness before marking a UI slice complete.
 
@@ -2116,7 +2135,7 @@ Before declaring the Agent UI complete, audit every interactive element.
 - [ ] Search the full Agent-related source tree for these patterns before the final parity gate.
 # Orchestration Runtime v2, Memory v2, Capability Discovery, and Multi-Agent Architecture
 
-This section extends the existing CCad Agent production TODO. It does not replace already verified Sprint 949–974 work.
+This section extends the existing CCad Agent production TODO. It does not replace already verified Sprint 949â€“974 work.
 
 The implementation must evolve the current LangGraph/C++/Qt architecture incrementally. Do not introduce a second competing orchestration framework and do not rewrite functioning provider, tool-broker, approval, transaction, memory, or Langfuse contracts merely to resemble another framework.
 
@@ -2988,7 +3007,7 @@ Before combining candidate sets check:
 
 # Conversation-first Memory v2
 
-## Parent task: preserve existing Sprint 970–974 work while correcting product semantics
+## Parent task: preserve existing Sprint 970â€“974 work while correcting product semantics
 
 Product definitions:
 
@@ -3340,33 +3359,33 @@ A complex turn should resemble:
 
 ```text
 agent.turn
-├── intake
-├── memory.retrieve
-├── context.assemble
-├── orchestrator
-├── task_graph                     if used
-│   ├── specialist.pcb
-│   │   ├── model.generate
-│   │   └── tool.call
-│   ├── specialist.schematic
-│   │   ├── model.generate
-│   │   └── tool.call
-│   └── join
-├── capability.search              if used
-├── tool.call
-├── stage
-│   ├── clone/snapshot
-│   ├── candidate.apply
-│   ├── diff
-│   └── preview.verify
-├── verifier                       if used
-├── approval
-│   ├── wait
-│   └── decision
-├── transaction
-├── post.verify
-├── final.generate
-└── turn.complete
+â”œâ”€â”€ intake
+â”œâ”€â”€ memory.retrieve
+â”œâ”€â”€ context.assemble
+â”œâ”€â”€ orchestrator
+â”œâ”€â”€ task_graph                     if used
+â”‚   â”œâ”€â”€ specialist.pcb
+â”‚   â”‚   â”œâ”€â”€ model.generate
+â”‚   â”‚   â””â”€â”€ tool.call
+â”‚   â”œâ”€â”€ specialist.schematic
+â”‚   â”‚   â”œâ”€â”€ model.generate
+â”‚   â”‚   â””â”€â”€ tool.call
+â”‚   â””â”€â”€ join
+â”œâ”€â”€ capability.search              if used
+â”œâ”€â”€ tool.call
+â”œâ”€â”€ stage
+â”‚   â”œâ”€â”€ clone/snapshot
+â”‚   â”œâ”€â”€ candidate.apply
+â”‚   â”œâ”€â”€ diff
+â”‚   â””â”€â”€ preview.verify
+â”œâ”€â”€ verifier                       if used
+â”œâ”€â”€ approval
+â”‚   â”œâ”€â”€ wait
+â”‚   â””â”€â”€ decision
+â”œâ”€â”€ transaction
+â”œâ”€â”€ post.verify
+â”œâ”€â”€ final.generate
+â””â”€â”€ turn.complete
 ```
 
 - [ ] Parallel Agents appear as sibling branches of the same trace.
@@ -3407,7 +3426,7 @@ agent.turn
 
 ## Parent task: incremental migration sequence
 
-### Migration A — decision contract
+### Migration A â€” decision contract
 
 - [ ] Add `NextAction` around current supervisor.
 - [ ] Map current routing mode to `router`.
@@ -3416,14 +3435,14 @@ agent.turn
 - [ ] Preserve existing provider/catalog behavior.
 - [ ] Preserve existing tests.
 
-### Migration B — capability registry
+### Migration B â€” capability registry
 
 - [ ] Register existing tools.
 - [ ] Register router/librarian as current Agent capabilities.
 - [ ] Add capability discovery without changing current default behavior.
 - [ ] Add tests.
 
-### Migration C — progressive tools
+### Migration C â€” progressive tools
 
 - [ ] Introduce Tool exposure classes.
 - [ ] Introduce TurnToolSet.
@@ -3431,14 +3450,14 @@ agent.turn
 - [ ] Compare token/tool accuracy before switching default.
 - [ ] Add tests.
 
-### Migration D — Blackboard/Run Ledger
+### Migration D â€” Blackboard/Run Ledger
 
 - [ ] Add typed run/artifact state.
 - [ ] Emit current router/librarian results as artifacts.
 - [ ] Keep existing visible behavior.
 - [ ] Add tests.
 
-### Migration E — bounded specialists
+### Migration E â€” bounded specialists
 
 - [ ] Add Agent Registry.
 - [ ] Add first real specialist.
@@ -3446,13 +3465,13 @@ agent.turn
 - [ ] Add spawn budgets.
 - [ ] Add lifecycle tests.
 
-### Migration F — optional TaskGraph
+### Migration F â€” optional TaskGraph
 
 - [ ] Add TaskGraph only after basic specialist/artifact flow is stable.
 - [ ] Keep simple prompts outside TaskGraph.
 - [ ] Add parallel read-only task validation.
 
-### Migration G — remove obsolete duplicate C++ planning
+### Migration G â€” remove obsolete duplicate C++ planning
 
 - [ ] Retire `EDAAgent::decompose()` pseudo-provider planning.
 - [ ] Remove static `run_001/user/workspace/main`.
@@ -3582,7 +3601,7 @@ Complete the selected Group/Task boundary coherently and include all completed c
 
 # Recommended implementation groups
 
-## Group O1 — Current graph ownership cleanup
+## Group O1 â€” Current graph ownership cleanup
 
 Complete in one coherent slice:
 
@@ -3595,7 +3614,7 @@ Complete in one coherent slice:
 - [ ] TODO update.
 - [ ] full required verification.
 
-## Group O2 — Run Ledger + Blackboard
+## Group O2 â€” Run Ledger + Blackboard
 
 Complete together:
 
@@ -3607,7 +3626,7 @@ Complete together:
 - [ ] Langfuse IDs.
 - [ ] tests/docs.
 
-## Group O3 — Capability + Tool progressive disclosure
+## Group O3 â€” Capability + Tool progressive disclosure
 
 Complete together:
 
@@ -3620,7 +3639,7 @@ Complete together:
 - [ ] executor compatibility.
 - [ ] tests measuring correct exposure and unchanged broker execution.
 
-## Group O4 — Skill Registry
+## Group O4 â€” Skill Registry
 
 Complete together:
 
@@ -3632,7 +3651,7 @@ Complete together:
 - [ ] memory-contamination protections.
 - [ ] tests/docs.
 
-## Group O5 — Agent Registry + bounded subagent lifecycle
+## Group O5 â€” Agent Registry + bounded subagent lifecycle
 
 Complete together:
 
@@ -3646,7 +3665,7 @@ Complete together:
 - [ ] first real specialist.
 - [ ] tests/docs.
 
-## Group O6 — Optional TaskGraph
+## Group O6 â€” Optional TaskGraph
 
 Complete together:
 
@@ -3661,7 +3680,7 @@ Complete together:
 - [ ] persistence.
 - [ ] tests/docs.
 
-## Group O7 — Retry/replan/loop control
+## Group O7 â€” Retry/replan/loop control
 
 Complete together:
 
@@ -3675,7 +3694,7 @@ Complete together:
 - [ ] budget enforcement.
 - [ ] tests demonstrating termination.
 
-## Group M1 — Conversation store + STM/LTM semantic migration
+## Group M1 â€” Conversation store + STM/LTM semantic migration
 
 Complete together:
 
@@ -3688,7 +3707,7 @@ Complete together:
 - [ ] history integration.
 - [ ] tests/docs.
 
-## Group M2 — Automatic episodic extraction
+## Group M2 â€” Automatic episodic extraction
 
 Complete together:
 
@@ -3702,7 +3721,7 @@ Complete together:
 - [ ] redaction.
 - [ ] tests/docs.
 
-## Group M3 — Episodic consolidation
+## Group M3 â€” Episodic consolidation
 
 Complete together:
 
@@ -3712,7 +3731,7 @@ Complete together:
 - [ ] stale-evidence prevention.
 - [ ] tests/docs.
 
-## Group M4 — Hybrid retrieval
+## Group M4 â€” Hybrid retrieval
 
 Complete together:
 
@@ -3725,7 +3744,7 @@ Complete together:
 - [ ] benchmarks/tests.
 - [ ] safe fallback.
 
-## Group M5 — Memory Explorer
+## Group M5 â€” Memory Explorer
 
 Complete together:
 
@@ -3740,7 +3759,7 @@ Complete together:
 - [ ] runtime refresh.
 - [ ] visual validation.
 
-## Group B1 — CandidateChangeSet batch staging
+## Group B1 â€” CandidateChangeSet batch staging
 
 Complete together:
 
@@ -3752,7 +3771,7 @@ Complete together:
 - [ ] proposal.
 - [ ] tests.
 
-## Group B2 — Partial revision and semantic conflict detection
+## Group B2 â€” Partial revision and semantic conflict detection
 
 Complete together:
 
@@ -3763,7 +3782,7 @@ Complete together:
 - [ ] combined candidate revalidation.
 - [ ] tests.
 
-## Group L1 — Langfuse graph topology repair
+## Group L1 â€” Langfuse graph topology repair
 
 Complete together:
 
@@ -3942,7 +3961,7 @@ The essential architecture is:
 - [ ] Report safe retrieval metadata in Langfuse under `memory.retrieve`.
 - [ ] Measure first-turn automatic retrieval recall and unnecessary-memory injection rate.
 - [ ] Measure extra model/tool calls avoided by automatic retrieval compared with on-demand-only memory search.
-- # Context Runtime v2 — automatic conversation, memory, and project retrieval
+- # Context Runtime v2 â€” automatic conversation, memory, and project retrieval
 
 This section defines how model context is constructed for every root turn and every specialist Agent.
 
@@ -4699,7 +4718,7 @@ Under the existing root Langfuse `agent.turn` trace:
 
 # Context Runtime implementation group
 
-## Group C1 — Conversation projection and TurnRecords
+## Group C1 â€” Conversation projection and TurnRecords
 
 Complete in one coherent implementation slice:
 
@@ -4713,7 +4732,7 @@ Complete in one coherent implementation slice:
 - [x] context tests.
 - [x] docs/TODO/evidence.
 
-## Group C2 — ContextBroker and automatic memory retrieval
+## Group C2 â€” ContextBroker and automatic memory retrieval
 
 Complete together:
 
@@ -4728,7 +4747,7 @@ Complete together:
 - [x] Langfuse context hierarchy: context and graph observations are children of one per-turn root; real SDK parent/trace identity contract passes (Sprint 978).
 - [x] tests/docs.
 
-## Group C3 — Project exact/lexical/graph/spatial retrieval
+## Group C3 â€” Project exact/lexical/graph/spatial retrieval
 
 Complete together:
 
@@ -4741,7 +4760,7 @@ Complete together:
 - [x] Incremental per-entity index updates for changes/additions/deletions.
 - [ ] Full C3 completion, remaining source-model relationships and transaction-delta updates; Sprint 986 adds bbox/diagnostic contracts, all serialized layer-bearing collections, and a 10k-object benchmark; tests/docs.
 
-## Group C4 — Semantic project retrieval
+## Group C4 â€” Semantic project retrieval
 
 Complete together:
 
@@ -4755,7 +4774,7 @@ Complete together:
 - [ ] retrieval benchmarks.
 - [ ] tests/docs.
 
-## Group C5 — Per-Agent context projection and artifact compression
+## Group C5 â€” Per-Agent context projection and artifact compression
 
 Complete together:
 

@@ -13,7 +13,10 @@ def orchestrator_method_catalog():
              "params": {"tier": {"type": "string", "optional": True,
                                     "enum": ["stm", "ltm", "episodic"]}},
              "response": {"method": "memory_state", "fields": [
-                 "tiers", "secret_value_visible"]}},
+                 "tiers", "secret_value_visible"],
+                 "tier_fields": ["stm", "ltm", "episodic", "semantic"],
+                 "semantic_fields": ["enabled", "backend", "model", "model_version",
+                                     "ready", "status", "cache_entries"]}},
             {"name": "agent.memory_set_enabled", "read_only": False, "secrets": False,
              "approval_required": False,
              "side_effect": "persist_memory_preference_and_update_runtime_cache",

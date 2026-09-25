@@ -76,7 +76,11 @@ private:
   QCheckBox* stm_cb_{nullptr};
   QCheckBox* ltm_cb_{nullptr};
   QCheckBox* episodic_cb_{nullptr};
+  QCheckBox* semantic_memory_enabled_cb_{nullptr};
+  QLineEdit* semantic_memory_endpoint_{nullptr};
+  QLineEdit* semantic_memory_model_{nullptr};
   QLabel* memory_status_label_{nullptr};
+  QLabel* semantic_memory_status_label_{nullptr};
   QLabel* memory_operation_status_label_{nullptr};
   QLabel* memory_manager_status_label_{nullptr};
   QPushButton* memory_reset_button_{nullptr};

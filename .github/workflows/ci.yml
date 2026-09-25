@@ -211,3 +211,20 @@ jobs:
         with:
           name: ctest-core-windows
           path: ctest-core-windows.log
+
+  evidence-manifest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          clean: true
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Test evidence verifier contracts
+        run: python -m unittest scripts/test_evidence_manifest.py
+      - name: Verify the checked-in evidence referenced by this commit
+        run: python scripts/check_evidence_manifest.py --repo . --commit HEAD --required

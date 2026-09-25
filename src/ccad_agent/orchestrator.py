@@ -2248,6 +2248,8 @@ def handle_provider_and_state_request(req, executor):
     elif method == "agent.memory_state":
         tier = req.get("params", {}).get("tier")
         try:
+            if not tier:
+                memory_manager.refresh_semantic_readiness()
             state = memory_manager.state(str(tier)) if tier else memory_manager.state()
             emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
                 "tiers": state if tier is None else {str(tier): state},

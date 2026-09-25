@@ -153,6 +153,24 @@ if ($Name.StartsWith("sprint971-memory")) {
   $env:CCAD_AGENT_MEMORY_PATH = Join-Path $isolatedMemoryProfile "agent_memory.json"
   $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
 }
+if ($Name.StartsWith("sprint991-semantic-memory")) {
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint991-semantic-" + [Guid]::NewGuid().ToString("N"))
+  $configDir = Join-Path $isolatedMemoryProfile "CCad"
+  New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+  $env:APPDATA = $isolatedMemoryProfile
+  $env:CCAD_AGENT_MEMORY_PATH = Join-Path $isolatedMemoryProfile "agent_memory.json"
+  $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
+  $env:CCAD_AGENT_THREAD_ID = "sprint991-semantic-memory-ui-thread"
+  $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
+  $testConfig = [ordered]@{
+    provider = "openai"
+    model = "gpt-5.1"
+    memory = @{ stm = $false; ltm = $false; episodic = $false }
+    observability = @{ enabled = $false; backend = "langfuse"; environment = "development" }
+  }
+  [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
+    ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
+}
 if ($Name.StartsWith("sprint974-memory")) {
   $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint974-" + [Guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path $isolatedMemoryProfile | Out-Null
@@ -349,8 +367,43 @@ try {
     if (-not (Test-Path -LiteralPath $confirmationScreenshot)) {
       throw "Mapped GUI did not capture the reset confirmation before cancelling it."
     }
+}
+if ($Name.StartsWith("sprint991-semantic-memory")) {
+  $configFile = Join-Path $isolatedMemoryProfile "CCad\agent_config.json"
+  $config = Get-Content -Raw -LiteralPath $configFile | ConvertFrom-Json
+  if (-not $config.memory.semantic.enabled -or
+      $config.memory.semantic.backend -ne "ollama_local" -or
+      $config.memory.semantic.base_url -ne "http://127.0.0.1:11434" -or
+      $config.memory.semantic.model -ne "embeddinggemma") {
+    throw "Semantic retrieval preferences were not persisted exactly in the isolated profile."
   }
-  if ($Name.StartsWith("sprint974-memory")) {
+  $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
+  $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
+  $mapped = @($reportData.entries | Where-Object {
+    $_.interaction -eq "ui.click" -and $_.result.result.performed -eq $true
+  })
+  $typed = @($reportData.entries | Where-Object {
+    $_.interaction -eq "ui.type_text" -and $_.result.result.performed -eq $true
+  })
+  if ($mapped.Count -lt 5 -or $typed.Count -lt 2) {
+    throw "Semantic settings GUI flow did not perform the expected mapped edits."
+  }
+  $runtimeStatus = @($reportData.entries | Where-Object {
+    $_.semantic_runtime_status_found -eq $true -and
+    $_.target.label -match 'Semantic retrieval: (ready|service_unavailable|model_not_installed)'
+  })
+  if ($runtimeStatus.Count -ne 1) {
+    throw "Semantic settings did not display a truthful ready/unavailable installed-model status."
+  }
+  $checkpoints = @(Get-ChildItem -LiteralPath $ScreenshotDir -Filter "$Name-*.png")
+  if ($checkpoints.Count -ne 4) {
+    throw "Semantic settings validation should retain four distinct UI checkpoints; found $($checkpoints.Count)."
+  }
+  if (Select-String -LiteralPath $stdoutLog -Pattern 'provider_request_sent":true' -Quiet) {
+    throw "Provider request occurred during semantic settings GUI validation."
+  }
+}
+if ($Name.StartsWith("sprint974-memory")) {
     $memoryAfterHash = (Get-FileHash -LiteralPath $env:CCAD_AGENT_MEMORY_PATH -Algorithm SHA256).Hash
     $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
     $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json

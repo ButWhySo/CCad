@@ -6,13 +6,14 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 990
-- Branch: `main`
+- Sprint: 991
+- Branch: `sprint-991-hybrid-memory-retrieval`
 - Phase 9 sprint budget: originally Sprints 226 through 254; the active programme has continued through Sprint 947 for deterministic KiCad PCB editor parity, schematic editor parity, external EDA formats, Gerber viewer, 3D viewer, multi-document projects, library losslessness, live GUI-map performance, prompt/tool-guide assets, observability, autorouter integration, and the production agent surface. Sprint 226 root file walk is completely audited.
 
 Phase 6 focused on Agent protocol: JSON-RPC/MCP over the transaction bus, permission gates, benchmark harness. Phase 7 closed the first native Agent pane, GUI parity, and visual-validation backlog budget through Sprint 205. Phase 8 covered the bounded runtime and EDA evidence expansion through Sprint 225. Phase 9 is the bounded KiCad parity execution phase.
 
 **Current State**:
+- **Sprint 991 (opt-in local semantic memory retrieval and verifiable evidence)** is implemented and locally verified on `sprint-991-hybrid-memory-retrieval`. The bounded loopback-only Ollama client, hybrid field-rank fusion/cosine MMR, lexical fallback, digest-scoped caches, editable settings and truthful runtime state are covered by focused offline contracts, Pyright (0 diagnostics), Qt MinGW Release build, and full CTest (115/115). The isolated GUI-map run completed seven successful mapped interactions, edited both semantic settings fields, inspected four meaningful screenshots, and reviewed captured stdout/stderr. The first run exposed and fixed the UI-map text-entry allowlist and Personalisation scroll-page contrast/height issues. Evidence is recorded at `artifacts/evidence/sprint-991-semantic-memory-final.json` (SHA-256 `2130B8588B29DE11551BFC7F08A2CDFE5D045561F1DC682D20295820CF0EE8B1`); it records the 115/115 full suite before the QSS-only readability adjustment and the passing focused GUI UI-map CTest after it, with fresh seven-action GUI evidence. The evidence runner, commit hook, and hosted CI manifest validation are implemented. Local Ollama readiness is unavailable, reported honestly; no provider/model download was attempted. Secret scan, review, commit, push, and remote CI remain pending.
 - **Sprint 990 (fielded lexical memory ranking)** is delivered on GitHub `main` as `f792576274ce53d671c1f2dc5c525b62211e07c7`; `git ls-remote` confirmed that exact remote SHA. The memory manager adds separate BM25 title/content/tag rankings after authorization, active-tier, project namespace, expiry, and minimum-match gates; weighted RRF combines field rankings and bounded deterministic MMR reduces repetitive memory injection. Diagnostic metadata carries scores, channel ranks, and opaque namespace identity rather than record content. Focused retrieval contracts pass, changed-module Pyright reports zero diagnostics, Qt MinGW Release builds, and full CTest passes 114/114. Embedding retrieval, historical-turn fusion, preference/correction and importance/recency weighting, and provider-tokenizer budgets remain open. The sprint branch was deleted after merge; no other local or remote feature branches were present. No GUI code changed, so sprint-specific screenshots were not needed.
 - **Sprint 989 (bounded BM25 memory/history retrieval)** is implemented and verified for delivery on `sprint-989-memory-bm25`. Enabled memory tiers and conversation TurnRecords use deterministic BM25. Cross-thread retrieval ranks up to 500 compact recaps only after an exact active-project filter, expands at most 16 threads, rejects weak multi-term matches, and injects at most eight source-linked turns. Provider context keeps exact thread/turn/message IDs; semantic embeddings, fusion, MMR, preference-aware ranking, and provider-tokenizer counts remain open. Eight focused retrieval/runtime contracts pass, changed-module Pyright reports zero diagnostics, Qt MinGW Release builds, and full CTest passes 114/114. No GUI code changed; no sprint-specific screenshots were needed. GitHub publication and branch cleanup are part of this delivery.
 - **Sprint 988 (project-scoped durable memory)** is delivered to GitHub `main` as `8d93e77330c394908de669a753408c1c1a6a6123`; the remote SHA was confirmed and the completed local sprint branch was removed. Durable LTM separates conversation records from a SHA-256-derived current-project namespace, reloads project records across threads, filters by active project, reports safe availability/counts, and rejects project writes without a native project ID. Project switches change the context cache identity, reject stale-turn refresh, and invalidate prepared compaction plans; explicit memory reset remains global across durable namespaces. Focused memory/context CTest passed 11/11, changed Python modules pass Pyright (0 diagnostics), Qt MinGW Release build succeeded, and full CTest passed 113/113. The staged credential-pattern scan and `git diff --check` were clean. No Qt source changed and no sprint-specific screenshots were captured; the full suite exercised existing GUI/UI-map coverage.
@@ -877,7 +878,7 @@ Extended `TRACK_SEGMENT_LENGTH` to three-point track arcs with circular-sweep an
 Added explicit board-text stroke width, minimum-thickness rule, JSON/CLI persistence, validation, and TEXT_THICKNESS_BELOW_MINIMUM DRC. Full build 200/200, CTest 73/73, official visual proof passed; screenshot inspected, stderr empty.
 ## Sprint 390-391 progress update (2026-09-16)
 
-Implemented the clearance DRC provider pad/pad, pad/via, and via/via checks with focused coverage. Repaired CI portability: POSIX CLI test now preserves literal `${VAR}` tokens, MSVC forward declarations match struct definitions, duplicate math macro definitions are removed, π is guarded locally, and nanometer-to-floating conversions are explicit. Full Qt build 112/112, CTest 75/75, focused CLI and clearance tests passed; official visual proof `sprint391_ci_portability_proof` passed with empty stderr and inspected screenshot.
+Implemented the clearance DRC provider pad/pad, pad/via, and via/via checks with focused coverage. Repaired CI portability: POSIX CLI test now preserves literal `${VAR}` tokens, MSVC forward declarations match struct definitions, duplicate math macro definitions are removed, Ï€ is guarded locally, and nanometer-to-floating conversions are explicit. Full Qt build 112/112, CTest 75/75, focused CLI and clearance tests passed; official visual proof `sprint391_ci_portability_proof` passed with empty stderr and inspected screenshot.
 ## Sprint 392 progress update (2026-09-16)
 
 Implemented `DrcTestProviderEdgeClearance` for pad and via copper against rectangular board edges, with nanometer-safe distance conversion and focused regression coverage. Full Qt build 99/99, CTest 76/76, official visual harness `sprint392_edge_clearance_proof` passed; before/after screenshots individually inspected, stderr empty. Provider output remains kernel diagnostic; exact diagnostic rendering remains tied to main DRC pipeline.
@@ -987,7 +988,7 @@ Added typed via start/end layer IDs, JSON persistence, and SES inference from pa
 
 ## Sprint 426 progress update (2026-09-16)
 
-SES via padstack validation now rejects a referenced padstack without a supported circle shape, matching KiCad’s explicit import error; missing external padstacks retain compatibility fallback. Focused DSN test and full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
+SES via padstack validation now rejects a referenced padstack without a supported circle shape, matching KiCadâ€™s explicit import error; missing external padstacks retain compatibility fallback. Focused DSN test and full Qt CTest passed 81/81; official harness screenshot was ingested and visually inspected with empty stderr.
 
 ## Sprint 427 progress update (2026-09-16)
 
@@ -1235,7 +1236,7 @@ Per-pad copper properties now override thermal gap and spoke width, and per-pad 
 
 ## Sprint 491 progress update (2026-09-17)
 
-References checked: KiCad names the PTH-only mode `THT_THERMAL` / “thermal reliefs for PTH”; it applies thermals to plated through-hole pads while SMD pads use solid connection. CCad accepts `pth_thermal` in CLI/DRC and board-aware fill reporting, includes `thru_hole`/`through_hole`/`pth`, and ignores SMD/NPTH types. Full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
+References checked: KiCad names the PTH-only mode `THT_THERMAL` / â€œthermal reliefs for PTHâ€; it applies thermals to plated through-hole pads while SMD pads use solid connection. CCad accepts `pth_thermal` in CLI/DRC and board-aware fill reporting, includes `thru_hole`/`through_hole`/`pth`, and ignores SMD/NPTH types. Full Qt Ninja build completed 155/155; CTest passed 91/91; official harness passed, screenshot inspected, stderr empty.
 
 ## Sprint 492 progress update (2026-09-17)
 
@@ -1279,11 +1280,11 @@ Agent fallback telemetry now keeps one process-run trace ID and increments fallb
 Agent graph execution now runs inside an explicit `agent_run` OpenTelemetry span with workflow and provider-readiness attributes, without recording prompt or context contents. Python syntax and diff checks pass; official harness remains the visual gate because the agent runtime has no direct GUI layout change.
 
 CI #245 completed with Linux Test failures and Windows pass. Workflow now adds failure-only verbose `cli` CTest diagnostics to Linux artifacts, so the next run captures the exact command/assertion behind exit 8.
-### Sprint 505 — harden Linux CLI cross-probe invocation
+### Sprint 505 â€” harden Linux CLI cross-probe invocation
 
 CI run #246 still reports Linux `cli` test failure (CTest exit 8), while the Windows job passes. The failing assertion is `pcb cross-probe reports net packet kind`. The CLI test launched the packet through `std::system()` with nested double quotes inside a shell argument; the core cross-probe test separately covers quoted KiCad packets. The CLI integration invocation now uses the parser-supported unquoted `$NET: N1` form, avoiding POSIX shell quoting variance while preserving the same net-resolution behavior. Full CTest and the official visual harness remain mandatory before commit and push.
 
-### Sprint 506 — make Linux CLI diagnostics unconditional
+### Sprint 506 â€” make Linux CLI diagnostics unconditional
 
 CI #247 still fails `core-linux` test `cli`, while the downloaded artifact remains insufficient to identify the Linux command boundary. The diagnostic rerun was guarded by `failure()` and did not appear in the public artifact size. Both Linux jobs now always run the verbose `cli` rerun with `continue-on-error`, preserving the original CTest failure as the job result while guaranteeing the diagnostic log is uploaded for the next run.
 
@@ -1291,69 +1292,69 @@ CI #248 still has no terminal result in the public view. The unquoted packet-for
 
 The local direct CLI check confirms the parser resolves `$NET: N1` as a net packet. The CLI integration test now exercises the parser's documented escaped-leading-dollar compatibility path (`\\$NET: N1`) to avoid shell expansion differences while retaining the same net-resolution assertion.
 
-### Sprint 509 — remove POSIX whitespace boundary from cross-probe regression
+### Sprint 509 â€” remove POSIX whitespace boundary from cross-probe regression
 
 The Linux-only CLI failure persisted across quoted and escaped packet forms. The black-box invocation now passes the shell-safe escaped packet `\\$NET:N1`, a single token with no whitespace boundary; the existing cross-probe parser already supports the unquoted value form and retains KiCad's quoted form coverage in the core test. This isolates the regression from POSIX command tokenization while preserving net-target assertions.
 
-### Sprint 510 — make agent intake deterministic
+### Sprint 510 â€” make agent intake deterministic
 
 Replaced the agent orchestration intake placeholders with whitespace normalization, keyword-based intent classification for PCB, schematic, and simulation requests, and a conservative risk scan that blocks destructive or externally consequential verbs. Added direct regression coverage; provider execution and durable worker ownership remain separate backlog work.
 
-### Sprint 511 — preserve explicit agent runner lifecycle
+### Sprint 511 â€” preserve explicit agent runner lifecycle
 
 KiCad-context research confirms lifecycle ownership matters for durable queue snapshots. The attempted lazy-start change was reverted after the existing queue restore test showed that enqueue-before-save must remain possible; callers must explicitly call `start()` after loading or when they want execution.
 
-### Sprint 512 — add reusable headless board context
+### Sprint 512 â€” add reusable headless board context
 
 Added `ccad::HeadlessBoardContext` above the serializer and board-loader seams. It owns one loaded project snapshot, exposes loader readiness, rejects save-before-load, and tracks explicit dirty/clean state. CLI and GUI integration remains the next bounded step; existing callers are unchanged. Focused board-loader test passed 1/1, the full Qt build linked 91 targets, and the CLI test passed 1/1.
-### Sprint 513 — add file-backed context persistence
+### Sprint 513 â€” add file-backed context persistence
 
 Extended `HeadlessBoardContext` with binary-safe `loadFile` and `saveFile` boundaries, including explicit open/read/write failures. File round-trip coverage passes; command migration remains incremental.
-### Sprint 515 — migrate project validation to headless context
+### Sprint 515 â€” migrate project validation to headless context
 
 `project validate` now loads through `HeadlessBoardContext`, making a real CLI path share core session ownership and serializer behavior. Full Qt build completed; CTest passed 91/91 with the Qt runtime PATH; official harness passed, screenshot inspected, and stderr was empty.
 
-### Sprint 516 — migrate add-via loading to headless context
+### Sprint 516 â€” migrate add-via loading to headless context
 
 `pcb add-via` now loads through `HeadlessBoardContext` while retaining existing validation, audit, and write behavior. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
 
-### Sprint 517 — migrate layer visibility loading
+### Sprint 517 â€” migrate layer visibility loading
 
 `pcb set-layer-visibility` now loads through `HeadlessBoardContext` while preserving validation and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
 
-### Sprint 518 — migrate set-via loading
+### Sprint 518 â€” migrate set-via loading
 
 `pcb set-via` now loads through `HeadlessBoardContext` while preserving via validation, audit, and compatibility writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
 
-### Sprint 519 — migrate add-track loading
+### Sprint 519 â€” migrate add-track loading
 
 `pcb add-track` now loads through `HeadlessBoardContext` while preserving routing geometry checks, audit, and compatibility writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
 
-### Sprint 520 — migrate track-arc loading
+### Sprint 520 â€” migrate track-arc loading
 
 `pcb add-track-arc` now loads through `HeadlessBoardContext` while preserving arc geometry checks, audit, and compatibility writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
 
-### Sprint 521 — migrate refill-zones ownership
+### Sprint 521 â€” migrate refill-zones ownership
 
 `pcb refill-zones` now owns its loaded project through `HeadlessBoardContext`, including applied contour and thermal-spoke mutations. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
 
-### Sprint 522 — migrate add-zone loading
+### Sprint 522 â€” migrate add-zone loading
 
 `pcb add-zone` now loads through `HeadlessBoardContext` while preserving layer, geometry, validation, and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
 
-### Sprint 523 — migrate add-text loading
+### Sprint 523 â€” migrate add-text loading
 
 `pcb add-text` now loads through `HeadlessBoardContext` while preserving layer, geometry, validation, and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
 
-### Sprint 524 — migrate graphic-line loading
+### Sprint 524 â€” migrate graphic-line loading
 
 `pcb add-graphic-line` now loads through `HeadlessBoardContext` while preserving layer, zero-length, geometry, and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
 
-### Sprint 525 — migrate graphic-arc loading
+### Sprint 525 â€” migrate graphic-arc loading
 
 `pcb add-graphic-arc` now loads through `HeadlessBoardContext` while preserving arc geometry, layer, and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
 
-### Sprint 526 — migrate add-target loading
+### Sprint 526 â€” migrate add-target loading
 
 `pcb add-target` now loads through `HeadlessBoardContext` while preserving shape, layer, geometry, and audit-compatible writing. Full Qt build completed, CTest passed 91/91, and the official harness screenshot was inspected with empty stderr.
 
@@ -2034,7 +2035,7 @@ coverage with Anthropic and Gemini dummy keys present while selecting the
 OpenAI-compatible local test server. Mock chat, Gemini secret redaction, and
 OpenAI-compatible tool-loop tests pass locally. Provider-dependent runtime
 tests remain CI-backed when this workspace lacks the corresponding service.
-# Sprint 724 — quota-safe provider settings and live chat surface
+# Sprint 724 â€” quota-safe provider settings and live chat surface
 
 Implemented Windows Credential Manager-backed provider secret storage, OS-authenticated reveal, strict provider model selection, Cerebras-compatible endpoint selection, quota-safe UI validation, and borderless single-stream chat styling. Validation: `cmake --build build-qt --config Release --target ccad_gui -j 6`, Qt PATH-enabled `ctest --test-dir build-qt -C Release --output-on-failure` (91/91), and `tests/physical_ui_robot.py` with live `ui.map`/mouse-keyboard actions and inspected screenshots. Real provider calls were not made.
 
@@ -2237,7 +2238,7 @@ refresh/key boundary for external harness authors.
 
 Sprint 787 disables the Settings refresh action for providers without a
 dynamic catalog implementation, leaving curated presets available and avoiding
-a misleading “latest models” affordance.
+a misleading â€œlatest modelsâ€ affordance.
 
 Router false-positive fixed: PNS obstacle-index candidates no longer reject
 routes before exact pad/via/track/zone/arc geometry checks. Core-only build with
@@ -2555,167 +2556,167 @@ excluding GUI, visual, live-provider, and real-provider tests. This prevents a
 bare system Python from producing false `langgraph` failures. The headless MCP
 bridge and runner contracts are included; the gate passed 31/31. GUI verification remains
 paused.
-### Sprint 862 — tool-result acknowledgement ordering
+### Sprint 862 â€” tool-result acknowledgement ordering
 
 Headless-only batch: delayed `tool_result_ack` until a pending broker call or matching durable checkpoint/call ID is verified. Unknown, late, and mismatched results remain ignored without a false success acknowledgement. Added an offline source contract; GUI/API/build validation remains paused by user instruction.
 
-### Sprint 863 — pending-call count correctness
+### Sprint 863 â€” pending-call count correctness
 
 Headless-only batch: pending-call recovery metadata now counts the union of process-local and checkpoint IDs, preventing one correlated call from appearing twice. Added an offline contract test; GUI/API/build validation remains paused.
 
-### Sprint 864 — thread-scoped context revisions
+### Sprint 864 â€” thread-scoped context revisions
 
-Headless-only batch: context revision chaining is now isolated by `CCAD_AGENT_THREAD_ID`, preventing one chat thread’s previous revision from being reported for another thread. Added an offline contract test; GUI/API/build validation remains paused.
+Headless-only batch: context revision chaining is now isolated by `CCAD_AGENT_THREAD_ID`, preventing one chat threadâ€™s previous revision from being reported for another thread. Added an offline contract test; GUI/API/build validation remains paused.
 
-### Sprint 865 — opaque context-state query
+### Sprint 865 â€” opaque context-state query
 
 Headless-only batch: added read-only `agent.context_state`, returning only thread ID, opaque revision, and redaction flags. Context content is never returned. Added an offline contract; GUI/API/build validation remains paused.
 
-### Sprint 866 — context-state round-trip proof
+### Sprint 866 â€” context-state round-trip proof
 
 Headless-only batch: extended the bundled subprocess contract to call `agent.context_state` and verify its real JSON response, default thread identity, empty initial revision, and redaction flags. GUI/API/build validation remains paused.
 
-### Sprint 867 — bounded context revision metadata
+### Sprint 867 â€” bounded context revision metadata
 
 Headless-only batch: capped retained per-thread opaque context revisions at 128 entries and evicted the oldest inactive entry. Active context remains available; project content is never retained by this map. Added an offline contract; GUI/API/build validation remains paused.
 
-### Sprint 868 — provider-unavailable message metadata
+### Sprint 868 â€” provider-unavailable message metadata
 
 Headless-only batch: provider-unavailable message events now carry stable `kind`, `category`, and `secret_value_visible:false` fields, matching the agent message contract without exposing exception text or credentials. Added a no-network contract assertion; GUI/API/build validation remains paused.
 
-### Sprint 869 — context clear lifecycle
+### Sprint 869 â€” context clear lifecycle
 
-Headless-only batch: `/clear` now removes the current thread’s opaque context revision alongside chat history, so the next context is reported as initial rather than chained to deleted state. Subprocess context contract covers the reset; GUI/API/build validation remains paused.
+Headless-only batch: `/clear` now removes the current threadâ€™s opaque context revision alongside chat history, so the next context is reported as initial rather than chained to deleted state. Subprocess context contract covers the reset; GUI/API/build validation remains paused.
 
-### Sprint 870 — truthful provider failure category
+### Sprint 870 â€” truthful provider failure category
 
 Headless-only batch: provider initialization now carries the classified failure category into the user-facing redacted message, preventing authentication/quota/model errors from being rendered as generic unavailability. No exception text or secret is exposed; GUI/API/build validation remains paused.
 
-### Sprint 871 — explicit tool approval metadata
+### Sprint 871 â€” explicit tool approval metadata
 
 Headless-only batch: mutating `tool_call` events now expose `approval_required`; dry-run via placement is explicitly false, while route/zone and awaited mutations are true. Discovery fields match emitted payloads. Added an offline contract; GUI/API/build validation remains paused.
 
-### Sprint 872 — durable approval metadata
+### Sprint 872 â€” durable approval metadata
 
 Headless-only batch: checkpointed LangGraph tool interrupts now preserve `approval_required:true`, so restart/resume cannot lose the side-effect approval boundary. Added an offline contract; GUI/API/build validation remains paused.
 
-### Sprint 873 — durable approval proof
+### Sprint 873 â€” durable approval proof
 
 Headless-only batch: checkpoint restart fixture now inspects the actual interrupt payload and proves `approval_required:true` survives checkpoint creation. GUI/API/build validation remains paused.
 
-### Sprint 874 — checkpoint approval decision branches
+### Sprint 874 â€” checkpoint approval decision branches
 
 Fresh-DB headless proof complete for checkpoint creation plus accept, denial, and cancellation resume branches; each retained the approval-bearing interrupt and completed its expected terminal path. GUI/API/build validation remains paused.
 
-### Sprint 875 — checkpoint gate runner
+### Sprint 875 â€” checkpoint gate runner
 
 Headless harness fix: `run_agent_contract_gate.ps1 -IncludeCheckpointRestart` now runs accept, denial, and cancellation with fresh temporary SQLite DBs instead of invoking the multi-phase fixture without its required argument. Added an offline runner contract; GUI/API/build validation remains paused.
 
-### Sprint 876 — centralized approval decision
+### Sprint 876 â€” centralized approval decision
 
 Headless-only approval slice: added one deterministic `tool_approval_decision()` policy used by client tool events; UI mutations require approval, explicit dry-runs do not. Added an offline contract; full policy/interrupt ownership remains the next run-loop batch.
 
-### Sprint 877 — approval reason metadata
+### Sprint 877 â€” approval reason metadata
 
 Headless-only approval slice: live tool calls and durable interrupts now carry `approval_reason` (`project_mutation` or `dry_run`) beside the boolean decision, enabling truthful approval UI without parsing arguments. Added offline contract coverage; GUI/API/build validation remains paused.
 
-### Sprint 878 — approval discovery parity
+### Sprint 878 â€” approval discovery parity
 
 Headless-only contract fix: `agent.methods` now advertises `approval_reason` alongside `approval_required`, matching live tool-call payloads. GUI/API/build validation remains paused.
 
-### Sprint 879 — pending approval snapshot
+### Sprint 879 â€” pending approval snapshot
 
 Headless-only harness slice: `agent.pending_calls` now returns redacted approval-required/reason metadata alongside opaque process/checkpoint IDs, allowing approval UI to recover state after restart. Added offline contract; GUI/API/build validation remains paused.
 
-### Sprint 880 — pending snapshot round-trip proof
+### Sprint 880 â€” pending snapshot round-trip proof
 
 Headless-only proof: the real orchestrator subprocess now queries `agent.pending_calls` and verifies empty-state count, approval false, and empty reason. GUI/API/build validation remains paused.
 
-### Sprint 881 — durable pending approval proof
+### Sprint 881 â€” durable pending approval proof
 
 Headless-only proof: checkpoint restart fixture now validates nonempty pending-call recovery metadata (`approval_required:true`, `project_mutation`) at the durable interrupt boundary. GUI/API/build validation remains paused.
 
-### Sprint 882 — pending discovery round-trip parity
+### Sprint 882 â€” pending discovery round-trip parity
 
 Headless-only proof: subprocess contract now verifies `agent.pending_calls` discovery advertises its actual `pending_calls_state` approval fields. GUI/API/build validation remains paused.
 
-### Sprint 883 — pending discovery schema completeness
+### Sprint 883 â€” pending discovery schema completeness
 
 Headless-only proof: the subprocess contract now checks every redacted `pending_calls_state` discovery field, including process/checkpoint IDs, count, approval metadata, and secret visibility. GUI/API/build validation remains paused.
 
-### Sprint 884 — thread-scoped process pending calls
+### Sprint 884 â€” thread-scoped process pending calls
 
 Headless-only fix: process-broker pending calls now carry their originating agent thread ID, and recovery snapshots exclude calls belonging to other threads. Added an isolated two-thread contract test. GUI/API/build validation remains paused.
 
-### Sprint 885 — request thread propagation
+### Sprint 885 â€” request thread propagation
 
 Headless-only fix: `human_message.thread_id` now drives context revisions, process-wait ownership, graph configuration, and emitted context-state metadata. The runtime contract covers two threads and their changed/unchanged transitions. GUI/API/build validation remains paused.
 
-### Sprint 886 — advertise session binding parameter
+### Sprint 886 â€” advertise session binding parameter
 
 Headless-only contract fix: `agent.methods` now declares optional opaque `human_message.thread_id`, matching runtime propagation and allowing external harnesses to bind conversations deliberately. GUI/API/build validation remains paused.
 
-### Sprint 887 — pending snapshot session identity
+### Sprint 887 â€” pending snapshot session identity
 
 Headless-only contract fix: `pending_calls_state` now returns the queried opaque `thread_id`, making approval recovery unambiguous for multi-session harness clients. GUI/API/build validation remains paused.
 
-### Sprint 888 — pending query session binding
+### Sprint 888 â€” pending query session binding
 
 Headless-only contract fix: `agent.methods` now advertises optional opaque `agent.pending_calls.thread_id`, matching the runtime query and response identity. GUI/API/build validation remains paused.
 
-### Sprint 889 — context query session binding
+### Sprint 889 â€” context query session binding
 
 Headless-only contract fix: `agent.methods` now advertises optional opaque `agent.context_state.thread_id`, matching its runtime session query. GUI/API/build validation remains paused.
 
-### Sprint 890 — thread control discovery parity
+### Sprint 890 â€” thread control discovery parity
 
 Headless-only contract fix: `agent.methods` now publishes the existing `agent.set_thread_id` and `agent.resume_thread` controls, including safe parameter and `thread_state` response schemas. GUI/API/build validation remains paused.
 
-### Sprint 891 — resume query schema parity
+### Sprint 891 â€” resume query schema parity
 
 Headless-only contract fix: `agent.resume_thread.resume` is now advertised optional, matching the runtime's read-only resume-state query when no resume value is supplied. GUI/API/build validation remains paused.
 
-### Sprint 892 — resume event response contract
+### Sprint 892 â€” resume event response contract
 
 Headless-only contract fix: method discovery now describes the emitted `thread_resumed` event, including thread identity, remaining nodes, and message count. GUI/API/build validation remains paused.
 
-### Sprint 893 — provider secret control discovery
+### Sprint 893 â€” provider secret control discovery
 
 Headless-only security contract: `agent.methods` now declares `agent.set_provider_secret` as secret-bearing and approval-required, with secret input redaction metadata and a non-secret provider-state response. GUI/API/build validation remains paused.
 
-### Sprint 894 — transient provider probe discovery
+### Sprint 894 â€” transient provider probe discovery
 
 Headless-only security contract: `agent.methods` now publishes the transient `agent.test_provider` input and redacted provider/backend/message response set, including secret metadata. GUI/API/build validation remains paused.
 
-### Sprint 895 — marketplace discovery parity
+### Sprint 895 â€” marketplace discovery parity
 
 Headless-only contract fix: `agent.methods` now publishes the read-only local marketplace catalog response (`plugins`, `workflows`). GUI/API/build validation remains paused.
 
-### Sprint 896 — persisted config discovery parity
+### Sprint 896 â€” persisted config discovery parity
 
 Headless-only contract fix: `agent.methods` now publishes read-only `agent.get_config` and its persisted non-secret settings fields, including provider/model, memory, personalisation, MCP, plugins, and workflows. GUI/API/build validation remains paused.
 
-### Sprint 897 — config mutation discovery parity
+### Sprint 897 â€” config mutation discovery parity
 
 Headless-only contract fix: `agent.methods` now publishes `agent.set_config` as an object-input control with a redacted success-message response. GUI/API/build validation remains paused.
 
-### Sprint 900 — persisted config secret rejection
+### Sprint 900 â€” persisted config secret rejection
 
 Headless-only security fix: `agent.set_config` now rejects API-key, secret, token, password, and credential-like keys before persistence, while retaining a redacted success/error message. GUI/API/build validation remains paused.
 
-### Sprint 901 — recursive config secret sanitization
+### Sprint 901 â€” recursive config secret sanitization
 
 Headless-only security fix: config secret rejection now recursively sanitizes nested objects and lists, blocking paths such as `provider.api_key` before persistence. GUI/API/build validation remains paused.
 
-### Sprint 902 — sanitizer behavior proof
+### Sprint 902 â€” sanitizer behavior proof
 
 Headless-only proof: added an executable no-network test for nested dictionary/list secret removal and rejected-path reporting. GUI/API/build validation remains paused.
 
-### Sprint 898 — component generator discovery parity
+### Sprint 898 â€” component generator discovery parity
 
 Headless-only contract fix: `agent.methods` now publishes `agent.generate_component` inputs and generated-component response fields, without making a provider call during validation. GUI/API/build validation remains paused.
 
-### Sprint 899 — runtime/catalog parity guard
+### Sprint 899 â€” runtime/catalog parity guard
 
 Headless-only guard: added a no-network regression test requiring every runtime `agent.*` control to appear in method discovery, with only the intentionally hidden legacy telemetry export exempted. GUI/API/build validation remains paused.
 ### Sprint 903 - provider key isolation
@@ -2796,7 +2797,7 @@ The method-discovery contract now advertises this normalization explicitly to ex
 
 Invalid non-string model-catalog provider values now return structured `invalid_params` instead of being coerced into misleading provider IDs.
 
-Static OpenAI, Anthropic, and Gemini preset descriptions now explicitly say they are curated and not live, preventing the settings UI from implying “latest” data where no refresh endpoint exists yet.
+Static OpenAI, Anthropic, and Gemini preset descriptions now explicitly say they are curated and not live, preventing the settings UI from implying â€œlatestâ€ data where no refresh endpoint exists yet.
 
 Cerebras settings now identify its model list as an official curated snapshot, matching the no-network catalog contract.
 
@@ -3060,34 +3061,34 @@ Focused `agent_preview` and `gui_ui_map` CTest targets pass. A disposable GUI
 run inspected eleven screenshots. The Langfuse test click did not advance
 `last_test`, so real export proof remains open. The full suite is blocked by
 the existing unbounded `test_agent_orchestrator` promise wait.
-### Sprint 953 — language-server toolchain
+### Sprint 953 â€” language-server toolchain
 
 Installed and verified clangd 19.1.7, Pyright 1.1.414, and cmake-language-server 0.1.11. Generated `compile_commands.json` from the Qt/MinGW CMake configuration for clangd; Python user Scripts was added to the Windows user PATH. These tools accelerate diagnostics only; CMake, CTest, real provider calls, and GUI validation remain authoritative.
 
-### Sprint 954 — bounded orchestration tests
+### Sprint 954 â€” bounded orchestration tests
 
 Bounded the native orchestrator test callback wait at ten seconds so a stalled runner produces an explicit test failure. Rebuilt the Qt release targets and ran the complete CTest gate: 92/92 passed in 110.53 seconds.
 
-### Sprint 955 — Python runtime type safety
+### Sprint 955 â€” Python runtime type safety
 
 Added explicit ownership types for checkpoint, executor, queue, plugin, and Langfuse runtime handles; added observation creation guards; and corrected callback/config metadata typing. Pyright diagnostics reduced from 22 to 1. The remaining complexity diagnostic stays open; no suppression was added.
-### Sprint 956 — provider catalog failure categories
+### Sprint 956 â€” provider catalog failure categories
 
 Provider model refreshes now preserve safe provider identity and actionable authentication, permission, payment, rate-limit, timeout, connection, and invalid-response categories without returning raw response bodies. Controlled catalog contracts cover OpenAI, Anthropic, Gemini, OpenRouter, Cerebras, and Ollama paths; broad provider integration verification remains open.
 
-### Sprint 957 â€” exact bounded context metadata
+### Sprint 957 Ã¢â‚¬â€ exact bounded context metadata
 
 The bounded provider package now carries a stable redacted package digest, estimated token count, and native project-domain counts alongside its revision, source, memory, history, truncation, and secret-safety metadata. The same metadata is emitted through `context_state` and passed into the agent-turn trace/config, so GUI evidence, orchestration, and observability refer to one exact package rather than separate character-count approximations. Context, revision, memory-boundary, and JSON-RPC contracts pass without network access. Pyright still reports the pre-existing single orchestrator complexity diagnostic; it remains open without suppression.
 
-### Sprint 958 â€” tiered memory lifecycle
+### Sprint 958 Ã¢â‚¬â€ tiered memory lifecycle
 
 Implemented durable STM, LTM, and episodic namespaces with runtime enable/disable unloading, ranked bounded retrieval, expiry cleanup, compaction, secret rejection, reset/delete separation, and safe memory-state IPC. Settings Reset Memories now confirms and invokes the real reset operation. Added lifecycle documentation and no-network manager/store contracts. Full Qt/CTest and GUI evidence remain the required end-of-slice gate.
 
-### Sprint 959 â€” documented provider integration matrix
+### Sprint 959 Ã¢â‚¬â€ documented provider integration matrix
 
 Verified the six configured provider adapters against their official model-catalog contracts: OpenAI, Anthropic, Gemini, OpenRouter, Cerebras, and Ollama. Added a checked-in endpoint/credential/adapter matrix and a no-network contract covering headers, response shapes, pagination/local-source semantics, and safe authentication, permission, payment, rate-limit, timeout, connection, and invalid-response categories. Live provider calls remain opt-in because they consume the user's quota.
 
-### Sprint 960 â€” orchestration complexity refactor, first half
+### Sprint 960 Ã¢â‚¬â€ orchestration complexity refactor, first half
 
 Moved the pure JSON-RPC method catalog into `method_catalog.py` without changing its schema or runtime contract. Context and native-catalog contracts pass. The remaining Pyright complexity diagnostic is in the still-monolithic RPC dispatch loop; the Tier 1 checkbox remains open until that loop is split and Pyright is clean.
 

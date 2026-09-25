@@ -6,6 +6,8 @@
 #include <QListWidget>
 #include <QJsonArray>
 #include <QStackedWidget>
+#include <QScrollArea>
+#include <QFrame>
 #include <QLabel>
 #include <QPushButton>
 #include <QSizePolicy>
@@ -167,6 +169,7 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
     : QDialog(parent), agent_panel_(agent_panel) {
   setWindowTitle("Agent Settings");
   setMinimumSize(700, 500);
+  resize(920, 640);
 
   setStyleSheet(R"(
     QDialog {
@@ -194,6 +197,25 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
     QLabel {
       color: #e6edf3;
       font-size: 13px;
+    }
+    QCheckBox {
+      color: #e6edf3;
+      spacing: 7px;
+    }
+    QCheckBox:disabled {
+      color: #8b949e;
+    }
+    QGroupBox {
+      color: #e6edf3;
+      border: 1px solid #30363d;
+      border-radius: 5px;
+      margin-top: 8px;
+      padding-top: 6px;
+    }
+    QGroupBox::title {
+      subcontrol-origin: margin;
+      left: 8px;
+      padding: 0 4px;
     }
     QLineEdit, QTextEdit, QComboBox {
       background-color: #010409;
@@ -416,8 +438,18 @@ void AgentSettingsDialog::setupUi() {
   stacked_widget_->addWidget(config_tab);
 
   auto* person_tab = new QWidget();
+  person_tab->setObjectName("personalisationPage");
+  person_tab->setStyleSheet("background-color: #0d1117;");
   createPersonalisationTab(person_tab);
-  stacked_widget_->addWidget(person_tab);
+  auto* personalisation_scroll = new QScrollArea(this);
+  personalisation_scroll->setObjectName("scroll:personalisation");
+  personalisation_scroll->setWidgetResizable(true);
+  personalisation_scroll->setFrameShape(QFrame::NoFrame);
+  personalisation_scroll->setStyleSheet(
+      "QScrollArea { background-color: #0d1117; border: none; }"
+      "QScrollArea > QWidget > QWidget { background-color: #0d1117; }");
+  personalisation_scroll->setWidget(person_tab);
+  stacked_widget_->addWidget(personalisation_scroll);
 
   auto* mcp_tab = new QWidget();
   createMCPTab(mcp_tab);
@@ -670,6 +702,26 @@ void AgentSettingsDialog::createPersonalisationTab(QWidget* parent_widget) {
   mem_layout->addWidget(stm_cb_);
   mem_layout->addWidget(ltm_cb_);
   mem_layout->addWidget(episodic_cb_);
+  auto* semantic_group = new QGroupBox("Semantic retrieval (local Ollama)", mem_group);
+  auto* semantic_form = new QFormLayout(semantic_group);
+  semantic_memory_enabled_cb_ = new QCheckBox(
+      "Use semantic similarity for memory retrieval", semantic_group);
+  semantic_memory_enabled_cb_->setObjectName("control:semanticMemoryEnabled");
+  semantic_memory_enabled_cb_->setToolTip(
+      "Opt in to local embeddings. CCad contacts only loopback Ollama and never downloads a model.");
+  semantic_form->addRow("", semantic_memory_enabled_cb_);
+  semantic_memory_endpoint_ = new QLineEdit("http://127.0.0.1:11434", semantic_group);
+  semantic_memory_endpoint_->setObjectName("control:semanticMemoryEndpoint");
+  semantic_form->addRow("Local endpoint:", semantic_memory_endpoint_);
+  semantic_memory_model_ = new QLineEdit("embeddinggemma", semantic_group);
+  semantic_memory_model_->setObjectName("control:semanticMemoryModel");
+  semantic_form->addRow("Installed model:", semantic_memory_model_);
+  semantic_memory_status_label_ = new QLabel(
+      "Semantic retrieval: disabled; lexical retrieval remains active", semantic_group);
+  semantic_memory_status_label_->setObjectName("label:semanticMemoryState");
+  semantic_memory_status_label_->setWordWrap(true);
+  semantic_form->addRow("Runtime:", semantic_memory_status_label_);
+  mem_layout->addWidget(semantic_group);
   memory_status_label_ = new QLabel("Memory state: waiting for backend", mem_group);
   memory_status_label_->setObjectName("label:memoryState");
   memory_status_label_->setWordWrap(false);
@@ -1113,6 +1165,15 @@ void AgentSettingsDialog::applyConfigState(const QJsonObject& config) {
     if (stm_cb_ && memory.contains("stm")) { const QSignalBlocker blocker(stm_cb_); stm_cb_->setChecked(memory["stm"].toBool()); }
     if (ltm_cb_ && memory.contains("ltm")) { const QSignalBlocker blocker(ltm_cb_); ltm_cb_->setChecked(memory["ltm"].toBool()); }
     if (episodic_cb_ && memory.contains("episodic")) { const QSignalBlocker blocker(episodic_cb_); episodic_cb_->setChecked(memory["episodic"].toBool()); }
+    const QJsonObject semantic = memory.value("semantic").toObject();
+    if (semantic_memory_enabled_cb_ && semantic.contains("enabled")) {
+        const QSignalBlocker blocker(semantic_memory_enabled_cb_);
+        semantic_memory_enabled_cb_->setChecked(semantic.value("enabled").toBool());
+    }
+    if (semantic_memory_endpoint_ && semantic.contains("base_url"))
+        semantic_memory_endpoint_->setText(semantic.value("base_url").toString());
+    if (semantic_memory_model_ && semantic.contains("model"))
+        semantic_memory_model_->setText(semantic.value("model").toString());
     const QJsonObject personalisation = config.value("personalisation").toObject();
     if (follow_up_ && personalisation.contains("follow_up")) follow_up_->setText(personalisation["follow_up"].toString());
     if (context_window_ && personalisation.contains("show_context_usage")) context_window_->setChecked(personalisation["show_context_usage"].toBool());
@@ -1181,6 +1242,15 @@ void AgentSettingsDialog::applyMemoryState(const QJsonObject& state) {
   applyTier("stm", stm_cb_);
   applyTier("ltm", ltm_cb_);
   applyTier("episodic", episodic_cb_);
+  const QJsonObject semantic = tiers.value("semantic").toObject();
+  if (!semantic.isEmpty() && semantic_memory_status_label_) {
+    const QString status = semantic.value("status").toString("unavailable");
+    const QString model = semantic.value("model").toString();
+    const QString version = semantic.value("model_version").toString();
+    semantic_memory_status_label_->setText(
+        QString("Semantic retrieval: %1 — %2%3")
+            .arg(status, model, version.isEmpty() ? QString() : " (" + version.left(20) + ")"));
+  }
   if (memory_status_label_ && !summary.isEmpty())
     memory_status_label_->setText(summary.join("  |  "));
 
@@ -1466,6 +1536,15 @@ void AgentSettingsDialog::saveAllSettings() {
   if (stm_cb_) memory["stm"] = stm_cb_->isChecked();
   if (ltm_cb_) memory["ltm"] = ltm_cb_->isChecked();
   if (episodic_cb_) memory["episodic"] = episodic_cb_->isChecked();
+  QJsonObject semantic;
+  semantic["enabled"] = semantic_memory_enabled_cb_ &&
+                        semantic_memory_enabled_cb_->isChecked();
+  semantic["backend"] = "ollama_local";
+  semantic["base_url"] = semantic_memory_endpoint_
+      ? semantic_memory_endpoint_->text().trimmed() : "http://127.0.0.1:11434";
+  semantic["model"] = semantic_memory_model_
+      ? semantic_memory_model_->text().trimmed() : "embeddinggemma";
+  memory["semantic"] = semantic;
   config["memory"] = memory;
 
   QJsonObject personalisation;

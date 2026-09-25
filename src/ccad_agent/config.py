@@ -75,7 +75,13 @@ class AgentConfigManager:
             "memory": {
                 "stm": True,
                 "ltm": False,
-                "episodic": False
+                "episodic": False,
+                "semantic": {
+                    "enabled": False,
+                    "backend": "ollama_local",
+                    "base_url": "http://127.0.0.1:11434",
+                    "model": "embeddinggemma"
+                }
             },
             "hooks": [],
             "personalisation": {
