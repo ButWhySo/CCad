@@ -2287,7 +2287,9 @@ class JsonReader {
         while (true) {
         const std::string key = readString();
         expect(':');
-        if (key == "name") {
+        if (key == "id") {
+          pin.id = readString();
+        } else if (key == "name") {
           pin.name = readString();
         } else if (key == "number") {
           pin.number = readString();
@@ -3577,6 +3579,9 @@ std::string dumpProjectJson(const Project& project) {
     for (std::size_t j = 0; j < component.pins.size(); ++j) {
       const SchPin& pin = component.pins.at(j);
       out << "        {\n";
+      if (!pin.id.empty()) {
+        writeField(out, 10, "id", pin.id);
+      }
       writeField(out, 10, "name", pin.name);
       writeField(out, 10, "number", pin.number);
       writeField(out, 10, "electrical_type", to_string(pin.electrical_type));

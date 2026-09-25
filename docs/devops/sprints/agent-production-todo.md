@@ -2,6 +2,18 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 995 active slice — stable schematic pin identity persistence (Tier 1, C3)
+
+- [x] Add source-level coverage for native `SchPin.id` round-trip and the existing derived-identity path for records without IDs.
+- [x] Read optional `id` from symbol-declared pins and write it only when non-empty, preserving compatibility with older project JSON.
+- [x] Pass focused serializer and project-index tests; Pyright reports zero diagnostics for the affected retrieval module.
+- [x] Pass Qt MinGW Release build and full CTest (115/115) through `scripts/verify_sprint.ps1 -NonVisual`; inspect its logs and manifest. Manifest: `artifacts/evidence/sprint995-schematic-pin-identities.json` (SHA-256 `21c857fa71413cdb262e3018cdd56db0485d46b6caae1383664b148e46254561`).
+- [x] Update feature/codebase/progress/C3 documentation and record the verified manifest metadata.
+- [x] Run redacted credential-pattern scans: zero matches in staged files; the tracked repository has one pre-existing synthetic test fixture in `scripts/test_memory_store.py`.
+- [ ] Commit and push this verified slice; inspect hosted CI on the pushed SHA before merge.
+
+Scope boundary: this preserves the source IDs that CCad currently serializes; library-definition pin identities and unrelated missing graph edges remain open.
+
 ### Sprint 994 completed slice — local evidence to independent CI handoff
 
 - [x] Clarify that local verification and a passing evidence manifest precede commit/push; pushing triggers independent CI, and merge waits for the actual green result.
@@ -38,7 +50,7 @@ Scope boundary: no labels are inferred by a model, and no semantic/vector projec
 - [x] Update feature, codebase, progress, and C3 relationship coverage records.
 
 Evidence: 34/34 project-index contracts; Pyright 0 diagnostics; Qt MinGW Release build; CTest 115/115; 10 successful mapped interactions, four inspected screenshots, no provider request, and reviewed stdout/stderr. Hash-bound manifest: `artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final.json`.
-Scope boundary: the current CCad JSON reader/writer omits `SchPin.id`, so file-loaded pin identities are derived from symbol, unit, and pin number/name. Preserving stable source pin IDs requires a future schema change; unsupported source-model graph relationships remain open.
+Scope boundary at Sprint 992: the current CCad JSON reader/writer omitted `SchPin.id`, so file-loaded pin identities were derived from symbol, unit, and pin number/name. Sprint 995 now preserves optional native IDs; unsupported library-definition pin identities and broader source-model graph relationships remain open.
 
 ### Sprint 991 active slice â€” opt-in local semantic memory retrieval (Tier 1, M4)
 
@@ -4792,7 +4804,7 @@ Complete together:
 
 - [x] Exact identity index for implemented typed entity classes; remaining entity coverage stays open above.
 - [x] Deterministic BM25 index for implemented typed entity text; remaining text-field coverage stays open above.
-- [ ] project relationship graph (Sprints 981/984/985/986 cover net membership, board-net identity, typed explicit links, diagnostics, serialized sheet-symbol membership, and cross-domain matching IDs; library-pin, artifact, proposal, functional-block, and further graph coverage remains open).
+- [ ] project relationship graph (Sprints 981/984/985/986 cover net membership, board-net identity, typed explicit links, diagnostics, serialized sheet-symbol membership, and cross-domain matching IDs; Sprint 995 preserves serialized symbol-declared pin IDs. Library-definition pin, artifact, proposal, and further graph coverage remains open).
 - [x] PCB spatial index for supported typed entity geometry, explicit bounding-box queries, and linked DRC/ERC diagnostic retrieval.
 - [x] Hybrid deterministic project retrieval.
 - [x] Content revision/staleness handling against the live typed snapshot.

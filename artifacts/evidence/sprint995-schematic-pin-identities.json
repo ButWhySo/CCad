@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint995-schematic-pin-identities",
+    "feature":  "Preserve typed schematic pin IDs through project save and load while retaining legacy derived identity",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-25T12:49:42.6130369Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.64 log=artifacts/evidence/sprint995-schematic-pin-identities/preflight.log",
+                      "finished_utc":  "2026-09-25T12:49:43.3114451Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=35.28 log=artifacts/evidence/sprint995-schematic-pin-identities/build.log",
+                      "finished_utc":  "2026-09-25T12:50:18.5865648Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=110.26 log=artifacts/evidence/sprint995-schematic-pin-identities/ctest.log",
+                      "finished_utc":  "2026-09-25T12:52:08.8475989Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint995-schematic-pin-identities/build.log",
+                                         "sha256":  "69CCF1D467040AC20D1271134A90FD8C8E964686B985FD72438D523AF795D979"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint995-schematic-pin-identities/ctest.log",
+                                         "sha256":  "81F6DE171C5F487A218385FE4D9B0B9BDC5878A3174D71011776B4BD21D2E94E"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint995-schematic-pin-identities/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-25T12:52:08.8939448Z"
+}

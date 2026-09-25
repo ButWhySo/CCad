@@ -77,7 +77,7 @@ class ProjectIndexTests(unittest.TestCase):
         symbol["pins"] = [
             {"name": "VIN", "number": "1", "electrical_type": "power_in",
              "graphical_style": "line", "orientation": "right"},
-            {"name": "PGOOD", "number": "2", "electrical_type": "output",
+            {"id": "LIBPIN_PGOOD", "name": "PGOOD", "number": "2", "electrical_type": "output",
              "graphical_style": "line", "orientation": "left"},
         ]
         project["nets"][0]["members"].append(
@@ -114,11 +114,15 @@ class ProjectIndexTests(unittest.TestCase):
         unconnected = next(item for item in pins if item.get("pin_name") == "PGOOD")
         connected = next(item for item in pins if item.get("pin_name") == "VIN")
         self.assertEqual(unconnected["pin_number"], "2")
+        self.assertEqual(unconnected["identity_source"], "native_pin_id")
+        self.assertEqual(unconnected["id"], "declared:sch-u3:1:LIBPIN_PGOOD")
         self.assertEqual(unconnected["electrical_type"], "output")
         self.assertEqual(unconnected["membership_kind"], "declared_pin")
         self.assertNotIn("net_id", unconnected)
         self.assertEqual(connected["net_id"], "GND")
         self.assertEqual(connected["membership_kind"], "schematic_net_member")
+        self.assertEqual(connected["identity_source"],
+                         "derived_from_symbol_unit_and_pin_number_or_name")
         symbol = next(item for item in pin_result["entities"]
                       if item["kind"] == "schematic_symbol" and
                       item["id"] == "sch-u3")

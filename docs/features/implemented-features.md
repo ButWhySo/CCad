@@ -1,5 +1,9 @@
 # Implemented Features
 
+## Sprint 995 stable schematic pin identity persistence
+
+The project JSON reader accepts an optional `id` on each placed symbol-declared schematic pin, and the writer emits non-empty IDs while omitting empty ones. Existing project files without pin IDs remain readable and continue to receive explicitly derived index identities; native IDs use the `native_pin_id` provenance label. Serializer round-trip and legacy-format tests plus project-index provenance tests cover both paths. This does not add library-definition pin records or claim complete schematic graph coverage. Qt MinGW Release and full CTest pass 115/115. Official non-visual evidence manifest: `artifacts/evidence/sprint995-schematic-pin-identities.json` (SHA-256 `21c857fa71413cdb262e3018cdd56db0485d46b6caae1383664b148e46254561`); logs remain workspace-only. clangd parsed the translation unit but did not complete indexing, and is not counted as a pass.
+
 ## Sprint 994 evidence-to-CI handoff
 
 The current visual-validation workflow treats the passing local evidence manifest as the boundary before commit and push. The evidence hook validates the staged manifest digest and any committed artifacts; for generated screenshots and logs kept local by sprint policy, it validates the workspace-only payload digests before commit. Hosted CI independently validates the manifest committed for the pushed revision, but cannot verify workspace-only file bytes and does not imply repository branch protection. The verifier invokes CCad's existing Qt UI-map target-sequence harness; generic wrapper scripts from external examples are not part of this project. The workflow requires the actual CI result for the pushed SHA before merge. The visual-harness CTest locks down the timing, evidence, and CI handoff wording.
@@ -13,6 +17,8 @@ The project index now derives functional-block search records solely from serial
 ## Sprint 992 schematic pin and annotation retrieval
 
 The revision-aware typed project index now adds serialized symbol-declared pins as searchable schematic entities, including unconnected pins that have no net membership. Connected declarations retain their source pin number, electrical type, symbol/unit identity, and resolved net membership; unresolved net records remain explicitly separate rather than being attached by guesswork. Textboxes, graphics, junctions, no-connect markers, bus entries, rule areas, and tables are indexed from their typed schematic collections. Table cell text is bounded, bitmap payload bytes are excluded, and incremental snapshots remove deleted pins and annotations. Validation: 34/34 focused project-index contracts, changed-module Pyright (0 diagnostics), Qt MinGW Release build, and CTest 115/115. The provider-disabled official GUI-map run completed 10 mapped interactions, verified the serialized unconnected PGOOD pin and bounded context retrieval, inspected four meaningful screenshots, and reviewed stdout/stderr; no provider request was sent. Evidence: `artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final.json`. CCad's project JSON currently does not preserve `SchPin.id`, so file-loaded pin identity is explicitly derived from symbol/unit/number-or-name. The broader C3 graph remains open.
+
+Sprint 995 supersedes the Sprint 992 note about missing JSON pin IDs: native non-empty `SchPin.id` values now round-trip, while legacy ID-less project files continue to load with derived retrieval identities.
 
 ## Sprint 991 opt-in semantic memory retrieval
 
