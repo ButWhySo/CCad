@@ -11,7 +11,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Pass the 23 focused project-index contracts, changed-module Pyright 1.1.414 (0 diagnostics), Qt MinGW Release build, and full CTest (113/113).
 - [x] Pass the provider-disabled seven-action GUI-map query against the real `agent-catalog` project; verify displayed board-net count, transcript retention/clear behavior, inspect all three distinct screenshots, and review stdout/stderr.
 - [x] Update handover/features/progress and this checklist; the production TODO is the canonical backlog, so no duplicate backlog file was created. Run the staged secret scan.
-- [ ] Commit the verified slice, fast-forward/push `main`, verify remote SHA, and remove only the completed sprint branch.
+- [x] Commit the verified slice as `06a6c3d`, fast-forward and push `main`, verify GitHub SHA `06a6c3debb4495e7db6ce1ca55196c17bf3d5abf`, and remove the completed sprint branch.
 
 ### Sprint 983 active slice — production-shaped project-index coverage (Tier 1, C3)
 
