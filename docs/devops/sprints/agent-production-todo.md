@@ -10,7 +10,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Pass 24 focused project-index/context-broker tests and changed-module Pyright 1.1.414 (0 diagnostics).
 - [x] Verify the real `ZERO_LENGTH_TRACK` diagnostic for `T_SPRINT985_ZERO` in the disposable-project GUI-map flow; seven mapped interactions, nine screenshots inspected, stdout/stderr reviewed, no provider request.
 - [x] Pass Qt MinGW Release build and full CTest (113/113); update handover, feature, progress, and this TODO; run redacted secret scan.
-- [ ] Commit verified slice, fast-forward/push `main`, verify remote SHA, and remove only the completed sprint branch.
+- [x] Commit verified slice `bf2b530`, fast-forward/push `main`, verify remote SHA `bf2b530ca04024c2a3ad5373502631441f7565e5`, and remove only the completed sprint branch.
 
 Scope boundary: this slice closes explicit-link and diagnostic retrieval coverage only; broader all-entity graph/layer coverage, benchmark coverage, and C3 completion remain open.
 
