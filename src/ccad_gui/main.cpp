@@ -462,6 +462,7 @@ int main(int argc, char** argv) {
           name.startsWith("sprint984-board-net-retrieval") ||
           name.startsWith("sprint985-project-reference-graph") ||
           name.startsWith("sprint986-project-spatial-index") ||
+          name.startsWith("sprint987-schematic-metadata") ||
           name.startsWith("sprint975-memory-ui") ||
           name.startsWith("sprint974-memory")) {
         const auto interact = [window, &entries, &output_dir, &name,
@@ -490,8 +491,9 @@ int main(int argc, char** argv) {
                !name.startsWith("sprint981-schematic-project-graph") &&
                !name.startsWith("sprint982-multilayer-project-context") &&
                 !name.startsWith("sprint983-project-index-typed-geometry") &&
-                !name.startsWith("sprint984-board-net-retrieval") &&
-                !name.startsWith("sprint986-project-spatial-index")) ||
+               !name.startsWith("sprint984-board-net-retrieval") &&
+                !name.startsWith("sprint986-project-spatial-index") &&
+                !name.startsWith("sprint987-schematic-metadata")) ||
               memory_checkpoints.contains(action_name)) {
             screenshot_path = QString::fromStdString(
                 (output_dir / (name + "-" + action_name + ".png").toStdString()).string());
@@ -504,6 +506,7 @@ int main(int argc, char** argv) {
                !name.startsWith("sprint984-board-net-retrieval") &&
                !name.startsWith("sprint986-project-spatial-index") &&
                !name.startsWith("sprint985-project-reference-graph") &&
+               !name.startsWith("sprint987-schematic-metadata") &&
               popup && popup->isVisible()) {
             popup_screenshot = QString::fromStdString(
                 (output_dir / (name + "-" + action_name + "-slash-popup.png").toStdString()).string());
@@ -578,7 +581,8 @@ int main(int argc, char** argv) {
                    name.startsWith("sprint983-project-index-typed-geometry") ||
                    name.startsWith("sprint984-board-net-retrieval") ||
                    name.startsWith("sprint985-project-reference-graph") ||
-                   name.startsWith("sprint986-project-spatial-index")) {
+                   name.startsWith("sprint986-project-spatial-index") ||
+                   name.startsWith("sprint987-schematic-metadata")) {
           const auto capture = [window, &output_dir, &name, &entries](const QString& state) {
             const QString path = QString::fromStdString(
                 (output_dir / (name + "-" + state + ".png").toStdString()).string());
@@ -600,6 +604,8 @@ int main(int argc, char** argv) {
           const bool context_memory_validation = name.startsWith("sprint977-context");
           const bool schematic_graph_validation =
               name.startsWith("sprint981-schematic-project-graph");
+          const bool schematic_metadata_validation =
+              name.startsWith("sprint987-schematic-metadata");
           const bool multilayer_project_validation =
               name.startsWith("sprint982-multilayer-project-context");
           const bool serialized_pad_layer_validation =
@@ -617,6 +623,7 @@ int main(int argc, char** argv) {
               serialized_pad_layer_validation ||
               board_net_validation ||
               diagnostic_validation ||
+              schematic_metadata_validation ||
               name.startsWith("sprint980-project-retrieval");
           if (diagnostic_validation) {
             ok = interact("ui.click", "{\"id\":\"action:agent_quick_run_drc\"}",
@@ -625,7 +632,7 @@ int main(int argc, char** argv) {
                           "action:agent_submit_chat", "diagnostic-drc-command-run") && ok;
           }
           auto* chat = window->findChild<QTextBrowser*>("control:agent_chat_stream");
-          bool project_diagnostic_visible = false;
+          bool project_diagnostic_visible = !diagnostic_validation;
           if (diagnostic_validation) {
             const QJsonObject live_context = QJsonDocument::fromJson(
                 window->runAgentUiQueryJson("project.context", "{}").toUtf8())
@@ -691,13 +698,15 @@ int main(int argc, char** argv) {
                      : multilayer_project_validation
                      ? QStringLiteral("What copper layers does via %1 span?")
                            .arg(placed_via_id)
-                     : schematic_graph_validation
-                     ? QStringLiteral("Inspect schematic net AC1 and list its member pins.")
-                     : serialized_pad_layer_validation
-                     ? QString()
-                     : board_net_validation
-                     ? QStringLiteral("Inspect the PCB net AC1 and identify its exact member pads.")
-                     : QStringLiteral("Describe component U_DEMO in the loaded project."))
+                      : schematic_graph_validation
+                      ? QStringLiteral("Inspect schematic net AC1 and list its member pins.")
+                      : serialized_pad_layer_validation
+                      ? QString()
+                      : board_net_validation
+                      ? QStringLiteral("Inspect the PCB net AC1 and identify its exact member pads.")
+                      : schematic_metadata_validation
+                      ? QStringLiteral("Find the Manufacturer field ACME-42 on U3 and the Power Stage schematic sheet path sheets/power_stage.kicad_sch.")
+                      : QStringLiteral("Describe component U_DEMO in the loaded project."))
               : context_memory_validation
               ? QStringLiteral("What memory applies to GND near U3 on F.Cu?")
               : QStringLiteral("Record this thread-local verification turn.");
@@ -724,6 +733,39 @@ int main(int argc, char** argv) {
                                 jsonStringLocal(pad_id));
             ok = !pad_id.isEmpty() && ok;
           }
+          bool schematic_metadata_serialized = !schematic_metadata_validation;
+          bool schematic_metadata_retrieved = !schematic_metadata_validation;
+          if (schematic_metadata_validation) {
+            const QJsonObject project = QJsonDocument::fromJson(
+                window->runAgentUiQueryJson("project.state", "{}").toUtf8())
+                .object().value("result").toObject().value("project").toObject();
+            bool found_sheet = false;
+            for (const QJsonValue& value : project.value("sheets").toArray()) {
+              const QJsonObject sheet = value.toObject();
+              found_sheet = found_sheet ||
+                  (sheet.value("id").toString() == "SHEET_SPRINT987" &&
+                   sheet.value("name").toString() == "Power Stage" &&
+                   sheet.value("file_path").toString() ==
+                       "sheets/power_stage.kicad_sch");
+            }
+            bool found_property = false;
+            for (const QJsonValue& value : project.value("components").toArray()) {
+              const QJsonObject component = value.toObject();
+              if (component.value("reference").toString() != "U3") continue;
+              for (const QJsonValue& field_value : component.value("fields").toArray()) {
+                const QJsonObject field = field_value.toObject();
+                found_property = found_property ||
+                    (field.value("name").toString() == "Manufacturer" &&
+                     field.value("text").toString() == "ACME-42");
+              }
+            }
+            schematic_metadata_serialized = found_sheet && found_property;
+            entries << QString("{\"schematic_metadata_serialized\":%1,\"sheet_path\":%2,\"property_value\":%3}")
+                           .arg(schematic_metadata_serialized ? "true" : "false",
+                                jsonStringLocal(found_sheet ? "sheets/power_stage.kicad_sch" : ""),
+                                jsonStringLocal(found_property ? "ACME-42" : ""));
+            ok = schematic_metadata_serialized && ok;
+          }
           ok = interact("ui.type_text",
                         QString("{\"id\":\"control:agent_chat_input\",\"text\":%1}")
                             .arg(jsonStringLocal(user_prompt)),
@@ -741,11 +783,20 @@ int main(int argc, char** argv) {
           const bool memory_visible = !context_memory_validation ||
               (chat && chat->toPlainText().contains("Context package prepared") &&
                chat->toPlainText().contains("1 memories"));
-          const bool project_matches_visible = diagnostic_validation
+          bool project_matches_visible = diagnostic_validation
               ? project_diagnostic_visible
               : !project_retrieval_validation ||
                     (chat && chat->toPlainText().contains("project matches") &&
                      !chat->toPlainText().contains("| 0 project matches"));
+          if (schematic_metadata_validation && chat) {
+            const QString transcript = chat->toPlainText();
+            schematic_metadata_retrieved = transcript.contains("ACME-42") &&
+                transcript.contains("sheets/power_stage.kicad_sch");
+            project_matches_visible = transcript.contains("project matches") &&
+                !transcript.contains("| 0 project matches");
+            entries << QString("{\"schematic_metadata_retrieved\":%1}")
+                           .arg(schematic_metadata_retrieved ? "true" : "false");
+          }
           const bool schematic_pin_visible = !schematic_graph_validation ||
               (chat && chat->toPlainText().contains("schematic pins"));
           const bool schematic_symbol_visible = !schematic_graph_validation ||
@@ -783,6 +834,8 @@ int main(int argc, char** argv) {
             }
           }
           const bool turn_visible = chat && memory_visible && project_matches_visible &&
+              schematic_metadata_serialized &&
+              schematic_metadata_retrieved &&
               schematic_pin_visible && schematic_symbol_visible && pcb_layers_visible &&
               multiple_project_layers_visible && board_net_visible && project_diagnostic_visible &&
               project_diagnostic_count_visible &&
@@ -791,7 +844,7 @@ int main(int argc, char** argv) {
                    ? chat->toPlainText().contains("is not configured")
                    : chat->toPlainText().contains(
                          "Provider execution is unavailable; configure a provider"));
-          entries << QString("{\"conversation_turn_visible\":%1,\"context_memory_attached\":%2,\"project_retrieval_visible\":%3,\"schematic_pin_retrieval_visible\":%4,\"schematic_symbol_retrieval_visible\":%5,\"project_layers_visible\":%6,\"multiple_project_layers_visible\":%7,\"board_net_count_visible\":%8,\"project_diagnostic_visible\":%9,\"project_diagnostic_count_visible\":%10,\"provider_request_sent\":false}")
+          entries << QString("{\"conversation_turn_visible\":%1,\"context_memory_attached\":%2,\"project_retrieval_visible\":%3,\"schematic_pin_retrieval_visible\":%4,\"schematic_symbol_retrieval_visible\":%5,\"project_layers_visible\":%6,\"multiple_project_layers_visible\":%7,\"board_net_count_visible\":%8,\"project_diagnostic_visible\":%9,\"project_diagnostic_count_visible\":%10,\"schematic_metadata_retrieved\":%11,\"provider_request_sent\":false}")
                          .arg(turn_visible ? "true" : "false",
                               memory_visible ? "true" : "false",
                               project_matches_visible ? "true" : "false",
@@ -801,7 +854,8 @@ int main(int argc, char** argv) {
                               multiple_project_layers_visible ? "true" : "false",
                               board_net_visible ? "true" : "false",
                               project_diagnostic_visible ? "true" : "false",
-                              project_diagnostic_count_visible ? "true" : "false");
+                              project_diagnostic_count_visible ? "true" : "false",
+                              schematic_metadata_retrieved ? "true" : "false");
           ok = turn_visible && capture("turn-persisted") && ok;
           if (!diagnostic_validation) {
             ok = interact("ui.type_text",
@@ -1078,6 +1132,8 @@ int main(int argc, char** argv) {
             ? QStringLiteral("Place one via on the disposable board through mapped toolbar and board-point interactions, then prove its F.Cu/B.Cu span survives exact project retrieval and bounded Agent context; provider disabled")
             : name.startsWith("sprint981-schematic-project-graph")
             ? QStringLiteral("Verify exact schematic net member pins and related symbols are counted in real turn context through seven mapped actions; provider disabled")
+            : name.startsWith("sprint987-schematic-metadata")
+            ? QStringLiteral("Load authoritative schematic fields and a relative sheet path, inspect them through project.state, then query both identifiers through real Agent context; provider disabled")
             : name.startsWith("sprint980-project-retrieval")
             ? QStringLiteral("Verify an actual typed-project retrieval match appears in per-turn Agent context and chat metadata via seven mapped actions; provider disabled")
             : name.startsWith("sprint977-context")

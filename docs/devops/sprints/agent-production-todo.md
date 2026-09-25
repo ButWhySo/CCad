@@ -2,6 +2,18 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 987 active slice — schematic fields and safe sheet identity (Tier 1, C3)
+
+- [x] Index typed symbol field names/text/visibility and sheet title plus relative path.
+- [x] Preserve bounded properties and relative sheet paths through context packaging; reject sensitive keys and absolute paths.
+- [x] Send native project ID with Agent turn context; keep serialized schematic state inspectable through the typed project-state query.
+- [x] Pass 32 focused project-index/context tests and changed-module Pyright.
+- [x] Verify provider-disabled live context has nonzero project retrieval, includes the field/path, and retains transcript across `/clear`; inspect three screenshots and stdout/stderr.
+- [x] Pass Qt MinGW Release build and full CTest (113/113); run redacted secret scan and update handover docs.
+- [x] Commit, fast-forward/push GitHub `main`, verify remote SHA, and remove only the completed sprint branch.
+
+Scope boundary: rule IDs, project artifact identities, notes, generated functional-block summaries, and annotations remain open because the typed model does not currently provide complete authoritative records for them.
+
 ### Sprint 986 completed slice — typed-project spatial retrieval (Tier 1, C3)
 
 - [x] Add explicit bounded bounding-box retrieval over indexed entity AABBs; preserve deterministic ordering and incremental stale-geometry removal.
@@ -4229,7 +4241,7 @@ Index exact identifiers for:
 - [x] pad IDs.
 - [x] net IDs/names.
 - [x] layer IDs/names.
-- [ ] sheet paths.
+- [x] Relative sheet paths (absolute paths are excluded from retrieval).
 - [ ] rule IDs.
 - [x] DRC/ERC diagnostic lookup IDs/codes and affected-object IDs.
 - [x] zone/keepout IDs.
@@ -4246,8 +4258,8 @@ Index textual fields such as:
 - [x] library descriptions when serialized by the native entity.
 - [x] net names present in the native schematic/PCB entity fields.
 - [x] labels.
-- [ ] sheet names/titles.
-- [ ] properties.
+- [x] sheet names/titles.
+- [x] schematic symbol properties/fields (bounded scalar text and visibility).
 - [ ] notes.
 - [ ] rule descriptions.
 - [x] DRC/ERC diagnostic codes, severity, engine, and messages.

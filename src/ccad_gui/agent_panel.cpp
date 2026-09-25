@@ -1713,6 +1713,17 @@ void AgentPanel::submitChat() {
     if (context_provider_) {
         const QString context = QString::fromStdString(context_provider_());
         params["context"] = context;
+        QJsonParseError context_error;
+        const QJsonDocument context_document =
+            QJsonDocument::fromJson(context.toUtf8(), &context_error);
+        if (context_error.error == QJsonParseError::NoError &&
+            context_document.isObject()) {
+          const QJsonObject project_context = context_document.object();
+          const QJsonObject typed_state = project_context.value("typed_state").toObject();
+          const QJsonObject project = typed_state.value("project").toObject();
+          const QString project_id = project.value("id").toString().trimmed();
+          if (!project_id.isEmpty()) params["project_id"] = project_id;
+        }
         if (context_usage_label_) {
           context_usage_label_->setText(QString("%1 / 128k context").arg((context.size() + 3) / 4));
         }

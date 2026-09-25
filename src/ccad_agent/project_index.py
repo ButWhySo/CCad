@@ -15,6 +15,8 @@ _SECRET = re.compile(
     r"(?:api[_-]?key|secret|password|token)\s*[:=]\s*\S+|"
     r"\b(?:sk|csk|gsk|xai|sk-or)-[A-Za-z0-9_-]{12,}\b|\bAIza[A-Za-z0-9_-]{20,}",
     re.IGNORECASE)
+_SENSITIVE_PROPERTY = re.compile(
+    r"(?:api[_-]?key|secret|password|token|authorization|credential)", re.IGNORECASE)
 _COORDINATE = re.compile(
     r"(?<![\w.])(-?\d+(?:\.\d+)?)\s*(mm|cm|mil|mils|in|inch|inches)?\s*[,;]\s*"
     r"(-?\d+(?:\.\d+)?)\s*(mm|cm|mil|mils|in|inch|inches)?",
@@ -35,10 +37,58 @@ def _normalize(value: Any) -> str:
 
 
 def _safe(value: Any, limit: int = 120) -> str:
-    text = str(value or "").strip()
+    if value is None:
+        return ""
+    text = str(value).strip()
     if not text or _SECRET.search(text):
         return ""
     return text[:limit]
+
+
+def _relative_sheet_path(value: Any) -> str:
+    """Keep typed sheet identity searchable without exporting host file paths."""
+    path = _safe(value, 240).replace("\\", "/")
+    if (not path or path.startswith("/") or path.startswith("//") or
+            re.match(r"^[A-Za-z]:", path)):
+        return ""
+    return path
+
+
+def _typed_properties(item: dict) -> list[dict]:
+    """Return bounded scalar properties from native symbol fields or metadata."""
+    values: list[dict] = []
+    raw = item.get("properties")
+    if isinstance(raw, dict):
+        entries = ((key, value, None) for key, value in
+                   sorted(raw.items(), key=lambda pair: str(pair[0]))[:32])
+    elif isinstance(raw, list):
+        entries = ((prop.get("name", prop.get("key")),
+                    prop.get("value", prop.get("text")),
+                    prop.get("visible") if isinstance(prop.get("visible"), bool) else None)
+                   for prop in raw[:32] if isinstance(prop, dict))
+    else:
+        entries = iter(())
+
+    def append(name: Any, value: Any, visible: bool | None):
+        clean_name = _safe(name, 80)
+        clean_value = _safe(value, 160) if isinstance(value, (str, int, float, bool)) else ""
+        if not clean_name or _SENSITIVE_PROPERTY.search(clean_name) or not clean_value:
+            return
+        prop: dict[str, Any] = {"name": clean_name, "value": clean_value}
+        if visible is not None:
+            prop["visible"] = visible
+        values.append(prop)
+
+    for name, value, visible in entries:
+        append(name, value, visible)
+
+    # CCad's authoritative schematic serializer calls instantiated symbol
+    # properties "fields" and stores their user-facing text under "text".
+    for field in item.get("fields", [])[:32] if isinstance(item.get("fields"), list) else ():
+        if isinstance(field, dict):
+            append(field.get("name"), field.get("text"),
+                   field.get("visible") if isinstance(field.get("visible"), bool) else None)
+    return values[:32]
 
 
 def project_model(snapshot: Any) -> dict:
@@ -271,6 +321,13 @@ class ProjectIndex:
             clean = _safe(value, 140)
             if clean:
                 fields[key] = clean
+        raw_sheet_path = item.get("sheet_path", item.get("file_path"))
+        sheet_path = _relative_sheet_path(raw_sheet_path)
+        if kind == "schematic_sheet" and sheet_path:
+            fields["sheet_path"] = sheet_path
+        properties = _typed_properties(item)
+        if properties:
+            fields["properties"] = properties
         net = _safe(net_id or item.get("net_id"), 120)
         if not net and kind.endswith("net"):
             net = object_id
@@ -345,28 +402,23 @@ class ProjectIndex:
             fields["bounds_mm"] = {key: round(value, 6) for key, value in bounds.items()}
         searchable_values = [object_id, net, component]
         searchable_values.extend(_safe(item.get(key), 140) for key in aliases
-                                 if key not in {"start_layer_id", "end_layer_id"})
+                                 if key not in {"start_layer_id", "end_layer_id"} and
+                                 not (kind == "schematic_sheet" and key == "file_path"))
         searchable_values.extend(fields.get(key, "") for key in
                                  ("reference", "value", "name", "part", "description",
                                   "library_description", "footprint_name", "lib_id",
                                   "sheet_path", "title", "notes", "pin_name", "pin_number",
                                   "code", "severity", "message", "engine", "object_id"))
-        properties = item.get("properties")
-        if isinstance(properties, dict):
-            for key, value in sorted(properties.items(), key=lambda pair: str(pair[0]))[:32]:
-                if isinstance(value, (str, int, float, bool)):
-                    searchable_values.append(_safe(key, 80))
-                    searchable_values.append(_safe(value, 160))
-        elif isinstance(properties, list):
-            for prop in properties[:32]:
-                if isinstance(prop, dict):
-                    searchable_values.extend((_safe(prop.get("name") or prop.get("key"), 80),
-                                             _safe(prop.get("value") or prop.get("text"), 160)))
+        for prop in properties:
+            searchable_values.extend((prop["name"], prop["value"]))
         exact_values = [object_id]
         exact_values.extend(_safe(item.get(key), 140) for key in aliases
                             if key in {"id", "reference", "name", "pin_name", "pin_number"}
+                            or (kind == "schematic_sheet" and key == "sheet_path")
                             or (kind == "project_diagnostic" and
                                 key in {"code", "object_id"}))
+        if kind == "schematic_sheet" and sheet_path:
+            exact_values.append(sheet_path)
         if kind in {"layer", "schematic_net"}:
             exact_values.append(net or _safe(item.get("name"), 140))
         text = " ".join([kind] + [str(value) for value in searchable_values if value] +
@@ -1031,6 +1083,7 @@ class ProjectIndex:
                     if key in {"id", "kind", "reference", "value", "name", "part",
                                "description", "library_description", "footprint_name",
                                "lib_id", "sheet_path", "title", "notes",
+                               "properties",
                                "pin_name", "pin_number", "type", "net_id", "membership_kind", "layer_id",
                                "layer_ids", "start_layer_id", "end_layer_id",
                                "component_id", "symbol_id", "position_mm", "bounds_mm",

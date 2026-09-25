@@ -10,6 +10,8 @@ _SECRET = re.compile(
     r"(?:api[_-]?key|secret|password|token)\s*[:=]\s*\S+"
     r"|\b(?:sk|csk|gsk|xai|sk-or)-[A-Za-z0-9_-]{12,}\b"
     r"|\bAIza[A-Za-z0-9_-]{20,}", re.IGNORECASE)
+_SENSITIVE_PROPERTY = re.compile(
+    r"api[_-]?key|secret|password|token|authorization|credential", re.IGNORECASE)
 _PREFIX = "[CCAD_CONTEXT_V3]\n"
 
 
@@ -104,14 +106,37 @@ def _project_retrieval_payload(value: dict | None) -> dict:
     for entity in source.get("entities", [])[:12]:
         if not isinstance(entity, dict):
             continue
-        item = {}
-        for key in ("id", "kind", "reference", "value", "name", "part",
+        item: dict[str, Any] = {}
+        for key in ("id", "kind", "reference", "value", "name", "part", "sheet_path",
                     "pin_name", "pin_number", "type", "net_id", "membership_kind", "layer_id",
                     "start_layer_id", "end_layer_id",
                     "component_id", "symbol_id", "position_mm", "bounds_mm", "retrieval",
                     "rank", "relationship", "distance_mm", "design_rules"):
             if key in entity and isinstance(entity[key], (str, int, float, dict)):
                 item[key] = entity[key]
+        sheet_path = entity.get("sheet_path")
+        if isinstance(sheet_path, str):
+            normalized_path = sheet_path.replace("\\", "/")
+            if normalized_path.startswith("/") or re.match(r"^[A-Za-z]:", normalized_path):
+                item.pop("sheet_path", None)
+            else:
+                item["sheet_path"] = normalized_path[:240]
+        properties = entity.get("properties")
+        if isinstance(properties, list):
+            safe_properties = []
+            for prop in properties[:32]:
+                if not isinstance(prop, dict):
+                    continue
+                name = _safe_text(prop.get("name"), 80)
+                property_value = _safe_text(prop.get("value"), 160)
+                if not name or not property_value or _SENSITIVE_PROPERTY.search(name):
+                    continue
+                safe_property = {"name": name, "value": property_value}
+                if isinstance(prop.get("visible"), bool):
+                    safe_property["visible"] = prop["visible"]
+                safe_properties.append(safe_property)
+            if safe_properties:
+                item["properties"] = safe_properties
         layer_ids = entity.get("layer_ids")
         if isinstance(layer_ids, list):
             safe_layers = [_safe_text(value, 120) for value in layer_ids[:16]

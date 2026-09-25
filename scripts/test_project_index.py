@@ -371,6 +371,90 @@ class ProjectIndexTests(unittest.TestCase):
         self.assertEqual(updated["design_rules"]["min_track_width_nm"], 175_000)
         self.assertEqual(packaged["design_rules"]["min_track_width_nm"], 175_000)
 
+    def test_schematic_sheet_name_and_project_relative_path_are_exact_and_searchable(self):
+        snapshot = project_snapshot()
+        project = snapshot["typed_state"]["project"]
+        project["sheets"] = [{"id": "sheet-power", "name": "Power Stage",
+                              "file_path": r"sheets\power_stage.kicad_sch"}]
+        index = ProjectIndex()
+
+        by_title = index.retrieve(snapshot, "Power Stage", limit=12)
+        sheet = next(item for item in by_title["entities"]
+                     if item["kind"] == "schematic_sheet")
+        self.assertEqual(sheet["name"], "Power Stage")
+        self.assertEqual(sheet["sheet_path"], "sheets/power_stage.kicad_sch")
+
+        by_path = index.retrieve(snapshot, "sheets/power_stage.kicad_sch", limit=12)
+        self.assertTrue(any(item["kind"] == "schematic_sheet" and
+                            item["id"] == "sheet-power" and
+                            item["retrieval"] == "exact"
+                            for item in by_path["entities"]))
+        package = build_context_package(
+            __import__("json").dumps(snapshot), [], [], char_limit=4096,
+            project_retrieval=by_path)
+        envelope = __import__("json").loads(package["content"].split("\n", 1)[1])
+        packaged_sheet = next(item for item in
+                              envelope["project_retrieval"]["entities"]
+                              if item["kind"] == "schematic_sheet")
+        self.assertEqual(packaged_sheet["sheet_path"], "sheets/power_stage.kicad_sch")
+
+    def test_symbol_fields_are_searchable_and_returned_without_secret_properties(self):
+        snapshot = project_snapshot()
+        symbol = snapshot["typed_state"]["project"]["components"][0]
+        symbol["fields"] = [
+            {"name": "Manufacturer", "text": "Acme Circuits", "visible": True},
+            {"name": "Order code", "text": "ACME-42", "visible": False},
+            {"name": "Zero value", "text": "0", "visible": True},
+        ]
+        symbol["properties"] = {"Footprint family": "QFN", "access_token": "do-not-index"}
+        index = ProjectIndex()
+
+        result = index.retrieve(snapshot, "Acme Circuits ACME-42", limit=12)
+        component = next(item for item in result["entities"]
+                         if item["kind"] == "schematic_symbol" and item["id"] == "sch-u3")
+        properties = {item["name"]: item for item in component["properties"]}
+        self.assertEqual(properties["Manufacturer"],
+                         {"name": "Manufacturer", "value": "Acme Circuits", "visible": True})
+        self.assertEqual(properties["Order code"]["value"], "ACME-42")
+        self.assertIn("Zero value", properties)
+        self.assertNotIn("access_token", properties)
+        self.assertNotIn("do-not-index", str(result))
+
+        package = build_context_package(
+            __import__("json").dumps(snapshot), [], [], char_limit=4096,
+            project_retrieval=result)
+        envelope = __import__("json").loads(package["content"].split("\n", 1)[1])
+        packaged_component = next(item for item in
+                                  envelope["project_retrieval"]["entities"]
+                                  if item["kind"] == "schematic_symbol" and
+                                  item["id"] == "sch-u3")
+        self.assertIn("ACME-42", str(packaged_component["properties"]))
+        self.assertNotIn("do-not-index", str(packaged_component))
+
+        zero = index.retrieve(snapshot, "Zero value 0", limit=12)
+        self.assertTrue(any(item["id"] == "sch-u3" for item in zero["entities"]))
+
+    def test_sheet_absolute_paths_are_not_added_to_retrieval(self):
+        snapshot = project_snapshot()
+        snapshot["typed_state"]["project"]["sheets"] = [{
+            "id": "SHEET_ABSOLUTE_PATH", "name": "ConfidentialSheet",
+            "file_path": r"C:\Users\Alice\private.kicad_sch"}]
+        result = ProjectIndex().retrieve(snapshot, "SHEET_ABSOLUTE_PATH", limit=12)
+        sheet = next(item for item in result["entities"]
+                     if item["kind"] == "schematic_sheet")
+        self.assertNotIn("sheet_path", sheet)
+        self.assertNotIn("C:\\Users", str(result))
+        package = build_context_package(
+            __import__("json").dumps(snapshot), [], [], char_limit=4096,
+            project_retrieval=result)
+        envelope = __import__("json").loads(package["content"].split("\n", 1)[1])
+        self.assertNotIn("sheet_path", str(envelope["project_retrieval"]))
+        self.assertNotIn("C:\\Users", str(envelope["project_retrieval"]))
+        private_path_search = ProjectIndex().retrieve(
+            snapshot, "Alice private.kicad_sch", limit=12)
+        self.assertFalse(any(item["kind"] == "schematic_sheet"
+                             for item in private_path_search["entities"]))
+
     def test_bounded_context_preserves_only_included_layer_memberships(self):
         import json
         snapshot = project_snapshot()
