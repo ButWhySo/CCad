@@ -2,7 +2,7 @@
 
 ## Sprint 1011 CTest failure diagnostics
 
-When a native CTest job fails, Linux core, Linux GUI, and Windows rerun only the failed test with verbose output, retain `ctest-failed-details.log`, and publish its contents in the job summary with error annotations. Sprint 1010 hosted CI identified `agent_project_index` on all three platforms, but anonymous log access did not expose its assertion; the exact root cause remains open pending the new workflow diagnostics. The local Qt/MinGW Release build and full CTest pass 119/119; manifest `artifacts/evidence/sprint1011-ctest-failure-diagnostics.json` records the verified non-visual gate.
+When a native CTest job fails, Linux core, Linux GUI, and Windows rerun only the failed test with verbose output, retain `ctest-failed-details.log`, and publish its contents in the job summary with error annotations. Sprint 1010 hosted CI identified `agent_project_index` on all three platforms. Sprint 1011 diagnostics found the root cause: project-index and Agent-context geometry contracts read an ignored, untracked demo-board file. Both now construct deterministic typed test data in the test itself, and the CI contract prevents those tests from reading the ignored demo path. The two affected tests and regression contract pass locally; the official Qt/MinGW Release build and full CTest pass 119/119. Manifest: `artifacts/evidence/sprint1011-ctest-fixture-fix.json`. Hosted CI on the exact post-fix SHA remains required before closure.
 
 # Sprint 1010 CI and CTest reliability (in progress)
 

@@ -7,8 +7,9 @@ Check a box only after implementation and its required evidence exist.
 - [x] Rerun failed CTest cases verbosely on Linux core, Linux GUI, and Windows.
 - [x] Publish one-test failure output in each job summary and preserve it as an artifact.
 - [x] Add regression contract requiring all native jobs to retain failed-test detail.
-- [x] Run official Qt/MinGW Release build and full CTest verifier (119/119); commit workspace-only manifest after review.
-- [ ] Push and inspect hosted job-level failure output for `agent_project_index`; implement the evidenced root-cause fix.
+- [x] Remove ignored `artifacts/demos` dependencies from project-index and agent-context geometry tests; use deterministic typed test data and guard against reintroduction.
+- [x] Verify affected tests and CI regression contract; official Qt/MinGW Release build/full CTest pass 119/119, with workspace-only manifest `artifacts/evidence/sprint1011-ctest-fixture-fix.json`.
+- [x] Inspect hosted failure output across Linux core, Linux GUI, and Windows; root cause was an untracked/ignored demo-board fixture required by two Python contracts.
 - [ ] Confirm all hosted CI jobs pass on the exact pushed main SHA.
 
 ### Sprint 1010 — CI/CTest failure repair

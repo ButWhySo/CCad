@@ -54,9 +54,11 @@ requests.extend({"method": "human_message", "params": {
 requests.append({"method": "human_message", "params": {
     "text": "/clear", "context": "board B"}})
 requests.append({"method": "agent.context_state", "params": {}})
-geometry_project = json.loads((ROOT / "artifacts" / "demos" /
-                               "sprint160-placement-crash-ci-final.ccad.json").read_text(
-                                   encoding="utf-8"))
+geometry_project = {"id": "project-geometry-contract", "board": {
+    "layers": [{"id": "F.Cu", "kind": "copper", "visible": True}],
+    "footprints": [], "placement_regions": [], "pads": [], "tracks": [],
+    "vias": [], "zones": [], "graphics": [], "texts": [],
+}, "components": [], "nets": [], "wires": [], "constraints": []}
 geometry_project["board"].setdefault("footprints", []).extend((
     {"reference": "JAC1", "value": "AC input",
      "footprint_name": "Connector_PinHeader_2.54mm", "layer_id": "F.Cu",

@@ -1247,8 +1247,7 @@ class ProjectIndexTests(unittest.TestCase):
                              for item in moved["entities"]))
 
     def test_production_limit_keeps_explicit_geometry_relations_ahead_of_lexical_noise(self):
-        fixture_path = ROOT / "artifacts" / "demos" / "sprint160-placement-crash-ci-final.ccad.json"
-        project = json.loads(fixture_path.read_text(encoding="utf-8"))
+        project = project_snapshot()["typed_state"]["project"]
         project["board"].setdefault("footprints", []).extend((
             {"reference": "JAC1", "value": "AC input",
              "footprint_name": "Connector_PinHeader_2.54mm", "layer_id": "F.Cu",
@@ -1307,7 +1306,7 @@ class ProjectIndexTests(unittest.TestCase):
             {"id": f"diag-{index}", "code": f"FIXTURE_{index}",
              "message": "Fixture diagnostic linked to selected pad",
              "object_id": "JAC1.1", "severity": "warning", "engine": "drc"}
-            for index in range(3)]
+            for index in range(12)]
         selected_pad = "JAC1.1"
         noisy_signals = extract_context_signals(
             query, goal=query, project_id="proj-sprint160-placement-crash-ci-final",

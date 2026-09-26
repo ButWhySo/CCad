@@ -30,4 +30,8 @@ assert workflow.count("Linux GUI build diagnostic") == 1
 python_job = job_block("agent-python")
 assert "agent-python-tests.log" in python_job
 assert "upload-artifact@v4" in python_job
+for test_name in ("test_agent_context_contract.py", "test_project_index.py"):
+    test_source = (Path(__file__).resolve().parent / test_name).read_text(encoding="utf-8")
+    assert "artifacts/demos/sprint160-placement-crash-ci-final.ccad.json" not in test_source
+    assert '"artifacts" / "demos"' not in test_source
 print("PASS CI contract: native test dependencies and per-job diagnostics are configured; CD is not configured")
