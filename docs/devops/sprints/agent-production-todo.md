@@ -2,6 +2,15 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1017 - CI / CTest / CD health reconciliation
+
+- [x] Query live GitHub Actions history and exact current `main` commit; latest run `36249116142` passed all five configured jobs on `011a754286d364b714dfbb64b268332d1b2c6a00`.
+- [x] Reconcile preceding red runs with the already-landed Sprint 1010/1011 CI and clean-checkout CTest fixture repairs; later runs on `main` are green.
+- [x] Run the official Qt/MinGW Release verifier and full CTest with its configured Qt runtime path; all 120 tests pass. Workspace-only evidence: `artifacts/evidence/sprint1017-ci-ct-cd-health.json` (SHA-256 `BE9FC68EE72E446A7075AFE9D3D7A3693046C4E7500CF3E290BC9C0C0BE8E47C`).
+- [x] Confirm there is one active CI workflow and no configured CD workflow or deployment target; do not invent a publishing destination.
+
+The first ad-hoc local `ctest` invocation omitted the required Qt runtime path and produced Windows loader errors for GUI tests before application code ran. The official verifier prepends the Qt/MinGW runtime and the complete run passes; this was an invocation-environment issue, not a current source/test failure.
+
 ### Sprint 1016 active slice — embedded library pins and exact schematic/PCB identity links (Tier 1, C3)
 
 - [x] Index embedded symbol-library definitions and pin metadata already serialized inside schematic components; identify source as the embedded project snapshot and key definition revisions by bounded content digest.
