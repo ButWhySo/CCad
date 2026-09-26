@@ -10,7 +10,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Verify root-level analysis covers all 22 Agent modules with zero diagnostics; run the focused context/project-index contracts.
 - [x] Pass the official Qt/MinGW Release/full CTest gate (120/120) and commit its evidence manifest `artifacts/evidence/sprint-1026-pyright-workspace-config.json` (SHA-256 `EB4A701A7EF14865B90F52730365279446AD91585AC9A4032779669700D8863A`).
 - [x] Update handover, feature, progress, backlog, and this checklist.
-- [ ] Confirm hosted CI passes on the exact pushed SHA before merge.
+- [x] Confirm all five hosted CI jobs pass on exact pushed `main` SHA `bb4da1ac35c9013ca101631f87a4e374fabd120d`: run `36278814002` (`agent-python`, `core-linux`, `gui-linux`, `core-windows`, `evidence-manifest`). Docs-only closure reused passing local evidence in `artifacts/evidence/sprint-1026-pyright-ci-closure.json` (SHA-256 `9F235FCB897E78C75BD7D6C58A0EAB9DA17D2FEFF88E98CE071805BD2B9C06FF`).
 
 ### Sprint 1025 — Active PCB layer/net context freshness (Tier 1)
 
