@@ -2416,6 +2416,8 @@ production modules pass Pyright with zero diagnostics; the Qt/MinGW Release
 build and full CTest pass 120/120. The official nonvisual manifest is
 `artifacts/evidence/sprint1016-project-pin-relationships.json` (SHA-256
 `827A69DB649AD6DFFF0526877802B4DBE86CCE2D26847E477DBBC86355CF7C95`).
+Feature commit `5f1216a` was merged locally as `2ce38f9` and pushed; all five
+hosted CI jobs passed on that exact `main` SHA in run `36248441890`.
 Standalone cached definitions, passive/decoupling links, proposal/artifact
 links, and transaction-delta ingestion remain open because the current project
 snapshot does not carry their authoritative contracts.

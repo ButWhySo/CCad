@@ -11,6 +11,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Add contracts for definition retrieval, provider packaging, duplicate-number ambiguity, and edge removal after a project revision.
 - [ ] Keep standalone library-cache definitions, artifacts/proposals, source-model passive/decoupling association, and transaction-delta ingestion open until their authoritative runtime/source contracts exist.
 - [x] Run official Qt/MinGW Release + full CTest (120/120); inspect the official nonvisual manifest and logs. Manifest `artifacts/evidence/sprint1016-project-pin-relationships.json` (SHA-256 `827A69DB649AD6DFFF0526877802B4DBE86CCE2D26847E477DBBC86355CF7C95`).
+- [x] Commit on `sprint-1016-project-pin-relationships`, merge locally to `main`, push upstream, and verify all five hosted CI jobs pass on exact merged SHA `2ce38f9a91fb1ad8590e4d112562e1d84f1a3dc4` (run `36248441890`).
 
 ### Sprint 1015 — CI / CTest follow-up
 

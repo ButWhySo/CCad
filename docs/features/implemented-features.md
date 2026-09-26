@@ -15,6 +15,8 @@ changed production modules, and the official Qt/MinGW Release build and full
 CTest pass 120/120. Workspace-only evidence is recorded in
 `artifacts/evidence/sprint1016-project-pin-relationships.json` (SHA-256
 `827A69DB649AD6DFFF0526877802B4DBE86CCE2D26847E477DBBC86355CF7C95`). This
+merged `main` SHA `2ce38f9a91fb1ad8590e4d112562e1d84f1a3dc4` passed all five
+hosted CI jobs in run `36248441890`. This
 does not index standalone library-cache definitions, proposals/artifacts,
 passive relationships, or transaction deltas.
 
