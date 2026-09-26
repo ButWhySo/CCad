@@ -16,7 +16,13 @@ std::string readFile(const std::filesystem::path& path) {
   require(bool(input), "policy fixture file opens: " + path.string());
   std::ostringstream buffer;
   buffer << input.rdbuf();
-  return buffer.str();
+  std::string contents = buffer.str();
+  for (std::size_t position = 0;
+       (position = contents.find("\r\n", position)) != std::string::npos;
+       ++position) {
+    contents.replace(position, 2, "\n");
+  }
+  return contents;
 }
 
 bool contains(const std::string& haystack, const std::string& needle) {

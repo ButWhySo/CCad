@@ -43,6 +43,21 @@ References checked: Langfuse's current Python instrumentation documents updating
 - [x] Run Pyright checks, Qt/MinGW Release build, full CTest (119/119), and inspect workspace-only evidence manifest `artifacts/evidence/sprint1007-gemini-exact-count-capturefix.json` (SHA-256 `A0D10CAD459E05FAA46FBC4DAA04200F75FB2BCD7AA73F5FB25E2ABE2733887A`). clangd's bounded check produced no useful response; the compiler build is authoritative. No live Gemini request or Langfuse receipt was attempted.
 - [x] Update codebase handover, feature inventory, progress, backlog, and this checklist; keep other-provider/multimodal counting and opt-in live trace receipt open.
 
+### Sprint 1008 active slice - stable memory summary in initial context (Tier 1)
+
+References checked: LangChain's [memory](https://docs.langchain.com/oss/python/langgraph/add-memory) and [context engineering](https://docs.langchain.com/oss/python/learn) guidance separates durable memory from bounded model-facing context. CCad keeps summaries deterministic and source-backed; no extra model call or inferred fact is introduced.
+
+- [x] Put bounded content from stable LTM/episodic preferences and corrections, plus explicitly high-importance facts, into the initial context Memory Summary; exclude STM, low-importance facts, and secret-bearing rows.
+- [x] Preserve explicit preference/correction ranking over inferred facts only after normal relevance and scope filtering; the offline memory-manager contract verifies correction precedence.
+- [x] Add a regression contract proving summary content reaches the provider context package, stays bounded, and excludes task-only, low-priority, and secret-bearing records.
+- [x] Make the visual-harness policy contract normalize Windows CRLF fixtures before comparing source fragments; focused Qt CTest passes after the portability correction.
+- [x] Run changed-module Pyright (0 diagnostics) and the official Qt/MinGW Release/full CTest gate (119/119); inspect manifest and captured logs. Workspace-only manifest `artifacts/evidence/sprint1008-memory-summary-r2.json`, SHA-256 `CEAC8CE780EC8DFDBB7E5B09FA494ECB29D4B07CC1DEAC98536C8D3D5A12433D`.
+- [x] Update progress, feature inventory, codebase map, backlog, and this TODO in the verified change set.
+- [x] Run redacted repository and staged-diff secret scans; staged diff is clean. Repository scan finds only synthetic credential strings in `scripts/test_memory_store.py:76`. Stage only scoped source, tests, docs, and evidence manifest.
+- [ ] Commit verified files on this feature branch, merge locally after gates, then push `main` and verify its SHA.
+
+Scope boundary: this does not add generated semantic summaries, source-attribution labels for each memory entry, or a real-provider recall benchmark.
+
 ### Sprint 1004 active slice — lean, complete visual evidence policy
 
 - [x] Align `AGENTS.md` with feature-specific visual checkpoints: record every mapped action, capture only distinct visual states, and inspect every retained image.
@@ -4152,7 +4167,7 @@ The essential architecture is:
 - [ ] Context creation must automatically retrieve likely-relevant memories before the first model call of a root turn.
 - [ ] Do not require the LLM to issue `memory.search` merely to discover whether relevant memory exists.
 - [ ] Build the automatic retrieval query from user prompt, normalized goal, active project, active editor, selected objects, relevant nets/components, workflow/domain, and current thread state.
-- [ ] Inject a bounded Memory Summary containing high-value stable user/project knowledge.
+- [x] Inject a bounded Memory Summary containing high-value stable user/project knowledge; Sprint 1008 contracts prove safe content reaches provider context.
 - [ ] Inject a bounded top-K set of automatically retrieved relevant memories.
 - [ ] Include a compact Memory Manifest describing available memory scopes/categories without injecting their full contents.
 - [ ] Reuse the resulting TurnMemoryContext across subsequent model calls in the same turn.
@@ -4390,7 +4405,7 @@ Keep complete raw messages, but additionally build one compact `TurnRecord` for 
 - [x] Include a bounded stable Memory Summary.
 - [x] Include bounded top-K automatically retrieved memories.
 - [x] Deduplicate automatic memories against both recent conversation and thread recap (Sprint 978 regression coverage).
-- [ ] Prefer explicit user preferences/corrections over inferred memories.
+- [x] Prefer explicit user preferences/corrections over inferred memories; bounded kind weighting is covered by `scripts/test_memory_manager.py`.
 - [x] Keep retrieval within its bounded estimated memory token budget.
 - [x] Record retrieval provenance/rank metadata.
 

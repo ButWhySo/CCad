@@ -12,11 +12,48 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src" / "ccad_agent"))
 
 from context_broker import ContextBroker, extract_context_signals
+from context_package import build_context_package
 from memory_manager import MemoryManager
 from memory_store import MemoryStore
 
 
 class ContextBrokerTests(unittest.TestCase):
+    def test_memory_summary_carries_stable_fact_content_without_task_or_secret_data(self):
+        summary = ContextBroker._summary([
+            {"id": "preference", "tier": "ltm", "scope": "project",
+             "kind": "preference", "importance": 5,
+             "title": "Ground return", "content":
+             "Keep the GND return path short near U3."},
+            {"id": "task", "tier": "stm", "scope": "task",
+             "kind": "constraint", "importance": 5,
+             "title": "Temporary target", "content": "Place the test pad at 4 mm."},
+            {"id": "secret", "tier": "episodic", "scope": "user",
+             "kind": "preference", "importance": 5,
+             "title": "api_key=private-value", "content": "Keep layout simple."},
+            {"id": "ephemeral", "tier": "episodic", "scope": "user",
+             "kind": "fact", "importance": 1,
+             "title": "Temporary note", "content": "Unverified temporary detail."},
+            {"id": "important", "tier": "episodic", "scope": "user",
+             "kind": "fact", "importance": 5,
+             "title": "Stable constraint", "content": "Keep power return copper continuous."},
+        ])
+
+        self.assertIn("Keep the GND return path short near U3", summary)
+        self.assertNotIn("Place the test pad", summary)
+        self.assertNotIn("private-value", summary)
+        self.assertNotIn("Unverified temporary detail", summary)
+        self.assertIn("Keep power return copper continuous", summary)
+        self.assertLessEqual(len(summary), ContextBroker.MAX_MEMORY_SUMMARY_CHARS)
+        package = build_context_package({}, [], [], char_limit=4096,
+                                       memory_summary=summary)
+        self.assertIn("Keep the GND return path short near U3", package["content"])
+        expanded = ContextBroker._summary([
+            {"tier": "ltm", "kind": "preference", "importance": 3,
+             "title": f"Rule {index}", "content": "x " * 200}
+            for index in range(8)
+        ])
+        self.assertLessEqual(len(expanded), ContextBroker.MAX_MEMORY_SUMMARY_CHARS)
+
     def test_signals_keep_design_identifiers_and_bound_sensitive_input(self):
         signals = extract_context_signals(
             "Move U3 on F.Cu and keep GND clear", active_editor="pcb",

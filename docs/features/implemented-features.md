@@ -1,5 +1,19 @@
 # Implemented Features
 
+## Sprint 1008 stable Memory Summary in initial provider context
+
+Automatic context assembly now builds a deterministic summary from eligible
+stable LTM/episodic preferences and corrections, plus user-marked high-importance
+facts. The summary carries bounded source-backed content rather than titles
+alone; process-only STM, low-importance facts, and secret-bearing entries are
+excluded. The summary stays inside the existing context budget and adds no
+provider call. Contracts cover the broker projection and final provider package.
+This slice does not add generated summaries, per-entry source-channel labels, or
+a live recall-quality benchmark. Focused contracts and changed-module Pyright
+pass; Qt/MinGW Release and full CTest pass 119/119. Workspace-only verifier
+manifest `artifacts/evidence/sprint1008-memory-summary-r2.json` (SHA-256
+`CEAC8CE780EC8DFDBB7E5B09FA494ECB29D4B07CC1DEAC98536C8D3D5A12433D`).
+
 ## Sprint 1007 opt-in Gemini input-token preflight
 
 When enabled in Agent Settings, Google Gemini receives a separate CountTokens

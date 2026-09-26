@@ -81,6 +81,8 @@ class ContextBroker:
     MAX_CACHE_ENTRIES = 32
     MAX_MEMORY_ENTRIES = 8
     MAX_MEMORY_CHARS = 4000
+    MAX_MEMORY_SUMMARY_CHARS = 1200
+    _SUMMARY_KINDS = frozenset({"preference", "correction"})
 
     def __init__(self, *, memory_token_budget=1000):
         self.memory_token_budget = max(64, min(8000, int(memory_token_budget)))
@@ -214,12 +216,25 @@ class ContextBroker:
     def _summary(entries):
         parts = []
         for entry in entries:
-            title = _safe_signal(entry.get("title", ""), 80)
-            if _SECRET.search(title):
+            if not isinstance(entry, dict) or entry.get("tier") == "stm":
                 continue
-            if title:
-                parts.append(title)
-        return ("Relevant stored topics: " + "; ".join(parts))[:400] if parts else ""
+            title = _safe_signal(entry.get("title", ""), 80)
+            content = _safe_signal(entry.get("content", ""), 240)
+            kind = str(entry.get("kind", "fact"))
+            importance = entry.get("importance", 3)
+            important_fact = (isinstance(importance, int) and
+                              not isinstance(importance, bool) and importance >= 4)
+            if (_SECRET.search(title) or _SECRET.search(content) or
+                    not content or (kind not in ContextBroker._SUMMARY_KINDS and
+                                    not (kind == "fact" and important_fact))):
+                continue
+            label = {"preference": "Preference", "correction": "Correction",
+                     "fact": "Important fact"}[kind]
+            parts.append(f"{label}: {title + ': ' if title else ''}{content}")
+            if len(parts) == 4:
+                break
+        return ("Stable memory: " + "; ".join(parts))[:
+            ContextBroker.MAX_MEMORY_SUMMARY_CHARS] if parts else ""
 
     def prepare(self, manager, *, thread_id: str, project_revision: str,
                 user_request: str, goal: str = "", project_id: str = "",
