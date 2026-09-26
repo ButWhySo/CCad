@@ -12,7 +12,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Run changed-module Pyright and Qt/MinGW clangd checks; record pre-existing diagnostics separately. Pyright: changed modules 0 diagnostics; orchestrator retains its two tracked `AgentConfigManager`/`ConfigPersistenceError` import-symbol diagnostics. clangd found and helped correct the Settings `QVariant::toInt` mismatch; `main.cpp` has no diagnostics. Its final Settings check reached the known optional `ExtractFunction` break/continue internal-error path; the Qt/MinGW compile remains the authoritative check.
 - [x] Run the official Qt/MinGW Release build and complete CTest gate (115/115; verifier manifest `artifacts/evidence/sprint1003-memory-importance-release.json`, SHA-256 `981FF8D01D32234C15A16631839DE36D5CA7CA0FB345C60A5010C1D70E3E2E17`).
 - [x] Run provider-disabled official UI-map scenario; exact priority 5 persisted and displayed; 15 mapped interactions and all 16 scoped screenshots inspected; stdout reviewed and stderr empty.
-- [x] Update progress/features/codebase/backlog and evidence; run staged secret scan and `git diff --check`. Commit/push status is not checked until it is confirmed.
+- [x] Update progress/features/codebase/backlog and evidence; run staged secret scan and `git diff --check`; commit `b01ca30` and feature-branch push verified. Main merge and hosted CI remain separate gates.
 
 Scope boundary: priority is explicitly user-authored; it does not classify memories or bypass any retrieval scope/relevance/expiry filter. Weights are bounded to ±10% and metadata sent in context contains only the numeric weight. Provider-tokenizer budgeting remains open.
 
