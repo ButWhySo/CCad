@@ -61,6 +61,8 @@ from history_compaction import (HistoryCompactionError,
                                 replace_checkpoint_history)
 from context_package import (build_context_package, build_provider_request_report,
                              format_large_context_explanation)
+from model_context_budget import (ModelContextLimitRegistry,
+                                   context_package_char_budget)
 from provider_usage import (account_response, collect_turn_usage,
                             langfuse_usage_details)
 from conversation_store import (ConversationStore, ConversationStoreError,
@@ -697,6 +699,7 @@ def emit_provider_request_context(system_text, messages, context_content,
     report = build_provider_request_report(
         system_text, messages, tools, provider=provider, model=model,
         context_content=context_content, context_metadata=context_metadata,
+        model_context_limit=active_model_context_limit(),
         large_context_threshold=os.environ.get(
             "CCAD_AGENT_LARGE_CONTEXT_TOKENS", "4096"))
     report["context_package_digest"] = str(
@@ -1661,6 +1664,18 @@ active_hooks = []
 schedules = []
 context_revisions = {}
 CONTEXT_REVISION_THREAD_LIMIT = 128
+provider_model_context_limits = ModelContextLimitRegistry()
+
+
+def active_model_context_limit() -> int | None:
+    """Use only context limits from an explicit catalog refresh this process."""
+    provider, model = active_provider_model()
+    return provider_model_context_limits.get(provider, model)
+
+
+def record_model_catalog_context_limits(provider: str, catalog: dict) -> None:
+    """Cache bounded catalog context limits without persisting provider data."""
+    provider_model_context_limits.replace_provider_catalog(provider, catalog)
 
 def bound_session_history(messages):
     """Keep newest whole user-turn groups within explicit token/message bounds."""
@@ -1762,7 +1777,9 @@ def agent_context_limit():
         limit = int(os.environ.get("CCAD_AGENT_CONTEXT_LIMIT", "32768"))
     except ValueError:
         limit = 32768
-    return min(131072, max(4096, limit))
+    fallback = min(131072, max(1024, limit))
+    return context_package_char_budget(active_model_context_limit(),
+                                       fallback_chars=fallback)
 
 def compact_session_history(messages, thread_id):
     """Semantically compact older turns through the selected model, then verify."""
@@ -2245,31 +2262,22 @@ def handle_provider_and_state_request(req, executor):
                               "network_access": "none", "models": []}})
             return True
         provider_id = raw_provider.strip().lower()
-        if provider_id == "openai":
-            emit({"jsonrpc": "2.0", "method": "provider_models",
-                  "params": {"provider": provider_id, **fetch_openai_models()}})
-        elif provider_id == "anthropic":
-            emit({"jsonrpc": "2.0", "method": "provider_models",
-                  "params": {"provider": provider_id, **fetch_anthropic_models()}})
-        elif provider_id == "google_gemini":
-            emit({"jsonrpc": "2.0", "method": "provider_models",
-                  "params": {"provider": provider_id, **fetch_gemini_models()}})
-        elif provider_id == "openrouter":
-            emit({"jsonrpc": "2.0", "method": "provider_models",
-                  "params": {"provider": provider_id, **fetch_openrouter_models()}})
-        elif provider_id == "cerebras":
-            emit({"jsonrpc": "2.0", "method": "provider_models",
-                  "params": {"provider": provider_id, **fetch_cerebras_models()}})
-        elif provider_id == "ollama":
-            emit({"jsonrpc": "2.0", "method": "provider_models",
-                  "params": {"provider": provider_id, **fetch_ollama_models()}})
-        else:
-            emit({"jsonrpc": "2.0", "method": "provider_models",
-                  "params": {"provider": provider_id, "ok": False,
-                              "error": "unsupported_provider",
-                              "error_detail": "model catalog is unavailable for this provider",
-                              "network_access": "explicit_refresh",
-                              "models": []}})
+        catalog_fetchers = {
+            "openai": fetch_openai_models,
+            "anthropic": fetch_anthropic_models,
+            "google_gemini": fetch_gemini_models,
+            "openrouter": fetch_openrouter_models,
+            "cerebras": fetch_cerebras_models,
+            "ollama": fetch_ollama_models,
+        }
+        fetch_catalog = catalog_fetchers.get(provider_id)
+        catalog = (fetch_catalog() if fetch_catalog else {
+            "ok": False, "error": "unsupported_provider",
+            "error_detail": "model catalog is unavailable for this provider",
+            "network_access": "explicit_refresh", "models": []})
+        record_model_catalog_context_limits(provider_id, catalog)
+        emit({"jsonrpc": "2.0", "method": "provider_models",
+              "params": {"provider": provider_id, **catalog}})
     elif method == "agent.pending_calls":
         thread_id = req.get("params", {}).get("thread_id", "")
         emit({"jsonrpc": "2.0", "method": "pending_calls_state", "params":
@@ -2744,6 +2752,7 @@ def handle_human_message(req):
                 model=preview_model or "provider default (not resolved)",
                 context_content=context_str,
                 context_metadata=context_metadata,
+                model_context_limit=active_model_context_limit(),
                 large_context_threshold=os.environ.get(
                     "CCAD_AGENT_LARGE_CONTEXT_TOKENS", "4096"))
             report.update({

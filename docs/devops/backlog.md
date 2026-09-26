@@ -2,6 +2,13 @@
 
 This file is the single local backlog for scattered CCad feature requests. Sprint files remain the execution record, while this backlog holds the larger map so future agents do not lose roadmap items.
 
+## Agent provider-token budget follow-up
+
+- [ ] Implement exact full-request pre-send counting only for provider/model combinations with a supported, privacy-reviewed path; ordinary turns must not issue hidden count-token network requests.
+- [ ] Add exact model-specific serialization for messages, tool schemas, system instructions, and supported multimodal content; otherwise preserve explicit estimated/unavailable labels.
+- [ ] Reconcile catalog context limits with provider output-token reservations and actual per-generation usage; never claim the project-context allocation alone proves the complete request fits.
+- [ ] Opt-in provider/Langfuse trace inspection remains separate from no-network budget contracts.
+
 ## Verified Work Ledger
 
 - [x] Sprint 1005 implementation is committed and pushed: provider responses are normalized to safe counts, attached to Langfuse generation `usage_details`, aggregated for turn telemetry, and optionally logged without content under `CCAD_TRACE_DEBUG`; official Qt/MinGW Release and CTest pass 116/116. Manifest `artifacts/evidence/sprint1005-provider-usage-accounting-r2.json` (SHA-256 `0284C1508ED831158F8662FFEFF86BE1AD549B29817F25274A9972CCECE1009D`). PR/hosted CI, live trace fetch, and exact pre-send tokenization/model-context allocation remain open.

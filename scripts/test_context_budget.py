@@ -233,6 +233,8 @@ class ContextBudgetTests(unittest.TestCase):
         self.assertGreater(components["bound_tool_schemas"]["chars"], 0)
         self.assertEqual(report["model_context_limit"], None)
         self.assertEqual(report["model_context_limit_source"], "unavailable")
+        self.assertEqual(report["context_allocation_policy"],
+                         "fixed_character_budget_model_window_unknown")
         self.assertTrue(report["large_context"])
         self.assertFalse(report["content_emitted"])
         self.assertFalse(report["secret_value_visible"])
@@ -240,6 +242,23 @@ class ContextBudgetTests(unittest.TestCase):
         for private_content in ("prior conversation", "current question", "tracks",
                                 "private-tool-coordinate"):
             self.assertNotIn(private_content, encoded_report)
+
+    def test_provider_catalog_limit_is_reported_without_claiming_exact_count(self):
+        package = CONTEXT.build_context_package("{}", [], [], char_limit=8192)
+        report = CONTEXT.build_provider_request_report(
+            "System instructions", [], [], provider="google_gemini",
+            model="gemini-catalog-model", context_content=package["content"],
+            context_metadata=package["metadata"], model_context_limit=128_000)
+        self.assertEqual(report["model_context_limit"], 128_000)
+        self.assertEqual(report["model_context_limit_source"],
+                         "explicit_provider_catalog")
+        self.assertEqual(report["context_package_budget_chars"], 8192)
+        self.assertEqual(report["context_package_budget_tokens_estimated"], 2048)
+        self.assertEqual(report["context_allocation_policy"],
+                         "up_to_25pct_model_window_max_8192_tokens")
+        self.assertEqual(report["estimate_method"],
+                         "ceil(text_chars/4) + 4 tokens/message + 8 tokens/tool; provider tokenizer unavailable")
+        self.assertIsInstance(report["estimated_context_within_model_limit"], bool)
 
     def test_non_text_payloads_are_explicitly_excluded_from_estimate(self):
         context = CONTEXT.build_context_package("{}", [], [], char_limit=1024)

@@ -1,5 +1,23 @@
 # Implemented Features
 
+## Sprint 1006 model-window-aware context allocation
+
+After the user explicitly refreshes a provider's model catalog, CCad uses the
+selected model's catalog-reported context window to bound the project snapshot
+to at most one quarter of that window, with an 8,192-token estimated ceiling.
+This leaves room for system instructions, conversation history, tool schemas,
+provider framing, and generated output. The limit is cached only in the running
+Agent process and only applies to the exact provider/model pair. Unknown or
+invalid metadata retains the configured character budget. Request accounting
+labels the context allocation as a policy and the whole-request token count as
+an estimate. Normal chat does not call a provider count-token endpoint.
+
+No claim of exact full-request tokenization is made: provider serialization,
+tool schemas, and multimodal payloads still require explicit provider-aware
+counting. The no-network tests cover catalog parsing/cache semantics, allocation
+math, fallback, and safe request reports. Release/full CTest evidence is recorded
+in the Sprint 1006 manifest.
+
 ## Sprint 1005 provider-returned token accounting
 
 Normal LangGraph model responses now contribute only validated numeric input,

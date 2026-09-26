@@ -2,6 +2,18 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1006 completed slice - model-window-aware context allocation (Tier 1)
+
+- [x] Derive active model context limits only from successful explicit provider catalog refreshes; keep catalog metadata process-local and keyed by exact provider/model.
+- [x] Allocate at most 25% of a known model window, capped at 8,192 estimated tokens, to project context; preserve the existing configured character cap when metadata is unavailable.
+- [x] Report catalog limit, allocation policy, package budget, and whole-request estimate without presenting character-based estimates as exact token counts.
+- [x] Add no-network tests for catalog validation, exact model identity, refresh replacement/failure, bounded cache, allocation math, fallback, and report truthfulness.
+- [x] Run changed-module Pyright, official Qt/MinGW Release build, complete CTest, and review evidence/logs.
+- [x] Update progress, codebase map, feature inventory, and backlog in this slice.
+- [x] Secret-scan staged diff; commit and push only verified source, tests, docs, and manifest.
+
+Boundary: full-request exact pre-send tokenizer counting remains open. Gemini exact counting uses a separate provider request; no hidden count request is added to normal chat turns. Unknown provider/model metadata retains the bounded fixed-character fallback.
+
 ### Sprint 1005 active slice - provider-returned token accounting (Tier 1, M4)
 
 References checked: Langfuse's current Python instrumentation documents updating an active generation with `usage_details` (`input`, `output`, optional `total`); provider SDK response metadata is the source for actual counts. CCad must not make extra count-token requests during normal turns because that changes provider network/quota behavior. See [Langfuse instrumentation](https://langfuse.com/docs/observability/sdk/instrumentation), [token and cost tracking](https://langfuse.com/docs/observability/features/token-and-cost-tracking), [Gemini token counting](https://ai.google.dev/gemini-api/docs/tokens), and [OpenRouter chat completions](https://openrouter.ai/docs/api/api-reference/chat/send-chat-completion-request).
@@ -19,7 +31,7 @@ References checked: Langfuse's current Python instrumentation documents updating
 - [x] Commit and push the verified source/tests/docs/manifest on the active feature branch after local gates.
 - [ ] Open the integration PR and inspect the actual hosted CI result for its exact head SHA; merge only after required checks pass.
 - [ ] Run an opt-in real provider turn and fetch its trace from Langfuse to verify generation usage was exported and readable. No live provider request was made in this slice.
-- [ ] Implement provider-specific exact pre-send tokenizer counting and model-context budget allocation; do not claim this broader provider-tokenizer TODO complete here.
+- [ ] Implement provider-specific exact full-request pre-send token counting; do not present the model-window allocation or character-based estimate as exact.
 
 ### Sprint 1004 active slice — lean, complete visual evidence policy
 

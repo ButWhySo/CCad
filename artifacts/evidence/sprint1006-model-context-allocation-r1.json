@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint1006-model-context-allocation-r1",
+    "feature":  "Explicit model catalog based context budget allocation",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-26T04:15:56.3063735Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.1 log=artifacts/evidence/sprint1006-model-context-allocation-r1/preflight.log",
+                      "finished_utc":  "2026-09-26T04:15:57.5334319Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=15.56 log=artifacts/evidence/sprint1006-model-context-allocation-r1/build.log",
+                      "finished_utc":  "2026-09-26T04:16:13.1146572Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=145.41 log=artifacts/evidence/sprint1006-model-context-allocation-r1/ctest.log",
+                      "finished_utc":  "2026-09-26T04:18:38.5298208Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint1006-model-context-allocation-r1/build.log",
+                                         "sha256":  "EB8BF4B65F90EE7DA95CBCE44B54F4496A9147EAE82D862B409F188AE8F70CB7"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1006-model-context-allocation-r1/ctest.log",
+                                         "sha256":  "D048BD4D2805F2C0D0AD7B7F5A5CB76E008D6467E1CA0068CCEFD5273CE9C9E2"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1006-model-context-allocation-r1/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-26T04:18:38.6108192Z"
+}

@@ -729,10 +729,23 @@ def build_provider_request_report(system_text: str, messages: Iterable[Any],
         "conversation_in_context_package": False,
         "conversation_sent_as_messages": bool(message_items),
         "model_context_limit": model_context_limit if isinstance(model_context_limit, int) and model_context_limit > 0 else None,
-        "model_context_limit_source": "authoritative_catalog" if isinstance(model_context_limit, int) and model_context_limit > 0 else "unavailable",
+        "model_context_limit_source": "explicit_provider_catalog" if isinstance(model_context_limit, int) and not isinstance(model_context_limit, bool) and model_context_limit > 0 else "unavailable",
+        "context_package_budget_chars": int(context_metadata.get("context_limit", 0)),
+        "context_package_budget_tokens_estimated": (
+            (int(context_metadata.get("context_limit", 0)) + 3) // 4),
+        "context_allocation_policy": (
+            "up_to_25pct_model_window_max_8192_tokens"
+            if isinstance(model_context_limit, int) and
+            not isinstance(model_context_limit, bool) and model_context_limit > 0
+            else "fixed_character_budget_model_window_unknown"),
         "estimated_context_fraction": (
             estimated_tokens / model_context_limit
-            if isinstance(model_context_limit, int) and model_context_limit > 0 else None),
+            if isinstance(model_context_limit, int) and
+            not isinstance(model_context_limit, bool) and model_context_limit > 0 else None),
+        "estimated_context_within_model_limit": (
+            estimated_tokens <= model_context_limit
+            if isinstance(model_context_limit, int) and
+            not isinstance(model_context_limit, bool) and model_context_limit > 0 else None),
         "large_context": estimated_tokens >= threshold,
         "large_context_threshold_tokens": threshold,
         "content_emitted": False,

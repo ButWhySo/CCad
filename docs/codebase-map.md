@@ -2304,6 +2304,27 @@ manifest. The policy contract passes, and Qt MinGW Release plus full CTest pass
 
 Sprint 998 extends `src/ccad_agent/project_index.py` so an explicit board group resolves its related IDs only to `board_net:<id>`, and schematic groups/sheets only to `schematic_net:<id>`. Internal `uid:` references prevent same-named PCB and schematic nets from alias-collapsing; the public relation is `block_net_member`, which asserts typed source membership only. Explicit group-to-net edges remain visible even when the active PCB net is already an exact retrieval seed; without this, active-layer state could hide the reason that net matched. These edges use the existing incremental reference index and are replaced when a member changes nets. `context_package.py` counts only edges that survive bounded packaging; `orchestrator.py` carries that integer in `context_state`, and `AgentPanel` exposes it in activity and workspace state. Contract coverage lives in `scripts/test_project_index.py` and `scripts/test_agent_context_contract.py`; the isolated UI-map flow is `sprint998-functional-block-net-context-ui` in `scripts/run_ui_map_mouse_target_demo.ps1`, driven by `config/gui_interaction_plans/sprint998-functional-block-net-context.json`. The C3 functional-block-to-net item is complete; library-definition pins, candidate/proposal links, and transaction-delta-driven indexing remain open.
 
+## Sprint 1006 model-window-aware context allocation
+
+`src/ccad_agent/model_context_budget.py` validates positive integer context
+limits from explicit provider model-catalog results, keys them by exact
+provider/model identity, replaces stale per-provider cache entries after each
+refresh, and bounds the process-local cache. `orchestrator.py` records catalog
+metadata only after an explicit catalog request succeeds; request assembly uses
+the matching selected model's limit to cap project context at 25% of its window
+and 8,192 estimated tokens. This leaves remaining capacity for instructions,
+history, tools, provider framing, and output. Unknown limits preserve the
+configured character cap. `context_package.py` reports catalog provenance,
+allocation policy, and rough full-request usage without claiming exact token
+counts. No additional provider request is made during ordinary turns. Coverage:
+`scripts/test_model_context_budget.py`, `scripts/test_context_budget.py`, and
+`scripts/test_provider_catalog_parsers.py`; CTest target
+`agent_model_context_budget`.
+
+The project-context budget is an allocation heuristic, not proof that the full
+request fits. Exact provider serialization/tokenization remains open, especially
+for routed models, structured tool schemas, and multimodal inputs.
+
 ## Sprint 1005 provider response token usage
 
 `src/ccad_agent/provider_usage.py` owns allowlisted normalization of provider
