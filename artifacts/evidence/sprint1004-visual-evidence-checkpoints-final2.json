@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint1004-visual-evidence-checkpoints-final2",
+    "feature":  "Align repository visual-validation rules to meaningful checkpoints and enforce them in the policy contract",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-26T02:16:49.1331823Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.01 log=artifacts/evidence/sprint1004-visual-evidence-checkpoints-final2/preflight.log",
+                      "finished_utc":  "2026-09-26T02:16:50.2772152Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=7.83 log=artifacts/evidence/sprint1004-visual-evidence-checkpoints-final2/build.log",
+                      "finished_utc":  "2026-09-26T02:16:58.1245539Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=149.44 log=artifacts/evidence/sprint1004-visual-evidence-checkpoints-final2/ctest.log",
+                      "finished_utc":  "2026-09-26T02:19:27.5691151Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint1004-visual-evidence-checkpoints-final2/build.log",
+                                         "sha256":  "B4914D7AF1975EF93E67197541CC5DBB79CE711A548CC40D4165786A2936FDAA"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1004-visual-evidence-checkpoints-final2/ctest.log",
+                                         "sha256":  "22A3EE73808B468F418B12D126AA4E876A222B26602AF89A4347F42A9248AFCC"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1004-visual-evidence-checkpoints-final2/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-26T02:19:27.6491146Z"
+}

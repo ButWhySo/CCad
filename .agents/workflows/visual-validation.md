@@ -40,6 +40,12 @@ feature. Do not call fictional GUI wrappers or use unmapped coordinates; if a
 mapped operation is unavailable, document the specific reason and use the
 nearest truthful test boundary.
 
+Record every mapped interaction in the harness report. Capture screenshots only for distinct visual states; they are checkpoints, not receipts for individual clicks. Capture enough to show the relevant before state, any dialog and its meaningful
+control state, the feature-specific result, and the restored final state. Inspect
+every retained screenshot. This resolves the older `AGENTS.md` per-interaction
+capture wording; do not multiply visually identical images just to increase the
+count.
+
 Run `scripts/preflight_qt_env.ps1`, use the pinned Qt 6.11.1 and MinGW 13.1
 toolchain, then build and run the relevant tests. Before a final merge or push,
 run the full Release build and full CTest suite. For GUI validation, launch the
@@ -132,6 +138,16 @@ that invoke nonexistent generic GUI wrappers or launch the application outside
 the mapped harness. The verifier checks the action report, required targets,
 logs, and planned distinct screenshots, then writes the manifest. Image quality
 still requires human inspection of every retained screenshot.
+
+The accompanying replacement recipe was audited against this repository rather
+than copied literally: its proposed `gui_map_interact.ps1` and
+`gui_map_screenshot.ps1` wrappers do not exist, while the app-owned target
+sequence and verifier already provide the real behavior. Likewise, the checked-in
+CI is the configured authority; do not claim a self-hosted Qt runner or enforced
+branch protection unless repository settings and a run for the exact pushed SHA
+prove them. Keep screenshots and logs workspace-only unless a separate product
+requirement explicitly calls for committing them; commit the verifier manifest
+and its hashes under the existing evidence policy.
 
 Run one full Release build and CTest gate after the selected implementation slice
 is complete. For a docs-only or otherwise source-unchanged follow-up, the

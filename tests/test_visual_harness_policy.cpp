@@ -116,6 +116,28 @@ int main() {
                   "visual workflow identifies the canonical gate");
   requireContains(workflow, "scripts/run_ui_map_mouse_target_demo.ps1",
                   "visual workflow requires the app-owned mapped harness");
+  requireNotContains(evidence_verifier, "gui_map_interact.ps1",
+                     "evidence verifier does not rely on illustrative missing wrappers");
+  requireNotContains(evidence_verifier, "gui_map_screenshot.ps1",
+                     "evidence verifier uses the app-owned screenshot path");
+  requireContains(workflow, "Capture screenshots only for distinct visual states",
+                  "visual workflow avoids redundant per-click screenshots");
+  requireContains(workflow, "Record every mapped interaction",
+                  "visual workflow preserves a complete interaction report");
+  requireContains(workflow, "do not claim a self-hosted Qt runner",
+                  "visual workflow requires evidence for runner claims");
+  requireNotContains(evidence_ci, "runs-on: [self-hosted, windows, qt-mingw]",
+                     "CI contract does not claim an unconfigured self-hosted runner");
+  const std::filesystem::path local_agent_instructions = root / "AGENTS.md";
+  if (std::filesystem::exists(local_agent_instructions)) {
+    const std::string agent_instructions = readFile(local_agent_instructions);
+    requireNotContains(agent_instructions,
+                       "Capture a screenshot after every interaction",
+                       "local instructions do not require redundant per-click screenshots");
+    requireContains(agent_instructions,
+                    "Capture screenshots only at distinct, meaningful visual states",
+                    "local instructions match the evidence checkpoint policy");
+  }
   requireContains(workflow, "-ReusePassedBuildAndTestsFrom",
                   "visual workflow permits only verifier-checked gate reuse");
   requireContains(workflow, "-WorkspaceOnlyEvidence",

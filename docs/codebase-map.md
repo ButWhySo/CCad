@@ -2304,6 +2304,22 @@ manifest. The policy contract passes, and Qt MinGW Release plus full CTest pass
 
 Sprint 998 extends `src/ccad_agent/project_index.py` so an explicit board group resolves its related IDs only to `board_net:<id>`, and schematic groups/sheets only to `schematic_net:<id>`. Internal `uid:` references prevent same-named PCB and schematic nets from alias-collapsing; the public relation is `block_net_member`, which asserts typed source membership only. Explicit group-to-net edges remain visible even when the active PCB net is already an exact retrieval seed; without this, active-layer state could hide the reason that net matched. These edges use the existing incremental reference index and are replaced when a member changes nets. `context_package.py` counts only edges that survive bounded packaging; `orchestrator.py` carries that integer in `context_state`, and `AgentPanel` exposes it in activity and workspace state. Contract coverage lives in `scripts/test_project_index.py` and `scripts/test_agent_context_contract.py`; the isolated UI-map flow is `sprint998-functional-block-net-context-ui` in `scripts/run_ui_map_mouse_target_demo.ps1`, driven by `config/gui_interaction_plans/sprint998-functional-block-net-context.json`. The C3 functional-block-to-net item is complete; library-definition pins, candidate/proposal links, and transaction-delta-driven indexing remain open.
 
+## Sprint 1004 visual evidence checkpoints
+
+`AGENTS.md` and `.agents/workflows/visual-validation.md` now share one image
+policy: record every attempted mapped interaction in the app-owned harness
+report, capture only distinct meaningful GUI states, and inspect every retained
+screenshot. `tests/test_visual_harness_policy.cpp` guards this rule and the
+canonical verifier/harness paths. The verifier, manifest checker, commit hook,
+CI lanes, and workspace-only screenshot/log policy were already functional and
+remain unchanged; do not replace them with generic GUI wrappers or claim a
+self-hosted runner/branch protection without independent configuration evidence.
+The updated contract passes under CTest; clangd reports zero errors, evidence
+manifest contracts pass 7/7, and the Qt MinGW Release/full CTest gate passes
+115/115. The final non-visual manifest is
+`artifacts/evidence/sprint1004-visual-evidence-checkpoints-final2.json` (SHA-256
+`F743B798128570479738A3983E9AA168C2571F02640DC0B9E319AD227A62E183`).
+
 ## Sprint 1003 user-controlled memory importance
 
 `MemoryStore` accepts strict integer importance 1–5, defaults new/legacy records to neutral 3, and preserves the field across edits. `MemoryManager` validates explicit input before duplicate matching and applies a bounded ±10% factor only after the existing enabled-tier, namespace, expiry, and relevance gates; its content-free provenance reports the factor. Slash commands, native method schemas/results, and the provider context allowlist carry only the safe value. Personalisation → Manage Memories has a user-set importance combo, restores the selected value for edits, and displays it in the record list. Focused contracts pass; Qt/MinGW Release and full CTest pass 115/115. The provider-disabled mapped GUI scenario saved/read back priority 5 with 15 successful interactions; all 16 screenshots were inspected and logs reviewed (empty stderr). Plan: `config/gui_interaction_plans/sprint1003-memory-importance.json`. Workspace-only verifier manifest `artifacts/evidence/sprint1003-memory-importance-release.json`, SHA-256 `981FF8D01D32234C15A16631839DE36D5CA7CA0FB345C60A5010C1D70E3E2E17`.

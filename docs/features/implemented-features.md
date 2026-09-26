@@ -1,5 +1,20 @@
 # Implemented Features
 
+## Sprint 1004 evidence checkpoints
+
+The repository instructions now distinguish interaction coverage from image
+count: every attempted mapped action remains in the harness report, while only
+distinct visual states are captured and inspected. This avoids redundant
+screenshots without losing proof of action order or results. The existing
+app-owned GUI-map sequence, hash-bearing verifier manifest, commit hook, and CI
+remain authoritative; illustrative missing wrappers, unsupported self-hosted
+runner claims, and broad artifact-unignore changes are not introduced. This is a
+development-process correction and does not change application runtime behavior.
+The policy test passes, clangd reports zero errors, the evidence-manifest
+contracts pass 7/7, and the Qt MinGW Release/full CTest gate passes 115/115.
+Final manifest: `artifacts/evidence/sprint1004-visual-evidence-checkpoints-final2.json`
+(SHA-256 `F743B798128570479738A3983E9AA168C2571F02640DC0B9E319AD227A62E183`).
+
 ## Sprint 1003 user-controlled memory importance
 
 Manage Memories exposes an explicit priority from 1 to 5, with 3 as the neutral default. Durable records retain that value through updates and legacy entries are read as neutral without rewriting the file. Existing scope, enabled-tier, expiry, and relevance checks remain authoritative; only admitted candidates receive a deterministic 0.90–1.10 ranking factor. Slash memory commands and JSON-RPC expose bounded importance fields, while context metadata carries only the numeric factor. Focused contracts pass, Qt/MinGW Release and full CTest pass 115/115, and an isolated provider-disabled UI-map run persisted/read back priority 5 with 15 successful mapped interactions. All 16 scoped screenshots were inspected; stdout was reviewed and stderr is empty. Verifier manifest: `artifacts/evidence/sprint1003-memory-importance-release.json` (SHA-256 `981FF8D01D32234C15A16631839DE36D5CA7CA0FB345C60A5010C1D70E3E2E17`).

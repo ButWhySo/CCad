@@ -2,6 +2,17 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1004 active slice — lean, complete visual evidence policy
+
+- [x] Align `AGENTS.md` with feature-specific visual checkpoints: record every mapped action, capture only distinct visual states, and inspect every retained image.
+- [x] Document why the supplied replacement recipe must use the repository's app-owned GUI-map harness, evidence verifier, commit hook, CI, and workspace-only artifact policy rather than its nonexistent wrappers or unverified runner assumptions.
+- [x] Extend the visual-harness policy contract to protect screenshot economy, complete action reporting, canonical wrappers, and truthful CI claims.
+- [x] Run the official non-visual Qt/MinGW Release and full CTest gate; inspect manifest and logs (115/115). Manifest `artifacts/evidence/sprint1004-visual-evidence-checkpoints-final2.json` (SHA-256 `F743B798128570479738A3983E9AA168C2571F02640DC0B9E319AD227A62E183`).
+- [x] Update this checklist, progress, feature inventory, codebase map, and process docs in the same verified change set.
+- [x] Run redacted staged-diff secret scan; the explicitly staged paths contain no high-confidence credential patterns.
+- [x] Commit and push the verified slice on the active feature branch.
+- [ ] Inspect hosted CI for the exact pushed SHA after a PR is available; do not claim it green before that check exists.
+
 ### Sprint 1003 active slice - user-controlled memory importance (Tier 1, M4)
 
 - [x] Add explicit integer importance 1–5 to memory records; default legacy/new records to neutral 3 without inferring priority.
