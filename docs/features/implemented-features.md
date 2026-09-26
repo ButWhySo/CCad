@@ -6,7 +6,7 @@ The first-turn context signal includes the live active PCB layer and net as boun
 
 ## Current CI / CTest / CD status (Sprint 1025)
 
-GitHub Actions run `36273540241` passes all five configured jobs on exact `main` SHA `d7208650d7bfa26700a63dca5a93070f58b0fe11`; CTest runs in the Linux core, Linux GUI, and Windows core jobs. The recent red run `36234661589` is historical and superseded; the prior incident record identifies a test dependency on an ignored local demo-board fixture as its cause. Only `.github/workflows/ci.yml` is configured. No CD workflow/deployment target exists, so delivery is unconfigured rather than failing; no release destination was invented.
+GitHub Actions run `36275620425` passes all five configured jobs on exact pushed `main` SHA `71f545945bf22f5da90211e1d6de4e18df63949d`; CTest runs in the Linux core, Linux GUI, and Windows core jobs. The recent red run `36234661589` is historical and superseded; the prior incident record identifies a test dependency on an ignored local demo-board fixture as its cause. The passing workflow currently warns that `actions/upload-artifact@v4` targets deprecated Node 20 and that `ubuntu-latest` will migrate to Ubuntu 26; this is a non-failing maintenance follow-up tracked in the TODO. Only `.github/workflows/ci.yml` is configured. No CD workflow/deployment target exists, so delivery is unconfigured rather than failing; no release destination was invented.
 
 ## Exact board design-rule context (Sprint 1024)
 
