@@ -6,6 +6,9 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
+- Sprint: 1021
+- Branch: `sprint-1021-memory-transcript-isolation` (based on `main` `c22229bdbe116eb611466aca1f7a324866803c8d`)
+- Sprint 1021 strengthens the Tier-1 memory contract: LTM/episodic activation opens their persistent namespaces; disabling and confirmed reset cannot erase canonical conversation history, project bytes, or unrelated checkpoint state. The real JSON-RPC restart contract, memory persistence contract, and manager lifecycle tests pass with provider calls disabled. Focused Pyright on production dependency modules reports zero diagnostics. Official Qt/MinGW Release passes; full CTest passes 120/120. Redacted changed-file secret scan is clean. Manifest `artifacts/evidence/sprint-1021-memory-transcript-isolation.json` SHA-256 `5823B39C237831C88905F81736DAD94DB6F9DA69CD64D1F87CF4470D68FBE460`. Commit, push, local merge, and hosted CI verification remain pending.
 - Sprint: 1020
 - Branch: `main` (CI/CTest/CD status refresh; current commit `3587c6e4b50d5a899abb54aa08593b0c5baeb5f1`)
 - Sprint 1020 live verification confirms GitHub Actions run `36257220845` passes all five jobs on exact current `main` SHA `3587c6e4b50d5a899abb54aa08593b0c5baeb5f1`: Agent Python, Linux core, Linux GUI, Windows core, and evidence manifest. CTest is included in all three native build jobs. Recent red runs are superseded: Sprint 1010 repaired missing Python test dependencies, stale contracts, and a Linux `-Werror` helper issue; Sprint 1011 removed a test dependency on an ignored local board fixture. Only `.github/workflows/ci.yml` is active. No CD workflow or deployment target exists, so CD is unconfigured rather than failing. No pipeline source changed because current CI/CTest are green; deployment target and publishing policy remain unspecified. No GUI behavior changed.

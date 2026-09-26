@@ -2445,6 +2445,24 @@ links, and transaction-delta ingestion remain open. Sprint 1018 adds only the
 source-confirmed same-sheet power-input/passive net association described
 above; it does not claim decoupling intent.
 
+## Sprint 1021 memory reset and transcript isolation
+
+`scripts/test_conversation_runtime.py` now runs real orchestrator JSON-RPC
+processes against an isolated conversation database and memory store. It enables
+LTM and episodic tiers, writes one temporary record in each distinct namespace,
+disables both tiers, confirms reset, and resumes the original thread. The test
+asserts that the thread's two durable conversation messages and searchable
+TurnRecord remain intact across these memory operations. `scripts/test_agent_memory_persistence.py`
+also proves unconfirmed reset is refused and that memory reset/toggle leave the
+project file and unrelated checkpoint data untouched. No provider call or GUI
+behavior is part of this contract. The Qt/MinGW Release gate and full CTest pass
+120/120; the verifier's workspace-only manifest is
+`artifacts/evidence/sprint-1021-memory-transcript-isolation.json` (SHA-256
+`5823B39C237831C88905F81736DAD94DB6F9DA69CD64D1F87CF4470D68FBE460`). A
+redacted scan of changed lines found no credential patterns. Remaining memory work includes semantic
+duplicate handling, legacy-secret cleanup evidence, and automatic memory
+generation; this slice does not close those items.
+
 ## Sprint 1013 read-only engineering calculator
 
 `src/ccad_agent/engineering_calculator.py` owns the standalone bounded dimensional expression parser, coordinate transform, and zero-thickness Hammerstad-Jensen microstrip estimate. It is imported into `orchestrator.py` and added to the rebuilt tool list next to the native method catalog and local memory search. These tools have no project-context dependency and do not modify project files or CAD state. Calculator arithmetic uses bounded AST parsing and `Decimal`, rejects unsafe Python syntax, caps expression length/tree depth/numeric magnitude, and returns stable error categories. The coordinate convention follows the kernel's Cartesian rotation formula (positive angles use `x'=x cos-y sin`, `y'=x sin+y cos`). The microstrip result explicitly excludes conductor-thickness and solder-mask corrections; it is an estimate, not a field solver. The outputs do not repeat user-supplied expression text. `scripts/test_agent_engineering_calculator.py` tests physical units, conversion, errors, transforms, the impedance path, schemas and orchestration registration; CTest target `agent_engineering_calculator` runs it using the project virtual environment on Windows. Qt/MinGW Release and full CTest pass 120/120; see manifest `artifacts/evidence/sprint-1013-agent-calculator.json`.
