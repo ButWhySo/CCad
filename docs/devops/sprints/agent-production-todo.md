@@ -10,7 +10,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Remove ignored `artifacts/demos` dependencies from project-index and agent-context geometry tests; use deterministic typed test data and guard against reintroduction.
 - [x] Verify affected tests and CI regression contract; official Qt/MinGW Release build/full CTest pass 119/119, with workspace-only manifest `artifacts/evidence/sprint1011-ctest-fixture-fix.json`.
 - [x] Inspect hosted failure output across Linux core, Linux GUI, and Windows; root cause was an untracked/ignored demo-board fixture required by two Python contracts.
-- [ ] Confirm all hosted CI jobs pass on the exact pushed main SHA.
+- [x] Confirm hosted CI passes for main SHA `4698996db768bd01f746a2a874edb07cff44a3c4` (Python, Linux core, Linux GUI, Windows core, evidence-manifest).
 
 ### Sprint 1010 — CI/CTest failure repair
 
@@ -21,7 +21,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Retain job configure/build/test logs and surface Linux compiler diagnostics.
 - [x] Run complete Python CI lane and checkpoint restart matrix locally.
 - [x] Run official Qt/MinGW Release build and full CTest verifier (119/119); commit workspace-only manifest after review.
-- [ ] Confirm hosted CI passes on exact pushed main SHA.
+- [x] Confirm hosted CI passes for main SHA `4698996db768bd01f746a2a874edb07cff44a3c4` (all configured jobs).
 - [x] Audit CD: no deployment workflow or target is configured; do not invent a destination.
 
 ### Sprint 1006 completed slice - model-window-aware context allocation (Tier 1)
