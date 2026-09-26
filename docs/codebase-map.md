@@ -48,6 +48,10 @@ Owns the `ccad agent orchestrate` and `ccad agent plan` CLI wrapper, providing t
 
 Sprint 207 addendum: `src/ccad_gui/agent_panel.cpp` added the fifth reference-inspired Agent pane contract with compact header action bar, evidence thumbnails, approval preview, and UI-map target proof.
 
+## Sprint 1019 CI / CTest / CD status
+
+The active workflow is `.github/workflows/ci.yml`; the latest observed run `36254672193` is green on `main` SHA `081e9897d008dbf2e235bf39ca35abe77798726e`, including its Python, Linux core, Linux GUI, Windows core, and evidence-manifest jobs. CTest executes within all three native jobs. Older hosted failures were traced to causes repaired in Sprints 1010 and 1011. A fresh local Qt/MinGW Release build and full CTest passed 120/120 under Sprint 1019 manifest `artifacts/evidence/sprint1019-ci-ct-reconciliation-r2.json` (SHA-256 `C2937FE61E2F6867E98FC436D2D9A80F738600CED3EF47D43C1545ACBE9F369F`). There is no CD workflow or configured deployment target. See `docs/devops/sprints/agent-production-todo.md` and `docs/devops/progress.md` for the timestamped reconciliation.
+
 ## Sprint 1018 source-model power/passive project retrieval
 
 `src/ccad_agent/project_index.py` derives `shares_power_input_net_with_passive`

@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint1019-ci-ct-reconciliation-r2",
+    "feature":  "Reconcile hosted CI and CTest status and document unconfigured CD scope",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-26T16:35:18.5194055Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.84 log=artifacts/evidence/sprint1019-ci-ct-reconciliation-r2/preflight.log",
+                      "finished_utc":  "2026-09-26T16:35:19.4665406Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.37 log=artifacts/evidence/sprint1019-ci-ct-reconciliation-r2/build.log",
+                      "finished_utc":  "2026-09-26T16:35:19.8456034Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=147.04 log=artifacts/evidence/sprint1019-ci-ct-reconciliation-r2/ctest.log",
+                      "finished_utc":  "2026-09-26T16:37:46.8836735Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint1019-ci-ct-reconciliation-r2/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1019-ci-ct-reconciliation-r2/ctest.log",
+                                         "sha256":  "62EA644955FB1B5D601A1B1F55B0E5E51DC538681E24AFB5F45E0C09C38ABB04"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1019-ci-ct-reconciliation-r2/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-26T16:37:46.9512003Z"
+}
