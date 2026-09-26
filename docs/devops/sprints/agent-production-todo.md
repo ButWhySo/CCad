@@ -4,12 +4,12 @@ Check a box only after implementation and its required evidence exist.
 
 ### Sprint 1019 — CI / CTest / CD current-state verification
 
-- [x] Query live GitHub Actions on the exact current `main` SHA `081e9897d008dbf2e235bf39ca35abe77798726e`; latest run `36254672193` passes `agent-python`, `core-linux`, `gui-linux`, `core-windows`, and `evidence-manifest`.
-- [x] Inspect the historical red runs and confirm their causes were already repaired: CI dependency installation/Linux `-Werror` in Sprint 1010 and ignored demo-fixture dependency in Sprint 1011; 14 subsequent `main` runs are green.
+- [x] Query live GitHub Actions on the exact merged `main` SHA `8d678b92435bfa8a5ee0dad46f268f3273dae4de`; run `36256453720` passes `agent-python`, `core-linux`, `gui-linux`, `core-windows`, and `evidence-manifest`.
+- [x] Inspect the historical red runs and confirm their causes were already repaired: CI dependency installation/Linux `-Werror` in Sprint 1010 and ignored demo-fixture dependency in Sprint 1011; 15 consecutive `main` runs now pass.
 - [x] Run the official nonvisual Qt/MinGW Release and full CTest verifier; verifier rejected Sprint 1018 evidence reuse as stale, so rerun the full gate: build passed, CTest 120/120. Manifest `artifacts/evidence/sprint1019-ci-ct-reconciliation-r2.json` (SHA-256 `C2937FE61E2F6867E98FC436D2D9A80F738600CED3EF47D43C1545ACBE9F369F`).
 - [x] Confirm GitHub currently has one active CI workflow and no CD workflow or configured deployment target; CD is unconfigured, not failing, and publishing destination/trigger must be chosen before implementation.
 
-The current hosted status is green. Older red notifications refer to runs before the already-merged fixes; CTest is executed in the Linux core, Linux GUI, and Windows core CI jobs. No GUI behavior changed in this status-only slice.
+The current hosted status is green. Older red notifications refer to runs before the already-merged fixes; CTest is executed in the Linux core, Linux GUI, and Windows core CI jobs. Sprint 1019 was locally merged and pushed to `main`; its completed feature branch was removed locally and remotely. No GUI behavior changed in this status-only slice.
 
 ### Sprint 1017 - CI / CTest / CD health reconciliation
 

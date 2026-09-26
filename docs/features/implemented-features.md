@@ -2,7 +2,7 @@
 
 ## CI / CTest delivery status (Sprint 1019)
 
-The current GitHub Actions CI run `36254672193` passes all five configured jobs on `main` SHA `081e9897d008dbf2e235bf39ca35abe77798726e`. CTest is part of the Linux core, Linux GUI, and Windows core jobs. Previously observed failures were repaired in Sprints 1010 and 1011 and are not current failures. A fresh local Qt/MinGW Release build and full CTest passed 120/120; evidence is `artifacts/evidence/sprint1019-ci-ct-reconciliation-r2.json` (SHA-256 `C2937FE61E2F6867E98FC436D2D9A80F738600CED3EF47D43C1545ACBE9F369F`). This repository has no CD workflow or deployment target; shipping is not configured.
+GitHub Actions run `36256453720` passes all five configured jobs on pushed `main` SHA `8d678b92435bfa8a5ee0dad46f268f3273dae4de`. CTest is part of the Linux core, Linux GUI, and Windows core jobs. Previously observed failures were repaired in Sprints 1010 and 1011 and are not current failures. A fresh local Qt/MinGW Release build and full CTest passed 120/120; evidence is `artifacts/evidence/sprint1019-ci-ct-reconciliation-r2.json` (SHA-256 `C2937FE61E2F6867E98FC436D2D9A80F738600CED3EF47D43C1545ACBE9F369F`). This repository has no CD workflow or deployment target; shipping is not configured.
 
 ## Sprint 1018 source-confirmed power/passive schematic relationships
 
