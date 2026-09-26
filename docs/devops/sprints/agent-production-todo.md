@@ -7,6 +7,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Inspect the latest public failure: run `36101062608` for old source SHA `214df8f`; Python protocol tests and six Python-backed Linux CTests failed on that revision.
 - [x] Confirm follow-up repairs are present on current `main`: stale protocol contracts, test-only project fixtures, CI runtime dependencies, and hosted failure diagnostics were repaired in Sprints 1010/1011.
 - [x] Verify the exact current `main` SHA `cae449782f841e443a534a5f7f4b1eef89d6c726`: hosted run `36239959391` passed all five configured jobs (Agent Python, Linux core, Linux GUI, Windows core, evidence-manifest).
+- [x] Verify the Sprint 1014 merge SHA `e22d07cec1c21876b7515a16555bb5c3cb3b8825`: hosted run `36241720460` passed all five configured jobs.
 - [x] Re-run official Qt/MinGW Release build and full CTest with the required Qt 6.11.1 runtime on `PATH`: 120/120 passed. Without that runtime path, GUI executables fail to load; this is an invocation/environment issue, not a reproduced test regression. Workspace-only manifest `artifacts/evidence/sprint-1014-ci-status-reconciliation.json` (SHA-256 `24737FCD2FD9491610F41EB66DBEF4AFA68814959504C50F64B1D00011885033`).
 - [x] Audit deployment configuration: no CD workflow or deployment target exists; there is no CD failure to repair without a user-selected release/deployment destination.
 
