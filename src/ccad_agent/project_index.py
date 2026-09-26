@@ -355,6 +355,9 @@ class ProjectIndex:
                            ("library_description", item.get("library_description")),
                            ("footprint_name", item.get("footprint_name")),
                            ("lib_id", item.get("lib_id")),
+                           ("extends", item.get("extends")),
+                           ("definition_source", item.get("definition_source")),
+                           ("library_symbol_id", item.get("library_symbol_id")),
                            ("sheet_path", item.get("sheet_path")),
                            ("title", item.get("title")),
                            ("text", item.get("text")),
@@ -531,6 +534,9 @@ class ProjectIndex:
             boards = project.get("boards", [])
             board = boards[0] if isinstance(boards, list) and boards and isinstance(boards[0], dict) else {}
         docs = []
+        library_pins_by_instance: dict[tuple[str, str], list[str]] = defaultdict(list)
+        embedded_definitions_by_instance: list[tuple[str, str, str]] = []
+        library_definitions: dict[str, dict] = {}
 
         # CCad currently stores design constraints as one board-level typed
         # value object rather than individually identified rule objects. Keep
@@ -643,6 +649,111 @@ class ProjectIndex:
                 aliases=("id", "reference", "part", "value", "lib_id"),
                 sheet_id=source_sheet_id,
                 extra_text=("schematic symbol",))
+            # A placed CCad symbol stores the resolved symbol-library content
+            # inside the project. Index that exact snapshot, not an assumed
+            # external cache or a definition fetched from the network.
+            for instance in _iter_dicts(symbols):
+                embedded = instance.get("symbol")
+                if not isinstance(embedded, dict):
+                    continue
+                lib_id = _safe(instance.get("part") or instance.get("lib_id") or
+                               embedded.get("name"), 160)
+                library_name = _safe(embedded.get("name"), 120)
+                extends = _safe(embedded.get("extends"), 120)
+                raw_pins = [pin for pin in _iter_dicts(embedded.get("pins"))][:256]
+                safe_pins = [{
+                    "name": _safe(pin.get("name"), 100),
+                    "number": _safe(pin.get("number"), 100),
+                    "electrical_type": _safe(pin.get("electrical_type"), 40),
+                    "graphical_style": _safe(pin.get("graphical_style"), 40),
+                    "orientation": _safe(pin.get("orientation"), 24),
+                } for pin in raw_pins]
+                number_counts = Counter(pin["number"] for pin in safe_pins
+                                        if pin["number"])
+                if not lib_id or not library_name:
+                    continue
+                definition_digest = hashlib.sha256(json.dumps(
+                    {"lib_id": lib_id, "name": library_name, "extends": extends,
+                     "pins": safe_pins}, sort_keys=True, separators=(",", ":")
+                ).encode()).hexdigest()[:16]
+                definition_id = f"embedded:{lib_id}:{definition_digest}"
+                definition_uid = f"library_symbol:{definition_id}"
+                definition_doc = library_definitions.get(definition_uid)
+                if definition_doc is None:
+                    if len(docs) >= _MAX_INPUT_ENTITIES:
+                        continue
+                    definition_doc = cls._make_doc(
+                        "library_symbol",
+                        {"id": definition_id, "name": library_name,
+                         "part": lib_id, "lib_id": lib_id, "extends": extends,
+                         "definition_source": "embedded_project_symbol"},
+                        aliases=("id", "name", "part", "lib_id"),
+                        extra_text=("embedded symbol-library definition", lib_id,
+                                    library_name, extends))
+                    if definition_doc is None:
+                        continue
+                    definition_doc["fields"].update({
+                        "definition_digest": definition_digest,
+                        "definition_source": "embedded_project_symbol",
+                    })
+                    definition_doc["references"] = set()
+                    docs.append(definition_doc)
+                    library_definitions[definition_uid] = definition_doc
+
+                    number_ordinals: Counter = Counter()
+                    for pin_index, pin in enumerate(safe_pins):
+                        if len(docs) >= _MAX_INPUT_ENTITIES:
+                            break
+                        number = pin["number"]
+                        number_ordinals[number] += 1
+                        ordinal = number_ordinals[number] if number else pin_index + 1
+                        pin_id = (f"{definition_id}:pin:{number}:{ordinal}"
+                                  if number else
+                                  f"{definition_id}:pin:unnumbered:{ordinal}")
+                        pin_doc = cls._make_doc(
+                            "library_pin",
+                            {"id": pin_id, "name": pin["name"],
+                             "pin_name": pin["name"], "pin_number": number,
+                             "electrical_type": pin["electrical_type"],
+                             "graphical_style": pin["graphical_style"],
+                             "orientation": pin["orientation"], "lib_id": lib_id,
+                             "library_symbol_id": definition_id,
+                             "definition_source": "embedded_project_symbol"},
+                            aliases=("id", "pin_name", "pin_number"),
+                            extra_text=("embedded library pin", lib_id, library_name))
+                        if pin_doc is None:
+                            continue
+                        pin_doc["fields"].update({
+                            "library_symbol_id": definition_id,
+                            "definition_source": "embedded_project_symbol",
+                            "pin_index": pin_index,
+                        })
+                        pin_doc["references"].add(
+                            (f"uid:{definition_uid}", "library_definition_pin"))
+                        definition_doc["references"].add(
+                            (f"uid:{pin_doc['uid']}", "library_pin"))
+                        docs.append(pin_doc)
+
+                component_id = _safe(instance.get("reference"), 120)
+                component_uid = _safe(instance.get("id"), 120)
+                if component_uid or component_id:
+                    embedded_definitions_by_instance.append(
+                        (component_uid, component_id, definition_uid))
+
+                unique_numbers = {pin["number"] for pin in safe_pins
+                                  if pin["number"] and
+                                  number_counts.get(pin["number"]) == 1}
+                identity_keys = {value for value in (component_id, component_uid)
+                                 if value}
+                for number in unique_numbers:
+                    pin_ordinal = next(i + 1 for i, pin in enumerate(safe_pins)
+                                       if pin["number"] == number)
+                    library_pin_uid = (
+                        f"library_pin:{definition_id}:pin:{number}:{pin_ordinal}")
+                    for identity in identity_keys:
+                        library_pins_by_instance[
+                            (_normalize(identity), number)].append(
+                                library_pin_uid)
             add("schematic_net", schematic.get("nets"), aliases=("id", "name"),
                 sheet_id=source_sheet_id,
                 extra_text=("schematic net",))
@@ -684,6 +795,23 @@ class ProjectIndex:
                         table_doc["tokens"].update(Counter(
                             token.casefold() for token in _WORD.findall(
                                 table_doc["fields"]["text"]) if len(token) <= 80))
+
+        symbol_docs_by_identity: dict[str, dict] = {}
+        for doc in docs:
+            if doc["fields"].get("kind") != "schematic_symbol":
+                continue
+            for value in (doc["fields"].get("id"),
+                          doc["fields"].get("reference")):
+                if value:
+                    symbol_docs_by_identity.setdefault(_normalize(value), doc)
+        for component_uid, component_id, definition_uid in embedded_definitions_by_instance:
+            symbol_doc = (symbol_docs_by_identity.get(_normalize(component_uid))
+                          if component_uid else None)
+            if symbol_doc is None and component_id:
+                symbol_doc = symbol_docs_by_identity.get(_normalize(component_id))
+            if symbol_doc is not None:
+                symbol_doc["references"].add(
+                    (f"uid:{definition_uid}", "embedded_library_definition"))
 
         diagnostics = snapshot.get("project_diagnostics", [])
         if isinstance(diagnostics, list):
@@ -830,6 +958,22 @@ class ProjectIndex:
                                           for net_id, member in claims)
 
         docs.extend(declared_pin_docs)
+        # Connect an instance pin to embedded library data only by an
+        # unambiguous, exact pin number. Names alone are not stable identities.
+        for pin_doc in declared_pin_docs:
+            pin_fields = pin_doc["fields"]
+            number = _safe(pin_fields.get("pin_number"), 100)
+            if not number:
+                continue
+            identity_keys = {value for value in (
+                pin_fields.get("component_id"), pin_fields.get("reference"),
+                pin_fields.get("symbol_id")) if value}
+            targets = {target for identity in identity_keys
+                       for target in library_pins_by_instance.get(
+                           (_normalize(identity), number), ())}
+            if len(targets) == 1:
+                pin_doc["references"].add(
+                    (f"uid:{next(iter(targets))}", "embedded_library_pin"))
         for doc in docs:
             if doc["fields"]["kind"] != "schematic_net":
                 continue
@@ -1007,6 +1151,33 @@ class ProjectIndex:
             block["signature"] = cls._signature(block)
             if len(docs) < _MAX_INPUT_ENTITIES:
                 docs.append(block)
+
+        # The native placement path stores FootprintPad.number in typed
+        # Pad.pin_name. Match only a unique reference-designator + pad-number
+        # pair on both sides; never infer this edge from net names.
+        pads_by_component_number: dict[tuple[str, str], list[dict]] = defaultdict(list)
+        pins_by_component_number: dict[tuple[str, str], list[dict]] = defaultdict(list)
+        for doc in docs:
+            fields = doc["fields"]
+            kind = fields.get("kind")
+            component = _normalize(fields.get("component_id") or
+                                   fields.get("reference"))
+            number = _safe(fields.get("pin_name") if kind == "pad" else
+                            fields.get("pin_number"), 100)
+            if not component or not number:
+                continue
+            if kind == "pad":
+                pads_by_component_number[(component, number)].append(doc)
+            elif kind == "schematic_pin" and fields.get("membership_kind") not in {
+                    "ambiguous_net_membership", "ambiguous_pin_declaration"}:
+                pins_by_component_number[(component, number)].append(doc)
+        for identity, pads in pads_by_component_number.items():
+            pins = pins_by_component_number.get(identity, ())
+            if len(pads) != 1 or len(pins) != 1:
+                continue
+            pad, pin = pads[0], pins[0]
+            pad["references"].add((f"uid:{pin['uid']}", "physical_pad_for_pin"))
+            pin["references"].add((f"uid:{pad['uid']}", "physical_pad_for_pin"))
 
         for doc in docs:
             doc["signature"] = cls._signature(doc)
@@ -1658,6 +1829,8 @@ class ProjectIndex:
                                "properties",
                                "pin_name", "pin_number", "electrical_type", "graphical_style",
                                "orientation", "identity_source", "symbol_unit", "locked", "visible",
+                               "extends", "definition_source", "definition_digest",
+                               "library_symbol_id", "pin_index",
                                "candidate_net_ids", "type", "net_id", "membership_kind", "layer_id",
                                "provenance", "source_group_id", "source_sheet_id", "member_count",
                                "members", "source_member_ids", "related_net_ids",

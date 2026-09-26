@@ -155,6 +155,8 @@ def _project_retrieval_payload(value: dict | None) -> dict:
         item: dict[str, Any] = {}
         for key in ("id", "kind", "reference", "value", "name", "part", "sheet_path",
                     "pin_name", "pin_number", "type", "net_id", "membership_kind", "layer_id",
+                    "extends", "definition_source", "definition_digest",
+                    "library_symbol_id", "pin_index",
                     "provenance", "source_group_id", "source_sheet_id", "source_revision",
                     "member_count",
                     "start_layer_id", "end_layer_id",

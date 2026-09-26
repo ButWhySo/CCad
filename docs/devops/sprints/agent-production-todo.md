@@ -2,6 +2,16 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1016 active slice — embedded library pins and exact schematic/PCB identity links (Tier 1, C3)
+
+- [x] Index embedded symbol-library definitions and pin metadata already serialized inside schematic components; identify source as the embedded project snapshot and key definition revisions by bounded content digest.
+- [x] Link schematic instances and declared pins to embedded definitions only through exact component identity and unique pin number.
+- [x] Link schematic pins to physical PCB pads only through a unique component reference and exact, case-preserving pin number; suppress ambiguous/missing matches and never infer by net name.
+- [x] Preserve definition identity, pin metadata, and relationship provenance through bounded provider-context packaging.
+- [x] Add contracts for definition retrieval, provider packaging, duplicate-number ambiguity, and edge removal after a project revision.
+- [ ] Keep standalone library-cache definitions, artifacts/proposals, source-model passive/decoupling association, and transaction-delta ingestion open until their authoritative runtime/source contracts exist.
+- [x] Run official Qt/MinGW Release + full CTest (120/120); inspect the official nonvisual manifest and logs. Manifest `artifacts/evidence/sprint1016-project-pin-relationships.json` (SHA-256 `827A69DB649AD6DFFF0526877802B4DBE86CCE2D26847E477DBBC86355CF7C95`).
+
 ### Sprint 1015 — CI / CTest follow-up
 
 - [x] Inspect failed hosted runs #539 and #540 at job and verbose-test level; identify the clean-runner fixture failure.
@@ -4633,10 +4643,10 @@ Index textual fields such as:
 
 Represent/traverse relationships such as:
 
-- [x] schematic symbol -> all serialized declared pins (connected and unconnected; Sprint 992; library definitions absent from the project snapshot remain open).
+- [x] schematic symbol -> all serialized declared pins (connected and unconnected; Sprint 992); embedded project symbol definitions/pins are separately indexed in Sprint 1016; standalone library-cache definitions remain open.
 - [x] connected schematic pin -> source schematic net via exact typed net-member identity (Sprint 981).
 - [x] schematic net -> schematic wires and labels (shared typed net membership; not geometric continuity proof).
-- [x] schematic symbol -> matching schematic/PCB component identity; remaining annotation/footprint source-link metadata stays open.
+- [x] schematic symbol -> matching schematic/PCB component identity; exact component reference + pin-number links to unique typed PCB pads are covered in Sprint 1016; annotation and other footprint source-link metadata remain open.
 - [x] PCB footprint/component identity -> its typed pads.
 - [x] pad -> PCB net association (not electrical continuity proof).
 - [x] net -> tracks.
@@ -4650,6 +4660,8 @@ Represent/traverse relationships such as:
 - [x] serialized schematic page -> symbols; file-path and hierarchy identity coverage remains separate.
 - [x] region -> objects (exact placement-region identity and intersecting board AABBs; Sprint 997 verified).
 - [x] functional block -> components/nets (typed source-backed membership and native net IDs; Sprint 998; no connectivity inference).
+- [x] Embedded project library symbol -> serialized definition pins, and schematic instance pin -> definition pin by a unique exact pin number (Sprint 1016; not a live external library-cache lookup).
+- [x] Schematic pin -> physical PCB pad by a unique exact component-reference/pin-number pair, with case-preserved pin identity and ambiguity suppression (Sprint 1016; not a net-based inference).
 - [ ] candidate/proposal -> affected objects.
 
 ### Graph retrieval
@@ -5054,12 +5066,12 @@ Complete together:
 
 - [x] Exact identity index for implemented typed entity classes; remaining entity coverage stays open above.
 - [x] Deterministic BM25 index for implemented typed entity text; remaining text-field coverage stays open above.
-- [ ] project relationship graph (Sprints 981/984/985/986 cover net membership, board-net identity, typed explicit links, diagnostics, serialized sheet-symbol membership, and cross-domain matching IDs; Sprint 995 preserves serialized symbol-declared pin IDs. Library-definition pin, artifact, proposal, and further graph coverage remains open).
+- [ ] project relationship graph (Sprints 981/984/985/986/995/1016 cover net membership, board-net identity, typed explicit links, diagnostics, serialized sheet-symbol membership, embedded definition pins, and exact schematic-pin/PCB-pad identity; standalone library-cache, artifact, proposal, passive-association, and other graph coverage remains open).
 - [x] PCB spatial index for supported typed entity geometry, explicit bounding-box queries, and linked DRC/ERC diagnostic retrieval.
 - [x] Hybrid deterministic project retrieval.
 - [x] Content revision/staleness handling against the live typed snapshot.
 - [x] Incremental per-entity index updates for changes/additions/deletions.
-- [ ] Full C3 completion, remaining source-model relationships and transaction-delta updates; Sprint 986 adds bbox/diagnostic contracts, all serialized layer-bearing collections, and a 10k-object benchmark; tests/docs.
+- [ ] Full C3 completion, remaining source-model relationships and transaction-delta ingestion; Sprint 986 adds bbox/diagnostic contracts, all serialized layer-bearing collections, and a 10k-object benchmark; Sprint 1016 adds exact embedded-library/pin-pad links; artifact/proposal inputs and transaction-delta contracts remain open.
 
 ## Group C4 â€” Semantic project retrieval
 
