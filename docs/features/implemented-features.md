@@ -1,5 +1,13 @@
 # Implemented Features
 
+## Active PCB layer/net context freshness (Sprint 1025)
+
+The first-turn context signal includes the live active PCB layer and net as bounded values. Those values contribute to memory-query terms, the signal digest, project-index retrieval, and ContextBroker cache identity, so switching layer or net invalidates context even when the serialized project revision is unchanged. Regression coverage verifies signal construction, memory retrieval, cache reuse for unchanged state, invalidation for layer/net changes, and orchestration propagation. Twelve focused broker contracts and the Agent context orchestration contract pass; the official Qt/MinGW Release build and full CTest pass 120/120. Pyright reports two existing `orchestrator.py` import-symbol diagnostics outside this change; they remain unsuppressed. Evidence: `artifacts/evidence/sprint-1025-active-layer-context.json` (SHA-256 `4339E8EC64406982A656095744D50245E8FC933FC1FAD2B60F1A8720F1EAB157`).
+
+## Current CI / CTest / CD status (Sprint 1025)
+
+GitHub Actions run `36273540241` passes all five configured jobs on exact `main` SHA `d7208650d7bfa26700a63dca5a93070f58b0fe11`; CTest runs in the Linux core, Linux GUI, and Windows core jobs. The recent red run `36234661589` is historical and superseded; the prior incident record identifies a test dependency on an ignored local demo-board fixture as its cause. Only `.github/workflows/ci.yml` is configured. No CD workflow/deployment target exists, so delivery is unconfigured rather than failing; no release destination was invented.
+
 ## Exact board design-rule context (Sprint 1024)
 
 The project index retains its aggregate board-rule record and additionally indexes each finite scalar `DesignRules` field under a stable typed path such as `board.design_rules.min_track_width_nm`. Records explicitly identify this as field-path-derived identity, preserve the typed value, and carry suffix-derived units when the serialized field supplies them; this does not claim the kernel provides native per-rule IDs or authored descriptions. Credential-shaped property names and secret-shaped values are removed recursively from provider-bound project snapshots. Project-index contracts pass 58/58, the context-package contract passes, changed-module Pyright reports zero diagnostics, and the official Qt/MinGW Release/full CTest gate passes 120/120. Evidence: `artifacts/evidence/sprint-1024-project-rule-context.json` (SHA-256 `89D234C649F6EE53B9815B4EABD9FAE30B7652FC8DC0EB5D9A612BE13169CC8C`).

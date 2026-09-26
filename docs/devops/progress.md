@@ -6,9 +6,10 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 1024
-- Branch: `sprint-1024-project-rule-context`
-- Sprint 1024 indexes typed scalar board-rule settings under explicit derived field paths, keeps their typed values and suffix-derived units, and removes credential-shaped content from provider-bound project snapshots. Project-index contracts pass 58/58, context-package contract passes, changed-module Pyright reports zero diagnostics, and Qt/MinGW Release/full CTest pass 120/120. Workspace-only evidence: `artifacts/evidence/sprint-1024-project-rule-context.json`, SHA-256 `89D234C649F6EE53B9815B4EABD9FAE30B7652FC8DC0EB5D9A612BE13169CC8C`.
+- Sprint: 1025
+- Branch: `sprint-1025-active-layer-context`
+- Sprint 1025 threads the actual active PCB layer/net into initial retrieval signals, project-index retrieval, telemetry signal digest, and ContextBroker cache identity. Layer/net changes now invalidate cached context even when project revision is unchanged. Twelve focused broker tests and the orchestration context contract pass; official Qt/MinGW Release and full CTest pass 120/120. Pyright reports two existing unresolved import-symbol diagnostics in `orchestrator.py`; no suppression was added. Manifest `artifacts/evidence/sprint-1025-active-layer-context.json`, SHA-256 `4339E8EC64406982A656095744D50245E8FC933FC1FAD2B60F1A8720F1EAB157`. Hosted status at slice start: run `36273540241` passes all five jobs on exact `main` SHA `d7208650d7bfa26700a63dca5a93070f58b0fe11`; CTest is included in Linux core, Linux GUI, and Windows core. The recent red run `36234661589` is superseded; the recorded cause is an ignored local demo-board fixture read by `agent_project_index`. No CD workflow or deployment target exists; CD is unconfigured, not failing. No CI workflow change was indicated by current evidence.
+
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution

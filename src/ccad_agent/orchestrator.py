@@ -2604,13 +2604,16 @@ def handle_human_message(req):
     except (TypeError, json.JSONDecodeError):
         project_context = {}
     project_context = project_context if isinstance(project_context, dict) else {}
+    active_layer = str(project_context.get("active_pcb_layer_id", ""))
+    active_net = str(project_context.get("active_pcb_net_id", ""))
     recent_context = recent_retrieval_text(session_messages)
     signals = extract_context_signals(
         memory_query, goal=text, project_id=project_id,
         active_editor=active_editor, selected_objects=selected_objects,
         workflow=active_workflow,
         task=memory_manager.identities["stm"], recent_turns=turn_records,
-        recent_context=recent_context)
+        recent_context=recent_context, active_layer=active_layer,
+        active_net=active_net)
     with telemetry_runtime.session(requested_thread), telemetry_runtime.observation(
             "context.assemble", "chain", {
                 "thread_id_hash": hashlib.sha256(
@@ -2636,8 +2639,7 @@ def handle_human_message(req):
                 historical_turn_count=len(turn_records), signals=signals,
                 recent_context=recent_context, thread_recap=recap,
                 project_snapshot=project_context,
-                active_layer=project_context.get("active_pcb_layer_id", ""),
-                active_net=project_context.get("active_pcb_net_id", ""))
+                active_layer=active_layer, active_net=active_net)
             if retrieval_observation is not None:
                 retrieval_observation.update(
                     input={"signal_digest": signals["digest"],

@@ -149,6 +149,10 @@ assert "context_state" in human_contract["response_contracts"]
 assert '"project_retrieval_near_component_count"' in text
 assert '"project_retrieval_region_member_count"' in text
 assert '"project_retrieval_block_net_count"' in text
+assert 'active_layer=active_layer' in text
+assert 'active_net=active_net' in text
+assert 'project_context.get("active_pcb_layer_id", "")' in text
+assert 'project_context.get("active_pcb_net_id", "")' in text
 assert "provider_state" in human_contract["responses"]
 assert "backend_state" in human_contract["responses"]
 assert "change_kind" in human_contract["response_contracts"]["context_state"]["fields"]

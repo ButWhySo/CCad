@@ -109,11 +109,14 @@ class ContextBrokerTests(unittest.TestCase):
     def test_signals_keep_design_identifiers_and_bound_sensitive_input(self):
         signals = extract_context_signals(
             "Move U3 on F.Cu and keep GND clear", active_editor="pcb",
-            selected_objects=["T17", "V2"], workflow="placement_pass")
+            selected_objects=["T17", "V2"], workflow="placement_pass",
+            active_layer="F.Cu", active_net="GND")
         self.assertIn("u3", signals["identifiers"])
         self.assertIn("f.cu", signals["identifiers"])
         self.assertIn("gnd", signals["identifiers"])
         self.assertIn("t17", signals["identifiers"])
+        self.assertIn("F.Cu", signals["query"])
+        self.assertIn("GND", signals["query"])
         self.assertLessEqual(len(signals["query"]), 2048)
         secret = extract_context_signals("api_key=not-a-real-secret")
         self.assertNotIn("not-a-real-secret", secret["query"])
@@ -150,6 +153,41 @@ class ContextBrokerTests(unittest.TestCase):
                                      user_request="Improve GND routing near U3 and connector clearance")
             self.assertEqual(changed["version"], 2)
             self.assertFalse(changed["cache_hit"])
+
+    def test_active_layer_and_net_invalidate_cache_and_seed_memory_retrieval(self):
+        with tempfile.TemporaryDirectory() as temp:
+            manager = MemoryManager(MemoryStore(Path(temp) / "memory.json"),
+                                    task_id="task", thread_id="thread",
+                                    project_id="project")
+            manager.configure({"ltm": True})
+            layer_memory = manager.add(
+                "Keep F.Cu signal routing clear of the board edge",
+                tier="ltm", title="Front copper routing")
+            net_memory = manager.add(
+                "Preserve the GND return path on the selected copper net",
+                tier="ltm", title="Ground return constraint")
+            broker = ContextBroker()
+            args = {"thread_id": "thread", "project_revision": "same-revision",
+                    "user_request": "Inspect the current board setup"}
+            first = broker.prepare(manager, **args, active_layer="F.Cu",
+                                   active_net="GND")
+            same_state = broker.prepare(manager, **args, active_layer="F.Cu",
+                                        active_net="GND")
+            changed_layer = broker.prepare(manager, **args, active_layer="B.Cu",
+                                           active_net="GND")
+            changed_net = broker.prepare(manager, **args, active_layer="B.Cu",
+                                         active_net="VCC")
+            self.assertTrue(same_state["cache_hit"])
+            self.assertFalse(changed_layer["cache_hit"])
+            self.assertFalse(changed_net["cache_hit"])
+            self.assertIn(layer_memory["id"],
+                          {item["id"] for item in first["memories"]})
+            self.assertIn(net_memory["id"],
+                          {item["id"] for item in first["memories"]})
+            self.assertIn("F.Cu", first["signals"]["query"])
+            self.assertIn("GND", first["signals"]["query"])
+            self.assertNotEqual(first["signal_digest"],
+                                changed_layer["signal_digest"])
 
     def test_project_memory_isolated_from_other_project_and_thread(self):
         with tempfile.TemporaryDirectory() as temp:

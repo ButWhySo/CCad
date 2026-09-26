@@ -2,6 +2,18 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1025 — Active PCB layer/net context freshness (Tier 1)
+
+- [x] Include the active PCB layer and net in bounded turn signals used for initial memory retrieval and project-index retrieval.
+- [x] Include active layer/net in the context digest and cache identity so changing either cannot reuse stale turn context at an unchanged project revision.
+- [x] Add regression contracts for query inclusion, memory retrieval relevance, cache hits for unchanged state, and invalidation for changed layer/net; prove orchestration passes live project state.
+- [x] Pass focused contracts, Python syntax checks, and official Qt/MinGW Release/full CTest (120/120). Manifest `artifacts/evidence/sprint-1025-active-layer-context.json`, SHA-256 `4339E8EC64406982A656095744D50245E8FC933FC1FAD2B60F1A8720F1EAB157`.
+- [x] Reconcile CI/CT/CD against live run `36273540241` on `main` SHA `d7208650d7bfa26700a63dca5a93070f58b0fe11`: all five configured jobs pass, with CTest in three native lanes. Historical run `36234661589` is superseded; the recorded cause is a test reading an ignored local demo-board fixture. CD has no workflow or deployment target and is therefore unconfigured, not failing.
+- [ ] Resolve the two existing Pyright import-symbol diagnostics in `orchestrator.py`; this slice does not suppress them.
+- [ ] Publish the verified feature and re-check hosted CI on the exact merged commit.
+
+Implementation boundary: active layer/net are transient UI state, not project-revision changes. They are now explicit retrieval signals and cache-key inputs; no persistent project model or UI behavior changed. No CI workflow edit was indicated by live evidence. Do not create a publishing pipeline until its artifact, destination, and release policy are specified.
+
 ### Sprint 1024 — Exact board-rule context and project-secret filtering (Tier 1)
 
 - [x] Index scalar board design-rule settings as exact `board.design_rules.<field>` records, with explicit derived-path identity, original value, field name, and unit metadata; preserve the compatible aggregate rule record.
@@ -4343,6 +4355,7 @@ The essential architecture is:
 - [ ] Context creation must automatically retrieve likely-relevant memories before the first model call of a root turn.
 - [ ] Do not require the LLM to issue `memory.search` merely to discover whether relevant memory exists.
 - [ ] Build the automatic retrieval query from user prompt, normalized goal, active project, active editor, selected objects, relevant nets/components, workflow/domain, and current thread state.
+- [x] Include the live active PCB layer and net in the first-turn retrieval query, context digest, and cache key (Sprint 1025); layer/net-only UI changes invalidate cached context without requiring a project revision change.
 - [x] Inject a bounded Memory Summary containing high-value stable user/project knowledge; Sprint 1008 contracts prove safe content reaches provider context.
 - [ ] Inject a bounded top-K set of automatically retrieved relevant memories.
 - [ ] Include a compact Memory Manifest describing available memory scopes/categories without injecting their full contents.

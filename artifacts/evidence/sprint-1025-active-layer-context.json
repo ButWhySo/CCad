@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1025-active-layer-context",
+    "feature":  "Active PCB layer/net context signals, memory retrieval, and cache invalidation",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-26T22:04:39.6578886Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.45 log=artifacts/evidence/sprint-1025-active-layer-context/preflight.log",
+                      "finished_utc":  "2026-09-26T22:04:41.2500288Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.81 log=artifacts/evidence/sprint-1025-active-layer-context/build.log",
+                      "finished_utc":  "2026-09-26T22:04:43.0796787Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=187.48 log=artifacts/evidence/sprint-1025-active-layer-context/ctest.log",
+                      "finished_utc":  "2026-09-26T22:07:50.5567607Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1025-active-layer-context/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1025-active-layer-context/ctest.log",
+                                         "sha256":  "33AAB564D45EF33CAF6A587C8744157F25A2DDB3DCC00C694163F3F71C5F3C0C"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1025-active-layer-context/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-26T22:07:50.6557646Z"
+}

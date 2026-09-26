@@ -77,13 +77,16 @@ def _safe_signal(value: Any, limit: int) -> str:
 def extract_context_signals(user_request: str, *, goal: str = "", project_id: str = "",
                             active_editor: str = "", selected_objects=(),
                             workflow: str = "", task: str = "", recent_turns=(),
-                            recent_context=()) -> dict:
+                            recent_context=(), active_layer: str = "",
+                            active_net: str = "") -> dict:
     """Create stable retrieval signals; never retain unbounded prompt text."""
     fields = [
         ("request", _safe_signal(user_request, 1400)),
         ("goal", _safe_signal(goal, 240)),
         ("project", _safe_signal(project_id, 100)),
         ("editor", _safe_signal(active_editor, 40)),
+        ("active_layer", _safe_signal(active_layer, 80)),
+        ("active_net", _safe_signal(active_net, 80)),
         ("workflow", _safe_signal(workflow, 80)),
         ("task", _safe_signal(task, 120)),
     ]
@@ -314,7 +317,8 @@ class ContextBroker:
         signals = signals or extract_context_signals(
             user_request, goal=goal, project_id=project_id, active_editor=active_editor,
             selected_objects=selected_objects, workflow=workflow, task=task,
-            recent_turns=recent_turns, recent_context=recent_context)
+            recent_turns=recent_turns, recent_context=recent_context,
+            active_layer=active_layer, active_net=active_net)
         current_project_id = str(project_id or getattr(manager, "project_id", ""))
         project_identity_digest = (hashlib.sha256(current_project_id.encode()).hexdigest()[:16]
                                    if current_project_id else "")
@@ -329,6 +333,8 @@ class ContextBroker:
                                    str(project_revision), signals["digest"],
                                    query_digest, int(historical_turn_count), generation,
                                    comparison_digest,
+                                   _safe_signal(active_layer, 80),
+                                   _safe_signal(active_net, 80),
                                    int(self.memory_token_budget)],
                                   separators=(",", ":"))
         key = hashlib.sha256(key_material.encode()).hexdigest()
