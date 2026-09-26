@@ -1,5 +1,9 @@
 # Implemented Features
 
+## Sprint 1011 CTest failure diagnostics
+
+When a native CTest job fails, Linux core, Linux GUI, and Windows rerun only the failed test with verbose output, retain `ctest-failed-details.log`, and publish its contents in the job summary with error annotations. Sprint 1010 hosted CI identified `agent_project_index` on all three platforms, but anonymous log access did not expose its assertion; the exact root cause remains open pending the new workflow diagnostics. The local Qt/MinGW Release build and full CTest pass 119/119; manifest `artifacts/evidence/sprint1011-ctest-failure-diagnostics.json` records the verified non-visual gate.
+
 # Sprint 1010 CI and CTest reliability (in progress)
 
 The CI workflow now supplies Python 3.12 and the Agent's declared requirements to all native CTest jobs, because several registered contracts import the Agent runtime. Provider/checkpoint source contracts align to the current typed method catalog; the local OpenAI-compatible protocol test uses isolated temporary state and a bounded subprocess; and the restart matrix exercises the real `ui.route_track` method schema. Linux build diagnostics are surfaced as workflow annotations, while configure/build/test logs are retained as artifacts. The Windows-only credential target helper is excluded from Linux compilation. The complete Python lane passes locally; the official Qt/MinGW Release build and full CTest pass 119/119, with workspace-only evidence manifest `artifacts/evidence/sprint1010-ci-ct-repair.json`. Changed Python contracts pass Pyright with zero diagnostics. Hosted CI for the pushed SHA remains pending. This repository has no configured CD workflow or deployment target.

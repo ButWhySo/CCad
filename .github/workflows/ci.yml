@@ -125,6 +125,24 @@ jobs:
             done
           fi
           exit "$test_exit"
+      - name: Rerun failed Linux CTest with verbose diagnostics
+        if: failure() && hashFiles('build/Testing/Temporary/LastTestsFailed.log') != ''
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          set +e
+          ctest --test-dir build --rerun-failed --output-on-failure -V 2>&1 | tee ctest-failed-details.log
+          detail_exit=${PIPESTATUS[0]}
+          if [ -f ctest-failed-details.log ]; then
+            echo '## Failed Linux CTest details' >> "$GITHUB_STEP_SUMMARY"
+            echo '```text' >> "$GITHUB_STEP_SUMMARY"
+            cat ctest-failed-details.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            grep -E '(^|:)( AssertionError|Error|Exception)|FAILED|Traceback|Error:' ctest-failed-details.log | tail -n 30 | while IFS= read -r diagnostic; do
+              echo "::error title=Linux CTest failure detail::$diagnostic"
+            done
+          fi
+          exit "$detail_exit"
       - name: Verbose CLI diagnostics
         if: always()
         continue-on-error: true
@@ -156,6 +174,7 @@ jobs:
             configure.log
             build.log
             ctest-core-linux.log
+            ctest-failed-details.log
             ctest-cli-linux-verbose.log
 
   gui-linux:
@@ -206,6 +225,24 @@ jobs:
             done
           fi
           exit "$test_exit"
+      - name: Rerun failed Linux GUI CTest with verbose diagnostics
+        if: failure() && hashFiles('build/Testing/Temporary/LastTestsFailed.log') != ''
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          set +e
+          ctest --test-dir build --rerun-failed --output-on-failure -V 2>&1 | tee ctest-failed-details.log
+          detail_exit=${PIPESTATUS[0]}
+          if [ -f ctest-failed-details.log ]; then
+            echo '## Failed Linux GUI CTest details' >> "$GITHUB_STEP_SUMMARY"
+            echo '```text' >> "$GITHUB_STEP_SUMMARY"
+            cat ctest-failed-details.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            grep -E 'AssertionError|FAILED|Traceback|Error:' ctest-failed-details.log | tail -n 30 | while IFS= read -r diagnostic; do
+              echo "::error title=Linux GUI CTest failure detail::$diagnostic"
+            done
+          fi
+          exit "$detail_exit"
       - name: Verbose CLI diagnostics
         if: always()
         continue-on-error: true
@@ -237,6 +274,7 @@ jobs:
             configure.log
             build.log
             ctest-gui-linux.log
+            ctest-failed-details.log
             ctest-cli-gui-linux-verbose.log
 
   core-windows:
@@ -269,12 +307,31 @@ jobs:
           $testExit = $LASTEXITCODE
           Get-Content ctest-core-windows.log
           exit $testExit
+      - name: Rerun failed Windows CTest with verbose diagnostics
+        if: failure()
+        continue-on-error: true
+        run: |
+          ctest --test-dir build --rerun-failed --output-on-failure -C Release -V *> ctest-failed-details.log
+          $detailExit = $LASTEXITCODE
+          if (Test-Path ctest-failed-details.log) {
+            Get-Content ctest-failed-details.log
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '## Failed Windows CTest details'
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '```text'
+            Get-Content ctest-failed-details.log | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '```'
+            Select-String -Path ctest-failed-details.log -Pattern 'AssertionError|FAILED|Traceback|Error:' | ForEach-Object {
+              Write-Output "::error title=Windows CTest failure detail::$($_.Line)"
+            }
+          }
+          exit $detailExit
       - name: Upload test log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ctest-core-windows
-          path: ctest-core-windows.log
+          path: |
+            ctest-core-windows.log
+            ctest-failed-details.log
       - name: Upload Windows configure/build diagnostics
         if: always()
         uses: actions/upload-artifact@v4

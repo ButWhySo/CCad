@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint1011-ctest-failure-diagnostics",
+    "feature":  "Expose exact cross-platform CTest failure output to diagnose hosted agent_project_index failure",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-26T09:56:59.2696931Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.19 log=artifacts/evidence/sprint1011-ctest-failure-diagnostics/preflight.log",
+                      "finished_utc":  "2026-09-26T09:57:00.5997451Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=76.96 log=artifacts/evidence/sprint1011-ctest-failure-diagnostics/build.log",
+                      "finished_utc":  "2026-09-26T09:58:17.5765838Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=185.15 log=artifacts/evidence/sprint1011-ctest-failure-diagnostics/ctest.log",
+                      "finished_utc":  "2026-09-26T10:01:22.7242199Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint1011-ctest-failure-diagnostics/build.log",
+                                         "sha256":  "54FABC9759E7E37EDCF95C0C3F8F3055938C2F0FE4E588DB1CD0F8347373D356"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1011-ctest-failure-diagnostics/ctest.log",
+                                         "sha256":  "E4B0A020B3D86D9E72BF82E4D93465661E9E8BEE5C569A8C0B4222553FE4A468"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1011-ctest-failure-diagnostics/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-26T10:01:22.8117527Z"
+}

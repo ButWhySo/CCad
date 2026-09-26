@@ -21,6 +21,8 @@ for job in ("core-linux", "gui-linux", "core-windows"):
     assert "upload-artifact@v4" in block, f"{job} must retain failure diagnostics"
     assert "build.log" in block, f"{job} must retain the full build output"
     assert "ctest" in block, f"{job} must run CTest"
+    assert "--rerun-failed --output-on-failure" in block, f"{job} must expose failed CTest details"
+    assert "ctest-failed-details.log" in block, f"{job} must retain failed-test diagnostics"
 
 assert workflow.count("Linux build diagnostic") == 1
 assert workflow.count("Linux GUI build diagnostic") == 1

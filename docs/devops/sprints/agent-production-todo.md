@@ -2,6 +2,15 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1011 — failing CTest diagnostics
+
+- [x] Rerun failed CTest cases verbosely on Linux core, Linux GUI, and Windows.
+- [x] Publish one-test failure output in each job summary and preserve it as an artifact.
+- [x] Add regression contract requiring all native jobs to retain failed-test detail.
+- [x] Run official Qt/MinGW Release build and full CTest verifier (119/119); commit workspace-only manifest after review.
+- [ ] Push and inspect hosted job-level failure output for `agent_project_index`; implement the evidenced root-cause fix.
+- [ ] Confirm all hosted CI jobs pass on the exact pushed main SHA.
+
 ### Sprint 1010 — CI/CTest failure repair
 
 - [x] Align stale provider/checkpoint CI contracts to current typed method catalogs and runtime behavior.
