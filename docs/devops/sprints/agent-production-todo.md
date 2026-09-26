@@ -9,7 +9,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Verify the repair on later hosted `main` runs, including run `36261448041` on merged SHA `bab8aed149015a6c763dfec861c86b7d69326d86`; all five jobs pass (`agent-python`, Linux core, Linux GUI, Windows core, evidence manifest).
 - [x] Run the official nonvisual verifier; Qt/MinGW preflight passes and its timestamp-checked reuse confirms the unchanged source has a successful Release build and full CTest, 120/120. Manifest `artifacts/evidence/sprint-1022-ci-ct-cd-health.json`, SHA-256 `150D8C7DD2E41A417A8B76295BBF7E7300FABF1A196CA51DB07095E63CD28A43`.
 - [x] Confirm `.github/workflows/ci.yml` is the sole configured workflow and that it runs CTest in all three native jobs; no CD workflow/deployment target exists, so delivery is unconfigured rather than failing.
-- [ ] Commit this report, locally merge to `main`, push, and verify hosted CI against the resulting exact SHA.
+- [x] Commit report `ab04db1`, fast-forward merge to `main`, push, and verify hosted CI run `36264153092` against exact SHA `ab04db1e0d417733da7966e16b5f634499f11ff4`; all five jobs pass.
 
 Finding: the visible red badges are historical, superseded runs; the current workflow is green. The missing-fixture regression and earlier Sprint 1010 dependency/contract/`-Werror` failures are already repaired. No CI source change is justified by current evidence. Do not invent a CD target; release destination and publishing policy need a product decision.
 
