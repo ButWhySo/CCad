@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint1009-memory-exposure-provenance-r3",
+    "feature":  "Safe per-memory automatic, summary, and explicit deep-retrieval provenance",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-26T08:03:42.3621548Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.36 log=artifacts/evidence/sprint1009-memory-exposure-provenance-r3/preflight.log",
+                      "finished_utc":  "2026-09-26T08:03:43.8852716Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.63 log=artifacts/evidence/sprint1009-memory-exposure-provenance-r3/build.log",
+                      "finished_utc":  "2026-09-26T08:03:44.5273440Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=171.97 log=artifacts/evidence/sprint1009-memory-exposure-provenance-r3/ctest.log",
+                      "finished_utc":  "2026-09-26T08:06:36.4975348Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint1009-memory-exposure-provenance-r3/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1009-memory-exposure-provenance-r3/ctest.log",
+                                         "sha256":  "7778AA5C02810552BD38967D2A34DBD24040CBB88C03B14E0DFABFA8302A6EA4"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1009-memory-exposure-provenance-r3/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-26T08:06:36.5735335Z"
+}

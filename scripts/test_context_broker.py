@@ -3,6 +3,7 @@
 # Runtime path insertion below intentionally resolves modules from src/ccad_agent.
 # pyright: reportMissingImports=false
 
+import json
 import sys
 import tempfile
 import unittest
@@ -11,7 +12,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src" / "ccad_agent"))
 
-from context_broker import ContextBroker, extract_context_signals
+from context_broker import (ContextBroker, extract_context_signals,
+                            memory_exposure_manifest)
 from context_package import build_context_package
 from memory_manager import MemoryManager
 from memory_store import MemoryStore
@@ -53,6 +55,56 @@ class ContextBrokerTests(unittest.TestCase):
             for index in range(8)
         ])
         self.assertLessEqual(len(expanded), ContextBroker.MAX_MEMORY_SUMMARY_CHARS)
+
+    def test_memory_context_channels_distinguish_automatic_summary_and_deep_search(self):
+        with tempfile.TemporaryDirectory() as temp:
+            manager = MemoryManager(MemoryStore(Path(temp) / "memory.json"),
+                                    task_id="task", thread_id="thread",
+                                    project_id="project")
+            manager.configure({"ltm": True, "episodic": True})
+            stable = manager.add(
+                "Keep the GND return path continuous around U3",
+                tier="ltm", kind="preference", importance=5,
+                title="GND return rule")
+            routine = manager.add(
+                "Place the test point beside connector J4",
+                tier="episodic", kind="fact", importance=1,
+                title="Test point placement")
+            broker = ContextBroker()
+            context = broker.prepare(
+                manager, thread_id="thread", project_revision="rev-a",
+                user_request="Review GND return near U3 and test point at J4")
+            initial = {item["entry_id"]: item for item in context["memory_retrieval"]}
+            self.assertEqual(initial[stable["id"]]["inclusion_channels"],
+                             ["automatic_retrieval", "memory_summary"])
+            self.assertEqual(initial[routine["id"]]["inclusion_channels"],
+                             ["automatic_retrieval"])
+            package = build_context_package(
+                {}, context["memories"], [], char_limit=4096,
+                memory_retrieval=context["memory_retrieval"],
+                memory_summary=context["memory_summary"],
+                memory_summary_entry_ids=context["memory_summary_entry_ids"])
+            packaged = {item["memory_key"]: item for item in
+                        package["metadata"]["memory_retrieval"]}
+            self.assertEqual(package["metadata"]["memory_exposure_channel_counts"], {
+                "automatic_retrieval": 2, "memory_summary": 1,
+                "explicit_deep_retrieval": 0})
+            self.assertNotIn(stable["id"], json.dumps(package["metadata"]))
+            self.assertEqual(len(packaged), 2)
+
+            refreshed = broker.refresh_memory(
+                manager, context, "test point J4", reason="agent_requested_deeper_memory")
+            deep = {item["entry_id"]: item for item in refreshed["memory_retrieval"]}
+            self.assertEqual(deep[stable["id"]]["inclusion_channels"],
+                             ["automatic_retrieval", "memory_summary",
+                              "explicit_deep_retrieval"])
+            self.assertEqual(deep[routine["id"]]["inclusion_channels"],
+                             ["automatic_retrieval", "explicit_deep_retrieval"])
+            safe_manifest = memory_exposure_manifest(refreshed["memory_retrieval"])
+            self.assertEqual(len(safe_manifest), 2)
+            self.assertTrue(all(set(item) == {"memory_key", "inclusion_channels"}
+                                for item in safe_manifest))
+            self.assertNotIn(stable["id"], json.dumps(safe_manifest))
 
     def test_signals_keep_design_identifiers_and_bound_sensitive_input(self):
         signals = extract_context_signals(

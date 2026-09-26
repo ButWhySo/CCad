@@ -1,5 +1,21 @@
 # Implemented Features
 
+## Sprint 1009 per-memory context exposure provenance
+
+Each packaged memory now has content-free provenance for its actual exposure
+channels: automatic retrieval, inclusion in the bounded Memory Summary, and/or
+explicit deep retrieval. Reports use a SHA-256-derived opaque key for the
+memory ID and allowlisted channel names; context diagnostics and Langfuse
+observations receive safe per-record provenance and per-channel counts, while
+the local deep-search result retains its established authorized record payload.
+Counts are computed only from records and summary text surviving the final
+context-package budget. Contracts cover channel overlap, deep-search refresh,
+package metadata, budget omission, and redaction. Qt/MinGW preflight and Release
+build pass, full CTest passes 119/119, and changed Python files compile. Pyright
+retains two known orchestrator import-symbol diagnostics. Workspace-only
+manifest `artifacts/evidence/sprint1009-memory-exposure-provenance-r3.json` has
+SHA-256 `97B97406372ACE0BB26DE6DA669C0BD668C4D19429C707F0E2B34FF9B012520B`.
+
 ## Sprint 1008 stable Memory Summary in initial provider context
 
 Automatic context assembly now builds a deterministic summary from eligible

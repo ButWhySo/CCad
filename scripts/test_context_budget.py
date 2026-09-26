@@ -130,6 +130,34 @@ class ContextBudgetTests(unittest.TestCase):
         self.assertNotIn("usage_persistence", provenance)
         self.assertNotIn("raw_content", provenance)
 
+    def test_provider_context_reports_hashed_memory_origin_channels_only(self):
+        package = CONTEXT.build_context_package(
+            "{}", [{"id": "private-memory-id", "tier": "ltm",
+                    "content": "Keep the USB return path continuous."}], [],
+            char_limit=4096,
+            memory_retrieval=[{"entry_id": "private-memory-id", "rank": 1,
+                               "tier": "ltm", "inclusion_channels": [
+                                   "automatic_retrieval", "memory_summary",
+                                   "explicit_deep_retrieval", "untrusted_channel"],
+                               "raw_content": "must not leak"}],
+            memory_summary="Stable memory: Keep the USB return path continuous.",
+            memory_summary_entry_ids=["private-memory-id"])
+        provenance = package["metadata"]["memory_retrieval"][0]
+        self.assertEqual(provenance["inclusion_channels"], [
+            "automatic_retrieval", "memory_summary", "explicit_deep_retrieval"])
+        self.assertRegex(provenance["memory_key"], r"^[0-9a-f]{16}$")
+        self.assertNotIn("private-memory-id", json.dumps(package["metadata"]))
+        self.assertNotIn("raw_content", provenance)
+        report = CONTEXT.build_provider_request_report(
+            "system", [], [], provider="local", model="test",
+            context_content=package["content"],
+            context_metadata=package["metadata"])
+        self.assertEqual(report["memory_retrieval"][0]["memory_key"],
+                         provenance["memory_key"])
+        self.assertEqual(report["memory_exposure_channel_counts"], {
+            "automatic_retrieval": 1, "memory_summary": 1,
+            "explicit_deep_retrieval": 1})
+
     def test_retrieved_turn_context_keeps_source_message_provenance(self):
         package = CONTEXT.build_context_package("{}", [], [], char_limit=4096,
             turn_records=[{"thread_id": "thread-1", "turn_id": "turn-1",
@@ -167,9 +195,11 @@ class ContextBudgetTests(unittest.TestCase):
             [], char_limit=1024,
             memory_retrieval=[
                 {"entry_id": "best", "rank": 1, "tier": "ltm",
-                 "query_overlap_terms": 3, "namespace_hash": "t1"},
+                 "query_overlap_terms": 3, "namespace_hash": "t1",
+                 "inclusion_channels": ["automatic_retrieval", "memory_summary"]},
                 {"entry_id": "lower", "rank": 2, "tier": "episodic",
-                 "query_overlap_terms": 1, "namespace_hash": "p1"},
+                 "query_overlap_terms": 1, "namespace_hash": "p1",
+                 "inclusion_channels": ["automatic_retrieval", "memory_summary"]},
             ])
         meta = package["metadata"]
         envelope = json.loads(package["content"].split("\n", 1)[1])
@@ -182,6 +212,10 @@ class ContextBudgetTests(unittest.TestCase):
         self.assertEqual(meta["omitted_memory_entry_count"], 1)
         self.assertEqual(meta["memory_retrieval"][0]["rank"], 1)
         self.assertEqual(meta["memory_retrieval"][0]["tier"], "ltm")
+        self.assertEqual(meta["memory_exposure_channel_counts"], {
+            "automatic_retrieval": 1, "memory_summary": 1,
+            "explicit_deep_retrieval": 0})
+        self.assertNotIn("lower", json.dumps(meta["memory_retrieval"]))
         self.assertTrue(envelope["project"]["snapshot_omitted"])
         self.assertEqual(envelope["constraints"]["omitted_memory_entry_count"], 1)
         self.assertIn("USB power constraints", package["content"])

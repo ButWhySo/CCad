@@ -23,6 +23,50 @@ _SECRET = re.compile(
     re.IGNORECASE)
 _SECRET_VALUE = re.compile(r"((?:api[_-]?key|secret|password|token)\s*[:=]\s*)\S+",
                            re.IGNORECASE)
+_MEMORY_EXPOSURE_CHANNELS = (
+    "automatic_retrieval", "memory_summary", "explicit_deep_retrieval")
+
+
+def memory_exposure_counts(provenance):
+    """Count exposed memory records per controlled channel; never return content."""
+    counts = {channel: 0 for channel in _MEMORY_EXPOSURE_CHANNELS}
+    for item in provenance:
+        if not isinstance(item, dict):
+            continue
+        raw_channels = item.get("inclusion_channels", ())
+        if not isinstance(raw_channels, (list, tuple, set, frozenset)):
+            continue
+        channels = set(raw_channels)
+        for channel in counts:
+            if channel in channels:
+                counts[channel] += 1
+    return counts
+
+
+def memory_exposure_manifest(provenance):
+    """Return per-record channel provenance with opaque IDs and no memory text."""
+    manifest = []
+    seen = set()
+    for item in provenance:
+        if not isinstance(item, dict):
+            continue
+        entry_id = item.get("entry_id")
+        memory_key = (hashlib.sha256(entry_id.encode("utf-8")).hexdigest()[:16]
+                      if isinstance(entry_id, str) and entry_id else
+                      item.get("memory_key", ""))
+        if not isinstance(memory_key, str) or not re.fullmatch(r"[0-9a-f]{16}", memory_key):
+            continue
+        channels = item.get("inclusion_channels", ())
+        if not isinstance(channels, (list, tuple, set, frozenset)):
+            continue
+        safe_channels = [channel for channel in _MEMORY_EXPOSURE_CHANNELS
+                         if channel in channels]
+        if memory_key in seen or not safe_channels:
+            continue
+        seen.add(memory_key)
+        manifest.append({"memory_key": memory_key,
+                         "inclusion_channels": safe_channels})
+    return manifest
 
 
 def _safe_signal(value: Any, limit: int) -> str:
@@ -213,8 +257,9 @@ class ContextBroker:
         return kept, kept_meta
 
     @staticmethod
-    def _summary(entries):
+    def _summary_details(entries):
         parts = []
+        source_entries = []
         for entry in entries:
             if not isinstance(entry, dict) or entry.get("tier") == "stm":
                 continue
@@ -230,11 +275,34 @@ class ContextBroker:
                 continue
             label = {"preference": "Preference", "correction": "Correction",
                      "fact": "Important fact"}[kind]
-            parts.append(f"{label}: {title + ': ' if title else ''}{content}")
+            part = f"{label}: {title + ': ' if title else ''}{content}"
+            parts.append(part)
+            source_entries.append((str(entry.get("id", "")), part))
             if len(parts) == 4:
                 break
-        return ("Stable memory: " + "; ".join(parts))[:
-            ContextBroker.MAX_MEMORY_SUMMARY_CHARS] if parts else ""
+        summary = ("Stable memory: " + "; ".join(parts))[:
+                   ContextBroker.MAX_MEMORY_SUMMARY_CHARS] if parts else ""
+        included_ids = [entry_id for entry_id, part in source_entries
+                        if entry_id and part in summary]
+        return summary, included_ids
+
+    @staticmethod
+    def _summary(entries):
+        return ContextBroker._summary_details(entries)[0]
+
+    @staticmethod
+    def _add_inclusion_channel(provenance, channel):
+        if channel not in _MEMORY_EXPOSURE_CHANNELS:
+            return
+        for item in provenance:
+            channels = item.get("inclusion_channels", [])
+            channels = [value for value in channels
+                        if value in _MEMORY_EXPOSURE_CHANNELS]
+            if channel not in channels:
+                channels.append(channel)
+            item["inclusion_channels"] = [value for value in (
+                "automatic_retrieval", "memory_summary", "explicit_deep_retrieval")
+                if value in channels]
 
     def prepare(self, manager, *, thread_id: str, project_revision: str,
                 user_request: str, goal: str = "", project_id: str = "",
@@ -273,6 +341,12 @@ class ContextBroker:
         entries, provenance = self._deduplicate_against_context(
             entries, provenance, comparison_texts)
         entries, provenance, chars = self._select(entries, provenance)
+        self._add_inclusion_channel(provenance, "automatic_retrieval")
+        summary, summary_ids = self._summary_details(entries)
+        summary_id_set = set(summary_ids)
+        for item in provenance:
+            if item.get("entry_id") in summary_id_set:
+                self._add_inclusion_channel([item], "memory_summary")
         manifest = self._manifest(manager, historical_turn_count, states)
         project_retrieval = {"available": False, "entities": [], "characters": 0,
                              "revision": "", "stats": {"index_state": "unavailable",
@@ -308,7 +382,8 @@ class ContextBroker:
                   "memory_generation": generation, "signals": signals,
                   "memories": entries, "memory_retrieval": provenance,
                   "dedup_context": comparison_texts,
-                  "memory_summary": self._summary(entries), "manifest": manifest,
+                  "memory_summary": summary,
+                  "memory_summary_entry_ids": summary_ids, "manifest": manifest,
                   "project_retrieval": project_retrieval,
                   "memory_chars": chars, "memory_token_budget": self.memory_token_budget,
                   "historical_turn_count": max(0, int(historical_turn_count)),
@@ -345,6 +420,7 @@ class ContextBroker:
                 ordered_entries.append(entry)
                 if entry_id in old_provenance:
                     ordered_provenance.append(old_provenance[entry_id])
+        self._add_inclusion_channel(ordered_provenance, "explicit_deep_retrieval")
         selected, selected_meta, chars = self._select(
             ordered_entries, ordered_provenance)
         thread = str(context.get("thread_id", ""))
@@ -352,9 +428,15 @@ class ContextBroker:
                       int(context.get("version", 0))) + 1
         self._versions[thread] = version
         refreshed_signals = extract_context_signals(merged_query)
+        summary, summary_ids = self._summary_details(selected)
+        summary_id_set = set(summary_ids)
+        for item in selected_meta:
+            if item.get("entry_id") in summary_id_set:
+                self._add_inclusion_channel([item], "memory_summary")
         refreshed = {**context, "version": version, "cache_hit": False,
                      "memories": selected, "memory_retrieval": selected_meta,
-                     "memory_summary": self._summary(selected), "memory_chars": chars,
+                     "memory_summary": summary,
+                     "memory_summary_entry_ids": summary_ids, "memory_chars": chars,
                      "signals": refreshed_signals,
                      "signal_digest": refreshed_signals["digest"],
                      "manifest": self._manifest(manager,

@@ -54,7 +54,8 @@ from memory_manager import MemoryManager, MemoryTaskScopes
 from memory_commands import execute_memory_command
 from memory_compaction import (MemoryCompactionError, MemoryCompactionPlans,
                                MEMORY_SUMMARY_SYSTEM_PROMPT)
-from context_broker import ContextBroker, extract_context_signals
+from context_broker import (ContextBroker, extract_context_signals,
+                            memory_exposure_counts, memory_exposure_manifest)
 from history_compaction import (HistoryCompactionError,
                                 compact_history,
                                 prepare_history_compaction,
@@ -403,6 +404,11 @@ def search_memory_context(query: str) -> str:
                 "result_count": str(len(refreshed["memories"])),
                 "new_context_version": str(refreshed["version"]),
                 "memory_chars": str(refreshed["memory_chars"]),
+                **{f"{channel}_count": str(count) for channel, count in
+                   memory_exposure_counts(refreshed["memory_retrieval"]).items()},
+                "memory_exposure": json.dumps(memory_exposure_manifest(
+                    refreshed["memory_retrieval"]), sort_keys=True,
+                    separators=(",", ":")),
             })
     active_turn_contexts[thread_id] = refreshed
     results = [{key: entry.get(key, "fact" if key == "kind" else "") for key in
@@ -413,6 +419,8 @@ def search_memory_context(query: str) -> str:
                        "memory_summary": refreshed["memory_summary"],
                        "memory_manifest": refreshed["manifest"],
                        "retrieval": refreshed["memory_retrieval"],
+                       "memory_exposure_channel_counts": memory_exposure_counts(
+                           refreshed["memory_retrieval"]),
                        "results": results, "secret_value_visible": False},
                       ensure_ascii=False, sort_keys=True)
 
@@ -2640,6 +2648,12 @@ def handle_human_message(req):
                     metadata={
                     "cache_hit": str(turn_context["cache_hit"]).lower(),
                     "memory_chars": str(turn_context["memory_chars"]),
+                    **{f"candidate_{channel}_count": str(count) for channel, count in
+                       memory_exposure_counts(
+                           turn_context["memory_retrieval"]).items()},
+                    "memory_exposure": json.dumps(memory_exposure_manifest(
+                        turn_context["memory_retrieval"]), sort_keys=True,
+                        separators=(",", ":")),
                 })
         with telemetry_runtime.observation("project.retrieve", "retriever", {
                 "signal_digest": signals["digest"],
@@ -2676,6 +2690,7 @@ def handle_human_message(req):
                 turn_records=turn_records,
                 thread_recap=recap,
                 memory_summary=turn_context["memory_summary"],
+                memory_summary_entry_ids=turn_context["memory_summary_entry_ids"],
                 memory_manifest=turn_context["manifest"],
                 project_retrieval=turn_context["project_retrieval"],
                 turn_context={key: turn_context[key] for key in
@@ -2689,7 +2704,15 @@ def handle_human_message(req):
                             "context_chars": str(package["metadata"][
                                 "content_size"]),
                             "truncated": str(package["metadata"][
-                                "truncated"]).lower()})
+                                "truncated"]).lower()},
+                    metadata={
+                        **{f"{channel}_count": str(count) for channel, count in
+                           package["metadata"][
+                               "memory_exposure_channel_counts"].items()},
+                        "memory_exposure": json.dumps(memory_exposure_manifest(
+                            package["metadata"]["memory_retrieval"]), sort_keys=True,
+                            separators=(",", ":")),
+                    })
         if assembly_observation is not None:
             context_metadata = package["metadata"]
             assembly_observation.update(
@@ -2748,6 +2771,8 @@ def handle_human_message(req):
         "sources": context_metadata["sources"],
         "memory_content_emitted": False,
         "memory_entry_count": context_metadata["memory_entry_count"],
+        "memory_exposure_channel_counts": context_metadata[
+            "memory_exposure_channel_counts"],
         "historical_turn_count": context_metadata["prior_turn_count"],
         "omitted_historical_turn_count": context_metadata[
             "omitted_prior_turn_count"],
@@ -2794,6 +2819,8 @@ def handle_human_message(req):
         "memory_tier_counts": context_metadata["memory_tier_counts"],
         "memory_tier_chars": context_metadata["memory_tier_chars"],
         "memory_retrieval": context_metadata["memory_retrieval"],
+        "memory_exposure_channel_counts": context_metadata[
+            "memory_exposure_channel_counts"],
         "memory_runtime": context_metadata["memory_runtime"],
         "memory_summary_chars": context_metadata["memory_summary_chars"],
         "memory_manifest": context_metadata["memory_manifest"],

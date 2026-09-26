@@ -49,6 +49,10 @@ with tempfile.TemporaryDirectory() as temp:
     assert result["context_version"] > initial["version"]
     assert any(row["id"] == kept["id"] for row in result["results"])
     assert any(row["id"] == project_fact["id"] for row in result["results"])
+    assert result["memory_exposure_channel_counts"]["explicit_deep_retrieval"] == len(
+        result["retrieval"])
+    assert all("explicit_deep_retrieval" in row["inclusion_channels"]
+               for row in result["retrieval"])
     assert all("Slide preference" not in row["title"] for row in result["results"])
     assert result["secret_value_visible"] is False
     assert module.agent_tools[0].name == "ccad_project_context"

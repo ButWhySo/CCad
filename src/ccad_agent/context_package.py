@@ -18,12 +18,27 @@ _RETRIEVAL_SAFE_FIELDS = (
     "rank", "tier", "query_overlap_terms", "bm25_score", "ranking_method",
     "channel_ranks", "rrf_score", "diversity_score", "redundancy_score",
     "matched_terms", "namespace_hash")
+_MEMORY_EXPOSURE_CHANNELS = frozenset({
+    "automatic_retrieval", "memory_summary", "explicit_deep_retrieval"})
 
 
 def _safe_retrieval_metadata(item: dict, *, include_bm25: bool) -> dict:
     fields = _RETRIEVAL_SAFE_FIELDS if include_bm25 else tuple(
         key for key in _RETRIEVAL_SAFE_FIELDS if key != "bm25_score")
     safe = {key: item[key] for key in fields if key in item}
+    entry_id = item.get("entry_id")
+    if isinstance(entry_id, str) and entry_id:
+        safe["memory_key"] = hashlib.sha256(entry_id.encode("utf-8")).hexdigest()[:16]
+    elif (isinstance(item.get("memory_key"), str) and
+          re.fullmatch(r"[0-9a-f]{16}", item["memory_key"])):
+        safe["memory_key"] = item["memory_key"]
+    channels = item.get("inclusion_channels", ())
+    if isinstance(channels, (list, tuple)):
+        safe_channels = [channel for channel in channels
+                         if isinstance(channel, str) and
+                         channel in _MEMORY_EXPOSURE_CHANNELS]
+        if safe_channels:
+            safe["inclusion_channels"] = list(dict.fromkeys(safe_channels))
     for key, floor, ceiling in (("kind_weight", 1.0, 1.16),
                                 ("importance_weight", 0.9, 1.1),
                                 ("recency_weight", 1.0, 1.15),
@@ -313,6 +328,7 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
                           turn_records: Iterable[dict] = (),
                           thread_recap: dict | None = None,
                           memory_summary: str = "",
+                          memory_summary_entry_ids: Iterable[str] = (),
                           memory_manifest: dict | None = None,
                           turn_context: dict | None = None,
                           project_retrieval: dict | None = None) -> dict:
@@ -321,6 +337,8 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
     project, native_revision = _project_payload(raw_context)
     memories = _memory_payload(memory_entries)
     summary = _memory_summary(memories, memory_summary)
+    summary_ids = {str(value) for value in memory_summary_entry_ids
+                   if isinstance(value, str) and value}
     manifest = _memory_manifest(memory_manifest)
     project_matches = _project_retrieval_payload(project_retrieval)
     turn_context = turn_context if isinstance(turn_context, dict) else {}
@@ -381,6 +399,7 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
         # before sacrificing a relevant memory record.
         if len(encoded := encode()) > limit and envelope["memory_summary"]:
             envelope["memory_summary"] = ""
+            summary_ids.clear()
         if len(encoded := encode()) > limit:
             current_manifest = envelope["memory_manifest"]
             envelope["memory_manifest"] = {
@@ -420,12 +439,16 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
             envelope["memory"].pop()
             omitted_memory_count += 1
         envelope["memory_summary"] = _memory_summary(envelope["memory"])
+        summary_ids = {str(entry.get("id", "")) for entry in envelope["memory"]
+                       if entry.get("id") and envelope["memory_summary"] and
+                       entry.get("content", "") in envelope["memory_summary"]}
         if omitted_memory_count:
             envelope["constraints"]["omitted_memory_entry_count"] = omitted_memory_count
             encoded = encode()
         if len(encoded) > limit:
             envelope["memory"] = []
             envelope["memory_summary"] = ""
+            summary_ids.clear()
             omitted_memory_count = len(memories)
             envelope["constraints"]["omitted_memory_entry_count"] = omitted_memory_count
             encoded = encode()
@@ -505,7 +528,17 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
     for entry in included_memories:
         item = retrieval_by_id.get(entry["id"])
         if item is not None:
-            included_retrieval.append(_safe_retrieval_metadata(item, include_bm25=True))
+            safe_item = _safe_retrieval_metadata(item, include_bm25=True)
+            channels = set(safe_item.get("inclusion_channels", ()))
+            if entry["id"] in summary_ids and envelope["memory_summary"]:
+                channels.add("memory_summary")
+            else:
+                channels.discard("memory_summary")
+            if channels:
+                safe_item["inclusion_channels"] = [channel for channel in (
+                    "automatic_retrieval", "memory_summary", "explicit_deep_retrieval")
+                    if channel in channels]
+            included_retrieval.append(safe_item)
     return {
         "content": encoded,
         "metadata": {
@@ -526,6 +559,11 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
             "memory_tier_counts": memory_tier_counts,
             "memory_tier_chars": memory_tier_chars,
             "memory_retrieval": included_retrieval,
+            "memory_exposure_channel_counts": {
+                channel: sum(channel in item.get("inclusion_channels", ())
+                             for item in included_retrieval)
+                for channel in ("automatic_retrieval", "memory_summary",
+                               "explicit_deep_retrieval")},
             "memory_summary_chars": len(envelope["memory_summary"]),
             "memory_manifest": envelope["memory_manifest"],
             "turn_context_version": envelope["turn_context"]["version"],
@@ -718,6 +756,11 @@ def build_provider_request_report(system_text: str, messages: Iterable[Any],
             _safe_retrieval_metadata(item, include_bm25=False)
             for item in context_metadata.get("memory_retrieval", [])
             if isinstance(item, dict)],
+        "memory_exposure_channel_counts": {
+            channel: max(0, int(context_metadata.get(
+                "memory_exposure_channel_counts", {}).get(channel, 0)))
+            for channel in ("automatic_retrieval", "memory_summary",
+                           "explicit_deep_retrieval")},
         "memory_runtime": {
             tier: {
                 "enabled": bool(context_metadata.get("memory_runtime", {}).get(tier, {}).get("enabled", False)),
