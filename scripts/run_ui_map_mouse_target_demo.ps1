@@ -295,6 +295,23 @@ if ($Name.StartsWith("sprint1001-memory-kind") -or $Name.StartsWith("sprint1003-
   [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
     ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
 }
+if ($Name.StartsWith("sprint1007-gemini-exact-count")) {
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) (
+    "ccad-sprint1007-gemini-count-" + [Guid]::NewGuid().ToString("N"))
+  $configDir = Join-Path $isolatedMemoryProfile "CCad"
+  New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+  $env:APPDATA = $isolatedMemoryProfile
+  $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
+  $testConfig = [ordered]@{
+    provider = "openai"
+    model = "gpt-5.1"
+    gemini_exact_input_counting = $false
+    memory = @{ stm = $false; ltm = $false; episodic = $false }
+    observability = @{ enabled = $false; backend = "langfuse"; environment = "development" }
+  }
+  [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
+    ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
+}
 if ($Name.StartsWith("sprint974-memory")) {
   $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint974-" + [Guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path $isolatedMemoryProfile | Out-Null
@@ -447,6 +464,23 @@ try {
     -ArgumentList @("--test-ui-map-target-sequence", $ProjectPath, $ScreenshotDir, $Name,
                     [string]$InitialLoadMilliseconds, [string]$PerTargetMilliseconds) `
     -PassThru -Wait -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
+  if ($Name.StartsWith("sprint1007-gemini-exact-count")) {
+    $configFile = Join-Path $isolatedMemoryProfile "CCad\agent_config.json"
+    $savedConfig = Get-Content -Raw -LiteralPath $configFile | ConvertFrom-Json
+    if ($savedConfig.gemini_exact_input_counting -ne $true) {
+      throw "Mapped Settings flow did not persist Gemini exact-count opt-in."
+    }
+    if ((Get-Content -Raw -LiteralPath $configFile) -match '(?i)(api[_-]?key|secret|credential|password)') {
+      throw "Provider credential-like field was unexpectedly written to the isolated config."
+    }
+    $reportFile = Join-Path $ScreenshotDir "$Name-target-sequence.json"
+    $report = Get-Content -Raw -LiteralPath $reportFile | ConvertFrom-Json
+    if (-not ($report.entries | Where-Object {
+      $_.gemini_exact_count_reloaded_checked -eq $true
+    })) {
+      throw "Settings did not reload the saved Gemini count preference as checked."
+    }
+  }
   if ($Name.Contains("sprint997")) {
     $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
     $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json

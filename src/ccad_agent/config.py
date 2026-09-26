@@ -67,6 +67,7 @@ class AgentConfigManager:
             "restore_session": True,
             "provider": "openai",
             "model": "gpt-5.1",
+            "gemini_exact_input_counting": False,
             "sandbox_mode": True,
             "approval_policy": True,
             "project_name": "sprint-demo",

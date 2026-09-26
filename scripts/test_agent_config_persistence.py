@@ -39,8 +39,13 @@ def run_agent(appdata, requests):
 
 with tempfile.TemporaryDirectory() as temp:
     appdata = Path(temp)
+    initial = run_agent(appdata, [{"method": "agent.get_config", "params": {}}])
+    initial_config = next(item["params"] for item in initial
+                          if item.get("method") == "config_state")
+    assert initial_config["gemini_exact_input_counting"] is False
     run_agent(appdata, [{"method": "agent.set_config", "params": {
         "provider": "cerebras", "model": "gpt-oss-120b", "grid": "2.5 mm",
+        "gemini_exact_input_counting": True,
         "sandbox_mode": True, "approval_policy": False,
         "memory": {"stm": True, "ltm": False, "episodic": True},
         "personalisation": {"chat_mode": "Detached",
@@ -51,6 +56,7 @@ with tempfile.TemporaryDirectory() as temp:
                   if item.get("method") == "config_state")
     assert config["provider"] == "cerebras"
     assert config["model"] == "gpt-oss-120b"
+    assert config["gemini_exact_input_counting"] is True
     assert config["grid"] == "2.5 mm"
     assert config["sandbox_mode"] is True
     assert config["approval_policy"] is False

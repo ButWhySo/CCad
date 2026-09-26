@@ -831,6 +831,17 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
   auto* layout = new QVBoxLayout(parent_widget);
   layout->addWidget(new QLabel("<b>API & Providers</b>", parent_widget));
   layout->addWidget(new QLabel("Provider keys persist in Windows Credential Manager. They are masked and never written to project files, config JSON, or logs.", parent_widget));
+  gemini_exact_input_count_cb_ = new QCheckBox(
+      "Count Gemini input tokens before sending (extra request)", parent_widget);
+  gemini_exact_input_count_cb_->setObjectName("control:geminiExactInputCounting");
+  gemini_exact_input_count_cb_->setToolTip(
+      "Off by default. When enabled for Google Gemini, CCad sends the full prompt and bound tool schemas to Gemini CountTokens before generation. This is an additional provider request and may consume quota; other providers remain estimated.");
+  layout->addWidget(gemini_exact_input_count_cb_);
+  auto* counting_policy = new QLabel(
+      "Opt-in only: sends the same prompt and tool declarations in a separate Gemini CountTokens request. Unsupported providers keep the labeled estimate.",
+      parent_widget);
+  counting_policy->setWordWrap(true);
+  layout->addWidget(counting_policy);
   api_key_input_ = new QLineEdit(parent_widget);
   api_key_input_->setObjectName("control:apiKeyInput");
   api_key_input_->setEchoMode(QLineEdit::Password);
@@ -1108,6 +1119,11 @@ void AgentSettingsDialog::loadCurrentSettings() {
 }
 
 void AgentSettingsDialog::applyConfigState(const QJsonObject& config) {
+    if (gemini_exact_input_count_cb_) {
+        const QSignalBlocker blocker(gemini_exact_input_count_cb_);
+        gemini_exact_input_count_cb_->setChecked(
+            config.value("gemini_exact_input_counting").toBool(false));
+    }
     if (provider_combo_ && config.contains("provider")) {
         const QString provider_id = config["provider"].toString();
         const int index = provider_combo_->findData(provider_id);
@@ -1554,6 +1570,8 @@ void AgentSettingsDialog::saveAllSettings() {
 
   if (provider_combo_) config["provider"] = provider_combo_->currentData().toString();
   if (model_input_) config["model"] = model_input_->text();
+  if (gemini_exact_input_count_cb_)
+    config["gemini_exact_input_counting"] = gemini_exact_input_count_cb_->isChecked();
   if (theme_combo_) config["theme"] = theme_combo_->currentText();
   if (grid_combo_) config["grid"] = grid_combo_->currentText();
   if (grid_combo_) {

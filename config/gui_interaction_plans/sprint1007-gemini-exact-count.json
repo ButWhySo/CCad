@@ -1,0 +1,17 @@
+{
+  "feature": "Enable Gemini exact input-token preflight in Agent Settings, persist it, and verify it reloads without provider traffic.",
+  "target_sequence": "sprint1007-gemini-exact-count-capturefix",
+  "project": "artifacts/demos/sprint160-placement-crash-ci-final.ccad.json",
+  "minimum_mapped_interactions": 7,
+  "required_targets": [
+    "action:settingsBtn",
+    "control:categoryList",
+    "control:geminiExactInputCounting",
+    "control:providerCombo",
+    "control:modelCombo",
+    "action:primaryButton",
+    "action:cancelSettingsButton"
+  ],
+  "required_text_entries": [],
+  "meaningful_screenshots": 10
+}

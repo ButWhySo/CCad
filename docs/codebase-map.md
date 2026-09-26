@@ -2357,6 +2357,22 @@ manifest contracts pass 7/7, and the Qt MinGW Release/full CTest gate passes
 `artifacts/evidence/sprint1004-visual-evidence-checkpoints-final2.json` (SHA-256
 `F743B798128570479738A3983E9AA168C2571F02640DC0B9E319AD227A62E183`).
 
+## Sprint 1007 opt-in Gemini exact input-token preflight
+
+`provider_token_count.py` prepares the exact bound Gemini `GenerateContentRequest`
+from the active system/messages and provider-bound tools, then calls the Google
+CountTokens endpoint only when `gemini_exact_input_counting` is explicitly true.
+The preference defaults off and is stored as a non-secret setting. Count calls
+have bounded timeouts and retries disabled; exact counts and safe statuses are
+attached to Langfuse metadata when tracing is active. Confirmed access/quota
+limits stop before generation; other count failures preserve the estimate and
+allow generation. Other providers remain unsupported and estimated. The real
+adapter request shape is locally validated without network access. The scoped
+Settings GUI-map flow checks persistence after save/reopen; its screenshot names
+include target ordinals for this scenario so repeated controls do not overwrite
+earlier visual states. Release/full CTest and the exact workspace-only evidence
+manifest are recorded in the Sprint 1007 checklist.
+
 ## Sprint 1003 user-controlled memory importance
 
 `MemoryStore` accepts strict integer importance 1–5, defaults new/legacy records to neutral 3, and preserves the field across edits. `MemoryManager` validates explicit input before duplicate matching and applies a bounded ±10% factor only after the existing enabled-tier, namespace, expiry, and relevance gates; its content-free provenance reports the factor. Slash commands, native method schemas/results, and the provider context allowlist carry only the safe value. Personalisation → Manage Memories has a user-set importance combo, restores the selected value for edits, and displays it in the record list. Focused contracts pass; Qt/MinGW Release and full CTest pass 115/115. The provider-disabled mapped GUI scenario saved/read back priority 5 with 15 successful interactions; all 16 screenshots were inspected and logs reviewed (empty stderr). Plan: `config/gui_interaction_plans/sprint1003-memory-importance.json`. Workspace-only verifier manifest `artifacts/evidence/sprint1003-memory-importance-release.json`, SHA-256 `981FF8D01D32234C15A16631839DE36D5CA7CA0FB345C60A5010C1D70E3E2E17`.

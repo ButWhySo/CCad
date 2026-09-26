@@ -1,5 +1,25 @@
 # Implemented Features
 
+## Sprint 1007 opt-in Gemini input-token preflight
+
+When enabled in Agent Settings, Google Gemini receives a separate CountTokens
+request containing the fully prepared system instruction, conversation, and
+bound tool declarations before generation. The preference defaults off, is
+persisted through the normal Agent configuration path, and has no effect on
+other providers. The exact input count and count-endpoint status are reported
+separately from estimates and as string-valued safe trace metadata. Count
+requests have a bounded timeout and SDK retries disabled; a confirmed quota,
+rate, authentication, permission, payment, or model-access error stops before
+the generation request. Non-limit count errors retain the estimate and allow
+generation to proceed. Enabling this feature transmits the full request a
+second time and can consume provider quota. Offline adapter-shape, failure, and
+configuration contracts pass. The provider-disabled Settings GUI-map flow
+verified persistence and reload across ten individually retained screenshots;
+the Qt/MinGW Release build and full CTest pass 119/119. Workspace-only evidence
+manifest `artifacts/evidence/sprint1007-gemini-exact-count-capturefix.json`
+(SHA-256 `A0D10CAD459E05FAA46FBC4DAA04200F75FB2BCD7AA73F5FB25E2ABE2733887A`).
+No live provider call or Langfuse receipt was attempted.
+
 ## Sprint 1006 model-window-aware context allocation
 
 After the user explicitly refreshes a provider's model catalog, CCad uses the

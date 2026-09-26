@@ -31,7 +31,17 @@ References checked: Langfuse's current Python instrumentation documents updating
 - [x] Commit and push the verified source/tests/docs/manifest on the active feature branch after local gates.
 - [ ] Open the integration PR and inspect the actual hosted CI result for its exact head SHA; merge only after required checks pass.
 - [ ] Run an opt-in real provider turn and fetch its trace from Langfuse to verify generation usage was exported and readable. No live provider request was made in this slice.
-- [ ] Implement provider-specific exact full-request pre-send token counting; do not present the model-window allocation or character-based estimate as exact.
+- [x] Implement opt-in provider-specific exact full-request pre-send token counting for Google Gemini; other providers and unsupported/multimodal payloads remain explicitly estimated or unavailable.
+
+### Sprint 1007 completed slice - opt-in Gemini exact input count (Tier 1)
+
+- [x] Add opt-in Gemini CountTokens preflight over the adapter-prepared system instruction, messages, and bound function declarations; disabled and unsupported providers issue no extra count request.
+- [x] Expose a default-off Settings preference; disclose the additional request/quota/prompt-transmission impact; persist and verify reload through Agent configuration.
+- [x] Publish safe exact-versus-estimated status and count metadata; stop before generation on confirmed count-endpoint auth/quota limits without retrying that blocked request.
+- [x] Contract-test adapter request shape, count validation, failure categories, disabled/unsupported cases, and settings persistence.
+- [x] Exercise Settings through the official GUI-map harness; inspect all ten retained interaction screenshots and stdout/stderr. Fix per-target screenshot filename collisions so each repeated mapped target remains inspectable.
+- [x] Run Pyright checks, Qt/MinGW Release build, full CTest (119/119), and inspect workspace-only evidence manifest `artifacts/evidence/sprint1007-gemini-exact-count-capturefix.json` (SHA-256 `A0D10CAD459E05FAA46FBC4DAA04200F75FB2BCD7AA73F5FB25E2ABE2733887A`). clangd's bounded check produced no useful response; the compiler build is authoritative. No live Gemini request or Langfuse receipt was attempted.
+- [x] Update codebase handover, feature inventory, progress, backlog, and this checklist; keep other-provider/multimodal counting and opt-in live trace receipt open.
 
 ### Sprint 1004 active slice — lean, complete visual evidence policy
 

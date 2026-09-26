@@ -61,6 +61,7 @@ private:
   QLabel* provider_target_label_{nullptr};
   QLabel* provider_status_label_{nullptr};
   QCheckBox* langfuse_enabled_cb_{nullptr};
+  QCheckBox* gemini_exact_input_count_cb_{nullptr};
   QLineEdit* langfuse_public_key_input_{nullptr};
   QLineEdit* langfuse_secret_key_input_{nullptr};
   QLineEdit* langfuse_base_url_input_{nullptr};

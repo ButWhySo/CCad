@@ -65,6 +65,7 @@ from model_context_budget import (ModelContextLimitRegistry,
                                    context_package_char_budget)
 from provider_usage import (account_response, collect_turn_usage,
                             langfuse_usage_details)
+from provider_token_count import count_gemini_input_tokens
 from conversation_store import (ConversationStore, ConversationStoreError,
                                 budgeted_history_window)
 from model_catalog import (fetch_anthropic_models as _fetch_anthropic_models,
@@ -716,6 +717,62 @@ def emit_provider_request_context(system_text, messages, context_content,
     return report
 
 
+class ProviderCountLimitError(RuntimeError):
+    """A count endpoint confirmed that a generation request should not follow."""
+    def __init__(self, category: str):
+        self.category = category
+        super().__init__(category)
+
+
+def preflight_provider_input_count(bound_model, prompt, provider, model, report):
+    """Optionally count Gemini's exact provider request and publish safe facts."""
+    enabled = config_manager.get("gemini_exact_input_counting", False) is True
+    if enabled and provider == "google_gemini":
+        with telemetry_runtime.observation(
+                "gemini.count-tokens", "generation",
+                {"provider": str(provider), "model": str(model),
+                 "operation": "input_token_count"}, model=str(model)) as observation:
+            result = count_gemini_input_tokens(
+                bound_model, prompt, provider, model, enabled,
+                provider_timeout_seconds(), classify_provider_error)
+            if observation is not None:
+                try:
+                    observation.update(metadata={
+                        "count_status": str(result["status"]),
+                        "count_source": str(result["source"]),
+                        "count_request_sent": str(
+                            result["additional_request_sent"]).lower(),
+                        **({"exact_input_tokens": str(result["exact_input_tokens"])}
+                           if "exact_input_tokens" in result else {}),
+                        **({"error_category": str(result["error_category"])}
+                           if "error_category" in result else {}),
+                    })
+                except Exception as error:
+                    print("[ccad-otel] token_count_metadata_update_failed "
+                          f"error_type={type(error).__name__}",
+                          file=sys.stderr, flush=True)
+    else:
+        result = count_gemini_input_tokens(
+            bound_model, prompt, provider, model, enabled,
+            provider_timeout_seconds(), classify_provider_error)
+    report["exact_input_count_status"] = result["status"]
+    report["exact_input_count_source"] = result["source"]
+    report["count_request_sent"] = result["additional_request_sent"]
+    if "exact_input_tokens" in result:
+        report["exact_input_tokens"] = result["exact_input_tokens"]
+    if "error_category" in result:
+        report["exact_input_count_error_category"] = result["error_category"]
+    report["measurement_stage"] = "pre_send"
+    emit({"jsonrpc": "2.0", "method": "provider_request_context",
+          "params": report})
+    if result.get("additional_request_sent") and result.get("error_category") in {
+            "quota_exhausted", "quota_or_rate_limit", "rate_limited",
+            "authentication", "permission_denied", "payment_required",
+            "model_not_found"}:
+        raise ProviderCountLimitError(result["error_category"])
+    return report
+
+
 def record_provider_response_usage(report, response, generation_observation):
     """Pair provider-returned counts with preflight estimates for this generation."""
     accounting = account_response(report, response)
@@ -757,8 +814,16 @@ def provider_request_trace_metadata(report):
         "project_snapshot_omitted": str(report["project_snapshot_omitted"]).lower(),
         "project_source_chars": str(report["project_source_chars"]),
         "memory_entry_count": str(report["memory_entry_count"]),
+        "exact_input_count_status": str(report.get("exact_input_count_status", "not_requested")),
+        "exact_input_count_source": str(report.get("exact_input_count_source", "unavailable")),
+        "count_request_sent": str(report.get("count_request_sent", False)).lower(),
         "estimate_includes_all_payloads": str(report["estimate_includes_all_payloads"]).lower(),
     }
+    if isinstance(report.get("exact_input_tokens"), int):
+        result["exact_input_tokens"] = str(report["exact_input_tokens"])
+    if report.get("exact_input_count_error_category"):
+        result["exact_input_count_error_category"] = str(
+            report["exact_input_count_error_category"])
     for name, component in report["components"].items():
         result[f"input_{name}_estimated_tokens"] = str(component["estimated_tokens"])
     for tier, count in report["memory_tier_counts"].items():
@@ -1095,6 +1160,11 @@ def provider_retry_after_seconds(error: Exception):
 
 def classify_provider_error(error: Exception):
     """Return safe, actionable category; never include secret-bearing text."""
+    explicit_category = getattr(error, "category", None)
+    if explicit_category in {"quota_exhausted", "quota_or_rate_limit", "rate_limited",
+                             "authentication", "permission_denied", "payment_required",
+                             "model_not_found"}:
+        return explicit_category
     for candidate in provider_exception_chain(error):
         status = next((getattr(response, "status_code", None)
                        for response in (candidate, getattr(candidate, "response", None))
@@ -1547,6 +1617,9 @@ def router_node(state: AgentState):
         state.get("context_metadata", {}), agent_tools,
         os.environ.get("CCAD_PROVIDER", "configured"),
         os.environ.get("CCAD_MODEL", "configured"))
+    request_context = preflight_provider_input_count(
+        router_llm, prompt, os.environ.get("CCAD_PROVIDER", "configured"),
+        os.environ.get("CCAD_MODEL", "configured"), request_context)
     with telemetry_runtime.observation("generate-routing-response", "generation", {
             "provider": os.environ.get("CCAD_PROVIDER", "configured"),
             "model": os.environ.get("CCAD_MODEL", "configured"),
@@ -1582,6 +1655,9 @@ def librarian_node(state: AgentState):
         state.get("context_metadata", {}), agent_tools,
         os.environ.get("CCAD_PROVIDER", "configured"),
         os.environ.get("CCAD_MODEL", "configured"))
+    request_context = preflight_provider_input_count(
+        librarian_llm, prompt, os.environ.get("CCAD_PROVIDER", "configured"),
+        os.environ.get("CCAD_MODEL", "configured"), request_context)
     with telemetry_runtime.observation("generate-library-response", "generation", {
             "provider": os.environ.get("CCAD_PROVIDER", "configured"),
             "model": os.environ.get("CCAD_MODEL", "configured"),

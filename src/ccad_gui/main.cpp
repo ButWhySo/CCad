@@ -1323,6 +1323,8 @@ int main(int argc, char** argv) {
         return;
       }
       const bool provider_target_sequence = name.startsWith("sprint972-provider");
+      const bool gemini_count_target_sequence =
+          name.startsWith("sprint1007-gemini-exact-count");
       const bool memory_target_sequence = name.startsWith("sprint967-memory") ||
                                           name.startsWith("sprint971-memory") ||
                                           name.startsWith("sprint1001-memory-kind") ||
@@ -1330,7 +1332,14 @@ int main(int argc, char** argv) {
       const bool memory_kind_target_sequence = name.startsWith("sprint1001-memory-kind");
       const bool memory_importance_target_sequence = name.startsWith("sprint1003-memory-importance");
       const bool semantic_memory_target_sequence = name.startsWith("sprint991-semantic-memory");
-      const QStringList target_ids = provider_target_sequence
+      const QStringList target_ids = gemini_count_target_sequence
+          ? QStringList{"action:settingsBtn", "control:categoryList",
+                        "control:geminiExactInputCounting", "control:providerCombo",
+                        "control:modelCombo", "action:primaryButton",
+                        "action:settingsBtn", "control:categoryList",
+                        "control:geminiExactInputCounting",
+                        "action:cancelSettingsButton"}
+          : provider_target_sequence
           ? QStringList{"action:settingsBtn", "control:categoryList",
                         "control:providerCombo", "control:modelCombo",
                         "control:categoryList", "control:apiKeyInput",
@@ -1364,7 +1373,8 @@ int main(int argc, char** argv) {
                                       "control:apiKeyInput", "control:mcpServersTable",
                                       "action:addMcpServerBtn", "action:removeMcpServerBtn"};
       const QStringList trigger_before_capture_ids = memory_target_sequence ||
-          semantic_memory_target_sequence || provider_target_sequence
+          semantic_memory_target_sequence || provider_target_sequence ||
+          gemini_count_target_sequence
           ? QStringList{"action:settingsBtn"}
           : QStringList{
           "action:grid",          "action:polar_coord",   "action:unit_inch",
@@ -1378,6 +1388,8 @@ int main(int argc, char** argv) {
                                                     "control:semanticMemoryEnabled",
                                                     "control:semanticMemoryEndpoint",
                                                     "control:semanticMemoryModel",
+                                                    "control:geminiExactInputCounting",
+                                                    "control:providerCombo", "control:modelCombo",
                                                     "action:agent_memory_reset",
                                                     "action:agent_memory_manage",
                                                     "action:addMemory", "action:saveMemory",
@@ -1391,6 +1403,7 @@ int main(int argc, char** argv) {
                                                     "action:primaryButton",
                                                     "action:testProviderBtn"};
       bool memory_target_actions_ok = true;
+      bool gemini_checkbox_changed = false;
       QJsonObject initial_memory_toggle_state;
       const auto visibleMemoryCheckbox = [](const QString& id) -> QCheckBox* {
         for (QWidget* widget : QApplication::allWidgets()) {
@@ -1406,12 +1419,15 @@ int main(int argc, char** argv) {
                             memory_importance_target_sequence,
                             semantic_memory_target_sequence,
                             provider_target_sequence,
+                            gemini_count_target_sequence,
                             &memory_target_actions_ok, &initial_memory_toggle_state,
+                            &gemini_checkbox_changed,
                             &visibleMemoryCheckbox,
                             &trigger_before_capture_ids,
                             &click_before_capture_ids,
                             per_target_wait_ms](
                                const QString& pass_name) {
+        int target_index = 0;
         for (const QString& id : target_ids) {
           if (trigger_before_capture_ids.contains(id)) {
             window->triggerSafeUiActionJson(id);
@@ -1423,7 +1439,8 @@ int main(int argc, char** argv) {
               QApplication::processEvents();
             }
           }
-          if (id == "control:providerCombo" || id == "control:modelCombo" ||
+          if (id == "control:geminiExactInputCounting" ||
+              id == "control:providerCombo" || id == "control:modelCombo" ||
               id == "control:apiKeyInput" || id == "control:mcpServersTable" ||
               id == "action:addMcpServerBtn" || id == "action:removeMcpServerBtn" ||
               id == "control:stmCb" || id == "control:ltmCb" ||
@@ -1439,18 +1456,21 @@ int main(int argc, char** argv) {
                 id == "control:episodicCb" || id == "label:memoryState" ||
                 id == "action:agent_memory_manage" ||
                 id == "action:agent_memory_reset";
-            const int category = provider_target_sequence &&
-                                         (id == "control:providerCombo" || id == "control:modelCombo")
-                                     ? 1
-                                     : (provider_target_sequence &&
-                                                (id == "control:apiKeyInput" ||
-                                                 id == "action:testProviderBtn")
-                                            ? 4
-                                            : ((memory_control || semantic_memory_target_sequence) ? 2 : (id == "control:mcpServersTable" ||
-                                         id == "action:addMcpServerBtn" ||
-                                         id == "action:removeMcpServerBtn"
-                                     ? 3
-                                     : (id == "control:apiKeyInput" ? 4 : 1))));
+            int category = 1;
+            if (gemini_count_target_sequence) {
+              category = id == "control:geminiExactInputCounting" ? 4 : 1;
+            } else if (provider_target_sequence) {
+              category = (id == "control:apiKeyInput" ||
+                          id == "action:testProviderBtn") ? 4 : 1;
+            } else if (memory_control || semantic_memory_target_sequence) {
+              category = 2;
+            } else if (id == "control:mcpServersTable" ||
+                       id == "action:addMcpServerBtn" ||
+                       id == "action:removeMcpServerBtn") {
+              category = 3;
+            } else if (id == "control:apiKeyInput") {
+              category = 4;
+            }
             for (QWidget* top_level : QApplication::topLevelWidgets()) {
               auto* categories = top_level->findChild<QListWidget*>("control:categoryList");
               if (categories == nullptr || !top_level->isVisible()) {
@@ -1463,7 +1483,10 @@ int main(int argc, char** argv) {
               break;
             }
           }
-          if (click_before_capture_ids.contains(id)) {
+          if (click_before_capture_ids.contains(id) &&
+              !(gemini_count_target_sequence &&
+                id == "control:geminiExactInputCounting" &&
+                gemini_checkbox_changed)) {
             if (memory_target_sequence && pass_name == "resized" &&
                 (id == "action:addMemory" || id == "action:saveMemory" ||
                  id == "control:memoryKind")) {
@@ -1490,8 +1513,9 @@ int main(int argc, char** argv) {
               });
             }
             static int provider_category_click = 0;
-            const int category_row = provider_target_sequence
-                ? ((provider_category_click++ % 2) == 0 ? 1 : 4) : 2;
+            const int category_row = gemini_count_target_sequence ? 4 :
+                (provider_target_sequence
+                ? ((provider_category_click++ % 2) == 0 ? 1 : 4) : 2);
             const QString payload = id == "control:categoryList"
                 ? QString("{\"id\":%1,\"row\":%2}").arg(jsonStringLocal(id)).arg(category_row)
                 : (id == "control:memoryTier"
@@ -1504,7 +1528,11 @@ int main(int argc, char** argv) {
                         ? QString("{\"id\":%1,\"value\":\"5\"}").arg(jsonStringLocal(id))
                     : QString("{\"id\":%1}").arg(jsonStringLocal(id)))));
             const QString click_result = window->runAgentUiQueryJson("ui.click", payload);
-            if (memory_target_sequence || provider_target_sequence) {
+            if (gemini_count_target_sequence &&
+                id == "control:geminiExactInputCounting")
+              gemini_checkbox_changed = true;
+            if (memory_target_sequence || provider_target_sequence ||
+                gemini_count_target_sequence) {
               const QJsonDocument click_doc = QJsonDocument::fromJson(click_result.toUtf8());
               const bool performed = click_doc.isObject() &&
                   click_doc.object().value("ok").toBool() &&
@@ -1574,7 +1602,18 @@ int main(int argc, char** argv) {
           }
           const QString target_json = window->uiTargetJsonById(id);
           const bool found = target_json.contains("\"found\":true");
-          if (provider_target_sequence && id != "action:cancelSettingsButton" && !found)
+          if (gemini_count_target_sequence &&
+              id == "control:geminiExactInputCounting" &&
+              gemini_checkbox_changed) {
+            const QCheckBox* restored = visibleMemoryCheckbox(id);
+            const bool enabled = restored && restored->isChecked();
+            entries << QString("{\"gemini_exact_count_reloaded_checked\":%1}")
+                .arg(enabled ? "true" : "false");
+            memory_target_actions_ok = memory_target_actions_ok && enabled;
+          }
+          if ((provider_target_sequence || gemini_count_target_sequence) &&
+              id != "action:cancelSettingsButton" &&
+              id != "action:primaryButton" && !found)
             memory_target_actions_ok = false;
           const std::optional<int> x = extractJsonInt(target_json, "\"logical_x\":");
           const std::optional<int> y = extractJsonInt(target_json, "\"logical_y\":");
@@ -1589,6 +1628,8 @@ int main(int argc, char** argv) {
             const QString safe_id = id;
             QString slug = safe_id;
             slug.replace(':', '_');
+            if (gemini_count_target_sequence)
+              slug.prepend(QString::number(target_index) + "-");
             const std::filesystem::path path =
                 output_dir / (name + "-" + pass_name + "-" + slug + ".png").toStdString();
             screenshot_path = QString::fromStdString(path.string());
@@ -1602,7 +1643,8 @@ int main(int argc, char** argv) {
                 break;
               }
             }
-            if ((semantic_memory_target_sequence || memory_kind_target_sequence) &&
+          if ((semantic_memory_target_sequence || memory_kind_target_sequence ||
+               gemini_count_target_sequence) &&
                 id == "action:settingsBtn") {
               QWidget* active = QApplication::activeWindow();
               if (active && active->isVisible()) capture_window = active;
@@ -1709,6 +1751,7 @@ int main(int argc, char** argv) {
                                            .section('}', 0, 0) + "}"
                                     : "null")
                          .arg(jsonStringLocal(screenshot_path));
+          ++target_index;
         }
       };
 
@@ -1716,7 +1759,8 @@ int main(int argc, char** argv) {
       // window->resize(1120, 720); // Removed because fullscreen resize crashes Qt on Windows
       QApplication::processEvents();
       QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
-      if (!semantic_memory_target_sequence && !memory_kind_target_sequence &&
+      if (!semantic_memory_target_sequence && !gemini_count_target_sequence &&
+          !memory_kind_target_sequence &&
           !memory_importance_target_sequence)
         runPass("resized");
       if (memory_target_sequence && !memory_kind_target_sequence &&
@@ -1877,6 +1921,7 @@ int main(int argc, char** argv) {
       const QByteArray bytes = report.toUtf8();
       output.write(bytes.constData(), bytes.size());
       if (!output || ((memory_target_sequence || provider_target_sequence ||
+                       gemini_count_target_sequence ||
                        memory_importance_target_sequence ||
                        semantic_memory_target_sequence) &&
                       !memory_target_actions_ok)) {
