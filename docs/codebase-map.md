@@ -48,6 +48,24 @@ Owns the `ccad agent orchestrate` and `ccad agent plan` CLI wrapper, providing t
 
 Sprint 207 addendum: `src/ccad_gui/agent_panel.cpp` added the fifth reference-inspired Agent pane contract with compact header action bar, evidence thumbnails, approval preview, and UI-map target proof.
 
+## Sprint 1018 source-model power/passive project retrieval
+
+`src/ccad_agent/project_index.py` derives `shares_power_input_net_with_passive`
+at query time from indexed `schematic_pin` records. Both pins must be declared
+by their source symbols, have unambiguous explicit native-net membership on
+the same sheet, use exactly the `power_in` and `passive` electrical types, and
+resolve to symbols with unique IDs and references. Lookup works from either
+symbol and from a uniquely referenced PCB footprint. This reports only
+same-net association; it must not be interpreted as decoupling intent. The
+lookup traverses existing component/net indexes and does not persist pairwise
+edges. `src/ccad_agent/context_package.py` carries the relation semantics and
+recomputes counts after entity-budget truncation, so context metadata reflects
+what was actually sent. Tests live in `scripts/test_project_index.py` and
+exercise source contracts, reverse lookup, ambiguity, sheet isolation,
+incremental revisions, ContextBroker retrieval, and provider-package transport.
+Standalone library caches, proposal/artifact links, decoupling inference, and
+transaction-delta indexing remain open.
+
 ## Sprint 225 Parity & Orchestrator Addendum
 
 Current position is Phase 9 / 9, Sprint 225, branch `sprint-225-parity-orchestrator`. Sprint 225 begins the deterministic KiCad source-walk parity mandate from Iteration 467.
@@ -2418,9 +2436,10 @@ build and full CTest pass 120/120. The official nonvisual manifest is
 `827A69DB649AD6DFFF0526877802B4DBE86CCE2D26847E477DBBC86355CF7C95`).
 Feature commit `5f1216a` was merged locally as `2ce38f9` and pushed; all five
 hosted CI jobs passed on that exact `main` SHA in run `36248441890`.
-Standalone cached definitions, passive/decoupling links, proposal/artifact
-links, and transaction-delta ingestion remain open because the current project
-snapshot does not carry their authoritative contracts.
+Standalone cached definitions, decoupling-intent inference, proposal/artifact
+links, and transaction-delta ingestion remain open. Sprint 1018 adds only the
+source-confirmed same-sheet power-input/passive net association described
+above; it does not claim decoupling intent.
 
 ## Sprint 1013 read-only engineering calculator
 

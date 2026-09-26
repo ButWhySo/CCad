@@ -1,5 +1,24 @@
 # Implemented Features
 
+## Sprint 1018 source-confirmed power/passive schematic relationships
+
+The project index now retrieves a directly related schematic component when a
+source-declared `power_in` pin and a `passive` pin share the same explicit net
+on the same sheet. The relationship can be found from either component or from
+a uniquely referenced PCB footprint linked to its schematic symbol. Missing or
+ambiguous pin membership, duplicate component references, wrong pin types, and
+cross-sheet matches produce no association. This is a net-sharing relationship,
+not a claim that a passive is a decoupling capacitor or has a particular design
+intent. The query-time lookup uses the existing component and net indexes and
+does not create pairwise persistent graph edges. Relationship provenance and
+counts of entities surviving context packaging are included in the bounded
+provider context. Verification evidence and test counts are recorded in
+`docs/devops/progress.md`: 55/55 focused project-index contracts, zero Pyright
+diagnostics on changed runtime modules, and 120/120 full CTests. The
+workspace-only verifier manifest is
+`artifacts/evidence/sprint1018-source-passive-associations.json` (SHA-256
+`9B9CB1046D4BB755310EEBA8247EDCCD8A37E14B9A39D6F947AAEE72FB1962B5`).
+
 ## Sprint 1016 embedded symbol pins and physical identity graph
 
 The bounded project index reads symbol definitions and pin attributes only

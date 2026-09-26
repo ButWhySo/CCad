@@ -11,6 +11,20 @@ Check a box only after implementation and its required evidence exist.
 
 The first ad-hoc local `ctest` invocation omitted the required Qt runtime path and produced Windows loader errors for GUI tests before application code ran. The official verifier prepends the Qt/MinGW runtime and the complete run passes; this was an invocation-environment issue, not a current source/test failure.
 
+### Sprint 1018 active slice — source-confirmed schematic power/passive relationships (Tier 1, C3)
+
+References checked: [KiCad Schematic Editor 10.0](https://docs.kicad.org/10.0/en/eeschema/eeschema.html) treats power-input and passive as distinct declared electrical pin types used by ERC; CCad uses those same serialized type names. A same-net association helps the Agent find passives sharing a component's power-input pin, but does not establish decoupling intent or electrical behavior. CCad will associate only source-declared `power_in` and `passive` pins with exact unambiguous membership on the same explicit net and sheet; it will not infer from names, values, reference prefixes, or cross-sheet net labels. Tests cover exact and reverse retrieval, context transport, unconnected and cross-sheet cases, wrong types, ambiguous membership/reference, and revision updates.
+
+- [x] Add query-time graph association over existing component/net indexes; do not materialize a dense all-to-all relationship graph.
+- [x] Resolve source and target symbols only through unique typed IDs and unique references; suppress duplicate/missing identities.
+- [x] Require a source-declared `power_in` pin and `passive` pin with same-sheet exact net membership; suppress ambiguous, unconnected, wrong-type, and cross-sheet matches.
+- [x] Return the association in both retrieval directions and for uniquely referenced PCB footprints linked to schematic symbols.
+- [x] Preserve relationship labels and explicit non-decoupling semantics through context-package allowlisting and budget-aware counts.
+- [x] Add positive, reverse, negative, ambiguity, cross-sheet, context-broker/package, and source-revision regression contracts.
+- [x] Run changed-module Pyright and official Qt/MinGW Release/full CTest; inspect the nonvisual manifest and complete logs.
+- [ ] Keep decoupling-intent inference, standalone library-cache definitions, artifacts/proposals, and transaction-delta ingestion open; these require separate source contracts.
+- [ ] Commit, locally merge, push, and verify hosted CI for the exact merged source SHA.
+
 ### Sprint 1016 active slice — embedded library pins and exact schematic/PCB identity links (Tier 1, C3)
 
 - [x] Index embedded symbol-library definitions and pin metadata already serialized inside schematic components; identify source as the embedded project snapshot and key definition revisions by bounded content digest.
@@ -18,7 +32,7 @@ The first ad-hoc local `ctest` invocation omitted the required Qt runtime path a
 - [x] Link schematic pins to physical PCB pads only through a unique component reference and exact, case-preserving pin number; suppress ambiguous/missing matches and never infer by net name.
 - [x] Preserve definition identity, pin metadata, and relationship provenance through bounded provider-context packaging.
 - [x] Add contracts for definition retrieval, provider packaging, duplicate-number ambiguity, and edge removal after a project revision.
-- [ ] Keep standalone library-cache definitions, artifacts/proposals, source-model passive/decoupling association, and transaction-delta ingestion open until their authoritative runtime/source contracts exist.
+- [ ] Keep standalone library-cache definitions, artifacts/proposals, decoupling-intent inference, and transaction-delta ingestion open until their authoritative runtime/source contracts exist.
 - [x] Run official Qt/MinGW Release + full CTest (120/120); inspect the official nonvisual manifest and logs. Manifest `artifacts/evidence/sprint1016-project-pin-relationships.json` (SHA-256 `827A69DB649AD6DFFF0526877802B4DBE86CCE2D26847E477DBBC86355CF7C95`).
 - [x] Commit on `sprint-1016-project-pin-relationships`, merge locally to `main`, push upstream, and verify all five hosted CI jobs pass on exact merged SHA `2ce38f9a91fb1ad8590e4d112562e1d84f1a3dc4` (run `36248441890`).
 
@@ -4666,6 +4680,7 @@ Represent/traverse relationships such as:
 - [x] object -> DRC/ERC diagnostic.
 - [x] component -> nearby PCB components (exact PCB footprint anchors and board-coordinate footprint-AABB distance; Sprint 997 verified).
 - [ ] component -> associated decoupling/passive components where deterministically derivable.
+- [x] Source-confirmed subset: same-sheet exact-net association between declared `power_in` and `passive` pins; not decoupling intent, and no name/value/prefix inference (Sprint 1018).
 - [x] schematic net -> PCB net where serialized IDs match; association does not assert physical continuity.
 - [x] serialized schematic page -> symbols; file-path and hierarchy identity coverage remains separate.
 - [x] region -> objects (exact placement-region identity and intersecting board AABBs; Sprint 997 verified).
@@ -5076,12 +5091,12 @@ Complete together:
 
 - [x] Exact identity index for implemented typed entity classes; remaining entity coverage stays open above.
 - [x] Deterministic BM25 index for implemented typed entity text; remaining text-field coverage stays open above.
-- [ ] project relationship graph (Sprints 981/984/985/986/995/1016 cover net membership, board-net identity, typed explicit links, diagnostics, serialized sheet-symbol membership, embedded definition pins, and exact schematic-pin/PCB-pad identity; standalone library-cache, artifact, proposal, passive-association, and other graph coverage remains open).
+- [ ] project relationship graph (Sprints 981/984/985/986/995/1016/1018 cover net membership, board-net identity, typed explicit links, diagnostics, serialized sheet-symbol membership, embedded definition pins, exact schematic-pin/PCB-pad identity, and source-confirmed power/passive association; standalone library-cache, artifact/proposal, decoupling-intent, and other graph coverage remains open).
 - [x] PCB spatial index for supported typed entity geometry, explicit bounding-box queries, and linked DRC/ERC diagnostic retrieval.
 - [x] Hybrid deterministic project retrieval.
 - [x] Content revision/staleness handling against the live typed snapshot.
 - [x] Incremental per-entity index updates for changes/additions/deletions.
-- [ ] Full C3 completion, remaining source-model relationships and transaction-delta ingestion; Sprint 986 adds bbox/diagnostic contracts, all serialized layer-bearing collections, and a 10k-object benchmark; Sprint 1016 adds exact embedded-library/pin-pad links; artifact/proposal inputs and transaction-delta contracts remain open.
+- [ ] Full C3 completion, remaining source-model relationships and transaction-delta ingestion; Sprint 986 adds bbox/diagnostic contracts, all serialized layer-bearing collections, and a 10k-object benchmark; Sprint 1016 adds exact embedded-library/pin-pad links; Sprint 1018 adds only same-sheet source-declared power/passive associations; standalone cache, artifact/proposal inputs, decoupling-intent inference, and transaction-delta contracts remain open.
 
 ## Group C4 â€” Semantic project retrieval
 
