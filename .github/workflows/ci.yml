@@ -35,6 +35,7 @@ jobs:
         run: |
           {
           set -e
+          npm exec --yes --package=pyright@1.1.414 -- pyright
           python -m py_compile src/ccad_agent/*.py scripts/test_*.py
           python scripts/test_provider_unconfigured.py
           python scripts/test_provider_gemini_secret.py

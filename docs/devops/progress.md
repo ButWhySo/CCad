@@ -6,8 +6,9 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 1025
-- Branch: `sprint-1025-active-layer-context`
+- Sprint: 1026
+- Branch: `sprint-1026-pyright-workspace-config`
+- Sprint 1026 makes Agent import resolution explicit for root-workspace Pyright analysis and runs pinned Pyright 1.1.414 in the existing Python CI lane. Root analysis covers all 22 Agent modules with zero diagnostics; the context orchestration contract and 58 project-index contracts pass. Official Qt/MinGW Release build passes; full CTest passes 120/120. Manifest `artifacts/evidence/sprint-1026-pyright-workspace-config.json`, SHA-256 `EB4A701A7EF14865B90F52730365279446AD91585AC9A4032779669700D8863A`. Hosted exact-SHA CI is pending.
 - Sprint 1025 threads the actual active PCB layer/net into initial retrieval signals, project-index retrieval, telemetry signal digest, and ContextBroker cache identity. Layer/net changes now invalidate cached context even when project revision is unchanged. Twelve focused broker tests and the orchestration context contract pass; official Qt/MinGW Release and full CTest pass 120/120. Pyright reports two existing unresolved import-symbol diagnostics in `orchestrator.py`; no suppression was added. Manifest `artifacts/evidence/sprint-1025-active-layer-context.json`, SHA-256 `4339E8EC64406982A656095744D50245E8FC933FC1FAD2B60F1A8720F1EAB157`. After pushing exact `main` SHA `71f545945bf22f5da90211e1d6de4e18df63949d`, hosted run `36275620425` passed all five jobs in 7m47s; CTest is included in Linux core, Linux GUI, and Windows core. The recent red run `36234661589` is superseded; the existing incident report attributes it to an ignored local demo-board fixture read by `agent_project_index`. The passing run emits non-fatal Node 20 deprecation notices for `actions/upload-artifact@v4` and an Ubuntu 26 migration notice for `ubuntu-latest`; follow-up is open in the TODO. No CD workflow or deployment target exists; CD is unconfigured, not failing. No CI workflow change was indicated by current failure evidence.
 
 

@@ -2,6 +2,16 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1026 — Pyright workspace and CI integration (Tier 1)
+
+- [x] Configure Pyright's execution environment for CCad's script-style Agent imports, so root-workspace analysis resolves sibling modules correctly.
+- [x] Configure the Python CI lane to run pinned Pyright 1.1.414 and retain its output with job diagnostics.
+- [x] Add a regression contract for the analyzer version and module search configuration.
+- [x] Verify root-level analysis covers all 22 Agent modules with zero diagnostics; run the focused context/project-index contracts.
+- [x] Pass the official Qt/MinGW Release/full CTest gate (120/120) and commit its evidence manifest `artifacts/evidence/sprint-1026-pyright-workspace-config.json` (SHA-256 `EB4A701A7EF14865B90F52730365279446AD91585AC9A4032779669700D8863A`).
+- [x] Update handover, feature, progress, backlog, and this checklist.
+- [ ] Confirm hosted CI passes on the exact pushed SHA before merge.
+
 ### Sprint 1025 — Active PCB layer/net context freshness (Tier 1)
 
 - [x] Include the active PCB layer and net in bounded turn signals used for initial memory retrieval and project-index retrieval.
@@ -9,7 +19,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Add regression contracts for query inclusion, memory retrieval relevance, cache hits for unchanged state, and invalidation for changed layer/net; prove orchestration passes live project state.
 - [x] Pass focused contracts, Python syntax checks, and official Qt/MinGW Release/full CTest (120/120). Manifest `artifacts/evidence/sprint-1025-active-layer-context.json`, SHA-256 `4339E8EC64406982A656095744D50245E8FC933FC1FAD2B60F1A8720F1EAB157`.
 - [x] Reconcile CI/CT/CD against live run `36273540241` on `main` SHA `d7208650d7bfa26700a63dca5a93070f58b0fe11`: all five configured jobs pass, with CTest in three native lanes. Historical run `36234661589` is superseded; the recorded cause is a test reading an ignored local demo-board fixture. CD has no workflow or deployment target and is therefore unconfigured, not failing.
-- [ ] Resolve the two existing Pyright import-symbol diagnostics in `orchestrator.py`; this slice does not suppress them.
+- [x] Resolve the two root-invocation Pyright import-symbol diagnostics in `orchestrator.py` through a checked-in workspace configuration; root analysis covers all 22 Agent modules with zero diagnostics (Sprint 1026). No diagnostics were suppressed.
 - [x] Publish the verified feature and re-check hosted CI on the exact merged commit: run `36275620425`, SHA `71f545945bf22f5da90211e1d6de4e18df63949d`, all five jobs pass.
 
 Implementation boundary: active layer/net are transient UI state, not project-revision changes. They are now explicit retrieval signals and cache-key inputs; no persistent project model or UI behavior changed. No CI workflow edit was indicated by live evidence. Do not create a publishing pipeline until its artifact, destination, and release policy are specified.

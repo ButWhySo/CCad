@@ -1,0 +1,15 @@
+{
+  "include": [
+    "src/ccad_agent"
+  ],
+  "executionEnvironments": [
+    {
+      "root": "src/ccad_agent",
+      "extraPaths": [
+        "src/ccad_agent"
+      ]
+    }
+  ],
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "standard"
+}

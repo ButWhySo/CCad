@@ -1,5 +1,6 @@
 """No-network contracts for portable, diagnosable build and test jobs."""
 
+import json
 import re
 from pathlib import Path
 
@@ -30,6 +31,15 @@ assert workflow.count("Linux GUI build diagnostic") == 1
 python_job = job_block("agent-python")
 assert "agent-python-tests.log" in python_job
 assert "upload-artifact@v4" in python_job
+assert "npm exec --yes --package=pyright@1.1.414 -- pyright" in python_job
+pyright_config_path = Path(__file__).resolve().parents[1] / "pyrightconfig.json"
+pyright_config = json.loads(pyright_config_path.read_text(encoding="utf-8"))
+assert pyright_config["include"] == ["src/ccad_agent"]
+assert pyright_config["pythonVersion"] == "3.12"
+assert pyright_config["typeCheckingMode"] == "standard"
+assert pyright_config["executionEnvironments"] == [
+    {"root": "src/ccad_agent", "extraPaths": ["src/ccad_agent"]}
+]
 for test_name in ("test_agent_context_contract.py", "test_project_index.py"):
     test_source = (Path(__file__).resolve().parent / test_name).read_text(encoding="utf-8")
     assert "artifacts/demos/sprint160-placement-crash-ci-final.ccad.json" not in test_source

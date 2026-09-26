@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1026-pyright-workspace-config",
+    "feature":  "Configure workspace-correct Pyright resolution and enforce pinned Agent analysis in CI",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-26T23:01:51.2762787Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.31 log=artifacts/evidence/sprint-1026-pyright-workspace-config/preflight.log",
+                      "finished_utc":  "2026-09-26T23:01:52.7328080Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.75 log=artifacts/evidence/sprint-1026-pyright-workspace-config/build.log",
+                      "finished_utc":  "2026-09-26T23:01:53.4974019Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=174.91 log=artifacts/evidence/sprint-1026-pyright-workspace-config/ctest.log",
+                      "finished_utc":  "2026-09-26T23:04:48.4073594Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1026-pyright-workspace-config/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1026-pyright-workspace-config/ctest.log",
+                                         "sha256":  "EB62243E2E4E438D243845E0D20D16D91BF3906A343EDB5848C614BFFD7A46AC"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1026-pyright-workspace-config/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-26T23:04:48.4753590Z"
+}
