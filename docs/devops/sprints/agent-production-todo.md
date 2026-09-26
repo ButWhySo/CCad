@@ -23,7 +23,7 @@ References checked: [KiCad Schematic Editor 10.0](https://docs.kicad.org/10.0/en
 - [x] Add positive, reverse, negative, ambiguity, cross-sheet, context-broker/package, and source-revision regression contracts.
 - [x] Run changed-module Pyright and official Qt/MinGW Release/full CTest; inspect the nonvisual manifest and complete logs.
 - [ ] Keep decoupling-intent inference, standalone library-cache definitions, artifacts/proposals, and transaction-delta ingestion open; these require separate source contracts.
-- [ ] Commit, locally merge, push, and verify hosted CI for the exact merged source SHA.
+- [x] Commit, locally merge, push, and verify hosted CI: implementation `fcf6847`, merge commit `9ff6968bc11f21ddd45884bfe66223b75b87ac6a`; all five hosted jobs pass in run `36253952081`.
 
 ### Sprint 1016 active slice — embedded library pins and exact schematic/PCB identity links (Tier 1, C3)
 
