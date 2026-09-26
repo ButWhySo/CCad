@@ -9,7 +9,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Add real JSON-RPC restart contract covering both durable memory tiers and the existing conversation store.
 - [x] Pass official Qt/MinGW Release build and full CTest (120/120); manifest `artifacts/evidence/sprint-1021-memory-transcript-isolation.json`, SHA-256 `5823B39C237831C88905F81736DAD94DB6F9DA69CD64D1F87CF4470D68FBE460`.
 - [x] Run redacted changed-file secret scan; no credential-pattern additions. Record manifest; keep captured logs workspace-only.
-- [ ] Commit, locally merge to `main`, push, and verify hosted CI on the exact merged SHA.
+- [x] Commit `2cce403`, locally merge and push `main` at `bab8aed`; hosted CI run `36261448041` passes all five jobs on that exact merged SHA. PR creation was unavailable to the connected GitHub integration (403), so CI ran from the authorized `main` push.
 
 ### Sprint 1020 — CI / CTest / CD failure report refresh
 
