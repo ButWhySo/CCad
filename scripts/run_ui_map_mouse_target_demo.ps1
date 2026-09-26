@@ -69,9 +69,10 @@ if ($Name.StartsWith("sprint982-multilayer-project-context") -or
     $Name.StartsWith("sprint983-project-index-typed-geometry") -or
     $Name.StartsWith("sprint985-project-reference-graph") -or
     $Name.StartsWith("sprint986-project-spatial-index") -or
-    $Name.StartsWith("sprint987-schematic-metadata")) {
+    $Name.StartsWith("sprint987-schematic-metadata") -or
+    $Name.StartsWith("sprint998-functional-block-net-context")) {
   $isolatedProjectPath = Join-Path ([IO.Path]::GetTempPath()) (
-    "ccad-sprint" + $(if ($Name.StartsWith("sprint987")) { "987-schematic-metadata-" } elseif ($Name.StartsWith("sprint986")) { "986-project-spatial-" } elseif ($Name.StartsWith("sprint985")) { "985-project-graph-" } elseif ($Name.StartsWith("sprint983")) { "983-typed-geometry-" } else { "982-multilayer-" }) +
+    "ccad-sprint" + $(if ($Name.StartsWith("sprint998")) { "998-block-net-" } elseif ($Name.StartsWith("sprint987")) { "987-schematic-metadata-" } elseif ($Name.StartsWith("sprint986")) { "986-project-spatial-" } elseif ($Name.StartsWith("sprint985")) { "985-project-graph-" } elseif ($Name.StartsWith("sprint983")) { "983-typed-geometry-" } else { "982-multilayer-" }) +
     [Guid]::NewGuid().ToString("N") + ".ccad.json")
   Copy-Item -LiteralPath $ProjectPath -Destination $isolatedProjectPath
   if ($Name.StartsWith("sprint983-project-index-typed-geometry")) {
@@ -88,8 +89,24 @@ if ($Name.StartsWith("sprint982-multilayer-project-context") -or
     if (-not $fixture.components -or $fixture.components.Count -eq 0) {
       throw "Schematic metadata scenario requires a serialized schematic component."
     }
-    $fixture.components[0].reference = "U3"
-    $fixture.components[0].fields = @([pscustomobject]@{
+    $fixture.components[0] | Add-Member -MemberType NoteProperty -Name reference `
+      -Value "U3" -Force
+    if ($Name.Contains("sprint992")) {
+      $fixture.components[0] | Add-Member -MemberType NoteProperty -Name unit `
+        -Value 1 -Force
+      $fixture.components[0] | Add-Member -MemberType NoteProperty -Name pins -Value @([pscustomobject]@{
+        name = "PGOOD"
+        number = "2"
+        electrical_type = "output"
+        orientation = "right"
+      }, [pscustomobject]@{
+        name = "GND"
+        number = "3"
+        electrical_type = "power_in"
+        orientation = "left"
+      }) -Force
+    }
+    $fixture.components[0] | Add-Member -MemberType NoteProperty -Name fields -Value @([pscustomobject]@{
       id = "FIELD_SPRINT987_MANUFACTURER"
       name = "Manufacturer"
       text = "ACME-42"
@@ -105,17 +122,71 @@ if ($Name.StartsWith("sprint982-multilayer-project-context") -or
       rotation_degrees = 0
       size = [pscustomobject]@{ width_nm = 1000000; height_nm = 1000000 }
       visible = $true
-    })
-    $fixture.sheets = @([pscustomobject]@{
+    }) -Force
+    $fixture | Add-Member -MemberType NoteProperty -Name sheets -Value @([pscustomobject]@{
       id = "SHEET_SPRINT987"
       name = "Power Stage"
       file_path = "sheets/power_stage.kicad_sch"
       position = [pscustomobject]@{ x_nm = 0; y_nm = 0 }
       size = [pscustomobject]@{ width_nm = 40000000; height_nm = 30000000 }
       pins = @()
-    })
+    }) -Force
+    if ($Name.Contains("sprint997")) {
+      if (-not $fixture.board.footprints) {
+        $fixture.board | Add-Member -MemberType NoteProperty -Name footprints -Value @() -Force
+      }
+      if (-not $fixture.board.placement_regions) {
+        $fixture.board | Add-Member -MemberType NoteProperty -Name placement_regions -Value @() -Force
+      }
+      $fixture.board.footprints += [pscustomobject]@{
+        reference = "JAC1"
+        value = "AC input"
+        footprint_name = "Connector_PinHeader_2.54mm"
+        layer_id = "F.Cu"
+        position = [pscustomobject]@{ x_nm = 8000000; y_nm = 17000000 }
+      }
+      $fixture.board.footprints += [pscustomobject]@{
+        reference = "C_NEAR"
+        value = "100 nF"
+        footprint_name = "C_0402"
+        layer_id = "F.Cu"
+        position = [pscustomobject]@{ x_nm = 10000000; y_nm = 17000000 }
+      }
+      $fixture.board.placement_regions = @($fixture.board.placement_regions) + @([pscustomobject]@{
+        id = "PR_SPRINT997"
+        kind = "placement"
+        area = [pscustomobject]@{
+          x_nm = 7000000; y_nm = 16000000; width_nm = 5000000; height_nm = 2000000
+        }
+      })
+    }
+    if ($Name.Contains("sprint993")) {
+      if (-not $fixture.board.groups) {
+        $fixture.board | Add-Member -MemberType NoteProperty -Name groups -Value @() -Force
+      }
+      $inputComponents = @("JAC1", "JAC2", "D1", "D2", "D3", "D4")
+      $groupMembers = @($fixture.board.pads |
+        Where-Object { $_.component_id -in $inputComponents -and
+                       $_.net_id -in @("AC1", "AC2") } |
+        ForEach-Object { [string]$_.id })
+      if ($groupMembers.Count -lt 4) {
+        throw "Sprint 993 functional-block fixture lacks its serialized AC-input board pads."
+      }
+      $fixture.board.groups += [pscustomobject]@{
+        id = "GROUP_SPRINT993_AC_INPUT"
+        name = "AC input stage"
+        members = $groupMembers
+      }
+    }
     [IO.File]::WriteAllText($isolatedProjectPath,
       (ConvertTo-Json -InputObject $fixture -Depth 64), [Text.UTF8Encoding]::new($false))
+    if ($Name.Contains("sprint997")) {
+      $fixtureCheck = Get-Content -Raw -LiteralPath $isolatedProjectPath | ConvertFrom-Json
+      if (@($fixtureCheck.board.footprints | Where-Object { $_.reference -in @("JAC1", "C_NEAR") }).Count -ne 2 -or
+          @($fixtureCheck.board.placement_regions | Where-Object { $_.id -eq "PR_SPRINT997" }).Count -ne 1) {
+        throw "Sprint 997 disposable board fixture did not serialize its proximity and placement-region records."
+      }
+    }
   } elseif ($Name.StartsWith("sprint985-project-reference-graph") -or
             $Name.StartsWith("sprint986-project-spatial-index")) {
     $fixture = Get-Content -Raw -LiteralPath $isolatedProjectPath | ConvertFrom-Json
@@ -140,6 +211,41 @@ if ($Name.StartsWith("sprint982-multilayer-project-context") -or
   }
   $ProjectPath = $isolatedProjectPath
 }
+if ($Name.StartsWith("sprint998-functional-block-net-context")) {
+  $fixture = Get-Content -Raw -LiteralPath $isolatedProjectPath | ConvertFrom-Json
+  if (-not $fixture.board.pads) {
+    throw "Functional-block net fixture requires a serialized board pad."
+  }
+  $netPad = @($fixture.board.pads | Where-Object {
+    $_.id -and $_.net_id
+  } | Select-Object -First 1)
+  if ($netPad.Count -ne 1) {
+    throw "Functional-block net fixture requires a pad with a native net ID."
+  }
+  if (-not $fixture.board.groups) {
+    $fixture.board | Add-Member -MemberType NoteProperty -Name groups -Value @() -Force
+  }
+  $fixture.board.groups += [pscustomobject]@{
+    id = "GROUP_SPRINT998_RETURN"
+    name = "Return path"
+    members = @([string]$netPad[0].id)
+  }
+  [IO.File]::WriteAllText($isolatedProjectPath,
+    (ConvertTo-Json -InputObject $fixture -Depth 64), [Text.UTF8Encoding]::new($false))
+  $fixtureCheck = Get-Content -Raw -LiteralPath $isolatedProjectPath | ConvertFrom-Json
+  $fixtureGroup = @($fixtureCheck.board.groups | Where-Object {
+    $_.id -eq "GROUP_SPRINT998_RETURN" -and $_.name -eq "Return path"
+  })
+  $fixtureMember = if ($fixtureGroup.Count -eq 1) {
+    [string]$fixtureGroup[0].members[0]
+  } else { "" }
+  $fixtureMemberPad = @($fixtureCheck.board.pads | Where-Object {
+    $_.id -eq $fixtureMember -and $_.net_id
+  })
+  if ($fixtureGroup.Count -ne 1 -or $fixtureMemberPad.Count -ne 1) {
+    throw "Sprint 998 disposable fixture failed its serialized group-to-native-net round trip."
+  }
+}
 if ($Name.StartsWith("sprint969-context")) {
   # Exercise the real large-context branch with a deliberately low, valid
   # threshold. The /context feature remains local and never invokes the model.
@@ -152,6 +258,59 @@ if ($Name.StartsWith("sprint971-memory")) {
   $env:APPDATA = $isolatedMemoryProfile
   $env:CCAD_AGENT_MEMORY_PATH = Join-Path $isolatedMemoryProfile "agent_memory.json"
   $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
+}
+if ($Name.StartsWith("sprint991-semantic-memory")) {
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint991-semantic-" + [Guid]::NewGuid().ToString("N"))
+  $configDir = Join-Path $isolatedMemoryProfile "CCad"
+  New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+  $env:APPDATA = $isolatedMemoryProfile
+  $env:CCAD_AGENT_MEMORY_PATH = Join-Path $isolatedMemoryProfile "agent_memory.json"
+  $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
+  $env:CCAD_AGENT_THREAD_ID = "sprint991-semantic-memory-ui-thread"
+  $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
+  $testConfig = [ordered]@{
+    provider = "openai"
+    model = "gpt-5.1"
+    memory = @{ stm = $false; ltm = $false; episodic = $false }
+    observability = @{ enabled = $false; backend = "langfuse"; environment = "development" }
+  }
+  [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
+    ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
+}
+if ($Name.StartsWith("sprint1001-memory-kind") -or $Name.StartsWith("sprint1003-memory-importance")) {
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-$Name-" + [Guid]::NewGuid().ToString("N"))
+  $configDir = Join-Path $isolatedMemoryProfile "CCad"
+  New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+  $env:APPDATA = $isolatedMemoryProfile
+  $env:CCAD_AGENT_MEMORY_PATH = Join-Path $isolatedMemoryProfile "agent_memory.json"
+  $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
+  $env:CCAD_AGENT_THREAD_ID = "$Name-ui-thread"
+  $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
+  $testConfig = [ordered]@{
+    provider = "openai"
+    model = "gpt-5.1"
+    memory = @{ stm = $false; ltm = $true; episodic = $false }
+    observability = @{ enabled = $false; backend = "langfuse"; environment = "development" }
+  }
+  [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
+    ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
+}
+if ($Name.StartsWith("sprint1007-gemini-exact-count")) {
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) (
+    "ccad-sprint1007-gemini-count-" + [Guid]::NewGuid().ToString("N"))
+  $configDir = Join-Path $isolatedMemoryProfile "CCad"
+  New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+  $env:APPDATA = $isolatedMemoryProfile
+  $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
+  $testConfig = [ordered]@{
+    provider = "openai"
+    model = "gpt-5.1"
+    gemini_exact_input_counting = $false
+    memory = @{ stm = $false; ltm = $false; episodic = $false }
+    observability = @{ enabled = $false; backend = "langfuse"; environment = "development" }
+  }
+  [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
+    ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
 }
 if ($Name.StartsWith("sprint974-memory")) {
   $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint974-" + [Guid]::NewGuid().ToString("N"))
@@ -246,7 +405,8 @@ if ($Name.StartsWith("sprint980-project-retrieval") -or
     $Name.StartsWith("sprint985-project-reference-graph") -or
     $Name.StartsWith("sprint984-board-net-retrieval") -or
     $Name.StartsWith("sprint986-project-spatial-index") -or
-    $Name.StartsWith("sprint987-schematic-metadata")) {
+    $Name.StartsWith("sprint987-schematic-metadata") -or
+    $Name.StartsWith("sprint998-functional-block-net-context")) {
   $profilePrefix = if ($Name.StartsWith("sprint986-project-spatial-index")) {
     "ccad-sprint986-project-spatial-"
   } elseif ($Name.StartsWith("sprint987-schematic-metadata")) {
@@ -261,6 +421,8 @@ if ($Name.StartsWith("sprint980-project-retrieval") -or
     "ccad-sprint983-typed-geometry-"
   } elseif ($Name.StartsWith("sprint981-schematic-project-graph")) {
     "ccad-sprint981-project-graph-"
+  } elseif ($Name.StartsWith("sprint998-functional-block-net-context")) {
+    "ccad-sprint998-block-net-"
   } else { "ccad-sprint980-project-" }
   $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ($profilePrefix + [Guid]::NewGuid().ToString("N"))
   $configDir = Join-Path $isolatedMemoryProfile "CCad"
@@ -269,7 +431,11 @@ if ($Name.StartsWith("sprint980-project-retrieval") -or
   $env:CCAD_AGENT_CONVERSATION_DB = Join-Path $isolatedMemoryProfile "agent_conversations.sqlite3"
   $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
   $env:CCAD_AGENT_THREAD_ID = if ($Name.StartsWith("sprint987-schematic-metadata")) {
-    "sprint987-schematic-metadata-ui-thread"
+    if ($Name.Contains("sprint997")) { "sprint997-geometry-relations-ui-thread" }
+    elseif ($Name.Contains("sprint993")) { "sprint993-functional-block-ui-thread" }
+    else { "sprint987-schematic-metadata-ui-thread" }
+  } elseif ($Name.StartsWith("sprint998-functional-block-net-context")) {
+    "sprint998-functional-block-net-context-ui-thread"
   } elseif ($Name.StartsWith("sprint986-project-spatial-index")) {
     "sprint986-project-spatial-index-ui-thread"
   } elseif ($Name.StartsWith("sprint984-board-net-retrieval")) {
@@ -298,6 +464,39 @@ try {
     -ArgumentList @("--test-ui-map-target-sequence", $ProjectPath, $ScreenshotDir, $Name,
                     [string]$InitialLoadMilliseconds, [string]$PerTargetMilliseconds) `
     -PassThru -Wait -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
+  if ($Name.StartsWith("sprint1007-gemini-exact-count")) {
+    $configFile = Join-Path $isolatedMemoryProfile "CCad\agent_config.json"
+    $savedConfig = Get-Content -Raw -LiteralPath $configFile | ConvertFrom-Json
+    if ($savedConfig.gemini_exact_input_counting -ne $true) {
+      throw "Mapped Settings flow did not persist Gemini exact-count opt-in."
+    }
+    if ((Get-Content -Raw -LiteralPath $configFile) -match '(?i)(api[_-]?key|secret|credential|password)') {
+      throw "Provider credential-like field was unexpectedly written to the isolated config."
+    }
+    $reportFile = Join-Path $ScreenshotDir "$Name-target-sequence.json"
+    $report = Get-Content -Raw -LiteralPath $reportFile | ConvertFrom-Json
+    if (-not ($report.entries | Where-Object {
+      $_.gemini_exact_count_reloaded_checked -eq $true
+    })) {
+      throw "Settings did not reload the saved Gemini count preference as checked."
+    }
+  }
+  if ($Name.Contains("sprint997")) {
+    $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
+    $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
+    $geometryProof = @($reportData.entries | Where-Object {
+      $_.pcb_geometry_relationships_visible -eq $true
+    } | Select-Object -First 1)
+    $turnProof = @($reportData.entries | Where-Object {
+      $_.conversation_turn_visible -eq $true
+    } | Select-Object -First 1)
+    if ($geometryProof.Count -ne 1 -or $turnProof.Count -ne 1) {
+      throw "Mapped Agent context did not prove nearby-footprint and placement-region counts. Report: $reportPath"
+    }
+    if (Select-String -LiteralPath $stdoutLog -Pattern 'provider_request_sent":true' -Quiet) {
+      throw "Provider request occurred during the isolated geometry-context validation."
+    }
+  }
   if ($Name.StartsWith("sprint982-multilayer-project-context")) {
     $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
     $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
@@ -349,8 +548,111 @@ try {
     if (-not (Test-Path -LiteralPath $confirmationScreenshot)) {
       throw "Mapped GUI did not capture the reset confirmation before cancelling it."
     }
+}
+if ($Name.StartsWith("sprint991-semantic-memory")) {
+  $configFile = Join-Path $isolatedMemoryProfile "CCad\agent_config.json"
+  $config = Get-Content -Raw -LiteralPath $configFile | ConvertFrom-Json
+  if (-not $config.memory.semantic.enabled -or
+      $config.memory.semantic.backend -ne "ollama_local" -or
+      $config.memory.semantic.base_url -ne "http://127.0.0.1:11434" -or
+      $config.memory.semantic.model -ne "embeddinggemma") {
+    throw "Semantic retrieval preferences were not persisted exactly in the isolated profile."
   }
-  if ($Name.StartsWith("sprint974-memory")) {
+  $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
+  $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
+  $mapped = @($reportData.entries | Where-Object {
+    $_.interaction -eq "ui.click" -and $_.result.result.performed -eq $true
+  })
+  $typed = @($reportData.entries | Where-Object {
+    $_.interaction -eq "ui.type_text" -and $_.result.result.performed -eq $true
+  })
+  if ($mapped.Count -lt 5 -or $typed.Count -lt 2) {
+    throw "Semantic settings GUI flow did not perform the expected mapped edits."
+  }
+  $runtimeStatus = @($reportData.entries | Where-Object {
+    $_.semantic_runtime_status_found -eq $true -and
+    $_.target.label -match 'Semantic retrieval: (ready|service_unavailable|model_not_installed)'
+  })
+  if ($runtimeStatus.Count -ne 1) {
+    throw "Semantic settings did not display a truthful ready/unavailable installed-model status."
+  }
+  $checkpoints = @(Get-ChildItem -LiteralPath $ScreenshotDir -Filter "$Name-*.png")
+  if ($checkpoints.Count -ne 4) {
+    throw "Semantic settings validation should retain four distinct UI checkpoints; found $($checkpoints.Count)."
+  }
+  if (Select-String -LiteralPath $stdoutLog -Pattern 'provider_request_sent":true' -Quiet) {
+    throw "Provider request occurred during semantic settings GUI validation."
+  }
+}
+if ($Name.StartsWith("sprint1001-memory-kind")) {
+  $memoryFile = $env:CCAD_AGENT_MEMORY_PATH
+  if (-not (Test-Path -LiteralPath $memoryFile)) {
+    throw "Mapped memory-kind flow did not create its isolated durable store."
+  }
+  $records = @(Get-Content -Raw -LiteralPath $memoryFile | ConvertFrom-Json)
+  $saved = @($records | Where-Object {
+    $_.tier -eq "ltm" -and $_.kind -eq "preference" -and
+    $_.title -eq "Memory kind proof" -and $_.scope -eq "conversation" -and
+    $_.content -eq "Keep ground return routing short in future edits"
+  })
+  if ($saved.Count -ne 1) {
+    throw "Mapped memory-kind flow did not persist exactly one typed preference record."
+  }
+  $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
+  $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
+  $performed = @($reportData.entries | Where-Object {
+    $_.interaction -eq "ui.click" -and $_.result.result.performed -eq $true
+  })
+  $typed = @($reportData.entries | Where-Object {
+    $_.interaction -eq "ui.type_text" -and $_.result.result.performed -eq $true
+  })
+  if ($performed.Count -lt 7 -or $typed.Count -lt 3 -or
+      -not ($reportData.entries | Where-Object { $_.memory_kind_saved_visible -eq $true })) {
+    throw "Mapped memory-kind flow did not prove mapped editing, save, and visible result."
+  }
+  $checkpoints = @(Get-ChildItem -LiteralPath $ScreenshotDir -Filter "$Name-*.png")
+  if ($checkpoints.Count -ne 15) {
+    throw "Memory-kind proof must retain one screenshot per mapped click/text entry (15 total); found $($checkpoints.Count)."
+  }
+  if (Select-String -LiteralPath $stdoutLog -Pattern 'provider_request_sent":true' -Quiet) {
+    throw "Provider request occurred during the isolated memory-kind GUI validation."
+  }
+}
+if ($Name.StartsWith("sprint1003-memory-importance")) {
+  $memoryFile = $env:CCAD_AGENT_MEMORY_PATH
+  if (-not (Test-Path -LiteralPath $memoryFile)) {
+    throw "Mapped memory-importance flow did not create its isolated durable store."
+  }
+  $records = @(Get-Content -Raw -LiteralPath $memoryFile | ConvertFrom-Json)
+  $saved = @($records | Where-Object {
+    $_.tier -eq "ltm" -and $_.kind -eq "fact" -and $_.importance -eq 5 -and
+    $_.title -eq "Memory importance proof" -and $_.scope -eq "conversation" -and
+    $_.content -eq "Keep ground return routing short in future edits"
+  })
+  if ($saved.Count -ne 1) {
+    throw "Mapped memory-importance flow did not persist exactly one priority-5 preference."
+  }
+  $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
+  $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
+  $performed = @($reportData.entries | Where-Object {
+    $_.interaction -eq "ui.click" -and $_.result.result.performed -eq $true
+  })
+  $typed = @($reportData.entries | Where-Object {
+    $_.interaction -eq "ui.type_text" -and $_.result.result.performed -eq $true
+  })
+  if ($performed.Count -lt 8 -or $typed.Count -lt 3 -or
+      -not ($reportData.entries | Where-Object { $_.memory_importance_saved_visible -eq $true })) {
+    throw "Mapped memory-importance flow did not prove selecting, saving, and displaying priority."
+  }
+  $checkpoints = @(Get-ChildItem -LiteralPath $ScreenshotDir -Filter "$Name-*.png")
+  if ($checkpoints.Count -ne 16) {
+    throw "Memory-importance proof requires 16 scoped interaction screenshots; found $($checkpoints.Count)."
+  }
+  if (Select-String -LiteralPath $stdoutLog -Pattern 'provider_request_sent":true' -Quiet) {
+    throw "Provider request occurred during isolated memory-importance GUI validation."
+  }
+}
+if ($Name.StartsWith("sprint974-memory")) {
     $memoryAfterHash = (Get-FileHash -LiteralPath $env:CCAD_AGENT_MEMORY_PATH -Algorithm SHA256).Hash
     $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
     $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
@@ -398,7 +700,19 @@ try {
       $Name.StartsWith("sprint987-schematic-metadata")) {
     $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
     $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
-    $requiredReportFields = if ($Name.StartsWith("sprint987-schematic-metadata")) {
+    $requiredReportFields = if ($Name.Contains("sprint992")) {
+      @("conversation_turn_visible", "schematic_metadata_serialized",
+        "declared_pin_serialized", "schematic_metadata_retrieved",
+        "schematic_pin_retrieval_visible")
+    } elseif ($Name.Contains("sprint993")) {
+      @("conversation_turn_visible", "schematic_metadata_serialized",
+        "schematic_metadata_retrieved", "functional_block_visible")
+    } elseif ($Name.Contains("sprint997")) {
+      @("conversation_turn_visible", "pcb_geometry_relationships_visible")
+    } elseif ($Name.StartsWith("sprint998-functional-block-net-context")) {
+      @("conversation_turn_visible", "functional_block_fixture_loaded",
+        "functional_block_net_retrieval_visible")
+    } elseif ($Name.StartsWith("sprint987-schematic-metadata")) {
       @("conversation_turn_visible", "schematic_metadata_serialized",
         "schematic_metadata_retrieved")
     } elseif ($Name.StartsWith("sprint985-project-reference-graph") -or
@@ -420,6 +734,21 @@ try {
       $actualScreenshots = @(Get-ChildItem -LiteralPath $ScreenshotDir -Filter "$Name-*.png")
       if ($actualScreenshots.Count -ne $requiredScreenshots.Count) {
         throw "Spatial project GUI validation should retain only three distinct checkpoints; found $($actualScreenshots.Count)."
+      }
+    } elseif ($Name.Contains("sprint992") -or $Name.Contains("sprint993") -or
+              $Name.StartsWith("sprint998-functional-block-net-context")) {
+      $requiredScreenshots = @("before", "turn-persisted",
+                               "context-settings-dialog", "restored-final")
+      $actualScreenshots = @(Get-ChildItem -LiteralPath $ScreenshotDir -Filter "$Name-*.png")
+      if ($actualScreenshots.Count -ne $requiredScreenshots.Count) {
+        throw "Schematic pin retrieval GUI validation should retain four distinct checkpoints; found $($actualScreenshots.Count)."
+      }
+    } elseif ($Name.Contains("sprint997")) {
+      $requiredScreenshots = @("before", "turn-persisted",
+                               "context-settings-dialog", "restored-final")
+      $actualScreenshots = @(Get-ChildItem -LiteralPath $ScreenshotDir -Filter "$Name-*.png")
+      if ($actualScreenshots.Count -ne $requiredScreenshots.Count) {
+        throw "Sprint 997 geometry retrieval GUI validation should retain four distinct checkpoints; found $($actualScreenshots.Count)."
       }
     } elseif ($Name.StartsWith("sprint987-schematic-metadata")) {
       $requiredScreenshots = @("before", "turn-persisted", "projection-cleared")
@@ -446,7 +775,9 @@ try {
     }
     $databaseVerifier = Join-Path $Root "scripts\verify_conversation_ui_state.py"
     $expectedThreadId = if ($Name.StartsWith("sprint987-schematic-metadata")) {
-      "sprint987-schematic-metadata-ui-thread"
+      if ($Name.Contains("sprint997")) { "sprint997-geometry-relations-ui-thread" }
+      elseif ($Name.Contains("sprint993")) { "sprint993-functional-block-ui-thread" }
+      else { "sprint987-schematic-metadata-ui-thread" }
     } elseif ($Name.StartsWith("sprint986-project-spatial-index")) {
       "sprint986-project-spatial-index-ui-thread"
     } elseif ($Name.StartsWith("sprint985-project-reference-graph")) {
@@ -531,7 +862,12 @@ try {
          -not ($reportData.entries | Where-Object { $_.schematic_symbol_retrieval_visible -eq $true }))) {
       throw "Mapped turn did not visibly include retrieved schematic net pins and related symbols."
     }
-    $requiredScreenshots = if ($Name.StartsWith("sprint986-project-spatial-index")) {
+    $requiredScreenshots = if ($Name.Contains("sprint992") -or $Name.Contains("sprint993") -or
+                               $Name.StartsWith("sprint998-functional-block-net-context")) {
+      @("before", "turn-persisted", "context-settings-dialog", "restored-final")
+    } elseif ($Name.Contains("sprint997")) {
+      @("before", "turn-persisted", "context-settings-dialog", "restored-final")
+    } elseif ($Name.StartsWith("sprint986-project-spatial-index")) {
       @("before", "diagnostics-ready", "turn-persisted")
     } elseif ($Name.StartsWith("sprint987-schematic-metadata")) {
       @("before", "turn-persisted", "projection-cleared")
@@ -583,7 +919,8 @@ try {
               [IO.Path]::GetFileName($projectFile) -like "ccad-sprint983-typed-geometry-*.ccad.json" -or
               [IO.Path]::GetFileName($projectFile) -like "ccad-sprint985-project-graph-*.ccad.json" -or
               [IO.Path]::GetFileName($projectFile) -like "ccad-sprint986-project-spatial-*.ccad.json" -or
-              [IO.Path]::GetFileName($projectFile) -like "ccad-sprint987-schematic-metadata-*.ccad.json")) {
+              [IO.Path]::GetFileName($projectFile) -like "ccad-sprint987-schematic-metadata-*.ccad.json" -or
+              [IO.Path]::GetFileName($projectFile) -like "ccad-sprint998-block-net-*.ccad.json")) {
       throw "Refusing to remove a project outside the verified temporary targets."
     }
     Remove-Item -LiteralPath $projectFile -Force

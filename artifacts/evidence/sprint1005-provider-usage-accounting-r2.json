@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint1005-provider-usage-accounting-r2",
+    "feature":  "Provider-returned token usage accounting across Langfuse, turn telemetry, and development diagnostics",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-26T03:07:19.4889581Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.22 log=artifacts/evidence/sprint1005-provider-usage-accounting-r2/preflight.log",
+                      "finished_utc":  "2026-09-26T03:07:20.8270876Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.57 log=artifacts/evidence/sprint1005-provider-usage-accounting-r2/build.log",
+                      "finished_utc":  "2026-09-26T03:07:21.4106240Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=145.36 log=artifacts/evidence/sprint1005-provider-usage-accounting-r2/ctest.log",
+                      "finished_utc":  "2026-09-26T03:09:46.7680173Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint1005-provider-usage-accounting-r2/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1005-provider-usage-accounting-r2/ctest.log",
+                                         "sha256":  "D9E9D0063BD1D1B345C42900A2EFD95C758F5518320E0985DC973057F37B48EE"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1005-provider-usage-accounting-r2/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-26T03:09:46.8440128Z"
+}

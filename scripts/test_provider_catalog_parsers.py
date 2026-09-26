@@ -65,6 +65,9 @@ gemini, request = invoke(orchestrator.fetch_gemini_models, "GEMINI_API_KEY", "ge
                {"name": "models/embed-test", "supportedGenerationMethods": ["embedContent"]}]})
 assert gemini["ok"] and [model["id"] for model in gemini["models"]] == ["gemini-test"]
 assert request.get_header("X-goog-api-key") == "gemini-test"
+orchestrator.record_model_catalog_context_limits("google_gemini", gemini)
+assert orchestrator.provider_model_context_limits.get(
+    "google_gemini", "gemini-test") is None  # not active selected model
 
 openrouter, request = invoke(orchestrator.fetch_openrouter_models, "OPENROUTER_API_KEY", "router-test", {
     "data": [{"id": "provider/model", "name": "Model", "context_length": 8192,
@@ -72,6 +75,9 @@ openrouter, request = invoke(orchestrator.fetch_openrouter_models, "OPENROUTER_A
 assert openrouter["ok"] and openrouter["models"][0]["id"] == "provider/model"
 assert openrouter["models"][0]["context_length"] == 8192
 assert openrouter["models"][0]["supported_parameters"] == ["tools", "temperature"]
+orchestrator.record_model_catalog_context_limits("openrouter", openrouter)
+assert orchestrator.provider_model_context_limits.get(
+    "openrouter", "provider/model") == 8192
 assert request.get_header("Authorization") == "Bearer router-test"
 
 cerebras, request = invoke(orchestrator.fetch_cerebras_models, "CEREBRAS_API_KEY", "cerebras-test", {
@@ -113,6 +119,28 @@ for function, key_name, provider, expected in (
     assert result["ok"] is False
     assert result["provider"] == provider
     assert result["error"] == expected
-    assert "failure" not in json.dumps(result).lower()
+assert "failure" not in json.dumps(result).lower()
+
+with patch.object(orchestrator, "active_model_context_limit", return_value=8192):
+    assert orchestrator.agent_context_limit() == 8192
+
+events = []
+orchestrator.provider_model_context_limits.replace_provider_catalog("openrouter", {
+    "ok": True, "models": [{"id": "provider/model", "context_length": 8192}]})
+with patch.object(orchestrator, "fetch_openrouter_models", side_effect=[{
+        "ok": True, "models": [{"id": "provider/next", "context_length": 16_384}]},
+        {"ok": False, "models": [], "error": "catalog_unavailable"}]), \
+     patch.object(orchestrator, "active_provider_model",
+                  return_value=("openrouter", "provider/next")), \
+     patch.object(orchestrator, "emit", side_effect=events.append):
+    assert orchestrator.handle_provider_and_state_request(
+        {"method": "agent.list_models", "params": {"provider": "openrouter"}},
+        executor=None)
+    assert orchestrator.active_model_context_limit() == 16_384
+    assert events[0]["method"] == "provider_models"
+    assert orchestrator.handle_provider_and_state_request(
+        {"method": "agent.list_models", "params": {"provider": "openrouter"}},
+        executor=None)
+    assert orchestrator.active_model_context_limit() is None
 
 print("PASS provider catalog parsers and auth headers; controlled local responses only")

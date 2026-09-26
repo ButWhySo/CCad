@@ -51,6 +51,10 @@ ui_*.h
 # Demo and screenshot artifacts
 artifacts/
 screenshots/
+!artifacts/
+artifacts/*
+!artifacts/evidence/
+!artifacts/evidence/**
 *.png
 *.jpg
 *.jpeg
@@ -110,3 +114,9 @@ tests/kicad-footprints/
 tests/kicad-symbols/
 tests/kicad-library-conventions/
 tests/kicad-packages3D/
+
+# Sprint evidence is intentionally retained and hash-checked by CI.
+!artifacts/evidence/**/*.json
+!artifacts/evidence/**/*.log
+!artifacts/evidence/**/*.png
+!artifacts/evidence/**/*.jsonl

@@ -6,6 +6,8 @@
 #include <QListWidget>
 #include <QJsonArray>
 #include <QStackedWidget>
+#include <QScrollArea>
+#include <QFrame>
 #include <QLabel>
 #include <QPushButton>
 #include <QSizePolicy>
@@ -167,6 +169,7 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
     : QDialog(parent), agent_panel_(agent_panel) {
   setWindowTitle("Agent Settings");
   setMinimumSize(700, 500);
+  resize(920, 640);
 
   setStyleSheet(R"(
     QDialog {
@@ -194,6 +197,25 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
     QLabel {
       color: #e6edf3;
       font-size: 13px;
+    }
+    QCheckBox {
+      color: #e6edf3;
+      spacing: 7px;
+    }
+    QCheckBox:disabled {
+      color: #8b949e;
+    }
+    QGroupBox {
+      color: #e6edf3;
+      border: 1px solid #30363d;
+      border-radius: 5px;
+      margin-top: 8px;
+      padding-top: 6px;
+    }
+    QGroupBox::title {
+      subcontrol-origin: margin;
+      left: 8px;
+      padding: 0 4px;
     }
     QLineEdit, QTextEdit, QComboBox {
       background-color: #010409;
@@ -416,8 +438,18 @@ void AgentSettingsDialog::setupUi() {
   stacked_widget_->addWidget(config_tab);
 
   auto* person_tab = new QWidget();
+  person_tab->setObjectName("personalisationPage");
+  person_tab->setStyleSheet("background-color: #0d1117;");
   createPersonalisationTab(person_tab);
-  stacked_widget_->addWidget(person_tab);
+  auto* personalisation_scroll = new QScrollArea(this);
+  personalisation_scroll->setObjectName("scroll:personalisation");
+  personalisation_scroll->setWidgetResizable(true);
+  personalisation_scroll->setFrameShape(QFrame::NoFrame);
+  personalisation_scroll->setStyleSheet(
+      "QScrollArea { background-color: #0d1117; border: none; }"
+      "QScrollArea > QWidget > QWidget { background-color: #0d1117; }");
+  personalisation_scroll->setWidget(person_tab);
+  stacked_widget_->addWidget(personalisation_scroll);
 
   auto* mcp_tab = new QWidget();
   createMCPTab(mcp_tab);
@@ -670,6 +702,26 @@ void AgentSettingsDialog::createPersonalisationTab(QWidget* parent_widget) {
   mem_layout->addWidget(stm_cb_);
   mem_layout->addWidget(ltm_cb_);
   mem_layout->addWidget(episodic_cb_);
+  auto* semantic_group = new QGroupBox("Semantic retrieval (local Ollama)", mem_group);
+  auto* semantic_form = new QFormLayout(semantic_group);
+  semantic_memory_enabled_cb_ = new QCheckBox(
+      "Use semantic similarity for memory retrieval", semantic_group);
+  semantic_memory_enabled_cb_->setObjectName("control:semanticMemoryEnabled");
+  semantic_memory_enabled_cb_->setToolTip(
+      "Opt in to local embeddings. CCad contacts only loopback Ollama and never downloads a model.");
+  semantic_form->addRow("", semantic_memory_enabled_cb_);
+  semantic_memory_endpoint_ = new QLineEdit("http://127.0.0.1:11434", semantic_group);
+  semantic_memory_endpoint_->setObjectName("control:semanticMemoryEndpoint");
+  semantic_form->addRow("Local endpoint:", semantic_memory_endpoint_);
+  semantic_memory_model_ = new QLineEdit("embeddinggemma", semantic_group);
+  semantic_memory_model_->setObjectName("control:semanticMemoryModel");
+  semantic_form->addRow("Installed model:", semantic_memory_model_);
+  semantic_memory_status_label_ = new QLabel(
+      "Semantic retrieval: disabled; lexical retrieval remains active", semantic_group);
+  semantic_memory_status_label_->setObjectName("label:semanticMemoryState");
+  semantic_memory_status_label_->setWordWrap(true);
+  semantic_form->addRow("Runtime:", semantic_memory_status_label_);
+  mem_layout->addWidget(semantic_group);
   memory_status_label_ = new QLabel("Memory state: waiting for backend", mem_group);
   memory_status_label_->setObjectName("label:memoryState");
   memory_status_label_->setWordWrap(false);
@@ -779,6 +831,17 @@ void AgentSettingsDialog::createAPIProvidersTab(QWidget* parent_widget) {
   auto* layout = new QVBoxLayout(parent_widget);
   layout->addWidget(new QLabel("<b>API & Providers</b>", parent_widget));
   layout->addWidget(new QLabel("Provider keys persist in Windows Credential Manager. They are masked and never written to project files, config JSON, or logs.", parent_widget));
+  gemini_exact_input_count_cb_ = new QCheckBox(
+      "Count Gemini input tokens before sending (extra request)", parent_widget);
+  gemini_exact_input_count_cb_->setObjectName("control:geminiExactInputCounting");
+  gemini_exact_input_count_cb_->setToolTip(
+      "Off by default. When enabled for Google Gemini, CCad sends the full prompt and bound tool schemas to Gemini CountTokens before generation. This is an additional provider request and may consume quota; other providers remain estimated.");
+  layout->addWidget(gemini_exact_input_count_cb_);
+  auto* counting_policy = new QLabel(
+      "Opt-in only: sends the same prompt and tool declarations in a separate Gemini CountTokens request. Unsupported providers keep the labeled estimate.",
+      parent_widget);
+  counting_policy->setWordWrap(true);
+  layout->addWidget(counting_policy);
   api_key_input_ = new QLineEdit(parent_widget);
   api_key_input_->setObjectName("control:apiKeyInput");
   api_key_input_->setEchoMode(QLineEdit::Password);
@@ -1056,6 +1119,11 @@ void AgentSettingsDialog::loadCurrentSettings() {
 }
 
 void AgentSettingsDialog::applyConfigState(const QJsonObject& config) {
+    if (gemini_exact_input_count_cb_) {
+        const QSignalBlocker blocker(gemini_exact_input_count_cb_);
+        gemini_exact_input_count_cb_->setChecked(
+            config.value("gemini_exact_input_counting").toBool(false));
+    }
     if (provider_combo_ && config.contains("provider")) {
         const QString provider_id = config["provider"].toString();
         const int index = provider_combo_->findData(provider_id);
@@ -1113,6 +1181,15 @@ void AgentSettingsDialog::applyConfigState(const QJsonObject& config) {
     if (stm_cb_ && memory.contains("stm")) { const QSignalBlocker blocker(stm_cb_); stm_cb_->setChecked(memory["stm"].toBool()); }
     if (ltm_cb_ && memory.contains("ltm")) { const QSignalBlocker blocker(ltm_cb_); ltm_cb_->setChecked(memory["ltm"].toBool()); }
     if (episodic_cb_ && memory.contains("episodic")) { const QSignalBlocker blocker(episodic_cb_); episodic_cb_->setChecked(memory["episodic"].toBool()); }
+    const QJsonObject semantic = memory.value("semantic").toObject();
+    if (semantic_memory_enabled_cb_ && semantic.contains("enabled")) {
+        const QSignalBlocker blocker(semantic_memory_enabled_cb_);
+        semantic_memory_enabled_cb_->setChecked(semantic.value("enabled").toBool());
+    }
+    if (semantic_memory_endpoint_ && semantic.contains("base_url"))
+        semantic_memory_endpoint_->setText(semantic.value("base_url").toString());
+    if (semantic_memory_model_ && semantic.contains("model"))
+        semantic_memory_model_->setText(semantic.value("model").toString());
     const QJsonObject personalisation = config.value("personalisation").toObject();
     if (follow_up_ && personalisation.contains("follow_up")) follow_up_->setText(personalisation["follow_up"].toString());
     if (context_window_ && personalisation.contains("show_context_usage")) context_window_->setChecked(personalisation["show_context_usage"].toBool());
@@ -1181,6 +1258,15 @@ void AgentSettingsDialog::applyMemoryState(const QJsonObject& state) {
   applyTier("stm", stm_cb_);
   applyTier("ltm", ltm_cb_);
   applyTier("episodic", episodic_cb_);
+  const QJsonObject semantic = tiers.value("semantic").toObject();
+  if (!semantic.isEmpty() && semantic_memory_status_label_) {
+    const QString status = semantic.value("status").toString("unavailable");
+    const QString model = semantic.value("model").toString();
+    const QString version = semantic.value("model_version").toString();
+    semantic_memory_status_label_->setText(
+        QString("Semantic retrieval: %1 — %2%3")
+            .arg(status, model, version.isEmpty() ? QString() : " (" + version.left(20) + ")"));
+  }
   if (memory_status_label_ && !summary.isEmpty())
     memory_status_label_->setText(summary.join("  |  "));
 
@@ -1192,14 +1278,20 @@ void AgentSettingsDialog::applyMemoryState(const QJsonObject& state) {
     memory_entries_->clear();
     for (const QJsonValue& value : entries) {
       const QJsonObject entry = value.toObject();
-      const QString label = QString("%1 memory  ·  record %2")
-          .arg(entry.value("tier").toString(), entry.value("id").toString().right(8));
+      const QString kind = entry.value("kind").toString("fact");
+      const int importance = entry.value("importance").toInt(3);
+      const QString label = QString("%1 · %2 memory  ·  priority %3/5  ·  record %4")
+          .arg(kind, entry.value("tier").toString())
+          .arg(importance)
+          .arg(entry.value("id").toString().right(8));
       auto* row = new QListWidgetItem(label, memory_entries_);
       row->setData(Qt::UserRole, entry.value("id").toString());
       row->setData(Qt::UserRole + 1, entry.value("content").toString());
       row->setData(Qt::UserRole + 2, entry.value("tier").toString());
       row->setData(Qt::UserRole + 3, entry.value("scope").toString());
       row->setData(Qt::UserRole + 4, entry.value("title").toString());
+      row->setData(Qt::UserRole + 5, kind);
+      row->setData(Qt::UserRole + 6, importance);
       if (row->data(Qt::UserRole).toString() == selected)
         memory_entries_->setCurrentItem(row);
     }
@@ -1279,6 +1371,19 @@ void AgentSettingsDialog::openMemoryManager() {
   memory_tier_->addItem("Short-term (task)", "stm");
   memory_tier_->addItem("Conversation (thread)", "ltm");
   memory_tier_->addItem("Episodic (local user)", "episodic");
+  memory_kind_ = new QComboBox(dialog);
+  memory_kind_->setObjectName("control:memoryKind");
+  memory_kind_->addItem("Fact", "fact");
+  memory_kind_->addItem("Preference", "preference");
+  memory_kind_->addItem("Correction", "correction");
+  memory_importance_ = new QComboBox(dialog);
+  memory_importance_->setObjectName("control:memoryImportance");
+  memory_importance_->addItem("1 · Low priority", 1);
+  memory_importance_->addItem("2 · Below normal", 2);
+  memory_importance_->addItem("3 · Normal", 3);
+  memory_importance_->addItem("4 · Important", 4);
+  memory_importance_->addItem("5 · Highest priority", 5);
+  memory_importance_->setCurrentIndex(memory_importance_->findData(3));
   memory_title_ = new QLineEdit(dialog);
   memory_title_->setObjectName("control:memoryTitle");
   memory_scope_ = new QLineEdit(dialog);
@@ -1287,6 +1392,8 @@ void AgentSettingsDialog::openMemoryManager() {
   memory_content_->setObjectName("control:memoryContent");
   memory_content_->setMaximumHeight(100);
   form->addRow("Tier:", memory_tier_);
+  form->addRow("Memory type:", memory_kind_);
+  form->addRow("User-set importance:", memory_importance_);
   form->addRow("Title:", memory_title_);
   form->addRow("Scope:", memory_scope_);
   form->addRow("Content:", memory_content_);
@@ -1318,18 +1425,32 @@ void AgentSettingsDialog::openMemoryManager() {
     if (memory_content_) memory_content_->setPlainText(current->data(Qt::UserRole + 1).toString());
     if (memory_title_) memory_title_->setText(current->data(Qt::UserRole + 4).toString());
     if (memory_scope_) memory_scope_->setText(current->data(Qt::UserRole + 3).toString());
+    const int kind = memory_kind_ ? memory_kind_->findData(current->data(Qt::UserRole + 5)) : -1;
+    if (kind >= 0) memory_kind_->setCurrentIndex(kind);
     const int tier = memory_tier_ ? memory_tier_->findData(current->data(Qt::UserRole + 2)) : -1;
     if (tier >= 0) memory_tier_->setCurrentIndex(tier);
+    const int stored_importance = current->data(Qt::UserRole + 6).toInt();
+    const int importance = memory_importance_
+        ? memory_importance_->findData(
+              stored_importance >= 1 && stored_importance <= 5 ? stored_importance : 3)
+        : -1;
+    if (importance >= 0) memory_importance_->setCurrentIndex(importance);
   });
   connect(add, &QPushButton::clicked, this, [this]() {
     if (memory_entries_) memory_entries_->clearSelection();
     if (memory_content_) memory_content_->clear();
     if (memory_title_) memory_title_->clear();
     if (memory_scope_) memory_scope_->setText("conversation");
+    if (memory_kind_) memory_kind_->setCurrentIndex(memory_kind_->findData("fact"));
+    if (memory_importance_)
+      memory_importance_->setCurrentIndex(memory_importance_->findData(3));
   });
   connect(save, &QPushButton::clicked, this, [this]() {
     if (!agent_panel_ || !memory_tier_ || !memory_content_ || !memory_scope_) return;
     QJsonObject params{{"tier", memory_tier_->currentData().toString()},
+                       {"kind", memory_kind_ ? memory_kind_->currentData().toString() : "fact"},
+                       {"importance", memory_importance_
+                           ? memory_importance_->currentData().toInt() : 3},
                        {"scope", memory_scope_->text().trimmed()},
                        {"title", memory_title_ ? memory_title_->text().trimmed() : QString()},
                        {"content", memory_content_->toPlainText()}};
@@ -1381,6 +1502,7 @@ void AgentSettingsDialog::openMemoryManager() {
     memory_title_ = nullptr;
     memory_scope_ = nullptr;
     memory_tier_ = nullptr;
+    memory_importance_ = nullptr;
     memory_manager_status_label_ = nullptr;
     memory_save_button_ = nullptr;
     memory_delete_button_ = nullptr;
@@ -1448,6 +1570,8 @@ void AgentSettingsDialog::saveAllSettings() {
 
   if (provider_combo_) config["provider"] = provider_combo_->currentData().toString();
   if (model_input_) config["model"] = model_input_->text();
+  if (gemini_exact_input_count_cb_)
+    config["gemini_exact_input_counting"] = gemini_exact_input_count_cb_->isChecked();
   if (theme_combo_) config["theme"] = theme_combo_->currentText();
   if (grid_combo_) config["grid"] = grid_combo_->currentText();
   if (grid_combo_) {
@@ -1466,6 +1590,15 @@ void AgentSettingsDialog::saveAllSettings() {
   if (stm_cb_) memory["stm"] = stm_cb_->isChecked();
   if (ltm_cb_) memory["ltm"] = ltm_cb_->isChecked();
   if (episodic_cb_) memory["episodic"] = episodic_cb_->isChecked();
+  QJsonObject semantic;
+  semantic["enabled"] = semantic_memory_enabled_cb_ &&
+                        semantic_memory_enabled_cb_->isChecked();
+  semantic["backend"] = "ollama_local";
+  semantic["base_url"] = semantic_memory_endpoint_
+      ? semantic_memory_endpoint_->text().trimmed() : "http://127.0.0.1:11434";
+  semantic["model"] = semantic_memory_model_
+      ? semantic_memory_model_->text().trimmed() : "embeddinggemma";
+  memory["semantic"] = semantic;
   config["memory"] = memory;
 
   QJsonObject personalisation;

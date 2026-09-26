@@ -340,6 +340,7 @@ class AgentPanel final : public QWidget {
   int context_content_size_ = 0;
   int context_memory_entry_count_ = 0;
   int context_history_message_count_ = 0;
+  int context_project_retrieval_block_net_count_ = 0;
   bool context_truncated_ = false;
   bool provider_env_present_ = false;
   QHash<QString, QString> provider_secrets_;

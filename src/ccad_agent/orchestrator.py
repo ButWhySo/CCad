@@ -61,6 +61,11 @@ from history_compaction import (HistoryCompactionError,
                                 replace_checkpoint_history)
 from context_package import (build_context_package, build_provider_request_report,
                              format_large_context_explanation)
+from model_context_budget import (ModelContextLimitRegistry,
+                                   context_package_char_budget)
+from provider_usage import (account_response, collect_turn_usage,
+                            langfuse_usage_details)
+from provider_token_count import count_gemini_input_tokens
 from conversation_store import (ConversationStore, ConversationStoreError,
                                 budgeted_history_window)
 from model_catalog import (fetch_anthropic_models as _fetch_anthropic_models,
@@ -400,8 +405,8 @@ def search_memory_context(query: str) -> str:
                 "memory_chars": str(refreshed["memory_chars"]),
             })
     active_turn_contexts[thread_id] = refreshed
-    results = [{key: entry.get(key, "") for key in
-                ("id", "title", "tier", "scope", "content")}
+    results = [{key: entry.get(key, "fact" if key == "kind" else "") for key in
+                ("id", "title", "tier", "scope", "kind", "content")}
                for entry in refreshed["memories"]]
     return json.dumps({"ok": True, "context_version": refreshed["version"],
                        "change_reason": refreshed["change_reason"],
@@ -695,8 +700,11 @@ def emit_provider_request_context(system_text, messages, context_content,
     report = build_provider_request_report(
         system_text, messages, tools, provider=provider, model=model,
         context_content=context_content, context_metadata=context_metadata,
+        model_context_limit=active_model_context_limit(),
         large_context_threshold=os.environ.get(
             "CCAD_AGENT_LARGE_CONTEXT_TOKENS", "4096"))
+    report["context_package_digest"] = str(
+        context_metadata.get("package_digest", ""))
     emit({"jsonrpc": "2.0", "method": "provider_request_context",
           "params": report})
     if os.environ.get("CCAD_TRACE_DEBUG", "").lower() in {"1", "true", "yes"}:
@@ -707,6 +715,92 @@ def emit_provider_request_context(system_text, messages, context_content,
             "kind": "large_context_breakdown",
             "text": format_large_context_explanation(report, context_metadata)}})
     return report
+
+
+class ProviderCountLimitError(RuntimeError):
+    """A count endpoint confirmed that a generation request should not follow."""
+    def __init__(self, category: str):
+        self.category = category
+        super().__init__(category)
+
+
+def preflight_provider_input_count(bound_model, prompt, provider, model, report):
+    """Optionally count Gemini's exact provider request and publish safe facts."""
+    enabled = config_manager.get("gemini_exact_input_counting", False) is True
+    if enabled and provider == "google_gemini":
+        with telemetry_runtime.observation(
+                "gemini.count-tokens", "generation",
+                {"provider": str(provider), "model": str(model),
+                 "operation": "input_token_count"}, model=str(model)) as observation:
+            result = count_gemini_input_tokens(
+                bound_model, prompt, provider, model, enabled,
+                provider_timeout_seconds(), classify_provider_error)
+            if observation is not None:
+                try:
+                    observation.update(metadata={
+                        "count_status": str(result["status"]),
+                        "count_source": str(result["source"]),
+                        "count_request_sent": str(
+                            result["additional_request_sent"]).lower(),
+                        **({"exact_input_tokens": str(result["exact_input_tokens"])}
+                           if "exact_input_tokens" in result else {}),
+                        **({"error_category": str(result["error_category"])}
+                           if "error_category" in result else {}),
+                    })
+                except Exception as error:
+                    print("[ccad-otel] token_count_metadata_update_failed "
+                          f"error_type={type(error).__name__}",
+                          file=sys.stderr, flush=True)
+    else:
+        result = count_gemini_input_tokens(
+            bound_model, prompt, provider, model, enabled,
+            provider_timeout_seconds(), classify_provider_error)
+    report["exact_input_count_status"] = result["status"]
+    report["exact_input_count_source"] = result["source"]
+    report["count_request_sent"] = result["additional_request_sent"]
+    if "exact_input_tokens" in result:
+        report["exact_input_tokens"] = result["exact_input_tokens"]
+    if "error_category" in result:
+        report["exact_input_count_error_category"] = result["error_category"]
+    report["measurement_stage"] = "pre_send"
+    emit({"jsonrpc": "2.0", "method": "provider_request_context",
+          "params": report})
+    if result.get("additional_request_sent") and result.get("error_category") in {
+            "quota_exhausted", "quota_or_rate_limit", "rate_limited",
+            "authentication", "permission_denied", "payment_required",
+            "model_not_found"}:
+        raise ProviderCountLimitError(result["error_category"])
+    return report
+
+
+def record_provider_response_usage(report, response, generation_observation):
+    """Pair provider-returned counts with preflight estimates for this generation."""
+    accounting = account_response(report, response)
+    usage = accounting["provider_usage"]
+    if usage:
+        if generation_observation is not None:
+            try:
+                generation_observation.update(
+                    usage_details=langfuse_usage_details(usage),
+                    metadata={"provider_usage_source": "provider_response"})
+            except Exception as error:
+                print("[ccad-otel] generation_usage_update_failed "
+                      f"error_type={type(error).__name__}",
+                      file=sys.stderr, flush=True)
+    accounting["measurement_stage"] = "provider_response"
+    emit({"jsonrpc": "2.0", "method": "provider_request_context",
+          "params": accounting})
+    if os.environ.get("CCAD_TRACE_DEBUG", "").lower() in {"1", "true", "yes"}:
+        usage_fields = " ".join(
+            f"{key}={value}" for key, value in usage.items()) or "unavailable"
+        estimate = accounting.get("estimated_input_tokens", "unavailable")
+        delta = accounting.get("input_token_estimate_delta", "unavailable")
+        print("[ccad-provider-usage] "
+              f"provider={report.get('provider', 'configured')} "
+              f"model={report.get('model', 'configured')} {usage_fields} "
+              f"estimated_input_tokens={estimate} estimate_delta={delta}",
+              file=sys.stderr, flush=True)
+    return accounting
 
 
 def provider_request_trace_metadata(report):
@@ -720,8 +814,16 @@ def provider_request_trace_metadata(report):
         "project_snapshot_omitted": str(report["project_snapshot_omitted"]).lower(),
         "project_source_chars": str(report["project_source_chars"]),
         "memory_entry_count": str(report["memory_entry_count"]),
+        "exact_input_count_status": str(report.get("exact_input_count_status", "not_requested")),
+        "exact_input_count_source": str(report.get("exact_input_count_source", "unavailable")),
+        "count_request_sent": str(report.get("count_request_sent", False)).lower(),
         "estimate_includes_all_payloads": str(report["estimate_includes_all_payloads"]).lower(),
     }
+    if isinstance(report.get("exact_input_tokens"), int):
+        result["exact_input_tokens"] = str(report["exact_input_tokens"])
+    if report.get("exact_input_count_error_category"):
+        result["exact_input_count_error_category"] = str(
+            report["exact_input_count_error_category"])
     for name, component in report["components"].items():
         result[f"input_{name}_estimated_tokens"] = str(component["estimated_tokens"])
     for tier, count in report["memory_tier_counts"].items():
@@ -766,6 +868,7 @@ class AgentState(TypedDict):
     context_metadata: Dict[str, Any]
     next_node: str
     thread_id: str
+    provider_request_accounting: Dict[str, Any]
 
 def tool_provider_name(method_name: str) -> str:
     """Create a provider-compatible stable name without losing native identity."""
@@ -1057,6 +1160,11 @@ def provider_retry_after_seconds(error: Exception):
 
 def classify_provider_error(error: Exception):
     """Return safe, actionable category; never include secret-bearing text."""
+    explicit_category = getattr(error, "category", None)
+    if explicit_category in {"quota_exhausted", "quota_or_rate_limit", "rate_limited",
+                             "authentication", "permission_denied", "payment_required",
+                             "model_not_found"}:
+        return explicit_category
     for candidate in provider_exception_chain(error):
         status = next((getattr(response, "status_code", None)
                        for response in (candidate, getattr(candidate, "response", None))
@@ -1509,17 +1617,22 @@ def router_node(state: AgentState):
         state.get("context_metadata", {}), agent_tools,
         os.environ.get("CCAD_PROVIDER", "configured"),
         os.environ.get("CCAD_MODEL", "configured"))
+    request_context = preflight_provider_input_count(
+        router_llm, prompt, os.environ.get("CCAD_PROVIDER", "configured"),
+        os.environ.get("CCAD_MODEL", "configured"), request_context)
     with telemetry_runtime.observation("generate-routing-response", "generation", {
             "provider": os.environ.get("CCAD_PROVIDER", "configured"),
             "model": os.environ.get("CCAD_MODEL", "configured"),
             "context_chars": str(len(context_str)),
             **provider_request_trace_metadata(request_context),
-        }, model=os.environ.get("CCAD_MODEL", "configured")):
+        }, model=os.environ.get("CCAD_MODEL", "configured")) as generation_observation:
         response = invoke_provider_with_retry(
             router_llm, prompt, config={"callbacks": callbacks} if callbacks else {})
+        accounting = record_provider_response_usage(
+            request_context, response, generation_observation)
     if "post node" in [h.lower() for h in active_hooks]:
         hooks.trigger_hook("post node", emit, "router")
-    return {"messages": [response]}
+    return {"messages": [response], "provider_request_accounting": accounting}
 
 @trace_function("librarian", "agent")
 def librarian_node(state: AgentState):
@@ -1542,17 +1655,22 @@ def librarian_node(state: AgentState):
         state.get("context_metadata", {}), agent_tools,
         os.environ.get("CCAD_PROVIDER", "configured"),
         os.environ.get("CCAD_MODEL", "configured"))
+    request_context = preflight_provider_input_count(
+        librarian_llm, prompt, os.environ.get("CCAD_PROVIDER", "configured"),
+        os.environ.get("CCAD_MODEL", "configured"), request_context)
     with telemetry_runtime.observation("generate-library-response", "generation", {
             "provider": os.environ.get("CCAD_PROVIDER", "configured"),
             "model": os.environ.get("CCAD_MODEL", "configured"),
             "context_chars": str(len(context_str)),
             **provider_request_trace_metadata(request_context),
-        }, model=os.environ.get("CCAD_MODEL", "configured")):
+        }, model=os.environ.get("CCAD_MODEL", "configured")) as generation_observation:
         response = invoke_provider_with_retry(
             librarian_llm, prompt, config={"callbacks": callbacks} if callbacks else {})
+        accounting = record_provider_response_usage(
+            request_context, response, generation_observation)
     if "post node" in [h.lower() for h in active_hooks]:
         hooks.trigger_hook("post node", emit, "librarian")
-    return {"messages": [response]}
+    return {"messages": [response], "provider_request_accounting": accounting}
 
 from langgraph.prebuilt import ToolNode
 execute_tool_node = ToolNode(agent_tools)
@@ -1622,6 +1740,18 @@ active_hooks = []
 schedules = []
 context_revisions = {}
 CONTEXT_REVISION_THREAD_LIMIT = 128
+provider_model_context_limits = ModelContextLimitRegistry()
+
+
+def active_model_context_limit() -> int | None:
+    """Use only context limits from an explicit catalog refresh this process."""
+    provider, model = active_provider_model()
+    return provider_model_context_limits.get(provider, model)
+
+
+def record_model_catalog_context_limits(provider: str, catalog: dict) -> None:
+    """Cache bounded catalog context limits without persisting provider data."""
+    provider_model_context_limits.replace_provider_catalog(provider, catalog)
 
 def bound_session_history(messages):
     """Keep newest whole user-turn groups within explicit token/message bounds."""
@@ -1723,7 +1853,9 @@ def agent_context_limit():
         limit = int(os.environ.get("CCAD_AGENT_CONTEXT_LIMIT", "32768"))
     except ValueError:
         limit = 32768
-    return min(131072, max(4096, limit))
+    fallback = min(131072, max(1024, limit))
+    return context_package_char_budget(active_model_context_limit(),
+                                       fallback_chars=fallback)
 
 def compact_session_history(messages, thread_id):
     """Semantically compact older turns through the selected model, then verify."""
@@ -2206,31 +2338,22 @@ def handle_provider_and_state_request(req, executor):
                               "network_access": "none", "models": []}})
             return True
         provider_id = raw_provider.strip().lower()
-        if provider_id == "openai":
-            emit({"jsonrpc": "2.0", "method": "provider_models",
-                  "params": {"provider": provider_id, **fetch_openai_models()}})
-        elif provider_id == "anthropic":
-            emit({"jsonrpc": "2.0", "method": "provider_models",
-                  "params": {"provider": provider_id, **fetch_anthropic_models()}})
-        elif provider_id == "google_gemini":
-            emit({"jsonrpc": "2.0", "method": "provider_models",
-                  "params": {"provider": provider_id, **fetch_gemini_models()}})
-        elif provider_id == "openrouter":
-            emit({"jsonrpc": "2.0", "method": "provider_models",
-                  "params": {"provider": provider_id, **fetch_openrouter_models()}})
-        elif provider_id == "cerebras":
-            emit({"jsonrpc": "2.0", "method": "provider_models",
-                  "params": {"provider": provider_id, **fetch_cerebras_models()}})
-        elif provider_id == "ollama":
-            emit({"jsonrpc": "2.0", "method": "provider_models",
-                  "params": {"provider": provider_id, **fetch_ollama_models()}})
-        else:
-            emit({"jsonrpc": "2.0", "method": "provider_models",
-                  "params": {"provider": provider_id, "ok": False,
-                              "error": "unsupported_provider",
-                              "error_detail": "model catalog is unavailable for this provider",
-                              "network_access": "explicit_refresh",
-                              "models": []}})
+        catalog_fetchers = {
+            "openai": fetch_openai_models,
+            "anthropic": fetch_anthropic_models,
+            "google_gemini": fetch_gemini_models,
+            "openrouter": fetch_openrouter_models,
+            "cerebras": fetch_cerebras_models,
+            "ollama": fetch_ollama_models,
+        }
+        fetch_catalog = catalog_fetchers.get(provider_id)
+        catalog = (fetch_catalog() if fetch_catalog else {
+            "ok": False, "error": "unsupported_provider",
+            "error_detail": "model catalog is unavailable for this provider",
+            "network_access": "explicit_refresh", "models": []})
+        record_model_catalog_context_limits(provider_id, catalog)
+        emit({"jsonrpc": "2.0", "method": "provider_models",
+              "params": {"provider": provider_id, **catalog}})
     elif method == "agent.pending_calls":
         thread_id = req.get("params", {}).get("thread_id", "")
         emit({"jsonrpc": "2.0", "method": "pending_calls_state", "params":
@@ -2248,6 +2371,8 @@ def handle_provider_and_state_request(req, executor):
     elif method == "agent.memory_state":
         tier = req.get("params", {}).get("tier")
         try:
+            if not tier:
+                memory_manager.refresh_semantic_readiness()
             state = memory_manager.state(str(tier)) if tier else memory_manager.state()
             emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
                 "tiers": state if tier is None else {str(tier): state},
@@ -2337,15 +2462,23 @@ def handle_provider_and_state_request(req, executor):
                     str(params.get("content", "")),
                     tier=tier,
                     scope=str(params.get("scope", "")),
-                    title=str(params.get("title", "")))
+                    title=str(params.get("title", "")),
+                    kind=params.get("kind"), importance=params.get("importance"))
+                if entry is None:
+                    raise RuntimeError("memory_add_failed")
                 result = {"id": entry["id"], "tier": entry["tier"],
-                          "scope": entry["scope"], "secret_value_visible": False}
+                          "scope": entry["scope"], "kind": entry["kind"],
+                          "importance": entry["importance"],
+                          "secret_value_visible": False}
                 event = "memory_added"
             elif method == "agent.memory_update":
                 entry = memory_manager.update(
                     str(params.get("id", "")), str(params.get("content", "")),
-                    title=params.get("title"), scope=params.get("scope"))
+                    title=params.get("title"), scope=params.get("scope"),
+                    kind=params.get("kind"), importance=params.get("importance"))
                 result = {"id": str(params.get("id", "")), "updated": entry is not None,
+                          "kind": entry.get("kind", "fact") if entry else "",
+                          "importance": entry.get("importance", 3) if entry else None,
                           "secret_value_visible": False}
                 event = "memory_updated"
             else:
@@ -2637,10 +2770,22 @@ def handle_human_message(req):
             "project_retrieval_kinds", {}).get("schematic_symbol", 0),
         "project_retrieval_board_net_count": context_metadata.get(
             "project_retrieval_kinds", {}).get("board_net", 0),
+        "project_retrieval_functional_block_count": context_metadata.get(
+            "project_retrieval_kinds", {}).get("functional_block", 0),
+        "project_retrieval_block_net_count": context_metadata.get(
+            "project_retrieval_block_net_count", 0),
         "project_retrieval_diagnostic_count": context_metadata.get(
             "project_retrieval_kinds", {}).get("project_diagnostic", 0),
         "project_retrieval_layer_count": context_metadata.get(
             "project_retrieval_layer_count", 0),
+        "project_retrieval_near_component_count": context_metadata.get(
+            "project_retrieval_stats", {}).get("near_component_match_count", 0),
+        "project_retrieval_region_member_count": context_metadata.get(
+            "project_retrieval_stats", {}).get("region_member_match_count", 0),
+        "project_retrieval_semantic_count": context_metadata.get(
+            "project_retrieval_semantic_count", 0),
+        "project_retrieval_semantic_status": context_metadata.get(
+            "project_retrieval_semantic_status", "disabled"),
         "project_retrieval_chars": context_metadata["project_retrieval_chars"],
         "project_retrieval_revision": context_metadata["project_retrieval_revision"],
         "project_retrieval_method": context_metadata["project_retrieval_method"],
@@ -2661,7 +2806,6 @@ def handle_human_message(req):
         "memory_token_budget": turn_context["memory_token_budget"],
         "project_counts": context_metadata["project_counts"],
     }})
-
     # Robust Command Parser
     if text.startswith("/"):
         cmd_parts = text.split(" ", 1)
@@ -2684,6 +2828,7 @@ def handle_human_message(req):
                 model=preview_model or "provider default (not resolved)",
                 context_content=context_str,
                 context_metadata=context_metadata,
+                model_context_limit=active_model_context_limit(),
                 large_context_threshold=os.environ.get(
                     "CCAD_AGENT_LARGE_CONTEXT_TOKENS", "4096"))
             report.update({
@@ -3004,10 +3149,31 @@ def handle_human_message(req):
             "category": getattr(error, "category", "conversation_store_write_failed"),
             "secret_value_visible": False}})
     trace = telemetry_runtime.current_trace()
+    accounting = final_state.get("provider_request_accounting", {})
+    provider_usage = collect_turn_usage(final_state.get("messages", []))
+    input_tokens = provider_usage.get("input_tokens")
+    output_tokens = provider_usage.get("output_tokens")
+    total_tokens = provider_usage.get("total_tokens")
+    token_usage = "unavailable"
+    if isinstance(input_tokens, int) and isinstance(output_tokens, int):
+        token_usage = (f"{input_tokens} input, {output_tokens} output, "
+                       f"{total_tokens if isinstance(total_tokens, int) else input_tokens + output_tokens} "
+                       "total provider-reported tokens")
+    elif isinstance(input_tokens, int):
+        token_usage = f"{input_tokens} provider-reported input tokens; output unavailable"
+    elif isinstance(output_tokens, int):
+        token_usage = f"{output_tokens} provider-reported output tokens; input unavailable"
     emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
         "run_state": "awaiting_tool_approval" if (has_tool_calls or has_legacy_tool) else "completed",
         **trace,
-        "token_usage": "unavailable", "cost": "unavailable",
+        "token_usage": token_usage,
+        "provider_usage": provider_usage,
+        "provider_usage_source": "provider_response" if provider_usage else "unavailable",
+        "last_generation_estimated_input_tokens": accounting.get("estimated_input_tokens")
+        if isinstance(accounting, dict) else None,
+        "last_generation_input_estimate_delta": accounting.get("input_token_estimate_delta")
+        if isinstance(accounting, dict) else None,
+        "cost": "unavailable",
     }})
 
     if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:

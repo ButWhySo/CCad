@@ -28,19 +28,34 @@ def execute_memory_command(manager, arguments):
                                  "scope": options.get("scope", ""),
                                  "secret_value_visible": False}
     if command == "add":
-        options, content = _metadata(remainder, allowed=("tier", "scope", "title"))
+        options, content = _metadata(remainder, allowed=("tier", "scope", "kind", "title", "importance"))
+        try:
+            importance = int(options["importance"]) if "importance" in options else None
+        except ValueError as error:
+            raise ValueError("memory importance must be an integer from 1 to 5") from error
         entry = manager.add(content, tier=options.get("tier", "ltm"),
                              scope=options.get("scope"),
-                             title=options.get("title", ""))
+                             title=options.get("title", ""),
+                             kind=options.get("kind"), importance=importance)
         return "memory_added", {"id": entry["id"], "tier": entry["tier"],
-                                 "scope": entry["scope"], "secret_value_visible": False}
+                                 "scope": entry["scope"], "kind": entry["kind"],
+                                 "importance": entry["importance"],
+                                 "secret_value_visible": False}
     if command == "update":
         entry_id, _, remainder = remainder.strip().partition(" ")
-        options, content = _metadata(remainder, allowed=("scope", "title"))
+        options, content = _metadata(remainder, allowed=("scope", "kind", "title", "importance"))
+        try:
+            importance = int(options["importance"]) if "importance" in options else None
+        except ValueError as error:
+            raise ValueError("memory importance must be an integer from 1 to 5") from error
         entry = manager.update(entry_id, content,
                                title=options.get("title") if "title" in options else None,
-                               scope=options.get("scope") if "scope" in options else None)
+                               scope=options.get("scope") if "scope" in options else None,
+                               kind=options.get("kind") if "kind" in options else None,
+                               importance=importance)
         return "memory_updated", {"id": entry_id, "updated": entry is not None,
+                                  "kind": entry.get("kind", "fact") if entry else "",
+                                  "importance": entry.get("importance", 3) if entry else None,
                                   "secret_value_visible": False}
     if command == "delete":
         entry_id = remainder.strip()

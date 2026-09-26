@@ -1,0 +1,94 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint992-schematic-pin-retrieval-verified-final",
+    "feature":  "Retrieve serialized connected and unconnected schematic pins and annotations in exact bounded project context",
+    "interaction_plan":  "config/gui_interaction_plans/sprint992-schematic-pin-retrieval.json",
+    "target_sequence":  "sprint987-schematic-metadata-sprint992-schematic-pin-retrieval-verified-final",
+    "started_utc":  "2026-09-25T09:45:35.6773328Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.49 log=artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final/preflight.log",
+                      "finished_utc":  "2026-09-25T09:45:36.2246017Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=30.58 log=artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final/build.log",
+                      "finished_utc":  "2026-09-25T09:46:06.8162300Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=92.28 log=artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final/ctest.log",
+                      "finished_utc":  "2026-09-25T09:47:39.0999776Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=21.34 log=artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final/ui_harness.log",
+                      "finished_utc":  "2026-09-25T09:48:00.4461929Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=10; screenshots=4",
+                      "finished_utc":  "2026-09-25T09:48:00.5161380Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-09-25T09:48:00.5378570Z"
+                  }
+              ],
+    "artifacts":  [
+                      {
+                          "path":  "artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final/build.log",
+                          "sha256":  "E1CC1DD76F4C907CEB1DF00A5A1A3021D74BF09CA0E329341563C96C4DE2F9F1"
+                      },
+                      {
+                          "path":  "artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final/ctest.log",
+                          "sha256":  "61C279C1575783B61F61D37023AB3B62718482E5FBC8897E4CC99D8A281930C5"
+                      },
+                      {
+                          "path":  "artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final/preflight.log",
+                          "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                      },
+                      {
+                          "path":  "artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final/sprint987-schematic-metadata-sprint992-schematic-pin-retrieval-verified-final.stderr.log",
+                          "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                      },
+                      {
+                          "path":  "artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final/sprint987-schematic-metadata-sprint992-schematic-pin-retrieval-verified-final.stdout.log",
+                          "sha256":  "DE4C451B6C5F63BBEFF22B8B6A502123B83A3B4554D0A764B6DEAEEEA5F7AD00"
+                      },
+                      {
+                          "path":  "artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final/sprint987-schematic-metadata-sprint992-schematic-pin-retrieval-verified-final-before.png",
+                          "sha256":  "734852E8B28125DFCCBC731979E5B32388410BAFCC579DC7F1E48A4C75364844"
+                      },
+                      {
+                          "path":  "artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final/sprint987-schematic-metadata-sprint992-schematic-pin-retrieval-verified-final-context-settings-dialog.png",
+                          "sha256":  "A3A6FE13DA596E7069E0322F7021F9989D52BEF22E5E291F7E51727620558F46"
+                      },
+                      {
+                          "path":  "artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final/sprint987-schematic-metadata-sprint992-schematic-pin-retrieval-verified-final-restored-final.png",
+                          "sha256":  "8486FE2C1D8E7FA066960C53249563E32601F7C569C2130F3F7419E32B93CECB"
+                      },
+                      {
+                          "path":  "artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final/sprint987-schematic-metadata-sprint992-schematic-pin-retrieval-verified-final-target-sequence.json",
+                          "sha256":  "28DBA998F60FB91177154B3CDA714FB347E843F7ADFEF2A89D4A49B262EBAA20"
+                      },
+                      {
+                          "path":  "artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final/sprint987-schematic-metadata-sprint992-schematic-pin-retrieval-verified-final-turn-persisted.png",
+                          "sha256":  "F0E8040FF65E6DFE5EB7785552397446FFFF1A150268361841E6D7BD0456FE4B"
+                      },
+                      {
+                          "path":  "artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final/ui_harness.log",
+                          "sha256":  "6B215E867E65AC3A875EF5D2C4C6054C07475E44C51175FEACAB7A6BE027BE31"
+                      }
+                  ],
+    "finished_utc":  "2026-09-25T09:48:00.5742041Z"
+}

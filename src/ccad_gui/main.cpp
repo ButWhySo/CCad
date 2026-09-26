@@ -463,6 +463,7 @@ int main(int argc, char** argv) {
           name.startsWith("sprint985-project-reference-graph") ||
           name.startsWith("sprint986-project-spatial-index") ||
           name.startsWith("sprint987-schematic-metadata") ||
+          name.startsWith("sprint998-functional-block-net-context") ||
           name.startsWith("sprint975-memory-ui") ||
           name.startsWith("sprint974-memory")) {
         const auto interact = [window, &entries, &output_dir, &name,
@@ -490,10 +491,11 @@ int main(int argc, char** argv) {
                !name.startsWith("sprint980-project-retrieval") &&
                !name.startsWith("sprint981-schematic-project-graph") &&
                !name.startsWith("sprint982-multilayer-project-context") &&
-                !name.startsWith("sprint983-project-index-typed-geometry") &&
+               !name.startsWith("sprint983-project-index-typed-geometry") &&
                !name.startsWith("sprint984-board-net-retrieval") &&
-                !name.startsWith("sprint986-project-spatial-index") &&
-                !name.startsWith("sprint987-schematic-metadata")) ||
+               !name.startsWith("sprint986-project-spatial-index") &&
+               !name.startsWith("sprint987-schematic-metadata") &&
+               !name.startsWith("sprint998-functional-block-net-context")) ||
               memory_checkpoints.contains(action_name)) {
             screenshot_path = QString::fromStdString(
                 (output_dir / (name + "-" + action_name + ".png").toStdString()).string());
@@ -507,6 +509,7 @@ int main(int argc, char** argv) {
                !name.startsWith("sprint986-project-spatial-index") &&
                !name.startsWith("sprint985-project-reference-graph") &&
                !name.startsWith("sprint987-schematic-metadata") &&
+               !name.startsWith("sprint998-functional-block-net-context") &&
               popup && popup->isVisible()) {
             popup_screenshot = QString::fromStdString(
                 (output_dir / (name + "-" + action_name + "-slash-popup.png").toStdString()).string());
@@ -582,14 +585,21 @@ int main(int argc, char** argv) {
                    name.startsWith("sprint984-board-net-retrieval") ||
                    name.startsWith("sprint985-project-reference-graph") ||
                    name.startsWith("sprint986-project-spatial-index") ||
-                   name.startsWith("sprint987-schematic-metadata")) {
+                   name.startsWith("sprint987-schematic-metadata") ||
+                   name.startsWith("sprint998-functional-block-net-context")) {
           const auto capture = [window, &output_dir, &name, &entries](const QString& state) {
             const QString path = QString::fromStdString(
                 (output_dir / (name + "-" + state + ".png").toStdString()).string());
-            window->raise();
-            window->activateWindow();
+            QWidget* capture_window = window;
+            if (state == "context-settings-dialog") {
+              QWidget* active = QApplication::activeWindow();
+              if (active && active != window && active->isVisible())
+                capture_window = active;
+            }
+            capture_window->raise();
+            capture_window->activateWindow();
             QApplication::processEvents();
-            if (!window->grab().save(path)) return false;
+            if (!capture_window->grab().save(path)) return false;
             entries << QString("{\"conversation_screenshot\":%1,\"state\":%2}")
                            .arg(jsonStringLocal(path), jsonStringLocal(state));
             return true;
@@ -606,6 +616,39 @@ int main(int argc, char** argv) {
               name.startsWith("sprint981-schematic-project-graph");
           const bool schematic_metadata_validation =
               name.startsWith("sprint987-schematic-metadata");
+          const bool declared_pin_validation = schematic_metadata_validation &&
+              name.contains("sprint992");
+          const bool functional_block_validation = schematic_metadata_validation &&
+              name.contains("sprint993");
+          const bool geometry_relation_validation = schematic_metadata_validation &&
+              name.contains("sprint997");
+          const bool functional_block_net_validation =
+              name.startsWith("sprint998-functional-block-net-context");
+          if (geometry_relation_validation) {
+            const QString state_json = window->runAgentUiQueryJson("project.state", "{}");
+            QJsonParseError state_error;
+            const QJsonDocument state_document = QJsonDocument::fromJson(
+                state_json.toUtf8(), &state_error);
+            const QJsonObject result = state_document.object().value("result").toObject();
+            const QJsonObject project = result.value("project").toObject();
+            const QJsonObject board = project.value("board").toObject();
+            int fixture_footprints = 0;
+            for (const QJsonValue& item : board.value("footprints").toArray()) {
+              const QJsonObject footprint = item.toObject();
+              const QString reference = footprint.value("reference").toString();
+              if (reference == "JAC1" || reference == "C_NEAR") {
+                ++fixture_footprints;
+              }
+            }
+            bool fixture_region = false;
+            for (const QJsonValue& item : board.value("placement_regions").toArray()) {
+              fixture_region = fixture_region ||
+                  item.toObject().value("id").toString() == "PR_SPRINT997";
+            }
+            entries << QString("{\"typed_fixture_footprints\":%1,\"typed_fixture_region_loaded\":%2}")
+                           .arg(fixture_footprints)
+                           .arg(fixture_region ? "true" : "false");
+          }
           const bool multilayer_project_validation =
               name.startsWith("sprint982-multilayer-project-context");
           const bool serialized_pad_layer_validation =
@@ -623,8 +666,45 @@ int main(int argc, char** argv) {
               serialized_pad_layer_validation ||
               board_net_validation ||
               diagnostic_validation ||
+              functional_block_net_validation ||
               schematic_metadata_validation ||
               name.startsWith("sprint980-project-retrieval");
+          if (functional_block_net_validation) {
+            const QJsonObject state_response = QJsonDocument::fromJson(
+                window->runAgentUiQueryJson("project.state", "{}").toUtf8()).object();
+            const QJsonObject state_payload = state_response.value("result").toObject();
+            const QJsonObject state = state_payload.value("project").toObject();
+            const QJsonObject board = state.value("board").toObject();
+            bool group_loaded = false;
+            QString group_member_id;
+            int group_count = 0;
+            for (const QJsonValue& value : board.value("groups").toArray()) {
+              const QJsonObject group = value.toObject();
+              if (group.value("id").toString() != "GROUP_SPRINT998_RETURN" ||
+                  group.value("name").toString() != "Return path") continue;
+              ++group_count;
+              const QJsonArray members = group.value("members").toArray();
+              if (!members.isEmpty()) group_member_id = members.first().toString();
+            }
+            QString member_net_id;
+            for (const QJsonValue& value : board.value("pads").toArray()) {
+              const QJsonObject pad = value.toObject();
+              if (pad.value("id").toString() == group_member_id) {
+                member_net_id = pad.value("net_id").toString();
+                break;
+              }
+            }
+            group_loaded = state_payload.value("available").toBool() &&
+                group_count == 1 && !group_member_id.isEmpty() &&
+                !member_net_id.isEmpty();
+            entries << QString("{\"project_state_available\":%1,\"functional_block_group_count\":%2,\"functional_block_member_id\":%3,\"functional_block_member_net_id\":%4,\"functional_block_fixture_loaded\":%5}")
+                           .arg(state_payload.value("available").toBool() ? "true" : "false")
+                           .arg(group_count)
+                           .arg(jsonStringLocal(group_member_id))
+                           .arg(jsonStringLocal(member_net_id))
+                           .arg(group_loaded ? "true" : "false");
+            ok = group_loaded && ok;
+          }
           if (diagnostic_validation) {
             ok = interact("ui.click", "{\"id\":\"action:agent_quick_run_drc\"}",
                           "action:agent_quick_run_drc", "diagnostic-drc-command-entered") && ok;
@@ -691,7 +771,11 @@ int main(int argc, char** argv) {
                              .arg(jsonStringLocal(QString::fromStdString(project_path.string())));
           }
           QString user_prompt = project_retrieval_validation
-              ? (spatial_diagnostic_validation
+              ? (functional_block_net_validation
+                     ? QStringLiteral("Find the Return path functional block and its native PCB net.")
+                     : geometry_relation_validation
+                     ? QStringLiteral("Which PCB footprints are within 5 mm of JAC1, and which PCB objects intersect placement region PR_SPRINT997?")
+                     : spatial_diagnostic_validation
                      ? QStringLiteral("Find DRC markers in bounding box from 10,10 to 14,14 mm.")
                      : diagnostic_graph_validation
                      ? QStringLiteral("Find DRC ZERO_LENGTH_TRACK on T_SPRINT985_ZERO and explain the affected object.")
@@ -705,7 +789,11 @@ int main(int argc, char** argv) {
                       : board_net_validation
                       ? QStringLiteral("Inspect the PCB net AC1 and identify its exact member pads.")
                       : schematic_metadata_validation
-                      ? QStringLiteral("Find the Manufacturer field ACME-42 on U3 and the Power Stage schematic sheet path sheets/power_stage.kicad_sch.")
+                      ? (functional_block_validation
+                           ? QStringLiteral("Find the AC input stage functional block and its current PCB members and related nets.")
+                           : declared_pin_validation
+                           ? QStringLiteral("Find unconnected PGOOD pin 2 on U3, Manufacturer ACME-42, and the Power Stage schematic sheet path sheets/power_stage.kicad_sch.")
+                           : QStringLiteral("Find the Manufacturer field ACME-42 on U3 and the Power Stage schematic sheet path sheets/power_stage.kicad_sch."))
                       : QStringLiteral("Describe component U_DEMO in the loaded project."))
               : context_memory_validation
               ? QStringLiteral("What memory applies to GND near U3 on F.Cu?")
@@ -733,9 +821,11 @@ int main(int argc, char** argv) {
                                 jsonStringLocal(pad_id));
             ok = !pad_id.isEmpty() && ok;
           }
-          bool schematic_metadata_serialized = !schematic_metadata_validation;
-          bool schematic_metadata_retrieved = !schematic_metadata_validation;
-          if (schematic_metadata_validation) {
+          bool schematic_metadata_serialized = !schematic_metadata_validation ||
+              geometry_relation_validation;
+          bool schematic_metadata_retrieved = !schematic_metadata_validation ||
+              geometry_relation_validation;
+          if (schematic_metadata_validation && !geometry_relation_validation) {
             const QJsonObject project = QJsonDocument::fromJson(
                 window->runAgentUiQueryJson("project.state", "{}").toUtf8())
                 .object().value("result").toObject().value("project").toObject();
@@ -749,6 +839,7 @@ int main(int argc, char** argv) {
                        "sheets/power_stage.kicad_sch");
             }
             bool found_property = false;
+            bool found_declared_pin = !declared_pin_validation;
             for (const QJsonValue& value : project.value("components").toArray()) {
               const QJsonObject component = value.toObject();
               if (component.value("reference").toString() != "U3") continue;
@@ -758,12 +849,21 @@ int main(int argc, char** argv) {
                     (field.value("name").toString() == "Manufacturer" &&
                      field.value("text").toString() == "ACME-42");
               }
+              for (const QJsonValue& pin_value : component.value("pins").toArray()) {
+                const QJsonObject pin = pin_value.toObject();
+                found_declared_pin = found_declared_pin ||
+                    (pin.value("name").toString() == "PGOOD" &&
+                     pin.value("number").toString() == "2" &&
+                     pin.value("electrical_type").toString() == "output");
+              }
             }
-            schematic_metadata_serialized = found_sheet && found_property;
-            entries << QString("{\"schematic_metadata_serialized\":%1,\"sheet_path\":%2,\"property_value\":%3}")
+            schematic_metadata_serialized = found_sheet && found_property &&
+                found_declared_pin;
+            entries << QString("{\"schematic_metadata_serialized\":%1,\"sheet_path\":%2,\"property_value\":%3,\"declared_pin_serialized\":%4}")
                            .arg(schematic_metadata_serialized ? "true" : "false",
                                 jsonStringLocal(found_sheet ? "sheets/power_stage.kicad_sch" : ""),
-                                jsonStringLocal(found_property ? "ACME-42" : ""));
+                                jsonStringLocal(found_property ? "ACME-42" : ""),
+                                found_declared_pin ? "true" : "false");
             ok = schematic_metadata_serialized && ok;
           }
           ok = interact("ui.type_text",
@@ -772,9 +872,15 @@ int main(int argc, char** argv) {
                         "control:agent_chat_input", "conversation-prompt-entered") && ok;
           ok = interact("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
                         "action:agent_submit_chat", "conversation-turn-submitted") && ok;
-          for (int attempt = 0; attempt < 60; ++attempt) {
+          for (int attempt = 0; attempt < 120; ++attempt) {
             QApplication::processEvents();
-            if (chat && (diagnostic_validation
+            const QString transcript = chat ? chat->toPlainText() : QString();
+            if (functional_block_net_validation &&
+                transcript.contains("functional-block net")) break;
+            if (geometry_relation_validation &&
+                transcript.contains("nearby PCB components") &&
+                transcript.contains("placement-region objects")) break;
+            if (!geometry_relation_validation && chat && (diagnostic_validation
                     ? chat->toPlainText().contains("is not configured")
                     : chat->toPlainText().contains(
                           "Provider execution is unavailable; configure a provider"))) break;
@@ -788,16 +894,39 @@ int main(int argc, char** argv) {
               : !project_retrieval_validation ||
                     (chat && chat->toPlainText().contains("project matches") &&
                      !chat->toPlainText().contains("| 0 project matches"));
-          if (schematic_metadata_validation && chat) {
+          bool functional_block_net_visible =
+              !functional_block_net_validation ||
+              (chat && chat->toPlainText().contains("1 functional-block net"));
+          if (functional_block_net_validation) {
+            const QJsonObject workspace_response = QJsonDocument::fromJson(
+                window->runAgentUiQueryJson("agent.workspace_state", "{}").toUtf8())
+                .object().value("result").toObject();
+            const int retained_block_net_count = workspace_response.value(
+                "context_project_retrieval_block_net_count").toInt(-1);
+            const bool exact_edge_count = retained_block_net_count == 1;
+            entries << QString("{\"functional_block_net_retrieval_visible\":%1,\"retained_block_net_count\":%2}")
+                           .arg(functional_block_net_visible && exact_edge_count
+                                    ? "true" : "false")
+                           .arg(retained_block_net_count);
+            functional_block_net_visible = functional_block_net_visible && exact_edge_count;
+          }
+          if (schematic_metadata_validation && !geometry_relation_validation && chat) {
             const QString transcript = chat->toPlainText();
-            schematic_metadata_retrieved = transcript.contains("ACME-42") &&
-                transcript.contains("sheets/power_stage.kicad_sch");
+            schematic_metadata_retrieved = functional_block_validation
+                ? transcript.contains("1 functional block")
+                : transcript.contains("ACME-42") &&
+                  transcript.contains("sheets/power_stage.kicad_sch");
+            if (declared_pin_validation)
+              schematic_metadata_retrieved = schematic_metadata_retrieved &&
+                  transcript.contains("PGOOD") &&
+                  transcript.contains("schematic pins");
             project_matches_visible = transcript.contains("project matches") &&
                 !transcript.contains("| 0 project matches");
             entries << QString("{\"schematic_metadata_retrieved\":%1}")
                            .arg(schematic_metadata_retrieved ? "true" : "false");
           }
-          const bool schematic_pin_visible = !schematic_graph_validation ||
+          const bool schematic_pin_visible = !(schematic_graph_validation ||
+                                                 declared_pin_validation) ||
               (chat && chat->toPlainText().contains("schematic pins"));
           const bool schematic_symbol_visible = !schematic_graph_validation ||
               (chat && chat->toPlainText().contains("schematic symbols"));
@@ -833,18 +962,28 @@ int main(int argc, char** argv) {
               }
             }
           }
+          bool geometry_relations_visible = !geometry_relation_validation;
+          if (geometry_relation_validation && chat) {
+            const QString transcript = chat->toPlainText();
+            geometry_relations_visible =
+                transcript.contains("nearby PCB components") &&
+                transcript.contains("placement-region objects");
+            entries << QString("{\"pcb_geometry_relationships_visible\":%1}")
+                           .arg(geometry_relations_visible ? "true" : "false");
+          }
           const bool turn_visible = chat && memory_visible && project_matches_visible &&
               schematic_metadata_serialized &&
               schematic_metadata_retrieved &&
               schematic_pin_visible && schematic_symbol_visible && pcb_layers_visible &&
               multiple_project_layers_visible && board_net_visible && project_diagnostic_visible &&
-              project_diagnostic_count_visible &&
+              project_diagnostic_count_visible && geometry_relations_visible &&
+              functional_block_net_visible &&
               chat->toPlainText().contains(user_prompt) &&
               (diagnostic_validation
                    ? chat->toPlainText().contains("is not configured")
                    : chat->toPlainText().contains(
                          "Provider execution is unavailable; configure a provider"));
-          entries << QString("{\"conversation_turn_visible\":%1,\"context_memory_attached\":%2,\"project_retrieval_visible\":%3,\"schematic_pin_retrieval_visible\":%4,\"schematic_symbol_retrieval_visible\":%5,\"project_layers_visible\":%6,\"multiple_project_layers_visible\":%7,\"board_net_count_visible\":%8,\"project_diagnostic_visible\":%9,\"project_diagnostic_count_visible\":%10,\"schematic_metadata_retrieved\":%11,\"provider_request_sent\":false}")
+          entries << QString("{\"conversation_turn_visible\":%1,\"context_memory_attached\":%2,\"project_retrieval_visible\":%3,\"schematic_pin_retrieval_visible\":%4,\"schematic_symbol_retrieval_visible\":%5,\"project_layers_visible\":%6,\"multiple_project_layers_visible\":%7,\"board_net_count_visible\":%8,\"project_diagnostic_visible\":%9,\"project_diagnostic_count_visible\":%10,\"schematic_metadata_retrieved\":%11,\"functional_block_visible\":%12,\"pcb_geometry_relationships_visible\":%13,\"provider_request_sent\":false}")
                          .arg(turn_visible ? "true" : "false",
                               memory_visible ? "true" : "false",
                               project_matches_visible ? "true" : "false",
@@ -855,8 +994,24 @@ int main(int argc, char** argv) {
                               board_net_visible ? "true" : "false",
                               project_diagnostic_visible ? "true" : "false",
                               project_diagnostic_count_visible ? "true" : "false",
-                              schematic_metadata_retrieved ? "true" : "false");
-          ok = turn_visible && capture("turn-persisted") && ok;
+                              schematic_metadata_retrieved ? "true" : "false",
+                              (functional_block_validation || functional_block_net_validation) &&
+                                      schematic_metadata_retrieved
+                                  ? "true" : "false",
+                              geometry_relations_visible ? "true" : "false");
+          const bool turn_screenshot_saved = capture("turn-persisted");
+          ok = turn_visible && turn_screenshot_saved && ok;
+          if (declared_pin_validation || functional_block_validation ||
+              functional_block_net_validation ||
+              geometry_relation_validation) {
+            ok = interact("ui.click", "{\"id\":\"action:settingsBtn\"}",
+                          "action:settingsBtn", "context-settings-opened") && ok;
+            ok = interact("ui.click", "{\"id\":\"control:categoryList\",\"row\":2}",
+                          "control:categoryList", "context-settings-category") && ok;
+            ok = capture("context-settings-dialog") && ok;
+            ok = interact("ui.click", "{\"id\":\"action:cancelSettingsButton\"}",
+                          "action:cancelSettingsButton", "context-settings-closed") && ok;
+          }
           if (!diagnostic_validation) {
             ok = interact("ui.type_text",
                           "{\"id\":\"control:agent_chat_input\",\"text\":\"/clear\"}",
@@ -867,7 +1022,7 @@ int main(int argc, char** argv) {
             const bool transcript_retained = chat && chat->toPlainText().contains(user_prompt);
             entries << QString("{\"canonical_transcript_retained_after_clear\":%1}")
                            .arg(transcript_retained ? "true" : "false");
-            ok = transcript_retained && capture("projection-cleared") && ok;
+            ok = transcript_retained && capture("restored-final") && ok;
           }
         } else if (name.startsWith("sprint975-memory-ui")) {
           const auto captureMemoryResult = [&]() {
@@ -1132,6 +1287,10 @@ int main(int argc, char** argv) {
             ? QStringLiteral("Place one via on the disposable board through mapped toolbar and board-point interactions, then prove its F.Cu/B.Cu span survives exact project retrieval and bounded Agent context; provider disabled")
             : name.startsWith("sprint981-schematic-project-graph")
             ? QStringLiteral("Verify exact schematic net member pins and related symbols are counted in real turn context through seven mapped actions; provider disabled")
+            : name.contains("sprint997")
+            ? QStringLiteral("Verify explicitly requested nearby PCB footprints and placement-region members survive bounded Agent context and display their included counts through mapped chat and Settings actions; provider disabled")
+            : name.startsWith("sprint998-functional-block-net-context")
+            ? QStringLiteral("Load an isolated explicit PCB group and verify its exact native board-net edge survives live Agent context packaging and is disclosed as a safe count; provider disabled")
             : name.startsWith("sprint987-schematic-metadata")
             ? QStringLiteral("Load authoritative schematic fields and a relative sheet path, inspect them through project.state, then query both identifiers through real Agent context; provider disabled")
             : name.startsWith("sprint980-project-retrieval")
@@ -1164,9 +1323,23 @@ int main(int argc, char** argv) {
         return;
       }
       const bool provider_target_sequence = name.startsWith("sprint972-provider");
+      const bool gemini_count_target_sequence =
+          name.startsWith("sprint1007-gemini-exact-count");
       const bool memory_target_sequence = name.startsWith("sprint967-memory") ||
-                                          name.startsWith("sprint971-memory");
-      const QStringList target_ids = provider_target_sequence
+                                          name.startsWith("sprint971-memory") ||
+                                          name.startsWith("sprint1001-memory-kind") ||
+                                          name.startsWith("sprint1003-memory-importance");
+      const bool memory_kind_target_sequence = name.startsWith("sprint1001-memory-kind");
+      const bool memory_importance_target_sequence = name.startsWith("sprint1003-memory-importance");
+      const bool semantic_memory_target_sequence = name.startsWith("sprint991-semantic-memory");
+      const QStringList target_ids = gemini_count_target_sequence
+          ? QStringList{"action:settingsBtn", "control:categoryList",
+                        "control:geminiExactInputCounting", "control:providerCombo",
+                        "control:modelCombo", "action:primaryButton",
+                        "action:settingsBtn", "control:categoryList",
+                        "control:geminiExactInputCounting",
+                        "action:cancelSettingsButton"}
+          : provider_target_sequence
           ? QStringList{"action:settingsBtn", "control:categoryList",
                         "control:providerCombo", "control:modelCombo",
                         "control:categoryList", "control:apiKeyInput",
@@ -1174,14 +1347,16 @@ int main(int argc, char** argv) {
                         "label:providerTestStatus", "action:cancelSettingsButton"}
           : memory_target_sequence
           ? QStringList{"action:settingsBtn", "control:categoryList",
-                        "control:stmCb", "control:ltmCb",
-                        "control:episodicCb", "label:memoryState",
-                        "action:agent_memory_reset",
-                        "action:agent_memory_manage", "control:memoryEntries",
-                        "action:addMemory", "control:memoryTier",
+                        "action:agent_memory_manage", "action:addMemory", "control:memoryTier",
+                        "control:memoryKind",
+                        "control:memoryImportance",
                         "control:memoryTitle", "control:memoryScope",
                         "control:memoryContent", "action:saveMemory",
                         "action:closeMemoryManager", "action:cancelSettingsButton"}
+          : semantic_memory_target_sequence
+          ? QStringList{"action:settingsBtn", "control:categoryList",
+                        "control:semanticMemoryEnabled", "control:semanticMemoryEndpoint",
+                        "control:semanticMemoryModel", "action:primaryButton"}
           : QStringList{"action:cursor", "action:measurement", "action:save",
                                       "menu:file", "panel:properties", "action:grid",
                                       "action:polar_coord", "action:unit_inch",
@@ -1197,7 +1372,9 @@ int main(int argc, char** argv) {
                                       "control:providerCombo", "control:modelCombo",
                                       "control:apiKeyInput", "control:mcpServersTable",
                                       "action:addMcpServerBtn", "action:removeMcpServerBtn"};
-      const QStringList trigger_before_capture_ids = memory_target_sequence || provider_target_sequence
+      const QStringList trigger_before_capture_ids = memory_target_sequence ||
+          semantic_memory_target_sequence || provider_target_sequence ||
+          gemini_count_target_sequence
           ? QStringList{"action:settingsBtn"}
           : QStringList{
           "action:grid",          "action:polar_coord",   "action:unit_inch",
@@ -1208,16 +1385,25 @@ int main(int argc, char** argv) {
                                                     "control:categoryList",
                                                     "control:stmCb", "control:ltmCb",
                                                     "control:episodicCb",
+                                                    "control:semanticMemoryEnabled",
+                                                    "control:semanticMemoryEndpoint",
+                                                    "control:semanticMemoryModel",
+                                                    "control:geminiExactInputCounting",
+                                                    "control:providerCombo", "control:modelCombo",
                                                     "action:agent_memory_reset",
                                                     "action:agent_memory_manage",
                                                     "action:addMemory", "action:saveMemory",
                                                     "control:memoryTier",
+                                                    "control:memoryKind",
+                                                    "control:memoryImportance",
                                                     "control:memoryTitle", "control:memoryScope",
                                                     "control:memoryContent",
                                                     "action:closeMemoryManager",
                                                     "action:cancelSettingsButton",
+                                                    "action:primaryButton",
                                                     "action:testProviderBtn"};
       bool memory_target_actions_ok = true;
+      bool gemini_checkbox_changed = false;
       QJsonObject initial_memory_toggle_state;
       const auto visibleMemoryCheckbox = [](const QString& id) -> QCheckBox* {
         for (QWidget* widget : QApplication::allWidgets()) {
@@ -1229,13 +1415,19 @@ int main(int argc, char** argv) {
       };
       const auto runPass = [window, &entries, &output_dir, &name, &target_ids,
                             memory_target_sequence,
+                            memory_kind_target_sequence,
+                            memory_importance_target_sequence,
+                            semantic_memory_target_sequence,
                             provider_target_sequence,
+                            gemini_count_target_sequence,
                             &memory_target_actions_ok, &initial_memory_toggle_state,
+                            &gemini_checkbox_changed,
                             &visibleMemoryCheckbox,
                             &trigger_before_capture_ids,
                             &click_before_capture_ids,
                             per_target_wait_ms](
                                const QString& pass_name) {
+        int target_index = 0;
         for (const QString& id : target_ids) {
           if (trigger_before_capture_ids.contains(id)) {
             window->triggerSafeUiActionJson(id);
@@ -1247,11 +1439,16 @@ int main(int argc, char** argv) {
               QApplication::processEvents();
             }
           }
-          if (id == "control:providerCombo" || id == "control:modelCombo" ||
+          if (id == "control:geminiExactInputCounting" ||
+              id == "control:providerCombo" || id == "control:modelCombo" ||
               id == "control:apiKeyInput" || id == "control:mcpServersTable" ||
               id == "action:addMcpServerBtn" || id == "action:removeMcpServerBtn" ||
               id == "control:stmCb" || id == "control:ltmCb" ||
               id == "control:episodicCb" || id == "label:memoryState" ||
+              id == "control:semanticMemoryEnabled" ||
+              id == "control:semanticMemoryEndpoint" ||
+              id == "control:semanticMemoryModel" ||
+              id == "label:semanticMemoryState" ||
               id == "action:agent_memory_manage" ||
               id == "action:agent_memory_reset" ||
               (provider_target_sequence && id == "action:testProviderBtn")) {
@@ -1259,18 +1456,21 @@ int main(int argc, char** argv) {
                 id == "control:episodicCb" || id == "label:memoryState" ||
                 id == "action:agent_memory_manage" ||
                 id == "action:agent_memory_reset";
-            const int category = provider_target_sequence &&
-                                         (id == "control:providerCombo" || id == "control:modelCombo")
-                                     ? 1
-                                     : (provider_target_sequence &&
-                                                (id == "control:apiKeyInput" ||
-                                                 id == "action:testProviderBtn")
-                                            ? 4
-                                            : (memory_control ? 2 : (id == "control:mcpServersTable" ||
-                                         id == "action:addMcpServerBtn" ||
-                                         id == "action:removeMcpServerBtn"
-                                     ? 3
-                                     : (id == "control:apiKeyInput" ? 4 : 1))));
+            int category = 1;
+            if (gemini_count_target_sequence) {
+              category = id == "control:geminiExactInputCounting" ? 4 : 1;
+            } else if (provider_target_sequence) {
+              category = (id == "control:apiKeyInput" ||
+                          id == "action:testProviderBtn") ? 4 : 1;
+            } else if (memory_control || semantic_memory_target_sequence) {
+              category = 2;
+            } else if (id == "control:mcpServersTable" ||
+                       id == "action:addMcpServerBtn" ||
+                       id == "action:removeMcpServerBtn") {
+              category = 3;
+            } else if (id == "control:apiKeyInput") {
+              category = 4;
+            }
             for (QWidget* top_level : QApplication::topLevelWidgets()) {
               auto* categories = top_level->findChild<QListWidget*>("control:categoryList");
               if (categories == nullptr || !top_level->isVisible()) {
@@ -1283,9 +1483,13 @@ int main(int argc, char** argv) {
               break;
             }
           }
-          if (click_before_capture_ids.contains(id)) {
+          if (click_before_capture_ids.contains(id) &&
+              !(gemini_count_target_sequence &&
+                id == "control:geminiExactInputCounting" &&
+                gemini_checkbox_changed)) {
             if (memory_target_sequence && pass_name == "resized" &&
-                (id == "action:addMemory" || id == "action:saveMemory")) {
+                (id == "action:addMemory" || id == "action:saveMemory" ||
+                 id == "control:memoryKind")) {
               // The first pass created a real LTM record in the isolated test profile;
               // the second pass only observes state after toggling the tier off.
             } else {
@@ -1309,15 +1513,26 @@ int main(int argc, char** argv) {
               });
             }
             static int provider_category_click = 0;
-            const int category_row = provider_target_sequence
-                ? ((provider_category_click++ % 2) == 0 ? 1 : 4) : 2;
+            const int category_row = gemini_count_target_sequence ? 4 :
+                (provider_target_sequence
+                ? ((provider_category_click++ % 2) == 0 ? 1 : 4) : 2);
             const QString payload = id == "control:categoryList"
                 ? QString("{\"id\":%1,\"row\":%2}").arg(jsonStringLocal(id)).arg(category_row)
                 : (id == "control:memoryTier"
                     ? QString("{\"id\":%1,\"value\":\"ltm\"}").arg(jsonStringLocal(id))
-                    : QString("{\"id\":%1}").arg(jsonStringLocal(id)));
+                    : (id == "control:memoryKind"
+                        ? QString("{\"id\":%1,\"value\":%2}").arg(
+                            jsonStringLocal(id), jsonStringLocal(
+                                memory_kind_target_sequence ? "preference" : "fact"))
+                    : (id == "control:memoryImportance"
+                        ? QString("{\"id\":%1,\"value\":\"5\"}").arg(jsonStringLocal(id))
+                    : QString("{\"id\":%1}").arg(jsonStringLocal(id)))));
             const QString click_result = window->runAgentUiQueryJson("ui.click", payload);
-            if (memory_target_sequence || provider_target_sequence) {
+            if (gemini_count_target_sequence &&
+                id == "control:geminiExactInputCounting")
+              gemini_checkbox_changed = true;
+            if (memory_target_sequence || provider_target_sequence ||
+                gemini_count_target_sequence) {
               const QJsonDocument click_doc = QJsonDocument::fromJson(click_result.toUtf8());
               const bool performed = click_doc.isObject() &&
                   click_doc.object().value("ok").toBool() &&
@@ -1342,6 +1557,43 @@ int main(int argc, char** argv) {
               entries << QString("{\"provider_local_validation_ready\":%1,\"status\":%2}")
                              .arg(ready ? "true" : "false", status);
             }
+            if ((memory_kind_target_sequence || memory_importance_target_sequence) && id == "action:saveMemory") {
+              bool saved = false;
+              QString status;
+              for (int attempt = 0; attempt < 50; ++attempt) {
+                QThread::msleep(100);
+                QApplication::processEvents();
+                status = window->uiTargetJsonById("label:memoryManagerStatus");
+                if (status.contains("Memory added.")) {
+                  saved = true;
+                  break;
+                }
+                if (status.contains("Memory add failed")) break;
+              }
+              memory_target_actions_ok = memory_target_actions_ok && saved;
+              bool priority_visible = !memory_importance_target_sequence;
+              if (memory_importance_target_sequence) {
+                for (int attempt = 0; attempt < 50 && !priority_visible; ++attempt) {
+                  for (QWidget* widget : QApplication::allWidgets()) {
+                    auto* list = qobject_cast<QListWidget*>(widget);
+                    if (!list || list->objectName() != "control:memoryEntries" || !list->isVisible()) continue;
+                    for (int row = 0; row < list->count(); ++row) {
+                      const QListWidgetItem* item = list->item(row);
+                      if (item && item->text().contains("priority 5/5") &&
+                          item->data(Qt::UserRole + 6).toInt() == 5) priority_visible = true;
+                    }
+                  }
+                  if (!priority_visible) {
+                    QThread::msleep(100);
+                    QApplication::processEvents();
+                  }
+                }
+              }
+              saved = saved && priority_visible;
+              entries << QString("{\"memory_kind_saved_visible\":%1,\"memory_importance_saved_visible\":%2,\"status\":%3}")
+                  .arg(saved ? "true" : "false",
+                       priority_visible ? "true" : "false", jsonStringLocal(status));
+            }
             if (id == "action:agent_memory_manage") {
               QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
               QApplication::processEvents();
@@ -1350,12 +1602,25 @@ int main(int argc, char** argv) {
           }
           const QString target_json = window->uiTargetJsonById(id);
           const bool found = target_json.contains("\"found\":true");
-          if (provider_target_sequence && id != "action:cancelSettingsButton" && !found)
+          if (gemini_count_target_sequence &&
+              id == "control:geminiExactInputCounting" &&
+              gemini_checkbox_changed) {
+            const QCheckBox* restored = visibleMemoryCheckbox(id);
+            const bool enabled = restored && restored->isChecked();
+            entries << QString("{\"gemini_exact_count_reloaded_checked\":%1}")
+                .arg(enabled ? "true" : "false");
+            memory_target_actions_ok = memory_target_actions_ok && enabled;
+          }
+          if ((provider_target_sequence || gemini_count_target_sequence) &&
+              id != "action:cancelSettingsButton" &&
+              id != "action:primaryButton" && !found)
             memory_target_actions_ok = false;
           const std::optional<int> x = extractJsonInt(target_json, "\"logical_x\":");
           const std::optional<int> y = extractJsonInt(target_json, "\"logical_y\":");
           QString screenshot_path;
-          if (found && x.has_value() && y.has_value()) {
+          if (found && x.has_value() && y.has_value() &&
+              (!semantic_memory_target_sequence || id == "action:settingsBtn" ||
+               id == "action:primaryButton" || id == "action:cancelSettingsButton")) {
             QCursor::setPos(*x, *y);
             QApplication::processEvents();
             QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
@@ -1363,6 +1628,8 @@ int main(int argc, char** argv) {
             const QString safe_id = id;
             QString slug = safe_id;
             slug.replace(':', '_');
+            if (gemini_count_target_sequence)
+              slug.prepend(QString::number(target_index) + "-");
             const std::filesystem::path path =
                 output_dir / (name + "-" + pass_name + "-" + slug + ".png").toStdString();
             screenshot_path = QString::fromStdString(path.string());
@@ -1376,6 +1643,12 @@ int main(int argc, char** argv) {
                 break;
               }
             }
+          if ((semantic_memory_target_sequence || memory_kind_target_sequence ||
+               gemini_count_target_sequence) &&
+                id == "action:settingsBtn") {
+              QWidget* active = QApplication::activeWindow();
+              if (active && active->isVisible()) capture_window = active;
+            }
             QPixmap screenshot = capture_window->grab();
             QPainter painter(&screenshot);
             painter.setRenderHint(QPainter::Antialiasing, true);
@@ -1388,7 +1661,16 @@ int main(int argc, char** argv) {
                              local_target.y() + 16);
             painter.end();
             screenshot.save(screenshot_path);
-          } else if (click_before_capture_ids.contains(id)) {
+          } else if ((click_before_capture_ids.contains(id) &&
+                      (!(memory_kind_target_sequence || memory_importance_target_sequence) ||
+                       id == "action:closeMemoryManager" ||
+                       id == "action:cancelSettingsButton") &&
+                      !(semantic_memory_target_sequence &&
+                        (id == "control:categoryList" ||
+                         id == "action:primaryButton" ||
+                         id == "control:semanticMemoryEndpoint" ||
+                         id == "control:semanticMemoryModel"))) ||
+                     (semantic_memory_target_sequence && id == "label:semanticMemoryState")) {
             QWidget* active = QApplication::activeWindow();
             if (active && active->isVisible()) {
               const std::filesystem::path path = output_dir /
@@ -1400,9 +1682,17 @@ int main(int argc, char** argv) {
           if ((id == "control:memoryContent" || id == "control:memoryTitle" ||
                id == "control:memoryScope") && found &&
               (!memory_target_sequence || pass_name == "initial")) {
-            const QString value = id == "control:memoryContent"
-                ? "Sprint 971 UI-map proof record; safe to delete"
-                : (id == "control:memoryTitle" ? "UI-map verification" : "conversation");
+            const QString value = memory_importance_target_sequence
+                ? (id == "control:memoryContent"
+                    ? "Keep ground return routing short in future edits"
+                    : (id == "control:memoryTitle" ? "Memory importance proof" : "conversation"))
+                : (memory_kind_target_sequence
+                ? (id == "control:memoryContent"
+                    ? "Keep ground return routing short in future edits"
+                    : (id == "control:memoryTitle" ? "Memory kind proof" : "conversation"))
+                : (id == "control:memoryContent"
+                    ? "Sprint 971 UI-map proof record; safe to delete"
+                    : (id == "control:memoryTitle" ? "UI-map verification" : "conversation")));
             const QString typing = QString("{\"id\":%1,\"text\":%2}")
                 .arg(jsonStringLocal(id), jsonStringLocal(value));
             const QString typing_result = window->runAgentUiQueryJson("ui.type_text", typing);
@@ -1417,14 +1707,40 @@ int main(int argc, char** argv) {
             QApplication::processEvents();
             QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
             QApplication::processEvents();
+            if (memory_kind_target_sequence || memory_importance_target_sequence) {
+              const std::filesystem::path typed_path = output_dir /
+                  (name + "-" + pass_name + "-" + id.mid(id.indexOf(':') + 1) + "-typed.png").toStdString();
+              QWidget* active = QApplication::activeWindow();
+              if (active && active->isVisible())
+                active->grab().save(QString::fromStdString(typed_path.string()));
+            }
             QString typed_slug = id.mid(id.indexOf(':') + 1);
             const std::filesystem::path typed_path = output_dir /
                 (name + "-" + pass_name + "-" + typed_slug + "-typed.png").toStdString();
             QWidget* active = QApplication::activeWindow();
-            if (active && active->isVisible()) active->grab().save(QString::fromStdString(typed_path.string()));
+            if (!(memory_kind_target_sequence || memory_importance_target_sequence) && active && active->isVisible())
+              active->grab().save(QString::fromStdString(typed_path.string()));
+            const QString typed_screenshot = QString::fromStdString(typed_path.string());
             entries << QString("{\"pass\":%1,\"id\":%2,\"interaction\":\"ui.type_text\",\"result\":%3,\"screenshot\":%4}")
                            .arg(jsonStringLocal(pass_name), jsonStringLocal(id), typing_result.trimmed(),
-                                jsonStringLocal(QString::fromStdString(typed_path.string())));
+                                jsonStringLocal(typed_screenshot));
+          }
+          if ((id == "control:semanticMemoryEndpoint" ||
+               id == "control:semanticMemoryModel") && found &&
+              semantic_memory_target_sequence && pass_name == "initial") {
+            const QString value = id == "control:semanticMemoryEndpoint"
+                ? "http://127.0.0.1:11434" : "embeddinggemma";
+            const QString typing = QString("{\"id\":%1,\"text\":%2}")
+                .arg(jsonStringLocal(id), jsonStringLocal(value));
+            const QString typing_result = window->runAgentUiQueryJson("ui.type_text", typing);
+            const QJsonDocument typing_doc = QJsonDocument::fromJson(typing_result.toUtf8());
+            const bool performed = typing_doc.isObject() &&
+                typing_doc.object().value("ok").toBool() &&
+                typing_doc.object().value("result").toObject().value("performed").toBool();
+            memory_target_actions_ok = memory_target_actions_ok && performed;
+            QApplication::processEvents();
+            entries << QString("{\"pass\":%1,\"id\":%2,\"interaction\":\"ui.type_text\",\"result\":%3}")
+                .arg(jsonStringLocal(pass_name), jsonStringLocal(id), typing_result.trimmed());
           }
           entries << QString("{\"pass\":%1,\"id\":%2,\"found\":%3,\"target\":%4,"
                              "\"screenshot\":%5}")
@@ -1435,6 +1751,7 @@ int main(int argc, char** argv) {
                                            .section('}', 0, 0) + "}"
                                     : "null")
                          .arg(jsonStringLocal(screenshot_path));
+          ++target_index;
         }
       };
 
@@ -1442,8 +1759,12 @@ int main(int argc, char** argv) {
       // window->resize(1120, 720); // Removed because fullscreen resize crashes Qt on Windows
       QApplication::processEvents();
       QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
-      runPass("resized");
-      if (memory_target_sequence) {
+      if (!semantic_memory_target_sequence && !gemini_count_target_sequence &&
+          !memory_kind_target_sequence &&
+          !memory_importance_target_sequence)
+        runPass("resized");
+      if (memory_target_sequence && !memory_kind_target_sequence &&
+          !memory_importance_target_sequence) {
         const QString reopen_result = window->runAgentUiQueryJson(
             "ui.click", "{\"id\":\"action:settingsBtn\"}");
         QApplication::processEvents();
@@ -1519,6 +1840,70 @@ int main(int argc, char** argv) {
         entries << QString("{\"memory_actions_ok\":%1}")
                        .arg(memory_target_actions_ok ? "true" : "false");
       }
+      if (semantic_memory_target_sequence) {
+        const QString reopen_result = window->runAgentUiQueryJson(
+            "ui.click", "{\"id\":\"action:settingsBtn\"}");
+        QApplication::processEvents();
+        QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
+        QApplication::processEvents();
+        auto recordPerformed = [&entries, &memory_target_actions_ok](
+                                   const QString& name, const QString& result) {
+          const QJsonDocument document = QJsonDocument::fromJson(result.toUtf8());
+          const bool performed = document.isObject() &&
+              document.object().value("ok").toBool() &&
+              document.object().value("result").toObject().value("performed").toBool();
+          memory_target_actions_ok = memory_target_actions_ok && performed;
+          entries << QString("{\"interaction\":%1,\"result\":%2}")
+              .arg(jsonStringLocal(name), result.trimmed());
+          return performed;
+        };
+        recordPerformed("ui.click:action:settingsBtn", reopen_result);
+        const QString category_result = window->runAgentUiQueryJson(
+            "ui.click", "{\"id\":\"control:categoryList\",\"row\":2}");
+        QApplication::processEvents();
+        QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
+        QApplication::processEvents();
+        recordPerformed("ui.click:control:categoryList:row2", category_result);
+        QString status_target;
+        for (int attempt = 0; attempt < 30; ++attempt) {
+          status_target = window->uiTargetJsonById("label:semanticMemoryState");
+          if (status_target.contains("service_unavailable") ||
+              status_target.contains("model_not_installed") ||
+              status_target.contains("\"label\":\"Semantic retrieval: ready"))
+            break;
+          QThread::msleep(100);
+          QApplication::processEvents();
+        }
+        const bool status_found = status_target.contains("\"found\":true") &&
+            (status_target.contains("service_unavailable") ||
+             status_target.contains("model_not_installed") ||
+             status_target.contains("\"label\":\"Semantic retrieval: ready"));
+        memory_target_actions_ok = memory_target_actions_ok && status_found;
+        QString status_screenshot;
+        for (QWidget* top_level : QApplication::topLevelWidgets()) {
+          if (top_level != window && top_level->isVisible()) {
+            const auto status_path = output_dir /
+                (name + "-runtime-status.png").toStdString();
+            status_screenshot = QString::fromStdString(status_path.string());
+            top_level->grab().save(status_screenshot);
+            break;
+          }
+        }
+        entries << QString("{\"semantic_runtime_status_found\":%1,\"target\":%2,\"screenshot\":%3}")
+            .arg(status_found ? "true" : "false", status_target,
+                 jsonStringLocal(status_screenshot));
+        const QString close_result = window->runAgentUiQueryJson(
+            "ui.click", "{\"id\":\"action:cancelSettingsButton\"}");
+        QApplication::processEvents();
+        QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
+        QApplication::processEvents();
+        recordPerformed("ui.click:action:cancelSettingsButton", close_result);
+        const auto final_path = output_dir /
+            (name + "-final.png").toStdString();
+        window->grab().save(QString::fromStdString(final_path.string()));
+        entries << QString("{\"final_screenshot\":%1}")
+            .arg(jsonStringLocal(QString::fromStdString(final_path.string())));
+      }
 
       const std::filesystem::path output_path =
           output_dir / (name + "-target-sequence.json").toStdString();
@@ -1535,7 +1920,10 @@ int main(int argc, char** argv) {
               .arg(entries.join(','));
       const QByteArray bytes = report.toUtf8();
       output.write(bytes.constData(), bytes.size());
-      if (!output || ((memory_target_sequence || provider_target_sequence) &&
+      if (!output || ((memory_target_sequence || provider_target_sequence ||
+                       gemini_count_target_sequence ||
+                       memory_importance_target_sequence ||
+                       semantic_memory_target_sequence) &&
                       !memory_target_actions_ok)) {
         std::cerr << "GUI-map target sequence failed; report: " << output_path.string() << '\n';
         std::cerr.flush();

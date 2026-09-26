@@ -1,8 +1,139 @@
 # Implemented Features
 
+## Sprint 1007 opt-in Gemini input-token preflight
+
+When enabled in Agent Settings, Google Gemini receives a separate CountTokens
+request containing the fully prepared system instruction, conversation, and
+bound tool declarations before generation. The preference defaults off, is
+persisted through the normal Agent configuration path, and has no effect on
+other providers. The exact input count and count-endpoint status are reported
+separately from estimates and as string-valued safe trace metadata. Count
+requests have a bounded timeout and SDK retries disabled; a confirmed quota,
+rate, authentication, permission, payment, or model-access error stops before
+the generation request. Non-limit count errors retain the estimate and allow
+generation to proceed. Enabling this feature transmits the full request a
+second time and can consume provider quota. Offline adapter-shape, failure, and
+configuration contracts pass. The provider-disabled Settings GUI-map flow
+verified persistence and reload across ten individually retained screenshots;
+the Qt/MinGW Release build and full CTest pass 119/119. Workspace-only evidence
+manifest `artifacts/evidence/sprint1007-gemini-exact-count-capturefix.json`
+(SHA-256 `A0D10CAD459E05FAA46FBC4DAA04200F75FB2BCD7AA73F5FB25E2ABE2733887A`).
+No live provider call or Langfuse receipt was attempted.
+
+## Sprint 1006 model-window-aware context allocation
+
+After the user explicitly refreshes a provider's model catalog, CCad uses the
+selected model's catalog-reported context window to bound the project snapshot
+to at most one quarter of that window, with an 8,192-token estimated ceiling.
+This leaves room for system instructions, conversation history, tool schemas,
+provider framing, and generated output. The limit is cached only in the running
+Agent process and only applies to the exact provider/model pair. Unknown or
+invalid metadata retains the configured character budget. Request accounting
+labels the context allocation as a policy and the whole-request token count as
+an estimate. Normal chat does not call a provider count-token endpoint.
+
+No claim of exact full-request tokenization is made: provider serialization,
+tool schemas, and multimodal payloads still require explicit provider-aware
+counting. The no-network tests cover catalog parsing/cache semantics, allocation
+math, fallback, and safe request reports. Release/full CTest evidence is recorded
+in the Sprint 1006 manifest.
+
+## Sprint 1005 provider-returned token accounting
+
+Normal LangGraph model responses now contribute only validated numeric input,
+output, and total token usage from provider/LangChain response metadata. Each
+generation observation receives Langfuse `usage_details`, and a content-free
+post-response accounting event pairs actual input usage with the separately
+labeled estimate. Final telemetry aggregates actual usage across AI responses
+after the current user message; estimate/delta fields are explicitly limited to
+the last generation. With `CCAD_TRACE_DEBUG=1`, stderr reports safe provider,
+model, counts, and estimate delta. Langfuse update errors are reported without
+turning a successful provider response into a failed user turn. Unsupported or
+absent provider usage remains unavailable, never guessed as actual. Exact
+provider-specific pre-send tokenizer budgeting remains unimplemented. The
+focused contract passes and the Qt/MinGW Release/full CTest gate passes 116/116.
+No live provider request or remote Langfuse trace was made, so exported trace
+delivery remains an opt-in verification task. Final-tree evidence manifest:
+`artifacts/evidence/sprint1005-provider-usage-accounting-r2.json` (SHA-256
+`0284C1508ED831158F8662FFEFF86BE1AD549B29817F25274A9972CCECE1009D`).
+
+## Sprint 1004 evidence checkpoints
+
+The repository instructions now distinguish interaction coverage from image
+count: every attempted mapped action remains in the harness report, while only
+distinct visual states are captured and inspected. This avoids redundant
+screenshots without losing proof of action order or results. The existing
+app-owned GUI-map sequence, hash-bearing verifier manifest, commit hook, and CI
+remain authoritative; illustrative missing wrappers, unsupported self-hosted
+runner claims, and broad artifact-unignore changes are not introduced. This is a
+development-process correction and does not change application runtime behavior.
+The policy test passes, clangd reports zero errors, the evidence-manifest
+contracts pass 7/7, and the Qt MinGW Release/full CTest gate passes 115/115.
+Final manifest: `artifacts/evidence/sprint1004-visual-evidence-checkpoints-final2.json`
+(SHA-256 `F743B798128570479738A3983E9AA168C2571F02640DC0B9E319AD227A62E183`).
+
+## Sprint 1003 user-controlled memory importance
+
+Manage Memories exposes an explicit priority from 1 to 5, with 3 as the neutral default. Durable records retain that value through updates and legacy entries are read as neutral without rewriting the file. Existing scope, enabled-tier, expiry, and relevance checks remain authoritative; only admitted candidates receive a deterministic 0.90–1.10 ranking factor. Slash memory commands and JSON-RPC expose bounded importance fields, while context metadata carries only the numeric factor. Focused contracts pass, Qt/MinGW Release and full CTest pass 115/115, and an isolated provider-disabled UI-map run persisted/read back priority 5 with 15 successful mapped interactions. All 16 scoped screenshots were inspected; stdout was reviewed and stderr is empty. Verifier manifest: `artifacts/evidence/sprint1003-memory-importance-release.json` (SHA-256 `981FF8D01D32234C15A16631839DE36D5CA7CA0FB345C60A5010C1D70E3E2E17`).
+
+## Sprint 1002 bounded memory recency and usage ranking
+
+After tier/project authorization, expiry, and lexical/semantic relevance checks, selected memories receive a deterministic recency adjustment capped at +15% with a 90-day exponential decay and a retrieval-use adjustment capped at +10% after 32 uses. The persistent store records only retrieval count and timestamp and preserves those fields across content edits; STM remains process-only. Safe provenance carries the two numeric factors and a controlled persistence status through the context package while excluding record text. Focused storage, manager, broker, lexical/semantic, and context-budget contracts pass; changed-module Pyright reports zero diagnostics. The official full Qt/CTest gate remains pending. User-controlled importance ranking and provider-specific tokenizer budgeting remain open.
+
+## Sprint 1001 explicit memory kinds
+
+Memory records carry the user-selected `fact`, `preference`, or `correction` label through durable JSON storage, memory-manager add/update, slash commands, native JSON-RPC discovery/results, Manage Memories, memory search, and bounded provider context. Legacy records without a label are read as `fact` without eager rewrite. Existing lexical/semantic relevance gates run first; the selected kind then applies a small deterministic multiplier and appears as content-free provenance. This does not classify memories from their wording. Focused memory contracts passed; the Qt MinGW Release build and full CTest passed 115/115; the provider-disabled Manage Memories UI flow saved and read back exactly one typed preference, with 15 mapped interaction screenshots inspected and empty stderr. Changed-module Pyright found only two pre-existing `AgentConfigManager`/`ConfigPersistenceError` import-symbol diagnostics. Workspace-only evidence manifest: `artifacts/evidence/sprint1001-memory-kind-final.json` (SHA-256 `DF1A4209369829BCC600ED828A580E7BB1FEAEC46E70EC08CD8B87BAAAF1F0AB`).
+
+## Sprint 1000 opt-in semantic PCB/schematic project retrieval
+
+When the user enables local semantic retrieval and the configured Ollama model is ready, the Agent can rank bounded typed board/schematic descriptions by embedding similarity alongside existing exact, lexical, graph, and spatial results. BM25 hits get first place in the 64-document embedding cap, and primitive tracks/vias are excluded from embedding. Embeddings stay in bounded process memory, changed entity descriptions are refreshed by content signature, and turning retrieval off clears the project's semantic caches. If the service is unavailable, disabled, or returns invalid data, exact/lexical retrieval continues and safe runtime metadata reports the semantic outcome. The bounded provider package retains allowlisted human-readable entity fields and similarity/provenance so a semantic match can be understood by the model. The focused project-index, context-broker, memory-manager, and context-package contracts pass; the final official non-visual Qt MinGW Release/full CTest gate passed 115/115. Evidence manifest: `artifacts/evidence/sprint1000-semantic-project-retrieval-final.json` (SHA-256 `EEEF1B410719F7E3FB006986C49EFCBD6C983143147BCEECB64FD99C83BF73F4`). This is optional, not a real-model quality guarantee: no Ollama embedding model was installed during validation, and generated summaries, persistent vectors, real installed-model retrieval benchmarks, and full C4 coverage remain open.
+
+## Sprint 997 coordinate-safe PCB geometry retrieval
+
+Project spatial queries now keep PCB and schematic coordinates separate. Exact PCB-footprint anchors can retrieve nearby physical footprints with `near_component` provenance, and exact placement-region IDs retrieve typed board objects whose AABBs intersect the region with `region_member` provenance. When a request explicitly asks for geometric relations, the anchor and related objects rank above unrelated exact matches, preserving the requested relationship inside the bounded package; ordinary exact retrieval is unchanged. The reported relations are geometric only: proximity is measured from an anchor position to footprint bounds, region membership is AABB intersection, and neither implies electrical connectivity or DRC clearance. Only relation counts for objects retained in bounded provider context are shown in the Agent activity status. `scripts/test_project_index.py` covers board-versus-schematic exclusion, proximity, region inclusion/exclusion/movement, incremental graph updates, and bounded context delivery. Pyright reports 0 diagnostics for the changed retrieval modules; the Qt MinGW Release build and full CTest pass 115/115. The official mapped GUI gate verified the disposable-board request and included counts with 10 mapped interactions; all four screenshots and stdout/stderr were inspected. Its workspace-only manifest is `artifacts/evidence/sprint997-project-geometry-relations-ui-pass.json` (SHA-256 `104DC06FB7BA39509639D3BA7B49FE4D82BF5871AEC945E2B067C73C8B965C16`); screenshots/logs remain local.
+
+## Sprint 996 evidence-gated visual validation
+
+The visual-validation guide now points to the repository's actual app-owned
+Qt GUI-map harness, manifest verifier, commit hook, and hosted CI rather than
+copying illustrative generic wrappers. It documents the one end-of-slice
+Release/CTest gate, provenance-checked reuse for unchanged code, and the rule
+that generated screenshots/logs remain workspace-only when requested. A CTest
+policy contract protects the canonical paths and evidence behavior. This does
+not claim branch protection or a self-hosted runner; those require confirmation
+from repository settings and actual CI runs. Verification: Qt MinGW Release and
+full CTest 115/115; manifest `artifacts/evidence/sprint996-validation-reconciliation.json`
+(SHA-256 `06AD438359BB59D8D8B5D1B6E52A366CE9EBC2F2370CE9871268AD374382D45F`).
+
+## Sprint 995 stable schematic pin identity persistence
+
+The project JSON reader accepts an optional `id` on each placed symbol-declared schematic pin, and the writer emits non-empty IDs while omitting empty ones. Existing project files without pin IDs remain readable and continue to receive explicitly derived index identities; native IDs use the `native_pin_id` provenance label. Serializer round-trip and legacy-format tests plus project-index provenance tests cover both paths. This does not add library-definition pin records or claim complete schematic graph coverage. Qt MinGW Release and full CTest pass 115/115. Official non-visual evidence manifest: `artifacts/evidence/sprint995-schematic-pin-identities.json` (SHA-256 `21c857fa71413cdb262e3018cdd56db0485d46b6caae1383664b148e46254561`); logs remain workspace-only. clangd parsed the translation unit but did not complete indexing, and is not counted as a pass.
+
+## Sprint 994 evidence-to-CI handoff
+
+The current visual-validation workflow treats the passing local evidence manifest as the boundary before commit and push. The evidence hook validates the staged manifest digest and any committed artifacts; for generated screenshots and logs kept local by sprint policy, it validates the workspace-only payload digests before commit. Hosted CI independently validates the manifest committed for the pushed revision, but cannot verify workspace-only file bytes and does not imply repository branch protection. The verifier invokes CCad's existing Qt UI-map target-sequence harness; generic wrapper scripts from external examples are not part of this project. The evidence-reference parser accepts both upper- and lowercase digest text, matching the uppercase output of PowerShell `Get-FileHash`. The workflow requires the actual CI result for the pushed SHA before merge. The visual-harness CTest locks down the timing, evidence, and CI handoff wording.
+
+The manifest commit hook now accepts both uppercase and lowercase SHA-256 text. This matters because PowerShell `Get-FileHash` prints uppercase hex; previously its otherwise-correct manifest reference was rejected. Seven evidence-checker contracts pass, and the official non-visual Qt MinGW gate passed full CTest (115/115). Manifest: `artifacts/evidence/sprint999-evidence-hash-casing.json` (SHA-256 `91314D658A1BB7B683C7D9CBC370DFD111A6A1157636C00F868CA6A8708C8F72`).
+
+The verifier also supports `-NonVisual` for process or documentation changes that do not alter GUI behavior. This mode still captures Qt/MinGW preflight, Release-build, and full-CTest results in its generated evidence manifest, and explicitly labels visual validation as not applicable; it cannot be used for changes with visible GUI effects. Sprint 994's verified manifest is `artifacts/evidence/sprint994-process-gate.json` (SHA-256 `2d9a776277b623c81a95939c41aca1e89d6cfbe21e84ecca12eb73aa82bb0dc2`); its three log payloads remain local and are checked by the commit hook.
+
+## Sprint 993 explicit functional-block context
+
+The project index now derives functional-block search records solely from serialized user-created board/schematic groups and existing child schematic sheets. Records retain the source group/sheet, bounded original member IDs, currently resolved typed members, native net IDs, and a board-space bounding region only when physical member geometry is available. PCB and schematic coordinates are never combined. Blocks are rebuilt against the current typed project revision, expand only through direct typed member references, and are removed/updated incrementally. The same bounded block metadata survives the provider context allowlist, and Agent context status reports the number of included blocks. Contracts cover natural-language lookup, current members/nets/bounds, unresolved references, context forwarding, revision provenance, and deletion. Validation: 35/35 focused contracts, Pyright clean, Qt MinGW Release build, full CTest 115/115, and the official provider-disabled GUI-map target with 10 mapped actions, four inspected meaningful screenshots, isolated conversation DB verification, and reviewed stdout/stderr (stderr empty). The live Agent turn displayed one matching functional block. Six evidence-manifest policy tests and the focused GUI-harness CTest pass. Evidence fingerprints: `artifacts/evidence/sprint993-functional-block-context-publish-ready.json`; screenshot/log payloads remain workspace-only. This is deterministic lexical retrieval, not vector/semantic project retrieval; no guessed or model-generated labels are treated as design truth.
+
+## Sprint 992 schematic pin and annotation retrieval
+
+The revision-aware typed project index now adds serialized symbol-declared pins as searchable schematic entities, including unconnected pins that have no net membership. Connected declarations retain their source pin number, electrical type, symbol/unit identity, and resolved net membership; unresolved net records remain explicitly separate rather than being attached by guesswork. Textboxes, graphics, junctions, no-connect markers, bus entries, rule areas, and tables are indexed from their typed schematic collections. Table cell text is bounded, bitmap payload bytes are excluded, and incremental snapshots remove deleted pins and annotations. Validation: 34/34 focused project-index contracts, changed-module Pyright (0 diagnostics), Qt MinGW Release build, and CTest 115/115. The provider-disabled official GUI-map run completed 10 mapped interactions, verified the serialized unconnected PGOOD pin and bounded context retrieval, inspected four meaningful screenshots, and reviewed stdout/stderr; no provider request was sent. Evidence: `artifacts/evidence/sprint992-schematic-pin-retrieval-verified-final.json`. CCad's project JSON currently does not preserve `SchPin.id`, so file-loaded pin identity is explicitly derived from symbol/unit/number-or-name. The broader C3 graph remains open.
+
+Sprint 995 supersedes the Sprint 992 note about missing JSON pin IDs: native non-empty `SchPin.id` values now round-trip, while legacy ID-less project files continue to load with derived retrieval identities.
+
+## Sprint 991 opt-in semantic memory retrieval
+
+Memory retrieval can optionally augment existing title/content/tag BM25+RRF ranking with local Ollama embeddings. The HTTP client accepts numeric loopback addresses only, disables proxy routing, checks that the selected model is already installed, uses the same exact model identity for query and records, requests `truncate=false`, validates finite normalized vectors, and bounds request sizes/timeouts/cache. Query/document cache keys include model digest, tier, opaque namespace, record ID, and content fingerprint; changing model/scope/content, disabling a tier, deleting/expiring memory, or compacting invalidates process-held vectors. Embedding failures return safe categories and lexical search remains available. Personalisation → Memory exposes opt-in enable, loopback endpoint, installed model and live ready/unavailable status. No model is installed or downloaded by CCad. Contracts: `scripts/test_semantic_retrieval.py`, `scripts/test_memory_manager.py`, `scripts/test_lexical_retrieval.py`, `scripts/test_memory_context_contract.py`; GUI proof uses `scripts/run_ui_map_mouse_target_demo.ps1 -Name sprint991-semantic-memory-...` with a disposable profile.
+
 ## Sprint 990 fielded lexical memory ranking
 
-Enabled memory records are retrieved through separate BM25 title, content, and tag fields after tier, project namespace, expiry, and minimum-match filters. Weighted reciprocal-rank fusion combines field rankings without conflating their BM25 score scales, then bounded deterministic maximal-marginal-relevance selection reduces near-duplicate context. Safe diagnostics report channel ranks and opaque scope identity, never the memory payload. This is lexical retrieval, not semantic embedding search; history ranking, preference/correction weighting, importance/recency adjustments, and provider tokenizer counts remain open. Offline contracts: `scripts/test_lexical_retrieval.py` and `scripts/test_memory_manager.py`.
+Enabled memory records are retrieved through separate BM25 title, content, and tag fields after tier, project namespace, expiry, and minimum-match filters. Weighted reciprocal-rank fusion combines field rankings without conflating their BM25 score scales, then bounded deterministic maximal-marginal-relevance selection reduces near-duplicate context. Safe diagnostics report channel ranks and opaque scope identity, never the memory payload. This is lexical retrieval, not semantic embedding search; history ranking, importance/recency/usage adjustments, and provider tokenizer counts remain open. Explicit preference/correction weighting is implemented in Sprint 1001. Offline contracts: `scripts/test_lexical_retrieval.py` and `scripts/test_memory_manager.py`.
 
 ## Sprint 989 bounded BM25 memory and history retrieval
 
@@ -10,7 +141,7 @@ Enabled task, conversation, project, and local-user memory now ranks through a s
 
 ## Sprint 988 project-scoped durable memory
 
-Project facts can be stored with `/memory add tier:ltm scope:project ...`. CCad derives an opaque namespace from the active native project ID, keeps these records separate from thread-scoped LTM and user-global episodic memory, and automatically retrieves them across chats for the same project. Project switching reloads the bounded LTM runtime; missing project identity rejects project writes and cannot fall back to a shared placeholder. Existing memory list/update/delete/clear operations respect the current namespace; explicit reset remains intentionally global. The context manifest reports project-scope availability and the safe durable-record count, not memory contents. Pending project compaction plans expire on project switch. Offline coverage: `scripts/test_memory_manager.py`, `scripts/test_memory_command_contract.py`, `scripts/test_context_broker.py`, `scripts/test_agent_memory_search_tool.py`, `scripts/test_agent_memory_compaction.py`, and `scripts/test_memory_context_contract.py`. Semantic retrieval, preference/correction ranking, and provider-tokenizer budgets remain open.
+Project facts can be stored with `/memory add tier:ltm scope:project ...`. CCad derives an opaque namespace from the active native project ID, keeps these records separate from thread-scoped LTM and user-global episodic memory, and automatically retrieves them across chats for the same project. Project switching reloads the bounded LTM runtime; missing project identity rejects project writes and cannot fall back to a shared placeholder. Existing memory list/update/delete/clear operations respect the current namespace; explicit reset remains intentionally global. The context manifest reports project-scope availability and the safe durable-record count, not memory contents. Pending project compaction plans expire on project switch. Offline coverage: `scripts/test_memory_manager.py`, `scripts/test_memory_command_contract.py`, `scripts/test_context_broker.py`, `scripts/test_agent_memory_search_tool.py`, `scripts/test_agent_memory_compaction.py`, and `scripts/test_memory_context_contract.py`. Provider-tokenizer budgets and recency/usage weighting remain open; Sprint 1001 adds explicit preference/correction-aware ranking.
 
 ## Sprint 987 schematic field and relative sheet retrieval
 
@@ -3020,6 +3151,15 @@ Automatic memory selection now compares candidates with bounded recent messages,
 ## Agent local context preview
 
 Type `/context` in the Agent chat to inspect how the current bounded request would be assembled, or `/context <draft>` to include a hypothetical user message and rank memory for that intent. The command uses the real project snapshot, enabled memory namespaces, conversation messages, system instructions, and bound model tool schemas, then renders safe counts, token estimates, ranking, omissions, the selected provider/model, and model-limit availability in chat. Provider/model identity follows the same persisted settings and environment override resolution as provider startup; a context limit remains unavailable unless authoritative selected-model metadata supplies one. The preview is local-only: no provider request, tool execution, history mutation, or draft persistence occurs. Automatic requests also receive the existing count-only explanation when estimated input crosses `CCAD_AGENT_LARGE_CONTEXT_TOKENS` (default 4096). Token counts are estimates rather than provider tokenizer measurements.
+## Sprint 991 semantic settings and verification evidence
+
+Personalisation > Memory offers opt-in loopback Ollama semantic retrieval with editable endpoint/model fields and live readiness. Exact lexical retrieval remains available when Ollama or its requested installed model is unavailable. Settings use a readable dark scroll surface with enough initial height for runtime state.
+
+`scripts/verify_sprint.ps1` runs the pinned preflight, Qt Release build, full CTest, and the named app-owned UI-map scenario in `config/gui_interaction_plans/sprint991-semantic-memory.json`. It stores a hash-bound evidence manifest together with that run's logs, mapped-action report, and distinct screenshots. The hook and CI checker verify artifact integrity, not visual correctness; every screenshot and log must still be inspected. These checks use local processes and do not contact a provider.
+
 ## Sprint 977 deterministic context and memory retrieval
 
-Before model reasoning, the Python orchestrator extracts bounded design/task signals and builds a thread/revision-scoped `TurnContext`. Enabled memory tiers are scope-filtered and ranked deterministically; selected records are limited by a configurable estimated-token budget (`CCAD_AGENT_MEMORY_TOKENS`, default 1000) and eight-entry ceiling. The provider envelope includes those authorized records, a bounded title-only Memory Summary, and an allowlisted availability/count manifest. `ccad_search_memory` is a real read-only local LangChain tool that lets the model request additional relevant records during the same turn, preserves prior valid matches, re-applies the budget, and reports an incremented context version. Sprint 988 adds the active project's durable LTM namespace and safe manifest count; project entity indexing, semantic memory retrieval, provider-tokenizer accounting, and a unified Langfuse root trace remain separate work. Diagnostics expose counts and digests, not prompt or memory text. Offline contracts: `scripts/test_context_broker.py`, `scripts/test_context_budget.py`, `scripts/test_agent_context_contract.py`, `scripts/test_agent_native_tool_catalog_protocol.py`, and `scripts/test_agent_memory_search_tool.py`.
+
+## Sprint 998 functional-block net retrieval
+
+Explicit PCB groups and schematic groups/sheets now traverse only their current native net IDs as typed graph edges. PCB and schematic net nodes use distinct internal identities, and the relationship is labeled `block_net_member`; it records serialized membership, not copper continuity or inferred electrical intent. Edges remain attributed when a related net is already an exact seed, including the active PCB net. Edge changes follow the existing incremental index refresh, and only edges retained in the bounded context package contribute to the safe `functional-block net` activity count, which is also available in the Agent workspace state. The provider-disabled GUI-map scenario is `config/gui_interaction_plans/sprint998-functional-block-net-context.json`; it loads an isolated board group and verifies the live Agent context count. The final gate passed 115/115 CTest checks, 10 mapped interactions, four inspected screenshots, and empty stderr. Workspace-only manifest `artifacts/evidence/sprint998-functional-block-net-context-release.json` (SHA-256 `D154A62DCF6411FBD8933232F4DA43F290AC5596D78EE10AFEB5B9DFBF5DFFEA`) binds the inspected evidence. Unsupported library pin identities, candidate/proposal object links, and transaction-delta index updates remain open.

@@ -32,6 +32,8 @@ class OrchestratorMethodCatalogTests(unittest.TestCase):
         toggle = self.by_name["agent.memory_set_enabled"]
         reset = self.by_name["agent.memory_reset"]
         self.assertEqual(state["params"]["tier"]["type"], "string")
+        self.assertIn("semantic", state["response"]["tier_fields"])
+        self.assertIn("model_version", state["response"]["semantic_fields"])
         self.assertEqual(toggle["params"]["enabled"]["type"], "boolean")
         self.assertEqual(toggle["read_only"], False)
         self.assertFalse(toggle["approval_required"])
@@ -41,6 +43,17 @@ class OrchestratorMethodCatalogTests(unittest.TestCase):
         self.assertTrue(self.by_name["agent.memory_delete"]["approval_required"])
         self.assertTrue(self.by_name["agent.memory_list"]["read_only"])
         self.assertTrue(self.by_name["agent.memory_add"]["params"]["content"]["secret_rejected"])
+        self.assertEqual(self.by_name["agent.memory_add"]["params"]["kind"]["enum"],
+                         ["fact", "preference", "correction"])
+        self.assertIn("kind", self.by_name["agent.memory_add"]["response"]["fields"])
+        self.assertEqual(self.by_name["agent.memory_add"]["params"]["importance"]["minimum"], 1)
+        self.assertEqual(self.by_name["agent.memory_add"]["params"]["importance"]["maximum"], 5)
+        self.assertIn("importance", self.by_name["agent.memory_add"]["response"]["fields"])
+        self.assertEqual(self.by_name["agent.memory_update"]["params"]["kind"]["enum"],
+                         ["fact", "preference", "correction"])
+        self.assertIn("kind", self.by_name["agent.memory_update"]["response"]["fields"])
+        self.assertEqual(self.by_name["agent.memory_update"]["params"]["importance"]["minimum"], 1)
+        self.assertEqual(self.by_name["agent.memory_update"]["params"]["importance"]["maximum"], 5)
 
     def test_catalog_never_discloses_secret_values(self):
         self.assertFalse(self.catalog["secret_value_visible"])

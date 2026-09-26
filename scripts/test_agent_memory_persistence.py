@@ -61,11 +61,14 @@ with tempfile.TemporaryDirectory() as temp:
     env["APPDATA"] = str(app_data)
     env["CCAD_AGENT_MEMORY_PATH"] = str(memory_path)
     env["CCAD_AGENT_CHECKPOINT_DB"] = str(checkpoint_path)
+    env["CCAD_AGENT_DEFER_PROVIDER_INIT"] = "1"
     requests = [
         {"method": "agent.memory_set_enabled", "params": {
             "tier": "ltm", "enabled": True}},
         {"method": "agent.memory_add", "params": {
             "tier": "ltm", "scope": "conversation", "title": "test",
+            "kind": "preference",
+            "importance": 5,
             "content": "Preserve the user's verified 0.25 mm clearance rule."}},
         {"method": "agent.memory_set_enabled", "params": {
             "tier": "ltm", "enabled": False}},
@@ -100,6 +103,9 @@ with tempfile.TemporaryDirectory() as temp:
     def matching(method):
         return [event["params"] for event in events
                 if event.get("method") == method]
+
+    assert matching("memory_added")[0]["kind"] == "preference"
+    assert matching("memory_added")[0]["importance"] == 5
 
     toggles = matching("memory_state")
     assert any(state.get("tier") == "ltm" and state.get("enabled") is True

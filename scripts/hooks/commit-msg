@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+set -eu
+repo_root=$(git rev-parse --show-toplevel)
+exec python "$repo_root/scripts/check_evidence_manifest.py" --repo "$repo_root" --commit-message "$1" --required

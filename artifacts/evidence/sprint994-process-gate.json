@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint994-process-gate",
+    "feature":  "Verify the evidence-to-CI handoff policy without changing GUI behavior",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-25T12:30:11.7966593Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.85 log=artifacts/evidence/sprint994-process-gate/preflight.log",
+                      "finished_utc":  "2026-09-25T12:30:12.6990379Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=4.05 log=artifacts/evidence/sprint994-process-gate/build.log",
+                      "finished_utc":  "2026-09-25T12:30:16.7714457Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=103.03 log=artifacts/evidence/sprint994-process-gate/ctest.log",
+                      "finished_utc":  "2026-09-25T12:31:59.8008480Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint994-process-gate/build.log",
+                                         "sha256":  "B4914D7AF1975EF93E67197541CC5DBB79CE711A548CC40D4165786A2936FDAA"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint994-process-gate/ctest.log",
+                                         "sha256":  "A3780956E48BC86599F4C786B9ECE3DADE88135DFB35E808EE2F924B256986EE"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint994-process-gate/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-25T12:31:59.8658877Z"
+}

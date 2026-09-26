@@ -8,6 +8,7 @@ import sys
 
 
 SOURCE = Path(__file__).parents[1] / "src" / "ccad_agent" / "orchestrator.py"
+ROOT = SOURCE.parents[2]
 CATALOG = SOURCE.with_name("method_catalog.py")
 text = SOURCE.read_text(encoding="utf-8") + CATALOG.read_text(encoding="utf-8")
 
@@ -53,9 +54,31 @@ requests.extend({"method": "human_message", "params": {
 requests.append({"method": "human_message", "params": {
     "text": "/clear", "context": "board B"}})
 requests.append({"method": "agent.context_state", "params": {}})
+geometry_project = json.loads((ROOT / "artifacts" / "demos" /
+                               "sprint160-placement-crash-ci-final.ccad.json").read_text(
+                                   encoding="utf-8"))
+geometry_project["board"].setdefault("footprints", []).extend((
+    {"reference": "JAC1", "value": "AC input",
+     "footprint_name": "Connector_PinHeader_2.54mm", "layer_id": "F.Cu",
+     "position": {"x_nm": 8_000_000, "y_nm": 17_000_000}},
+    {"reference": "C_NEAR", "value": "100 nF", "footprint_name": "C_0402",
+     "layer_id": "F.Cu", "position": {"x_nm": 10_000_000, "y_nm": 17_000_000}},
+))
+geometry_project["board"].setdefault("placement_regions", []).append({
+    "id": "PR_SPRINT997", "kind": "placement",
+    "area": {"x_nm": 7_000_000, "y_nm": 16_000_000,
+             "width_nm": 5_000_000, "height_nm": 2_000_000},
+})
+requests.append({"method": "human_message", "params": {
+    "text": "Which PCB footprints are within 5 mm of JAC1, and which PCB objects "
+            "intersect placement region PR_SPRINT997?",
+    "context": json.dumps({"typed_state": {"available": True,
+                                              "project": geometry_project}}),
+    "thread_id": "thread-geometry-relations"}})
 payload = "\n".join(json.dumps(request) for request in requests) + "\n"
 run = subprocess.run([sys.executable, str(SOURCE)], input=payload, text=True,
-                     capture_output=True, env=env, check=True)
+                     capture_output=True, env=env, check=False)
+assert run.returncode == 0, run.stderr
 lines = [json.loads(line) for line in run.stdout.splitlines()
          if line.strip().startswith("{")]
 methods = next(item["params"] for item in lines
@@ -121,10 +144,17 @@ for field in ("thread_id", "process_call_ids", "checkpoint_call_ids", "count", "
               "approval_reason", "secret_value_visible"):
     assert field in pending_contract["response"]["fields"]
 assert "context_state" in human_contract["response_contracts"]
+assert '"project_retrieval_near_component_count"' in text
+assert '"project_retrieval_region_member_count"' in text
+assert '"project_retrieval_block_net_count"' in text
 assert "provider_state" in human_contract["responses"]
 assert "backend_state" in human_contract["responses"]
 assert "change_kind" in human_contract["response_contracts"]["context_state"]["fields"]
 assert "thread_id" in human_contract["response_contracts"]["context_state"]["fields"]
+for field in ("project_retrieval_near_component_count",
+              "project_retrieval_region_member_count",
+              "project_retrieval_block_net_count", "project_retrieval_stats"):
+    assert field in human_contract["response_contracts"]["context_state"]["fields"]
 assert "intake_state" in human_contract["response_contracts"]
 assert "accepted" in human_contract["response_contracts"]["intake_state"]["fields"]
 assert "provider_state" in human_contract["response_contracts"]
@@ -159,7 +189,7 @@ assert pending_snapshot["params"]["thread_id"] == "ccad-local"
 assert pending_snapshot["params"]["approval_required"] is False
 assert pending_snapshot["params"]["approval_reason"] == ""
 events = [item for item in lines if item.get("method") == "context_state"]
-assert len(events) == 4, run.stdout + run.stderr
+assert len(events) == 5, run.stdout + run.stderr
 assert events[0]["params"]["previous_revision"] == ""
 assert events[0]["params"]["change_kind"] == "initial"
 assert events[0]["params"]["thread_id"] == "thread-a"
@@ -169,7 +199,7 @@ assert events[1]["params"]["thread_id"] == "thread-b"
 assert events[2]["params"]["previous_revision"] == events[1]["params"]["revision"]
 assert events[2]["params"]["change_kind"] == "unchanged"
 assert events[2]["params"]["thread_id"] == "thread-b"
-for event in events:
+for event in events[:-1]:
     params = event["params"]
     assert params["context_schema_version"] == 3
     assert params["content_emitted"] is False
@@ -179,5 +209,17 @@ for event in events:
     assert len(params["turn_context_signal_digest"]) == 24
     assert params["memory_token_budget"] >= 64
     assert params["history_message_count"] >= 0
+    assert params["project_retrieval_near_component_count"] == 0
+    assert params["project_retrieval_region_member_count"] == 0
+    assert params["project_retrieval_block_net_count"] == 0
+    assert params["project_retrieval_stats"]["near_component_match_count"] == 0
+    assert params["project_retrieval_stats"]["region_member_match_count"] == 0
     assert "project_snapshot" in params["sources"]
+geometry_event = events[-1]["params"]
+assert geometry_event["thread_id"] == "thread-geometry-relations"
+assert geometry_event["project_retrieval_near_component_count"] == 1
+assert geometry_event["project_retrieval_region_member_count"] > 0
+assert geometry_event["project_retrieval_block_net_count"] == 0
+assert geometry_event["project_retrieval_stats"]["near_component_match_count"] == 1
+assert geometry_event["project_retrieval_stats"]["region_member_match_count"] > 0
 print("PASS agent context history boundary contract; no network")

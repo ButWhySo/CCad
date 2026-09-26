@@ -1,0 +1,20 @@
+{
+  "feature": "Retrieve the explicit AC input group from the loaded rectifier board and expose its current-project block count in Agent context metadata.",
+  "target_sequence": "sprint987-schematic-metadata",
+  "project": "artifacts/demos/sprint160-placement-crash-ci-final.ccad.json",
+  "minimum_mapped_interactions": 8,
+  "required_targets": [
+    "tab:pcb",
+    "tab:schematic",
+    "tab:agent",
+    "control:agent_chat_input",
+    "action:agent_submit_chat",
+    "action:settingsBtn",
+    "control:categoryList",
+    "action:cancelSettingsButton"
+  ],
+  "required_text_entries": [
+    "control:agent_chat_input"
+  ],
+  "meaningful_screenshots": 4
+}

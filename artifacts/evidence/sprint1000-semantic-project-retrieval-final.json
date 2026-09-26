@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint1000-semantic-project-retrieval-final",
+    "feature":  "Opt-in bounded semantic retrieval over typed PCB and schematic project context",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-25T20:03:38.8873877Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.84 log=artifacts/evidence/sprint1000-semantic-project-retrieval-final/preflight.log",
+                      "finished_utc":  "2026-09-25T20:03:39.8084526Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.28 log=artifacts/evidence/sprint1000-semantic-project-retrieval-final/build.log",
+                      "finished_utc":  "2026-09-25T20:03:40.1017906Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=124.31 log=artifacts/evidence/sprint1000-semantic-project-retrieval-final/ctest.log",
+                      "finished_utc":  "2026-09-25T20:05:44.4088482Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint1000-semantic-project-retrieval-final/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1000-semantic-project-retrieval-final/ctest.log",
+                                         "sha256":  "C34510727AEC78682EF67B483391D124E9C516C1A3E899184238E2A3A1CB7510"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1000-semantic-project-retrieval-final/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-25T20:05:44.4904040Z"
+}

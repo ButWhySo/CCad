@@ -2,7 +2,23 @@
 
 This file is the single local backlog for scattered CCad feature requests. Sprint files remain the execution record, while this backlog holds the larger map so future agents do not lose roadmap items.
 
+## Agent provider-token budget follow-up
+
+- [ ] Extend exact pre-send counting beyond opt-in Gemini to provider/model combinations with supported request serialization; ordinary turns must not issue hidden count-token network requests.
+- [ ] Add exact model-specific serialization for messages, tool schemas, system instructions, and supported multimodal content; otherwise preserve explicit estimated/unavailable labels.
+- [ ] Reconcile catalog context limits with provider output-token reservations and actual per-generation usage; never claim the project-context allocation alone proves the complete request fits.
+- [ ] Opt-in provider/Langfuse trace inspection remains separate from no-network budget contracts.
+
 ## Verified Work Ledger
+
+- [x] Sprint 1007 implements opt-in Gemini CountTokens for the adapter-bound prompt/messages/function declarations, default-off persisted Settings, safe exact/estimated reporting, and no-retry confirmed limit failures. Offline provider/config contracts pass; Qt/MinGW Release and full CTest pass 119/119; seven mapped GUI clicks, ten inspected unique screenshots, and stdout/empty-stderr verified save/reopen without provider traffic. Manifest `artifacts/evidence/sprint1007-gemini-exact-count-capturefix.json` (SHA-256 `A0D10CAD459E05FAA46FBC4DAA04200F75FB2BCD7AA73F5FB25E2ABE2733887A`). Other provider/multimodal token counting and live Langfuse receipt remain open.
+- [x] Sprint 1005 implementation is committed and pushed: provider responses are normalized to safe counts, attached to Langfuse generation `usage_details`, aggregated for turn telemetry, and optionally logged without content under `CCAD_TRACE_DEBUG`; official Qt/MinGW Release and CTest pass 116/116. Manifest `artifacts/evidence/sprint1005-provider-usage-accounting-r2.json` (SHA-256 `0284C1508ED831158F8662FFEFF86BE1AD549B29817F25274A9972CCECE1009D`). PR/hosted CI and live trace fetch remain open; Sprint 1007 covers opt-in Gemini exact input counting, while other providers and unsupported payloads remain estimates.
+
+- [x] Sprint 1002: bounded recency and persisted retrieval-use ranking after relevance gates; preserves durable usage metadata across memory edits, keeps STM counters process-only, and exposes only safe numeric weights/status in provider context. Focused memory/context/semantic/lexical contracts pass, changed-module Pyright is clean, and the official Qt/MinGW Release plus full CTest pass 115/115. Manifest: `artifacts/evidence/sprint1002-memory-ranking.json` (SHA-256 `CB8EF8DCA12816AE1C7E3761981B2C74FBCADE0AAE46A602A6360B27D4D27226`). No GUI behavior changed; screenshots are not applicable.
+- [x] Sprint 1003: user-controlled memory importance 1–5 (neutral 3), persisted and validated through store/manager/slash/RPC/UI; ±10% factor only after existing retrieval gates; bounded context provenance contains no memory text. Focused contracts pass; changed-module Pyright checked with two pre-existing orchestrator symbol diagnostics, clangd helped find a Settings type mismatch, Qt/MinGW Release and CTest pass 115/115, provider-disabled mapped UI saved/read back priority 5 in 15 interactions, all 16 screenshots inspected, stdout reviewed and stderr empty. Manifest `artifacts/evidence/sprint1003-memory-importance-release.json` (SHA-256 `981FF8D01D32234C15A16631839DE36D5CA7CA0FB345C60A5010C1D70E3E2E17`). Commit `b01ca30` pushed to `sprint-991-hybrid-memory-retrieval`; hosted CI and main merge are not yet confirmed.
+
+- [x] Sprint 993: explicit board-group/schematic-sheet functional-block retrieval with revision provenance; 35/35 focused contracts, Pyright and clangd source diagnostics checked, Qt MinGW Release build, full CTest 115/115, provider-disabled 10-action GUI-map validation, four inspected states, captured logs reviewed, isolated transcript DB assertion, six evidence-manifest contracts, and focused GUI-harness CTest. `artifacts/evidence/sprint993-functional-block-context-publish-ready.json` (SHA-256 `8753A1ABDA9444A08B8B1E41D5D3D34B129A107719D75E8903CB9AE552598400`). Generated logs/screenshots remain workspace-only; only manifest fingerprints enter Git. Semantic/vector retrieval remains open.
+- [x] Sprint 992: retrieval includes connected/unconnected serialized schematic pins and bounded annotations, safe net membership, incremental deletion, and bitmap exclusion; 34/34 focused contracts, Pyright clean, Qt MinGW Release, 115/115 CTest, 10-action provider-free UI-map proof, four inspected screenshots, stdout/stderr reviewed. `SchPin.id` is still not serialized; broader C3 remains open.
 
 This ledger is the current single checklist for scattered user-reported GUI, KiCad compatibility, and agent-harness work. Check an item only after code review, focused tests, KiCad/reference comparison where relevant, and visual validation when the behavior is visible.
 
@@ -1177,9 +1193,22 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   BM25, search same-project compact recaps before source-linked turns, preserve
   exact conversation pointers, and reject weak matches. Offline contracts and
   full build/CTest evidence are tracked in the Sprint 989 TODO/log.
-- [ ] Follow-up: semantic embeddings, deterministic fusion/diversity ranking,
-  preference/correction evidence, richer extraction, and provider-tokenizer
-  budgeting; do not imply BM25 alone provides semantic recall.
+- [x] Sprint 1000: add opt-in bounded semantic PCB/schematic context retrieval
+  through the existing local Ollama backend, with lexical candidate priority,
+  process-only signature-keyed vectors, exact/graph/spatial provenance, safe
+  context status, and exact/lexical fallback. Qt Release/full CTest passed
+  115/115; real-model relevance validation remains open because Ollama had no
+  installed model.
+- [x] Sprint 1001: add explicit user-selected fact/preference/correction
+  evidence and bounded ranking weights. Remaining memory follow-up is richer
+  extraction and provider-tokenizer budgeting. Memory semantic retrieval and
+  deterministic field fusion/diversity are implemented; BM25 alone does not
+  provide semantic recall.
+- [ ] Sprint 1000 follow-up: validate opt-in semantic project retrieval against
+  a real installed Ollama model and representative PCB/schematic paraphrase
+  queries; generated summaries, durable vectors, and retrieval-quality metrics
+  remain unimplemented. Offline backend-contract tests do not establish model
+  relevance quality.
 - [x] Sprint 988: add project-scoped durable LTM storage/retrieval; safe project
   identity, isolation, manifest counts, namespace-aware compaction invalidation,
   and reset semantics are covered by offline contracts.
@@ -1197,6 +1226,7 @@ Implement provider-neutral request/response transport, explicit approval-aware t
   Langfuse SDK parent links with a local in-memory exporter.
 - [ ] Langfuse follow-up: verify a fresh opt-in production-account trace/readback
   and preserve trace identity across approval interruption and resume.
-- [ ] Sprint 977 follow-up: add explicit preference/correction weighting and
-  provider-tokenizer-based global budget allocation; current memory ranking and
-  token counts are deterministic lexical/character estimates.
+- [x] Sprint 1001 follow-up: add explicit preference/correction weighting with
+  content-free provenance, in addition to existing lexical/semantic relevance.
+- [ ] Provider-tokenizer-based global budget allocation; token counts remain
+  deterministic estimates until an authoritative provider tokenizer is used.

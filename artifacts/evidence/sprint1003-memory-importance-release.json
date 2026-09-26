@@ -1,0 +1,147 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint1003-memory-importance-release",
+    "feature":  "Explicit priority-aware persistent agent memory through settings, RPC, retrieval, context metadata, and isolated UI-map verification",
+    "validation_mode":  "gui",
+    "interaction_plan":  "config/gui_interaction_plans/sprint1003-memory-importance.json",
+    "target_sequence":  "sprint1003-memory-importance-sprint1003-memory-importance-release",
+    "visual_validation":  "required",
+    "started_utc":  "2026-09-26T01:32:57.7297103Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.05 log=artifacts/evidence/sprint1003-memory-importance-release/preflight.log",
+                      "finished_utc":  "2026-09-26T01:32:58.9028557Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.4 log=artifacts/evidence/sprint1003-memory-importance-release/build.log",
+                      "finished_utc":  "2026-09-26T01:32:59.3159136Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=148.28 log=artifacts/evidence/sprint1003-memory-importance-release/ctest.log",
+                      "finished_utc":  "2026-09-26T01:35:27.5973524Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=30.98 log=artifacts/evidence/sprint1003-memory-importance-release/ui_harness.log",
+                      "finished_utc":  "2026-09-26T01:35:58.5780764Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=15; screenshots=16",
+                      "finished_utc":  "2026-09-26T01:35:58.9191354Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-09-26T01:35:59.0081990Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/ctest.log",
+                                         "sha256":  "2D57D42E55A82DEA91BBB6AD02B0E24B3797745B62ACA09633D393E0CA92169D"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release.stderr.log",
+                                         "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release.stdout.log",
+                                         "sha256":  "1F27495279EE4594385475C4101AE0918C2B69D7858DAD0283ADAC424579CCA8"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release-initial-action_addMemory.png",
+                                         "sha256":  "A19009BE1DA2D39D7B1A81DD81D3E497FB5DB8C59133AC659E1E42177D4FF72B"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release-initial-action_agent_memory_manage.png",
+                                         "sha256":  "E53FD0A2E0B3AFF250D76BCE71C5134F947B71255E22C2741174CD538AAC2D4F"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release-initial-action_saveMemory.png",
+                                         "sha256":  "DA68120F7D02F2E8F31748FA9BFC117F44AB2395BD496831E19C8D46622DFE4E"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release-initial-action_settingsBtn.png",
+                                         "sha256":  "27026035E287EA13C09B542BDA30D0C379A58B2F7767AB273D02A17A46617E41"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release-initial-cancelSettingsButton-after.png",
+                                         "sha256":  "376E7136F21E3650E07EFA069D588931DF6EEB10A281ECB876C6C51E9CDDA0B3"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release-initial-closeMemoryManager-after.png",
+                                         "sha256":  "013B34F340A56E06AA902327BA5B7B3E5FBAC2D44F5143EBA646399D3C104E7E"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release-initial-control_categoryList.png",
+                                         "sha256":  "FF4F274FE030DEBD622203E8F4F0921849AD7FF4971067E8970AC68F15261D4D"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release-initial-control_memoryContent.png",
+                                         "sha256":  "E92AA9CE94DB0C0E993DBF7AA95BBB0AC669C0175F5645D039E6FBD088067E11"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release-initial-control_memoryImportance.png",
+                                         "sha256":  "1C293A45EC34181A37DCCF24795854F1775D3A60443A4879E70A0B1F406FD083"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release-initial-control_memoryKind.png",
+                                         "sha256":  "AAA0B66F6B38D96ED361B5B0FF1A4370CF88A0A4E5B98D0962F456755E2E0D22"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release-initial-control_memoryScope.png",
+                                         "sha256":  "4B950153225074DEA245719582B99B397373BDFD94F625E8B16DFC280ED50A3E"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release-initial-control_memoryTier.png",
+                                         "sha256":  "3F68252A5DCF4DDE8B42BDD202670F7B26EEA46AF26A3E3DC1B6ADC5C4B1FC3E"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release-initial-control_memoryTitle.png",
+                                         "sha256":  "FFC90D4C1457F63112B9A0FCDF07FD6E14209089F0CF728E22097DAA68E6D525"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release-initial-memoryContent-typed.png",
+                                         "sha256":  "0D075652F9D7CA4F015E727A8BD7220B7319A6CB8CB739E327858629D0C884B8"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release-initial-memoryScope-typed.png",
+                                         "sha256":  "6D91D8C041FC4C3515786EC87C37C5AAD965F65123C3EA686BF4972EC7A4ABE7"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release-initial-memoryTitle-typed.png",
+                                         "sha256":  "EA63E37FBBFF9B01EC0B9538271F71458F759F2EF26BCD017ED7E86B6E8FE086"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/sprint1003-memory-importance-sprint1003-memory-importance-release-target-sequence.json",
+                                         "sha256":  "FF24DB387E0D57B3585CEFEC5A424CA51CADBE0559771E18BA590DB1D3908EB4"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1003-memory-importance-release/ui_harness.log",
+                                         "sha256":  "75FCF6B59AAEABF7EDCC7FE4045E7DB1ED7C15C3110A9CAC3086DDAC900E5C00"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-26T01:35:59.1307315Z"
+}

@@ -1,0 +1,116 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-991-semantic-memory-final",
+    "feature":  "Opt-in local semantic memory retrieval and evidence workflow",
+    "interaction_plan":  "config/gui_interaction_plans/sprint991-semantic-memory.json",
+    "target_sequence":  "sprint991-semantic-memory-final2",
+    "started_utc":  "2026-09-25T08:31:30.6765972Z",
+    "finished_utc":  "2026-09-25T08:31:30.6765972Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "detail":  "preflight passed in preceding complete local verification gate",
+                      "finished_utc":  "2026-09-25T08:31:30.1930665Z",
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true
+                  },
+                  {
+                      "detail":  "Qt MinGW Release build passed after dark-settings stylesheet correction",
+                      "finished_utc":  "2026-09-25T08:31:30.2090650Z",
+                      "name":  "release_build",
+                      "passed":  true
+                  },
+                  {
+                      "detail":  "full CTest 115/115 passed before theme-only change; focused gui_ui_map CTest passed 1/1 after change",
+                      "finished_utc":  "2026-09-25T08:31:30.2090650Z",
+                      "name":  "full_ctest",
+                      "passed":  true
+                  },
+                  {
+                      "detail":  "7 mapped actions including endpoint/model entry; runtime status truthfully reports missing loopback service; provider disabled",
+                      "finished_utc":  "2026-09-25T08:31:30.2090650Z",
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true
+                  },
+                  {
+                      "detail":  "fresh action report, stdout/stderr and four screenshots captured and visually inspected",
+                      "finished_utc":  "2026-09-25T08:31:30.2090650Z",
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true
+                  }
+              ],
+    "artifacts":  [
+                      {
+                          "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794",
+                          "path":  "artifacts/evidence/sprint-991-semantic-memory-final/build.log"
+                      },
+                      {
+                          "sha256":  "6785E703376F9187391D5E6AE933124F05D825C0FEC810F213B0B9FF5EC7AB89",
+                          "path":  "artifacts/evidence/sprint-991-semantic-memory-final/ctest.log"
+                      },
+                      {
+                          "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9",
+                          "path":  "artifacts/evidence/sprint-991-semantic-memory-final/preflight.log"
+                      },
+                      {
+                          "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+                          "path":  "artifacts/evidence/sprint-991-semantic-memory-final/sprint991-semantic-memory-final2.stderr.log"
+                      },
+                      {
+                          "sha256":  "A65D50A80D22CCC6BD89EE4A605CBC35167D89B347E6D78B84E7B166D62BBDF0",
+                          "path":  "artifacts/evidence/sprint-991-semantic-memory-final/sprint991-semantic-memory-final2.stdout.log"
+                      },
+                      {
+                          "sha256":  "F7861FA6385F10D90AB4BAEC898E4C6D61BD4185DE69CE4C6CB1A46BEBBFBAE7",
+                          "path":  "artifacts/evidence/sprint-991-semantic-memory-final/sprint991-semantic-memory-final2-final.png"
+                      },
+                      {
+                          "sha256":  "88BCDD4A7DF5F510AEF0354FBAE750048C7FD31A887BA4A85405206D481F9228",
+                          "path":  "artifacts/evidence/sprint-991-semantic-memory-final/sprint991-semantic-memory-final2-initial-action_settingsBtn.png"
+                      },
+                      {
+                          "sha256":  "AAFCFF8A88EACF66501344AE622C9AE3FC3DBD94DB4E4725C211E94E12EE3E69",
+                          "path":  "artifacts/evidence/sprint-991-semantic-memory-final/sprint991-semantic-memory-final2-initial-semanticMemoryEnabled-after.png"
+                      },
+                      {
+                          "sha256":  "79F4784D4191E528AE1351A188E11D7F1E1725DD90ABF76A0AA08D3D18D35EA4",
+                          "path":  "artifacts/evidence/sprint-991-semantic-memory-final/sprint991-semantic-memory-final2-runtime-status.png"
+                      },
+                      {
+                          "sha256":  "1622D60C142D1D76B03952418BC1CF2AE1A6019547C0D7A157867329A77F35D7",
+                          "path":  "artifacts/evidence/sprint-991-semantic-memory-final/sprint991-semantic-memory-final2-target-sequence.json"
+                      },
+                      {
+                          "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+                          "path":  "artifacts/evidence/sprint-991-semantic-memory-final/sprint991-semantic-memory-sprint-991-semantic-memory-final.stderr.log"
+                      },
+                      {
+                          "sha256":  "00BDC5464D4DAB5FBB6C536D6CD49D7098E080D9CB013CEE2F1649BD2735AC36",
+                          "path":  "artifacts/evidence/sprint-991-semantic-memory-final/sprint991-semantic-memory-sprint-991-semantic-memory-final.stdout.log"
+                      },
+                      {
+                          "sha256":  "F7861FA6385F10D90AB4BAEC898E4C6D61BD4185DE69CE4C6CB1A46BEBBFBAE7",
+                          "path":  "artifacts/evidence/sprint-991-semantic-memory-final/sprint991-semantic-memory-sprint-991-semantic-memory-final-final.png"
+                      },
+                      {
+                          "sha256":  "1F9F11E51EA3F19ADD1FD6C41AE4B2E981F3328D0E0B9867423D70FA890F4D01",
+                          "path":  "artifacts/evidence/sprint-991-semantic-memory-final/sprint991-semantic-memory-sprint-991-semantic-memory-final-initial-action_settingsBtn.png"
+                      },
+                      {
+                          "sha256":  "7B40ABEE753E5A603D10FE27AD21B0DD211A6949496CA70AB8FDB506A23DC965",
+                          "path":  "artifacts/evidence/sprint-991-semantic-memory-final/sprint991-semantic-memory-sprint-991-semantic-memory-final-initial-semanticMemoryEnabled-after.png"
+                      },
+                      {
+                          "sha256":  "1A8D931FBE6CC27FC94B8A89333A4574A47A481D3BE8C3786D54036AEF9A45B4",
+                          "path":  "artifacts/evidence/sprint-991-semantic-memory-final/sprint991-semantic-memory-sprint-991-semantic-memory-final-runtime-status.png"
+                      },
+                      {
+                          "sha256":  "34BA5C38B8D64A2DEDDA91BB36A2CFD7A2CEAD3C14CE1F6EA12C12BB30F290FD",
+                          "path":  "artifacts/evidence/sprint-991-semantic-memory-final/sprint991-semantic-memory-sprint-991-semantic-memory-final-target-sequence.json"
+                      },
+                      {
+                          "sha256":  "7EC7C72FF62E6FA59B3CAC27D5E971D8A4CCC109D44E65367907CAC9C9487D5F",
+                          "path":  "artifacts/evidence/sprint-991-semantic-memory-final/ui_harness.log"
+                      }
+                  ]
+}

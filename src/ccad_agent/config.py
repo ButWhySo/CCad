@@ -67,6 +67,7 @@ class AgentConfigManager:
             "restore_session": True,
             "provider": "openai",
             "model": "gpt-5.1",
+            "gemini_exact_input_counting": False,
             "sandbox_mode": True,
             "approval_policy": True,
             "project_name": "sprint-demo",
@@ -75,7 +76,13 @@ class AgentConfigManager:
             "memory": {
                 "stm": True,
                 "ltm": False,
-                "episodic": False
+                "episodic": False,
+                "semantic": {
+                    "enabled": False,
+                    "backend": "ollama_local",
+                    "base_url": "http://127.0.0.1:11434",
+                    "model": "embeddinggemma"
+                }
             },
             "hooks": [],
             "personalisation": {

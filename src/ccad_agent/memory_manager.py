@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 import re
 from collections import OrderedDict
 from datetime import datetime, timezone
@@ -12,11 +13,15 @@ from lexical_retrieval import diversify_ranked, fuse_rankings, rank_documents
 from uuid import uuid4
 
 from memory_store import MemoryStore, MemoryStoreError
+from semantic_retrieval import EmbeddingError, OllamaEmbeddingBackend
 
 
 class MemoryManager:
     TIERS = ("stm", "ltm", "episodic")
     MAX_STM_TASKS = 32
+    MAX_EMBEDDING_CACHE = 2048
+    MAX_SEMANTIC_CANDIDATES = 32
+    MIN_SEMANTIC_SIMILARITY = 0.25
     NEAR_DUPLICATE_THRESHOLD = 0.88
     _word = re.compile(r"[a-z0-9_]{3,}", re.IGNORECASE)
 
@@ -31,6 +36,18 @@ class MemoryManager:
         self.storage_errors: dict[str, str] = {}
         self._stm_tasks: OrderedDict[str, list[dict[str, Any]]] = OrderedDict()
         self._retain_stm_task = True
+        self._embedding_backend_override = None
+        self._embedding_backend = None
+        self._embedding_config_identity = ""
+        self._embedding_cache: OrderedDict[str, list[float]] = OrderedDict()
+        self._query_embedding_cache: OrderedDict[str, list[float]] = OrderedDict()
+        self.semantic_config = {"enabled": False, "backend": "ollama_local",
+                                "base_url": "http://127.0.0.1:11434",
+                                "model": "embeddinggemma"}
+        self._semantic_status = {"enabled": False, "ready": False,
+                                 "status": "disabled", "error": "",
+                                 "backend": "ollama_local", "model": "embeddinggemma",
+                                 "model_version": "", "cache_entries": 0}
 
     def set_identities(self, *, task_id: str, thread_id: str, project_id: str,
                        user_id="local-user", retain_stm_task=True):
@@ -41,6 +58,8 @@ class MemoryManager:
                    if identities[tier] != self.identities[tier]}
         if project_changed:
             changed.add("ltm")
+        if changed:
+            self._clear_embedding_cache()
         self.identities = identities
         self.project_id = str(project_id)
         self._retain_stm_task = bool(retain_stm_task)
@@ -78,7 +97,106 @@ class MemoryManager:
                 self.enabled[tier] = False
                 self.runtime[tier] = []
                 self.storage_errors[tier] = error.category
+        semantic = flags.get("semantic", {})
+        self._configure_semantic(semantic if isinstance(semantic, dict) else {})
         return failures
+
+    @property
+    def embedding_cache_entries(self):
+        return len(self._embedding_cache) + len(self._query_embedding_cache)
+
+    def set_embedding_backend(self, backend):
+        """Set a backend implementing identity, embed_query, and embed_documents."""
+        self._embedding_backend_override = backend
+
+    def _configure_semantic(self, requested):
+        config = {
+            "enabled": bool(requested.get("enabled", False)),
+            "backend": str(requested.get("backend", "ollama_local")),
+            "base_url": str(requested.get("base_url", "http://127.0.0.1:11434")),
+            "model": str(requested.get("model", "embeddinggemma")),
+        }
+        config_identity = "|".join((config["backend"], config["base_url"], config["model"]))
+        old_identity = getattr(self._embedding_backend, "identity", "")
+        self.semantic_config = config
+        if not config["enabled"]:
+            self._embedding_backend = None
+            self._clear_embedding_cache()
+            self._semantic_status = {**config, "ready": False, "status": "disabled",
+                                     "error": "", "model_version": "",
+                                     "cache_entries": self.embedding_cache_entries}
+            return
+        if config["backend"] != "ollama_local" and self._embedding_backend_override is None:
+            self._embedding_backend = None
+            self._semantic_status = {**config, "ready": False,
+                                     "status": "backend_unsupported",
+                                     "error": "backend_unsupported", "model_version": "",
+                                     "cache_entries": self.embedding_cache_entries}
+            return
+        try:
+            if self._embedding_backend_override is not None:
+                backend = self._embedding_backend_override
+                probe = {"ready": True, "status": "ready", "error": "",
+                         "model_version": str(getattr(backend, "identity", ""))[:128]}
+            else:
+                backend = OllamaEmbeddingBackend(config["base_url"], config["model"])
+                probe = backend.check_ready()
+            new_identity = getattr(backend, "identity", "")
+            if ((old_identity and old_identity != new_identity) or
+                    (self._embedding_config_identity and
+                     self._embedding_config_identity != config_identity)):
+                self._embedding_cache.clear()
+                self._query_embedding_cache.clear()
+            self._embedding_backend = backend
+            self._embedding_config_identity = config_identity
+            self._semantic_status = {**config, **probe,
+                                     "model_version": str(probe.get("model_version", ""))[:128],
+                                     "cache_entries": self.embedding_cache_entries}
+        except EmbeddingError as error:
+            self._embedding_backend = None
+            self._embedding_config_identity = config_identity
+            self._embedding_cache.clear()
+            self._query_embedding_cache.clear()
+            self._semantic_status = {**config, "ready": False, "status": error.category,
+                                     "error": error.category, "model_version": "",
+                                     "cache_entries": 0}
+
+    def semantic_state(self):
+        return {**self._semantic_status,
+                "cache_entries": self.embedding_cache_entries,
+                "model_version": str(self._semantic_status.get("model_version", ""))[:128]}
+
+    @property
+    def semantic_embedding_backend(self):
+        """Return the backend only while local semantic retrieval is enabled and ready."""
+        if (not self.semantic_config.get("enabled") or
+                not self._semantic_status.get("ready")):
+            return None
+        return self._embedding_backend
+
+    def refresh_semantic_readiness(self):
+        if not self.semantic_config.get("enabled") or self._embedding_backend_override is not None:
+            return self.semantic_state()
+        try:
+            backend = OllamaEmbeddingBackend(self.semantic_config["base_url"],
+                                             self.semantic_config["model"])
+            probe = backend.check_ready()
+            old_identity = getattr(self._embedding_backend, "identity", "")
+            if old_identity and old_identity != backend.identity:
+                self._clear_embedding_cache()
+            self._embedding_backend = backend
+            self._semantic_status = {**self.semantic_config, **probe,
+                                     "model_version": str(probe.get("model_version", ""))[:128],
+                                     "cache_entries": self.embedding_cache_entries}
+        except EmbeddingError as error:
+            self._embedding_backend = None
+            self._semantic_status.update({"ready": False, "status": error.category,
+                                          "error": error.category})
+        return self.semantic_state()
+
+    def _clear_embedding_cache(self):
+        self._embedding_cache.clear()
+        self._query_embedding_cache.clear()
 
     def enable(self, tier: str):
         self._check_tier(tier)
@@ -95,6 +213,7 @@ class MemoryManager:
         self._check_tier(tier)
         self.enabled[tier] = False
         self.runtime[tier] = []
+        self._clear_embedding_cache()
         if tier == "stm":
             self._stm_tasks.clear()
         return self.state(tier)
@@ -184,6 +303,8 @@ class MemoryManager:
             if not self.enabled[tier] or self.storage_errors.get(tier):
                 continue
             for entry_index, entry in enumerate(self.runtime[tier]):
+                if self.store.contains_secret(entry):
+                    continue
                 title = str(entry.get("title", ""))
                 content = str(entry.get("content", ""))
                 raw_tags = entry.get("tags", [])
@@ -194,7 +315,12 @@ class MemoryManager:
                                    "text": f"{title} {content} {tags}",
                                    "title_text": title, "content_text": content,
                                    "tags_text": tags,
-                                   "created_at": str(entry.get("created_at", ""))})
+                                   "kind": entry.get("kind", "fact"),
+                                   "importance": entry.get("importance", 3),
+                                   "created_at": str(entry.get("created_at", "")),
+                                   "last_used_at": str(entry.get("last_used_at", "")),
+                                   "updated_at": str(entry.get("updated_at", "")),
+                                   "use_count": entry.get("use_count", 0)})
         query_term_count = len(set(self._word.findall(str(query).casefold())))
         lexical = rank_documents(query, candidates,
                                  min_matches=min(2, query_term_count))
@@ -210,25 +336,83 @@ class MemoryManager:
         fused = fuse_rankings(channels, weights={"title": 1.2,
                                                  "content": 1.0,
                                                  "tags": 0.8})
+        semantic_ranked = self._semantic_rankings(candidates, str(query))
+        semantic_by_id = {item["document"]["entry"]["id"]: item
+                          for item in semantic_ranked}
+        if semantic_ranked:
+            fused = fuse_rankings({**channels, "semantic": semantic_ranked},
+                                  weights={"title": 1.2, "content": 1.0,
+                                           "tags": 0.8, "semantic": 1.0})
+        # Kind only adjusts already-relevant candidates; it cannot introduce a
+        # preference/correction that failed the lexical/semantic eligibility gate.
+        kind_weights = {"fact": 1.0, "preference": 1.08, "correction": 1.16}
+        ranked_at = self._now()
+        for item in fused:
+            document = item["document"]
+            kind = document.get("kind", "fact")
+            importance = document.get("importance", 3)
+            item["score"] *= kind_weights.get(kind, 1.0)
+            item["kind_weight"] = kind_weights.get(kind, 1.0)
+            item["importance_weight"] = self._importance_weight(importance)
+            item["recency_weight"] = self._recency_weight(document, ranked_at)
+            item["usage_weight"] = self._usage_weight(document.get("use_count", 0))
+            item["score"] *= (item["importance_weight"] * item["recency_weight"] *
+                               item["usage_weight"])
+        fused.sort(key=lambda item: (-item["score"], item["ordinal"]))
         lexical_by_id = {item["document"]["entry"]["id"]: item
                          for item in lexical}
         diversified = diversify_ranked(fused, limit=max(0, min(32, int(limit))),
-                                       text_key="text", relevance_weight=0.7)
+                                       text_key="text", relevance_weight=0.7,
+                                       similarity_fn=self._candidate_similarity)
         selected = diversified
+        durable_ids = [item["document"]["entry"]["id"] for item in selected
+                       if item["document"]["tier"] != "stm"]
+        try:
+            recorded_usage = self.store.record_usage(durable_ids,
+                                                     used_at=ranked_at.isoformat())
+        except MemoryStoreError:
+            recorded_usage = {}
+        for item in selected:
+            document = item["document"]
+            entry = document["entry"]
+            if document["tier"] == "stm":
+                entry["use_count"] = min(1_000_000, max(
+                    0, self._safe_use_count(entry.get("use_count", 0))) + 1)
+                entry["last_used_at"] = ranked_at.isoformat()
+                document["usage_persistence"] = "process"
+            elif entry["id"] in recorded_usage:
+                entry.update(recorded_usage[entry["id"]])
+                document["usage_persistence"] = "durable"
+            else:
+                entry["use_count"] = min(1_000_000, max(
+                    0, self._safe_use_count(entry.get("use_count", 0))) + 1)
+                entry["last_used_at"] = ranked_at.isoformat()
+                document["usage_persistence"] = "process_only"
+            entry["project_id"] = self.project_id
         entries = [item["document"]["entry"] for item in selected]
         provenance = [{
             "entry_id": item["document"]["entry"]["id"],
             "rank": index + 1,
             "tier": item["document"]["tier"],
+            "memory_kind": item["document"].get("kind", "fact"),
+            "importance_weight": round(item.get("importance_weight", 1.0), 3),
+            "kind_weight": round(item.get("kind_weight", 1.0), 3),
+            "recency_weight": round(item.get("recency_weight", 1.0), 6),
+            "usage_weight": round(item.get("usage_weight", 1.0), 6),
+            "usage_persistence": item["document"].get("usage_persistence", "unavailable"),
             "query_overlap_terms": len(item["matched_terms"]),
-            "bm25_score": round(lexical_by_id[
-                item["document"]["entry"]["id"]]["score"], 6),
-            "ranking_method": "fielded_bm25_rrf_mmr",
+            "bm25_score": round(lexical_by_id.get(
+                item["document"]["entry"]["id"], {}).get("score", 0.0), 6),
+            "ranking_method": ("hybrid_bm25_rrf_mmr" if semantic_ranked
+                               else "fielded_bm25_rrf_mmr"),
             "channel_ranks": item["channel_ranks"],
             "rrf_score": round(item["score"], 8),
             "diversity_score": item["diversity_score"],
             "redundancy_score": item["redundancy_score"],
             "matched_terms": item["matched_terms"],
+            **({"semantic_similarity": round(semantic_by_id[
+                item["document"]["entry"]["id"]]["score"], 6)}
+               if item["document"]["entry"]["id"] in semantic_by_id else {}),
             "namespace_hash": hashlib.sha256(
                 str(item["document"]["entry"].get(
                     "namespace", self.identities[item["document"]["tier"]])).encode()
@@ -236,14 +420,158 @@ class MemoryManager:
         } for index, item in enumerate(selected)]
         return entries, provenance
 
+    @classmethod
+    def _safe_use_count(cls, value):
+        return value if isinstance(value, int) and not isinstance(value, bool) else 0
+
+    @classmethod
+    def _usage_weight(cls, value):
+        count = min(32, max(0, cls._safe_use_count(value)))
+        return 1.0 + 0.10 * math.log1p(count) / math.log1p(32)
+
+    @staticmethod
+    def _importance_weight(value):
+        if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 5:
+            value = 3
+        return 1.0 + (value - 3) * 0.05
+
+    @staticmethod
+    def _recency_weight(document, now):
+        value = (document.get("last_used_at") or document.get("updated_at")
+                 or document.get("created_at"))
+        if not value:
+            return 1.0
+        try:
+            timestamp = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            if timestamp.tzinfo is None:
+                return 1.0
+            age_days = max(0.0, (now - timestamp.astimezone(timezone.utc)).total_seconds()
+                           / 86400.0)
+        except (TypeError, ValueError, OverflowError):
+            return 1.0
+        return 1.0 + 0.15 * math.exp(-age_days / 90.0)
+
+    def _semantic_rankings(self, candidates, query):
+        backend = self._embedding_backend
+        if (not candidates or not query.strip() or
+                not self._semantic_status.get("ready") or backend is None):
+            return []
+        eligible = [item for item in candidates
+                    if not self.store.contains_secret(item["entry"])]
+        if not eligible:
+            return []
+        try:
+            backend_identity = str(backend.identity)
+            query_key = backend_identity + ":q:" + hashlib.sha256(
+                query.encode("utf-8")).hexdigest()
+            query_vector = self._embedding_cache_get(self._query_embedding_cache, query_key)
+            if query_vector is None:
+                query_vector = OllamaEmbeddingBackend._normalize_vector(
+                    backend.embed_query(query))
+                self._cache_embedding(self._query_embedding_cache, query_key, query_vector)
+            document_vectors = {}
+            missing = []
+            for candidate in eligible:
+                entry = candidate["entry"]
+                content_fingerprint = hashlib.sha256(candidate["text"].encode(
+                    "utf-8")).hexdigest()
+                namespace_hash = hashlib.sha256(str(entry.get("namespace", "")).encode()
+                                                ).hexdigest()[:16]
+                key = ":".join((backend_identity, candidate["tier"], namespace_hash,
+                                str(entry.get("id", "")), content_fingerprint))
+                vector = self._embedding_cache_get(self._embedding_cache, key)
+                if vector is None:
+                    missing.append((candidate, key))
+                else:
+                    document_vectors[id(candidate)] = vector
+            for offset in range(0, len(missing), OllamaEmbeddingBackend.MAX_TEXTS):
+                batch = missing[offset:offset + OllamaEmbeddingBackend.MAX_TEXTS]
+                vectors = backend.embed_documents([item[0]["text"] for item in batch])
+                if len(vectors) != len(batch):
+                    raise EmbeddingError("embedding_invalid_response")
+                for (candidate, key), vector in zip(batch, vectors):
+                    normalized = OllamaEmbeddingBackend._normalize_vector(vector)
+                    self._cache_embedding(self._embedding_cache, key, normalized)
+                    document_vectors[id(candidate)] = normalized
+            dimensions = len(query_vector)
+            ranked = []
+            if any(len(vector) != dimensions for vector in document_vectors.values()):
+                raise EmbeddingError("embedding_dimension_mismatch")
+            for ordinal, candidate in enumerate(eligible):
+                vector = document_vectors.get(id(candidate))
+                if vector is None:
+                    continue
+                similarity = self._cosine(query_vector, vector)
+                candidate["_semantic_vector"] = vector
+                if similarity >= self.MIN_SEMANTIC_SIMILARITY:
+                    ranked.append({"document": candidate, "score": similarity,
+                                   "matched_terms": [], "ordinal": ordinal})
+            ranked.sort(key=lambda item: (-item["score"], item["ordinal"]))
+            self._semantic_status.update({"ready": True, "status": "ready", "error": "",
+                                          "cache_entries": self.embedding_cache_entries})
+            return ranked[:self.MAX_SEMANTIC_CANDIDATES]
+        except (EmbeddingError, AttributeError, TypeError, ValueError,
+                OverflowError, ArithmeticError) as error:
+            category = (error.category if isinstance(error, EmbeddingError)
+                        else "embedding_invalid_response")
+            self._semantic_status.update({"ready": False, "status": category,
+                                          "error": category})
+            self._embedding_backend = None
+            return []
+        except Exception:
+            category = "embedding_failed"
+            self._semantic_status.update({"ready": False, "status": category,
+                                          "error": category})
+            self._embedding_backend = None
+            return []
+
+    @staticmethod
+    def _cosine(left, right):
+        if not left or len(left) != len(right):
+            return -1.0
+        dot = sum(a * b for a, b in zip(left, right))
+        norm_left = sum(a * a for a in left) ** 0.5
+        norm_right = sum(b * b for b in right) ** 0.5
+        return dot / (norm_left * norm_right) if norm_left and norm_right else -1.0
+
+    @classmethod
+    def _candidate_similarity(cls, left, right):
+        left_vector = left.get("_semantic_vector")
+        right_vector = right.get("_semantic_vector")
+        if isinstance(left_vector, list) and isinstance(right_vector, list) and (
+                len(left_vector) == len(right_vector)):
+            return max(0.0, cls._cosine(left_vector, right_vector))
+        left_terms = set(cls._word.findall(str(left.get("text", "")).casefold()))
+        right_terms = set(cls._word.findall(str(right.get("text", "")).casefold()))
+        return len(left_terms & right_terms) / max(1, len(left_terms | right_terms))
+
+    @staticmethod
+    def _embedding_cache_get(cache, key):
+        vector = cache.pop(key, None)
+        if vector is not None:
+            cache[key] = vector
+        return vector
+
+    def _cache_embedding(self, cache, key, vector):
+        normalized = OllamaEmbeddingBackend._normalize_vector(vector)
+        cache.pop(key, None)
+        cache[key] = normalized
+        while len(cache) > self.MAX_EMBEDDING_CACHE:
+            cache.popitem(last=False)
+
     def context_entries(self, query: str):
         return self.retrieve(query, limit=8)
 
     def add(self, content: str, *, tier="ltm", title="", scope=None, tags=None,
-            expires_at=""):
+            kind=None,
+            expires_at="", importance=None):
         self._check_tier(tier)
         if not self.enabled[tier]:
             raise RuntimeError(f"memory tier disabled: {tier}")
+        if (importance is not None and
+                (isinstance(importance, bool) or not isinstance(importance, int)
+                 or not 1 <= importance <= 5)):
+            raise ValueError("memory importance must be an integer from 1 to 5")
         if tier == "stm" and not self._retain_stm_task:
             raise RuntimeError("STM requires an active task; use /task start")
         normalized = " ".join(str(content).casefold().split())
@@ -252,6 +580,11 @@ class MemoryManager:
         existing = next((item for item in self.list(tier=tier, scope=scope)
                          if " ".join(str(item.get("content", "")).casefold().split()) == normalized), None)
         if existing:
+            if ((kind is not None and existing.get("kind", "fact") != kind) or
+                    (importance is not None and
+                     existing.get("importance", 3) != importance)):
+                return self.update(existing["id"], content, kind=kind,
+                                   importance=importance)
             return existing
         duplicate = self._near_duplicate(content, tier, scope=scope)
         if duplicate:
@@ -260,17 +593,20 @@ class MemoryManager:
                 f"near-duplicate memory exists ({entry['id']}, lexical overlap "
                 f"{similarity:.0%}); update that record or add distinct information")
         namespace = self.namespace_for(tier, scope)
+        importance = 3 if importance is None else importance
         entry = self.store.normalise(content, title=title, scope=scope, tags=tags,
-                                     tier=tier, namespace=namespace,
-                                     expires_at=expires_at)
+                                     tier=tier, kind=kind or "fact", namespace=namespace,
+                                     expires_at=expires_at, importance=importance)
         entry["project_id"] = self.project_id
         if tier != "stm":
             entry = self.store.add(content, title=title, scope=scope, tags=tags,
+                                   kind=kind or "fact",
                                    tier=tier, namespace=namespace,
-                                   expires_at=expires_at)
+                                   expires_at=expires_at, importance=importance)
             self.store.keep_latest(tier, namespace, 64)
             entry["project_id"] = self.project_id
         self.runtime[tier].append(entry)
+        self._clear_embedding_cache()
         self.runtime[tier] = self._bounded_runtime(tier)
         if tier == "stm":
             self._stm_tasks[self.identities[tier]] = self.runtime[tier]
@@ -350,6 +686,7 @@ class MemoryManager:
                 if expired:
                     expired_ids.add(entry.get("id"))
             if expired_ids:
+                self._clear_embedding_cache()
                 self.runtime[tier] = [item for item in self.runtime[tier]
                                       if item.get("id") not in expired_ids]
                 if tier == "stm":
@@ -362,7 +699,7 @@ class MemoryManager:
                         self.store.delete(entry_id)
 
     def update(self, entry_id, content, *, title=None, scope=None, tags=None,
-               expires_at=None):
+               expires_at=None, kind=None, importance=None):
         for tier in self.TIERS:
             if not self.enabled[tier]:
                 if tier != "stm" and any(
@@ -388,12 +725,18 @@ class MemoryManager:
             fields = {"title": entry.get("title", "") if title is None else title,
                       "scope": target_scope,
                       "tags": entry.get("tags", []) if tags is None else tags,
+                      "kind": entry.get("kind", "fact") if kind is None else kind,
+                      "importance": entry.get("importance", 3) if importance is None else importance,
                       "tier": tier, "namespace": namespace,
                       "expires_at": entry.get("expires_at", "") if expires_at is None else expires_at}
             if tier == "stm":
                 replacement = self.store.normalise(content, **fields)
                 replacement.update(id=entry_id, project_id=self.project_id,
                                    created_at=entry.get("created_at", ""))
+                replacement["updated_at"] = self._now().isoformat()
+                for field in ("last_used_at", "use_count"):
+                    if field in entry:
+                        replacement[field] = entry[field]
             else:
                 replacement = self.store.update(entry_id, content, **fields)
                 if replacement is None:
@@ -403,6 +746,7 @@ class MemoryManager:
                                   for item in self.runtime[tier]]
             if tier == "stm":
                 self._stm_tasks[self.identities[tier]] = self.runtime[tier]
+            self._clear_embedding_cache()
             return replacement
         return None
 
@@ -417,7 +761,10 @@ class MemoryManager:
                         self._stm_tasks[namespace] = [
                             item for item in entries
                             if item.get("id") != entry_id]
-                return tier == "stm" or self.store.delete(entry_id)
+                removed = tier == "stm" or self.store.delete(entry_id)
+                if removed:
+                    self._clear_embedding_cache()
+                return removed
         # A memory row may remain visible while a conversation/thread switch
         # occurs inside the confirmation dialog's nested event loop. The
         # selected ID is globally unique, so honor that explicit delete even
@@ -436,7 +783,10 @@ class MemoryManager:
                 self._stm_tasks[namespace] = [
                     item for item in entries if item.get("id") != entry_id]
             return True
-        return self.store.delete(entry_id)
+        removed = self.store.delete(entry_id)
+        if removed:
+            self._clear_embedding_cache()
+        return removed
 
     def clear_scope(self, scope, *, tier=None):
         tiers = self.TIERS if tier is None else (tier,)
@@ -465,6 +815,8 @@ class MemoryManager:
                     removed += self.store.clear_scope(scope, tier=current,
                                                       namespace=namespace)
             removed += len(runtime_matches - persistent_matches)
+        if removed:
+            self._clear_embedding_cache()
         return removed
 
     def reset(self, tier=None, *, persistent=True):
@@ -484,6 +836,8 @@ class MemoryManager:
                 removed += len(runtime_ids - stored_ids)
             else:
                 removed += len(runtime_ids)
+        if removed:
+            self._clear_embedding_cache()
         return removed
 
     def clear_task(self, task_id: str):
@@ -492,6 +846,8 @@ class MemoryManager:
         entries = self._stm_tasks.pop(task_id, [])
         if self.identities["stm"] == task_id:
             self.runtime["stm"] = []
+        if entries:
+            self._clear_embedding_cache()
         return len(entries)
 
     def apply_compaction(self, *, tier: str, namespace: str, scope: str,
@@ -511,6 +867,7 @@ class MemoryManager:
         self.runtime[tier] = self._load(tier)
         self.storage_errors.pop(tier, None)
         entry["project_id"] = self.project_id
+        self._clear_embedding_cache()
         return entry
 
     def compact(self, tier: str, limit=64):
@@ -521,6 +878,8 @@ class MemoryManager:
         removed = (0 if tier == "stm" else sum(
             self.store.keep_latest(tier, namespace, max(1, min(64, int(limit))))
             for namespace in self._namespaces(tier)))
+        if removed:
+            self._clear_embedding_cache()
         return {"runtime_entries": len(self.runtime[tier]), "persistent_removed": removed}
 
     def state(self, tier=None):
@@ -564,6 +923,8 @@ class MemoryManager:
                                    if persistent_count_known else None),
                                "namespace_hash": hashlib.sha256("|".join(
                                    self._namespaces(current)).encode()).hexdigest()[:16]}
+        if tier is None:
+            result["semantic"] = self.semantic_state()
         return result if tier is None else result[tier]
 
     @classmethod

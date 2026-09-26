@@ -90,7 +90,7 @@ def fuse_rankings(rankings: dict[str, list[dict]], *, weights=None,
 
 
 def diversify_ranked(ranked: Iterable[dict], *, limit, text_key="text",
-                     relevance_weight=0.7) -> list[dict]:
+                     relevance_weight=0.7, similarity_fn=None) -> list[dict]:
     """Greedily rerank a bounded result set for query relevance and novelty."""
     rows = list(ranked)
     limit = max(0, min(32, int(limit)))
@@ -109,9 +109,14 @@ def diversify_ranked(ranked: Iterable[dict], *, limit, text_key="text",
         best_redundancy = 0.0
         for index in remaining:
             candidate_terms = set(terms[index])
-            redundancy = max((len(candidate_terms & set(terms[chosen])) /
-                              max(1, len(candidate_terms | set(terms[chosen])))
-                              for chosen in selected_indices), default=0.0)
+            if similarity_fn:
+                redundancy = max((max(0.0, min(1.0, float(similarity_fn(
+                    rows[index]["document"], rows[chosen]["document"]))))
+                                  for chosen in selected_indices), default=0.0)
+            else:
+                redundancy = max((len(candidate_terms & set(terms[chosen])) /
+                                  max(1, len(candidate_terms | set(terms[chosen])))
+                                  for chosen in selected_indices), default=0.0)
             relevance = float(rows[index].get("score", 0.0)) / maximum
             value = weight * relevance - (1.0 - weight) * redundancy
             if value > best_value or (value == best_value and

@@ -1,0 +1,26 @@
+{
+  "feature": "Create and verify a durable typed memory preference through the live Manage Memories UI, with provider access disabled.",
+  "target_sequence": "sprint1001-memory-kind",
+  "project": "artifacts/demos/sprint160-placement-crash-ci-final.ccad.json",
+  "minimum_mapped_interactions": 7,
+  "required_targets": [
+    "action:settingsBtn",
+    "control:categoryList",
+    "action:agent_memory_manage",
+    "action:addMemory",
+    "control:memoryTier",
+    "control:memoryKind",
+    "control:memoryTitle",
+    "control:memoryScope",
+    "control:memoryContent",
+    "action:saveMemory",
+    "action:closeMemoryManager",
+    "action:cancelSettingsButton"
+  ],
+  "required_text_entries": [
+    "control:memoryTitle",
+    "control:memoryScope",
+    "control:memoryContent"
+  ],
+  "meaningful_screenshots": 15
+}

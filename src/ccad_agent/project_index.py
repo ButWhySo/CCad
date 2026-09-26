@@ -6,8 +6,10 @@ import hashlib
 import json
 import math
 import re
-from collections import Counter, defaultdict
+from collections import Counter, OrderedDict, defaultdict
 from typing import Any
+
+from semantic_retrieval import EmbeddingError, OllamaEmbeddingBackend
 
 
 _WORD = re.compile(r"[\w]+", re.UNICODE)
@@ -30,6 +32,30 @@ _STOP = {"the", "and", "for", "with", "from", "into", "near", "around", "show",
          "project", "objects", "please", "current", "existing", "all", "are", "is"}
 _MAX_INPUT_ENTITIES = 50_000
 _MAX_RESULT_TEXT = 400
+_MAX_SEMANTIC_DOCUMENTS = 64
+_MAX_SEMANTIC_VECTOR_CACHE = 512
+_MAX_SEMANTIC_QUERY_CACHE = 64
+_SEMANTIC_KINDS = {
+    "functional_block", "schematic_sheet", "footprint", "schematic_symbol",
+    "schematic_net", "design_rules", "project_diagnostic", "schematic_textbox",
+}
+_SEMANTIC_KIND_PRIORITY = {
+    "functional_block": 0, "schematic_sheet": 1, "footprint": 2,
+    "schematic_symbol": 3, "schematic_net": 4, "design_rules": 5,
+    "project_diagnostic": 6, "schematic_textbox": 7,
+}
+_BOARD_GEOMETRY_KINDS = frozenset({
+    "footprint", "pad", "track", "track_arc", "via", "zone", "graphic",
+    "board_text", "dimension", "keepout", "route_request", "board_group",
+    "target", "barcode", "board_table", "placement_region", "reference_image",
+    "teardrop", "board_net"})
+_SCHEMATIC_GEOMETRY_KINDS = frozenset({
+    "schematic_symbol", "schematic_pin", "schematic_wire", "schematic_label",
+    "schematic_net", "schematic_page", "schematic_sheet", "schematic_text",
+    "schematic_textbox",
+    "schematic_graphic", "schematic_junction", "schematic_no_connect",
+    "schematic_marker", "schematic_bus_entry", "schematic_bus", "schematic_rule_area",
+    "schematic_table", "schematic_bitmap", "schematic_group", "power_symbol"})
 
 
 def _normalize(value: Any) -> str:
@@ -274,6 +300,28 @@ class ProjectIndex:
         self._spatial_cells: dict[tuple[int, int], set[str]] = defaultdict(set)
         self._spatial_keys: dict[str, tuple[tuple[int, int], ...]] = {}
         self._spatial_global: set[str] = set()
+        self._semantic_backend = None
+        self._semantic_identity = ""
+        self._semantic_status = "disabled"
+        self._semantic_vectors: OrderedDict[str, list[float]] = OrderedDict()
+        self._semantic_query_vectors: OrderedDict[str, list[float]] = OrderedDict()
+
+    def set_embedding_backend(self, backend):
+        """Set the explicitly configured, ready local project embedding backend."""
+        identity = str(getattr(backend, "identity", "")) if backend is not None else ""
+        if backend is None or not identity:
+            self._semantic_backend = None
+            self._semantic_identity = ""
+            self._semantic_status = "disabled"
+            self._semantic_vectors.clear()
+            self._semantic_query_vectors.clear()
+            return
+        if identity != self._semantic_identity:
+            self._semantic_vectors.clear()
+            self._semantic_query_vectors.clear()
+        self._semantic_backend = backend
+        self._semantic_identity = identity[:256]
+        self._semantic_status = "ready"
 
     @staticmethod
     def _signature(doc: dict) -> str:
@@ -309,9 +357,15 @@ class ProjectIndex:
                            ("lib_id", item.get("lib_id")),
                            ("sheet_path", item.get("sheet_path")),
                            ("title", item.get("title")),
+                           ("text", item.get("text")),
                            ("notes", item.get("notes")),
+                           ("target", item.get("target")),
                            ("pin_name", item.get("pin_name")),
                            ("pin_number", item.get("pin_number")),
+                           ("electrical_type", item.get("electrical_type")),
+                           ("graphical_style", item.get("graphical_style")),
+                           ("orientation", item.get("orientation")),
+                           ("identity_source", item.get("identity_source")),
                            ("type", item.get("kind", item.get("type"))),
                            ("code", item.get("code")),
                            ("severity", item.get("severity")),
@@ -321,6 +375,12 @@ class ProjectIndex:
             clean = _safe(value, 140)
             if clean:
                 fields[key] = clean
+        for key in ("locked", "visible"):
+            if isinstance(item.get(key), bool):
+                fields[key] = item[key]
+        if (isinstance(item.get("unit"), int) and
+                not isinstance(item.get("unit"), bool) and 0 <= item["unit"] <= 1024):
+            fields["symbol_unit"] = item["unit"]
         raw_sheet_path = item.get("sheet_path", item.get("file_path"))
         sheet_path = _relative_sheet_path(raw_sheet_path)
         if kind == "schematic_sheet" and sheet_path:
@@ -366,7 +426,11 @@ class ProjectIndex:
         if net:
             fields["net_id"] = net
             if kind == "schematic_pin":
-                fields["membership_kind"] = "schematic_net_member"
+                fields["membership_kind"] = (
+                    _safe(item.get("membership_kind"), 40) or "schematic_net_member")
+        elif kind == "schematic_pin":
+            fields["membership_kind"] = (
+                _safe(item.get("membership_kind"), 40) or "declared_pin")
         if layer:
             fields["layer_id"] = layer
         if layer_ids:
@@ -407,7 +471,9 @@ class ProjectIndex:
         searchable_values.extend(fields.get(key, "") for key in
                                  ("reference", "value", "name", "part", "description",
                                   "library_description", "footprint_name", "lib_id",
-                                  "sheet_path", "title", "notes", "pin_name", "pin_number",
+                                  "sheet_path", "title", "text", "notes", "target",
+                                  "pin_name", "pin_number", "electrical_type",
+                                  "graphical_style", "orientation",
                                   "code", "severity", "message", "engine", "object_id"))
         for prop in properties:
             searchable_values.extend((prop["name"], prop["value"]))
@@ -552,6 +618,7 @@ class ProjectIndex:
                 docs.append(net_doc)
 
         schematic_sources = [project]
+        declared_pin_sources: list[tuple[str, dict]] = []
         schematics = project.get("schematics", [])
         if isinstance(schematics, list):
             schematic_sources.extend(item for item in schematics[:64] if isinstance(item, dict))
@@ -567,6 +634,11 @@ class ProjectIndex:
                 if page is not None and len(docs) < _MAX_INPUT_ENTITIES:
                     docs.append(page)
             symbols = schematic.get("components", schematic.get("symbols", []))
+            declared_pin_sources.extend(
+                (source_sheet_id, {**symbol, "symbol_id": _safe(symbol.get("id"), 120),
+                                   "reference": _safe(symbol.get("reference"), 120)})
+                for symbol in _iter_dicts(symbols)
+                if isinstance(symbol.get("pins"), list))
             add("schematic_symbol", symbols,
                 aliases=("id", "reference", "part", "value", "lib_id"),
                 sheet_id=source_sheet_id,
@@ -581,10 +653,37 @@ class ProjectIndex:
             for kind, key in (("power_symbol", "power_symbols"), ("schematic_bus", "buses"),
                               ("schematic_constraint", "constraints"),
                               ("schematic_group", "groups"), ("schematic_sheet", "sheets"),
-                              ("schematic_text", "texts")):
+                              ("schematic_text", "texts"),
+                              ("schematic_textbox", "textboxes"),
+                              ("schematic_graphic", "graphics"),
+                              ("schematic_junction", "junctions"),
+                              ("schematic_no_connect", "no_connects"),
+                              ("schematic_marker", "markers"),
+                              ("schematic_bus_entry", "bus_entries"),
+                              ("schematic_rule_area", "rule_areas"),
+                              ("schematic_table", "tables"),
+                              ("schematic_bitmap", "bitmaps")):
                 add(kind, schematic.get(key), aliases=("id", "name", "text", "value", "net_id"),
                     sheet_id=source_sheet_id,
                     parent_sheet_id=(source_sheet_id if kind == "schematic_sheet" else ""))
+            # Table cell text is useful for retrieval; embedded bitmap data is
+            # deliberately excluded from both the index and provider context.
+            for table in _iter_dicts(schematic.get("tables")):
+                cell_text = [_safe(cell.get("text"), 140)
+                             for cell in _iter_dicts(table.get("cells"))]
+                cell_text = [value for value in cell_text if value]
+                if cell_text:
+                    table_id = _safe(table.get("id"), 120)
+                    table_doc = next((doc for doc in reversed(docs)
+                                      if doc["fields"]["kind"] == "schematic_table" and
+                                      doc["fields"]["id"] == table_id), None)
+                    if table_doc is not None:
+                        table_doc["fields"]["text"] = " | ".join(cell_text)[:400]
+                        table_doc["text"] = (table_doc["text"] + " " +
+                                              table_doc["fields"]["text"])[:1200]
+                        table_doc["tokens"].update(Counter(
+                            token.casefold() for token in _WORD.findall(
+                                table_doc["fields"]["text"]) if len(token) <= 80))
 
         diagnostics = snapshot.get("project_diagnostics", [])
         if isinstance(diagnostics, list):
@@ -605,6 +704,46 @@ class ProjectIndex:
                     extra_text=("project diagnostic",))
                 if diagnostic is not None and len(docs) < _MAX_INPUT_ENTITIES:
                     docs.append(diagnostic)
+
+        # Build typed declared-pin records before linking net membership so
+        # unconnected pins remain visible and connected pins retain electrical
+        # metadata from their source symbol.
+        declared_pin_docs: list[dict] = []
+        declared_by_component_pin: dict[tuple[str, str], list[dict]] = defaultdict(list)
+        for sheet_id, symbol in declared_pin_sources:
+            symbol_id = _safe(symbol.get("symbol_id") or symbol.get("id"), 120)
+            reference = _safe(symbol.get("reference"), 120)
+            unit = symbol.get("unit", 1)
+            for pin in _iter_dicts(symbol.get("pins")):
+                pin_name = _safe(pin.get("name"), 100)
+                pin_number = _safe(pin.get("number"), 100)
+                if not pin_name and not pin_number:
+                    continue
+                source_pin_id = _safe(pin.get("id"), 120)
+                identity_part = source_pin_id or pin_number or pin_name
+                identity = f"declared:{symbol_id or reference}:{unit}:{identity_part}"
+                pin_item = {
+                    **pin, "id": identity, "symbol_id": symbol_id,
+                    "component_id": reference, "reference": reference,
+                    "pin_name": pin_name, "pin_number": pin_number,
+                    "unit": unit, "membership_kind": "declared_pin",
+                    "identity_source": ("native_pin_id" if source_pin_id else
+                        "derived_from_symbol_unit_and_pin_number_or_name"),
+                }
+                pin_doc = cls._make_doc(
+                    "schematic_pin", pin_item,
+                    aliases=("id", "pin_name", "pin_number", "symbol_id"),
+                    component_id=reference, sheet_id=sheet_id)
+                if pin_doc is None:
+                    continue
+                declared_pin_docs.append(pin_doc)
+                pin_key = _normalize(pin_name)
+                if pin_key:
+                    for component_key in {symbol_id, reference}:
+                        normalized_component = _normalize(component_key)
+                        if normalized_component:
+                            declared_by_component_pin[
+                                (normalized_component, pin_key)].append(pin_doc)
 
         # Build the membership lookup once; scanning every source net for every
         # indexed net makes large multi-sheet projects quadratic.
@@ -632,8 +771,9 @@ class ProjectIndex:
             if member_count >= _MAX_INPUT_ENTITIES:
                 break
 
-        # Schematic net.members points at serialized component IDs and pins;
-        # preserve each declared member as a separate searchable logical pin.
+        # Schematic net.members points at serialized component IDs and pins.
+        # Attach a membership to a declared pin only when that identity maps
+        # unambiguously; retain unresolved native members as separate records.
         symbols = {}
         for symbol in docs:
             if symbol["fields"]["kind"] != "schematic_symbol":
@@ -642,11 +782,61 @@ class ProjectIndex:
                 value = _normalize(symbol["fields"].get(key, ""))
                 if value:
                     symbols[value] = symbol
+        member_claims: dict[str, list[tuple[str, dict]]] = defaultdict(list)
+        unresolved_members: list[tuple[str, dict, bool]] = []
+        for net_id, members in members_by_net.items():
+            for member in members:
+                component_id = _safe(member.get("component_id"), 120)
+                pin_name = _safe(member.get("pin_name"), 100)
+                symbol = symbols.get(_normalize(component_id))
+                component_keys = {component_id}
+                if symbol:
+                    component_keys.update((symbol["fields"].get("id", ""),
+                                           symbol["fields"].get("reference", "")))
+                candidates = {pin_doc["uid"]: pin_doc
+                              for component_key in component_keys
+                              for pin_doc in declared_by_component_pin.get(
+                                  (_normalize(component_key), _normalize(pin_name)), ())}
+                if len(candidates) == 1:
+                    pin_doc = next(iter(candidates.values()))
+                    member_claims[pin_doc["uid"]].append((net_id, member))
+                else:
+                    unresolved_members.append((net_id, member, len(candidates) > 1))
+
+        for pin_doc in declared_pin_docs:
+            claims = member_claims.get(pin_doc["uid"], ())
+            claimed_nets = sorted({net_id for net_id, _member in claims})
+            if len(claimed_nets) == 1:
+                net_id = claimed_nets[0]
+                symbol_id = pin_doc["fields"].get("symbol_id", "")
+                pin_name = pin_doc["fields"].get("pin_name", "")
+                component_id = pin_doc["fields"].get("reference", "") or \
+                    pin_doc["fields"].get("component_id", "")
+                # Preserve the historical net-member ID while enriching its
+                # payload with the exact declaration fields.
+                pin_doc["fields"]["id"] = f"{net_id}:{component_id}:{pin_name}"
+                pin_doc["uid"] = f"schematic_pin:{pin_doc['fields']['id']}"
+                pin_doc["fields"]["net_id"] = net_id
+                pin_doc["fields"]["membership_kind"] = "schematic_net_member"
+                pin_doc["net"] = _normalize(net_id)
+                pin_doc["aliases"].add(_normalize(net_id))
+                pin_doc["tokens"].update(Counter(
+                    token.casefold() for token in _WORD.findall(net_id)))
+                pin_doc["text"] = (pin_doc["text"] + " " + net_id)[:1200]
+            elif claimed_nets:
+                pin_doc["fields"]["membership_kind"] = "ambiguous_net_membership"
+                pin_doc["fields"]["candidate_net_ids"] = claimed_nets[:8]
+                unresolved_members.extend((net_id, member, True)
+                                          for net_id, member in claims)
+
+        docs.extend(declared_pin_docs)
         for doc in docs:
             if doc["fields"]["kind"] != "schematic_net":
                 continue
             net_id = doc["fields"]["id"]
-            for member in members_by_net.get(net_id, ()):
+            for member_net, member, ambiguous in unresolved_members:
+                if member_net != net_id:
+                    continue
                 component_id = _safe(member.get("component_id"), 120)
                 pin_name = _safe(member.get("pin_name"), 100)
                 symbol = symbols.get(_normalize(component_id))
@@ -657,13 +847,167 @@ class ProjectIndex:
                     "schematic_pin",
                     {"id": f"{net_id}:{component_id}:{pin_name}",
                      "component_id": reference, "symbol_id": symbol_id,
-                     "reference": reference, "pin_name": pin_name,
-                     "net_id": net_id},
-                    aliases=("id", "pin_name", "component_id", "symbol_id"),
-                    component_id=reference, net_id=net_id)
+                      "reference": reference, "pin_name": pin_name,
+                      "net_id": net_id,
+                      "membership_kind": ("ambiguous_pin_declaration" if ambiguous
+                                          else "schematic_net_member")},
+                     aliases=("id", "pin_name", "component_id", "symbol_id"),
+                     component_id=reference, net_id=net_id)
                 if pin_doc is not None and len(docs) < _MAX_INPUT_ENTITIES:
                     docs.append(pin_doc)
                     doc["components"].update(pin_doc["components"])
+
+        # Build functional-block search documents only from explicit native
+        # group membership and serialized sheet hierarchy. These are derived
+        # index records, never inferred design truth; their provenance and
+        # current source revision remain visible to callers.
+        initial_docs = tuple(docs)
+        aliases: dict[str, list[dict]] = defaultdict(list)
+        by_sheet: dict[str, list[dict]] = defaultdict(list)
+        for source_doc in initial_docs:
+            for alias in source_doc["aliases"]:
+                aliases[alias].append(source_doc)
+            for sheet in source_doc["sheets"]:
+                by_sheet[sheet].append(source_doc)
+
+        block_sources = [doc for doc in initial_docs
+                         if doc["fields"]["kind"] in {"board_group", "schematic_group"}]
+
+        def block_bounds(members):
+            points = []
+            for member in members:
+                fields = member["fields"]
+                position = fields.get("position_mm")
+                if isinstance(position, dict):
+                    point = _point(position)
+                    if point is not None:
+                        points.append(point)
+                bounds = fields.get("bounds_mm")
+                if isinstance(bounds, dict):
+                    for x_key, y_key in (("min_x_mm", "min_y_mm"),
+                                         ("max_x_mm", "max_y_mm")):
+                        point = _point({"x": bounds.get(x_key), "y": bounds.get(y_key)})
+                        if point is not None:
+                            points.append(point)
+            return _bbox(points)
+
+        available_uids = {doc["uid"] for doc in docs}
+        for source_doc in block_sources:
+            fields = source_doc["fields"]
+            source_member_ids = sorted({target for target, relation in source_doc["references"]
+                                        if relation == "group_member"})[:64]
+            allowed_kinds = ({"footprint", "pad", "track", "track_arc", "via", "zone",
+                               "graphic", "board_text", "dimension", "keepout",
+                               "route_request", "board_group", "target", "barcode",
+                               "board_table", "placement_region", "reference_image",
+                               "teardrop"}
+                              if fields["kind"] == "board_group" else
+                              {"schematic_symbol", "schematic_net", "schematic_pin",
+                               "schematic_wire", "schematic_label", "schematic_page",
+                               "schematic_sheet", "schematic_text", "schematic_textbox",
+                               "schematic_graphic", "schematic_junction",
+                               "schematic_no_connect", "schematic_marker",
+                               "schematic_bus_entry", "schematic_rule_area",
+                               "schematic_table"})
+            member_docs = {}
+            for target, relation in source_doc["references"]:
+                if relation != "group_member":
+                    continue
+                for member in aliases.get(target, ()):
+                    if (member["uid"] != source_doc["uid"] and
+                            member["fields"]["kind"] in allowed_kinds):
+                        member_docs[member["uid"]] = member
+            block = cls._make_doc(
+                "functional_block",
+                {"id": f"group:{fields['kind']}:{fields['id']}",
+                 "name": fields.get("name") or fields.get("text") or fields["id"]},
+                aliases=("id", "name"),
+                extra_text=("explicit functional block", fields.get("name", ""),
+                            *(member["text"] for member in member_docs.values())))
+            if block is None:
+                continue
+            block["fields"].update({
+                "provenance": "explicit_user_group",
+                "source_group_id": fields["id"],
+                "member_count": len(member_docs),
+                "source_member_ids": source_member_ids,
+                "members": sorted({member["fields"].get("reference") or
+                                   member["fields"].get("id", "")
+                                   for member in member_docs.values()} - {""})[:64],
+                "related_net_ids": sorted({member["fields"].get("net_id", "")
+                                            for member in member_docs.values()
+                                            if member["fields"].get("net_id")})[:64],
+            })
+            bounds = block_bounds(member_docs.values())
+            if bounds:
+                block["fields"]["bounds_mm"] = {
+                    key: round(value, 6) for key, value in bounds.items()}
+            block["references"].update((member["fields"].get("id", ""), "group_member")
+                                        for member in member_docs.values())
+            block["references"].discard(("", "group_member"))
+            block["references"].add((fields["id"], "source_group"))
+            net_kind = {"board_group": "board_net",
+                        "schematic_group": "schematic_net"}.get(fields["kind"])
+            for net_id in block["fields"]["related_net_ids"]:
+                target_uid = f"{net_kind}:{net_id}" if net_kind else ""
+                if target_uid and target_uid in available_uids:
+                    block["references"].add((f"uid:{target_uid}", "block_net_member"))
+            block["text"] = (block["text"] + " " + " ".join(
+                net for net in block["fields"]["related_net_ids"]))[:1200]
+            block["tokens"] = Counter(token.casefold() for token in _WORD.findall(
+                block["text"]) if len(token) <= 80)
+            block["signature"] = cls._signature(block)
+            if len(docs) < _MAX_INPUT_ENTITIES:
+                docs.append(block)
+
+        for sheet_doc in (doc for doc in initial_docs
+                          if doc["fields"]["kind"] == "schematic_sheet"):
+            sheet_id = sheet_doc["fields"]["id"]
+            member_docs = {member["uid"]: member for member in by_sheet.get(
+                _normalize(sheet_id), ()) if member["uid"] != sheet_doc["uid"]}
+            if not member_docs:
+                continue
+            fields = sheet_doc["fields"]
+            block = cls._make_doc(
+                "functional_block",
+                {"id": f"sheet:{sheet_id}",
+                 "name": fields.get("name") or fields.get("title") or sheet_id},
+                aliases=("id", "name"),
+                extra_text=("schematic sheet functional block", fields.get("name", ""),
+                            *(member["text"] for member in member_docs.values())))
+            if block is None:
+                continue
+            block["fields"].update({
+                "provenance": "serialized_schematic_sheet",
+                "source_sheet_id": sheet_id,
+                "member_count": len(member_docs),
+                "source_member_ids": [],
+                "members": sorted({member["fields"].get("reference") or
+                                   member["fields"].get("id", "")
+                                   for member in member_docs.values()} - {""})[:64],
+                "related_net_ids": sorted({member["fields"].get("net_id", "")
+                                            for member in member_docs.values()
+                                            if member["fields"].get("net_id")})[:64],
+            })
+            bounds = block_bounds(member_docs.values())
+            if bounds:
+                block["fields"]["bounds_mm"] = {
+                    key: round(value, 6) for key, value in bounds.items()}
+            block["references"].update((member["fields"].get("id", ""), "group_member")
+                                        for member in member_docs.values())
+            block["references"].add((sheet_id, "source_sheet"))
+            for net_id in block["fields"]["related_net_ids"]:
+                target_uid = f"schematic_net:{net_id}"
+                if target_uid in available_uids:
+                    block["references"].add((f"uid:{target_uid}", "block_net_member"))
+            block["text"] = (block["text"] + " " + " ".join(
+                net for net in block["fields"]["related_net_ids"]))[:1200]
+            block["tokens"] = Counter(token.casefold() for token in _WORD.findall(
+                block["text"]) if len(token) <= 80)
+            block["signature"] = cls._signature(block)
+            if len(docs) < _MAX_INPUT_ENTITIES:
+                docs.append(block)
+
         for doc in docs:
             doc["signature"] = cls._signature(doc)
         return project_id, docs
@@ -719,6 +1063,11 @@ class ProjectIndex:
                 if not bucket:
                     self._component_docs.pop(value, None)
         self._remove_spatial(uid)
+        if doc is not None and self._semantic_identity:
+            project_key = hashlib.sha256(self._project_id.encode("utf-8")).hexdigest()[:24]
+            vector_key = ":".join((self._semantic_identity, project_key, uid,
+                                    doc["signature"]))
+            self._semantic_vectors.pop(vector_key, None)
 
     def _remove_spatial(self, uid: str):
         for key in self._spatial_keys.pop(uid, ()):
@@ -883,6 +1232,89 @@ class ProjectIndex:
             {"footprint", "pad", "track", "track_arc", "via", "zone"} else 1,
             item[0]))[:limit]
 
+    @staticmethod
+    def _cache_get(cache: OrderedDict, key: str):
+        value = cache.pop(key, None)
+        if value is not None:
+            cache[key] = value
+        return value
+
+    @staticmethod
+    def _cache_put(cache: OrderedDict, key: str, value: list[float], limit: int):
+        cache.pop(key, None)
+        cache[key] = value
+        while len(cache) > limit:
+            cache.popitem(last=False)
+
+    def _semantic_ranking(self, query: str,
+                          preferred_uids=()) -> list[tuple[str, float]]:
+        backend = self._semantic_backend
+        if backend is None or not query or _SECRET.search(query):
+            self._semantic_status = ("disabled" if backend is None else
+                                     "query_empty" if not query else "query_redacted")
+            return []
+        eligible = [doc for doc in self._docs.values()
+                    if doc["fields"].get("kind") in _SEMANTIC_KINDS and
+                    len(doc["text"].split()) >= 2 and not _SECRET.search(doc["text"])]
+        preferred = set(preferred_uids)
+        eligible.sort(key=lambda doc: (
+            0 if doc["uid"] in preferred else 1,
+            _SEMANTIC_KIND_PRIORITY.get(doc["fields"]["kind"], 99), doc["uid"]))
+        eligible = eligible[:_MAX_SEMANTIC_DOCUMENTS]
+        if not eligible:
+            self._semantic_status = "no_semantic_entities"
+            return []
+        try:
+            query_key = self._semantic_identity + ":q:" + hashlib.sha256(
+                query.encode("utf-8")).hexdigest()
+            query_vector = self._cache_get(self._semantic_query_vectors, query_key)
+            if query_vector is None:
+                query_vector = OllamaEmbeddingBackend._normalize_vector(
+                    backend.embed_query(query))
+                self._cache_put(self._semantic_query_vectors, query_key, query_vector,
+                                _MAX_SEMANTIC_QUERY_CACHE)
+
+            project_key = hashlib.sha256(self._project_id.encode("utf-8")).hexdigest()[:24]
+            vectors: dict[str, list[float]] = {}
+            missing = []
+            for doc in eligible:
+                key = ":".join((self._semantic_identity, project_key, doc["uid"],
+                                doc["signature"]))
+                vector = self._cache_get(self._semantic_vectors, key)
+                if vector is None:
+                    missing.append((doc, key))
+                else:
+                    vectors[doc["uid"]] = vector
+            for offset in range(0, len(missing), OllamaEmbeddingBackend.MAX_TEXTS):
+                batch = missing[offset:offset + OllamaEmbeddingBackend.MAX_TEXTS]
+                embedded = backend.embed_documents([doc["text"] for doc, _key in batch])
+                if len(embedded) != len(batch):
+                    raise EmbeddingError("embedding_invalid_response")
+                for (doc, key), raw_vector in zip(batch, embedded):
+                    vector = OllamaEmbeddingBackend._normalize_vector(raw_vector)
+                    if len(vector) != len(query_vector):
+                        raise EmbeddingError("embedding_dimension_mismatch")
+                    self._cache_put(self._semantic_vectors, key, vector,
+                                    _MAX_SEMANTIC_VECTOR_CACHE)
+                    vectors[doc["uid"]] = vector
+
+            ranked = []
+            for doc in eligible:
+                vector = vectors.get(doc["uid"])
+                if vector is None:
+                    continue
+                similarity = sum(left * right for left, right in zip(query_vector, vector))
+                if similarity >= 0.25:
+                    ranked.append((doc["uid"], similarity))
+            ranked.sort(key=lambda item: (-item[1], item[0]))
+            self._semantic_status = "ready"
+            return ranked
+        except EmbeddingError as error:
+            self._semantic_status = error.category
+        except Exception:
+            self._semantic_status = "embedding_failed"
+        return []
+
     def revision(self, project_id: str = "") -> str:
         """Return the active typed-project content revision, not a UI epoch."""
         if project_id and self._project_id not in (project_id, "opaque:" + project_id):
@@ -980,16 +1412,36 @@ class ProjectIndex:
                                         if doc["fields"]["kind"] == "schematic_net" and
                                         other_kind in {"schematic_pin", "schematic_symbol"}
                                         else "same_component")
+                        if (doc["fields"]["kind"], other_kind) in {
+                                ("schematic_pin", "schematic_symbol"),
+                                ("schematic_symbol", "schematic_pin")}:
+                            pin = doc if doc["fields"]["kind"] == "schematic_pin" else \
+                                self._docs.get(neighbor, {})
+                            symbol = doc if doc["fields"]["kind"] == "schematic_symbol" else \
+                                self._docs.get(neighbor, {})
+                            pin_fields = pin.get("fields", {})
+                            symbol_fields = symbol.get("fields", {})
+                            if pin_fields.get("symbol_id") == symbol_fields.get("id"):
+                                relationship = (
+                                    "declared_pin"
+                                    if pin_fields.get("membership_kind") == "declared_pin"
+                                    else "logical_net_member")
                         found[neighbor].add(relationship)
             for sheet in doc["sheets"]:
                 for neighbor in self._sheet_docs.get(sheet, ()):
                     if neighbor != uid and neighbor not in seeds:
                         found[neighbor].add("same_schematic_sheet")
             for target, relation in doc["references"]:
-                for alias_uid in self._aliases.get(target, ()):
-                    if alias_uid != uid and alias_uid not in seeds:
+                target_uids = ({target[4:]} if target.startswith("uid:") and
+                               target[4:] in self._docs else
+                               self._aliases.get(target, ()) if not target.startswith("uid:")
+                               else ())
+                for alias_uid in target_uids:
+                    if (alias_uid != uid and
+                            (alias_uid not in seeds or relation == "block_net_member")):
                         found[alias_uid].add(relation)
             identity_keys = set(doc["aliases"])
+            identity_keys.add(f"uid:{doc['uid']}")
             identity = _normalize(doc["fields"].get("id"))
             if identity:
                 identity_keys.add(identity)
@@ -999,8 +1451,28 @@ class ProjectIndex:
                         found[neighbor].add(relation)
         return found
 
+    @staticmethod
+    def _coordinate_domain(query: str, active_layer: str, exact_ids: set[str],
+                           docs: dict[str, dict]) -> str:
+        if re.search(r"\b(schematic|sheet|symbol|pin|wire|netlist)\b", query,
+                     re.IGNORECASE):
+            return "schematic"
+        if active_layer or re.search(
+                r"\b(pcb|board|physical|footprint|track|via|copper|layer)\b",
+                query, re.IGNORECASE):
+            return "board"
+        if any(docs.get(uid, {}).get("fields", {}).get("kind") == "footprint"
+               for uid in exact_ids):
+            return "board"
+        if any(docs.get(uid, {}).get("fields", {}).get("kind") in
+               _SCHEMATIC_GEOMETRY_KINDS for uid in exact_ids):
+            return "schematic"
+        return "board"
+
     def retrieve(self, snapshot: Any, query: str, *, active_layer: str = "",
-                 active_net: str = "", selected_objects=(), limit: int = 10) -> dict:
+                 active_net: str = "", selected_objects=(), limit: int = 10,
+                 embedding_backend=None) -> dict:
+        self.set_embedding_backend(embedding_backend)
         if isinstance(snapshot, str):
             try:
                 snapshot = json.loads(snapshot)
@@ -1015,9 +1487,14 @@ class ProjectIndex:
                     "logical_net_semantics":
                         "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity",
                     "spatial_semantics": "axis_aligned_bounds_intersection_or_distance_only",
+                    "geometry_relationship_semantics":
+                        "pcb_coordinates_only; near_component_measures_anchor_position_to_footprint_bounds; region_member_means_axis_aligned_bounds_intersection",
+                    "semantic_status": "disabled",
                     "stats": {"index_state": "unavailable", "total_entities": 0,
                               "exact_match_count": 0, "lexical_match_count": 0,
                               "relationship_match_count": 0, "spatial_match_count": 0,
+                              "near_component_match_count": 0,
+                              "region_member_match_count": 0,
                               "omitted_count": 0}}
         stats = self._sync(snapshot)
         query = _safe(query, 3072)
@@ -1034,21 +1511,75 @@ class ProjectIndex:
         points = [] if query_box else _coordinates(query)
         nearby = bool(re.search(r"\b(near|around|nearby|within|radius|close\s+to|beside)\b",
                                 query, re.IGNORECASE))
+        coordinate_domain = self._coordinate_domain(query, active_layer, exact_ids,
+                                                    self._docs)
         if nearby and not points:
-            for uid in sorted(exact_ids)[:4]:
+            for uid in sorted(exact_ids):
+                kind = self._docs.get(uid, {}).get("fields", {}).get("kind", "")
+                if ((coordinate_domain == "board" and kind not in _BOARD_GEOMETRY_KINDS) or
+                        (coordinate_domain == "schematic" and
+                         kind not in _SCHEMATIC_GEOMETRY_KINDS)):
+                    continue
                 position = self._docs[uid]["fields"].get("position_mm")
                 if position:
                     points.append((position["x"], position["y"]))
+                if len(points) == 4:
+                    break
         radius = _radius(query)
         spatial_scores: dict[str, float] = {}
+        near_component_distances: dict[str, float] = {}
         anchor_ids = exact_ids if nearby and not _coordinates(query) else set()
         if query_box:
-            spatial_scores.update(self._spatial_box(query_box))
+            spatial_scores.update({uid: distance for uid, distance in
+                                   self._spatial_box(query_box)
+                                   if self._docs[uid]["fields"]["kind"] in
+                                   (_BOARD_GEOMETRY_KINDS if coordinate_domain == "board"
+                                    else _SCHEMATIC_GEOMETRY_KINDS)})
         else:
             for point in points[:4]:
                 for uid, distance in self._spatial(point, radius)[:limit * 2]:
+                    kind = self._docs[uid]["fields"]["kind"]
+                    if kind not in (_BOARD_GEOMETRY_KINDS if coordinate_domain == "board"
+                                    else _SCHEMATIC_GEOMETRY_KINDS):
+                        continue
                     if uid not in anchor_ids:
                         spatial_scores[uid] = min(spatial_scores.get(uid, math.inf), distance)
+
+        if nearby and coordinate_domain == "board":
+            for anchor_uid in sorted(exact_ids):
+                anchor = self._docs.get(anchor_uid, {})
+                if anchor.get("fields", {}).get("kind") != "footprint":
+                    continue
+                position = anchor["fields"].get("position_mm")
+                if not position:
+                    continue
+                point = (position["x"], position["y"])
+                for uid, distance in self._spatial(point, radius):
+                    candidate = self._docs.get(uid, {})
+                    if candidate.get("fields", {}).get("kind") != "footprint" or uid in exact_ids:
+                        continue
+                    related[uid].add("near_component")
+                    near_component_distances[uid] = min(
+                        near_component_distances.get(uid, math.inf), distance)
+                    spatial_scores[uid] = min(spatial_scores.get(uid, math.inf), distance)
+
+        region_intent = bool(re.search(
+            r"\b(?:inside|within|intersect(?:s|ing)?|contained|members?|objects?|components?)\b",
+            query, re.IGNORECASE))
+        region_seeds = [uid for uid in sorted(exact_ids)
+                        if self._docs.get(uid, {}).get("fields", {}).get("kind") ==
+                        "placement_region"]
+        if coordinate_domain == "board" and region_intent:
+            for region_uid in region_seeds:
+                bounds = self._docs[region_uid]["fields"].get("bounds_mm")
+                if not bounds:
+                    continue
+                for uid, _distance in self._spatial_box(bounds):
+                    if uid == region_uid or self._docs[uid]["fields"]["kind"] not in \
+                            _BOARD_GEOMETRY_KINDS:
+                        continue
+                    related[uid].add("region_member")
+                    spatial_scores[uid] = 0.0
 
         # A spatially selected object carries its actual live DRC/ERC records;
         # unrelated diagnostics elsewhere stay out.
@@ -1057,23 +1588,64 @@ class ProjectIndex:
                     "project_diagnostic" and "diagnostic_for" in relations):
                 related[uid].add("diagnostic_for")
 
+        geometry_anchor_ids = {
+            uid for uid in exact_ids
+            if ((nearby and coordinate_domain == "board" and
+                 self._docs.get(uid, {}).get("fields", {}).get("kind") == "footprint") or
+                uid in region_seeds)
+        }
         scores: dict[str, tuple[float, str, str, float]] = {}
         for uid in exact_ids:
-            scores[uid] = (1000.0, "exact", "", 0.0)
+            scores[uid] = (1400.0 if uid in geometry_anchor_ids else 1000.0,
+                           "exact", "", 0.0)
         for rank, (uid, score) in enumerate(lexical):
             candidate = (500.0 + score - rank * 0.001, "lexical", "", 0.0)
             if uid not in scores or candidate[0] > scores[uid][0]:
                 scores[uid] = candidate
         for uid, relations in related.items():
             relation = sorted(relations)[0]
+            geometry_relations = relations.intersection(
+                {"near_component", "region_member"})
+            if geometry_relations:
+                relation = ("near_component" if "near_component" in geometry_relations
+                            else "region_member")
+                priority = 1250.0 if "near_component" in geometry_relations else 1200.0
+                prior = scores.get(uid)
+                if prior is None or prior[0] < priority:
+                    scores[uid] = (priority, "relationship", relation,
+                                   spatial_scores.get(uid, 0.0))
+                elif not prior[2]:
+                    scores[uid] = (prior[0], prior[1], relation, prior[3])
+                continue
             if uid not in scores:
-                scores[uid] = (100.0, "relationship", relation, 0.0)
-            elif scores[uid][1] == "lexical":
+                scores[uid] = (100.0, "relationship", relation,
+                               spatial_scores.get(uid, 0.0))
+            elif (scores[uid][1] == "lexical" or
+                  (not scores[uid][2] and relation == "block_net_member")):
                 prior = scores[uid]
                 scores[uid] = (prior[0], prior[1], relation, prior[3])
         for uid, distance in spatial_scores.items():
             if uid not in scores:
                 scores[uid] = (50.0 - distance, "spatial", "", distance)
+
+        semantic = self._semantic_ranking(query, lexical_ids)
+        semantic_similarity = dict(semantic)
+        if semantic:
+            lexical_rank = {uid: rank for rank, (uid, _score) in enumerate(lexical, 1)}
+            semantic_rank = {uid: rank for rank, (uid, _score) in enumerate(semantic, 1)}
+            for uid in set(lexical_rank).union(semantic_rank):
+                prior = scores.get(uid)
+                if prior and (prior[1] == "exact" or prior[2] in
+                              {"near_component", "region_member"}):
+                    continue
+                reciprocal = (
+                    (1.0 / (60 + lexical_rank[uid]) if uid in lexical_rank else 0.0) +
+                    (1.0 / (60 + semantic_rank[uid]) if uid in semantic_rank else 0.0))
+                relation = prior[2] if prior else ""
+                distance = prior[3] if prior else 0.0
+                scores[uid] = (reciprocal * 20_000.0,
+                               "hybrid" if uid in lexical_rank else "semantic",
+                               relation, distance)
 
         chosen = sorted(scores.items(), key=lambda item: (-item[1][0], item[0]))
         output, used_chars = [], 0
@@ -1082,9 +1654,13 @@ class ProjectIndex:
             item = {key: value for key, value in fields.items()
                     if key in {"id", "kind", "reference", "value", "name", "part",
                                "description", "library_description", "footprint_name",
-                               "lib_id", "sheet_path", "title", "notes",
+                               "lib_id", "sheet_path", "title", "text", "notes", "target",
                                "properties",
-                               "pin_name", "pin_number", "type", "net_id", "membership_kind", "layer_id",
+                               "pin_name", "pin_number", "electrical_type", "graphical_style",
+                               "orientation", "identity_source", "symbol_unit", "locked", "visible",
+                               "candidate_net_ids", "type", "net_id", "membership_kind", "layer_id",
+                               "provenance", "source_group_id", "source_sheet_id", "member_count",
+                               "members", "source_member_ids", "related_net_ids",
                                "layer_ids", "start_layer_id", "end_layer_id",
                                "component_id", "symbol_id", "position_mm", "bounds_mm",
                                "sheet_id", "parent_sheet_id", "code", "severity",
@@ -1097,11 +1673,17 @@ class ProjectIndex:
                     item[key] = fields[key]
             item["retrieval"] = mode
             item["rank"] = rank
+            if uid in semantic_similarity:
+                item["semantic_similarity"] = round(semantic_similarity[uid], 6)
+            if fields.get("kind") == "functional_block":
+                item["source_revision"] = self._revision
             if relation:
                 item["relationship"] = relation
                 item["relationships"] = sorted(related.get(uid, ()))
             if mode == "spatial":
                 item["distance_mm"] = round(distance, 4)
+            elif "near_component" in related.get(uid, ()):
+                item["distance_mm"] = round(near_component_distances.get(uid, distance), 4)
             encoded_size = len(json.dumps(item, ensure_ascii=False, separators=(",", ":")))
             if len(output) >= limit or used_chars + encoded_size > self.max_chars:
                 continue
@@ -1112,6 +1694,11 @@ class ProjectIndex:
                       "lexical_match_count": len(lexical_ids),
                       "relationship_match_count": len(related),
                       "spatial_match_count": len(spatial_scores),
+                      "near_component_match_count": sum(
+                          "near_component" in values for values in related.values()),
+                      "region_member_match_count": sum(
+                          "region_member" in values for values in related.values()),
+                      "semantic_match_count": len(semantic),
                       "omitted_count": max(0, len(scores) - len(output)),
                       "total_entities": len(self._docs)})
         return {"available": True, "reason": "", "revision": self._revision,
@@ -1122,6 +1709,11 @@ class ProjectIndex:
                 "logical_net_semantics":
                     "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity",
                 "spatial_semantics": "axis_aligned_bounds_intersection_or_distance_only",
+                "geometry_relationship_semantics":
+                    "pcb_coordinates_only; near_component_measures_anchor_position_to_footprint_bounds; region_member_means_axis_aligned_bounds_intersection",
+                "semantic_status": self._semantic_status,
                 "explicit_reference_semantics":
                     "serialized object references and declared schematic page membership only",
-                "search_method": "exact_alias_bm25_relationship_spatial_diagnostics"}
+                "search_method": ("exact_alias_bm25_semantic_rrf_relationship_spatial_geometry_diagnostics"
+                                  if semantic else
+                                  "exact_alias_bm25_relationship_spatial_geometry_diagnostics")}

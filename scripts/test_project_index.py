@@ -1,6 +1,7 @@
 """Contract for exact, lexical, relationship, spatial, and incremental retrieval."""
 
 import sys
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -10,7 +11,7 @@ sys.path.insert(0, str(ROOT / "src" / "ccad_agent"))
 
 from project_index import ProjectIndex
 from context_package import build_context_package
-from context_broker import ContextBroker
+from context_broker import ContextBroker, extract_context_signals
 from memory_manager import MemoryManager
 from memory_store import MemoryStore
 
@@ -69,6 +70,295 @@ def project_snapshot():
 
 
 class ProjectIndexTests(unittest.TestCase):
+    def test_semantic_project_retrieval_is_opt_in_and_fuses_nonlexical_matches(self):
+        class Backend:
+            identity = "contract:project-embeddings-v1"
+
+            def __init__(self):
+                self.document_batches = 0
+
+            @staticmethod
+            def _vector(text):
+                text = text.casefold()
+                if "receptacle" in text or "cable" in text:
+                    return [1.0, 0.0, 0.0]
+                if "usb connector" in text or "usb_c" in text:
+                    return [1.0, 0.0, 0.0]
+                if "power regulator" in text or "tps62130" in text:
+                    return [0.0, 1.0, 0.0]
+                return [0.0, 0.0, 1.0]
+
+            def embed_query(self, text):
+                return self._vector(text)
+
+            def embed_documents(self, texts):
+                self.document_batches += 1
+                return [self._vector(text) for text in texts]
+
+        snapshot = project_snapshot()
+        backend = Backend()
+        index = ProjectIndex()
+        lexical_only = index.retrieve(snapshot, "receptacle for a cable", limit=12)
+        self.assertEqual(lexical_only["semantic_status"], "disabled")
+        self.assertFalse(any(item.get("semantic_similarity") is not None
+                             for item in lexical_only["entities"]))
+
+        semantic = index.retrieve(snapshot, "receptacle for a cable", limit=12,
+                                  embedding_backend=backend)
+        connectors = [item for item in semantic["entities"]
+                      if item["kind"] == "footprint" and item["id"] == "J2"]
+        self.assertEqual(len(connectors), 1)
+        self.assertGreater(connectors[0]["semantic_similarity"], 0.99)
+        self.assertIn(connectors[0]["retrieval"], {"semantic", "hybrid"})
+        self.assertEqual(semantic["semantic_status"], "ready")
+        self.assertGreaterEqual(semantic["stats"]["semantic_match_count"], 1)
+        # Tracks and vias remain governed by exact/graph/spatial retrieval; they
+        # are not sent to the semantic backend as project-language documents.
+        self.assertEqual(backend.document_batches, 1)
+
+    def test_semantic_project_cache_reuses_unchanged_text_and_refreshes_edits(self):
+        class Backend:
+            identity = "contract:project-embeddings-v1"
+
+            def __init__(self):
+                self.calls = []
+
+            def embed_query(self, text):
+                return [1.0, 0.0]
+
+            def embed_documents(self, texts):
+                self.calls.extend(texts)
+                return [[1.0, 0.0] for _ in texts]
+
+        snapshot = project_snapshot()
+        backend = Backend()
+        index = ProjectIndex()
+        index.retrieve(snapshot, "adapter", embedding_backend=backend)
+        first_count = len(backend.calls)
+        self.assertGreater(first_count, 0)
+        index.retrieve(snapshot, "adapter", embedding_backend=backend)
+        self.assertEqual(len(backend.calls), first_count)
+
+        snapshot["typed_state"]["project"]["board"]["footprints"][1]["value"] = "USB-C host connector"
+        index.retrieve(snapshot, "adapter", embedding_backend=backend)
+        self.assertGreater(len(backend.calls), first_count)
+        self.assertIn("USB-C host connector", " ".join(backend.calls))
+
+    def test_semantic_candidate_cap_prioritizes_lexical_hits(self):
+        class Backend:
+            identity = "contract:bounded-project-embeddings"
+
+            def __init__(self):
+                self.documents = []
+
+            def embed_query(self, text):
+                return [1.0, 0.0]
+
+            def embed_documents(self, texts):
+                self.documents.extend(texts)
+                return [[1.0, 0.0] for _ in texts]
+
+        snapshot = project_snapshot()
+        board = snapshot["typed_state"]["project"]["board"]
+        board["footprints"] = [
+            {"reference": f"A{index:03}", "value": "Unrelated test device",
+             "footprint_name": "Package:Generic", "layer_id": "F.Cu",
+             "position": {"x_nm": index, "y_nm": 0}}
+            for index in range(80)
+        ] + board["footprints"]
+        backend = Backend()
+        result = ProjectIndex().retrieve(snapshot, "USB connector", limit=12,
+                                         embedding_backend=backend)
+        self.assertLessEqual(len(backend.documents), 64)
+        self.assertTrue(any("Connector_USB:USB_C_Receptacle" in text
+                            for text in backend.documents))
+        self.assertTrue(any(item["kind"] == "footprint" and item["id"] == "J2"
+                            for item in result["entities"]))
+
+    def test_semantic_backend_failure_preserves_exact_and_lexical_results(self):
+        class Backend:
+            identity = "contract:failure"
+
+            def embed_query(self, text):
+                raise RuntimeError("must not leak prompt or exception")
+
+            def embed_documents(self, texts):
+                raise RuntimeError("unreachable")
+
+        snapshot = project_snapshot()
+        result = ProjectIndex().retrieve(snapshot, "TPS62130 power regulator",
+                                         embedding_backend=Backend())
+        self.assertEqual(result["semantic_status"], "embedding_failed")
+        self.assertTrue(any(item["id"] == "U3" for item in result["entities"]))
+        self.assertTrue(any(item["retrieval"] in {"exact", "lexical"}
+                            for item in result["entities"]))
+
+    def test_context_broker_uses_configured_semantic_backend_and_unloads_it_when_disabled(self):
+        class Backend:
+            identity = "contract:configured-project-embeddings"
+
+            def __init__(self):
+                self.document_calls = 0
+
+            @staticmethod
+            def _vector(text):
+                text = text.casefold()
+                return ([1.0, 0.0] if "receptacle" in text or "usb connector" in text
+                        else [0.0, 1.0])
+
+            def embed_query(self, text):
+                return self._vector(text)
+
+            def embed_documents(self, texts):
+                self.document_calls += len(texts)
+                return [self._vector(text) for text in texts]
+
+        with tempfile.TemporaryDirectory() as temp:
+            manager = MemoryManager(MemoryStore(Path(temp) / "memory.json"),
+                                    project_id="project-1")
+            backend = Backend()
+            manager.set_embedding_backend(backend)
+            manager.configure({"semantic": {"enabled": True,
+                                               "backend": "ollama_local",
+                                               "model": "contract-model"}})
+            broker = ContextBroker()
+            prepared = broker.prepare(
+                manager, thread_id="thread-1", project_revision="rev-1",
+                project_id="project-1", user_request="receptacle for a cable",
+                project_snapshot=project_snapshot())
+            result = prepared["project_retrieval"]
+            self.assertEqual(result["semantic_status"], "ready")
+            self.assertTrue(any(item["kind"] == "footprint" and item["id"] == "J2"
+                                and item.get("semantic_similarity", 0) > 0.99
+                                for item in result["entities"]))
+            packaged = build_context_package(
+                json.dumps(project_snapshot()), [], [], char_limit=8192,
+                project_retrieval=result)
+            envelope = json.loads(packaged["content"].split("\n", 1)[1])
+            packaged_j2 = next(item for item in envelope["project_retrieval"]["entities"]
+                               if item["kind"] == "footprint" and item["id"] == "J2")
+            self.assertGreater(packaged_j2["semantic_similarity"], 0.99)
+            self.assertEqual(packaged_j2["footprint_name"],
+                             "Connector_USB:USB_C_Receptacle")
+            self.assertEqual(packaged["metadata"]["project_retrieval_semantic_status"],
+                             "ready")
+            self.assertGreater(packaged["metadata"]["project_retrieval_semantic_count"], 0)
+
+            manager.configure({"semantic": {"enabled": False}})
+            disabled = broker.prepare(
+                manager, thread_id="thread-1", project_revision="rev-1",
+                project_id="project-1", user_request="receptacle for a cable",
+                project_snapshot=project_snapshot(), force_refresh=True)
+            self.assertEqual(disabled["project_retrieval"]["semantic_status"], "disabled")
+            self.assertEqual(disabled["project_retrieval"]["stats"]["semantic_match_count"], 0)
+            prior_document_calls = backend.document_calls
+            manager.configure({"semantic": {"enabled": True,
+                                               "backend": "ollama_local",
+                                               "model": "contract-model"}})
+            broker.prepare(
+                manager, thread_id="thread-1", project_revision="rev-1",
+                project_id="project-1", user_request="receptacle for a cable",
+                project_snapshot=project_snapshot(), force_refresh=True)
+            self.assertGreater(backend.document_calls, prior_document_calls)
+
+    def test_schematic_declared_pins_and_serialized_annotations_are_retrievable(self):
+        snapshot = project_snapshot()
+        project = snapshot["typed_state"]["project"]
+        symbol = project["components"][0]
+        symbol["unit"] = 1
+        symbol["pins"] = [
+            {"name": "VIN", "number": "1", "electrical_type": "power_in",
+             "graphical_style": "line", "orientation": "right"},
+            {"id": "LIBPIN_PGOOD", "name": "PGOOD", "number": "2", "electrical_type": "output",
+             "graphical_style": "line", "orientation": "left"},
+        ]
+        project["nets"][0]["members"].append(
+            {"component_id": "sch-u3", "pin_name": "VIN"})
+        project.update({
+            "textboxes": [{"id": "TBX1", "text": "Input power requirements",
+                           "area": {"origin": {"x_nm": 0, "y_nm": 0},
+                                    "size": {"width_nm": 5_000_000,
+                                             "height_nm": 2_000_000}}}],
+            "graphics": [{"id": "SG1", "kind": "line",
+                          "start": {"x_nm": 0, "y_nm": 0},
+                          "end": {"x_nm": 1_000_000, "y_nm": 0}}],
+            "rule_areas": [{"id": "RA1", "name": "High voltage keepout",
+                            "outline": [{"x_nm": 0, "y_nm": 0},
+                                        {"x_nm": 2_000_000, "y_nm": 0},
+                                        {"x_nm": 2_000_000, "y_nm": 1_000_000}],
+                            "locked": True}],
+            "tables": [{"id": "ST1", "rows": 1, "cols": 1,
+                        "cells": [{"row": 0, "col": 0, "text": "ACME-42"}]}],
+            "junctions": [{"id": "JUNC1", "position": {"x_nm": 1_000_000,
+                                                          "y_nm": 2_000_000}}],
+            "no_connects": [{"id": "NC1", "position": {"x_nm": 2_000_000,
+                                                            "y_nm": 3_000_000}}],
+            "markers": [{"id": "MK1", "kind": "erc", "severity": "warning",
+                         "position": {"x_nm": 3_000_000, "y_nm": 4_000_000}}],
+            "bus_entries": [{"id": "BE1", "kind": "wire",
+                             "position": {"x_nm": 4_000_000, "y_nm": 5_000_000}}],
+        })
+        index = ProjectIndex()
+        pin_result = index.retrieve(snapshot, "PGOOD pin 2", limit=24)
+        pins = [item for item in pin_result["entities"]
+                if item["kind"] == "schematic_pin" and
+                item.get("symbol_id") == "sch-u3"]
+        unconnected = next(item for item in pins if item.get("pin_name") == "PGOOD")
+        connected = next(item for item in pins if item.get("pin_name") == "VIN")
+        self.assertEqual(unconnected["pin_number"], "2")
+        self.assertEqual(unconnected["identity_source"], "native_pin_id")
+        self.assertEqual(unconnected["id"], "declared:sch-u3:1:LIBPIN_PGOOD")
+        self.assertEqual(unconnected["electrical_type"], "output")
+        self.assertEqual(unconnected["membership_kind"], "declared_pin")
+        self.assertNotIn("net_id", unconnected)
+        self.assertEqual(connected["net_id"], "GND")
+        self.assertEqual(connected["membership_kind"], "schematic_net_member")
+        self.assertEqual(connected["identity_source"],
+                         "derived_from_symbol_unit_and_pin_number_or_name")
+        symbol = next(item for item in pin_result["entities"]
+                      if item["kind"] == "schematic_symbol" and
+                      item["id"] == "sch-u3")
+        self.assertIn("declared_pin", symbol.get("relationships", []))
+
+        expected = {
+            ("schematic_textbox", "TBX1"), ("schematic_graphic", "SG1"),
+            ("schematic_rule_area", "RA1"), ("schematic_table", "ST1"),
+            ("schematic_junction", "JUNC1"), ("schematic_no_connect", "NC1"),
+            ("schematic_marker", "MK1"), ("schematic_bus_entry", "BE1"),
+        }
+        # Query each typed identity independently. Generic junction and marker
+        # records have no meaningful prose, so a prose-only query must not be
+        # expected to retrieve them by coincidence.
+        by_key = {}
+        for kind, object_id in expected:
+            result = index.retrieve(snapshot, object_id, limit=40)
+            by_key.update({(item["kind"], item["id"]): item
+                           for item in result["entities"]})
+        actual = set(by_key)
+        self.assertTrue(expected.issubset(actual), expected - actual)
+        self.assertEqual(by_key[("schematic_textbox", "TBX1")]["text"],
+                         "Input power requirements")
+        self.assertTrue(by_key[("schematic_rule_area", "RA1")]["locked"])
+        self.assertEqual(by_key[("schematic_table", "ST1")]["text"], "ACME-42")
+
+    def test_declared_pin_and_schematic_entity_removals_are_incremental(self):
+        snapshot = project_snapshot()
+        project = snapshot["typed_state"]["project"]
+        project["components"][0]["pins"] = [
+            {"name": "PGOOD", "number": "2", "electrical_type": "output"}]
+        project["textboxes"] = [{"id": "TBX1", "text": "Output enable"}]
+        index = ProjectIndex()
+        before = index.retrieve(snapshot, "PGOOD Output enable", limit=20)
+        self.assertTrue(any(item["id"] == "TBX1" for item in before["entities"]))
+        project["components"][0]["pins"].clear()
+        project["textboxes"].clear()
+        after = index.retrieve(snapshot, "PGOOD Output enable", limit=20)
+        self.assertEqual(after["stats"]["index_state"], "incremental")
+        self.assertFalse(any(item["kind"] == "schematic_pin" and
+                             item.get("pin_name") == "PGOOD" for item in after["entities"]))
+        self.assertFalse(any(item["kind"] == "schematic_textbox" and
+                             item["id"] == "TBX1" for item in after["entities"]))
+
     def test_exact_identity_and_layer_lookup_use_typed_board_and_schematic(self):
         index = ProjectIndex()
         snapshot = project_snapshot()
@@ -303,18 +593,29 @@ class ProjectIndexTests(unittest.TestCase):
             {"engine": "drc", "severity": "error", "code": "FAR_AWAY",
              "message": "Unrelated violation", "object_id": "J2"},
         ]
-        result = ProjectIndex().retrieve(
-            snapshot, "objects in rectangle from -1,-1 to 3,2 mm", limit=32)
+        index = ProjectIndex()
+        result = index.retrieve(
+            snapshot, "PCB objects in rectangle from -1,-1 to 3,2 mm", limit=32)
         diagnostics = [item for item in result["entities"]
                        if item["kind"] == "project_diagnostic"]
         self.assertTrue(any(item["code"] == "TRACK_CLEARANCE" and
                             item["object_id"] == "T1" for item in diagnostics))
-        self.assertTrue(any(item["code"] == "PIN_NOT_CONNECTED" and
-                            item["object_id"] == "sch-u3" for item in diagnostics))
+        self.assertFalse(any(item["code"] == "PIN_NOT_CONNECTED"
+                             for item in diagnostics))
         self.assertFalse(any(item["code"] == "FAR_AWAY" for item in diagnostics))
         self.assertTrue(all(item["retrieval"] == "relationship" and
                             item["relationship"] == "diagnostic_for"
                             for item in diagnostics))
+
+        schematic_result = index.retrieve(
+            snapshot, "schematic symbols in rectangle from -1,-1 to 3,2 mm", limit=32)
+        schematic_diagnostics = [item for item in schematic_result["entities"]
+                                 if item["kind"] == "project_diagnostic"]
+        self.assertTrue(any(item["code"] == "PIN_NOT_CONNECTED" and
+                            item["object_id"] == "sch-u3"
+                            for item in schematic_diagnostics))
+        self.assertFalse(any(item["code"] == "TRACK_CLEARANCE"
+                             for item in schematic_diagnostics))
 
         with tempfile.TemporaryDirectory() as temp:
             manager = MemoryManager(MemoryStore(Path(temp) / "memory.json"),
@@ -617,6 +918,131 @@ class ProjectIndexTests(unittest.TestCase):
         self.assertFalse(any(item["kind"] in {"project_diagnostic", "board_group"}
                              for item in refreshed["entities"]))
 
+    def test_explicit_user_groups_become_revision_current_functional_blocks(self):
+        snapshot = project_snapshot()
+        project = snapshot["typed_state"]["project"]
+        project["board"]["groups"] = [{
+            "id": "GROUP_POWER", "name": "Buck converter input stage",
+            "members": ["U3", "P1", "T1", "missing-native-reference"],
+        }]
+        project["schematics"] = [
+            {"id": "ROOT", "name": "Root",
+             "sheets": [{"id": "SHEET_POWER", "name": "Power conversion"}]},
+            {"id": "SHEET_POWER", "name": "Power conversion",
+             "components": project["components"], "nets": project["nets"],
+             "groups": [{"id": "SG_POWER", "name": "Regulator feedback loop",
+                         "members": ["sch-u3", "GND:sch-u3:GND"]}]},
+        ]
+
+        index = ProjectIndex(max_entities=32)
+        retrieved = index.retrieve(snapshot, "buck converter input stage", limit=32)
+        block = next(item for item in retrieved["entities"]
+                     if item["kind"] == "functional_block" and
+                     item["id"] == "group:board_group:GROUP_POWER")
+        self.assertEqual(block["provenance"], "explicit_user_group")
+        self.assertEqual(block["source_revision"], retrieved["revision"])
+        self.assertEqual(block["members"], ["P1", "T1", "U3"])
+        self.assertIn("missing-native-reference", block["source_member_ids"])
+        self.assertEqual(block["related_net_ids"], ["GND"])
+        self.assertEqual(block["bounds_mm"], {
+            "min_x_mm": 0.0, "min_y_mm": 0.0,
+            "max_x_mm": 2.0, "max_y_mm": 0.0})
+        self.assertTrue(any(item["kind"] == "footprint" and item["id"] == "U3" and
+                            item.get("relationship") == "group_member"
+                            for item in retrieved["entities"]))
+        package = build_context_package(
+            __import__("json").dumps(snapshot), [], [], char_limit=4096,
+            project_retrieval=retrieved)
+        packaged_json = package["content"].split("\n", 1)[1]
+        packaged_content = __import__("json").loads(packaged_json)
+        packaged_block = next(item for item in packaged_content["project_retrieval"]["entities"]
+                              if item["kind"] == "functional_block")
+        self.assertEqual(packaged_block["members"], ["P1", "T1", "U3"])
+        self.assertEqual(packaged_block["related_net_ids"], ["GND"])
+        self.assertEqual(packaged_block["source_revision"], retrieved["revision"])
+        self.assertEqual(package["metadata"]["project_retrieval_kinds"][
+            "functional_block"], 1)
+        sheet_result = index.retrieve(snapshot, "Power conversion", limit=32)
+        sheet_block = next(item for item in sheet_result["entities"]
+                           if item["kind"] == "functional_block" and
+                           item["id"] == "sheet:SHEET_POWER")
+        self.assertEqual(sheet_block["provenance"], "serialized_schematic_sheet")
+
+        project["board"]["groups"].clear()
+        refreshed = index.retrieve(snapshot, "buck converter input stage", limit=32)
+        self.assertEqual(refreshed["stats"]["index_state"], "incremental")
+        self.assertFalse(any(item["kind"] == "functional_block" and
+                             item["id"] == "group:board_group:GROUP_POWER"
+                             for item in refreshed["entities"]))
+
+    def test_functional_blocks_expand_only_to_their_typed_net_nodes(self):
+        snapshot = project_snapshot()
+        project = snapshot["typed_state"]["project"]
+        project["board"]["groups"] = [{
+            "id": "GROUP_POWER", "name": "Power conversion stage",
+            "members": ["P1"],
+        }]
+        project["board"]["pads"].append({
+            "id": "P3", "component_id": "U3", "pin_name": "VIN",
+            "net_id": "VIN", "position": {"x_nm": 1_000_000, "y_nm": 0},
+        })
+        project["groups"] = [{"id": "SG_POWER", "name": "Regulator supply",
+                              "members": ["GND:sch-u3:GND"]}]
+
+        index = ProjectIndex(max_entities=32)
+        board = index.retrieve(snapshot, "Power conversion stage", limit=32)
+        board_block = next(item for item in board["entities"]
+                           if item["kind"] == "functional_block" and
+                           item["id"] == "group:board_group:GROUP_POWER")
+        board_nets = [item for item in board["entities"]
+                      if item["kind"] == "board_net"]
+        self.assertEqual(board_block["related_net_ids"], ["GND"])
+        self.assertEqual([(item["id"], item["relationship"]) for item in board_nets],
+                         [("GND", "block_net_member")])
+
+        schematic = index.retrieve(snapshot, "Regulator supply schematic", limit=32)
+        sheet_block = next(item for item in schematic["entities"]
+                           if item["kind"] == "functional_block" and
+                           item["id"] == "group:schematic_group:SG_POWER")
+        schematic_nets = [item for item in schematic["entities"]
+                          if item["kind"] == "schematic_net"]
+        self.assertEqual(sheet_block["related_net_ids"], ["GND"])
+        self.assertEqual([(item["id"], item["relationship"])
+                          for item in schematic_nets],
+                         [("GND", "block_net_member")])
+
+        package = build_context_package(
+            __import__("json").dumps(snapshot), [], [], char_limit=4096,
+            project_retrieval=schematic)
+        payload = __import__("json").loads(package["content"].split("\n", 1)[1])
+        packaged_net = next(item for item in payload["project_retrieval"]["entities"]
+                            if item["kind"] == "schematic_net" and
+                            item.get("relationship") == "block_net_member")
+        self.assertEqual(packaged_net["relationship"], "block_net_member")
+        self.assertEqual(package["metadata"]["project_retrieval_block_net_count"], 1)
+
+    def test_functional_block_net_edges_refresh_after_member_net_changes(self):
+        index = ProjectIndex(max_entities=32)
+        before = project_snapshot()
+        board = before["typed_state"]["project"]["board"]
+        board["groups"] = [{"id": "BG_NET", "name": "Grounded group",
+                            "members": ["P1"]}]
+        first = index.retrieve(before, "Grounded group", limit=32)
+        self.assertTrue(any(item["kind"] == "board_net" and item["id"] == "GND"
+                            and item.get("relationship") == "block_net_member"
+                            for item in first["entities"]))
+
+        after = project_snapshot()
+        board = after["typed_state"]["project"]["board"]
+        board["groups"] = [{"id": "BG_NET", "name": "Grounded group",
+                            "members": ["P1"]}]
+        board["pads"][0]["net_id"] = "VIN"
+        refreshed = index.retrieve(after, "Grounded group", limit=32)
+        self.assertEqual(refreshed["stats"]["index_state"], "incremental")
+        net_edges = {(item["kind"], item["id"]) for item in refreshed["entities"]
+                     if item.get("relationship") == "block_net_member"}
+        self.assertEqual(net_edges, {("board_net", "VIN")})
+
     def test_board_net_id_change_incrementally_removes_stale_membership(self):
         index = ProjectIndex()
         before = project_snapshot()
@@ -721,7 +1147,205 @@ class ProjectIndexTests(unittest.TestCase):
                        if item["retrieval"] == "spatial"}
         self.assertTrue({"U3", "P1", "T1", "V1"}.intersection(spatial_ids))
         near_u3 = index.retrieve(project_snapshot(), "what is near U3", limit=12)
-        self.assertTrue(any(item["retrieval"] == "spatial" for item in near_u3["entities"]))
+        self.assertFalse(any(item["kind"].startswith("schematic_") and
+                             item["retrieval"] == "spatial"
+                             for item in near_u3["entities"]))
+
+    def test_nearby_component_relation_stays_in_pcb_coordinate_space(self):
+        snapshot = project_snapshot()
+        project = snapshot["typed_state"]["project"]
+        project["board"]["footprints"].append({
+            "reference": "C_NEAR", "value": "100 nF", "footprint_name": "C_0402",
+            "layer_id": "F.Cu", "position": {"x_nm": 5_000_000, "y_nm": 0}})
+        project["components"].append({
+            "id": "sch-c-near", "reference": "C_NEAR", "value": "100 nF",
+            "position": {"x_nm": 1_000_000, "y_nm": 0}})
+
+        result = ProjectIndex().retrieve(
+            snapshot, "Which PCB footprints are within 10 mm of U3?", limit=20)
+        near = next(item for item in result["entities"]
+                    if item["kind"] == "footprint" and item["id"] == "C_NEAR")
+        self.assertEqual(near["retrieval"], "relationship")
+        self.assertEqual(near["relationship"], "near_component")
+        self.assertAlmostEqual(near["distance_mm"], 5.0)
+        self.assertFalse(any(item["kind"].startswith("schematic_") and
+                             item["retrieval"] == "spatial"
+                             for item in result["entities"]))
+        self.assertEqual(result["stats"]["near_component_match_count"], 1)
+        self.assertIn("pcb_coordinates_only", result["geometry_relationship_semantics"])
+
+    def test_identified_placement_region_expands_to_intersecting_board_objects_only(self):
+        snapshot = project_snapshot()
+        project = snapshot["typed_state"]["project"]
+        board = project["board"]
+        board["placement_regions"] = [{
+            "id": "PR_SPRINT997", "kind": "placement",
+            "area": {"x_nm": 20_000_000, "y_nm": 20_000_000,
+                     "width_nm": 10_000_000, "height_nm": 10_000_000}}]
+        board["footprints"].append({
+            "reference": "U_INSIDE", "value": "Controller", "footprint_name": "QFN",
+            "position": {"x_nm": 29_000_000, "y_nm": 25_000_000}})
+        board["footprints"].append({
+            "reference": "C_NEAR", "value": "100 nF", "footprint_name": "C_0402",
+            "position": {"x_nm": 28_000_000, "y_nm": 25_000_000}})
+        board["texts"] = [{
+            "id": "TX_CROSSES_REGION", "text": "Board label",
+            "position": {"x_nm": 20_000_000, "y_nm": 25_000_000}}]
+        project["components"].append({
+            "id": "sch-coincident", "reference": "R_SCHEMATIC",
+            "position": {"x_nm": 25_000_000, "y_nm": 25_000_000}})
+
+        result = ProjectIndex().retrieve(
+            snapshot, "Which PCB objects intersect placement region PR_SPRINT997?", limit=20)
+        related = {(item["kind"], item["id"]): item for item in result["entities"]
+                   if item.get("relationship") == "region_member"}
+        self.assertIn(("footprint", "U_INSIDE"), related)
+        self.assertIn(("board_text", "TX_CROSSES_REGION"), related)
+        self.assertNotIn(("footprint", "J2"), related)
+        self.assertFalse(any(item["id"] == "sch-coincident" for item in related.values()))
+        self.assertEqual(result["stats"]["region_member_match_count"], 3)
+        self.assertIn("axis_aligned_bounds_intersection", result["geometry_relationship_semantics"])
+
+        combined = ProjectIndex().retrieve(
+            snapshot,
+            "Which PCB footprints are within 5 mm of U_INSIDE and which objects intersect placement region PR_SPRINT997?",
+            limit=10)
+        combined_near = next(item for item in combined["entities"]
+                             if item["kind"] == "footprint" and
+                             item["id"] == "C_NEAR")
+        self.assertIn("near_component", combined_near["relationships"])
+        self.assertIn("region_member", combined_near["relationships"])
+        self.assertAlmostEqual(combined_near["distance_mm"], 1.0)
+        combined_region_members = [item for item in combined["entities"]
+                                   if item.get("relationship") == "region_member" or
+                                   "region_member" in item.get("relationships", ())]
+        self.assertGreater(len(combined_region_members), 0)
+        self.assertGreater(combined["stats"]["near_component_match_count"], 0)
+        self.assertGreater(combined["stats"]["region_member_match_count"], 0)
+
+        import json
+        package = build_context_package(json.dumps(snapshot), [], [], char_limit=4096,
+                                        project_retrieval=result)
+        envelope = json.loads(package["content"].split("\n", 1)[1])
+        retrieval = envelope["project_retrieval"]
+        packaged_region_members = [item for item in retrieval["entities"]
+                                   if item.get("relationship") == "region_member"]
+        self.assertEqual(len(packaged_region_members), 3)
+        self.assertEqual(retrieval["stats"]["region_member_match_count"], 3)
+        self.assertIn("pcb_coordinates_only",
+                      retrieval["geometry_relationship_semantics"])
+        self.assertEqual(package["metadata"]["project_retrieval_stats"][
+            "region_member_match_count"], 3)
+        self.assertNotIn("C:\\Users", package["content"])
+
+        board["placement_regions"][0]["area"]["x_nm"] = 70_000_000
+        moved = ProjectIndex().retrieve(
+            snapshot, "Which PCB objects intersect placement region PR_SPRINT997?",
+            limit=20)
+        self.assertEqual(moved["stats"]["region_member_match_count"], 0)
+        self.assertFalse(any(item.get("relationship") == "region_member"
+                             for item in moved["entities"]))
+
+    def test_production_limit_keeps_explicit_geometry_relations_ahead_of_lexical_noise(self):
+        fixture_path = ROOT / "artifacts" / "demos" / "sprint160-placement-crash-ci-final.ccad.json"
+        project = json.loads(fixture_path.read_text(encoding="utf-8"))
+        project["board"].setdefault("footprints", []).extend((
+            {"reference": "JAC1", "value": "AC input",
+             "footprint_name": "Connector_PinHeader_2.54mm", "layer_id": "F.Cu",
+             "position": {"x_nm": 8_000_000, "y_nm": 17_000_000}},
+            {"reference": "C_NEAR", "value": "100 nF", "footprint_name": "C_0402",
+             "layer_id": "F.Cu",
+             "position": {"x_nm": 10_000_000, "y_nm": 17_000_000}},
+        ))
+        project["board"].setdefault("placement_regions", []).append({
+            "id": "PR_SPRINT997", "kind": "placement",
+            "area": {"x_nm": 7_000_000, "y_nm": 16_000_000,
+                     "width_nm": 5_000_000, "height_nm": 2_000_000},
+        })
+        snapshot = {"typed_state": {"available": True, "project": project}}
+        query = ("Which PCB footprints are within 5 mm of JAC1, and which PCB objects "
+                 "intersect placement region PR_SPRINT997?")
+
+        result = ProjectIndex().retrieve(snapshot, query)
+        packaged = build_context_package(json.dumps(snapshot), [], [], char_limit=8192,
+                                         project_retrieval=result)
+        envelope = json.loads(packaged["content"].split("\n", 1)[1])
+        entities = envelope["project_retrieval"]["entities"]
+        self.assertTrue(any(item["id"] == "C_NEAR" and
+                            "near_component" in item.get("relationships", ())
+                            for item in entities))
+        self.assertTrue(any("region_member" in item.get("relationships", ())
+                            for item in entities))
+        self.assertGreater(packaged["metadata"]["project_retrieval_stats"][
+            "near_component_match_count"], 0)
+        self.assertGreater(packaged["metadata"]["project_retrieval_stats"][
+            "region_member_match_count"], 0)
+
+        live_signals = extract_context_signals(
+            query, goal=query, project_id="proj-sprint160-placement-crash-ci-final",
+            active_editor="pcb", selected_objects=("JAC1",))
+        with tempfile.TemporaryDirectory() as memory_dir:
+            live_manager = MemoryManager(
+                MemoryStore(Path(memory_dir) / "memory.json"),
+                thread_id="thread-geometry",
+                project_id="proj-sprint160-placement-crash-ci-final")
+            live_manager.configure({})
+            live_context = ContextBroker().prepare(
+                live_manager, thread_id="thread-geometry",
+                project_revision="fixture-revision", user_request=query,
+                goal=query, project_id="proj-sprint160-placement-crash-ci-final",
+                active_editor="pcb", selected_objects=("JAC1",),
+                signals=live_signals, project_snapshot=snapshot,
+                active_layer="F.Cu", active_net="AC1")
+        self.assertGreater(live_context["project_retrieval"]["stats"][
+            "near_component_match_count"], 0)
+        self.assertGreater(live_context["project_retrieval"]["stats"][
+            "region_member_match_count"], 0)
+
+        context_snapshot = json.loads(json.dumps(snapshot))
+        context_snapshot["project_diagnostics"] = [
+            {"id": f"diag-{index}", "code": f"FIXTURE_{index}",
+             "message": "Fixture diagnostic linked to selected pad",
+             "object_id": "JAC1.1", "severity": "warning", "engine": "drc"}
+            for index in range(3)]
+        selected_pad = "JAC1.1"
+        noisy_signals = extract_context_signals(
+            query, goal=query, project_id="proj-sprint160-placement-crash-ci-final",
+            active_editor="pcb", selected_objects=(selected_pad,))
+        noisy_retrieval = ProjectIndex().retrieve(
+            context_snapshot, noisy_signals["query"], active_layer="F.Cu",
+            active_net="AC1", selected_objects=(selected_pad,), limit=10)
+        self.assertGreater(noisy_retrieval["stats"]["exact_match_count"], 10)
+        noisy_package = build_context_package(
+            json.dumps(context_snapshot), [], [], char_limit=8192,
+            project_retrieval=noisy_retrieval)
+        self.assertGreater(noisy_package["metadata"]["project_retrieval_stats"][
+            "near_component_match_count"], 0)
+        self.assertGreater(noisy_package["metadata"]["project_retrieval_stats"][
+            "region_member_match_count"], 0)
+        self.assertTrue(any(entity["id"] == "C_NEAR" and
+                            "near_component" in entity.get("relationships", ())
+                            for entity in noisy_retrieval["entities"]))
+
+    def test_relationship_only_changes_invalidate_incremental_graph_edges(self):
+        snapshot = project_snapshot()
+        board = snapshot["typed_state"]["project"]["board"]
+        board["groups"] = [{"id": "GR_SPRINT997", "members": ["U3"]}]
+        index = ProjectIndex()
+        initial = index.retrieve(snapshot, "GR_SPRINT997", limit=20)
+        self.assertTrue(any(item["kind"] == "footprint" and item["id"] == "U3" and
+                            item.get("relationship") == "group_member"
+                            for item in initial["entities"]))
+
+        board["groups"][0]["members"] = ["J2"]
+        updated = index.retrieve(snapshot, "GR_SPRINT997", limit=20)
+        self.assertEqual(updated["stats"]["index_state"], "incremental")
+        self.assertTrue(any(item["kind"] == "footprint" and item["id"] == "J2" and
+                            item.get("relationship") == "group_member"
+                            for item in updated["entities"]))
+        self.assertFalse(any(item["kind"] == "footprint" and item["id"] == "U3" and
+                             item.get("relationship") == "group_member"
+                             for item in updated["entities"]))
 
     def test_revision_update_removes_deleted_rows_and_only_reindexes_changes(self):
         index = ProjectIndex()
@@ -791,6 +1415,24 @@ class ProjectIndexTests(unittest.TestCase):
         self.assertGreater(package["metadata"]["project_retrieval_kinds"].get(
             "board_net", 0), 0)
         self.assertLessEqual(package["metadata"]["content_size"], 4096)
+
+    def test_explicit_functional_block_native_net_edge_survives_context_packaging(self):
+        snapshot = project_snapshot()
+        board = snapshot["typed_state"]["project"]["board"]
+        board["groups"] = [{"id": "GROUP_RETURN", "name": "Return path",
+                            "members": ["P1"]}]
+        # P1's typed pad is assigned to native board net GND in this fixture.
+        retrieval = ProjectIndex().retrieve(
+            snapshot, "Find the Return path functional block and its native PCB net.",
+            active_net="GND")
+        edge = next(entity for entity in retrieval["entities"]
+                    if entity["kind"] == "board_net" and entity["id"] == "GND")
+        self.assertEqual(edge["relationship"], "block_net_member")
+        package = build_context_package(
+            json.dumps(snapshot), [], [], char_limit=8192,
+            project_retrieval=retrieval)
+        self.assertEqual(package["metadata"]["project_retrieval_block_net_count"], 1)
+        self.assertIn("block_net_member", str(package["content"]))
 
     def test_context_broker_reuses_project_index_and_refreshes_changed_geometry(self):
         with tempfile.TemporaryDirectory() as temp:

@@ -310,14 +310,44 @@ private slots:
     auto* status = settings.findChild<QLabel*>("label:memoryManagerStatus");
     auto* save = settings.findChild<QPushButton*>("action:saveMemory");
     auto* remove = settings.findChild<QPushButton*>("action:deleteMemory");
+    auto* kind = settings.findChild<QComboBox*>("control:memoryKind");
+    auto* importance = settings.findChild<QComboBox*>("control:memoryImportance");
     QVERIFY(status != nullptr);
     QCOMPARE(status->text(), QString("Ready."));
     QVERIFY(save != nullptr);
     QVERIFY(save->isEnabled());
     QVERIFY(remove != nullptr);
     QVERIFY(remove->isEnabled());
+    QVERIFY(kind != nullptr);
+    QVERIFY(importance != nullptr);
+    QCOMPARE(kind->currentData().toString(), QString("fact"));
+    QCOMPARE(kind->findData("preference") >= 0, true);
+    QCOMPARE(kind->findData("correction") >= 0, true);
+    QCOMPARE(importance->currentData().toInt(), 3);
+    QCOMPARE(importance->count(), 5);
+    QCOMPARE(importance->findData(1) >= 0, true);
+    QCOMPARE(importance->findData(5) >= 0, true);
+    importance->setCurrentIndex(importance->findData(5));
+    QCOMPARE(importance->currentData().toInt(), 5);
     settings.close();
     QTest::qWait(50);
+  }
+
+  void testSemanticMemorySettingsUseOptInLocalBackend() {
+    AgentPanel panel;
+    AgentSettingsDialog settings(&panel);
+    auto* enabled = settings.findChild<QCheckBox*>("control:semanticMemoryEnabled");
+    auto* endpoint = settings.findChild<QLineEdit*>("control:semanticMemoryEndpoint");
+    auto* model = settings.findChild<QLineEdit*>("control:semanticMemoryModel");
+    auto* status = settings.findChild<QLabel*>("label:semanticMemoryState");
+    QVERIFY(enabled != nullptr);
+    QVERIFY(endpoint != nullptr);
+    QVERIFY(model != nullptr);
+    QVERIFY(status != nullptr);
+    QVERIFY(!enabled->isChecked());
+    QCOMPARE(endpoint->text(), QString("http://127.0.0.1:11434"));
+    QCOMPARE(model->text(), QString("embeddinggemma"));
+    QVERIFY(status->text().contains("lexical retrieval remains active"));
   }
 
   void testMarketplaceInteractions() {

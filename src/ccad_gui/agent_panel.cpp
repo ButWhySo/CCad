@@ -1414,6 +1414,8 @@ void AgentPanel::handlePythonOutput() {
         context_content_size_ = params["content_size"].toInt();
         context_memory_entry_count_ = params["memory_entry_count"].toInt();
         context_history_message_count_ = params["history_message_count"].toInt();
+        context_project_retrieval_block_net_count_ =
+            params["project_retrieval_block_net_count"].toInt();
         context_truncated_ = params["truncated"].toBool(false);
         context_sources_.clear();
         for (const QJsonValue& source : params["sources"].toArray()) {
@@ -1425,9 +1427,17 @@ void AgentPanel::handlePythonOutput() {
         const int schematic_pin_count = params["project_retrieval_schematic_pin_count"].toInt();
         const int schematic_symbol_count = params["project_retrieval_schematic_symbol_count"].toInt();
         const int board_net_count = params["project_retrieval_board_net_count"].toInt();
+        const int functional_block_count =
+            params["project_retrieval_functional_block_count"].toInt();
+        const int functional_block_net_count =
+            params["project_retrieval_block_net_count"].toInt();
         const int project_diagnostic_count =
             params["project_retrieval_diagnostic_count"].toInt();
         const int pcb_layer_count = params["project_retrieval_layer_count"].toInt();
+        const int nearby_pcb_component_count =
+            params["project_retrieval_near_component_count"].toInt();
+        const int placement_region_member_count =
+            params["project_retrieval_region_member_count"].toInt();
         QString schematic_detail;
         if (schematic_pin_count > 0)
           schematic_detail += QString(" | %1 schematic pins").arg(schematic_pin_count);
@@ -1435,11 +1445,25 @@ void AgentPanel::handlePythonOutput() {
           schematic_detail += QString(" | %1 schematic symbols").arg(schematic_symbol_count);
         if (board_net_count > 0)
           schematic_detail += QString(" | PCB nets: %1").arg(board_net_count);
+        if (functional_block_count > 0)
+          schematic_detail += QString(" | %1 functional block%2")
+                                  .arg(functional_block_count)
+                                  .arg(functional_block_count == 1 ? "" : "s");
+        if (functional_block_net_count > 0)
+          schematic_detail += QString(" | %1 functional-block net%2")
+                                  .arg(functional_block_net_count)
+                                  .arg(functional_block_net_count == 1 ? "" : "s");
         if (pcb_layer_count > 0)
           schematic_detail += QString(" | %1 PCB layers").arg(pcb_layer_count);
         if (project_diagnostic_count > 0)
           schematic_detail += QString(" | %1 DRC/ERC diagnostics")
                                   .arg(project_diagnostic_count);
+        if (nearby_pcb_component_count > 0)
+          schematic_detail += QString(" | %1 nearby PCB components")
+                                  .arg(nearby_pcb_component_count);
+        if (placement_region_member_count > 0)
+          schematic_detail += QString(" | %1 placement-region objects")
+                                  .arg(placement_region_member_count);
         addActivityEvent("context", "Context package prepared",
                          QString("v%1 | %2 chars | ~%3 tokens | %4 memories | %5 history | %6")
                              .arg(context_schema_version_)
@@ -3239,6 +3263,8 @@ QString AgentPanel::workspaceStateJson() const {
   response.insert("context_content_size", context_content_size_);
   response.insert("context_memory_entry_count", context_memory_entry_count_);
   response.insert("context_history_message_count", context_history_message_count_);
+  response.insert("context_project_retrieval_block_net_count",
+                  context_project_retrieval_block_net_count_);
   response.insert("context_truncated", context_truncated_);
   response.insert("context_sources", QJsonArray::fromStringList(context_sources_));
   response.insert("result_state", resultStateText());

@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import math
 import re
 from typing import Any, Iterable
 
@@ -13,6 +14,28 @@ _SECRET = re.compile(
 _SENSITIVE_PROPERTY = re.compile(
     r"api[_-]?key|secret|password|token|authorization|credential", re.IGNORECASE)
 _PREFIX = "[CCAD_CONTEXT_V3]\n"
+_RETRIEVAL_SAFE_FIELDS = (
+    "rank", "tier", "query_overlap_terms", "bm25_score", "ranking_method",
+    "channel_ranks", "rrf_score", "diversity_score", "redundancy_score",
+    "matched_terms", "namespace_hash")
+
+
+def _safe_retrieval_metadata(item: dict, *, include_bm25: bool) -> dict:
+    fields = _RETRIEVAL_SAFE_FIELDS if include_bm25 else tuple(
+        key for key in _RETRIEVAL_SAFE_FIELDS if key != "bm25_score")
+    safe = {key: item[key] for key in fields if key in item}
+    for key, floor, ceiling in (("kind_weight", 1.0, 1.16),
+                                ("importance_weight", 0.9, 1.1),
+                                ("recency_weight", 1.0, 1.15),
+                                ("usage_weight", 1.0, 1.10)):
+        value = item.get(key)
+        if (isinstance(value, (int, float)) and not isinstance(value, bool)
+                and math.isfinite(value) and floor <= value <= ceiling):
+            safe[key] = value
+    persistence = item.get("usage_persistence")
+    if persistence in {"durable", "process", "process_only", "unavailable"}:
+        safe["usage_persistence"] = persistence
+    return safe
 
 
 def _safe_text(value: Any, limit: int) -> str:
@@ -41,6 +64,9 @@ def _memory_payload(entries: Iterable[dict], per_entry_limit: int = 1000) -> lis
     for entry in entries:
         if not isinstance(entry, dict):
             continue
+        kind = entry.get("kind", "fact")
+        if kind not in {"fact", "preference", "correction"}:
+            continue
         content = _safe_text(entry.get("content"), per_entry_limit)
         if not content:
             continue
@@ -48,6 +74,7 @@ def _memory_payload(entries: Iterable[dict], per_entry_limit: int = 1000) -> lis
             "id": _safe_text(entry.get("id"), 100),
             "title": _safe_text(entry.get("title"), 200),
             "tier": _safe_text(entry.get("tier", "ltm"), 32),
+            "kind": kind,
             "scope": _safe_text(entry.get("scope", "project"), 100),
             "tags": [_safe_text(tag, 60) for tag in entry.get("tags", [])[:20]
                      if _safe_text(tag, 60)],
@@ -67,7 +94,11 @@ def _memory_summary(entries: Iterable[dict], supplied: str = "") -> str:
         title = _safe_text(entry.get("title"), 80)
         content = _safe_text(entry.get("content"), 180)
         if content:
-            parts.append((f"{title}: " if title else "") + content)
+            kind = entry.get("kind", "fact")
+            prefix = {"preference": "User preference: ",
+                      "correction": "User correction: ",
+                      "fact": "Known fact: "}.get(kind, "")
+            parts.append(prefix + (f"{title}: " if title else "") + content)
     return "; ".join(parts)[:1200]
 
 
@@ -109,11 +140,25 @@ def _project_retrieval_payload(value: dict | None) -> dict:
         item: dict[str, Any] = {}
         for key in ("id", "kind", "reference", "value", "name", "part", "sheet_path",
                     "pin_name", "pin_number", "type", "net_id", "membership_kind", "layer_id",
+                    "provenance", "source_group_id", "source_sheet_id", "source_revision",
+                    "member_count",
                     "start_layer_id", "end_layer_id",
                     "component_id", "symbol_id", "position_mm", "bounds_mm", "retrieval",
-                    "rank", "relationship", "distance_mm", "design_rules"):
+                    "rank", "relationship", "distance_mm", "semantic_similarity",
+                    "design_rules"):
             if key in entity and isinstance(entity[key], (str, int, float, dict)):
                 item[key] = entity[key]
+        for key in ("description", "library_description", "footprint_name", "lib_id",
+                    "title", "text", "notes", "target"):
+            if key in entity:
+                content = _safe_text(entity[key], 480)
+                if content:
+                    item[key] = content
+        for key in ("members", "source_member_ids", "related_net_ids"):
+            values = entity.get(key)
+            if isinstance(values, list):
+                item[key] = [clean for raw in values[:64]
+                             if (clean := _safe_text(raw, 120))]
         sheet_path = entity.get("sheet_path")
         if isinstance(sheet_path, str):
             normalized_path = sheet_path.replace("\\", "/")
@@ -154,20 +199,35 @@ def _project_retrieval_payload(value: dict | None) -> dict:
         used += encoded_size
     stats = source.get("stats", {})
     stats = stats if isinstance(stats, dict) else {}
+    stats_payload = {key: max(0, int(stats.get(key, 0) or 0)) for key in
+                     ("total_entities", "exact_match_count", "lexical_match_count",
+                     "relationship_match_count", "spatial_match_count",
+                     "near_component_match_count", "region_member_match_count",
+                     "semantic_match_count",
+                     "omitted_count")}
+    for relation, key in (("near_component", "near_component_match_count"),
+                          ("region_member", "region_member_match_count")):
+        stats_payload[key] = sum(
+            relation in entity.get("relationships", ()) or
+            entity.get("relationship") == relation for entity in entities)
+    stats_payload["semantic_match_count"] = sum(
+        isinstance(entity.get("semantic_similarity"), (int, float))
+        for entity in entities)
     return {
         "available": bool(source.get("available", False)),
         "revision": _safe_text(source.get("revision"), 32),
         "search_method": _safe_text(source.get("search_method"), 80),
+        "semantic_status": _safe_text(source.get("semantic_status"), 48) or "disabled",
         "relationship_semantics": "shared_net_association_only",
         "board_net_semantics":
             "native_net_id_association_not_physical_continuity",
         "logical_net_semantics":
             "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity",
-        "spatial_semantics": "axis_aligned_bounds_distance_only",
+        "spatial_semantics": "axis_aligned_bounds_intersection_or_distance_only",
+        "geometry_relationship_semantics":
+            "pcb_coordinates_only; near_component_measures_anchor_position_to_footprint_bounds; region_member_means_axis_aligned_bounds_intersection",
         "entities": entities,
-        "stats": {key: max(0, int(stats.get(key, 0) or 0)) for key in
-                  ("total_entities", "exact_match_count", "lexical_match_count",
-                   "relationship_match_count", "spatial_match_count", "omitted_count")},
+        "stats": stats_payload,
     }
 
 
@@ -376,6 +436,16 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
                 envelope["project_retrieval"]["stats"]["omitted_count"] += 1
         if len(encoded) > limit:
             raise ValueError("context limit is too small for the safe summary envelope")
+    included_retrieval_stats = envelope.get("project_retrieval", {}).get("stats", {})
+    if isinstance(included_retrieval_stats, dict):
+        included_entities = envelope.get("project_retrieval", {}).get("entities", [])
+        for relation, key in (("near_component", "near_component_match_count"),
+                              ("region_member", "region_member_match_count")):
+            included_retrieval_stats[key] = sum(
+                relation in entity.get("relationships", ()) or
+                entity.get("relationship") == relation
+                for entity in included_entities if isinstance(entity, dict))
+        encoded = encode()
     # Conversation advances every turn; it must not invalidate a project/action
     # revision.  Fall back only to project and retrieved-memory identity.
     revision_material = json.dumps(
@@ -392,7 +462,9 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
     elif project_snapshot_omitted:
         sources.append("project_summary")
     included_project_retrieval = envelope.get("project_retrieval", {
-        "revision": "", "search_method": "", "stats": {}, "entities": []})
+        "revision": "", "search_method": "", "entities": [],
+        "stats": {"near_component_match_count": 0,
+                  "region_member_match_count": 0}})
     project_retrieval_kinds: dict[str, int] = {}
     for entity in included_project_retrieval["entities"]:
         kind = entity.get("kind") if isinstance(entity, dict) else None
@@ -433,12 +505,7 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
     for entry in included_memories:
         item = retrieval_by_id.get(entry["id"])
         if item is not None:
-            included_retrieval.append({key: item[key] for key in
-                                       ("rank", "tier", "query_overlap_terms", "bm25_score",
-                                        "ranking_method", "channel_ranks", "rrf_score",
-                                        "diversity_score", "redundancy_score",
-                                        "matched_terms", "namespace_hash")
-                                       if key in item})
+            included_retrieval.append(_safe_retrieval_metadata(item, include_bm25=True))
     return {
         "content": encoded,
         "metadata": {
@@ -485,9 +552,17 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
             "project_counts": project_counts,
             "project_retrieval_revision": included_project_retrieval["revision"],
             "project_retrieval_method": included_project_retrieval["search_method"],
+            "project_retrieval_semantic_status": included_project_retrieval.get(
+                "semantic_status", "disabled"),
             "project_retrieval_stats": included_project_retrieval["stats"],
+            "project_retrieval_semantic_count": included_project_retrieval[
+                "stats"].get("semantic_match_count", 0),
             "project_retrieval_kinds": project_retrieval_kinds,
             "project_retrieval_count": len(included_project_retrieval["entities"]),
+            "project_retrieval_block_net_count": sum(
+                entity.get("relationship") == "block_net_member"
+                for entity in included_project_retrieval["entities"]
+                if isinstance(entity, dict)),
             "project_retrieval_layer_ids": project_retrieval_layer_ids,
             "project_retrieval_layer_count": len(project_retrieval_layer_ids),
             "project_retrieval_chars": len(json.dumps(
@@ -640,11 +715,7 @@ def build_provider_request_report(system_text: str, messages: Iterable[Any],
         "memory_tier_counts": {tier: int(tiers.get(tier, 0))
                                 for tier in ("stm", "ltm", "episodic")},
         "memory_retrieval": [
-            {key: item[key] for key in
-             ("rank", "tier", "query_overlap_terms", "ranking_method",
-              "channel_ranks", "rrf_score", "diversity_score", "redundancy_score",
-              "namespace_hash")
-             if key in item}
+            _safe_retrieval_metadata(item, include_bm25=False)
             for item in context_metadata.get("memory_retrieval", [])
             if isinstance(item, dict)],
         "memory_runtime": {
@@ -658,10 +729,23 @@ def build_provider_request_report(system_text: str, messages: Iterable[Any],
         "conversation_in_context_package": False,
         "conversation_sent_as_messages": bool(message_items),
         "model_context_limit": model_context_limit if isinstance(model_context_limit, int) and model_context_limit > 0 else None,
-        "model_context_limit_source": "authoritative_catalog" if isinstance(model_context_limit, int) and model_context_limit > 0 else "unavailable",
+        "model_context_limit_source": "explicit_provider_catalog" if isinstance(model_context_limit, int) and not isinstance(model_context_limit, bool) and model_context_limit > 0 else "unavailable",
+        "context_package_budget_chars": int(context_metadata.get("context_limit", 0)),
+        "context_package_budget_tokens_estimated": (
+            (int(context_metadata.get("context_limit", 0)) + 3) // 4),
+        "context_allocation_policy": (
+            "up_to_25pct_model_window_max_8192_tokens"
+            if isinstance(model_context_limit, int) and
+            not isinstance(model_context_limit, bool) and model_context_limit > 0
+            else "fixed_character_budget_model_window_unknown"),
         "estimated_context_fraction": (
             estimated_tokens / model_context_limit
-            if isinstance(model_context_limit, int) and model_context_limit > 0 else None),
+            if isinstance(model_context_limit, int) and
+            not isinstance(model_context_limit, bool) and model_context_limit > 0 else None),
+        "estimated_context_within_model_limit": (
+            estimated_tokens <= model_context_limit
+            if isinstance(model_context_limit, int) and
+            not isinstance(model_context_limit, bool) and model_context_limit > 0 else None),
         "large_context": estimated_tokens >= threshold,
         "large_context_threshold_tokens": threshold,
         "content_emitted": False,

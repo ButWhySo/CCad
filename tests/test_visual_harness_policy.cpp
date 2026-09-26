@@ -43,6 +43,13 @@ int main() {
       readFile(root / "scripts" / "run_ui_map_mouse_target_demo.ps1");
   const std::string interaction_harness =
       readFile(root / "scripts" / "run_gui_interaction_demo.ps1");
+  const std::string evidence_verifier =
+      readFile(root / "scripts" / "verify_sprint.ps1");
+  const std::string evidence_hook =
+      readFile(root / "scripts" / "hooks" / "commit-msg");
+  const std::string evidence_ci =
+      readFile(root / ".github" / "workflows" / "ci.yml");
+  const std::string evidence_ignore = readFile(root / ".gitignore");
   const std::string workflow =
       readFile(root / ".agents" / "workflows" / "visual-validation.md");
 
@@ -64,8 +71,17 @@ int main() {
 
   requireContains(target_harness, "[int]$InitialLoadMilliseconds = 5000",
                   "multi-target harness initial wait");
+  requireContains(target_harness,
+                  "failed its serialized group-to-native-net round trip",
+                  "Sprint 998 fixture proves native net membership before launch");
   requireContains(target_harness, "[int]$PerTargetMilliseconds = 800",
                   "multi-target harness per-target wait");
+  requireContains(target_harness,
+                  "} elseif ($Name.Contains(\"sprint997\")) {\n      @(\"conversation_turn_visible\", \"pcb_geometry_relationships_visible\")",
+                  "Sprint 997 geometry validation uses its own conversation assertions");
+  requireContains(target_harness,
+                  "} elseif ($Name.Contains(\"sprint997\")) {\n      $requiredScreenshots = @(\"before\", \"turn-persisted\",",
+                  "Sprint 997 geometry validation checks its four feature-specific checkpoints");
 
   requireContains(interaction_harness, "[int]$GuiWaitSeconds = 7",
                   "live interaction harness preview wait");
@@ -88,4 +104,58 @@ int main() {
   requireContains(workflow, "5-second initial load wait",
                   "visual workflow multi-target initial wait policy");
   requireContains(workflow, "800 ms", "visual workflow per-action policy");
+  requireContains(workflow, "push the verified branch to trigger its independent CI run",
+                  "visual workflow triggers CI after local verification");
+  requireContains(workflow, "merge only after the actual required",
+                  "visual workflow gates merge on real CI status");
+  requireContains(workflow, "CI checks pass.",
+                  "visual workflow requires passing CI checks before merge");
+  requireContains(workflow, "Do not commit screenshots or logs",
+                  "visual workflow preserves workspace-only evidence policy");
+  requireContains(workflow, "scripts/verify_sprint.ps1",
+                  "visual workflow identifies the canonical gate");
+  requireContains(workflow, "scripts/run_ui_map_mouse_target_demo.ps1",
+                  "visual workflow requires the app-owned mapped harness");
+  requireNotContains(evidence_verifier, "gui_map_interact.ps1",
+                     "evidence verifier does not rely on illustrative missing wrappers");
+  requireNotContains(evidence_verifier, "gui_map_screenshot.ps1",
+                     "evidence verifier uses the app-owned screenshot path");
+  requireContains(workflow, "Capture screenshots only for distinct visual states",
+                  "visual workflow avoids redundant per-click screenshots");
+  requireContains(workflow, "Record every mapped interaction",
+                  "visual workflow preserves a complete interaction report");
+  requireContains(workflow, "do not claim a self-hosted Qt runner",
+                  "visual workflow requires evidence for runner claims");
+  requireNotContains(evidence_ci, "runs-on: [self-hosted, windows, qt-mingw]",
+                     "CI contract does not claim an unconfigured self-hosted runner");
+  const std::filesystem::path local_agent_instructions = root / "AGENTS.md";
+  if (std::filesystem::exists(local_agent_instructions)) {
+    const std::string agent_instructions = readFile(local_agent_instructions);
+    requireNotContains(agent_instructions,
+                       "Capture a screenshot after every interaction",
+                       "local instructions do not require redundant per-click screenshots");
+    requireContains(agent_instructions,
+                    "Capture screenshots only at distinct, meaningful visual states",
+                    "local instructions match the evidence checkpoint policy");
+  }
+  requireContains(workflow, "-ReusePassedBuildAndTestsFrom",
+                  "visual workflow permits only verifier-checked gate reuse");
+  requireContains(workflow, "-WorkspaceOnlyEvidence",
+                  "visual workflow preserves local-only screenshot/log handling");
+  requireContains(evidence_verifier, "[switch]$WorkspaceOnlyEvidence",
+                  "evidence verifier supports local-only payloads");
+  requireContains(evidence_verifier, "[string]$ReusePassedBuildAndTestsFrom",
+                  "evidence verifier gates prior build/test reuse");
+  requireContains(evidence_hook, "scripts/check_evidence_manifest.py",
+                  "commit hook uses the canonical evidence checker");
+  requireContains(evidence_ci, "evidence-manifest:",
+                  "hosted CI validates evidence manifests");
+  requireContains(evidence_ignore, "artifacts/",
+                  "generated evidence remains excluded by default");
+  requireContains(evidence_verifier, "[switch]$NonVisual",
+                  "evidence verifier supports explicit non-visual changes");
+  requireContains(evidence_verifier, "not_applicable_no_gui_behavior_changed",
+                  "non-visual manifest states why GUI proof is not applicable");
+  requireContains(evidence_verifier, "-InteractionPlan",
+                  "GUI evidence still requires an interaction plan");
 }

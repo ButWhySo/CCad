@@ -175,7 +175,7 @@ int main() {
           .size = ccad::Size{ccad::nanometers(100), ccad::nanometers(200)},
           .visible = true,
       }},
-      .pins = {SchPin{.name = "VDD", .number = "", .electrical_type = ccad::ElectricalPinType::PowerIn}, SchPin{.name = "GND", .number = "", .electrical_type = ccad::ElectricalPinType::PowerIn}},
+      .pins = {SchPin{.id = "SPIN1", .name = "VDD", .number = "", .electrical_type = ccad::ElectricalPinType::PowerIn}, SchPin{.id = "SPIN2", .name = "GND", .number = "", .electrical_type = ccad::ElectricalPinType::PowerIn}},
   });
   project.schematics[0].nets.push_back(Net{
       .id = "N_3V3",
@@ -464,6 +464,19 @@ int main() {
   require(loaded.schematics[0].symbols.at(0).fields.at(0).text == "10k", "component field text round trips");
   require(loaded.schematics[0].symbols.at(0).fields.at(0).rotation_degrees == 90.0, "component field rotation round trips");
   require(loaded.schematics[0].symbols.at(0).pins.size() == 2, "pin count round trips");
+  require(loaded.schematics[0].symbols.at(0).pins.at(0).id == "SPIN1", "first schematic symbol pin id round trips");
+  require(loaded.schematics[0].symbols.at(0).pins.at(1).id == "SPIN2", "second schematic symbol pin id round trips");
+  std::string legacy_json = json;
+  const std::size_t pins_start = legacy_json.find("\"pins\": [");
+  const std::size_t first_pin_id = legacy_json.find("\"id\": \"SPIN1\",\n", pins_start);
+  require(pins_start != std::string::npos && first_pin_id != std::string::npos,
+          "serialized pin identity exists for legacy fixture construction");
+  const std::size_t first_pin_line = legacy_json.rfind('\n', first_pin_id) + 1;
+  const std::size_t first_pin_line_end = legacy_json.find('\n', first_pin_id) + 1;
+  legacy_json.erase(first_pin_line, first_pin_line_end - first_pin_line);
+  const Project legacy_loaded = ccad::loadProjectJson(legacy_json);
+  require(legacy_loaded.schematics[0].symbols.at(0).pins.at(0).id.empty(),
+          "legacy schematic pin without id loads with an empty id");
   require(loaded.schematics[0].nets.size() == 1, "net count round trips");
   require(loaded.schematics[0].groups.size() == 1, "sch group count round trips");
   require(loaded.schematics[0].groups.at(0).id == "G1", "sch group id round trips");

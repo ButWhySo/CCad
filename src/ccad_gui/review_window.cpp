@@ -7301,6 +7301,8 @@ QString ReviewWindow::uiTypeTextJson(const QString& id, const QString& text) {
                                    "control:agent_command_input",
                                    "control:agent_chat_input",
                                    "control:apiKeyInput", "control:modelInput",
+                                   "control:semanticMemoryEndpoint",
+                                   "control:semanticMemoryModel",
                                    "control:projectNameInput", "control:projectPathInput",
                                    "control:followUpInput", "control:customInstructionsText",
                                    "control:memoryTitle", "control:memoryScope",

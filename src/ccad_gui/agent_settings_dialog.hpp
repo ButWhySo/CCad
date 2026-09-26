@@ -61,6 +61,7 @@ private:
   QLabel* provider_target_label_{nullptr};
   QLabel* provider_status_label_{nullptr};
   QCheckBox* langfuse_enabled_cb_{nullptr};
+  QCheckBox* gemini_exact_input_count_cb_{nullptr};
   QLineEdit* langfuse_public_key_input_{nullptr};
   QLineEdit* langfuse_secret_key_input_{nullptr};
   QLineEdit* langfuse_base_url_input_{nullptr};
@@ -76,7 +77,11 @@ private:
   QCheckBox* stm_cb_{nullptr};
   QCheckBox* ltm_cb_{nullptr};
   QCheckBox* episodic_cb_{nullptr};
+  QCheckBox* semantic_memory_enabled_cb_{nullptr};
+  QLineEdit* semantic_memory_endpoint_{nullptr};
+  QLineEdit* semantic_memory_model_{nullptr};
   QLabel* memory_status_label_{nullptr};
+  QLabel* semantic_memory_status_label_{nullptr};
   QLabel* memory_operation_status_label_{nullptr};
   QLabel* memory_manager_status_label_{nullptr};
   QPushButton* memory_reset_button_{nullptr};
@@ -88,6 +93,8 @@ private:
   QLineEdit* memory_title_{nullptr};
   QLineEdit* memory_scope_{nullptr};
   QComboBox* memory_tier_{nullptr};
+  QComboBox* memory_kind_{nullptr};
+  QComboBox* memory_importance_{nullptr};
   QComboBox* hooks_combo_{nullptr};
 
   // General settings

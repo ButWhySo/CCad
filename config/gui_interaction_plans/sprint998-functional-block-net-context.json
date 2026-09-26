@@ -1,0 +1,17 @@
+{
+  "target_sequence": "sprint998-functional-block-net-context-ui",
+  "project": "artifacts/demos/sprint160-placement-crash-ci-final.ccad.json",
+  "minimum_mapped_interactions": 7,
+  "required_targets": [
+    "tab:pcb",
+    "tab:schematic",
+    "tab:agent",
+    "control:agent_chat_input",
+    "action:agent_submit_chat",
+    "action:settingsBtn",
+    "control:categoryList",
+    "action:cancelSettingsButton"
+  ],
+  "required_text_entries": ["control:agent_chat_input"],
+  "meaningful_screenshots": 4
+}
