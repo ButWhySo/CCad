@@ -241,6 +241,8 @@ if(Python3_Interpreter_FOUND)
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_agent_orchestrator_method_catalog.py")
   add_test(NAME agent_context_budget
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_context_budget.py")
+  add_test(NAME agent_provider_usage
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_provider_usage.py")
   add_test(NAME agent_context_broker
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_context_broker.py")
   add_test(NAME agent_project_index

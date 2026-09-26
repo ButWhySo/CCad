@@ -1,5 +1,24 @@
 # Implemented Features
 
+## Sprint 1005 provider-returned token accounting
+
+Normal LangGraph model responses now contribute only validated numeric input,
+output, and total token usage from provider/LangChain response metadata. Each
+generation observation receives Langfuse `usage_details`, and a content-free
+post-response accounting event pairs actual input usage with the separately
+labeled estimate. Final telemetry aggregates actual usage across AI responses
+after the current user message; estimate/delta fields are explicitly limited to
+the last generation. With `CCAD_TRACE_DEBUG=1`, stderr reports safe provider,
+model, counts, and estimate delta. Langfuse update errors are reported without
+turning a successful provider response into a failed user turn. Unsupported or
+absent provider usage remains unavailable, never guessed as actual. Exact
+provider-specific pre-send tokenizer budgeting remains unimplemented. The
+focused contract passes and the Qt/MinGW Release/full CTest gate passes 116/116.
+No live provider request or remote Langfuse trace was made, so exported trace
+delivery remains an opt-in verification task. Final-tree evidence manifest:
+`artifacts/evidence/sprint1005-provider-usage-accounting-r2.json` (SHA-256
+`0284C1508ED831158F8662FFEFF86BE1AD549B29817F25274A9972CCECE1009D`).
+
 ## Sprint 1004 evidence checkpoints
 
 The repository instructions now distinguish interaction coverage from image

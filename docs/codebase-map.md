@@ -2304,6 +2304,22 @@ manifest. The policy contract passes, and Qt MinGW Release plus full CTest pass
 
 Sprint 998 extends `src/ccad_agent/project_index.py` so an explicit board group resolves its related IDs only to `board_net:<id>`, and schematic groups/sheets only to `schematic_net:<id>`. Internal `uid:` references prevent same-named PCB and schematic nets from alias-collapsing; the public relation is `block_net_member`, which asserts typed source membership only. Explicit group-to-net edges remain visible even when the active PCB net is already an exact retrieval seed; without this, active-layer state could hide the reason that net matched. These edges use the existing incremental reference index and are replaced when a member changes nets. `context_package.py` counts only edges that survive bounded packaging; `orchestrator.py` carries that integer in `context_state`, and `AgentPanel` exposes it in activity and workspace state. Contract coverage lives in `scripts/test_project_index.py` and `scripts/test_agent_context_contract.py`; the isolated UI-map flow is `sprint998-functional-block-net-context-ui` in `scripts/run_ui_map_mouse_target_demo.ps1`, driven by `config/gui_interaction_plans/sprint998-functional-block-net-context.json`. The C3 functional-block-to-net item is complete; library-definition pins, candidate/proposal links, and transaction-delta-driven indexing remain open.
 
+## Sprint 1005 provider response token usage
+
+`src/ccad_agent/provider_usage.py` owns allowlisted normalization of provider
+usage metadata, safe estimate comparison, Langfuse `usage_details` mapping, and
+aggregation of `AIMessage` usage after the most recent human message.
+`orchestrator.py` attaches per-response counts to the active generation, emits
+post-response accounting, aggregates turn usage for telemetry, and optionally
+logs only provider/model/count values when `CCAD_TRACE_DEBUG` is enabled. The
+path makes no additional provider request. `scripts/test_provider_usage.py`
+contains deterministic no-network contracts and is registered as
+`agent_provider_usage` in CTest. This records response usage, not exact pre-send
+tokenization; that separate model/provider-specific budgeting remains open.
+The official Qt/MinGW Release build and complete CTest gate pass 116/116. The
+final-tree evidence manifest is `artifacts/evidence/sprint1005-provider-usage-accounting-r2.json`
+(SHA-256 `0284C1508ED831158F8662FFEFF86BE1AD549B29817F25274A9972CCECE1009D`).
+
 ## Sprint 1004 visual evidence checkpoints
 
 `AGENTS.md` and `.agents/workflows/visual-validation.md` now share one image

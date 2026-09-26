@@ -2,6 +2,25 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1005 active slice - provider-returned token accounting (Tier 1, M4)
+
+References checked: Langfuse's current Python instrumentation documents updating an active generation with `usage_details` (`input`, `output`, optional `total`); provider SDK response metadata is the source for actual counts. CCad must not make extra count-token requests during normal turns because that changes provider network/quota behavior. See [Langfuse instrumentation](https://langfuse.com/docs/observability/sdk/instrumentation), [token and cost tracking](https://langfuse.com/docs/observability/features/token-and-cost-tracking), [Gemini token counting](https://ai.google.dev/gemini-api/docs/tokens), and [OpenRouter chat completions](https://openrouter.ai/docs/api/api-reference/chat/send-chat-completion-request).
+
+- [x] Re-read `.agents/workflows/visual-validation.md` and audit the supplied replacement recipe against the checked-in verifier, app-owned GUI-map harness, commit hook, CI, and artifact policy; retain the working canonical infrastructure instead of importing nonexistent GUI wrappers or unsupported runner assumptions.
+- [x] Normalize supported provider/LangChain response usage fields to bounded integer input/output/total values; never copy response content, request identifiers, or unrecognized metadata.
+- [x] Associate actual counts with their generation observation and emit a safe post-response context-accounting event; preserve the separately labeled preflight estimate.
+- [x] Aggregate actual usage across all model responses after the latest user message for final turn telemetry; label the estimate/delta as last-generation-only.
+- [x] Emit optional content-free provider/model/token accounting to development stderr under `CCAD_TRACE_DEBUG`; do not let tracing update failures discard a successful model response.
+- [x] Add deterministic no-network contracts for provider aliases, malformed values, current-turn aggregation, estimate pairing, Langfuse field mapping, and content/secret exclusion.
+- [x] Use the applicable installed language servers: Pyright reports zero issues in the new accounting module and only the two existing orchestrator import-symbol errors; `cmake-language-server` 0.1.11 produced no usable response to the bounded LSP check, while authoritative CMake regeneration registered the added CTest successfully. No C++ files changed, so clangd was not applicable.
+- [x] Run focused Pyright and the official non-visual Qt MinGW Release/full CTest gate; inspect the generated manifest and every captured log (116/116; manifest `artifacts/evidence/sprint1005-provider-usage-accounting-r2.json`, SHA-256 `0284C1508ED831158F8662FFEFF86BE1AD549B29817F25274A9972CCECE1009D`).
+- [x] Update progress, feature inventory, codebase map, backlog, and this checklist; `git diff --check` passes.
+- [x] Run redacted repository and staged-diff secret scans; the staged change is clean. The tracked-tree scan found only existing synthetic-token test fixtures in memory tests.
+- [x] Commit and push the verified source/tests/docs/manifest on the active feature branch after local gates.
+- [ ] Open the integration PR and inspect the actual hosted CI result for its exact head SHA; merge only after required checks pass.
+- [ ] Run an opt-in real provider turn and fetch its trace from Langfuse to verify generation usage was exported and readable. No live provider request was made in this slice.
+- [ ] Implement provider-specific exact pre-send tokenizer counting and model-context budget allocation; do not claim this broader provider-tokenizer TODO complete here.
+
 ### Sprint 1004 active slice — lean, complete visual evidence policy
 
 - [x] Align `AGENTS.md` with feature-specific visual checkpoints: record every mapped action, capture only distinct visual states, and inspect every retained image.
