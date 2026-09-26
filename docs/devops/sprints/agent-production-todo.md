@@ -10,7 +10,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Keep calculation results content-minimal; do not echo user formula text in tool output.
 - [x] Write and pass calculator and native-catalog integration contracts; no provider call, project mutation, or output artifact.
 - [x] Pass Pyright on the new calculator module and Qt/MinGW Release/full CTest (120/120); verifier manifest `artifacts/evidence/sprint-1013-agent-calculator.json`.
-- [ ] Confirm hosted CI passes on the exact published feature commit; CD remains unavailable until a deployment target is configured.
+- [x] Confirm hosted CI passes on exact merged commit `cb2c184fc2202da4bbd976c0c91f814b9b4bce67` (run `36239405429`, all five jobs green); CD remains unavailable because no deployment target is configured.
 
 ### Sprint 1011 — failing CTest diagnostics
 
